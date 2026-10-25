@@ -1,0 +1,227 @@
+name: CI
+
+# Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
+# outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
+#   web    Linux: the page in headless Chromium (software WebGL): no page or console errors, and
+#          screenshots of the tour at a phone's and a desktop's size
+#   apple  macOS: Debug and Release builds for the simulator and the bundled data checked byte for
+#          byte; launched and screenshotted at moments of the tour only when the workflow is run
+#          by hand, as a report (hosted runners have no GPU)
+#   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
+#          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
+#          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
+#          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
+# The macOS runners (5 at once) are shared with pbordjadze/paint-by-number and pbordjadze/pigeon:
+# one macOS job per push here.
+
+on:
+  push:
+    branches-ignore: ['ci-shots/**', 'sidestore']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  PROJECT: App/TerraIncognita.xcodeproj
+  SCHEME: TerraIncognita
+
+jobs:
+  web:
+    name: The page in headless Chromium (and WebKit, as a report)
+    runs-on: ubuntu-latest
+    # Playwright's own image: Node and every browser with its libraries, nothing to install
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 20
+    # in a container GitHub's default shell is sh, which has no pipefail
+    defaults: { run: { shell: bash } }
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Syntax
+        run: |
+          mkdir -p out/web && echo started > out/web-started.txt
+          for f in Web/*.js ci/*.cjs; do node --check "$f"; done
+      - name: Load the page and screenshot the tour
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y > /dev/null && npm i -s playwright@1.56.1)
+          export NODE_PATH=/tmp/pw/node_modules
+          # both sizes run; either failing fails the step
+          rc=0
+          node ci/web_check.cjs Web out/web 390x844 6 58 120 160 186 222 245 270 290 336 2>&1 | tee out/web-check.log || rc=1
+          node ci/web_check.cjs Web out/web 1280x800 6 58 222 245 290 2>&1 | tee -a out/web-check.log || rc=1
+          exit $rc
+      - name: The page in WebKit (for now a report, not a gate)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          set -o pipefail
+          export NODE_PATH=/tmp/pw/node_modules
+          BROWSER=webkit node ci/web_check.cjs Web out/web 390x844 6 58 222 2>&1 | tee out/webkit-check.log
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: web, path: out, if-no-files-found: ignore }
+
+  apple:
+    name: iPhone simulator builds (screenshots when run by hand)
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Start simulator
+        # only for screenshots, which run when the workflow is started by hand (below)
+        id: sim
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          read -r _ UDID MODEL RUNTIME < <(ci/simulators.sh iphone)
+          echo "$MODEL $RUNTIME $UDID"
+          mkdir -p out
+          nohup xcrun simctl boot "$UDID" > out/boot.log 2>&1 &
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Build (Debug, simulator)
+        id: build
+        run: |
+          set -o pipefail
+          mkdir -p out
+          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd -quiet \
+            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/app-build.log | tail -80
+      - name: Release build
+        id: release
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/release -quiet \
+            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/release-build.log | tail -60
+      - name: Bundled data
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          # the map's data must reach the app byte for byte (an image tool would destroy it)
+          APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+          for f in Web/data/*.png Web/cell.glsl Web/sprites.json; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          echo "bundled data identical"
+      - name: Screenshots of the tour on the simulator
+        # By hand only (Run workflow), and a report, not a gate: the hosted macOS runners have no
+        # GPU, WebKit's GPU process is emulated on the CPU, and iOS ends it as unresponsive.
+        id: shots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
+        continue-on-error: true
+        timeout-minutes: 10
+        run: ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 58 222
+      - name: Collect
+        if: always()
+        run: |
+          mkdir -p out
+          grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
+          echo "build=${{ steps.build.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: apple, path: out, if-no-files-found: ignore }
+
+  ipa:
+    name: IPA for SideStore (unsigned device build)
+    needs: apple
+    if: ${{ !cancelled() && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
+    permissions:
+      contents: write
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Archive
+        run: |
+          set -o pipefail
+          mkdir -p out
+          # Version 1.0.<run>, build <run>: every build is an update to the installed one.
+          xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/TerraIncognita.xcarchive -quiet \
+            MARKETING_VERSION="1.0.$BUILD" CURRENT_PROJECT_VERSION="$BUILD" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee out/ipa-build.log | tail -80
+      - name: Package
+        run: |
+          # SideStore signs the app with the user's Apple ID when installing it.
+          APP=build/TerraIncognita.xcarchive/Products/Applications/TerraIncognita.app
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../../out/TerraIncognita.ipa Payload)
+          ls -l out/TerraIncognita.ipa
+          /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" -c "Print CFBundleVersion" "$APP/Info.plist"
+      - name: Publish release and SideStore source
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git log -1 --format=%s > out/notes.txt
+          if gh release view "build-$BUILD" > /dev/null 2>&1; then
+            gh release upload "build-$BUILD" out/TerraIncognita.ipa --clobber
+          else
+            gh release create "build-$BUILD" out/TerraIncognita.ipa --prerelease --target "$GITHUB_SHA" \
+              --title "Build $BUILD" --notes-file out/notes.txt
+          fi
+          # Keep the five newest builds (KEEP in ci/sidestore_source.py: the same number).
+          gh release list --limit 100 --json tagName -q '.[].tagName' | grep '^build-' | tail -n +6 |
+            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
+          SOURCE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/sidestore"
+          mkdir -p build/source
+          python3 ci/sidestore_source.py build/TerraIncognita.xcarchive/Products/Applications/TerraIncognita.app \
+            "$SOURCE/icon.png" > build/source/source.json
+          cp ci/sidestore-icon.png build/source/icon.png
+          printf '# SideStore source\n\nAdd %s/source.json in SideStore (Sources → +).\n' "$SOURCE" > build/source/README.md
+          cp build/source/source.json out/
+          cd build/source
+          git init -q && git checkout -q -b sidestore && git add -A
+          git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "SideStore source for build $BUILD"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "sidestore:refs/heads/sidestore"
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: ipa
+          path: |
+            out
+            !out/*.ipa
+          if-no-files-found: ignore
+
+  report:
+    name: Publish report
+    needs: [web, apple, ipa]
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with: { path: report }
+      - name: Write status and push to refs/ci-shots/${{ github.ref_name }}
+        run: |
+          mkdir -p report && cd report
+          {
+            echo "commit: ${GITHUB_SHA}"
+            echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "web: ${{ needs.web.result }}"
+            echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"
+            echo "ipa: ${{ needs.ipa.result }}"
+            echo
+            if [ -s apple/errors.txt ]; then echo "## compiler errors and warnings"; head -60 apple/errors.txt; echo; fi
+            if [ -f web/web-check.log ]; then echo "## web check"; tail -20 web/web-check.log; fi
+            if [ -f web/webkit-check.log ]; then echo "## webkit check (report only)"; tail -20 web/webkit-check.log; fi
+            if [ -f apple/shots/sim-steps.log ]; then echo "## simulator (report only)"; cat apple/shots/sim-steps.log; fi
+          } > STATUS.md
+          cat STATUS.md
+          echo "${GITHUB_SHA}" > COMMIT
+          git init -q && git checkout -q -b shots
+          git add -A
+          git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" "shots:refs/ci-shots/${GITHUB_REF_NAME}"

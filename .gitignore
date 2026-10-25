@@ -1,0 +1,9 @@
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build/
+.DS_Store
+/out/
+ci-report/
+__pycache__/
+node_modules/
