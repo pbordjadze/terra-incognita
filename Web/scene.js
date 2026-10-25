@@ -82,7 +82,8 @@ function layoutFor(proj, W, H) {
   const portrait = H > W * 1.15;
   const hemi = proj === 0 ? (portrait ? [0, 1.03] : [1.03, 0]) : [0, 0];
   const ext = proj === 0 ? (portrait ? [2.12, 4.18] : [4.18, 2.12]) : proj === 1 ? [4.2, 2.2] : [2.24, 2.24];
-  const fit = Math.min(W * 0.93 / ext[0], H * (portrait ? 0.84 : 0.8) / ext[1]);
+  // the oval is wide: on a tall screen it may run past the sides rather than be tiny
+  const fit = Math.min(W * (proj === 1 && portrait ? 1.5 : 0.93) / ext[0], H * (portrait ? 0.84 : 0.8) / ext[1]);
   return { hemi, ext, fit, portrait };
 }
 
@@ -100,7 +101,7 @@ const FINDS = [
     text: ['The Catalan Atlas, made on Majorca in 1375 and credited to Abraham Cresques, puts a king on a throne in West Africa holding up a gold nugget. He is Mansa Musa, ruler of Mali.',
       'On his pilgrimage to Mecca in 1324 he spent and gave away so much gold in Cairo that, according to the historian al-Umari, its value there was still low twelve years later.'],
     source: 'Catalan Atlas, 1375; Bibliothèque nationale de France', link: 'https://en.wikipedia.org/wiki/Mansa_Musa' },
-  { id: 'serpent', c: [-3.5, 63.2], kind: 'serpent', eyebrow: 'From the Carta Marina', title: 'The sea serpent off Norway',
+  { id: 'serpent', c: [-12.5, 64.2], kind: 'serpent', eyebrow: 'From the Carta Marina', title: 'The sea serpent off Norway',
     text: ['In 1539 the Swedish priest Olaus Magnus printed the Carta Marina, a map of the northern lands and seas full of creatures sailors described to him. Off the Norwegian coast a huge serpent coils around a ship.',
       'He wrote that it lived in caves along the shore near Bergen and came out on summer nights to eat calves, lambs and pigs.'],
     source: 'Olaus Magnus, Carta Marina, Venice, 1539', link: 'https://en.wikipedia.org/wiki/Carta_marina' },
@@ -126,7 +127,7 @@ const FINDS = [
     source: 'Abraham Ortelius, Typus Orbis Terrarum, 1570', link: 'https://en.wikipedia.org/wiki/Terra_Australis' },
 ];
 const SHIPS = [
-  { route: [[-9.5, 38.2], [-25, 33], [-45, 24], [-64, 18]], dur: 150, phase: 0.1 },
+  { route: [[-9.5, 38.2], [-16, 27], [-32, 19], [-58, 15]], dur: 150, phase: 0.1 },
   { route: [[-14, 8], [2, -25], [18, -38], [38, -32], [54, -14], [68, 6]], dur: 200, phase: 0.55 },
   { route: [[122, 13], [150, 24], [178, 33], [-158, 36], [-128, 30], [-110, 22]], dur: 230, phase: 0.3 },
 ];
@@ -189,7 +190,7 @@ class Scene {
     const at = ll => { const P = forward(pp, ll); return P ? Object.assign(toS(P), { h: P[2] }) : null; };
     const vis = (p, m = 120) => p && p[0] > -m && p[0] < W + m && p[1] > -m && p[1] < H + m;
     v.at = at; v.toS = toS; v.lay = lay; v.cwPx = cw; v.chPx = ch;
-    const zl = Math.log2(st.look.z);
+    const zl = Math.log2(st.look.z), phoneW = Math.min(W, H) < 600;
     // Hibernia's roundel, centred on Ireland
     const ie = at([-7.9, 53.4]);
     v.kells = [-7.9, 53.4, clamp(pxPerDeg * 5.6, ch * 12, Math.min(W, H) * 0.47), st.kells];
@@ -200,21 +201,33 @@ class Scene {
       v.roses.push([p[0], p[1], R, p.h]);
       if (vis(p, R * 1.3)) v.sprites.push({ a: [p[0], p[1], R, 5], b: [1, 0, 0, 0] });
     }
-    // ships, whales, and what is hidden
-    // creatures in character rows, as the old maps drew them: far larger than life, always legible
-    const sz = (base, grow) => ch * (st.look.z < 1.8 ? base : base * 1.7 + grow * zl);
-    v.keepOut = [];
-    const keep = (p, s, w, up, down) => v.keepOut.push([p[0] - s * w, p[1] - s * up, p[0] + s * w, p[1] + s * down]);
-    for (const s of SHIPS) { const { ll, dir } = shipAt(s, time); const p = at(ll); if (vis(p)) { const k = sz(1.7, 1.3); v.sprites.push({ a: [p[0], p[1], k, 4], b: [-dir, 0, 0, s.phase] }); keep(p, k, 1.4, 2.6, 0.4); } }
-    for (const w of WHALES) { const p = at(w.c); if (vis(p)) { const k = sz(2.3, 1.9); v.sprites.push({ a: [p[0], p[1], k, 3], b: [1, w.seed, 0, w.seed] }); keep(p, k, 1.3, 1.6, 0.3); } }
+    // the creatures: hand-drawn ASCII art (tools/sprites.py), the same size in characters at any zoom
+    v.keepOut = []; v.creatures = [];
+    // drawn on a grid k times coarser than the map's, k growing as the map comes closer
+    const kArt = Math.max(1, Math.min(4, Math.round((phoneW ? 1.3 : 1.15) * Math.pow(st.look.z, 0.36) * (2.6 / (st.grain || 2.6)))));
+    const wanted = [];
+    const creature = (art, p, frame, flip, pri) => wanted.push({ art, p, frame, flip, pri });
+    for (const s of SHIPS) { const { ll, dir } = shipAt(s, time); const p = at(ll); if (vis(p, 200)) creature('ship', p, time * 1.5 + s.phase * 7, dir < 0, 1); }
+    for (const w of WHALES) { const p = at(w.c); if (vis(p, 200) && st.look.z > 1.2) creature('whale', p, (time * 0.7 + w.seed * 3) % 3, w.seed > 0.5, 2); }
     for (const f of FINDS) {
       const p = at(f.c); f.screen = p; if (!vis(p, 260)) continue;
-      if (f.kind === 'serpent') { const k = sz(2.8, 2.6); v.sprites.push({ a: [p[0], p[1], k, 1], b: [-1, 0, 0, 0.2] }); keep([p[0] - k * 0.8, p[1]], k, 2.6, 2.0, 0.3); }
-      else if (f.kind === 'dragon') { const k = sz(2.8, 2.6); v.sprites.push({ a: [p[0], p[1], k, 2], b: [1, 0, 0, 0.6] }); keep([p[0] + k * 0.8, p[1]], k, 2.6, 2.2, 0.3); }
-      else if (f.kind === 'brendan') { const k = sz(2.4, 2.2); v.sprites.push({ a: [p[0], p[1], k, 3], b: [-1, 0.1, 1, 0.1] }); keep(p, k, 1.3, 2.2, 0.3); }
+      if (f.kind === 'serpent') { if (st.look.z > 1.5) creature('serpent', p, time * 1.4, false, 3); }
+      else if (f.kind === 'dragon') { if (st.look.z > 1.5) creature('dragon', p, time * 1.2, false, 3); }
+      else if (f.kind === 'brendan') creature('brendan', p, time * 3, false, 3);
       else if (f.kind === 'phantom') { const fade = clamp((5.5 - st.look.z) / 2.5); if (fade > 0.05) v.sprites.push({ a: [p[0], p[1], ch * (2.2 + 1.2 * zl), 10], b: [1, 0, 0, 0] }); }
-      else if (f.kind === 'glint') v.sprites.push({ a: [p[0], p[1], ch * (1.1 + 0.45 * zl), 9], b: [1, (f.c[0] * 0.13) % 1, f.mosaic ? 2 : f.silver ? 1 : 0, 0] });
+      else if (f.kind === 'glint') v.sprites.push({ a: [p[0], p[1], ch * (1.5 + 0.7 * Math.max(zl, 0)), 9], b: [1, Math.abs(f.c[0] * 0.13) % 1, f.mosaic ? 2 : f.silver ? 1 : 0, 0] });
       else if (f.kind === 'tower' && st.kells > 0.3) v.sprites.push({ a: [p[0], p[1] + ch * 0.5, ch * (1.2 + 0.9 * zl), 11], b: [1, 0, 0, 0] });
+    }
+    // place the creatures, the hidden ones first; one that would overlap another stays away
+    wanted.sort((a, b) => b.pri - a.pri);
+    for (const c of wanted) {
+      const name = c.flip ? c.art + '_flip' : c.art, m = TI.ART && TI.ART[name]; if (!m) continue;
+      const k = kArt, ax = Math.floor(c.p[0] / cw), ay = Math.floor(c.p[1] / ch);
+      const x0 = (ax - m.anchor[0] * k) * cw, y0 = (ay - m.anchor[1] * k) * ch, box = [x0, y0, x0 + m.w * k * cw, y0 + m.h * k * ch];
+      if (box[0] > W || box[1] > H || box[2] < 0 || box[3] < 0) continue;
+      if (v.keepOut.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+      v.creatures.push({ art: name, x: c.p[0], y: c.p[1], frame: Math.floor(c.frame) % m.frames, k, x0, y0 });
+      v.keepOut.push(box);
     }
     // the ornaments on the sheet: a title ribbon, the moon, and (two hemispheres) the winds
     const sheet = (P, size) => [toS(P)[0], toS(P)[1], size * scale];
@@ -289,9 +302,18 @@ class Scene {
     if (w === undefined) { w = [...text].reduce((a, c) => a + x.measureText(c).width, 0) + sp * Math.max(0, [...text].length - 1); this.measure.set(key, w); if (this.measure.size > 4000) this.measure.clear(); }
     return w;
   }
-  drawLabels(v, x, alpha) {
+  drawLabels(v, x, alpha, renderer) {
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.clearRect(0, 0, x.canvas.width, x.canvas.height);
+    // the creatures first, pixel-aligned to the map's grid
+    if (renderer && v.creatures) {
+      const cwDev = Math.max(4, Math.round(v.grain * v.dpr)), chDev = cwDev * 2;
+      x.imageSmoothingEnabled = false;
+      for (const c of v.creatures) {
+        const bm = renderer.creatureBitmap(c.art, c.frame, c.k, cwDev, chDev, v.ink);
+        x.drawImage(bm, Math.round(c.x0 / v.cwPx) * cwDev, Math.round(c.y0 / v.chPx) * chDev);
+      }
+    }
     if (alpha <= 0) return;
     x.save(); x.globalAlpha = alpha; x.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
     x.textBaseline = 'middle'; x.lineJoin = 'round'; x.textAlign = 'left';
@@ -308,6 +330,13 @@ class Scene {
   }
   findAt(v, px, py) {
     let best = null, bd = 1e9;
+    for (const c of v.creatures || []) {
+      const m = TI.ART[c.art];
+      if (px >= c.x0 && px <= c.x0 + m.w * c.k * v.cwPx && py >= c.y0 && py <= c.y0 + m.h * c.k * v.chPx) {
+        const f = FINDS.find(f => f.kind === c.art.replace('_flip', ''));
+        if (f) return f;
+      }
+    }
     for (const f of FINDS) {
       if (!f.screen) continue;
       const d = Math.hypot(px - f.screen[0], py - f.screen[1]);

@@ -11,7 +11,7 @@ GLYPHS.push(...EXTRA);
 const GI = Object.fromEntries(GLYPHS.map((g, i) => [g, i]));
 const NAMED = { SP: ' ', DOT: '.', COMMA: ',', QUOTE: "'", BTICK: '`', COLON: ':', SEMI: ';', DASH: '-', US: '_', MACRON: '¯', PIPE: '|',
   SLASH: '/', BSLASH: '\\', TILDE: '~', APPROX: '≈', PLUS: '+', STAR: '*', MIDDOT: '·', BULLET: '•', CLUB: '♣', SPADE: '♠', O: 'o' };
-const RAMP_CAND = " .'`:-~=+*^xo%#&@$8W";
+const RAMP_CAND = " .`:-=+*#%@";
 
 const PAL_KEYS = ['SKY', 'STAR', 'SEABG', 'SEA', 'SEAHI', 'COAST', 'GLINT', 'LANDBG', 'VELLUM', 'VELLUMHI', 'FOREST', 'FORESTHI', 'GRASS', 'GRASSHI',
   'DESERT', 'DESERTHI', 'ICE', 'ICEHI', 'MOUNT', 'MOUNTHI', 'SNOW', 'RIVER', 'BORDER', 'GOLD', 'GOLDHI', 'VERM', 'VERMHI', 'VERD', 'VERDHI', 'LAPIS',
@@ -53,7 +53,7 @@ const INKS = {
 };
 for (const ink of Object.values(INKS)) ink.pal = new Float32Array(PAL_KEYS.flatMap(k => hex(ink.c[k])));
 
-const LIMITS = { NKNOCK: 40, NSPR: 16, NROSE: 5, NMARK: 32 };
+const LIMITS = { NKNOCK: 40, NSPR: 16, NROSE: 5, NMARK: 32, NART: 16, NASPR: 12 };
 
 class Renderer {
   constructor(canvas, textCanvas) {
@@ -69,7 +69,9 @@ class Renderer {
     const gl = this.gl;
     const [cellSrc] = await Promise.all([fetch(base + 'cell.glsl').then(r => r.text())]);
     const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('missing ' + src)); im.src = base + src; });
-    const [geo, geo2, aux, aux2] = await Promise.all([load('data/geo.png'), load('data/geo2.png'), load('data/aux.png'), load('data/aux2.png')]);
+    const [geo, geo2, aux, aux2, sprites] = await Promise.all([load('data/geo.png'), load('data/geo2.png'), load('data/aux.png'), load('data/aux2.png'),
+      fetch(base + 'sprites.json').then(r => r.json())]);
+    this.buildArt(sprites);
     this.tex = { geo: this.texture(geo, true), geo2: this.texture(geo2, true), aux: this.texture(aux, true), aux2: this.texture(aux2, true) };
     this.measureFont();
     const defines = [
@@ -88,6 +90,54 @@ class Renderer {
     this.vao = gl.createVertexArray(); gl.bindVertexArray(this.vao);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     this.uloc = new Map();
+  }
+
+  // The creatures' drawings in one integer texture: R the character, G its colour (palette index
+  // + 1; 0 see-through), B 1 for an opaque blank. Frames of a drawing are stacked under each other.
+  buildArt(data) {
+    const names = Object.keys(data.art), W = Math.max(...names.map(n => data.art[n].w));
+    let H = 0; const meta = {};
+    names.forEach((n, i) => { const a = data.art[n]; meta[n] = { i, y0: H, w: a.w, h: a.h, frames: a.frames.length, anchor: a.anchor }; H += a.h * a.frames.length; });
+    const px = new Uint8Array(W * H * 4);
+    for (const n of names) {
+      const a = data.art[n], m = meta[n];
+      a.frames.forEach((f, fi) => f.g.forEach((line, y) => [...line].forEach((ch, x) => {
+        const o = ((m.y0 + fi * a.h + y) * W + x) * 4, code = f.m[y][x];
+        if (code === ':') { px[o + 2] = 1; return; }
+        if (ch === ' ' || code === ' ') return;
+        px[o] = GI[ch] ?? GI['?'];
+        px[o + 1] = PAL_KEYS.indexOf(data.colours[code]) + 1;
+      })));
+    }
+    const gl = this.gl, t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, W, H, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, px);
+    for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
+    this.artTex = t; this.artMeta = meta; this.artData = data; this.artCache = new Map();
+    this.artTable = new Float32Array(LIMITS.NART * 4); this.artAnchor = new Float32Array(LIMITS.NART * 2);
+    names.forEach((n, i) => { const m = meta[n]; this.artTable.set([m.y0, m.w, m.h, m.frames], i * 4); this.artAnchor.set(m.anchor, i * 2); });
+    TI.ART = meta;
+  }
+
+  // A creature's frame as a bitmap of characters at k times the cell, for the lettering canvas.
+  creatureBitmap(name, frame, k, cwDev, chDev, ink) {
+    const key = [name, frame, k, cwDev, ink].join('|');
+    let c = this.artCache.get(key);
+    if (c) return c;
+    const a = this.artData.art[name], f = a.frames[frame];
+    c = document.createElement('canvas'); c.width = a.w * k * cwDev; c.height = a.h * k * chDev;
+    const x = c.getContext('2d'); x.textAlign = 'center'; x.textBaseline = 'middle';
+    const pal = INKS[ink].c, dark = INKS[ink].dark;
+    f.g.forEach((line, y) => [...line].forEach((ch, xx) => {
+      const code = f.m[y][xx]; if (ch === ' ' || code === ' ' || code === ':') return;
+      x.fillStyle = pal[this.artData.colours[code]];
+      if (!dark) x.globalAlpha = 0.95;
+      this.drawGlyph(x, ch, (xx + 0.5) * k * cwDev, (y + 0.53) * k * chDev, k * chDev / 1.2);
+    }));
+    if (this.artCache.size > 80) this.artCache.clear();
+    this.artCache.set(key, c);
+    return c;
   }
 
   texture(img, linear) {
@@ -214,7 +264,11 @@ class Renderer {
     const p = this.cellProg; gl.useProgram(p);
     const ink = INKS[v.ink];
     const T = (unit, tex, name) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(this.u(p, name), unit); };
-    T(0, this.tex.geo, 'uGeo'); T(1, this.tex.aux, 'uAux'); T(2, this.tex.aux2, 'uAux2'); T(3, this.tex.geo2, 'uGeo2');
+    T(0, this.tex.geo, 'uGeo'); T(1, this.tex.aux, 'uAux'); T(2, this.tex.aux2, 'uAux2'); T(3, this.tex.geo2, 'uGeo2'); T(4, this.artTex, 'uArtTex');
+    gl.uniform4fv(this.u(p, 'uArt[0]'), this.artTable); gl.uniform2fv(this.u(p, 'uArtA[0]'), this.artAnchor);
+    const cr = v.creatures || [], ca = new Float32Array(LIMITS.NASPR * 4);
+    cr.slice(0, LIMITS.NASPR).forEach((c, i) => ca.set([c.x, c.y, this.artMeta[c.art].i, (c.frame % this.artMeta[c.art].frames) * 8 + c.k], i * 4));
+    gl.uniform4fv(this.u(p, 'uAS[0]'), ca); gl.uniform1i(this.u(p, 'uASN'), Math.min(cr.length, LIMITS.NASPR));
     gl.uniform2f(this.u(p, 'uGrid'), cols, rows); gl.uniform2f(this.u(p, 'uCell'), cw, ch); gl.uniform2f(this.u(p, 'uView'), v.W, v.H);
     gl.uniform2f(this.u(p, 'uCam'), v.cam.x, v.cam.y); gl.uniform1f(this.u(p, 'uScale'), v.scale); gl.uniform1f(this.u(p, 'uDelta'), cw * 0.5);
     gl.uniform1f(this.u(p, 'uTime'), v.time); gl.uniform1f(this.u(p, 'uDetail'), v.detail);

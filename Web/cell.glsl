@@ -25,6 +25,9 @@ uniform float uSunAz;           // light direction for relief, radians
 uniform vec4 uKnock[NKNOCK]; uniform int uKnockN;
 uniform vec4 uSpr[NSPR]; uniform vec4 uSprP[NSPR]; uniform int uSprN;
 uniform vec4 uRose[NROSE]; uniform int uRoseN;
+uniform highp usampler2D uArtTex;
+uniform vec4 uArt[NART]; uniform vec2 uArtA[NART];   // per drawing: first row, width, height, frames; anchor
+uniform vec4 uAS[NASPR]; uniform int uASN;             // per creature on screen: anchor (px), drawing, frame
 uniform vec4 uMark[NMARK]; uniform int uMarkN;
 uniform vec4 uReveal;           // x progress 0..1, yz origin (screen px), w spread (px)
 uniform vec2 uStars;            // parallax offset of the sky (px)
@@ -198,96 +201,7 @@ vec3 matCol(float m, float lit) {
   return mix(a, b, clamp(lit, 0.0, 1.0));
 }
 
-// ---- the creatures and ornaments, in local units (y down; the sea's surface at y = 0)
-vec3 serpent(vec2 u, float t, bool dragon) {
-  float bodyM = dragon ? M_DRAGON : M_BODY, spikeM = dragon ? M_GOLD : M_SPIKE;
-  vec3 r = vec3(1e5, 0.0, 0.0);
-  vec2 hc = vec2(-1.2, -1.25 + 0.08 * sin(t * 1.4));
-  vec2 hu = u - hc;
-  float head = min(sdEll(hu, vec2(0.46, 0.3)), sdBox(hu - vec2(-0.48, -0.05), vec2(0.34, 0.11)));
-  float jaw = sdBox(hu - vec2(-0.42, 0.17), vec2(0.28, 0.05));
-  r = U(r, vec3(min(head, jaw), bodyM, 0.55 + 0.45 * clamp(-hu.y / 0.3 + 0.3, 0.0, 1.0)));
-  r = U(r, vec3(sdCircle(hu - vec2(-0.12, -0.1), 0.075), M_EYE, 1.0));
-  // a fin of spines behind the head
-  float fin = sdTri(hu, vec2(-0.05, -0.2), vec2(0.7, -0.2), vec2(0.1, -0.68 + 0.08 * sin(hu.x * 18.0)));
-  r = U(r, vec3(fin, spikeM, 0.9));
-  float h0u = -0.2 + 0.06 * sin(t * 1.2), h0r = 0.58 + 0.05 * sin(t * 1.7);
-  float neck = sdSeg(u, hc + vec2(0.28, 0.14), vec2(h0u - h0r + 0.02, 0.0)) - 0.2;
-  r = U(r, vec3(max(neck, u.y - 0.04), bodyM, 0.35 + 0.5 * clamp(0.5 - (u.x - hc.x) * 0.8, 0.0, 1.0)));
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i);
-    vec2 c = vec2(-0.2 + fi * 1.15 + 0.06 * sin(t * 1.2 + fi * 1.7), 0.0);
-    float rr = (i == 2 ? 0.42 : 0.58) + 0.05 * sin(t * 1.7 + fi * 1.3);
-    float d = length(u - c), a = atan(-(u.y - c.y), u.x - c.x);
-    float band = max(abs(d - rr) - 0.21, u.y - 0.04);
-    r = U(r, vec3(band, bodyM, 0.25 + 0.7 * clamp(sin(a), 0.0, 1.0)));
-    float saw = 1.0 - abs(fract(a / PI * 8.0) - 0.5) * 2.0;
-    float sp = max(abs(d - rr - 0.3) - 0.09 * saw, max(u.y + 0.05, -sin(a) + 0.35));
-    r = U(r, vec3(sp, spikeM, 0.95));
-  }
-  if (dragon) {
-    float flap = 0.25 * sin(t * 3.0);
-    float wing = sdTri(u, vec2(-0.3, -0.65), vec2(0.25, -1.9 - flap), vec2(1.15, -0.8));
-    wing = max(wing, -(u.y - (-0.8 - 0.22 * abs(sin((u.x - 0.25) * 7.0)))));
-    r = U(r, vec3(wing, M_GOLD, 0.3 + 0.6 * clamp((-0.8 - u.y) / 1.2, 0.0, 1.0)));
-  }
-  float tx0 = 2.1 + 0.42;
-  r = U(r, vec3(max(sdSeg(u, vec2(tx0, 0.02), vec2(tx0 + 0.5, -0.5)) - 0.14, u.y - 0.04), bodyM, 0.55));
-  r = U(r, vec3(sdTri(u, vec2(tx0 + 0.42, -0.42), vec2(tx0 + 0.95, -0.85), vec2(tx0 + 0.72, -0.25)), spikeM, 0.85));
-  return r;
-}
-vec3 whale(vec2 u, float t, vec4 p) {
-  bool brendan = p.z > 0.5;
-  float c = fract(t / 18.0 + p.y);
-  float up = brendan ? 1.0 : smoothstep(0.02, 0.14, c) * (1.0 - smoothstep(0.62, 0.78, c));
-  float spout = brendan ? 0.0 : smoothstep(0.16, 0.22, c) * (1.0 - smoothstep(0.34, 0.44, c));
-  float dive = brendan ? 0.0 : smoothstep(0.6, 0.72, c) * (1.0 - smoothstep(0.84, 0.92, c));
-  float by = 0.4 - 0.62 * up;
-  vec3 r = vec3(max(sdEll(u - vec2(0.0, by), vec2(1.2, 0.72)), u.y - 0.03), M_WHALE, clamp(0.2 + 0.85 * clamp((by - u.y) / 0.72 + 0.35, 0.0, 1.0), 0.0, 1.0));
-  r = U(r, vec3(sdCircle(u - vec2(-0.82, by - 0.12), 0.07), M_EYE, 0.9));
-  if (dive > 0.01) {
-    float fy = -0.2 - 0.7 * dive;
-    r = U(r, vec3(min(sdTri(u, vec2(0.98, 0.05), vec2(1.22, fy - 0.1), vec2(1.75, fy - 0.3)), sdTri(u, vec2(0.98, 0.05), vec2(1.22, fy - 0.1), vec2(0.8, fy - 0.35))), M_WHALE, 0.65));
-  }
-  if (spout > 0.02) for (int j = 0; j < 9; j++) {
-    float fj = float(j), a = (fj / 8.0 - 0.5) * 1.8, rise = fract(t * 0.8 + fj * 0.37);
-    vec2 pp = vec2(-0.55 + sin(a) * rise * 0.6, by - 0.72 - rise * 1.3 * spout + rise * rise * 0.6);
-    r = U(r, vec3(sdCircle(u - pp, 0.09 * (1.2 - rise)), M_SPRAY, 1.0));
-  }
-  if (brendan) {
-    vec2 f = vec2(0.05, by - 0.72);
-    for (int j = 0; j < 6; j++) {
-      float q = fract(t * 0.22 + float(j) / 6.0);
-      r = U(r, vec3(sdCircle(u - (f + vec2(0.15 * sin(q * 6.0 + float(j)) + q * 0.7, -0.55 - q * 1.4)), 0.07 + 0.12 * q), M_SMOKE, 0.6 * (1.0 - q)));
-    }
-    float fl = 1.0 + 0.25 * sin(t * 9.0) + 0.15 * sin(t * 13.7);
-    vec2 d = u - f;
-    float flame = max(abs(d.x) - (0.17 * (1.0 + d.y / (0.55 * fl)) + 0.03 * sin(d.y * 25.0 + t * 8.0)), max(d.y - 0.02, -d.y - 0.55 * fl));
-    r = U(r, vec3(flame, M_FIRE, clamp(0.55 - d.y * 1.2, 0.0, 1.0)));
-    r = U(r, vec3(sdBox(d - vec2(0.0, 0.02), vec2(0.28, 0.04)), M_HULL, 0.4));
-  }
-  return r;
-}
-vec3 ship(vec2 u, float t) {
-  vec3 r = vec3(1e5, 0.0, 0.0);
-  float deck = u.x > 0.6 ? -0.62 : (u.x < -0.95 ? -0.42 : -0.3);
-  float hull = max(max(abs(u.x) - 1.25, deck - u.y), u.y - (0.3 - 0.22 * u.x * u.x));
-  float plank = abs(fract((u.y - deck) / 0.12) - 0.5) < 0.14 ? 0.2 : 0.55;
-  r = U(r, vec3(hull, M_HULL, plank));
-  r = U(r, vec3(sdBox(u - vec2(-0.15, -1.2), vec2(0.045, 0.95)), M_HULL, 0.6));
-  r = U(r, vec3(sdBox(u - vec2(0.68, -1.1), vec2(0.04, 0.5)), M_HULL, 0.6));
-  float sv = (u.y + 1.95) / 1.45, belly = 0.22 * sin(clamp(sv, 0.0, 1.0) * PI);
-  float sail = max(max(-sv, sv - 1.0) * 1.45, max(-0.85 - belly * 0.3 - u.x, u.x - 0.5 - belly));
-  float cu = (-0.85 - belly * 0.3 + 0.5 + belly) * 0.5;
-  r = U(r, vec3(sail, M_SAIL, 0.45 + 0.5 * sin(clamp(sv, 0.0, 1.0) * PI) * (u.x < cu ? 1.0 : 0.7)));
-  float cross = max(sail + 0.001, min(abs(u.x - cu) - 0.09, abs(sv - 0.5) * 1.45 - 0.1));
-  r = U(r, vec3(cross, M_CROSS, 0.85));
-  r = U(r, vec3(sdBox(u - vec2(-0.15, -2.28), vec2(0.4, 0.15)), M_SAIL, 0.7));
-  r = U(r, vec3(sdTri(u, vec2(0.7, -1.6), vec2(0.7, -0.68), vec2(1.3, -0.72)), M_SAIL, 0.6));
-  float w = 0.05 * sin(u.x * 12.0 - t * 6.0);
-  r = U(r, vec3(sdBox(u - vec2(0.24, -2.56 + w), vec2(0.36, 0.05)), M_FLAG, 0.85));
-  return r;
-}
+// ---- the ornaments, in local units (y down)
 vec3 rose(vec2 u) {
   vec3 r = vec3(1e5, 0.0, 0.0);
   for (int j = 0; j < 16; j++) {
@@ -348,7 +262,9 @@ vec3 glint(vec2 u, float t, float seed, float m) {
   vec2 a = abs(u) / (0.75 + 0.5 * pulse);
   float star = min(max(a.x - 0.16 * (1.0 - a.y), a.y - 1.0), max(a.y - 0.16 * (1.0 - a.x / 0.75), a.x - 0.75));
   star = min(star, length(a) - 0.18);
-  return vec3(star, m, clamp(pulse + 0.2 - length(a) * 0.4, 0.0, 1.0));
+  vec3 r = vec3(star, m, clamp(pulse + 0.2 - length(a) * 0.4, 0.0, 1.0));
+  float ring = abs(length(u) - (1.0 + 0.6 * fract(t * 0.35 + seed))) - 0.04;
+  return U(r, vec3(ring + 0.9 * fract(t * 0.35 + seed) * 0.12, M_GHOST, 0.9));
 }
 vec3 phantom(vec2 u, float t) {
   float d = abs(sdCircle(u, 0.97)) - 0.06;
@@ -360,9 +276,6 @@ vec3 phantom(vec2 u, float t) {
   return vec3(d + dash, M_GHOST, 0.55 + 0.45 * sin(t * 0.7));
 }
 vec3 sprite(int type, vec2 u, vec4 p, float t) {
-  if (type == 1 || type == 2) return serpent(u, t, type == 2);
-  if (type == 3) return whale(u, t, p);
-  if (type == 4) return ship(u, t);
   if (type == 5) return rose(u);
   if (type == 6) return moonShape(u, p.y);
   if (type == 7) return ribbon(u, p.y);
@@ -374,13 +287,11 @@ vec3 sprite(int type, vec2 u, vec4 p, float t) {
   return vec3(1e5, 0.0, 0.0);
 }
 float spriteExtent(int type) {
-  if (type == 1 || type == 2) return 4.2;
-  if (type == 3) return 2.6;
-  if (type == 4) return 3.2;
   if (type == 5) return 1.4;
   if (type == 7) return 1.6;
   if (type == 8) return 3.2;
   if (type == 11) return 2.8;
+  if (type == 9) return 2.0;
   return 1.3;
 }
 // Draw sprite i over the cell, engraved. Returns true if the sprite covers the cell.
@@ -392,13 +303,12 @@ bool drawSprite(int i, out bool covered) {
   vec2 cen = s.xy, d0 = (SP - cen) / s.z;
   vec2 u = vec2(d0.x * dir, d0.y);
   float ext = spriteExtent(type);
-  if (abs(u.x - (type <= 2 ? 0.8 : 0.0)) > ext + 0.5 || abs(u.y + (type <= 4 ? 0.8 : 0.0)) > ext + 0.5) return false;
+  if (abs(u.x) > ext + 0.5 || abs(u.y) > ext + 0.5) return false;
   float t = uTime + p.w * 13.0;
   vec3 a = sprite(type, u, p, t);
   float cellU = max(uCell.x, uCell.y) / s.z;
   if (a.x > cellU) return false;
   vec3 ax = sprite(type, u + vec2(dir * uDelta / s.z, 0.0), p, t), ay = sprite(type, u + vec2(0.0, uDelta / s.z), p, t);
-  if (type <= 4 && u.y > 0.05) return false;          // nothing of a creature shows below the water
   F f = field(a.x * s.z, ax.x * s.z, ay.x * s.z);
   f.n.x *= dir;
   float m = a.y, lit = a.z;
@@ -410,15 +320,10 @@ bool drawSprite(int i, out bool covered) {
   int g = strokeG(f.d, f.n);
   if (g >= 0) { put(g, matCol(m, max(lit, 0.7)), 1.05); covered = true; return true; }
   if (a.x < 0.0) {
-    // hatching on the lit side (on vellum, the dark side), in the shape's own frame
+    // inside: shaded in a ramp of characters by its light, as an engraver would model it
+    if (m == M_GHOST || m == M_SMOKE) { put(G_SP, FG, 0.0); covered = true; return true; }
     float l = uDark > 0.5 ? lit : 1.0 - lit;
-    vec2 hp = u * s.z / uCell.y;
-    float k = fract((hp.x * 0.5 + hp.y) / 1.6);
-    int hg = -1;
-    if (l > 0.72) hg = k < 0.34 ? G_SLASH : -1;
-    else if (l > 0.45) hg = k < 0.17 ? G_SLASH : -1;
-    if (m == M_GHOST || m == M_SMOKE) hg = -1;
-    put(hg >= 0 ? hg : G_SP, matCol(m, lit), hg >= 0 ? 0.8 : 0.0);
+    put(ramp(clamp(0.18 + 0.62 * l, 0.0, 1.0)), matCol(m, lit), 0.85 + 0.3 * l);
     covered = true; return true;
   }
   return false;
@@ -683,22 +588,27 @@ void main() {
         float along = dot(SP, vec2(-coast.n.y, coast.n.x)) / uCell.x;
         if (fract(along * 0.5) < 0.5) put(G_MIDDOT, P_(P_VERMHI), 1.1);
       }
-      if (night > 0.0) { FG *= 1.0 - 0.55 * night; I *= 1.0 - 0.4 * night; BG *= 1.0 - 0.5 * night; }
+      if (night > 0.0) { FG *= 1.0 - 0.7 * night; I *= 1.0 - 0.55 * night; BG *= 1.0 - 0.6 * night; }
     } else {
       BG = P_(P_LANDBG);
       float veg = a0.r, arid = a0.g, ice = a0.b, elev = a0.a;
       float desertPoly = decSigned4(q0.a);
       vec2 geoW = ll * 9.0;
       if (uRelief > 0.5) {
-        // shaded relief: the elevation lit from a moving sun, in a density ramp
-        float ex = texture(uAux, uvOf(llx)).a, ey = texture(uAux, uvOf(lly)).a;
-        vec2 grad = vec2(ex - elev, ey - elev) / uDelta * hpx * 60.0;
-        vec3 n3 = normalize(vec3(-grad.x, -grad.y, 1.0));
-        vec3 L = normalize(vec3(cos(uSunAz), sin(uSunAz), 0.9));
-        float sh = clamp(dot(n3, L), 0.0, 1.0);
-        float v = clamp(0.25 + 0.75 * sh * (0.6 + 0.4 * elev * 3.0), 0.0, 1.0);
-        vec3 base = ice > 0.5 ? P_(P_ICEHI) : arid > 0.5 ? mix(P_(P_DESERT), P_(P_DESERTHI), 0.5) : veg > 0.5 ? mix(P_(P_FOREST), P_(P_FORESTHI), 0.3) : mix(P_(P_GRASS), P_(P_VELLUMHI), 0.3);
-        put(ramp(v), base * (0.55 + 0.6 * sh), 0.75 + 0.45 * sh);
+        // shaded relief: the GEBCO elevation lit from a moving sun, in a ramp of characters, tinted
+        // by height (lowland green, upland tan, high brown, snow)
+        float e2 = max(E * 1.5, 0.06);
+        float eE = texture(uAux, uvOf(ll + vec2(e2, 0.0))).a, eW = texture(uAux, uvOf(ll - vec2(e2, 0.0))).a;
+        float eN = texture(uAux, uvOf(ll + vec2(0.0, e2))).a, eS = texture(uAux, uvOf(ll - vec2(0.0, e2))).a;
+        vec2 g = vec2(eE - eW, eN - eS) / (2.0 * e2) * 22.0;
+        vec3 n3 = normalize(vec3(-g.x, -g.y, 1.0));
+        vec3 L = normalize(vec3(cos(uSunAz), sin(uSunAz), 0.8));
+        float rel = dot(n3, L) - L.z;
+        float v = clamp(0.3 + rel * 1.5 + elev * 0.9, 0.0, 1.0);
+        vec3 tint = elev < 0.06 ? mix(P_(P_GRASS), P_(P_FORESTHI), 0.3) : elev < 0.2 ? mix(P_(P_GRASSHI), P_(P_DESERT), (elev - 0.06) / 0.14)
+                  : elev < 0.45 ? mix(P_(P_DESERT), P_(P_MOUNT), (elev - 0.2) / 0.25) : mix(P_(P_MOUNTHI), P_(P_SNOW), clamp((elev - 0.45) / 0.25, 0.0, 1.0));
+        if (ice > 0.5) tint = P_(P_ICEHI);
+        put(ramp(v), tint * (0.65 + 0.5 * clamp(rel * 2.0 + 0.5, 0.0, 1.0)), 0.7 + 0.5 * v);
       } else if (ice > 0.5) {
         float shm = 0.5 + 0.5 * sin(uTime * 0.8 + hsh * 30.0);
         put(hsh < 0.3 ? G_STAR : hsh < 0.55 ? G_PLUS : hsh < 0.8 ? G_MIDDOT : G_DOT, mix(P_(P_ICE), P_(P_ICEHI), shm), 0.45 + 0.35 * shm);
@@ -770,9 +680,10 @@ void main() {
         }
       }
       if (night > 0.0) {
-        FG *= 1.0 - 0.6 * night; I *= 1.0 - 0.45 * night; BG *= 1.0 - 0.5 * night;
+        FG *= 1.0 - 0.75 * night; I *= 1.0 - 0.6 * night; BG *= 1.0 - 0.6 * night;
         float lights = b0.b;
-        if (lights > 0.25 && h12(cellLL + 2.0) < lights * 1.2) put(lights > 0.55 ? G_STAR : G_MIDDOT, P_(P_LIGHTS), (0.7 + 0.6 * lights) * night + (1.0 - night) * I);
+        if (lights > 0.12 && h12(vec2(CX, CY) + 2.0) < lights * 2.2) put(lights > 0.5 ? G_STAR : lights > 0.28 ? G_PLUS : G_MIDDOT, P_(P_LIGHTS), (0.8 + 0.7 * lights) * night + (1.0 - night) * I);
+        if (night > 0.15 && night < 0.6) { FG = mix(FG, P_(P_FIRE), 0.35); }
       }
       // the town marks of capitals
       for (int i = 0; i < NMARK; i++) {
@@ -844,7 +755,22 @@ void main() {
       }
     }
   }
-  // compass roses, creatures, ornaments
+  // the creatures: hand-drawn ASCII art drawn over the map by the lettering pass, on a grid k
+  // times coarser; here the map is cleared under them
+  for (int i = 0; i < NASPR; i++) {
+    if (i >= uASN) break;
+    vec4 s = uAS[i];
+    int ai = int(s.z), k = int(mod(s.w, 8.0)), fr = int(s.w / 8.0);
+    vec4 art = uArt[ai];
+    ivec2 ac = ivec2(floor(s.xy / uCell));
+    int dx = CX - ac.x + int(uArtA[ai].x) * k, dy = CY - ac.y + int(uArtA[ai].y) * k;
+    if (dx < 0 || dy < 0) continue;
+    int col = dx / k, row = dy / k;
+    if (col >= int(art.y) || row >= int(art.z)) continue;
+    uvec4 tx = texelFetch(uArtTex, ivec2(col, int(art.x) + fr * int(art.z) + row), 0);
+    if (tx.g > 0u || tx.b > 0u) put(G_SP, FG, 0.0);
+  }
+  // compass roses and ornaments
   for (int i = 0; i < NSPR; i++) {
     if (i >= uSprN) break;
     bool cov;

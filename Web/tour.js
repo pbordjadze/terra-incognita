@@ -42,7 +42,7 @@ const SCRIPT = [
   { t: 37, d: 8, cap: { eyebrow: 'Portolan charts', text: 'Compass roses, and the rhumb lines that sailors steered by, ruled across the open sea.' } },
   { t: 45, d: 7, cam: { lon: -30.2, lat: 38.6, z: 6.5, ov: 0 } },
   { t: 52, d: 10, cap: { eyebrow: 'A legend of the sea', title: 'The island that swam away', text: 'In the Voyage of Saint Brendan (by about 900) the monks light a fire on an island. The island is a whale.' } },
-  { t: 62, d: 9, cam: { lon: -2.5, lat: 64.4, z: 5.2, ov: 0 } },
+  { t: 62, d: 9, cam: { lon: -9.5, lat: 65.2, z: 5.2, ov: 0 } },
   { t: 71, d: 10, cap: { eyebrow: 'Carta Marina, 1539', title: 'The sea serpent off Norway', text: 'Olaus Magnus drew what sailors told him. He wrote that it came ashore near Bergen on summer nights.' } },
   { t: 82, d: 5, cam: { lon: -15.5, lat: 52.2, z: 2.3, ov: 0 } },
   { t: 87, d: 6, cam: { lon: -15.5, lat: 52.0, z: 6.5, ov: 0 }, ease: 'inOut' },
@@ -73,10 +73,10 @@ const SCRIPT = [
   { t: 186, d: 18, cam: { lon: 8, lat: 42, z: 2.6, ov: 0 }, ease: 'sine' },
   // VI — Hibernia, after Kells
   { t: 202, d: 2.4, set: { ink: 'night' }, kind: 0 },
-  { t: 204, d: 8, cam: { lon: -7.9, lat: 53.4, z: 9, ov: 0 } },
+  { t: 204, d: 8, cam: { lon: -7.9, lat: 53.5, z: 12, ov: 0 } },
   { t: 212, d: 5, tw: { kells: [0, 1] }, ease: 'inOut' },
   { t: 213, d: 11, cap: { eyebrow: 'Hibernia', title: 'After the Book of Kells', text: 'Ireland in a medallion, in the pigments of a gospel book made around 800: verdigris, orpiment, red lead and gold.' } },
-  { t: 218, d: 16, cam: { lon: -7.6, lat: 53.3, z: 15, ov: 0 }, ease: 'sine' },
+  { t: 218, d: 16, cam: { lon: -7.8, lat: 53.4, z: 24, ov: 0 }, ease: 'sine' },
   { t: 225, d: 10, cap: { eyebrow: 'Hibernia', text: 'Triskele spirals turn slowly over the land, round trees as the film draws them, a plait along the coast, red dots standing off it.' } },
   { t: 237, d: 7, cam: { lon: 6, lat: 50, z: 3.2, ov: 0 } },
   { t: 238, d: 2.8, set: { ink: 'kells' }, kind: 2 },
@@ -100,7 +100,7 @@ const SCRIPT = [
   { t: 318, d: 1, tw: { sunW: [1, 0] } },
   { t: 318, d: 6, cam: { lon: -3, lat: 17.6, z: 5.5, ov: 0 } },
   { t: 323, d: 7, cap: { eyebrow: 'Hidden things', title: 'Mansa Musa', text: 'The Catalan Atlas (1375) puts a king in West Africa, holding up a nugget of gold.' } },
-  { t: 330, d: 6, cam: { lon: 134, lat: 17, z: 4.2, ov: 0 } },
+  { t: 330, d: 6, cam: { lon: 138.5, lat: 16, z: 4.2, ov: 0 } },
   { t: 335, d: 7, cap: { eyebrow: 'Hidden things', title: 'HC SVNT DRACONES', text: '“Here are dragons” is on just two old globes, both near the coast of East Asia.' } },
   // IX — yours
   { t: 344, d: 7, cam: { lon: 20, lat: 0, z: 1, ov: 1 } },
@@ -227,6 +227,12 @@ class Tour {
     }
     // free: the reader's own state, with an optional style transition
     const fs = this.free;
+    // zoomed right out, the sheet settles back into its frame
+    const L = fs.st.look;
+    if (fs.st.proj !== 2 && L.z < 1.25 && this.input.pointers.size === 0) {
+      const r = 1 - Math.exp(-dt * 4);
+      L.ov += (1 - L.ov) * r; L.dx = (L.dx || 0) * (1 - r); L.dy = (L.dy || 0) * (1 - r);
+    }
     if (fs.trans) {
       const u = clamp((now - fs.trans.t0) / fs.trans.d);
       const a = Object.assign({}, fs.trans.from, { look: fs.st.look, reveal: fs.st.reveal });

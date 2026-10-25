@@ -39,7 +39,7 @@ const App = {
     this.renderer.render(va, vb, mix, kind);
     const lv = vb && mix > 0.5 ? vb : va;
     const la = vb ? Math.abs(mix - 0.5) * 2 : 1;
-    this.scene.drawLabels(lv, this.tctx, (lv === vb ? (b.labels ?? 1) : (a.labels ?? 1)) * la);
+    this.scene.drawLabels(lv, this.tctx, (lv === vb ? (b.labels ?? 1) : (a.labels ?? 1)) * la, this.renderer);
     this.lastView = lv;
     this.frames++;
     if (now - this.fpsAt > 1000) { this.fps = this.frames * 1000 / (now - this.fpsAt); this.frames = 0; this.fpsAt = now; }
