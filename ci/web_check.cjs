@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
   catch (e) { errs.push('the page never became ready'); }
   for (const t of times) {
     await p.evaluate(T => { if (App.tour) { App.tour.T = +T; App.tour.playing = false; } }, t);
-    await p.waitForTimeout(1500);
+    await p.waitForTimeout(2500);
     await p.screenshot({ path: path.join(out, `${BROWSER === 'chromium' ? 'web' : BROWSER}-${W}x${H}-t${String(t).padStart(3, '0')}.png`) });
   }
   await b.close(); server.close();

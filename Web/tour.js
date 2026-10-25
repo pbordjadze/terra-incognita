@@ -416,6 +416,19 @@ class UI {
       this.tour.setStyle(k, v);
     });
     this.lastChap = null;
+    this.capBox = null; this.capFade = 0; this.veilAt = 0;
+  }
+  // labels the caption would cover fade while it shows, so the rubric reads over plain map
+  veil(now) {
+    const dt = this.veilAt ? Math.min(0.1, (now - this.veilAt) / 1000) : 0;
+    this.veilAt = now;
+    this.capFade += ((this.capShown ? 1 : 0) - this.capFade) * Math.min(1, dt * 5);
+    if (this.capShown && this.capBox && this.capBox.W !== innerWidth + 'x' + innerHeight) this.measureCap();
+    return this.capBox && this.capFade > 0.01 ? { ...this.capBox, a: this.capFade } : null;
+  }
+  measureCap() {
+    const r = this.cap.getBoundingClientRect();
+    this.capBox = { l: r.left, r: r.right, t: r.top, W: innerWidth + 'x' + innerHeight };
   }
   syncPanel() {
     const st = this.tour.free && this.tour.free.st; if (!st) return;
@@ -452,6 +465,7 @@ class UI {
         this.capText.textContent = text || ''; this.capText.hidden = !text;
         this.cap.classList.toggle('big', !!cap.big);
         this.cap.classList.add('on');
+        this.measureCap();
       }, 380);
     }
   }

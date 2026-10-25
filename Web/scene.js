@@ -194,6 +194,7 @@ class Scene {
     // Hibernia's roundel, centred on Ireland
     const ie = at([-7.9, 53.4]);
     v.kells = [-7.9, 53.4, clamp(pxPerDeg * 5.6, ch * 12, Math.min(W, H) * 0.47), st.kells];
+    v.kellsC = ie;
     // compass roses and their rhumb lines
     for (const r of ROSES) {
       const p = at(r.c); if (!p) continue;
@@ -281,6 +282,8 @@ class Scene {
     if (v.ribbon && st.ornaments > 0) items.push({ text: st.title || 'TERRA INCOGNITA', x: v.ribbon[0], y: v.ribbon[1] + 1, size: clamp(v.ribbon[2] * 0.11, 11, 64), font: SC, color: L.title, sp: 0.34, pri: 200, keep: true });
     items.sort((a, b) => b.pri - a.pri);
     const placed = (v.keepOut || []).map(b => b.slice());
+    // an open roundel is a picture of its own: no word crosses it
+    const disc = v.kells[3] > 0.5 && v.kellsC ? [v.kellsC[0], v.kellsC[1], v.kells[2] * 1.04] : null;
     x.save(); x.setTransform(v.dpr, 0, 0, v.dpr, 0, 0); x.textBaseline = 'middle'; x.lineJoin = 'round';
     for (const it of items) {
       x.font = `${it.italic ? 'italic ' : ''}${it.size.toFixed(1)}px ${it.font}`;
@@ -288,6 +291,7 @@ class Scene {
       const x0 = it.left ? it.x : it.x - w / 2;
       const box = [x0 - 3, it.y - h / 2 - 2, x0 + w + 3, it.y + h / 2 + 2];
       if (box[2] < 0 || box[0] > W || box[3] < 0 || box[1] > H) continue;
+      if (disc && !it.keep && Math.hypot(clamp(disc[0], box[0], box[2]) - disc[0], clamp(disc[1], box[1], box[3]) - disc[1]) < disc[2]) continue;
       if (!it.keep && placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
       placed.push(box);
       Object.assign(it, { w, x0, spx: sp });
@@ -302,7 +306,7 @@ class Scene {
     if (w === undefined) { w = [...text].reduce((a, c) => a + x.measureText(c).width, 0) + sp * Math.max(0, [...text].length - 1); this.measure.set(key, w); if (this.measure.size > 4000) this.measure.clear(); }
     return w;
   }
-  drawLabels(v, x, alpha, renderer) {
+  drawLabels(v, x, alpha, renderer, veil) {
     x.setTransform(1, 0, 0, 1, 0, 0);
     x.clearRect(0, 0, x.canvas.width, x.canvas.height);
     // the creatures first, pixel-aligned to the map's grid
@@ -320,6 +324,12 @@ class Scene {
     for (const l of v.labels) {
       // set at a whole pixel size and scaled the rest of the way, so zooming reuses the bitmaps
       const bm = this.labelBitmap(l, v), k = l.size / bm.size;
+      if (veil) {
+        const right = l.x0 + bm.c.width * k / v.dpr, under = clamp((l.y + l.size * 0.5 - veil.t + 16) / 16, 0, 1);
+        const f = right > veil.l - 12 && l.x0 < veil.r + 12 ? 1 - veil.a * under : 1;
+        if (f < 0.01) continue;
+        x.globalAlpha = alpha * f;
+      }
       x.drawImage(bm.c, (l.x0 - bm.pad * k) * v.dpr, (l.y - bm.h * k / 2) * v.dpr, bm.c.width * k, bm.c.height * k);
     }
     x.restore();
