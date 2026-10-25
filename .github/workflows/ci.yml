@@ -38,6 +38,8 @@ jobs:
     # Playwright's own image: Node and every browser with its libraries, nothing to install
     container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 20
+    # in a container GitHub's default shell is sh, which has no pipefail
+    defaults: { run: { shell: bash } }
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
