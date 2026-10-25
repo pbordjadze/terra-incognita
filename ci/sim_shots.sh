@@ -2,8 +2,7 @@
 # Installs the app on a booted simulator and screenshots the tour at moments of it.
 #   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid> <t1> <t2> ...
 # Each moment is a launch with `-tour t<T>s` (the film waits at T s and stops drawing after two
-# seconds, so the simulator is idle for the capture; Debug builds only), a wait, and a screenshot;
-# then one launch that plays the film, as a device would.
+# seconds, so the simulator is idle for the capture; Debug builds only), a wait, and a screenshot.
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3

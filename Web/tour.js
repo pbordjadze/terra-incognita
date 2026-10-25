@@ -157,7 +157,8 @@ class Tour {
     this.capShown = null;
     // #t213 plays from 213 s, #t213p waits there, #t213s waits there and stops drawing after two
     // seconds (CI's simulator screenshots); #r213 is where the film was before a reload, and plays on
-    const m = /([tr])(\d+(?:\.\d+)?)([ps]?)/.exec(window.TI_TOUR || location.hash);
+    // (a resume mark wins over a Debug launch's -tour, which the page is handed again on reload)
+    const m = /([tr])(\d+(?:\.\d+)?)([ps]?)/.exec(/#r\d/.test(location.hash) ? location.hash : window.TI_TOUR || location.hash);
     if (m) { this.T = Math.min(+m[2], END); this.playing = m[1] === 'r' || !m[3]; this.still = m[3] === 's'; }
   }
 
@@ -416,19 +417,27 @@ class UI {
       this.tour.setStyle(k, v);
     });
     this.lastChap = null;
-    this.capBox = null; this.capFade = 0; this.veilAt = 0;
+    this.capLive = null; this.capBox = null; this.veilBox = null; this.capFade = 0; this.veilAt = 0;
   }
-  // labels the caption would cover fade while it shows, so the rubric reads over plain map
+  // labels the caption would cover fade while it shows, so the rubric reads over plain map; between
+  // two captions the fade holds and its edge slides to the new caption's top
   veil(now) {
-    const dt = this.veilAt ? Math.min(0.1, (now - this.veilAt) / 1000) : 0;
+    const dt = this.veilAt ? Math.min(0.1, (now - this.veilAt) / 1000) : 0, e = Math.min(1, dt * 5);
     this.veilAt = now;
-    this.capFade += ((this.capShown ? 1 : 0) - this.capFade) * Math.min(1, dt * 5);
-    if (this.capShown && this.capBox && this.capBox.W !== innerWidth + 'x' + innerHeight) this.measureCap();
-    return this.capBox && this.capFade > 0.01 ? { ...this.capBox, a: this.capFade } : null;
+    const target = this.capLive ? 1 : this.capShown && this.veilBox ? this.capFade : 0;
+    this.capFade += (target - this.capFade) * e;
+    if (this.capLive && this.capBox.W !== innerWidth + 'x' + innerHeight) this.measureCap();
+    if (!this.capShown && this.capFade < 0.01) this.veilBox = null;
+    else if (this.capBox) {
+      if (!this.veilBox) this.veilBox = { ...this.capBox };
+      else for (const k of ['l', 'r', 't']) this.veilBox[k] += (this.capBox[k] - this.veilBox[k]) * e;
+    }
+    return this.veilBox && this.capFade > 0.01 ? { ...this.veilBox, a: this.capFade } : null;
   }
   measureCap() {
-    const r = this.cap.getBoundingClientRect();
-    this.capBox = { l: r.left, r: r.right, t: r.top, W: innerWidth + 'x' + innerHeight };
+    // the top without the rise the caption makes as it appears (#capWrap is its offset parent)
+    const r = this.cap.getBoundingClientRect(), t = this.cap.parentElement.getBoundingClientRect().top + this.cap.offsetTop;
+    this.capBox = { l: r.left, r: r.right, t, W: innerWidth + 'x' + innerHeight };
   }
   syncPanel() {
     const st = this.tour.free && this.tour.free.st; if (!st) return;
@@ -446,7 +455,7 @@ class UI {
     this.resumeBtn.hidden = m !== 'free';
     this.resumeBtn.textContent = atEnd || this.tour.T >= END ? 'Play the tour again' : 'Resume the tour';
     if (m !== 'free') { this.panel.hidden = true; this.hideCard(); }
-    if (m !== 'film') { this.capShown = null; this.cap.classList.remove('on'); document.body.classList.remove('capOn'); }
+    if (m !== 'film') { clearTimeout(this.capTimer); this.capShown = this.capLive = null; this.cap.classList.remove('on'); document.body.classList.remove('capOn'); }
     if (m === 'free' && atEnd) this.togglePanel(true);
   }
   update(T, cap) {
@@ -454,7 +463,7 @@ class UI {
     let ch = CHAPTERS[0]; for (const c of CHAPTERS) if (T >= c.t) ch = c;
     if (ch !== this.lastChap) { this.chap.textContent = `${ch.n} · ${ch.name}`; this.lastChap = ch; }
     if (cap !== this.capShown) {
-      this.capShown = cap;
+      this.capShown = cap; this.capLive = null;
       this.cap.classList.remove('on');
       document.body.classList.toggle('capOn', !!cap);
       clearTimeout(this.capTimer);
@@ -465,7 +474,7 @@ class UI {
         this.capText.textContent = text || ''; this.capText.hidden = !text;
         this.cap.classList.toggle('big', !!cap.big);
         this.cap.classList.add('on');
-        this.measureCap();
+        this.capLive = cap; this.measureCap();
       }, 380);
     }
   }

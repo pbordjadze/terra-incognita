@@ -4,8 +4,9 @@ name: CI
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   web    Linux: the page in headless Chromium (software WebGL): no page or console errors, and
 #          screenshots of the tour at a phone's and a desktop's size
-#   apple  macOS: the app built for the simulator, launched at several moments of the tour and
-#          screenshotted on real WebKit, and a Release build
+#   apple  macOS: Debug and Release builds for the simulator and the bundled data checked byte for
+#          byte; launched and screenshotted at moments of the tour only when the workflow is run
+#          by hand, as a report (hosted runners have no GPU)
 #   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
@@ -46,15 +47,20 @@ jobs:
           for f in Web/*.js ci/*.cjs; do node --check "$f"; done
       - name: Load the page and screenshot the tour
         run: |
+          set -o pipefail
           mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y > /dev/null && npm i -s playwright@1.56.1)
           export NODE_PATH=/tmp/pw/node_modules
-          node ci/web_check.cjs Web out/web 390x844 6 58 120 160 186 222 245 270 290 336 2>&1 | tee out/web-check.log
-          node ci/web_check.cjs Web out/web 1280x800 6 58 222 245 290 2>&1 | tee -a out/web-check.log
+          # both sizes run; either failing fails the step
+          rc=0
+          node ci/web_check.cjs Web out/web 390x844 6 58 120 160 186 222 245 270 290 336 2>&1 | tee out/web-check.log || rc=1
+          node ci/web_check.cjs Web out/web 1280x800 6 58 222 245 290 2>&1 | tee -a out/web-check.log || rc=1
+          exit $rc
       - name: The page in WebKit (for now a report, not a gate)
         if: ${{ !cancelled() }}
         continue-on-error: true
         timeout-minutes: 8
         run: |
+          set -o pipefail
           export NODE_PATH=/tmp/pw/node_modules
           BROWSER=webkit node ci/web_check.cjs Web out/web 390x844 6 58 222 2>&1 | tee out/webkit-check.log
       - uses: actions/upload-artifact@v5
@@ -62,7 +68,7 @@ jobs:
         with: { name: web, path: out, if-no-files-found: ignore }
 
   apple:
-    name: iPhone simulator build, screenshots, Release build
+    name: iPhone simulator builds (screenshots when run by hand)
     runs-on: macos-26
     timeout-minutes: 45
     steps:

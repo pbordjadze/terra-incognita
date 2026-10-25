@@ -282,8 +282,9 @@ class Scene {
     if (v.ribbon && st.ornaments > 0) items.push({ text: st.title || 'TERRA INCOGNITA', x: v.ribbon[0], y: v.ribbon[1] + 1, size: clamp(v.ribbon[2] * 0.11, 11, 64), font: SC, color: L.title, sp: 0.34, pri: 200, keep: true });
     items.sort((a, b) => b.pri - a.pri);
     const placed = (v.keepOut || []).map(b => b.slice());
-    // an open roundel is a picture of its own: no word crosses it
-    const disc = v.kells[3] > 0.5 && v.kellsC ? [v.kellsC[0], v.kellsC[1], v.kells[2] * 1.04] : null;
+    // an open roundel is a picture of its own: no word crosses it or its braided frame (the Kells
+    // ink, which paints the whole world, draws no roundel)
+    const disc = v.kells[3] > 0.5 && !TI.INKS[st.ink].kells && v.kellsC ? [v.kellsC[0], v.kellsC[1], v.kells[2] + v.chPx * 2.2 + 3] : null;
     x.save(); x.setTransform(v.dpr, 0, 0, v.dpr, 0, 0); x.textBaseline = 'middle'; x.lineJoin = 'round';
     for (const it of items) {
       x.font = `${it.italic ? 'italic ' : ''}${it.size.toFixed(1)}px ${it.font}`;
