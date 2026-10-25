@@ -32,28 +32,28 @@ env:
 
 jobs:
   web:
-    name: The page in headless Chromium
+    name: The page in headless Chromium (and WebKit, as a report)
     runs-on: ubuntu-latest
+    # Playwright's own image: Node and every browser with its libraries, nothing to install
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - uses: actions/setup-node@v5
-        with: { node-version: 22 }
       - name: Syntax
-        run: for f in Web/*.js ci/*.cjs; do node --check "$f"; done
-      - name: Install Chromium
         run: |
-          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y > /dev/null && npm i -s playwright@1.56.1
-          npx playwright install --with-deps chromium webkit > /dev/null
+          mkdir -p out/web && echo started > out/web-started.txt
+          for f in Web/*.js ci/*.cjs; do node --check "$f"; done
       - name: Load the page and screenshot the tour
         run: |
+          mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y > /dev/null && npm i -s playwright@1.56.1)
           export NODE_PATH=/tmp/pw/node_modules
-          mkdir -p out/web
           node ci/web_check.cjs Web out/web 390x844 6 58 120 160 186 222 245 270 290 336 2>&1 | tee out/web-check.log
           node ci/web_check.cjs Web out/web 1280x800 6 58 222 245 290 2>&1 | tee -a out/web-check.log
       - name: The page in WebKit (for now a report, not a gate)
+        if: ${{ !cancelled() }}
         continue-on-error: true
+        timeout-minutes: 8
         run: |
           export NODE_PATH=/tmp/pw/node_modules
           BROWSER=webkit node ci/web_check.cjs Web out/web 390x844 6 58 222 2>&1 | tee out/webkit-check.log
@@ -69,7 +69,9 @@ jobs:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
       - name: Start simulator
+        # only for screenshots, which run when the workflow is started by hand (below)
         id: sim
+        if: github.event_name == 'workflow_dispatch'
         run: |
           read -r _ UDID MODEL RUNTIME < <(ci/simulators.sh iphone)
           echo "$MODEL $RUNTIME $UDID"
@@ -91,18 +93,21 @@ jobs:
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/release -quiet \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/release-build.log | tail -60
-      - name: Screenshots of the tour on the simulator
-        # A report, not a gate: the hosted macOS runners have no GPU, and the simulator drawing
-        # WebGL on the CPU is too slow to capture reliably.
-        id: shots
+      - name: Bundled data
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          # the map's data must reach the app byte for byte (an image tool would destroy it)
+          APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+          for f in Web/data/*.png Web/cell.glsl Web/sprites.json; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          echo "bundled data identical"
+      - name: Screenshots of the tour on the simulator
+        # By hand only (Run workflow), and a report, not a gate: the hosted macOS runners have no
+        # GPU, WebKit's GPU process is emulated on the CPU, and iOS ends it as unresponsive.
+        id: shots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
         continue-on-error: true
         timeout-minutes: 10
-        run: |
-          APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          # the map's data must reach the app byte for byte (an image tool would destroy it)
-          for f in Web/data/*.png Web/cell.glsl Web/sprites.json; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
-          ci/sim_shots.sh "$APP" out/shots "${{ steps.sim.outputs.udid }}" 58 222
+        run: ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 58 222
       - name: Collect
         if: always()
         run: |

@@ -22,8 +22,8 @@ tour that plays on launch. This file is the map and the rules.
   `window.TI_TOUR`).
 - `ci/` and `.github/workflows/ci.yml`: `web` (headless Chromium check and screenshots, and a
   WebKit pass that reports without gating), `apple` (Debug and Release builds, the bundled data
-  compared byte for byte, simulator screenshots as a report: hosted runners have no GPU, so the
-  simulator draws WebGL on the CPU and is too slow to gate on), `ipa` (on `main`: the
+  compared byte for byte; simulator screenshots only when the workflow is run by hand, as a
+  report: hosted runners have no GPU, so WebKit's GPU process is emulated and iOS ends it), `ipa` (on `main`: the
   `build-<n>` prerelease and the SideStore source on the `sidestore` branch; CI owns that branch),
   `report` (to `refs/ci-shots/<branch>`; `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it).
 
