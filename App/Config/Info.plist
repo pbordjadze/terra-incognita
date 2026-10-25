@@ -13,7 +13,5 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
-	<key>UIRequiresFullScreen</key>
-	<true/>
 </dict>
 </plist>
