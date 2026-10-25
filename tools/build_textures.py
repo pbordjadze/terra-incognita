@@ -3,20 +3,23 @@
     python3 tools/build_textures.py <cache-dir>
 
 Everything is equirectangular (longitude across, latitude down), so the renderer can draw any
-projection by inverting it per character cell. Writes Web/data/:
+projection by inverting it per character cell. Every file is RGB (no alpha): a browser may
+premultiply an image's colour by its alpha when it decodes it, which would destroy data kept
+there. Writes Web/data/:
 
-  geo.png   4096 x 2048  R  signed distance to the coast, fine: 128 + 8 d, for |d| <= 16 px
+  geoA.png  4096 x 2048  R  signed distance to the coast, fine: 128 + 8 d, for |d| <= 16 px
                          G  the same, coarse: 128 + d / 2, for |d| <= 254 px (land positive;
                             the great lakes are water)
                          B  distance to a land border between countries: 8 d, up to 32 px
-                         A  distance to a river: 16 d, up to 16 px
-  geo2.png  2048 x 1024  R  signed distance to a named mountain range: 128 + 4 d (px at 2048)
+  geoB.png  4096 x 2048  R  distance to a river: 16 d, up to 16 px (G, B the same)
+  lo1.png   2048 x 1024  R  signed distance to a named mountain range: 128 + 4 d (px at 2048)
                          G  the country's wash (1-4, so no neighbours share one, times 60)
                          B  signed distance to the island of Ireland's coast: 128 + 2 d
-                         A  signed distance to a named desert: 128 + 4 d
-  aux.png   2048 x 1024  R forest, G desert, B ice (from NASA's Blue Marble), A elevation (GEBCO)
-  aux2.png  2048 x 1024  R unused, G unused, B night lights (NASA Black Marble),
-                         A sea depth (GEBCO; 255 is the shore, darker is deeper)
+  lo2.png   2048 x 1024  R  signed distance to a named desert: 128 + 4 d
+                         G  night lights (NASA Black Marble)
+                         B  sea depth (GEBCO; 255 is the shore, darker is deeper)
+  lo3.png   2048 x 1024  R forest, G desert, B ice (from NASA's Blue Marble)
+  lo4.png   2048 x 1024  elevation (GEBCO), grey
   places.json            label points: seas, countries, capitals
 
 Distances are in pixels of the texture they live in, linear in each channel; cell.glsl decodes
@@ -179,8 +182,9 @@ def main():
     print('mountains', flush=True)
     mount_m = raster(HI, lambda d: fill(d, regions, HI, keep=lambda p: p['FEATURECLA'] == 'Range/mtn' and (p.get('SCALERANK') or 9) <= 4))
     mount = halve(signed(mount_m)) / 2
-    geo = np.stack([enc(coast, 128, 8), enc(coast, 128, 0.5), enc(border, 0, 8), enc(river, 0, 16)], -1)
-    Image.fromarray(geo, 'RGBA').save(OUT / 'geo.png', optimize=True)
+    geoA = np.stack([enc(coast, 128, 8), enc(coast, 128, 0.5), enc(border, 0, 8)], -1)
+    Image.fromarray(geoA, 'RGB').save(OUT / 'geoA.png', optimize=True)
+    Image.fromarray(enc(river, 0, 16), 'L').convert('RGB').save(OUT / 'geoB.png', optimize=True)
     print('Ireland', flush=True)
     from shapely.geometry import shape, Point
     eire = [f for f in land if shape(f['geometry']).buffer(0).contains(Point(-8.0, 53.4))]
@@ -204,8 +208,9 @@ def main():
     lat = np.linspace(90, -90, LO[1])[:, None] * np.ones((1, LO[0]))
     ice = np.maximum(ice, (lat < -62).astype(np.float32))
     elev = resample(src['elevation.png'], LO)
-    aux = np.stack([veg, arid, ice, elev], -1)
-    Image.fromarray((cl(aux) * 255).astype(np.uint8), 'RGBA').save(OUT / 'aux.png', optimize=True)
+    lo3 = np.stack([veg, arid, ice], -1)
+    Image.fromarray((cl(lo3) * 255).astype(np.uint8), 'RGB').save(OUT / 'lo3.png', optimize=True)
+    Image.fromarray((cl(elev) * 255).astype(np.uint8), 'L').convert('RGB').save(OUT / 'lo4.png', optimize=True)
 
     print('washes, deserts, lights, depth', flush=True)
     admin = load('admin0.geojson')
@@ -220,11 +225,10 @@ def main():
     desert = halve(halve(signed(desert_m))) / 4  # px at 2048
     lights = resample(src['lights.jpg'], LO)
     depth = resample(src['bathymetry.png'], LO)
-    geo2 = np.stack([enc(mount_lo, 128, 4), wash.astype(np.uint8), enc(eire_d, 128, 2), enc(desert, 128, 4)], -1)
-    Image.fromarray(geo2, 'RGBA').save(OUT / 'geo2.png', optimize=True)
-    zero = np.zeros(LO[::-1], np.uint8)
-    aux2 = np.stack([zero, zero, (cl(lights) * 255).astype(np.uint8), (cl(depth) * 255).astype(np.uint8)], -1)
-    Image.fromarray(aux2, 'RGBA').save(OUT / 'aux2.png', optimize=True)
+    lo1 = np.stack([enc(mount_lo, 128, 4), wash.astype(np.uint8), enc(eire_d, 128, 2)], -1)
+    Image.fromarray(lo1, 'RGB').save(OUT / 'lo1.png', optimize=True)
+    lo2 = np.stack([enc(desert, 128, 4), (cl(lights) * 255).astype(np.uint8), (cl(depth) * 255).astype(np.uint8)], -1)
+    Image.fromarray(lo2, 'RGB').save(OUT / 'lo2.png', optimize=True)
 
     print('places', flush=True)
     seas = []

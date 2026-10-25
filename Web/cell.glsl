@@ -9,7 +9,7 @@ precision highp float;
 precision highp int;
 //%DEFINES%
 
-uniform sampler2D uGeo, uGeo2, uAux, uAux2;
+uniform sampler2D uGeoA, uGeoB, uLo1, uLo2, uLo3, uLo4;
 uniform vec2 uGrid, uCell, uView, uCam;
 uniform float uScale, uDelta, uTime, uDetail;
 uniform int uProj;
@@ -88,6 +88,15 @@ F fieldLL(float f0, float fE, float fN) {
 
 // ------------------------------------------------------------------ the map's projections
 vec2 uvOf(vec2 ll) { return vec2((ll.x + 180.0) / 360.0, (90.0 - ll.y) / 180.0); }
+// The textures as four logical maps (tools/build_textures.py says what is in each file):
+// geo: coast fine, coast coarse, border, river; geo2: mountains, wash, Ireland, desert;
+// aux: forest, desert, ice, elevation; aux2: -, -, night lights, sea depth.
+vec4 tGeo(vec2 uv) { return vec4(texture(uGeoA, uv).rgb, texture(uGeoB, uv).r); }
+vec4 tGeo2(vec2 uv) { return vec4(texture(uLo1, uv).rgb, texture(uLo2, uv).r); }
+vec4 tAux(vec2 uv) { return vec4(texture(uLo3, uv).rgb, texture(uLo4, uv).r); }
+vec4 tAux2(vec2 uv) { return vec4(0.0, 0.0, texture(uLo2, uv).gb); }
+// the texel of a 2048 x 1024 map under a point, longitude wrapped (a negative % is undefined)
+ivec2 texel2048(vec2 ll) { vec2 uv = uvOf(ll); return ivec2(min(int(fract(uv.x) * 2048.0), 2047), clamp(int(uv.y * 1024.0), 0, 1023)); }
 vec2 inv(vec2 P, int h, out float rho, out vec3 nrm) {
   nrm = vec3(0.0, 0.0, 1.0);
   if (uProj == 0) {            // two hemispheres, azimuthal equidistant (oblique when zoomed in)
@@ -258,7 +267,7 @@ vec3 tower(vec2 u) {
   return r;
 }
 vec3 glint(vec2 u, float t, float seed, float m) {
-  float pulse = 0.55 + 0.45 * pow(sin(t * 1.4 + seed * 6.28), 2.0);
+  float sp = sin(t * 1.4 + seed * 6.28), pulse = 0.55 + 0.45 * sp * sp;
   vec2 a = abs(u) / (0.75 + 0.5 * pulse);
   float star = min(max(a.x - 0.16 * (1.0 - a.y), a.y - 1.0), max(a.y - 0.16 * (1.0 - a.x / 0.75), a.x - 0.75));
   star = min(star, length(a) - 0.18);
@@ -514,10 +523,10 @@ void main() {
       put(sh < 0.002 ? G_STAR : sh < 0.006 ? G_PLUS : sh < 0.016 ? G_MIDDOT : G_DOT, P_(P_STAR), (0.25 + 0.65 * tw * (sh < 0.006 ? 1.3 : 0.8)) * (uDark > 0.5 ? 1.0 : 0.35));
     }
   } else {
-    vec4 g0 = texture(uGeo, uvOf(ll)), gx = texture(uGeo, uvOf(ll + vec2(E, 0.0))), gy = texture(uGeo, uvOf(ll + vec2(0.0, E)));
-    vec4 a0 = texture(uAux, uvOf(ll));
-    vec4 b0 = texture(uAux2, uvOf(ll));
-    vec4 q0 = texture(uGeo2, uvOf(ll));
+    vec4 g0 = tGeo(uvOf(ll)), gx = tGeo(uvOf(ll + vec2(E, 0.0))), gy = tGeo(uvOf(ll + vec2(0.0, E)));
+    vec4 a0 = tAux(uvOf(ll));
+    vec4 b0 = tAux2(uvOf(ll));
+    vec4 q0 = tGeo2(uvOf(ll));
     float c0 = decCoast(g0);
     F coast = fieldLL(c0, decCoast(gx), decCoast(gy));
     bool land = c0 > 0.0;
@@ -598,8 +607,8 @@ void main() {
         // shaded relief: the GEBCO elevation lit from a moving sun, in a ramp of characters, tinted
         // by height (lowland green, upland tan, high brown, snow)
         float e2 = max(E * 1.5, 0.06);
-        float eE = texture(uAux, uvOf(ll + vec2(e2, 0.0))).a, eW = texture(uAux, uvOf(ll - vec2(e2, 0.0))).a;
-        float eN = texture(uAux, uvOf(ll + vec2(0.0, e2))).a, eS = texture(uAux, uvOf(ll - vec2(0.0, e2))).a;
+        float eE = tAux(uvOf(ll + vec2(e2, 0.0))).a, eW = tAux(uvOf(ll - vec2(e2, 0.0))).a;
+        float eN = tAux(uvOf(ll + vec2(0.0, e2))).a, eS = tAux(uvOf(ll - vec2(0.0, e2))).a;
         vec2 g = vec2(eE - eW, eN - eS) / (2.0 * e2) * 22.0;
         vec3 n3 = normalize(vec3(-g.x, -g.y, 1.0));
         vec3 L = normalize(vec3(cos(uSunAz), sin(uSunAz), 0.8));
@@ -631,7 +640,7 @@ void main() {
       // a wash of colour inside each country's border, as maps were coloured by hand
       float bd = decBorder(g0);
       F border = fieldLL(bd, decBorder(gx), decBorder(gy));
-      int wsh = int(texelFetch(uGeo2, ivec2(uvOf(ll) * vec2(2048.0, 1024.0)) % ivec2(2048, 1024), 0).g * 255.0 / 60.0 + 0.5);
+      int wsh = int(texelFetch(uLo1, texel2048(ll), 0).g * 255.0 / 60.0 + 0.5);
       if (wsh >= 1 && wsh <= 4 && border.d < uCell.x * 3.2 && uDetail > 0.5) {
         float f = (1.0 - border.d / (uCell.x * 3.2)) * 0.75;
         FG = mix(FG, P_(P_WASH0 + wsh - 1), f);
@@ -656,7 +665,7 @@ void main() {
             vec2 gi = floor(ll / s0) + vec2(float(ox), float(-oy));
             float j1 = h12(gi * 1.37), j2 = h12(gi * 2.71 + 3.3);
             vec2 L = (gi + vec2(0.5 + (j1 - 0.5) * 0.6 + mod(gi.y, 2.0) * 0.25, 0.5 + (j2 - 0.5) * 0.4)) * s0;
-            if (decSigned4(texture(uGeo2, uvOf(L)).r) < 0.5 || decCoast(texture(uGeo, uvOf(L))) < 3.0) continue;
+            if (decSigned4(tGeo2(uvOf(L)).r) < 0.5 || decCoast(tGeo(uvOf(L))) < 3.0) continue;
             vec2 S = toScreen(fwd(L));
             float w = iconPx * (0.82 + j1 * 0.36), h = w * 0.85 * (0.9 + j2 * 0.35);
             vec2 u = (SP - S) / vec2(w, h);
@@ -718,7 +727,7 @@ void main() {
       BG = K_DEEP;
       if (!kellsCoast(coast.d, coast.n, land, K_GOLDHI)) {
         if (land) {
-          int wk = int(texelFetch(uGeo2, ivec2(uvOf(ll) * vec2(2048.0, 1024.0)) % ivec2(2048, 1024), 0).g * 255.0 / 60.0 + 0.5);
+          int wk = int(texelFetch(uLo1, texel2048(ll), 0).g * 255.0 / 60.0 + 0.5);
           kellsLand(P, a0, kField(max(wk - 1, 0)) * (a0.b > 0.5 ? 0.6 : 1.0), K_INK, vec3(0.95, 0.88, 0.68));
         } else kellsSea(-coast.d, vec3(0.38, 0.52, 0.95), vec3(0.62, 0.42, 0.72), vec3(0.32, 0.44, 0.8));
       }

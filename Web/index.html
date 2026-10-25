@@ -116,6 +116,10 @@ body[data-mode="film"] #menuBtn { opacity: 0.55; }
 </section>
 
 <div id="fail" hidden></div>
+<script>
+  // in the app, links leave for Safari (App/TerraIncognita/MapView.swift); a browser opens a tab
+  if (location.protocol === 'terra:') document.addEventListener('DOMContentLoaded', () => document.getElementById('cardLink').removeAttribute('target'));
+</script>
 <script src="render.js"></script>
 <script src="scene.js"></script>
 <script src="tour.js"></script>

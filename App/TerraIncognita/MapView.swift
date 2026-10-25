@@ -5,12 +5,14 @@ import WebKit
 
 /// The bundled page in a web view that neither scrolls nor zooms: every touch goes to the map.
 struct MapView: UIViewRepresentable {
-    func makeCoordinator() -> BundleScheme { BundleScheme() }
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.setURLSchemeHandler(context.coordinator, forURLScheme: BundleScheme.scheme)
+        config.setURLSchemeHandler(context.coordinator.scheme, forURLScheme: BundleScheme.scheme)
         let web = WKWebView(frame: .zero, configuration: config)
+        web.navigationDelegate = context.coordinator
+        web.uiDelegate = context.coordinator
         web.isOpaque = false
         web.backgroundColor = .black
         web.scrollView.backgroundColor = .black
@@ -37,5 +39,27 @@ struct MapView: UIViewRepresentable {
         }
         #endif
         return BundleScheme.start
+    }
+
+    /// Serves the bundle, sends links out to Safari, and brings the page back if iOS ends its
+    /// process (the page keeps the film's place in its address, so a reload resumes there).
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        let scheme = BundleScheme()
+
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            guard let url = navigationAction.request.url, url.scheme == "https" || url.scheme == "http" else { return .allow }
+            UIApplication.shared.open(url)
+            return .cancel
+        }
+
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+                     for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if let url = navigationAction.request.url { UIApplication.shared.open(url) }
+            return nil
+        }
+
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            webView.reload()
+        }
     }
 }

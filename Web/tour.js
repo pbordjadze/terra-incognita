@@ -134,7 +134,8 @@ function lookAt(seg, T) {
 function lerpLook(a, b, e) {
   const ll = slerpLL([a.lon, a.lat], [b.lon, b.lat], e);
   const hop = Math.max(0, Math.min(Math.log(a.z), Math.log(b.z)) - 0.05) * smooth01(10, 55, angDist([a.lon, a.lat], [b.lon, b.lat]));
-  return { lon: ll[0], lat: ll[1], z: Math.exp(lerp(Math.log(a.z), Math.log(b.z), e) - hop * Math.sin(Math.PI * e)), ov: lerp(a.ov ?? 0, b.ov ?? 0, e) };
+  return { lon: ll[0], lat: ll[1], z: Math.exp(lerp(Math.log(a.z), Math.log(b.z), e) - hop * Math.sin(Math.PI * e)), ov: lerp(a.ov ?? 0, b.ov ?? 0, e),
+    dx: lerp(a.dx || 0, b.dx || 0, e), dy: lerp(a.dy || 0, b.dy || 0, e) };
 }
 // The sun right now: the point it stands over, as a unit vector (x to 0°E, y to 90°E, z north).
 function sunVec(lonOverride) {
@@ -154,8 +155,10 @@ class Tour {
     this.ui = new UI(this);
     this.input = new Input(this);
     this.capShown = null;
-    const m = /t(\d+(?:\.\d+)?)(p?)/.exec(location.hash);
-    if (m) { this.T = Math.min(+m[1], END); this.playing = !m[2]; }
+    // #t213 plays from 213 s, #t213p waits there (CI's screenshots); #r213 is where the film was
+    // before a reload, and plays on
+    const m = /([tr])(\d+(?:\.\d+)?)(p?)/.exec(location.hash);
+    if (m) { this.T = Math.min(+m[2], END); this.playing = m[1] === 'r' || !m[3]; }
   }
 
   // the film's state at time T: one state, or two with a transition between them
@@ -202,6 +205,7 @@ class Tour {
   frame(time, now) {
     const dt = this.lastNow == null ? 0 : Math.min(0.1, (now - this.lastNow) / 1000);
     this.lastNow = now;
+    this.remember(now);
     if (this.mode === 'film' && this.playing) {
       this.T += dt;
       if (this.T >= END) { this.T = END; this.enterFree(true); }
@@ -240,6 +244,12 @@ class Tour {
       return { a, b: fs.st, mix: E.inOut(u), kind: fs.trans ? fs.trans.kind : 0 };
     }
     return { a: fs.st, b: null, mix: 0, kind: 0 };
+  }
+  remember(now) {
+    if (now - (this.savedAt || 0) < 2000) return;
+    this.savedAt = now;
+    const h = '#r' + Math.floor(this.mode === 'return' ? this.ret.T : this.T);
+    if (location.hash !== h) try { history.replaceState(null, '', h); } catch (e) { /* not allowed here: nothing to keep */ }
   }
   capAt(T) { let c = null; for (const k of this.tl.caps) if (T >= k.t0 && T < k.t1) c = k; return c; }
 
@@ -302,11 +312,15 @@ class Input {
   }
   take() { if (this.tour.mode !== 'free') this.tour.enterFree(false); }
   st() { return this.tour.free.st; }
-  pp(st) { const lay = layoutFor(st.proj, this.app.W, this.app.H); return { pp: projParams(st, lay), lay }; }
-  // the plane point under a screen point, for the current look
-  plane(st, sx, sy) {
-    const v = this.app.lastView;
-    return [v.cam.x + (sx - this.app.W / 2) / v.scale, v.cam.y + (sy - this.app.H / 2) / v.scale];
+  // Where the look puts the map right now: the projection, its scale and the plane point at the
+  // centre of the screen, worked out from the state (several touch events can arrive between two
+  // frames, and each must build on the one before).
+  frameOf(st) {
+    const lay = layoutFor(st.proj, this.app.W, this.app.H), pp = projParams(st, lay), L = st.look;
+    const scale = lay.fit * L.z;
+    const tp = st.proj === 2 ? [0, 0] : (forward(pp, [L.lon, L.lat]) || [0, 0]);
+    const ov = st.proj === 2 ? 0 : L.ov;
+    return { pp, scale, cam: [lerp(tp[0], 0, ov) + (L.dx || 0), lerp(tp[1], 0, ov) + (L.dy || 0)] };
   }
   down(e) {
     this.take();
@@ -349,17 +363,15 @@ class Input {
   }
   // move the look so the map follows the finger by (dx, dy) screen px
   panBy(dx, dy) {
-    const st = this.st(), L = st.look, v = this.app.lastView;
+    const st = this.st(), L = st.look, f = this.frameOf(st);
     if (st.proj !== 2 && L.ov > 0.02) {
-      // far out: slide the sheet; the overview framing gives way as soon as it is moved
-      L.dx = (L.dx || 0) - dx / v.scale; L.dy = (L.dy || 0) - dy / v.scale;
+      // far out: slide the sheet
+      L.dx = (L.dx || 0) - dx / f.scale; L.dy = (L.dy || 0) - dy / f.scale;
       return;
     }
-    const { pp } = this.pp(st);
-    const c = [v.cam.x - dx / v.scale, v.cam.y - dy / v.scale];
-    const ll = inverse(pp, c);
+    const ll = inverse(f.pp, [f.cam[0] - dx / f.scale, f.cam[1] - dy / f.scale]);
     if (ll) { L.lon = ll[0]; L.lat = clamp(ll[1], -84, 84); L.dx = 0; L.dy = 0; }
-    else { L.dx = (L.dx || 0) - dx / v.scale; L.dy = (L.dy || 0) - dy / v.scale; }
+    else { L.dx = (L.dx || 0) - dx / f.scale; L.dy = (L.dy || 0) - dy / f.scale; }
   }
   zoomAt(f, sx, sy) {
     const st = this.st(), L = st.look, z0 = L.z;
@@ -370,8 +382,7 @@ class Input {
     if (st.proj !== 2) {
       if (L.z > 1.35 && L.ov > 0) {
         // leaving the overview: hand the framing over to a look at the place in the middle
-        const v = this.app.lastView, { pp } = this.pp(st);
-        const ll = inverse(pp, [v.cam.x, v.cam.y]);
+        const f = this.frameOf(st), ll = inverse(f.pp, f.cam);
         if (ll) { L.lon = ll[0]; L.lat = ll[1]; L.ov = 0; L.dx = 0; L.dy = 0; }
       } else if (L.z < 1.15) { L.ov = Math.min(1, L.ov + 0.2); L.dx = (L.dx || 0) * 0.8; L.dy = (L.dy || 0) * 0.8; }
     }

@@ -10,6 +10,10 @@ const App = {
     await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
     await Promise.all(['700 20px "JetBrains Mono"', '20px "IM Fell English SC"', 'italic 20px "IM Fell English"', '20px "Noto Sans Symbols 2"']
       .map(f => document.fonts.load(f, f.includes('Symbols') ? '♣♠' : 'A').catch(() => {})));
+    // iOS may take the GPU context away while the app is in the background: come back by
+    // reloading (the address keeps the film's place, see Tour.remember)
+    this.gl.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; });
+    this.gl.addEventListener('webglcontextrestored', () => location.reload());
     this.renderer = new TI.Renderer(this.gl, this.textCanvas);
     await this.renderer.init('');
     const places = await fetch('data/places.json').then(r => r.json());
@@ -30,6 +34,7 @@ const App = {
   },
   loop(now) {
     requestAnimationFrame(t => this.loop(t));
+    if (this.lost) return;
     const time = (now - this.t0) / 1000;
     let a = this.state, b = null, mix = 0, kind = 0;
     if (this.tour) ({ a, b, mix, kind } = this.tour.frame(time, now));

@@ -69,10 +69,10 @@ class Renderer {
     const gl = this.gl;
     const [cellSrc] = await Promise.all([fetch(base + 'cell.glsl').then(r => r.text())]);
     const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('missing ' + src)); im.src = base + src; });
-    const [geo, geo2, aux, aux2, sprites] = await Promise.all([load('data/geo.png'), load('data/geo2.png'), load('data/aux.png'), load('data/aux2.png'),
-      fetch(base + 'sprites.json').then(r => r.json())]);
+    const names = ['geoA', 'geoB', 'lo1', 'lo2', 'lo3', 'lo4'];
+    const [imgs, sprites] = await Promise.all([Promise.all(names.map(n => load(`data/${n}.png`))), fetch(base + 'sprites.json').then(r => r.json())]);
     this.buildArt(sprites);
-    this.tex = { geo: this.texture(geo, true), geo2: this.texture(geo2, true), aux: this.texture(aux, true), aux2: this.texture(aux2, true) };
+    this.tex = Object.fromEntries(names.map((n, i) => [n, this.texture(imgs[i], true)]));
     this.measureFont();
     const defines = [
       ...Object.entries(NAMED).map(([k, v]) => `#define G_${k} ${GI[v]}`),
@@ -145,6 +145,7 @@ class Renderer {
     gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, img);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, linear ? gl.LINEAR : gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, linear ? gl.LINEAR : gl.NEAREST);
@@ -199,7 +200,8 @@ class Renderer {
   }
   atlasFor(cwDev, chDev) {
     const key = cwDev + 'x' + chDev;
-    if (this.atlas && this.atlas.key === key) return this.atlas;
+    this.atlases = this.atlases || new Map();
+    if (this.atlases.has(key)) return this.atlases.get(key);
     const per = 16, rows = Math.ceil(GLYPHS.length / per);
     const c = document.createElement('canvas'); c.width = cwDev * per; c.height = chDev * rows;
     const x = c.getContext('2d');
@@ -211,9 +213,10 @@ class Renderer {
       this.drawGlyph(x, g, ox + cwDev / 2, oy + chDev * 0.53, chDev / 1.2);
       x.restore();
     });
-    if (this.atlas) this.gl.deleteTexture(this.atlas.tex);
-    this.atlas = { key, tex: this.texture(c, false) };
-    return this.atlas;
+    if (this.atlases.size >= 4) { for (const a of this.atlases.values()) this.gl.deleteTexture(a.tex); this.atlases.clear(); }
+    const atlas = { key, tex: this.texture(c, false) };
+    this.atlases.set(key, atlas);
+    return atlas;
   }
 
   grid(cols, rows) {
@@ -264,7 +267,8 @@ class Renderer {
     const p = this.cellProg; gl.useProgram(p);
     const ink = INKS[v.ink];
     const T = (unit, tex, name) => { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(this.u(p, name), unit); };
-    T(0, this.tex.geo, 'uGeo'); T(1, this.tex.aux, 'uAux'); T(2, this.tex.aux2, 'uAux2'); T(3, this.tex.geo2, 'uGeo2'); T(4, this.artTex, 'uArtTex');
+    T(0, this.tex.geoA, 'uGeoA'); T(1, this.tex.geoB, 'uGeoB'); T(2, this.tex.lo1, 'uLo1'); T(3, this.tex.lo2, 'uLo2');
+    T(4, this.tex.lo3, 'uLo3'); T(5, this.tex.lo4, 'uLo4'); T(6, this.artTex, 'uArtTex');
     gl.uniform4fv(this.u(p, 'uArt[0]'), this.artTable); gl.uniform2fv(this.u(p, 'uArtA[0]'), this.artAnchor);
     const cr = v.creatures || [], ca = new Float32Array(LIMITS.NASPR * 4);
     cr.slice(0, LIMITS.NASPR).forEach((c, i) => ca.set([c.x, c.y, this.artMeta[c.art].i, (c.frame % this.artMeta[c.art].frames) * 8 + c.k], i * 4));

@@ -78,26 +78,6 @@ jobs:
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd -quiet \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/app-build.log | tail -80
-      - name: Screenshots of the tour on the simulator
-        id: shots
-        if: steps.build.outcome == 'success'
-        run: |
-          UDID="${{ steps.sim.outputs.udid }}"
-          APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          xcrun simctl bootstatus "$UDID" -b > /dev/null
-          xcrun simctl install "$UDID" "$APP"
-          mkdir -p out/shots
-          # -tour <hash> opens the page at a moment of the film, paused (Debug builds only).
-          for T in 6 58 160 186 222 245 290 336; do
-            xcrun simctl launch --terminate-running-process "$UDID" com.pbordjadze.terraincognita -tour "t${T}p" > /dev/null
-            sleep 14
-            xcrun simctl io "$UDID" screenshot "out/shots/sim-t$(printf '%03d' "$T").png" > /dev/null 2>&1
-          done
-          # and the film playing on its own for a while, from the start
-          xcrun simctl launch --terminate-running-process "$UDID" com.pbordjadze.terraincognita > /dev/null
-          sleep 40
-          xcrun simctl io "$UDID" screenshot out/shots/sim-playing-40s.png > /dev/null 2>&1
-          xcrun simctl spawn "$UDID" log show --last 3m --style compact --predicate 'process == "TerraIncognita" OR subsystem CONTAINS "WebKit"' > out/sim-app.log 2>&1 || true
       - name: Release build
         id: release
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -106,6 +86,15 @@ jobs:
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/release -quiet \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/release-build.log | tail -60
+      - name: Screenshots of the tour on the simulator
+        id: shots
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 12
+        run: |
+          APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+          # the map's data must reach the app byte for byte (an image tool would destroy it)
+          for f in Web/data/*.png Web/cell.glsl Web/sprites.json; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          ci/sim_shots.sh "$APP" out/shots "${{ steps.sim.outputs.udid }}" 6 58 160 186 222 245 290 336
       - name: Collect
         if: always()
         run: |
