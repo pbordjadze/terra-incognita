@@ -10,13 +10,16 @@ const App = {
     await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 3000))]);
     await Promise.all(['700 20px "JetBrains Mono"', '20px "IM Fell English SC"', 'italic 20px "IM Fell English"', '20px "Noto Sans Symbols 2"']
       .map(f => document.fonts.load(f, f.includes('Symbols') ? '♣♠' : 'A').catch(() => {})));
+    TI.log('fonts');
     // iOS may take the GPU context away while the app is in the background: come back by
     // reloading (the address keeps the film's place, see Tour.remember)
-    this.gl.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; });
-    this.gl.addEventListener('webglcontextrestored', () => location.reload());
+    this.gl.addEventListener('webglcontextlost', e => { e.preventDefault(); this.lost = true; TI.log('webgl context lost'); });
+    this.gl.addEventListener('webglcontextrestored', () => { TI.log('webgl context restored: reloading'); location.reload(); });
     this.renderer = new TI.Renderer(this.gl, this.textCanvas);
+    TI.log('webgl2 context');
     await this.renderer.init('');
     const places = await fetch('data/places.json').then(r => r.json());
+    TI.log('places');
     this.scene = new TI.Scene(places);
     this.state = TI.defaultState();
     this.resize();
@@ -24,6 +27,8 @@ const App = {
     this.t0 = performance.now();
     this.frames = 0; this.fpsAt = performance.now(); this.fps = 60;
     if (TI.Tour) this.tour = new TI.Tour(this);
+    TI.log('tour');
+    this.n = 0; this.fpsLogAt = performance.now();
     requestAnimationFrame(t => this.loop(t));
     this.ready = true;
   },
@@ -43,12 +48,18 @@ const App = {
     const va = this.scene.view(a, this.W, this.H, this.dpr, time, this.tctx);
     let vb = null;
     if (b && mix > 0 && mix < 1) vb = this.scene.view(b, this.W, this.H, this.dpr, time, this.tctx);
-    this.renderer.render(va, vb, mix, kind);
+    const t1 = performance.now();
+    if (TI.diag !== 'nogl') this.renderer.render(va, vb, mix, kind);
     const lv = vb && mix > 0.5 ? vb : va;
     const la = vb ? Math.abs(mix - 0.5) * 2 : 1;
-    this.scene.drawLabels(lv, this.tctx, (lv === vb ? (b.labels ?? 1) : (a.labels ?? 1)) * la, this.renderer, this.tour && this.tour.ui.veil(now));
+    const t2 = performance.now();
+    if (TI.diag !== 'no2d') this.scene.drawLabels(lv, this.tctx, (lv === vb ? (b.labels ?? 1) : (a.labels ?? 1)) * la, this.renderer, this.tour && this.tour.ui.veil(now));
     this.lastView = lv;
     this.frames++;
+    // the first frames, timed (on the CPU: the GPU's work shows in when the next frame comes)
+    if (++this.n <= 5) TI.log(`frame ${this.n}: map ${Math.round(t2 - t1)} ms, lettering ${Math.round(performance.now() - t2)} ms`);
+    if (this.n === 5) TI.log('ready');
+    if (now - this.fpsLogAt > 15000) { this.fpsLogAt = now; TI.log(`${this.fps.toFixed(0)} frames a second at ${this.tour ? this.tour.T.toFixed(0) : 0} s`); }
     if (now - this.fpsAt > 1000) { this.fps = this.frames * 1000 / (now - this.fpsAt); this.frames = 0; this.fpsAt = now; }
   },
 };

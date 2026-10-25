@@ -117,12 +117,20 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 58 222
+      - name: What stalls the page on the simulator
+        # By hand only, a report: the app as it is, then without the lettering canvas, then
+        # without the map's drawing, each with the page's start-up log (ci/sim_diag.sh)
+        id: diag
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
+        continue-on-error: true
+        timeout-minutes: 12
+        run: ci/sim_diag.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/diag "${{ steps.sim.outputs.udid }}" full no2d nogl
       - name: Collect
         if: always()
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} shots=${{ steps.shots.outcome }} diag=${{ steps.diag.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
@@ -218,6 +226,7 @@ jobs:
             if [ -f web/web-check.log ]; then echo "## web check"; tail -20 web/web-check.log; fi
             if [ -f web/webkit-check.log ]; then echo "## webkit check (report only)"; tail -20 web/webkit-check.log; fi
             if [ -f apple/shots/sim-steps.log ]; then echo "## simulator (report only)"; cat apple/shots/sim-steps.log; fi
+            if [ -f apple/diag/diag.txt ]; then echo; echo "## simulator diagnosis (report only)"; cat apple/diag/diag.txt; fi
           } > STATUS.md
           cat STATUS.md
           echo "${GITHUB_SHA}" > COMMIT

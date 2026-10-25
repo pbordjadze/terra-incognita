@@ -68,12 +68,16 @@ class Renderer {
   async init(base = '') {
     const gl = this.gl;
     const [cellSrc] = await Promise.all([fetch(base + 'cell.glsl').then(r => r.text())]);
+    TI.log('shader source');
     const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('missing ' + src)); im.src = base + src; });
     const names = ['geoA', 'geoB', 'lo1', 'lo2', 'lo3', 'lo4'];
     const [imgs, sprites] = await Promise.all([Promise.all(names.map(n => load(`data/${n}.png`))), fetch(base + 'sprites.json').then(r => r.json())]);
+    TI.log('images');
     this.buildArt(sprites);
     this.tex = Object.fromEntries(names.map((n, i) => [n, this.texture(imgs[i], true)]));
+    TI.log('textures');
     this.measureFont();
+    TI.log('density ramp');
     const defines = [
       ...Object.entries(NAMED).map(([k, v]) => `#define G_${k} ${GI[v]}`),
       ...PAL_KEYS.map((k, i) => `#define P_${k} ${i}`),
@@ -82,9 +86,13 @@ class Renderer {
       `#define NRAMP ${this.ramp.length}`,
       `const int RAMP[${this.ramp.length}] = int[${this.ramp.length}](${this.ramp.join(',')});`,
     ].join('\n');
+    let t = performance.now();
     this.cellProg = this.program(QUAD_VS, cellSrc.replace('//%DEFINES%', defines));
+    TI.log(`map shader compiled (${Math.round(performance.now() - t)} ms)`);
+    t = performance.now();
     this.glyphProg = this.program(QUAD_VS, GLYPH_FS);
     this.mixProg = this.program(QUAD_VS, MIX_FS);
+    TI.log(`glyph and mix shaders compiled (${Math.round(performance.now() - t)} ms)`);
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
     this.vao = gl.createVertexArray(); gl.bindVertexArray(this.vao);
@@ -174,6 +182,8 @@ class Renderer {
 
   // The density ramp: candidate characters sorted by the ink they carry in this font.
   measureFont() {
+    // what this font measures in Chromium, for a diagnosis without pixel read-backs
+    if (TI.diag === 'no2d') { this.ramp = [...' `-::++***##%%@@'].map(ch => GI[ch]); return; }
     const c = document.createElement('canvas'); c.width = 40; c.height = 80;
     const x = c.getContext('2d', { willReadFrequently: true });
     x.textAlign = 'center'; x.textBaseline = 'middle';

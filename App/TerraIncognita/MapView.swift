@@ -5,17 +5,22 @@ import WebKit
 
 /// The bundled page in a web view that neither scrolls nor zooms: every touch goes to the map.
 struct MapView: UIViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    let status: PageStatus
+
+    func makeCoordinator() -> Coordinator { Coordinator(status: status) }
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(context.coordinator.scheme, forURLScheme: BundleScheme.scheme)
+        config.userContentController.add(context.coordinator, name: "page")
         #if DEBUG
-        // `-tour t213s` (CI) reaches the page before its scripts run, whatever becomes of the URL
+        // `-tour t213s` and `-diag no2d` (CI) reach the page before its scripts run, whatever
+        // becomes of the URL
         let args = ProcessInfo.processInfo.arguments
-        if let i = args.firstIndex(of: "-tour"), i + 1 < args.count {
-            let moment = args[i + 1].filter { $0.isLetter || $0.isNumber || $0 == "." }
-            config.userContentController.addUserScript(WKUserScript(source: "window.TI_TOUR = '\(moment)';",
+        for (flag, name) in [("-tour", "TI_TOUR"), ("-diag", "TI_DIAG")] {
+            guard let i = args.firstIndex(of: flag), i + 1 < args.count else { continue }
+            let value = args[i + 1].filter { $0.isLetter || $0.isNumber || $0 == "." }
+            config.userContentController.addUserScript(WKUserScript(source: "window.\(name) = '\(value)';",
                                                                     injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
         #endif
@@ -38,10 +43,21 @@ struct MapView: UIViewRepresentable {
 
     func updateUIView(_ web: WKWebView, context: Context) {}
 
-    /// Serves the bundle, sends links out to Safari, and brings the page back if iOS ends its
-    /// process (the page keeps the film's place in its address, so a reload resumes there).
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    /// Serves the bundle, passes on the page's reports, sends links out to Safari, and brings the
+    /// page back if iOS ends its process (the page keeps the film's place in its address, so a
+    /// reload resumes there).
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         let scheme = BundleScheme()
+        let status: PageStatus
+
+        init(status: PageStatus) {
+            self.status = status
+            super.init()
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if let line = message.body as? String { status.report(line) }
+        }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
             guard let url = navigationAction.request.url, url.scheme == "https" || url.scheme == "http" else { return .allow }
@@ -56,6 +72,7 @@ struct MapView: UIViewRepresentable {
         }
 
         func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            status.report("the page's process ended: reloading")
             webView.reload()
         }
     }
