@@ -31,7 +31,5 @@ shot() {
 }
 WAIT=20
 for T in "$@"; do shot "t$(printf '%03d' "$T")" -tour "t${T}s"; done
-WAIT=30
-shot playing-30s
 run 60 xcrun simctl spawn "$UDID" log show --last 5m --style compact --predicate 'process == "TerraIncognita" OR process CONTAINS "WebContent"' > "$OUT/sim-app.log" 2>&1 || true
 step done

@@ -10,6 +10,15 @@ struct MapView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.setURLSchemeHandler(context.coordinator.scheme, forURLScheme: BundleScheme.scheme)
+        #if DEBUG
+        // `-tour t213s` (CI) reaches the page before its scripts run, whatever becomes of the URL
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-tour"), i + 1 < args.count {
+            let moment = args[i + 1].filter { $0.isLetter || $0.isNumber || $0 == "." }
+            config.userContentController.addUserScript(WKUserScript(source: "window.TI_TOUR = '\(moment)';",
+                                                                    injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
+        #endif
         let web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = context.coordinator
         web.uiDelegate = context.coordinator
@@ -23,23 +32,11 @@ struct MapView: UIViewRepresentable {
         #if DEBUG
         web.isInspectable = true
         #endif
-        web.load(URLRequest(url: Self.startURL()))
+        web.load(URLRequest(url: BundleScheme.start))
         return web
     }
 
     func updateUIView(_ web: WKWebView, context: Context) {}
-
-    private static func startURL() -> URL {
-        #if DEBUG
-        // `-tour t213p` opens the film at 213 s, paused (CI's screenshots); `-tour t213` plays from there.
-        let args = ProcessInfo.processInfo.arguments
-        if let i = args.firstIndex(of: "-tour"), i + 1 < args.count,
-           let moment = URL(string: "terra://app/index.html#" + args[i + 1]) {
-            return moment
-        }
-        #endif
-        return BundleScheme.start
-    }
 
     /// Serves the bundle, sends links out to Safari, and brings the page back if iOS ends its
     /// process (the page keeps the film's place in its address, so a reload resumes there).

@@ -157,7 +157,7 @@ class Tour {
     this.capShown = null;
     // #t213 plays from 213 s, #t213p waits there, #t213s waits there and stops drawing after two
     // seconds (CI's simulator screenshots); #r213 is where the film was before a reload, and plays on
-    const m = /([tr])(\d+(?:\.\d+)?)([ps]?)/.exec(location.hash);
+    const m = /([tr])(\d+(?:\.\d+)?)([ps]?)/.exec(window.TI_TOUR || location.hash);
     if (m) { this.T = Math.min(+m[2], END); this.playing = m[1] === 'r' || !m[3]; this.still = m[3] === 's'; }
   }
 
