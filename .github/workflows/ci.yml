@@ -82,6 +82,7 @@ jobs:
         id: build
         run: |
           set -o pipefail
+          mkdir -p out
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd -quiet \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/app-build.log | tail -80
