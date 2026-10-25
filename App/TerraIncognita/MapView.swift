@@ -48,13 +48,13 @@ struct MapView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
             guard let url = navigationAction.request.url, url.scheme == "https" || url.scheme == "http" else { return .allow }
-            UIApplication.shared.open(url)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
             return .cancel
         }
 
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                      for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            if let url = navigationAction.request.url { UIApplication.shared.open(url) }
+            if let url = navigationAction.request.url { UIApplication.shared.open(url, options: [:], completionHandler: nil) }
             return nil
         }
 
