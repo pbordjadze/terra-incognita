@@ -33,9 +33,11 @@ const App = {
     for (const c of [this.gl, this.textCanvas]) { c.width = Math.round(this.W * this.dpr); c.height = Math.round(this.H * this.dpr); }
   },
   loop(now) {
+    if (this.tour && this.tour.still && now - this.t0 > 2000) return;
     requestAnimationFrame(t => this.loop(t));
     if (this.lost) return;
-    const time = (now - this.t0) / 1000;
+    // a frame's timestamp can fall a little before the moment the loop started
+    const time = Math.max(0, (now - this.t0) / 1000);
     let a = this.state, b = null, mix = 0, kind = 0;
     if (this.tour) ({ a, b, mix, kind } = this.tour.frame(time, now));
     const va = this.scene.view(a, this.W, this.H, this.dpr, time, this.tctx);

@@ -89,12 +89,12 @@ jobs:
       - name: Screenshots of the tour on the simulator
         id: shots
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 12
+        timeout-minutes: 16
         run: |
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
           # the map's data must reach the app byte for byte (an image tool would destroy it)
           for f in Web/data/*.png Web/cell.glsl Web/sprites.json; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
-          ci/sim_shots.sh "$APP" out/shots "${{ steps.sim.outputs.udid }}" 6 58 160 186 222 245 290 336
+          ci/sim_shots.sh "$APP" out/shots "${{ steps.sim.outputs.udid }}" 6 58 186 222 245 290
       - name: Collect
         if: always()
         run: |

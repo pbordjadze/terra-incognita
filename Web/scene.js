@@ -226,7 +226,7 @@ class Scene {
       const x0 = (ax - m.anchor[0] * k) * cw, y0 = (ay - m.anchor[1] * k) * ch, box = [x0, y0, x0 + m.w * k * cw, y0 + m.h * k * ch];
       if (box[0] > W || box[1] > H || box[2] < 0 || box[3] < 0) continue;
       if (v.keepOut.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
-      v.creatures.push({ art: name, x: c.p[0], y: c.p[1], frame: Math.floor(c.frame) % m.frames, k, x0, y0 });
+      v.creatures.push({ art: name, x: c.p[0], y: c.p[1], frame: ((Math.floor(c.frame) % m.frames) + m.frames) % m.frames, k, x0, y0 });
       v.keepOut.push(box);
     }
     // the ornaments on the sheet: a title ribbon, the moon, and (two hemispheres) the winds
@@ -315,18 +315,41 @@ class Scene {
       }
     }
     if (alpha <= 0) return;
-    x.save(); x.globalAlpha = alpha; x.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
-    x.textBaseline = 'middle'; x.lineJoin = 'round'; x.textAlign = 'left';
-    const halo = TI.INKS[v.ink].label.halo;
+    // each word is set once, halo and letters, into a bitmap of its own; a frame only places them
+    x.save(); x.globalAlpha = alpha; x.imageSmoothingEnabled = true;
     for (const l of v.labels) {
-      x.font = `${l.italic ? 'italic ' : ''}${l.size.toFixed(1)}px ${l.font}`;
-      x.lineWidth = Math.max(2.2, l.size * 0.13); x.strokeStyle = halo;
-      let cx = l.x0;
-      for (const c of l.text) { x.strokeText(c, cx, l.y); cx += x.measureText(c).width + l.spx; }
-      x.fillStyle = l.color; cx = l.x0;
-      for (const c of l.text) { x.fillText(c, cx, l.y); cx += x.measureText(c).width + l.spx; }
+      // set at a whole pixel size and scaled the rest of the way, so zooming reuses the bitmaps
+      const bm = this.labelBitmap(l, v), k = l.size / bm.size;
+      x.drawImage(bm.c, (l.x0 - bm.pad * k) * v.dpr, (l.y - bm.h * k / 2) * v.dpr, bm.c.width * k, bm.c.height * k);
     }
     x.restore();
+  }
+  labelBitmap(l, v) {
+    const size = Math.max(6, Math.round(l.size));
+    const key = [l.text, size, l.font, l.italic ? 1 : 0, l.color, v.ink, v.dpr].join('|');
+    this.bitmaps = this.bitmaps || new Map();
+    let bm = this.bitmaps.get(key);
+    if (bm) return bm;
+    const font = `${l.italic ? 'italic ' : ''}${size}px ${l.font}`, sp = l.sp * size;
+    const m = document.createElement('canvas').getContext('2d');
+    m.font = font;
+    const widths = [...l.text].map(ch => m.measureText(ch).width);
+    const w = widths.reduce((a, b) => a + b, 0) + sp * Math.max(0, widths.length - 1);
+    const pad = Math.ceil(size * 0.3), h = Math.ceil(size * 1.5);
+    const c = document.createElement('canvas');
+    c.width = Math.ceil((w + pad * 2) * v.dpr); c.height = Math.ceil(h * v.dpr);
+    const x = c.getContext('2d');
+    x.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
+    x.font = font; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    x.lineWidth = Math.max(2.2, size * 0.13); x.strokeStyle = TI.INKS[v.ink].label.halo; x.fillStyle = l.color;
+    for (const pass of ['stroke', 'fill']) {
+      let cx = pad;
+      [...l.text].forEach((ch, i) => { pass === 'stroke' ? x.strokeText(ch, cx, h / 2) : x.fillText(ch, cx, h / 2); cx += widths[i] + sp; });
+    }
+    bm = { c, pad, h, size };
+    if (this.bitmaps.size > 600) this.bitmaps.clear();
+    this.bitmaps.set(key, bm);
+    return bm;
   }
   findAt(v, px, py) {
     let best = null, bd = 1e9;
