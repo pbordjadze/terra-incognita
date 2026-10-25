@@ -321,7 +321,7 @@ bool drawSprite(int i, out bool covered) {
   if (g >= 0) { put(g, matCol(m, max(lit, 0.7)), 1.05); covered = true; return true; }
   if (a.x < 0.0) {
     // inside: shaded in a ramp of characters by its light, as an engraver would model it
-    if (m == M_GHOST || m == M_SMOKE) { put(G_SP, FG, 0.0); covered = true; return true; }
+    if (m == M_GHOST || m == M_SMOKE || m == M_RIBBON) { put(G_SP, FG, 0.0); covered = true; return true; }
     float l = uDark > 0.5 ? lit : 1.0 - lit;
     put(ramp(clamp(0.18 + 0.62 * l, 0.0, 1.0)), matCol(m, lit), 0.85 + 0.3 * l);
     covered = true; return true;
