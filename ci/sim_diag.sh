@@ -25,7 +25,7 @@ for MODE in "$@"; do
   run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
   START=$(date '+%Y-%m-%d %H:%M:%S')
   step "launch $MODE: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" -diag "$MODE" 2>&1 | tr '\n' ' ')"
-  sleep 45
+  sleep 60
   run 90 xcrun simctl io "$UDID" screenshot --type=png "$OUT/diag-$MODE.png" > /dev/null 2>&1; step "captured $MODE ($?)"
   run 120 xcrun simctl spawn "$UDID" log show --start "$START" --style compact \
     --predicate 'subsystem == "com.pbordjadze.terraincognita" OR eventMessage CONTAINS "became unresponsive" OR eventMessage CONTAINS "gpuProcessExited"' \

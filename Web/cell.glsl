@@ -31,6 +31,11 @@ uniform vec4 uAS[NASPR]; uniform int uASN;             // per creature on screen
 uniform vec4 uMark[NMARK]; uniform int uMarkN;
 uniform vec4 uReveal;           // x progress 0..1, yz origin (screen px), w spread (px)
 uniform vec2 uStars;            // parallax offset of the sky (px)
+// Always 0. Added to a loop's count so the compiler keeps it a loop: a GPU compiler writes out a
+// copy of the body per pass when the count is a constant, and with the copies this shader took
+// longer to compile than iOS lets WebKit's GPU process stay busy. For the same reason a heavy
+// function has one call site (the sprites, the projection, the Kells treatments).
+uniform int uZero;
 
 layout(location = 0) out vec4 oFg;
 layout(location = 1) out vec4 oBg;
@@ -213,7 +218,7 @@ vec3 matCol(float m, float lit) {
 // ---- the ornaments, in local units (y down)
 vec3 rose(vec2 u) {
   vec3 r = vec3(1e5, 0.0, 0.0);
-  for (int j = 0; j < 16; j++) {
+  for (int j = 0; j < 16 + uZero; j++) {
     bool lng = j < 8;
     float a = lng ? float(j) * PI / 4.0 : PI / 8.0 + float(j - 8) * PI / 4.0;
     float L = lng ? ((j % 2) == 1 ? 0.78 : 1.0) : 0.52, W = lng ? ((j % 2) == 1 ? 0.1 : 0.13) : 0.075, b = L * 0.2;
@@ -314,28 +319,32 @@ bool drawSprite(int i, out bool covered) {
   float ext = spriteExtent(type);
   if (abs(u.x) > ext + 0.5 || abs(u.y) > ext + 0.5) return false;
   float t = uTime + p.w * 13.0;
-  vec3 a = sprite(type, u, p, t);
   float cellU = max(uCell.x, uCell.y) / s.z;
-  if (a.x > cellU) return false;
-  vec3 ax = sprite(type, u + vec2(dir * uDelta / s.z, 0.0), p, t), ay = sprite(type, u + vec2(0.0, uDelta / s.z), p, t);
+  // the shape at the cell, then beside it for the direction of its edge
+  vec3 a = vec3(0.0), ax = a, ay = a;
+  for (int k = 0; k < 3 + uZero; k++) {
+    vec2 o = k == 1 ? vec2(dir * uDelta / s.z, 0.0) : k == 2 ? vec2(0.0, uDelta / s.z) : vec2(0.0);
+    vec3 r = sprite(type, u + o, p, t);
+    if (k == 0) { if (r.x > cellU) return false; a = r; } else if (k == 1) ax = r; else ay = r;
+  }
   F f = field(a.x * s.z, ax.x * s.z, ay.x * s.z);
   f.n.x *= dir;
   float m = a.y, lit = a.z;
   if (m == M_HOLE) { covered = a.x < 0.0; if (covered) { put(G_SP, FG, 0.0); } return covered; }
-  if (solidMat(m) && a.x < 0.0) {
-    put(ramp(clamp(0.45 + 0.55 * lit, 0.0, 1.0)), matCol(m, lit), 1.15);
-    covered = true; return true;
-  }
-  int g = strokeG(f.d, f.n);
-  if (g >= 0) { put(g, matCol(m, max(lit, 0.7)), 1.05); covered = true; return true; }
-  if (a.x < 0.0) {
-    // inside: shaded in a ramp of characters by its light, as an engraver would model it
+  // solid inside, else its outline, else inside shaded in a ramp of characters by its light, as
+  // an engraver would model it (one call of matCol, see uZero)
+  bool solid = solidMat(m) && a.x < 0.0;
+  int g = solid ? -1 : strokeG(f.d, f.n);
+  if (!solid && g < 0) {
+    if (a.x >= 0.0) return false;
     if (m == M_GHOST || m == M_SMOKE || m == M_RIBBON) { put(G_SP, FG, 0.0); covered = true; return true; }
-    float l = uDark > 0.5 ? lit : 1.0 - lit;
-    put(ramp(clamp(0.18 + 0.62 * l, 0.0, 1.0)), matCol(m, lit), 0.85 + 0.3 * l);
-    covered = true; return true;
   }
-  return false;
+  vec3 col = matCol(m, g >= 0 ? max(lit, 0.7) : lit);
+  float l = uDark > 0.5 ? lit : 1.0 - lit;
+  if (solid) put(ramp(clamp(0.45 + 0.55 * lit, 0.0, 1.0)), col, 1.15);
+  else if (g >= 0) put(g, col, 1.05);
+  else put(ramp(clamp(0.18 + 0.62 * l, 0.0, 1.0)), col, 0.85 + 0.3 * l);
+  covered = true; return true;
 }
 
 // ------------------------------------------------------------------ after the Book of Kells
@@ -464,30 +473,27 @@ bool braid(vec2 cen, float R, float w, vec3 c1, vec3 c2, vec3 rule, vec3 ground)
 }
 // Hibernia's roundel: a parchment medallion over Ireland in a dark enamel ring with a gilt
 // braid; Ireland laid in verdigris under gold spirals, Britain in orpiment.
-bool hibernia(vec2 P, vec4 a0, float coastPx, vec2 coastN, bool land, float eire) {
-  if (uKells.w <= 0.001 || kellsDark()) return false;
+// 0: not in the roundel; 1: drawn (its braided frame); 2: inside, for main to lay its ground,
+// with `edge` set where the opening roundel is still being drawn
+int hibernia(out bool edge) {
+  edge = false;
+  if (uKells.w <= 0.001) return 0;
   vec2 cen = toScreen(fwd(uKells.xy));
   float R = uKells.z, r = length(SP - cen);
   float open = uKells.w;
   float reach = R * smoothstep(0.0, 0.75, open);
   float w = uCell.y * 3.2;
-  if (r > R + w) return false;
+  if (r > R + w) return 0;
   if (r > R - w * 0.5 - uCell.y * 0.5) {
-    if (open < 0.6) return false;
+    if (open < 0.6) return 0;
     float drawn = smoothstep(0.6, 1.0, open);
     float ang = mod(atan(SP.x - cen.x, -(SP.y - cen.y)) + 2.0 * PI, 2.0 * PI) / (2.0 * PI);
-    if (ang > drawn) return false;
-    return braid(cen, R, w, K_GOLDHI, mix(K_RED, vec3(1.0), 0.25), K_GOLD, vec3(0.10, 0.06, 0.09));
+    if (ang > drawn) return 0;
+    return braid(cen, R, w, K_GOLDHI, mix(K_RED, vec3(1.0), 0.25), K_GOLD, vec3(0.10, 0.06, 0.09)) ? 1 : 0;
   }
-  if (r > reach) return false;
-  BG = K_VELLUM;
-  if (kellsCoast(coastPx, coastN, land, K_INK)) return true;
-  if (land) {
-    if (eire > -1.0) kellsLand(P, a0, mix(K_GREEN, K_VELLUM, 0.12), K_INK, vec3(0.86, 0.95, 0.72));
-    else { BG = mix(K_ORP, K_VELLUM, 0.35); float k = h12(vec2(CX, CY)); put(k < 0.25 ? G_DOT : G_SP, K_INK, 0.9); }
-  } else kellsSea(-coastPx, K_LAPIS, K_PURPLE, K_LAPIS);
-  if (open < 1.0 && reach - r < uCell.y * 1.2) put(ramp(0.8), K_GOLD, 1.3);
-  return true;
+  if (r > reach) return 0;
+  edge = open < 1.0 && reach - r < uCell.y * 1.2;
+  return 2;
 }
 
 // ------------------------------------------------------------------ main
@@ -497,8 +503,13 @@ void main() {
   vec2 P = uCam + (SP - 0.5 * uView) / uScale;
   vec2 Px = P + vec2(uDelta / uScale, 0.0), Py = P + vec2(0.0, uDelta / uScale);
   int hemi = (uProj == 0 && length(P - uHemi) < length(P + uHemi)) ? 1 : 0;
-  float rho, rhox, rhoy; vec3 nrm, nrmx, nrmy;
-  vec2 ll = inv(P, hemi, rho, nrm), llx = inv(Px, hemi, rhox, nrmx), lly = inv(Py, hemi, rhoy, nrmy);
+  float rho = 0.0, rhox = 0.0, rhoy = 0.0; vec3 nrm = vec3(0.0, 0.0, 1.0);
+  vec2 ll = vec2(0.0), llx = ll, lly = ll;
+  for (int k = 0; k < 3 + uZero; k++) {
+    float r_; vec3 n_;
+    vec2 l_ = inv(k == 0 ? P : k == 1 ? Px : Py, hemi, r_, n_);
+    if (k == 0) { ll = l_; rho = r_; nrm = n_; } else if (k == 1) { llx = l_; rhox = r_; } else { lly = l_; rhoy = r_; }
+  }
   bool onMap = rho <= 1.0;
   G = G_SP; FG = vec3(0.0); I = 0.0; BG = P_(P_SKY); LIT = 0.0;
   F rim = field(rho - 1.0, rhox - 1.0, rhoy - 1.0);
@@ -575,8 +586,7 @@ void main() {
         if (g >= 0) put(g, mix(P_(P_SEA), P_(P_COAST), fade), 0.5 + 0.5 * fade);
       }
       // rhumb lines from the compass roses
-      for (int i = 0; i < NROSE; i++) {
-        if (i >= uRoseN) break;
+      for (int i = 0; i < min(uRoseN, NROSE); i++) {
         vec4 ro = uRose[i];
         if (int(ro.w) != hemi && uProj == 0) continue;
         vec2 v = SP - ro.xy; float rr = length(v);
@@ -661,7 +671,7 @@ void main() {
           float stepDeg = iconPx * 0.78 / hpx;
           float sl = log2(stepDeg), s0 = exp2(floor(sl));
           float best = -1e5; vec3 hit = vec3(0.0);
-          for (int oy = -1; oy <= 2; oy++) for (int ox = -1; ox <= 1; ox++) {
+          for (int oy = -1; oy <= 2 + uZero; oy++) for (int ox = -1; ox <= 1 + uZero; ox++) {
             vec2 gi = floor(ll / s0) + vec2(float(ox), float(-oy));
             float j1 = h12(gi * 1.37), j2 = h12(gi * 2.71 + 3.3);
             vec2 L = (gi + vec2(0.5 + (j1 - 0.5) * 0.6 + mod(gi.y, 2.0) * 0.25, 0.5 + (j2 - 0.5) * 0.4)) * s0;
@@ -695,8 +705,7 @@ void main() {
         if (night > 0.15 && night < 0.6) { FG = mix(FG, P_(P_FIRE), 0.35); }
       }
       // the town marks of capitals
-      for (int i = 0; i < NMARK; i++) {
-        if (i >= uMarkN) break;
+      for (int i = 0; i < min(uMarkN, NMARK); i++) {
         vec2 d = SP - uMark[i].xy;
         if (abs(d.x) < uCell.x * 0.5 && abs(d.y) < uCell.y * 0.5) { put(G_O, uMark[i].w > 0.5 ? P_(P_GOLDHI) : P_(P_VERMHI), 1.1); break; }
       }
@@ -722,16 +731,22 @@ void main() {
       int g = strokeG(coast.d, coast.n);
       if (g >= 0) put(g, uIllum > 0.5 ? P_(P_INK) : P_(P_VELLUMHI), uIllum > 0.5 ? 1.2 : 0.95);
     }
-    if (kellsDark()) {
-      // the Kells ink: the whole world as a carpet page, each country laid in its own pigment
-      BG = K_DEEP;
-      if (!kellsCoast(coast.d, coast.n, land, K_GOLDHI)) {
-        if (land) {
+    // after Kells: the whole world as a carpet page in the Kells ink, each country laid in its
+    // own pigment; otherwise Hibernia's roundel, Ireland in verdigris and Britain in orpiment
+    bool edge = false;
+    bool world = kellsDark();
+    if (world || hibernia(edge) == 2) {
+      BG = world ? K_DEEP : K_VELLUM;
+      if (!kellsCoast(coast.d, coast.n, land, world ? K_GOLDHI : K_INK)) {
+        if (land && !world && eire <= -1.0) { BG = mix(K_ORP, K_VELLUM, 0.35); put(h12(vec2(CX, CY)) < 0.25 ? G_DOT : G_SP, K_INK, 0.9); }
+        else if (land) {
           int wk = int(texelFetch(uLo1, texel2048(ll), 0).g * 255.0 / 60.0 + 0.5);
-          kellsLand(P, a0, kField(max(wk - 1, 0)) * (a0.b > 0.5 ? 0.6 : 1.0), K_INK, vec3(0.95, 0.88, 0.68));
-        } else kellsSea(-coast.d, vec3(0.38, 0.52, 0.95), vec3(0.62, 0.42, 0.72), vec3(0.32, 0.44, 0.8));
+          vec3 fieldCol = world ? kField(max(wk - 1, 0)) * (a0.b > 0.5 ? 0.6 : 1.0) : mix(K_GREEN, K_VELLUM, 0.12);
+          kellsLand(P, a0, fieldCol, K_INK, world ? vec3(0.95, 0.88, 0.68) : vec3(0.86, 0.95, 0.72));
+        } else kellsSea(-coast.d, world ? vec3(0.38, 0.52, 0.95) : K_LAPIS, world ? vec3(0.62, 0.42, 0.72) : K_PURPLE, world ? vec3(0.32, 0.44, 0.8) : K_LAPIS);
+        if (edge) put(ramp(0.8), K_GOLD, 1.3);
       }
-    } else hibernia(P, a0, coast.d, coast.n, land, eire);
+    }
   }
   // the rim: a double gold rule around each world
   {
@@ -766,8 +781,7 @@ void main() {
   }
   // the creatures: hand-drawn ASCII art drawn over the map by the lettering pass, on a grid k
   // times coarser; here the map is cleared under them
-  for (int i = 0; i < NASPR; i++) {
-    if (i >= uASN) break;
+  for (int i = 0; i < min(uASN, NASPR); i++) {
     vec4 s = uAS[i];
     int ai = int(s.z), k = int(mod(s.w, 8.0)), fr = int(s.w / 8.0);
     vec4 art = uArt[ai];
@@ -780,8 +794,7 @@ void main() {
     if (tx.g > 0u || tx.b > 0u) put(G_SP, FG, 0.0);
   }
   // compass roses and ornaments
-  for (int i = 0; i < NSPR; i++) {
-    if (i >= uSprN) break;
+  for (int i = 0; i < min(uSprN, NSPR); i++) {
     bool cov;
     drawSprite(i, cov);
   }
@@ -793,8 +806,7 @@ void main() {
     else if (edge < 0.08) { put(ramp(0.9), P_(P_GOLDHI), 1.6); }
   }
   // the words sit on knocked-back ground
-  for (int i = 0; i < NKNOCK; i++) {
-    if (i >= uKnockN) break;
+  for (int i = 0; i < min(uKnockN, NKNOCK); i++) {
     vec4 b = uKnock[i];
     if (SP.x > b.x && SP.x < b.z && SP.y > b.y && SP.y < b.w) { I *= 0.3; break; }
   }

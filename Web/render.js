@@ -292,6 +292,7 @@ class Renderer {
     gl.uniform1f(this.u(p, 'uDark'), ink.dark); gl.uniform1f(this.u(p, 'uIllum'), ink.illum); gl.uniform1f(this.u(p, 'uRelief'), v.relief);
     gl.uniform1f(this.u(p, 'uKellsAll'), ink.kells ? 1 : 0);
     gl.uniform4f(this.u(p, 'uKells'), v.kells[0], v.kells[1], v.kells[2], v.kells[3]);
+    gl.uniform1i(this.u(p, 'uZero'), 0);
     gl.uniform4f(this.u(p, 'uSun'), v.sun[0], v.sun[1], v.sun[2], v.sun[3]); gl.uniform1f(this.u(p, 'uSunAz'), v.sunAz);
     gl.uniform4f(this.u(p, 'uReveal'), v.reveal[0], v.reveal[1], v.reveal[2], v.reveal[3]);
     gl.uniform2f(this.u(p, 'uStars'), v.stars[0], v.stars[1]);
