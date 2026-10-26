@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<script src="../vendor/d3.min.js"></script>
+<script src="../kit.js"></script>
+<script src="stitch.js"></script>
+<script src="page.js"></script>
+<script>
+'use strict';
+window.STITCH_LOG = 1;
+const hex = Stitch.rgb;
+const pal = [null, { rgb: hex('#8a9a6e') }, { rgb: hex('#a33e2c') }, { rgb: hex('#2e4766') }, { rgb: hex('#c08f3e') },
+  { rgb: hex('#c9a24e'), metal: true }, { rgb: hex('#3a2b22') }, { rgb: hex('#8ba4b8') }, { rgb: hex('#d6c5a1') }];
+Page.run(async () => {
+  const c = 14, ox = 7, oy = 8.5, ncol = Math.ceil(Kit.W / c), nrow = Math.ceil(Kit.H / c);
+  const data = new Uint8Array(ncol * nrow);
+  for (let j = 0; j < nrow; j++) for (let i = 0; i < ncol; i++) {
+    const x = ox + (i + .5) * c - 819, y = oy + (j + .5) * c - 1772;
+    if (Math.hypot(x, y * 0.8) < 420) data[j * ncol + i] = (x > 0 ? 1 : y > 0 ? 4 : 8);
+    if (Math.abs(x + 300) < 60 && Math.abs(y - 700) < 40) data[j * ncol + i] = 2;
+  }
+  const segs = new Stitch.Segs();
+  // backstitch round the blob
+  const N = 180;
+  for (let k = 0; k < N; k++) {
+    const a0 = k / N * 2 * Math.PI, a1 = (k + 1) / N * 2 * Math.PI;
+    segs.push(819 + 430 * Math.cos(a0), 1772 + 430 / 0.8 * Math.sin(a0), 819 + 430 * Math.cos(a1), 1772 + 430 / 0.8 * Math.sin(a1), 2.2, 6, 0, { taper: 0.5 });
+  }
+  // running stitch lines
+  for (let r = 0; r < 4; r++) for (let x = 100; x < 1500; x += 18) segs.push(x, 600 + r * 22, x + 11, 600 + r * 22, 1.6, 7, 0);
+  // couched gold
+  let s0 = 0;
+  for (let x = 100; x < 1500; x += 6) { const y = 2700 + 40 * Math.sin(x / 90), y2 = 2700 + 40 * Math.sin((x + 6) / 90); segs.push(x, y, x + 6, y2, 3.2, 5, 1, { s0 }); s0 += Math.hypot(6, y2 - y); }
+  for (let x = 120; x < 1500; x += 26) { const y = 2700 + 40 * Math.sin(x / 90); segs.push(x - 2, y - 5, x + 2, y + 5, 1.1, 2, 0, { tier: 1 }); }
+  // knots
+  for (let k = 0; k < 20; k++) segs.push(300 + k * 50, 3000, 300 + k * 50, 3000, 4, 2, 2, { tier: 1 });
+  // satin block
+  for (let y = 900; y < 1000; y += 3.2) segs.push(1000, y, 1300, y + 40, 1.8, 3, 0, { taper: 0.3 });
+  return { linen: { P: 7, ox, oy, rgb: hex('#e9e0cb'), seed: 3 }, pal, grids: [{ c, ox, oy, ncol, nrow, data, hw: 0.17, seed: 5 }], segs };
+});
+</script>
