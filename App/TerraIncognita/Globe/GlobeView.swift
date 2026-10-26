@@ -125,8 +125,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let index: Int
         /// The web-map zoom from which it shows.
         let from: Double
-        /// A Persian capital's rosette, left of its name and on the city itself.
+        /// A Persian capital's rosette, left of its name and on the city itself, and its size.
         let mark: Bool
+        let markSize: CGFloat
+        /// Its halo's tone, and the room it keeps from other names (points).
+        let halo: String
+        let gap: CGFloat
         var layer: CALayer?
         var alpha = 0.0
     }
@@ -290,7 +294,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let ring = 1 - smoothstep(1.25, 1.7, zoom)
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
-            u1: SIMD4(Float(radius * scale), Float(scale), Float(zoom), Float(ring)),
+            u1: SIMD4(Float(radius * scale), Float(scale * Double(reading)), Float(zoom), Float(ring)),
             u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), Float(styleMix), 0),
             r0: SIMD4(Float(m[0][0]), Float(m[1][0]), Float(m[2][0]), 0),
             r1: SIMD4(Float(m[0][1]), Float(m[1][1]), Float(m[2][1]), 0),
@@ -312,12 +316,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     // MARK: the camera
 
     /// The globe's centre and radius on screen, in points (tools/globe/preview.py's `layout`): as large
-    /// as its room allows with its frame round it (Wikipedia's gold ring reaches 11 pt past the edge;
-    /// the Persian frame's finials 0.1475 of the radius), 14 pt from the room's edges.
+    /// as its room allows with its frame round it (Wikipedia's gold ring reaches 11 reading points
+    /// past the edge; the Persian frame's finials 0.1475 of the radius), 14 pt from the room's edges.
     private var place: (centre: CGPoint, radius: Double) {
         let box = room ?? CGRect(x: 0, y: Double(bounds.height) * 0.08, width: Double(bounds.width), height: Double(bounds.height) * 0.7)
         let half = min(Double(box.width), Double(box.height)) / 2 - 14
-        let r = (half - 11) + (half / 1.1475 - (half - 11)) * styleMix
+        let ring = 11 * Double(reading)
+        let r = (half - ring) + (half / 1.1475 - (half - ring)) * styleMix
         return (CGPoint(x: box.midX, y: box.midY), max(r, 40) * zoom)
     }
 
@@ -433,11 +438,26 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func tap(_ g: UITapGestureRecognizer) {
         touched()
-        guard let p = unproject(g.location(in: self)), let k = data?.country(lon: p.lon, lat: p.lat), k != selected else {
+        guard let k = country(near: g.location(in: self)), k != selected else {
             select(nil, animated: true)
             return
         }
         select(k, animated: true)
+    }
+
+    /// The country under a point of the screen or, off its coast, the nearest within a fingertip
+    /// (`GlobeType.touch` reading points): small islands and states are smaller than a finger.
+    private func country(near p: CGPoint) -> Int? {
+        let reach = CGFloat(GlobeType.shared?.touch ?? 10) * reading
+        for ring in 0...3 {
+            let r = reach * CGFloat(ring) / 3, n = ring == 0 ? 1 : 6 * ring
+            for i in 0..<n {
+                let a = 2 * Double.pi * Double(i) / Double(n)
+                let q = CGPoint(x: p.x + r * CGFloat(cos(a)), y: p.y + r * CGFloat(sin(a)))
+                if let w = unproject(q), let k = data?.country(lon: w.lon, lat: w.lat) { return k }
+            }
+        }
+        return nil
     }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
@@ -494,20 +514,20 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard let k = shown ?? selected, let data else { return }
         let name = Self.short(data.countries[k].n).uppercased()
         let persian = style == .persian
+        guard let face = faces["selected"] else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        selectedLetters.string = NSAttributedString(string: name, attributes: Self.attributes(.selected, persian, labelScale))
-        selectedLabel.string = persian ? nil : NSAttributedString(string: name, attributes: Self.attributes(.halo, persian, labelScale))
+        selectedLetters.string = NSAttributedString(string: name, attributes: Self.attributes(face, labelScale))
+        selectedLabel.string = persian ? nil : NSAttributedString(string: name, attributes: Self.attributes(face, labelScale, silhouette: true))
         let size = selectedLetters.preferredFrameSize()
-        let pad = persian ? CGSize(width: 14, height: 7) : CGSize(width: 4, height: 2)
+        let pad = persian ? CGSize(width: 14 * labelScale, height: 7 * labelScale) : CGSize(width: 4, height: 2)
         selectedLabel.bounds = CGRect(x: 0, y: 0, width: ceil(size.width) + pad.width, height: ceil(size.height) + pad.height)
         selectedLetters.frame = persian ? CGRect(x: pad.width / 2, y: pad.height / 2, width: ceil(size.width), height: ceil(size.height))
                                         : selectedLabel.bounds
-        selectedLabel.backgroundColor = persian ? UIColor(red: 0xF7 / 255, green: 0xF0 / 255, blue: 0xDF / 255, alpha: 1).cgColor : nil
+        selectedLabel.backgroundColor = persian ? UIColor(hex: face.halo)?.cgColor : nil
         selectedLabel.borderColor = UIColor(red: 0xA8 / 255, green: 0x89 / 255, blue: 0x4F / 255, alpha: 1).cgColor
         selectedLabel.borderWidth = persian ? 1.2 : 0
-        selectedLabel.shadowColor = persian ? UIColor(red: 0x2A / 255, green: 0x21 / 255, blue: 0x19 / 255, alpha: 1).cgColor
-                                            : UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1).cgColor
+        selectedLabel.shadowColor = UIColor(hex: persian ? face.ink : face.halo)?.cgColor
         selectedLabel.shadowOpacity = persian ? 0.22 : 0.8
         selectedLabel.shadowRadius = persian ? 1.5 : 2
         selectedLabel.shadowOffset = persian ? CGSize(width: 0, height: 0.5) : .zero
@@ -550,6 +570,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             roomMeasured = false
             measureRoom()
         }
+        // (a screen of another size reads at another scale)
+        if abs(labelScale - letteredScale) > 0.001 { relabel() }
         needsDraw = true
     }
 
@@ -622,87 +644,69 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     // MARK: the names
 
-    private enum Style { case country, sea, ocean, capital, selected, halo }
+    /// The style's faces (Globe/type.json).
+    private var faces: [String: GlobeType.Face] { GlobeType.shared?.styles[style.rawValue]?.names ?? [:] }
 
-    /// The names' type at 1x (`scale` multiplies it). Every name's ink is at least 4.5:1 against its
-    /// halo (CLAUDE.md › Text on the map).
-    private static func attributes(_ style: Style, _ persian: Bool, _ scale: CGFloat) -> [NSAttributedString.Key: Any] {
-        func font(_ name: String, _ size: CGFloat) -> UIFont { UIFont(name: name, size: size * scale) ?? .systemFont(ofSize: size * scale) }
-        func ink(_ hex: UInt32) -> [NSAttributedString.Key: Any] {
-            let c = UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
-            // UIKit's key for measuring, Core Text's for drawing
-            return [.foregroundColor: c, NSAttributedString.Key(kCTForegroundColorAttributeName as String): c.cgColor]
+    /// A face's attributes at `scale`. `silhouette`: the same letters filled and stroked thickly (a
+    /// negative width does both) in the face's halo, Wikipedia's red under the chosen name.
+    private static func attributes(_ face: GlobeType.Face, _ scale: CGFloat, silhouette: Bool = false) -> [NSAttributedString.Key: Any] {
+        let size = CGFloat(face.size) * scale
+        let font = UIFont(name: face.font, size: size) ?? .systemFont(ofSize: size)
+        let ink = UIColor(hex: silhouette ? face.halo : face.ink) ?? .black
+        // UIKit's key for measuring, Core Text's for drawing
+        var a: [NSAttributedString.Key: Any] = [.font: font, .kern: CGFloat(face.tracking) * size, .foregroundColor: ink,
+                                                NSAttributedString.Key(kCTForegroundColorAttributeName as String): ink.cgColor]
+        if silhouette {
+            a[.strokeWidth] = -18.0
+            a[.strokeColor] = ink
+            a[NSAttributedString.Key(kCTStrokeColorAttributeName as String)] = ink.cgColor
         }
-        if persian {
-            // ink and lapis, in Libertinus throughout (Uncial is the Kells')
-            switch style {
-            case .country: return ink(0x4A3D2E).merging([.font: font("LibertinusSerif-Regular", 10), .kern: 0.9 * scale]) { a, _ in a }
-            case .sea: return ink(0x4E5B9B).merging([.font: font("LibertinusSerif-Italic", 10), .kern: 0.3 * scale]) { a, _ in a }
-            case .ocean: return ink(0x4E5B9B).merging([.font: font("LibertinusSerif-Italic", 11.5), .kern: 2.4 * scale]) { a, _ in a }
-            case .capital: return ink(0x4A3D2E).merging([.font: font("LibertinusSerif-Italic", 10)]) { a, _ in a }
-            case .selected, .halo: return ink(0x2A2119).merging([.font: font("LibertinusSerif-Semibold", 12), .kern: 1.0 * scale]) { a, _ in a }
-            }
-        }
-        switch style {
-        case .country: return ink(0x5F5A51).merging([.font: font("LibertinusSerif-Regular", 10), .kern: 0.9 * scale]) { a, _ in a }
-        case .sea: return ink(0x2B6C9A).merging([.font: font("UncialAntiqua-Regular", 10), .kern: 0.4 * scale]) { a, _ in a }
-        case .ocean: return ink(0x2A6A99).merging([.font: font("UncialAntiqua-Regular", 11), .kern: 1.2 * scale]) { a, _ in a }
-        case .capital: return ink(0x4A463F).merging([.font: font("LibertinusSerif-Italic", 10)]) { a, _ in a }
-        case .selected: return ink(0xFFF7EA).merging([.font: font("LibertinusSerif-Semibold", 12), .kern: 1.0 * scale]) { a, _ in a }
-        case .halo:
-            // the same letters filled and stroked thickly (a negative width does both) in the red
-            let red = UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1)
-            return ink(0xB02232).merging([.font: font("LibertinusSerif-Semibold", 12), .kern: 1.0 * scale, .strokeWidth: -18.0,
-                                          .strokeColor: red,
-                                          NSAttributedString.Key(kCTStrokeColorAttributeName as String): red.cgColor]) { a, _ in a }
-        }
+        return a
     }
 
-    /// How much larger the names are than at 1x: on an iPad, and with the reader's text size (to
-    /// half as large again; fewer names then fit, and the order of claim decides which).
+    /// How much larger than at 1x lines and names are drawn on this screen: a larger one is held
+    /// further away (`GlobeType.readingScale`).
+    private var reading: CGFloat {
+        let side = min(bounds.width, bounds.height)
+        return CGFloat(GlobeType.shared?.readingScale(shortSide: Double(side > 0 ? side : 400)) ?? 1)
+    }
+
+    /// The names' scale: the screen's reading scale, and the reader's text size (up to `readerMax`;
+    /// fewer names then fit, and the order of claim decides which).
     private var labelScale: CGFloat {
-        let pad: CGFloat = traitCollection.userInterfaceIdiom == .pad ? 1.15 : 1
         let reader = UIFontMetrics(forTextStyle: .footnote).scaledValue(for: 10, compatibleWith: traitCollection) / 10
-        return pad * min(max(reader, 1), 1.5)
+        return reading * min(max(reader, 1), CGFloat(GlobeType.shared?.readerMax ?? 1.5))
     }
+    /// The scale the names were last lettered at.
+    private var letteredScale: CGFloat = 0
 
-    /// A name's halo: the ground's tone round its letters, so no line crosses them (points each side);
-    /// and the room left between two names.
-    private static let halo: CGFloat = 1.5
-    private static let gap: CGFloat = 4
+    /// Points round a name's letters in its halo.
+    private var halo: CGFloat { CGFloat(GlobeType.shared?.halo ?? 1.5) * labelScale }
 
-    /// The tone of a name's ground, for its halo: the sea's or the land's, in the style.
-    private static func haloColour(_ kind: Kind, _ persian: Bool) -> CGColor {
-        let hex: UInt32 = kind == .sea ? (persian ? 0xE7EBF1 : 0xDDF3FD) : (persian ? 0xF1EBD6 : 0xF5EED8)
-        return UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 0.92).cgColor
-    }
-
-    /// A name's picture: its letters over their halo (a round-joined stroke of the ground's tone),
-    /// and a Persian capital's rosette left of them.
+    /// A name's picture: its letters over their halo (a round-joined stroke of the ground's tone,
+    /// so no line crosses them), and a Persian capital's rosette left of them.
     private func picture(of l: Label) -> CGImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = pixels
         format.opaque = false
-        let halo = Self.haloColour(l.kind, style == .persian)
-        let mark = l.mark ? rosette : nil
+        let halo = self.halo, mark = l.mark ? rosette : nil
         let image = UIGraphicsImageRenderer(size: l.size, format: format).image { context in
             let c = context.cgContext
             let line = CTLineCreateWithAttributedString(l.text)
             var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
             let width = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading))
             if let mark {
-                let m = Self.markSize * labelScale
-                c.draw(mark, in: CGRect(x: Self.halo + 1, y: (l.size.height - m) / 2, width: m, height: m))
+                c.draw(mark, in: CGRect(x: halo + 1, y: (l.size.height - l.markSize) / 2, width: l.markSize, height: l.markSize))
             }
             // Core Text draws with y up
             c.translateBy(x: 0, y: l.size.height)
             c.scaleBy(x: 1, y: -1)
             c.textMatrix = .identity
-            let origin = CGPoint(x: l.mark ? l.size.width - width - Self.halo - 1 : (l.size.width - width) / 2,
+            let origin = CGPoint(x: l.mark ? l.size.width - width - halo - 1 : (l.size.width - width) / 2,
                                  y: (l.size.height - ascent - descent) / 2 + descent)
             c.setLineJoin(.round)
-            c.setLineWidth(Self.halo * 2)
-            c.setStrokeColor(halo)
+            c.setLineWidth(halo * 2)
+            c.setStrokeColor((UIColor(hex: l.halo) ?? .white).withAlphaComponent(0.92).cgColor)
             c.setTextDrawingMode(.stroke)
             c.textPosition = origin
             CTLineDraw(line, c)
@@ -723,10 +727,6 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         layer.addSublayer(labelLayer)
         selectedLabel.alignmentMode = .center
         selectedLabel.isHidden = true
-        selectedLabel.shadowColor = UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1).cgColor
-        selectedLabel.shadowOpacity = 0.8
-        selectedLabel.shadowRadius = 2
-        selectedLabel.shadowOffset = .zero
         selectedLetters.alignmentMode = .center
         selectedRule.borderColor = UIColor(red: 0x4E / 255, green: 0x5B / 255, blue: 0x9B / 255, alpha: 1).cgColor
         selectedRule.borderWidth = 0.5
@@ -737,42 +737,43 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         makeLabels()
     }
 
-    /// The names, lettered in the style.
+    /// The names, lettered in the style's faces at the names' scale: oceans and seas, countries
+    /// (larger the more prominent), capitals.
     private func makeLabels() {
-        guard let data else { labels = []; return }
+        let faces = self.faces
+        guard let data, let type = GlobeType.shared else { labels = []; return }
         let persian = style == .persian
-        let scale = labelScale
-        func label(_ text: String, _ style: Style, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false) -> Label? {
-            guard c.count == 2 else { return nil }
-            let s = NSAttributedString(string: text, attributes: Self.attributes(style, persian, scale))
+        let scale = labelScale, halo = self.halo
+        letteredScale = scale
+        func label(_ text: String, _ key: String, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false) -> Label? {
+            guard c.count == 2, let face = faces[key] else { return nil }
+            let s = NSAttributedString(string: text, attributes: Self.attributes(face, scale))
             let size = s.size()
-            let room = 2 * Self.halo + 2
-            return Label(text: s, size: CGSize(width: ceil(size.width) + room + (mark ? Self.markWidth * scale : 0), height: ceil(size.height) + room),
-                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark)
+            let room = 2 * halo + 2
+            let markSize = CGFloat(face.size) * 0.9 * scale
+            return Label(text: s, size: CGSize(width: ceil(size.width) + room + (mark ? markSize * 1.33 : 0), height: ceil(size.height) + room),
+                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark, markSize: markSize,
+                         halo: face.halo, gap: CGFloat(type.gap * face.size) * scale)
         }
         // in the order they claim room: oceans, seas, countries, capitals
         var all: [Label?] = []
-        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, .ocean, s.c, .sea, i, from: 0)) }
+        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: 0)) }
         for (i, s) in data.seas.enumerated().sorted(by: { $0.element.r < $1.element.r }) where !s.ocean {
-            all.append(label(s.n, .sea, s.c, .sea, i, from: s.r + 2.5))
+            all.append(label(s.n, "sea", s.c, .sea, i, from: s.r + 2.5))
         }
         for (i, c) in data.countries.enumerated().sorted(by: { ($0.element.min, $0.element.r) < ($1.element.min, $1.element.r) }) {
-            all.append(label(Self.short(c.n).uppercased(), .country, c.c, .country, i, from: c.min + 0.5))
+            all.append(label(Self.short(c.n).uppercased(), type.countryFace(rank: c.r), c.c, .country, i, from: c.min + 0.5))
         }
         for (i, c) in data.capitals.enumerated().sorted(by: { ($0.element.r ?? 9) < ($1.element.r ?? 9) }) {
-            all.append(persian ? label(c.n, .capital, c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, mark: true)
-                               : label("· " + c.n, .capital, c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
+            all.append(persian ? label(c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, mark: true)
+                               : label("· " + c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
         }
         labels = all.compactMap { $0 }
     }
 
-    /// A Persian capital's rosette: its size, and the room it takes left of the name, in points.
-    private static let markSize: CGFloat = 9
-    private static let markWidth: CGFloat = 12
-
     /// Where on its picture a name is pinned to its place: the middle, or a capital's rosette.
     private func anchor(_ l: Label) -> CGPoint {
-        l.mark ? CGPoint(x: (Self.halo + 1 + Self.markSize * labelScale / 2) / l.size.width, y: 0.5) : CGPoint(x: 0.5, y: 0.5)
+        l.mark ? CGPoint(x: (halo + 1 + l.markSize / 2) / l.size.width, y: 0.5) : CGPoint(x: 0.5, y: 0.5)
     }
 
     /// Which names show (in their order of claim, where they face the viewer, the zoom has reached
@@ -784,7 +785,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let level = log2(2 * .pi * radius / 256) + 1.2      // the web-map zoom the globe is drawn at
         var placed: [CGRect] = []
         let fade = min(1, dt * 10)
-        let clear = keepClear.map { $0.insetBy(dx: -Self.gap, dy: -Self.gap) }
+        let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
+        let clear = keepClear.map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func fits(_ r: CGRect) -> Bool {
@@ -804,7 +806,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             let r = selectedLabel.bounds.offsetBy(dx: p.x - selectedLabel.bounds.width / 2, dy: p.y - selectedLabel.bounds.height / 2)
             if facing > (selectedAlpha > 0.5 ? 0.2 : 0.3), !clear.contains(where: { $0.intersects(r) }) {
                 selectedTarget = 1
-                placed.append(r.insetBy(dx: -Self.gap / 2, dy: -Self.gap / 2))
+                placed.append(r.insetBy(dx: -gap / 2, dy: -gap / 2))
             }
             selectedLabel.position = p
         }
@@ -822,8 +824,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 if facing > (l.alpha > 0.5 ? 0.3 : 0.4) {
                     let a = anchor(l)
                     let r = CGRect(x: p.x - l.size.width * a.x, y: p.y - l.size.height / 2, width: l.size.width, height: l.size.height)
-                    if fits(r) {
-                        placed.append(r.insetBy(dx: -Self.gap / 2, dy: -Self.gap / 2))
+                    let g = r.insetBy(dx: -l.gap / 2, dy: -l.gap / 2)
+                    if fits(g) {
+                        placed.append(g)
                         target = 1
                     }
                 }

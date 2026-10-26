@@ -20,21 +20,28 @@ finished picture in the chosen look. This file is the map and the rules.
   - `AtlasScreen`: SwiftUI around it.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
 - **The globe** (`App/TerraIncognita/Globe/`, the button beside the look menu): the whole Earth
-  drawn live, in the colours of Wikipedia's location maps (WikiProject Maps), a little prettier.
+  drawn live, in two styles chosen from the palette menu (kept between launches, `globeStyle`):
+  Wikipedia's location-map colours (WikiProject Maps), a little prettier, and the Persian, the same
+  map in colours and a frame studied from a 1529 Persian manuscript (`Globe.metal`'s `P_` palette).
+  A change of style crossfades.
   - `Globe.metal`: one fragment per pixel inverts the orthographic projection and samples the
-    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom.
-    `tools/globe/preview.py` is the same, line for line, in numpy: change both together, and look at
-    the preview before CI.
+    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; both
+    styles, mixed by the style uniform. `tools/globe/preview.py` is the same, line for line, in
+    numpy (`--style persian`; iPad-sized by default): change both together, and look at the preview
+    before CI.
   - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
-    tapping a country (the locator's red, from the country map `ids.png`), the names (CATextLayers
-    placed as the camera moves, in order of claim: oceans, seas, countries, capitals; none
-    overlapping, none past the globe's edge). `GlobeScreen`: its caption. Made the first time it is
+    tapping a country (lit from the country map `ids.png`), the names (pictures with their halos
+    drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
+    the Persian style, a headpiece with the name in its cartouche). Made the first time it is
     opened and kept (its maps decoded once), paused while the film shows.
   - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.
-  - Debug builds take `-globe` (open on it), `-globe-at lon lat zoom` (held there) and
-    `-globe-select <name>`.
+    The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
+    `tools/globe/ornament.py` (its docstring is their layout; no source image is used), and
+    `type.json` is the type (Design rules).
+  - Debug builds take `-globe` (open on it), `-globeStyle wikipedia|persian`, `-globe-at lon lat
+    zoom` (held there) and `-globe-select <name>`.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
@@ -65,26 +72,41 @@ finished picture in the chosen look. This file is the map and the rules.
     branch. CI owns that branch.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
 
-## Text on the map
+## Design rules
 
-Every name must be readable on the device it is on (the iPad first, then the iPhone). The rules,
-built into `GlobeView`'s names and mirrored by `tools/globe/preview.py`:
+The globe is for reading, on the iPad first, then the iPhone. The numbers live in one spec,
+`Globe/type.json`, which `GlobeView` and `GlobeScreen` read, `tools/globe/preview.py` mirrors, and
+`ci/check_globe.py` holds to these rules (fonts bundled, sizes, contrast): change the spec, not the
+code, and let the check tell you when a choice breaks a rule.
 
-- **Halo.** Every name sits on a halo of its ground's tone (the sea's or the land's, 1.5 pt each
-  side, round-joined), so no coast, border or graticule line crosses a letter.
-- **Contrast.** A name's ink is at least 4.5:1 against its halo (WCAG AA for small text); the
-  caption's lines against their panel too. Check a new colour before using it.
-- **Readable or not shown.** A name is fully opaque or absent; it fades only in time (a tenth of a
-  second or so), never as a steady half-tone because of where it is. Its cut-off near the limb has
-  slack (shown above 0.4 of facing, kept down to 0.3), so it doesn't flicker there.
-- **On its ground.** A name lies wholly on the globe (none spills onto the frame or the paper) and
-  wholly on screen, and never under the caption or the buttons (`GlobeView.keepClear`).
-- **Room.** At least 4 pt between any two names, halos included. The order of claim decides which
-  stay: the chosen country, oceans, seas, countries, capitals.
-- **Size.** Names are at least 10 pt (oceans 11), 15 % larger on the iPad, and grow with the
-  reader's text size up to half as large again; fewer then fit, and the order of claim decides.
-- **Language.** Real names in English, set in Libertinus (Uncial only for Wikipedia's seas, a
-  Kells touch); capitals letter-spaced; no invented or decorative script.
+- **Scale for the reader's eye, not the pixels.** A larger screen is held further away and its
+  points are physically larger, so lines and names are drawn at a reading scale that grows with
+  the screen's shorter side (1.0 on a phone, 1.2 on the 13-inch iPad; `reading` in the spec). It
+  multiplies the names, their halos and gaps, the touch reach, and every line's width (the shader's
+  pixels per point are pixels per reading point). The reader's text size enlarges the names on
+  top, up to 1.5×. Captions follow the reader's text size only (as system text does) and run at
+  most 560 pt wide, a readable line.
+- **Hierarchy by importance.** Oceans, then seas, then countries in three sizes by label rank (the
+  most prominent largest), then capitals; claimed in that order, so when room runs short the less
+  important names give way first, never the other way round.
+- **Every name on a halo of its ground.** The sea's or the land's tone, round-joined, 1.5 reading
+  points each side, so no coast, border or graticule line crosses a letter.
+- **Contrast.** Every ink at least 4.5:1 against what is round it (WCAG AA for small text): a name's
+  halo, a caption's ground, the cartouche's gold. The check computes it.
+- **Readable or not shown.** A name is fully opaque or absent; it fades only in time, never as a
+  steady half-tone because of where it is. Its cut-off near the limb has slack (shown above 0.4 of
+  facing, kept down to 0.3), so it doesn't flicker there. Nothing is under 10 pt; a title shrinking
+  to fit stops at 13 pt (the cartouche letters the shorter name, so it rarely needs to).
+- **On its ground, with room.** A name lies wholly on the globe and on screen, never on the frame,
+  the paper, the caption or the buttons (`GlobeView.keepClear`), and keeps 0.4 of its size clear
+  of any other.
+- **The globe fills its room.** As large as the space between the buttons and the caption allows,
+  frame included; that space is measured when the screen's size or the style changes, never when a
+  caption's text does, so a tap never moves the globe.
+- **Touch.** A tap on the sea within 10 reading points of a country chooses it: small islands and
+  states are smaller than a fingertip.
+- **Language.** Real names in English, in Libertinus (Uncial only for Wikipedia's seas); capitals
+  letter-spaced; no invented or decorative script.
 
 ## Rules
 

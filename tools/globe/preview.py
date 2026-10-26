@@ -14,6 +14,13 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
 G = ROOT / 'Globe'
+TYPE = json.loads((G / 'type.json').read_text())       # the type and its scale (GlobeType)
+
+
+def reading(w, h):
+    """The scale lines and names are drawn at on a w x h point screen (GlobeType.readingScale)."""
+    (s0, s1), (f0, f1) = TYPE['reading']['shortSide'], TYPE['reading']['factor']
+    return f0 + (f1 - f0) * min(max((min(w, h) - s0) / (s1 - s0), 0), 1)
 
 
 def hexc(s):
@@ -64,7 +71,7 @@ def layout(w, h, persian=False):
     top = buttons_box(w, h)[3]
     bottom = caption_box(w, h)[1] if persian else h - (20 if min(w, h) >= 700 else 34) - 150
     half = min(w, bottom - top) / 2 - 14
-    return w / 2, (top + bottom) / 2, half / 1.1475 if persian else half - 11
+    return w / 2, (top + bottom) / 2, half / 1.1475 if persian else half - 11 * reading(w, h)
 
 
 def rotation(lon0, lat0):
@@ -253,6 +260,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     ter = np.asarray(Image.open(G / 'terrain.png'))[..., :3]
     ids = np.asarray(Image.open(G / 'ids.png'))
     W, H = int(w * scale), int(h * scale)
+    ls = scale * reading(w, h)                          # pixels per reading point: lines' widths
     cx, cy, r0 = layout(w, h, persian)
     R = r0 * zoom * scale
     px, py = np.meshgrid(np.arange(W) + 0.5, np.arange(H) + 0.5)
@@ -266,19 +274,19 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     sh = np.exp(-np.maximum(np.hypot(x, y + 0.035) - 0.985, 0) ** 2 / 0.0035) * (rr > 0.97)
     page = mix(page, SHADOW, 0.16 * sh)
     ring_on = 1 - smoothstep(1.25, 1.7, zoom)
-    ringpx = (rr - 1) * R / scale                   # points outside the globe's edge
+    ringpx = (rr - 1) * R / ls                   # points outside the globe's edge
     gold = np.zeros_like(rr)
     for at, wd in ((6.5, 1.1), (10.0, 0.7)):
-        gold = np.maximum(gold, line(ringpx - at, wd * scale))
+        gold = np.maximum(gold, line(ringpx - at, wd * ls))
     ang = np.degrees(np.arctan2(x, y)) % 360
-    tick = line(((ang + 5) % 10) - 5, 0.9 * scale, np.degrees(1 / np.maximum(rr * R, 1))) * ((ringpx > 7) & (ringpx < 9.6))
+    tick = line(((ang + 5) % 10) - 5, 0.9 * ls, np.degrees(1 / np.maximum(rr * R, 1))) * ((ringpx > 7) & (ringpx < 9.6))
     dots = np.zeros_like(rr)
     for a in range(0, 360, 90):                     # the four quarters: three little dots, Kells-fashion
         for da, dr in ((0, 8.25), (-1.5, 8.25), (1.5, 8.25)):
             t = np.radians(a + da)
-            dx = cx * scale + np.sin(t) * (R + dr * scale) - px
-            dy = cy * scale - np.cos(t) * (R + dr * scale) - py
-            dots = np.maximum(dots, 1 - smoothstep(1.1 * scale, 1.9 * scale, np.hypot(dx, dy)))
+            dx = cx * scale + np.sin(t) * (R + dr * ls) - px
+            dy = cy * scale - np.cos(t) * (R + dr * ls) - py
+            dots = np.maximum(dots, 1 - smoothstep(1.1 * ls, 1.9 * ls, np.hypot(dx, dy)))
     page = mix(page, GOLD, np.clip(np.maximum(np.maximum(gold, tick * 0.8), dots), 0, 1) * ring_on)
     if persian:
         page = persian_page(px, py, x, y, rr, R, W, H, grain)
@@ -329,32 +337,32 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     glat, glon = np.degrees(lat), np.degrees(lon)
     fwlat = fwidth(glat)
     fwlon = np.minimum(fwidth(glon), fwidth(glon % 360))     # the antimeridian's jump, or 0's
-    gl = np.maximum(line(((glat + 7.5) % 15) - 7.5, 0.6 * scale, fwlat),
-                    line(((glon + 7.5) % 15) - 7.5, 0.6 * scale, fwlon) * (np.abs(glat) < 75))
+    gl = np.maximum(line(((glat + 7.5) % 15) - 7.5, 0.6 * ls, fwlat),
+                    line(((glon + 7.5) % 15) - 7.5, 0.6 * ls, fwlon) * (np.abs(glat) < 75))
     # the selected country (the shader: gather, then bilinear)
     m = sample((ids == selected).astype(np.float32), u, v)[..., 0] if selected else np.zeros_like(u)
     if persian:
-        col = persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined)
+        col = persian_globe(ls, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined)
     else:
         # the sea: deeper is a little bluer, with a faint watercolour mottle and lines along the coasts
         sea = mix(OCEAN_SHALLOW, OCEAN_DEEP, depth)
         sea = sea * (0.985 + 0.03 * mott)[..., None]
         for at, a in ((-6, 0.15), (-13, 0.08)):
-            sea = mix(sea, COAST, a * line(fine - at, 0.7 * scale) * ((fine < -2) & (fine > -15.5)))
+            sea = mix(sea, COAST, a * line(fine - at, 0.7 * ls) * ((fine < -2) & (fine > -15.5)))
         # the land: cream, warmer up high, the relief shaded from the north-west
         land = mix(LAND, HIGHLAND, 0.85 * smoothstep(250, 3200, hm))
         land = land * (1 + 0.30 * hill)[..., None]
-        land = mix(land, RIVER, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * lined(river))
+        land = mix(land, RIVER, 0.75 * line(river, 0.65 * ls) * smoothstep(1.2, 2.2, k) * lined(river))
         # the selected country over its rivers, as a locator map has it; its borders drawn on top
         land = mix(land, LOCATOR * (1 + 0.12 * hill)[..., None], 0.94 * m)
-        land = mix(land, BORDER, 0.8 * line(border, 0.7 * scale) * lined(border))
+        land = mix(land, BORDER, 0.8 * line(border, 0.7 * ls) * lined(border))
         col = mix(sea, land, landa)
-        col = mix(col, COAST, line(d, 0.9 * scale * min(k ** 0.25, 1.4)))
+        col = mix(col, COAST, line(d, 0.9 * ls * min(k ** 0.25, 1.4)))
         # the graticule, every 15 degrees
         col = mix(col, COAST, gl * np.where(landa > 0.5, 0.10, 0.16))
         # roundness: the limb a little shaded; the rim drawn
         col = col * (1 - 0.07 * (1 - z) ** 2)[..., None]
-        col = mix(col, COAST, line((rr - 1) * R, 1.2 * scale))
+        col = mix(col, COAST, line((rr - 1) * R, 1.2 * ls))
     edge = smoothstep(1 + 0.5 / R, 1 - 0.5 / R, rr)
     out = np.where(inside[..., None], mix(page, col, edge), page)
     return Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8), 'RGB'), (cx, cy, r0 * zoom, M)
@@ -365,85 +373,93 @@ def short(name):
 
 
 def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=()):
-    """The app's names (GlobeView, CLAUDE.md › Text on the map): the selected country, oceans and
-    seas, then countries and capitals, in that order of claim; each on a halo of its ground's tone,
-    wholly on the globe and on screen, clear of `keep_clear` (x0, y0, x1, y1 in points) and 4 pt
-    from any other; 15 % larger on an iPad-sized screen."""
+    """The app's names (GlobeView, CLAUDE.md › Design rules), in the faces of Globe/type.json at the
+    screen's reading scale: the selected country, oceans and seas, then countries (larger the more
+    prominent) and capitals, in that order of claim; each on a halo of its ground's tone, wholly on
+    the globe and on screen, clear of `keep_clear` (x0, y0, x1, y1 in points) and its gap from any
+    other."""
     cx, cy, R, M = geom
     data = json.loads((G / 'globe.json').read_text())
-    f = G / 'fonts'
-    k = 1.15 if min(w, h) >= 700 else 1.0
-    font = lambda name, size: ImageFont.truetype(str(f / name), int(round(size * k * scale)))
-    if persian:
-        country, capital = font('LibertinusSerif-Regular.otf', 10), font('LibertinusSerif-Italic.otf', 10)
-        ocean, sea = font('LibertinusSerif-Italic.otf', 11.5), font('LibertinusSerif-Italic.otf', 10)
-        sel = font('LibertinusSerif-Semibold.otf', 12)
-        ink, blue = hexc('#4A3D2E'), P_LAPIS
-        land_halo, sea_halo = hexc('#F1EBD6'), hexc('#E7EBF1')
-    else:
-        country, capital = font('LibertinusSerif-Regular.otf', 10), font('LibertinusSerif-Italic.otf', 10)
-        ocean, sea = font('UncialAntiqua-Regular.ttf', 11), font('UncialAntiqua-Regular.ttf', 10)
-        sel = font('LibertinusSerif-Semibold.otf', 12)
-        ink, blue = hexc('#5F5A51'), hexc('#2B6C9A')
-        land_halo, sea_halo = LAND, OCEAN_SHALLOW
+    faces = TYPE['styles']['persian' if persian else 'wikipedia']['names']
+    k = reading(w, h)
+    fonts = {}
+
+    def font(face):
+        key = (face['font'], face['size'])
+        if key not in fonts:
+            path = next(G / 'fonts' / (face['font'] + ext) for ext in ('.otf', '.ttf') if (G / 'fonts' / (face['font'] + ext)).exists())
+            fonts[key] = ImageFont.truetype(str(path), int(round(face['size'] * k * scale)))
+        return fonts[key]
+
+    def tier(r):
+        t = TYPE['countryTiers']
+        return 'country1' if r <= t[0] else 'country2' if r <= t[1] else 'country3'
     draw = ImageDraw.Draw(img)
     placed = [tuple(v * scale for v in r) for r in keep_clear]
-    halo, gap = 1.5 * scale, 4 * scale
+    halo = TYPE['halo'] * k * scale
     col = lambda c: tuple(int(255 * v) for v in c)
 
-    def put(text, lon, lat, font, colour, ground, tracking=False, panel=False, mark=False):
+    def put(text, lon, lat, face, panel=False, mark=False, silhouette=False):
         la, lo = np.radians(lat), np.radians(lon)
         wv = np.array([np.cos(la) * np.sin(lo), np.sin(la), np.cos(la) * np.cos(lo)])
         vx, vy, vz = M.T @ wv
         if vz < 0.4:                                    # (the app keeps a shown name down to 0.3)
             return
+        f = font(face)
         sx, sy = (cx + vx * R) * scale, (cy - vy * R) * scale
-        text = '\u2009'.join(text) if tracking else text
-        bb = draw.textbbox((0, 0), text, font=font)
-        tw, th = bb[2] - bb[0], bb[3] - bb[1]
-        mk = 12 * k * scale if mark else 0              # the capital's rosette, left of its name, on the city
-        pad = 5 * scale if panel else halo + scale
-        x0 = sx - (halo + scale + 4.5 * k * scale) if mark else sx - tw / 2 - pad
-        box = (x0, sy - th / 2 - pad, x0 + tw + mk + 2 * pad, sy + th / 2 + pad)
-        Rpx = R * scale
+        spacing = face['tracking'] * face['size'] * k * scale
+        widths = [draw.textlength(ch, font=f) for ch in text]
+        tw = sum(widths) + spacing * (len(text) - 1)
+        bb = draw.textbbox((0, 0), text, font=f)
+        th = bb[3] - bb[1]
+        mk = face['size'] * 0.9 * k * scale            # a capital's rosette, left of its name, on the city
+        pad = (5 if panel else 0) * k * scale + halo + scale
+        x0 = sx - (halo + scale + mk / 2) if mark else sx - tw / 2 - pad
+        box = (x0, sy - th / 2 - pad, x0 + tw + (mk * 1.33 if mark else 0) + 2 * pad, sy + th / 2 + pad)
         far = max(np.hypot(bx - cx * scale, by - cy * scale) for bx in (box[0], box[2]) for by in (box[1], box[3]))
-        if far >= Rpx * 0.99 or box[0] < 0 or box[1] < 0 or box[2] > w * scale or box[3] > h * scale:
+        if far >= R * scale * 0.99 or box[0] < 0 or box[1] < 0 or box[2] > w * scale or box[3] > h * scale:
             return
-        g = (box[0] - gap / 2, box[1] - gap / 2, box[2] + gap / 2, box[3] + gap / 2)
+        gap = TYPE['gap'] * face['size'] * k * scale / 2
+        g = (box[0] - gap, box[1] - gap, box[2] + gap, box[3] + gap)
         if any(not (g[2] < b[0] or g[0] > b[2] or g[3] < b[1] or g[1] > b[3]) for b in placed):
             return
         placed.append(g)
+        ink, ground = hexc(face['ink']), hexc(face['halo'])
         if panel:                                       # a quiet text panel, ruled in gold and lapis
-            draw.rectangle(box, fill=col(hexc('#F7F0DF')), outline=col(P_GOLD), width=max(1, int(1.2 * scale)))
+            draw.rectangle(box, fill=col(ground), outline=col(P_GOLD), width=max(1, int(1.2 * scale)))
             i = 2.2 * scale
             draw.rectangle((box[0] + i, box[1] + i, box[2] - i, box[3] - i), outline=col(P_LAPIS), width=max(1, int(0.5 * scale)))
         if mark:
-            rs = picture('rosette.png', (9 * k * scale, 9 * k * scale), stand_in_rosette)
+            rs = picture('rosette.png', (mk, mk), stand_in_rosette)
             rs = np.concatenate([rs[..., :3] / np.maximum(rs[..., 3:], 1e-4), rs[..., 3:]], -1)   # straight again for PIL
             ri = Image.fromarray((np.clip(rs, 0, 1) * 255).astype(np.uint8), 'RGBA')
             img.paste(ri, (int(sx - ri.size[0] / 2), int(sy - ri.size[1] / 2)), ri)
-        tx = box[0] + pad + mk
+        x = box[0] + pad + (mk * 1.33 if mark else 0)
         ty = sy - th / 2 - bb[1]
-        if not panel:
-            draw.text((tx, ty), text, font=font, fill=col(colour), stroke_width=int(round(halo)), stroke_fill=col(ground))
-        draw.text((tx, ty), text, font=font, fill=col(colour))
+        for passes in ((['halo', 'ink'] if not panel else ['ink']) if not silhouette else ['silhouette', 'ink']):
+            xx = x
+            for ch, cw in zip(text, widths):
+                if passes == 'halo':
+                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=int(round(halo)), stroke_fill=col(ground))
+                elif passes == 'silhouette':
+                    draw.text((xx, ty), ch, font=f, fill=col(ground), stroke_width=int(round(2.2 * k * scale)), stroke_fill=col(ground))
+                else:
+                    draw.text((xx, ty), ch, font=f, fill=col(ink))
+                xx += cw + spacing
 
     level = np.log2(2 * np.pi * R / 256) + 1.2      # the web-map zoom the globe is drawn at
     for i, c in enumerate(data['countries']):
         if i + 1 == selected:
-            if persian:
-                put(short(c['n']).upper(), *c['c'], sel, P_INK, None, panel=True)
-            else:
-                put(short(c['n']).upper(), *c['c'], sel, hexc('#FFF7EA'), hexc('#B02232'))
+            put(short(c['n']).upper(), *c['c'], faces['selected'], panel=persian, silhouette=not persian)
     for s in sorted(data['seas'], key=lambda s: (not s['ocean'], s['r'])):
         if s['ocean'] or s['r'] <= level - 2.5:
-            put(s['n'], *s['c'], ocean if s['ocean'] else sea, blue, sea_halo, tracking=persian and s['ocean'])
+            put(s['n'], *s['c'], faces['ocean' if s['ocean'] else 'sea'])
     for i, c in sorted(enumerate(data['countries']), key=lambda ic: (ic[1]['min'], ic[1]['r'])):
         if c['min'] <= level - 0.5 and i + 1 != selected:
-            put(short(c['n']).upper(), *c['c'], country, ink, land_halo)
+            put(short(c['n']).upper(), *c['c'], faces[tier(c['r'])])
     for c in sorted(data['capitals'], key=lambda c: c.get('r') or 9):
         if level >= 5.6 + (c.get('r') or 5) * 0.25:
-            put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], capital, ink, land_halo, mark=persian)
+            put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], faces['capital'], mark=persian)
 
 
 CAPTION_WIDTH = 560                                    # the caption's widest, in points (a readable line)
@@ -472,7 +488,7 @@ def persian_caption(img, w, h, scale, selected):
     data = json.loads((G / 'globe.json').read_text())
     if selected:
         c = data['countries'][selected - 1]
-        title, eyebrow = c.get('long') or c['n'], (c.get('sub') or c.get('cont') or '')
+        title, eyebrow = short(c['n']), (c.get('sub') or c.get('cont') or '')
         facts = []
         if c.get('cap'):
             facts.append('Capital ' + c['cap'])
@@ -500,13 +516,14 @@ def persian_caption(img, w, h, scale, selected):
     hp = np.concatenate([head[..., :3] / np.maximum(head[..., 3:], 1e-4), head[..., 3:]], -1)
     hi = Image.fromarray((np.clip(hp, 0, 1) * 255).astype(np.uint8), 'RGBA')
     img.paste(hi, (S(x0 + inset), S(y0 + inset)), hi)
-    # the name in the cartouche (its box: PersianCaption.cartouche), shrunk to fit
-    bx, by, bw, bh = 0.29, 0.2, 0.42, 0.6
-    size = 22.0
+    # the name in the cartouche (its face and box: type.json), shrunk to fit, to 0.55 of its size
+    cart = TYPE['styles']['persian']['cartouche']
+    bx, by, bw, bh = cart['box']
+    size = cart['size']
     while True:
-        tf = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), S(size))
+        tf = ImageFont.truetype(str(f / (cart['font'] + '.otf')), S(size))
         bb = d.textbbox((0, 0), title, font=tf)
-        if bb[2] - bb[0] <= bw * inner * scale or size <= 9:
+        if bb[2] - bb[0] <= bw * inner * scale or size <= cart['size'] * 0.55:
             break
         size -= 0.5
     cxp, cyp = S(x0 + inset + inner * (bx + bw / 2)), S(y0 + inset + head_h * (by + bh / 2))

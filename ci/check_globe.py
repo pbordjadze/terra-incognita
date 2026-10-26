@@ -7,8 +7,10 @@ globe.json has every field the app's decoder requires (App/TerraIncognita/Globe/
 missing one leaves the globe blank), the three maps are the sizes and kinds the shader and the tap
 lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
 (RGBA: the band 1536 x 256, the finial 256 x 256, the rosette 96 x 96, the caption's headpiece
-2048 x 256), no country index in globe.json exceeds what a grey byte holds, and the fonts are there
-with their licences. Reads PNG headers itself (no image library on the runner).
+2048 x 256), no country index in globe.json exceeds what a grey byte holds, the fonts are there
+with their licences, and the type (type.json) keeps the design rules: bundled fonts, no name under
+the smallest size, every ink at least the set contrast against its halo or ground. Reads PNG
+headers itself (no image library on the runner).
 """
 import json, os, struct, sys
 
@@ -85,6 +87,75 @@ for f in ('LibertinusSerif-Regular.otf', 'LibertinusSerif-Italic.otf', 'Libertin
           'UncialAntiqua-Regular.ttf', 'OFL-Libertinus.txt', 'OFL-UncialAntiqua.txt'):
     if not os.path.isfile(os.path.join(root, 'fonts', f)):
         err(f'fonts/{f} missing')
+
+# the type (type.json, CLAUDE.md › Design rules): every face's font bundled, every name at least the
+# smallest size, every ink against what is round it (a name's halo, a caption's ground, the
+# cartouche's gold) at least the contrast it sets
+def luminance(hexs):
+    c = [int(hexs.lstrip('#')[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+
+
+def contrast(a, b):
+    la, lb = luminance(a), luminance(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def font_file(name):
+    return any(os.path.isfile(os.path.join(root, 'fonts', name + ext)) for ext in ('.otf', '.ttf'))
+
+
+try:
+    t = json.load(open(os.path.join(root, 'type.json')), parse_constant=no_nan)
+except (OSError, ValueError) as e:
+    err(f'type.json: {e}')
+    t = {}
+for key, kind in (('reading', dict), ('readerMax', NUM), ('minSize', NUM), ('contrast', NUM), ('halo', NUM),
+                  ('gap', NUM), ('touch', NUM), ('countryTiers', list), ('styles', dict)):
+    if not isinstance(t.get(key), kind):
+        err(f'type.json: {key} missing or not {kind}')
+r = t.get('reading') or {}
+if not (isinstance(r.get('shortSide'), list) and len(r['shortSide']) == 2 and r['shortSide'][1] > r['shortSide'][0]
+        and isinstance(r.get('factor'), list) and len(r['factor']) == 2):
+    err('type.json: reading needs shortSide [small, large] and factor [at small, at large]')
+least, enough = t.get('minSize', 10), t.get('contrast', 4.5)
+NAMES = ('ocean', 'sea', 'country1', 'country2', 'country3', 'capital', 'selected')
+for sname, st in (t.get('styles') or {}).items():
+    names = st.get('names') or {}
+    for n in NAMES:
+        f = names.get(n)
+        if not isinstance(f, dict):
+            err(f'type.json {sname}: no face for {n}')
+            continue
+        if not font_file(f.get('font', '')):
+            err(f'type.json {sname} {n}: font {f.get("font")} not in fonts/')
+        if not isinstance(f.get('size'), NUM) or f['size'] < least:
+            err(f'type.json {sname} {n}: size {f.get("size")} under {least}')
+        try:
+            c = contrast(f['ink'], f['halo'])
+            if c < enough:
+                err(f'type.json {sname} {n}: {f["ink"]} on {f["halo"]} is {c:.2f}:1, under {enough}:1')
+        except (KeyError, ValueError, TypeError):
+            err(f'type.json {sname} {n}: ink and halo must be #RRGGBB')
+    cap, ground = st.get('caption') or {}, st.get('captionGround', '')
+    for line in ('eyebrow', 'title', 'text'):
+        l = cap.get(line)
+        if not isinstance(l, dict) or not font_file(l.get('font', '')):
+            err(f'type.json {sname}: caption {line} missing or its font not in fonts/')
+            continue
+        try:
+            c = contrast(l['color'], ground)
+            if c < enough:
+                err(f'type.json {sname}: caption {line} {l["color"]} on {ground} is {c:.2f}:1, under {enough}:1')
+        except (KeyError, ValueError, TypeError):
+            err(f'type.json {sname}: caption {line} color and captionGround must be #RRGGBB')
+    ca = st.get('cartouche')
+    if ca is not None:
+        if not font_file(ca.get('font', '')) or not (isinstance(ca.get('box'), list) and len(ca['box']) == 4):
+            err(f'type.json {sname}: cartouche needs a bundled font and a box [x, y, width, height]')
+        elif contrast(ca['ink'], ca['ground']) < enough or ca['size'] * 0.55 < least:
+            err(f'type.json {sname}: the cartouche title is too faint or, shrunk to 0.55, too small')
 
 size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(root) for f in fs)
 print(f'Globe: {len(data.get("countries") or [])} countries, {len(data.get("seas") or [])} seas, '

@@ -94,3 +94,73 @@ nonisolated struct GlobeData: Sendable {
         return true
     }()
 }
+
+/// The globe's type and its scale (Globe/type.json, CLAUDE.md › Design rules): the names' faces in
+/// each style, the captions', and how much larger everything is drawn on a larger screen.
+nonisolated struct GlobeType: Decodable, Sendable {
+    nonisolated struct Face: Decodable, Sendable {
+        let font: String
+        /// Points at reading scale 1.
+        let size: Double
+        /// A fraction of the size.
+        let tracking: Double
+        let ink: String
+        /// The tone round the letters: the ground's (a name), or the name's panel or silhouette (the
+        /// chosen country's).
+        let halo: String
+    }
+
+    nonisolated struct Cartouche: Decodable, Sendable {
+        let font: String
+        let size: Double
+        let ink: String
+        let ground: String
+        /// Where the title may go, as fractions of the headpiece: x, y, width, height.
+        let box: [Double]
+    }
+
+    nonisolated struct Style: Decodable, Sendable {
+        let names: [String: Face]
+        let caption: CaptionStyle
+        let captionGround: String
+        let cartouche: Cartouche?
+    }
+
+    nonisolated struct Reading: Decodable, Sendable {
+        /// Two screens' shorter sides, in points, and the scale each is drawn at.
+        let shortSide: [Double]
+        let factor: [Double]
+    }
+
+    let reading: Reading
+    /// The most the reader's text size enlarges the names.
+    let readerMax: Double
+    /// Points round a name's letters in its halo, and between two names as a fraction of the size.
+    let halo: Double
+    let gap: Double
+    /// How near, in points, a tap on the sea may be to a country to choose it.
+    let touch: Double
+    /// The label ranks up to which a country's name is set in the first and second sizes.
+    let countryTiers: [Double]
+    let styles: [String: Style]
+
+    static let shared: GlobeType? = {
+        guard let json = try? Data(contentsOf: GlobeData.root.appending(path: "type.json")) else { return nil }
+        return try? JSONDecoder().decode(GlobeType.self, from: json)
+    }()
+
+    /// The scale things are drawn at on a screen whose shorter side is `side` points: a larger
+    /// screen is held further away, so its names and lines are drawn larger.
+    func readingScale(shortSide side: Double) -> Double {
+        guard reading.shortSide.count == 2, reading.factor.count == 2, reading.shortSide[1] > reading.shortSide[0] else { return 1 }
+        let t = min(max((side - reading.shortSide[0]) / (reading.shortSide[1] - reading.shortSide[0]), 0), 1)
+        return reading.factor[0] + (reading.factor[1] - reading.factor[0]) * t
+    }
+
+    /// The key of a country's face, by its label rank: the more prominent, the larger.
+    func countryFace(rank: Double) -> String {
+        if let first = countryTiers.first, rank <= first { return "country1" }
+        if countryTiers.count > 1, rank <= countryTiers[1] { return "country2" }
+        return "country3"
+    }
+}

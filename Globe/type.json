@@ -1,0 +1,49 @@
+{
+  "about": "The globe's type and its scale: read by GlobeView and GlobeScreen, mirrored by tools/globe/preview.py, checked by ci/check_globe.py (CLAUDE.md › Design rules). Sizes are points at reading scale 1; a face's tracking is a fraction of its size.",
+  "reading": {"shortSide": [430, 1032], "factor": [1.0, 1.2]},
+  "readerMax": 1.5,
+  "minSize": 10,
+  "contrast": 4.5,
+  "halo": 1.5,
+  "gap": 0.4,
+  "touch": 10,
+  "countryTiers": [2, 3],
+  "styles": {
+    "wikipedia": {
+      "names": {
+        "ocean": {"font": "UncialAntiqua-Regular", "size": 11.5, "tracking": 0.1, "ink": "#2A6A99", "halo": "#DDF3FD"},
+        "sea": {"font": "UncialAntiqua-Regular", "size": 10, "tracking": 0.04, "ink": "#2B6C9A", "halo": "#DDF3FD"},
+        "country1": {"font": "LibertinusSerif-Regular", "size": 12, "tracking": 0.09, "ink": "#5F5A51", "halo": "#F5EED8"},
+        "country2": {"font": "LibertinusSerif-Regular", "size": 11, "tracking": 0.09, "ink": "#5F5A51", "halo": "#F5EED8"},
+        "country3": {"font": "LibertinusSerif-Regular", "size": 10, "tracking": 0.09, "ink": "#5F5A51", "halo": "#F5EED8"},
+        "capital": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0, "ink": "#4A463F", "halo": "#F5EED8"},
+        "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#FFF7EA", "halo": "#B02232"}
+      },
+      "caption": {
+        "eyebrow": {"font": "LibertinusSerif-Regular", "size": 12.5, "color": "#C12838", "tracking": 2.2, "uppercase": true},
+        "title": {"font": "LibertinusSerif-Semibold", "size": 30, "color": "#2A2925"},
+        "text": {"font": "LibertinusSerif-Italic", "size": 17, "color": "#5A564E"},
+        "scrim": "#F6F2E7F2"
+      },
+      "captionGround": "#F6F2E7"
+    },
+    "persian": {
+      "names": {
+        "ocean": {"font": "LibertinusSerif-Italic", "size": 12, "tracking": 0.2, "ink": "#4E5B9B", "halo": "#E7EBF1"},
+        "sea": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0.03, "ink": "#4E5B9B", "halo": "#E7EBF1"},
+        "country1": {"font": "LibertinusSerif-Regular", "size": 12, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
+        "country2": {"font": "LibertinusSerif-Regular", "size": 11, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
+        "country3": {"font": "LibertinusSerif-Regular", "size": 10, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
+        "capital": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0, "ink": "#4A3D2E", "halo": "#F1EBD6"},
+        "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#2A2119", "halo": "#F7F0DF"}
+      },
+      "caption": {
+        "eyebrow": {"font": "LibertinusSerif-Regular", "size": 12.5, "color": "#4E5B9B", "tracking": 2.2, "uppercase": true},
+        "title": {"font": "LibertinusSerif-Semibold", "size": 28, "color": "#2A2119"},
+        "text": {"font": "LibertinusSerif-Italic", "size": 17, "color": "#5A4E40"}
+      },
+      "captionGround": "#F7F0DF",
+      "cartouche": {"font": "LibertinusSerif-Semibold", "size": 24, "ink": "#2A2119", "ground": "#C9AE6A", "box": [0.29, 0.2, 0.42, 0.6]}
+    }
+  }
+}

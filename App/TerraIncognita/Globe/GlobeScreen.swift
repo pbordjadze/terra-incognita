@@ -50,7 +50,9 @@ struct GlobeScreen: View {
         var facts: [String] = []
         if let cap = c.cap { facts.append(String(localized: "Capital \(cap)")) }
         if let pop = c.pop, pop > 0 { facts.append(Self.people(pop)) }
-        return Plate.Caption(eyebrow: region, title: c.long ?? c.n, text: facts.joined(separator: " · "))
+        // (the Persian letters the shorter name, in the headpiece's cartouche)
+        let title = style == .persian ? (c.n == "United States of America" ? "United States" : c.n) : (c.long ?? c.n)
+        return Plate.Caption(eyebrow: region, title: title, text: facts.joined(separator: " · "))
     }
 
     /// "34 million people", to two figures.
@@ -62,32 +64,23 @@ struct GlobeScreen: View {
         return String(localized: "\(Int(n)) people")
     }
 
-    /// The caption in Libertinus, Wikipedia's serif, over the globe's paper; the eyebrow in the
-    /// locator's red.
-    static let style = CaptionStyle(
-        fonts: nil,
-        eyebrow: .init(font: "LibertinusSerif-Regular", size: 12.5, color: "#C12838", tracking: 2.2, uppercase: true, italic: nil),
-        title: .init(font: "LibertinusSerif-Semibold", size: 30, color: "#2A2925", tracking: nil, uppercase: nil, italic: nil),
-        text: .init(font: "LibertinusSerif-Italic", size: 17, color: "#5A564E", tracking: nil, uppercase: nil, italic: nil),
-        scrim: "#F6F2E7F2")
-
-    /// The Persian caption's type: the eyebrow in lapis, the title in the manuscript's ink.
-    static let persianStyle = CaptionStyle(
-        fonts: nil,
-        eyebrow: .init(font: "LibertinusSerif-Regular", size: 12.5, color: "#4E5B9B", tracking: 2.2, uppercase: true, italic: nil),
-        title: .init(font: "LibertinusSerif-Semibold", size: 28, color: "#2A2119", tracking: nil, uppercase: nil, italic: nil),
-        text: .init(font: "LibertinusSerif-Italic", size: 17, color: "#5A4E40", tracking: nil, uppercase: nil, italic: nil),
-        scrim: nil)
+    /// The captions' type in each style (Globe/type.json): Libertinus, Wikipedia's serif, over the
+    /// globe's paper, the eyebrow in the locator's red; in the Persian, the eyebrow in lapis and the
+    /// title in the manuscript's ink.
+    static let style = GlobeType.shared?.styles[GlobeStyle.wikipedia.rawValue]?.caption
+    static let persianStyle = GlobeType.shared?.styles[GlobeStyle.persian.rawValue]?.caption
 }
 
 /// The caption in the Persian style, as the manuscript opens its text: an illuminated headpiece with
 /// the title lettered in its gold cartouche, over a quiet panel ruled in gold, pink and lapis.
 private struct PersianCaption: View {
     let caption: Plate.Caption
-    /// The headpiece (Globe/headpiece.png), and the box inside its cartouche that the title may
-    /// fill, as fractions of it (tools/globe/ornament.py).
+    /// The headpiece (Globe/headpiece.png), and the title's face and the box inside the cartouche
+    /// it may fill, as fractions of the headpiece (Globe/type.json).
     static let headpiece = UIImage(contentsOfFile: GlobeData.root.appending(path: "headpiece.png").path(percentEncoded: false))
-    static let cartouche = CGRect(x: 0.29, y: 0.2, width: 0.42, height: 0.6)
+    static let face = GlobeType.shared?.styles[GlobeStyle.persian.rawValue]?.cartouche
+    static let cartouche = face.flatMap { $0.box.count == 4 ? CGRect(x: $0.box[0], y: $0.box[1], width: $0.box[2], height: $0.box[3]) : nil }
+        ?? CGRect(x: 0.29, y: 0.2, width: 0.42, height: 0.6)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -98,10 +91,10 @@ private struct PersianCaption: View {
                     .overlay {
                         GeometryReader { g in
                             Text(verbatim: caption.title)
-                                .font(.custom("LibertinusSerif-Semibold", size: 22, relativeTo: .title))
-                                .foregroundStyle(Color(red: 0x2A / 255, green: 0x21 / 255, blue: 0x19 / 255))
+                                .font(.custom(Self.face?.font ?? "LibertinusSerif-Semibold", size: Self.face?.size ?? 24, relativeTo: .title))
+                                .foregroundStyle(Color(uiColor: Self.face.flatMap { UIColor(hex: $0.ink) } ?? .black))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.4)
+                                .minimumScaleFactor(0.55)     // (24 pt down to 13: the longest short names on a phone)
                                 .frame(width: g.size.width * Self.cartouche.width, height: g.size.height * Self.cartouche.height)
                                 .position(x: g.size.width * Self.cartouche.midX, y: g.size.height * Self.cartouche.midY)
                         }
