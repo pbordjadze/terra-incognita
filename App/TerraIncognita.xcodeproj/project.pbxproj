@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		0B00000000000000000000F3 /* Atlas in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B06 /* Atlas */; };
+		0B00000000000000000000F4 /* Globe in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B07 /* Globe */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0B0000000000000000000B01 /* TerraIncognita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TerraIncognita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0B0000000000000000000B06 /* Atlas */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Atlas; path = ../Atlas; sourceTree = "<group>"; };
+		0B0000000000000000000B07 /* Globe */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Globe; path = ../Globe; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,6 +42,7 @@
 			children = (
 				0B0000000000000000000D01 /* TerraIncognita */,
 				0B0000000000000000000B06 /* Atlas */,
+				0B0000000000000000000B07 /* Globe */,
 				0B0000000000000000000004 /* Config */,
 				0B0000000000000000000003 /* Products */,
 			);
@@ -124,6 +127,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0B00000000000000000000F3 /* Atlas in Resources */,
+				0B00000000000000000000F4 /* Globe in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

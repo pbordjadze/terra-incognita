@@ -2,7 +2,9 @@
 # Installs the app on a booted simulator and screenshots the film at moments of it.
 #   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid> <t1> <t2> ...
 # Each moment is a launch with `-film <T>` (the film held at T seconds; Debug builds only), a wait,
-# and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`).
+# and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`);
+# with GLOBE=1, the globe too (`-globe`, held at a place with `-globe-at`, a country lit with
+# `-globe-select`).
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -35,6 +37,11 @@ if [ -n "${LOOKS:-}" ]; then
   for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
 else
   for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
+fi
+if [ "${GLOBE:-}" = 1 ]; then
+  shot globe-whole -globe -globe-at -83 28 1
+  shot globe-italy -globe -globe-at 12 44 2.6 -globe-select Italy
+  shot globe-lakes -globe -globe-at -84 41 4.5 -globe-select "United States of America"
 fi
 run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
 step done

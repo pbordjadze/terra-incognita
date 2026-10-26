@@ -2,7 +2,8 @@ name: CI
 
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
-#   plates Linux: every look in Atlas/ sound (ci/check_atlas.py) and the plate tools' syntax
+#   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
+#          ci/check_globe.py) and the tools' syntax
 #   apple  macOS: Debug and Release builds for the simulator and the plates checked byte for byte
 #          in the bundle; every look screenshotted at moments of its film only when the workflow
 #          is run by hand, as a report
@@ -32,7 +33,7 @@ env:
 
 jobs:
   plates:
-    name: The looks' plates and tools
+    name: The looks' plates, the globe's data and the tools
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -44,10 +45,11 @@ jobs:
           mkdir -p out
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
+          python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -89,9 +91,10 @@ jobs:
       - name: Bundled data
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          # the plates must reach the app byte for byte (an image tool would recompress them)
+          # the plates and the globe's maps must reach the app byte for byte (an image tool would
+          # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
@@ -101,7 +104,8 @@ jobs:
         continue-on-error: true
         timeout-minutes: 25
         run: |
-          # every look, at five moments of its film
+          # every look, at five moments of its film, then the globe (GLOBE=1)
+          export GLOBE=1
           export LOOKS="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
           ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 4 16 28 40 52
       - name: Collect
