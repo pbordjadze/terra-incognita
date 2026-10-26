@@ -120,9 +120,10 @@ Every choice in the Persian style traces to one of two references; nothing is a 
   colours are sampled from the scans and white-balanced by one gain that makes its lead-white
   pigment neutral (the varnish's cast is not the painter's): paper F2E4C8, lapis 5F6CA7, gold
   A08C60, the cartouche's gold 9D8A57 (both golds then lifted, +0.10 OKLab lightness and chroma
-  x1.3, to C5AA6E and C2A862: a scan shows shell gold unlit and olive), salmon C47C66, pink D1A38F, green 79A18B, light blue A2B7D0,
-  black 251F14, white F5F5F5, the margin's blue ink 6D6793, the text's ink 3B2C16, the rubrics'
-  vermilion DD6C51, the landscapes' meadow CCD6C8 and rocks CCBDCB (shadows A298A7).
+  x1.3, to C5AA6E and C2A862: a scan shows shell gold unlit and olive), salmon C47C66, pink
+  D1A38F, green 79A18B, light blue A2B7D0 (lapis let down with white: the hue and chroma of every
+  water tint), black 251F14, white F5F5F5, the margin's blue ink 6D6793, the text's ink 3B2C16, the
+  rubrics' vermilion DD6C51, the landscapes' meadow CCD6C8 and rocks CCBDCB (shadows A298A7).
 - **Wikipedia's map conventions** (WikiProject Maps, location and topographic maps): water C6ECFF
   and its depth ramp from D8F2FE, coasts, rivers and water names 0978AB, borders and country
   names 646464, land F6E1B9, the highest tint F5F4F2; country names in capitals, water names in
