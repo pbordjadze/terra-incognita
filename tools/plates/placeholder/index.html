@@ -26,12 +26,26 @@ const LEVELS = [
     caption: { eyebrow: 'Placeholder', title: 'Short North', text: 'High Street, north of downtown.' } },
 ];
 const LAYERS = [{ name: 'base', depth: 0, opaque: true }, { name: 'labels', depth: 0.06 }];
+// one of each kind of life, to exercise the player: a bobbing ship on the world, a gold sheen on Ohio
+const SHIP = [-40, 30], SHIP_R = 60;
+const EXTRA = {
+  world: [{ name: 'ship', depth: 0.03, frame: null, motion: { kind: 'bob', amp: [0, 10], period: 6, phase: 0 } }],
+  ohio: [{ name: 'gold', depth: 0.06, motion: { kind: 'sheen', period: 6, width: 0.3, angle: 20, color: '#fff2c0', opacity: 0.7 } }],
+};
 
 window.Plates = {
   levels: LEVELS.length,
+  style: { eyebrow: { font: 'serif', size: 12, color: '#c0583c', tracking: 2.2, uppercase: true },
+           title: { font: 'serif', size: 28, color: '#f6ead0' }, text: { font: 'serif', size: 16, color: '#eadcc0', italic: true },
+           scrim: '#1b140c99' },
   info(level) {
-    const L = LEVELS[level - 1], next = LEVELS[level];
-    return { id: L.id, caption: L.caption, layers: LAYERS, child: next ? Kit.childRect(L.proj(), next.proj()) : null };
+    const L = LEVELS[level - 1], next = LEVELS[level], proj = L.proj();
+    const extra = (EXTRA[L.id] || []).map(l => {
+      if (l.name !== 'ship') return l;
+      const [x, y] = proj(SHIP);
+      return { ...l, frame: [x - SHIP_R, y - SHIP_R, SHIP_R * 2, SHIP_R * 2] };
+    });
+    return { id: L.id, caption: L.caption, layers: [...LAYERS, ...extra], child: next ? Kit.childRect(proj, next.proj()) : null };
   },
 };
 
@@ -84,6 +98,12 @@ async function draw(level, layer) {
       g.append('g').selectAll('circle').data((await D('shortnorth-trees.geojson')).features).join('circle')
         .attr('cx', f => proj(f.geometry.coordinates)[0]).attr('cy', f => proj(f.geometry.coordinates)[1]).attr('r', 9).attr('fill', '#8fa36d').attr('fill-opacity', 0.8);
     }
+  } else if (layer === 'ship') {
+    const [x, y] = proj(SHIP);
+    g.append('path').attr('d', `M${x - 40},${y} q40,30 80,0 l-10,-6 h-60 z M${x},${y - 6} v-46 l30,30 z`)
+      .attr('fill', C.red).attr('stroke', C.ink).attr('stroke-width', 3);
+  } else if (layer === 'gold') {
+    label(g, proj([-82.5, 40.6]), 'OHIO', 70, { fill: '#d9a93c', spacing: '0.3em' }).attr('stroke', 'none');
   } else if (layer === 'labels') {
     if (L.id === 'world') {
       label(g, proj([-100, 47]), 'NORTH AMERICA', 46);

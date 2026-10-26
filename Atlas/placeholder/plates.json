@@ -15,6 +15,25 @@
     {
      "file": "world/labels.png",
      "depth": 0.06
+    },
+    {
+     "file": "world/ship.png",
+     "depth": 0.03,
+     "frame": [
+      1184,
+      1729,
+      121,
+      121
+     ],
+     "motion": {
+      "kind": "bob",
+      "amp": [
+       0,
+       10
+      ],
+      "period": 6,
+      "phase": 0
+     }
     }
    ],
    "child": [
@@ -100,6 +119,18 @@
     {
      "file": "ohio/labels.png",
      "depth": 0.06
+    },
+    {
+     "file": "ohio/gold.png",
+     "depth": 0.06,
+     "motion": {
+      "kind": "sheen",
+      "period": 6,
+      "width": 0.3,
+      "angle": 20,
+      "color": "#fff2c0",
+      "opacity": 0.7
+     }
     }
    ],
    "child": [
@@ -128,6 +159,18 @@
     {
      "file": "ohio-1/labels.png",
      "depth": 0.06
+    },
+    {
+     "file": "ohio-1/gold.png",
+     "depth": 0.06,
+     "motion": {
+      "kind": "sheen",
+      "period": 6,
+      "width": 0.3,
+      "angle": 20,
+      "color": "#fff2c0",
+      "opacity": 0.7
+     }
     }
    ],
    "child": [
@@ -252,5 +295,26 @@
     "text": "High Street, north of downtown."
    }
   }
- ]
+ ],
+ "style": {
+  "eyebrow": {
+   "font": "serif",
+   "size": 12,
+   "color": "#c0583c",
+   "tracking": 2.2,
+   "uppercase": true
+  },
+  "title": {
+   "font": "serif",
+   "size": 28,
+   "color": "#f6ead0"
+  },
+  "text": {
+   "font": "serif",
+   "size": 16,
+   "color": "#eadcc0",
+   "italic": true
+  },
+  "scrim": "#1b140c99"
+ }
 }

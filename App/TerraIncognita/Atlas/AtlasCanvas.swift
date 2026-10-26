@@ -227,6 +227,8 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         CATransaction.setDisableActions(true)
         let shownIDs = Set(visible.map(\.0))
         for (k, node) in nodes where !shownIDs.contains(k) { node.container.isHidden = true }
+        let still = UIAccessibility.isReduceMotionEnabled
+        let t = CACurrentMediaTime()
         for (k, opacity) in visible {
             let node = self.node(k, look: look, ladder: ladder)
             let c = ladder.express(camera, in: k)
@@ -236,12 +238,16 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             node.container.zPosition = CGFloat(k)
             node.container.position = CGPoint(x: Double(bounds.midX) - c.x * c.zoom, y: Double(bounds.midY) - c.y * c.zoom)
             node.container.transform = CATransform3DMakeScale(CGFloat(c.zoom), CGFloat(c.zoom), 1)
+            // a plate still fading up has soft edges, hardening as it takes over: its border never
+            // shows as a seam over the plate behind
+            let fading = k > b || (k == b && opacity < 1)
+            node.feather(fading ? 0.2 * (1 - opacity) : 0, plateWidth: p.width)
             // nearer layers move further with the camera, in proportion to its offset from the centre,
             // measured at rest so a dive doesn't fling them apart
             let s = ladder.restZoom(k) / c.zoom
             let ox = -(c.x - p.width / 2) * s, oy = -(c.y - p.height / 2) * s
-            for (layer, spec) in zip(node.layers, p.layers) where spec.depth != 0 {
-                layer.frame = CGRect(x: ox * spec.depth, y: oy * spec.depth, width: p.width, height: p.height)
+            for (ln, spec) in zip(node.layers, p.layers) where spec.depth != 0 || spec.motion != nil {
+                ln.place(spec, plate: node.container.bounds, offset: CGPoint(x: ox * spec.depth, y: oy * spec.depth), time: t, still: still)
             }
         }
         CATransaction.commit()
@@ -257,14 +263,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         container.isHidden = true
         container.anchorPoint = .zero
         container.bounds = CGRect(x: 0, y: 0, width: p.width, height: p.height)
-        let layers = p.layers.map { _ in
-            let l = CALayer()
-            l.frame = container.bounds
-            l.contentsGravity = .resize
-            l.minificationFilter = .trilinear
-            l.magnificationFilter = .linear
-            container.addSublayer(l)
-            return l
+        let layers = p.layers.map { spec in
+            let ln = LayerNode(spec, plate: container.bounds)
+            container.addSublayer(ln.layer)
+            return ln
         }
         layer.addSublayer(container)
         let n = PlateNode(container: container, layers: layers)
@@ -284,7 +286,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             n.loading = true
             let urls = ladder.plates[k].layers.map { Atlas.url(of: $0, in: look) }
             if now && k == b {
-                for (l, url) in zip(n.layers, urls) { l.contents = UIImage(contentsOfFile: url.path)?.preparingForDisplay()?.cgImage }
+                for (ln, url) in zip(n.layers, urls) { ln.image.contents = UIImage(contentsOfFile: url.path)?.preparingForDisplay()?.cgImage }
                 n.loaded = true
                 n.loading = false
             } else {
@@ -293,7 +295,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
                     for url in urls { images.append(await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay()) }
                     // the look may have changed while these were decoding
                     guard let self, self.nodes[k] === n else { return }
-                    for (l, image) in zip(n.layers, images) { l.contents = image?.cgImage }
+                    for (ln, image) in zip(n.layers, images) { ln.image.contents = image?.cgImage }
                     n.loaded = true
                     n.loading = false
                 }
@@ -304,18 +306,149 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
 
 private final class PlateNode {
     let container: CALayer
-    let layers: [CALayer]
+    let layers: [LayerNode]
+    private let edge = CALayer()
     var loaded = false
     var loading = false
 
-    init(container: CALayer, layers: [CALayer]) {
+    init(container: CALayer, layers: [LayerNode]) {
         self.container = container
         self.layers = layers
+        edge.contents = Self.softEdge
+        // the corners and sides of the picture keep their size; only the middle stretches
+        edge.contentsCenter = CGRect(x: 0.45, y: 0.45, width: 0.1, height: 0.1)
     }
 
     func unload() {
-        for l in layers { l.contents = nil }
+        for l in layers { l.image.contents = nil }
         loaded = false
+    }
+
+    /// Fades the plate's edges over `fraction` of its width, or not at all.
+    func feather(_ fraction: Double, plateWidth: Double) {
+        guard fraction > 0.002 else {
+            if container.mask != nil { container.mask = nil }
+            return
+        }
+        edge.frame = container.bounds
+        // the soft edge is 45% of the picture's 64 pixels; contentsScale sets how wide it draws
+        edge.contentsScale = CGFloat(64 * 0.45 / (fraction * plateWidth))
+        if container.mask !== edge { container.mask = edge }
+    }
+
+    /// White, opaque in the middle and fading to nothing at its edges.
+    private static let softEdge: CGImage? = {
+        let n = 64
+        var px = [UInt8](repeating: 0, count: n * n * 4)
+        for y in 0..<n {
+            for x in 0..<n {
+                let d = Double(min(x, n - 1 - x, y, n - 1 - y)) / (Double(n) * 0.45)
+                let a = UInt8(255 * smoothstep(0, 1, d))
+                let i = (y * n + x) * 4
+                px[i] = a; px[i + 1] = a; px[i + 2] = a; px[i + 3] = a
+            }
+        }
+        guard let provider = CGDataProvider(data: Data(px) as CFData) else { return nil }
+        return CGImage(width: n, height: n, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: n * 4,
+                       space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+    }()
+}
+
+/// One layer of a plate: the layer moved on screen, the one that shows its picture (the same, or a
+/// sheen's mask), and a sheen's band of light.
+private final class LayerNode {
+    let layer: CALayer
+    let image: CALayer
+    private let band: CAGradientLayer?
+
+    init(_ spec: Plate.Layer, plate: CGRect) {
+        let frame = spec.rect ?? plate
+        if let m = spec.motion, m.kind == "sheen" {
+            // the picture is a mask: light shows only where the gold is
+            let host = CALayer(), mask = CALayer(), band = CAGradientLayer()
+            host.frame = frame
+            mask.frame = host.bounds
+            mask.contentsGravity = .resize
+            host.mask = mask
+            let light = UIColor(hex: m.color ?? "#fff4cc") ?? .white
+            let peak = CGFloat(m.opacity ?? 0.55)
+            band.colors = [light.withAlphaComponent(0).cgColor, light.withAlphaComponent(peak).cgColor, light.withAlphaComponent(0).cgColor]
+            band.startPoint = CGPoint(x: 0, y: 0.5)
+            band.endPoint = CGPoint(x: 1, y: 0.5)
+            band.isHidden = true
+            host.addSublayer(band)
+            layer = host
+            image = mask
+            self.band = band
+        } else {
+            let l = CALayer()
+            l.frame = frame
+            layer = l
+            image = l
+            band = nil
+        }
+        image.contentsGravity = .resize
+        image.minificationFilter = .trilinear
+        image.magnificationFilter = .linear
+    }
+
+    /// Where the layer sits this frame: its place, the camera's parallax `offset`, and its motion.
+    func place(_ spec: Plate.Layer, plate: CGRect, offset: CGPoint, time t: Double, still: Bool) {
+        let base = spec.rect ?? plate
+        var dx = Double(offset.x), dy = Double(offset.y)
+        let m = spec.motion
+        switch m?.kind ?? "" {
+        case "bob" where !still:
+            let w = m!.wave(t), amp = m!.amp ?? [0, 0]
+            dx += (amp.first ?? 0) * w
+            dy += (amp.count > 1 ? amp[1] : 0) * w
+        case "breathe" where !still:
+            let lo = m!.min ?? 0.6, hi = m!.max ?? 1
+            layer.opacity = Float(lo + (hi - lo) * (0.5 + 0.5 * m!.wave(t)))
+        case "sheen":
+            sweep(m!, size: base.size, time: t, still: still)
+        default: break
+        }
+        if let m, m.kind == "sway" {
+            // turns about its anchor, a point of the plate
+            let a = m.anchor ?? [Double(base.midX), Double(base.midY)]
+            let ax = a.first ?? Double(base.midX), ay = a.count > 1 ? a[1] : Double(base.midY)
+            layer.anchorPoint = CGPoint(x: (ax - Double(base.minX)) / Double(base.width), y: (ay - Double(base.minY)) / Double(base.height))
+            layer.bounds = CGRect(origin: .zero, size: base.size)
+            layer.position = CGPoint(x: ax + dx, y: ay + dy)
+            let angle = still ? 0 : (m.angle ?? 0) * .pi / 180 * m.wave(t)
+            layer.transform = CATransform3DMakeRotation(CGFloat(angle), 0, 0, 1)
+        } else {
+            layer.frame = base.offsetBy(dx: dx, dy: dy)
+        }
+    }
+
+    /// The band of light crosses the gold in the first third of each period, then waits.
+    private func sweep(_ m: Plate.Motion, size: CGSize, time t: Double, still: Bool) {
+        guard let band else { return }
+        image.frame = CGRect(origin: .zero, size: size)
+        let period = max(m.period ?? 7, 1)
+        let u = (t / period + (m.phase ?? 0)).truncatingRemainder(dividingBy: 1)
+        guard !still, u < 0.34 else { band.isHidden = true; return }
+        let w = Double(size.width) * (m.width ?? 0.25), diagonal = hypot(Double(size.width), Double(size.height))
+        band.isHidden = false
+        band.bounds = CGRect(x: 0, y: 0, width: w, height: diagonal * 1.2)
+        let e = easeInOut(u / 0.34)
+        band.position = CGPoint(x: -w + (Double(size.width) + 2 * w) * e, y: Double(size.height) / 2)
+        band.transform = CATransform3DMakeRotation(CGFloat((m.angle ?? 20) * .pi / 180), 0, 0, 1)
+    }
+}
+
+extension UIColor {
+    /// #rrggbb or #rrggbbaa
+    convenience init?(hex: String) {
+        var s = hex.trimmingCharacters(in: .whitespaces)
+        if s.hasPrefix("#") { s.removeFirst() }
+        guard s.count == 6 || s.count == 8, let v = UInt64(s, radix: 16) else { return nil }
+        let rgba = s.count == 6 ? (v << 8) | 0xFF : v
+        self.init(red: CGFloat((rgba >> 24) & 0xFF) / 255, green: CGFloat((rgba >> 16) & 0xFF) / 255,
+                  blue: CGFloat((rgba >> 8) & 0xFF) / 255, alpha: CGFloat(rgba & 0xFF) / 255)
     }
 }
 

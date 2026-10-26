@@ -7,12 +7,22 @@ import UIKit
 @Observable
 final class AtlasModel {
     let looks = Atlas.looks()
-    var lookIndex = 0
+    var lookIndex = 0 { didSet { loadStyle() } }
     var caption: Plate.Caption?
     var mode: AtlasCanvas.Mode = .film
+    /// The look's captions: its fonts, sizes and colours.
+    private(set) var style: CaptionStyle?
     @ObservationIgnored weak var canvas: AtlasCanvas?
 
     var look: Look? { looks.indices.contains(lookIndex) ? looks[lookIndex] : nil }
+
+    init() { loadStyle() }
+
+    private func loadStyle() {
+        guard let look, let set = Atlas.plates(of: look) else { style = nil; return }
+        if let s = set.style { Atlas.registerFonts(of: look, s) }
+        style = set.style
+    }
 }
 
 /// The map edge to edge, the caption at its foot, the look menu, and Resume once the reader has
@@ -25,7 +35,7 @@ struct AtlasScreen: View {
             AtlasCanvasView(model: model)
                 .ignoresSafeArea()
             if let caption = model.caption {
-                CaptionView(caption: caption)
+                CaptionView(caption: caption, style: model.style)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .id(caption.title)
             }
@@ -67,27 +77,41 @@ struct AtlasScreen: View {
 
 private struct CaptionView: View {
     let caption: Plate.Caption
+    let style: CaptionStyle?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(verbatim: caption.eyebrow.uppercased())
-                .font(.system(.caption, design: .serif).weight(.semibold))
-                .tracking(2.4)
-                .foregroundStyle(Color(red: 0.86, green: 0.45, blue: 0.33))
-            Text(verbatim: caption.title)
-                .font(.system(.title, design: .serif))
-                .foregroundStyle(Color(red: 0.97, green: 0.92, blue: 0.80))
-            Text(verbatim: caption.text)
-                .font(.system(.body, design: .serif).italic())
-                .foregroundStyle(Color(red: 0.92, green: 0.87, blue: 0.76))
+            line(caption.eyebrow, style?.eyebrow, fallback: Fallback(size: 12, color: "#dc7354", tracking: 2.4, uppercase: true), relativeTo: .caption)
+            line(caption.title, style?.title, fallback: Fallback(size: 28, color: "#f7ebcc"), relativeTo: .title)
+            line(caption.text, style?.text, fallback: Fallback(size: 17, color: "#ebdec2", italic: true), relativeTo: .body)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24)
-        .padding(.top, 60)
+        .padding(.top, 70)
         .padding(.bottom, 36)
-        .background(LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom))
+        .background(LinearGradient(colors: [.clear, scrim], startPoint: .top, endPoint: .bottom))
         .allowsHitTesting(false)
         .accessibilityElement(children: .combine)
+    }
+
+    private var scrim: Color { Color(uiColor: style?.scrim.flatMap { UIColor(hex: $0) } ?? UIColor(white: 0, alpha: 0.55)) }
+
+    private struct Fallback {
+        var size: Double, color: String, tracking = 0.0, uppercase = false, italic = false
+    }
+
+    /// One line of the caption in the look's type, or the app's serif when the look sets none.
+    private func line(_ string: String, _ t: CaptionStyle.Text?, fallback f: Fallback, relativeTo textStyle: Font.TextStyle) -> some View {
+        let size = t?.size ?? f.size
+        var font: Font = t.map { $0.font == "serif" ? .system(size: size, design: .serif) : .custom($0.font, size: size, relativeTo: textStyle) }
+            ?? .system(size: size, design: .serif)
+        if t?.italic ?? f.italic { font = font.italic() }
+        let upper = t?.uppercase ?? f.uppercase
+        return Text(verbatim: upper ? string.uppercased() : string)
+            .font(font)
+            .tracking(t?.tracking ?? f.tracking)
+            .foregroundStyle(Color(uiColor: UIColor(hex: t?.color ?? f.color) ?? .white))
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
