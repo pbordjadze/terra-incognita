@@ -286,13 +286,21 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             n.loading = true
             let urls = ladder.plates[k].layers.map { Atlas.url(of: $0, in: look) }
             if now && k == b {
-                for (ln, url) in zip(n.layers, urls) { ln.image.contents = UIImage(contentsOfFile: url.path)?.preparingForDisplay()?.cgImage }
+                // (decoding ahead can fail where the hardware decoder is missing, as in the simulator:
+                // then the picture decodes as it is first drawn)
+                for (ln, url) in zip(n.layers, urls) {
+                    let image = UIImage(contentsOfFile: url.path)
+                    ln.image.contents = (image?.preparingForDisplay() ?? image)?.cgImage
+                }
                 n.loaded = true
                 n.loading = false
             } else {
                 Task { [weak self] in
                     var images: [UIImage?] = []
-                    for url in urls { images.append(await UIImage(contentsOfFile: url.path)?.byPreparingForDisplay()) }
+                    for url in urls {
+                        guard let image = UIImage(contentsOfFile: url.path) else { images.append(nil); continue }
+                        images.append(await image.byPreparingForDisplay() ?? image)
+                    }
                     // the look may have changed while these were decoding
                     guard let self, self.nodes[k] === n else { return }
                     for (ln, image) in zip(n.layers, images) { ln.image.contents = image?.cgImage }

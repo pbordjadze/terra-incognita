@@ -60,9 +60,13 @@ nonisolated struct Ladder: Sendable {
 
     /// How opaque plate k is drawn when the camera puts it at `zoom`: the first plate always, each
     /// later one fading up while it is still drawn smaller than its pixels (sharp), so the wider plate
-    /// behind is never blown up much past its own.
+    /// behind is never blown up much past its own; but only once the camera has pushed in past the
+    /// wider plate's rest, so a plate never shows through while the film rests on the one before.
     func opacity(_ k: Int, zoom: Double) -> Double {
-        k == 0 ? 1 : smoothstep(0.25 * restZoom(k), 0.6 * restZoom(k), zoom)
+        guard k > 0 else { return 1 }
+        let atParentRest = restZoom(k - 1) * ratio(k - 1)
+        let start = max(0.25 * restZoom(k), 1.3 * atParentRest)
+        return smoothstep(start, max(0.6 * restZoom(k), start * 1.25), zoom)
     }
 
     /// Plate k centred, at rest.

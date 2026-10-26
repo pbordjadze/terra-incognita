@@ -46,7 +46,10 @@ class Ladder:
         while c[0] > 0 and c[3] < 0.55 * self.rest_zoom(c[0]): c = self.up(c)
         return c
 
-    def opacity(self, k, z): return 1 if k == 0 else smoothstep(0.25 * self.rest_zoom(k), 0.6 * self.rest_zoom(k), z)
+    def opacity(self, k, z):
+        if k == 0: return 1
+        start = max(0.25 * self.rest_zoom(k), 1.3 * self.rest_zoom(k - 1) * self.ratio(k - 1))
+        return smoothstep(start, max(0.6 * self.rest_zoom(k), start * 1.25), z)
     def rest(self, k): return (k, self.p[k]['size'][0] / 2, self.p[k]['size'][1] / 2, self.rest_zoom(k))
 
 
