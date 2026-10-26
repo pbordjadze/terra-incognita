@@ -34,6 +34,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var keepClear: [CGRect] = [] {
         didSet {
             guard keepClear != oldValue else { return }
+            clearBounds = bounds.size
             if !roomMeasured { measureRoom() }
             labelsFading = true
             needsDraw = true
@@ -44,6 +45,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// tap never moves the globe.
     private var room: CGRect?
     private var roomMeasured = false
+    /// The size the view had when `keepClear` was last set: rects from another size are stale.
+    private var clearBounds = CGSize.zero
     /// While the film shows instead, nothing moves or is drawn (the globe is kept, its pictures
     /// decoded once).
     var suspended = false {
@@ -371,7 +374,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if r.midY < bounds.midY { top = max(top, Double(r.maxY)) } else { bottom = min(bottom, Double(r.minY)) }
         }
         room = CGRect(x: 0, y: top, width: Double(bounds.width), height: max(bottom - top, Double(bounds.height) * 0.4))
-        roomMeasured = !keepClear.isEmpty
+        // (rects laid out for another size, as just after a rotation, don't settle it: their
+        // successors are measured again when they come)
+        roomMeasured = !keepClear.isEmpty && clearBounds == bounds.size
         needsDraw = true
     }
 
@@ -826,11 +831,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let clear = (keepClear + pageStrips).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
-        func fits(_ r: CGRect) -> Bool {
+        func onGlobe(_ r: CGRect) -> Bool {
             let far = max(hypot(Double(r.minX - centre.x), Double(r.minY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.minY - centre.y)),
                           hypot(Double(r.minX - centre.x), Double(r.maxY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.maxY - centre.y)))
-            return far < radius * 0.99 && bounds.contains(r) && !clear.contains(where: { $0.intersects(r) })
-                && !placed.contains(where: { $0.intersects(r) })
+            return far < radius * 0.99 && bounds.contains(r)
+        }
+        func fits(_ r: CGRect) -> Bool {
+            onGlobe(r) && !clear.contains(where: { $0.intersects(r) }) && !placed.contains(where: { $0.intersects(r) })
         }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
@@ -841,7 +848,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             let c = data.countries[shown]
             let (p, facing) = project(lon: c.c[0], lat: c.c[1])
             let r = selectedLabel.bounds.offsetBy(dx: p.x - selectedLabel.bounds.width / 2, dy: p.y - selectedLabel.bounds.height / 2)
-            if facing > (selectedAlpha > 0.5 ? 0.2 : 0.3), !clear.contains(where: { $0.intersects(r) }) {
+            if facing > (selectedAlpha > 0.5 ? 0.2 : 0.3), onGlobe(r), !clear.contains(where: { $0.intersects(r) }) {
                 selectedTarget = 1
                 placed.append(r.insetBy(dx: -gap / 2, dy: -gap / 2))
             }

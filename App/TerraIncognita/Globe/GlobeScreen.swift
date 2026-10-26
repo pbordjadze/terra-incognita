@@ -78,8 +78,9 @@ struct PersianCaption: View {
     /// The headpiece (Globe/headpiece.png), and the title's face and the box inside the cartouche
     /// it may fill, as fractions of the headpiece (Globe/type.json).
     /// How far in from the safe area the caption sits: inside the page's frame (Globe.metal's
-    /// PAGE_MARGIN and PAGE_DEPTH), which comes in when the globe is looked at closer.
-    static let pageRoom: CGFloat = 27
+    /// PAGE_MARGIN and PAGE_DEPTH, 22.81 reading points, at most 27.4 points on the largest screen),
+    /// which comes in when the globe is looked at closer.
+    static let pageRoom: CGFloat = 30
     static let headpiece = UIImage(contentsOfFile: GlobeData.root.appending(path: "headpiece.png").path(percentEncoded: false))
     static let face = GlobeType.shared?.styles[GlobeStyle.persian.rawValue]?.cartouche
     static let cartouche = face.flatMap { $0.box.count == 4 ? CGRect(x: $0.box[0], y: $0.box[1], width: $0.box[2], height: $0.box[3]) : nil }

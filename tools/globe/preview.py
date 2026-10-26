@@ -214,7 +214,7 @@ PAGE_RULES = ((0, 0.68, 'P_PINK'), (0.68, 2.03, 'P_GOLD'), (2.03, 3.39, 'P_LIGHT
               (11.66, 13.83, 'P_GREEN'), (13.83, 15.46, 'P_GOLD'), (15.46, 16.81, 'P_PINK'))
 PAGE_BRAID = (3.39, 11.39)
 PAGE_DEPTH = 16.81
-PAGE_ROOM = 27                    # what sits on the page keeps this far in from the safe area: inside the frame
+PAGE_ROOM = 30                    # what sits on the page keeps this far in from the safe area: inside the frame
 
 
 def page_frame(col, px, py, W, H, ls, insets, alpha):
@@ -246,7 +246,7 @@ def page_frame(col, px, py, W, H, ls, insets, alpha):
 def page_strips(w, h, insets):
     """The page frame's four strips in points (x0, y0, x1, y1): no name goes under them."""
     top, bottom, left, right = insets
-    d = PAGE_MARGIN + PAGE_DEPTH
+    d = (PAGE_MARGIN + PAGE_DEPTH) * reading(w, h)
     return [(0, 0, w, top + d), (0, h - bottom - d, w, h), (0, 0, left + d, h), (w - right - d, 0, w, h)]
 
 

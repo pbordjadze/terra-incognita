@@ -111,52 +111,84 @@ try:
 except (OSError, ValueError) as e:
     err(f'type.json: {e}')
     t = {}
-for key, kind in (('reading', dict), ('readerMax', NUM), ('minSize', NUM), ('contrast', NUM), ('halo', NUM),
-                  ('gap', NUM), ('touch', NUM), ('countryTiers', list), ('styles', dict)):
-    if not isinstance(t.get(key), kind):
+for key, kind in (('reading', dict), ('readerMax', NUM), ('minSize', NUM), ('contrast', NUM), ('largeText', NUM),
+                  ('largeTextBold', NUM), ('largeContrast', NUM), ('halo', NUM), ('gap', NUM), ('touch', NUM),
+                  ('countryTiers', list), ('styles', dict)):
+    if not isinstance(t.get(key), kind) or isinstance(t.get(key), bool):
         err(f'type.json: {key} missing or not {kind}')
 r = t.get('reading') or {}
-if not (isinstance(r.get('shortSide'), list) and len(r['shortSide']) == 2 and r['shortSide'][1] > r['shortSide'][0]
-        and isinstance(r.get('factor'), list) and len(r['factor']) == 2):
-    err('type.json: reading needs shortSide [small, large] and factor [at small, at large]')
+if not (isinstance(r.get('shortSide'), list) and len(r['shortSide']) == 2 and all(isinstance(v, NUM) for v in r['shortSide'])
+        and r['shortSide'][1] > r['shortSide'][0] and isinstance(r.get('factor'), list) and len(r['factor']) == 2
+        and all(isinstance(v, NUM) for v in r['factor'])):
+    err('type.json: reading needs shortSide [small, large] and factor [at small, at large], numbers')
+if not (isinstance(t.get('countryTiers'), list) and len(t['countryTiers']) == 2 and all(isinstance(v, NUM) for v in t['countryTiers'])):
+    err('type.json: countryTiers needs two label ranks')
 least, enough = t.get('minSize', 10), t.get('contrast', 4.5)
+
+
+def needed(size, font):
+    """The contrast a line needs: less for large text as WCAG has it (18 pt, or 14 pt bold; iOS points
+    taken as its points)."""
+    bold = 'Bold' in font or 'Semibold' in font
+    large = size >= (t.get('largeTextBold', 1e9) if bold else t.get('largeText', 1e9))
+    return t.get('largeContrast', enough) if large else enough
+
+
+def typed(where, obj, fields):
+    """Every field the app's decoder requires (GlobeType, CaptionStyle), of its type."""
+    if not isinstance(obj, dict):
+        err(f'{where}: not an object')
+        return False
+    ok = True
+    for name, kind in fields.items():
+        v = obj.get(name)
+        if not isinstance(v, kind) or isinstance(v, bool) and kind is not bool:
+            err(f'{where}: {name} missing or not {kind}')
+            ok = False
+    return ok
+
+
 NAMES = ('ocean', 'sea', 'country1', 'country2', 'country3', 'capital', 'selected')
-for sname, st in (t.get('styles') or {}).items():
-    names = st.get('names') or {}
+styles = t.get('styles') or {}
+for sname in ('wikipedia', 'persian'):                       # (GlobeStyle's cases)
+    if sname not in styles:
+        err(f'type.json: no style {sname}')
+for sname, st in styles.items():
+    if not typed(f'type.json {sname}', st, {'names': dict, 'caption': dict, 'captionGround': str}):
+        continue
+    names = st['names']
     for n in NAMES:
         f = names.get(n)
-        if not isinstance(f, dict):
-            err(f'type.json {sname}: no face for {n}')
+        if not typed(f'type.json {sname} {n}', f, {'font': str, 'size': NUM, 'tracking': NUM, 'ink': str, 'halo': str}):
             continue
-        if not font_file(f.get('font', '')):
-            err(f'type.json {sname} {n}: font {f.get("font")} not in fonts/')
-        if not isinstance(f.get('size'), NUM) or f['size'] < least:
-            err(f'type.json {sname} {n}: size {f.get("size")} under {least}')
+        if not font_file(f['font']):
+            err(f'type.json {sname} {n}: font {f["font"]} not in fonts/')
+        if f['size'] < least:
+            err(f'type.json {sname} {n}: size {f["size"]} under {least}')
         try:
             c = contrast(f['ink'], f['halo'])
             if c < enough:
                 err(f'type.json {sname} {n}: {f["ink"]} on {f["halo"]} is {c:.2f}:1, under {enough}:1')
         except (KeyError, ValueError, TypeError):
             err(f'type.json {sname} {n}: ink and halo must be #RRGGBB')
-    cap, ground = st.get('caption') or {}, st.get('captionGround', '')
+    cap, ground = st['caption'], st['captionGround']
     for line in ('eyebrow', 'title', 'text'):
         l = cap.get(line)
-        if not isinstance(l, dict) or not font_file(l.get('font', '')):
-            err(f'type.json {sname}: caption {line} missing or its font not in fonts/')
+        if not typed(f'type.json {sname} caption {line}', l, {'font': str, 'size': NUM, 'color': str}):
             continue
+        if not font_file(l['font']):
+            err(f'type.json {sname}: caption {line} font {l["font"]} not in fonts/')
         try:
-            # (large text, as WCAG has it, needs less: a rubric set large keeps its vermilion)
-            need = t.get('largeContrast', enough) if l.get('size', 0) >= t.get('largeText', 1e9) else enough
-            c = contrast(l['color'], ground)
+            need, c = needed(l['size'], l['font']), contrast(l['color'], ground)
             if c < need:
                 err(f'type.json {sname}: caption {line} {l["color"]} on {ground} is {c:.2f}:1, under {need}:1')
         except (KeyError, ValueError, TypeError):
             err(f'type.json {sname}: caption {line} color and captionGround must be #RRGGBB')
     ca = st.get('cartouche')
-    if ca is not None:
-        if not font_file(ca.get('font', '')) or not (isinstance(ca.get('box'), list) and len(ca['box']) == 4):
+    if ca is not None and typed(f'type.json {sname} cartouche', ca, {'font': str, 'size': NUM, 'ink': str, 'ground': str, 'box': list}):
+        if not font_file(ca['font']) or len(ca['box']) != 4 or not all(isinstance(v, NUM) for v in ca['box']):
             err(f'type.json {sname}: cartouche needs a bundled font and a box [x, y, width, height]')
-        elif contrast(ca['ink'], ca['ground']) < enough or ca['size'] * 0.55 < least:
+        elif contrast(ca['ink'], ca['ground']) < needed(ca['size'] * 0.55, ca['font']) or ca['size'] * 0.55 < least:
             err(f'type.json {sname}: the cartouche title is too faint or, shrunk to 0.55, too small')
 
 size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(root) for f in fs)

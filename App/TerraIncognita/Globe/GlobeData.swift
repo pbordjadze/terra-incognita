@@ -86,10 +86,12 @@ nonisolated struct GlobeData: Sendable {
     /// Makes the globe's fonts available; the first call registers them, later ones do nothing.
     static func registerFonts() { _ = fontsRegistered }
 
+    /// (every font in fonts/, so that any face type.json names, which ci/check_globe.py finds there, is usable)
     private static let fontsRegistered: Bool = {
         let folder = root.appending(path: "fonts", directoryHint: .isDirectory)
-        for file in ["LibertinusSerif-Regular.otf", "LibertinusSerif-Italic.otf", "LibertinusSerif-Semibold.otf", "UncialAntiqua-Regular.ttf"] {
-            _ = CTFontManagerRegisterFontsForURL(folder.appending(path: file) as CFURL, .process, nil)
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        for file in files where ["otf", "ttf"].contains(file.pathExtension.lowercased()) {
+            _ = CTFontManagerRegisterFontsForURL(file as CFURL, .process, nil)
         }
         return true
     }()

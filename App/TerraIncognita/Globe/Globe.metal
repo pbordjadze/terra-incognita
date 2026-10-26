@@ -122,7 +122,7 @@ static float ring(float rr, float a, float b, float R) {
 /// per reading point).
 static float pageBand(float e, float a, float b, float ppp) {
     float lo = PAGE_DEPTH - b, hi = PAGE_DEPTH - a, k = 1;
-    if ((hi - lo) * ppp < 0.8) { float c = (lo + hi) / 2; lo = c - 0.4 / ppp; hi = c + 0.4 / ppp; k = (hi - lo) * ppp / 0.8; }
+    if ((hi - lo) * ppp < 0.8) { float c = (lo + hi) / 2; k = (hi - lo) * ppp / 0.8; lo = c - 0.4 / ppp; hi = c + 0.4 / ppp; }
     return k * clamp(min(e - lo, hi - e) * ppp + 0.5, 0.0, 1.0);
 }
 

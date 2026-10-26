@@ -91,8 +91,11 @@ code, and let the check tell you when a choice breaks a rule.
   important names give way first, never the other way round.
 - **Every name on a halo of its ground.** The sea's or the land's tone, round-joined, 1.5 reading
   points each side, so no coast, border or graticule line crosses a letter.
-- **Contrast.** Every ink at least 4.5:1 against what is round it (WCAG AA for small text): a name's
-  halo, a caption's ground, the cartouche's gold. The check computes it.
+- **Contrast.** Every ink at least 4.5:1 against what is round it (WCAG AA): a name's halo, a
+  caption's ground, the cartouche's gold; large text (18 pt, or 14 pt bold, iOS points taken as
+  WCAG's) at least 3:1, which lets the Persian rubric keep the manuscript's vermilion by being set
+  large. The check computes it, and fails a spec the app couldn't read (a missing field, a style, a
+  font not in `Globe/fonts/`, which the app registers whole).
 - **Readable or not shown.** A name is fully opaque or absent; it fades only in time, never as a
   steady half-tone because of where it is. Its cut-off near the limb has slack (shown above 0.4 of
   facing, kept down to 0.3), so it doesn't flicker there. Nothing is under 10 pt; a title shrinking
