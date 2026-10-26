@@ -119,8 +119,8 @@ jobs:
         run: ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 58 222
       - name: What stalls the page on the simulator
         # By hand only, a report: the app as it is, with the page's start-up log; add `no2d`
-        # (without the lettering canvas) or `nogl` (without the map's drawing) to narrow down a
-        # stall (ci/sim_diag.sh)
+        # (without the lettering canvas and the font's read-back) or `nogl` (without the map's
+        # drawing) to narrow down a stall, each about four minutes (ci/sim_diag.sh)
         id: diag
         if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
         continue-on-error: true

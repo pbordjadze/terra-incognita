@@ -121,7 +121,8 @@ body[data-mode="film"] #menuBtn { opacity: 0.55; }
   if (location.protocol === 'terra:') document.addEventListener('DOMContentLoaded', () => document.getElementById('cardLink').removeAttribute('target'));
   // Start-up, step by step and timed: to the app's log (and to the line it shows if starting
   // stalls), and to the console. TI.diag leaves a part out to find what stalls: `no2d` the
-  // lettering canvas and pixel read-backs, `nogl` the map's drawing (Debug builds: -diag <mode>).
+  // lettering canvas and the font's measuring read-back, `nogl` the map's drawing (Debug builds:
+  // -diag <mode>).
   window.TI = { diag: window.TI_DIAG || new URLSearchParams(location.search).get('diag') || '' };
   TI.log = msg => {
     const line = (performance.now() / 1000).toFixed(2) + ' s ' + msg;

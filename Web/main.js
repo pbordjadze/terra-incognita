@@ -18,6 +18,10 @@ const App = {
     this.renderer = new TI.Renderer(this.gl, this.textCanvas);
     TI.log('webgl2 context');
     await this.renderer.init('');
+    // the glyphs at the opening grain, drawn and uploaded before the first frame
+    const g0 = TI.defaultState().grain, cw0 = Math.max(4, Math.round(g0 * Math.min(devicePixelRatio || 1, 3)));
+    this.renderer.atlasFor(cw0, cw0 * 2);
+    TI.log('glyph atlas');
     const places = await fetch('data/places.json').then(r => r.json());
     TI.log('places');
     this.scene = new TI.Scene(places);
@@ -38,7 +42,7 @@ const App = {
     for (const c of [this.gl, this.textCanvas]) { c.width = Math.round(this.W * this.dpr); c.height = Math.round(this.H * this.dpr); }
   },
   loop(now) {
-    if (this.tour && this.tour.still && now - this.t0 > 2000) return;
+    if (this.tour && this.tour.still && now - this.t0 > 2000) { if (this.n < 5) { this.n = 5; TI.log('still, ready'); } return; }
     requestAnimationFrame(t => this.loop(t));
     if (this.lost) return;
     // a frame's timestamp can fall a little before the moment the loop started
@@ -71,4 +75,4 @@ TI.defaultState = () => ({
 });
 
 window.App = App;
-App.start().catch(e => { console.error(e); const f = document.getElementById('fail'); f.hidden = false; f.textContent = 'Terra Incognita could not start: ' + e.message; });
+App.start().catch(e => { console.error(e); TI.log('could not start: ' + e.message); const f = document.getElementById('fail'); f.hidden = false; f.textContent = 'Terra Incognita could not start: ' + e.message; });

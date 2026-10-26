@@ -17,13 +17,19 @@ tour that plays on launch. This file is the map and the rules.
   `#r<T>` in its address so a reload resumes the film.
 - `Web/data/` is built by `tools/build_textures.py` (its docstring is the texture layout, which
   `cell.glsl`'s decoders mirror): rebuild, never hand-edit. `Web/fonts/` are OFL fonts, bundled.
+- `cell.glsl` must stay quick for a phone's GPU compiler, which builds it at the first frame
+  while iOS watches WebKit's GPU process: a heavy function gets one call site, and a loop over a
+  heavy body takes its count from a uniform (`uZero`), never a constant it could write out.
+- The page reports each step of its start (`TI.log`, in `index.html`) to the app, which logs it
+  (os_log, subsystem com.pbordjadze.terraincognita, category page) and shows the last step if the
+  first frames haven't come six seconds after a start (`App/TerraIncognita/PageStatus.swift`).
 - `App/`: `TerraIncognita.xcodeproj` (synchronized folder `TerraIncognita/`; `Web` is a folder
   reference copied into the bundle). Debug builds take `-tour t213s` (handed to the page as
-  `window.TI_TOUR`).
+  `window.TI_TOUR`) and `-diag no2d|nogl` (`TI.diag`: a part of the page left out).
 - `ci/` and `.github/workflows/ci.yml`: `web` (headless Chromium check and screenshots, and a
   WebKit pass that reports without gating), `apple` (Debug and Release builds, the bundled data
   compared byte for byte; simulator screenshots only when the workflow is run by hand, as a
-  report: hosted runners have no GPU, so WebKit's GPU process is emulated and iOS ends it), `ipa` (on `main`: the
+  report, and `ci/sim_diag.sh`, the page's start-up log per `-diag` mode), `ipa` (on `main`: the
   `build-<n>` prerelease and the SideStore source on the `sidestore` branch; CI owns that branch),
   `report` (to `refs/ci-shots/<branch>`; `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it).
 

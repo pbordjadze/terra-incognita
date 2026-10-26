@@ -13,7 +13,8 @@ step() { echo "$(date +%T) $*"; }
 run() {
   local limit="$1"; shift
   "$@" & local pid=$!
-  ( sleep "$limit"; kill -9 "$pid" 2>/dev/null && echo "$(date +%T) killed after ${limit} s: $*" ) & local dog=$!
+  # (its sleep writes nowhere: left running, it would hold a caller's $(...) open to the end)
+  ( sleep "$limit" > /dev/null 2>&1; kill -9 "$pid" 2>/dev/null && echo "$(date +%T) killed after ${limit} s: $*" ) & local dog=$!
   wait "$pid"; local rc=$?
   kill "$dog" 2>/dev/null; wait "$dog" 2>/dev/null
   return $rc
@@ -24,7 +25,8 @@ run 120 xcrun simctl install "$UDID" "$APP"; step "installed ($?)"
 for MODE in "$@"; do
   run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
   START=$(date '+%Y-%m-%d %H:%M:%S')
-  step "launch $MODE: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" -diag "$MODE" 2>&1 | tr '\n' ' ')"
+  ARGS=(); [ "$MODE" = full ] || ARGS=(-diag "$MODE")
+  step "launch $MODE: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" "${ARGS[@]}" 2>&1 | tr '\n' ' ')"
   sleep 60
   run 90 xcrun simctl io "$UDID" screenshot --type=png "$OUT/diag-$MODE.png" > /dev/null 2>&1; step "captured $MODE ($?)"
   run 120 xcrun simctl spawn "$UDID" log show --start "$START" --style compact \

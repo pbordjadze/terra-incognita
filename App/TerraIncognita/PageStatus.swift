@@ -18,6 +18,7 @@ final class PageStatus {
         Self.log.notice("\(line, privacy: .public)")
         self.line = line
         if line.contains(" s page ") { ready = false; startedAt = Date(); starts += 1 }
+        if line.hasPrefix("the page's process ended") { ready = false; startedAt = Date() }
         if line.hasSuffix(" ready") { ready = true }
     }
 }
