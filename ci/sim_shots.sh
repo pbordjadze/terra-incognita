@@ -30,10 +30,11 @@ shot() {
   run 90 xcrun simctl io "$UDID" screenshot --type=png "$OUT/sim-$1.png" > /dev/null 2>&1; step "captured $1 ($?)"
 }
 WAIT=20
+SINCE=$(date '+%Y-%m-%d %H:%M:%S')
 if [ -n "${LOOKS:-}" ]; then
   for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
 else
   for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
 fi
-run 60 xcrun simctl spawn "$UDID" log show --last 5m --style compact --predicate 'process == "TerraIncognita" OR process CONTAINS "WebContent"' > "$OUT/sim-app.log" 2>&1 || true
+run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita" OR process CONTAINS "WebContent"' > "$OUT/sim-app.log" 2>&1 || true
 step done

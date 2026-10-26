@@ -30,6 +30,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     // returning to the film: from where, to which moment, since when
     private var returnFrom = Camera(plate: 0, x: 0, y: 0, zoom: 1)
     private var returnStart: CFTimeInterval = 0
+    // Reduce Motion: the background over the map, how far a cut has dipped through it
+    private let veil = CALayer()
+    private var dip = 0.0
+    private var busy = true
     #if DEBUG
     /// `-film 21.5` (CI's screenshots): the film held at that moment.
     private let frozenAt: Double? = {
@@ -42,6 +46,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = UIColor(red: 0.07, green: 0.08, blue: 0.10, alpha: 1)
+        veil.backgroundColor = backgroundColor?.cgColor
+        veil.zPosition = 1000
+        veil.opacity = 0
+        layer.addSublayer(veil)
         isMultipleTouchEnabled = true
         let pan = UIPanGestureRecognizer(target: self, action: #selector(pan(_:)))
         pan.maximumNumberOfTouches = 2
@@ -69,8 +77,9 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         nodes = [:]
         let new = Ladder(plates: set.plates, screen: bounds.size)
         ladder = new
-        film = Film(new)
-        filmTime = min(filmTime, film?.duration ?? 0)
+        let film = Film(new)
+        self.film = film
+        filmTime = min(filmTime, film.duration)
         if let old {
             // the same scale (looks may pass through different plates on the way), the same spot
             var c = camera
@@ -78,8 +87,13 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             let level = old.plates[...c.plate].filter { !$0.passes }.count - 1
             let stops = new.plates.indices.filter { !new.plates[$0].passes }
             let k = stops[min(level, stops.count - 1)], from = old.plates[c.plate]
-            camera = new.normalized(Camera(plate: k, x: c.x / from.width * new.plates[k].width, y: c.y / from.height * new.plates[k].height,
-                                           zoom: c.zoom / old.restZoom(c.plate) * new.restZoom(k)))
+            let mapped = Camera(plate: k, x: c.x / from.width * new.plates[k].width, y: c.y / from.height * new.plates[k].height,
+                                zoom: c.zoom / old.restZoom(c.plate) * new.restZoom(k))
+            switch mode {
+            case .film, .ended: camera = new.normalized(film.camera(at: filmTime))
+            case .free: camera = new.held(mapped)
+            case .returning: camera = new.normalized(mapped); beginReturn()
+            }
         } else {
             camera = new.rest(0)
         }
@@ -90,14 +104,20 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     // MARK: the film and the reader's hands
 
     func resume() {
-        guard let film, let ladder else { return }
-        if mode == .ended { filmTime = 0 }
-        let target = film.camera(at: filmTime)
-        let common = min(camera.plate, target.plate)
-        returnFrom = ladder.express(camera, in: common)
-        returnStart = CACurrentMediaTime()
+        guard let film else { return }
+        if mode == .ended || filmTime >= film.duration { filmTime = 0 }
         fling = .zero
         mode = .returning
+        beginReturn()
+    }
+
+    /// The glide back to the film starts from here and now (again after a new look or screen size,
+    /// whose plates and zooms the old start isn't measured in), in the wider of the two plates.
+    private func beginReturn() {
+        guard let film, let ladder else { return }
+        let target = film.camera(at: filmTime)
+        returnFrom = ladder.express(camera, in: min(camera.plate, target.plate))
+        returnStart = CACurrentMediaTime()
     }
 
     private func enterFree() {
@@ -126,14 +146,19 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         switch g.state {
         case .began: touching += 1; enterFree()
         case .changed:
+            guard let ladder else { return }
             let f = g.location(in: self)
             let fx = Double(f.x - bounds.midX), fy = Double(f.y - bounds.midY)
             // the plate's point under the fingers stays under them
             let px = camera.x + fx / camera.zoom, py = camera.y + fy / camera.zoom
-            camera.zoom *= Double(g.scale)
+            let z0 = camera.zoom, wanted = z0 * Double(g.scale)
             g.scale = 1
+            // no deeper into a plate than its limit (a camera already past it, having climbed out of
+            // the next plate, holds its zoom)
+            camera.zoom = min(wanted, max(z0, ladder.maxZoom(camera.plate)))
             camera.x = px - fx / camera.zoom
             camera.y = py - fy / camera.zoom
+            camera = ladder.steered(camera, from: z0, toward: wanted)
             settle()
         case .ended, .cancelled, .failed: touching = max(0, touching - 1)
         default: break
@@ -144,7 +169,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
 
     private func settle() {
         guard let ladder else { return }
-        camera = ladder.clamped(ladder.normalized(camera))
+        camera = ladder.held(camera)
         render()
     }
 
@@ -165,6 +190,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        veil.frame = bounds
+        CATransaction.commit()
         if let pending, bounds.width > 0 { show(pending) }
         guard let ladder, ladder.screen != bounds.size, bounds.width > 0 else { return }
         // a new size (rotation, a new window): the same view, measured against the new screen
@@ -173,6 +202,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         camera.zoom *= resized.restZoom(camera.plate) / rest
         self.ladder = resized
         film = Film(resized)
+        if mode == .returning { beginReturn() }
         render()
     }
 
@@ -180,6 +210,9 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         let dt = min(link.targetTimestamp - (lastTick ?? link.timestamp), 0.05)
         lastTick = link.targetTimestamp
         guard let ladder, let film else { return }
+        // Reduce Motion: no dives, no flights back; the camera cuts at the bottom of a dip instead
+        let still = UIAccessibility.isReduceMotionEnabled
+        dip = 0
         switch mode {
         case .film:
             filmTime += dt
@@ -187,12 +220,22 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             if let frozenAt { filmTime = frozenAt }
             #endif
             if filmTime >= film.duration { filmTime = film.duration; mode = .ended }
-            camera = ladder.normalized(film.camera(at: filmTime))
+            if still {
+                let cut = film.cut(at: filmTime)
+                camera = ladder.normalized(cut.camera)
+                dip = cut.dip
+            } else {
+                camera = ladder.normalized(film.camera(at: filmTime))
+            }
         case .returning:
-            let u = (CACurrentMediaTime() - returnStart) / 1.4
-            let target = film.camera(at: filmTime)
-            let to = ladder.express(target, in: returnFrom.plate)
-            camera = ladder.normalized(glide(returnFrom, to, easeInOut(u)))
+            let u = (CACurrentMediaTime() - returnStart) / (still ? 0.8 : 1.4)
+            let target = still ? film.cut(at: filmTime).camera : film.camera(at: filmTime)
+            if still {
+                camera = ladder.normalized(u < 0.5 ? returnFrom : target)
+                dip = smoothstep(0, 1, 1 - abs(2 * u - 1))
+            } else {
+                camera = ladder.normalized(glide(returnFrom, ladder.express(target, in: returnFrom.plate), easeInOut(u)))
+            }
             if u >= 1 { mode = .film }
         case .free:
             if touching == 0, abs(fling.dx) + abs(fling.dy) > 4 {
@@ -200,10 +243,18 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
                 camera.y -= Double(fling.dy) * dt / camera.zoom
                 let decay = exp(-4.5 * dt)
                 fling = CGVector(dx: fling.dx * decay, dy: fling.dy * decay)
-                camera = ladder.clamped(ladder.normalized(camera))
+                camera = ladder.held(camera)
             }
         case .ended:
             break
+        }
+        // only the film, a flight back and the reader's hands need the full rate; the sprites' slow
+        // motions are smooth at 30, which spares the battery on the end screen
+        let moving = mode == .film || mode == .returning || touching > 0 || abs(fling.dx) + abs(fling.dy) > 4
+        if moving != busy {
+            busy = moving
+            link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+                                                  : CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
         }
         let shown = mode == .film ? film.caption(at: filmTime).map { ladder.plates[$0].caption } : nil
         if shown != caption { caption = shown; onCaption?(shown) }
@@ -225,6 +276,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        veil.opacity = Float(dip)
         let shownIDs = Set(visible.map(\.0))
         for (k, node) in nodes where !shownIDs.contains(k) { node.container.isHidden = true }
         let still = UIAccessibility.isReduceMotionEnabled
@@ -238,16 +290,20 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             node.container.zPosition = CGFloat(k)
             node.container.position = CGPoint(x: Double(bounds.midX) - c.x * c.zoom, y: Double(bounds.midY) - c.y * c.zoom)
             node.container.transform = CATransform3DMakeScale(CGFloat(c.zoom), CGFloat(c.zoom), 1)
-            // a plate still fading up has soft edges, hardening as it takes over: its border never
-            // shows as a seam over the plate behind
-            let fading = k > b || (k == b && opacity < 1)
-            node.feather(fading ? 0.2 * (1 - opacity) : 0, plateWidth: p.width)
+            // a plate drawn over the one behind has soft edges, so its border never shows as a seam:
+            // wide while it fades up, hardening as it takes over, and narrow while the plate behind
+            // shows past it (the reader can stop short of the closer plate, or pan off its edge, where
+            // the film never does)
+            let fade = k > b || (k == b && opacity < 1) ? 0.2 * (1 - opacity) : 0
+            let narrow = k > b ? 0.04 : k == b && k > 0 ? 0.04 * (1 - smoothstep(0.85, 1, c.zoom / ladder.coverZoom(k))) : 0
+            node.feather(max(fade, narrow), plateWidth: p.width)
             // nearer layers move further with the camera, in proportion to its offset from the centre,
             // measured at rest so a dive doesn't fling them apart
             let s = ladder.restZoom(k) / c.zoom
             let ox = -(c.x - p.width / 2) * s, oy = -(c.y - p.height / 2) * s
+            let depth = still ? 0 : 1.0
             for (ln, spec) in zip(node.layers, p.layers) where spec.depth != 0 || spec.motion != nil {
-                ln.place(spec, plate: node.container.bounds, offset: CGPoint(x: ox * spec.depth, y: oy * spec.depth), time: t, still: still)
+                ln.place(spec, plate: node.container.bounds, offset: CGPoint(x: ox * spec.depth * depth, y: oy * spec.depth * depth), time: t, still: still)
             }
         }
         CATransaction.commit()
@@ -279,6 +335,11 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     private func loadAround(_ b: Int, now: Bool) {
         guard let ladder, let look else { return }
         let keep = max(0, b - 1)...min(ladder.count - 1, b + 2)
+        // (setting contents outside a transaction without actions would cross-fade them, keeping the
+        // old picture alive a quarter second)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
         for (k, n) in nodes where !keep.contains(k) && n.loaded { n.unload() }
         for k in keep {
             let n = node(k, look: look, ladder: ladder)
@@ -303,7 +364,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
                     }
                     // the look may have changed while these were decoding
                     guard let self, self.nodes[k] === n else { return }
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
                     for (ln, image) in zip(n.layers, images) { ln.image.contents = image?.cgImage }
+                    CATransaction.commit()
                     n.loaded = true
                     n.loading = false
                 }

@@ -130,9 +130,9 @@ nonisolated enum Atlas {
     }
 
     /// Every plate but the last has a child with a positive size, and all have a size and layers:
-    /// the camera divides by these.
+    /// the camera divides by these. The first and last are stops (the film starts and ends on them).
     private static func valid(_ set: PlateSet) -> Bool {
-        guard !set.plates.isEmpty else { return false }
+        guard let first = set.plates.first, let last = set.plates.last, !first.passes, !last.passes else { return false }
         for (i, p) in set.plates.enumerated() {
             guard p.size.count == 2, p.width > 0, p.height > 0, !p.layers.isEmpty else { return false }
             if i < set.plates.count - 1 {

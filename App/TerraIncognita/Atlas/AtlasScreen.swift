@@ -39,7 +39,8 @@ final class AtlasModel {
 /// taken the map in hand.
 struct AtlasScreen: View {
     @State private var model = AtlasModel()
-    /// Black over the map: it fades up from it at launch and dips through it between looks.
+    /// The launch screen's slate over the map: the map fades up from it at launch and dips through it
+    /// between looks.
     @State private var veil = 1.0
     /// The look's name, shown for a moment after switching.
     @State private var banner: String?
@@ -83,7 +84,7 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.3), value: model.mode)
         .overlay {
-            Color.black.opacity(veil).ignoresSafeArea().allowsHitTesting(false)
+            Color("LaunchBackground").opacity(veil).ignoresSafeArea().allowsHitTesting(false)
         }
         .overlay(alignment: .top) {
             if let banner {
@@ -114,7 +115,7 @@ struct AtlasScreen: View {
                 if banner == look.name { banner = nil }
             }
         }
-        .background(Color.black)
+        .background(Color("LaunchBackground"))
     }
 }
 
@@ -143,16 +144,17 @@ private struct CaptionView: View {
         var size: Double, color: String, tracking = 0.0, uppercase = false, italic = false
     }
 
-    /// One line of the caption in the look's type, or the app's serif when the look sets none.
+    /// One line of the caption in the look's type, or the app's serif when the look sets none. A look
+    /// that styles the line means what it leaves out: no italic, no capitals, no tracking.
     private func line(_ string: String, _ t: CaptionStyle.Text?, fallback f: Fallback, relativeTo textStyle: Font.TextStyle) -> some View {
         let size = t?.size ?? f.size
         var font: Font = t.map { $0.font == "serif" ? .system(size: size, design: .serif) : .custom($0.font, size: size, relativeTo: textStyle) }
             ?? .system(size: size, design: .serif)
-        if t?.italic ?? f.italic { font = font.italic() }
-        let upper = t?.uppercase ?? f.uppercase
+        if t.map({ $0.italic ?? false }) ?? f.italic { font = font.italic() }
+        let upper = t.map { $0.uppercase ?? false } ?? f.uppercase
         return Text(verbatim: upper ? string.uppercased() : string)
             .font(font)
-            .tracking(t?.tracking ?? f.tracking)
+            .tracking(t.map { $0.tracking ?? 0 } ?? f.tracking)
             .foregroundStyle(Color(uiColor: UIColor(hex: t?.color ?? f.color) ?? .white))
             .fixedSize(horizontal: false, vertical: true)
     }

@@ -69,22 +69,64 @@ nonisolated struct Ladder: Sendable {
         return smoothstep(start, max(0.6 * restZoom(k), start * 1.25), zoom)
     }
 
+    /// The reader's camera: the same view in the deepest plate it lies wholly inside, so whatever the
+    /// fingers do, the plate under them covers the screen. It hands down only once the view is inside
+    /// the child with a little to spare, so a view on the child's edge doesn't flip between plates.
+    func contained(_ c: Camera) -> Camera {
+        var c = c
+        while c.plate > 0, !inside(c, spare: 0) { c = up(c) }
+        while c.plate < count - 1, inside(down(c), spare: 0.02) { c = down(c) }
+        return c
+    }
+
+    /// The reader's camera kept on the pictures.
+    func held(_ c: Camera) -> Camera { clamped(contained(c)) }
+
+    /// Whether the view lies inside its plate, with `spare` of the view's size besides.
+    private func inside(_ c: Camera, spare: Double) -> Bool {
+        let p = plates[c.plate]
+        let hw = Double(screen.width) / 2 / c.zoom * (1 + spare), hh = Double(screen.height) / 2 / c.zoom * (1 + spare)
+        return c.x - hw >= -0.5 && c.x + hw <= p.width + 0.5 && c.y - hh >= -0.5 && c.y + hh <= p.height + 0.5
+    }
+
+    /// How far the reader may pinch into plate k: three times its rest on the last; elsewhere twice its
+    /// rest, or past the hand-over to the next plate (which `steered` brings the view to in time).
+    func maxZoom(_ k: Int) -> Double {
+        k == count - 1 ? 3 * restZoom(k) : max(2 * restZoom(k), 1.1 * coverZoom(k + 1) / ratio(k))
+    }
+
+    /// Pinching in past a plate's rest asks for detail only the next plate has, so the view slides
+    /// towards it as the fingers ask for more zoom, at an even pace on screen, arriving inside it as
+    /// the zoom reaches the hand-over: `contained` then hands down without a jump. `z0` is the zoom
+    /// before this step of the pinch, `wanted` the zoom the fingers asked for.
+    func steered(_ c: Camera, from z0: Double, toward wanted: Double) -> Camera {
+        let k = c.plate
+        guard k < count - 1, wanted > z0, wanted > restZoom(k), let ch = plates[k].child else { return c }
+        let handover = 1.06 * coverZoom(k + 1) / ratio(k)
+        let from = max(z0, restZoom(k)), left = log(handover / from), step = log(wanted / from)
+        // the way left shrinks with the zoom still to go and with the zoom itself, so it closes at an
+        // even pace on screen
+        let u = left > 0 ? 1 - exp(-step) * max(0, left - step) / left : 1
+        // where the view fits inside the next plate at the hand-over, with a little to spare
+        let hw = Double(screen.width) / 2 / handover * 1.03, hh = Double(screen.height) / 2 / handover * 1.03
+        let tx = min(max(c.x, ch[0] + hw), ch[0] + ch[2] - hw), ty = min(max(c.y, ch[1] + hh), ch[1] + ch[3] - hh)
+        return Camera(plate: k, x: c.x + (tx - c.x) * u, y: c.y + (ty - c.y) * u, zoom: c.zoom)
+    }
+
     /// Plate k centred, at rest.
     func rest(_ k: Int) -> Camera {
         Camera(plate: k, x: plates[k].width / 2, y: plates[k].height / 2, zoom: restZoom(k))
     }
 
-    /// Keeps the camera on the pictures: the first plate may be pulled back until it fits the screen,
-    /// the last pushed in to three times its rest, and the centre stays where the plate covers the
-    /// screen.
+    /// Keeps the reader's camera (after `contained`) on the pictures: on the first plate, which has
+    /// none around it, no further out than the plate fitting the screen, the centre staying where the
+    /// plate covers it. (Any other plate the view would leave, it climbs out of instead.)
     func clamped(_ c: Camera) -> Camera {
         var c = c
-        let p = plates[c.plate]
-        if c.plate == 0 {
-            let fit = min(Double(screen.width) / p.width, Double(screen.height) / p.height)
-            c.zoom = max(c.zoom, fit)
-        }
-        if c.plate == count - 1 { c.zoom = min(c.zoom, 3 * restZoom(c.plate)) }
+        guard c.plate == 0 else { return c }
+        let p = plates[0]
+        let fit = min(Double(screen.width) / p.width, Double(screen.height) / p.height)
+        c.zoom = max(c.zoom, fit)
         let hw = Double(screen.width) / 2 / c.zoom, hh = Double(screen.height) / 2 / c.zoom
         c.x = hw * 2 >= p.width ? p.width / 2 : min(max(c.x, hw), p.width - hw)
         c.y = hh * 2 >= p.height ? p.height / 2 : min(max(c.y, hh), p.height - hh)
@@ -156,6 +198,15 @@ nonisolated struct Film: Sendable {
         guard let shot = shots.first(where: { t < $0.end }) ?? shots.last else { return Camera(plate: 0, x: 0, y: 0, zoom: 1) }
         let u = (t - shot.start) / (shot.end - shot.start)
         return glide(shot.from, shot.to, easeInOut(u))
+    }
+
+    /// The film under Reduce Motion: the drifts as they are, and each dive a dip through the background
+    /// instead, the camera cutting from its start to its end at the bottom of it. `dip` is how far
+    /// down, 0 to 1.
+    func cut(at t: Double) -> (camera: Camera, dip: Double) {
+        guard let shot = shots.first(where: { t < $0.end }), !shot.drift else { return (camera(at: t), 0) }
+        let u = (t - shot.start) / (shot.end - shot.start)
+        return (u < 0.5 ? shot.from : shot.to, smoothstep(0, 1, 1 - abs(2 * u - 1) / 0.7))
     }
 
     /// The plate whose caption shows at t, if any.
