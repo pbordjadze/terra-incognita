@@ -8,9 +8,18 @@ import QuartzCore
 import UIKit
 import simd
 
-/// The whole globe, drawn live by Metal (`Globe.metal`) in the colours of Wikipedia's location maps,
-/// a little prettier: drag to spin it, pinch to zoom, double-tap to fly in, tap a country to light it
-/// in the locator's red. Left alone it turns slowly, as the Earth does.
+/// The globe's two styles: Wikipedia's location-map colours, a little prettier, and the Persian, the
+/// same map in colours studied from a Persian manuscript, inside its frame (Globe.metal's P_ palette).
+enum GlobeStyle: String, CaseIterable, Identifiable {
+    case persian, wikipedia
+
+    var id: String { rawValue }
+    var name: String { self == .persian ? String(localized: "Persian") : String(localized: "Wikipedia") }
+}
+
+/// The whole globe, drawn live by Metal (`Globe.metal`) in either style: drag to spin it, pinch to
+/// zoom, double-tap to fly in, tap a country to light it (in the locator's red, or gilded). Left alone
+/// it turns slowly, as the Earth does.
 final class GlobeView: UIView, UIGestureRecognizerDelegate {
     override class var layerClass: AnyClass { CAMetalLayer.self }
 
@@ -37,6 +46,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var geo: MTLTexture?
     private var terrain: MTLTexture?
     private var ids: MTLTexture?
+    private var band: MTLTexture?
+    private var fleuron: MTLTexture?
+    /// The Persian capitals' marker (Globe/rosette.png).
+    private var rosette: CGImage?
+    /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian.
+    private(set) var style = GlobeStyle.persian
+    private var styleMix = 1.0
     private var displayLink: CADisplayLink?
     private var lastTick: CFTimeInterval?
     private var needsDraw = true
@@ -60,10 +76,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var highlight = 0.0
     private let labelLayer = CALayer()
     private var labels: [Label] = []
-    /// The chosen country's name: a thick red silhouette of it (the halo, for where it reaches past
-    /// its country onto the sea), the cream letters on top as its sublayer.
+    /// The chosen country's name: in Wikipedia's style a thick red silhouette of it (the halo, for
+    /// where it reaches past its country onto the sea), the cream letters on top as its sublayer; in
+    /// the Persian a small text panel, ruled in gold and lapis (`selectedRule`), the letters ink.
     private let selectedLabel = CATextLayer()
     private let selectedLetters = CATextLayer()
+    private let selectedRule = CALayer()
     /// The screen's pixels per point, for the names' pictures.
     private var pixels: CGFloat = 3
     #if DEBUG
@@ -90,6 +108,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let index: Int
         /// The web-map zoom from which it shows.
         let from: Double
+        /// A Persian capital's rosette, left of its name and on the city itself.
+        let mark: Bool
         var layer: CATextLayer?
         var alpha = 0.0
     }
@@ -149,9 +169,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard let queue else { return }
         geo = Self.texture(GlobeData.root.appending(path: "geo.png"), device: device, queue: queue)
         terrain = Self.texture(GlobeData.root.appending(path: "terrain.png"), device: device, queue: queue)
-        if geo == nil || terrain == nil || data == nil {
+        band = Self.texture(GlobeData.root.appending(path: "band.png"), device: device, queue: queue, premultiply: true)
+        fleuron = Self.texture(GlobeData.root.appending(path: "fleuron.png"), device: device, queue: queue, premultiply: true)
+        if let source = CGImageSourceCreateWithURL(GlobeData.root.appending(path: "rosette.png") as CFURL, nil) {
+            rosette = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        if geo == nil || terrain == nil || band == nil || fleuron == nil || data == nil {
             Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
-                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) data \(self.data != nil)")
+                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) band \(self.band != nil) fleuron \(self.fleuron != nil) data \(self.data != nil)")
         }
         // the countries' map, from the bytes the tap reads (decoded once)
         if let data, data.ids.count == data.width * data.height {
@@ -164,8 +189,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     /// An RGBA map's decoded bytes uploaded as they are (colour management would bend the distances
     /// it is made of), with mipmaps. Bytes in any order but R, G, B, A are refused rather than read
-    /// wrong.
-    private static func texture(_ url: URL, device: MTLDevice, queue: MTLCommandQueue) -> MTLTexture? {
+    /// wrong. A picture with transparency (`premultiply`) is premultiplied if it isn't, so that its
+    /// mipmaps blend its edges right.
+    private static func texture(_ url: URL, device: MTLDevice, queue: MTLCommandQueue, premultiply: Bool = false) -> MTLTexture? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil), image.bitsPerComponent == 8,
               let data = image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return nil }
@@ -192,6 +218,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 }
             }
             texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: rgba, bytesPerRow: w * 4)
+        } else if premultiply && image.alphaInfo == .last {
+            var rgba = [UInt8](repeating: 0, count: w * h * 4)
+            rgba.withUnsafeMutableBufferPointer { dst in
+                for y in 0..<h {
+                    for x in 0..<w {
+                        let s = y * row + x * 4, t = (y * w + x) * 4
+                        let a = UInt16(bytes[s + 3])
+                        dst[t] = UInt8((UInt16(bytes[s]) * a + 127) / 255)
+                        dst[t + 1] = UInt8((UInt16(bytes[s + 1]) * a + 127) / 255)
+                        dst[t + 2] = UInt8((UInt16(bytes[s + 2]) * a + 127) / 255)
+                        dst[t + 3] = bytes[s + 3]
+                    }
+                }
+            }
+            texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: rgba, bytesPerRow: w * 4)
         } else {
             texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: bytes, bytesPerRow: row)
         }
@@ -214,7 +255,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     /// Draws a frame; false if it couldn't (no drawable yet), so the next tick tries again.
     private func draw() -> Bool {
-        guard let pipeline, let queue, let geo, let terrain, let ids, let metalLayer,
+        guard let pipeline, let queue, let geo, let terrain, let ids, let band, let fleuron, let metalLayer,
               bounds.width > 0, bounds.height > 0, let drawable = metalLayer.nextDrawable(),
               let commands = queue.makeCommandBuffer() else { return false }
         let pass = MTLRenderPassDescriptor()
@@ -229,7 +270,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
             u1: SIMD4(Float(radius * scale), Float(scale), Float(zoom), Float(ring)),
-            u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), 0, 0),
+            u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), Float(styleMix), 0),
             r0: SIMD4(Float(m[0][0]), Float(m[1][0]), Float(m[2][0]), 0),
             r1: SIMD4(Float(m[0][1]), Float(m[1][1]), Float(m[2][1]), 0),
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0))
@@ -238,6 +279,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         encoder.setFragmentTexture(geo, index: 0)
         encoder.setFragmentTexture(terrain, index: 1)
         encoder.setFragmentTexture(ids, index: 2)
+        encoder.setFragmentTexture(band, index: 3)
+        encoder.setFragmentTexture(fleuron, index: 4)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
         commands.present(drawable)
@@ -247,10 +290,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     // MARK: the camera
 
-    /// The globe's centre and radius on screen, in points (tools/globe/preview.py's `layout`).
+    /// The globe's centre and radius on screen, in points (tools/globe/preview.py's `layout`): a little
+    /// smaller in the Persian style, whose frame needs the room.
     private var place: (centre: CGPoint, radius: Double) {
         let w = Double(bounds.width), h = Double(bounds.height)
-        return (CGPoint(x: w / 2, y: h * 0.43), 0.455 * min(w, h * 0.55) * zoom)
+        return (CGPoint(x: w / 2, y: h * 0.43), (0.455 + (0.42 - 0.455) * styleMix) * min(w, h * 0.55) * zoom)
     }
 
     /// World from view: Ry(lon0) . Rx(-lat0), built from its columns (simd matrices are indexed by
@@ -379,22 +423,54 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if k != nil { shown = k }
         if still { highlight = k == nil ? 0 : 1 }
         if let k, let data {
-            let c = data.countries[k]
-            let name = Self.short(c.n).uppercased()
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            selectedLetters.string = NSAttributedString(string: name, attributes: Self.attributes(.selected))
-            selectedLabel.string = NSAttributedString(string: name, attributes: Self.attributes(.halo))
-            let size = selectedLetters.preferredFrameSize()
-            selectedLabel.bounds = CGRect(x: 0, y: 0, width: size.width + 4, height: size.height + 2)
-            selectedLetters.frame = selectedLabel.bounds
-            CATransaction.commit()
-            accessibilityValue = c.long ?? c.n
+            letterSelected()
+            accessibilityValue = data.countries[k].long ?? data.countries[k].n
         } else {
             accessibilityValue = nil
         }
         onSelect?(k.flatMap { data?.countries[$0] })
         needsDraw = true
+    }
+
+    /// Changes the style: crossfaded, the names lettered afresh (Reduce Motion: at once).
+    func setStyle(_ new: GlobeStyle, animated: Bool) {
+        guard new != style || !animated else { return }
+        style = new
+        if !animated || UIAccessibility.isReduceMotionEnabled { styleMix = new == .persian ? 1 : 0 }
+        backgroundColor = new == .persian ? UIColor(red: 0xF3 / 255, green: 0xE9 / 255, blue: 0xD2 / 255, alpha: 1)
+                                          : UIColor(red: 0xF6 / 255, green: 0xF2 / 255, blue: 0xE7 / 255, alpha: 1)
+        for l in labels { l.layer?.removeFromSuperlayer() }
+        makeLabels()
+        letterSelected()
+        labelsFading = true
+        needsDraw = true
+    }
+
+    /// The chosen country's name, in the style's dress.
+    private func letterSelected() {
+        guard let k = shown ?? selected, let data else { return }
+        let name = Self.short(data.countries[k].n).uppercased()
+        let persian = style == .persian
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        selectedLetters.string = NSAttributedString(string: name, attributes: Self.attributes(.selected, persian))
+        selectedLabel.string = persian ? nil : NSAttributedString(string: name, attributes: Self.attributes(.halo, persian))
+        let size = selectedLetters.preferredFrameSize()
+        let pad = persian ? CGSize(width: 14, height: 7) : CGSize(width: 4, height: 2)
+        selectedLabel.bounds = CGRect(x: 0, y: 0, width: ceil(size.width) + pad.width, height: ceil(size.height) + pad.height)
+        selectedLetters.frame = persian ? CGRect(x: pad.width / 2, y: pad.height / 2, width: ceil(size.width), height: ceil(size.height))
+                                        : selectedLabel.bounds
+        selectedLabel.backgroundColor = persian ? UIColor(red: 0xF7 / 255, green: 0xF0 / 255, blue: 0xDF / 255, alpha: 1).cgColor : nil
+        selectedLabel.borderColor = UIColor(red: 0xA8 / 255, green: 0x89 / 255, blue: 0x4F / 255, alpha: 1).cgColor
+        selectedLabel.borderWidth = persian ? 1.2 : 0
+        selectedLabel.shadowColor = persian ? UIColor(red: 0x2A / 255, green: 0x21 / 255, blue: 0x19 / 255, alpha: 1).cgColor
+                                            : UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1).cgColor
+        selectedLabel.shadowOpacity = persian ? 0.22 : 0.8
+        selectedLabel.shadowRadius = persian ? 1.5 : 2
+        selectedLabel.shadowOffset = persian ? CGSize(width: 0, height: 0.5) : .zero
+        selectedRule.frame = selectedLabel.bounds.insetBy(dx: 2.2, dy: 2.2)
+        selectedRule.isHidden = !persian
+        CATransaction.commit()
     }
 
     // MARK: each frame
@@ -463,14 +539,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if highlight == 0 { shown = nil }
             needsDraw = true
         }
+        let styleTarget = style == .persian ? 1.0 : 0.0
+        let restyling = styleMix != styleTarget
+        if restyling {
+            styleMix = still ? styleTarget : styleMix + (styleTarget - styleMix) * min(1, dt * 6)
+            if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
+            needsDraw = true
+        }
         if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
         if needsDraw, draw() {
             needsDraw = false
             if let onDrawn { self.onDrawn = nil; onDrawn() }
         }
-        // the hands, a fling, a flight or the red fading want the full rate; the slow turn (and the
-        // names fading with it) is smooth at 30
-        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp
+        // the hands, a fling, a flight, the highlight fading or the style changing want the full rate;
+        // the slow turn (and the names fading with it) is smooth at 30
+        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || restyling
         if moving != busy {
             busy = moving
             link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
@@ -490,12 +573,22 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     private enum Style { case country, sea, ocean, capital, selected, halo }
 
-    private static func attributes(_ style: Style) -> [NSAttributedString.Key: Any] {
+    private static func attributes(_ style: Style, _ persian: Bool) -> [NSAttributedString.Key: Any] {
         func font(_ name: String, _ size: CGFloat) -> UIFont { UIFont(name: name, size: size) ?? .systemFont(ofSize: size) }
         func ink(_ hex: UInt32) -> [NSAttributedString.Key: Any] {
             let c = UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
             // UIKit's key for measuring, Core Text's for CATextLayer, which draws with it
             return [.foregroundColor: c, NSAttributedString.Key(kCTForegroundColorAttributeName as String): c.cgColor]
+        }
+        if persian {
+            // ink and lapis, in Libertinus throughout (Uncial is the Kells')
+            switch style {
+            case .country: return ink(0x4A3D2E).merging([.font: font("LibertinusSerif-Regular", 9.5), .kern: 0.9]) { a, _ in a }
+            case .sea: return ink(0x4E5B9B).merging([.font: font("LibertinusSerif-Italic", 9), .kern: 0.3]) { a, _ in a }
+            case .ocean: return ink(0x4E5B9B).merging([.font: font("LibertinusSerif-Italic", 11), .kern: 2.4]) { a, _ in a }
+            case .capital: return ink(0x4A3D2E).merging([.font: font("LibertinusSerif-Italic", 9.5)]) { a, _ in a }
+            case .selected, .halo: return ink(0x2A2119).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0]) { a, _ in a }
+            }
         }
         switch style {
         case .country: return ink(0x5F5A51).merging([.font: font("LibertinusSerif-Regular", 9.5), .kern: 0.9]) { a, _ in a }
@@ -527,14 +620,25 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         selectedLabel.shadowRadius = 2
         selectedLabel.shadowOffset = .zero
         selectedLetters.alignmentMode = .center
+        selectedRule.borderColor = UIColor(red: 0x4E / 255, green: 0x5B / 255, blue: 0x9B / 255, alpha: 1).cgColor
+        selectedRule.borderWidth = 0.5
+        selectedRule.isHidden = true
+        selectedLabel.addSublayer(selectedRule)
         selectedLabel.addSublayer(selectedLetters)
         labelLayer.addSublayer(selectedLabel)
-        guard let data else { return }
-        func label(_ text: String, _ style: Style, _ c: [Double], _ kind: Kind, _ index: Int, from: Double) -> Label? {
+        makeLabels()
+    }
+
+    /// The names, lettered in the style.
+    private func makeLabels() {
+        guard let data else { labels = []; return }
+        let persian = style == .persian
+        func label(_ text: String, _ style: Style, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false) -> Label? {
             guard c.count == 2 else { return nil }
-            let s = NSAttributedString(string: text, attributes: Self.attributes(style))
+            let s = NSAttributedString(string: text, attributes: Self.attributes(style, persian))
             let size = s.size()
-            return Label(text: s, size: CGSize(width: ceil(size.width) + 2, height: ceil(size.height) + 2), lon: c[0], lat: c[1], kind: kind, index: index, from: from)
+            return Label(text: s, size: CGSize(width: ceil(size.width) + 2 + (mark ? Self.markWidth : 0), height: ceil(size.height) + 2),
+                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark)
         }
         // in the order they claim room: oceans, seas, countries, capitals
         var all: [Label?] = []
@@ -546,9 +650,19 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             all.append(label(Self.short(c.n).uppercased(), .country, c.c, .country, i, from: c.min + 0.5))
         }
         for (i, c) in data.capitals.enumerated().sorted(by: { ($0.element.r ?? 9) < ($1.element.r ?? 9) }) {
-            all.append(label("· " + c.n, .capital, c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
+            all.append(persian ? label(c.n, .capital, c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, mark: true)
+                               : label("· " + c.n, .capital, c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
         }
         labels = all.compactMap { $0 }
+    }
+
+    /// A Persian capital's rosette: its size, and the room it takes left of the name, in points.
+    private static let markSize: CGFloat = 9
+    private static let markWidth: CGFloat = 12
+
+    /// Where on its picture a name is pinned to its place: the middle, or a capital's rosette.
+    private static func anchor(_ l: Label) -> CGPoint {
+        l.mark ? CGPoint(x: (markSize / 2 + 1) / l.size.width, y: 0.5) : CGPoint(x: 0.5, y: 0.5)
     }
 
     /// Which names show (in their order of claim, where they face the viewer, the zoom has reached
@@ -581,7 +695,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 let (p, facing) = project(lon: l.lon, lat: l.lat)
                 point = facing > 0 ? p : nil
                 if facing > 0.25 {
-                    let r = CGRect(x: p.x - l.size.width / 2 - 3, y: p.y - l.size.height / 2 - 3, width: l.size.width + 6, height: l.size.height + 6)
+                    let a = Self.anchor(l)
+                    let r = CGRect(x: p.x - l.size.width * a.x - 3, y: p.y - l.size.height / 2 - 3, width: l.size.width + 6, height: l.size.height + 6)
                     // (all of it on the globe: no name spills onto the paper)
                     let far = max(hypot(Double(r.minX - centre.x), Double(r.minY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.minY - centre.y)),
                                   hypot(Double(r.minX - centre.x), Double(r.maxY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.maxY - centre.y)))
@@ -602,8 +717,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 let t = CATextLayer()
                 t.string = l.text
                 t.contentsScale = pixels
-                t.alignmentMode = .center
+                t.alignmentMode = l.mark ? .right : .center
                 t.bounds = CGRect(origin: .zero, size: l.size)
+                t.anchorPoint = Self.anchor(l)
+                if l.mark, let rosette {
+                    let m = CALayer()
+                    m.contents = rosette
+                    m.contentsGravity = .resizeAspect
+                    m.frame = CGRect(x: 1, y: (l.size.height - Self.markSize) / 2, width: Self.markSize, height: Self.markSize)
+                    t.addSublayer(m)
+                }
                 labelLayer.insertSublayer(t, below: selectedLabel)
                 l.layer = t
             }

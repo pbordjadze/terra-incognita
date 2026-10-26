@@ -5,9 +5,10 @@
 
 globe.json has every field the app's decoder requires (App/TerraIncognita/Globe/GlobeData.swift: a
 missing one leaves the globe blank), the three maps are the sizes and kinds the shader and the tap
-lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), no country index in globe.json exceeds
-what a grey byte holds, and the fonts are there with their licences. Reads PNG headers itself (no
-image library on the runner).
+lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
+(RGBA: the band 1536 x 256, the finial 256 x 256, the rosette 96 x 96), no country index in
+globe.json exceeds what a grey byte holds, and the fonts are there with their licences. Reads PNG
+headers itself (no image library on the runner).
 """
 import json, os, struct, sys
 
@@ -29,14 +30,17 @@ def png(path):
     return struct.unpack('>IIBB', head[16:26])
 
 
-KINDS = {'geo.png': 6, 'terrain.png': 6, 'ids.png': 0}   # 6: RGBA, 0: grey
-for name, kind in KINDS.items():
+# the maps, and the Persian style's ornaments (tools/globe/ornament.py): size, colour type (6: RGBA,
+# 0: grey), all 8-bit, as the app's uploads read them
+KINDS = {'geo.png': (4096, 2048, 6), 'terrain.png': (4096, 2048, 6), 'ids.png': (4096, 2048, 0),
+         'band.png': (1536, 256, 6), 'fleuron.png': (256, 256, 6), 'rosette.png': (96, 96, 6)}
+for name, (w, h0, kind) in KINDS.items():
     p = os.path.join(root, name)
     h = png(p) if os.path.isfile(p) else None
     if h is None:
         err(f'{name}: missing or not a PNG')
-    elif h != (4096, 2048, 8, kind):
-        err(f'{name}: {h[0]}x{h[1]}, {h[2]}-bit, colour type {h[3]}; expected 4096x2048, 8-bit, colour type {kind}')
+    elif h != (w, h0, 8, kind):
+        err(f'{name}: {h[0]}x{h[1]}, {h[2]}-bit, colour type {h[3]}; expected {w}x{h0}, 8-bit, colour type {kind}')
 
 
 def no_nan(name):
