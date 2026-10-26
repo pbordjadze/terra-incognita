@@ -58,10 +58,10 @@ struct AtlasScreen: View {
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
-        // `-globe` (CI's screenshots): open on the globe
-        return ProcessInfo.processInfo.arguments.contains("-globe")
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-globe") || (!args.contains("-film") && !args.contains("-look"))
         #else
-        return false
+        return true
         #endif
     }
 
