@@ -63,6 +63,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var ids: MTLTexture?
     private var band: MTLTexture?
     private var fleuron: MTLTexture?
+    private var braid: MTLTexture?
     /// The Persian capitals' marker (Globe/rosette.png).
     private var rosette: CGImage?
     /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian.
@@ -196,12 +197,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         terrain = Self.texture(GlobeData.root.appending(path: "terrain.png"), device: device, queue: queue)
         band = Self.texture(GlobeData.root.appending(path: "band.png"), device: device, queue: queue, premultiply: true)
         fleuron = Self.texture(GlobeData.root.appending(path: "fleuron.png"), device: device, queue: queue, premultiply: true)
+        braid = Self.texture(GlobeData.root.appending(path: "braid.png"), device: device, queue: queue)
         if let source = CGImageSourceCreateWithURL(GlobeData.root.appending(path: "rosette.png") as CFURL, nil) {
             rosette = CGImageSourceCreateImageAtIndex(source, 0, nil)
         }
-        if geo == nil || terrain == nil || band == nil || fleuron == nil || data == nil {
+        if geo == nil || terrain == nil || band == nil || fleuron == nil || braid == nil || data == nil {
             Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
-                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) band \(self.band != nil) fleuron \(self.fleuron != nil) data \(self.data != nil)")
+                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) band \(self.band != nil) fleuron \(self.fleuron != nil) braid \(self.braid != nil) data \(self.data != nil)")
         }
         // the countries' map, from the bytes the tap reads (decoded once)
         if let data, data.ids.count == data.width * data.height {
@@ -280,7 +282,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     /// Draws a frame; false if it couldn't (no drawable yet), so the next tick tries again.
     private func draw() -> Bool {
-        guard let pipeline, let queue, let geo, let terrain, let ids, let band, let fleuron, let metalLayer,
+        guard let pipeline, let queue, let geo, let terrain, let ids, let band, let fleuron, let braid, let metalLayer,
               bounds.width > 0, bounds.height > 0, let drawable = metalLayer.nextDrawable(),
               let commands = queue.makeCommandBuffer() else { return false }
         let pass = MTLRenderPassDescriptor()
@@ -306,6 +308,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         encoder.setFragmentTexture(ids, index: 2)
         encoder.setFragmentTexture(band, index: 3)
         encoder.setFragmentTexture(fleuron, index: 4)
+        encoder.setFragmentTexture(braid, index: 5)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
         commands.present(drawable)
@@ -317,12 +320,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     /// The globe's centre and radius on screen, in points (tools/globe/preview.py's `layout`): as large
     /// as its room allows with its frame round it (Wikipedia's gold ring reaches 11 reading points
-    /// past the edge; the Persian frame's finials 0.1475 of the radius), 14 pt from the room's edges.
+    /// past the edge; the Persian frame's finials 0.1833 of the radius), 14 pt from the room's edges.
     private var place: (centre: CGPoint, radius: Double) {
         let box = room ?? CGRect(x: 0, y: Double(bounds.height) * 0.08, width: Double(bounds.width), height: Double(bounds.height) * 0.7)
         let half = min(Double(box.width), Double(box.height)) / 2 - 14
         let ring = 11 * Double(reading)
-        let r = (half - ring) + (half / 1.1475 - (half - ring)) * styleMix
+        let r = (half - ring) + (half / 1.1833 - (half - ring)) * styleMix
         return (CGPoint(x: box.midX, y: box.midY), max(r, 40) * zoom)
     }
 
@@ -525,7 +528,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         selectedLetters.frame = persian ? CGRect(x: pad.width / 2, y: pad.height / 2, width: ceil(size.width), height: ceil(size.height))
                                         : selectedLabel.bounds
         selectedLabel.backgroundColor = persian ? UIColor(hex: face.halo)?.cgColor : nil
-        selectedLabel.borderColor = UIColor(red: 0xA8 / 255, green: 0x89 / 255, blue: 0x4F / 255, alpha: 1).cgColor
+        selectedLabel.borderColor = UIColor(red: 0xA0 / 255, green: 0x8C / 255, blue: 0x60 / 255, alpha: 1).cgColor
         selectedLabel.borderWidth = persian ? 1.2 : 0
         selectedLabel.shadowColor = UIColor(hex: persian ? face.ink : face.halo)?.cgColor
         selectedLabel.shadowOpacity = persian ? 0.22 : 0.8
@@ -728,7 +731,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         selectedLabel.alignmentMode = .center
         selectedLabel.isHidden = true
         selectedLetters.alignmentMode = .center
-        selectedRule.borderColor = UIColor(red: 0x4E / 255, green: 0x5B / 255, blue: 0x9B / 255, alpha: 1).cgColor
+        selectedRule.borderColor = UIColor(red: 0x5F / 255, green: 0x6C / 255, blue: 0xA7 / 255, alpha: 1).cgColor
         selectedRule.borderWidth = 0.5
         selectedRule.isHidden = true
         selectedLabel.addSublayer(selectedRule)

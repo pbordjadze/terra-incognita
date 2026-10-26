@@ -1,13 +1,27 @@
 {
-  "about": "The globe's type and its scale: read by GlobeView and GlobeScreen, mirrored by tools/globe/preview.py, checked by ci/check_globe.py (CLAUDE.md › Design rules). Sizes are points at reading scale 1; a face's tracking is a fraction of its size.",
-  "reading": {"shortSide": [430, 1032], "factor": [1.0, 1.2]},
+  "about": "The globe's type and its scale: read by GlobeView and GlobeScreen, mirrored by tools/globe/preview.py, checked by ci/check_globe.py (CLAUDE.md › Design rules). Sizes are points at reading scale 1; a face's tracking is a fraction of its size. Persian inks: Wikipedia's label lightness in the manuscript's inks (country names its text ink, water names its margin ink), the caption's first line a rubric in its vermilion, set large as its rubrics are.",
+  "reading": {
+    "shortSide": [
+      430,
+      1032
+    ],
+    "factor": [
+      1.0,
+      1.2
+    ]
+  },
   "readerMax": 1.5,
   "minSize": 10,
   "contrast": 4.5,
+  "largeText": 18.66,
+  "largeContrast": 3.0,
   "halo": 1.5,
   "gap": 0.4,
   "touch": 10,
-  "countryTiers": [2, 3],
+  "countryTiers": [
+    2,
+    3
+  ],
   "styles": {
     "wikipedia": {
       "names": {
@@ -20,30 +34,67 @@
         "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#FFF7EA", "halo": "#B02232"}
       },
       "caption": {
-        "eyebrow": {"font": "LibertinusSerif-Regular", "size": 12.5, "color": "#C12838", "tracking": 2.2, "uppercase": true},
-        "title": {"font": "LibertinusSerif-Semibold", "size": 30, "color": "#2A2925"},
-        "text": {"font": "LibertinusSerif-Italic", "size": 17, "color": "#5A564E"},
+        "eyebrow": {
+          "font": "LibertinusSerif-Regular",
+          "size": 12.5,
+          "color": "#C12838",
+          "tracking": 2.2,
+          "uppercase": true
+        },
+        "title": {
+          "font": "LibertinusSerif-Semibold",
+          "size": 30,
+          "color": "#2A2925"
+        },
+        "text": {
+          "font": "LibertinusSerif-Italic",
+          "size": 17,
+          "color": "#5A564E"
+        },
         "scrim": "#F6F2E7F2"
       },
       "captionGround": "#F6F2E7"
     },
     "persian": {
       "names": {
-        "ocean": {"font": "LibertinusSerif-Italic", "size": 12, "tracking": 0.2, "ink": "#4E5B9B", "halo": "#E7EBF1"},
-        "sea": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0.03, "ink": "#4E5B9B", "halo": "#E7EBF1"},
-        "country1": {"font": "LibertinusSerif-Regular", "size": 12, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
-        "country2": {"font": "LibertinusSerif-Regular", "size": 11, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
-        "country3": {"font": "LibertinusSerif-Regular", "size": 10, "tracking": 0.09, "ink": "#4A3D2E", "halo": "#F1EBD6"},
-        "capital": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0, "ink": "#4A3D2E", "halo": "#F1EBD6"},
-        "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#2A2119", "halo": "#F7F0DF"}
+        "ocean": {"font": "LibertinusSerif-Italic", "size": 12, "tracking": 0.2, "ink": "#6C6792", "halo": "#E1EFFF"},
+        "sea": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0.03, "ink": "#6C6792", "halo": "#E1EFFF"},
+        "country1": {"font": "LibertinusSerif-Regular", "size": 12, "tracking": 0.09, "ink": "#72614A", "halo": "#DDE7D9"},
+        "country2": {"font": "LibertinusSerif-Regular", "size": 11, "tracking": 0.09, "ink": "#72614A", "halo": "#DDE7D9"},
+        "country3": {"font": "LibertinusSerif-Regular", "size": 10, "tracking": 0.09, "ink": "#72614A", "halo": "#DDE7D9"},
+        "capital": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0, "ink": "#3B2C16", "halo": "#DDE7D9"},
+        "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#251F14", "halo": "#E5DBBE"}
       },
       "caption": {
-        "eyebrow": {"font": "LibertinusSerif-Regular", "size": 12.5, "color": "#4E5B9B", "tracking": 2.2, "uppercase": true},
-        "title": {"font": "LibertinusSerif-Semibold", "size": 28, "color": "#2A2119"},
-        "text": {"font": "LibertinusSerif-Italic", "size": 17, "color": "#5A4E40"}
+        "eyebrow": {
+          "font": "LibertinusSerif-Regular",
+          "size": 19,
+          "color": "#C35E46"
+        },
+        "title": {
+          "font": "LibertinusSerif-Semibold",
+          "size": 28,
+          "color": "#251F14"
+        },
+        "text": {
+          "font": "LibertinusSerif-Regular",
+          "size": 17,
+          "color": "#3B2C16"
+        }
       },
-      "captionGround": "#F7F0DF",
-      "cartouche": {"font": "LibertinusSerif-Semibold", "size": 24, "ink": "#2A2119", "ground": "#C9AE6A", "box": [0.29, 0.2, 0.42, 0.6]}
+      "captionGround": "#E5DBBE",
+      "cartouche": {
+        "font": "LibertinusSerif-Semibold",
+        "size": 24,
+        "ink": "#251F14",
+        "ground": "#9D8A57",
+        "box": [
+          0.29,
+          0.2,
+          0.42,
+          0.6
+        ]
+      }
     }
   }
 }

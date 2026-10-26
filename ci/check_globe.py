@@ -6,8 +6,8 @@
 globe.json has every field the app's decoder requires (App/TerraIncognita/Globe/GlobeData.swift: a
 missing one leaves the globe blank), the three maps are the sizes and kinds the shader and the tap
 lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
-(RGBA: the band 1536 x 256, the finial 256 x 256, the rosette 96 x 96, the caption's headpiece
-2048 x 256), no country index in globe.json exceeds what a grey byte holds, the fonts are there
+(RGBA: the band 1152 x 256, the braid 1024 x 256, the finial 256 x 256, the rosette 96 x 96, the
+caption's headpiece 2048 x 256), no country index in globe.json exceeds what a grey byte holds, the fonts are there
 with their licences, and the type (type.json) keeps the design rules: bundled fonts, no name under
 the smallest size, every ink at least the set contrast against its halo or ground. Reads PNG
 headers itself (no image library on the runner).
@@ -35,8 +35,8 @@ def png(path):
 # the maps, and the Persian style's ornaments (tools/globe/ornament.py): size, colour type (6: RGBA,
 # 0: grey), all 8-bit, as the app's uploads read them
 KINDS = {'geo.png': (4096, 2048, 6), 'terrain.png': (4096, 2048, 6), 'ids.png': (4096, 2048, 0),
-         'band.png': (1536, 256, 6), 'fleuron.png': (256, 256, 6), 'rosette.png': (96, 96, 6),
-         'headpiece.png': (2048, 256, 6)}
+         'band.png': (1152, 256, 6), 'fleuron.png': (256, 256, 6), 'rosette.png': (96, 96, 6),
+         'headpiece.png': (2048, 256, 6), 'braid.png': (1024, 256, 6)}
 for name, (w, h0, kind) in KINDS.items():
     p = os.path.join(root, name)
     h = png(p) if os.path.isfile(p) else None
@@ -145,9 +145,11 @@ for sname, st in (t.get('styles') or {}).items():
             err(f'type.json {sname}: caption {line} missing or its font not in fonts/')
             continue
         try:
+            # (large text, as WCAG has it, needs less: a rubric set large keeps its vermilion)
+            need = t.get('largeContrast', enough) if l.get('size', 0) >= t.get('largeText', 1e9) else enough
             c = contrast(l['color'], ground)
-            if c < enough:
-                err(f'type.json {sname}: caption {line} {l["color"]} on {ground} is {c:.2f}:1, under {enough}:1')
+            if c < need:
+                err(f'type.json {sname}: caption {line} {l["color"]} on {ground} is {c:.2f}:1, under {need}:1')
         except (KeyError, ValueError, TypeError):
             err(f'type.json {sname}: caption {line} color and captionGround must be #RRGGBB')
     ca = st.get('cartouche')

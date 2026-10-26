@@ -117,7 +117,8 @@ private struct PersianCaption: View {
     }
 }
 
-/// The panel's ground and its rulings.
+/// The panel's ground and its rulings: the manuscript's text panels and their gold, pink and lapis
+/// rulings (Globe.metal's P_ colours).
 private struct PersianPanel: View {
     /// The rulings' depth, in points.
     static let inset: CGFloat = 5
@@ -128,10 +129,10 @@ private struct PersianPanel: View {
                 Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
             }
             let r = CGRect(origin: .zero, size: size)
-            ctx.fill(Path(r), with: .color(colour(0xF7F0DF)))
-            ctx.stroke(Path(r.insetBy(dx: 1, dy: 1)), with: .color(colour(0xA8894F)), lineWidth: 2)
-            ctx.stroke(Path(r.insetBy(dx: 3.2, dy: 3.2)), with: .color(colour(0xD59A86)), lineWidth: 0.8)
-            ctx.stroke(Path(r.insetBy(dx: Self.inset - 0.25, dy: Self.inset - 0.25)), with: .color(colour(0x4E5B9B)), lineWidth: 0.5)
+            ctx.fill(Path(r), with: .color(colour(0xE5DBBE)))       // the text panels' paper
+            ctx.stroke(Path(r.insetBy(dx: 1, dy: 1)), with: .color(colour(0xA08C60)), lineWidth: 2)
+            ctx.stroke(Path(r.insetBy(dx: 3.2, dy: 3.2)), with: .color(colour(0xD1A38F)), lineWidth: 0.8)
+            ctx.stroke(Path(r.insetBy(dx: Self.inset - 0.25, dy: Self.inset - 0.25)), with: .color(colour(0x5F6CA7)), lineWidth: 0.5)
         }
     }
 }

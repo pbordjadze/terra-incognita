@@ -108,6 +108,32 @@ code, and let the check tell you when a choice breaks a rule.
 - **Language.** Real names in English, in Libertinus (Uncial only for Wikipedia's seas); capitals
   letter-spaced; no invented or decorative script.
 
+## The Persian style's sources
+
+Every choice in the Persian style traces to one of two references; nothing is a default.
+
+- **The manuscript**: LACMA's Khamsa of Nizami (M.85.237.16, Tabriz, 1529), its illuminated
+  opening and its landscapes, inspected in LACMA's scans (no pixel of them is in the app). Its
+  colours are sampled from the scans and white-balanced by one gain that makes its lead-white
+  pigment neutral (the varnish's cast is not the painter's): paper F2E4C8, lapis 5F6CA7, gold
+  A08C60, the cartouche's gold 9D8A57, salmon C47C66, pink D1A38F, green 79A18B, light blue A2B7D0,
+  black 251F14, white F5F5F5, the margin's blue ink 6D6793, the text's ink 3B2C16, the rubrics'
+  vermilion DD6C51, the landscapes' meadow CCD6C8 and rocks CCBDCB (shadows A298A7).
+- **Wikipedia's map conventions** (WikiProject Maps, location and topographic maps): water C6ECFF
+  and its depth ramp from D8F2FE, coasts, rivers and water names 0978AB, borders and country
+  names 646464, land F6E1B9, the highest tint F5F4F2; country names in capitals, water names in
+  italic.
+
+How they combine: the map's tints and lines take their lightness from the Wikipedia entry for
+their kind and their hue (and chroma) from the manuscript colour for it, so the map keeps
+Wikipedia's tonal design and reads like it; a name's ink may then be darkened, never hue-shifted,
+only as far as the contrast rule needs. The frame's rulings follow the order and proportions
+measured across the opening spread's frame, from its text panel out (Globe.metal's `P_` frame).
+On the map itself, what is drawn on the paper uses the margin's vocabulary (blue ink: coasts,
+rivers, finials, the capitals' rosettes); illumination (gold, lapis, salmon) stays in the frame,
+the caption's headpiece, and the one chosen country, gilded as the cartouche. The gold is the
+scan's matte shell gold: no sheen, no shadows, no vignette (the manuscript has none).
+
 ## Rules
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;

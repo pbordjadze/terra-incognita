@@ -40,28 +40,28 @@ LOCATOR = hexc('#C12838')
 GOLD = hexc('#B08A3E')
 SHADOW = hexc('#6E6352')
 
-# The Persian style: a study of the illuminated opening and the landscapes of LACMA's Khamsa of
-# Nizami (M.85.237.16, Tabriz, 1529), cleaned of the varnish's yellow. The globe is the quiet text
-# panel; its frame is the manuscript's: gold, pink, green and lapis rulings around a lapis band.
-P_PAPER = hexc('#F3E9D2')
-P_SEA = hexc('#E7EBF1')
-P_SEA_DEEP = hexc('#D3DAE9')
-P_COAST = hexc('#4A5794')
-P_MEADOW = hexc('#ECE7CE')       # lowland: the meadows' pale sage, on cream
-P_UPLAND = hexc('#DCDCC0')
-P_ROCK = hexc('#D5C6D0')         # highland: the lavender rocks
-P_PEAK = hexc('#EDE5EA')
-P_SHADE = hexc('#8C7C9C')
-P_BORDER = hexc('#A8635F')
-P_RIVER = hexc('#5C6EAE')
-P_LAPIS = hexc('#4E5B9B')
-P_GOLD = hexc('#A8894F')
-P_GOLD_LIGHT = hexc('#C9AE6A')
-P_PINK = hexc('#D59A86')
-P_GREEN = hexc('#6F9A7E')
-P_SALMON = hexc('#C7735A')
-P_INK = hexc('#2A2119')
-P_SEL = hexc('#D6BE7E')
+# The Persian style, every colour traced (Globe.metal's P_ palette, line for line; CLAUDE.md › The
+# Persian style's sources): the manuscript's colours sampled from LACMA's scans of the Khamsa of Nizami
+# (M.85.237.16), white-balanced so its lead white is neutral; the map's tints Wikipedia's lightness in
+# the manuscript's hues.
+P_PAPER = hexc('#F2E4C8')
+P_SEA = hexc('#E1EFFF')
+P_SEA_DEEP = hexc('#C6D2FE')
+P_COAST = hexc('#6F6995')
+P_MEADOW = hexc('#DDE7D9')
+P_ROCK = hexc('#EDDEEC')
+P_PEAK = hexc('#F7F1FF')
+P_SHADE = hexc('#A298A7')
+P_WHITE = hexc('#F5F5F5')
+P_BORDER = hexc('#825947')
+P_LAPIS = hexc('#5F6CA7')
+P_GOLD = hexc('#A08C60')
+P_PINK = hexc('#D1A38F')
+P_GREEN = hexc('#79A18B')
+P_LIGHT_BLUE = hexc('#A2B7D0')
+P_SALMON = hexc('#C47C66')
+P_INK = hexc('#251F14')
+P_SEL = hexc('#9D8A57')
 SEL_ALPHA = 0.85
 
 
@@ -71,7 +71,7 @@ def layout(w, h, persian=False):
     top = buttons_box(w, h)[3]
     bottom = caption_box(w, h)[1] if persian else h - (20 if min(w, h) >= 700 else 34) - 150
     half = min(w, bottom - top) / 2 - 14
-    return w / 2, (top + bottom) / 2, half / 1.1475 if persian else half - 11 * reading(w, h)
+    return w / 2, (top + bottom) / 2, half / 1.1833 if persian else half - 11 * reading(w, h)
 
 
 def rotation(lon0, lat0):
@@ -148,15 +148,17 @@ def mix(a, b, t):
     return a * (1 - t) + b * t
 
 
-# The Persian frame, outward from the globe's edge, in units of its radius (so it grows with the
-# globe): the rulings of a manuscript's frame (jadval) around the ornamental band, then on the
-# paper a blue ruled circle with blue-ink finials standing on it, as round a medallion.
+# The Persian frame, outward from the globe's edge in units of its radius (Globe.metal's): the
+# rulings in the order and proportions measured across the opening spread's frame, the braid and the
+# border band between them, then on the paper a ruled line with the margin's finials on it.
 P_RULES = (                       # (from, to, colour)
-    (1.000, 1.0035, P_INK), (1.0035, 1.0115, P_GOLD), (1.0115, 1.0155, P_PINK),
-    (1.0705, 1.0745, P_PINK), (1.0745, 1.0805, P_GREEN), (1.0805, 1.0905, P_GOLD), (1.0905, 1.093, P_INK),
-    (1.100, 1.1025, P_LAPIS))
-P_BAND = (1.0155, 1.0705, 20)     # inner, outer, repeats round
-P_FLEURON = (1.1025, 0.045, 48)   # base, height, how many
+    (1.0000, 1.0018, P_PINK), (1.0018, 1.0055, P_GOLD), (1.0055, 1.0091, P_LIGHT_BLUE),
+    (1.0307, 1.0314, P_GOLD), (1.0314, 1.0373, P_GREEN), (1.0373, 1.0416, P_GOLD), (1.0416, 1.0453, P_PINK),
+    (1.0453, 1.0471, P_GOLD), (1.0471, 1.0486, P_LAPIS), (1.0486, 1.0635, P_GOLD), (1.0635, 1.0650, P_INK),
+    (1.1150, 1.1161, P_INK), (1.1161, 1.1274, P_GOLD), (1.1274, 1.1303, P_PINK), (1.1376, 1.1383, P_COAST))
+P_BRAID = (1.0091, 1.0307, 74)    # inner, outer, repeats round
+P_BAND = (1.0650, 1.1150, 30)
+P_FLEURON = (1.1383, 0.045, 48)   # base, height, how many
 
 
 def picture(name, size, fallback):
@@ -169,6 +171,16 @@ def picture(name, size, fallback):
     a[..., :3] *= a[..., 3:]                                 # premultiplied, as the app uploads it
     out = [np.asarray(Image.fromarray(a[..., c]).resize((max(int(size[0]), 2), max(int(size[1]), 2)), Image.LANCZOS)) for c in range(4)]
     return np.clip(np.stack(out, -1), 0, 1)
+
+
+def stand_in_braid():
+    img = Image.new('RGBA', (1024, 256), tuple(int(c * 255) for c in P_GOLD) + (255,))
+    d = ImageDraw.Draw(img)
+    for k in range(9):
+        x = k * 256
+        d.line([(x - 256, 40), (x - 128, 216), (x, 40)], fill=(37, 31, 20, 255), width=30)
+        d.line([(x - 256, 216), (x - 128, 40), (x, 216)], fill=(37, 31, 20, 255), width=30)
+    return img
 
 
 def stand_in_band():
@@ -193,16 +205,21 @@ def stand_in_fleuron():
 
 
 def persian_page(px, py, x, y, rr, R, W, H, grain):
-    page = P_PAPER * (0.985 + 0.03 * grain)[..., None]
-    vig = np.hypot(px / W - 0.5, py / H - 0.48)
-    page = page * (1 - 0.06 * smoothstep(0.35, 0.8, vig))[..., None]
-    sh = np.exp(-np.maximum(np.hypot(x, y + 0.03) - 1.10, 0) ** 2 / 0.003) * (rr > 1.08)
-    page = mix(page, SHADOW, 0.10 * sh)
+    page = P_PAPER * (0.985 + 0.03 * grain)[..., None]      # (the paper's own texture; no shadow, no vignette)
     def ring(a, b):
-        return smoothstep(a - 0.5 / R, a + 0.5 / R, rr) * (1 - smoothstep(b - 0.5 / R, b + 0.5 / R, rr))
+        w, k = (b - a) * R, 1.0                                # (never thinner than 0.8 px: as much fainter)
+        if w < 0.8:
+            c = (a + b) / 2
+            a, b, k = c - 0.4 / R, c + 0.4 / R, w / 0.8
+        return k * smoothstep(a - 0.5 / R, a + 0.5 / R, rr) * (1 - smoothstep(b - 0.5 / R, b + 0.5 / R, rr))
     for a, b, c in P_RULES:
         page = mix(page, c, ring(a, b))
     theta = np.arctan2(x, y) % (2 * np.pi)                   # clockwise from the top
+    w_in, w_out, wn = P_BRAID
+    wlength = 2 * np.pi * (w_in + w_out) / 2 * R / wn
+    wtile = picture('braid.png', (wlength, (w_out - w_in) * R), stand_in_braid)
+    wb = sample(wtile, (theta / (2 * np.pi) * wn) % 1, (rr - w_in) / (w_out - w_in))
+    page = mix(page, wb[..., :3], ring(w_in, w_out) * wb[..., 3])
     r_in, r_out, n = P_BAND
     length = 2 * np.pi * (r_in + r_out) / 2 * R / n
     tile = picture('band.png', (length, (r_out - r_in) * R), stand_in_band)
@@ -222,32 +239,28 @@ def persian_page(px, py, x, y, rr, R, W, H, grain):
 
 def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined):
     # the sea: a pale lapis wash, its coasts ruled like a panel, a gold hair close in and a lapis one out
-    sea = mix(P_SEA, P_SEA_DEEP, depth)
-    sea = sea * (0.985 + 0.03 * mott)[..., None]
+    sea = mix(P_SEA, P_SEA_DEEP, depth)                      # (flat washes, as the manuscript's colours are)
     near = smoothstep(1.4, 2.6, k)                           # the rulings come with a closer look
     sea = mix(sea, P_GOLD, 0.6 * near * line(fine + 4.5, 0.6 * scale) * ((fine < -1.5) & (fine > -8)))
-    sea = mix(sea, P_COAST, 0.14 * near * line(fine + 11, 0.6 * scale) * ((fine < -8) & (fine > -15.5)))
+    sea = mix(sea, P_LIGHT_BLUE, 0.5 * near * line(fine + 11, 0.6 * scale) * ((fine < -8) & (fine > -15.5)))
     # the land: the meadows' sage low, the rocks' lavender high, their shadows violet
-    land = mix(P_MEADOW, P_UPLAND, smoothstep(200, 1100, hm))
-    land = mix(land, P_ROCK, smoothstep(900, 2600, hm))
+    land = mix(P_MEADOW, P_ROCK, smoothstep(900, 2600, hm))
     land = mix(land, P_PEAK, 0.7 * smoothstep(5000, 6300, hm))
     land = mix(land, P_SHADE, 0.36 * np.clip(-hill, 0, 1))
-    land = mix(land, np.ones(3, np.float32), 0.30 * np.clip(hill, 0, 1))
+    land = mix(land, P_WHITE, 0.30 * np.clip(hill, 0, 1))
     # closer in, the heights' contours every 500 m, pale like the rocks' highlights
     # (lobed, as the painters drew rocks: the contours of the height plus a little cellular swell)
     hc = hm / 600 + 0.3 * worley(u * 4096 / 4.5, v * 2048 / 4.5)
     contour = line(((hc + 0.5) % 1) - 0.5, 0.55 * scale, fwidth(hc)) * smoothstep(800, 1300, hm) * smoothstep(1.6, 2.6, k)
-    land = mix(land, P_PEAK, 0.7 * contour)
+    land = mix(land, P_WHITE, 0.7 * contour)
     land = mix(land, P_SHADE, 0.22 * line(((hc + 0.42) % 1) - 0.5, 0.55 * scale, fwidth(hc)) * smoothstep(800, 1300, hm) * smoothstep(1.6, 2.6, k))
-    land = mix(land, P_RIVER, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * lined(river))
-    # the chosen country gilded, like the opening's cartouche, and edged in its pink
-    # (the gold catches a light from the upper left as the globe turns it past)
-    sheen = np.maximum(x * -0.42 + y * 0.52 + z * 0.744, 0) ** 10
-    gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(u * 2400, v * 1200) - 0.5) + 0.22 * sheen)[..., None]
+    land = mix(land, P_COAST, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * lined(river))
+    # the chosen country gilded in the cartouche's matte gold, its speckle and all, and edged in its pink
+    gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(u * 2400, v * 1200) - 0.5))[..., None]
     land = mix(land, gild, SEL_ALPHA * m)
     bl = line(border, 0.7 * scale) * lined(border)
     land = mix(land, P_BORDER, 0.75 * bl)
-    land = mix(land, hexc('#C0705E'), line(border, 1.5 * scale) * lined(border) * (m > 0.04))
+    land = mix(land, P_PINK, line(border, 1.5 * scale) * lined(border) * (m > 0.04))
     col = mix(sea, land, landa)
     col = mix(col, P_COAST, line(d, 0.75 * scale * min(k ** 0.3, 1.3)))
     col = mix(col, P_GOLD, gl * np.where(landa > 0.5, 0.14, 0.22))
@@ -472,7 +485,8 @@ def caption_box(w, h):
     pw = min(w - 28, CAPTION_WIDTH)
     x0 = (w - pw) / 2
     head_h = (pw - 2 * inset) / 8
-    body_h = 12 + 12.5 * 1.3 + 6 + 17 * 1.3 + 12
+    cap = TYPE['styles']['persian']['caption']
+    body_h = 12 + cap['eyebrow']['size'] * 1.3 + 6 + cap['text']['size'] * 1.3 + 12
     y1 = h - (20 if min(w, h) >= 700 else 34) - 10
     return x0, y1 - (2 * inset + head_h + body_h), x0 + pw, y1
 
@@ -500,8 +514,9 @@ def persian_caption(img, w, h, scale, selected):
     f = G / 'fonts'
     S = lambda v: int(round(v * scale))
     tf = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), S(22))
-    ef = ImageFont.truetype(str(f / 'LibertinusSerif-Regular.otf'), S(12.5))
-    xf = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), S(17))
+    cap = TYPE['styles']['persian']['caption']
+    ef = ImageFont.truetype(str(f / (cap['eyebrow']['font'] + '.otf')), S(cap['eyebrow']['size']))
+    xf = ImageFont.truetype(str(f / (cap['text']['font'] + '.otf')), S(cap['text']['size']))
     col = lambda k: tuple(int(255 * v) for v in k)
     inset = 5
     x0, y0, x1, y1 = caption_box(w, h)
@@ -509,7 +524,7 @@ def persian_caption(img, w, h, scale, selected):
     head = picture('headpiece.png', (inner * scale, inner / 8 * scale), lambda: Image.new('RGBA', (2048, 256), col(P_LAPIS) + (255,)))
     head_h = inner / 8
     d = ImageDraw.Draw(img)
-    d.rectangle((S(x0), S(y0), S(x1), S(y1)), fill=col(hexc('#F7F0DF')))
+    d.rectangle((S(x0), S(y0), S(x1), S(y1)), fill=col(hexc(TYPE['styles']['persian']['captionGround'])))
     d.rectangle((S(x0 + 1), S(y0 + 1), S(x1 - 1), S(y1 - 1)), outline=col(P_GOLD), width=S(2))
     d.rectangle((S(x0 + 3.2), S(y0 + 3.2), S(x1 - 3.2), S(y1 - 3.2)), outline=col(P_PINK), width=max(1, S(0.8)))
     d.rectangle((S(x0 + inset), S(y0 + inset), S(x1 - inset), S(y1 - inset)), outline=col(P_LAPIS), width=max(1, S(0.5)))
@@ -529,8 +544,9 @@ def persian_caption(img, w, h, scale, selected):
     cxp, cyp = S(x0 + inset + inner * (bx + bw / 2)), S(y0 + inset + head_h * (by + bh / 2))
     d.text((cxp - (bb[2] - bb[0]) / 2, cyp - (bb[3] + bb[1]) / 2), title, font=tf, fill=col(P_INK))
     ty = y0 + inset + head_h + 12
-    d.text((S(x0 + inset + 16), S(ty)), '\u2009'.join(eyebrow.upper()), font=ef, fill=col(P_LAPIS))
-    d.text((S(x0 + inset + 16), S(ty + 12.5 * 1.3 + 6)), text, font=xf, fill=col(hexc('#5A4E40')))
+    # the first line a rubric, in the manuscript's vermilion, set large as its rubrics are
+    d.text((S(x0 + inset + 16), S(ty)), eyebrow, font=ef, fill=col(hexc(cap['eyebrow']['color'])))
+    d.text((S(x0 + inset + 16), S(ty + cap['eyebrow']['size'] * 1.3 + 6)), text, font=xf, fill=col(hexc(cap['text']['color'])))
 
 
 def stand_in_rosette():
