@@ -60,7 +60,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var highlight = 0.0
     private let labelLayer = CALayer()
     private var labels: [Label] = []
+    /// The chosen country's name: a thick red silhouette of it (the halo, for where it reaches past
+    /// its country onto the sea), the cream letters on top as its sublayer.
     private let selectedLabel = CATextLayer()
+    private let selectedLetters = CATextLayer()
     /// The screen's pixels per point, for the names' pictures.
     private var pixels: CGFloat = 3
     #if DEBUG
@@ -377,8 +380,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if still { highlight = k == nil ? 0 : 1 }
         if let k, let data {
             let c = data.countries[k]
-            selectedLabel.string = NSAttributedString(string: Self.short(c.n).uppercased(), attributes: Self.attributes(.selected))
-            selectedLabel.bounds = CGRect(origin: .zero, size: selectedLabel.preferredFrameSize())
+            let name = Self.short(c.n).uppercased()
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            selectedLetters.string = NSAttributedString(string: name, attributes: Self.attributes(.selected))
+            selectedLabel.string = NSAttributedString(string: name, attributes: Self.attributes(.halo))
+            let size = selectedLetters.preferredFrameSize()
+            selectedLabel.bounds = CGRect(x: 0, y: 0, width: size.width + 4, height: size.height + 2)
+            selectedLetters.frame = selectedLabel.bounds
+            CATransaction.commit()
             accessibilityValue = c.long ?? c.n
         } else {
             accessibilityValue = nil
@@ -409,6 +419,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : pixels
         pixels = scale
         selectedLabel.contentsScale = scale
+        selectedLetters.contentsScale = scale
         metalLayer?.contentsScale = scale
         metalLayer?.drawableSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
         CATransaction.begin()
@@ -477,7 +488,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     // MARK: the names
 
-    private enum Style { case country, sea, ocean, capital, selected }
+    private enum Style { case country, sea, ocean, capital, selected, halo }
 
     private static func attributes(_ style: Style) -> [NSAttributedString.Key: Any] {
         func font(_ name: String, _ size: CGFloat) -> UIFont { UIFont(name: name, size: size) ?? .systemFont(ofSize: size) }
@@ -491,11 +502,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         case .sea: return ink(0x4A8DBB).merging([.font: font("UncialAntiqua-Regular", 8.5), .kern: 0.4]) { a, _ in a }
         case .ocean: return ink(0x3E84B6).merging([.font: font("UncialAntiqua-Regular", 10), .kern: 1.2]) { a, _ in a }
         case .capital: return ink(0x4A463F).merging([.font: font("LibertinusSerif-Italic", 9.5)]) { a, _ in a }
-        case .selected:
-            // cream, outlined in the locator's red (a negative width strokes and fills), for where the
-            // name reaches past its country onto the sea
-            let red = UIColor(red: 0xA8 / 255, green: 0x1E / 255, blue: 0x2D / 255, alpha: 1)
-            return ink(0xFFF7EA).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0, .strokeWidth: -5.0,
+        case .selected: return ink(0xFFF7EA).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0]) { a, _ in a }
+        case .halo:
+            // the same letters filled and stroked thickly (a negative width does both) in the red
+            let red = UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1)
+            return ink(0xB02232).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0, .strokeWidth: -18.0,
                                           .strokeColor: red,
                                           NSAttributedString.Key(kCTStrokeColorAttributeName as String): red.cgColor]) { a, _ in a }
         }
@@ -511,11 +522,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         layer.addSublayer(labelLayer)
         selectedLabel.alignmentMode = .center
         selectedLabel.isHidden = true
-        // a halo of the locator's red, so the name reads where it reaches past a small country
-        selectedLabel.shadowColor = UIColor(red: 0xC1 / 255, green: 0x28 / 255, blue: 0x38 / 255, alpha: 1).cgColor
-        selectedLabel.shadowOpacity = 1
-        selectedLabel.shadowRadius = 3
+        selectedLabel.shadowColor = UIColor(red: 0xB0 / 255, green: 0x22 / 255, blue: 0x32 / 255, alpha: 1).cgColor
+        selectedLabel.shadowOpacity = 0.8
+        selectedLabel.shadowRadius = 2
         selectedLabel.shadowOffset = .zero
+        selectedLetters.alignmentMode = .center
+        selectedLabel.addSublayer(selectedLetters)
         labelLayer.addSublayer(selectedLabel)
         guard let data else { return }
         func label(_ text: String, _ style: Style, _ c: [Double], _ kind: Kind, _ index: Int, from: Double) -> Label? {
