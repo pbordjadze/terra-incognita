@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Installs the app on a booted simulator and screenshots the tour at moments of it.
+# Installs the app on a booted simulator and screenshots the film at moments of it.
 #   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid> <t1> <t2> ...
-# Each moment is a launch with `-tour t<T>s` (the film waits at T s and stops drawing after two
-# seconds, so the simulator is idle for the capture; Debug builds only), a wait, and a screenshot.
+# Each moment is a launch with `-film <T>` (the film held at T seconds; Debug builds only), a wait,
+# and a screenshot.
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -30,6 +30,6 @@ shot() {
   run 90 xcrun simctl io "$UDID" screenshot --type=png "$OUT/sim-$1.png" > /dev/null 2>&1; step "captured $1 ($?)"
 }
 WAIT=20
-for T in "$@"; do shot "t$(printf '%03d' "$T")" -tour "t${T}s"; done
+for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
 run 60 xcrun simctl spawn "$UDID" log show --last 5m --style compact --predicate 'process == "TerraIncognita" OR process CONTAINS "WebContent"' > "$OUT/sim-app.log" 2>&1 || true
 step done

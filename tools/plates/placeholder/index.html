@@ -1,0 +1,126 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Placeholder plates</title>
+<!-- A plain chart at the five scales, for building and testing the engine before the chosen look's
+     plates exist. The contract it follows is in ../kit.js. -->
+<script src="../vendor/d3.min.js"></script>
+<script src="../vendor/topojson.min.js"></script>
+<script src="../kit.js"></script>
+<style>body { margin: 0; background: transparent; }</style>
+<script>
+'use strict';
+const W = Kit.W, H = Kit.H;
+const C = { paper: '#efe7d4', sea: '#a9bdb8', coast: '#6f8f8b', land: '#e9dfc6', edge: '#7a6c55', water: '#93b2b6',
+  road: '#b79e7d', minor: '#d6c6a8', building: '#cdbf9f', green: '#c3cca2', ink: '#3b3328', red: '#9c4a32' };
+const FONT = 'Georgia, "Times New Roman", serif';
+const mercator = (lon0, lat0, latSpan) => {
+  // a Mercator that fills the plate's height with latSpan degrees around (lon0, lat0)
+  const y = d => Math.log(Math.tan(Math.PI / 4 + d * Math.PI / 360));
+  return d3.geoMercator().center([lon0, lat0]).translate([W / 2, H / 2]).scale(H / (y(lat0 + latSpan / 2) - y(lat0 - latSpan / 2)));
+};
+const LEVELS = [
+  { id: 'world', proj: () => d3.geoOrthographic().rotate([83, -36]).translate([W / 2, H / 2]).scale(W * 0.44).clipAngle(90),
+    caption: { eyebrow: 'Placeholder', title: 'The whole world', text: 'Plain plates for testing the engine.' } },
+  { id: 'america', proj: () => d3.geoConicConformal().parallels([30, 55]).rotate([83, 0]).center([0, 41]).translate([W / 2, H / 2]).scale(W * 1.25),
+    caption: { eyebrow: 'Placeholder', title: 'North America', text: 'The Great Lakes, and Ohio below them.' } },
+  { id: 'ohio', proj: () => mercator(-82.8, 40.2, 9.5),
+    caption: { eyebrow: 'Placeholder', title: 'Ohio', text: 'Between Lake Erie and the Ohio River.' } },
+  { id: 'columbus', proj: () => mercator(-82.99, 39.985, 0.62),
+    caption: { eyebrow: 'Placeholder', title: 'Columbus', text: 'Inside the ring, where the rivers meet.' } },
+  { id: 'shortnorth', proj: () => mercator(-83.005, 39.983, 0.0165),
+    caption: { eyebrow: 'Placeholder', title: 'Short North', text: 'High Street, north of downtown.' } },
+];
+const LAYERS = [{ name: 'base', depth: 0, opaque: true }, { name: 'labels', depth: 0.06 }];
+
+window.Plates = {
+  levels: LEVELS.length,
+  info(level) {
+    const L = LEVELS[level - 1], next = LEVELS[level];
+    return { id: L.id, caption: L.caption, layers: LAYERS, child: next ? Kit.childRect(L.proj(), next.proj()) : null };
+  },
+};
+
+const lines = (g, feats, path, stroke, width, filter) => g.append('g').selectAll('path')
+  .data(feats.filter(f => !filter || filter(f.properties))).join('path').attr('d', path)
+  .attr('fill', 'none').attr('stroke', stroke).attr('stroke-width', width).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+const areas = (g, feats, path, fill, stroke, width = 1) => g.append('g').selectAll('path').data(feats).join('path')
+  .attr('d', path).attr('fill', fill).attr('stroke', stroke || 'none').attr('stroke-width', width);
+const label = (g, xy, text, size, opts = {}) => g.append('text').attr('x', xy[0]).attr('y', xy[1]).text(text)
+  .attr('font-family', FONT).attr('font-size', size).attr('fill', opts.fill || C.ink).attr('text-anchor', 'middle')
+  .attr('letter-spacing', opts.spacing || '0.12em').attr('font-style', opts.italic ? 'italic' : null)
+  .attr('stroke', C.paper).attr('stroke-width', size * 0.18).attr('paint-order', 'stroke');
+
+async function draw(level, layer) {
+  const L = LEVELS[level - 1], proj = L.proj(), path = d3.geoPath(proj), svg = Kit.svg(), g = svg.append('g');
+  const D = name => Kit.json(`../data/${name}`);
+  if (layer === 'base') {
+    g.append('rect').attr('width', W).attr('height', H).attr('fill', L.id === 'world' ? '#1d2733' : C.paper);
+    if (L.id === 'world') {
+      const topo = await D('land-50m.json'), land = topojson.feature(topo, topo.objects.land);
+      g.append('path').datum({ type: 'Sphere' }).attr('d', path).attr('fill', C.sea).attr('stroke', C.coast).attr('stroke-width', 4);
+      g.append('path').datum(d3.geoGraticule10()).attr('d', path).attr('fill', 'none').attr('stroke', C.coast).attr('stroke-opacity', 0.35);
+      areas(g, land.features, path, C.land, C.edge, 2);
+    } else if (L.id === 'america' || L.id === 'ohio') {
+      g.select('rect').attr('fill', C.sea);
+      const land = L.id === 'america' ? (await D('america-land.geojson')).features : [];
+      if (land.length) areas(g, land, path, C.land, C.edge, 2.5);
+      const states = (await D(`${L.id}-states.geojson`)).features;
+      if (!land.length) areas(g, states, path, C.land, 'none');
+      lines(g, states, path, C.edge, L.id === 'ohio' ? 3 : 1.4).attr('stroke-dasharray', L.id === 'ohio' ? '10 7' : '5 4').attr('stroke-opacity', 0.7);
+      areas(g, (await D(`${L.id}-lakes.geojson`)).features, path, C.sea, C.coast, 1.5);
+      lines(g, (await D(`${L.id}-rivers.geojson`)).features, path, C.water, L.id === 'ohio' ? 5 : 2.5);
+      if (L.id === 'ohio') lines(g, (await D('ohio-roads.geojson')).features, path, C.road, 2.5).attr('stroke-opacity', 0.6);
+    } else if (L.id === 'columbus') {
+      const roads = (await D('columbus-roads.geojson')).features;
+      areas(g, (await D('columbus-city.geojson')).features, path, C.land, C.edge, 1.5).attr('fill-opacity', 0.6);
+      lines(g, roads, path, C.minor, 1.1, p => p.class === 'local');
+      areas(g, (await D('columbus-water.geojson')).features, path, C.water, 'none');
+      lines(g, (await D('columbus-streams.geojson')).features, path, C.water, 2.5);
+      lines(g, roads, path, C.road, 3.5, p => p.class === 'major');
+      lines(g, roads, path, C.red, 6, p => p.class === 'interstate').attr('stroke-opacity', 0.75);
+    } else {
+      areas(g, (await D('shortnorth-green.geojson')).features, path, C.green, 'none');
+      areas(g, (await D('shortnorth-water.geojson')).features.filter(f => f.geometry.type.includes('Polygon')), path, C.water, 'none');
+      const roads = (await D('shortnorth-roads.geojson')).features;
+      const big = { primary: 30, secondary: 26, tertiary: 22, residential: 16, unclassified: 14, service: 8 };
+      lines(g, roads, path, C.minor, 1, p => big[p.class]).attr('stroke-width', f => big[f.properties.class] * 1.25 + 4).attr('stroke', C.edge).attr('stroke-opacity', 0.35);
+      lines(g, roads, path, '#f7f1e3', 1, p => big[p.class]).attr('stroke-width', f => big[f.properties.class] * 1.25);
+      areas(g, (await D('shortnorth-buildings.geojson')).features, path, C.building, C.edge, 1.2);
+      g.append('g').selectAll('circle').data((await D('shortnorth-trees.geojson')).features).join('circle')
+        .attr('cx', f => proj(f.geometry.coordinates)[0]).attr('cy', f => proj(f.geometry.coordinates)[1]).attr('r', 9).attr('fill', '#8fa36d').attr('fill-opacity', 0.8);
+    }
+  } else if (layer === 'labels') {
+    if (L.id === 'world') {
+      label(g, proj([-100, 47]), 'NORTH AMERICA', 46);
+      label(g, proj([-60, -15]), 'SOUTH AMERICA', 40);
+      label(g, proj([-40, 28]), 'Atlantic Ocean', 40, { italic: true, fill: '#2d4a52' });
+    } else if (L.id === 'america') {
+      for (const p of (await D('america-places.geojson')).features) {
+        const xy = proj(p.geometry.coordinates);
+        g.append('circle').attr('cx', xy[0]).attr('cy', xy[1]).attr('r', 6).attr('fill', C.red);
+        label(g, [xy[0], xy[1] - 16], p.properties.name, 26, { spacing: '0.04em' });
+      }
+      label(g, proj([-83, 40.3]), 'OHIO', 30, { fill: C.red });
+    } else if (L.id === 'ohio') {
+      for (const p of (await D('ohio-places.geojson')).features.filter(f => f.properties.pop > 250000)) {
+        const xy = proj(p.geometry.coordinates);
+        g.append('circle').attr('cx', xy[0]).attr('cy', xy[1]).attr('r', 9).attr('fill', C.red);
+        label(g, [xy[0], xy[1] - 22], p.properties.name, 40, { spacing: '0.05em' });
+      }
+      label(g, proj([-81.2, 42.2]), 'Lake Erie', 44, { italic: true, fill: '#2d4a52' });
+      label(g, proj([-82.5, 40.6]), 'OHIO', 70, { fill: C.red, spacing: '0.3em' });
+    } else if (L.id === 'columbus') {
+      label(g, proj([-83.0, 39.962]), 'Downtown', 44);
+      label(g, proj([-83.04, 40.06]), 'Olentangy', 34, { italic: true, fill: '#2d4a52' });
+      label(g, proj([-83.035, 39.92]), 'Scioto', 34, { italic: true, fill: '#2d4a52' });
+    } else {
+      label(g, proj([-83.0035, 39.9835]), 'HIGH STREET', 40, { spacing: '0.3em' });
+      label(g, [W / 2, H - 60], '© OpenStreetMap contributors', 26, { spacing: '0.02em' });
+    }
+  }
+}
+
+const { level, layer } = Kit.params();
+if (layer !== 'none') addEventListener('DOMContentLoaded', () =>
+  draw(level, layer).then(() => { window.platesReady = true; }, e => { window.platesReady = 'failed: ' + e.message; }));
+</script>

@@ -1,0 +1,256 @@
+{
+ "name": "Placeholder",
+ "plates": [
+  {
+   "id": "world",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "world/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "world/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    532.4,
+    1089.4,
+    573.2,
+    1240.5
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "The whole world",
+    "text": "Plain plates for testing the engine."
+   }
+  },
+  {
+   "id": "america",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "america/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "america/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    573.5,
+    1257.4,
+    501.8,
+    1085.9
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "North America",
+    "text": "The Great Lakes, and Ohio below them."
+   }
+  },
+  {
+   "id": "america-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "america-1/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "america-1/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    568.1,
+    1229.6,
+    501.8,
+    1085.8
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "North America",
+    "text": "The Great Lakes, and Ohio below them."
+   },
+   "pass": true
+  },
+  {
+   "id": "ohio",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    556.4,
+    1400.9,
+    417.3,
+    903.1
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Ohio",
+    "text": "Between Lake Erie and the Ohio River."
+   }
+  },
+  {
+   "id": "ohio-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio-1/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio-1/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    610.4,
+    1321.1,
+    417.3,
+    902.9
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Ohio",
+    "text": "Between Lake Erie and the Ohio River."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    508.8,
+    1254.7,
+    489.1,
+    1058.5
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Columbus",
+    "text": "Inside the ring, where the rivers meet."
+   }
+  },
+  {
+   "id": "columbus-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-1/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-1/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    574.5,
+    1243.3,
+    489.1,
+    1058.5
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Columbus",
+    "text": "Inside the ring, where the rivers meet."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus-2",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-2/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-2/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": [
+    574.5,
+    1243.6,
+    489.1,
+    1057.8
+   ],
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Columbus",
+    "text": "Inside the ring, where the rivers meet."
+   },
+   "pass": true
+  },
+  {
+   "id": "shortnorth",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "shortnorth/base.jpg",
+     "depth": 0
+    },
+    {
+     "file": "shortnorth/labels.png",
+     "depth": 0.06
+    }
+   ],
+   "child": null,
+   "caption": {
+    "eyebrow": "Placeholder",
+    "title": "Short North",
+    "text": "High Street, north of downtown."
+   }
+  }
+ ]
+}
