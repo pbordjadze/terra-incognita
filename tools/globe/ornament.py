@@ -1,7 +1,7 @@
 """Draw the globe's Persian ornaments (Globe/) with offline Python geometry.
 
     python3 tools/globe/ornament.py
-    python3 tools/globe/ornament.py --sheet tools/globe/sheets/ornament-sheet.png
+    python3 tools/globe/ornament.py --sheet /tmp/ornament-sheet-r3.png
 
 The default run writes all four assets; --sheet also regenerates the review sheet.
 Only numpy, Pillow, scipy and the Python standard library are used. No source images,
@@ -13,15 +13,17 @@ fonts, lettering or network access are needed.
                quatrefoil has four circular lobes of radius 0.2 H, a 5 px white outline,
                an immediately inner 2 px gold rim, and a 4 px gold star with light-gold tips.
                Inside the panel's 6 px white outline, a 2 px gold rule follows after a
-               3 px lapis gap. Two 10 px gold sines in antiphase, amplitude 0.24 H, enclose
+               3 px lapis gap. Two 7 px gold sines in antiphase, amplitude 0.24 H, enclose
                four oval compartments. At the three internal centre-line crossings, the
-               top strand alternates; a 14 px lapis knockout leaves 2 px beside it.
+               top strand alternates; an 11 px lapis knockout leaves 2 px beside it.
                Each bay has a nominal 40 px khatai: alternating six white petals/rose heart
-               and five rose or orange petals/light-gold heart. Leafy C scrolls fill the
-               bays. Outward crest curls carry 14 px pink/white buds with gold calyces;
-               30 x 14 px split-palmette rumi grow at their roots and along the scrolls.
-               Secondary curls fill the outer spaces between crests. All ornamental
-               strokes are at least 3 px; the explicitly requested rules/gaps are 2 px.
+               and five rose or orange petals/light-gold heart. Each crest carries one
+               tightening 1.5-turn volute, tapering from 6 to 3 px, ending in a 26 px
+               five-petal blossom with a light-gold heart. Its colours cycle through
+               rose, white, orange, pale blue and pink. Outward crest curls each carry
+               one 14 px pink/white bud with a gold calyx. Rounded 28 x 16 px split
+               palmettes occur in pairs only at volute roots and stem crossings. All
+               ornamental strokes are at least 3 px; the requested rules/gaps are 2 px.
   fleuron.png  256 x 256, transparent RGBA, pointing up. A washed trefoil crowns a blue-ink
                stem and two hooked tendrils (minimum stroke 3 px). Alpha stays inside
                (56, 16)..(200, 244); the sheet places the actual bottom alpha edge on the ring.
@@ -33,9 +35,10 @@ fonts, lettering or network access are needed.
                gold stems join them to the cartouche. The three gold grounds use C9AE6A,
                deterministic +/-3% speckle in 3 px grains, a 4 px E3A08D pink outline,
                and a 2 px WHITE outer line. Black quarter-lobed corner spandrels reach
-               about 22% H and contain gold/pink sprigs. Mirrored interlaced leafy scrolls,
-               blossoms and shoulder sprigs remain at least 12 px from the cartouche;
-               only the two joining stems enter that margin. The gold interior is plain.
+               about 22% H and contain gold/pink sprigs with rounded leaves. Mirrored
+               interlaced scrolls, blossoms and shoulder sprigs remain at least 12 px
+               from the cartouche; only the two joining stems enter that margin.
+               The gold interior is plain.
                Cartouche inner text box, fractions (x0, y0, x1, y1):
                    (0.31, 0.31, 0.69, 0.69)
                Every pixel of this box is at least 12 px inside the gold fill.
@@ -46,15 +49,17 @@ Geometry is rasterised at 4x and box-filtered in premultiplied working colour, t
 with straight alpha and sRGB metadata. Coverage is measured before filtering, as visible
 area of gold and blossom colours divided by area inside the white outline. Both total
 coverage (including the inner gold rule) and ornament-only coverage are printed. The band
-requires both to lie in 40-45%; its seam columns and opaque alpha are checked. Headpiece
-coverage excludes the cartouche, pendants and black spandrels, counting only exposed lapis.
+requires total coverage to lie in 26-32%; its seam columns and opaque alpha are checked.
+Headpiece coverage excludes the cartouche, pendants and black spandrels, counting only exposed lapis.
+Its total coverage must also lie in 26-32%; the value without its field ruling is printed too.
 
 The optional 2112 x 2544 paper sheet contains, top to bottom: a bilinearly sampled app-scale
 polar wrap (inner radius 504 px, thickness 0.0685 radius, sixteen repeats), gold rings and
 48 outward fleurons; the whole band at 1:1; the whole headpiece at 1:1; a 360 x 160 px crop
 of that finished ring enlarged exactly 3x with nearest-neighbour; then fleurons at 256 and
 25 px, rosettes at 96 and 30 px, and the headpiece at its 360 x 45 px app size. The sheet
-contains no text and needs no globe data.
+contains no text and needs no globe data. With --sheet, the full PNG stays at the supplied
+path; tools/globe/ornament-sheet.jpg is a copy at most 1600 px wide, JPEG quality 85.
 """
 import argparse
 from pathlib import Path
@@ -134,12 +139,13 @@ class Drawing:
         self.image.paste((*rgb(fill), 255), mask=Image.fromarray(inner.astype('uint8') * 255))
         self.coverage.paste(255, mask=outer_mask)
 
-    def stroke(self, points, width, colour, end_width=None):
+    def stroke(self, points, width, colour, end_width=None, taper=1):
         points = np.asarray(points, float)
         tangent = np.gradient(points, axis=0)
         normal = np.column_stack((-tangent[:, 1], tangent[:, 0]))
         normal /= np.maximum(np.linalg.norm(normal, axis=1, keepdims=True), 1e-9)
-        widths = np.linspace(width, width if end_width is None else end_width, len(points))
+        progress = np.linspace(0, 1, len(points)) ** taper
+        widths = width + ((width if end_width is None else end_width) - width) * progress
         offset = normal * widths[:, None] / 2
         self.polygon(np.concatenate((points + offset, (points - offset)[::-1])), colour)
         segments = np.diff(points, axis=0)
@@ -175,12 +181,14 @@ def teardrop():
 
 
 def split_leaf():
-    """A 30 x 14 px bifurcated rumi, with a broad open notch."""
-    shape = bezier((0, 0), ((9, -7), (22, -7), (30, -6)),
-                   ((27, -6), (25, -2), (19, 0)),
-                   ((25, 1), (28, 4), (30, 6)),
-                   ((20, 7), (7, 7), (0, 0)))
-    shape[:, 1] *= 14 / np.ptp(shape[:, 1])
+    """A smooth 28 x 16 px split palmette: two round lobes and a round notch."""
+    shape = bezier((0, 0), ((0, -4), (8, -8), (17, -8)),
+                   ((23, -8), (28, -7), (28, -4)),
+                   ((28, -1), (20, -3), (20, 0)),
+                   ((20, 3), (28, 1), (28, 4)),
+                   ((28, 7), (23, 8), (17, 8)),
+                   ((8, 8), (0, 4), (0, 0)))
+    shape[:, 1] *= 16 / np.ptp(shape[:, 1])
     return shape
 
 
@@ -203,7 +211,7 @@ def bud(drawing, centre, angle, colour):
 
 
 def leafy_curve(drawing, points, width=5, spacing=23, sides=(-1, 1)):
-    """Secondary scrolls carry alternating full-size split palmettes."""
+    """A shoulder sprig with smooth, rounded split palmettes."""
     drawing.stroke(points, width, GOLD)
     arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))]
     for number, distance in enumerate(np.arange(16, arc[-1] - 10, spacing)):
@@ -217,12 +225,9 @@ def leafy_curve(drawing, points, width=5, spacing=23, sides=(-1, 1)):
             drawing.polygon(leaf, GOLD)
 
 
-def arabesque(drawing, start_x, end_x, middle_y=128, amplitude=61.44, compartments=4, flowers=True):
-    """Two antiphase sines, four oval bays, and outward leafy spiral tendrils.
-
-    Main stems are 10 px, secondary stems 5 px, and small branches at least 3 px.
-    A 14 px lapis knockout under a 10 px crossing gives exactly 2 px on each side.
-    """
+def arabesque(drawing, start_x, end_x, middle_y=128, amplitude=61.44, compartments=4,
+              flowers=True, outer_volutes=False):
+    """A 7 px interlace with one 6-to-3 px, 1.5-turn volute at every crest."""
     span = end_x - start_x
     step = span / compartments
     position = np.linspace(0, 1, 2401)
@@ -231,77 +236,60 @@ def arabesque(drawing, start_x, end_x, middle_y=128, amplitude=61.44, compartmen
                              middle_y + sign * amplitude * np.sin(phase)))
              for sign in (-1, 1)]
     for stem in stems:
-        # Paired rumi on the main stems build a dense, illuminated leafy braid.
-        leafy_curve(drawing, stem, width=10, spacing=26, sides=(-1,))
-        leafy_curve(drawing, stem, width=10, spacing=26, sides=(1,))
+        drawing.stroke(stem, 7, GOLD)
 
     for bay in range(compartments):
         centre_x = start_x + (bay + 0.5) * step
-        # The bays have two inward-facing leafy C scrolls around a 40 px blossom.
-        for side in (-1, 1):
-            curve = bezier((centre_x + side * (step / 2 - 20), middle_y),
-                           ((centre_x + side * 95, middle_y - 45),
-                            (centre_x + side * 37, middle_y - 47),
-                            (centre_x + side * 34, middle_y - 12)),
-                           ((centre_x + side * 32, middle_y + 20),
-                            (centre_x + side * 75, middle_y + 31),
-                            (centre_x + side * 80, middle_y + 8)))
-            leafy_curve(drawing, curve, width=6, spacing=22)
         for outward in (-1, 1):
             root = (centre_x, middle_y + outward * amplitude)
+            # An elliptic Archimedean spiral makes exactly 1.5 tightening turns.
+            # Rotate the lower band volute; reflect headpiece volutes into its two
+            # narrow blue margins above and below the pendants.
+            progress = np.linspace(0, 1, 721)
+            initial_angle = 2.47 if outer_volutes else -0.8
+            angle = initial_angle + 3 * np.pi * progress
+            radius = 1 - 0.90 * progress
+            edge_volute = ((bay == 0 and outward == -1)
+                            or (bay == compartments - 1 and outward == 1))
+            radii = np.array((204 * step / 296.5, 30) if outer_volutes else
+                             ((112.5 if edge_volute else 125) * step / 296.5, 98))
+            centre = np.array((0, -amplitude)) - radii * (np.cos(initial_angle), np.sin(initial_angle))
+            spiral = centre + radii * radius[:, None] * np.column_stack((np.cos(angle), np.sin(angle)))
+            spiral *= (1 if outer_volutes else -outward, -outward)
+            spiral += (centre_x, middle_y)
+            drawing.stroke(spiral, 6, GOLD, end_width=3, taper=4)
+            blossom(drawing, spiral[-1],
+                    (ROSE, WHITE, ORANGE, PALE_BLUE, PINK)[(2 * bay + (outward == 1)) % 5],
+                    diameter=26)
             # A broad curl returns into the outer margin and ends in a small bud.
-            curve = bezier(root,
-                           ((centre_x + 42, root[1] + outward * 9),
-                            (centre_x + 99, root[1] + outward * 29),
-                            (centre_x + 67, root[1] + outward * 37)),
-                           ((centre_x + 31, root[1] + outward * 48),
-                            (centre_x + 17, root[1] + outward * 20),
-                            (centre_x + 41, root[1] + outward * 18)))
-            leafy_curve(drawing, curve, width=5, spacing=24, sides=(-outward,))
-            for sign in (-1, 1):
-                drawing.polygon(transform(split_leaf(), root,
-                                          np.pi / 2 * outward + sign * 0.65), GOLD)
+            curve = bezier((0, -amplitude),
+                           ((90, -100), (230, -118), (230, -60)),
+                           ((230, 0), (96, 0), (96, -50)),
+                           ((96, -80), (155, -90), (165, -62)))
+            curve[:, 0] *= (0.52 if bay == compartments - 1 else 1) * step / 296.5
+            curve[:, 1] *= -outward
+            curve += (centre_x, middle_y)
+            drawing.stroke(curve, 7, GOLD)
+            for angle in (outward * 0.4, np.pi - outward * 0.4):
+                drawing.polygon(transform(split_leaf(), root, angle), GOLD)
             bud(drawing, curve[-1], 0, PINK if bay % 2 else WHITE)
-            # A countercurl fills the otherwise empty outer half of each compartment.
-            counter = bezier((centre_x - 8, root[1]),
-                             ((centre_x - 47, root[1] - outward * 9),
-                              (centre_x - 109, root[1] + outward * 8),
-                              (centre_x - 98, root[1] + outward * 32)),
-                             ((centre_x - 88, root[1] + outward * 51),
-                              (centre_x - 51, root[1] + outward * 37),
-                              (centre_x - 65, root[1] + outward * 21)))
-            leafy_curve(drawing, counter, width=5, spacing=22, sides=(outward,))
-            bud(drawing, counter[-1], np.pi, WHITE if bay % 2 else PINK)
         if flowers:
             blossom(drawing, (centre_x, middle_y),
                     WHITE if bay % 2 == 0 else (ROSE, ORANGE, PALE_BLUE)[(bay // 2) % 3],
                     petals=6 if bay % 2 == 0 else 5)
-    # Branch into the open upper/lower spaces between successive crest tendrils.
+    # One pair of rounded leaves at each crossing, outside the open underpass.
     for crossing in range(1, compartments):
         centre = start_x + crossing * step
-        root_y = amplitude * abs(np.sin(np.pi * (crossing - 38 / step)))
-        for outward in (-1, 1):
-            scroll = bezier((centre - 38, middle_y + outward * root_y),
-                            ((centre - 20, middle_y + outward * 80),
-                             (centre + 45, middle_y + outward * 103),
-                             (centre + 57, middle_y + outward * 70)),
-                            ((centre + 65, middle_y + outward * 43),
-                             (centre + 25, middle_y + outward * 38),
-                             (centre + 21, middle_y + outward * 59)))
-            leafy_curve(drawing, scroll, width=5, spacing=24, sides=(outward,))
-            bud(drawing, scroll[-1], np.pi, PINK if crossing % 2 else WHITE)
-    # Open the crossings, then restore both strands and the alternating 2 px underpass.
-    # Keeping foliage out of these small discs makes the braid legible at app scale.
-    for crossing in range(1, compartments):
-        drawing.dot((start_x + crossing * step, middle_y), 19, LAPIS)
-    for stem in stems:
-        drawing.stroke(stem, 10, GOLD)
+        for side in (-1, 1):
+            root = (centre + side * 12, middle_y + side * amplitude * np.sin(12 * np.pi / step))
+            drawing.polygon(transform(split_leaf(), root, np.pi / 2 if side == 1 else -np.pi / 2), GOLD)
+    # Preserve the alternating strands and exactly 2 px of lapis beside the top one.
     for crossing in range(1, compartments):
         centre = start_x + crossing * step
         top = stems[crossing % 2]
         local = top[np.abs(top[:, 0] - centre) <= 15]
-        drawing.stroke(local, 14, LAPIS)
-        drawing.stroke(local, 10, GOLD)
+        drawing.stroke(local, 11, LAPIS)
+        drawing.stroke(local, 7, GOLD)
 
 
 def colour_mask(drawing, colours):
@@ -365,7 +353,7 @@ def band():
     decoration = colour_mask(ornaments, (GOLD, GOLD_LIGHT, WHITE, ROSE, ORANGE, PALE_BLUE, PINK)) & visible
     ornament_coverage = np.count_nonzero(decoration & interior) / np.count_nonzero(interior)
     coverage = np.count_nonzero((decoration | ruling) & interior) / np.count_nonzero(interior)
-    if not (0.40 <= ornament_coverage <= coverage <= 0.45) or clearance < 3:
+    if not (0.26 <= coverage <= 0.32) or clearance < 3:
         raise ValueError(f'panel decoration: {coverage:.2%} coverage, '
                          f'{ornament_coverage:.2%} without ruling, {clearance:.2f} px clearance')
     image = box_rgba(drawing.image)
@@ -474,13 +462,14 @@ def headpiece():
     reserved = central_mask.copy()
     ornaments = Drawing((width, height))
     # Draw whole side scrolls rather than clipping scroll fragments around the cartouche.
-    arabesque(ornaments, 28, 466, compartments=2, flowers=False)
     for upper in (True, False):
         shoulder = bezier((452, 49), ((505, 23), (557, 17), (610, 29)))
         if not upper:
             shoulder[:, 1] = height - shoulder[:, 1]
         leafy_curve(ornaments, shoulder, width=5, spacing=35, sides=(-1 if upper else 1,))
         bud(ornaments, shoulder[-1], 0, PINK)
+    # Keep the volute blossoms above the shoulder foliage where the two meet.
+    arabesque(ornaments, 28, 466, compartments=2, flowers=False, outer_volutes=True)
     blossom(ornaments, (90, 128), WHITE, petals=6)
     blossom(ornaments, (451, 128), PALE_BLUE)
     ornaments.image.alpha_composite(ornaments.image.transpose(Image.Transpose.FLIP_LEFT_RIGHT))
@@ -529,6 +518,9 @@ def headpiece():
     coverage = np.count_nonzero(decoration & lapis_region) / np.count_nonzero(lapis_region)
     decoration &= ~((edge >= 9) & (edge < 11))
     ornament_coverage = np.count_nonzero(decoration & lapis_region) / np.count_nonzero(lapis_region)
+    if not 0.26 <= coverage <= 0.32:
+        raise ValueError(f'headpiece field decoration: {coverage:.2%} coverage, '
+                         f'{ornament_coverage:.2%} without ruling')
     x0, y0, x1, y1 = TEXT_BOX
     text_clearance = cartouche_distance[int(y0 * height * SCALE):int(y1 * height * SCALE),
                                        int(x0 * width * SCALE):int(x1 * width * SCALE)].min() - 6
@@ -635,7 +627,14 @@ def main():
                         (heading, 'headpiece.png')):
         save(image, OUT / name)
     if args.sheet:
-        save(review_sheet(tile, finial, marker, heading), args.sheet)
+        sheet = review_sheet(tile, finial, marker, heading)
+        save(sheet, args.sheet)
+        preview = sheet.convert('RGB')
+        preview.thumbnail((1600, sheet.height), Image.Resampling.LANCZOS)
+        preview_path = ROOT / 'tools/globe/ornament-sheet.jpg'
+        preview.save(preview_path, quality=85, subsampling=0)
+        print(f'wrote {preview_path.relative_to(ROOT)} '
+              f'({preview.width} x {preview.height}, JPEG quality 85)')
 
 
 if __name__ == '__main__':
