@@ -34,15 +34,15 @@ finished picture in the chosen look. This file is the map and the rules.
   docstring). d3 needs polygon exteriors clockwise; the build fixes winding after rounding.
   - The closest scale in the app is a public neighbourhood (Short North). A private one never comes
     into this public repository.
-- **The first demo** (`Web/`, `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`): the map in
-  dense characters by WebGL, no longer the app's screen.
-  - `cell.glsl` must stay quick for a phone's GPU compiler, which builds it at the first frame while
-    iOS watches WebKit's GPU process: a heavy function gets one call site, and a loop over a heavy
-    body takes its count from a uniform (`uZero`).
+- **The first demo**, the map in dense characters by WebGL in a web view, was retired on October 26,
+  2026. Its last state is in `main`'s history at 1f9b941 (`git show 1f9b941:Web/index.html`; also
+  `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`, `tools/build_textures.py`,
+  `tools/sprites.py`, `ci/web_check.cjs`).
 - **CI** (`ci/` and `.github/workflows/ci.yml`):
-  - `web`: headless Chromium check of `Web/`, plus a WebKit report.
-  - `apple`: Debug and Release builds. The plates and `Web/data` are compared byte for byte in the
-    bundle. Simulator screenshots of the film at moments run only when the workflow is started by
+  - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
+    and no unused file in the bundle), and the plate tools' syntax.
+  - `apple`: Debug and Release builds. The plates are compared byte for byte in the bundle.
+    Simulator screenshots of every look's film at moments run only when the workflow is started by
     hand (`ci/sim_shots.sh`).
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
