@@ -595,6 +595,12 @@ function maskOut(A) {
 // 1 inside the plate's resting view, falling to 0 at its edges: while a closer plate fades up it is
 // smaller than the screen, and its outer ring must look like the plate it opens out of
 const edgeFade = () => gridOf((x, y) => smooth(4, 79, Math.min(x, CW - x)) * smooth(8, 160, Math.min(y, CH - y)));
+// lift a plate's outer ring towards its parent's key (by screening a colour), for the moment it fades up
+function ringLift(color, k) {
+  if (PASS()) return;
+  const E = edgeFade(), lc = hex(color);
+  for (let i = 0; i < N; i++) { const a2 = (1 - E[i]) * k, q = i * 3; if (a2 > 0) for (let c = 0; c < 3; c++) IMG[q + c] = 1 - (1 - IMG[q + c]) * (1 - lc[c] * a2); }
+}
 
 // ---------------------------------------------------------------- data
 const D = name => Kit.json(`../data/${name}`);
@@ -1028,6 +1034,7 @@ function drawOhio(layer, d) {
   composite();
   c = scratch(); spatter(c, 1800, 47, (x, y) => at(seaM, x, y) > 0.9 && at(dSea, x, y) > 9 * K, { big: 0.03 }); composite('normal', 0.8);
   c = scratch(); stars(c, 6, 49, (x, y) => at(dSea, x, y) > 15 * K && at(seaM, x, y) > 0.9, { apart: 36, scale: 1.1 }); composite();
+  ringLift('#4d7f78', 0.18);
   paper(0);
   present();
 }
@@ -1156,6 +1163,7 @@ function drawColumbus(layer, d) {
     composite('normal', 1, i => SNE[i]);
   }
   if (!PASS()) { c = scratch(); tower(c, tw[0], tw[1], 24, { edge: 0.9 }); composite(); }
+  ringLift('#5f938c', 0.2);
   paper(0);
   present();
 }
@@ -1192,7 +1200,7 @@ function drawShortNorth(layer, d) {
     const L = (t, ll, size, o) => { const [x, y] = pt(ll); label(c, t, x, y, size, o); };
     L('Victorian Village', [-83.0078, 39.9842], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
     L('Italian Village', [-83.0019, 39.9792], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
-    label(c, '© OpenStreetMap contributors', CW / 2 + 186, CH / 2 + 413, 5.5, { color: '#b7c5e6', track: 0.02, alpha: 0.6, align: 'right' });
+    label(c, '© OpenStreetMap contributors', 430, 200, 5.5, { color: '#c3d0ec', track: 0.02, alpha: 0.75, align: 'right' });
   });
   if (layer === 'lights') { const EDGE = edgeFade(); vectorLayer(c => {
     // High Street's light, and its arches drawn upright as the film stands things up in a plan: each a
@@ -1213,6 +1221,8 @@ function drawShortNorth(layer, d) {
   begin(true);
   // the ground between: the same moonlit teal as the city plate below, parks a little lighter
   wash(null, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.18, specks: 0.004, off: 61, lift: () => 0.06 });
+  // the outer ring takes the city plate's lighter key, so the plate's edge doesn't show as it fades up
+  { const lc = hex('#5f938c'); for (let i = 0; i < N; i++) { const a2 = (1 - EDGE[i]) * 0.34, q = i * 3; if (a2 > 0) for (let k = 0; k < 3; k++) IMG[q + k] = 1 - (1 - IMG[q + k]) * (1 - lc[k] * a2); } }
   const parkM = maskFrom(c => { c.beginPath(); gp(c)(parks); gp(c)(woods); c.fill(); });
   wash(parkM, { c: ['#123438', '#1e4c4a', '#33695f'], bloom: 0.45, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.16, off: 63 });
   const bldM = maskFrom(c => { c.beginPath(); gp(c)(d.bldFC); c.fill(); });

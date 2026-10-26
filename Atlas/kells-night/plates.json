@@ -1,0 +1,527 @@
+{
+ "name": "Night Voyage",
+ "plates": [
+  {
+   "id": "world",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "world/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "world/near.png",
+     "depth": 0.1
+    },
+    {
+     "file": "world/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "world/ship.png",
+     "depth": 0.02,
+     "frame": [
+      970,
+      1516,
+      108,
+      86
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0,
+      "anchor": [
+       1024,
+       1584
+      ]
+     }
+    }
+   ],
+   "child": [
+    546.8,
+    1183.5,
+    544.3,
+    1178.1
+   ],
+   "caption": {
+    "eyebrow": "I · The World",
+    "title": "One lit stone in the night",
+    "text": "Far out, the Earth is a single orb among spiral stars."
+   }
+  },
+  {
+   "id": "world-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "world-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "world-1/near.png",
+     "depth": 0.1
+    },
+    {
+     "file": "world-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "world-1/ship.png",
+     "depth": 0.02,
+     "frame": [
+      1273,
+      1000,
+      326,
+      260
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0,
+      "anchor": [
+       1436.0174390965408,
+       1205.2832856878908
+      ]
+     }
+    }
+   ],
+   "child": [
+    546.8,
+    1183.3,
+    544.3,
+    1178.4
+   ],
+   "caption": {
+    "eyebrow": "I · The World",
+    "title": "One lit stone in the night",
+    "text": "Far out, the Earth is a single orb among spiral stars."
+   },
+   "pass": true
+  },
+  {
+   "id": "america",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "america/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "america/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.15
+     }
+    },
+    {
+     "file": "america/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "america/ship.png",
+     "depth": 0.02,
+     "frame": [
+      917,
+      1531,
+      86,
+      68
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.2,
+      "anchor": [
+       960,
+       1585
+      ]
+     }
+    }
+   ],
+   "child": [
+    598.2,
+    1294.7,
+    441.5,
+    955.6
+   ],
+   "caption": {
+    "eyebrow": "II · North America",
+    "title": "The five sweet-water seas",
+    "text": "The Great Lakes hold the light; Ohio lies below Erie."
+   }
+  },
+  {
+   "id": "ohio",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.3
+     }
+    },
+    {
+     "file": "ohio/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "ohio/ship.png",
+     "depth": 0.02,
+     "frame": [
+      734,
+      1606,
+      97,
+      77
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.4,
+      "anchor": [
+       782,
+       1668
+      ]
+     }
+    }
+   ],
+   "child": [
+    581.8,
+    1259.1,
+    474.4,
+    1026.7
+   ],
+   "caption": {
+    "eyebrow": "III · Ohio",
+    "title": "Between the lake and the river",
+    "text": "Erie above, the river below, Columbus between."
+   }
+  },
+  {
+   "id": "ohio-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio-1/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.3
+     }
+    },
+    {
+     "file": "ohio-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "ohio-1/ship.png",
+     "depth": 0.02,
+     "frame": [
+      525,
+      1197,
+      336,
+      267
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.4,
+      "anchor": [
+       691.2487064132013,
+       1411.8615509421315
+      ]
+     }
+    }
+   ],
+   "child": [
+    581.8,
+    1259.3,
+    474.4,
+    1026.5
+   ],
+   "caption": {
+    "eyebrow": "III · Ohio",
+    "title": "Between the lake and the river",
+    "text": "Erie above, the river below, Columbus between."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.44999999999999996
+     }
+    },
+    {
+     "file": "columbus/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus/ship.png",
+     "depth": 0.02,
+     "frame": [
+      744,
+      1725,
+      63,
+      50
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.6000000000000001,
+      "anchor": [
+       776,
+       1765
+      ]
+     }
+    }
+   ],
+   "child": [
+    579.4,
+    1254,
+    479.1,
+    1037
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The city in its ring",
+    "text": "The Outerbelt is its wall; two rivers meet."
+   }
+  },
+  {
+   "id": "columbus-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-1/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.44999999999999996
+     }
+    },
+    {
+     "file": "columbus-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus-1/ship.png",
+     "depth": 0.02,
+     "frame": [
+      562,
+      1610,
+      216,
+      172
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.6000000000000001,
+      "anchor": [
+       672.0018725498671,
+       1746.8607917238141
+      ]
+     }
+    }
+   ],
+   "child": [
+    579.4,
+    1254,
+    479.1,
+    1037
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The city in its ring",
+    "text": "The Outerbelt is its wall; two rivers meet."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus-2",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-2/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-2/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.44999999999999996
+     }
+    },
+    {
+     "file": "columbus-2/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus-2/ship.png",
+     "depth": 0.02,
+     "frame": [
+      0,
+      1217,
+      679,
+      585
+     ],
+     "motion": {
+      "kind": "sway",
+      "angle": 2.4,
+      "period": 7,
+      "phase": 0.6000000000000001,
+      "anchor": [
+       316.4779192128953,
+       1684.8507998627142
+      ]
+     }
+    }
+   ],
+   "child": [
+    579.4,
+    1254.8,
+    479.1,
+    1035.4
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The city in its ring",
+    "text": "The Outerbelt is its wall; two rivers meet."
+   },
+   "pass": true
+  },
+  {
+   "id": "shortnorth",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "shortnorth/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "shortnorth/lights.png",
+     "depth": 0,
+     "motion": {
+      "kind": "breathe",
+      "min": 0.82,
+      "max": 1,
+      "period": 8,
+      "phase": 0.6
+     }
+    },
+    {
+     "file": "shortnorth/labels.png",
+     "depth": 0.04
+    }
+   ],
+   "child": null,
+   "caption": {
+    "eyebrow": "V · Short North",
+    "title": "Lanterns over High Street",
+    "text": "Arches of light down the long street north."
+   }
+  }
+ ],
+ "style": {
+  "fonts": [
+   "fonts/UncialAntiqua-Regular.ttf",
+   "fonts/Alegreya-Regular.ttf",
+   "fonts/Alegreya-Italic.ttf"
+  ],
+  "eyebrow": {
+   "font": "Alegreya-Regular",
+   "size": 12.5,
+   "color": "#e0565e",
+   "tracking": 2.6,
+   "uppercase": true
+  },
+  "title": {
+   "font": "Alegreya-Italic",
+   "size": 27,
+   "color": "#f4ead0"
+  },
+  "text": {
+   "font": "Alegreya-Regular",
+   "size": 16.5,
+   "color": "#b9c7e8"
+  },
+  "scrim": "#050718e6",
+  "accent": "#e0565e"
+ }
+}
