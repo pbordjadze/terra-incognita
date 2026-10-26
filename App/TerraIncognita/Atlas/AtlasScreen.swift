@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import SwiftUI
 import UIKit
@@ -16,7 +17,16 @@ final class AtlasModel {
 
     var look: Look? { looks.indices.contains(lookIndex) ? looks[lookIndex] : nil }
 
-    init() { loadStyle() }
+    init() {
+        #if DEBUG
+        // `-look sampler` (CI's screenshots): start on that look
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-look"), i + 1 < args.count, let k = looks.firstIndex(where: { $0.id == args[i + 1] }) {
+            lookIndex = k
+        }
+        #endif
+        loadStyle()
+    }
 
     private func loadStyle() {
         guard let look, let set = Atlas.plates(of: look) else { style = nil; return }
@@ -29,6 +39,10 @@ final class AtlasModel {
 /// taken the map in hand.
 struct AtlasScreen: View {
     @State private var model = AtlasModel()
+    /// Black over the map: it fades up from it at launch and dips through it between looks.
+    @State private var veil = 1.0
+    /// The look's name, shown for a moment after switching.
+    @State private var banner: String?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -68,8 +82,37 @@ struct AtlasScreen: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: model.mode)
+        .overlay {
+            Color.black.opacity(veil).ignoresSafeArea().allowsHitTesting(false)
+        }
+        .overlay(alignment: .top) {
+            if let banner {
+                Text(verbatim: banner)
+                    .font(.system(.headline, design: .serif))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .glassEffect()
+                    .padding(.top, 60)
+                    .transition(.opacity)
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+        .animation(.easeInOut(duration: 0.4), value: banner)
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
+        }
         .onChange(of: model.lookIndex) { _, _ in
-            if let look = model.look { model.canvas?.show(look) }
+            guard let look = model.look else { return }
+            Task {
+                withAnimation(.easeIn(duration: 0.22)) { veil = 1 }
+                try? await Task.sleep(for: .milliseconds(240))
+                model.canvas?.show(look)
+                banner = look.name
+                withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
+                try? await Task.sleep(for: .seconds(1.8))
+                if banner == look.name { banner = nil }
+            }
         }
         .background(Color.black)
     }
