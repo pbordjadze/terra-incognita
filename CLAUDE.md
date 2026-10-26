@@ -1,43 +1,58 @@
 # Terra Incognita — engineering notes
 
-A demo app: a medieval world map drawn in characters (WebGL2 in a WKWebView), with a six-minute
-tour that plays on launch. This file is the map and the rules.
+A demo app: a medieval map that plays as a film, from the whole world down to a street, each scale a
+finished picture in the chosen look. This file is the map and the rules.
 
 ## Map
 
-- `Web/`: everything you see. `index.html` (overlay: captions, chapters, Resume, style menu,
-  cards), `render.js` (WebGL2: the cell pass writes each cell's character, colour and ground into
-  two small textures; the glyph pass paints them from a font atlas; a mix pass blends two frames
-  for transitions; the inks), `cell.glsl` (one fragment per character cell: inverts the
-  projection, samples the textures, picks strokes from a line's direction, engraves the
-  creatures, the Kells treatments), `scene.js` (projections forward and inverse, the camera as a
-  look of lon/lat/zoom, lettering, sprites, hidden things), `tour.js` (the script, its clock, the
-  reader's fingers, the UI), `main.js` (start-up and the loop). `#t213` in the URL plays from
-  213 s, `#t213p` waits there, `#t213s` waits and stops drawing after two seconds; the page keeps
-  `#r<T>` in its address so a reload resumes the film.
-- `Web/data/` is built by `tools/build_textures.py` (its docstring is the texture layout, which
-  `cell.glsl`'s decoders mirror): rebuild, never hand-edit. `Web/fonts/` are OFL fonts, bundled.
-- `cell.glsl` must stay quick for a phone's GPU compiler, which builds it at the first frame
-  while iOS watches WebKit's GPU process: a heavy function gets one call site, and a loop over a
-  heavy body takes its count from a uniform (`uZero`), never a constant it could write out.
-- The page reports each step of its start (`TI.log`, in `index.html`) to the app, which logs it
-  (os_log, subsystem com.pbordjadze.terraincognita, category page) and shows the last step if the
-  first frames haven't come six seconds after a start (`App/TerraIncognita/PageStatus.swift`).
-- `App/`: `TerraIncognita.xcodeproj` (synchronized folder `TerraIncognita/`; `Web` is a folder
-  reference copied into the bundle). Debug builds take `-tour t213s` (handed to the page as
-  `window.TI_TOUR`) and `-diag no2d|nogl` (`TI.diag`: a part of the page left out).
-- `ci/` and `.github/workflows/ci.yml`: `web` (headless Chromium check and screenshots, and a
-  WebKit pass that reports without gating), `apple` (Debug and Release builds, the bundled data
-  compared byte for byte; simulator screenshots only when the workflow is run by hand, as a
-  report, and `ci/sim_diag.sh`, the page's start-up log per `-diag` mode), `ipa` (on `main`: the
-  `build-<n>` prerelease and the SideStore source on the `sidestore` branch; CI owns that branch),
-  `report` (to `refs/ci-shots/<branch>`; `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it).
+- **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
+  each sitting inside the one before at its `child` rectangle.
+  - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
+    while it doesn't cover the screen, its child fading up) and only moves and scales them each
+    display-link frame. That is what keeps it at 120 Hz: never draw or lay out per frame.
+  - `Camera.swift`: `Ladder` converts a camera between nested plates, `normalized` keeps the film's
+    camera in the deepest opaque one, and `Film` is the drifts and dives (`cut`: the same film under
+    Reduce Motion, each dive a dip through the background).
+  - Free mode keeps the reader's camera in the deepest plate the view lies wholly inside
+    (`contained`; only the first plate clamps), and pinching in past a plate's rest slides the view
+    towards the closer plate so it arrives inside it at the hand-over (`steered`): no jumps.
+  - `Plates.swift`: decodes `Atlas/`.
+  - `AtlasScreen`: SwiftUI around it.
+  - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
+- **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
+  `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
+  (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
+  - Between scales more than 4× apart, the exporter adds pass plates (the wider scale magnified about
+    the closer one), so no picture is blown up far before the next takes over. The film dives
+    straight through them.
+  - Plates are 1638×3545: about 1.4 phone screens at 3×.
+  - A page that draws on a canvas paints pass plates itself at their magnification (the exporter
+    passes `magnify`, `cx`, `cy`; the page sets `window.platesMagnifies`), so they stay sharp.
+  - Preview a look's film without the phone: `python3 tools/plates/preview.py <look> --times …`
+    (frames) or `--video` (no gold sheen).
+- **Map data** (`tools/plates/data/`). Built by `tools/plates/build_data.py` (sources in its
+  docstring). d3 needs polygon exteriors clockwise; the build fixes winding after rounding.
+  - The closest scale in the app is a public neighbourhood (Short North). A private one never comes
+    into this public repository.
+- **The first demo** (`Web/`, `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`): the map in
+  dense characters by WebGL, no longer the app's screen.
+  - `cell.glsl` must stay quick for a phone's GPU compiler, which builds it at the first frame while
+    iOS watches WebKit's GPU process: a heavy function gets one call site, and a loop over a heavy
+    body takes its count from a uniform (`uZero`).
+- **CI** (`ci/` and `.github/workflows/ci.yml`):
+  - `web`: headless Chromium check of `Web/`, plus a WebKit report.
+  - `apple`: Debug and Release builds. The plates and `Web/data` are compared byte for byte in the
+    bundle. Simulator screenshots of the film at moments run only when the workflow is started by
+    hand (`ci/sim_shots.sh`).
+  - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
+    branch. CI owns that branch.
+  - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
 
 ## Rules
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;
   a commit message says what changed and why and quotes no one.
-- No network: the page loads only from the bundle; no analytics, no accounts.
+- No network: everything loads from the bundle; no analytics, no accounts.
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
 - Name, icon and listing are the owner's to decide (the icon is a placeholder).

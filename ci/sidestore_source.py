@@ -44,13 +44,13 @@ if not versions:
 latest = versions[0]
 
 description = (
-    "An atlas drawn in letters: the world as a medieval map, every coast, wood, wave and sea "
-    "monster made of characters. Open it and a six-minute tour plays; touch the map to wander.")
+    "A medieval map that plays as a film, from the whole world down to a single street. Open it "
+    "and the film plays; touch the map to wander, and switch between looks.")
 app = {
     "name": info.get("CFBundleDisplayName", "Terra Incognita"),
     "bundleIdentifier": info["CFBundleIdentifier"],
     "developerName": repo.split("/")[0],
-    "subtitle": "An atlas drawn in letters",
+    "subtitle": "The world, closer and closer",
     "localizedDescription": description,
     "iconURL": icon_url,
     "tintColor": "#C9A243",
