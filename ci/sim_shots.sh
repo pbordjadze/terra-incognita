@@ -14,7 +14,8 @@ step() { echo "$(date +%T) $*"; }
 run() {
   local limit="$1"; shift
   "$@" & local pid=$!
-  ( sleep "$limit"; kill -9 "$pid" 2>/dev/null && echo "$(date +%T) killed after ${limit} s: $*" ) & local dog=$!
+  # (its sleep writes nowhere: left running, it would hold a caller's $(...) open to the end)
+  ( sleep "$limit" > /dev/null 2>&1; kill -9 "$pid" 2>/dev/null && echo "$(date +%T) killed after ${limit} s: $*" ) & local dog=$!
   wait "$pid"; local rc=$?
   kill "$dog" 2>/dev/null; wait "$dog" 2>/dev/null
   return $rc

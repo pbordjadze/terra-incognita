@@ -119,6 +119,19 @@ body[data-mode="film"] #menuBtn { opacity: 0.55; }
 <script>
   // in the app, links leave for Safari (App/TerraIncognita/MapView.swift); a browser opens a tab
   if (location.protocol === 'terra:') document.addEventListener('DOMContentLoaded', () => document.getElementById('cardLink').removeAttribute('target'));
+  // Start-up, step by step and timed: to the app's log (and to the line it shows if starting
+  // stalls), and to the console. TI.diag leaves a part out to find what stalls: `no2d` the
+  // lettering canvas and the font's measuring read-back, `nogl` the map's drawing (Debug builds:
+  // -diag <mode>).
+  window.TI = { diag: window.TI_DIAG || new URLSearchParams(location.search).get('diag') || '' };
+  TI.log = msg => {
+    const line = (performance.now() / 1000).toFixed(2) + ' s ' + msg;
+    try { webkit.messageHandlers.page.postMessage(line); } catch (e) {}
+    console.log('[terra] ' + line);
+  };
+  addEventListener('error', e => TI.log('error: ' + e.message + ' (' + String(e.filename).split('/').pop() + ':' + e.lineno + ')'));
+  addEventListener('unhandledrejection', e => TI.log('rejected: ' + (e.reason && e.reason.message || e.reason)));
+  TI.log('page ' + innerWidth + 'x' + innerHeight + ' @' + devicePixelRatio + (TI.diag ? ', leaving out ' + TI.diag : ''));
 </script>
 <script src="render.js"></script>
 <script src="scene.js"></script>

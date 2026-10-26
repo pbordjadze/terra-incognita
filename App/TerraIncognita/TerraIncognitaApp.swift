@@ -5,11 +5,14 @@ import UIKit
 /// (`Web/`, see its `render.js`); this is the window that holds it, edge to edge.
 @main
 struct TerraIncognitaApp: App {
+    @State private var status = PageStatus()
+
     var body: some Scene {
         WindowGroup {
-            MapView()
+            MapView(status: status)
                 .ignoresSafeArea()
                 .background(Color.black)
+                .overlay(alignment: .bottom) { StartLine(status: status) }
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
                 .preferredColorScheme(.dark)
