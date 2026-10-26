@@ -732,9 +732,17 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         format.scale = pixels
         format.opaque = false
         let halo = self.halo, mark = l.mark ? rosette : nil
+        // the halo's pass: the same letters in the halo's tone (Core Text strokes in the text's own
+        // colour unless the string names another, which would draw the halo in ink)
+        let tone = (UIColor(hex: l.halo) ?? .white).withAlphaComponent(0.92)
+        let toned = NSMutableAttributedString(attributedString: l.text)
+        toned.addAttributes([.foregroundColor: tone, NSAttributedString.Key(kCTForegroundColorAttributeName as String): tone.cgColor,
+                             NSAttributedString.Key(kCTStrokeColorAttributeName as String): tone.cgColor],
+                            range: NSRange(location: 0, length: toned.length))
         let image = UIGraphicsImageRenderer(size: l.size, format: format).image { context in
             let c = context.cgContext
             let line = CTLineCreateWithAttributedString(l.text)
+            let haloLine = CTLineCreateWithAttributedString(toned)
             var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
             let width = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading))
             if let mark {
@@ -748,10 +756,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                                  y: (l.size.height - ascent - descent) / 2 + descent)
             c.setLineJoin(.round)
             c.setLineWidth(halo * 2)
-            c.setStrokeColor((UIColor(hex: l.halo) ?? .white).withAlphaComponent(0.92).cgColor)
-            c.setTextDrawingMode(.stroke)
+            c.setStrokeColor(tone.cgColor)
+            c.setTextDrawingMode(.fillStroke)
             c.textPosition = origin
-            CTLineDraw(line, c)
+            CTLineDraw(haloLine, c)
             c.setTextDrawingMode(.fill)
             c.textPosition = origin
             CTLineDraw(line, c)

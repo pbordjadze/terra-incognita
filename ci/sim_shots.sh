@@ -33,11 +33,7 @@ shot() {
 }
 WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
-if [ -n "${LOOKS:-}" ]; then
-  for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
-else
-  for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
-fi
+# the globe first (the film's moments can take long, and a timeout should cut them, not it)
 if [ "${GLOBE:-}" = 1 ]; then
   # each style (the defaults' `globeStyle`, set by the launch argument)
   shot globe-whole -globe -globeStyle wikipedia -globe-at -83 28 1
@@ -47,6 +43,11 @@ if [ "${GLOBE:-}" = 1 ]; then
   shot persian-iran -globe -globeStyle persian -globe-at 53 33 1 -globe-select Iran
   shot persian-region -globe -globeStyle persian -globe-at 53 33 4.5 -globe-select Iran
   shot persian-himalaya -globe -globeStyle persian -globe-at 84 31 7 -globe-select Nepal
+fi
+if [ -n "${LOOKS:-}" ]; then
+  for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
+else
+  for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
 fi
 run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
 step done
