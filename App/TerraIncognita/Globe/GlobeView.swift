@@ -491,7 +491,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         case .sea: return ink(0x4A8DBB).merging([.font: font("UncialAntiqua-Regular", 8.5), .kern: 0.4]) { a, _ in a }
         case .ocean: return ink(0x3E84B6).merging([.font: font("UncialAntiqua-Regular", 10), .kern: 1.2]) { a, _ in a }
         case .capital: return ink(0x4A463F).merging([.font: font("LibertinusSerif-Italic", 9.5)]) { a, _ in a }
-        case .selected: return ink(0xFFF7EA).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0]) { a, _ in a }
+        case .selected:
+            // cream, outlined in the locator's red (a negative width strokes and fills), for where the
+            // name reaches past its country onto the sea
+            let red = UIColor(red: 0xA8 / 255, green: 0x1E / 255, blue: 0x2D / 255, alpha: 1)
+            return ink(0xFFF7EA).merging([.font: font("LibertinusSerif-Semibold", 11), .kern: 1.0, .strokeWidth: -5.0,
+                                          .strokeColor: red,
+                                          NSAttributedString.Key(kCTStrokeColorAttributeName as String): red.cgColor]) { a, _ in a }
         }
     }
 
@@ -508,7 +514,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         // a halo of the locator's red, so the name reads where it reaches past a small country
         selectedLabel.shadowColor = UIColor(red: 0xC1 / 255, green: 0x28 / 255, blue: 0x38 / 255, alpha: 1).cgColor
         selectedLabel.shadowOpacity = 1
-        selectedLabel.shadowRadius = 2.5
+        selectedLabel.shadowRadius = 3
         selectedLabel.shadowOffset = .zero
         labelLayer.addSublayer(selectedLabel)
         guard let data else { return }
