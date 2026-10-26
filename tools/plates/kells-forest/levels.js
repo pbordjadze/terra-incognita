@@ -416,7 +416,7 @@ function ohioGround(d) {
   // the till plain: the survey's townships, each its own faint field colour
   const plain = maskOf(c => { c.fill(ohSharp); c.globalCompositeOperation = 'destination-out'; hillsRegion(c); c.fill(lakesSharp); });
   ctx.save(); ctx.clip(ohSharp); ctx.globalCompositeOperation = 'multiply';
-  const tw = 8.6, ob = bboxOf([], 0), obb = d3.geoPath(proj).bounds(S3.ohio);
+  const tw = 8.6, obb = d3.geoPath(proj).bounds(S3.ohio);
   for (let y = obb[0][1]; y < obb[1][1]; y += tw) for (let x = obb[0][0]; x < obb[1][0]; x += tw) {
     const t = pick([tiles.straw, tiles.chart, tiles.khaki, tiles.lime, tiles.straw, tiles.ochre]), a = R(0.03, 0.09), half = rnd() < 0.4, ang = rnd() < 0.5;
     if (!plain(x + tw / 2, y + tw / 2)) continue;
@@ -664,14 +664,14 @@ function shortNorthInMiniature(d, proj) {
   const pts = d.snT.features.map(t => proj(t.geometry.coordinates));
   for (let y = -120; y < H + 120; y += 7) for (let x = -120; x < W + 120; x += 7) {
     const hx = x + (hash2(x, y, 5) - 0.5) * 5, hy = y + (hash2(x, y, 6) - 0.5) * 5;
-    if (hash2(x, y, 7) > 0.55 || fbm2(hx / 26, hy / 26, 51) < 0.52) continue;
+    if (hash2(x, y, 7) > 0.3 || fbm2(hx / 26, hy / 26, 51) < 0.52) continue;
     pts.push([C0[0] + (hx - C0[0]) * f, C0[1] + (hy - C0[1]) * f]);
   }
   for (const t of d.snR.features.filter(g => ['residential', 'tertiary', 'secondary', 'unclassified', 'living_street'].includes(g.properties.class))) {
     const ls = t.geometry.type === 'LineString' ? [t.geometry.coordinates] : t.geometry.coordinates, off = ((ROAD_W[t.properties.class] || 4) / 2 + 3.2) * f;
     for (const l of ls) { const pp = l.map(c => proj(c)); for (let i = 1; i < pp.length; i++) { const a = pp[i - 1], b = pp[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (!L) continue;
       for (let u = 0; u < L; u += 9.5 * f) { const x = a[0] + (b[0] - a[0]) * u / L, y = a[1] + (b[1] - a[1]) * u / L, nx = -(b[1] - a[1]) / L, ny = (b[0] - a[0]) / L;
-        for (const sd of [-1, 1]) if (hash2(Math.round(x * 1e3), Math.round(y * 1e3), sd + 9) < 0.45) pts.push([x + nx * sd * off, y + ny * sd * off]); } } }
+        for (const sd of [-1, 1]) if (hash2(Math.round(x * 1e3), Math.round(y * 1e3), sd + 9) < 0.3) pts.push([x + nx * sd * off, y + ny * sd * off]); } } }
   }
   pts.sort((a, b) => a[1] - b[1]);
   for (const p of pts) {
@@ -1033,6 +1033,9 @@ function render() {
   const list = LAYER === 'all' ? LVL.layers : LVL.layers.filter(l => l.name === LAYER);
   if (!list.length) throw new Error('no layer ' + LAYER);
   for (const l of list) {
+    // a pass plate carries no names: they would only balloon as the camera dives, so they fade out with the plate
+    // behind, and the next level brings its own
+    if (VS !== 1 && l.name === 'labels') continue;
     seedRng(seedFor(LEVEL, l.name)); css(ctx);
     l.draw(DATA_LOADED);
     css(ctx);
