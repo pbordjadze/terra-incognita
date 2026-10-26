@@ -13,21 +13,16 @@ const W = Kit.W, H = Kit.H;
 const C = { paper: '#efe7d4', sea: '#a9bdb8', coast: '#6f8f8b', land: '#e9dfc6', edge: '#7a6c55', water: '#93b2b6',
   road: '#b79e7d', minor: '#d6c6a8', building: '#cdbf9f', green: '#c3cca2', ink: '#3b3328', red: '#9c4a32' };
 const FONT = 'Georgia, "Times New Roman", serif';
-const mercator = (lon0, lat0, latSpan) => {
-  // a Mercator that fills the plate's height with latSpan degrees around (lon0, lat0)
-  const y = d => Math.log(Math.tan(Math.PI / 4 + d * Math.PI / 360));
-  return d3.geoMercator().center([lon0, lat0]).translate([W / 2, H / 2]).scale(H / (y(lat0 + latSpan / 2) - y(lat0 - latSpan / 2)));
-};
 const LEVELS = [
-  { id: 'world', proj: () => d3.geoOrthographic().rotate([83, -36]).translate([W / 2, H / 2]).scale(W * 0.44).clipAngle(90),
+  { id: 'world', proj: () => Kit.lens(W * 0.44),
     caption: { eyebrow: 'Placeholder', title: 'The whole world', text: 'Plain plates for testing the engine.' } },
-  { id: 'america', proj: () => d3.geoConicConformal().parallels([30, 55]).rotate([83, 0]).center([0, 41]).translate([W / 2, H / 2]).scale(W * 1.25),
+  { id: 'america', proj: () => Kit.lens(Kit.km(5200)),
     caption: { eyebrow: 'Placeholder', title: 'North America', text: 'The Great Lakes, and Ohio below them.' } },
-  { id: 'ohio', proj: () => mercator(-82.8, 40.2, 9.5),
+  { id: 'ohio', proj: () => Kit.lens(Kit.km(520)),
     caption: { eyebrow: 'Placeholder', title: 'Ohio', text: 'Between Lake Erie and the Ohio River.' } },
-  { id: 'columbus', proj: () => mercator(-82.99, 39.985, 0.62),
+  { id: 'columbus', proj: () => Kit.lens(Kit.km(38)),
     caption: { eyebrow: 'Placeholder', title: 'Columbus', text: 'Inside the ring, where the rivers meet.' } },
-  { id: 'shortnorth', proj: () => mercator(-83.005, 39.983, 0.0165),
+  { id: 'shortnorth', proj: () => Kit.lens(Kit.km(1.3)),
     caption: { eyebrow: 'Placeholder', title: 'Short North', text: 'High Street, north of downtown.' } },
 ];
 const LAYERS = [{ name: 'base', depth: 0, opaque: true }, { name: 'labels', depth: 0.06 }];

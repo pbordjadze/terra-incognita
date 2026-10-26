@@ -11,10 +11,13 @@ and simplified for the scale it is drawn at, in tools/plates/data/.
     physical/ne_10m_land, ne_10m_lakes, ne_10m_rivers_lake_centerlines;
     cultural/ne_10m_admin_1_states_provinces_lakes, ne_10m_populated_places_simple, ne_10m_roads
   US Census TIGER/Line 2024 (public domain), https://www2.census.gov/geo/tiger/TIGER2024/...:
-    ROADS/tl_2024_39049_roads, AREAWATER/tl_2024_39049_areawater, LINEARWATER/tl_2024_39049_linearwater,
+    ROADS/tl_2024_<county>_roads, AREAWATER/tl_2024_<county>_areawater, LINEARWATER/tl_2024_<county>_linearwater
+    for Franklin County and its neighbours (39049, 39041, 39129, 39045, 39089, 39097, 39159), and
     PLACE/tl_2024_39_place
-  OpenStreetMap (ODbL: credited in the app as "© OpenStreetMap contributors"), the API's map call:
-    shortnorth.osm = https://api.openstreetmap.org/api/0.6/map?bbox=-83.0135,39.9745,-82.9965,39.9915
+  OpenStreetMap (ODbL: credited in the app as "© OpenStreetMap contributors"), the API's map call in three
+  bands (it refuses one box this full): shortnorth-<south>.osm =
+    https://api.openstreetmap.org/api/0.6/map?bbox=-83.0145,<south>,-82.9955,<north> for the bands
+    39.9675-39.9780, 39.9780-39.9885 and 39.9885-39.9985
 """
 import io
 import json
@@ -33,8 +36,8 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
 BOXES = {
     'america': (-170, 5, -50, 75),
     'ohio': (-88.5, 35.0, -77.0, 45.5),
-    'columbus': (-83.22, 39.84, -82.76, 40.16),
-    'shortnorth': (-83.0135, 39.9745, -82.9965, 39.9915),
+    'columbus': (-83.30, 39.55, -82.70, 40.42),
+    'shortnorth': (-83.0145, 39.9675, -82.9955, 39.9985),
 }
 
 
@@ -95,10 +98,14 @@ def write(name, feats, digits):
     print(f'{name}: {len(fc["features"])} features, {os.path.getsize(path) // 1024} KB')
 
 
+COUNTIES = ('39049', '39041', '39129', '39045', '39089', '39097', '39159')
+
+
 def clipped(zipname, level, tol, keep=lambda p: True, props=lambda p: {}):
     b = box(*BOXES[level])
     out = []
-    for g, p in read_shp(zipname):
+    names = [zipname.replace('39049', c) for c in COUNTIES] if '39049' in zipname else [zipname]
+    for g, p in (r for n in names for r in read_shp(n)):
         if keep(p) and g.intersects(b):
             g = g.intersection(b)
             out.append((g.simplify(tol, preserve_topology=True) if tol else g, props(p)))
@@ -138,14 +145,22 @@ write('columbus-city', clipped('tl_2024_39_place.zip', 'columbus', 0.0002,
                                props=lambda p: {'name': p['NAME']}), 5)
 
 # Short North, from OpenStreetMap
-root = ET.parse(os.path.join(SRC, 'shortnorth.osm')).getroot()
-nodes = {n.get('id'): (float(n.get('lon')), float(n.get('lat'))) for n in root.iter('node')}
+bands = [ET.parse(os.path.join(SRC, f)).getroot() for f in sorted(os.listdir(SRC)) if f.startswith('shortnorth-') and f.endswith('.osm')]
+nodes = {n.get('id'): (float(n.get('lon')), float(n.get('lat'))) for r in bands for n in r.iter('node')}
 tags = lambda el: {t.get('k'): t.get('v') for t in el.findall('tag')}
+# a way crossing two bands comes back in both: keep it once
+seen = set()
+ways = []
+for r in bands:
+    for w in r.iter('way'):
+        if w.get('id') not in seen:
+            seen.add(w.get('id')); ways.append(w)
+tree_nodes = {n.get('id'): n for r in bands for n in r.iter('node') if tags(n).get('natural') == 'tree'}
 b = box(*BOXES['shortnorth'])
 GREEN = {('leisure', 'park'), ('leisure', 'pitch'), ('leisure', 'playground'), ('landuse', 'grass'), ('landuse', 'forest'),
          ('natural', 'wood'), ('landuse', 'meadow'), ('landuse', 'cemetery'), ('natural', 'scrub'), ('leisure', 'garden')}
 layers = {k: [] for k in ('roads', 'buildings', 'water', 'green', 'rail', 'trees')}
-for w in root.iter('way'):
+for w in ways:
     pts = [nodes[nd.get('ref')] for nd in w.findall('nd') if nd.get('ref') in nodes]
     t = tags(w)
     if len(pts) < 2:
@@ -164,10 +179,9 @@ for w in root.iter('way'):
         layers['rail'].append((LineString(pts).intersection(b), {'kind': t['railway']}))
     elif closed and any((k, t.get(k)) in GREEN for k in ('leisure', 'landuse', 'natural')):
         layers['green'].append((Polygon(pts).buffer(0).intersection(b), {'kind': t.get('leisure') or t.get('landuse') or t.get('natural'), 'name': t.get('name', '')}))
-for n in root.iter('node'):
-    if tags(n).get('natural') == 'tree':
-        p = Point(float(n.get('lon')), float(n.get('lat')))
-        if p.within(b):
-            layers['trees'].append((p, {}))
+for n in tree_nodes.values():
+    p = Point(float(n.get('lon')), float(n.get('lat')))
+    if p.within(b):
+        layers['trees'].append((p, {}))
 for k, feats in layers.items():
     write(f'shortnorth-{k}', feats, 6)

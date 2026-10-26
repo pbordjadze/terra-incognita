@@ -2,8 +2,9 @@
 // Renders a look's plates for the app.
 //   node tools/plates/export.cjs <look> "<Look name>"
 // opens tools/plates/<look>/index.html (the contract is in tools/plates/kit.js), renders every layer
-// of every level and writes Atlas/<look>/<level id>/<layer>.{jpg,png} and Atlas/<look>/plates.json,
-// then lists the look in Atlas/looks.json. Needs Playwright (in CI's image, or `npm i playwright`).
+// of every level and writes Atlas/<look>/<level id>/<layer>.{jpg,png}, the caption fonts and
+// Atlas/<look>/plates.json, then lists the look in Atlas/looks.json (not with PLATES_NO_LIST=1, for
+// exports running side by side). Needs Playwright (in CI's image, or `npm i playwright`).
 'use strict';
 const fs = require('fs'), path = require('path'), http = require('http');
 const { chromium } = require('playwright');
@@ -31,7 +32,7 @@ const server = http.createServer((req, res) => {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(`${base}?level=1&layer=none`);
   await page.waitForFunction(() => window.Plates && window.Kit, null, { timeout: 60000 });
-  const { W, H, levels } = await page.evaluate(() => ({ W: Kit.W, H: Kit.H, levels: Plates.levels }));
+  const { W, H, levels, style } = await page.evaluate(() => ({ W: Kit.W, H: Kit.H, levels: Plates.levels, style: Plates.style || null }));
   await page.setViewportSize({ width: W, height: H });
   fs.rmSync(out, { recursive: true, force: true });
   // Each level's plate, and between two levels whose zoom differs more than MAX_STEP, plates that
@@ -62,12 +63,27 @@ const server = http.createServer((req, res) => {
     const [cx, cy] = a.magnify === 1 ? [b.cx, b.cy] : [W / 2, H / 2];
     return [cx - w / 2, cy - h / 2, w, h];
   };
+  // a point of the level's plate, in a pass plate magnified about (cx, cy)
+  const mag = (item, x, y) => item.magnify === 1 ? [x, y] : [W / 2 + (x - item.cx) * item.magnify, H / 2 + (y - item.cy) * item.magnify];
   const plates = [];
   for (const [i, item] of plan.entries()) {
     const { level, info, id } = item;
     fs.mkdirSync(path.join(out, id), { recursive: true });
     const layers = [];
     for (const layer of info.layers) {
+      let frame = null, motion = layer.motion ? { ...layer.motion } : null;
+      if (layer.frame) {
+        const [x0, y0] = mag(item, layer.frame[0], layer.frame[1]);
+        const [x1, y1] = mag(item, layer.frame[0] + layer.frame[2], layer.frame[1] + layer.frame[3]);
+        const cx0 = Math.max(0, Math.floor(x0)), cy0 = Math.max(0, Math.floor(y0));
+        const cx1 = Math.min(W, Math.ceil(x1)), cy1 = Math.min(H, Math.ceil(y1));
+        if (cx1 - cx0 < 2 || cy1 - cy0 < 2) continue;      // magnified off this plate
+        frame = [cx0, cy0, cx1 - cx0, cy1 - cy0];
+      }
+      if (motion && item.magnify !== 1) {
+        if (motion.amp) motion.amp = motion.amp.map(v => v * item.magnify);
+        if (motion.anchor) motion.anchor = mag(item, motion.anchor[0], motion.anchor[1]);
+      }
       await page.goto(`${base}?level=${level}&layer=${layer.name}`);
       await page.waitForFunction(() => window.platesReady !== undefined, null, { timeout: 120000 });
       const ready = await page.evaluate(() => window.platesReady);
@@ -81,9 +97,13 @@ const server = http.createServer((req, res) => {
         await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
       }
       const file = `${id}/${layer.name}.${layer.opaque ? 'jpg' : 'png'}`;
+      const clip = frame ? { x: frame[0], y: frame[1], width: frame[2], height: frame[3] } : { x: 0, y: 0, width: W, height: H };
       await page.screenshot({ path: path.join(out, file), type: layer.opaque ? 'jpeg' : 'png', quality: layer.opaque ? 88 : undefined,
-        omitBackground: !layer.opaque, clip: { x: 0, y: 0, width: W, height: H } });
-      layers.push({ file, depth: layer.depth || 0 });
+        omitBackground: !layer.opaque, clip });
+      const spec = { file, depth: layer.depth || 0 };
+      if (frame) spec.frame = frame;
+      if (motion) spec.motion = motion;
+      layers.push(spec);
       console.log(`${look} ${id} ${layer.name}`);
     }
     const plate = { id, size: [W, H], layers, child: childOf(item, plan[i + 1]), caption: info.caption };
@@ -91,7 +111,18 @@ const server = http.createServer((req, res) => {
     if (item.pass) plate.pass = true;
     plates.push(plate);
   }
-  fs.writeFileSync(path.join(out, 'plates.json'), JSON.stringify({ name, plates }, null, 1) + '\n');
+  if (style && style.fonts) {
+    fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });
+    style.fonts = style.fonts.map(f => {
+      const to = `fonts/${path.basename(f)}`;
+      fs.copyFileSync(path.join(__dirname, look, f), path.join(out, to));
+      return to;
+    });
+  }
+  const set = { name, plates };
+  if (style) set.style = style;
+  fs.writeFileSync(path.join(out, 'plates.json'), JSON.stringify(set, null, 1) + '\n');
+  if (process.env.PLATES_NO_LIST) { await browser.close(); server.close(); return finish(); }
   const listPath = path.join(root, 'Atlas', 'looks.json');
   const list = fs.existsSync(listPath) ? JSON.parse(fs.readFileSync(listPath, 'utf8')) : [];
   const entry = { id: look, name, plates: `${look}/plates.json` };
@@ -99,5 +130,6 @@ const server = http.createServer((req, res) => {
   if (i >= 0) list[i] = entry; else list.push(entry);
   fs.writeFileSync(listPath, JSON.stringify(list, null, 1) + '\n');
   await browser.close(); server.close();
-  if (errors.length) { console.error('page errors:\n' + errors.join('\n')); process.exit(1); }
+  finish();
+  function finish() { if (errors.length) { console.error('page errors:\n' + errors.join('\n')); process.exit(1); } }
 });
