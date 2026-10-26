@@ -4,6 +4,7 @@ import SwiftUI
 struct OceanExperience: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var lens = "seeds"
     @State private var time = 0.0
     @State private var evidence = false
@@ -17,10 +18,10 @@ struct OceanExperience: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { dismiss() } label: { Label("Atlas", systemImage: "arrow.left").frame(minHeight: 44) }
+                Button { dismiss() } label: { toolbarLabel("Atlas", symbol: "arrow.left") }
                     .accessibilityIdentifier("closeExperience")
                 Spacer()
-                Button { evidence = true } label: { Label("Evidence", systemImage: "text.book.closed").frame(minHeight: 44) }
+                Button { evidence = true } label: { toolbarLabel("Evidence", symbol: "text.book.closed") }
                     .accessibilityIdentifier("evidenceButton")
             }
             .font(.custom("LibertinusSerif-Regular", size: 18, relativeTo: .body))
@@ -91,8 +92,17 @@ struct OceanExperience: View {
         }
     }
 
+    @ViewBuilder private func toolbarLabel(_ title: String, symbol: String) -> some View {
+        if typeSize.isAccessibilitySize {
+            Label(title, systemImage: symbol).labelStyle(.iconOnly).frame(minWidth: 64, minHeight: 64)
+        } else {
+            Label(title, systemImage: symbol).frame(minHeight: 44)
+        }
+    }
+
     private var lensMenu: some View {
-        HStack(spacing: 0) {
+        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: 0))
+        return layout {
             lensButton("seeds", title: "Seeds", identifier: "lensSeeds")
             lensButton("words", title: "Words", identifier: "lensWords")
             lensButton("people", title: "Lives", identifier: "lensPeople")
@@ -164,9 +174,10 @@ struct OceanExperience: View {
             Text(borrowed ? "A BORROWED MARITIME WORD" : "TWO RELATIVES, FAR APART")
                 .font(.custom("LibertinusSerif-Regular", size: 13, relativeTo: .caption))
                 .tracking(1.4).foregroundStyle(Self.blue)
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
+            let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 18)) : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 12))
+            layout {
                 word(borrowed ? "sambo" : "zato", language: "Malagasy")
-                Text("·").font(.title)
+                if !typeSize.isAccessibilitySize { Text("·").font(.title) }
                 word(borrowed ? "sambaw" : "jatuh", language: borrowed ? "Old Malay" : "Ma’anyan")
             }
             Text(borrowed ? "Both mean “ship”." : "Both mean “hundred”.")
@@ -184,6 +195,10 @@ struct OceanExperience: View {
                 .accessibilityIdentifier("wordTangent")
             margin(borrowed ? "A family tree is not the whole story of a language." : "The ocean separates the places. The words preserve a relationship.")
             prose(borrowed ? "Adelaar connects sambo with Old Malay sambaw in the history of maritime borrowing. That is a different relationship from inherited vocabulary: Malagasy did not descend from Malay. Contact left its own traces, including through Bantu languages in Africa." : "The paired forms are a linguist’s comparison, not a recorded conversation. They do not tell us which shore a particular speaker visited, or how many journeys were made. Nor did Malagasy remain unchanged: African and Asian contacts helped shape it.")
+            if borrowed {
+                margin("sammaw · “celestial ship”")
+                prose("Adelaar’s comparison also records this Ma’anyan word. A ship can have a life beyond the sea. The gloss is tantalizing; it does not give us enough to reconstruct the practice behind it. That question remains open here.")
+            }
             note("The map marks present-day places as orientation, not ancient ethnic territories. Words are shown in scholarly or standard spelling; no reconstructed pronunciation is performed.")
         }
     }

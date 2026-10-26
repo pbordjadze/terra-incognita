@@ -24,7 +24,7 @@ enum OceanEvidence {
             detail: "Alexander Adelaar · 2016 · NUSA 61, pp. 69–88",
             url: "https://tufs.repo.nii.ac.jp/record/1402/files/04Adelaar.pdf",
             support: "Table 1, printed p. 72, compares Ma’anyan jatuh and Malagasy zàtu, both meaning ‘hundred’. This encounter restores standard Malagasy spelling: zato. Section 8, p. 84, lists Malagasy sàmbu (standard sambo) and Old Malay sambaw, both ‘ship’, in a discussion of language contact. Page 70 explains the author's spelling conventions. Sections 5 and 7 examine Bantu contact and migration debates.",
-            limitation: "Shared inherited words and borrowed words are different evidence. Malagasy did not descend from Malay. Similar-looking words alone cannot reconstruct a voyage. The early migrants' identities, social status and motives remain uncertain; no named traveler or recorded dialogue is supplied by this paper."
+            limitation: "Shared inherited words and borrowed words are different evidence. Malagasy did not descend from Malay. Table 2, p. 74, also gives Ma’anyan sammaw, glossed ‘celestial ship’ (spelled sambaw in Section 8). Only the lexical gloss is presented: no particular ritual, deity or soul journey is reconstructed. Similar-looking words alone cannot reconstruct a voyage. The early migrants' identities, social status and motives remain uncertain; no named traveler or recorded dialogue is supplied by this paper."
         ),
         OceanSource(
             id: "seeds",

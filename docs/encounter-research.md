@@ -34,6 +34,12 @@ Independently authored historical content for an offline atlas experiment. Check
 - **Scope:** Full PDF inspected. §5 and §7 discuss Bantu contact and disputed migration routes; different disciplines produce competing models. Do not present Adelaar's favored indirect route or seventh/eighth-century dates as settled facts. Do not animate a morph from one modern word to another as if one directly became the other. No speech recording or synthetic pronunciation is cleared here.
 - **Status:** Checked full paper and printed table. Standard spellings and meanings were additionally checked in the *Malagasy Dictionary and Encyclopedia*: [zato](https://malagasyword.org/bins/teny2/zato), [sambo](https://malagasyword.org/bins/teny2/sambo), and [vary](https://malagasyword.org/bins/teny2/vary). These dictionary entries confirm forms and glosses; they are not being used to establish a migration route or the debated etymology of vary.
 
+The optional maritime-word tangent also shows Ma’anyan **sammaw**, glossed “celestial ship”,
+from Table 2 on printed p. 74; Section 8 uses the spelling **sambaw** for the same gloss.
+Only this attributed lexical observation is shown. No checked primary ethnographic source
+was located for a specific ritual behind it, so there is no celestial-boat scene, belief account,
+or claim about present practice. The question is left explicitly open.
+
 ### A1. Early crop evidence around the western Indian Ocean
 
 - **Claim:** Archaeobotanical assemblages from tested Comorian and Malagasy sites dated to the eighth–tenth centuries CE were dominated by Asian crops, with rice especially abundant. Tested coastal East African assemblages were instead predominantly African crops; this is a sampled archaeological comparison, not a timeless divide.

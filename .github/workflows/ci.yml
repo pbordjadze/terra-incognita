@@ -75,11 +75,15 @@ jobs:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
       - name: Start simulator
-        # An iPhone for UI tests on pushes; the selected device(s) for manual visual review.
+        # An iPhone on branches, both devices sequentially on main; explicit manual selection.
         id: sim
         run: |
           D="${{ inputs.device }}"
-          if [ "$D" = both ]; then D="ipad iphone"; elif [ -z "$D" ]; then D=iphone; fi
+          if [ "$D" = both ]; then
+            D="ipad iphone"
+          elif [ -z "$D" ]; then
+            if [ "$GITHUB_REF_NAME" = main ]; then D="ipad iphone"; else D=iphone; fi
+          fi
           mkdir -p out
           ci/simulators.sh $D > out/sims.txt
           cat out/sims.txt

@@ -30,7 +30,8 @@ final class OceanEncounterTests: XCTestCase {
                 start.press(forDuration: 0.05, thenDragTo: end)
             }
         }
-        XCTAssertTrue(element.isHittable, "A control or explanation must remain reachable when text grows")
+        let state = element.exists ? "Exists as \(element.elementType): \(element.label)" : "Element query did not match"
+        XCTAssertTrue(element.isHittable, "A control or explanation must remain reachable when text grows. \(state).\n\(app.debugDescription)")
     }
 
     @MainActor private func exercise(largeText: Bool) {
@@ -51,7 +52,9 @@ final class OceanEncounterTests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 15))
         capture(prefix + "01-open")
 
-        let loupe = button("oceanLoupe", in: app)
+        // Adjustable accessibility actions give this control a slider trait even though its
+        // visible SwiftUI construction is a Button. Query its stable identity, not its trait.
+        let loupe = app.descendants(matching: .any)["oceanLoupe"].firstMatch
         reveal(loupe, in: app)
         let initialShore = loupe.value as? String
         XCTAssertNotNil(initialShore)
@@ -112,12 +115,16 @@ final class OceanEncounterTests: XCTestCase {
         reveal(timeline, in: app)
         XCTAssertTrue(timeline.waitForExistence(timeout: 10))
         let initialValue = timeline.value as? String
-        timeline.adjust(toNormalizedSliderPosition: 0.15)
+        // Keep the spoken value meaningful to a person. Exercise the actual thumb movement
+        // rather than asking XCTest to parse that semantic value as a percentage.
+        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+            .press(forDuration: 0.08, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
         let earlierValue = timeline.value as? String
         let era = app.staticTexts["evidenceEra"].firstMatch
         XCTAssertTrue(era.exists)
         let earlierEra = era.label
-        timeline.adjust(toNormalizedSliderPosition: 0.9)
+        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5))
+            .press(forDuration: 0.08, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
         XCTAssertNotEqual(earlierValue, timeline.value as? String, "Time must respond to the reader's hand")
         XCTAssertNotEqual(earlierEra, era.label, "The explanation must respond to time as well as the slider")
         XCTAssertNotNil(initialValue)
