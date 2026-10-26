@@ -7,10 +7,12 @@ struct OceanMap: View {
     let time: Double
     var onPlace: (String) -> Void = { _ in }
     @State private var focus = CGPoint(x: 0.24, y: 0.65)
+    @State private var handleOrigin: CGPoint?
 
     private let sea = Color(red: 0.875, green: 0.918, blue: 0.949)
     private let land = Color(red: 0.867, green: 0.906, blue: 0.851)
     private let coast = Color(red: 0.427, green: 0.404, blue: 0.576)
+    private let blueInk = Color(red: 0.30, green: 0.29, blue: 0.45)
     private let ink = Color(red: 0.231, green: 0.173, blue: 0.086)
     private let paper = Color(red: 0.949, green: 0.894, blue: 0.784)
     private let gold = Color(red: 0.773, green: 0.667, blue: 0.431)
@@ -42,7 +44,7 @@ struct OceanMap: View {
                     context.fill(Path(rect), with: .color(sea))
                     terrain(context, chart: chart)
                     label("INDIAN OCEAN", at: chart.point(CGPoint(x: 79, y: -17)), context: context,
-                          size: min(max(size.width / 28, 12), 18), tracking: 1.8, color: coast)
+                          size: min(max(size.width / 28, 12), 18), tracking: 1.8, color: blueInk)
                     label("India", at: chart.point(CGPoint(x: 78, y: 18)), context: context, size: 12, color: ink)
                     label("Arabia", at: chart.point(CGPoint(x: 48, y: 24)), context: context, size: 12, color: ink)
                     label("Sumatra", at: chart.point(CGPoint(x: 100, y: -6)), context: context, size: 11, color: ink)
@@ -68,7 +70,7 @@ struct OceanMap: View {
                     if let nearby {
                         evidence(nearby.id, context: glass, centre: centre, radius: radius)
                     } else {
-                        label("the open sea", at: centre, context: glass, size: 16, color: coast)
+                        label("the open sea", at: centre, context: glass, size: 16, color: blueInk)
                     }
                     for inset in [0.0, 3.0, 5.0] {
                         context.stroke(Path(ellipseIn: aperture.insetBy(dx: inset, dy: inset)),
@@ -83,14 +85,31 @@ struct OceanMap: View {
                 })
                 .accessibilityHidden(true)
 
-                // A native adjustable alternative to dragging. A tap alternates among the same places.
-                Image(systemName: "hand.draw")
-                    .font(.system(size: 13))
-                    .foregroundStyle(ink)
-                    .padding(5).background(paper, in: Circle())
-                    .position(x: centre.x + radius * 0.70, y: centre.y + radius * 0.70)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
+                // The handle is a real adjustable control and an alternative to dragging the field.
+                Button {
+                    advance(from: nearby?.id, direction: 1, chart: chart)
+                } label: {
+                    Image(systemName: "hand.draw")
+                        .font(.system(size: 13))
+                        .foregroundStyle(ink)
+                        .padding(5).background(paper, in: Circle())
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .highPriorityGesture(DragGesture(minimumDistance: 5, coordinateSpace: .named("oceanField")).onChanged { value in
+                    if handleOrigin == nil { handleOrigin = constrained(focus, in: g.size) }
+                    if let origin = handleOrigin {
+                        focus = normalized(CGPoint(x: origin.x + value.translation.width, y: origin.y + value.translation.height), size: g.size)
+                    }
+                }.onEnded { _ in handleOrigin = nil })
+                .accessibilityLabel("Inspection glass")
+                .accessibilityValue(nearby?.name ?? "Open sea")
+                .accessibilityHint("Adjust to move between shores, or drag across the map")
+                .accessibilityIdentifier("oceanLoupe")
+                .accessibilityAdjustableAction { direction in
+                    advance(from: nearby?.id, direction: direction == .decrement ? -1 : 1, chart: chart)
+                }
+                .position(x: centre.x - radius * 0.70, y: centre.y + radius * 0.70)
                 ForEach(places, id: \.id) { place in
                     Button {
                         focus = normalized(chart.point(place.coordinate), size: g.size)
@@ -119,25 +138,12 @@ struct OceanMap: View {
                 }
                 .allowsHitTesting(false)
             }
+            .coordinateSpace(name: "oceanField")
             .clipped()
+            .accessibilityIdentifier("oceanMapSurface")
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Indian Ocean viewing table")
-            .overlay(alignment: .topLeading) {
-                // Accessibility-only movable glass; transparent to ordinary map gestures.
-                Text("Inspection glass")
-                    .foregroundStyle(.clear)
-                    .frame(width: 1, height: 1)
-                    .accessibilityLabel("Inspection glass")
-                    .accessibilityValue(nearby?.name ?? "Open sea")
-                    .accessibilityIdentifier("oceanLoupe")
-                    .accessibilityAdjustableAction { direction in
-                        let current = places.firstIndex { $0.id == nearby?.id } ?? 0
-                        let delta = direction == .decrement ? -1 : 1
-                        let next = places[(current + delta + places.count) % places.count]
-                        focus = normalized(chart.point(next.coordinate), size: g.size)
-                    }
-                    .allowsHitTesting(false)
-            }
+
         }
     }
 
@@ -179,18 +185,23 @@ struct OceanMap: View {
             furrow.addQuadCurve(to: CGPoint(x: centre.x, y: grain.maxY - 4), control: CGPoint(x: centre.x + 3, y: centre.y))
             context.stroke(furrow, with: .color(reveal < 0.5 ? ink.opacity(0.3) : gold.opacity(0.8)), lineWidth: 0.7)
             label(reveal < 0.5 ? "a trace below" : "charred rice", at: CGPoint(x: centre.x, y: centre.y + 29), context: context, size: 14, color: ink)
-            label(reveal < 0.5 ? "draw back the layer" : "c. 700–1000 CE", at: CGPoint(x: centre.x, y: centre.y + 44), context: context, size: 10, color: coast)
+            label(reveal < 0.5 ? "draw back the layer" : "c. 700–1000 CE", at: CGPoint(x: centre.x, y: centre.y + 44), context: context, size: 10, color: blueInk)
         } else if lens == "words" && (place == "borneo" || place == "madagascar") {
             label(place == "borneo" ? "jatuh" : "zato", at: CGPoint(x: centre.x, y: centre.y - 11), context: context, size: 29, color: ink)
-            label(place == "borneo" ? "Ma’anyan" : "Malagasy", at: CGPoint(x: centre.x, y: centre.y + 16), context: context, size: 12, color: coast)
+            label(place == "borneo" ? "Ma’anyan" : "Malagasy", at: CGPoint(x: centre.x, y: centre.y + 16), context: context, size: 12, color: blueInk)
             label("hundred", at: CGPoint(x: centre.x, y: centre.y + 35), context: context, size: 14, color: ink)
         } else {
             let name = place == "borneo" ? "Borneo" : place == "comoros" ? "Comoros" : place == "africa" ? "East Africa" : "Madagascar"
             label(name, at: CGPoint(x: centre.x, y: centre.y - 9), context: context, size: 18, color: ink)
-            label(lens == "people" ? "a place, not a route" : "another shore", at: CGPoint(x: centre.x, y: centre.y + 16), context: context, size: 11, color: coast)
+            label(lens == "people" ? "a place, not a route" : "another shore", at: CGPoint(x: centre.x, y: centre.y + 16), context: context, size: 11, color: blueInk)
         }
     }
 
+    private func advance(from id: String?, direction: Int, chart: Chart) {
+        let current = places.firstIndex { $0.id == id } ?? 0
+        let next = places[(current + direction + places.count) % places.count]
+        focus = normalized(chart.point(next.coordinate), size: chart.size)
+    }
     private func labelPoint(_ place: Place, chart: Chart) -> CGPoint {
         let p = chart.point(place.coordinate)
         return CGPoint(x: min(max(p.x + place.offset.width, 44), chart.size.width - 44),

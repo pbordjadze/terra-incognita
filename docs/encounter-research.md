@@ -64,6 +64,22 @@ Independently authored historical content for an offline atlas experiment. Check
 
 ## Rights and provenance
 
+### Visual authorship
+
+The encounter keeps the existing globe's paper, blue ink and matte gold family, and its bundled
+Libertinus typography. The inherited visual study is documented in the public engineering notes:
+LACMA M.85.237.16, the 1529 *Khamsa* opening, provides a precedent for quiet reading fields held
+by fine colored rulings. No scan is included. The regional map, movable glass and botanical drawing
+are original editorial compositions; they are not presented as historical Malagasy objects or
+Persian representations of Madagascar. The map is generated from the repository's public-domain
+Natural Earth coastline data by `tools/encounter/build_coasts.py`. No historical territory is inferred.
+
+The glass enlarges the same modern coastline coordinates by an affine transform. Its evidence
+panel is an annotation over geography, not a depiction of what someone would literally see at
+the location. Native place controls and an adjustable glass offer alternatives to direct dragging.
+The surface/beneath control selects present orientation versus a broad archaeological evidence
+layer; intermediate positions have no independent historical date or quantitative meaning.
+
 All prose above is newly written paraphrase except the explicitly marked short quotations. No article images, maps, tables, sound recordings, or paragraphs are authorized for copying into the app by this record. Bibliographic facts, minimal short quotations, language forms, and independently drawn diagrams are suitable for the cited encounter. Retain the app's existing geographic and font license notices. Language forms are not expressive prose; retain attribution to the comparative scholar and explain the standardized orthography.
 
 ## What remains uncertain

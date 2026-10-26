@@ -125,7 +125,7 @@ struct OceanExperience: View {
             HStack(alignment: .center, spacing: 14) {
                 SeedStudy(progress: time).frame(width: 90, height: 138).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(time < 0.5 ? "Draw back the present" : "A meal, a thousand years ago")
+                    Text(time < 0.5 ? "Draw back the present" : "Early crop traces")
                         .font(.custom("LibertinusSerif-Regular", size: 26, relativeTo: .title2))
                     Text(time < 0.5 ? "Move the layer below. The island has something buried in it." : "Charred rice survived at early island settlements.")
                         .font(.custom("LibertinusSerif-Regular", size: 18, relativeTo: .body))
@@ -171,6 +171,9 @@ struct OceanExperience: View {
             }
             Text(borrowed ? "Both mean “ship”." : "Both mean “hundred”.")
                 .font(.custom("LibertinusSerif-Italic", size: 23, relativeTo: .title2))
+            if borrowed {
+                note("This pair opens a separate history of contact. The map’s glass keeps the inherited zato / jatuh comparison; it does not locate an Old Malay departure port.")
+            }
             prose("Malagasy belongs to the South East Barito branch of the Austronesian language family. Its other members are spoken in southern Borneo, across the Indian Ocean. Madagascar is just off Africa; this part of its linguistic family is not.")
                 .accessibilityIdentifier("encounterClaim")
             Button {

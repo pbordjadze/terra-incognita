@@ -25,8 +25,8 @@ final class OceanEncounterTests: XCTestCase {
         for upwards in [!towardsTop, towardsTop] {
             for _ in 0..<8 {
                 guard !element.isHittable else { return }
-                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: upwards ? 0.78 : 0.28))
-                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: upwards ? 0.28 : 0.78))
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: upwards ? 0.78 : 0.28))
+                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: upwards ? 0.28 : 0.78))
                 start.press(forDuration: 0.05, thenDragTo: end)
             }
         }
@@ -50,6 +50,20 @@ final class OceanEncounterTests: XCTestCase {
         let close = button("closeExperience", in: app)
         XCTAssertTrue(close.waitForExistence(timeout: 15))
         capture(prefix + "01-open")
+
+        let loupe = button("oceanLoupe", in: app)
+        reveal(loupe, in: app)
+        let initialShore = loupe.value as? String
+        XCTAssertNotNil(initialShore)
+        let field = app.descendants(matching: .any)["oceanMapSurface"].firstMatch
+        XCTAssertTrue(field.exists)
+        // A horizontal drag on the map itself must move the glass, without scrolling the page
+        // or relying on the discrete place buttons to supply a different rendering.
+        let mapStart = field.coordinate(withNormalizedOffset: CGVector(dx: 0.49, dy: 0.48))
+        let mapEnd = field.coordinate(withNormalizedOffset: CGVector(dx: 0.83, dy: 0.48))
+        mapStart.press(forDuration: 0.08, thenDragTo: mapEnd)
+        XCTAssertNotEqual(initialShore, loupe.value as? String, "Dragging the field must change the glass's geographic focus")
+        capture(prefix + "01-glass-moved")
 
         let borneo = button("place_borneo", in: app)
         reveal(borneo, in: app)
