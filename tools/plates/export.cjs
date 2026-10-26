@@ -100,7 +100,8 @@ const server = http.createServer((req, res) => {
       }
       const file = `${id}/${layer.name}.${layer.opaque ? 'jpg' : 'png'}`;
       const clip = frame ? { x: frame[0], y: frame[1], width: frame[2], height: frame[3] } : { x: 0, y: 0, width: W, height: H };
-      await page.screenshot({ path: path.join(out, file), type: layer.opaque ? 'jpeg' : 'png', quality: layer.opaque ? 88 : undefined,
+      // (a heavy layer can take a minute or more while several looks export at once)
+      await page.screenshot({ timeout: 180000, path: path.join(out, file), type: layer.opaque ? 'jpeg' : 'png', quality: layer.opaque ? 88 : undefined,
         omitBackground: !layer.opaque, clip });
       const spec = { file, depth: layer.depth || 0 };
       if (frame) spec.frame = frame;

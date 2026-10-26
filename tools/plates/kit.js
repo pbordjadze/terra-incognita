@@ -55,6 +55,9 @@ const Kit = {
       .scale(scale).clipAngle(90).precision(0.1);
   },
   km(width) { return PLATE_W * 6371 / width; },
+  // (At the street scale d3's spherical clipping merges vertices closer than about 1e-6 radians,
+  // some 6 m, folding small buildings into slivers: project such geometry point by point through the
+  // lens instead of d3.geoPath, as ffern's flatPath does.)
   // The next plate's footprint in this plate's pixels: the child's centre where this projection puts
   // it, its width from the child's left and right edges, and the plate's aspect.
   childRect(parent, child) {

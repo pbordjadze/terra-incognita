@@ -94,7 +94,8 @@ window.Plates = {
 
 // ---------- geography helpers ----------
 const polysOf = g => g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
-// Area of a projected path in square plate pixels (d3 measures what the projection keeps).
+// Torn pieces from features: each polygon given its paper (or left out), the small ones grouped by
+// where they lie, so each group's filter stays local.
 function pieceSet(features, proj, paperOf, opts = {}) {
   const path = opts.path || d3.geoPath(proj), groups = new Map();
   for (const f of features) {
@@ -172,7 +173,7 @@ async function worldGround(L, proj, rand) {
   const out = [PA.defs(), Sprites.ptDefs(), PA.sheet(rand)];
 
   // the wheel: printed on the sheet around the globe
-  out.push(ringPrint(rand));
+  out.push(ringPrint());
   // the globe: a disc of heavier card, the sea washed onto it, rounder where the wash pools at the limb
   out.push(`<path d="${sphere}" fill="#f3ede0" filter="url(#card)"/>`);
   out.push(PA.wash(inset, allD(pieces) + ohioD, { reserve: 3.6, opacity: 0.6 }));
@@ -191,7 +192,7 @@ async function worldGround(L, proj, rand) {
 
 // The printed ring: hairlines, the weeks, the cross-quarter days' plants (the quarter days' names are
 // on the labels layer).
-function ringPrint(rand) {
+function ringPrint() {
   const pol = (r, a) => [CX + r * Math.sin(a), CY - r * Math.cos(a)];
   let ticks = '';
   for (let k = 0; k < 52; k++) {
@@ -411,15 +412,6 @@ async function columbusGround(L, proj, rand) {
   out.push(PA.wash(waterD, null, { shore: waterD, reserve: 2.2 }));
   // the country: one sheet of sage, the reservoirs and rivers torn out of it
   out.push(PA.torn([{ d: `M-40 -40H${W + 40}V${H + 40}H-40Z`, paper: 'sage', clip: 'noWater' }]));
-  // a few fields in other papers, laid down outside the city
-  const fields = [];
-  for (let i = 0; i < 18; i++) {
-    let x, y;
-    do { x = rand() * W; y = rand() * H; } while (Math.hypot((x - CX) / 1.0, (y - CY) / 1.25) < 640);
-    const w = (60 + rand() * 110), h = (50 + rand() * 90), a = rand() * Math.PI;
-    const pts = [[-w, -h], [w, -h * (0.8 + rand() * 0.4)], [w * (0.8 + rand() * 0.3), h], [-w * (0.9 + rand() * 0.2), h]].map(([u, v]) => [x + u * Math.cos(a) - v * Math.sin(a), y + u * Math.sin(a) + v * Math.cos(a)]);
-    fields.push({ d: 'M' + pts.map(p => f1(p[0]) + ' ' + f1(p[1])).join('L') + 'Z', paper: ['sageLight', 'ochre', 'kraftLight', 'sageLight'][i % 4], clip: 'noWater' });
-  }
   out.push(PA.pencil(R('local').features.length ? path(R('local')) : '', { dx: 0, dy: 0, width: 0.3, opacity: 0.22 }).replace('<path ', '<path clip-path="url(#outCity)" '));
   // the city, its streets scored through to the cream beneath
   out.push(PA.torn([{ d: cityD, paper: 'kraft', clip: 'noWater' }]));
@@ -599,7 +591,6 @@ async function draw(level, layer, magnify, mx, my) {
   document.body.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${body}</svg>`;
 }
 
-async function plainGround(L, proj, rand) { return PA.defs() + PA.sheet(rand); }
 const GROUNDS = { world: worldGround, america: americaGround, ohio: ohioGround, columbus: columbusGround, shortnorth: shortnorthGround };
 const LABELS = { world: worldLabels, america: americaLabels, ohio: ohioLabels, columbus: columbusLabels, shortnorth: shortnorthLabels };
 const SPRITE_ART = {

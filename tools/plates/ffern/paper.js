@@ -285,7 +285,7 @@ const PA = (() => {
   function clouds() {
     if (cloudsCache) return cloudsCache;
     const n = fbm(11);
-    return cloudsCache = noiseImage((x, y) => { const v = n(x / 520, y / 520); return [115, 92, 52, Math.max(0, Math.min(255, (v - 0.5) * 120))]; });
+    return cloudsCache = noiseImage((x, y) => { const v = n(x / 520, y / 520); return [115, 92, 52, Math.max(0, Math.min(255, (v - 0.52) * 90))]; });
   }
   // A wash's pigment over the whole plate: two pigments running together, deeper where o.deep says,
   // paler where the water pooled and dried thin.
@@ -318,7 +318,7 @@ const PA = (() => {
       fleck += `<path d="M${f1(x)} ${f1(y)}l${f2(Math.cos(a) * L)} ${f2(Math.sin(a) * L)}" stroke="${cols[i % 4]}" stroke-width="${f2((0.35 + rand() * 0.25) * U)}" opacity="${f2(0.25 + rand() * 0.25)}"/>`;
     }
     return `<rect width="${W}" height="${H}" fill="${C.paper}"/>${clouds()}
-      <g fill="none" stroke-linecap="round"><path d="${fib}" stroke="${C.fibreLight}" stroke-width="${f2(0.4 * U)}" opacity="0.7"/><path d="${fibD}" stroke="${C.fibreDark}" stroke-width="${f2(0.3 * U)}" opacity="0.4"/>${fleck}</g>`;
+      <g fill="none" stroke-linecap="round"><path d="${fib}" stroke="${C.fibreLight}" stroke-width="${f2(0.4 * U)}" opacity="0.55"/><path d="${fibD}" stroke="${C.fibreDark}" stroke-width="${f2(0.3 * U)}" opacity="0.35"/>${fleck}</g>`;
   }
 
   // Watercolour over an area (white) with the land (black, stroked for the reserve) kept dry.
