@@ -7,20 +7,24 @@ import UIKit
 struct GlobeScreen: View {
     let active: Bool
     let style: GlobeStyle
+    /// What else covers the screen (the buttons), in global coordinates: no name goes under it.
+    let keepClear: [CGRect]
     /// Its first frame is on screen.
     let onDrawn: () -> Void
     @State private var country: GlobeData.Country?
+    @State private var captionFrame = CGRect.zero
 
-    init(active: Bool, style: GlobeStyle, onDrawn: @escaping () -> Void = {}) {
+    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}) {
         self.active = active
         self.style = style
+        self.keepClear = keepClear
         self.onDrawn = onDrawn
         GlobeData.registerFonts()
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active, style: style, onDrawn: onDrawn, country: $country)
+            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, country: $country)
                 .ignoresSafeArea()
             Group {
                 if style == .persian {
@@ -31,6 +35,7 @@ struct GlobeScreen: View {
             }
             .id(caption.title + style.rawValue)
             .transition(.opacity.combined(with: .offset(y: 8)))
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
         }
         .animation(.easeInOut(duration: 0.35), value: caption.title)
         .animation(.easeInOut(duration: 0.35), value: style)
@@ -110,6 +115,7 @@ private struct PersianCaption: View {
         }
         .padding(PersianPanel.inset)
         .background(PersianPanel())
+        .frame(maxWidth: CaptionLines.widest)
         .padding(.horizontal, 14)
         .padding(.bottom, 10)
         .allowsHitTesting(false)
@@ -140,6 +146,8 @@ private struct PersianPanel: View {
 private struct GlobeCanvasView: UIViewRepresentable {
     let active: Bool
     let style: GlobeStyle
+    /// In global (the window's) coordinates.
+    let keepClear: [CGRect]
     let onDrawn: () -> Void
     @Binding var country: GlobeData.Country?
 
@@ -157,5 +165,6 @@ private struct GlobeCanvasView: UIViewRepresentable {
     func updateUIView(_ view: GlobeView, context: Context) {
         if view.suspended == active { view.suspended = !active }
         if view.style != style { view.setStyle(style, animated: true) }
+        view.keepClear = keepClear.filter { !$0.isEmpty }.map { view.convert($0, from: nil) }
     }
 }

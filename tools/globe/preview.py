@@ -59,9 +59,12 @@ SEL_ALPHA = 0.85
 
 
 def layout(w, h, persian=False):
-    """The globe's centre and resting radius in points (GlobeView's `place`); a little smaller in the
-    Persian style, whose frame needs the room."""
-    return w / 2, h * 0.43, (0.42 if persian else 0.455) * min(w, h * 0.55)
+    """The globe's centre and resting radius in points (GlobeView's `place`): as large as its room
+    (between the buttons and the caption) allows with its frame round it, 14 pt from the room's edges."""
+    top = buttons_box(w, h)[3]
+    bottom = caption_box(w, h)[1] if persian else h - (20 if min(w, h) >= 700 else 34) - 150
+    half = min(w, bottom - top) / 2 - 14
+    return w / 2, (top + bottom) / 2, half / 1.1475 if persian else half - 11
 
 
 def rotation(lon0, lat0):
@@ -361,74 +364,106 @@ def short(name):
     return {'United States of America': 'United States'}.get(name, name)
 
 
-def labels(img, w, h, scale, geom, zoom, selected, persian=False):
-    """Roughly the app's label layer: the selected country, oceans and seas, then countries (and in the
-    Persian style capitals), in that order of claim, none overlapping."""
+def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=()):
+    """The app's names (GlobeView, CLAUDE.md › Text on the map): the selected country, oceans and
+    seas, then countries and capitals, in that order of claim; each on a halo of its ground's tone,
+    wholly on the globe and on screen, clear of `keep_clear` (x0, y0, x1, y1 in points) and 4 pt
+    from any other; 15 % larger on an iPad-sized screen."""
     cx, cy, R, M = geom
     data = json.loads((G / 'globe.json').read_text())
     f = G / 'fonts'
-    cap = ImageFont.truetype(str(f / 'LibertinusSerif-Regular.otf'), int(9.5 * scale))
-    sel = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), int(11 * scale))
-    sea = ImageFont.truetype(str(f / 'UncialAntiqua-Regular.ttf'), int(8.5 * scale))
+    k = 1.15 if min(w, h) >= 700 else 1.0
+    font = lambda name, size: ImageFont.truetype(str(f / name), int(round(size * k * scale)))
     if persian:
-        ocean = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), int(11 * scale))
-        sea = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), int(9 * scale))
-        town = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), int(9.5 * scale))
+        country, capital = font('LibertinusSerif-Regular.otf', 10), font('LibertinusSerif-Italic.otf', 10)
+        ocean, sea = font('LibertinusSerif-Italic.otf', 11.5), font('LibertinusSerif-Italic.otf', 10)
+        sel = font('LibertinusSerif-Semibold.otf', 12)
+        ink, blue = hexc('#4A3D2E'), P_LAPIS
+        land_halo, sea_halo = hexc('#F1EBD6'), hexc('#E7EBF1')
+    else:
+        country, capital = font('LibertinusSerif-Regular.otf', 10), font('LibertinusSerif-Italic.otf', 10)
+        ocean, sea = font('UncialAntiqua-Regular.ttf', 11), font('UncialAntiqua-Regular.ttf', 10)
+        sel = font('LibertinusSerif-Semibold.otf', 12)
+        ink, blue = hexc('#5F5A51'), hexc('#2B6C9A')
+        land_halo, sea_halo = LAND, OCEAN_SHALLOW
     draw = ImageDraw.Draw(img)
-    placed = []
-    paper = P_PAPER if persian else PAPER
+    placed = [tuple(v * scale for v in r) for r in keep_clear]
+    halo, gap = 1.5 * scale, 4 * scale
+    col = lambda c: tuple(int(255 * v) for v in c)
 
-    def put(text, lon, lat, font, colour, tracking, panel=False, mark=False):
+    def put(text, lon, lat, font, colour, ground, tracking=False, panel=False, mark=False):
         la, lo = np.radians(lat), np.radians(lon)
         wv = np.array([np.cos(la) * np.sin(lo), np.sin(la), np.cos(la) * np.cos(lo)])
         vx, vy, vz = M.T @ wv
-        if vz < 0.25:
+        if vz < 0.4:                                    # (the app keeps a shown name down to 0.3)
             return
         sx, sy = (cx + vx * R) * scale, (cy - vy * R) * scale
         text = '\u2009'.join(text) if tracking else text
         bb = draw.textbbox((0, 0), text, font=font)
         tw, th = bb[2] - bb[0], bb[3] - bb[1]
-        mk = 10 * scale if mark else 0                  # the capital's rosette, left of its name
-        box = (sx - tw / 2 - 3 - mk, sy - th / 2 - 3, sx + tw / 2 + 3, sy + th / 2 + 3)
-        if panel:
-            box = (box[0] - 5 * scale, box[1] - 3 * scale, box[2] + 5 * scale, box[3] + 3 * scale)
-        if any(not (box[2] < b[0] or box[0] > b[2] or box[3] < b[1] or box[1] > b[3]) for b in placed):
+        mk = 12 * k * scale if mark else 0              # the capital's rosette, left of its name, on the city
+        pad = 5 * scale if panel else halo + scale
+        x0 = sx - (halo + scale + 4.5 * k * scale) if mark else sx - tw / 2 - pad
+        box = (x0, sy - th / 2 - pad, x0 + tw + mk + 2 * pad, sy + th / 2 + pad)
+        Rpx = R * scale
+        far = max(np.hypot(bx - cx * scale, by - cy * scale) for bx in (box[0], box[2]) for by in (box[1], box[3]))
+        if far >= Rpx * 0.99 or box[0] < 0 or box[1] < 0 or box[2] > w * scale or box[3] > h * scale:
             return
-        placed.append(box)
-        a = min(1, (vz - 0.25) / 0.25)
-        c = tuple(int(255 * (paper[i] * (1 - a) + colour[i] * a)) for i in range(3))
+        g = (box[0] - gap / 2, box[1] - gap / 2, box[2] + gap / 2, box[3] + gap / 2)
+        if any(not (g[2] < b[0] or g[0] > b[2] or g[3] < b[1] or g[1] > b[3]) for b in placed):
+            return
+        placed.append(g)
         if panel:                                       # a quiet text panel, ruled in gold and lapis
-            col = lambda k: tuple(int(255 * v) for v in k)
             draw.rectangle(box, fill=col(hexc('#F7F0DF')), outline=col(P_GOLD), width=max(1, int(1.2 * scale)))
             i = 2.2 * scale
             draw.rectangle((box[0] + i, box[1] + i, box[2] - i, box[3] - i), outline=col(P_LAPIS), width=max(1, int(0.5 * scale)))
         if mark:
-            rs = picture('rosette.png', (9 * scale, 9 * scale), stand_in_rosette)
+            rs = picture('rosette.png', (9 * k * scale, 9 * k * scale), stand_in_rosette)
             rs = np.concatenate([rs[..., :3] / np.maximum(rs[..., 3:], 1e-4), rs[..., 3:]], -1)   # straight again for PIL
             ri = Image.fromarray((np.clip(rs, 0, 1) * 255).astype(np.uint8), 'RGBA')
-            img.paste(ri, (int(sx - tw / 2 - mk), int(sy - ri.size[1] / 2)), ri)
-        draw.text((sx - tw / 2, sy - th / 2 - bb[1]), text, font=font, fill=c)
+            img.paste(ri, (int(sx - ri.size[0] / 2), int(sy - ri.size[1] / 2)), ri)
+        tx = box[0] + pad + mk
+        ty = sy - th / 2 - bb[1]
+        if not panel:
+            draw.text((tx, ty), text, font=font, fill=col(colour), stroke_width=int(round(halo)), stroke_fill=col(ground))
+        draw.text((tx, ty), text, font=font, fill=col(colour))
 
     level = np.log2(2 * np.pi * R / 256) + 1.2      # the web-map zoom the globe is drawn at
     for i, c in enumerate(data['countries']):
         if i + 1 == selected:
             if persian:
-                put(short(c['n']).upper(), *c['c'], sel, P_INK, False, panel=True)
+                put(short(c['n']).upper(), *c['c'], sel, P_INK, None, panel=True)
             else:
-                put(short(c['n']).upper(), *c['c'], sel, hexc('#FFF7EA'), False)
+                put(short(c['n']).upper(), *c['c'], sel, hexc('#FFF7EA'), hexc('#B02232'))
     for s in sorted(data['seas'], key=lambda s: (not s['ocean'], s['r'])):
         if s['ocean'] or s['r'] <= level - 2.5:
-            if persian:
-                put(s['n'], *s['c'], ocean if s['ocean'] else sea, P_LAPIS, s['ocean'])
-            else:
-                put(s['n'], *s['c'], sea, hexc('#4A8DBB'), False)
+            put(s['n'], *s['c'], ocean if s['ocean'] else sea, blue, sea_halo, tracking=persian and s['ocean'])
     for i, c in sorted(enumerate(data['countries']), key=lambda ic: (ic[1]['min'], ic[1]['r'])):
         if c['min'] <= level - 0.5 and i + 1 != selected:
-            put(short(c['n']).upper(), *c['c'], cap, hexc('#4A3D2E') if persian else hexc('#5F5A51'), False)
-    if persian:
-        for c in sorted(data['capitals'], key=lambda c: c.get('r') or 9):
-            if level >= 5.6 + (c.get('r') or 5) * 0.25:
-                put(c['n'], *c['c'], town, hexc('#4A3D2E'), False, mark=True)
+            put(short(c['n']).upper(), *c['c'], country, ink, land_halo)
+    for c in sorted(data['capitals'], key=lambda c: c.get('r') or 9):
+        if level >= 5.6 + (c.get('r') or 5) * 0.25:
+            put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], capital, ink, land_halo, mark=persian)
+
+
+CAPTION_WIDTH = 560                                    # the caption's widest, in points (a readable line)
+
+
+def caption_box(w, h):
+    """Where the Persian caption sits, in points (x0, y0, x1, y1): at the foot, at most CAPTION_WIDTH
+    wide, centred."""
+    inset = 5
+    pw = min(w - 28, CAPTION_WIDTH)
+    x0 = (w - pw) / 2
+    head_h = (pw - 2 * inset) / 8
+    body_h = 12 + 12.5 * 1.3 + 6 + 17 * 1.3 + 12
+    y1 = h - (20 if min(w, h) >= 700 else 34) - 10
+    return x0, y1 - (2 * inset + head_h + body_h), x0 + pw, y1
+
+
+def buttons_box(w, h):
+    """The style and film buttons, top right, in points (AtlasScreen's)."""
+    return w - 130, 0, w, (24 if min(w, h) >= 700 else 54) + 8 + 48
 
 
 def persian_caption(img, w, h, scale, selected):
@@ -453,13 +488,10 @@ def persian_caption(img, w, h, scale, selected):
     xf = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), S(17))
     col = lambda k: tuple(int(255 * v) for v in k)
     inset = 5
-    x0, x1 = 14, w - 14
+    x0, y0, x1, y1 = caption_box(w, h)
     inner = x1 - x0 - 2 * inset
     head = picture('headpiece.png', (inner * scale, inner / 8 * scale), lambda: Image.new('RGBA', (2048, 256), col(P_LAPIS) + (255,)))
     head_h = inner / 8
-    body_h = 12 + 12.5 * 1.3 + 6 + 17 * 1.3 + 12
-    y1 = h - 34 - 10
-    y0 = y1 - (2 * inset + head_h + body_h)
     d = ImageDraw.Draw(img)
     d.rectangle((S(x0), S(y0), S(x1), S(y1)), fill=col(hexc('#F7F0DF')))
     d.rectangle((S(x0 + 1), S(y0 + 1), S(x1 - 1), S(y1 - 1)), outline=col(P_GOLD), width=S(2))
@@ -502,8 +534,8 @@ def main():
     a.add_argument('--lat', type=float, default=32)
     a.add_argument('--zoom', type=float, default=1)
     a.add_argument('--select', default='')
-    a.add_argument('--scale', type=float, default=2)
-    a.add_argument('--size', default='402x874')
+    a.add_argument('--scale', type=float, default=1)
+    a.add_argument('--size', default='1032x1376', help='points: 1032x1376 the 13-inch iPad (the default), 402x874 an iPhone')
     a.add_argument('--no-labels', action='store_true')
     a.add_argument('--style', default='wikipedia', choices=('wikipedia', 'persian'))
     o = a.parse_args()
@@ -512,7 +544,8 @@ def main():
     selected = names.index(o.select) + 1 if o.select else 0
     img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian')
     if not o.no_labels:
-        labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian')
+        clear = [buttons_box(w, h)] + ([caption_box(w, h)] if o.style == 'persian' else [])
+        labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian', clear)
         if o.style == 'persian':
             persian_caption(img, w, h, o.scale, selected)
     img.save(o.out)

@@ -58,11 +58,33 @@ finished picture in the chosen look. This file is the map and the rules.
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
     and no unused file in the bundle), the globe's data by `ci/check_globe.py`, and the tools' syntax.
   - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
-    in the bundle. Simulator screenshots of every look's film at moments, and of the globe, run only
-    when the workflow is started by hand (`ci/sim_shots.sh`).
+    in the bundle. Simulator screenshots run only when the workflow is started by hand
+    (`ci/sim_shots.sh`): on the 13" iPad Pro (the primary device; `device` also takes `iphone` or
+    `both`), every look's film at moments (unless `film` is off) and the globe in each style.
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
+
+## Text on the map
+
+Every name must be readable on the device it is on (the iPad first, then the iPhone). The rules,
+built into `GlobeView`'s names and mirrored by `tools/globe/preview.py`:
+
+- **Halo.** Every name sits on a halo of its ground's tone (the sea's or the land's, 1.5 pt each
+  side, round-joined), so no coast, border or graticule line crosses a letter.
+- **Contrast.** A name's ink is at least 4.5:1 against its halo (WCAG AA for small text); the
+  caption's lines against their panel too. Check a new colour before using it.
+- **Readable or not shown.** A name is fully opaque or absent; it fades only in time (a tenth of a
+  second or so), never as a steady half-tone because of where it is. Its cut-off near the limb has
+  slack (shown above 0.4 of facing, kept down to 0.3), so it doesn't flicker there.
+- **On its ground.** A name lies wholly on the globe (none spills onto the frame or the paper) and
+  wholly on screen, and never under the caption or the buttons (`GlobeView.keepClear`).
+- **Room.** At least 4 pt between any two names, halos included. The order of claim decides which
+  stay: the chosen country, oceans, seas, countries, capitals.
+- **Size.** Names are at least 10 pt (oceans 11), 15 % larger on the iPad, and grow with the
+  reader's text size up to half as large again; fewer then fit, and the order of claim decides.
+- **Language.** Real names in English, set in Libertinus (Uncial only for Wikipedia's seas, a
+  Kells touch); capitals letter-spaced; no invented or decorative script.
 
 ## Rules
 

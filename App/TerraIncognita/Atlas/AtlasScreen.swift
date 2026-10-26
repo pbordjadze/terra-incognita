@@ -53,6 +53,8 @@ struct AtlasScreen: View {
     @State private var globeDrawn = false
     /// The globe's style, kept between launches (Debug: `-globeStyle wikipedia` at launch).
     @AppStorage("globeStyle") private var globeStyle = GlobeStyle.persian
+    /// Where the buttons are, so the globe keeps its names clear of them.
+    @State private var buttonsFrame = CGRect.zero
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -75,7 +77,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe, style: globeStyle, onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -118,6 +120,7 @@ struct AtlasScreen: View {
                     .accessibilityLabel(Text("Look"))
                 }
             }
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
             .padding(.trailing, 16)
             .padding(.top, 8)
         }
@@ -195,6 +198,7 @@ struct CaptionView: View {
 
     var body: some View {
         CaptionLines(caption: caption, style: style)
+            .frame(maxWidth: CaptionLines.widest, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
             .padding(.top, 70)
@@ -214,6 +218,8 @@ struct CaptionView: View {
 struct CaptionLines: View {
     let caption: Plate.Caption
     let style: CaptionStyle?
+    /// The widest a caption runs, in points: on an iPad a line any longer is hard to read.
+    static let widest: CGFloat = 560
 
     var body: some View {
         // (a line left empty takes no room)
