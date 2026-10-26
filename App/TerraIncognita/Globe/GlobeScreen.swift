@@ -75,31 +75,53 @@ struct GlobeScreen: View {
         scrim: nil)
 }
 
-/// The caption in the Persian style: a quiet text panel under a strip of the frame's band, ruled in
-/// gold, pink and lapis, as the manuscript sets its text under an illuminated headpiece.
+/// The caption in the Persian style, as the manuscript opens its text: an illuminated headpiece with
+/// the title lettered in its gold cartouche, over a quiet panel ruled in gold, pink and lapis.
 private struct PersianCaption: View {
     let caption: Plate.Caption
+    /// The headpiece (Globe/headpiece.png), and the box inside its cartouche that the title may
+    /// fill, as fractions of it (tools/globe/ornament.py).
+    static let headpiece = UIImage(contentsOfFile: GlobeData.root.appending(path: "headpiece.png").path(percentEncoded: false))
+    static let cartouche = CGRect(x: 0.29, y: 0.2, width: 0.42, height: 0.6)
 
     var body: some View {
-        CaptionLines(caption: caption, style: GlobeScreen.persianStyle)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.top, 14 + PersianPanel.inset + PersianPanel.head)
-            .padding(.bottom, 16)
-            .background(PersianPanel())
-            .padding(.horizontal, 14)
-            .padding(.bottom, 10)
-            .allowsHitTesting(false)
-            .accessibilityElement(children: .combine)
+        VStack(alignment: .leading, spacing: 0) {
+            if let head = Self.headpiece {
+                Image(uiImage: head)
+                    .resizable()
+                    .aspectRatio(head.size.width / max(head.size.height, 1), contentMode: .fit)
+                    .overlay {
+                        GeometryReader { g in
+                            Text(verbatim: caption.title)
+                                .font(.custom("LibertinusSerif-Semibold", size: 22, relativeTo: .title))
+                                .foregroundStyle(Color(red: 0x2A / 255, green: 0x21 / 255, blue: 0x19 / 255))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.4)
+                                .frame(width: g.size.width * Self.cartouche.width, height: g.size.height * Self.cartouche.height)
+                                .position(x: g.size.width * Self.cartouche.midX, y: g.size.height * Self.cartouche.midY)
+                        }
+                    }
+            }
+            CaptionLines(caption: Plate.Caption(eyebrow: caption.eyebrow, title: Self.headpiece == nil ? caption.title : "", text: caption.text),
+                         style: GlobeScreen.persianStyle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+        }
+        .padding(PersianPanel.inset)
+        .background(PersianPanel())
+        .padding(.horizontal, 14)
+        .padding(.bottom, 10)
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: [caption.title, caption.eyebrow, caption.text].filter { !$0.isEmpty }.joined(separator: ", ")))
     }
 }
 
+/// The panel's ground and its rulings.
 private struct PersianPanel: View {
-    /// The rulings' depth, and the headpiece's height inside them, in points.
+    /// The rulings' depth, in points.
     static let inset: CGFloat = 5
-    static let head: CGFloat = 12
-    /// The frame's band (Globe/band.png), drawn as the headpiece.
-    static let band = UIImage(contentsOfFile: GlobeData.root.appending(path: "band.png").path(percentEncoded: false))
 
     var body: some View {
         Canvas { ctx, size in
@@ -110,21 +132,7 @@ private struct PersianPanel: View {
             ctx.fill(Path(r), with: .color(colour(0xF7F0DF)))
             ctx.stroke(Path(r.insetBy(dx: 1, dy: 1)), with: .color(colour(0xA8894F)), lineWidth: 2)
             ctx.stroke(Path(r.insetBy(dx: 3.2, dy: 3.2)), with: .color(colour(0xD59A86)), lineWidth: 0.8)
-            let inner = r.insetBy(dx: Self.inset, dy: Self.inset)
-            if let band = Self.band {
-                // whole repeats of the band across the panel
-                let image = ctx.resolve(Image(uiImage: band))
-                let n = max(1, (inner.width / (Self.head * band.size.width / max(band.size.height, 1))).rounded())
-                let w = inner.width / n
-                for i in 0..<Int(n) {
-                    ctx.draw(image, in: CGRect(x: inner.minX + CGFloat(i) * w, y: inner.minY, width: w, height: Self.head))
-                }
-            }
-            var under = Path()
-            under.move(to: CGPoint(x: inner.minX, y: inner.minY + Self.head + 0.5))
-            under.addLine(to: CGPoint(x: inner.maxX, y: inner.minY + Self.head + 0.5))
-            ctx.stroke(under, with: .color(colour(0xA8894F)), lineWidth: 1)
-            ctx.stroke(Path(inner.insetBy(dx: -0.25, dy: -0.25)), with: .color(colour(0x4E5B9B)), lineWidth: 0.5)
+            ctx.stroke(Path(r.insetBy(dx: Self.inset - 0.25, dy: Self.inset - 0.25)), with: .color(colour(0x4E5B9B)), lineWidth: 0.5)
         }
     }
 }

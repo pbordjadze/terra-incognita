@@ -6,9 +6,9 @@
 globe.json has every field the app's decoder requires (App/TerraIncognita/Globe/GlobeData.swift: a
 missing one leaves the globe blank), the three maps are the sizes and kinds the shader and the tap
 lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
-(RGBA: the band 1536 x 256, the finial 256 x 256, the rosette 96 x 96), no country index in
-globe.json exceeds what a grey byte holds, and the fonts are there with their licences. Reads PNG
-headers itself (no image library on the runner).
+(RGBA: the band 1536 x 256, the finial 256 x 256, the rosette 96 x 96, the caption's headpiece
+2048 x 256), no country index in globe.json exceeds what a grey byte holds, and the fonts are there
+with their licences. Reads PNG headers itself (no image library on the runner).
 """
 import json, os, struct, sys
 
@@ -33,7 +33,8 @@ def png(path):
 # the maps, and the Persian style's ornaments (tools/globe/ornament.py): size, colour type (6: RGBA,
 # 0: grey), all 8-bit, as the app's uploads read them
 KINDS = {'geo.png': (4096, 2048, 6), 'terrain.png': (4096, 2048, 6), 'ids.png': (4096, 2048, 0),
-         'band.png': (1536, 256, 6), 'fleuron.png': (256, 256, 6), 'rosette.png': (96, 96, 6)}
+         'band.png': (1536, 256, 6), 'fleuron.png': (256, 256, 6), 'rosette.png': (96, 96, 6),
+         'headpiece.png': (2048, 256, 6)}
 for name, (w, h0, kind) in KINDS.items():
     p = os.path.join(root, name)
     h = png(p) if os.path.isfile(p) else None

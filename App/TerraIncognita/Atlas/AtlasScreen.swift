@@ -216,10 +216,17 @@ struct CaptionLines: View {
     let style: CaptionStyle?
 
     var body: some View {
+        // (a line left empty takes no room)
         VStack(alignment: .leading, spacing: 6) {
-            line(caption.eyebrow, style?.eyebrow, fallback: Fallback(size: 12, color: "#dc7354", tracking: 2.4, uppercase: true), relativeTo: .caption)
-            line(caption.title, style?.title, fallback: Fallback(size: 28, color: "#f7ebcc"), relativeTo: .title)
-            line(caption.text, style?.text, fallback: Fallback(size: 17, color: "#ebdec2", italic: true), relativeTo: .body)
+            if !caption.eyebrow.isEmpty {
+                line(caption.eyebrow, style?.eyebrow, fallback: Fallback(size: 12, color: "#dc7354", tracking: 2.4, uppercase: true), relativeTo: .caption)
+            }
+            if !caption.title.isEmpty {
+                line(caption.title, style?.title, fallback: Fallback(size: 28, color: "#f7ebcc"), relativeTo: .title)
+            }
+            if !caption.text.isEmpty {
+                line(caption.text, style?.text, fallback: Fallback(size: 17, color: "#ebdec2", italic: true), relativeTo: .body)
+            }
         }
     }
 

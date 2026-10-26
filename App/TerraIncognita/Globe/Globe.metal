@@ -143,8 +143,9 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     // angle's (which jumps at the top, where it wraps: take them from the half-turned angle there)
     float theta = floormod(atan2(x, y), 2 * M_PI_F);   // clockwise from the top
     float theta2 = fract(theta / (2 * M_PI_F) + 0.5) * 2 * M_PI_F;
-    float tdx = abs(dfdx(theta)) < abs(dfdx(theta2)) ? dfdx(theta) : dfdx(theta2);
-    float tdy = abs(dfdy(theta)) < abs(dfdy(theta2)) ? dfdy(theta) : dfdy(theta2);
+    float tdx1 = dfdx(theta), tdx2 = dfdx(theta2), tdy1 = dfdy(theta), tdy2 = dfdy(theta2);
+    float tdx = abs(tdx1) < abs(tdx2) ? tdx1 : tdx2;
+    float tdy = abs(tdy1) < abs(tdy2) ? tdy1 : tdy2;
     float rdx = dfdx(rr), rdy = dfdy(rr);
     float3 ppage = 0;
     if (style > 0.001) {                                // (the same for every pixel)
@@ -292,8 +293,10 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
             land = mix(land, P_SHADE, 0.22 * stroke(fract(hc + 0.42) - 0.5, 0.55 * scale, fwHc) * rocky);
         }
         land = mix(land, P_RIVER, 0.75 * stroke(river, 0.65 * scale, fwRiver) * smoothstep(1.2, 2.2, k) * riverOn);
-        // the chosen country gilded, like the opening's cartouche, and edged in its pink
-        float3 gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(uv * float2(2400, 1200)) - 0.5));
+        // the chosen country gilded, like the opening's cartouche, and edged in its pink; the gold
+        // catches a light from the upper left as the globe turns it past
+        float sheen = pow(max(dot(float3(x, y, z), float3(-0.42, 0.52, 0.744)), 0.0), 10.0);
+        float3 gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(uv * float2(2400, 1200)) - 0.5) + 0.22 * sheen);
         land = mix(land, gild, SEL_ALPHA * m);
         land = mix(land, P_BORDER, 0.75 * stroke(border, 0.7 * scale, fwBorder) * borderOn);
         land = mix(land, P_SEL_EDGE, stroke(border, 1.5 * scale, fwBorder) * borderOn * (m > 0.04 * highlight ? highlight : 0.0));

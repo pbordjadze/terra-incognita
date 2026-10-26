@@ -151,7 +151,8 @@ P_FLEURON = (1.1025, 0.045, 48)   # base, height, how many
 
 def picture(name, size, fallback):
     """A bundled ornament (tools/globe/ornament.py), or a stand-in, resized to `size` (w, h) pixels on
-    screen: what the shader's mipmaps do."""
+    screen: roughly what the shader's mipmaps do (it filters per pixel, by the footprint, and reads
+    transparent past a sprite's edge; this is close enough to judge the look by)."""
     path = G / name
     img = Image.open(path).convert('RGBA') if path.exists() else fallback()
     a = np.asarray(img).astype(np.float32) / 255
@@ -209,7 +210,7 @@ def persian_page(px, py, x, y, rr, R, W, H, grain):
     return page
 
 
-def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, z, rr, R, lined):
+def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined):
     # the sea: a pale lapis wash, its coasts ruled like a panel, a gold hair close in and a lapis one out
     sea = mix(P_SEA, P_SEA_DEEP, depth)
     sea = sea * (0.985 + 0.03 * mott)[..., None]
@@ -230,7 +231,9 @@ def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott,
     land = mix(land, P_SHADE, 0.22 * line(((hc + 0.42) % 1) - 0.5, 0.55 * scale, fwidth(hc)) * smoothstep(800, 1300, hm) * smoothstep(1.6, 2.6, k))
     land = mix(land, P_RIVER, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * lined(river))
     # the chosen country gilded, like the opening's cartouche, and edged in its pink
-    gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(u * 2400, v * 1200) - 0.5))[..., None]
+    # (the gold catches a light from the upper left as the globe turns it past)
+    sheen = np.maximum(x * -0.42 + y * 0.52 + z * 0.744, 0) ** 10
+    gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(u * 2400, v * 1200) - 0.5) + 0.22 * sheen)[..., None]
     land = mix(land, gild, SEL_ALPHA * m)
     bl = line(border, 0.7 * scale) * lined(border)
     land = mix(land, P_BORDER, 0.75 * bl)
@@ -328,7 +331,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     # the selected country (the shader: gather, then bilinear)
     m = sample((ids == selected).astype(np.float32), u, v)[..., 0] if selected else np.zeros_like(u)
     if persian:
-        col = persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, z, rr, R, lined)
+        col = persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined)
     else:
         # the sea: deeper is a little bluer, with a faint watercolour mottle and lines along the coasts
         sea = mix(OCEAN_SHALLOW, OCEAN_DEEP, depth)
@@ -428,6 +431,59 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False):
                 put(c['n'], *c['c'], town, hexc('#4A3D2E'), False, mark=True)
 
 
+def persian_caption(img, w, h, scale, selected):
+    """Roughly the app's Persian caption (GlobeScreen's PersianCaption): the headpiece with the name in
+    its cartouche, over a ruled text panel, at the foot of the screen."""
+    data = json.loads((G / 'globe.json').read_text())
+    if selected:
+        c = data['countries'][selected - 1]
+        title, eyebrow = c.get('long') or c['n'], (c.get('sub') or c.get('cont') or '')
+        facts = []
+        if c.get('cap'):
+            facts.append('Capital ' + c['cap'])
+        if c.get('pop'):
+            facts.append(f"{c['pop'] / 1e6:.0f} million people" if c['pop'] >= 1e7 else f"{c['pop'] / 1e6:.1f} million people")
+        text = ' \u00b7 '.join(facts)
+    else:
+        title, eyebrow, text = 'The whole world', 'The globe', 'Spin it, pinch it, tap a country.'
+    f = G / 'fonts'
+    S = lambda v: int(round(v * scale))
+    tf = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), S(22))
+    ef = ImageFont.truetype(str(f / 'LibertinusSerif-Regular.otf'), S(12.5))
+    xf = ImageFont.truetype(str(f / 'LibertinusSerif-Italic.otf'), S(17))
+    col = lambda k: tuple(int(255 * v) for v in k)
+    inset = 5
+    x0, x1 = 14, w - 14
+    inner = x1 - x0 - 2 * inset
+    head = picture('headpiece.png', (inner * scale, inner / 8 * scale), lambda: Image.new('RGBA', (2048, 256), col(P_LAPIS) + (255,)))
+    head_h = inner / 8
+    body_h = 12 + 12.5 * 1.3 + 6 + 17 * 1.3 + 12
+    y1 = h - 34 - 10
+    y0 = y1 - (2 * inset + head_h + body_h)
+    d = ImageDraw.Draw(img)
+    d.rectangle((S(x0), S(y0), S(x1), S(y1)), fill=col(hexc('#F7F0DF')))
+    d.rectangle((S(x0 + 1), S(y0 + 1), S(x1 - 1), S(y1 - 1)), outline=col(P_GOLD), width=S(2))
+    d.rectangle((S(x0 + 3.2), S(y0 + 3.2), S(x1 - 3.2), S(y1 - 3.2)), outline=col(P_PINK), width=max(1, S(0.8)))
+    d.rectangle((S(x0 + inset), S(y0 + inset), S(x1 - inset), S(y1 - inset)), outline=col(P_LAPIS), width=max(1, S(0.5)))
+    hp = np.concatenate([head[..., :3] / np.maximum(head[..., 3:], 1e-4), head[..., 3:]], -1)
+    hi = Image.fromarray((np.clip(hp, 0, 1) * 255).astype(np.uint8), 'RGBA')
+    img.paste(hi, (S(x0 + inset), S(y0 + inset)), hi)
+    # the name in the cartouche (its box: PersianCaption.cartouche), shrunk to fit
+    bx, by, bw, bh = 0.29, 0.2, 0.42, 0.6
+    size = 22.0
+    while True:
+        tf = ImageFont.truetype(str(f / 'LibertinusSerif-Semibold.otf'), S(size))
+        bb = d.textbbox((0, 0), title, font=tf)
+        if bb[2] - bb[0] <= bw * inner * scale or size <= 9:
+            break
+        size -= 0.5
+    cxp, cyp = S(x0 + inset + inner * (bx + bw / 2)), S(y0 + inset + head_h * (by + bh / 2))
+    d.text((cxp - (bb[2] - bb[0]) / 2, cyp - (bb[3] + bb[1]) / 2), title, font=tf, fill=col(P_INK))
+    ty = y0 + inset + head_h + 12
+    d.text((S(x0 + inset + 16), S(ty)), '\u2009'.join(eyebrow.upper()), font=ef, fill=col(P_LAPIS))
+    d.text((S(x0 + inset + 16), S(ty + 12.5 * 1.3 + 6)), text, font=xf, fill=col(hexc('#5A4E40')))
+
+
 def stand_in_rosette():
     img = Image.new('RGBA', (96, 96), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -457,6 +513,8 @@ def main():
     img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian')
     if not o.no_labels:
         labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian')
+        if o.style == 'persian':
+            persian_caption(img, w, h, o.scale, selected)
     img.save(o.out)
 
 
