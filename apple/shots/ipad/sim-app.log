@@ -1,0 +1,922 @@
+getpwuid_r did not find a match for uid 501
+Timestamp               Ty Process[PID:TID]
+2026-10-26 20:04:06.387 Df TerraIncognita[16929:e372] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1058de1c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:04:06.506 Df TerraIncognita[16929:e372] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1058de1c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:05:22.113 Df TerraIncognita[16929:e372] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:40.023 Df TerraIncognita[20719:10e1c] [com.apple.xpc:connection] [0x10567e640] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-26 20:06:40.023 Df TerraIncognita[20719:10de6] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-26 20:06:40.024 Df TerraIncognita[20719:10e1d] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-26 20:06:40.024 Df TerraIncognita[20719:10e1d] [com.apple.xpc:connection] [0x105683380] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:06:40.029 A  TerraIncognita[20719:10e1c] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-26 20:06:40.046 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-10-26 20:06:40.046 Df TerraIncognita[20719:10de6] [com.apple.runningboard:connection] Initializing connection
+2026-10-26 20:06:40.046 Df TerraIncognita[20719:10e1b] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-10-26 20:06:40.046 Df TerraIncognita[20719:10de6] [com.apple.runningboard:process] Removing all cached process handles
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10e1b] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10de6] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10e1b] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x10567ff00>
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10e1d] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10de6] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10e1b] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-10-26 20:06:40.047 Df TerraIncognita[20719:10e1b] [com.apple.xpc:connection] [0x105d38280] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-26 20:06:40.048 A  TerraIncognita[20719:10e21] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:40.048 Df TerraIncognita[20719:10e1d] [com.apple.runningboard:connection] Handshake succeeded
+2026-10-26 20:06:40.048 Df TerraIncognita[20719:10e1d] [com.apple.runningboard:connection] Identity resolved as app<com.pbordjadze.terraincognita((null))>
+2026-10-26 20:06:40.049 Df TerraIncognita[20719:10de6] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-10-26 20:06:40.049 Df TerraIncognita[20719:10e1b] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x10567ff00>
+2026-10-26 20:06:40.049 Df TerraIncognita[20719:10e1b] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x105c88b80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1220 (elapsed = 0).
+2026-10-26 20:06:40.049 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-10-26 20:06:40.061 Df TerraIncognita[20719:10de6] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x105d0c640; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-10-26 20:06:40.061 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-10-26 20:06:40.062 Df TerraIncognita[20719:10de6] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x105cf4780 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-10-26 20:06:40.063 Df TerraIncognita[20719:10de6] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x105cf4780 com.apple.frontboard.systemappservices> sent handshake
+2026-10-26 20:06:40.063 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-10-26 20:06:40.063 Df TerraIncognita[20719:10de6] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x105d0cec0>
+2026-10-26 20:06:40.064 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-10-26 20:06:40.065 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-10-26 20:06:40.071 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:06:40.071 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x105d38500> for initial
+2026-10-26 20:06:40.072 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x105d38500> for CADisplay KVO
+2026-10-26 20:06:40.073 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-10-26 20:06:40.075 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:06:40.076 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:06:40.077 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-10-26 20:06:40.078 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-10-26 20:06:40.078 Df TerraIncognita[20719:10de6] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-10-26 20:06:40.078 Df TerraIncognita[20719:10de6] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-10-26 20:06:40.079 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-10-26 20:06:40.079 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-10-26 20:06:40.080 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:06:40.080 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-10-26 20:06:40.081 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-10-26 20:06:40.081 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-10-26 20:06:40.083 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-10-26 20:06:40.085 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:06:40.085 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-10-26 20:06:40.086 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-10-26 20:06:40.087 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-10-26 20:06:40.088 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:06:40.088 Df TerraIncognita[20719:10de6] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-10-26 20:06:40.088 Df TerraIncognita[20719:10e1b] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-10-26 20:06:40.089 Df TerraIncognita[20719:10de6] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:06:40.089 Df TerraIncognita[20719:10e1f] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-10-26 20:06:40.089 Df TerraIncognita[20719:10de6] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:06:40.089 Df TerraIncognita[20719:10de6] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:06:40.090 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-10-26 20:06:40.092 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-10-26 20:06:40.094 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-10-26 20:06:40.094 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-10-26 20:06:40.095 Df TerraIncognita[20719:10e1f] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-10-26 20:06:40.104 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-10-26 20:06:40.110 Df TerraIncognita[20719:10e1f] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-10-26 20:06:40.110 Df TerraIncognita[20719:10e1f] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-10-26 20:06:40.110 Df TerraIncognita[20719:10e1f] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-10-26 20:06:40.115 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105d38b40] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-10-26 20:06:40.214 Df TerraIncognita[20719:10de6] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-26 20:06:40.215 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105d38dc0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:06:40.220 Df TerraIncognita[20719:10de6] [com.apple.app_launch_measurement:ApplicationLaunch] alm_acquire_pageins_recording_assertion: acquired pageins recording assertion!
+2026-10-26 20:06:40.222 Df TerraIncognita[20719:10e1f] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-10-26 20:06:40.222 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-10-26 20:06:40.223 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.226 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.226 Df TerraIncognita[20719:10de6] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x105e61730>; with scene: <UIWindowScene: 0x10568d300>
+2026-10-26 20:06:40.226 Df TerraIncognita[20719:10de6] [com.apple.BacklightServices:scenes] 0x105c26790 setDelegate:<0x105c26730 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.pbordjadze.terraincognita-default
+2026-10-26 20:06:40.227 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.227 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventDeferring] [0x105e601c0] Initialized with scene: <UIWindowScene: 0x10568d300>; behavior: <_UIEventDeferringBehavior_iOS: 0x105f60420>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10e21] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10de6] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x105c46e20; process scope; status: target> was:none
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to LastOneWins
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x10568d300; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UIFocus] Focus system enabled
+2026-10-26 20:06:40.229 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x105cf4fa0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventDeferring] [0x105e601c0] Scene target of event deferring environments did update: scene: 0x10568d300; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10568d300; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x105c26970: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to SystemShellManaged
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10568d300; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x10568d300: Window scene became target of keyboard environment
+2026-10-26 20:06:40.230 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.231 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.232 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.343 Df TerraIncognita[20719:10de6] [com.apple.UIKit:PointerLockState] preferredPointerLockStatus updated: scene: <UIWindowScene: 0x10568d300; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96; activationState: UISceneActivationStateUnattached>; viewController: <_TtGC7SwiftUI19UIHostingControllerGVS_15ModifiedContentVS_7AnyViewVS_12RootModifier__: 0x105db8000>; preferredPointerLockStatus: _UIPointerLockStatusUnlocked
+2026-10-26 20:06:40.348 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-10-26 20:06:40.348 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x10568d300: Window became key in scene: UIWindow: 0x105da8400; contextId: 0x2D5B19F5: reason: UIWindowScene: 0x10568d300: Window requested to become key in scene: 0x105da8400
+2026-10-26 20:06:40.348 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10568d300; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x105da8400; reason: UIWindowScene: 0x10568d300: Window requested to become key in scene: 0x105da8400
+2026-10-26 20:06:40.348 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x105da8400; contextId: 0x2D5B19F5; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:06:40.348 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventDeferring] [0x105e601c0] Begin local event deferring requested for token: 0x105c46ca0; environments: 1; reason: UIWindowScene: 0x10568d300: Begin event deferring in keyboardFocus for window: 0x105da8400
+2026-10-26 20:06:40.350 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.350 Df TerraIncognita[20719:10e1f] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x105c46e20; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default; status: ancestor> was:target
+2026-10-26 20:06:40.351 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:40.351 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-10-26 20:06:40.352 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-10-26 20:06:40.352 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-10-26 20:06:40.352 Df TerraIncognita[20719:10de6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-10-26 20:06:40.358 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:40.358 Df TerraIncognita[20719:10e21] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-10-26 20:06:40.360 Df TerraIncognita[20719:10e21] [com.apple.xpc:session] [0x105da5900] Session created.
+2026-10-26 20:06:40.360 Df TerraIncognita[20719:10e21] [com.apple.xpc:session] [0x105da5900] Session created from connection [0x105fbc000]
+2026-10-26 20:06:40.360 Df TerraIncognita[20719:10e21] [com.apple.xpc:connection] [0x105fbc000] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-10-26 20:06:40.360 Df TerraIncognita[20719:10e21] [com.apple.xpc:session] [0x105da5900] Session activated
+2026-10-26 20:06:40.382 A  TerraIncognita[20719:10de6] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:06:40.472 Df TerraIncognita[20719:10e21] [com.apple.xpc:connection] [0x105fbcc80] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-26 20:06:40.488 A  TerraIncognita[20719:10de6] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:06:40.614 Df TerraIncognita[20719:10de6] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-26 20:06:40.754 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105fbd040] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:06:40.767 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105fbd400] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:06:40.768 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105fbd180] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:06:40.778 E  TerraIncognita[20719:10de6] (libCoreFSCache.dylib) fopen failed for data file: errno = 2 (No such file or directory)
+2026-10-26 20:06:40.778 Df TerraIncognita[20719:10de6] (libCoreFSCache.dylib) Invalidating cache
+2026-10-26 20:06:40.778 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105fbde00] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-26 20:06:41.093 Df TerraIncognita[20719:10e1d] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-26 20:06:41.093 Df TerraIncognita[20719:10e1d] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x105c88b80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1220 (elapsed = 1), _expireHandler: (null)
+2026-10-26 20:06:41.094 Df TerraIncognita[20719:10e1d] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x10567ff00> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x105c88b80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1220 (elapsed = 1))
+2026-10-26 20:06:41.094 Df TerraIncognita[20719:10e1d] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x10567ff00> for task identifier: 1
+2026-10-26 20:06:41.199 A  TerraIncognita[20719:10e1d] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:41.368 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x105fbdf40] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-26 20:06:41.368 A  TerraIncognita[20719:10e1f] (Metal) Metal Compiling Shader
+2026-10-26 20:06:46.781 A  TerraIncognita[20719:10e1f] (Metal) Metal Compiling Shader
+2026-10-26 20:06:47.457 Df TerraIncognita[20719:10de6] [PrototypeTools:domain] Not observing PTDefaults on customer install.
+2026-10-26 20:06:47.514 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:47.595 Df TerraIncognita[20719:10de6] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2026-10-26 20:06:47.830 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:47.830 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x108b6a1c0] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-26 20:06:47.863 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:47.873 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:47.877 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:47.883 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:48.020 A  TerraIncognita[20719:10e1e] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:48.049 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x105cf66c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:06:48.058 A  TerraIncognita[20719:10e1e] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:48.058 E  TerraIncognita[20719:10e1e] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-10-26 20:06:48.060 Df TerraIncognita[20719:10de6] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [7DE51A7D-0DA3-41AC-8392-799A693B804D] (reporting strategy default)>
+2026-10-26 20:06:48.061 Df TerraIncognita[20719:10de6] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [CB074B62-4178-416A-B5AE-A6D5B9DAE59C] (reporting strategy default)>
+2026-10-26 20:06:48.061 Df TerraIncognita[20719:10de6] [com.apple.network:activity] Set activity <nw_activity 50:1 [7DE51A7D-0DA3-41AC-8392-799A693B804D] (reporting strategy default)> as the global parent
+2026-10-26 20:06:48.075 Df TerraIncognita[20719:10de6] [com.apple.UIKit:EventDeferring] [0x105e601c0] Scene target of event deferring environments did update: scene: 0x10568d300; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:06:48.076 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10568d300; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:06:48.076 Df TerraIncognita[20719:10de6] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-26 20:06:48.083 Df TerraIncognita[20719:10de6] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-26 20:06:48.095 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:48.097 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:48.109 Df TerraIncognita[20719:10de6] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10568d300> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:06:48.110 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:48.110 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-26 20:06:48.111 Df TerraIncognita[20719:10de6] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-26 20:06:48.111 Df TerraIncognita[20719:10de6] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-26 20:06:48.119 Df TerraIncognita[20719:10de6] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-26 20:06:48.128 Df TerraIncognita[20719:10de6] [com.apple.xpc:connection] [0x108b68780] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-26 20:06:48.131 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:48.137 A  TerraIncognita[20719:10e1f] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:48.214 A  TerraIncognita[20719:1101b] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:06:48.258 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:48.263 Df TerraIncognita[20719:10de6] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:06:48.280 Df TerraIncognita[20719:10de6] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-26 20:06:48.393 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyboardSceneDelegate] forceReloadInputViews
+2026-10-26 20:06:48.393 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyboardSceneDelegate] Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+2026-10-26 20:06:48.394 Df TerraIncognita[20719:10de6] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-26 20:06:48.470 Df TerraIncognita[20719:10de6] [com.apple.network:activity] <nw_activity 50:1 [7DE51A7D-0DA3-41AC-8392-799A693B804D] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 28174ms
+2026-10-26 20:06:48.472 Df TerraIncognita[20719:10de6] [com.apple.network:activity] <nw_activity 50:2 [CB074B62-4178-416A-B5AE-A6D5B9DAE59C] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 28177ms
+2026-10-26 20:06:48.472 Df TerraIncognita[20719:10de6] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [7DE51A7D-0DA3-41AC-8392-799A693B804D] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-26 20:06:48.472 Df TerraIncognita[20719:10de6] [com.apple.network:activity] Unset the global parent activity
+2026-10-26 20:06:48.472 Df TerraIncognita[20719:10de6] [com.apple.app_launch_measurement:ApplicationLaunch] alm_release_pageins_recording_assertion: releasing pageins recording assertion
+2026-10-26 20:06:48.507 E  TerraIncognita[20719:1101b] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+2026-10-26 20:06:48.739 Df TerraIncognita[20719:10de6] [com.apple.renderbox:misc] RBDevice: initialized bg state: false
+2026-10-26 20:06:48.768 E  TerraIncognita[20719:10de6] (libCoreFSCache.dylib) fopen failed for data file: errno = 2 (No such file or directory)
+2026-10-26 20:06:48.770 Df TerraIncognita[20719:10de6] (libCoreFSCache.dylib) Invalidating cache
+2026-10-26 20:06:48.774 A  TerraIncognita[20719:1101b] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.818 A  TerraIncognita[20719:10e1d] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.827 A  TerraIncognita[20719:1101b] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.874 A  TerraIncognita[20719:10e1c] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.878 A  TerraIncognita[20719:10e1d] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.882 A  TerraIncognita[20719:10e1c] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.887 A  TerraIncognita[20719:10e1d] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.895 A  TerraIncognita[20719:10e1c] (Metal) Metal Compiling Shader
+2026-10-26 20:06:48.927 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.021 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.133 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.289 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.605 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.607 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:06:49.611 E  TerraIncognita[20719:10de6] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:09:58.990 Df TerraIncognita[28765:15ca6] [com.apple.xpc:connection] [0x1014130b0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-26 20:09:58.990 Df TerraIncognita[28765:15c9e] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-26 20:09:58.992 Df TerraIncognita[28765:15ca9] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-26 20:09:58.996 Df TerraIncognita[28765:15ca9] [com.apple.xpc:connection] [0x101938140] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:09:59.001 A  TerraIncognita[28765:15caa] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-26 20:09:59.011 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-10-26 20:09:59.012 Df TerraIncognita[28765:15c9e] [com.apple.runningboard:connection] Initializing connection
+2026-10-26 20:09:59.012 Df TerraIncognita[28765:15c9e] [com.apple.runningboard:process] Removing all cached process handles
+2026-10-26 20:09:59.013 Df TerraIncognita[28765:15c9e] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-10-26 20:09:59.013 Df TerraIncognita[28765:15cab] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-10-26 20:09:59.014 Df TerraIncognita[28765:15c9e] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-10-26 20:09:59.014 Df TerraIncognita[28765:15cab] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-10-26 20:09:59.014 Df TerraIncognita[28765:15cab] [com.apple.xpc:connection] [0x101938280] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-26 20:09:59.015 Df TerraIncognita[28765:15c9e] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-10-26 20:09:59.015 Df TerraIncognita[28765:15ca6] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-10-26 20:09:59.015 Df TerraIncognita[28765:15ca6] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-10-26 20:09:59.016 Df TerraIncognita[28765:15ca6] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x1019b80a0>
+2026-10-26 20:09:59.017 Df TerraIncognita[28765:15c9e] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x1019147a0; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-10-26 20:09:59.017 Df TerraIncognita[28765:15c9e] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1018f46e0 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-10-26 20:09:59.017 Df TerraIncognita[28765:15c9e] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1018f46e0 com.apple.frontboard.systemappservices> sent handshake
+2026-10-26 20:09:59.018 Df TerraIncognita[28765:15c9e] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x101914bc0>
+2026-10-26 20:09:59.019 Df TerraIncognita[28765:15cab] [com.apple.runningboard:connection] Handshake succeeded
+2026-10-26 20:09:59.019 Df TerraIncognita[28765:15cab] [com.apple.runningboard:connection] Identity resolved as app<com.pbordjadze.terraincognita((null))>
+2026-10-26 20:09:59.021 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-10-26 20:09:59.021 Df TerraIncognita[28765:15ca6] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x1019b80a0>
+2026-10-26 20:09:59.021 Df TerraIncognita[28765:15ca6] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x101889e80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1419 (elapsed = 0).
+2026-10-26 20:09:59.022 A  TerraIncognita[28765:15cad] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:09:59.027 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-10-26 20:09:59.027 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x101938500> for initial
+2026-10-26 20:09:59.028 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-10-26 20:09:59.028 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x101938500> for CADisplay KVO
+2026-10-26 20:09:59.029 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-10-26 20:09:59.030 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-10-26 20:09:59.034 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:09:59.036 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-10-26 20:09:59.039 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:09:59.040 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:09:59.041 Df TerraIncognita[28765:15c9e] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-10-26 20:09:59.042 Df TerraIncognita[28765:15c9e] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-10-26 20:09:59.043 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-10-26 20:09:59.043 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-10-26 20:09:59.044 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-10-26 20:09:59.044 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-10-26 20:09:59.044 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:09:59.044 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-10-26 20:09:59.047 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-10-26 20:09:59.047 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-10-26 20:09:59.051 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-10-26 20:09:59.052 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:09:59.053 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-10-26 20:09:59.054 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-10-26 20:09:59.059 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-10-26 20:09:59.060 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-10-26 20:09:59.061 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-10-26 20:09:59.062 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:09:59.062 Df TerraIncognita[28765:15ca6] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-10-26 20:09:59.067 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-10-26 20:09:59.068 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-10-26 20:09:59.068 Df TerraIncognita[28765:15caa] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-10-26 20:09:59.086 Df TerraIncognita[28765:15c9e] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-10-26 20:09:59.088 Df TerraIncognita[28765:15c9e] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:09:59.088 Df TerraIncognita[28765:15c9e] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:09:59.089 Df TerraIncognita[28765:15c9e] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:09:59.091 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-10-26 20:09:59.103 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-10-26 20:09:59.110 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-10-26 20:09:59.110 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-10-26 20:09:59.110 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-10-26 20:09:59.114 Df TerraIncognita[28765:15c9e] [com.apple.app_launch_measurement:ApplicationLaunch] alm_acquire_pageins_recording_assertion: acquired pageins recording assertion!
+2026-10-26 20:09:59.127 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-10-26 20:09:59.129 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.134 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.135 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x101a4c380>; with scene: <UIWindowScene: 0x10141fd80>
+2026-10-26 20:09:59.135 Df TerraIncognita[28765:15c9e] [com.apple.BacklightServices:scenes] 0x1019f1e60 setDelegate:<0x1019f1e90 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.pbordjadze.terraincognita-default
+2026-10-26 20:09:59.136 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.136 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventDeferring] [0x101a4c310] Initialized with scene: <UIWindowScene: 0x10141fd80>; behavior: <_UIEventDeferringBehavior_iOS: 0x101915860>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-10-26 20:09:59.136 Df TerraIncognita[28765:15c9e] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-26 20:09:59.137 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x101938dc0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:09:59.142 Df TerraIncognita[28765:15c9e] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x101845f20; process scope; status: target> was:none
+2026-10-26 20:09:59.142 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to LastOneWins
+2026-10-26 20:09:59.143 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x10141fd80; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:09:59.143 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UIFocus] Focus system enabled
+2026-10-26 20:09:59.144 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1018f50e0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:09:59.144 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.144 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventDeferring] [0x101a4c310] Scene target of event deferring environments did update: scene: 0x10141fd80; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10141fd80; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x1019f21c0: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to SystemShellManaged
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15ca6] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10141fd80; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x10141fd80: Window scene became target of keyboard environment
+2026-10-26 20:09:59.145 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.146 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.149 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.508 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:PointerLockState] preferredPointerLockStatus updated: scene: <UIWindowScene: 0x10141fd80; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96; activationState: UISceneActivationStateUnattached>; viewController: <_TtGC7SwiftUI19UIHostingControllerGVS_15ModifiedContentVS_7AnyViewVS_12RootModifier__: 0x1019cc000>; preferredPointerLockStatus: _UIPointerLockStatusUnlocked
+2026-10-26 20:09:59.512 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-10-26 20:09:59.513 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x10141fd80: Window became key in scene: UIWindow: 0x1019bc400; contextId: 0x4BFD7706: reason: UIWindowScene: 0x10141fd80: Window requested to become key in scene: 0x1019bc400
+2026-10-26 20:09:59.513 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10141fd80; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x1019bc400; reason: UIWindowScene: 0x10141fd80: Window requested to become key in scene: 0x1019bc400
+2026-10-26 20:09:59.513 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x1019bc400; contextId: 0x4BFD7706; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:09:59.513 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventDeferring] [0x101a4c310] Begin local event deferring requested for token: 0x101845c20; environments: 1; reason: UIWindowScene: 0x10141fd80: Begin event deferring in keyboardFocus for window: 0x1019bc400
+2026-10-26 20:09:59.523 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.536 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:09:59.540 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-10-26 20:09:59.540 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-10-26 20:09:59.541 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-10-26 20:09:59.546 Df TerraIncognita[28765:15c9e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-10-26 20:09:59.582 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:09:59.649 A  TerraIncognita[28765:15c9e] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:09:59.662 Df TerraIncognita[28765:15ca9] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-10-26 20:09:59.699 Df TerraIncognita[28765:15ca6] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-10-26 20:09:59.776 Df TerraIncognita[28765:15ca6] [com.apple.xpc:session] [0x1019ba9e0] Session created.
+2026-10-26 20:09:59.776 Df TerraIncognita[28765:15ca6] [com.apple.xpc:session] [0x1019ba9e0] Session created from connection [0x101b20b40]
+2026-10-26 20:09:59.776 Df TerraIncognita[28765:15ca6] [com.apple.xpc:connection] [0x101b20b40] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-10-26 20:09:59.825 Df TerraIncognita[28765:15ca6] [com.apple.xpc:session] [0x1019ba9e0] Session activated
+2026-10-26 20:09:59.916 A  TerraIncognita[28765:15c9e] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:10:00.001 Df TerraIncognita[28765:15ca9] [com.apple.xpc:connection] [0x101b20c80] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-26 20:10:00.018 Df TerraIncognita[28765:15ca9] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x101845f20; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default; status: ancestor> was:target
+2026-10-26 20:10:00.030 Df TerraIncognita[28765:15caa] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-26 20:10:00.030 Df TerraIncognita[28765:15caa] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x101889e80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1419 (elapsed = 1), _expireHandler: (null)
+2026-10-26 20:10:00.030 Df TerraIncognita[28765:15caa] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x1019b80a0> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x101889e80>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1419 (elapsed = 1))
+2026-10-26 20:10:00.030 Df TerraIncognita[28765:15caa] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x1019b80a0> for task identifier: 1
+2026-10-26 20:10:00.044 Df TerraIncognita[28765:15c9e] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-26 20:10:00.143 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x101b20140] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:10:00.147 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x101b212c0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:10:00.148 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x101b21400] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:10:01.003 Df TerraIncognita[28765:15c9e] [PrototypeTools:domain] Not observing PTDefaults on customer install.
+2026-10-26 20:10:01.084 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:10:01.175 Df TerraIncognita[28765:15c9e] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2026-10-26 20:10:01.305 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:01.305 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x104b0a080] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-26 20:10:01.346 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:01.355 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:01.359 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:01.364 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:01.441 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x104b08140] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-10-26 20:10:01.462 A  TerraIncognita[28765:15ca9] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:10:01.469 A  TerraIncognita[28765:15caa] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:10:01.476 A  TerraIncognita[28765:15ca9] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:10:01.486 A  TerraIncognita[28765:15ca9] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:10:01.576 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1018f6620; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:10:01.580 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [17FD40F8-A487-4031-98C2-1C10A55722E7] (reporting strategy default)>
+2026-10-26 20:10:01.580 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [2C5941AA-DD0A-407F-9A4E-6A63C3E659CA] (reporting strategy default)>
+2026-10-26 20:10:01.580 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] Set activity <nw_activity 50:1 [17FD40F8-A487-4031-98C2-1C10A55722E7] (reporting strategy default)> as the global parent
+2026-10-26 20:10:01.581 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:10:01.581 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:10:01.582 E  TerraIncognita[28765:15caa] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-10-26 20:10:01.588 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-26 20:10:01.594 Df TerraIncognita[28765:15c9e] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-26 20:10:01.595 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:EventDeferring] [0x101a4c310] Scene target of event deferring environments did update: scene: 0x10141fd80; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:10:01.595 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10141fd80; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:10:01.601 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10141fd80> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:10:01.603 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:10:01.603 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-26 20:10:01.603 Df TerraIncognita[28765:15c9e] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-26 20:10:01.603 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-26 20:10:01.645 Df TerraIncognita[28765:15c9e] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-26 20:10:01.670 Df TerraIncognita[28765:15c9e] [com.apple.xpc:connection] [0x104b09040] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-26 20:10:01.702 A  TerraIncognita[28765:15cae] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:10:01.705 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:10:01.727 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:10:01.775 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:10:01.785 Df TerraIncognita[28765:15c9e] [com.apple.renderbox:misc] RBDevice: initialized bg state: false
+2026-10-26 20:10:01.825 Df TerraIncognita[28765:15c9e] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-26 20:10:01.858 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyboardSceneDelegate] forceReloadInputViews
+2026-10-26 20:10:01.858 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyboardSceneDelegate] Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+2026-10-26 20:10:01.861 Df TerraIncognita[28765:15c9e] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-26 20:10:02.134 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.164 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.229 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.291 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.500 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.504 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.509 E  TerraIncognita[28765:15c9e] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:10:02.648 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] <nw_activity 50:1 [17FD40F8-A487-4031-98C2-1C10A55722E7] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 4403ms
+2026-10-26 20:10:02.648 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] <nw_activity 50:2 [2C5941AA-DD0A-407F-9A4E-6A63C3E659CA] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 4401ms
+2026-10-26 20:10:02.648 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [17FD40F8-A487-4031-98C2-1C10A55722E7] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-26 20:10:02.648 Df TerraIncognita[28765:15c9e] [com.apple.network:activity] Unset the global parent activity
+2026-10-26 20:10:02.648 Df TerraIncognita[28765:15c9e] [com.apple.app_launch_measurement:ApplicationLaunch] alm_release_pageins_recording_assertion: releasing pageins recording assertion
+2026-10-26 20:10:02.649 E  TerraIncognita[28765:15cad] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+2026-10-26 20:11:22.199 Df TerraIncognita[32140:17fad] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-26 20:11:22.199 Df TerraIncognita[32140:17fb1] [com.apple.xpc:connection] [0x10122ea50] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-26 20:11:22.217 Df TerraIncognita[32140:17fb3] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-26 20:11:22.218 A  TerraIncognita[32140:17fb2] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-26 20:11:22.218 Df TerraIncognita[32140:17fb3] [com.apple.xpc:connection] [0x10193c000] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:11:22.238 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-10-26 20:11:22.239 Df TerraIncognita[32140:17fad] [com.apple.runningboard:connection] Initializing connection
+2026-10-26 20:11:22.239 Df TerraIncognita[32140:17fad] [com.apple.runningboard:process] Removing all cached process handles
+2026-10-26 20:11:22.239 Df TerraIncognita[32140:17fad] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fb4] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fb4] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fb4] [com.apple.xpc:connection] [0x10193c140] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fb1] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fb1] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-10-26 20:11:22.240 Df TerraIncognita[32140:17fad] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-10-26 20:11:22.241 Df TerraIncognita[32140:17fb1] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x10122ef30>
+2026-10-26 20:11:22.241 Df TerraIncognita[32140:17fad] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-10-26 20:11:22.242 A  TerraIncognita[32140:17fba] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:11:22.242 Df TerraIncognita[32140:17fb4] [com.apple.runningboard:connection] Handshake succeeded
+2026-10-26 20:11:22.242 Df TerraIncognita[32140:17fb4] [com.apple.runningboard:connection] Identity resolved as app<com.pbordjadze.terraincognita((null))>
+2026-10-26 20:11:22.244 Df TerraIncognita[32140:17fb1] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x10122ef30>
+2026-10-26 20:11:22.244 Df TerraIncognita[32140:17fb1] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x101889080>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1502 (elapsed = 0).
+2026-10-26 20:11:22.244 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-10-26 20:11:22.244 Df TerraIncognita[32140:17fad] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x1019349a0; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-10-26 20:11:22.245 Df TerraIncognita[32140:17fad] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1018ecc80 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-10-26 20:11:22.245 Df TerraIncognita[32140:17fad] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1018ecc80 com.apple.frontboard.systemappservices> sent handshake
+2026-10-26 20:11:22.246 Df TerraIncognita[32140:17fad] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x101934d60>
+2026-10-26 20:11:22.257 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-10-26 20:11:22.258 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-10-26 20:11:22.259 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-10-26 20:11:22.260 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-10-26 20:11:22.264 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x10193c3c0> for initial
+2026-10-26 20:11:22.264 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:11:22.264 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x10193c3c0> for CADisplay KVO
+2026-10-26 20:11:22.266 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-10-26 20:11:22.267 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:11:22.268 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:11:22.269 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-10-26 20:11:22.269 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-10-26 20:11:22.270 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-10-26 20:11:22.270 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-10-26 20:11:22.270 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:11:22.270 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-10-26 20:11:22.271 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-10-26 20:11:22.271 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-10-26 20:11:22.273 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-10-26 20:11:22.275 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:11:22.275 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-10-26 20:11:22.277 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-10-26 20:11:22.277 Df TerraIncognita[32140:17fad] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-10-26 20:11:22.278 Df TerraIncognita[32140:17fad] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-10-26 20:11:22.279 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-10-26 20:11:22.279 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:11:22.279 Df TerraIncognita[32140:17fb1] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-10-26 20:11:22.281 Df TerraIncognita[32140:17fb3] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-10-26 20:11:22.284 Df TerraIncognita[32140:17fb3] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-10-26 20:11:22.289 Df TerraIncognita[32140:17fad] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-10-26 20:11:22.290 Df TerraIncognita[32140:17fad] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:11:22.291 Df TerraIncognita[32140:17fad] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:11:22.291 Df TerraIncognita[32140:17fad] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:11:22.296 Df TerraIncognita[32140:17fb3] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-10-26 20:11:22.297 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-10-26 20:11:22.300 Df TerraIncognita[32140:17fb3] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-10-26 20:11:22.304 Df TerraIncognita[32140:17fb3] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-10-26 20:11:22.336 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-10-26 20:11:22.388 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-10-26 20:11:22.389 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-10-26 20:11:22.389 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-10-26 20:11:22.424 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x10193ca00] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-10-26 20:11:22.615 Df TerraIncognita[32140:17fad] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-26 20:11:22.615 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x10193cc80] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:11:22.632 Df TerraIncognita[32140:17fad] [com.apple.app_launch_measurement:ApplicationLaunch] alm_acquire_pageins_recording_assertion: acquired pageins recording assertion!
+2026-10-26 20:11:22.637 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-10-26 20:11:22.639 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.642 Df TerraIncognita[32140:17fb4] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-10-26 20:11:22.650 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.651 Df TerraIncognita[32140:17fad] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x101a50fc0>; with scene: <UIWindowScene: 0x10123bf40>
+2026-10-26 20:11:22.651 Df TerraIncognita[32140:17fad] [com.apple.BacklightServices:scenes] 0x101826c40 setDelegate:<0x1018268b0 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.pbordjadze.terraincognita-default
+2026-10-26 20:11:22.653 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.653 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventDeferring] [0x101a51030] Initialized with scene: <UIWindowScene: 0x10123bf40>; behavior: <_UIEventDeferringBehavior_iOS: 0x101b645c0>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-10-26 20:11:22.656 Df TerraIncognita[32140:17fad] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x101845c80; process scope; status: target> was:none
+2026-10-26 20:11:22.656 Df TerraIncognita[32140:17fb4] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-10-26 20:11:22.656 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to LastOneWins
+2026-10-26 20:11:22.656 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x10123bf40; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:11:22.656 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UIFocus] Focus system enabled
+2026-10-26 20:11:22.658 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1018ecf00; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventDeferring] [0x101a51030] Scene target of event deferring environments did update: scene: 0x10123bf40; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10123bf40; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x101826b20: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to SystemShellManaged
+2026-10-26 20:11:22.659 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10123bf40; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x10123bf40: Window scene became target of keyboard environment
+2026-10-26 20:11:22.661 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.662 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.664 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.815 Df TerraIncognita[32140:17fad] [com.apple.UIKit:PointerLockState] preferredPointerLockStatus updated: scene: <UIWindowScene: 0x10123bf40; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96; activationState: UISceneActivationStateUnattached>; viewController: <_TtGC7SwiftUI19UIHostingControllerGVS_15ModifiedContentVS_7AnyViewVS_12RootModifier__: 0x1019cc000>; preferredPointerLockStatus: _UIPointerLockStatusUnlocked
+2026-10-26 20:11:22.821 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-10-26 20:11:22.822 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x10123bf40: Window became key in scene: UIWindow: 0x1019b4400; contextId: 0xB19ED26E: reason: UIWindowScene: 0x10123bf40: Window requested to become key in scene: 0x1019b4400
+2026-10-26 20:11:22.822 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x10123bf40; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x1019b4400; reason: UIWindowScene: 0x10123bf40: Window requested to become key in scene: 0x1019b4400
+2026-10-26 20:11:22.822 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x1019b4400; contextId: 0xB19ED26E; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:11:22.822 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventDeferring] [0x101a51030] Begin local event deferring requested for token: 0x101844ba0; environments: 1; reason: UIWindowScene: 0x10123bf40: Begin event deferring in keyboardFocus for window: 0x1019b4400
+2026-10-26 20:11:22.824 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.824 Df TerraIncognita[32140:17fb1] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x101845c80; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default; status: ancestor> was:target
+2026-10-26 20:11:22.826 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:22.827 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-10-26 20:11:22.827 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-10-26 20:11:22.827 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-10-26 20:11:22.827 Df TerraIncognita[32140:17fad] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-10-26 20:11:22.829 Df TerraIncognita[32140:17fb4] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-10-26 20:11:22.829 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:22.833 Df TerraIncognita[32140:17fb4] [com.apple.xpc:session] [0x1019c14f0] Session created.
+2026-10-26 20:11:22.833 Df TerraIncognita[32140:17fb4] [com.apple.xpc:session] [0x1019c14f0] Session created from connection [0x101bc4a00]
+2026-10-26 20:11:22.834 Df TerraIncognita[32140:17fb4] [com.apple.xpc:connection] [0x101bc4a00] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-10-26 20:11:22.837 Df TerraIncognita[32140:17fb4] [com.apple.xpc:session] [0x1019c14f0] Session activated
+2026-10-26 20:11:22.844 A  TerraIncognita[32140:17fad] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:11:22.975 Df TerraIncognita[32140:17fba] [com.apple.xpc:connection] [0x101bc4b40] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-26 20:11:22.991 A  TerraIncognita[32140:17fad] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:11:23.099 Df TerraIncognita[32140:17fad] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-26 20:11:23.213 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x101bc5180] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:11:23.217 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x101bc5cc0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:11:23.218 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x101bc5e00] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:11:23.293 Df TerraIncognita[32140:17fb4] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-26 20:11:23.293 Df TerraIncognita[32140:17fb4] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x101889080>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1502 (elapsed = 1), _expireHandler: (null)
+2026-10-26 20:11:23.293 Df TerraIncognita[32140:17fb4] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x10122ef30> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x101889080>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1502 (elapsed = 1))
+2026-10-26 20:11:23.293 Df TerraIncognita[32140:17fb4] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x10122ef30> for task identifier: 1
+2026-10-26 20:11:23.559 A  TerraIncognita[32140:17fba] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:11:23.988 Df TerraIncognita[32140:17fad] [PrototypeTools:domain] Not observing PTDefaults on customer install.
+2026-10-26 20:11:24.048 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:24.130 Df TerraIncognita[32140:17fad] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2026-10-26 20:11:24.266 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:24.266 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x104771cc0] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-26 20:11:24.295 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:24.303 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:24.309 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:24.316 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:24.324 Df TerraIncognita[32140:17fad] [com.apple.renderbox:misc] RBDevice: initialized bg state: false
+2026-10-26 20:11:24.329 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x1047726c0] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-26 20:11:24.506 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x104772800] activating connection: mach=false listener=false peer=false name=com.apple.MTLCompilerService
+2026-10-26 20:11:24.506 A  TerraIncognita[32140:17fb4] (Metal) Metal Compiling Shader
+2026-10-26 20:11:24.991 A  TerraIncognita[32140:17fb3] (Metal) Metal Compiling Shader
+2026-10-26 20:11:25.039 F  TerraIncognita[32140:17fad] [com.apple.renderbox:error] building pipeline plane_color-cea15feba4 took 0.711602 seconds
+2026-10-26 20:11:25.039 A  TerraIncognita[32140:17fad] (libsystem_trace.dylib) Activity for state dumps
+2026-10-26 20:11:25.039 A  TerraIncognita[32140:17fb4] (Metal) Metal Compiling Shader
+2026-10-26 20:11:25.074 A  TerraIncognita[32140:17fb4] (Metal) Metal Compiling Shader
+2026-10-26 20:11:25.079 A  TerraIncognita[32140:17fba] (Metal) Metal Compiling Shader
+2026-10-26 20:11:25.493 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1018ee1c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:11:25.504 Df TerraIncognita[32140:17fad] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [8DB27D56-4ABE-49EA-8DDC-9AC279681CA7] (reporting strategy default)>
+2026-10-26 20:11:25.504 Df TerraIncognita[32140:17fad] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [F5EA1C8A-FCD6-405C-9C5C-FFDB74E9930A] (reporting strategy default)>
+2026-10-26 20:11:25.504 Df TerraIncognita[32140:17fad] [com.apple.network:activity] Set activity <nw_activity 50:1 [8DB27D56-4ABE-49EA-8DDC-9AC279681CA7] (reporting strategy default)> as the global parent
+2026-10-26 20:11:25.504 Df TerraIncognita[32140:17fad] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-26 20:11:25.505 A  TerraIncognita[32140:17fb2] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:11:25.506 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:25.506 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:25.509 Df TerraIncognita[32140:17fad] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-26 20:11:25.517 Df TerraIncognita[32140:17fad] [com.apple.UIKit:EventDeferring] [0x101a51030] Scene target of event deferring environments did update: scene: 0x10123bf40; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:11:25.518 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x10123bf40; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:11:25.523 A  TerraIncognita[32140:17fb2] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:11:25.527 Df TerraIncognita[32140:17fad] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x10123bf40> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:11:25.529 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:25.529 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-26 20:11:25.529 Df TerraIncognita[32140:17fad] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-26 20:11:25.529 Df TerraIncognita[32140:17fad] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-26 20:11:25.540 Sd TerraIncognita[32140:0] (21AB2359-DEEC-3444-94FE-B7257E43BE34) IOHIDManager State
+{
+    DispatchQueue = 0;
+    RunLoop = 1;
+    createOptions = 0;
+    isOpen = 0;
+    openOptions = 0;
+}
+2026-10-26 20:11:25.542 Df TerraIncognita[32140:17fad] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-26 20:11:25.546 Df TerraIncognita[32140:17fad] [com.apple.xpc:connection] [0x104770640] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-26 20:11:25.727 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:25.763 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:25.785 Df TerraIncognita[32140:17fad] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:11:25.786 Df TerraIncognita[32140:17fad] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-26 20:11:25.798 A  TerraIncognita[32140:17fb4] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:11:25.861 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyboardSceneDelegate] forceReloadInputViews
+2026-10-26 20:11:25.864 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyboardSceneDelegate] Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+2026-10-26 20:11:25.876 Df TerraIncognita[32140:17fad] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-26 20:11:25.908 Sd TerraIncognita[32140:0] (C5DE29B6-3E2C-34DE-AA3C-32346C8FF586) UAUserActivity
+UAUserActivityManager supportsActivityContinuation=YES isEnabled=YES serverPid=0 PROJECT:UserActivity-551
+2026-10-26 20:11:26.332 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.340 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.448 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.574 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.646 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.829 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.842 E  TerraIncognita[32140:17fad] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:11:26.970 Df TerraIncognita[32140:17fad] [com.apple.network:activity] <nw_activity 50:1 [8DB27D56-4ABE-49EA-8DDC-9AC279681CA7] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 7220ms
+2026-10-26 20:11:26.971 Df TerraIncognita[32140:17fad] [com.apple.network:activity] <nw_activity 50:2 [F5EA1C8A-FCD6-405C-9C5C-FFDB74E9930A] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 7220ms
+2026-10-26 20:11:26.971 Df TerraIncognita[32140:17fad] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [8DB27D56-4ABE-49EA-8DDC-9AC279681CA7] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-26 20:11:26.971 Df TerraIncognita[32140:17fad] [com.apple.network:activity] Unset the global parent activity
+2026-10-26 20:11:26.971 Df TerraIncognita[32140:17fad] [com.apple.app_launch_measurement:ApplicationLaunch] alm_release_pageins_recording_assertion: releasing pageins recording assertion
+2026-10-26 20:16:31.758 Df TerraIncognita[50355:22b29] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-26 20:16:31.758 Df TerraIncognita[50355:22b2c] [com.apple.xpc:connection] [0x100e7c5f0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-26 20:16:31.758 Df TerraIncognita[50355:22b2e] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-26 20:16:31.759 Df TerraIncognita[50355:22b2e] [com.apple.xpc:connection] [0x100e7ce60] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:16:31.764 A  TerraIncognita[50355:22b2d] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-26 20:16:31.767 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-10-26 20:16:31.767 Df TerraIncognita[50355:22b29] [com.apple.runningboard:connection] Initializing connection
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b29] [com.apple.runningboard:process] Removing all cached process handles
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b29] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b32] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b32] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b32] [com.apple.xpc:connection] [0x10154c280] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b2c] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-10-26 20:16:31.768 Df TerraIncognita[50355:22b2c] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-10-26 20:16:31.769 Df TerraIncognita[50355:22b2c] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x100e7c480>
+2026-10-26 20:16:31.769 Df TerraIncognita[50355:22b29] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-10-26 20:16:31.770 Df TerraIncognita[50355:22b29] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-10-26 20:16:31.772 Df TerraIncognita[50355:22b29] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x1015088c0; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-10-26 20:16:31.772 Df TerraIncognita[50355:22b29] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1014f0820 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-10-26 20:16:31.772 Df TerraIncognita[50355:22b29] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1014f0820 com.apple.frontboard.systemappservices> sent handshake
+2026-10-26 20:16:31.772 Df TerraIncognita[50355:22b29] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x101508e60>
+2026-10-26 20:16:31.775 Df TerraIncognita[50355:22b32] [com.apple.runningboard:connection] Handshake succeeded
+2026-10-26 20:16:31.775 A  TerraIncognita[50355:22b2f] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:31.776 Df TerraIncognita[50355:22b32] [com.apple.runningboard:connection] Identity resolved as app<com.pbordjadze.terraincognita((null))>
+2026-10-26 20:16:31.778 Df TerraIncognita[50355:22b2c] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x100e7c480>
+2026-10-26 20:16:31.778 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-10-26 20:16:31.778 Df TerraIncognita[50355:22b2c] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x101489f00>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1812 (elapsed = 0).
+2026-10-26 20:16:31.782 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-10-26 20:16:31.784 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-10-26 20:16:31.785 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x10154c500> for initial
+2026-10-26 20:16:31.785 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x10154c500> for CADisplay KVO
+2026-10-26 20:16:31.786 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-10-26 20:16:31.786 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-10-26 20:16:31.789 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:16:31.790 Df TerraIncognita[50355:22b29] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-10-26 20:16:31.790 Df TerraIncognita[50355:22b29] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-10-26 20:16:31.791 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-10-26 20:16:31.792 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:16:31.792 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:16:31.794 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-10-26 20:16:31.794 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-10-26 20:16:31.795 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-10-26 20:16:31.795 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-10-26 20:16:31.795 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:16:31.795 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-10-26 20:16:31.796 Df TerraIncognita[50355:22b29] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-10-26 20:16:31.796 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-10-26 20:16:31.796 Df TerraIncognita[50355:22b29] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:16:31.796 Df TerraIncognita[50355:22b29] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:16:31.797 Df TerraIncognita[50355:22b29] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:16:31.798 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-10-26 20:16:31.798 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-10-26 20:16:31.798 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-10-26 20:16:31.799 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-10-26 20:16:31.801 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-10-26 20:16:31.802 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:16:31.803 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-10-26 20:16:31.803 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-10-26 20:16:31.803 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-10-26 20:16:31.804 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-10-26 20:16:31.804 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-10-26 20:16:31.804 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:16:31.804 Df TerraIncognita[50355:22b2c] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-10-26 20:16:31.805 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-10-26 20:16:31.805 Df TerraIncognita[50355:22b2e] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-10-26 20:16:31.806 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-10-26 20:16:31.806 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-10-26 20:16:31.806 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-10-26 20:16:31.809 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x10154cb40] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-10-26 20:16:31.899 Df TerraIncognita[50355:22b29] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-26 20:16:31.899 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x10154cdc0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:16:31.906 Df TerraIncognita[50355:22b29] [com.apple.app_launch_measurement:ApplicationLaunch] alm_acquire_pageins_recording_assertion: acquired pageins recording assertion!
+2026-10-26 20:16:31.910 Df TerraIncognita[50355:22b2c] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-10-26 20:16:31.911 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-10-26 20:16:31.911 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:31.924 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:31.928 Df TerraIncognita[50355:22b29] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x101669420>; with scene: <UIWindowScene: 0x100e7d580>
+2026-10-26 20:16:31.932 Df TerraIncognita[50355:22b29] [com.apple.BacklightServices:scenes] 0x101426730 setDelegate:<0x101426820 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.pbordjadze.terraincognita-default
+2026-10-26 20:16:31.938 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:31.938 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventDeferring] [0x101669490] Initialized with scene: <UIWindowScene: 0x100e7d580>; behavior: <_UIEventDeferringBehavior_iOS: 0x101764340>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-10-26 20:16:31.945 Df TerraIncognita[50355:22b29] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x1015ee460; process scope; status: target> was:none
+2026-10-26 20:16:31.946 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to LastOneWins
+2026-10-26 20:16:31.946 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x100e7d580; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:16:31.946 Df TerraIncognita[50355:22b2c] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-10-26 20:16:31.946 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UIFocus] Focus system enabled
+2026-10-26 20:16:31.951 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1014f0780; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:16:31.956 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:31.957 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventDeferring] [0x101669490] Scene target of event deferring environments did update: scene: 0x100e7d580; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:16:31.957 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x100e7d580; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:16:31.957 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x101426700: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-10-26 20:16:31.958 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to SystemShellManaged
+2026-10-26 20:16:31.958 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x100e7d580; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x100e7d580: Window scene became target of keyboard environment
+2026-10-26 20:16:31.961 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:31.977 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:32.004 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:32.314 Df TerraIncognita[50355:22b29] [com.apple.UIKit:PointerLockState] preferredPointerLockStatus updated: scene: <UIWindowScene: 0x100e7d580; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96; activationState: UISceneActivationStateUnattached>; viewController: <_TtGC7SwiftUI19UIHostingControllerGVS_15ModifiedContentVS_7AnyViewVS_12RootModifier__: 0x1015d0000>; preferredPointerLockStatus: _UIPointerLockStatusUnlocked
+2026-10-26 20:16:32.320 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-10-26 20:16:32.321 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x100e7d580: Window became key in scene: UIWindow: 0x1015a4400; contextId: 0x9AE0D37C: reason: UIWindowScene: 0x100e7d580: Window requested to become key in scene: 0x1015a4400
+2026-10-26 20:16:32.321 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x100e7d580; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x1015a4400; reason: UIWindowScene: 0x100e7d580: Window requested to become key in scene: 0x1015a4400
+2026-10-26 20:16:32.321 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x1015a4400; contextId: 0x9AE0D37C; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:16:32.321 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventDeferring] [0x101669490] Begin local event deferring requested for token: 0x1015ee2e0; environments: 1; reason: UIWindowScene: 0x100e7d580: Begin event deferring in keyboardFocus for window: 0x1015a4400
+2026-10-26 20:16:32.325 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:32.325 Df TerraIncognita[50355:22b2e] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x1015ee460; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default; status: ancestor> was:target
+2026-10-26 20:16:32.327 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:32.328 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-10-26 20:16:32.328 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-10-26 20:16:32.328 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-10-26 20:16:32.329 Df TerraIncognita[50355:22b29] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-10-26 20:16:32.331 Df TerraIncognita[50355:22b2e] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-10-26 20:16:32.331 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:32.333 Df TerraIncognita[50355:22b2e] [com.apple.xpc:session] [0x1015b8190] Session created.
+2026-10-26 20:16:32.333 Df TerraIncognita[50355:22b2e] [com.apple.xpc:session] [0x1015b8190] Session created from connection [0x1017c4000]
+2026-10-26 20:16:32.333 Df TerraIncognita[50355:22b2e] [com.apple.xpc:connection] [0x1017c4000] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-10-26 20:16:32.334 Df TerraIncognita[50355:22b2e] [com.apple.xpc:session] [0x1015b8190] Session activated
+2026-10-26 20:16:32.347 A  TerraIncognita[50355:22b29] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:16:32.430 Df TerraIncognita[50355:22b2d] [com.apple.xpc:connection] [0x1017c4c80] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-26 20:16:32.442 A  TerraIncognita[50355:22b29] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:16:32.537 Df TerraIncognita[50355:22b29] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-26 20:16:32.631 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x1017c5180] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:16:32.641 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x1017c5cc0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:16:32.641 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x1017c5e00] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:16:32.786 Df TerraIncognita[50355:22b30] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-26 20:16:32.786 Df TerraIncognita[50355:22b30] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x101489f00>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1812 (elapsed = 1), _expireHandler: (null)
+2026-10-26 20:16:32.786 Df TerraIncognita[50355:22b30] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x100e7c480> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x101489f00>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1812 (elapsed = 1))
+2026-10-26 20:16:32.786 Df TerraIncognita[50355:22b30] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x100e7c480> for task identifier: 1
+2026-10-26 20:16:32.901 A  TerraIncognita[50355:22b2d] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:33.494 Df TerraIncognita[50355:22b29] [PrototypeTools:domain] Not observing PTDefaults on customer install.
+2026-10-26 20:16:33.594 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:33.721 Df TerraIncognita[50355:22b29] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2026-10-26 20:16:33.812 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:33.812 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x104375e00] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-26 20:16:33.861 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:33.869 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:33.873 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:33.877 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:33.887 Df TerraIncognita[50355:22b29] [com.apple.renderbox:misc] RBDevice: initialized bg state: false
+2026-10-26 20:16:33.988 A  TerraIncognita[50355:22b2e] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:34.000 A  TerraIncognita[50355:22b30] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:34.009 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1014f2080; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:16:34.012 Df TerraIncognita[50355:22b29] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [B5A19EA5-8220-4982-9474-FE32D428611B] (reporting strategy default)>
+2026-10-26 20:16:34.012 Df TerraIncognita[50355:22b29] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [FE2899A4-3613-4C69-BD70-EB3FAAF6FB95] (reporting strategy default)>
+2026-10-26 20:16:34.012 Df TerraIncognita[50355:22b29] [com.apple.network:activity] Set activity <nw_activity 50:1 [B5A19EA5-8220-4982-9474-FE32D428611B] (reporting strategy default)> as the global parent
+2026-10-26 20:16:34.013 Df TerraIncognita[50355:22b29] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-26 20:16:34.016 Df TerraIncognita[50355:22b29] [com.apple.UIKit:EventDeferring] [0x101669490] Scene target of event deferring environments did update: scene: 0x100e7d580; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:16:34.016 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x100e7d580; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:16:34.030 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:34.031 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:34.031 Df TerraIncognita[50355:22b29] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-26 20:16:34.033 A  TerraIncognita[50355:22b2c] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:34.040 Df TerraIncognita[50355:22b29] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x100e7d580> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:16:34.043 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:34.043 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-26 20:16:34.043 Df TerraIncognita[50355:22b29] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-26 20:16:34.044 Df TerraIncognita[50355:22b29] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-26 20:16:34.059 Df TerraIncognita[50355:22b29] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-26 20:16:34.068 Df TerraIncognita[50355:22b29] [com.apple.xpc:connection] [0x104374780] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-26 20:16:34.069 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:34.118 A  TerraIncognita[50355:22b2f] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:16:34.226 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:34.293 Df TerraIncognita[50355:22b29] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:16:34.294 Df TerraIncognita[50355:22b29] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-26 20:16:34.312 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyboardSceneDelegate] forceReloadInputViews
+2026-10-26 20:16:34.312 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyboardSceneDelegate] Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+2026-10-26 20:16:34.316 Df TerraIncognita[50355:22b29] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-26 20:16:34.755 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:34.763 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:34.893 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:35.019 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:35.085 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:35.205 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:35.223 E  TerraIncognita[50355:22b29] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:16:35.553 Df TerraIncognita[50355:22b29] [com.apple.network:activity] <nw_activity 50:1 [B5A19EA5-8220-4982-9474-FE32D428611B] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5100ms
+2026-10-26 20:16:35.553 Df TerraIncognita[50355:22b29] [com.apple.network:activity] <nw_activity 50:2 [FE2899A4-3613-4C69-BD70-EB3FAAF6FB95] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5100ms
+2026-10-26 20:16:35.553 Df TerraIncognita[50355:22b29] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [B5A19EA5-8220-4982-9474-FE32D428611B] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-26 20:16:35.553 Df TerraIncognita[50355:22b29] [com.apple.network:activity] Unset the global parent activity
+2026-10-26 20:16:35.554 Df TerraIncognita[50355:22b29] [com.apple.app_launch_measurement:ApplicationLaunch] alm_release_pageins_recording_assertion: releasing pageins recording assertion
+2026-10-26 20:18:04.188 Df TerraIncognita[56388:26216] (libMobileGestalt.dylib) No persisted cache on this platform.
+2026-10-26 20:18:04.189 Df TerraIncognita[56388:2621d] [com.apple.xpc:connection] [0x105b0b0e0] activating connection: mach=true listener=false peer=false name=com.apple.cfprefsd.daemon
+2026-10-26 20:18:04.190 Df TerraIncognita[56388:26221] [com.apple.BoardServices:XPCErrors] [C:1] Alloc com.apple.frontboard.systemappservices
+2026-10-26 20:18:04.191 Df TerraIncognita[56388:26221] [com.apple.xpc:connection] [0x105b0bf80] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:18:04.217 A  TerraIncognita[56388:26220] (CoreFoundation) Loading Preferences From User Session CFPrefsD
+2026-10-26 20:18:04.228 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason added: 10; deactivation reasons: 0 -> 1024; animating application lifecycle event: 0
+2026-10-26 20:18:04.229 Df TerraIncognita[56388:26216] [com.apple.runningboard:connection] Initializing connection
+2026-10-26 20:18:04.229 Df TerraIncognita[56388:26216] [com.apple.runningboard:process] Removing all cached process handles
+2026-10-26 20:18:04.229 Df TerraIncognita[56388:2621d] [com.apple.UIKit:BackgroundTask] Creating new assertion because there is no existing background assertion.
+2026-10-26 20:18:04.229 Df TerraIncognita[56388:26216] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.open
+2026-10-26 20:18:04.229 Df TerraIncognita[56388:2621d] [com.apple.UIKit:BackgroundTask] Creating new background assertion
+2026-10-26 20:18:04.230 Df TerraIncognita[56388:2621d] [com.apple.UIKit:BackgroundTask] Created new background assertion <BKSProcessAssertion: 0x105b0db30>
+2026-10-26 20:18:04.230 Df TerraIncognita[56388:26216] [com.apple.BoardServices:Injection] activating monitor for service com.apple.frontboard.workspace-service
+2026-10-26 20:18:04.231 Df TerraIncognita[56388:2621d] [com.apple.runningboard:connection] Creating connection to com.apple.runningboard
+2026-10-26 20:18:04.231 Df TerraIncognita[56388:2621d] [com.apple.xpc:connection] [0x106148280] activating connection: mach=true listener=false peer=false name=com.apple.runningboard
+2026-10-26 20:18:04.231 Df TerraIncognita[56388:2621f] [com.apple.runningboard:connection] Sending handshake request attempt #1 to server
+2026-10-26 20:18:04.233 Df TerraIncognita[56388:26216] [com.apple.FrontBoard:Common] FBSWorkspace registering source: com.apple.frontboard.systemappservices
+2026-10-26 20:18:04.234 A  TerraIncognita[56388:26221] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:18:04.235 Df TerraIncognita[56388:2621f] [com.apple.runningboard:connection] Handshake succeeded
+2026-10-26 20:18:04.235 Df TerraIncognita[56388:2621f] [com.apple.runningboard:connection] Identity resolved as app<com.pbordjadze.terraincognita((null))>
+2026-10-26 20:18:04.236 Df TerraIncognita[56388:2621d] [com.apple.UIKit:BackgroundTask] Incrementing reference count for background assertion <BKSProcessAssertion: 0x105b0db30>
+2026-10-26 20:18:04.237 Df TerraIncognita[56388:2621d] [com.apple.UIKit:BackgroundTask] Created background task <_UIBackgroundTaskInfo: 0x106088b40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1904 (elapsed = 0).
+2026-10-26 20:18:04.238 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UIApplicationSceneKeyboardSettings on FBSSceneSettings
+2026-10-26 20:18:04.238 Df TerraIncognita[56388:26216] [com.apple.FrontBoard:Common] FBSWorkspace connected to endpoint : <BSServiceConnectionEndpoint: 0x1061149a0; target: com.apple.frontboard.systemappservices; service: com.apple.frontboard.workspace-service>
+2026-10-26 20:18:04.239 Df TerraIncognita[56388:26216] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1060f4dc0 com.apple.frontboard.systemappservices> attempting immediate handshake from activate
+2026-10-26 20:18:04.239 Df TerraIncognita[56388:26216] [com.apple.FrontBoard:Common] <FBSWorkspaceScenesClient:0x1060f4dc0 com.apple.frontboard.systemappservices> sent handshake
+2026-10-26 20:18:04.240 Df TerraIncognita[56388:26216] [com.apple.runningboard:general] Added observer for process assertions expiration warning: <_RBSExpirationWarningClient: 0x106114c40>
+2026-10-26 20:18:04.256 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneOcclusionSettings> on FBSSceneSettings
+2026-10-26 20:18:04.259 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneInterfaceProtectionSettings> on FBSSceneSettings
+2026-10-26 20:18:04.260 Df TerraIncognita[56388:26216] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x106148500> for initial
+2026-10-26 20:18:04.261 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferencesHostSettingsExtension on FBSSceneSettings
+2026-10-26 20:18:04.262 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneSafeAreaSettingsExtension on FBSSceneSettings
+2026-10-26 20:18:04.262 Df TerraIncognita[56388:26216] [com.apple.UIKit:UIScreen] Evaluated capturing state as 0 on <UIScreen: 0x106148500> for CADisplay KVO
+2026-10-26 20:18:04.268 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneLayoutPreferenceClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:18:04.273 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UIHomeAffordanceHostSceneSettings> on FBSSceneSettings
+2026-10-26 20:18:04.275 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISystemShellSceneHostingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:18:04.276 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneRenderingEnvironmentSettings on FBSSceneSettings
+2026-10-26 20:18:04.277 Df TerraIncognita[56388:26216] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 1, category name = (null)
+2026-10-26 20:18:04.277 Df TerraIncognita[56388:26216] [com.apple.Accessibility:AXSupportCommon] Read CategoryName: per-app = 0, category name = (null)
+2026-10-26 20:18:04.279 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneRenderingEnvironmentClientSettings> on FBSSceneClientSettings
+2026-10-26 20:18:04.279 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneTransitioningHostSettings> on FBSSceneSettings
+2026-10-26 20:18:04.280 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneFocusSystemSettings> on FBSSceneSettings
+2026-10-26 20:18:04.281 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationSettingsExtension on FBSSceneSettings
+2026-10-26 20:18:04.281 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneOrientationClientSettingsExtension on FBSSceneClientSettings
+2026-10-26 20:18:04.281 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneWindowingControlClientSettings on FBSSceneClientSettings
+2026-10-26 20:18:04.282 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingContentSizePreferenceClientSettings> on FBSSceneClientSettings
+2026-10-26 20:18:04.283 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension _UISceneHostingTraitCollectionPropagationSettings on FBSSceneSettings
+2026-10-26 20:18:04.287 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationSettings> on FBSSceneSettings
+2026-10-26 20:18:04.290 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingSheetPresentationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:18:04.292 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingEventDeferringSettings> on FBSSceneSettings
+2026-10-26 20:18:04.293 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneSettings
+2026-10-26 20:18:04.294 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <UIKit__UITypedKeyValueSceneSettings> on FBSSceneClientSettings
+2026-10-26 20:18:04.294 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneHostingViewControllerPreferencePropagationClientSettings> on FBSSceneClientSettings
+2026-10-26 20:18:04.295 Df TerraIncognita[56388:2621d] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneZoomTransitionSettings> on FBSSceneSettings
+2026-10-26 20:18:04.295 Df TerraIncognita[56388:26224] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneSettingsCore on FBSSceneSettings
+2026-10-26 20:18:04.303 Df TerraIncognita[56388:26224] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneClientSettingsCore on FBSSceneClientSettings
+2026-10-26 20:18:04.305 Df TerraIncognita[56388:26216] [com.apple.dt.xctest:Default] Registering for test daemon availability notify post.
+2026-10-26 20:18:04.306 Df TerraIncognita[56388:26216] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:18:04.306 Df TerraIncognita[56388:26216] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:18:04.307 Df TerraIncognita[56388:26216] [com.apple.dt.xctest:Default] notify_get_state check indicated test daemon not ready.
+2026-10-26 20:18:04.308 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason added: 11; deactivation reasons: 1024 -> 3072; animating application lifecycle event: 0
+2026-10-26 20:18:04.315 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason removed: 10; deactivation reasons: 3072 -> 2048; animating application lifecycle event: 0
+2026-10-26 20:18:04.319 Df TerraIncognita[56388:26224] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneSettings setting counterpart class: UIApplicationSceneSettings
+2026-10-26 20:18:04.327 Df TerraIncognita[56388:26224] [com.apple.FrontBoard:SceneExtension] UIMutableApplicationSceneClientSettings setting counterpart class: UIApplicationSceneClientSettings
+2026-10-26 20:18:04.327 Df TerraIncognita[56388:26224] [com.apple.FrontBoard:SceneExtension] Realizing settings extension FBSSceneTransitionContextCore on FBSSceneTransitionContext
+2026-10-26 20:18:04.334 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventBus] Event Timing Profile for Touch: not found, path="/System/Library/EventTimingProfiles/Sim.Touch.plist"
+2026-10-26 20:18:04.334 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventBus] Event Timing Profile for Pencil: not found, path="/System/Library/EventTimingProfiles/Sim.Pencil.plist"
+2026-10-26 20:18:04.334 Df TerraIncognita[56388:26216] [com.apple.UIKit:UpdateScheduler] Selected display: name=LCD (PurpleMain), id=1
+2026-10-26 20:18:04.353 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x106148b40] activating connection: mach=true listener=false peer=false name=com.apple.lsd.mapdb
+2026-10-26 20:18:04.456 Df TerraIncognita[56388:26216] [com.apple.BoardServices:XPCErrors] [C:2] Alloc com.apple.backboard.hid-services.xpc
+2026-10-26 20:18:04.456 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x106148dc0] activating connection: mach=false listener=false peer=false name=(anonymous)
+2026-10-26 20:18:04.461 Df TerraIncognita[56388:26216] [com.apple.app_launch_measurement:ApplicationLaunch] alm_acquire_pageins_recording_assertion: acquired pageins recording assertion!
+2026-10-26 20:18:04.465 Df TerraIncognita[56388:26220] [com.apple.BackBoard:EventDelivery] BKSHIDEventDeliveryManager - connection activation
+2026-10-26 20:18:04.467 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason added: 5; deactivation reasons: 2048 -> 2080; animating application lifecycle event: 1
+2026-10-26 20:18:04.467 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Should send trait collection or coordinate space update, interface style 1 -> 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.471 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.472 Df TerraIncognita[56388:26216] [com.apple.UIKit:HomeAffordanceObservation] Initializing: <_UIHomeAffordanceSceneNotifier: 0x106260d90>; with scene: <UIWindowScene: 0x105b190e0>
+2026-10-26 20:18:04.472 Df TerraIncognita[56388:26216] [com.apple.BacklightServices:scenes] 0x106026610 setDelegate:<0x1060265e0 _UIBacklightEnvironment> hasDelegate:YES for environment:sceneID:com.pbordjadze.terraincognita-default
+2026-10-26 20:18:04.472 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.472 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventDeferring] [0x106260e00] Initialized with scene: <UIWindowScene: 0x105b190e0>; behavior: <_UIEventDeferringBehavior_iOS: 0x1063705c0>; availableForProcess: 1, systemShellManagesKeyboardFocus: 1
+2026-10-26 20:18:04.475 Df TerraIncognita[56388:26220] [com.apple.BackBoard:EventDelivery] BKSHIDEventObserver - connection activation
+2026-10-26 20:18:04.475 Df TerraIncognita[56388:26216] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x106047540; process scope; status: target> was:none
+2026-10-26 20:18:04.475 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to LastOneWins
+2026-10-26 20:18:04.475 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Scene target of keyboard event deferring environment did change: 1; scene: UIWindowScene: 0x105b190e0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:18:04.475 Df TerraIncognita[56388:26216] [com.apple.UIKit:UIFocus] Focus system enabled
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1060f52c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventDeferring] [0x106260e00] Scene target of event deferring environments did update: scene: 0x105b190e0; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x105b190e0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Stack[KeyWindow] 0x106026940: Taking no further action for migration from LastOneWins -> SystemShellManaged as there are no scenes
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Setting default evaluation strategy for UIUserInterfaceIdiomPad to SystemShellManaged
+2026-10-26 20:18:04.476 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Key window needs update: 0; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x105b190e0; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x0; reason: UIWindowScene: 0x105b190e0: Window scene became target of keyboard environment
+2026-10-26 20:18:04.477 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.478 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.480 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.623 Df TerraIncognita[56388:26216] [com.apple.UIKit:PointerLockState] preferredPointerLockStatus updated: scene: <UIWindowScene: 0x105b190e0; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96; activationState: UISceneActivationStateUnattached>; viewController: <_TtGC7SwiftUI19UIHostingControllerGVS_15ModifiedContentVS_7AnyViewVS_12RootModifier__: 0x1061c8000>; preferredPointerLockStatus: _UIPointerLockStatusUnlocked
+2026-10-26 20:18:04.630 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Key window API is scene-level: YES
+2026-10-26 20:18:04.630 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] UIWindowScene: 0x105b190e0: Window became key in scene: UIWindow: 0x1061b8400; contextId: 0x68F1CDCB: reason: UIWindowScene: 0x105b190e0: Window requested to become key in scene: 0x1061b8400
+2026-10-26 20:18:04.630 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Key window needs update: 1; currentKeyWindowScene: 0x0; evaluatedKeyWindowScene: 0x105b190e0; currentApplicationKeyWindow: 0x0; evaluatedApplicationKeyWindow: 0x1061b8400; reason: UIWindowScene: 0x105b190e0: Window requested to become key in scene: 0x1061b8400
+2026-10-26 20:18:04.630 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Window did become application key: UIWindow: 0x1061b8400; contextId: 0x68F1CDCB; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:18:04.630 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventDeferring] [0x106260e00] Begin local event deferring requested for token: 0x106047f60; environments: 1; reason: UIWindowScene: 0x105b190e0: Begin event deferring in keyboardFocus for window: 0x1061b8400
+2026-10-26 20:18:04.634 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.635 Df TerraIncognita[56388:26220] [com.apple.BackBoard:EventDelivery] policyStatus:<BKSHIDEventDeliveryPolicyObserver: 0x106047540; token: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default; status: ancestor> was:target
+2026-10-26 20:18:04.637 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:04.637 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Ignoring already applied deactivation reason: 5; deactivation reasons: 2080
+2026-10-26 20:18:04.637 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason added: 12; deactivation reasons: 2080 -> 6176; animating application lifecycle event: 1
+2026-10-26 20:18:04.638 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason removed: 11; deactivation reasons: 6176 -> 4128; animating application lifecycle event: 1
+2026-10-26 20:18:04.638 Df TerraIncognita[56388:26216] [com.apple.FrontBoard:SceneExtension] Realizing settings extension <_UISceneIntelligenceSupportSettings> on FBSSceneSettings
+2026-10-26 20:18:04.642 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:04.649 Df TerraIncognita[56388:2621d] [com.apple.UIIntelligenceSupport:xpc] establishing connection to agent
+2026-10-26 20:18:04.654 Df TerraIncognita[56388:2621d] [com.apple.xpc:session] [0x1061b54f0] Session created.
+2026-10-26 20:18:04.654 Df TerraIncognita[56388:2621d] [com.apple.xpc:session] [0x1061b54f0] Session created from connection [0x1063d0b40]
+2026-10-26 20:18:04.654 Df TerraIncognita[56388:2621d] [com.apple.xpc:connection] [0x1063d0b40] activating connection: mach=true listener=false peer=false name=com.apple.uiintelligencesupport.agent
+2026-10-26 20:18:04.654 Df TerraIncognita[56388:2621d] [com.apple.xpc:session] [0x1061b54f0] Session activated
+2026-10-26 20:18:04.662 A  TerraIncognita[56388:26216] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:18:04.726 Df TerraIncognita[56388:2621d] [com.apple.xpc:connection] [0x1063d0c80] activating connection: mach=true listener=false peer=false name=com.apple.fontservicesd
+2026-10-26 20:18:04.736 A  TerraIncognita[56388:26216] (CoreFoundation) Updating Key-Value Observers Of Preferences
+2026-10-26 20:18:04.795 Df TerraIncognita[56388:26216] [com.apple.CoreAnalytics:client] No XPC connection in Simulator
+2026-10-26 20:18:04.883 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x1063d1180] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:18:04.885 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x1063d1cc0] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:18:04.886 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x1063d1e00] activating connection: mach=true listener=false peer=false name=com.apple.metal.simulator
+2026-10-26 20:18:05.280 Df TerraIncognita[56388:26220] [com.apple.UIKit:BackgroundTask] Ending background task with UIBackgroundTaskIdentifier: 1
+2026-10-26 20:18:05.280 Df TerraIncognita[56388:26220] [com.apple.UIKit:BackgroundTask] Ending task with identifier 1 and description: <_UIBackgroundTaskInfo: 0x106088b40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1904 (elapsed = 1), _expireHandler: (null)
+2026-10-26 20:18:05.280 Df TerraIncognita[56388:26220] [com.apple.UIKit:BackgroundTask] Decrementing reference count for assertion <BKSProcessAssertion: 0x105b0db30> (used by background task with identifier 1: <_UIBackgroundTaskInfo: 0x106088b40>: taskID = 1, taskName = Launch Background Task for Coalescing, creationTime = 1904 (elapsed = 1))
+2026-10-26 20:18:05.280 Df TerraIncognita[56388:26220] [com.apple.UIKit:BackgroundTask] Will invalidate assertion: <BKSProcessAssertion: 0x105b0db30> for task identifier: 1
+2026-10-26 20:18:05.557 Df TerraIncognita[56388:26216] [PrototypeTools:domain] Not observing PTDefaults on customer install.
+2026-10-26 20:18:05.618 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:05.704 Df TerraIncognita[56388:26216] (CoreVideo) Pixel format registry initialized. Constant classes enabled.
+2026-10-26 20:18:05.805 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:05.805 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x108f7de00] activating connection: mach=true listener=false peer=false name=com.apple.IOSurface.Remote
+2026-10-26 20:18:05.843 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:05.850 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:05.853 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:05.857 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:05.866 Df TerraIncognita[56388:26216] [com.apple.renderbox:misc] RBDevice: initialized bg state: false
+2026-10-26 20:18:05.966 A  TerraIncognita[56388:26220] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:18:05.973 A  TerraIncognita[56388:26224] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:18:05.981 Df TerraIncognita[56388:26216] [com.apple.UIKit:UIFocus] Failed to update focus with context <UIFocusUpdateContext: 0x1060f61c0; previouslyFocusedItem: (nil); nextFocusedItem: (nil); focusHeading: None>. No additional info available.
+2026-10-26 20:18:05.988 Df TerraIncognita[56388:26216] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:1 [91B4BC74-D752-4F98-94FC-4EE991FD51F3] (reporting strategy default)>
+2026-10-26 20:18:05.988 Df TerraIncognita[56388:26216] [com.apple.network:activity] Create activity from XPC object <nw_activity 50:2 [1DF7B4FF-62B5-41AC-BD56-CBBCECB0A232] (reporting strategy default)>
+2026-10-26 20:18:05.988 Df TerraIncognita[56388:26216] [com.apple.network:activity] Set activity <nw_activity 50:1 [91B4BC74-D752-4F98-94FC-4EE991FD51F3] (reporting strategy default)> as the global parent
+2026-10-26 20:18:05.994 A  TerraIncognita[56388:26220] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:18:05.995 Df TerraIncognita[56388:26216] [com.apple.UIKit:EventDeferring] [0x106260e00] Scene target of event deferring environments did update: scene: 0x105b190e0; current systemShellManagesKeyboardFocus: 1; systemShellManagesKeyboardFocusForScene: 1; eligibleForRecordRemoval: 1;
+2026-10-26 20:18:05.995 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyWindow] Scene became target of keyboard event deferring environment: UIWindowScene: 0x105b190e0; scene identity: com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.pbordjadze.terraincognita-default
+2026-10-26 20:18:05.996 Df TerraIncognita[56388:26216] [com.apple.Accessibility:AXCommon] Read Per-App on Init: Smart invert = (null)
+2026-10-26 20:18:06.002 Df TerraIncognita[56388:26216] [com.apple.UIKit:UpdateScheduler] Target list changed: <CADisplay:LCD PurpleMain>
+2026-10-26 20:18:06.009 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:06.010 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:06.010 Df TerraIncognita[56388:26216] [com.apple.UIKit:InterfaceStyle] Not push traits update to screen for new style 1, <UIWindowScene: 0x105b190e0> (381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96)
+2026-10-26 20:18:06.012 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:06.012 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason removed: 12; deactivation reasons: 4128 -> 32; animating application lifecycle event: 1
+2026-10-26 20:18:06.013 Df TerraIncognita[56388:26216] [com.apple.KeyboardArbiter:Client] Send setDeactivating: N (-DeactivationReason:SuspendedEventsOnly)
+2026-10-26 20:18:06.013 Df TerraIncognita[56388:26216] [com.apple.UIKit:Application] Deactivation reason removed: 5; deactivation reasons: 32 -> 0; animating application lifecycle event: 0
+2026-10-26 20:18:06.058 Df TerraIncognita[56388:26216] [com.apple.KeyboardArbiter:Client] startConnection
+2026-10-26 20:18:06.062 Df TerraIncognita[56388:26216] [com.apple.xpc:connection] [0x108f7c780] activating connection: mach=true listener=false peer=false name=com.apple.UIKit.KeyboardManagement.hosted
+2026-10-26 20:18:06.065 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:06.076 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:06.086 Df TerraIncognita[56388:26216] [com.apple.UIKit:AppLifecycle] sceneOfRecord: sceneID: sceneID:com.pbordjadze.terraincognita-default  persistentID: 381DC03B-BE3E-42AE-9B08-6F4BFA1C7A96
+2026-10-26 20:18:06.089 Df TerraIncognita[56388:26216] [com.apple.KeyboardArbiter:Client] handleKeyboardChange: set currentKeyboard:N (wasKeyboard:N)
+2026-10-26 20:18:06.120 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyboardSceneDelegate] forceReloadInputViews
+2026-10-26 20:18:06.121 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyboardSceneDelegate] Reloading input views for key-window scene responder: <(null): 0x0; > force:Y
+2026-10-26 20:18:06.124 Df TerraIncognita[56388:26216] [com.apple.UIKit:KeyboardArbiterClientLog] isWritingToolsHandlingKeyboardTracking:Y (WT ready:Y, Arbiter ready:Y)
+2026-10-26 20:18:06.158 A  TerraIncognita[56388:26248] (RunningBoardServices) didChangeInheritances
+2026-10-26 20:18:06.192 Df TerraIncognita[56388:26216] [com.apple.network:activity] <nw_activity 50:1 [91B4BC74-D752-4F98-94FC-4EE991FD51F3] (global parent) (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5333ms
+2026-10-26 20:18:06.193 Df TerraIncognita[56388:26216] [com.apple.network:activity] <nw_activity 50:2 [1DF7B4FF-62B5-41AC-BD56-CBBCECB0A232] (reporting strategy default) complete (reason success)> complete with reason 2 (success), duration 5334ms
+2026-10-26 20:18:06.193 Df TerraIncognita[56388:26216] [com.apple.network:activity] Unsetting the global parent activity <nw_activity 50:1 [91B4BC74-D752-4F98-94FC-4EE991FD51F3] (global parent) (reporting strategy default) complete (reason success)>
+2026-10-26 20:18:06.193 Df TerraIncognita[56388:26216] [com.apple.network:activity] Unset the global parent activity
+2026-10-26 20:18:06.194 Df TerraIncognita[56388:26216] [com.apple.app_launch_measurement:ApplicationLaunch] alm_release_pageins_recording_assertion: releasing pageins recording assertion
+2026-10-26 20:18:06.568 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.669 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.779 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.857 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.902 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.907 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt
+2026-10-26 20:18:06.912 E  TerraIncognita[56388:26216] [com.apple.UIKit:Decompressor] Error -17102 decompressing image -- possibly corrupt

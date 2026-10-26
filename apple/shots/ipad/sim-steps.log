@@ -1,0 +1,19 @@
+20:01:47 killed after 30 s: xcrun simctl boot 687AB7EE-DF9A-4A96-878E-7509AB01A80C
+20:01:55 booted (0)
+20:02:18 installed (0)
+20:03:36 warmed (0)
+20:05:22 launch globe-whole: com.pbordjadze.terraincognita: 16929 
+20:06:07 captured globe-whole (0)
+20:06:40 launch globe-italy: com.pbordjadze.terraincognita: 20719 
+20:07:22 captured globe-italy (0)
+20:10:07 launch globe-lakes: ci/sim_shots.sh: line 21: 23852 Killed: 9               "$@" date: stdout: Broken pipe 
+20:10:55 captured globe-lakes (0)
+20:11:33 launch persian-whole: com.pbordjadze.terraincognita: 32140 
+20:12:38 captured persian-whole (0)
+20:15:04 launch persian-iran: ci/sim_shots.sh: line 21: 37250 Killed: 9               "$@" date: stdout: Broken pipe 
+20:15:59 captured persian-iran (0)
+20:16:34 launch persian-region: com.pbordjadze.terraincognita: 50355 
+20:17:22 captured persian-region (0)
+20:18:08 launch persian-himalaya: com.pbordjadze.terraincognita: 56388 
+20:18:53 captured persian-himalaya (0)
+20:18:57 done
