@@ -44,37 +44,70 @@ struct AtlasScreen: View {
     @State private var veil = 1.0
     /// The look's name, shown for a moment after switching.
     @State private var banner: String?
+    /// The whole globe instead of the film; once made, it is kept (its maps decoded once).
+    @State private var globe = AtlasScreen.startsOnGlobe
+    @State private var globeMade = AtlasScreen.startsOnGlobe
+    /// A switch between them under way (a second tap waits for it).
+    @State private var switching = false
+    /// The globe's first frame is on screen.
+    @State private var globeDrawn = false
+
+    private static var startsOnGlobe: Bool {
+        #if DEBUG
+        // `-globe` (CI's screenshots): open on the globe
+        return ProcessInfo.processInfo.arguments.contains("-globe")
+        #else
+        return false
+        #endif
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
             AtlasCanvasView(model: model)
                 .ignoresSafeArea()
+                .accessibilityHidden(globe)
             if let caption = model.caption {
                 CaptionView(caption: caption, style: model.style)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .id(caption.title)
+                    .accessibilityHidden(globe)
+            }
+            if globeMade {
+                GlobeScreen(active: globe, onDrawn: { globeDrawn = true })
+                    .opacity(globe ? 1 : 0)
+                    .allowsHitTesting(globe)
+                    .accessibilityHidden(!globe)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
-            if model.looks.count > 1 {
-                Menu {
-                    Picker(selection: $model.lookIndex) {
-                        ForEach(model.looks.indices, id: \.self) { i in Text(model.looks[i].name).tag(i) }
-                    } label: { Text("Look") }
-                } label: {
-                    Image(systemName: "paintpalette")
+            HStack(spacing: 10) {
+                Button { toggleGlobe() } label: {
+                    Image(systemName: globe ? "film" : "globe.americas.fill")
                         .font(.title3)
                         .padding(6)
                 }
                 .buttonStyle(.glass)
-                .accessibilityLabel(Text("Look"))
-                .padding(.trailing, 16)
-                .padding(.top, 8)
+                .accessibilityLabel(globe ? Text("The film") : Text("The globe"))
+                if model.looks.count > 1 && !globe {
+                    Menu {
+                        Picker(selection: $model.lookIndex) {
+                            ForEach(model.looks.indices, id: \.self) { i in Text(model.looks[i].name).tag(i) }
+                        } label: { Text("Look") }
+                    } label: {
+                        Image(systemName: "paintpalette")
+                            .font(.title3)
+                            .padding(6)
+                    }
+                    .buttonStyle(.glass)
+                    .accessibilityLabel(Text("Look"))
+                }
             }
+            .padding(.trailing, 16)
+            .padding(.top, 8)
         }
         .overlay(alignment: .bottom) {
-            if model.mode == .free || model.mode == .ended {
+            if !globe && (model.mode == .free || model.mode == .ended) {
                 Button(model.mode == .ended || model.canvas?.atEnd == true ? "Play again" : "Resume the tour") { model.canvas?.resume() }
                     .buttonStyle(.glassProminent)
                     .tint(Color(red: 0.62, green: 0.29, blue: 0.20))
@@ -101,6 +134,7 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.4), value: banner)
         .onAppear {
+            model.canvas?.suspended = globe
             withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
         }
         .onChange(of: model.lookIndex) { _, _ in
@@ -117,9 +151,30 @@ struct AtlasScreen: View {
         }
         .background(Color("LaunchBackground"))
     }
+
+    /// Between the film and the globe, through the slate: each holds still while the other shows.
+    private func toggleGlobe() {
+        guard !switching else { return }
+        switching = true
+        Task {
+            withAnimation(.easeIn(duration: 0.22)) { veil = 1 }
+            try? await Task.sleep(for: .milliseconds(240))
+            globe.toggle()
+            globeMade = globeMade || globe
+            model.canvas?.suspended = globe
+            // the first time, the globe decodes its maps under the veil: it lifts once a frame is drawn
+            // (or after a second, whatever happens)
+            for _ in 0..<40 where globe && !globeDrawn {
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+            withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
+            switching = false
+        }
+    }
 }
 
-private struct CaptionView: View {
+/// A caption in a look's type: the film's, and the globe's.
+struct CaptionView: View {
     let caption: Plate.Caption
     let style: CaptionStyle?
 

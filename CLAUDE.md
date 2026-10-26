@@ -19,6 +19,22 @@ finished picture in the chosen look. This file is the map and the rules.
   - `Plates.swift`: decodes `Atlas/`.
   - `AtlasScreen`: SwiftUI around it.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
+- **The globe** (`App/TerraIncognita/Globe/`, the button beside the look menu): the whole Earth
+  drawn live, in the colours of Wikipedia's location maps (WikiProject Maps), a little prettier.
+  - `Globe.metal`: one fragment per pixel inverts the orthographic projection and samples the
+    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom.
+    `tools/globe/preview.py` is the same, line for line, in numpy: change both together, and look at
+    the preview before CI.
+  - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
+    tapping a country (the locator's red, from the country map `ids.png`), the names (CATextLayers
+    placed as the camera moves, in order of claim: oceans, seas, countries, capitals; none
+    overlapping, none past the globe's edge). `GlobeScreen`: its caption. Made the first time it is
+    opened and kept (its maps decoded once), paused while the film shows.
+  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
+    docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
+    textures are uploaded as decoded, without colour management, which would bend the distances.
+  - Debug builds take `-globe` (open on it), `-globe-at lon lat zoom` (held there) and
+    `-globe-select <name>`.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
@@ -40,10 +56,10 @@ finished picture in the chosen look. This file is the map and the rules.
   `tools/sprites.py`, `ci/web_check.cjs`).
 - **CI** (`ci/` and `.github/workflows/ci.yml`):
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
-    and no unused file in the bundle), and the plate tools' syntax.
-  - `apple`: Debug and Release builds. The plates are compared byte for byte in the bundle.
-    Simulator screenshots of every look's film at moments run only when the workflow is started by
-    hand (`ci/sim_shots.sh`).
+    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, and the tools' syntax.
+  - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
+    in the bundle. Simulator screenshots of every look's film at moments, and of the globe, run only
+    when the workflow is started by hand (`ci/sim_shots.sh`).
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.

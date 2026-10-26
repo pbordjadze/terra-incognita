@@ -14,6 +14,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     var onMode: ((Mode) -> Void)?
 
     private(set) var mode: Mode = .film { didSet { if mode != oldValue { onMode?(mode) } } }
+    /// While the globe is shown the film holds still and nothing is drawn.
+    var suspended = false {
+        didSet { displayLink?.isPaused = suspended; lastTick = nil }
+    }
     private var look: Look?
     private var pending: Look?
     private var ladder: Ladder?
@@ -186,6 +190,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             let link = CADisplayLink(target: DisplayLinkTarget(self), selector: #selector(DisplayLinkTarget.tick(_:)))
             link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
             link.add(to: .main, forMode: .common)
+            link.isPaused = suspended
             displayLink = link
             busy = true
         } else if window == nil {
