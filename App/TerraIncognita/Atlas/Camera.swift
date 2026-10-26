@@ -70,12 +70,28 @@ nonisolated struct Ladder: Sendable {
     }
 
     /// The reader's camera: the same view in the deepest plate it lies wholly inside, so whatever the
-    /// fingers do, the plate under them covers the screen. It hands down only once the view is inside
-    /// the child with a little to spare, so a view on the child's edge doesn't flip between plates.
+    /// fingers do, the plate under them covers the screen. A view leaving its plate climbs into the
+    /// wider one only while that one wouldn't be drawn past its limit (a blur); deeper than that, the
+    /// plate's edge holds. It hands down only once the view is inside the child with a little to
+    /// spare, so a view on the child's edge doesn't flip between plates.
     func contained(_ c: Camera) -> Camera {
         var c = c
-        while c.plate > 0, !inside(c, spare: 0) { c = up(c) }
+        while c.plate > 0, !inside(c, spare: 0) {
+            let wider = up(c)
+            guard wider.zoom <= maxZoom(wider.plate) else { c = kept(c); break }
+            c = wider
+        }
         while c.plate < count - 1, inside(down(c), spare: 0.02) { c = down(c) }
+        return c
+    }
+
+    /// The view moved back inside its plate (centred on it where it is wider than the plate).
+    private func kept(_ c: Camera) -> Camera {
+        var c = c
+        let p = plates[c.plate]
+        let hw = Double(screen.width) / 2 / c.zoom, hh = Double(screen.height) / 2 / c.zoom
+        c.x = hw * 2 >= p.width ? p.width / 2 : min(max(c.x, hw), p.width - hw)
+        c.y = hh * 2 >= p.height ? p.height / 2 : min(max(c.y, hh), p.height - hh)
         return c
     }
 
@@ -83,10 +99,17 @@ nonisolated struct Ladder: Sendable {
     func held(_ c: Camera) -> Camera { clamped(contained(c)) }
 
     /// Whether the view lies inside its plate, with `spare` of the view's size besides.
-    private func inside(_ c: Camera, spare: Double) -> Bool {
+    func inside(_ c: Camera, spare: Double = 0) -> Bool {
         let p = plates[c.plate]
         let hw = Double(screen.width) / 2 / c.zoom * (1 + spare), hh = Double(screen.height) / 2 / c.zoom * (1 + spare)
         return c.x - hw >= -0.5 && c.x + hw <= p.width + 0.5 && c.y - hh >= -0.5 && c.y + hh <= p.height + 0.5
+    }
+
+    /// How far the view reaches past its plate's edges, in the plate's pixels: 0 inside it.
+    func overhang(_ c: Camera) -> Double {
+        let p = plates[c.plate]
+        let hw = Double(screen.width) / 2 / c.zoom, hh = Double(screen.height) / 2 / c.zoom
+        return max(0, hw - c.x, c.x + hw - p.width, hh - c.y, c.y + hh - p.height)
     }
 
     /// How far the reader may pinch into plate k: three times its rest on the last; elsewhere twice its
@@ -103,10 +126,11 @@ nonisolated struct Ladder: Sendable {
         let k = c.plate
         guard k < count - 1, wanted > z0, wanted > restZoom(k), let ch = plates[k].child else { return c }
         let handover = 1.06 * coverZoom(k + 1) / ratio(k)
-        let from = max(z0, restZoom(k)), left = log(handover / from), step = log(wanted / from)
-        // the way left shrinks with the zoom still to go and with the zoom itself, so it closes at an
-        // even pace on screen
-        let u = left > 0 ? 1 - exp(-step) * max(0, left - step) / left : 1
+        // the way left shrinks with the zoom still to go (at least a little, so a view far off the
+        // next plate close to or past the hand-over still slides rather than leaps) and with the zoom
+        // itself, so it closes at an even pace on screen
+        let from = max(z0, restZoom(k)), left = max(log(handover / from), 0.35), step = log(wanted / from)
+        let u = 1 - exp(-step) * max(0, left - step) / left
         // where the view fits inside the next plate at the hand-over, with a little to spare
         let hw = Double(screen.width) / 2 / handover * 1.03, hh = Double(screen.height) / 2 / handover * 1.03
         let tx = min(max(c.x, ch[0] + hw), ch[0] + ch[2] - hw), ty = min(max(c.y, ch[1] + hh), ch[1] + ch[3] - hh)
@@ -127,17 +151,13 @@ nonisolated struct Ladder: Sendable {
 
     /// Keeps the reader's camera (after `contained`) on the pictures: on the first plate, which has
     /// none around it, no further out than the plate fitting the screen, the centre staying where the
-    /// plate covers it. (Any other plate the view would leave, it climbs out of instead.)
+    /// plate covers it. (On any other, `contained` climbs out or holds the plate's edge.)
     func clamped(_ c: Camera) -> Camera {
-        var c = c
         guard c.plate == 0 else { return c }
+        var c = c
         let p = plates[0]
-        let fit = min(Double(screen.width) / p.width, Double(screen.height) / p.height)
-        c.zoom = max(c.zoom, fit)
-        let hw = Double(screen.width) / 2 / c.zoom, hh = Double(screen.height) / 2 / c.zoom
-        c.x = hw * 2 >= p.width ? p.width / 2 : min(max(c.x, hw), p.width - hw)
-        c.y = hh * 2 >= p.height ? p.height / 2 : min(max(c.y, hh), p.height - hh)
-        return c
+        c.zoom = max(c.zoom, min(Double(screen.width) / p.width, Double(screen.height) / p.height))
+        return kept(c)
     }
 }
 
@@ -214,6 +234,12 @@ nonisolated struct Film: Sendable {
         guard let shot = shots.first(where: { t < $0.end }), !shot.drift else { return (camera(at: t), 0) }
         let u = (t - shot.start) / (shot.end - shot.start)
         return (u < 0.5 ? shot.from : shot.to, smoothstep(0, 1, 1 - abs(2 * u - 1) / 0.7))
+    }
+
+    /// The end of the dive under way at t, if one is.
+    func diveEnd(at t: Double) -> Double? {
+        guard let shot = shots.first(where: { t >= $0.start && t < $0.end }), !shot.drift else { return nil }
+        return shot.end
     }
 
     /// The plate whose caption shows at t, if any.

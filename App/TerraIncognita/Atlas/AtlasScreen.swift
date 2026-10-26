@@ -75,7 +75,7 @@ struct AtlasScreen: View {
         }
         .overlay(alignment: .bottom) {
             if model.mode == .free || model.mode == .ended {
-                Button(model.mode == .ended ? "Play again" : "Resume the tour") { model.canvas?.resume() }
+                Button(model.mode == .ended || model.canvas?.atEnd == true ? "Play again" : "Resume the tour") { model.canvas?.resume() }
                     .buttonStyle(.glassProminent)
                     .tint(Color(red: 0.62, green: 0.29, blue: 0.20))
                     .padding(.bottom, 28)

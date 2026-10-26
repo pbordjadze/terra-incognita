@@ -106,10 +106,15 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     func resume() {
         guard let film else { return }
         if mode == .ended || filmTime >= film.duration { filmTime = 0 }
+        // under Reduce Motion the return's own dip is the cut: it lands after the dive under way
+        if UIAccessibility.isReduceMotionEnabled, let end = film.diveEnd(at: filmTime) { filmTime = end }
         fling = .zero
         mode = .returning
         beginReturn()
     }
+
+    /// Whether the film has played to its end (touching the map after doesn't make it resumable).
+    var atEnd: Bool { film.map { filmTime >= $0.duration } ?? false }
 
     /// The glide back to the film starts from here and now (again after a new look or screen size,
     /// whose plates and zooms the old start isn't measured in), in the wider of the two plates.
@@ -182,6 +187,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
             link.add(to: .main, forMode: .common)
             displayLink = link
+            busy = true
         } else if window == nil {
             displayLink?.invalidate()
             displayLink = nil
@@ -203,6 +209,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         self.ladder = resized
         film = Film(resized)
         if mode == .returning { beginReturn() }
+        if mode == .free { camera = resized.held(camera) }
         render()
     }
 
@@ -265,9 +272,15 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         guard let ladder, let look else { return }
         let b = camera.plate
         let current = ladder.opacity(b, zoom: camera.zoom)
-        let covers = camera.zoom >= ladder.coverZoom(b) * 0.999
         var visible: [(Int, Double)] = []
-        if b > 0, current < 1 || !covers { visible.append((b - 1, 1)) }
+        // behind a plate that isn't opaque or doesn't hold the whole view, the nearest wider plate
+        // that does (or the first)
+        var back = b
+        if b > 0, current < 1 || !ladder.inside(camera) {
+            back = b - 1
+            while back > 0, !ladder.inside(ladder.express(camera, in: back)) { back -= 1 }
+            visible.append((back, 1))
+        }
         visible.append((b, visible.isEmpty ? 1 : current))
         if b + 1 < ladder.count {
             let child = ladder.down(camera)
@@ -292,10 +305,10 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             node.container.transform = CATransform3DMakeScale(CGFloat(c.zoom), CGFloat(c.zoom), 1)
             // a plate drawn over the one behind has soft edges, so its border never shows as a seam:
             // wide while it fades up, hardening as it takes over, and narrow while the plate behind
-            // shows past it (the reader can stop short of the closer plate, or pan off its edge, where
-            // the film never does)
+            // shows past it, growing from nothing as the view first reaches past its edge (the reader
+            // can stop short of the closer plate, or pan off its edge, where the film never does)
             let fade = k > b || (k == b && opacity < 1) ? 0.2 * (1 - opacity) : 0
-            let narrow = k > b ? 0.04 : k == b && k > 0 ? 0.04 * (1 - smoothstep(0.85, 1, c.zoom / ladder.coverZoom(k))) : 0
+            let narrow = k > back ? min(0.04, ladder.overhang(c) / p.width) : 0
             node.feather(max(fade, narrow), plateWidth: p.width)
             // nearer layers move further with the camera, in proportion to its offset from the centre,
             // measured at rest so a dive doesn't fling them apart
@@ -303,16 +316,18 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             let ox = -(c.x - p.width / 2) * s, oy = -(c.y - p.height / 2) * s
             let depth = still ? 0 : 1.0
             // names swell as the camera dives; past about twice their size they fade, as a map's do
-            // (a pass plate's names are its scale's, magnified)
-            let s = ladder.stop(of: k)
-            let names = Float(1 - smoothstep(1.7, 2.8, ladder.express(camera, in: s).zoom / ladder.restZoom(s)))
+            // (a pass plate's names are its scale's, magnified), except on the last scale, which no
+            // closer one takes over from
+            let scale = ladder.stop(of: k)
+            let names = scale == ladder.count - 1 ? 1
+                : Float(1 - smoothstep(1.7, 2.8, ladder.express(camera, in: scale).zoom / ladder.restZoom(scale)))
             for (ln, spec) in zip(node.layers, p.layers) where spec.depth != 0 || spec.motion != nil || spec.isLabels {
                 ln.place(spec, plate: node.container.bounds, offset: CGPoint(x: ox * spec.depth * depth, y: oy * spec.depth * depth), time: t, still: still)
                 if spec.isLabels { ln.layer.opacity = names }
             }
         }
         CATransaction.commit()
-        loadAround(b, now: false)
+        loadAround(b, now: false, back: back)
     }
 
     // MARK: the pictures
@@ -335,11 +350,12 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         return n
     }
 
-    /// Plates b - 1 to b + 2 have their pictures; the rest let theirs go. The camera's own plate is
-    /// decoded at once the first time (nothing would show otherwise), the others in the background.
-    private func loadAround(_ b: Int, now: Bool) {
+    /// Plates b - 1 (or the wider one drawn behind, `back`) to b + 2 have their pictures; the rest let
+    /// theirs go. The camera's own plate is decoded at once the first time (nothing would show
+    /// otherwise), the others in the background.
+    private func loadAround(_ b: Int, now: Bool, back: Int? = nil) {
         guard let ladder, let look else { return }
-        let keep = max(0, b - 1)...min(ladder.count - 1, b + 2)
+        let keep = max(0, min(back ?? b, b - 1))...min(ladder.count - 1, b + 2)
         // (setting contents outside a transaction without actions would cross-fade them, keeping the
         // old picture alive a quarter second)
         CATransaction.begin()
