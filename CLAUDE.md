@@ -10,8 +10,12 @@ finished picture in the chosen look. This file is the map and the rules.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
     while it doesn't cover the screen, its child fading up) and only moves and scales them each
     display-link frame. That is what keeps it at 120 Hz: never draw or lay out per frame.
-  - `Camera.swift`: `Ladder` converts a camera between nested plates, `normalized` keeps it in the
-    deepest opaque one, and `Film` is the drifts and dives.
+  - `Camera.swift`: `Ladder` converts a camera between nested plates, `normalized` keeps the film's
+    camera in the deepest opaque one, and `Film` is the drifts and dives (`cut`: the same film under
+    Reduce Motion, each dive a dip through the background).
+  - Free mode keeps the reader's camera in the deepest plate the view lies wholly inside
+    (`contained`; only the first plate clamps), and pinching in past a plate's rest slides the view
+    towards the closer plate so it arrives inside it at the hand-over (`steered`): no jumps.
   - `Plates.swift`: decodes `Atlas/`.
   - `AtlasScreen`: SwiftUI around it.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
@@ -22,6 +26,10 @@ finished picture in the chosen look. This file is the map and the rules.
     the closer one), so no picture is blown up far before the next takes over. The film dives
     straight through them.
   - Plates are 1638×3545: about 1.4 phone screens at 3×.
+  - A page that draws on a canvas paints pass plates itself at their magnification (the exporter
+    passes `magnify`, `cx`, `cy`; the page sets `window.platesMagnifies`), so they stay sharp.
+  - Preview a look's film without the phone: `python3 tools/plates/preview.py <look> --times …`
+    (frames) or `--video` (no gold sheen).
 - **Map data** (`tools/plates/data/`). Built by `tools/plates/build_data.py` (sources in its
   docstring). d3 needs polygon exteriors clockwise; the build fixes winding after rounding.
   - The closest scale in the app is a public neighbourhood (Short North). A private one never comes

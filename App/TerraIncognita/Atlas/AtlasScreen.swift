@@ -133,7 +133,10 @@ private struct CaptionView: View {
         .padding(.horizontal, 24)
         .padding(.top, 70)
         .padding(.bottom, 36)
-        .background(LinearGradient(colors: [.clear, scrim], startPoint: .top, endPoint: .bottom))
+        // nearly full by the eyebrow's line (about a third of the way down), so the small type stays
+        // clear over a busy map
+        .background(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
+                                           .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom))
         .allowsHitTesting(false)
         .accessibilityElement(children: .combine)
     }

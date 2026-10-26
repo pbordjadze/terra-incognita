@@ -16,7 +16,11 @@ touch the map to wander, then resume. The look menu switches between the looks o
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.
 
+The looks: Aisling's Forest, Paper Almanac, Night Voyage, Chalk and Slate, and The Sampler.
+
 Map data: Natural Earth and US Census TIGER/Line (public domain); © OpenStreetMap contributors
-(ODbL), for the streets and buildings of the closest scale. The first demo also used NASA Blue
-Marble, Black Marble and GEBCO elevation (public domain) and the fonts JetBrains Mono, IM Fell
-English, EB Garamond and Noto Sans Symbols 2 (SIL Open Font License). Nothing leaves the device.
+(ODbL), for the streets and buildings of the closest scale; NASA Blue Marble (public domain), for
+where the forest look's woods grow. Fonts (SIL Open Font License, their licences beside them in
+each look's folder): IM Fell English, EB Garamond, Uncial Antiqua, Alegreya, Libre Caslon Text and
+Cormorant. The first demo also used NASA Black Marble and GEBCO elevation (public domain) and the
+fonts JetBrains Mono and Noto Sans Symbols 2. Nothing leaves the device.
