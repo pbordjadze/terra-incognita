@@ -435,6 +435,12 @@ def short(name):
     return {'United States of America': 'United States'}.get(name, name)
 
 
+def cartouche(name):
+    """The name the Persian caption letters in its cartouche (GlobeScreen.cartouche)."""
+    special = {'United States of America': 'United States', 'Heard I. and McDonald Is.': 'Heard & McDonald Is.'}
+    return special.get(name, name.replace(' and ', ' & '))
+
+
 def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=()):
     """The app's names (GlobeView, CLAUDE.md › Design rules), in the faces of Globe/type.json at the
     screen's reading scale: the selected country, oceans and seas, then countries (larger the more
@@ -562,7 +568,7 @@ def persian_caption(img, w, h, scale, selected):
     data = json.loads((G / 'globe.json').read_text())
     if selected:
         c = data['countries'][selected - 1]
-        title, eyebrow = short(c['n']), (c.get('sub') or c.get('cont') or '')
+        title, eyebrow = cartouche(c['n']), (c.get('sub') or c.get('cont') or '')
         facts = []
         if c.get('cap'):
             facts.append('Capital ' + c['cap'])

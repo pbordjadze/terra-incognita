@@ -116,8 +116,8 @@ jobs:
         continue-on-error: true
         timeout-minutes: 50
         run: |
-          # on each device: every look at five moments of its film (unless `film` is off), then the
-          # globe in each style (GLOBE=1); each device's pictures in out/shots/<device>/
+          # on each device (the iPad first): the globe in each style (GLOBE=1), then every look at
+          # five moments of its film (unless `film` is off); each device's pictures in out/shots/<device>/
           export GLOBE=1
           ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
           # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)

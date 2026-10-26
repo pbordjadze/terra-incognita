@@ -50,9 +50,19 @@ struct GlobeScreen: View {
         var facts: [String] = []
         if let cap = c.cap { facts.append(String(localized: "Capital \(cap)")) }
         if let pop = c.pop, pop > 0 { facts.append(Self.people(pop)) }
-        // (the Persian letters the shorter name, in the headpiece's cartouche)
-        let title = style == .persian ? (c.n == "United States of America" ? "United States" : c.n) : (c.long ?? c.n)
+        let title = style == .persian ? Self.cartouche(c.n) : (c.long ?? c.n)
         return Plate.Caption(eyebrow: region, title: title, text: facts.joined(separator: " · "))
+    }
+
+    /// The name the Persian letters in the headpiece's cartouche: the short name, "&" for "and" (as
+    /// Natural Earth's own abbreviations write it), so the longest still fit a 375 pt phone's
+    /// cartouche at 13 pt (`PersianCaption`'s floor); tools/globe/preview.py's `cartouche` mirrors it.
+    static func cartouche(_ name: String) -> String {
+        switch name {
+        case "United States of America": "United States"
+        case "Heard I. and McDonald Is.": "Heard & McDonald Is."
+        default: name.replacingOccurrences(of: " and ", with: " & ")
+        }
     }
 
     /// "34 million people", to two figures.
@@ -98,7 +108,7 @@ struct PersianCaption: View {
                                 .font(.custom(Self.face?.font ?? "LibertinusSerif-Semibold", size: Self.face?.size ?? 24, relativeTo: .title))
                                 .foregroundStyle(Color(uiColor: Self.face.flatMap { UIColor(hex: $0.ink) } ?? .black))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.55)     // (24 pt down to 13: the longest short names on a phone)
+                                .minimumScaleFactor(0.55)     // (24 pt down to 13.2: the longest name fits a 375 pt phone)
                                 .frame(width: g.size.width * Self.cartouche.width, height: g.size.height * Self.cartouche.height)
                                 .position(x: g.size.width * Self.cartouche.midX, y: g.size.height * Self.cartouche.midY)
                         }

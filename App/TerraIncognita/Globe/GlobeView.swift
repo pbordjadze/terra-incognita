@@ -56,6 +56,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// decoded once).
     var suspended = false {
         didSet {
+            // (the film's buttons sit elsewhere, and a rotation meanwhile settled the room by them)
+            if oldValue && !suspended { unsettleRoom() }
             displayLink?.isPaused = suspended
             lastTick = nil
             needsDraw = true
