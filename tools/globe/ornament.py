@@ -10,12 +10,15 @@ Nizami, M.85.237.16. The palette and revised proportions below follow supplied s
 measurements; the lighter scroll, cusps, rulings and headpiece composition retain the
 round 3 manuscript study. No fonts, lettering or source-image pixels are used.
 
-The only paint colours are these sRGB scan samples, white-balanced so the manuscript's
-lead white reads neutral: LAPIS 5F6CA7, GOLD A08C60 (all ornament and ruling gold),
-CARTOUCHE 9D8A57 (cartouche and pendant grounds), SALMON C47C66, PINK D1A38F (pink paint
+The paint palette follows sRGB scan samples, white-balanced so the manuscript's
+lead white reads neutral: LAPIS 5F6CA7, GOLD C5AA6E (all ornament and ruling gold),
+CARTOUCHE C2A862 (cartouche and pendant grounds), SALMON C47C66, PINK D1A38F (pink paint
 and outlines), BLACK 251F14, WHITE F5F5F5, LIGHT_BLUE A2B7D0, GREEN 79A18B, INK 6D6793
 (margin ink), PAPER F2E4C8. Blossoms use only WHITE, PINK, SALMON and LIGHT_BLUE, with
-GOLD hearts. Antialiasing and resampling blend these paints; no colour noise is added.
+GOLD hearts. Both golds are brightened to read as paint under light: A08C60 -> C5AA6E
+and 9D8A57 -> C2A862 preserve hue, lift OKLab L by +0.10 and multiply chroma by 1.3.
+Cartouche and pendant grounds retain deterministic +/-3% speckle in 3 px grains.
+Antialiasing and resampling blend these paints.
 
   band.png     1152 x 256, opaque RGBA, seamless in x; y runs from inner to outer edge.
                The salmon cell is centred on x = 0, nominal width 307 px (1.2 H), split
@@ -49,8 +52,8 @@ GOLD hearts. Antialiasing and resampling blend these paints; no colour noise is 
   headpiece.png 2048 x 256, opaque RGBA. The round 3 lapis field and WHITE/GOLD rulings,
                mirrored lighter scrolls and rounded-leaf black corner spandrels remain.
                The centred cusped cartouche is 52% W x 72% H; outward-facing lobed
-               pendants are 12% W x 46% H. All three are flat CARTOUCHE, with a 4 px
-               PINK outline and a 2 px WHITE line outside. Pendants carry PINK blossoms
+               pendants are 12% W x 46% H. All three use CARTOUCHE with +/-3% speckle,
+               a 4 px PINK outline and a 2 px WHITE line outside. Pendants carry PINK blossoms
                and short GOLD stems join them to the cartouche. Scrolls stay at least
                12 px from the cartouche. The plain interior's text box, fractions
                (x0, y0, x1, y1) = (0.31, 0.31, 0.69, 0.69), stays 12 px inside the fill.
@@ -82,8 +85,8 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'Globe'
 SCALE = 4
 LAPIS = '#5F6CA7'
-GOLD = '#A08C60'
-CARTOUCHE = '#9D8A57'
+GOLD = '#C5AA6E'
+CARTOUCHE = '#C2A862'
 SALMON = '#C47C66'
 PINK = '#D1A38F'
 BLACK = '#251F14'
@@ -497,13 +500,20 @@ def polygon_mask(size, points):
     return np.asarray(mask) > 0
 
 
-def gilded_shape(drawing, points):
-    """Flat CARTOUCHE paint, with a 4 px PINK outline inside a 2 px WHITE line."""
+def gilded_shape(drawing, points, seed):
+    """CARTOUCHE with 3 px grain at most +/-3%; 4 px PINK inside 2 px WHITE."""
     mask = polygon_mask(drawing.image.size, points)
     distance = ndimage.distance_transform_edt(mask) / SCALE
-    for limit, colour in ((0, WHITE), (2, PINK), (6, CARTOUCHE)):
+    for limit, colour in ((0, WHITE), (2, PINK)):
         drawing.image.paste((*rgb(colour), 255),
                             mask=Image.fromarray((distance > limit).astype('uint8') * 255))
+    rng = np.random.default_rng(seed)
+    height, width = mask.shape
+    grain = rng.uniform(-0.03, 0.03, ((height + 11) // 12, (width + 11) // 12, 1))
+    grain = np.repeat(np.repeat(grain, 12, axis=0), 12, axis=1)[:height, :width]
+    gold = np.rint(np.asarray(rgb(CARTOUCHE)) * (1 + grain)).astype('uint8')
+    drawing.image.paste(Image.fromarray(gold),
+                        mask=Image.fromarray((distance > 6).astype('uint8') * 255))
     return distance
 
 
@@ -539,7 +549,7 @@ def headpiece():
         drawing.stroke([(inner_x, height / 2), (edge_x, height / 2)], 8, GOLD)
         pendant = pendant_shape((centre_x, height / 2), width * 0.12, height * 0.46, side)
         reserved |= polygon_mask(drawing.image.size, pendant)
-        gilded_shape(drawing, pendant)
+        gilded_shape(drawing, pendant, 8)
         blossom(drawing, (centre_x, height / 2), PINK)
     for flip_x in (False, True):
         for flip_y in (False, True):
@@ -560,7 +570,7 @@ def headpiece():
             bud(drawing, reflect([(89, 12)])[0], np.pi if flip_x else 0, PINK)
     # Coverage refers only to exposed blue ground; reserve the cartouche, pendants and
     # black corners. Report totals both with and without the inner gold field ruling.
-    cartouche_distance = gilded_shape(drawing, cartouche)
+    cartouche_distance = gilded_shape(drawing, cartouche, 23)
     row, column = np.ogrid[:height * SCALE, :width * SCALE]
     edge = np.minimum(np.minimum((row + 0.5) / SCALE, height - (row + 0.5) / SCALE),
                       np.minimum((column + 0.5) / SCALE, width - (column + 0.5) / SCALE))
