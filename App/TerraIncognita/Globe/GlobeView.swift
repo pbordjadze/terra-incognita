@@ -201,9 +201,18 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if let source = CGImageSourceCreateWithURL(GlobeData.root.appending(path: "rosette.png") as CFURL, nil) {
             rosette = CGImageSourceCreateImageAtIndex(source, 0, nil)
         }
-        if geo == nil || terrain == nil || band == nil || fleuron == nil || braid == nil || data == nil {
+        // (an ornament that won't load leaves its place empty; the globe still draws)
+        let blank = Self.blank(device: device)
+        if band == nil || fleuron == nil || braid == nil {
             Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
-                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) band \(self.band != nil) fleuron \(self.fleuron != nil) braid \(self.braid != nil) data \(self.data != nil)")
+                .error("ornament missing or unreadable: band \(self.band != nil) fleuron \(self.fleuron != nil) braid \(self.braid != nil)")
+        }
+        band = band ?? blank
+        fleuron = fleuron ?? blank
+        braid = braid ?? blank
+        if geo == nil || terrain == nil || data == nil {
+            Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
+                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) data \(self.data != nil)")
         }
         // the countries' map, from the bytes the tap reads (decoded once)
         if let data, data.ids.count == data.width * data.height {
@@ -212,6 +221,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             ids = device.makeTexture(descriptor: d)
             ids?.replace(region: MTLRegionMake2D(0, 0, data.width, data.height), mipmapLevel: 0, withBytes: data.ids, bytesPerRow: data.width)
         }
+    }
+
+    /// One transparent pixel, in place of an ornament that won't load.
+    private static func blank(device: MTLDevice) -> MTLTexture? {
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: 1, height: 1, mipmapped: false)
+        d.usage = .shaderRead
+        let texture = device.makeTexture(descriptor: d)
+        let clear: [UInt8] = [0, 0, 0, 0]
+        texture?.replace(region: MTLRegionMake2D(0, 0, 1, 1), mipmapLevel: 0, withBytes: clear, bytesPerRow: 4)
+        return texture
     }
 
     /// An RGBA map's decoded bytes uploaded as they are (colour management would bend the distances

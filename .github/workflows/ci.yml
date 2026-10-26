@@ -120,12 +120,11 @@ jobs:
           # globe in each style (GLOBE=1); each device's pictures in out/shots/<device>/
           export GLOBE=1
           ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
-          mapfile -t SIMS < out/sims.txt
-          for line in "${SIMS[@]}"; do
-            read -r KIND UDID _ <<< "$line"
+          # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)
+          while read -r KIND UDID _ <&3; do
             if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
-          done
+          done 3< out/sims.txt
       - name: Collect
         if: always()
         run: |
