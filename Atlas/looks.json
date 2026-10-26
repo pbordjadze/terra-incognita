@@ -1,12 +1,27 @@
 [
  {
+  "id": "kells-forest",
+  "name": "Aisling's Forest",
+  "plates": "kells-forest/plates.json"
+ },
+ {
+  "id": "ffern",
+  "name": "Paper Almanac",
+  "plates": "ffern/plates.json"
+ },
+ {
+  "id": "kells-night",
+  "name": "Night Voyage",
+  "plates": "kells-night/plates.json"
+ },
+ {
   "id": "kells-chalk",
   "name": "Chalk and Slate",
   "plates": "kells-chalk/plates.json"
  },
  {
-  "id": "placeholder",
-  "name": "Placeholder",
-  "plates": "placeholder/plates.json"
+  "id": "sampler",
+  "name": "The Sampler",
+  "plates": "sampler/plates.json"
  }
 ]
