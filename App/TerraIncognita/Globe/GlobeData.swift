@@ -83,11 +83,14 @@ nonisolated struct GlobeData: Sendable {
         return (out, w, h)
     }
 
-    /// Makes the globe's fonts available (once; registering again is refused, harmlessly).
-    static func registerFonts() {
+    /// Makes the globe's fonts available; the first call registers them, later ones do nothing.
+    static func registerFonts() { _ = fontsRegistered }
+
+    private static let fontsRegistered: Bool = {
         let folder = root.appending(path: "fonts", directoryHint: .isDirectory)
         for file in ["LibertinusSerif-Regular.otf", "LibertinusSerif-Italic.otf", "LibertinusSerif-Semibold.otf", "UncialAntiqua-Regular.ttf"] {
             _ = CTFontManagerRegisterFontsForURL(folder.appending(path: file) as CFURL, .process, nil)
         }
-    }
+        return true
+    }()
 }

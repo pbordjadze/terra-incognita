@@ -6,16 +6,19 @@ import UIKit
 /// Kept once made: `active` false while the film shows instead.
 struct GlobeScreen: View {
     let active: Bool
+    /// Its first frame is on screen.
+    let onDrawn: () -> Void
     @State private var country: GlobeData.Country?
 
-    init(active: Bool) {
+    init(active: Bool, onDrawn: @escaping () -> Void = {}) {
         self.active = active
+        self.onDrawn = onDrawn
         GlobeData.registerFonts()
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active, country: $country)
+            GlobeCanvasView(active: active, onDrawn: onDrawn, country: $country)
                 .ignoresSafeArea()
             CaptionView(caption: caption, style: Self.style)
                 .id(caption.title)
@@ -57,11 +60,13 @@ struct GlobeScreen: View {
 
 private struct GlobeCanvasView: UIViewRepresentable {
     let active: Bool
+    let onDrawn: () -> Void
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
         let view = GlobeView(frame: .zero)
         view.onSelect = { country = $0 }
+        view.onDrawn = onDrawn
         // (a country lit from the start, by -globe-select; told after this update, not during it)
         let initial = view.selectedCountry
         Task { country = initial }

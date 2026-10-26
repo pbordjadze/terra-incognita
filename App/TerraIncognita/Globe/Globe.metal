@@ -53,6 +53,16 @@ static float floormod(float x, float y) { return x - y * floor(x / y); }
 
 static float deg(float r) { return r * 57.29577951308232; }
 
+/// How steeply a field changes per texel of the map, from its change per pixel (gs) and the map's
+/// (tx, ty: texels per pixel along the screen's x and y): a distance changes about 1 a texel, the
+/// jump where a line's sign flips about 16.
+static float perTexel(float2 gs, float2 tx, float2 ty) {
+    float det = tx.x * ty.y - tx.y * ty.x;
+    if (abs(det) < 1e-8) return 1e9;
+    float2 gt = float2(ty.y * gs.x - tx.y * gs.y, -ty.x * gs.x + tx.x * gs.y) / det;
+    return length(gt);
+}
+
 /// Coverage of a line `width` pixels wide along d == 0, fw being d's change per pixel. (Every fwidth
 /// is taken at the top level, outside any branch: derivatives are undefined where neighbouring
 /// pixels part ways.)
@@ -120,11 +130,11 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float height = t.g * 255 - 128;
     float river = (t.b * 255 - 128) / 16;
     float fwD = fwidth(d), fwFine = fwidth(fine), fwBorder = fwidth(border), fwRiver = fwidth(river);
-    // a line's distance changes about a texel a texel; where its sign flips (far from any line) it
-    // jumps sixteen: no line there
-    float texels = (abs(dx.x) + abs(dy.x)) * 4096 + (abs(dx.y) + abs(dy.y)) * 2048;
-    float borderOn = fwBorder < 2.5 * texels && abs(border) < 7 ? 1.0 : 0.0;
-    float riverOn = fwRiver < 2.5 * texels && abs(river) < 7 ? 1.0 : 0.0;
+    // a line's distance changes about a texel a texel; where its sign flips (past a line's end,
+    // between lines) it jumps: no line there
+    float2 tx = dx * float2(4096, 2048), ty = dy * float2(4096, 2048);
+    float borderOn = perTexel(float2(dfdx(border), dfdy(border)), tx, ty) < 1.5 && abs(border) < 7 ? 1.0 : 0.0;
+    float riverOn = perTexel(float2(dfdx(river), dfdy(river)), tx, ty) < 1.5 && abs(river) < 7 ? 1.0 : 0.0;
     float landa = smoothstep(-0.5, 0.5, d / max(fwD, 1e-5));
     float k = clamp(zoom, 1.0, 8.0);
 

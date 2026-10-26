@@ -49,6 +49,8 @@ struct AtlasScreen: View {
     @State private var globeMade = AtlasScreen.startsOnGlobe
     /// A switch between them under way (a second tap waits for it).
     @State private var switching = false
+    /// The globe's first frame is on screen.
+    @State private var globeDrawn = false
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -71,7 +73,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe)
+                GlobeScreen(active: globe, onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -160,8 +162,11 @@ struct AtlasScreen: View {
             globe.toggle()
             globeMade = globeMade || globe
             model.canvas?.suspended = globe
-            // (the first time, the globe decodes its maps under the veil: let that frame pass first)
-            try? await Task.sleep(for: .milliseconds(60))
+            // the first time, the globe decodes its maps under the veil: it lifts once a frame is drawn
+            // (or after a second, whatever happens)
+            for _ in 0..<40 where globe && !globeDrawn {
+                try? await Task.sleep(for: .milliseconds(25))
+            }
             withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
             switching = false
         }

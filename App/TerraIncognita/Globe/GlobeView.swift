@@ -3,6 +3,7 @@ import CoreText
 import Foundation
 import ImageIO
 import Metal
+import OSLog
 import QuartzCore
 import UIKit
 import simd
@@ -15,6 +16,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     /// A country was tapped (nil: the selection was cleared).
     var onSelect: ((GlobeData.Country?) -> Void)?
+    /// The first frame is on screen (the veil over the switch to it can lift).
+    var onDrawn: (() -> Void)?
     /// The country in the locator's red, if any.
     var selectedCountry: GlobeData.Country? { selected.flatMap { data?.countries[$0] } }
     /// While the film shows instead, nothing moves or is drawn (the globe is kept, its pictures
@@ -143,6 +146,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard let queue else { return }
         geo = Self.texture(GlobeData.root.appending(path: "geo.png"), device: device, queue: queue)
         terrain = Self.texture(GlobeData.root.appending(path: "terrain.png"), device: device, queue: queue)
+        if geo == nil || terrain == nil || data == nil {
+            Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
+                .error("globe data missing or unreadable: geo \(self.geo != nil) terrain \(self.terrain != nil) data \(self.data != nil)")
+        }
         // the countries' map, from the bytes the tap reads (decoded once)
         if let data, data.ids.count == data.width * data.height {
             let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r8Unorm, width: data.width, height: data.height, mipmapped: false)
@@ -446,9 +453,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
-        if needsDraw, draw() { needsDraw = false }
-        // the hands, a fling, a flight or a fade want the full rate; the slow turn is smooth at 30
-        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || labelsFading
+        if needsDraw, draw() {
+            needsDraw = false
+            if let onDrawn { self.onDrawn = nil; onDrawn() }
+        }
+        // the hands, a fling, a flight or the red fading want the full rate; the slow turn (and the
+        // names fading with it) is smooth at 30
+        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp
         if moving != busy {
             busy = moving
             link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)

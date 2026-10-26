@@ -154,10 +154,24 @@ def render(w, h, scale, lon0, lat0, zoom, selected):
     hill = (t[..., 0] * 255 - 128) / 127
     height = t[..., 1] * 255 - 128
     river = (t[..., 2] * 255 - 128) / 16
-    # a line's distance changes about a texel a texel; where its sign flips (far from any line) it
-    # jumps sixteen: no line there
-    texels = fwidth(u * 4096) + fwidth(v * 2048)
-    lined = lambda f: (fwidth(f) < 2.5 * texels) & (np.abs(f) < 7)
+    # a line's distance changes about a texel a texel; where its sign flips (past a line's end,
+    # between lines) it jumps: no line there (Globe.metal's perTexel)
+    def grad(f):
+        gy, gx = np.gradient(f)
+        return gx, gy
+    ux1, uy1 = grad(u)
+    ux2, uy2 = grad((u + 0.5) % 1)                      # the antimeridian's jump, or 0's
+    ux = np.where(np.abs(ux1) < np.abs(ux2), ux1, ux2) * 4096
+    uy = np.where(np.abs(uy1) < np.abs(uy2), uy1, uy2) * 4096
+    vx, vy = grad(v)
+    vx, vy = vx * 2048, vy * 2048
+    det = ux * vy - vx * uy
+    safe = np.where(np.abs(det) < 1e-8, 1e-8, det)
+
+    def lined(f):
+        gx, gy = grad(f)
+        gt = np.hypot(vy * gx - vx * gy, -uy * gx + ux * gy) / np.abs(safe)
+        return (gt < 1.5) & (np.abs(det) >= 1e-8) & (np.abs(f) < 7)
     landa = smoothstep(-0.5, 0.5, d / np.maximum(fwidth(d), 1e-5))
     k = np.clip(zoom, 1, 8)
     # the sea: deeper is a little bluer, with a faint watercolour mottle and lines along the coasts
