@@ -28,9 +28,15 @@ run 120 xcrun simctl install "$UDID" "$APP"; step "installed ($?)"
 # (a first launch on a simulator still settling can outlast the shot's wait: one unpictured, to warm it)
 run 180 xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null 2>&1; step "warmed ($?)"
 sleep 10
+# shot <name> <arguments...>: a fresh launch with the arguments (an instance still running would
+# keep its own, and be pictured instead; a launch that hangs is tried once more), a wait, a picture
 shot() {
-  run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-  step "launch $1: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" "${@:2}" 2>&1 | tr '\n' ' ')"
+  local said
+  for attempt in 1 2; do
+    run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" > /dev/null 2>&1
+    said=$(run 120 xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" "${@:2}" 2>&1) && break
+  done
+  step "launch $1: $(echo "$said" | tr '\n' ' ')"
   sleep "$WAIT"
   run 90 xcrun simctl io "$UDID" screenshot --type=png "$OUT/sim-$1.png" > /dev/null 2>&1; step "captured $1 ($?)"
 }
