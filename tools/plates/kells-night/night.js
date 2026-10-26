@@ -586,6 +586,16 @@ function vectorLayer(draw) {
   out.setTransform(1, 0, 0, 1, 0, 0);
 }
 
+// Fade what a vector layer drew by a per-pixel alpha (0..1).
+function maskOut(A) {
+  const id = out.getImageData(0, 0, W, H), d = id.data;
+  for (let i = 0, p = 3; i < N; i++, p += 4) if (d[p]) d[p] = Math.round(d[p] * A[i]);
+  out.putImageData(id, 0, 0);
+}
+// 1 inside the plate's resting view, falling to 0 at its edges: while a closer plate fades up it is
+// smaller than the screen, and its outer ring must look like the plate it opens out of
+const edgeFade = () => gridOf((x, y) => smooth(4, 79, Math.min(x, CW - x)) * smooth(8, 160, Math.min(y, CH - y)));
+
 // ---------------------------------------------------------------- data
 const D = name => Kit.json(`../data/${name}`);
 // The lens applied point by point (no spherical clipping or resampling). d3-geo merges points closer than
@@ -1024,8 +1034,9 @@ function drawOhio(layer, d) {
 
 // ================================================================ IV · Columbus
 async function loadColumbus() {
-  const [roadsFC, waterFC, streamsFC] = await Promise.all([D('columbus-roads.geojson'), D('columbus-water.geojson'), D('columbus-streams.geojson')]);
-  return { roadsFC, waterFC, streamsFC };
+  const [roadsFC, waterFC, streamsFC, snBld, snRoads] = await Promise.all([D('columbus-roads.geojson'), D('columbus-water.geojson'), D('columbus-streams.geojson'),
+    D('shortnorth-buildings.geojson'), D('shortnorth-roads.geojson')]);
+  return { roadsFC, waterFC, streamsFC, snBld, snRoads };
 }
 function drawColumbus(layer, d) {
   const proj = lensU(3), gp = c => planar(proj, c), gpn = () => planar(proj, null), pt = ll => proj(ll);
@@ -1131,6 +1142,19 @@ function drawColumbus(layer, d) {
   composite('normal', 1, chalky(0.1, 0.42));
   c = scratch(); c.filter = blurU(3.3); c.beginPath(); gp(c)(ring); c.strokeStyle = rgba(PAL.pale, 0.35); c.lineWidth = 7; c.stroke(); c.filter = 'none';
   composite('screen', 0.5);
+  // Short North's own roofs and street surfaces, as its plate draws them and faded as its plate fades
+  // them at its edges: specks at this scale that add up to the neighbourhood's tone, and real detail on
+  // the pass plates, so the last plate opens out of the same ground
+  {
+    const snl = lensBase(4), here = proj;
+    const SNE = gridOf((x, y) => { const ll = here.invert([x, y]), q = ll && snl(ll); return q ? smooth(4, 79, Math.min(q[0], CW - q[0])) * smooth(8, 160, Math.min(q[1], CH - q[1])) : 0; });
+    const cls2 = k => fc(d.snRoads.features.filter(f => k.includes(f.properties.class)));
+    c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); gp(c)(cls2(['residential', 'unclassified', 'living_street'])); c.strokeStyle = '#1d3040'; c.lineWidth = 3.0 * SCALES[3] / SCALES[4] * MS; c.stroke();
+    c.beginPath(); gp(c)(cls2(['primary', 'secondary', 'tertiary'])); c.strokeStyle = '#223850'; c.lineWidth = 4.4 * SCALES[3] / SCALES[4] * MS; c.stroke();
+    c.beginPath(); gp(c)(d.snBld); c.fillStyle = '#1d2f40'; c.fill();
+    composite('normal', 1, i => SNE[i]);
+  }
   if (!PASS()) { c = scratch(); tower(c, tw[0], tw[1], 24, { edge: 0.9 }); composite(); }
   paper(0);
   present();
@@ -1170,7 +1194,7 @@ function drawShortNorth(layer, d) {
     L('Italian Village', [-83.0019, 39.9792], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
     label(c, '© OpenStreetMap contributors', CW / 2 + 186, CH / 2 + 413, 5.5, { color: '#b7c5e6', track: 0.02, alpha: 0.6, align: 'right' });
   });
-  if (layer === 'lights') return vectorLayer(c => {
+  if (layer === 'lights') { const EDGE = edgeFade(); vectorLayer(c => {
     // High Street's light, and its arches drawn upright as the film stands things up in a plan: each a
     // curve of small lamps from kerb to kerb, a pool of light beneath
     c.save(); c.filter = blurU(4); c.lineCap = 'round'; c.beginPath(); gp(c)(high); c.strokeStyle = rgba(PAL.cream, 0.5); c.lineWidth = 8; c.stroke(); c.restore();
@@ -1184,7 +1208,8 @@ function drawShortNorth(layer, d) {
       c.strokeStyle = 'rgba(246,236,202,0.55)'; c.lineWidth = 0.55; c.lineCap = 'round'; c.stroke();
       for (let s2 = 0; s2 <= 28; s2 += 2) { const [qx, qy] = P[s2]; glow(c, qx, qy, 1.8, '#fff3cf', 0.55); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(qx, qy, 0.34, 0, Math.PI * 2); c.fill(); }
     }
-  });
+  }); return maskOut(EDGE); }
+  const EDGE = edgeFade(), E = i => EDGE[i];
   begin(true);
   // the ground between: the same moonlit teal as the city plate below, parks a little lighter
   wash(null, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.18, specks: 0.004, off: 61, lift: () => 0.06 });
@@ -1194,34 +1219,39 @@ function drawShortNorth(layer, d) {
   const roadM = maskFrom(c => { c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); gp(c)(high); gp(c)(mainR); gp(c)(motorR); c.lineWidth = 5; c.stroke(); c.beginPath(); gp(c)(resR); c.lineWidth = 3.4; c.stroke(); c.beginPath(); gp(c)(svcR); c.lineWidth = 1.6; c.stroke(); });
   let c = scratch();
   hatch(c, { seed: 71, cell: 6, density: 0.7, inside: (x, y) => at(bldM, x, y) < 0.3 && at(roadM, x, y) < 0.3, angle: (x, y) => 0.7 + (FA(MOT, x, y) - 0.5) * 2.4, jitter: 0.3,
-    where: () => 0.45, len: 4.5, space: 1.0, nmin: 2, nmax: 5, w: 0.25, color: PAL.ink, alpha: 0.42 });
+    where: (x, y) => 0.45 * at(EDGE, x, y), len: 4.5, space: 1.0, nmin: 2, nmax: 5, w: 0.25, color: PAL.ink, alpha: 0.42 });
   composite();
   // the freeway in its cut, edged in chalk; the railway as a chalk ladder
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
   c.beginPath(); gp(c)(motorR); c.strokeStyle = 'rgba(200,214,240,0.5)'; c.lineWidth = 7.4; c.stroke(); c.strokeStyle = '#0b1322'; c.lineWidth = 6.2; c.stroke();
   c.beginPath(); gp(c)(d.railFC); c.strokeStyle = 'rgba(214,226,246,0.55)'; c.lineWidth = 0.45; c.stroke();
   c.setLineDash([0.4, 1.6]); c.lineWidth = 2.2; c.strokeStyle = 'rgba(214,226,246,0.35)'; c.stroke(); c.setLineDash([]);
-  composite('normal', 1, chalky(0.12, 0.45));
+  composite('normal', 1, i => chalky(0.12, 0.45)(i) * EDGE[i]);
+  // out at the edges, the streets as the city plate draws them: a fine chalk web, the through streets in cream
+  c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.beginPath(); gp(c)(resR); gp(c)(svcR); c.strokeStyle = 'rgba(214,226,246,0.24)'; c.lineWidth = 0.35; c.stroke();
+  c.beginPath(); gp(c)(mainR); gp(c)(high); gp(c)(motorR); c.strokeStyle = rgba(PAL.cream, 0.55); c.lineWidth = 0.55; c.stroke();
+  composite('normal', 1, i => 1 - EDGE[i]);
   // lanes: dark, quiet surfaces; the through streets washed with lamplight and lit along their length
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
   c.beginPath(); gp(c)(svcR); c.strokeStyle = 'rgba(16,26,40,0.6)'; c.lineWidth = 1.3; c.stroke();
   c.beginPath(); gp(c)(resR); c.strokeStyle = '#1d3040'; c.lineWidth = 3.0; c.stroke();
   c.beginPath(); gp(c)(mainR); c.strokeStyle = '#223850'; c.lineWidth = 4.2; c.stroke();
   c.beginPath(); gp(c)(high); c.strokeStyle = '#2c4058'; c.lineWidth = 6; c.stroke();
-  composite();
+  composite('normal', 1, E);
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round'; c.filter = blurU(3);
   c.beginPath(); gp(c)(resR); c.strokeStyle = rgba(PAL.cream, 0.08); c.lineWidth = 3; c.stroke();
   c.beginPath(); gp(c)(mainR); c.strokeStyle = rgba(PAL.cream, 0.42); c.lineWidth = 5; c.stroke();
   c.filter = 'none';
-  composite('screen', 0.75);
+  composite('screen', 0.75, E);
   c = scratch(); c.lineCap = 'round';
   for (const f of mainR.features) for (const sg of linePts(gp, f)) for (const [x, y] of along(sg, 22, 7)) { if (!onPlate(x, y, 6)) continue; glow(c, x, y, 5, PAL.cream, 0.24); c.fillStyle = 'rgba(255,246,220,0.85)'; c.beginPath(); c.arc(x, y, 0.4, 0, Math.PI * 2); c.fill(); }
-  composite();
+  composite('normal', 1, E);
   // buildings: dark slate drawn round in chalk, the gables' ridges in chalk too (as the film chalks its stone)
   c = scratch(); c.save(); c.translate(1.0, 1.2); c.beginPath(); gp(c)(d.bldFC); c.fillStyle = 'rgba(2,5,12,0.45)'; c.fill(); c.restore();
-  composite();
+  composite('normal', 1, E);
   c = scratch(); c.beginPath(); gp(c)(d.bldFC); c.fillStyle = '#1d2f40'; c.fill();
-  composite();
+  composite('normal', 1, E);
   c = scratch(); c.beginPath(); gp(c)(d.bldFC); c.strokeStyle = 'rgba(214,226,246,0.42)'; c.lineWidth = 0.32; c.lineJoin = 'round'; c.stroke();
   for (const f of d.bldFC.features) {
     const rg = f.geometry.coordinates[0].map(pt).filter(Boolean); if (rg.length < 4 || !onPlate(rg[0][0], rg[0][1], 10)) continue;
@@ -1242,7 +1272,7 @@ function drawShortNorth(layer, d) {
     c.moveTo(a[0], a[1]); c.lineTo(b2[0], b2[1]);
   }
   c.strokeStyle = 'rgba(214,226,246,0.3)'; c.lineWidth = 0.28; c.stroke();
-  composite('normal', 1, chalky(0.15, 0.5));
+  composite('normal', 1, i => chalky(0.15, 0.5)(i) * EDGE[i]);
   // trees: the mapped ones (rows along the streets, Goodale Park's wood), and crowns filling the woods
   const crowns = [];
   for (const f of d.treesFC.features) { const p = pt(f.geometry.coordinates); if (p && onPlate(p[0], p[1], 6)) crowns.push([p[0], p[1], 2.4 + hashI(crowns.length + 7) * 1.5]); }
@@ -1250,13 +1280,13 @@ function drawShortNorth(layer, d) {
   { const r = rng(73); for (let k = 0; k < 20000; k++) { const x = r() * CW, y = r() * CH, rad = 2.4 + r() * 1.4; if (!onPlate(x, y) || at(woodM, x, y) < 0.5) continue; if (crowns.some(([cx, cy, cr]) => Math.abs(cx - x) < 6 && Math.abs(cy - y) < 6 && Math.hypot(cx - x, cy - y) < (cr + rad) * 0.62)) continue; crowns.push([x, y, rad]); } }
   c = scratch(); crowns.sort((a2, b2) => a2[1] - b2[1]);
   for (const [x, y, rad] of crowns) crown(c, x, y, rad, { rot: x * 0.7 + y, lit: '#2d5a4c', dark: '#0a1d1f', rim: 0.5 });
-  composite();
+  composite('normal', 1, E);
   // footpaths: dotted chalk in the parks only (the pavements stay quiet)
   c = scratch(); c.beginPath(); gp(c)(footR); c.setLineDash([0.1, 1.6]); c.lineCap = 'round'; c.strokeStyle = 'rgba(230,238,250,0.5)'; c.lineWidth = 0.55; c.stroke();
-  composite('normal', 1, i => parkM[i] * (1 - bldM[i]));
+  composite('normal', 1, i => parkM[i] * (1 - bldM[i]) * EDGE[i]);
   // the neighbourhood's lamplight hanging in the air, strongest over High Street (as the city plate glows here)
   { const cr = hex('#d9cfa8'), haze = gridOf((x, y) => { const dx = x - xOnHigh(y); return 0.08 + 0.15 * Math.exp(-(dx * dx) / (2 * 60 * 60)); });
-    for (let i = 0; i < N; i++) { const a2 = haze[i], q = i * 3; for (let k = 0; k < 3; k++) IMG[q + k] = 1 - (1 - IMG[q + k]) * (1 - cr[k] * a2); } }
+    for (let i = 0; i < N; i++) { const a2 = haze[i] * EDGE[i], q = i * 3; for (let k = 0; k < 3; k++) IMG[q + k] = 1 - (1 - IMG[q + k]) * (1 - cr[k] * a2); } }
   paper(0);
   present();
 }
