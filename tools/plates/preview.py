@@ -51,6 +51,9 @@ class Ladder:
         start = max(0.25 * self.rest_zoom(k), 1.3 * self.rest_zoom(k - 1) * self.ratio(k - 1))
         return smoothstep(start, max(0.6 * self.rest_zoom(k), start * 1.25), z)
     def rest(self, k): return (k, self.p[k]['size'][0] / 2, self.p[k]['size'][1] / 2, self.rest_zoom(k))
+    def stop(self, k):
+        while k > 0 and self.p[k].get('pass'): k -= 1
+        return k
 
 
 def smoothstep(a, b, x):
@@ -131,9 +134,9 @@ def feather_mask(size, rect, width):
     return m.filter(ImageFilter.GaussianBlur(max(width / 3, 0.1))) if width > 1 else m
 
 
-def draw_plate(canvas, L, imgs, k, c, opacity, t, S, feather=0):
+def draw_plate(canvas, L, imgs, k, c, opacity, t, S, feather=0, names=1):
     """Draws plate k at camera c (in plate k) onto canvas (screen x S pixels); feather is the edge
-    fade, as a fraction of the plate's width."""
+    fade, as a fraction of the plate's width, and names the opacity of its labels layer."""
     p = L.p[k]
     W, H = p['size']
     z = c[3] * S                                     # canvas pixels per plate pixel
@@ -161,7 +164,7 @@ def draw_plate(canvas, L, imgs, k, c, opacity, t, S, feather=0):
         cy = c[2] - ch / 2 / z
         data = (a, 0, (cx - ox) / reduce, 0, a, (cy - oy) / reduce)
         part = img.transform((cw, ch), Image.AFFINE, data, resample=Image.BILINEAR, fillcolor=(0, 0, 0, 0))
-        alpha = opacity * fade
+        alpha = opacity * fade * (names if spec['file'].split('/')[-1] == 'labels.png' else 1)
         if alpha < 1:
             part.putalpha(part.getchannel('A').point(lambda v: int(v * alpha)))
         if feather > 0:
@@ -183,8 +186,15 @@ def frame(L, imgs, c, t, S):
         o = L.opacity(b + 1, L.down(c)[3])
         if o > 0.001: vis.append((b + 1, o))
     for k, o in vis:
-        # a plate still fading up has soft edges, hardening as it takes over
-        draw_plate(canvas, L, imgs, k, L.express(c, k), o, t, S, feather=FEATHER * (1 - o) if k > b or (k == b and o < 1) else 0)
+        ck = L.express(c, k)
+        # as the app: soft edges while a plate fades up, hardening as it takes over, and narrow ones
+        # while the plate behind shows past it
+        fade = FEATHER * (1 - o) if k > b or (k == b and o < 1) else 0
+        narrow = 0.04 if k > b else 0.04 * (1 - smoothstep(0.85, 1, ck[3] / L.cover(k))) if k == b and k > 0 else 0
+        # names fade once a dive swells them past about twice their size
+        s = L.stop(k)
+        names = 1 - smoothstep(1.7, 2.8, L.express(c, s)[3] / L.rest_zoom(s))
+        draw_plate(canvas, L, imgs, k, ck, o, t, S, feather=max(fade, narrow), names=names)
     return canvas
 
 

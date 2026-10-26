@@ -302,8 +302,13 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             let s = ladder.restZoom(k) / c.zoom
             let ox = -(c.x - p.width / 2) * s, oy = -(c.y - p.height / 2) * s
             let depth = still ? 0 : 1.0
-            for (ln, spec) in zip(node.layers, p.layers) where spec.depth != 0 || spec.motion != nil {
+            // names swell as the camera dives; past about twice their size they fade, as a map's do
+            // (a pass plate's names are its scale's, magnified)
+            let s = ladder.stop(of: k)
+            let names = Float(1 - smoothstep(1.7, 2.8, ladder.express(camera, in: s).zoom / ladder.restZoom(s)))
+            for (ln, spec) in zip(node.layers, p.layers) where spec.depth != 0 || spec.motion != nil || spec.isLabels {
                 ln.place(spec, plate: node.container.bounds, offset: CGPoint(x: ox * spec.depth * depth, y: oy * spec.depth * depth), time: t, still: still)
+                if spec.isLabels { ln.layer.opacity = names }
             }
         }
         CATransaction.commit()

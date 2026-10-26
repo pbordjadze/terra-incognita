@@ -113,6 +113,13 @@ nonisolated struct Ladder: Sendable {
         return Camera(plate: k, x: c.x + (tx - c.x) * u, y: c.y + (ty - c.y) * u, zoom: c.zoom)
     }
 
+    /// The scale plate k belongs to: itself, or for a pass plate the stop it magnifies.
+    func stop(of k: Int) -> Int {
+        var k = k
+        while k > 0, plates[k].passes { k -= 1 }
+        return k
+    }
+
     /// Plate k centred, at rest.
     func rest(_ k: Int) -> Camera {
         Camera(plate: k, x: plates[k].width / 2, y: plates[k].height / 2, zoom: restZoom(k))

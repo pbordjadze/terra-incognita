@@ -12,6 +12,8 @@
 // child is where the next level's plate sits in this one (Kit.childRect), and a layer is
 //   { name,
 //     opaque: true,                 // the ground; one per plate, first
+//     name: 'labels',               // the plate's names: the app fades them as a dive swells them
+//                                   // past about twice their size
 //     depth: 0.05,                  // parallax: how much further than the ground it moves with the
 //                                   // camera, as a fraction of the camera's offset from the centre
 //     frame: [x, y, w, h],          // a sprite: only this part of the plate (a creature, a ship)

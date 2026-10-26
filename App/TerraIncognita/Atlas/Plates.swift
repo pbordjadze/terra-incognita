@@ -53,6 +53,10 @@ nonisolated struct Plate: Decodable, Sendable {
             guard let f = frame, f.count == 4, f[2] > 0, f[3] > 0 else { return nil }
             return CGRect(x: f[0], y: f[1], width: f[2], height: f[3])
         }
+
+        /// The plate's names (the layer the exporter writes as labels.png), which fade as a dive
+        /// swells them.
+        var isLabels: Bool { (file as NSString).lastPathComponent == "labels.png" }
     }
 
     /// Gentle life, in plate pixels and seconds (tools/plates/kit.js describes each kind).
