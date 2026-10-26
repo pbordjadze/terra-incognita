@@ -1,5 +1,10 @@
 [
  {
+  "id": "kells-chalk",
+  "name": "Chalk and Slate",
+  "plates": "kells-chalk/plates.json"
+ },
+ {
   "id": "placeholder",
   "name": "Placeholder",
   "plates": "placeholder/plates.json"
