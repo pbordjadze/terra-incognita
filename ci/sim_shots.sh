@@ -36,5 +36,5 @@ if [ -n "${LOOKS:-}" ]; then
 else
   for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
 fi
-run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita" OR process CONTAINS "WebContent"' > "$OUT/sim-app.log" 2>&1 || true
+run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
 step done

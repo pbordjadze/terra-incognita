@@ -2,11 +2,10 @@ name: CI
 
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
-#   web    Linux: the page in headless Chromium (software WebGL): no page or console errors, and
-#          screenshots of the tour at a phone's and a desktop's size
-#   apple  macOS: Debug and Release builds for the simulator and the bundled data checked byte for
-#          byte; launched and screenshotted at moments of the tour only when the workflow is run
-#          by hand, as a report (hosted runners have no GPU)
+#   plates Linux: every look in Atlas/ sound (ci/check_atlas.py) and the plate tools' syntax
+#   apple  macOS: Debug and Release builds for the simulator and the plates checked byte for byte
+#          in the bundle; every look screenshotted at moments of its film only when the workflow
+#          is run by hand, as a report
 #   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
@@ -32,42 +31,27 @@ env:
   SCHEME: TerraIncognita
 
 jobs:
-  web:
-    name: The page in headless Chromium (and WebKit, as a report)
+  plates:
+    name: The looks' plates and tools
     runs-on: ubuntu-latest
-    # Playwright's own image: Node and every browser with its libraries, nothing to install
-    container: mcr.microsoft.com/playwright:v1.56.1-noble
-    timeout-minutes: 20
-    # in a container GitHub's default shell is sh, which has no pipefail
-    defaults: { run: { shell: bash } }
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - name: Syntax
-        run: |
-          mkdir -p out/web && echo started > out/web-started.txt
-          for f in Web/*.js ci/*.cjs; do node --check "$f"; done
-      - name: Load the page and screenshot the tour
+      - name: Check Atlas and the plate tools
         run: |
           set -o pipefail
-          mkdir -p /tmp/pw && (cd /tmp/pw && npm init -y > /dev/null && npm i -s playwright@1.56.1)
-          export NODE_PATH=/tmp/pw/node_modules
-          # both sizes run; either failing fails the step
+          mkdir -p out
           rc=0
-          node ci/web_check.cjs Web out/web 390x844 6 58 120 160 186 222 245 270 290 336 2>&1 | tee out/web-check.log || rc=1
-          node ci/web_check.cjs Web out/web 1280x800 6 58 222 245 290 2>&1 | tee -a out/web-check.log || rc=1
+          python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
+          for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
+            node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
+          done
+          python3 -m py_compile tools/plates/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
-      - name: The page in WebKit (for now a report, not a gate)
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        timeout-minutes: 8
-        run: |
-          set -o pipefail
-          export NODE_PATH=/tmp/pw/node_modules
-          BROWSER=webkit node ci/web_check.cjs Web out/web 390x844 6 58 222 2>&1 | tee out/webkit-check.log
       - uses: actions/upload-artifact@v5
         if: always()
-        with: { name: web, path: out, if-no-files-found: ignore }
+        with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
     name: iPhone simulator builds (screenshots when run by hand)
@@ -105,14 +89,13 @@ jobs:
       - name: Bundled data
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          # the plates and the map's data must reach the app byte for byte (an image tool would
-          # recompress the one and destroy the other)
+          # the plates must reach the app byte for byte (an image tool would recompress them)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in Web/data/*.png Web/cell.glsl Web/sprites.json $(find Atlas -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
-      - name: Screenshots of the tour on the simulator
-        # By hand only (Run workflow), and a report, not a gate: the hosted macOS runners have no
-        # GPU, WebKit's GPU process is emulated on the CPU, and iOS ends it as unresponsive.
+      - name: Screenshots of the film on the simulator
+        # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
+        # pictures a person looks at.
         id: shots
         if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
         continue-on-error: true
@@ -199,7 +182,7 @@ jobs:
 
   report:
     name: Publish report
-    needs: [web, apple, ipa]
+    needs: [plates, apple, ipa]
     if: ${{ !cancelled() }}
     permissions:
       contents: write
@@ -214,13 +197,12 @@ jobs:
             echo "commit: ${GITHUB_SHA}"
             echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo
-            echo "web: ${{ needs.web.result }}"
+            echo "plates: ${{ needs.plates.result }}"
             echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"
             echo "ipa: ${{ needs.ipa.result }}"
             echo
             if [ -s apple/errors.txt ]; then echo "## compiler errors and warnings"; head -60 apple/errors.txt; echo; fi
-            if [ -f web/web-check.log ]; then echo "## web check"; tail -20 web/web-check.log; fi
-            if [ -f web/webkit-check.log ]; then echo "## webkit check (report only)"; tail -20 web/webkit-check.log; fi
+            if [ -f plates/plates-check.log ]; then echo "## plates"; tail -20 plates/plates-check.log; fi
             if [ -f apple/shots/sim-steps.log ]; then echo "## simulator (report only)"; cat apple/shots/sim-steps.log; fi
           } > STATUS.md
           cat STATUS.md

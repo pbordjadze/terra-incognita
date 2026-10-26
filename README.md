@@ -11,8 +11,7 @@ touch the map to wander, then resume. The look menu switches between the looks o
 - `Atlas/`: each look's plates, made by `tools/plates/export.cjs` from the look's page
   (`tools/plates/<look>/index.html`; the contract is in `tools/plates/kit.js`).
 - `tools/plates/build_data.py`: the map data the pages draw from, in `tools/plates/data/`.
-- `Web/`, `tools/build_textures.py`: the first demo, the map drawn in characters by WebGL (no longer
-  the app's screen).
+- The first demo, the map drawn in characters by WebGL, is retired; it is in the history at 1f9b941.
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.
 
@@ -22,5 +21,4 @@ Map data: Natural Earth and US Census TIGER/Line (public domain); © OpenStreetM
 (ODbL), for the streets and buildings of the closest scale; NASA Blue Marble (public domain), for
 where the forest look's woods grow. Fonts (SIL Open Font License, their licences beside them in
 each look's folder): IM Fell English, EB Garamond, Uncial Antiqua, Alegreya, Libre Caslon Text and
-Cormorant. The first demo also used NASA Black Marble and GEBCO elevation (public domain) and the
-fonts JetBrains Mono and Noto Sans Symbols 2. Nothing leaves the device.
+Cormorant. Nothing leaves the device.
