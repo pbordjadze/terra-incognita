@@ -33,18 +33,23 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// points: no name is placed under them.
     var keepClear: [CGRect] = [] {
         didSet {
-            guard keepClear != oldValue else { return }
+            let fresh = clearBounds != bounds.size
             clearBounds = bounds.size
-            if !roomMeasured { measureRoom() }
+            guard keepClear != oldValue || fresh else { return }
+            if !roomSettled { measureRoom() }
             labelsFading = true
             needsDraw = true
         }
     }
     /// The part of the screen the globe and its frame fill: between the buttons and the caption.
-    /// Measured when the screen's size or the style changes, not when the caption's text does, so a
-    /// tap never moves the globe.
+    /// Measured when the screen's size, its safe area or the style changes, not when the caption's
+    /// text does, so a tap never moves the globe.
     private var room: CGRect?
     private var roomMeasured = false
+    /// When the room was first measured from rects laid out for this screen: for a moment after,
+    /// the caption and buttons may still be settling, and each new place of theirs measures it again.
+    private var roomSince = 0.0
+    private var roomSettled: Bool { roomMeasured && CACurrentMediaTime() - roomSince > 0.6 }
     /// The size the view had when `keepClear` was last set: rects from another size are stale.
     private var clearBounds = CGSize.zero
     /// While the film shows instead, nothing moves or is drawn (the globe is kept, its pictures
@@ -376,8 +381,22 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         room = CGRect(x: 0, y: top, width: Double(bounds.width), height: max(bottom - top, Double(bounds.height) * 0.4))
         // (rects laid out for another size, as just after a rotation, don't settle it: their
         // successors are measured again when they come)
-        roomMeasured = !keepClear.isEmpty && clearBounds == bounds.size
+        let measured = !keepClear.isEmpty && clearBounds == bounds.size
+        if measured && !roomMeasured { roomSince = CACurrentMediaTime() }
+        roomMeasured = measured
         needsDraw = true
+    }
+
+    /// The screen, its safe area or the style changed: the room is measured again, and again as
+    /// what covers the screen settles into its new place.
+    private func unsettleRoom() {
+        roomMeasured = false
+        measureRoom()
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        unsettleRoom()
     }
 
     /// World from view: Ry(lon0) . Rx(-lat0), built from its columns (simd matrices are indexed by
@@ -491,13 +510,18 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// (`GlobeType.touch` reading points): small islands and states are smaller than a finger.
     private func country(near p: CGPoint) -> Int? {
         let reach = CGFloat(GlobeType.shared?.touch ?? 10) * reading
-        for ring in 0...3 {
-            let r = reach * CGFloat(ring) / 3, n = ring == 0 ? 1 : 6 * ring
+        if let w = unproject(p), let k = data?.country(lon: w.lon, lat: w.lat) { return k }
+        // rings half a point apart, each probed every half point round it: the first land met is
+        // the nearest (to half a point), however small the island
+        var r: CGFloat = 0.5
+        while r <= reach {
+            let n = Int((4 * .pi * r).rounded(.up))
             for i in 0..<n {
                 let a = 2 * Double.pi * Double(i) / Double(n)
                 let q = CGPoint(x: p.x + r * CGFloat(cos(a)), y: p.y + r * CGFloat(sin(a)))
                 if let w = unproject(q), let k = data?.country(lon: w.lon, lat: w.lat) { return k }
             }
+            r += 0.5
         }
         return nil
     }
@@ -536,7 +560,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         style = new
         if !animated || UIAccessibility.isReduceMotionEnabled { styleMix = new == .persian ? 1 : 0 }
         // (the other style's caption is another size: measured again once it has been laid out)
-        roomMeasured = false
+        unsettleRoom()
         backgroundColor = new == .persian ? UIColor(red: 0xF3 / 255, green: 0xE9 / 255, blue: 0xD2 / 255, alpha: 1)
                                           : UIColor(red: 0xF6 / 255, green: 0xF2 / 255, blue: 0xE7 / 255, alpha: 1)
         relabel()
@@ -609,8 +633,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         CATransaction.commit()
         if room.map({ $0.width != Double(bounds.width) }) ?? true || roomBounds != bounds.size {
             roomBounds = bounds.size
-            roomMeasured = false
-            measureRoom()
+            unsettleRoom()
         }
         // (a screen of another size reads at another scale)
         if abs(labelScale - letteredScale) > 0.001 { relabel() }

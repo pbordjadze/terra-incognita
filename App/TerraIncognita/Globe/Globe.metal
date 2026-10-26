@@ -45,7 +45,7 @@ constant float3 SHADOW = float3(0x6E, 0x63, 0x52) / 255;
 // unlit, olive, and gold is meant to be seen under light.
 constant float3 P_PAPER = float3(0xF2, 0xE4, 0xC8) / 255;      // the margin's paper
 constant float3 P_SEA = float3(0xE1, 0xEF, 0xFF) / 255;        // Wikipedia's shallowest sea, in the light-blue ruling's hue
-constant float3 P_SEA_DEEP = float3(0xC6, 0xD2, 0xFE) / 255;   // its fourth depth, in lapis
+constant float3 P_SEA_DEEP = float3(0xC1, 0xD6, 0xF0) / 255;   // its fourth depth, in the same light blue (lapis let down with white)
 constant float3 P_COAST = float3(0x6F, 0x69, 0x95) / 255;      // Wikipedia's coasts and rivers, in the margin's blue ink
 constant float3 P_MEADOW = float3(0xDD, 0xE7, 0xD9) / 255;     // Wikipedia's land, in the landscapes' meadow
 constant float3 P_ROCK = float3(0xED, 0xDE, 0xEC) / 255;       // the same, in their lavender rocks

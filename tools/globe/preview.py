@@ -46,7 +46,7 @@ SHADOW = hexc('#6E6352')
 # the manuscript's hues.
 P_PAPER = hexc('#F2E4C8')
 P_SEA = hexc('#E1EFFF')
-P_SEA_DEEP = hexc('#C6D2FE')
+P_SEA_DEEP = hexc('#C1D6F0')
 P_COAST = hexc('#6F6995')
 P_MEADOW = hexc('#DDE7D9')
 P_ROCK = hexc('#EDDEEC')
@@ -217,7 +217,7 @@ PAGE_DEPTH = 16.81
 PAGE_ROOM = 30                    # what sits on the page keeps this far in from the safe area: inside the frame
 
 
-def page_frame(col, px, py, W, H, ls, insets, alpha):
+def page_frame(col, px, py, W, H, ls, insets, alpha, grain):
     """The page's frame over `col` (the picture so far), `alpha` of the way in. `insets` are the safe
     area's (top, bottom, left, right) in pixels; `ls` pixels per reading point."""
     top, bottom, left, right = insets
@@ -226,7 +226,8 @@ def page_frame(col, px, py, W, H, ls, insets, alpha):
     dl, dr, dt, db = px - left - outer, W - right - outer - px, py - top - outer, H - bottom - outer - py
     e = np.minimum(np.minimum(dl, dr), np.minimum(dt, db)) / ls
     horizontal = np.minimum(dt, db) <= np.minimum(dl, dr)    # nearest the top or bottom: the braid runs along x
-    out = np.where((e < 0)[..., None], mix(col, P_PAPER, alpha), col)
+    paper = P_PAPER * (0.985 + 0.03 * grain)[..., None]
+    out = mix(col, paper, alpha * (1 - np.clip(e * ls + 0.5, 0, 1)))
     def band(a, b):                                          # (a, b: reading points out from the panel)
         lo, hi, k = PAGE_DEPTH - b, PAGE_DEPTH - a, 1.0
         if (hi - lo) * ls < 0.8:                             # (never thinner than 0.8 px: as much fainter)
@@ -426,7 +427,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     out = np.where(inside[..., None], mix(page, col, edge), page)
     if persian:
         # the page's frame comes in as the globe's own frame leaves the screen
-        out = page_frame(out, px, py, W, H, ls, tuple(v * scale for v in safe_insets(w, h)), page_alpha(zoom))
+        out = page_frame(out, px, py, W, H, ls, tuple(v * scale for v in safe_insets(w, h)), page_alpha(zoom), grain)
     return Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8), 'RGB'), (cx, cy, r0 * zoom, M)
 
 
@@ -531,7 +532,7 @@ def caption_box(w, h):
     """Where the Persian caption sits, in points (x0, y0, x1, y1): at the foot, at most CAPTION_WIDTH
     wide, centred."""
     inset = 5
-    pw = min(w - 28, CAPTION_WIDTH)
+    pw = min(w - 2 * PAGE_ROOM, CAPTION_WIDTH)              # (inside the page frame at the sides too)
     x0 = (w - pw) / 2
     head_h = (pw - 2 * inset) / 8
     cap = TYPE['styles']['persian']['caption']
