@@ -1,27 +1,60 @@
-"""Draws the globe's Persian ornaments (Globe/) entirely from procedural geometry.
+"""Draw the globe's Persian ornaments (Globe/) with offline Python geometry.
 
     python3 tools/globe/ornament.py
     python3 tools/globe/ornament.py --sheet tools/globe/sheets/ornament-sheet.png
 
-  band.png     1536 x 256, opaque RGBA, one of sixteen repeats around the globe. x wraps;
-               y runs from the band's inner edge to its outer edge. A 288 px salmon cell
-               straddles x = 0, with a white-edged black quatrefoil and a gold line star.
-               The remaining lapis panel has three-lobed ends and a 6 px white ruling.
-               A 7 px sine stem makes four alternating bays, with tapering spiral tendrils,
-               split leaves and rose, white, orange and pale-blue five-petalled blossoms.
-  fleuron.png  256 x 256, transparent RGBA, pointing up. A washed trefoil crowns a blue-ink
-               stem and two hooked tendrils. Its alpha stays inside (56, 16)..(200, 244);
-               the review places its bottom-centre alpha edge, not its padding, on the ring.
-  rosette.png  96 x 96, transparent RGBA, an 80 px eight-petalled capital marker: white
-               petals, 3 px gold outlines and a 16 px gold centre.
+The default run writes all four assets; --sheet also regenerates the review sheet.
+Only numpy, Pillow, scipy and the Python standard library are used. No source images,
+fonts, lettering or network access are needed.
 
-The sRGB palette studies the illuminated opening of LACMA's Khamsa of Nizami (M.85.237.16).
-No source pictures, fonts or lettering are used. Geometry is rasterised at 4x and box-filtered
-in premultiplied working colour, then stored with straight alpha and the specified sRGB bytes.
-The optional 1600 x 1728 paper sheet fits the complete 1536 px tile at 1:1 below a bilinearly
-sampled polar wrap (inner radius 504, thickness 0.0685 radius, sixteen repeats), gold rings and
-48 outward fleurons. Below the tile, left to right, are the fleuron at 256 and 25 px and the
-rosette at 96 and 30 px. The sheet contains no text and needs no globe data or network access.
+  band.png     1536 x 256, opaque RGBA, one of sixteen repeats around the globe. x wraps;
+               y runs from the band's inner edge to its outer edge. The original 288 px
+               salmon seam cell and three-lobed lapis panel retain their layout. The black
+               quatrefoil has four circular lobes of radius 0.2 H, a 5 px white outline,
+               an immediately inner 2 px gold rim, and a 4 px gold star with light-gold tips.
+               Inside the panel's 6 px white outline, a 2 px gold rule follows after a
+               3 px lapis gap. Two 10 px gold sines in antiphase, amplitude 0.24 H, enclose
+               four oval compartments. At the three internal centre-line crossings, the
+               top strand alternates; a 14 px lapis knockout leaves 2 px beside it.
+               Each bay has a nominal 40 px khatai: alternating six white petals/rose heart
+               and five rose or orange petals/light-gold heart. Leafy C scrolls fill the
+               bays. Outward crest curls carry 14 px pink/white buds with gold calyces;
+               30 x 14 px split-palmette rumi grow at their roots and along the scrolls.
+               Secondary curls fill the outer spaces between crests. All ornamental
+               strokes are at least 3 px; the explicitly requested rules/gaps are 2 px.
+  fleuron.png  256 x 256, transparent RGBA, pointing up. A washed trefoil crowns a blue-ink
+               stem and two hooked tendrils (minimum stroke 3 px). Alpha stays inside
+               (56, 16)..(200, 244); the sheet places the actual bottom alpha edge on the ring.
+  rosette.png  96 x 96, transparent RGBA: eight pointed almond petals, C9AE6A light gold
+               with 3 px 8C6D3A outlines. An 18 px 4E5B9B lapis centre has a 2 px gold ring.
+  headpiece.png 2048 x 256, opaque RGBA, lapis with the same white/gold field ruling.
+               The centred cusped gold oval is 52% W x 72% H; outward-pointing lobed
+               teardrop pendants are 12% W x 46% H and carry small rose blossoms. Short
+               gold stems join them to the cartouche. The three gold grounds use C9AE6A,
+               deterministic +/-3% speckle in 3 px grains, a 4 px E3A08D pink outline,
+               and a 2 px WHITE outer line. Black quarter-lobed corner spandrels reach
+               about 22% H and contain gold/pink sprigs. Mirrored interlaced leafy scrolls,
+               blossoms and shoulder sprigs remain at least 12 px from the cartouche;
+               only the two joining stems enter that margin. The gold interior is plain.
+               Cartouche inner text box, fractions (x0, y0, x1, y1):
+                   (0.31, 0.31, 0.69, 0.69)
+               Every pixel of this box is at least 12 px inside the gold fill.
+
+The original sRGB palette studies LACMA's Khamsa of Nizami (M.85.237.16); only the newly
+specified light gold, rosette outline and cartouche pink replace or extend those colours.
+Geometry is rasterised at 4x and box-filtered in premultiplied working colour, then saved
+with straight alpha and sRGB metadata. Coverage is measured before filtering, as visible
+area of gold and blossom colours divided by area inside the white outline. Both total
+coverage (including the inner gold rule) and ornament-only coverage are printed. The band
+requires both to lie in 40-45%; its seam columns and opaque alpha are checked. Headpiece
+coverage excludes the cartouche, pendants and black spandrels, counting only exposed lapis.
+
+The optional 2112 x 2544 paper sheet contains, top to bottom: a bilinearly sampled app-scale
+polar wrap (inner radius 504 px, thickness 0.0685 radius, sixteen repeats), gold rings and
+48 outward fleurons; the whole band at 1:1; the whole headpiece at 1:1; a 360 x 160 px crop
+of that finished ring enlarged exactly 3x with nearest-neighbour; then fleurons at 256 and
+25 px, rosettes at 96 and 30 px, and the headpiece at its 360 x 45 px app size. The sheet
+contains no text and needs no globe data.
 """
 import argparse
 from pathlib import Path
@@ -35,7 +68,7 @@ OUT = ROOT / 'Globe'
 SCALE = 4
 LAPIS = '#4E5B9B'
 GOLD = '#A8894F'
-GOLD_LIGHT = '#C7A964'
+GOLD_LIGHT = '#C9AE6A'
 SALMON = '#C7735A'
 BLACK = '#2A2119'
 WHITE = '#EFE7DA'
@@ -46,6 +79,9 @@ PALE_BLUE = '#A9BCE0'
 INK = '#4F5D9A'
 WASH = '#A9B5D8'
 PAPER = '#F3E9D2'
+ROSETTE_OUTLINE = '#8C6D3A'
+CARTOUCHE_PINK = '#E3A08D'
+TEXT_BOX = (0.31, 0.31, 0.69, 0.69)
 
 
 def rgb(colour):
@@ -139,17 +175,141 @@ def teardrop():
 
 
 def split_leaf():
-    return bezier((0, 0), ((7, -6), (19, -7), (26, -5)),
-                  ((22, -5), (22, -1), (17, 0)),
-                  ((22, 0), (24, 3), (26, 5)),
-                  ((17, 7), (6, 6), (0, 0)))
+    """A 30 x 14 px bifurcated rumi, with a broad open notch."""
+    shape = bezier((0, 0), ((9, -7), (22, -7), (30, -6)),
+                   ((27, -6), (25, -2), (19, 0)),
+                   ((25, 1), (28, 4), (30, 6)),
+                   ((20, 7), (7, 7), (0, 0)))
+    shape[:, 1] *= 14 / np.ptp(shape[:, 1])
+    return shape
 
 
-def blossom(drawing, centre, colour):
-    for angle in np.linspace(-np.pi / 2, 3 * np.pi / 2, 5, endpoint=False):
-        petal = np.asarray(centre) + 8.5 * np.array([np.cos(angle), np.sin(angle)])
-        drawing.dot(petal, 6.5, colour)
-    drawing.dot(centre, 3.5, GOLD_LIGHT)
+def blossom(drawing, centre, colour, petals=5, diameter=40):
+    """Lobed khatai; the white six-petal form has a rose heart."""
+    radius = diameter / 2
+    for angle in np.linspace(-np.pi / 2, 3 * np.pi / 2, petals, endpoint=False):
+        petal = np.asarray(centre) + radius * 0.57 * np.array([np.cos(angle), np.sin(angle)])
+        drawing.dot(petal, radius * 0.43, colour)
+    drawing.dot(centre, radius * 0.27, ROSE if petals == 6 else GOLD_LIGHT)
+
+
+def bud(drawing, centre, angle, colour):
+    """A 14 px bud including its solid gold calyx; no hairline veins."""
+    shape = bezier((-7, 0), ((-2, -7), (7, -7), (7, 0)),
+                   ((7, 7), (-2, 7), (-7, 0)))
+    drawing.polygon(transform(shape, centre, angle), colour)
+    calyx = [(-7, 0), (-2, -5), (-3, 0), (-2, 5)]
+    drawing.polygon(transform(calyx, centre, angle), GOLD)
+
+
+def leafy_curve(drawing, points, width=5, spacing=23, sides=(-1, 1)):
+    """Secondary scrolls carry alternating full-size split palmettes."""
+    drawing.stroke(points, width, GOLD)
+    arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))]
+    for number, distance in enumerate(np.arange(16, arc[-1] - 10, spacing)):
+        index = min(np.searchsorted(arc, distance), len(points) - 2)
+        angle = np.arctan2(*(points[index + 1] - points[index - 1])[::-1])
+        side = sides[number % len(sides)]
+        leaf = transform(split_leaf(), points[index], angle + side * 0.9)
+        if leaf[:, 1].min() < 16 or leaf[:, 1].max() > 240:
+            leaf = transform(split_leaf(), points[index], angle + side * 0.9 + np.pi)
+        if leaf[:, 1].min() >= 16 and leaf[:, 1].max() <= 240:
+            drawing.polygon(leaf, GOLD)
+
+
+def arabesque(drawing, start_x, end_x, middle_y=128, amplitude=61.44, compartments=4, flowers=True):
+    """Two antiphase sines, four oval bays, and outward leafy spiral tendrils.
+
+    Main stems are 10 px, secondary stems 5 px, and small branches at least 3 px.
+    A 14 px lapis knockout under a 10 px crossing gives exactly 2 px on each side.
+    """
+    span = end_x - start_x
+    step = span / compartments
+    position = np.linspace(0, 1, 2401)
+    phase = compartments * np.pi * position
+    stems = [np.column_stack((start_x + span * position,
+                             middle_y + sign * amplitude * np.sin(phase)))
+             for sign in (-1, 1)]
+    for stem in stems:
+        # Paired rumi on the main stems build a dense, illuminated leafy braid.
+        leafy_curve(drawing, stem, width=10, spacing=26, sides=(-1,))
+        leafy_curve(drawing, stem, width=10, spacing=26, sides=(1,))
+
+    for bay in range(compartments):
+        centre_x = start_x + (bay + 0.5) * step
+        # The bays have two inward-facing leafy C scrolls around a 40 px blossom.
+        for side in (-1, 1):
+            curve = bezier((centre_x + side * (step / 2 - 20), middle_y),
+                           ((centre_x + side * 95, middle_y - 45),
+                            (centre_x + side * 37, middle_y - 47),
+                            (centre_x + side * 34, middle_y - 12)),
+                           ((centre_x + side * 32, middle_y + 20),
+                            (centre_x + side * 75, middle_y + 31),
+                            (centre_x + side * 80, middle_y + 8)))
+            leafy_curve(drawing, curve, width=6, spacing=22)
+        for outward in (-1, 1):
+            root = (centre_x, middle_y + outward * amplitude)
+            # A broad curl returns into the outer margin and ends in a small bud.
+            curve = bezier(root,
+                           ((centre_x + 42, root[1] + outward * 9),
+                            (centre_x + 99, root[1] + outward * 29),
+                            (centre_x + 67, root[1] + outward * 37)),
+                           ((centre_x + 31, root[1] + outward * 48),
+                            (centre_x + 17, root[1] + outward * 20),
+                            (centre_x + 41, root[1] + outward * 18)))
+            leafy_curve(drawing, curve, width=5, spacing=24, sides=(-outward,))
+            for sign in (-1, 1):
+                drawing.polygon(transform(split_leaf(), root,
+                                          np.pi / 2 * outward + sign * 0.65), GOLD)
+            bud(drawing, curve[-1], 0, PINK if bay % 2 else WHITE)
+            # A countercurl fills the otherwise empty outer half of each compartment.
+            counter = bezier((centre_x - 8, root[1]),
+                             ((centre_x - 47, root[1] - outward * 9),
+                              (centre_x - 109, root[1] + outward * 8),
+                              (centre_x - 98, root[1] + outward * 32)),
+                             ((centre_x - 88, root[1] + outward * 51),
+                              (centre_x - 51, root[1] + outward * 37),
+                              (centre_x - 65, root[1] + outward * 21)))
+            leafy_curve(drawing, counter, width=5, spacing=22, sides=(outward,))
+            bud(drawing, counter[-1], np.pi, WHITE if bay % 2 else PINK)
+        if flowers:
+            blossom(drawing, (centre_x, middle_y),
+                    WHITE if bay % 2 == 0 else (ROSE, ORANGE, PALE_BLUE)[(bay // 2) % 3],
+                    petals=6 if bay % 2 == 0 else 5)
+    # Branch into the open upper/lower spaces between successive crest tendrils.
+    for crossing in range(1, compartments):
+        centre = start_x + crossing * step
+        root_y = amplitude * abs(np.sin(np.pi * (crossing - 38 / step)))
+        for outward in (-1, 1):
+            scroll = bezier((centre - 38, middle_y + outward * root_y),
+                            ((centre - 20, middle_y + outward * 80),
+                             (centre + 45, middle_y + outward * 103),
+                             (centre + 57, middle_y + outward * 70)),
+                            ((centre + 65, middle_y + outward * 43),
+                             (centre + 25, middle_y + outward * 38),
+                             (centre + 21, middle_y + outward * 59)))
+            leafy_curve(drawing, scroll, width=5, spacing=24, sides=(outward,))
+            bud(drawing, scroll[-1], np.pi, PINK if crossing % 2 else WHITE)
+    # Open the crossings, then restore both strands and the alternating 2 px underpass.
+    # Keeping foliage out of these small discs makes the braid legible at app scale.
+    for crossing in range(1, compartments):
+        drawing.dot((start_x + crossing * step, middle_y), 19, LAPIS)
+    for stem in stems:
+        drawing.stroke(stem, 10, GOLD)
+    for crossing in range(1, compartments):
+        centre = start_x + crossing * step
+        top = stems[crossing % 2]
+        local = top[np.abs(top[:, 0] - centre) <= 15]
+        drawing.stroke(local, 14, LAPIS)
+        drawing.stroke(local, 10, GOLD)
+
+
+def colour_mask(drawing, colours):
+    pixels = np.asarray(drawing.image)
+    mask = np.zeros(pixels.shape[:2], bool)
+    for colour in colours:
+        mask |= np.all(pixels[..., :3] == rgb(colour), axis=2)
+    return mask
 
 
 def band():
@@ -161,12 +321,16 @@ def band():
     distance = np.full(drawing.coverage.size[::-1], np.inf, np.float32)
     for offset_x, offset_y in ((0.17, 0), (-0.17, 0), (0, 0.17), (0, -0.17)):
         distance = np.minimum(distance, np.hypot(horizontal - offset_x * height,
-                                                  vertical - offset_y * height) - 0.22 * height)
-    drawing.image.paste((*rgb(WHITE), 255), mask=Image.fromarray((distance <= 2.5).astype('uint8') * 255))
-    drawing.image.paste((*rgb(BLACK), 255), mask=Image.fromarray((distance <= -2.5).astype('uint8') * 255))
-    star = np.array([(0, -62), (12, -12), (62, 0), (12, 12), (0, 62),
-                     (-12, 12), (-62, 0), (-12, -12), (0, -62)])
-    drawing.stroke(star + (0, height / 2), 3, GOLD)
+                                                  vertical - offset_y * height) - 0.2 * height)
+    for limit, colour in ((2.5, WHITE), (-2.5, GOLD), (-4.5, BLACK)):
+        drawing.image.paste((*rgb(colour), 255),
+                            mask=Image.fromarray((distance <= limit).astype('uint8') * 255))
+    star = np.array([(0, -60), (12, -12), (60, 0), (12, 12), (0, 60),
+                     (-12, 12), (-60, 0), (-12, -12), (0, -60)])
+    drawing.stroke(star + (0, height / 2), 4, GOLD)
+    for angle in np.arange(4) * np.pi / 2:
+        tip = np.array([(49, -3), (60, 0), (49, 3)])
+        drawing.polygon(transform(tip, (0, height / 2), angle), GOLD_LIGHT)
     drawing.polygon(np.array([(0, -10), (6, 0), (0, 10), (-6, 0)]) + (0, height / 2), GOLD)
     for centre_y in (18, 238):
         drawing.polygon(transform(teardrop(), (113, centre_y),
@@ -190,44 +354,26 @@ def band():
     interior = edge_distance > 6
     drawing.image.paste((*rgb(WHITE), 255), mask=panel)
     drawing.image.paste((*rgb(LAPIS), 255), mask=Image.fromarray(interior.astype('uint8') * 255))
-    drawing.coverage.paste(0, (0, 0, *drawing.coverage.size))
-
-    start_x, end_x = 194, width - 194
-    position = np.linspace(0, 1, 1601)
-    stem = np.column_stack((start_x + (end_x - start_x) * position,
-                            height / 2 - 0.22 * height * np.sin(4 * np.pi * position)))
-    drawing.stroke(stem, 7, GOLD)
-    for bay, colour in enumerate((ROSE, WHITE, ORANGE, PALE_BLUE)):
-        fraction = (bay + 0.5) / 4
-        centre_x = start_x + (end_x - start_x) * fraction
-        inward = 1 if bay % 2 == 0 else -1
-        root_y = height / 2 - inward * 0.22 * height
-        centre_y = root_y + inward * 59
-        amount = np.linspace(0, 1, 501)
-        tightening = amount - np.sin(2 * np.pi * amount) / (2 * np.pi)
-        radius = 59 * np.exp(-1.7 * tightening)
-        angle = -np.pi / 2 + amount * 2.5 * np.pi
-        tendril = np.column_stack((centre_x + radius * np.cos(angle),
-                                  centre_y + inward * radius * np.sin(angle)))
-        drawing.stroke(tendril, 5, GOLD, end_width=3)
-        for leaf_angle in (-np.pi / 6, -5 * np.pi / 6):
-            leaf = transform(split_leaf(), (0, 0), leaf_angle)
-            leaf[:, 1] *= inward
-            drawing.polygon(leaf + (centre_x, root_y), GOLD)
-        blossom(drawing, tendril[-1], colour)
-        for offset_x, dot_y in ((-75, 39), (75, 217)):
-            drawing.dot((centre_x + offset_x, dot_y), 2, GOLD)
-
-    decoration = np.asarray(drawing.coverage) > 0
-    coverage = np.count_nonzero(decoration) / np.count_nonzero(interior)
-    clearance = float(edge_distance[decoration].min() - 6)
-    if coverage >= 0.35 or clearance < 10:
-        raise ValueError(f'panel decoration: {coverage:.2%} coverage, {clearance:.2f} px clearance')
+    # Three clear pixels after the white edge, then a two-pixel inner gold ruling.
+    ruling = (edge_distance > 9) & (edge_distance <= 11)
+    drawing.image.paste((*rgb(GOLD), 255), mask=Image.fromarray(ruling.astype('uint8') * 255))
+    ornaments = Drawing((width, height))
+    arabesque(ornaments, 175, width - 175)
+    visible = np.asarray(ornaments.image)[..., 3] > 0
+    clearance = float(edge_distance[visible].min() - 11)
+    drawing.image.alpha_composite(ornaments.image)
+    decoration = colour_mask(ornaments, (GOLD, GOLD_LIGHT, WHITE, ROSE, ORANGE, PALE_BLUE, PINK)) & visible
+    ornament_coverage = np.count_nonzero(decoration & interior) / np.count_nonzero(interior)
+    coverage = np.count_nonzero((decoration | ruling) & interior) / np.count_nonzero(interior)
+    if not (0.40 <= ornament_coverage <= coverage <= 0.45) or clearance < 3:
+        raise ValueError(f'panel decoration: {coverage:.2%} coverage, '
+                         f'{ornament_coverage:.2%} without ruling, {clearance:.2f} px clearance')
     image = box_rgba(drawing.image)
     pixels = np.asarray(image)
     if not np.array_equal(pixels[:, 0], pixels[:, -1]) or not np.all(pixels[..., 3] == 255):
         raise ValueError('band does not join seamlessly')
-    print(f'band: gold + blossoms {coverage:.2%} of lapis panel; outline clearance {clearance:.2f} px')
+    print(f'band: gold + blossoms {coverage:.2%} of panel inside white outline; '
+          f'{ornament_coverage:.2%} without ruling; {clearance:.2f} px clearance from gold ruling')
     print('band: opposite edge columns identical; alpha 255 throughout')
     return image
 
@@ -248,8 +394,8 @@ def fleuron():
                      ((58, 178), (60, 199), (74, 199)),
                      ((85, 199), (88, 187), (80, 184)),
                      ((76, 182), (72, 185), (74, 189)))
-    drawing.stroke(tendril, 3.5, INK, end_width=2.5)
-    drawing.stroke(tendril * (-1, 1) + (256, 0), 3.5, INK, end_width=2.5)
+    drawing.stroke(tendril, 3.5, INK, end_width=3)
+    drawing.stroke(tendril * (-1, 1) + (256, 0), 3.5, INK, end_width=3)
     image = box_rgba(drawing.image)
     bounds = image.getchannel('A').getbbox()
     if not (bounds and bounds[0] >= 56 and bounds[1] >= 16 and bounds[2] <= 200 and bounds[3] <= 244):
@@ -260,14 +406,137 @@ def fleuron():
 
 def rosette():
     drawing = Drawing((96, 96))
-    petal = bezier((7, 0), ((14, -5), (21, -9), (29, -7)),
-                   ((41.5, -5), (41.5, 5), (29, 7)),
-                   ((21, 9), (14, 5), (7, 0)))
+    petal = bezier((7, 0), ((18, -10), (32, -11), (40, 0)),
+                   ((32, 11), (18, 10), (7, 0)))
     for angle in np.linspace(0, 2 * np.pi, 8, endpoint=False):
         points = transform(petal, (48, 48), angle)
-        drawing.polygon(points, WHITE)
-        drawing.stroke(points, 3, GOLD)
-    drawing.dot((48, 48), 8, GOLD)
+        drawing.polygon(points, GOLD_LIGHT)
+        drawing.stroke(points, 3, ROSETTE_OUTLINE)
+    drawing.dot((48, 48), 11, GOLD_LIGHT)
+    drawing.dot((48, 48), 9, LAPIS)
+    return box_rgba(drawing.image)
+
+
+def cartouche_shape(centre, width, height):
+    """A long cusped oval; its four mirrored shoulders have three broad lobes."""
+    quadrant = bezier((1, 0), ((0.92, -0.08), (0.99, -0.35), (0.85, -0.35)),
+                      ((0.93, -0.72), (0.72, -0.88), (0.66, -0.72)),
+                      ((0.63, -1.02), (0.39, -1.04), (0.32, -0.88)),
+                      ((0.22, -1.03), (0.08, -1), (0, -1)))
+    top = np.concatenate((quadrant, (quadrant * (-1, 1))[::-1]))
+    shape = np.concatenate((top, (top * (1, -1))[::-1]))
+    # Normalise to the exact requested outer bounds, including the slight cusp overshoot.
+    shape /= np.max(np.abs(shape), axis=0)
+    return shape * (width / 2, height / 2) + centre
+
+
+def pendant_shape(centre, width, height, side):
+    """A lobed teardrop, with its single sharp point facing away from the cartouche."""
+    top = bezier((1, 0), ((0.55, -0.10), (0.85, -0.48), (0.47, -0.47)),
+                 ((0.57, -0.85), (0.05, -1.05), (-0.12, -0.82)),
+                 ((-0.40, -1.12), (-0.95, -0.86), (-0.82, -0.52)),
+                 ((-1.08, -0.54), (-1.02, -0.13), (-1, 0)))
+    shape = np.concatenate((top, (top * (1, -1))[::-1]))
+    low, high = shape.min(axis=0), shape.max(axis=0)
+    shape = 2 * (shape - low) / (high - low) - 1
+    return shape * (side * width / 2, height / 2) + centre
+
+
+def polygon_mask(size, points):
+    mask = Image.new('L', size)
+    ImageDraw.Draw(mask).polygon([(float(x) * SCALE - 0.5, float(y) * SCALE - 0.5)
+                                  for x, y in points], fill=255)
+    return np.asarray(mask) > 0
+
+
+def gilded_shape(drawing, points, seed):
+    """Opaque gold, with three-pixel grain at most +/-3%; 4 px pink, 2 px white."""
+    mask = polygon_mask(drawing.image.size, points)
+    distance = ndimage.distance_transform_edt(mask) / SCALE
+    for limit, colour in ((0, WHITE), (2, CARTOUCHE_PINK)):
+        drawing.image.paste((*rgb(colour), 255),
+                            mask=Image.fromarray((distance > limit).astype('uint8') * 255))
+    rng = np.random.default_rng(seed)
+    height, width = mask.shape
+    grain = rng.uniform(-0.03, 0.03, ((height + 11) // 12, (width + 11) // 12, 1))
+    grain = np.repeat(np.repeat(grain, 12, axis=0), 12, axis=1)[:height, :width]
+    gold = np.rint(np.asarray(rgb(GOLD_LIGHT)) * (1 + grain)).astype('uint8')
+    drawing.image.paste(Image.fromarray(gold),
+                        mask=Image.fromarray((distance > 6).astype('uint8') * 255))
+    return distance
+
+
+def headpiece():
+    width, height = 2048, 256
+    drawing = Drawing((width, height), LAPIS)
+    cartouche = cartouche_shape((width / 2, height / 2), width * 0.52, height * 0.72)
+    central_mask = polygon_mask(drawing.image.size, cartouche)
+    reserved = central_mask.copy()
+    ornaments = Drawing((width, height))
+    # Draw whole side scrolls rather than clipping scroll fragments around the cartouche.
+    arabesque(ornaments, 28, 466, compartments=2, flowers=False)
+    for upper in (True, False):
+        shoulder = bezier((452, 49), ((505, 23), (557, 17), (610, 29)))
+        if not upper:
+            shoulder[:, 1] = height - shoulder[:, 1]
+        leafy_curve(ornaments, shoulder, width=5, spacing=35, sides=(-1 if upper else 1,))
+        bud(ornaments, shoulder[-1], 0, PINK)
+    blossom(ornaments, (90, 128), WHITE, petals=6)
+    blossom(ornaments, (451, 128), PALE_BLUE)
+    ornaments.image.alpha_composite(ornaments.image.transpose(Image.Transpose.FLIP_LEFT_RIGHT))
+    distance_outside = ndimage.distance_transform_edt(~central_mask) / SCALE
+    ornament_alpha = np.asarray(ornaments.image)[..., 3] > 0
+    ornament_clearance = float(distance_outside[ornament_alpha].min())
+    if ornament_clearance < 12:
+        raise ValueError(f'headpiece scroll clearance {ornament_clearance:.2f} px')
+    drawing.image.alpha_composite(ornaments.image)
+    for side in (-1, 1):
+        centre_x = width / 2 + side * width * 0.365
+        inner_x = centre_x - side * width * 0.06
+        edge_x = width / 2 + side * width * 0.26
+        drawing.stroke([(inner_x, height / 2), (edge_x, height / 2)], 8, GOLD)
+        pendant = pendant_shape((centre_x, height / 2), width * 0.12, height * 0.46, side)
+        reserved |= polygon_mask(drawing.image.size, pendant)
+        gilded_shape(drawing, pendant, 8)
+        blossom(drawing, (centre_x, height / 2), ROSE)
+    for flip_x in (False, True):
+        for flip_y in (False, True):
+            corner = bezier((0, 0), ((50, 0), (104, 0), (144, 0)),
+                            ((133, 23), (104, 29), (98, 19)),
+                            ((103, 47), (66, 54), (56, 38)),
+                            ((57, 63), (18, 58), (0, 56)))
+            corner = np.concatenate((corner, [(0, 0)]))
+            def reflect(points):
+                return np.asarray(points) * (-1 if flip_x else 1, -1 if flip_y else 1) + (
+                    width if flip_x else 0, height if flip_y else 0)
+            reserved |= polygon_mask(drawing.image.size, reflect(corner))
+            drawing.polygon(reflect(corner), BLACK)
+            sprig = bezier((15, 13), ((43, 18), (69, 18), (90, 12)))
+            drawing.stroke(reflect(sprig), 3, GOLD)
+            for x, y, angle in ((32, 16, 0.75), (58, 17, -0.5)):
+                drawing.polygon(reflect(transform(split_leaf() * 0.6, (x, y), angle)), GOLD)
+            bud(drawing, reflect([(89, 12)])[0], np.pi if flip_x else 0, PINK)
+    # Coverage refers only to exposed blue ground; reserve the cartouche, pendants and
+    # black corners. Report totals both with and without the inner gold field ruling.
+    cartouche_distance = gilded_shape(drawing, cartouche, 23)
+    row, column = np.ogrid[:height * SCALE, :width * SCALE]
+    edge = np.minimum(np.minimum((row + 0.5) / SCALE, height - (row + 0.5) / SCALE),
+                      np.minimum((column + 0.5) / SCALE, width - (column + 0.5) / SCALE))
+    drawing.image.paste((*rgb(WHITE), 255), mask=Image.fromarray((edge < 6).astype('uint8') * 255))
+    drawing.image.paste((*rgb(GOLD), 255), mask=Image.fromarray(((edge >= 9) & (edge < 11)).astype('uint8') * 255))
+    lapis_region = (edge >= 6) & ~reserved
+    decoration = colour_mask(drawing, (GOLD, GOLD_LIGHT, WHITE, ROSE, ORANGE, PALE_BLUE, PINK))
+    coverage = np.count_nonzero(decoration & lapis_region) / np.count_nonzero(lapis_region)
+    decoration &= ~((edge >= 9) & (edge < 11))
+    ornament_coverage = np.count_nonzero(decoration & lapis_region) / np.count_nonzero(lapis_region)
+    x0, y0, x1, y1 = TEXT_BOX
+    text_clearance = cartouche_distance[int(y0 * height * SCALE):int(y1 * height * SCALE),
+                                       int(x0 * width * SCALE):int(x1 * width * SCALE)].min() - 6
+    if text_clearance < 12:
+        raise ValueError(f'cartouche text box clearance {text_clearance:.2f} px')
+    print(f'headpiece: gold + blossoms {coverage:.2%} of exposed lapis; '
+          f'{ornament_coverage:.2%} without ruling; {ornament_clearance:.2f} px scroll clearance; '
+          f'text box {TEXT_BOX}, {text_clearance:.2f} px inside gold fill')
     return box_rgba(drawing.image)
 
 
@@ -309,13 +578,13 @@ def place_fleuron(sheet, image, base, angle, height):
     sheet.alpha_composite(stamp, (left, top))
 
 
-def review_sheet(tile, finial, marker):
-    sheet = Image.new('RGBA', (1600, 1728), (*rgb(PAPER), 255))
-    centre_x, centre_y, inner = 800, 580, 504
+def review_sheet(tile, finial, marker, heading):
+    sheet = Image.new('RGBA', (2112, 2544), (*rgb(PAPER), 255))
+    centre_x, centre_y, inner = 1056, 580, 504
     outer = inner * (1 + 0.0685)
     inner_ring, outer_ring = inner - 2.5, outer + 2.5
     texture = np.asarray(tile, np.float32)[..., :3]
-    left, top, size = 250, 30, 1100
+    left, top, size = 506, 30, 1100
     column = (np.arange(size * SCALE, dtype=np.float32) + 0.5) / SCALE + left - centre_x
     for first_row in range(0, size, 20):
         rows = min(20, size - first_row)
@@ -335,11 +604,16 @@ def review_sheet(tile, finial, marker):
     for angle in np.linspace(0, 2 * np.pi, 48, endpoint=False):
         base = (centre_x + outer_ring * np.sin(angle), centre_y - outer_ring * np.cos(angle))
         place_fleuron(sheet, finial, base, angle, inner * 0.05)
-    sheet.alpha_composite(tile, (32, 1170))
-    sheet.alpha_composite(finial, (160, 1450))
-    place_fleuron(sheet, finial, (520, 1616), 0, 25)
-    sheet.alpha_composite(marker, (744, 1530))
-    sheet.alpha_composite(marker.resize((30, 30), Image.Resampling.BOX), (1017, 1563))
+    # This is a crop of the finished app-scale ring, enlarged without resampling its pixels.
+    crop = sheet.crop((1010, 0, 1370, 160)).resize((1080, 480), Image.Resampling.NEAREST)
+    sheet.alpha_composite(crop, (516, 1760))
+    sheet.alpha_composite(tile, (288, 1170))
+    sheet.alpha_composite(finial, (160, 2240))
+    place_fleuron(sheet, finial, (520, 2406), 0, 25)
+    sheet.alpha_composite(marker, (744, 2330))
+    sheet.alpha_composite(marker.resize((30, 30), Image.Resampling.BOX), (1017, 2363))
+    sheet.alpha_composite(heading, (32, 1460))
+    sheet.alpha_composite(heading.resize((360, 45), Image.Resampling.BOX), (1450, 2350))
     return sheet
 
 
@@ -356,11 +630,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sheet', type=Path, help='also write a paper review sheet to this path')
     args = parser.parse_args()
-    tile, finial, marker = band(), fleuron(), rosette()
-    for image, name in ((tile, 'band.png'), (finial, 'fleuron.png'), (marker, 'rosette.png')):
+    tile, finial, marker, heading = band(), fleuron(), rosette(), headpiece()
+    for image, name in ((tile, 'band.png'), (finial, 'fleuron.png'), (marker, 'rosette.png'),
+                        (heading, 'headpiece.png')):
         save(image, OUT / name)
     if args.sheet:
-        save(review_sheet(tile, finial, marker), args.sheet)
+        save(review_sheet(tile, finial, marker, heading), args.sheet)
 
 
 if __name__ == '__main__':
