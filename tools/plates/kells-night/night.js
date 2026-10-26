@@ -55,19 +55,18 @@ const CAPTIONS = [
 function layersOf(k) {
   const L = [{ name: 'ground', opaque: true }];
   if (k === 0) L.push({ name: 'near', depth: 0.1 });
-  if (k >= 1) L.push({ name: 'lights', depth: 0, motion: { kind: 'breathe', min: 0.72, max: 1, period: 8, phase: 0.15 * k } });
+  if (k >= 1) L.push({ name: 'lights', depth: 0, motion: { kind: 'breathe', min: 0.82, max: 1, period: 8, phase: 0.15 * k } });
   L.push({ name: 'labels', depth: 0.04 });
   const sf = shipFrame(k);
   if (sf) L.push({ name: 'ship', depth: 0.02, frame: sf.frame,
     motion: { kind: 'sway', angle: 2.4, period: 7, phase: 0.2 * k, anchor: [Math.round(sf.x * S), Math.round(sf.y * S)] } });
-  if (k === 4) L.push({ name: 'near', depth: 0.12 });
   return L;
 }
 window.Plates = {
   levels: 5,
   style: {
     fonts: ['fonts/UncialAntiqua-Regular.ttf', 'fonts/Alegreya-Regular.ttf', 'fonts/Alegreya-Italic.ttf'],
-    eyebrow: { font: 'UncialAntiqua-Regular', size: 12, color: '#e0565e', tracking: 2.6, uppercase: true },
+    eyebrow: { font: 'Alegreya-Regular', size: 12.5, color: '#e0565e', tracking: 2.6, uppercase: true },
     title: { font: 'Alegreya-Italic', size: 27, color: '#f4ead0' },
     text: { font: 'Alegreya-Regular', size: 16.5, color: '#b9c7e8' },
     scrim: '#050718e6', accent: '#e0565e',
@@ -718,6 +717,8 @@ async function loadAmerica() {
 }
 function drawAmerica(layer, d) {
   const proj = lensU(1), gp = c => d3.geoPath(proj, c), pt = ll => proj(ll);
+  // the world orb's moonlight, where its plate shows the same ground (lit from the upper left)
+  const orbShade = () => { const wl = lensBase(0), [wx, wy] = wl.translate(), wr = wl.scale(); return gridOf((x, y) => { const ll = proj.invert([x, y]), p = ll && wl(ll); return p ? -((p[0] - wx) * 0.6 + (p[1] - wy) * 0.8) / wr : 0; }); };
   const areaOf = f => Math.abs(d3.geoPath(proj).area(f));
   const lakes = fc(d.lakesFC.features.filter(f => areaOf(f) > 3)), bigLakes = fc(lakes.features.filter(f => areaOf(f) > 60));
   const ohio = d.statesFC.features.find(f => f.properties.name === 'Ohio');
@@ -744,7 +745,8 @@ function drawAmerica(layer, d) {
   });
   if (layer === 'ship') return vectorLayer(c => { if (PASS()) return; const [x, y] = pt(SHIP[1].at); ship(c, x, y + 1.5, SHIP[1].h, SHIP[1].dir); });
   begin(true);
-  wash(null, { c: PAL.sea, bloom: 0.75, mottle: 0.5, brush: 0.25, tide: 0.16, grain: 0.12, off: 7 });
+  const SHADE = orbShade();
+  wash(null, { c: PAL.sea, bloom: 0.4, inherit: 0.6, mottle: 0.5, brush: 0.25, tide: 0.16, grain: 0.12, off: 7, lift: i => 0.16 * SHADE[i] });
   const landM = maskFrom(c => {
     c.beginPath(); gp(c)(d.land50); c.fill(); c.beginPath(); gp(c)(d.land10); c.fill();
     c.globalCompositeOperation = 'destination-out'; c.beginPath(); gp(c)(lakes); c.fill();
@@ -760,7 +762,7 @@ function drawAmerica(layer, d) {
   const NORTH = gridOf((x, y) => { const ll = proj.invert([x, y]); return ll ? smooth(45.0, 46.4, ll[1]) : 0; });
   const north = i => NORTH[i];
   wash(landM, { c: PAL.land, bloom: 0.25, inherit: 0.36, mottle: 0.4, brush: 0.3, tide: 0.22, grain: 0.2, specks: 0.005, off: 13, edge: dLand, edgeW: 6, edgeK: 0.25,
-    lift: i => ohioM[i] * 0.12 + 0.15 * Math.exp(-dSea[i] / K / 34) - 0.08 * north(i) });
+    lift: i => ohioM[i] * 0.12 + 0.15 * Math.exp(-dSea[i] / K / 34) - 0.08 * north(i) + 0.12 * SHADE[i] });
   // the Appalachians: sweeping bands along the ridge line, from Tennessee to the Hudson
   const spine = [[-85.6, 34.6], [-84.1, 35.8], [-82.3, 36.9], [-80.7, 37.9], [-79.4, 39.1], [-78.2, 40.2], [-76.9, 40.9], [-75.6, 41.5], [-74.6, 42.2], [-74.1, 43.2]].map(pt);
   bands(spine, { count: 11, space: 5.4, fill: '#6a9c96', fillAlpha: 0.15, lineAlpha: 0.32, lw: 0.45, taper: 0.3, fadeEnds: 0.28, mask: landM });
@@ -1165,7 +1167,7 @@ function drawShortNorth(layer, d) {
     if (top.length > 2) pathLabel(c, 'High Street', top.map(([x, y]) => [x - 12, y]), 11, { track: 0.12, color: PAL.cream, font: 'italic', });
     const L = (t, ll, size, o) => { const [x, y] = pt(ll); label(c, t, x, y, size, o); };
     L('Victorian Village', [-83.0078, 39.9842], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
-    L('Italian Village', [-83.0003, 39.9792], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
+    L('Italian Village', [-83.0019, 39.9792], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
     label(c, '© OpenStreetMap contributors', CW / 2 + 186, CH / 2 + 413, 5.5, { color: '#b7c5e6', track: 0.02, alpha: 0.6, align: 'right' });
   });
   if (layer === 'lights') return vectorLayer(c => {
@@ -1183,20 +1185,6 @@ function drawShortNorth(layer, d) {
       for (let s2 = 0; s2 <= 28; s2 += 2) { const [qx, qy] = P[s2]; glow(c, qx, qy, 1.8, '#fff3cf', 0.55); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(qx, qy, 0.34, 0, Math.PI * 2); c.fill(); }
     }
   });
-  if (layer === 'near') {
-    // a frame of dark crowns at the edges, nearer the eye: the street seen from up in the trees
-    begin(false);
-    const c = scratch(), r = rng(97);
-    // clusters at the two top corners of the final view (about 109..437 by 186..902 units), and their
-    // continuation out to the plate's edges; the foot of the screen stays clear for the caption
-    const spots = [[104, 192, 26], [140, 172, 17], [86, 238, 15], [60, 160, 30], [40, 230, 22], [96, 120, 24],
-      [442, 192, 26], [404, 172, 16], [462, 240, 15], [488, 160, 30], [508, 232, 22], [452, 118, 24]];
-    for (const [x, y, rad] of spots.sort((a2, b2) => a2[2] - b2[2])) {
-      crown(c, x + (r() - 0.5) * 4, y + (r() - 0.5) * 4, rad, { lit: '#183634', dark: '#03090c', rim: 0.34, shadow: 0.5, curl: false });
-    }
-    composite();
-    return present();
-  }
   begin(true);
   // the ground between: the same moonlit teal as the city plate below, parks a little lighter
   wash(null, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.18, specks: 0.004, off: 61, lift: () => 0.06 });
@@ -1285,23 +1273,31 @@ function render() {
 // when magnified, so the ground would grow darker with each pass. Coarse cells of the unmagnified
 // picture (the part this pass plate shows) and of the new one give a smooth gain per channel.
 function matchTone() {
-  const GX = 6, GY = 13, x0 = MCX - W / 2 / MS, y0 = MCY - H / 2 / MS, cw = W / MS / GX, ch = H / MS / GY;
-  const cell = (img, X0, Y0, w, h) => {
-    const o = [0, 0, 0]; let n = 0;
-    for (let y = Math.max(0, Y0 | 0); y < Math.min(H, Y0 + h); y += 3) for (let x = Math.max(0, X0 | 0); x < Math.min(W, X0 + w); x += 3) { const q = (y * W + x) * 3; o[0] += img[q]; o[1] += img[q + 1]; o[2] += img[q + 2]; n++; }
-    return n ? o.map(v => v / n) : null;
-  };
-  const gain = [];
+  // cells fixed to the level's own plate (BC plate px), the same for every pass plate of the level, so
+  // that two pass plates agree with each other where one fades in over the other
+  const BC = 60, x0 = MCX - W / 2 / MS, y0 = MCY - H / 2 / MS, x1 = MCX + W / 2 / MS, y1 = MCY + H / 2 / MS;
+  const i0 = Math.floor(x0 / BC), i1 = Math.ceil(x1 / BC), j0 = Math.floor(y0 / BC), j1 = Math.ceil(y1 / BC), GX = i1 - i0, GY = j1 - j0;
+  const toPass = (bx, by) => [W / 2 + (bx - MCX) * MS, H / 2 + (by - MCY) * MS];
+  const gain = new Float32Array(GX * GY * 3).fill(1);
   for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
-    const a = cell(BASE, x0 + i * cw, y0 + j * ch, cw, ch), b = cell(IMG, i * W / GX, j * H / GY, W / GX, H / GY);
-    gain.push(a && b ? a.map((v, c) => Math.min(1.45, Math.max(0.75, (v + 0.004) / (b[c] + 0.004)))) : [1, 1, 1]);
+    const bx0 = Math.max(x0, (i0 + i) * BC), bx1 = Math.min(x1, (i0 + i + 1) * BC), by0 = Math.max(y0, (j0 + j) * BC), by1 = Math.min(y1, (j0 + j + 1) * BC);
+    if (bx1 - bx0 < 1 || by1 - by0 < 1) continue;
+    const a = [0, 0, 0], b2 = [0, 0, 0]; let na = 0, nb = 0;
+    for (let y = Math.max(0, Math.floor(by0)); y < Math.min(H, by1); y += 2) for (let x = Math.max(0, Math.floor(bx0)); x < Math.min(W, bx1); x += 2) { const q = (y * W + x) * 3; a[0] += BASE[q]; a[1] += BASE[q + 1]; a[2] += BASE[q + 2]; na++; }
+    const [px0, py0] = toPass(bx0, by0), [px1, py1] = toPass(bx1, by1), st = Math.max(2, Math.round((px1 - px0) / 60));
+    for (let y = Math.max(0, Math.floor(py0)); y < Math.min(H, py1); y += st) for (let x = Math.max(0, Math.floor(px0)); x < Math.min(W, px1); x += st) { const q = (y * W + x) * 3; b2[0] += IMG[q]; b2[1] += IMG[q + 1]; b2[2] += IMG[q + 2]; nb++; }
+    if (!na || !nb) continue;
+    for (let c = 0; c < 3; c++) gain[(j * GX + i) * 3 + c] = Math.min(1.45, Math.max(0.75, (a[c] / na + 0.004) / (b2[c] / nb + 0.004)));
   }
-  for (let y = 0, i = 0; y < H; y++) {
-    const gy = Math.min(GY - 1.001, Math.max(0, y / (H / GY) - 0.5)), j0 = gy | 0, ty = gy - j0;
-    for (let x = 0; x < W; x++, i++) {
-      const gx = Math.min(GX - 1.001, Math.max(0, x / (W / GX) - 0.5)), i0 = gx | 0, tx = gx - i0;
-      const A = gain[j0 * GX + i0], B = gain[j0 * GX + i0 + 1], C = gain[(j0 + 1) * GX + i0], Dd = gain[(j0 + 1) * GX + i0 + 1], q = i * 3;
-      for (let c = 0; c < 3; c++) IMG[q + c] *= (A[c] + (B[c] - A[c]) * tx) * (1 - ty) + (C[c] + (Dd[c] - C[c]) * tx) * ty;
+  // bilinear between cell centres, in plate px of the level
+  for (let y = 0, k = 0; y < H; y++) {
+    const by = MCY + (y - H / 2) / MS, gy = Math.min(GY - 1.0001, Math.max(0, by / BC - j0 - 0.5)), ja = gy | 0, ty = gy - ja, jb = Math.min(GY - 1, ja + 1);
+    for (let x = 0; x < W; x++, k++) {
+      const bx = MCX + (x - W / 2) / MS, gx = Math.min(GX - 1.0001, Math.max(0, bx / BC - i0 - 0.5)), ia = gx | 0, tx = gx - ia, ib = Math.min(GX - 1, ia + 1), q = k * 3;
+      for (let c = 0; c < 3; c++) {
+        const A = gain[(ja * GX + ia) * 3 + c], B = gain[(ja * GX + ib) * 3 + c], C = gain[(jb * GX + ia) * 3 + c], Dd = gain[(jb * GX + ib) * 3 + c];
+        IMG[q + c] *= (A + (B - A) * tx) * (1 - ty) + (C + (Dd - C) * tx) * ty;
+      }
     }
   }
 }

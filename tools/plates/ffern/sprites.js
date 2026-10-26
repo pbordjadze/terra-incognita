@@ -281,6 +281,33 @@ const Sprites = (() => {
       <g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.4 0.3)"><path d="${d}"/><path d="${veins}" stroke-width="0.28" opacity="0.8"/><path d="M0.4 -4L0 0" stroke-width="0.7"/></g></g>`;
   }
 
+
+  // ---------- a great blue heron, standing in the shallows, facing west ----------
+  // Local frame: its feet at the origin; about x -14..16, y -46..4.
+  function heron() {
+    const body = `M-6 -17C-4 -23 5.6 -25 10 -20.4C12.2 -18.2 13.6 -14.8 11.6 -12.4C7 -11 -1.4 -12 -6 -17Z`;
+    const wing = `M-3 -19.6C1 -22.6 7 -22.4 10.4 -19C11.6 -17.4 12 -15.2 11 -13.6C6.6 -14.6 1.4 -16.4 -3 -19.6Z`;
+    const tail = `M10.6 -19.4L15.8 -16.2L11.6 -14.6Z`;
+    const neck = `M-4.6 -19C-8.6 -23.4 -2.6 -29.8 -5.2 -34.2C-6.8 -37 -6.2 -40 -3.2 -41.4`;
+    const head = `M-5.6 -41.8C-5.6 -43.6 -2.4 -44.6 -0.6 -43.2C0.6 -42.2 0.2 -40.6 -1.4 -40.2C-3 -39.8 -5.6 -40.2 -5.6 -41.8Z`;
+    const bill = `M-5.4 -42.4L-13.4 -40.8L-5.2 -40.8Z`;
+    const plume = `M-2.6 -43.6C0 -44.8 3 -45 5.8 -44.2`;
+    const legs = `M1 -12.2L0.4 -6.6L0.8 0M3.4 -12.4L3.8 -6.6L3.2 0`;
+    const colour = `<g filter="url(#gouache-pt)"><path d="${body}" fill="#8597a3"/><path d="${wing}" fill="#6b7f8c"/><path d="${tail}" fill="#5f707c"/>
+      <path d="M0.4 -13.4C1.6 -14.6 3.4 -14.6 4.4 -13.2L3.8 -11.8L1 -11.6Z" fill="#9a5a3c"/>
+      <path d="${neck}" stroke="#c9cfcb" stroke-width="2.7" fill="none" stroke-linecap="round"/><path d="M-6.4 -36C-7 -31 -4 -27 -5.6 -22" stroke="#7d8d96" stroke-width="0.7" fill="none"/>
+      <path d="${head}" fill="#f2efe6"/><path d="M-4.8 -43.2C-3 -44 -1 -44 0.2 -43C-1.6 -42.6 -3.4 -42.6 -4.8 -43.2Z" fill="#2e2a20"/><path d="${bill}" fill="#d9a441"/>
+      <path d="${legs}" stroke="#6b5a40" stroke-width="0.75" fill="none"/></g>
+      <circle cx="-3.6" cy="-41.6" r="0.45" fill="#2e2a20"/>`;
+    const ink = `<g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#inkline-pt)" transform="translate(0.35 0.3)">
+      <path d="${body}"/><path d="${wing}" stroke-width="0.3"/><path d="${head}" stroke-width="0.3"/><path d="${bill}" stroke-width="0.3"/><path d="${plume}" stroke-width="0.45"/>
+      <path d="M-5.9 -20.6C-9.9 -24.8 -3.9 -30.4 -6.5 -34.6C-8 -37.2 -7.6 -39.8 -5.4 -41M-3.4 -18.2C-7.2 -22.6 -1.2 -29.2 -3.8 -33.6C-5.2 -36 -4.8 -38.8 -2.4 -40.4" stroke-width="0.32"/>
+      <path d="M2.6 -20.4L7.8 -17.4M3.4 -21.4L9 -18.8" stroke-width="0.22"/></g>`;
+    const water = `<g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linecap="round" filter="url(#inkline-pt)" opacity="0.8">
+      <path d="M-6 1.2q3 -1.6 6 0t6 0M-11 3.6q2.6 -1.3 5.2 0M7 3.4q2.6 -1.3 5.2 0"/></g>`;
+    return `<g filter="url(#cutout-pt)">${colour}${ink}</g>${water}`;
+  }
+
   // ---------- stamps: small plants and buildings, a spot-colour block and its key line ----------
   // Each kind returns [colour, ink] in points, its origin at the foot; put() places one.
   const STAMP = {
@@ -326,7 +353,7 @@ const Sprites = (() => {
         d += i === 0 ? `M${f2(p[0])} ${f2(p[1])}` : `Q${f2(q0x)} ${f2(q0y)} ${f2(p[0])} ${f2(p[1])}`;
         var q0x = q[0], q0y = q[1];
       }
-      return [`<path d="${d}Z" fill="${o.fill || C.sageDeep}"/>`, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="0.32" stroke-dasharray="${f2(r * 2.2)} ${f2(r * 0.9)}"/><circle r="0.45" fill="${C.ink}"/>`];
+      return [`<path d="${d}Z" fill="${o.fill || C.sageDeep}"/>`, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="0.26" stroke-opacity="0.75" stroke-dasharray="${f2(r * 2.2)} ${f2(r * 0.9)}"/><circle r="0.4" fill="${C.ink}" opacity="0.7"/>`];
     },
     // a town: three gabled houses and a spire, in cut card
     town: (o) => {
@@ -351,6 +378,6 @@ const Sprites = (() => {
   // Many stamps printed together: colours with the riso grain, then the key lines off register.
   function stamps(list) { return PA.stamp(list.map(l => l[0]).join(''), list.map(l => l[1]).join('')); }
 
-  return { ptDefs, place, cubicPts, ptsD, leafD, serpent, ship, geese, buckeyeSprig, cardinal, mapleLeaf, oakLeaf, STAMP, put, stamps };
+  return { ptDefs, place, cubicPts, ptsD, leafD, serpent, ship, geese, buckeyeSprig, cardinal, heron, mapleLeaf, oakLeaf, STAMP, put, stamps };
 })();
 window.Sprites = Sprites;

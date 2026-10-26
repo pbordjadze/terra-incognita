@@ -48,17 +48,20 @@ const SPRITES = {
   ],
   america: [
     { name: 'geese', depth: 0.03, at: [1040, 1420], s: 2.5, box: [-24, -46, 50, 20], motion: { kind: 'bob', amp: [-5, 4], period: 7.5, phase: 0.1 } },
-    { name: 'serpent', depth: 0.02, at: [1222, 2068], s: 1.45, center: [224, 214], box: [110, 150, 340, 276], motion: { kind: 'bob', amp: [0, 4], period: 8, phase: 0.6 } },
+    { name: 'serpent', depth: 0.02, at: [1168, 2070], s: 1.45, center: [224, 214], box: [110, 150, 340, 276], motion: { kind: 'bob', amp: [0, 4], period: 8, phase: 0.6 } },
   ],
   shortnorth: [
     { name: 'maple', depth: 0.12, at: [1235, 905], s: 3.6, rot: 28, box: [-26, -48, 30, 10], motion: { kind: 'sway', angle: 3, period: 8.5, phase: 0, anchor: [1235, 905] } },
-    { name: 'oak', depth: 0.1, at: [370, 1380], s: 3.4, rot: -38, box: [-34, -42, 26, 14], motion: { kind: 'sway', angle: -2.6, period: 7, phase: 0.4, anchor: [370, 1380] } },
+    { name: 'oak', depth: 0.1, at: [372, 1105], s: 3.4, rot: -38, box: [-34, -42, 26, 14], motion: { kind: 'sway', angle: -2.6, period: 7, phase: 0.4, anchor: [372, 1105] } },
+  ],
+  columbus: [
+    { name: 'heron', depth: 0.02, at: [557, 1650], s: 2.6, box: [-16, -48, 18, 6], motion: { kind: 'bob', amp: [0, -2.5], period: 7.5, phase: 0.15 } },
   ],
   ohio: [
-    { name: 'cardinal', depth: 0.02, at: [452, 2374], s: 3.3, box: [-20, -22, 16, 5], motion: { kind: 'bob', amp: [0, -3], period: 5.5, phase: 0.3 } },
+    { name: 'cardinal', depth: 0.02, at: [535, 2364], s: 3.3, box: [-20, -22, 16, 5], motion: { kind: 'bob', amp: [0, -3], period: 5.5, phase: 0.3 } },
   ],
 };
-const OHIO_SPRIG = { at: [372, 2450], s: 4 };
+const OHIO_SPRIG = { at: [455, 2440], s: 4 };
 function armFrame() {
   const a = NOW_DEG * Math.PI / 180, pts = [];
   for (const r of [RING.inner - 22, RING.outer + 22]) for (const da of [-0.05, 0.05]) pts.push([CX + r * Math.sin(a + da), CY - r * Math.cos(a + da)]);
@@ -112,6 +115,14 @@ function pieceSet(features, proj, paperOf, opts = {}) {
   return [...groups].map(([key, ds]) => { const [paper, s, cell] = key.split(':'); return { paper, small: !!s, cell, d: ds.join('') }; });
 }
 const allD = pieces => pieces.map(p => p.d).join('');
+// Where two countries of different papers meet: the line the seam is torn along.
+function paperSeams(topo, path) {
+  const paperOfCountry = f => { const [lon, lat] = d3.geoCentroid(f); return countryPaper(f, lon, lat); };
+  const feats = new Map(topojson.feature(topo, topo.objects.countries).features.map(f => [f.id + f.properties.name, f]));
+  const papers = new Map([...feats].map(([k, f]) => [k, paperOfCountry(f)]));
+  const key = g => g.id + g.properties.name;
+  return path(topojson.mesh(topo, topo.objects.countries, (a, b) => a !== b && papers.get(key(a)) !== papers.get(key(b))));
+}
 // At street scale d3's spherical clipping merges vertices closer than its epsilon (a millionth of a
 // radian, several metres here), which folds houses into triangles. Near the lens centre nothing needs
 // clipping, so this path projects each vertex straight through and joins them.
@@ -171,7 +182,7 @@ async function worldGround(L, proj, rand) {
   out.push(PA.pencil(d3.geoPath(proj)(d3.geoGraticule().step([30, 30])()), { dx: 0, dy: 0, width: 0.35, opacity: 0.32 }));
   out.push(PA.pencil(allD(pieces), { width: 0.4, opacity: 0.4 }));
   out.push(`<clipPath id="globeClip"><path d="${sphere}"/></clipPath>`);
-  out.push(PA.torn(pieces, 'globeClip'));
+  out.push(`<g clip-path="url(#globeClip)">${PA.tornBase(pieces)}${PA.seam(paperSeams(topo, path))}</g>`);
   out.push(PA.torn([{ d: ohioD, paper: 'sage', small: true }]));
   // the hunter's moon over the world
   out.push(moon(CX, 975, 46));
@@ -282,7 +293,8 @@ async function americaGround(L, proj, rand) {
   out.push(`<clipPath id="noLakes"><path clip-rule="evenodd" d="M-10 -10H${W + 10}V${H + 10}H-10Z${lakesD}"/></clipPath>`);
   out.push(PA.wash(`M0 0H${W}V${H}H0Z`, landD, { lakes: lakesD }));
   out.push(PA.pencil(landD));
-  out.push(PA.torn(pieces));
+  out.push(PA.tornBase(pieces));
+  out.push(PA.seam(paperSeams(topo, path)));
   // the ranges: a second, darker paper torn along them and laid over the land
   out.push(`<g opacity="0.62">${PA.torn([{ d: path({ type: 'FeatureCollection', features: ranges }), paper: 'kraftDark', clip: 'noLakes' }])}</g>`);
   // borders in pencil, faint
@@ -334,7 +346,7 @@ async function ohioGround(L, proj, rand) {
   out.push(`<clipPath id="noLakes"><path clip-rule="evenodd" d="M-10 -10H${W + 10}V${H + 10}H-10Z${lakesD}"/></clipPath>`);
   out.push(PA.wash(lakesD, null, { shore: lakesD }));
   out.push(PA.pencil(landD));
-  out.push(PA.torn(pieces));
+  out.push(PA.tornBase(pieces));
   const ranges = mountains.features.filter(f => /Appalachian/.test(f.properties.name)).map(rewound);
   out.push(`<g opacity="0.62">${PA.torn([{ d: path({ type: 'FeatureCollection', features: ranges }), paper: 'kraftDark', clip: 'noLakes' }])}</g>`);
   out.push(PA.pencil(path({ type: 'FeatureCollection', features: stO.features }), { dx: 0, dy: 0, width: 0.45, opacity: 0.35 }));
@@ -379,7 +391,7 @@ async function ohioLabels(L, proj) {
   const [ex, ey] = at(-81.75, 41.95);
   items.push([ex, ey, 'Lake Erie', { size: 11, italic: true, track: 0.12, fill: C.seaInk }]);
   const st = { size: 7.6, track: 0.3, fill: '#5a4f3a' };
-  for (const [lon, lat, n] of [[-85.3, 39.75, 'INDIANA'], [-83.55, 37.95, 'KENTUCKY'], [-81.3, 38.45, 'WEST VIRGINIA'], [-84.6, 43.1, 'MICHIGAN'], [-81.3, 42.9, 'ONTARIO']]) {
+  for (const [lon, lat, n] of [[-85.3, 39.75, 'INDIANA'], [-82.9, 37.7, 'KENTUCKY'], [-81.3, 38.45, 'WEST VIRGINIA'], [-84.6, 43.1, 'MICHIGAN'], [-81.3, 42.9, 'ONTARIO']]) {
     const [x, y] = at(lon, lat); items.push([x, y, n, st]);
   }
   return PA.letterpress(items);
@@ -420,7 +432,7 @@ async function columbusGround(L, proj, rand) {
   // the streams, one stroke each
   const named = streams.features.filter(f => RIVERS.test(f.properties.name)), other = streams.features.filter(f => !RIVERS.test(f.properties.name));
   out.push(`<g style="mix-blend-mode:multiply" opacity="0.85" filter="url(#brush)" fill="none" stroke="${C.seaA}" stroke-linecap="round" stroke-linejoin="round">
-      <path d="${path({ type: 'FeatureCollection', features: other })}" stroke-width="${f2(0.35 * U)}" opacity="0.55"/><path d="${path({ type: 'FeatureCollection', features: named })}" stroke-width="${f2(0.9 * U)}"/></g>`);
+      <path d="${path({ type: 'FeatureCollection', features: other })}" stroke-width="${f2(0.3 * U)}" opacity="0.38"/><path d="${path({ type: 'FeatureCollection', features: named })}" stroke-width="${f2(0.9 * U)}"/></g>`);
   // the interstates, and the ring among them, stitched in rust thread
   const iD = path(R('interstate'));
   out.push(`<g fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -515,14 +527,38 @@ async function shortnorthGround(L, proj, rand) {
     byFill.get(fill).push(d);
   });
   out.push(`<g filter="url(#cards)">${[...byFill].map(([fill, ds]) => `<path d="${ds.join('')}" fill="${fill}"/>`).join('')}</g>`);
+  // the arches over High Street, a line of lamps strung across the road every eighty metres or so
+  {
+    const high = roads.features.filter(f => f.properties.name === 'North High Street' && f.properties.class === 'primary');
+    const pts = [];
+    for (const f of high) for (const line of (f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates)) for (const c of line) if (c[1] > 39.9766 && c[1] < 39.9893) pts.push(c);
+    pts.sort((a, b) => a[1] - b[1]);
+    let arches = '', lamps = '', last = null;
+    for (let i = 1; i < pts.length; i++) {
+      const a = proj(pts[i - 1]), b = proj(pts[i]);
+      const seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (!seg) continue;
+      const tx = (b[0] - a[0]) / seg, ty = (b[1] - a[1]) / seg, nx = -ty, ny = tx;
+      for (let t = 0; t <= seg; t += 4) {
+        const x = a[0] + tx * t, y = a[1] + ty * t;
+        if (last && Math.hypot(x - last[0], y - last[1]) < 86 * m) continue;
+        last = [x, y];
+        const hw = 17 * m;
+        arches += `M${f1(x - nx * hw)} ${f1(y - ny * hw)}L${f1(x + nx * hw)} ${f1(y + ny * hw)}`;
+        for (let k = -3; k <= 3; k++) lamps += `<circle cx="${f1(x + nx * hw * k / 3.4)}" cy="${f1(y + ny * hw * k / 3.4)}" r="${f2(0.62 * U)}"/>`;
+      }
+    }
+    out.push(`<g style="mix-blend-mode:multiply" filter="url(#inkline)"><path d="${arches}" stroke="${C.rustDeep}" stroke-width="${f2(0.95 * U)}" fill="none" stroke-linecap="round"/></g>
+      <g fill="#f3c974" stroke="${C.rustDeep}" stroke-width="${f2(0.12 * U)}">${lamps}</g>`);
+  }
   // the street trees, stamped in their October colours
-  const tcols = [C.ochre, C.rust, '#b98a3a', C.haw, C.sageDeep, '#c9a24e', C.ochre, '#9a6a2c'];
+  const tcols = [C.ochre, C.rust, '#c9a24e', '#d4ae5a', C.sage, '#c08a3e', C.ochre, '#b98a3a', '#d9b968', C.haw];
   const list = [];
   const placed = [];
   trees.features.forEach((f, i) => {
     const xy = proj(f.geometry.coordinates);
     if (!xy || xy[0] < -30 || xy[0] > W + 30 || xy[1] < -30 || xy[1] > H + 30) return;
-    if (placed.some(p => Math.abs(p[0] - xy[0]) < 13 && Math.abs(p[1] - xy[1]) < 13)) return;
+    if (placed.some(p => Math.abs(p[0] - xy[0]) < 15 && Math.abs(p[1] - xy[1]) < 15)) return;
     placed.push(xy);
     list.push(Sprites.put('crown', xy[0], xy[1], U * 0.95, { r: 2.5 + rand() * 1.1, fill: tcols[Math.floor(rand() * tcols.length)], ph: rand() * 6 }));
   });
@@ -535,7 +571,7 @@ function shortnorthLabels(L, proj) {
   const put = (lon, lat, t, o) => { const [x, y] = at(lon, lat); items.push([x, y, t, o]); };
   put(-83.00445, 39.9905, 'HIGH STREET', { size: 9, track: 0.34, rotate: -84 });
   put(-83.0085, 39.9862, 'VICTORIAN VILLAGE', { size: 7.6, track: 0.3, fill: '#4a3c28' });
-  put(-83.0005, 39.9795, 'ITALIAN VILLAGE', { size: 7.6, track: 0.3, fill: '#4a3c28' });
+  put(-83.0012, 39.9800, 'ITALIAN VILLAGE', { size: 7.6, track: 0.3, fill: '#4a3c28' });
   put(-83.0098, 39.9772, 'Goodale Park', { size: 9, italic: true, track: 0.06, fill: '#33402a' });
   return PA.letterpress(items);
 }
@@ -548,11 +584,18 @@ async function draw(level, layer, magnify, mx, my) {
   let body = '';
   const sp = (SPRITES[L.id] || []).find(s => s.name === layer);
   if (layer === 'ground') body = await GROUNDS[L.id](L, proj, rand);
-  else if (layer === 'labels') body = PA.defs() + await LABELS[L.id](L, proj);
+  // a pass plate goes without names: they would only swell as the camera dives through
+  else if (layer === 'labels') body = magnify !== 1 ? '' : PA.defs() + await LABELS[L.id](L, proj);
   else if (sp) body = await SPRITE_ART[`${L.id}/${sp.name}`](sp);
   else throw new Error('no layer ' + layer);
   // a pass plate: the level magnified about (mx, my), drawn here so the filters only work where it shows
-  if (magnify !== 1) body = `<g transform="translate(${f2(W / 2 - mx * magnify)} ${f2(H / 2 - my * magnify)}) scale(${magnify})">${body}</g>`;
+  // (the definitions stay outside the magnifying group: a filter's feImage would otherwise draw its
+  // noise through that transform twice)
+  if (magnify !== 1) {
+    const defs = [];
+    body = body.replace(/<defs>[\s\S]*?<\/defs>/g, m => { defs.push(m); return ''; });
+    body = defs.join('') + `<g transform="translate(${f2(W / 2 - mx * magnify)} ${f2(H / 2 - my * magnify)}) scale(${magnify})">${body}</g>`;
+  }
   document.body.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${body}</svg>`;
 }
 
@@ -566,6 +609,7 @@ const SPRITE_ART = {
   'america/serpent': sp => Sprites.ptDefs() + Sprites.place(Sprites.serpent('a'), sp.at[0], sp.at[1], sp.s, ...sp.center),
   'shortnorth/maple': sp => Sprites.ptDefs() + `<g transform="translate(${sp.at[0]} ${sp.at[1]}) rotate(${sp.rot}) scale(${sp.s})">${Sprites.mapleLeaf()}</g>`,
   'shortnorth/oak': sp => Sprites.ptDefs() + `<g transform="translate(${sp.at[0]} ${sp.at[1]}) rotate(${sp.rot}) scale(${sp.s})">${Sprites.oakLeaf()}</g>`,
+  'columbus/heron': sp => Sprites.ptDefs() + Sprites.place(Sprites.heron(), sp.at[0], sp.at[1], sp.s, 0, 0),
   'ohio/cardinal': sp => Sprites.ptDefs() + Sprites.place(Sprites.cardinal(), sp.at[0], sp.at[1], sp.s, 0, 0),
 };
 

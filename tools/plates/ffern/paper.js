@@ -36,12 +36,18 @@ const PA = (() => {
   }
   const regionAttr = r => `x="${f1(r[0])}" y="${f1(r[1])}" width="${f1(r[2])}" height="${f1(r[3])}" filterUnits="userSpaceOnUse"`;
   const R = () => regionAttr(window_());
-  // The bounding box of an SVG path made of M/L/Z commands with absolute coordinates.
+  // The bounding box of an SVG path with absolute commands (M, L, H, V, Q, C, Z).
   function pathBox(d) {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    const re = /(-?\d+(?:\.\d+)?(?:e-?\d+)?)[ ,](-?\d+(?:\.\d+)?(?:e-?\d+)?)/g;
-    let m;
-    while ((m = re.exec(d))) { const x = +m[1], y = +m[2]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, cmd = 'M', i = 0;
+    const tok = d.match(/[MLHVQCZmlhvqcz]|-?\d*\.?\d+(?:e-?\d+)?/g) || [];
+    const add = (x, y) => { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; };
+    let cx = 0, cy = 0;
+    while (i < tok.length) {
+      if (/[A-Za-z]/.test(tok[i])) { cmd = tok[i++]; continue; }
+      if (cmd === 'H') { cx = +tok[i++]; add(cx, cy); }
+      else if (cmd === 'V') { cy = +tok[i++]; add(cx, cy); }
+      else { cx = +tok[i++]; cy = +tok[i++]; add(cx, cy); }
+    }
     return [x0, y0, x1 - x0, y1 - y0];
   }
   function intersect(a, b) {
@@ -57,51 +63,6 @@ const PA = (() => {
   const f1 = v => Math.round(v * 10) / 10, f2 = v => Math.round(v * 100) / 100;
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-  // ---------- noise tiles ----------
-  // The filters read their noise from three small tiles painted once (periodic value noise, three
-  // independent channels each) instead of computing turbulence across the plate: an image is far
-  // cheaper to sample, and when the exporter magnifies a plate the tiles simply magnify with it.
-  const TILES = { lo: { size: 512, cell: 64, oct: 3 }, mid: { size: 256, cell: 16, oct: 3 }, hi: { size: 128, cell: 4, oct: 2 } };
-  let tileDefsCache = null;
-  function tileDefs() {
-    if (tileDefsCache) return tileDefsCache;
-    let out = '';
-    for (const [name, t] of Object.entries(TILES)) {
-      const r = rng(name.length * 977 + t.size), cv = document.createElement('canvas');
-      cv.width = cv.height = t.size;
-      const ctx = cv.getContext('2d'), img = ctx.createImageData(t.size, t.size);
-      for (let ch = 0; ch < 3; ch++) {
-        const layers = [];
-        for (let o = 0; o < t.oct; o++) {
-          const per = Math.round(t.size / t.cell * 2 ** o), val = new Float32Array(per * per);
-          for (let i = 0; i < val.length; i++) val[i] = r();
-          layers.push({ per, val, cell: t.cell / 2 ** o, amp: 0.5 ** o });
-        }
-        const sm = v => v * v * (3 - 2 * v);
-        for (let y = 0; y < t.size; y++) for (let x = 0; x < t.size; x++) {
-          let v = 0, tot = 0;
-          for (const L of layers) {
-            const fx = x / L.cell, fy = y / L.cell, xi = Math.floor(fx), yi = Math.floor(fy), u = sm(fx - xi), w = sm(fy - yi);
-            const g = (a, b) => L.val[((b % L.per + L.per) % L.per) * L.per + ((a % L.per + L.per) % L.per)];
-            const a00 = g(xi, yi), a10 = g(xi + 1, yi), a01 = g(xi, yi + 1), a11 = g(xi + 1, yi + 1);
-            v += L.amp * (a00 + (a10 - a00) * u + (a01 - a00) * w + (a00 - a10 - a01 + a11) * u * w); tot += L.amp;
-          }
-          img.data[(y * t.size + x) * 4 + ch] = Math.max(0, Math.min(255, 128 + (v / tot - 0.5) * 1.35 * 255));
-        }
-      }
-      for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
-      ctx.putImageData(img, 0, 0);
-      out += `<pattern id="pz-${name}" patternUnits="userSpaceOnUse" width="${t.size}" height="${t.size}"><image width="${t.size}" height="${t.size}" href="${cv.toDataURL()}"/></pattern>`;
-    }
-    return tileDefsCache = out;
-  }
-  // Rectangles filled with the tiles, over what the view can show; a filter reads one as its noise.
-  function noiseRects() {
-    const r = window_();
-    return Object.keys(TILES).map(n => `<rect id="nzr-${n}" x="${f1(r[0])}" y="${f1(r[1])}" width="${f1(r[2])}" height="${f1(r[3])}" fill="url(#pz-${n})"/>`).join('');
-  }
-  const nz = (name, result) => `<feImage href="#nzr-${name}" result="${result}"/>`;
-
   // ---------- filters ----------
   // A torn piece: the narrowest inlets closed (no one tears a fjord), a coarse warp for the tear, fine
   // fuzz for its fibres, the white core showing past the coloured face, the paper's own mottle and
@@ -110,11 +71,11 @@ const PA = (() => {
     const s = o.seed, k = o.k || 1;
     const close = (o.close ?? 1.1) * U * k, warp = (o.warp ?? 4.2) * U * k, fuzz = (o.fuzz ?? 1.3) * U * k, rim = (o.rim ?? 0.8) * U * k;
     return `<filter id="${id}" ${o.region || 'x="-3%" y="-3%" width="106%" height="106%"'} color-interpolation-filters="sRGB">
-    ${nz('lo', 'warp')}
+    <feTurbulence type="fractalNoise" baseFrequency="${f2(0.05 / U / k * 1000) / 1000}" numOctaves="2" seed="${s}" result="warp"/>
     <feGaussianBlur in="SourceGraphic" stdDeviation="${f2(close)}" result="cl1"/>
     <feComponentTransfer in="cl1" result="cl2"><feFuncA type="linear" slope="8" intercept="-3.6"/></feComponentTransfer>
     <feDisplacementMap in="cl2" in2="warp" scale="${f2(warp)}" xChannelSelector="R" yChannelSelector="G" result="shape"/>
-    ${nz('hi', 'fuzzN')}
+    <feTurbulence type="fractalNoise" baseFrequency="${f2(1.2 / U / k * 100) / 100}" numOctaves="1" seed="${s + 1}" result="fuzzN"/>
     <feDisplacementMap in="shape" in2="fuzzN" scale="${f2(fuzz)}" xChannelSelector="R" yChannelSelector="G" result="face"/>
     <feGaussianBlur in="shape" stdDeviation="${f2(rim * 1.2)}" result="fat0"/>
     <feComponentTransfer in="fat0" result="fat"><feFuncA type="linear" slope="8" intercept="-1"/></feComponentTransfer>
@@ -126,8 +87,8 @@ const PA = (() => {
     <feOffset in="sh0" dx="${f2(0.5 * U)}" dy="${f2(0.8 * U)}" result="sh1"/>
     <feFlood flood-color="#3a2d18" flood-opacity="${o.shadow || 0.28}"/>
     <feComposite in2="sh1" operator="in" result="shadow"/>
-    ${nz('lo', 'mot')}
-    ${nz('hi', 'grn')}
+    <feTurbulence type="fractalNoise" baseFrequency="${f2((o.mottleF || 0.055) / U * 1000) / 1000}" numOctaves="2" seed="${s + 4}" result="mot"/>
+    <feTurbulence type="fractalNoise" baseFrequency="${o.grainF || '0.24 0.12'}" numOctaves="1" seed="${s + 5}" result="grn"/>
     <feComposite in="mot" in2="grn" operator="arithmetic" k1="0" k2="${o.mottle || 0.55}" k3="${o.grain || 0.45}" k4="0" result="tx"/>
     <feColorMatrix in="tx" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  ${o.texK || -0.9} 0 0 0 ${o.texB || 0.5}" result="txA"/>
     <feFlood flood-color="${o.texColor || '#2e2210'}"/>
@@ -144,10 +105,10 @@ const PA = (() => {
 
   // The papers: a fill and how its stock looks.
   const PAPERS = {
-    kraft: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43 } },
+    kraft: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.55, mottle: 0.3, mottleF: 0.08, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43 } },
     kraftLight: { fill: C.kraftLight, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43 } },
-    city: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43, close: 3.4, warp: 3, rim: 0.7 } },
-    sage: { fill: C.sage, f: { texColor: '#2c3418', mottle: 0.5, grain: 0.36, texK: -0.8, texB: 0.45 } },
+    city: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.55, mottle: 0.3, mottleF: 0.08, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43, close: 2.2, warp: 2.4, rim: 0.7 } },
+    sage: { fill: C.sage, f: { texColor: '#2c3418', mottle: 0.32, grain: 0.48, texK: -0.6, texB: 0.34, mottleF: 0.08 } },
     sageLight: { fill: C.sageLight, f: { texColor: '#2c3418', mottle: 0.66, grain: 0.32, texK: -0.8, texB: 0.45 } },
     washi: { fill: C.washi, f: { opacity: 0.9, texColor: '#4a4a40', mottle: 0.5, grain: 0.5, texK: -0.7, texB: 0.36, rim: 1.0, warp: 3.2, close: 0.6 } },
     ochre: { fill: C.ochre, f: { texColor: '#3a2a08', mottle: 0.7, grain: 0.35 } },
@@ -157,20 +118,25 @@ const PA = (() => {
   };
 
   function defs(extra = '') {
-    return `<defs>${tileDefs()}${noiseRects()}
+    return `<defs>
+  <!-- a seam's tear: its edge ragged in the paper's fibres -->
+  <filter id="seamTear" ${R()}>
+    <feTurbulence type="fractalNoise" baseFrequency="${f2(0.6 / U * 100) / 100}" numOctaves="2" seed="44" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(1.8 * U)}" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
   <!-- where the pigment gathered at the wash's edge, softening into the open water -->
   <filter id="soften" ${R()}><feGaussianBlur stdDeviation="${f2(1.6 * U)}"/></filter>
 
   <!-- a river or a lake's thread: the same pigment, laid with one stroke of the brush -->
   <filter id="brush" ${R()} color-interpolation-filters="sRGB">
-    ${nz('mid', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="27" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(1.6 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
     <feGaussianBlur in="d" stdDeviation="${f2(0.5 * U)}" result="b"/>
     <feComposite in="d" in2="b" operator="arithmetic" k1="0" k2="1.7" k3="-0.7" k4="0"/>
   </filter>
 
   <filter id="pencil" ${R()}>
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.31" numOctaves="1" seed="31" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(1.1 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.8 0 0 0 -0.45" result="skip"/>
     <feComposite in="d" in2="skip" operator="in"/>
@@ -178,9 +144,9 @@ const PA = (() => {
 
   <!-- letterpress: the type bites a little ragged, the ink sits unevenly and squeezes darker at its edges -->
   <filter id="press" ${R()} color-interpolation-filters="sRGB">
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.41" numOctaves="2" seed="17" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.55 * U)}" xChannelSelector="R" yChannelSelector="G" result="rough"/>
-    ${nz('mid', 'inkN')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.33" numOctaves="2" seed="19" result="inkN"/>
     <feColorMatrix in="inkN" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.1 0 0 0 1.5" result="cover"/>
     <feComposite in="rough" in2="cover" operator="in" result="inked"/>
     <feMorphology in="rough" operator="erode" radius="${f2(0.32 * U)}" result="er"/>
@@ -203,11 +169,11 @@ const PA = (() => {
   </filter>
   <!-- gouache on paper: the pigment a little uneven, darker where the brush stopped -->
   <filter id="gouache" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.21" numOctaves="2" seed="23" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.7 * U)}" xChannelSelector="R" yChannelSelector="G" result="g"/>
     <feGaussianBlur in="g" stdDeviation="${f2(0.7 * U)}" result="gb"/>
     <feComposite in="g" in2="gb" operator="arithmetic" k1="0" k2="1.5" k3="-0.5" k4="0" result="edged"/>
-    ${nz('lo', 'm')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.031" numOctaves="3" seed="29" result="m"/>
     <feColorMatrix in="m" type="matrix" values="0 0 0 0 1  0 0 0 0 0.97  0 0 0 0 0.9  1.1 0 0 0 -0.5" result="mA"/>
     <feComposite in="mA" in2="g" operator="in" result="light"/>
     <feMerge result="painted"><feMergeNode in="edged"/><feMergeNode in="light"/></feMerge>
@@ -215,16 +181,16 @@ const PA = (() => {
   </filter>
   <!-- brush ink: a slightly wavering line that runs thin in places -->
   <filter id="inkline" ${R()}>
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.24" numOctaves="2" seed="37" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.8 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    ${nz('mid', 'w')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.086" numOctaves="2" seed="38" result="w"/>
     <feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 1.9" result="wA"/>
     <feComposite in="d" in2="wA" operator="in"/>
   </filter>
   <filter id="inklineS" x="-5%" y="-5%" width="110%" height="110%">
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.24" numOctaves="2" seed="37" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.8 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    ${nz('mid', 'w')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.086" numOctaves="2" seed="38" result="w"/>
     <feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 1.9" result="wA"/>
     <feComposite in="d" in2="wA" operator="in"/>
   </filter>
@@ -243,7 +209,7 @@ const PA = (() => {
   </filter>
   <!-- riso: a flat spot colour with the printer's grain in it -->
   <filter id="riso" ${R()} color-interpolation-filters="sRGB">
-    ${nz('hi', 'n')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="1" seed="41" result="n"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.3 0 0 0 1.5" result="nA"/>
     <feComposite in="SourceGraphic" in2="nA" operator="in"/>
   </filter>
@@ -251,7 +217,7 @@ const PA = (() => {
   <filter id="card" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="${f2(1.1 * U)}" result="b"/><feOffset in="b" dx="${f2(0.7 * U)}" dy="${f2(1.2 * U)}" result="o"/>
     <feFlood flood-color="#2e2210" flood-opacity="0.34"/><feComposite in2="o" operator="in" result="sh"/>
-    ${nz('lo', 'm')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="3" seed="61" result="m"/>
     <feColorMatrix in="m" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.27  0 0 0 0 0.15  0.5 0 0 0 -0.18" result="mA"/>
     <feComposite in="mA" in2="SourceAlpha" operator="in" result="mot"/>
     <feMerge><feMergeNode in="sh"/><feMergeNode in="SourceGraphic"/><feMergeNode in="mot"/></feMerge>
@@ -270,7 +236,7 @@ const PA = (() => {
   <filter id="cards" ${R()} color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="${f2(0.55 * U)}" result="b"/><feOffset in="b" dx="${f2(0.5 * U)}" dy="${f2(0.75 * U)}" result="o"/>
     <feFlood flood-color="#2e2210" flood-opacity="0.42"/><feComposite in2="o" operator="in" result="sh"/>
-    ${nz('mid', 'm')}
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="63" result="m"/>
     <feColorMatrix in="m" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.27  0 0 0 0 0.15  0.5 0 0 0 -0.2" result="mA"/>
     <feComposite in="mA" in2="SourceAlpha" operator="in" result="mot"/>
     <feMorphology in="SourceAlpha" operator="erode" radius="0.6" result="er"/>
@@ -319,7 +285,7 @@ const PA = (() => {
   function clouds() {
     if (cloudsCache) return cloudsCache;
     const n = fbm(11);
-    return cloudsCache = noiseImage((x, y) => { const v = n(x / 520, y / 520); return [115, 92, 52, Math.max(0, Math.min(255, (v - 0.47) * 190))]; });
+    return cloudsCache = noiseImage((x, y) => { const v = n(x / 520, y / 520); return [115, 92, 52, Math.max(0, Math.min(255, (v - 0.5) * 120))]; });
   }
   // A wash's pigment over the whole plate: two pigments running together, deeper where o.deep says,
   // paler where the water pooled and dried thin.
@@ -399,6 +365,33 @@ const PA = (() => {
     return clip ? `<g clip-path="url(#${clip})">${out}</g>` : out;
   }
 
+  // The base papers of a plate torn in one pass (one filter over the view, however many papers):
+  // the coasts get the white core and the shadow; where two papers meet inland, seam() draws the tear.
+  function tornBase(pieces, o = {}) {
+    const box = window_(), id = `tornBase${tornN++}`;
+    const byKey = new Map();
+    for (const p of pieces) {
+      if (!p.d) continue;
+      const key = p.paper + '|' + (p.clip || '');
+      if (!byKey.has(key)) byKey.set(key, []);
+      byKey.get(key).push(p.d);
+    }
+    let paths = '';
+    for (const [key, ds] of byKey) {
+      const [name, clip] = key.split('|');
+      paths += `<path d="${ds.join('')}" fill="${PAPERS[name].fill}"${clip ? ` clip-path="url(#${clip})"` : ''}/>`;
+    }
+    const f = { ...PAPERS.kraft.f, texColor: '#3a3020', mottle: 0.3, grain: 0.55, mottleF: 0.08, texK: -0.5, texB: 0.29, hiK: 0.75, hiB: -0.45, ...(o.f || {}) };
+    return `<defs>${tornFilter(id, { seed: 41, ...f, region: regionAttr(box) })}</defs><g filter="url(#${id})">${paths}</g>`;
+  }
+  // A tear inland, where one paper meets another: the white core showing along it, a hair of shadow.
+  function seam(d) {
+    if (!d) return '';
+    return `<g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#seamTear)">
+      <path d="${d}" stroke="#3a2d18" stroke-opacity="0.28" stroke-width="${f2(1.6 * U)}" transform="translate(${f2(0.45 * U)} ${f2(0.7 * U)})"/>
+      <path d="${d}" stroke="#fdfbf4" stroke-width="${f2(1.25 * U)}"/></g>`;
+  }
+
   function pencil(d, o = {}) {
     return `<path d="${d}" transform="translate(${f2((o.dx ?? -1.4) * U)} ${f2((o.dy ?? 1.1) * U)})" fill="none" stroke="${C.pencil}" stroke-width="${f2((o.width || 0.45) * U)}" opacity="${o.opacity || 0.5}" filter="url(#pencil)"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/>`;
   }
@@ -424,6 +417,6 @@ const PA = (() => {
       <g style="mix-blend-mode:multiply" filter="url(#inkline)" transform="translate(${f2(dx * U)} ${f2(dy * U)})">${ink}</g>`;
   }
 
-  return { W, H, U, C, PAPERS, VIEW, setView, rng, f1, f2, esc, defs, sheet, wash, torn, pencil, textEl, letterpress, stamp };
+  return { W, H, U, C, PAPERS, VIEW, setView, rng, f1, f2, esc, defs, sheet, wash, torn, tornBase, seam, pencil, textEl, letterpress, stamp };
 })();
 window.PA = PA;
