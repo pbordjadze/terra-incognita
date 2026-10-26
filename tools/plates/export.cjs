@@ -84,11 +84,13 @@ const server = http.createServer((req, res) => {
         if (motion.amp) motion.amp = motion.amp.map(v => v * item.magnify);
         if (motion.anchor) motion.anchor = mag(item, motion.anchor[0], motion.anchor[1]);
       }
-      await page.goto(`${base}?level=${level}&layer=${layer.name}`);
+      const magnify = item.magnify !== 1 ? `&magnify=${item.magnify}&cx=${item.cx}&cy=${item.cy}` : '';
+      await page.goto(`${base}?level=${level}&layer=${layer.name}${magnify}`);
       await page.waitForFunction(() => window.platesReady !== undefined, null, { timeout: 120000 });
       const ready = await page.evaluate(() => window.platesReady);
       if (ready !== true) throw new Error(`${id} ${layer.name}: ${ready}\n${errors.join('\n')}`);
-      if (item.magnify !== 1) {
+      // a page that paints the magnification itself (window.platesMagnifies) is left as it drew
+      if (item.magnify !== 1 && !(await page.evaluate(() => window.platesMagnifies === true))) {
         await page.evaluate(({ s, cx, cy, W, H }) => {
           const r = document.documentElement;
           r.style.transformOrigin = '0 0';
@@ -113,6 +115,12 @@ const server = http.createServer((req, res) => {
   }
   if (style && style.fonts) {
     fs.mkdirSync(path.join(out, 'fonts'), { recursive: true });
+    // the fonts' licences travel with them (the OFL asks it): OFL*.txt or LICENSE* beside a font
+    for (const dir of new Set(style.fonts.map(f => path.dirname(path.join(__dirname, look, f))))) {
+      for (const f of fs.readdirSync(dir).filter(f => /^(OFL|LICEN[CS]E)/i.test(f) && !/\.(ttf|otf)$/i.test(f))) {
+        fs.copyFileSync(path.join(dir, f), path.join(out, 'fonts', f));
+      }
+    }
     style.fonts = style.fonts.map(f => {
       const to = `fonts/${path.basename(f)}`;
       fs.copyFileSync(path.join(__dirname, look, f), path.join(out, to));

@@ -14,6 +14,9 @@
 'use strict';
 const DPR = 3, DW = Kit.W, DH = Kit.H, W = DW / DPR, H = DH / DPR, TAU = Math.PI * 2;
 let VIEW = { s: 1, cx: W / 2, cy: H / 2 };          // magnification about (cx, cy), in plate points
+// On a pass plate, a stroke thickens only as the square root of the magnification: the drawing seen
+// closer, not blown up (a geometric width, like a road's, still scales fully).
+const LWK = () => Math.pow(VIEW.s, -0.5);
 
 // ---------------------------------------------------------------- colour
 const INK = {
@@ -230,7 +233,7 @@ function chalk(g, pts, o = {}) {
   g.strokeStyle = color;
   for (let k = 0; k < passes; k++) {
     const q = wobble(base, amp * (k ? 1.35 : 1), wl * (k ? 0.8 : 1), rng() * 200);
-    g.globalAlpha = a * (k ? 0.5 : 1); g.lineWidth = w * (k ? 0.65 : 1);
+    g.globalAlpha = a * (k ? 0.5 : 1); g.lineWidth = w * (k ? 0.65 : 1) * LWK();
     strokePts(g, q, closed);
   }
   g.globalAlpha = 1;
@@ -257,7 +260,7 @@ function erodeWith(g, t, a = 1) {
 function wash(g, path, color, a, o = {}) {
   const t = layer();
   t.fillStyle = color; t.fill(path, 'evenodd');
-  put(t, tex('mottle'), 'destination-in');
+  if (o.mottle !== false) put(t, tex('mottle'), 'destination-in');
   put(g, t, 'source-over', a);
 }
 // Rubbed chalk: a soft white glow, a finger dragged through chalk, clipped to a shape.
@@ -285,6 +288,7 @@ function hatch(g, clip, o = {}) {
 // Ripple lines offset from an edge, on one side of it: the edge stroked wide, its middle erased.
 function offsetRing(path, d, lw, keepClip, eraseFill) {
   const g = layer();
+  lw *= LWK();
   g.strokeStyle = '#fff'; g.lineWidth = 2 * d + lw; g.stroke(path);
   g.globalCompositeOperation = 'destination-out'; g.lineWidth = Math.max(0.1, 2 * d - lw); g.stroke(path);
   if (eraseFill) g.fill(eraseFill, 'evenodd');
@@ -292,19 +296,19 @@ function offsetRing(path, d, lw, keepClip, eraseFill) {
   return g;
 }
 function plainLines(g, lines, w, a) {   // many thin lines at once, no wobble (a city's lanes)
-  g.save(); g.lineWidth = w; g.strokeStyle = INK.chalk; g.globalAlpha = a; g.beginPath();
+  g.save(); g.lineWidth = w * LWK(); g.strokeStyle = INK.chalk; g.globalAlpha = a; g.beginPath();
   for (const l of lines) { const p = l.pts; g.moveTo(p[0][0], p[0][1]); for (let i = 1; i < p.length; i++) g.lineTo(p[i][0], p[i][1]); }
   g.stroke(); g.restore();
 }
 function dotted(g, lines, o = {}) {
   const { gap = 2.8, w = 1, a = 0.35 } = o;
-  g.save(); g.setLineDash([0.1, gap]); g.lineWidth = w; g.strokeStyle = INK.chalk; g.globalAlpha = a;
+  g.save(); g.setLineDash([0.1, gap]); g.lineWidth = w * LWK(); g.strokeStyle = INK.chalk; g.globalAlpha = a;
   for (const l of lines) strokePts(g, wobble(resample(l.pts || l, 1.5, l.closed), 0.25, 14, srand() * 100), l.closed);
   g.restore();
 }
 function dashed(g, lines, o = {}) {
   const { dash = [3, 2.6], w = 0.7, a = 0.35 } = o;
-  g.save(); g.setLineDash(dash); g.lineWidth = w; g.strokeStyle = INK.chalk; g.globalAlpha = a;
+  g.save(); g.setLineDash(dash); g.lineWidth = w * LWK(); g.strokeStyle = INK.chalk; g.globalAlpha = a;
   for (const l of lines) strokePts(g, wobble(resample(l.pts || l, 1.5, false), 0.3, 14, srand() * 100), false);
   g.restore();
 }
@@ -312,7 +316,7 @@ function dashed(g, lines, o = {}) {
 function doubleLine(g, lines, outer, inner, o = {}) {
   const t = layer(), amp = o.amp ?? 0.3;
   const ws = lines.map(l => wobble(resample(l.pts || l, 1.5, false), amp, o.wl ?? 18, srand() * 100));
-  t.strokeStyle = INK.chalk; t.lineWidth = outer; for (const q of ws) strokePts(t, q, false);
+  t.strokeStyle = INK.chalk; t.lineWidth = inner + (outer - inner) * LWK(); for (const q of ws) strokePts(t, q, false);
   t.globalCompositeOperation = 'destination-out'; t.lineWidth = inner; for (const q of ws) strokePts(t, q, false);
   put(g, t, 'source-over', o.a ?? 0.9);
   return ws;
@@ -444,20 +448,39 @@ function curl(g, x, y, s, o = {}) {
   chalk(g, crest.concat(sp.slice(1)), { w: o.w ?? 0.6, a, amp: 0.08, passes: 1, step: 1 });
   if (o.dots) for (let i = 0; i < 3; i++) { g.save(); g.globalAlpha = a * 0.8; g.fillStyle = INK.chalk; g.beginPath(); g.arc(x - dir * s * (1.9 + i * 0.7), y + s * 0.15, 0.45, 0, TAU); g.fill(); g.restore(); }
 }
-// A rolling wave of the night sea: a long crest that rises, breaks and curls into a spiral, with a
-// line of dots riding the water below it.
+// A rolling wave of the night sea, after the film's: a swell that rises and curls over into a
+// spiral, its face washed pale, an echo line inside the curl, and white dots along the crest.
 function seaWave(g, x, y, len, o = {}) {
-  const a = o.a ?? 0.5, dir = o.dir ?? 1, hgt = len * 0.16, crest = [];
-  for (let i = 0; i <= 24; i++) {
-    const t = i / 24, rise = Math.pow(Math.sin(t * Math.PI * 0.62), 1.6);
-    crest.push([x - dir * len * (1 - t), y - hgt * rise]);
+  const a = o.a ?? 0.5, dir = o.dir ?? 1, hgt = len * 0.36, r = hgt * 0.5;
+  const cx = x, cy = y - hgt + r;                       // the curl's centre; its top is the crest
+  const crest = [];
+  for (let i = 0; i <= 30; i++) {                       // trough to crest: a long concave rise
+    const t = i / 30, e = t * t * (1.6 - 0.6 * t);
+    crest.push([x - dir * len * (1 - t), y - (hgt) * e]);
   }
-  const tip = crest[crest.length - 1], r = hgt * 0.95;
-  const sp = spiral(tip[0] + dir * r * 0.15, tip[1] + r * 0.9, r, 1.35, -Math.PI / 2, dir).slice(1);
-  chalk(g, crest.concat(sp), { w: o.w ?? 0.7, a, amp: 0.1, wl: 20, passes: 1, step: 1 });
-  chalk(g, crest.slice(4, 21).map(([px, py]) => [px - dir * 0.6, py + hgt * 0.35]), { w: 0.45, a: a * 0.5, amp: 0.1, passes: 1, step: 1 });
+  crest[crest.length - 1] = [cx, cy - r];
+  const curlPts = [];
+  for (let i = 1; i <= 60; i++) {                        // over the top, forward and down, winding in
+    const t = i / 60, ang = -Math.PI / 2 + dir * t * 1.7 * TAU, rad = r * (1 - t * 0.86);
+    curlPts.push([cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad]);
+  }
+  const line = crest.concat(curlPts);
+  const face = new Path2D(); face.moveTo(crest[0][0], crest[0][1]);
+  for (const p of crest) face.lineTo(p[0], p[1]);
+  for (const p of curlPts.slice(0, 26)) face.lineTo(p[0], p[1]);
+  face.lineTo(cx - dir * r * 0.2, y); face.closePath();
+  g.save();
+  g.globalCompositeOperation = 'destination-out'; g.fill(face); g.lineWidth = 2.4; strokePts(g, line, false);
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = a * 0.22; g.fillStyle = '#c9dbe6'; g.filter = blurPx(1.6); g.fill(face);
+  g.restore();
+  chalk(g, line, { w: o.w ?? 0.85, a, amp: 0.08, wl: 24, passes: 1, step: 0.8 });
+  const echo = crest.slice(14, 29).map(([px, py]) => [px + dir * 1.2, py + 2.3]);
+  const inner = []; for (let i = 0; i <= 30; i++) { const t = i / 30, ang = -Math.PI / 2 + 0.5 * dir + dir * t * 1.2 * TAU, rad = r * 0.68 * (1 - t * 0.7); inner.push([cx + Math.cos(ang) * rad, cy + Math.sin(ang) * rad]); }
+  chalk(g, echo, { w: 0.5, a: a * 0.6, amp: 0.08, passes: 1, step: 0.9 });
+  chalk(g, inner, { w: 0.45, a: a * 0.5, amp: 0.05, passes: 1, step: 0.8 });
   g.save(); g.fillStyle = INK.chalk;
-  for (let i = 0; i < 6; i++) { const t = (i + 0.5) / 6; g.globalAlpha = a * 0.75; g.beginPath(); g.arc(x - dir * len * (1 - t * 0.85), y + hgt * 0.55 + Math.sin(i * 1.7) * 0.3, 0.5, 0, TAU); g.fill(); }
+  for (let i = 6; i < 29; i += 3) { const [px, py] = crest[i]; g.globalAlpha = a * 0.8; g.beginPath(); g.arc(px - dir * 0.6, py - 1.7, 0.5, 0, TAU); g.fill(); }
+  for (let i = 0; i < 6; i++) { g.globalAlpha = a * 0.55; g.beginPath(); g.arc(x - dir * len * (1.14 - i * 0.065), y + 0.5, 0.45, 0, TAU); g.fill(); }
   g.restore();
 }
 // A tower in elevation, standing on (x, y): a shaft with window lines and its own top.

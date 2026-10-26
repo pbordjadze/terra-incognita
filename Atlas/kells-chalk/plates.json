@@ -1,0 +1,538 @@
+{
+ "name": "Chalk and Slate",
+ "plates": [
+  {
+   "id": "world",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "world/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "world/sheen.png",
+     "depth": 0,
+     "frame": [
+      699,
+      1653,
+      240,
+      240
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    },
+    {
+     "file": "world/ship.png",
+     "depth": 0.02,
+     "frame": [
+      1041,
+      1616,
+      90,
+      66
+     ],
+     "motion": {
+      "kind": "bob",
+      "amp": [
+       2,
+       3
+      ],
+      "period": 7.5,
+      "phase": 0.2
+     }
+    }
+   ],
+   "child": [
+    496.8,
+    1075.2,
+    644.4,
+    1394.6
+   ],
+   "caption": {
+    "eyebrow": "I · The World",
+    "title": "Orbis Terrarum",
+    "text": "The whole Earth, chalked on the abbey’s slate."
+   }
+  },
+  {
+   "id": "world-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "world-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "world-1/sheen.png",
+     "depth": 0,
+     "frame": [
+      514,
+      1468,
+      611,
+      611
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    },
+    {
+     "file": "world-1/ship.png",
+     "depth": 0.02,
+     "frame": [
+      1383,
+      1374,
+      230,
+      169
+     ],
+     "motion": {
+      "kind": "bob",
+      "amp": [
+       5.08391127441794,
+       7.625866911626911
+      ],
+      "period": 7.5,
+      "phase": 0.2
+     }
+    }
+   ],
+   "child": [
+    496.8,
+    1075.2,
+    644.4,
+    1394.5
+   ],
+   "caption": {
+    "eyebrow": "I · The World",
+    "title": "Orbis Terrarum",
+    "text": "The whole Earth, chalked on the abbey’s slate."
+   },
+   "pass": true
+  },
+  {
+   "id": "america",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "america/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "america/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "america/sheen.png",
+     "depth": 0,
+     "frame": [
+      684,
+      1638,
+      270,
+      270
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    475,
+    1027.8,
+    688.1,
+    1489.3
+   ],
+   "caption": {
+    "eyebrow": "II · North America",
+    "title": "The Inland Seas",
+    "text": "Five great lakes, and Ohio just below Erie."
+   }
+  },
+  {
+   "id": "america-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "america-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "america-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "america-1/sheen.png",
+     "depth": 0,
+     "frame": [
+      497,
+      1452,
+      644,
+      644
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    474.9,
+    1027.9,
+    688.1,
+    1489.1
+   ],
+   "caption": {
+    "eyebrow": "II · North America",
+    "title": "The Inland Seas",
+    "text": "Five great lakes, and Ohio just below Erie."
+   },
+   "pass": true
+  },
+  {
+   "id": "ohio",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "ohio/sheen.png",
+     "depth": 0,
+     "frame": [
+      762,
+      1716,
+      114,
+      114
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    612.9,
+    1326.5,
+    412.1,
+    892
+   ],
+   "caption": {
+    "eyebrow": "III · Ohio",
+    "title": "Between Two Waters",
+    "text": "Erie above, the Ohio below, Columbus at the heart."
+   }
+  },
+  {
+   "id": "ohio-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "ohio-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "ohio-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "ohio-1/sheen.png",
+     "depth": 0,
+     "frame": [
+      592,
+      1548,
+      454,
+      454
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    612.9,
+    1326.4,
+    412.1,
+    892.2
+   ],
+   "caption": {
+    "eyebrow": "III · Ohio",
+    "title": "Between Two Waters",
+    "text": "Erie above, the Ohio below, Columbus at the heart."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus/sheen.png",
+     "depth": 0,
+     "frame": [
+      790,
+      1730,
+      57,
+      79
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    553.2,
+    1197.3,
+    531.6,
+    1150.6
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The Walled City",
+    "text": "The outerbelt is its wall; two rivers meet downtown."
+   }
+  },
+  {
+   "id": "columbus-1",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-1/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-1/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus-1/sheen.png",
+     "depth": 0,
+     "frame": [
+      729,
+      1641,
+      177,
+      244
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    553.2,
+    1197.2,
+    531.6,
+    1150.6
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The Walled City",
+    "text": "The outerbelt is its wall; two rivers meet downtown."
+   },
+   "pass": true
+  },
+  {
+   "id": "columbus-2",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "columbus-2/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "columbus-2/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "columbus-2/sheen.png",
+     "depth": 0,
+     "frame": [
+      543,
+      1368,
+      542,
+      751
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 120,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.7
+     }
+    }
+   ],
+   "child": [
+    553.2,
+    1196.7,
+    531.6,
+    1151.5
+   ],
+   "caption": {
+    "eyebrow": "IV · Columbus",
+    "title": "The Walled City",
+    "text": "The outerbelt is its wall; two rivers meet downtown."
+   },
+   "pass": true
+  },
+  {
+   "id": "shortnorth",
+   "size": [
+    1638,
+    3545
+   ],
+   "layers": [
+    {
+     "file": "shortnorth/ground.jpg",
+     "depth": 0
+    },
+    {
+     "file": "shortnorth/labels.png",
+     "depth": 0.04
+    },
+    {
+     "file": "shortnorth/lamps.png",
+     "depth": 0,
+     "frame": [
+      626,
+      1268,
+      537,
+      1345
+     ],
+     "motion": {
+      "kind": "breathe",
+      "min": 0.45,
+      "max": 1,
+      "period": 6.5,
+      "phase": 0
+     }
+    },
+    {
+     "file": "shortnorth/sheen.png",
+     "depth": 0.04,
+     "frame": [
+      537,
+      2175,
+      90,
+      132
+     ],
+     "motion": {
+      "kind": "sheen",
+      "period": 8,
+      "width": 90,
+      "angle": 24,
+      "color": "#fff3d2",
+      "opacity": 0.75
+     }
+    }
+   ],
+   "child": null,
+   "caption": {
+    "eyebrow": "V · The Neighbourhood",
+    "title": "Short North",
+    "text": "Arches over High Street, brick rows, round trees."
+   }
+  }
+ ],
+ "style": {
+  "fonts": [
+   "fonts/IMFellEnglishSC.ttf",
+   "fonts/IMFellEnglish-Roman.ttf",
+   "fonts/IMFellEnglish-Italic.ttf"
+  ],
+  "eyebrow": {
+   "font": "IM_FELL_English_SC",
+   "size": 12.5,
+   "color": "#d0574a",
+   "tracking": 2.9,
+   "uppercase": true
+  },
+  "title": {
+   "font": "IM_FELL_English_Roman",
+   "size": 28,
+   "color": "#eceee8"
+  },
+  "text": {
+   "font": "IM_FELL_English_Italic",
+   "size": 17,
+   "color": "#eceee8c4"
+  },
+  "scrim": "#0b1015e8",
+  "accent": "#c94a3c"
+ }
+}

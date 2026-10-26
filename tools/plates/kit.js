@@ -36,9 +36,13 @@ const PLATE_W = 1638, PLATE_H = 3545;
 
 const Kit = {
   W: PLATE_W, H: PLATE_H,
+  // magnify is set for a pass plate: the level drawn magnified by that much about (cx, cy) of its own
+  // plate. By default the exporter does it with a CSS transform on the page, which keeps SVG sharp
+  // but blurs a canvas; a page that paints the magnification itself sets window.platesMagnifies.
   params() {
     const q = new URLSearchParams(location.search);
-    return { level: +(q.get('level') || 1), layer: q.get('layer') || 'all' };
+    return { level: +(q.get('level') || 1), layer: q.get('layer') || 'all',
+             magnify: +(q.get('magnify') || 1), cx: +(q.get('cx') || PLATE_W / 2), cy: +(q.get('cy') || PLATE_H / 2) };
   },
   async json(path) { return (await fetch(path)).json(); },
   // The lens every level draws through: one orthographic projection centred on where the film ends
