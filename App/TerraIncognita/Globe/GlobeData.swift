@@ -43,10 +43,11 @@ nonisolated struct GlobeData: Sendable {
     let countries: [Country]
     let seas: [Sea]
     let capitals: [Capital]
-    /// 1 + the index of the country under each pixel of the 4096 x 2048 map (0: none), row by row.
-    private let ids: [UInt8]
-    private let width: Int
-    private let height: Int
+    /// 1 + the index of the country under each pixel of the map (0: none), row by row: the tap's
+    /// lookup, and the shader's texture of it.
+    let ids: [UInt8]
+    let width: Int
+    let height: Int
 
     static let root = Bundle.main.bundleURL.appending(path: "Globe", directoryHint: .isDirectory)
 

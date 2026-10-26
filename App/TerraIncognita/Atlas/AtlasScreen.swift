@@ -44,8 +44,11 @@ struct AtlasScreen: View {
     @State private var veil = 1.0
     /// The look's name, shown for a moment after switching.
     @State private var banner: String?
-    /// The whole globe instead of the film.
+    /// The whole globe instead of the film; once made, it is kept (its maps decoded once).
     @State private var globe = AtlasScreen.startsOnGlobe
+    @State private var globeMade = AtlasScreen.startsOnGlobe
+    /// A switch between them under way (a second tap waits for it).
+    @State private var switching = false
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -60,13 +63,18 @@ struct AtlasScreen: View {
         ZStack(alignment: .bottom) {
             AtlasCanvasView(model: model)
                 .ignoresSafeArea()
+                .accessibilityHidden(globe)
             if let caption = model.caption {
                 CaptionView(caption: caption, style: model.style)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .id(caption.title)
+                    .accessibilityHidden(globe)
             }
-            if globe {
-                GlobeScreen()
+            if globeMade {
+                GlobeScreen(active: globe)
+                    .opacity(globe ? 1 : 0)
+                    .allowsHitTesting(globe)
+                    .accessibilityHidden(!globe)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: model.caption)
@@ -142,14 +150,20 @@ struct AtlasScreen: View {
         .background(Color("LaunchBackground"))
     }
 
-    /// Between the film and the globe, through the slate: the film holds still while the globe shows.
+    /// Between the film and the globe, through the slate: each holds still while the other shows.
     private func toggleGlobe() {
+        guard !switching else { return }
+        switching = true
         Task {
             withAnimation(.easeIn(duration: 0.22)) { veil = 1 }
             try? await Task.sleep(for: .milliseconds(240))
             globe.toggle()
+            globeMade = globeMade || globe
             model.canvas?.suspended = globe
+            // (the first time, the globe decodes its maps under the veil: let that frame pass first)
+            try? await Task.sleep(for: .milliseconds(60))
             withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
+            switching = false
         }
     }
 }

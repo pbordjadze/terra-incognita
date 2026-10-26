@@ -3,14 +3,19 @@ import SwiftUI
 import UIKit
 
 /// The whole globe, with a caption naming the country in the locator's red, or saying what to do.
+/// Kept once made: `active` false while the film shows instead.
 struct GlobeScreen: View {
+    let active: Bool
     @State private var country: GlobeData.Country?
 
-    init() { GlobeData.registerFonts() }
+    init(active: Bool) {
+        self.active = active
+        GlobeData.registerFonts()
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(country: $country)
+            GlobeCanvasView(active: active, country: $country)
                 .ignoresSafeArea()
             CaptionView(caption: caption, style: Self.style)
                 .id(caption.title)
@@ -51,6 +56,7 @@ struct GlobeScreen: View {
 }
 
 private struct GlobeCanvasView: UIViewRepresentable {
+    let active: Bool
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
@@ -62,5 +68,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ view: GlobeView, context: Context) {}
+    func updateUIView(_ view: GlobeView, context: Context) {
+        if view.suspended == active { view.suspended = !active }
+    }
 }

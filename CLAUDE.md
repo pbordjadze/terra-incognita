@@ -27,7 +27,9 @@ finished picture in the chosen look. This file is the map and the rules.
     the preview before CI.
   - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
     tapping a country (the locator's red, from the country map `ids.png`), the names (CATextLayers
-    placed each frame, nearest-first, none overlapping). `GlobeScreen`: its caption.
+    placed as the camera moves, in order of claim: oceans, seas, countries, capitals; none
+    overlapping, none past the globe's edge). `GlobeScreen`: its caption. Made the first time it is
+    opened and kept (its maps decoded once), paused while the film shows.
   - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.

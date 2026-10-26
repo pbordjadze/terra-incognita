@@ -115,12 +115,16 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float fine = (g.r * 255 - 128) / 8;
     float coarse = (g.g * 255 - 128) * 2;
     float d = abs(coarse) > 14 ? coarse : fine;
-    // (an unsigned distance sampled between texels never quite reaches 0 on its line)
-    float border = max(g.b * 255 / 8 - 0.45, 0.0);
+    float border = (g.b * 255 - 128) / 16;
     float hill = (t.r * 255 - 128) / 127;
     float height = t.g * 255 - 128;
-    float river = max(t.b * 255 / 16 - 0.45, 0.0);
-    float fwD = fwidth(d), fwCoarse = fwidth(coarse), fwBorder = fwidth(border), fwRiver = fwidth(river);
+    float river = (t.b * 255 - 128) / 16;
+    float fwD = fwidth(d), fwFine = fwidth(fine), fwBorder = fwidth(border), fwRiver = fwidth(river);
+    // a line's distance changes about a texel a texel; where its sign flips (far from any line) it
+    // jumps sixteen: no line there
+    float texels = (abs(dx.x) + abs(dy.x)) * 4096 + (abs(dx.y) + abs(dy.y)) * 2048;
+    float borderOn = fwBorder < 2.5 * texels && abs(border) < 7 ? 1.0 : 0.0;
+    float riverOn = fwRiver < 2.5 * texels && abs(river) < 7 ? 1.0 : 0.0;
     float landa = smoothstep(-0.5, 0.5, d / max(fwD, 1e-5));
     float k = clamp(zoom, 1.0, 8.0);
 
@@ -129,13 +133,15 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float3 sea = mix(OCEAN_SHALLOW, OCEAN_DEEP, depth);
     float mott = vnoise(float2(uv.x * 90, uv.y * 45)) * 0.6 + vnoise(float2(uv.x * 260, uv.y * 130)) * 0.4;
     sea *= 0.985 + 0.03 * mott;
-    float offshore = coarse < -2 ? 1.0 : 0.0;
-    sea = mix(sea, COAST, 0.15 * stroke(coarse + 6, 0.7 * scale, fwCoarse) * offshore);
-    sea = mix(sea, COAST, 0.08 * stroke(coarse + 13, 0.7 * scale, fwCoarse) * offshore);
+    float offshore = fine < -2 && fine > -15.5 ? 1.0 : 0.0;
+    sea = mix(sea, COAST, 0.15 * stroke(fine + 6, 0.7 * scale, fwFine) * offshore);
+    sea = mix(sea, COAST, 0.08 * stroke(fine + 13, 0.7 * scale, fwFine) * offshore);
     // the land: cream, warmer up high, the relief shaded from the north-west
     float hm = max(height, 0.0) * 50;
     float3 land = mix(LAND, HIGHLAND, 0.85 * smoothstep(250.0, 3200.0, hm));
     land *= 1 + 0.30 * hill;
+    land = mix(land, RIVER, 0.75 * stroke(river, 0.65 * scale, fwRiver) * smoothstep(1.2, 2.2, k) * riverOn);
+    // the selected country over its rivers, as a locator map has it; its borders drawn on top
     if (selected > 0.5 && highlight > 0.001) {
         // the country's share of the four texels around this point, read exactly and blended, so
         // its edge is smooth however close the camera
@@ -145,8 +151,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
         float m = mix(mix(is.w, is.z, f.x), mix(is.x, is.y, f.x), f.y);
         land = mix(land, LOCATOR * (1 + 0.12 * hill), 0.94 * m * highlight);
     }
-    land = mix(land, RIVER, 0.75 * stroke(river, 0.65 * scale, fwRiver) * smoothstep(1.2, 2.2, k) * (river < 8 ? 1.0 : 0.0));
-    land = mix(land, BORDER, 0.8 * stroke(border, 0.7 * scale, fwBorder) * (border < 16 ? 1.0 : 0.0));
+    land = mix(land, BORDER, 0.8 * stroke(border, 0.7 * scale, fwBorder) * borderOn);
     float3 col = mix(sea, land, landa);
     col = mix(col, COAST, stroke(d, 0.9 * scale * min(pow(k, 0.25), 1.4), fwD));
     // the graticule, every 15 degrees
@@ -159,6 +164,6 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     // roundness: the limb a little shaded; the rim drawn
     col *= 1 - 0.07 * (1 - z) * (1 - z);
     col = mix(col, COAST, stroke((rr - 1) * R, 1.2 * scale, fwRing * scale));
-    float edge = smoothstep(1 + 0.5 / R, 1 - 0.5 / R, rr);
+    float edge = 1 - smoothstep(1 - 0.5 / R, 1 + 0.5 / R, rr);
     return float4(rr < 1 + 2 / R ? mix(page, col, edge) : page, 1);
 }

@@ -11,10 +11,10 @@ nothing), ids is grey.
   geo.png      R  signed distance to the coast, fine: 128 + 8 d, for |d| <= 16 px (land positive;
                   the larger lakes are water)
                G  the same, coarse: 128 + d / 2, for |d| <= 254 px
-               B  distance to a land border between countries: 8 d, up to 32 px
+               B  signed distance to a land border between countries: 128 + 16 d, for |d| < 8 px
   terrain.png  R  hillshade, 128 flat, lit from the north-west
                G  height: land 128 + elevation / 50 m, sea 127 - depth / 87 m
-               B  distance to a river: 16 d, up to 16 px
+               B  signed distance to a river: 128 + 16 d, for |d| < 8 px
   ids.png      grey: the country under each pixel, 1 + its index in globe.json (0: none)
   globe.json   countries (name, long name, continent, subregion, population, capital, label point,
                label rank), seas and oceans (name, rank, label point), capitals (name, point)
@@ -23,8 +23,12 @@ nothing), ids is grey.
 
 Sources (fetched into the cache if missing): Natural Earth 1:50m land, lakes, countries, boundary
 lines, rivers and marine areas, and 1:110m populated places; NASA's GEBCO elevation and
-bathymetry. Distances are in pixels at 4096, measured at 8192 and halved, wrapping around the
-antimeridian; the shader decodes them with the same constants.
+bathymetry. Distances are in pixels at 4096, wrapping around the antimeridian; the shader decodes
+them with the same constants. The coast's is measured on land rasterised at 8192 and halved; a line's
+(borders, rivers) to the line itself, signed by which side of it a pixel lies, so that like the
+coast's it crosses zero on the line and stays sharp however close the camera. (Its sign flips where
+the nearest line changes side, far from any line: the shader tells those jumps from lines by their
+steepness.)
 """
 import json, shutil, sys, urllib.request, zipfile
 from pathlib import Path
@@ -123,6 +127,43 @@ def signed(mask):
     return wrapped_edt(~mask) - wrapped_edt(mask)
 
 
+def signed_lines(features, size, keep=lambda p: True, spacing=0.1, reach=10.0):
+    """Distance (px) from every pixel's centre to the nearest line, signed by the side of the line's
+    direction it lies on, clamped to `reach`; wrapping in longitude."""
+    from scipy.spatial import cKDTree
+    pts, dirs = [], []
+    for f in features:
+        if not keep(f['properties']):
+            continue
+        for ln in lines(f['geometry']):
+            p = np.array([xy(*pt, size) for pt in ln], np.float64)
+            for a, b in zip(p[:-1], p[1:]):
+                d = b - a
+                n = np.hypot(*d)
+                if n == 0 or abs(d[0]) > size[0] / 2:      # crossing the antimeridian
+                    continue
+                k = max(int(np.ceil(n / spacing)), 1)
+                t = (np.arange(k) + 0.5)[:, None] / k
+                pts.append(a + t * d)
+                dirs.append(np.repeat((d / n)[None], k, 0))
+    pts, dirs = np.concatenate(pts), np.concatenate(dirs)
+    w = size[0]
+    edge = (pts[:, 0] < reach + 1) | (pts[:, 0] > w - reach - 1)
+    pts = np.concatenate([pts, pts[edge] + [w, 0], pts[edge] - [w, 0]])
+    dirs = np.concatenate([dirs, dirs[edge], dirs[edge]])
+    tree = cKDTree(pts)
+    ys, xs = np.mgrid[0:size[1], 0:size[0]]
+    q = np.stack([xs.ravel() + 0.5, ys.ravel() + 0.5], -1)
+    dist, idx = tree.query(q, distance_upper_bound=reach, workers=-1)
+    out = np.full(len(q), reach, np.float32)
+    hit = np.isfinite(dist)
+    v = q[hit] - pts[idx[hit]]
+    t = dirs[idx[hit]]
+    side = np.sign(t[:, 0] * v[:, 1] - t[:, 1] * v[:, 0])
+    out[hit] = np.where(side == 0, 1, side) * np.minimum(dist[hit], reach)
+    return out.reshape(size[1], size[0])
+
+
 def halve(a):
     return a.reshape(a.shape[0] // 2, 2, a.shape[1] // 2, 2).mean(axis=(1, 3))
 
@@ -164,12 +205,10 @@ def main():
     print('coast and borders', flush=True)
     land_m = raster(HI, lambda d: (fill(d, land, HI), fill(d, lakes, HI, 0, lambda p: rank(p) <= 4))) > 127
     coast = halve(signed(land_m)) / 2
-    border_m = raster(HI, lambda d: stroke(d, load('ne_50m_boundary_lines.geojson'), HI)) > 127
-    border = halve(wrapped_edt(border_m)) / 2
+    border = signed_lines(load('ne_50m_boundary_lines.geojson'), SIZE)
     opaque = np.full(coast.shape, 255, np.uint8)
-    geo = np.stack([enc(coast, 128, 8), enc(coast, 128, 0.5), enc(border, 0, 8), opaque], -1)
+    geo = np.stack([enc(coast, 128, 8), enc(coast, 128, 0.5), enc(border, 128, 16), opaque], -1)
     Image.fromarray(geo, 'RGBA').save(OUT / 'geo.png', optimize=True)
-    del border_m
 
     print('terrain', flush=True)
     elev_m = resample(src['gebco_elev_21600.png'], SIZE) * 25.0
@@ -177,11 +216,9 @@ def main():
     land_lo = halve(land_m.astype(np.float32)) > 0.5
     shade = np.where(land_lo, hillshade(elev_m), 128).astype(np.uint8)
     height = np.where(land_lo, enc(elev_m / 50, 128, 1), enc(-depth_m / 87, 127, 1))
-    river_m = raster(HI, lambda d: stroke(d, load('rivers.geojson'), HI,
-                                          lambda p: p.get('featurecla') == 'River' and rank(p) <= 6)) > 127
-    river = halve(wrapped_edt(river_m)) / 2
-    Image.fromarray(np.stack([shade, height, enc(river, 0, 16), opaque], -1), 'RGBA').save(OUT / 'terrain.png', optimize=True)
-    del land_m, river_m
+    river = signed_lines(load('rivers.geojson'), SIZE, lambda p: p.get('featurecla') == 'River' and rank(p) <= 6)
+    Image.fromarray(np.stack([shade, height, enc(river, 128, 16), opaque], -1), 'RGBA').save(OUT / 'terrain.png', optimize=True)
+    del land_m
 
     print('countries', flush=True)
     order = sorted(range(len(admin)), key=lambda i: admin[i]['properties']['NAME'])
@@ -229,8 +266,9 @@ def main():
         pt = g.representative_point()
         seas.append({'n': p['name'], 'r': p['scalerank'], 'ocean': p['featurecla'] == 'ocean',
                      'c': [round(pt.x, 2), round(pt.y, 2)], 'a': round(g.area, 1)})
+    # (no NaN: Swift's JSONDecoder refuses it, and the globe would lose its names and taps)
     (OUT / 'globe.json').write_text(json.dumps({'countries': countries, 'seas': seas, 'capitals': capital_list},
-                                               separators=(',', ':'), ensure_ascii=False) + '\n')
+                                               separators=(',', ':'), ensure_ascii=False, allow_nan=False) + '\n')
 
     fonts = OUT / 'fonts'
     fonts.mkdir(exist_ok=True)

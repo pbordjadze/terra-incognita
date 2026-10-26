@@ -17,6 +17,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onSelect: ((GlobeData.Country?) -> Void)?
     /// The country in the locator's red, if any.
     var selectedCountry: GlobeData.Country? { selected.flatMap { data?.countries[$0] } }
+    /// While the film shows instead, nothing moves or is drawn (the globe is kept, its pictures
+    /// decoded once).
+    var suspended = false {
+        didSet {
+            displayLink?.isPaused = suspended
+            lastTick = nil
+            needsDraw = true
+        }
+    }
 
     private let data = GlobeData.load()
     private let device = MTLCreateSystemDefaultDevice()
@@ -28,6 +37,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var displayLink: CADisplayLink?
     private var lastTick: CFTimeInterval?
     private var needsDraw = true
+    private var busy = true
+    private var labelsFading = true
+    private var cachedRotation: (lon: Double, lat: Double, m: simd_double3x3)?
 
     // the camera: the point of the globe at the screen's centre, in degrees, and how far in
     private var lon0 = -40.0
@@ -131,19 +143,31 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard let queue else { return }
         geo = Self.texture(GlobeData.root.appending(path: "geo.png"), device: device, queue: queue)
         terrain = Self.texture(GlobeData.root.appending(path: "terrain.png"), device: device, queue: queue)
-        ids = Self.texture(GlobeData.root.appending(path: "ids.png"), device: device, queue: queue)
+        // the countries' map, from the bytes the tap reads (decoded once)
+        if let data, data.ids.count == data.width * data.height {
+            let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r8Unorm, width: data.width, height: data.height, mipmapped: false)
+            d.usage = .shaderRead
+            ids = device.makeTexture(descriptor: d)
+            ids?.replace(region: MTLRegionMake2D(0, 0, data.width, data.height), mipmapLevel: 0, withBytes: data.ids, bytesPerRow: data.width)
+        }
     }
 
-    /// The image's decoded bytes uploaded as they are: colour management would bend the distances
-    /// the map is made of. RGBA images get mipmaps; a grey one (the countries) is read exactly.
+    /// An RGBA map's decoded bytes uploaded as they are (colour management would bend the distances
+    /// it is made of), with mipmaps. Bytes in any order but R, G, B, A are refused rather than read
+    /// wrong.
     private static func texture(_ url: URL, device: MTLDevice, queue: MTLCommandQueue) -> MTLTexture? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
               let image = CGImageSourceCreateImageAtIndex(source, 0, nil), image.bitsPerComponent == 8,
               let data = image.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else { return nil }
         let w = image.width, h = image.height, row = image.bytesPerRow, channels = image.bitsPerPixel / 8
-        guard channels == 1 || channels == 3 || channels == 4, CFDataGetLength(data) >= row * h else { return nil }
-        let grey = channels == 1
-        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: grey ? .r8Unorm : .rgba8Unorm, width: w, height: h, mipmapped: !grey)
+        let order = image.byteOrderInfo
+        guard order == .orderDefault || order == .order32Big else { return nil }
+        switch (channels, image.alphaInfo) {
+        case (4, .last), (4, .premultipliedLast), (4, .noneSkipLast), (3, .none): break
+        default: return nil
+        }
+        guard CFDataGetLength(data) >= row * h else { return nil }
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: w, height: h, mipmapped: true)
         d.usage = .shaderRead
         guard let texture = device.makeTexture(descriptor: d) else { return nil }
         if channels == 3 {
@@ -161,7 +185,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         } else {
             texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: bytes, bytesPerRow: row)
         }
-        if !grey, let commands = queue.makeCommandBuffer(), let blit = commands.makeBlitCommandEncoder() {
+        if let commands = queue.makeCommandBuffer(), let blit = commands.makeBlitCommandEncoder() {
             blit.generateMipmaps(for: texture)
             blit.endEncoding()
             commands.commit()
@@ -178,15 +202,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var r2: SIMD4<Float>
     }
 
-    private func draw() {
+    /// Draws a frame; false if it couldn't (no drawable yet), so the next tick tries again.
+    private func draw() -> Bool {
         guard let pipeline, let queue, let geo, let terrain, let ids, let metalLayer,
               bounds.width > 0, bounds.height > 0, let drawable = metalLayer.nextDrawable(),
-              let commands = queue.makeCommandBuffer() else { return }
+              let commands = queue.makeCommandBuffer() else { return false }
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = drawable.texture
         pass.colorAttachments[0].loadAction = .dontCare
         pass.colorAttachments[0].storeAction = .store
-        guard let encoder = commands.makeRenderCommandEncoder(descriptor: pass) else { return }
+        guard let encoder = commands.makeRenderCommandEncoder(descriptor: pass) else { return false }
         let scale = Double(metalLayer.contentsScale)
         let (centre, radius) = place
         let m = rotation
@@ -207,6 +232,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         encoder.endEncoding()
         commands.present(drawable)
         commands.commit()
+        return true
     }
 
     // MARK: the camera
@@ -217,12 +243,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         return (CGPoint(x: w / 2, y: h * 0.43), 0.455 * min(w, h * 0.55) * zoom)
     }
 
-    /// World from view: Ry(lon0) . Rx(-lat0). (simd matrices are indexed by column: m[column][row].)
+    /// World from view: Ry(lon0) . Rx(-lat0), built from its columns (simd matrices are indexed by
+    /// column: m[column][row]), and kept while the camera stays put: every name asks for it each frame.
     private var rotation: simd_double3x3 {
+        if let c = cachedRotation, c.lon == lon0, c.lat == lat0 { return c.m }
         let a = lon0 * .pi / 180, b = -lat0 * .pi / 180
-        return simd_double3x3(rows: [SIMD3<Double>(cos(a), sin(a) * sin(b), sin(a) * cos(b)),
-                                     SIMD3<Double>(0, cos(b), -sin(b)),
-                                     SIMD3<Double>(-sin(a), cos(a) * sin(b), cos(a) * cos(b))])
+        let m = simd_double3x3(SIMD3<Double>(cos(a), 0, -sin(a)),
+                               SIMD3<Double>(sin(a) * sin(b), cos(b), cos(a) * sin(b)),
+                               SIMD3<Double>(sin(a) * cos(b), -sin(b), cos(a) * cos(b)))
+        cachedRotation = (lon: lon0, lat: lat0, m: m)
+        return m
     }
 
     /// Where a point of the globe is on screen, and how far it faces the viewer (1 at the centre, 0 at
@@ -332,9 +362,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     private func select(_ k: Int?, animated: Bool) {
+        let still = !animated || UIAccessibility.isReduceMotionEnabled
+        // straight from one country to another, the new one fades up from nothing too
+        if let k, let s = shown, s != k, !still { highlight = 0 }
         selected = k
         if k != nil { shown = k }
-        if !animated || UIAccessibility.isReduceMotionEnabled { highlight = k == nil ? 0 : 1 }
+        if still { highlight = k == nil ? 0 : 1 }
         if let k, let data {
             let c = data.countries[k]
             selectedLabel.string = NSAttributedString(string: Self.short(c.n).uppercased(), attributes: Self.attributes(.selected))
@@ -353,9 +386,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         super.didMoveToWindow()
         if window != nil, displayLink == nil {
             let link = CADisplayLink(target: GlobeLinkTarget(self), selector: #selector(GlobeLinkTarget.tick(_:)))
-            link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
+            link.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
             link.add(to: .main, forMode: .common)
+            link.isPaused = suspended
             displayLink = link
+            busy = true
         } else if window == nil {
             displayLink?.invalidate()
             displayLink = nil
@@ -403,16 +438,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         let target = selected == nil ? 0.0 : 1.0
-        if highlight != target {
+        let fadingUp = highlight != target
+        if fadingUp {
             highlight = still ? target : highlight + (target - highlight) * min(1, dt * 9)
             if abs(highlight - target) < 0.01 { highlight = target }
             if highlight == 0 { shown = nil }
             needsDraw = true
         }
-        updateLabels(dt: dt)
-        if needsDraw {
-            needsDraw = false
-            draw()
+        if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
+        if needsDraw, draw() { needsDraw = false }
+        // the hands, a fling, a flight or a fade want the full rate; the slow turn is smooth at 30
+        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || labelsFading
+        if moving != busy {
+            busy = moving
+            link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+                                                  : CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
         }
     }
 
@@ -454,6 +494,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         layer.addSublayer(labelLayer)
         selectedLabel.alignmentMode = .center
         selectedLabel.isHidden = true
+        // a halo of the locator's red, so the name reads where it reaches past a small country
+        selectedLabel.shadowColor = UIColor(red: 0xC1 / 255, green: 0x28 / 255, blue: 0x38 / 255, alpha: 1).cgColor
+        selectedLabel.shadowOpacity = 1
+        selectedLabel.shadowRadius = 2.5
+        selectedLabel.shadowOffset = .zero
         labelLayer.addSublayer(selectedLabel)
         guard let data else { return }
         func label(_ text: String, _ style: Style, _ c: [Double], _ kind: Kind, _ index: Int, from: Double) -> Label? {
@@ -477,10 +522,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         labels = all.compactMap { $0 }
     }
 
-    /// Each frame: which names show (in their order, where they face the viewer and the zoom has
-    /// reached them, if they don't touch one already placed), fading them in and out.
-    private func updateLabels(dt: Double) {
-        let radius = place.radius
+    /// Which names show (in their order of claim, where they face the viewer, the zoom has reached
+    /// them and they lie on the globe, if they don't touch one already placed), fading them in and
+    /// out. Returns whether any is still fading.
+    private func updateLabels(dt: Double) -> Bool {
+        let (centre, radius) = place
+        var fading = false
         let level = log2(2 * .pi * radius / 256) + 1.2      // the web-map zoom the globe is drawn at
         var placed: [CGRect] = []
         let fade = min(1, dt * 10)
@@ -506,7 +553,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 point = facing > 0 ? p : nil
                 if facing > 0.25 {
                     let r = CGRect(x: p.x - l.size.width / 2 - 3, y: p.y - l.size.height / 2 - 3, width: l.size.width + 6, height: l.size.height + 6)
-                    if bounds.insetBy(dx: -20, dy: -20).intersects(r), !placed.contains(where: { $0.intersects(r) }) {
+                    // (all of it on the globe: no name spills onto the paper)
+                    let far = max(hypot(Double(r.minX - centre.x), Double(r.minY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.minY - centre.y)),
+                                  hypot(Double(r.minX - centre.x), Double(r.maxY - centre.y)), hypot(Double(r.maxX - centre.x), Double(r.maxY - centre.y)))
+                    if far < radius * 0.99, bounds.insetBy(dx: -20, dy: -20).intersects(r), !placed.contains(where: { $0.intersects(r) }) {
                         placed.append(r)
                         target = min(1, (facing - 0.25) / 0.25)
                     }
@@ -518,6 +568,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 continue
             }
             l.alpha += (target - l.alpha) * fade
+            if abs(target - l.alpha) < 0.005 { l.alpha = target } else { fading = true }
             if l.layer == nil {
                 let t = CATextLayer()
                 t.string = l.text
@@ -536,6 +587,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             labels[i] = l
         }
         CATransaction.commit()
+        return fading
     }
 }
 

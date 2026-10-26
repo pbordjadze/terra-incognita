@@ -1,10 +1,10 @@
 """Draws the globe as the app's shader does (App/TerraIncognita/Globe/Globe.metal mirrors this, line
 for line), so its look can be judged without a phone.
 
-    python3 tools/globe/preview.py out.png [--lon -83 --lat 40 --zoom 1 --select Ohio --scale 2]
+    python3 tools/globe/preview.py out.png [--lon -83 --lat 40 --zoom 1 --select Italy --scale 2]
 
 Coordinates: the screen in points, y down; the globe's centre and radius come from `layout`, as in
-GlobeView. --select names a country (globe.json); its locator red is drawn at full strength.
+GlobeView's `place`. --select names a country (globe.json); its locator red is drawn at full strength.
 Labels are drawn here with PIL in the app's fonts, roughly where the app's label layer puts them.
 """
 import argparse, json
@@ -35,7 +35,7 @@ SHADOW = hexc('#6E6352')
 
 
 def layout(w, h):
-    """The globe's centre and resting radius in points (GlobeView.layout)."""
+    """The globe's centre and resting radius in points (GlobeView's `place`)."""
     return w / 2, h * 0.43, 0.455 * min(w, h * 0.55)
 
 
@@ -83,11 +83,9 @@ def line(d, width, fw=None):
     return 1 - smoothstep(width / 2 - 0.5, width / 2 + 0.5, np.abs(d) / np.maximum(fw, 1e-5))
 
 
-def sample(img, u, v, nearest=False):
+def sample(img, u, v):
     h, w = img.shape[:2]
     x, y = u * w - 0.5, v * h - 0.5
-    if nearest:
-        return img[np.clip(np.floor(v * h).astype(int), 0, h - 1), np.floor(u * w).astype(int) % w]
     x0, y0 = np.floor(x).astype(int), np.floor(y).astype(int)
     fx, fy = (x - x0)[..., None], (y - y0)[..., None]
     if img.ndim == 2:
@@ -127,7 +125,6 @@ def render(w, h, scale, lon0, lat0, zoom, selected):
         gold = np.maximum(gold, line(ringpx - at, wd * scale))
     ang = np.degrees(np.arctan2(x, y)) % 360
     tick = line(((ang + 5) % 10) - 5, 0.9 * scale, np.degrees(1 / np.maximum(rr * R, 1))) * ((ringpx > 7) & (ringpx < 9.6))
-    big = (np.abs(((ang + 15) % 30) - 15) < 0.001)
     dots = np.zeros_like(rr)
     for a in range(0, 360, 90):                     # the four quarters: three little dots, Kells-fashion
         for da, dr in ((0, 8.25), (-1.5, 8.25), (1.5, 8.25)):
@@ -153,11 +150,14 @@ def render(w, h, scale, lon0, lat0, zoom, selected):
     fine = (g[..., 0] * 255 - 128) / 8
     coarse = (g[..., 1] * 255 - 128) * 2
     d = np.where(np.abs(coarse) > 14, coarse, fine)
-    # (an unsigned distance sampled between texels never quite reaches 0 on its line)
-    border = np.maximum(g[..., 2] * 255 / 8 - 0.45, 0)
+    border = (g[..., 2] * 255 - 128) / 16
     hill = (t[..., 0] * 255 - 128) / 127
     height = t[..., 1] * 255 - 128
-    river = np.maximum(t[..., 2] * 255 / 16 - 0.45, 0)
+    river = (t[..., 2] * 255 - 128) / 16
+    # a line's distance changes about a texel a texel; where its sign flips (far from any line) it
+    # jumps sixteen: no line there
+    texels = fwidth(u * 4096) + fwidth(v * 2048)
+    lined = lambda f: (fwidth(f) < 2.5 * texels) & (np.abs(f) < 7)
     landa = smoothstep(-0.5, 0.5, d / np.maximum(fwidth(d), 1e-5))
     k = np.clip(zoom, 1, 8)
     # the sea: deeper is a little bluer, with a faint watercolour mottle and lines along the coasts
@@ -166,16 +166,17 @@ def render(w, h, scale, lon0, lat0, zoom, selected):
     mott = vnoise(u * 90, v * 45) * 0.6 + vnoise(u * 260, v * 130) * 0.4
     sea = sea * (0.985 + 0.03 * mott)[..., None]
     for at, a in ((-6, 0.15), (-13, 0.08)):
-        sea = mix(sea, COAST, a * line(coarse - at, 0.7 * scale) * (coarse < -2))
+        sea = mix(sea, COAST, a * line(fine - at, 0.7 * scale) * ((fine < -2) & (fine > -15.5)))
     # the land: cream, warmer up high, the relief shaded from the north-west
     hm = np.maximum(height, 0) * 50
     land = mix(LAND, HIGHLAND, 0.85 * smoothstep(250, 3200, hm))
     land = land * (1 + 0.30 * hill)[..., None]
+    land = mix(land, RIVER, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * lined(river))
+    # the selected country over its rivers, as a locator map has it; its borders drawn on top
     if selected:
         m = sample((ids == selected).astype(np.float32), u, v)[..., 0]   # the shader: gather, then bilinear
         land = mix(land, LOCATOR * (1 + 0.12 * hill)[..., None], 0.94 * m)
-    land = mix(land, RIVER, 0.75 * line(river, 0.65 * scale) * smoothstep(1.2, 2.2, k) * (river < 8))
-    land = mix(land, BORDER, 0.8 * line(border, 0.7 * scale) * (border < 16))
+    land = mix(land, BORDER, 0.8 * line(border, 0.7 * scale) * lined(border))
     col = mix(sea, land, landa)
     col = mix(col, COAST, line(d, 0.9 * scale * min(k ** 0.25, 1.4)))
     # the graticule, every 15 degrees
@@ -198,7 +199,8 @@ def short(name):
 
 
 def labels(img, w, h, scale, geom, zoom, selected):
-    """Roughly the app's label layer: countries, then seas, nearest-first, none overlapping."""
+    """Roughly the app's label layer: the selected country, oceans and seas, then countries, in that
+    order of claim, none overlapping."""
     cx, cy, R, M = geom
     data = json.loads((G / 'globe.json').read_text())
     f = G / 'fonts'

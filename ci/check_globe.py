@@ -38,8 +38,13 @@ for name, kind in KINDS.items():
     elif h != (4096, 2048, 8, kind):
         err(f'{name}: {h[0]}x{h[1]}, {h[2]}-bit, colour type {h[3]}; expected 4096x2048, 8-bit, colour type {kind}')
 
+
+def no_nan(name):
+    raise ValueError(f'{name} (Swift\'s JSONDecoder refuses it)')
+
+
 try:
-    data = json.load(open(os.path.join(root, 'globe.json')))
+    data = json.load(open(os.path.join(root, 'globe.json')), parse_constant=no_nan)
 except (OSError, ValueError) as e:
     err(f'globe.json: {e}')
     data = {}
