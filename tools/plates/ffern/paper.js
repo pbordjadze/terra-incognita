@@ -22,6 +22,33 @@ const PA = (() => {
     rust: '#b0603e', rustDeep: '#8e4228', haw: '#a8402c',
   };
 
+  // ---------- the view ----------
+  // A plate is drawn as it is (s = 1) or, for a pass plate, magnified s times about (cx, cy) by the
+  // page itself. Either way the large filters only work over what the plate can show (plus a margin
+  // for the tears that reach in from outside): window() is that rectangle in the plate's own units.
+  const VIEW = { s: 1, cx: W / 2, cy: H / 2 };
+  function setView(s, cx, cy) { VIEW.s = s; VIEW.cx = cx; VIEW.cy = cy; }
+  // (Chromium renders a filter, or an image a filter reads, no larger than 4096 pixels a side, so the
+  // margin is kept to 40 pixels of the plate as drawn, whatever the magnification.)
+  function window_(margin = 40 / VIEW.s) {
+    const w = W / VIEW.s, h = H / VIEW.s;
+    return [VIEW.cx - w / 2 - margin, VIEW.cy - h / 2 - margin, w + 2 * margin, h + 2 * margin];
+  }
+  const regionAttr = r => `x="${f1(r[0])}" y="${f1(r[1])}" width="${f1(r[2])}" height="${f1(r[3])}" filterUnits="userSpaceOnUse"`;
+  const R = () => regionAttr(window_());
+  // The bounding box of an SVG path made of M/L/Z commands with absolute coordinates.
+  function pathBox(d) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const re = /(-?\d+(?:\.\d+)?(?:e-?\d+)?)[ ,](-?\d+(?:\.\d+)?(?:e-?\d+)?)/g;
+    let m;
+    while ((m = re.exec(d))) { const x = +m[1], y = +m[2]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return [x0, y0, x1 - x0, y1 - y0];
+  }
+  function intersect(a, b) {
+    const x0 = Math.max(a[0], b[0]), y0 = Math.max(a[1], b[1]), x1 = Math.min(a[0] + a[2], b[0] + b[2]), y1 = Math.min(a[1] + a[3], b[1] + b[3]);
+    return x1 > x0 && y1 > y0 ? [x0, y0, x1 - x0, y1 - y0] : null;
+  }
+
   // ---------- seeded randomness ----------
   function rng(seed) {
     let s = seed | 0;
@@ -30,6 +57,51 @@ const PA = (() => {
   const f1 = v => Math.round(v * 10) / 10, f2 = v => Math.round(v * 100) / 100;
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
+  // ---------- noise tiles ----------
+  // The filters read their noise from three small tiles painted once (periodic value noise, three
+  // independent channels each) instead of computing turbulence across the plate: an image is far
+  // cheaper to sample, and when the exporter magnifies a plate the tiles simply magnify with it.
+  const TILES = { lo: { size: 512, cell: 64, oct: 3 }, mid: { size: 256, cell: 16, oct: 3 }, hi: { size: 128, cell: 4, oct: 2 } };
+  let tileDefsCache = null;
+  function tileDefs() {
+    if (tileDefsCache) return tileDefsCache;
+    let out = '';
+    for (const [name, t] of Object.entries(TILES)) {
+      const r = rng(name.length * 977 + t.size), cv = document.createElement('canvas');
+      cv.width = cv.height = t.size;
+      const ctx = cv.getContext('2d'), img = ctx.createImageData(t.size, t.size);
+      for (let ch = 0; ch < 3; ch++) {
+        const layers = [];
+        for (let o = 0; o < t.oct; o++) {
+          const per = Math.round(t.size / t.cell * 2 ** o), val = new Float32Array(per * per);
+          for (let i = 0; i < val.length; i++) val[i] = r();
+          layers.push({ per, val, cell: t.cell / 2 ** o, amp: 0.5 ** o });
+        }
+        const sm = v => v * v * (3 - 2 * v);
+        for (let y = 0; y < t.size; y++) for (let x = 0; x < t.size; x++) {
+          let v = 0, tot = 0;
+          for (const L of layers) {
+            const fx = x / L.cell, fy = y / L.cell, xi = Math.floor(fx), yi = Math.floor(fy), u = sm(fx - xi), w = sm(fy - yi);
+            const g = (a, b) => L.val[((b % L.per + L.per) % L.per) * L.per + ((a % L.per + L.per) % L.per)];
+            const a00 = g(xi, yi), a10 = g(xi + 1, yi), a01 = g(xi, yi + 1), a11 = g(xi + 1, yi + 1);
+            v += L.amp * (a00 + (a10 - a00) * u + (a01 - a00) * w + (a00 - a10 - a01 + a11) * u * w); tot += L.amp;
+          }
+          img.data[(y * t.size + x) * 4 + ch] = Math.max(0, Math.min(255, 128 + (v / tot - 0.5) * 1.35 * 255));
+        }
+      }
+      for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+      ctx.putImageData(img, 0, 0);
+      out += `<pattern id="pz-${name}" patternUnits="userSpaceOnUse" width="${t.size}" height="${t.size}"><image width="${t.size}" height="${t.size}" href="${cv.toDataURL()}"/></pattern>`;
+    }
+    return tileDefsCache = out;
+  }
+  // Rectangles filled with the tiles, over what the view can show; a filter reads one as its noise.
+  function noiseRects() {
+    const r = window_();
+    return Object.keys(TILES).map(n => `<rect id="nzr-${n}" x="${f1(r[0])}" y="${f1(r[1])}" width="${f1(r[2])}" height="${f1(r[3])}" fill="url(#pz-${n})"/>`).join('');
+  }
+  const nz = (name, result) => `<feImage href="#nzr-${name}" result="${result}"/>`;
+
   // ---------- filters ----------
   // A torn piece: the narrowest inlets closed (no one tears a fjord), a coarse warp for the tear, fine
   // fuzz for its fibres, the white core showing past the coloured face, the paper's own mottle and
@@ -37,26 +109,25 @@ const PA = (() => {
   function tornFilter(id, o) {
     const s = o.seed, k = o.k || 1;
     const close = (o.close ?? 1.1) * U * k, warp = (o.warp ?? 4.2) * U * k, fuzz = (o.fuzz ?? 1.3) * U * k, rim = (o.rim ?? 0.8) * U * k;
-    return `<filter id="${id}" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="${f2(0.05 / U / k * 100) / 100}" numOctaves="3" seed="${s}" result="warp"/>
-    <feMorphology in="SourceGraphic" operator="dilate" radius="${f2(close)}" result="cl1"/>
-    <feMorphology in="cl1" operator="erode" radius="${f2(close)}" result="cl2"/>
+    return `<filter id="${id}" ${o.region || 'x="-3%" y="-3%" width="106%" height="106%"'} color-interpolation-filters="sRGB">
+    ${nz('lo', 'warp')}
+    <feGaussianBlur in="SourceGraphic" stdDeviation="${f2(close)}" result="cl1"/>
+    <feComponentTransfer in="cl1" result="cl2"><feFuncA type="linear" slope="8" intercept="-3.6"/></feComponentTransfer>
     <feDisplacementMap in="cl2" in2="warp" scale="${f2(warp)}" xChannelSelector="R" yChannelSelector="G" result="shape"/>
-    <feTurbulence type="fractalNoise" baseFrequency="${f2(0.9 / U / k * 100) / 100}" numOctaves="2" seed="${s + 1}" result="fuzzN"/>
+    ${nz('hi', 'fuzzN')}
     <feDisplacementMap in="shape" in2="fuzzN" scale="${f2(fuzz)}" xChannelSelector="R" yChannelSelector="G" result="face"/>
-    <feMorphology in="shape" operator="dilate" radius="${f2(rim)}" result="fat"/>
-    <feTurbulence type="fractalNoise" baseFrequency="${f2(0.035 / U / k * 1000) / 1000}" numOctaves="2" seed="${s + 2}" result="rimN"/>
-    <feDisplacementMap in="fat" in2="rimN" scale="${f2(rim * 2.6)}" xChannelSelector="G" yChannelSelector="R" result="fat2"/>
-    <feTurbulence type="fractalNoise" baseFrequency="${f2(1.6 / U / k * 100) / 100}" numOctaves="1" seed="${s + 3}" result="hairN"/>
-    <feDisplacementMap in="fat2" in2="hairN" scale="${f2(2.2 * U * k)}" xChannelSelector="R" yChannelSelector="G" result="core"/>
+    <feGaussianBlur in="shape" stdDeviation="${f2(rim * 1.2)}" result="fat0"/>
+    <feComponentTransfer in="fat0" result="fat"><feFuncA type="linear" slope="8" intercept="-1"/></feComponentTransfer>
+    <feDisplacementMap in="fat" in2="warp" scale="${f2(rim * 2.6)}" xChannelSelector="G" yChannelSelector="R" result="fat2"/>
+    <feDisplacementMap in="fat2" in2="fuzzN" scale="${f2(2.2 * U * k)}" xChannelSelector="G" yChannelSelector="R" result="core"/>
     <feFlood flood-color="#fdfbf4"/>
     <feComposite in2="core" operator="in" result="rimC"/>
     <feGaussianBlur in="core" stdDeviation="${f2(0.9 * U)}" result="sh0"/>
     <feOffset in="sh0" dx="${f2(0.5 * U)}" dy="${f2(0.8 * U)}" result="sh1"/>
     <feFlood flood-color="#3a2d18" flood-opacity="${o.shadow || 0.28}"/>
     <feComposite in2="sh1" operator="in" result="shadow"/>
-    <feTurbulence type="fractalNoise" baseFrequency="${f2((o.mottleF || 0.03) / U * 1000) / 1000}" numOctaves="3" seed="${s + 4}" result="mot"/>
-    <feTurbulence type="fractalNoise" baseFrequency="${o.grainF || '0.24 0.12'}" numOctaves="2" seed="${s + 5}" result="grn"/>
+    ${nz('lo', 'mot')}
+    ${nz('hi', 'grn')}
     <feComposite in="mot" in2="grn" operator="arithmetic" k1="0" k2="${o.mottle || 0.55}" k3="${o.grain || 0.45}" k4="0" result="tx"/>
     <feColorMatrix in="tx" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  ${o.texK || -0.9} 0 0 0 ${o.texB || 0.5}" result="txA"/>
     <feFlood flood-color="${o.texColor || '#2e2210'}"/>
@@ -73,89 +144,43 @@ const PA = (() => {
 
   // The papers: a fill and how its stock looks.
   const PAPERS = {
-    kraft: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.42, mottle: 0.58, texK: -0.7, texB: 0.4, hiK: 0.7, hiB: -0.42 } },
-    kraftLight: { fill: C.kraftLight, f: { grainF: '0.38 0.21', grain: 0.42, mottle: 0.58, texK: -0.65, texB: 0.37, hiK: 0.7, hiB: -0.42 } },
-    sage: { fill: C.sage, f: { texColor: '#2c3418', mottle: 0.7, grain: 0.3 } },
+    kraft: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43 } },
+    kraftLight: { fill: C.kraftLight, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43 } },
+    city: { fill: C.kraft, f: { grainF: '0.38 0.21', grain: 0.5, mottle: 0.4, mottleF: 0.05, texK: -0.6, texB: 0.36, hiK: 0.7, hiB: -0.43, close: 3.4, warp: 3, rim: 0.7 } },
+    sage: { fill: C.sage, f: { texColor: '#2c3418', mottle: 0.5, grain: 0.36, texK: -0.8, texB: 0.45 } },
     sageLight: { fill: C.sageLight, f: { texColor: '#2c3418', mottle: 0.66, grain: 0.32, texK: -0.8, texB: 0.45 } },
     washi: { fill: C.washi, f: { opacity: 0.9, texColor: '#4a4a40', mottle: 0.5, grain: 0.5, texK: -0.7, texB: 0.36, rim: 1.0, warp: 3.2, close: 0.6 } },
     ochre: { fill: C.ochre, f: { texColor: '#3a2a08', mottle: 0.7, grain: 0.35 } },
     clay: { fill: C.clay, f: { texColor: '#3a1e10', mottle: 0.62, grain: 0.38, grainF: '0.28 0.19' } },
     heather: { fill: C.heather, f: { texColor: '#2a1a18', mottle: 0.7, grain: 0.3 } },
+    kraftDark: { fill: C.kraftDark, f: { grainF: '0.38 0.21', grain: 0.42, mottle: 0.6, texK: -0.75, texB: 0.42, hiK: 0.7, hiB: -0.42 } },
   };
 
   function defs(extra = '') {
-    let torn = '', seed = 40;
-    for (const [name, p] of Object.entries(PAPERS)) {
-      torn += tornFilter(`torn-${name}`, { seed, ...p.f });
-      torn += tornFilter(`tornS-${name}`, { seed: seed + 7, ...p.f, warp: 1.5, rim: 0.5, fuzz: 0.8, close: 0.3 });
-      seed += 10;
-    }
-    return `<defs>
-  <filter id="paperTex" x="0" y="0" width="${W}" height="${H}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.0022" numOctaves="4" seed="11" result="cloud"/>
-    <feColorMatrix in="cloud" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.36  0 0 0 0 0.2  0.5 0 0 0 -0.19" result="cloudA"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="4" result="tooth"/>
-    <feDiffuseLighting in="tooth" surfaceScale="${f2(0.9 * U)}" diffuseConstant="1.05" lighting-color="#fff" result="lit"><feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
-    <feColorMatrix in="lit" type="matrix" values="0 0 0 0 0.3  0 0 0 0 0.24  0 0 0 0 0.14  -0.2 0 0 0 0.13" result="toothA"/>
-    <feMerge><feMergeNode in="cloudA"/><feMergeNode in="toothA"/></feMerge>
-  </filter>
-
-  <!-- watercolour, laid on a group whose white is water and whose black is land: the wash stops a
-       few points short of each coast, unevenly; two pigments run together wet in wet; it deepens away
-       from the shore, pools, dries darker at its edges and granulates in the paper's tooth -->
-  <filter id="wash" x="0" y="0" width="${W}" height="${H}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1 0 0 0 0" result="A0"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="3" seed="21" result="rn"/>
-    <feDisplacementMap in="A0" in2="rn" scale="${f2(5 * U)}" xChannelSelector="R" yChannelSelector="G" result="A1"/>
-    <feGaussianBlur in="A1" stdDeviation="0.8" result="A"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.0011" numOctaves="2" seed="13" result="mixN"/>
-    <feColorMatrix in="mixN" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 2.6 0 0 -1.05" result="mixA"/>
-    <feGaussianBlur in="A" stdDeviation="${f2(26 * U)}" result="farB"/>
-    <feComponentTransfer in="farB" result="far"><feFuncA type="linear" slope="1.6" intercept="-0.45"/></feComponentTransfer>
-    <feFlood flood-color="${C.seaA}" result="pigA"/>
-    <feFlood flood-color="${C.seaB}"/>
-    <feComposite in2="mixA" operator="in" result="pigB"/>
-    <feFlood flood-color="${C.seaDeep}"/>
-    <feComposite in2="far" operator="in" result="pigD"/>
-    <feMerge result="pig"><feMergeNode in="pigA"/><feMergeNode in="pigB"/><feMergeNode in="pigD"/></feMerge>
-    <feTurbulence type="fractalNoise" baseFrequency="0.0022" numOctaves="4" seed="8" result="pool"/>
-    <feColorMatrix in="pool" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.5 0 0 0 -0.22" result="poolA"/>
-    <feComposite in="pig" in2="A" operator="in" result="pigS"/>
-    <feComposite in="pigS" in2="poolA" operator="arithmetic" k1="0.55" k2="0.45" k3="0" k4="0" result="body"/>
-    <feGaussianBlur in="A" stdDeviation="${f2(0.7 * U)}" result="blurN"/>
-    <feComposite in="A" in2="blurN" operator="arithmetic" k1="0" k2="3" k3="-3" k4="0" result="edgeN"/>
-    <feGaussianBlur in="A" stdDeviation="${f2(3.5 * U)}" result="blurW"/>
-    <feComposite in="A" in2="blurW" operator="arithmetic" k1="0" k2="0.6" k3="-0.6" k4="0" result="edgeW"/>
-    <feMerge result="edgeA0"><feMergeNode in="edgeN"/><feMergeNode in="edgeW"/></feMerge>
-    <feComposite in="edgeA0" in2="A" operator="in" result="edgeA"/>
-    <feFlood flood-color="${C.seaDeep}" flood-opacity="0.8"/>
-    <feComposite in2="edgeA" operator="in" result="edge"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.28" numOctaves="2" seed="5" result="gr"/>
-    <feColorMatrix in="gr" type="matrix" values="0 0 0 0 0.2  0 0 0 0 0.3  0 0 0 0 0.34  1.6 0 0 0 -0.92" result="grA"/>
-    <feComposite in="grA" in2="A" operator="in" result="gran"/>
-    <feMerge><feMergeNode in="body"/><feMergeNode in="edge"/><feMergeNode in="gran"/></feMerge>
-  </filter>
+    return `<defs>${tileDefs()}${noiseRects()}
+  <!-- where the pigment gathered at the wash's edge, softening into the open water -->
+  <filter id="soften" ${R()}><feGaussianBlur stdDeviation="${f2(1.6 * U)}"/></filter>
 
   <!-- a river or a lake's thread: the same pigment, laid with one stroke of the brush -->
-  <filter id="brush" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="27" result="n"/>
+  <filter id="brush" ${R()} color-interpolation-filters="sRGB">
+    ${nz('mid', 'n')}
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(1.6 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
     <feGaussianBlur in="d" stdDeviation="${f2(0.5 * U)}" result="b"/>
     <feComposite in="d" in2="b" operator="arithmetic" k1="0" k2="1.7" k3="-0.7" k4="0"/>
   </filter>
 
-  <filter id="pencil" x="-2%" y="-2%" width="104%" height="104%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.31" numOctaves="1" seed="31" result="n"/>
+  <filter id="pencil" ${R()}>
+    ${nz('hi', 'n')}
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(1.1 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.8 0 0 0 -0.45" result="skip"/>
     <feComposite in="d" in2="skip" operator="in"/>
   </filter>
 
   <!-- letterpress: the type bites a little ragged, the ink sits unevenly and squeezes darker at its edges -->
-  <filter id="press" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.41" numOctaves="2" seed="17" result="n"/>
+  <filter id="press" ${R()} color-interpolation-filters="sRGB">
+    ${nz('hi', 'n')}
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.55 * U)}" xChannelSelector="R" yChannelSelector="G" result="rough"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.33" numOctaves="2" seed="19" result="inkN"/>
+    ${nz('mid', 'inkN')}
     <feColorMatrix in="inkN" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.1 0 0 0 1.5" result="cover"/>
     <feComposite in="rough" in2="cover" operator="in" result="inked"/>
     <feMorphology in="rough" operator="erode" radius="${f2(0.32 * U)}" result="er"/>
@@ -164,7 +189,7 @@ const PA = (() => {
     <feMerge><feMergeNode in="inked"/><feMergeNode in="rimD"/></feMerge>
   </filter>
   <!-- the impression: a faint light lip below and right of each letter, where the paper was pressed down -->
-  <filter id="deboss" x="-2%" y="-2%" width="104%" height="104%">
+  <filter id="deboss" ${R()}>
     <feGaussianBlur in="SourceAlpha" stdDeviation="${f2(0.35 * U)}" result="b"/>
     <feOffset in="b" dx="${f2(0.45 * U)}" dy="${f2(0.55 * U)}" result="o"/>
     <feComposite in="o" in2="SourceAlpha" operator="out" result="lip"/>
@@ -178,21 +203,28 @@ const PA = (() => {
   </filter>
   <!-- gouache on paper: the pigment a little uneven, darker where the brush stopped -->
   <filter id="gouache" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.21" numOctaves="2" seed="23" result="n"/>
+    ${nz('hi', 'n')}
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.7 * U)}" xChannelSelector="R" yChannelSelector="G" result="g"/>
     <feGaussianBlur in="g" stdDeviation="${f2(0.7 * U)}" result="gb"/>
     <feComposite in="g" in2="gb" operator="arithmetic" k1="0" k2="1.5" k3="-0.5" k4="0" result="edged"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.031" numOctaves="3" seed="29" result="m"/>
+    ${nz('lo', 'm')}
     <feColorMatrix in="m" type="matrix" values="0 0 0 0 1  0 0 0 0 0.97  0 0 0 0 0.9  1.1 0 0 0 -0.5" result="mA"/>
     <feComposite in="mA" in2="g" operator="in" result="light"/>
     <feMerge result="painted"><feMergeNode in="edged"/><feMergeNode in="light"/></feMerge>
     <feComposite in="painted" in2="g" operator="in"/>
   </filter>
   <!-- brush ink: a slightly wavering line that runs thin in places -->
-  <filter id="inkline" x="-5%" y="-5%" width="110%" height="110%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.24" numOctaves="2" seed="37" result="n"/>
+  <filter id="inkline" ${R()}>
+    ${nz('hi', 'n')}
     <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.8 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.086" numOctaves="2" seed="38" result="w"/>
+    ${nz('mid', 'w')}
+    <feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 1.9" result="wA"/>
+    <feComposite in="d" in2="wA" operator="in"/>
+  </filter>
+  <filter id="inklineS" x="-5%" y="-5%" width="110%" height="110%">
+    ${nz('hi', 'n')}
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="${f2(0.8 * U)}" xChannelSelector="R" yChannelSelector="G" result="d"/>
+    ${nz('mid', 'w')}
     <feColorMatrix in="w" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -2 0 0 0 1.9" result="wA"/>
     <feComposite in="d" in2="wA" operator="in"/>
   </filter>
@@ -210,8 +242,8 @@ const PA = (() => {
     <feMerge><feMergeNode in="shadow"/><feMergeNode in="margin"/><feMergeNode in="SourceGraphic"/></feMerge>
   </filter>
   <!-- riso: a flat spot colour with the printer's grain in it -->
-  <filter id="riso" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="1" seed="41" result="n"/>
+  <filter id="riso" ${R()} color-interpolation-filters="sRGB">
+    ${nz('hi', 'n')}
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.3 0 0 0 1.5" result="nA"/>
     <feComposite in="SourceGraphic" in2="nA" operator="in"/>
   </filter>
@@ -219,14 +251,89 @@ const PA = (() => {
   <filter id="card" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="${f2(1.1 * U)}" result="b"/><feOffset in="b" dx="${f2(0.7 * U)}" dy="${f2(1.2 * U)}" result="o"/>
     <feFlood flood-color="#2e2210" flood-opacity="0.34"/><feComposite in2="o" operator="in" result="sh"/>
-    <feTurbulence type="fractalNoise" baseFrequency="0.017" numOctaves="3" seed="61" result="m"/>
+    ${nz('lo', 'm')}
     <feColorMatrix in="m" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.27  0 0 0 0 0.15  0.5 0 0 0 -0.18" result="mA"/>
     <feComposite in="mA" in2="SourceAlpha" operator="in" result="mot"/>
     <feMerge><feMergeNode in="sh"/><feMergeNode in="SourceGraphic"/><feMergeNode in="mot"/></feMerge>
   </filter>
-  ${torn}
+  <!-- a street cut through the paper: the cream beneath, shadowed under the cut's upper edge -->
+  <filter id="cutStreet" ${R()} color-interpolation-filters="sRGB">
+    <feOffset in="SourceAlpha" dx="${f2(0.45 * U)}" dy="${f2(0.65 * U)}" result="o"/>
+    <feComposite in="SourceAlpha" in2="o" operator="out" result="band"/>
+    <feGaussianBlur in="band" stdDeviation="${f2(0.35 * U)}" result="bb"/>
+    <feFlood flood-color="#3a2d18" flood-opacity="0.38"/>
+    <feComposite in2="bb" operator="in" result="sh0"/>
+    <feComposite in="sh0" in2="SourceAlpha" operator="in" result="sh"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="sh"/></feMerge>
+  </filter>
+  <!-- small pieces of card laid on the paper: a shadow a point deep and the card's mottle -->
+  <filter id="cards" ${R()} color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="${f2(0.55 * U)}" result="b"/><feOffset in="b" dx="${f2(0.5 * U)}" dy="${f2(0.75 * U)}" result="o"/>
+    <feFlood flood-color="#2e2210" flood-opacity="0.42"/><feComposite in2="o" operator="in" result="sh"/>
+    ${nz('mid', 'm')}
+    <feColorMatrix in="m" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.27  0 0 0 0 0.15  0.5 0 0 0 -0.2" result="mA"/>
+    <feComposite in="mA" in2="SourceAlpha" operator="in" result="mot"/>
+    <feMorphology in="SourceAlpha" operator="erode" radius="0.6" result="er"/>
+    <feComposite in="SourceAlpha" in2="er" operator="out" result="edge"/>
+    <feFlood flood-color="#fffaf0" flood-opacity="0.55"/><feComposite in2="edge" operator="in" result="lip"/>
+    <feMerge><feMergeNode in="sh"/><feMergeNode in="SourceGraphic"/><feMergeNode in="mot"/><feMergeNode in="lip"/></feMerge>
+  </filter>
   ${extra}
 </defs>`;
+  }
+
+  // ---------- low-frequency noise, painted once into a small image ----------
+  // The large soft variations (the paper's formation, where a wash pooled or ran green) carry no
+  // detail, so they are drawn at a sixth of the plate's resolution and stretched over it: cheap to
+  // render, and still smooth when the exporter magnifies a plate for a pass.
+  function fbm(seed) {
+    const r = rng(seed), perm = new Uint8Array(512), val = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { perm[i] = i; val[i] = r(); }
+    for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+    for (let i = 0; i < 256; i++) perm[256 + i] = perm[i];
+    const lat = (x, y) => val[perm[perm[x & 255] + (y & 255)]];
+    const sm = t => t * t * (3 - 2 * t);
+    const n = (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y), u = sm(x - xi), v = sm(y - yi);
+      const a = lat(xi, yi), b = lat(xi + 1, yi), c = lat(xi, yi + 1), d = lat(xi + 1, yi + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    return (x, y, oct = 4) => { let s = 0, amp = 0.5, f = 1, tot = 0; for (let o = 0; o < oct; o++) { s += amp * n(x * f, y * f); tot += amp; amp *= 0.5; f *= 2.03; } return s / tot; };
+  }
+  // fn(x, y) in plate pixels gives [r, g, b, a], 0..255
+  function noiseImage(fn, scale = 6) {
+    const w = Math.ceil(W / scale), h = Math.ceil(H / scale), cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(w, h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const c = fn(x * scale, y * scale), i = (y * w + x) * 4;
+      img.data[i] = c[0]; img.data[i + 1] = c[1]; img.data[i + 2] = c[2]; img.data[i + 3] = c[3];
+    }
+    ctx.putImageData(img, 0, 0);
+    return `<image href="${cv.toDataURL()}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none"/>`;
+  }
+  const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  // The paper's formation: soft clouds where the pulp lay thicker.
+  let cloudsCache = null;
+  function clouds() {
+    if (cloudsCache) return cloudsCache;
+    const n = fbm(11);
+    return cloudsCache = noiseImage((x, y) => { const v = n(x / 520, y / 520); return [115, 92, 52, Math.max(0, Math.min(255, (v - 0.47) * 190))]; });
+  }
+  // A wash's pigment over the whole plate: two pigments running together, deeper where o.deep says,
+  // paler where the water pooled and dried thin.
+  function washImage(o = {}) {
+    const a = hex(C.seaA), b = hex(C.seaB), dp = hex(C.seaDeep), white = [255, 255, 255];
+    const nMix = fbm(13), nPool = fbm(8), deep = o.deep || ((x, y) => 0.25 + 0.35 * (1 - (x / W * 0.45 + y / H * 0.55)));
+    return noiseImage((x, y) => {
+      const g = Math.max(0, Math.min(1, (nMix(x / 900, y / 900, 3) - 0.42) * 2.4));
+      const p = nPool(x / 430, y / 430, 4);
+      let c = mix(a, b, g * 0.85);
+      c = mix(c, dp, Math.max(0, Math.min(1, deep(x, y) + (p - 0.5) * 0.5)));
+      c = mix(c, white, Math.max(0, (p - 0.52) * 1.1));
+      return [c[0], c[1], c[2], 255];
+    });
   }
 
   // ---------- the sheet ----------
@@ -244,36 +351,52 @@ const PA = (() => {
       const x = rand() * W, y = rand() * H, L = (0.8 + rand() * 1.6) * U, a = rand() * Math.PI;
       fleck += `<path d="M${f1(x)} ${f1(y)}l${f2(Math.cos(a) * L)} ${f2(Math.sin(a) * L)}" stroke="${cols[i % 4]}" stroke-width="${f2((0.35 + rand() * 0.25) * U)}" opacity="${f2(0.25 + rand() * 0.25)}"/>`;
     }
-    return `<rect width="${W}" height="${H}" fill="${C.paper}"/><rect width="${W}" height="${H}" filter="url(#paperTex)"/>
+    return `<rect width="${W}" height="${H}" fill="${C.paper}"/>${clouds()}
       <g fill="none" stroke-linecap="round"><path d="${fib}" stroke="${C.fibreLight}" stroke-width="${f2(0.4 * U)}" opacity="0.7"/><path d="${fibD}" stroke="${C.fibreDark}" stroke-width="${f2(0.3 * U)}" opacity="0.4"/>${fleck}</g>`;
   }
 
   // Watercolour over an area (white) with the land (black, stroked for the reserve) kept dry.
+  // Watercolour over an area, the land kept dry: the group multiplies onto the paper, so the white
+  // painted over the land and the reserve along its shore leaves the paper as it was. Just outside
+  // the reserve the pigment gathers into the darker line a wash leaves where it dried.
+  let washN = 0;
   function wash(areaD, landD, o = {}) {
-    const reserve = (o.reserve ?? 4.5) * U;
-    return `<g style="mix-blend-mode:multiply" opacity="${o.opacity || 0.55}"><g filter="url(#wash)">
-      <path d="${areaD}" fill="#fff"/>
-      ${landD ? `<path d="${landD}" fill="#000" stroke="#000" stroke-width="${f2(reserve)}" stroke-linejoin="round"/>` : ''}
+    const reserve = (o.reserve ?? 4.5) * U, id = 'washClip' + (washN++), coast = (landD || '') + (o.shore || '');
+    return `<clipPath id="${id}"><path d="${areaD}"/></clipPath>
+    <g style="mix-blend-mode:multiply" opacity="${o.opacity || 0.55}"><g clip-path="url(#${id})">
+      ${washImage(o)}
+      <path d="${coast}" fill="none" stroke="${C.seaDeep}" stroke-opacity="0.7" stroke-width="${f2(reserve + 4.5 * U)}" stroke-linejoin="round" filter="url(#soften)"/>
+      ${landD ? `<path d="${landD}" fill="#fff"/>` : ''}
+      <path d="${coast}" fill="none" stroke="#fff" stroke-width="${f2(reserve)}" stroke-linejoin="round"/>
     </g></g>`;
   }
 
   // Torn pieces: [{ d, paper, small }], each paper's pieces torn together, so where two pieces of one
   // paper meet there is no seam.
-  function torn(pieces) {
+  let tornN = 0;
+  function torn(pieces, clip) {
     const byKey = new Map();
     for (const p of pieces) {
       if (!p.d) continue;
-      const key = (p.small ? 'tornS-' : 'torn-') + p.paper + (p.clip ? '|' + p.clip : '');
+      // small pieces far apart are torn in separate groups, so no filter works over the whole plate
+      const cell = p.small && p.cell ? '#' + p.cell : '';
+      const key = (p.small ? 's' : 'b') + '|' + p.paper + cell + '|' + (p.clip || '');
       if (!byKey.has(key)) byKey.set(key, []);
       byKey.get(key).push(p.d);
     }
     let out = '';
     for (const [key, ds] of byKey) {
-      const [filter, clip] = key.split('|');
-      const paper = PAPERS[filter.replace(/^tornS?-/, '')];
-      out += `<g filter="url(#${filter})"><path d="${ds.join('')}" fill="${paper.fill}"${clip ? ` clip-path="url(#${clip})"` : ''}/></g>`;
+      const [size, paperKey, pieceClip] = key.split('|');
+      const name = paperKey.replace(/#.*/, ''), paper = PAPERS[name], d = ds.join('');
+      // each group gets its own filter, working only where the group and the view overlap
+      const box = pathBox(d), m = 30 * U, region = intersect([box[0] - m, box[1] - m, box[2] + 2 * m, box[3] + 2 * m], window_());
+      if (!region) continue;
+      const id = `torn${tornN++}`;
+      const f = size === 's' ? { ...paper.f, warp: 1.5, rim: 0.5, fuzz: 0.8, close: 0.3 } : paper.f;
+      out += `<defs>${tornFilter(id, { seed: 40, ...f, region: regionAttr(region) })}</defs>`;
+      out += `<g filter="url(#${id})"><path d="${d}" fill="${paper.fill}"${pieceClip ? ` clip-path="url(#${pieceClip})"` : ''}/></g>`;
     }
-    return out;
+    return clip ? `<g clip-path="url(#${clip})">${out}</g>` : out;
   }
 
   function pencil(d, o = {}) {
@@ -301,6 +424,6 @@ const PA = (() => {
       <g style="mix-blend-mode:multiply" filter="url(#inkline)" transform="translate(${f2(dx * U)} ${f2(dy * U)})">${ink}</g>`;
   }
 
-  return { W, H, U, C, PAPERS, rng, f1, f2, esc, defs, sheet, wash, torn, pencil, textEl, letterpress, stamp };
+  return { W, H, U, C, PAPERS, VIEW, setView, rng, f1, f2, esc, defs, sheet, wash, torn, pencil, textEl, letterpress, stamp };
 })();
 window.PA = PA;

@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>The Sampler</title>
+<!-- The world embroidered: a needlework map sampler on linen, from the globe down to High Street.
+     Land in counted cross stitch, coasts in backstitch, water in running stitch, towns in French knots,
+     roads in couched thread, a little gold. The page contract is ../kit.js; the stitching is stitch.js,
+     the map's stitches geo.js, the alphabets and motifs charts.js, the five scales levels.js. -->
+<script src="../vendor/d3.min.js"></script>
+<script src="../vendor/topojson.min.js"></script>
+<script src="../kit.js"></script>
+<script src="stitch.js"></script>
+<script src="geo.js"></script>
+<script src="charts.js"></script>
+<script src="page.js"></script>
+<script src="levels.js"></script>
+<style>body { margin: 0; background: transparent; }</style>
+<script>
+'use strict';
+window.Plates = {
+  levels: Levels.list.length,
+  style: {
+    fonts: ['fonts/LibreCaslonText-Regular.ttf', 'fonts/LibreCaslonText-Italic.ttf'],
+    eyebrow: { font: 'LibreCaslonText-Regular', size: 11.5, color: '#9b3f2d', tracking: 2.6, uppercase: true },
+    title: { font: 'LibreCaslonText-Italic', size: 29, color: '#3a2b21' },
+    text: { font: 'LibreCaslonText-Regular', size: 15.5, color: '#4b3a2c' },
+    scrim: '#ece3cff2',
+    accent: '#9b3f2d',
+  },
+  info(level) {
+    const L = Levels.list[level - 1], next = Levels.list[level];
+    return { id: L.id, caption: L.caption, layers: L.layers(), child: next ? Kit.childRect(L.proj(), next.proj()) : null };
+  },
+};
+Page.run((level, layer) => Levels.build(level, layer));
+</script>

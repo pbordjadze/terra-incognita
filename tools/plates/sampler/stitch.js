@@ -36,7 +36,7 @@ const Stitch = (() => {
   // ---- freeform stitches -------------------------------------------------------------------------
   // kind 0: a stitch between two holes (it narrows where it goes into the cloth); 1: laid thread,
   // continuous along a path (couching); 2: a French knot at (x1, y1), hw its radius.
-  const F = 12;
+  const F = 13;
   class Segs {
     constructor() { this.a = new Float32Array(1 << 16); this.n = 0; }
     push(x1, y1, x2, y2, hw, col, kind = 0, o = {}) {
@@ -45,7 +45,7 @@ const Stitch = (() => {
       const a = this.a, i = this.n++ * F;
       a[i] = x1; a[i + 1] = y1; a[i + 2] = x2; a[i + 3] = y2; a[i + 4] = hw; a[i + 5] = col; a[i + 6] = kind;
       a[i + 7] = o.s0 || 0; a[i + 8] = o.phase ?? hash(this.n, 7, 11); a[i + 9] = o.tier || 0;
-      a[i + 10] = o.shadow ?? 1; a[i + 11] = o.taper ?? 0.5;
+      a[i + 10] = o.shadow ?? 1; a[i + 11] = o.taper ?? 0.5; a[i + 12] = o.mode || 0;
     }
     get length() { return this.n; }
   }
@@ -55,33 +55,48 @@ const Stitch = (() => {
   // (-1..1, towards its normal (-diry, dirx)), s the distance along it in plate px, pitch the twist's
   // length, px the plate px per screen px (detail fades out when it would be smaller than a pixel).
   const out3 = new Float64Array(3);
-  function shade(r, g, b, metal, n, s, pitch, dirx, diry, px, phase, fuzz) {
-    const nz = Math.sqrt(Math.max(0, 1 - n * n));
-    const nx = -diry * n, ny = dirx * n;
+  // mode 0: a twisted two-ply thread (perle, crewel, gold); mode 1: stranded floss, two strands laid
+  // side by side, each lightly twisted, flatter and plumper (cross stitch, satin)
+  function shade(r, g, b, metal, n, s, pitch, dirx, diry, px, phase, mode) {
+    const flat = mode === 1 ? 0.72 : 1;
+    const nn = n * flat, nz = Math.sqrt(Math.max(0, 1 - nn * nn));
+    const nx = -diry * nn, ny = dirx * nn;
     let dif = nx * LX + ny * LY + nz * LZ; if (dif < 0) dif = 0;
     let spec = nx * HX + ny * HY + nz * HZ; if (spec < 0) spec = 0;
-    // the ply twist: two plies cross the thread diagonally, a groove between them
     let groove = 1, crown = 0.5;
     const pp = pitch / px;
-    if (pp > 2.2) {
+    if (mode === 1) {
+      // two strands: a soft valley between them, each strand a little cylinder with its own twist
+      const m = n >= 0 ? (n - 0.5) * 2 : (n + 0.5) * 2, bs = Math.sqrt(Math.max(0, 1 - m * m));
+      const ws = pitch * 0.22 / px;                      // a strand's width on screen
+      const amp = clamp01((ws - 3.2) / 3);
+      groove = 1 - amp * 0.28 * (1 - bs * bs);
+      crown = bs;
+      if (pp > 15) {
+        const ph = 2 * (s / pitch + m * 0.30 + phase + (n >= 0 ? 0.5 : 0)), f = ph - Math.floor(ph);
+        const st = Math.sin(Math.PI * f), a2 = clamp01((pp - 15) / 8);
+        groove *= 1 - a2 * 0.16 * (1 - Math.sqrt(st));
+        crown *= 0.6 + 0.4 * st;
+      }
+      if (pp > 16) groove *= 1 - clamp01((pp - 16) / 24) * 0.10 * (vnoise(s / (pitch * 0.7) + phase * 50, n * 16, 3) - 0.5) * 2;
+    } else if (pp > 2.2) {
+      // the ply twist: two plies cross the thread diagonally, a groove between them
       const ph = 2 * (s / pitch + n * 0.42 + phase), f = ph - Math.floor(ph);
       crown = Math.sin(Math.PI * f);
       const amp = clamp01((pp - 2.2) / 3);
       groove = 1 - amp * (metal ? 0.42 : 0.30) * (1 - Math.sqrt(crown));
-      // loose fibres on a big thread: fine streaks along the ply
       if (pp > 14) {
         const k = clamp01((pp - 14) / 20) * 0.10;
         groove *= 1 - k * (vnoise(s / (pitch * 0.09) + phase * 50, n * 7 + f * 3, 3) - 0.5) * 2;
       }
     }
-    if (fuzz) groove *= 1 + fuzz;
     if (metal) {
       const sp = Math.pow(spec, 9) * (0.45 + 0.55 * crown);
       const k = (0.28 + 0.62 * dif) * groove;
       out3[0] = r * k + sp * 0.95; out3[1] = g * k + sp * 0.85; out3[2] = b * k + sp * 0.55;
     } else {
-      const sp = Math.pow(spec, 16) * 0.16 * (0.4 + 0.6 * crown);
-      const k = (0.50 + 0.74 * dif) * groove;
+      const sp = Math.pow(spec, 18) * 0.10 * (0.3 + 0.7 * crown);
+      const k = (0.46 + 0.80 * dif) * groove;
       out3[0] = r * k + sp; out3[1] = g * k + sp * 0.97; out3[2] = b * k + sp * 0.9;
     }
   }
@@ -115,7 +130,7 @@ const Stitch = (() => {
       bw *= 1 + amp * (vnoise(k * 31 + fu * 9, gy * 2.6, seed + 5) - 0.5);
       bf *= 1 + amp * (vnoise(m * 31 + fv * 9, gx * 2.6, seed + 6) - 0.5);
     }
-    const hole = 0.70;
+    const hole = 0.74;
     let b;
     if (warpOver) b = (hole + (bf - hole) * cf) * (1 - cw) + bw * cw;
     else b = (hole + (bw - hole) * cw) * (1 - cf) + bf * cf;
@@ -136,7 +151,7 @@ const Stitch = (() => {
     const len = Math.SQRT2 * (1 - 2 * E);
     const t = rx * dx + ry * dy, d = -rx * dy + ry * dx - jit;
     const tc = t < 0 ? 0 : t > len ? len : t, tn = tc / len;
-    const w = hw * (0.40 + 0.60 * Math.sqrt(Math.sin(Math.PI * tn)));
+    const w = hw * (0.52 + 0.48 * Math.sqrt(Math.sin(Math.PI * tn)));
     const et = t - tc, dist = Math.sqrt(et * et + d * d);
     sN = d / w; sT = tc;
     return clamp01((w - dist) / (aa + soft) + 0.5);
@@ -184,18 +199,18 @@ const Stitch = (() => {
     const P = pal[own], base = P.rgb;
     const lot = 1 + (vnoise(i / 7.3, j / 7.3, seed + 4) - 0.5) * (P.lot ?? 0.11) + (h3 - 0.5) * 0.07;
     const r = base[0] * lot, g = base[1] * lot, bl = base[2] * lot;
-    const pitch = hw * c * 2.6;
+    const pitch = hw * c * 4.2;
     const wb = hw * (0.94 + 0.12 * h3), wt = hw * (0.94 + 0.12 * h1);
     const cb = stroke(false, a, b, wb, jb, aa, 0);
     if (cb > 0) {
-      shade(r, g, bl, P.metal, sN, sT * c, pitch, R2, -R2, px, h1, 0);
+      shade(r, g, bl, P.metal, sN, sT * c, pitch, R2, -R2, px, h1, 1);
       let k = 1;
       if (shTop > 0 && scol) k = 1 - shTop * 0.30;
       over(out3[0] * k * 0.96, out3[1] * k * 0.96, out3[2] * k * 0.96, cb);
     }
     const ct = stroke(true, a, b, wt, jt, aa, 0);
     if (ct > 0) {
-      shade(r, g, bl, P.metal, sN, sT * c, pitch, R2, R2, px, h2, 0);
+      shade(r, g, bl, P.metal, sN, sT * c, pitch, R2, R2, px, h2, 1);
       over(out3[0], out3[1], out3[2], ct);
     }
   }
@@ -257,7 +272,7 @@ const Stitch = (() => {
     const c = clamp01((w - dist) / px + 0.5);
     if (c <= 0) return;
     let n = d / w; n = n > 1 ? 1 : n < -1 ? -1 : n;
-    shade(base[0], base[1], base[2], P.metal, n, a[i + 7] + tc, hw * 5.2, ux, uy, px, phase, 0);
+    shade(base[0], base[1], base[2], P.metal, n, a[i + 7] + tc, hw * (a[i + 12] ? 8.4 : 5.2), ux, uy, px, phase, a[i + 12]);
     over(out3[0] * endk, out3[1] * endk, out3[2] * endk, c);
   }
 
@@ -296,7 +311,7 @@ const Stitch = (() => {
   function render(scene, view, W, H) {
     const t0 = performance.now();
     const outp = new Uint8ClampedArray(W * H * 4);
-    const T = 32, s = view.s, px = 1 / s;
+    const T = 16, s = view.s, px = 1 / s;
     const segs = scene.segs || new Segs();
     const B = bin(segs, view, W, H, T);
     const a = segs.a, pal = scene.pal, L = scene.linen, grids = scene.grids || [];

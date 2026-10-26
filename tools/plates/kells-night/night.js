@@ -13,20 +13,24 @@
 // Units. Drawing is in units of 3 plate pixels (the plate is 546 x 1181.7 units); the screen at rest
 // shows the middle 388 x 844 units.
 //
-// Pass plates. The exporter makes them by magnifying the page about the closer plate's centre with a
-// CSS transform on the root element. A canvas would only be blown up, so the page watches for that
-// transform and, in the same task, redraws the layer at the magnified scale at full resolution and
-// takes the transform off: pass plates stay as sharp as the plates themselves.
+// Pass plates. The exporter asks for them with &magnify=s&cx=..&cy=.. (the level magnified about that
+// point of its plate), and the page paints them itself (window.platesMagnifies), through the lens
+// magnified about that point. Line weights, lettering and textures keep their own size, so a pass plate is
+// a true intermediate map (more detail, not thicker lines); names, the ship and the standing tower are
+// left to the plates themselves, and only the iris the camera dives through is kept.
 'use strict';
 (function () {
 const W = Kit.W, H = Kit.H, S = 3, CW = W / S, CH = H / S, N = W * H;
-const { level: LEVEL, layer: LAYER } = Kit.params();
+const { level: LEVEL, layer: LAYER, magnify: MAGNIFY, cx: MAG_CX, cy: MAG_CY } = Kit.params();
 
 // ---------------------------------------------------------------- the levels, their scales and layers
 const SCALES = [W * 0.306, Kit.km(2300), Kit.km(620), Kit.km(52), Kit.km(1.3)];
 const IDS = ['world', 'america', 'ohio', 'columbus', 'shortnorth'];
-const lensU = k => d3.geoOrthographic().rotate([-Kit.TARGET[0], -Kit.TARGET[1]]).translate([CW / 2, CH / 2])
-  .scale(SCALES[k] / S).clipAngle(90).precision(0.1);
+// the lens in drawing units, magnified about (MCX, MCY) plate px while a pass plate is drawn
+let MS = 1, MCX = W / 2, MCY = H / 2;
+const lensU = k => d3.geoOrthographic().rotate([-Kit.TARGET[0], -Kit.TARGET[1]])
+  .translate([CW / 2 + (CW / 2 - MCX / S) * MS, CH / 2 + (CH / 2 - MCY / S) * MS]).scale(SCALES[k] / S * MS).clipAngle(90).precision(0.1);
+const lensBase = k => d3.geoOrthographic().rotate([-Kit.TARGET[0], -Kit.TARGET[1]]).translate([CW / 2, CH / 2]).scale(SCALES[k] / S).clipAngle(90).precision(0.1);
 const KELLS = [-6.88, 53.73], CBUS = [-82.99, 39.96];
 // where the red sail is at each scale: [lon, lat], mast height in units, facing (1 east, -1 west)
 const SHIP = [
@@ -76,9 +80,13 @@ window.Plates = {
 if (LAYER === 'none') return;
 
 // ---------------------------------------------------------------- magnification (pass plates)
-let MS = 1, K = S, OX = 0, OY = 0;   // device px per unit, and the device position of unit (0, 0)
-function setMag(s, cx, cy) { MS = s; K = S * s; OX = W / 2 - cx * s; OY = H / 2 - cy * s; }
-const ux = i => ((i % W) - OX) / K, uy = i => (((i / W) | 0) - OY) / K;
+const K = S, OX = 0, OY = 0;   // device px per unit, and the device position of unit (0, 0)
+function setMag(s, cx, cy) { MS = s; MCX = cx; MCY = cy; }
+const ux = i => (i % W) / S, uy = i => ((i / W) | 0) / S;
+// a point of this plate in the unmagnified plate's units (for what should zoom with the map: the big
+// watercolour blooms and the vignette)
+const baseX = x => MCX / S + (x - CW / 2) / MS, baseY = y => MCY / S + (y - CH / 2) / MS;
+const PASS = () => MS > 1.001;
 
 // ---------------------------------------------------------------- randomness and noise
 function rng(seed) {
@@ -137,12 +145,24 @@ function makeFields() {
   PAPER = field(1, 4.5, 3, 5, 0, 4, 0);     // paper fibres
 }
 const fi = i => ((i / W) | 0) * FW + (i % W);   // a device index into a field with margin
-const bloomAt = i => { const bx = Math.min(FW - 1, Math.max(0, Math.round(ux(i) * S))), by = Math.min(FH - 1, Math.max(0, Math.round(uy(i) * S))); return BLOOM[by * FW + bx]; };
+// The parent level's blooms where its plate shows the same ground: smooth at this scale. Washed in under
+// a plate's own, so its large tones carry on from the plate it opens out of during the dive.
+let PB_CACHE = null;
+function parentBlooms() {
+  if (PB_CACHE) return PB_CACHE;
+  const k = LEVEL - 1, here = lensU(k), there = lensBase(k - 1);
+  PB_CACHE = gridOf((x, y) => {
+    const ll = here.invert([x, y]); const p = ll && there(ll); if (!p) return 0.5;
+    const bx = Math.min(FW - 1, Math.max(0, Math.round(p[0] * S))), by = Math.min(FH - 1, Math.max(0, Math.round(p[1] * S)));
+    return BLOOM[by * FW + bx];
+  });
+  return PB_CACHE;
+}
+const bloomAt = i => { const bx = Math.min(FW - 1, Math.max(0, Math.round(baseX(ux(i)) * S))), by = Math.min(FH - 1, Math.max(0, Math.round(baseY(uy(i)) * S))); return BLOOM[by * FW + bx]; };
 
 // ---------------------------------------------------------------- canvases and the paint buffer
 function mk(w = W, h = H) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-const OUT = mk(); document.body.appendChild(OUT);
-const out = OUT.getContext('2d');
+let out = null;   // the page's canvas, made once the body exists
 const SCR = mk(), sctx = SCR.getContext('2d', { willReadFrequently: true });
 function scratch() {
   sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.globalCompositeOperation = 'source-over'; sctx.globalAlpha = 1;
@@ -182,12 +202,14 @@ const within = m => i => m[i];
 function wash(mask, P) {
   const [c0, c1, c2] = P.c.map(hex), off = P.off || 0, dx = (off * 37) % EXT, dy = (off * 101) % EXT;
   const bloom = P.bloom ?? 1, mottle = P.mottle ?? 0.5, tide = P.tide ?? 0.12, grain = P.grain ?? 0.14, specks = P.specks ?? 0.003, brush = P.brush ?? 0;
+  const PB = P.inherit ? parentBlooms() : null, pb = P.inherit || 0;
   for (let y = 0, i = 0; y < H; y++) {
     const row = (y + dy) * FW + dx;
     for (let x = 0; x < W; x++, i++) {
       const a = mask ? mask[i] : 1; if (a <= 0.003) continue;
       const j = row + x;
       let v = 0.5 + (bloomAt(i) - 0.5) * bloom * 1.6 + (MOT[j] - 0.5) * mottle * 1.4 + (BRUSH[j] - 0.5) * brush * 1.4;
+      if (PB) v += (PB[i] - 0.5) * pb * 1.6;
       if (P.lift) v += P.lift(i);
       v = clamp01(v);
       let r, g, b;
@@ -265,6 +287,7 @@ function linePts(gpath, f) {
 const onPlate = (x, y, m = 20) => { const X = x * K + OX, Y = y * K + OY, M = m * K; return X > -M && X < W + M && Y > -M && Y < H + M; };
 
 // ---------------------------------------------------------------- the night palette
+const OHIO_LAND = ['#0f2832', '#1a3f48', '#2d5856'];   // moonlit Ohio, and the city that opens out of it
 const PAL = {
   sky: ['#060a2a', '#101a55', '#1f2d78'],
   sea: ['#111c5e', '#1d3089', '#3350b2'],
@@ -387,7 +410,7 @@ function label(c, text, x, y, size, o = {}) {
 // Lettering along a path (unit points), centred at fraction `at` of its length.
 function pathLabel(c, text, pts, size, o = {}) {
   c.save();
-  c.font = `${size}px 'Uncial Antiqua'`; c.textBaseline = 'middle'; c.textAlign = 'center';
+  c.font = o.font === 'italic' ? `italic ${size}px Alegreya` : `${size}px 'Uncial Antiqua'`; c.textBaseline = 'middle'; c.textAlign = 'center';
   const track = (o.track ?? 0.2) * size;
   const widths = [...text].map(ch => c.measureText(ch).width + track);
   const total = widths.reduce((a, b) => a + b, 0) - track;
@@ -543,7 +566,7 @@ function shoreLines(waterM, dWater, o = {}) {
 // Paper grain and a gentle darkening towards the plate's outer ring (in units of the unmagnified plate).
 function paper(vig = 0.45) {
   for (let i = 0; i < N; i++) {
-    const dx = (ux(i) - CW / 2) / (CW * 0.71), dy = (uy(i) - CH / 2) / (CH * 0.71);
+    const dx = (baseX(ux(i)) - CW / 2) / (CW * 0.71), dy = (baseY(uy(i)) - CH / 2) / (CH * 0.71);
     const v = 1 - vig * smooth(0.25, 0.85, Math.sqrt(dx * dx * 1.1 + dy * dy));
     const p = (0.96 + PAPER[i] * 0.06 + (GRAIN[i] - 0.5) * 0.04) * v;
     const q = i * 3; IMG[q] *= p; IMG[q + 1] *= p; IMG[q + 2] *= p;
@@ -566,6 +589,9 @@ function vectorLayer(draw) {
 
 // ---------------------------------------------------------------- data
 const D = name => Kit.json(`../data/${name}`);
+// The lens applied point by point (no spherical clipping or resampling). d3-geo merges points closer than
+// 1e-6 radians, about 6 m, which would cut the corners off houses at the street scales.
+const planar = (proj, ctx) => d3.geoPath(d3.geoTransform({ point(x, y) { const p = proj([x, y]); this.stream.point(p[0], p[1]); } }), ctx);
 const fc = features => ({ type: 'FeatureCollection', features });
 
 // ================================================================ I · the world
@@ -581,7 +607,7 @@ async function loadWorld() {
     rivers: fc(riversFC.features.filter(f => ['Mississippi', 'Missouri', 'Ohio', 'Saint Lawrence', 'Mackenzie', 'Yukon', 'Rio Grande', 'Arkansas', 'Nelson', 'Saskatchewan', 'Columbia', 'Colorado'].includes(f.properties.name))) };
 }
 function drawWorld(layer, d) {
-  const proj = lensU(0), gp = c => d3.geoPath(proj, c), OXu = CW / 2, OYu = CH / 2, OR = proj.scale();
+  const proj = lensU(0), gp = c => d3.geoPath(proj, c), [OXu, OYu] = proj.translate(), OR = proj.scale();
   const offOrb = (x, y, m) => Math.hypot(x - OXu, y - OYu) > OR + m;
   if (layer === 'near') {
     begin(false);
@@ -591,6 +617,7 @@ function drawWorld(layer, d) {
   }
   if (layer === 'labels') {
     // the voyage and the next frame, in chalk floating just above the orb
+    if (PASS()) return vectorLayer(c => { const ir = new Path2D(d3.geoPath(proj)(d3.geoCircle().center(CBUS).radius(11)())); c.setLineDash([0.1, 2.5]); c.lineCap = 'round'; c.lineWidth = 0.95; c.strokeStyle = 'rgba(233,238,249,0.9)'; c.stroke(ir); });
     return vectorLayer(c => {
       const ip = d3.geoInterpolate(KELLS, CBUS), pts = [];
       for (let t = 0; t <= 1.0001; t += 0.01) { const p = proj(ip(t)); if (p) pts.push(p); }
@@ -600,7 +627,7 @@ function drawWorld(layer, d) {
     });
   }
   if (layer === 'lights') return vectorLayer(() => {});
-  if (layer === 'ship') return vectorLayer(c => { const [x, y] = proj(SHIP[0].at); ship(c, x, y + 1, SHIP[0].h, SHIP[0].dir); });
+  if (layer === 'ship') return vectorLayer(c => { if (PASS()) return; const [x, y] = proj(SHIP[0].at); ship(c, x, y + 1, SHIP[0].h, SHIP[0].dir); });
   // ground
   begin(true);
   wash(null, { c: PAL.sky, bloom: 0.5, mottle: 0.4, brush: 0.2, tide: 0.1, grain: 0.11, specks: 0.002,
@@ -679,7 +706,7 @@ function drawWorld(layer, d) {
   // far stars and fine spatter on the ground; the nearer ones are on their own layer
   c = scratch(); spatter(c, 2600, 21, (x, y) => offOrb(x, y, 4), { big: 0.02 }); composite('normal', 0.8);
   c = scratch(); stars(c, 16, 35, (x, y) => offOrb(x, y, 26), { apart: 40, bigShare: 0.05, scale: 0.75 }); composite('normal', 0.75);
-  paper(0.4);
+  paper(0.4);   // the world alone darkens towards its edges: nested plates must match their parents
   present();
 }
 
@@ -696,6 +723,7 @@ function drawAmerica(layer, d) {
   const ohio = d.statesFC.features.find(f => f.properties.name === 'Ohio');
   const cbus = d.ohioPlaces.features.find(f => f.properties.name === 'Columbus').geometry.coordinates;
   if (layer === 'labels') return vectorLayer(c => {
+    if (PASS()) { const oc = pt([-82.7, 40.2]); return iris(c, oc[0], oc[1], 60 * MS); }
     const voyage = [[-61, 47.3], [-64.5, 49.2], [-68.5, 48.8], [-71.2, 46.8], [-72.6, 46.2], [-74.2, 45.3], [-75.8, 44.4], [-76.9, 43.75], [-78.5, 43.55], [-79.25, 43.2],
       [-79.4, 42.85], [-80.2, 42.45], [-81.3, 41.95], [-82.4, 41.62], [-82.85, 41.2], [-83.05, 40.6], cbus].map(pt);
     route(c, voyage, 3.0, 0.5, 0.85);
@@ -714,7 +742,7 @@ function drawAmerica(layer, d) {
     for (const f of places) { const p = pt(f.geometry.coordinates); if (!p || f.properties.name === 'Columbus') continue; light(c, p[0], p[1], 5 + Math.min(7, Math.sqrt(f.properties.pop / 1e6) * 2), 0.45); }
     const p = pt(cbus); light(c, p[0], p[1], 16, 0.75);
   });
-  if (layer === 'ship') return vectorLayer(c => { const [x, y] = pt(SHIP[1].at); ship(c, x, y + 1.5, SHIP[1].h, SHIP[1].dir); });
+  if (layer === 'ship') return vectorLayer(c => { if (PASS()) return; const [x, y] = pt(SHIP[1].at); ship(c, x, y + 1.5, SHIP[1].h, SHIP[1].dir); });
   begin(true);
   wash(null, { c: PAL.sea, bloom: 0.75, mottle: 0.5, brush: 0.25, tide: 0.16, grain: 0.12, off: 7 });
   const landM = maskFrom(c => {
@@ -731,7 +759,7 @@ function drawAmerica(layer, d) {
   // the north of the lakes is forest and lies darker; the land is lighter round the lakes; Ohio moonlit
   const NORTH = gridOf((x, y) => { const ll = proj.invert([x, y]); return ll ? smooth(45.0, 46.4, ll[1]) : 0; });
   const north = i => NORTH[i];
-  wash(landM, { c: PAL.land, bloom: 0.45, mottle: 0.4, brush: 0.3, tide: 0.22, grain: 0.2, specks: 0.005, off: 13, edge: dLand, edgeW: 6, edgeK: 0.25,
+  wash(landM, { c: PAL.land, bloom: 0.25, inherit: 0.36, mottle: 0.4, brush: 0.3, tide: 0.22, grain: 0.2, specks: 0.005, off: 13, edge: dLand, edgeW: 6, edgeK: 0.25,
     lift: i => ohioM[i] * 0.12 + 0.15 * Math.exp(-dSea[i] / K / 34) - 0.08 * north(i) });
   // the Appalachians: sweeping bands along the ridge line, from Tennessee to the Hudson
   const spine = [[-85.6, 34.6], [-84.1, 35.8], [-82.3, 36.9], [-80.7, 37.9], [-79.4, 39.1], [-78.2, 40.2], [-76.9, 40.9], [-75.6, 41.5], [-74.6, 42.2], [-74.1, 43.2]].map(pt);
@@ -745,29 +773,31 @@ function drawAmerica(layer, d) {
     for (let gy = 0; gy < CH; gy += cell) for (let gx = 0; gx < CW; gx += cell) {
       const x0 = gx + (r() - 0.5) * 1.5, y0 = gy + (r() - 0.5) * 1.5, q = [r(), r(), r(), r()];
       const cx = x0 + cell / 2, cy = y0 + cell / 2;
-      if (!onPlate(cx, cy) || !inLand(cx, cy) || q[0] > 0.55 * field(cx, cy) || at(dLand, cx, cy) < 4 * K) continue;
+      if (!onPlate(cx, cy) || !inLand(cx, cy) || q[0] > 0.72 * field(cx, cy) || at(dLand, cx, cy) < 4 * K) continue;
       const horiz = q[1] < 0.5, sp = 1.4 + q[2] * 0.4, m = 1.6, ww = cell - m * 2;
       c.beginPath();
       for (let t = m; t < cell - m; t += sp) {
         if (horiz) penStroke(c, x0 + m, y0 + t, x0 + m + ww, y0 + t, 0.22, 0.1);
         else penStroke(c, x0 + t, y0 + m, x0 + t, y0 + m + ww, 0.22, 0.1);
       }
-      c.fillStyle = q[3] < 0.65 ? 'rgba(160,205,196,0.5)' : 'rgba(3,8,12,0.6)'; c.fill();
+      c.fillStyle = q[3] < 0.62 ? 'rgba(165,210,200,0.66)' : 'rgba(3,8,12,0.66)'; c.fill();
     }
   }
-  composite('normal', 1, chalky(0.12, 0.45));
+  composite('normal', 1, chalky(0.1, 0.42));
   // hatching: dark ink along the shores, a few moonlit strokes inland
   c = scratch();
   hatch(c, { seed: 21, cell: 5.5, density: 0.9, inside: inLand, angle: (x, y) => tangent(dLand, x, y), jitter: 0.3,
     where: (x, y) => Math.max(Math.exp(-at(dLand, x, y) / K / 6) * 0.95, 0.12) * (1 - 0.5 * field(x, y)), len: 6.5, space: 1.1, nmin: 3, nmax: 6, w: 0.3, color: PAL.ink, alpha: 0.78 });
   composite();
   // the forest north of the lakes: the film's dark round crowns, drawn at continent size
-  const forestM = new Float32Array(N); for (let i = 0; i < N; i++) forestM[i] = landM[i] > 0.5 ? north(i) : 0;
+  // and the southern woods, from the Ozarks across Tennessee to the Carolinas: sparser, smaller crowns
+  const SOUTH = gridOf((x, y) => { const ll = proj.invert([x, y]); if (!ll) return 0; return smooth(31.8, 33.2, ll[1]) * smooth(37.2, 36.2, ll[1]) * smooth(-93.5, -91.5, ll[0]) * smooth(-78.5, -80, ll[0]) * 0.42; });
+  const forestM = new Float32Array(N); for (let i = 0; i < N; i++) forestM[i] = landM[i] > 0.5 ? Math.max(north(i), SOUTH[i]) : 0;
   c = scratch();
   {
     const r = rng(43), got = [];
     for (let k = 0; k < 26000; k++) {
-      const x = r() * CW, y = r() * CH, rad = 2.4 + r() * 1.8, q = r();
+      const x = r() * CW, y = r() * CH, q = r(), rad = (2.4 + r() * 1.8) * (at(SOUTH, x, y) > north(Math.min(N - 1, Math.max(0, ((y * K + OY) | 0) * W + ((x * K + OX) | 0)))) ? 0.78 : 1);
       if (!onPlate(x, y) || at(forestM, x, y) < 0.05 || q > at(forestM, x, y) || at(dLand, x, y) < (rad + 1.5) * K) continue;
       if (got.some(([gx, gy, gr]) => Math.abs(gx - x) < 9 && Math.abs(gy - y) < 9 && Math.hypot(gx - x, gy - y) < (gr + rad) * 0.95)) continue;
       got.push([x, y, rad]);
@@ -802,7 +832,7 @@ function drawAmerica(layer, d) {
   composite('normal', 1, i => landM[i] * chalky(0.15, 0.5)(i));
   c = scratch(); spatter(c, 2600, 27, (x, y) => at(seaM, x, y) > 0.9 && at(dSea, x, y) > 12 * K, { big: 0.03 }); composite('normal', 0.8);
   c = scratch(); stars(c, 9, 29, (x, y) => at(dSea, x, y) > 18 * K && at(seaM, x, y) > 0.9, { apart: 40 }); composite();
-  paper(0.45);
+  paper(0);
   present();
 }
 // A function of position evaluated on a coarse grid (every 8 device px) and read back bilinearly.
@@ -846,6 +876,7 @@ function drawOhio(layer, d) {
   };
   const cb = pt(place('Columbus'));
   if (layer === 'labels') return vectorLayer(c => {
+    if (PASS()) return iris(c, cb[0] - MS, cb[1] - MS, 27 * MS);
     const sandusky = [[-82.55, 41.55], [-82.8, 41.47], [-83.05, 41.38], [-83.15, 41.15], [-83.25, 40.86], [-83.2, 40.55], [-83.179, 40.3523], [-83.1434, 40.2696], [-83.14, 40.21], [-83.08, 40.12]].map(pt);
     route(c, sandusky, 3.2, 0.55, 0.9);
     iris(c, cb[0] - 1, cb[1] - 1, 27);
@@ -872,7 +903,7 @@ function drawOhio(layer, d) {
     for (const n of ['Cleveland', 'Cincinnati']) { const p = pt(place(n)); glow(c, p[0], p[1], 17, PAL.cream, 0.42); }
     glow(c, cb[0], cb[1], 34, PAL.cream, 0.55);
   });
-  if (layer === 'ship') return vectorLayer(c => { const [x, y] = pt(SHIP[2].at); ship(c, x, y + 2, SHIP[2].h, SHIP[2].dir); });
+  if (layer === 'ship') return vectorLayer(c => { if (PASS()) return; const [x, y] = pt(SHIP[2].at); ship(c, x, y + 2, SHIP[2].h, SHIP[2].dir); });
   begin(true);
   wash(null, { c: PAL.sea, bloom: 0.75, mottle: 0.5, brush: 0.3, tide: 0.16, grain: 0.12, off: 7 });
   const landM = maskFrom(c => {
@@ -886,8 +917,8 @@ function drawOhio(layer, d) {
   for (let i = 0; i < N; i++) ohioM[i] *= landM[i];
   const dSea = edt(i => landM[i] > 0.5), dLand = edt(i => landM[i] <= 0.5);
   shallows(seaM, dSea, { w: 3.2, alpha: 0.62 });
-  wash(landM, { c: PAL.landDim, bloom: 0.45, mottle: 0.4, brush: 0.3, tide: 0.2, grain: 0.2, specks: 0.005, off: 13, edge: dLand, edgeW: 6, edgeK: 0.2 });
-  wash(ohioM, { c: ['#12303a', '#1e4650', '#33625f'], bloom: 0.45, mottle: 0.45, brush: 0.25, tide: 0.22, grain: 0.2, specks: 0.005, off: 31, edge: dLand, edgeW: 6, edgeK: 0.2,
+  wash(landM, { c: PAL.land, bloom: 0.25, inherit: 0.4, mottle: 0.4, brush: 0.3, tide: 0.2, grain: 0.2, specks: 0.005, off: 13, edge: dLand, edgeW: 6, edgeK: 0.2, lift: () => 0.04 });
+  wash(ohioM, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.45, brush: 0.25, tide: 0.22, grain: 0.2, specks: 0.005, off: 31, edge: dLand, edgeW: 6, edgeK: 0.2,
     lift: i => 0.1 * Math.exp(-dSea[i] / K / 40) });
   // the glacier's edge splits Ohio: flat till plains to the north and west, hills to the south-east
   const glacial = [[-80.52, 40.62], [-81.25, 40.78], [-81.9, 40.62], [-82.25, 40.25], [-82.55, 39.65], [-83.1, 39.1], [-83.75, 38.95], [-84.4, 39.05], [-84.82, 39.12]].map(pt);
@@ -910,7 +941,7 @@ function drawOhio(layer, d) {
         if (horiz) penStroke(c, x0 + m, y0 + t, x0 + m + ww, y0 + t + (j0 - 0.5) * 0.4, 0.28, (j1 - 0.5) * 0.5);
         else penStroke(c, x0 + t, y0 + m, x0 + t + (j0 - 0.5) * 0.4, y0 + m + ww, 0.28, (j1 - 0.5) * 0.5);
       }
-      c.fillStyle = q[3] < 0.65 ? 'rgba(160,205,196,0.62)' : 'rgba(3,8,12,0.7)'; c.fill();
+      c.fillStyle = q[3] < 0.6 ? 'rgba(160,205,196,0.5)' : 'rgba(3,8,12,0.7)'; c.fill();
     }
   }
   composite('normal', 1, i => plainsO[i] * chalky(0.12, 0.45)(i));
@@ -981,11 +1012,11 @@ function drawOhio(layer, d) {
   c.strokeStyle = 'rgba(238,243,255,0.95)'; c.lineWidth = 2.2; c.stroke();
   c.strokeStyle = 'rgba(30,50,80,0.9)'; c.lineWidth = 1.1; c.stroke();
   c.setLineDash([0.1, 1.7]); c.strokeStyle = 'rgba(246,236,202,0.95)'; c.lineWidth = 0.8; c.stroke(); c.setLineDash([]);
-  tower(c, cb[0], cb[1] + 4, 15);
+  if (!PASS()) tower(c, cb[0], cb[1] + 4, 15);
   composite();
   c = scratch(); spatter(c, 1800, 47, (x, y) => at(seaM, x, y) > 0.9 && at(dSea, x, y) > 9 * K, { big: 0.03 }); composite('normal', 0.8);
   c = scratch(); stars(c, 6, 49, (x, y) => at(dSea, x, y) > 15 * K && at(seaM, x, y) > 0.9, { apart: 36, scale: 1.1 }); composite();
-  paper(0.45);
+  paper(0);
   present();
 }
 
@@ -995,7 +1026,7 @@ async function loadColumbus() {
   return { roadsFC, waterFC, streamsFC };
 }
 function drawColumbus(layer, d) {
-  const proj = lensU(3), gp = c => d3.geoPath(proj, c), gpn = () => d3.geoPath(proj), pt = ll => proj(ll);
+  const proj = lensU(3), gp = c => planar(proj, c), gpn = () => planar(proj, null), pt = ll => proj(ll);
   const RC = pt([-82.985, 39.99]), RR = Math.abs(pt([-82.80, 39.99])[0] - pt([-83.17, 39.99])[0]) / 2;
   const bTop = pt([-83, 40.42])[1], bBot = pt([-83, 39.55])[1];
   const fadeAt = (x, y) => (1 - smooth(1.04, 1.55, Math.hypot(x - RC[0], (y - RC[1]) * 1.02) / RR)) * smooth(bTop, bTop + 40, y) * smooth(bBot, bBot - 40, y);
@@ -1004,8 +1035,9 @@ function drawColumbus(layer, d) {
   const ring = fc(R.filter(f => f.properties.class === 'interstate' && ringNames.includes(f.properties.name)));
   const spokes = fc(R.filter(f => f.properties.class === 'interstate' && !ringNames.includes(f.properties.name)));
   const majors = fc(R.filter(f => f.properties.class === 'major')), locals = fc(R.filter(f => f.properties.class === 'local'));
-  const dt = pt([-83.0006, 39.9612]), sn = pt(Kit.TARGET);
+  const dt = pt([-83.0006, 39.9612]), sn = pt(Kit.TARGET), tw = pt([-82.9935, 39.9575]);
   if (layer === 'labels') return vectorLayer(c => {
+    if (PASS()) return iris(c, sn[0], sn[1], 13 * MS, 0.95);
     // the voyage: down the Scioto past downtown, then up the Olentangy to its mooring by Short North
     const v = [[-83.108, 40.075], [-83.103, 40.05], [-83.088, 40.02], [-83.075, 39.99], [-83.045, 39.966], [-83.03, 39.961], [-83.021, 39.965], [-83.0205, 39.975], [-83.0211, 39.982]].map(pt);
     route(c, v, 3.0, 0.5, 0.85);
@@ -1013,20 +1045,16 @@ function drawColumbus(layer, d) {
     const Lb = (t, ll, size, o) => { const [x, y] = pt(ll); label(c, t, x, y, size, o); };
     Lb('Scioto', [-83.035, 39.885], 8.5, { color: PAL.pale, track: 0.28, rotate: -1.33 });
     Lb('Olentangy', [-83.012, 40.075], 7.5, { color: PAL.pale, track: 0.24, rotate: -1.5 });
-    Lb('Short North', [Kit.TARGET[0] + 0.004, Kit.TARGET[1] + 0.0125], 7, { color: PAL.cream, track: 0.2 });
-    Lb('Downtown', [-82.985, 39.951], 7, { color: PAL.cream, track: 0.2, alpha: 0.9 });
+    label(c, 'Short North', sn[0] + 15, sn[1] - 1, 7, { color: PAL.cream, track: 0.2, align: 'left' });
+    Lb('Downtown', [-82.9935, 39.9485], 6.5, { color: PAL.cream, track: 0.2, alpha: 0.85 });
     const arc = []; for (let k = 0; k <= 40; k++) { const t = Math.PI * (1.2 + 0.6 * k / 40); arc.push([RC[0] + Math.cos(t) * (RR + 13), RC[1] + Math.sin(t) * (RR * 0.95 + 13)]); }
     pathLabel(c, 'The Outerbelt', arc, 8, { color: PAL.chalk, track: 0.3, alpha: 0.85 });
   });
   if (layer === 'lights') return vectorLayer(c => {
-    c.save(); c.filter = blurU(2); c.beginPath(); gp(c)(majors); c.strokeStyle = rgba(PAL.cream, 0.3); c.lineWidth = 2.2; c.stroke(); c.restore();
-    glow(c, dt[0], dt[1], 46, PAL.cream, 0.5); glow(c, dt[0], dt[1], 16, PAL.cream, 0.45);
-    glow(c, sn[0], sn[1], 9, PAL.cream, 0.4);
+    glow(c, dt[0], dt[1], 34 * Math.sqrt(MS), PAL.cream, 0.42); glow(c, dt[0], dt[1], 13 * Math.sqrt(MS), PAL.cream, 0.4);
+    glow(c, sn[0], sn[1], 10 * Math.sqrt(MS), PAL.cream, 0.42);
   });
-  if (layer === 'ship') {
-    if (MS > 6) return vectorLayer(() => {});   // past this the ship would sweep by as a giant
-    return vectorLayer(c => { const [x, y] = pt(SHIP[3].at); ship(c, x, y + 2, SHIP[3].h, SHIP[3].dir); });
-  }
+  if (layer === 'ship') return vectorLayer(c => { if (PASS()) return; const [x, y] = pt(SHIP[3].at); ship(c, x, y + 2, SHIP[3].h, SHIP[3].dir); });
   const FADE = new Float32Array(N); for (let i = 0; i < N; i++) FADE[i] = fadeAt(ux(i), uy(i));
   const named = /Scioto|Olentangy|Alum|Walnut|Blacklick|Darby|Hoover/;
   const water = fc(d.waterFC.features.filter(f => named.test(f.properties.name) || Math.abs(gpn().area(f)) > 5));
@@ -1035,18 +1063,39 @@ function drawColumbus(layer, d) {
   const main = fc(water.features.filter(f => { if (/Scioto|Olentangy/.test(f.properties.name)) return true; const q = gpn().centroid(f); return isFinite(q[0]) && at(dMain, q[0], q[1]) < 9 * K && !/Hoover|Walnut|Alum|Blacklick|Darby/.test(f.properties.name); }));
   const mainStreams = fc(d.streamsFC.features.filter(f => /Scioto|Olentangy/.test(f.properties.name)));
   begin(true);
-  wash(null, { c: ['#060b1e', '#0b1628', '#142436'], bloom: 0.45, mottle: 0.4, brush: 0.3, tide: 0.2, grain: 0.2, specks: 0.005, off: 13 });
-  wash(FADE, { c: ['#10283a', '#1b3f4a', '#2e5a5a'], bloom: 0.5, mottle: 0.45, brush: 0.25, tide: 0.22, grain: 0.2, specks: 0.005, off: 41 });
+  // the same moonlit teal as Ohio's plate, so the city fades up over its own ground; the ring a little brighter
+  wash(null, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.45, brush: 0.25, tide: 0.22, grain: 0.2, specks: 0.005, off: 31,
+    lift: i => 0.06 * FADE[i] + 0.04 });
   const waterM = maskFrom(c => { c.beginPath(); gp(c)(water); c.fill(); c.lineWidth = 1.6; c.lineJoin = 'round'; c.stroke(); c.beginPath(); gp(c)(d.streamsFC); c.lineWidth = 0.9; c.stroke(); });
   const dW = edt(i => waterM[i] > 0.4);
   let c = scratch();
   hatch(c, { seed: 51, cell: 6, density: 0.85, inside: (x, y) => at(waterM, x, y) < 0.2, angle: (x, y) => tangent(dW, x, y), jitter: 0.35,
-    where: (x, y) => (0.12 + 0.85 * Math.exp(-at(dW, x, y) / K / 7)) * (0.15 + 0.85 * fadeAt(x, y)), len: 5.5, space: 1.05, nmin: 3, nmax: 5, w: 0.26, color: PAL.ink, alpha: 0.7 });
+    where: (x, y) => (0.08 + 0.75 * Math.exp(-at(dW, x, y) / K / 7)) * (0.15 + 0.85 * fadeAt(x, y)), len: 5.5, space: 1.05, nmin: 3, nmax: 5, w: 0.26, color: PAL.ink, alpha: 0.38 });
   composite();
+  // the farmland round the city, ploughed as on Ohio's plate: hatched fields, fewer towards the ring
+  c = scratch();
+  {
+    const r = rng(57), cell = 12;
+    for (let gy = 0; gy < CH; gy += cell) for (let gx = 0; gx < CW; gx += cell) {
+      const x0 = gx + (r() - 0.5) * 2, y0 = gy + (r() - 0.5) * 2, q = [r(), r(), r(), r()], cx = x0 + cell / 2, cy = y0 + cell / 2;
+      if (!onPlate(cx, cy)) continue;
+      const rr = Math.hypot(cx - RC[0], (cy - RC[1]) * 1.02) / RR, keep = smooth(0.95, 1.25, rr) * 0.55;
+      if (q[0] > keep || at(waterM, cx, cy) > 0.2) continue;
+      const horiz = q[1] < 0.5, sp = 1.5 + q[2] * 0.4, m = 2, ww = cell - m * 2;
+      c.beginPath();
+      for (let t = m; t < cell - m; t += sp) {
+        if (horiz) penStroke(c, x0 + m, y0 + t, x0 + m + ww, y0 + t, 0.26, 0.1); else penStroke(c, x0 + t, y0 + m, x0 + t, y0 + m + ww, 0.26, 0.1);
+      }
+      c.fillStyle = q[3] < 0.6 ? 'rgba(160,205,196,0.45)' : 'rgba(3,8,12,0.55)'; c.fill();
+    }
+  }
+  composite('normal', 1, chalky(0.12, 0.45));
   c = scratch(); c.beginPath(); gp(c)(locals); c.strokeStyle = 'rgba(214,226,246,0.2)'; c.lineWidth = 0.3; c.stroke();
-  composite('normal', 1, i => FADE[i] * FADE[i]);
+  composite('normal', 1, i => 0.15 + 0.85 * FADE[i] * FADE[i]);
+  c = scratch(); c.filter = blurU(2); c.beginPath(); gp(c)(majors); c.strokeStyle = rgba(PAL.cream, 0.5); c.lineWidth = 2.2; c.stroke(); c.filter = 'none';
+  composite('screen', 0.2, i => 0.2 + 0.8 * FADE[i]);
   c = scratch(); c.beginPath(); gp(c)(majors); c.strokeStyle = rgba(PAL.cream, 0.6); c.lineWidth = 0.5; c.lineCap = 'round'; c.stroke();
-  composite('normal', 1, i => 0.1 + 0.9 * FADE[i]);
+  composite('normal', 1, i => 0.25 + 0.75 * FADE[i]);
   c = scratch();
   {
     const r = rng(53); let n = 0;
@@ -1080,8 +1129,8 @@ function drawColumbus(layer, d) {
   composite('normal', 1, chalky(0.1, 0.42));
   c = scratch(); c.filter = blurU(3.3); c.beginPath(); gp(c)(ring); c.strokeStyle = rgba(PAL.pale, 0.35); c.lineWidth = 7; c.stroke(); c.filter = 'none';
   composite('screen', 0.5);
-  c = scratch(); tower(c, dt[0], dt[1] + 3, 46, { edge: 0.9 }); composite();
-  paper(0.45);
+  if (!PASS()) { c = scratch(); tower(c, tw[0], tw[1], 24, { edge: 0.9 }); composite(); }
+  paper(0);
   present();
 }
 
@@ -1091,177 +1140,185 @@ async function loadShortNorth() {
   return { roadsFC, bldFC, greenFC, treesFC, railFC };
 }
 function drawShortNorth(layer, d) {
-  const proj = lensU(4), gp = c => d3.geoPath(proj, c), pt = ll => proj(ll);
+  const proj = lensU(4), gp = c => planar(proj, c), pt = ll => proj(ll);
   const cls = k => fc(d.roadsFC.features.filter(f => k.includes(f.properties.class)));
-  const high = fc(d.roadsFC.features.filter(f => f.properties.name === 'North High Street' && ['primary', 'secondary', 'tertiary'].includes(f.properties.class)));
-  const mainR = cls(['primary', 'secondary', 'tertiary', 'primary_link', 'secondary_link']), resR = cls(['residential', 'unclassified', 'living_street']);
-  const svcR = cls(['service']), footR = cls(['footway', 'path', 'cycleway', 'pedestrian', 'steps']), motorR = cls(['motorway', 'motorway_link']);
+  const isHigh = f => f.properties.name === 'North High Street' && ['primary', 'secondary', 'tertiary'].includes(f.properties.class);
+  const high = fc(d.roadsFC.features.filter(isHigh));
+  const mainR = fc(d.roadsFC.features.filter(f => !isHigh(f) && ['primary', 'secondary', 'tertiary', 'primary_link', 'secondary_link'].includes(f.properties.class)));
+  const resR = cls(['residential', 'unclassified', 'living_street']), svcR = cls(['service']);
+  const footR = cls(['footway', 'path', 'cycleway', 'pedestrian', 'steps']), motorR = cls(['motorway', 'motorway_link']);
   const byKind = k => fc(d.greenFC.features.filter(f => k.includes(f.properties.kind)));
-  const parks = byKind(['park', 'garden', 'playground', 'pitch']), grass = byKind(['grass']), woods = byKind(['forest', 'wood', 'scrub']);
-  // High Street's centre line, south to north, for the arches
+  const parks = byKind(['park', 'garden', 'playground', 'pitch', 'grass']), woods = byKind(['forest', 'wood', 'scrub']);
+  // High Street's centre line, south to north
   const highLine = (() => {
-    const segs = []; for (const f of high.features) for (const sg of linePts(gp, f)) segs.push(sg);
-    const pts = segs.flat().sort((a, b) => b[1] - a[1]);
-    const outp = []; for (let y = CH + 20; y > -20; y -= 4) { const near = pts.filter(p => Math.abs(p[1] - y) < 6); if (near.length) outp.push([near.reduce((s, p) => s + p[0], 0) / near.length, y]); }
-    return outp;
+    const pts = []; for (const f of high.features) for (const sg of linePts(gp, f)) pts.push(...sg);
+    const o = []; for (let y = CH + 20; y > -20; y -= 4) { const near = pts.filter(p => Math.abs(p[1] - y) < 6); if (near.length) o.push([near.reduce((t, p) => t + p[0], 0) / near.length, y]); }
+    return o;
   })();
+  const xOnHigh = y => { let best = null; for (const p of highLine) if (!best || Math.abs(p[1] - y) < Math.abs(best[1] - y)) best = p; return best ? best[0] : CW / 2; };
+  const highDir = Math.atan2(highLine[highLine.length - 1][1] - highLine[0][1], highLine[highLine.length - 1][0] - highLine[0][0]);
+  // the arches over High Street, from the convention centre north to Fifth Avenue
   const archY0 = pt([-83.0035, 39.9726])[1], archY1 = pt([-83.0035, 39.9886])[1];
-  const arches = [];
-  { const n = 17; for (let k = 0; k < n; k++) { const y = lerp(archY0, archY1, k / (n - 1)); let best = null; for (const p of highLine) if (!best || Math.abs(p[1] - y) < Math.abs(best[1] - y)) best = p; if (best) arches.push([best[0], y]); } }
-  const highDir = (() => { const a = highLine[0], b = highLine[highLine.length - 1]; return Math.atan2(b[1] - a[1], b[0] - a[0]); })();
+  const arches = []; for (let k = 0; k < 17; k++) { const y = lerp(archY0, archY1, k / 16); arches.push([xOnHigh(y), y]); }
   if (layer === 'labels') return vectorLayer(c => {
-    // High Street's name along the street, north of the arches; the villages either side, faint
-    const top = highLine.filter(p => p[1] < archY1 - 6 && p[1] > archY1 - 150);
-    if (top.length > 2) pathLabel(c, 'High Street', top.map(([x, y]) => [x - 11, y]), 9, { track: 0.28, color: PAL.cream });
-    label(c, 'Victorian Village', pt([-83.0095, 39.9835])[0], pt([-83.0095, 39.9835])[1], 8.5, { color: PAL.pale, track: 0.28, alpha: 0.75 });
-    label(c, 'Italian Village', pt([-82.9985, 39.979])[0], pt([-82.9985, 39.979])[1], 8.5, { color: PAL.pale, track: 0.28, alpha: 0.75 });
-    label(c, '© OpenStreetMap contributors', CW / 2 + 186, CH / 2 + 412, 5.5, { color: '#b7c5e6', track: 0.02, alpha: 0.6, align: 'right' });
+    const top = highLine.filter(p => p[1] < archY1 - 8 && p[1] > archY1 - 160);
+    if (top.length > 2) pathLabel(c, 'High Street', top.map(([x, y]) => [x - 12, y]), 11, { track: 0.12, color: PAL.cream, font: 'italic', });
+    const L = (t, ll, size, o) => { const [x, y] = pt(ll); label(c, t, x, y, size, o); };
+    L('Victorian Village', [-83.0078, 39.9842], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
+    L('Italian Village', [-83.0003, 39.9792], 8, { color: PAL.pale, track: 0.26, alpha: 0.75 });
+    label(c, '© OpenStreetMap contributors', CW / 2 + 186, CH / 2 + 413, 5.5, { color: '#b7c5e6', track: 0.02, alpha: 0.6, align: 'right' });
   });
   if (layer === 'lights') return vectorLayer(c => {
-    // the arches over High Street, drawn upright as the film stands its towers in a plan: each a curve
-    // of small lamps from kerb to kerb, a soft light pooled under it
-    const ca = Math.cos(highDir), sa = Math.sin(highDir);   // along the street (pointing north is -y)
+    // High Street's light, and its arches drawn upright as the film stands things up in a plan: each a
+    // curve of small lamps from kerb to kerb, a pool of light beneath
+    c.save(); c.filter = blurU(4); c.lineCap = 'round'; c.beginPath(); gp(c)(high); c.strokeStyle = rgba(PAL.cream, 0.5); c.lineWidth = 8; c.stroke(); c.restore();
+    c.save(); c.lineCap = 'round'; c.beginPath(); gp(c)(high); c.strokeStyle = rgba(PAL.cream, 0.55); c.lineWidth = 1.1; c.stroke(); c.restore();
+    const ax = -Math.sin(highDir), ay = Math.cos(highDir);   // across the street
     for (const [x, y] of arches) {
-      glow(c, x, y, 13, PAL.cream, 0.32);
-      const half = 6.6, rise = 7.5;
-      // across the street (perpendicular to its line), rising "up" the page
-      const px = -sa, py = ca;   // unit across
-      const ptsA = []; for (let s = 0; s <= 24; s++) { const t = s / 24, u = (t - 0.5) * 2 * half, v = -Math.sqrt(Math.max(0, 1 - (u / half) ** 2)) * rise; ptsA.push([x + px * u, y + py * u + v]); }
-      c.beginPath(); ptsA.forEach((p, k) => k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
-      c.strokeStyle = 'rgba(246,236,202,0.45)'; c.lineWidth = 0.5; c.stroke();
-      for (let s = 0; s <= 24; s += 2) { const [qx, qy] = ptsA[s]; glow(c, qx, qy, 1.4, '#fff3cf', 0.6); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(qx, qy, 0.32, 0, Math.PI * 2); c.fill(); }
-    }
-    // lamps along the side streets, and High Street's own glow
-    c.save(); c.filter = blurU(3); c.lineCap = 'round'; c.beginPath(); gp(c)(high); c.strokeStyle = rgba(PAL.cream, 0.42); c.lineWidth = 7; c.stroke(); c.restore();
-    for (const f of [...mainR.features, ...resR.features]) {
-      const main = mainR.features.includes(f);
-      if (f.properties.name === 'North High Street') continue;
-      for (const sg of linePts(gp, f)) for (const [x, y] of along(sg, main ? 16 : 26, main ? 5 : 11)) {
-        if (!onPlate(x, y, 4)) continue;
-        glow(c, x, y, main ? 6 : 5, PAL.cream, main ? 0.3 : 0.22); c.fillStyle = 'rgba(255,246,220,0.9)'; c.beginPath(); c.arc(x, y, main ? 0.45 : 0.35, 0, Math.PI * 2); c.fill();
-      }
+      glow(c, x, y - 3, 16, PAL.cream, 0.3);
+      const half = 8.2, rise = 9.5, P = [];
+      for (let s2 = 0; s2 <= 28; s2++) { const u = (s2 / 28 - 0.5) * 2 * half, v = -Math.sqrt(Math.max(0, 1 - (u / half) ** 2)) * rise; P.push([x + ax * u, y + ay * u + v]); }
+      c.beginPath(); P.forEach((q, k) => k ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]));
+      c.strokeStyle = 'rgba(246,236,202,0.55)'; c.lineWidth = 0.55; c.lineCap = 'round'; c.stroke();
+      for (let s2 = 0; s2 <= 28; s2 += 2) { const [qx, qy] = P[s2]; glow(c, qx, qy, 1.8, '#fff3cf', 0.55); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(qx, qy, 0.34, 0, Math.PI * 2); c.fill(); }
     }
   });
   if (layer === 'near') {
-    // a frame of dark round crowns at the plate's edges, nearer the eye, so the street sits deep below
+    // a frame of dark crowns at the edges, nearer the eye: the street seen from up in the trees
     begin(false);
-    const c = scratch(), r = rng(97), got = [];
-    for (let k = 0; k < 4000 && got.length < 46; k++) {
-      const x = r() * CW, y = r() * CH, rad = 14 + r() * 16;
-      const ex = Math.min(x - 70, CW - 70 - x), ey = Math.min(y - 150, CH - 150 - y);
-      const out = Math.min(ex / 60, ey / 120);   // < 0 outside the resting screen's inner area
-      if (out > -0.2 || (y > CH * 0.62 && out > -0.6)) continue;
-      if (got.some(([gx, gy, gr]) => Math.hypot(gx - x, gy - y) < (gr + rad) * 0.7)) continue;
-      got.push([x, y, rad]);
+    const c = scratch(), r = rng(97);
+    // clusters at the two top corners of the final view (about 109..437 by 186..902 units), and their
+    // continuation out to the plate's edges; the foot of the screen stays clear for the caption
+    const spots = [[104, 192, 26], [140, 172, 17], [86, 238, 15], [60, 160, 30], [40, 230, 22], [96, 120, 24],
+      [442, 192, 26], [404, 172, 16], [462, 240, 15], [488, 160, 30], [508, 232, 22], [452, 118, 24]];
+    for (const [x, y, rad] of spots.sort((a2, b2) => a2[2] - b2[2])) {
+      crown(c, x + (r() - 0.5) * 4, y + (r() - 0.5) * 4, rad, { lit: '#183634', dark: '#03090c', rim: 0.34, shadow: 0.5, curl: false });
     }
-    for (const [x, y, rad] of got.sort((a, b) => a[2] - b[2])) crown(c, x, y, rad, { lit: '#1a3533', dark: '#040b0e', rim: 0.35, shadow: 0.55, rot: x });
     composite();
     return present();
   }
   begin(true);
-  wash(null, { c: ['#080f1c', '#0e1a2a', '#17293a'], bloom: 0.45, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.2, specks: 0.005, off: 61 });
-  const parkM = maskFrom(c => { c.beginPath(); gp(c)(parks); gp(c)(grass); gp(c)(woods); c.fill(); });
-  wash(parkM, { c: ['#0e2a2e', '#18403f', '#2b5c55'], bloom: 0.45, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.18, off: 63 });
+  // the ground between: the same moonlit teal as the city plate below, parks a little lighter
+  wash(null, { c: OHIO_LAND, bloom: 0.25, inherit: 0.4, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.18, specks: 0.004, off: 61, lift: () => 0.06 });
+  const parkM = maskFrom(c => { c.beginPath(); gp(c)(parks); gp(c)(woods); c.fill(); });
+  wash(parkM, { c: ['#123438', '#1e4c4a', '#33695f'], bloom: 0.45, mottle: 0.4, brush: 0.2, tide: 0.18, grain: 0.16, off: 63 });
   const bldM = maskFrom(c => { c.beginPath(); gp(c)(d.bldFC); c.fill(); });
-  const roadM = maskFrom(c => { c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); gp(c)(mainR); gp(c)(motorR); c.lineWidth = 5; c.stroke(); c.beginPath(); gp(c)(resR); c.lineWidth = 3.6; c.stroke(); c.beginPath(); gp(c)(svcR); c.lineWidth = 1.6; c.stroke(); });
-  // hatching in the yards and parks
+  const roadM = maskFrom(c => { c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); gp(c)(high); gp(c)(mainR); gp(c)(motorR); c.lineWidth = 5; c.stroke(); c.beginPath(); gp(c)(resR); c.lineWidth = 3.4; c.stroke(); c.beginPath(); gp(c)(svcR); c.lineWidth = 1.6; c.stroke(); });
   let c = scratch();
   hatch(c, { seed: 71, cell: 6, density: 0.7, inside: (x, y) => at(bldM, x, y) < 0.3 && at(roadM, x, y) < 0.3, angle: (x, y) => 0.7 + (FA(MOT, x, y) - 0.5) * 2.4, jitter: 0.3,
-    where: () => 0.45, len: 4.5, space: 1.0, nmin: 2, nmax: 5, w: 0.25, color: PAL.ink, alpha: 0.55 });
+    where: () => 0.45, len: 4.5, space: 1.0, nmin: 2, nmax: 5, w: 0.25, color: PAL.ink, alpha: 0.42 });
   composite();
   // the freeway in its cut, edged in chalk; the railway as a chalk ladder
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
   c.beginPath(); gp(c)(motorR); c.strokeStyle = 'rgba(200,214,240,0.5)'; c.lineWidth = 7.4; c.stroke(); c.strokeStyle = '#0b1322'; c.lineWidth = 6.2; c.stroke();
-  composite('normal', 1, chalky(0.12, 0.45));
-  c = scratch(); c.beginPath(); gp(c)(d.railFC); c.strokeStyle = 'rgba(214,226,246,0.55)'; c.lineWidth = 0.45; c.stroke();
+  c.beginPath(); gp(c)(d.railFC); c.strokeStyle = 'rgba(214,226,246,0.55)'; c.lineWidth = 0.45; c.stroke();
   c.setLineDash([0.4, 1.6]); c.lineWidth = 2.2; c.strokeStyle = 'rgba(214,226,246,0.35)'; c.stroke(); c.setLineDash([]);
-  composite('normal', 1, chalky(0.15, 0.5));
-  // lanes: dark surfaces washed with lamplight, High Street the brightest
+  composite('normal', 1, chalky(0.12, 0.45));
+  // lanes: dark, quiet surfaces; the through streets washed with lamplight and lit along their length
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
-  c.beginPath(); gp(c)(svcR); c.strokeStyle = 'rgba(30,40,62,0.75)'; c.lineWidth = 1.4; c.stroke();
-  c.beginPath(); gp(c)(resR); c.strokeStyle = '#1e283f'; c.lineWidth = 3.2; c.stroke();
-  c.beginPath(); gp(c)(mainR); c.strokeStyle = '#242e48'; c.lineWidth = 4.4; c.stroke();
-  c.beginPath(); gp(c)(high); c.strokeStyle = '#2a3450'; c.lineWidth = 6; c.stroke();
+  c.beginPath(); gp(c)(svcR); c.strokeStyle = 'rgba(16,26,40,0.6)'; c.lineWidth = 1.3; c.stroke();
+  c.beginPath(); gp(c)(resR); c.strokeStyle = '#1d3040'; c.lineWidth = 3.0; c.stroke();
+  c.beginPath(); gp(c)(mainR); c.strokeStyle = '#223850'; c.lineWidth = 4.2; c.stroke();
+  c.beginPath(); gp(c)(high); c.strokeStyle = '#2c4058'; c.lineWidth = 6; c.stroke();
   composite();
   c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round'; c.filter = blurU(3);
-  c.beginPath(); gp(c)(resR); c.strokeStyle = rgba(PAL.cream, 0.32); c.lineWidth = 3; c.stroke();
-  c.beginPath(); gp(c)(mainR); c.strokeStyle = rgba(PAL.cream, 0.55); c.lineWidth = 4.4; c.stroke();
+  c.beginPath(); gp(c)(resR); c.strokeStyle = rgba(PAL.cream, 0.08); c.lineWidth = 3; c.stroke();
+  c.beginPath(); gp(c)(mainR); c.strokeStyle = rgba(PAL.cream, 0.42); c.lineWidth = 5; c.stroke();
   c.filter = 'none';
   composite('screen', 0.75);
-  c = scratch(); c.lineCap = 'round'; c.lineJoin = 'round';
-  c.beginPath(); gp(c)(resR); c.strokeStyle = rgba(PAL.cream, 0.24); c.lineWidth = 0.45; c.stroke();
-  c.beginPath(); gp(c)(mainR); c.strokeStyle = rgba(PAL.cream, 0.42); c.lineWidth = 0.6; c.stroke();
-  c.beginPath(); gp(c)(high); c.strokeStyle = rgba(PAL.cream, 0.7); c.lineWidth = 0.8; c.stroke();
+  c = scratch(); c.lineCap = 'round';
+  for (const f of mainR.features) for (const sg of linePts(gp, f)) for (const [x, y] of along(sg, 22, 7)) { if (!onPlate(x, y, 6)) continue; glow(c, x, y, 5, PAL.cream, 0.24); c.fillStyle = 'rgba(255,246,220,0.85)'; c.beginPath(); c.arc(x, y, 0.4, 0, Math.PI * 2); c.fill(); }
   composite();
-  // buildings: dark roofs with a shadow, a faint moonlit edge, the ridge along the long side
-  c = scratch(); c.save(); c.translate(1.2, 1.4); c.beginPath(); gp(c)(d.bldFC); c.fillStyle = 'rgba(2,5,12,0.55)'; c.fill(); c.restore();
+  // buildings: dark slate drawn round in chalk, the gables' ridges in chalk too (as the film chalks its stone)
+  c = scratch(); c.save(); c.translate(1.0, 1.2); c.beginPath(); gp(c)(d.bldFC); c.fillStyle = 'rgba(2,5,12,0.45)'; c.fill(); c.restore();
   composite();
-  c = scratch();
-  c.beginPath(); gp(c)(d.bldFC); c.fillStyle = '#121828'; c.fill();
-  c.strokeStyle = 'rgba(190,206,236,0.24)'; c.lineWidth = 0.3; c.stroke();
+  c = scratch(); c.beginPath(); gp(c)(d.bldFC); c.fillStyle = '#1d2f40'; c.fill();
+  composite();
+  c = scratch(); c.beginPath(); gp(c)(d.bldFC); c.strokeStyle = 'rgba(214,226,246,0.42)'; c.lineWidth = 0.32; c.lineJoin = 'round'; c.stroke();
   for (const f of d.bldFC.features) {
-    const rg = f.geometry.coordinates[0].map(pt).filter(Boolean); if (rg.length < 4) continue;
-    if (!onPlate(rg[0][0], rg[0][1], 10)) continue;
+    const rg = f.geometry.coordinates[0].map(pt).filter(Boolean); if (rg.length < 4 || !onPlate(rg[0][0], rg[0][1], 10)) continue;
     let best = 0, th = 0;
     for (let k = 1; k < rg.length; k++) { const dx = rg[k][0] - rg[k - 1][0], dy = rg[k][1] - rg[k - 1][1], l = dx * dx + dy * dy; if (l > best) { best = l; th = Math.atan2(dy, dx); } }
     const uxv = Math.cos(th), uyv = Math.sin(th);
     let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
     for (const [x, y] of rg) { const u = x * uxv + y * uyv, v = -x * uyv + y * uxv; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
-    if ((u1 - u0) * (v1 - v0) > 260 || u1 - u0 < 2) continue;
-    const vm = (v0 + v1) / 2, inset = Math.min((v1 - v0) / 2, (u1 - u0) * 0.3);
-    const X = (u, v) => [u * uxv - v * uyv, u * uyv + v * uxv];
-    const [x0, y0] = X(u0 + inset, vm), [x1, y1] = X(u1 - inset, vm), p1 = X(u0, v0), p2 = X(u1, v0);
-    c.beginPath(); c.moveTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.lineTo(x1, y1); c.lineTo(x0, y0); c.closePath();
-    c.fillStyle = (-uyv - uxv) > 0 ? 'rgba(80,98,140,0.26)' : 'rgba(0,0,0,0.15)'; c.fill();
-    c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.strokeStyle = 'rgba(226,234,250,0.36)'; c.lineWidth = 0.28; c.stroke();
+    const area = (u1 - u0) * (v1 - v0), X = (u, v) => [u * uxv - v * uyv, u * uyv + v * uxv];
+    if (area > 220) {
+      // a big roof: fine chalk lines across it, like the patterns cut in the abbey's stone
+      const n = Math.floor((v1 - v0) / 2.6);
+      for (let k = 1; k < n; k++) { const v = v0 + (v1 - v0) * k / n, a = X(u0 + 1.2, v), b2 = X(u1 - 1.2, v); c.moveTo(a[0], a[1]); c.lineTo(b2[0], b2[1]); }
+      continue;
+    }
+    if (u1 - u0 < 2) continue;
+    const vm = (v0 + v1) / 2, inset = Math.min((v1 - v0) / 2, (u1 - u0) * 0.3), a = X(u0 + inset, vm), b2 = X(u1 - inset, vm);
+    c.moveTo(a[0], a[1]); c.lineTo(b2[0], b2[1]);
   }
-  composite();
-  // trees: the mapped ones (the rows along the streets), the parks' woods filled with crowns
+  c.strokeStyle = 'rgba(214,226,246,0.3)'; c.lineWidth = 0.28; c.stroke();
+  composite('normal', 1, chalky(0.15, 0.5));
+  // trees: the mapped ones (rows along the streets, Goodale Park's wood), and crowns filling the woods
   const crowns = [];
-  for (const f of d.treesFC.features) { const p = pt(f.geometry.coordinates); if (p && onPlate(p[0], p[1], 6)) crowns.push([p[0], p[1], 2.3 + hashI(crowns.length + 7) * 1.5]); }
+  for (const f of d.treesFC.features) { const p = pt(f.geometry.coordinates); if (p && onPlate(p[0], p[1], 6)) crowns.push([p[0], p[1], 2.4 + hashI(crowns.length + 7) * 1.5]); }
   const woodM = maskFrom(cc => { cc.beginPath(); gp(cc)(woods); cc.fill(); });
   { const r = rng(73); for (let k = 0; k < 20000; k++) { const x = r() * CW, y = r() * CH, rad = 2.4 + r() * 1.4; if (!onPlate(x, y) || at(woodM, x, y) < 0.5) continue; if (crowns.some(([cx, cy, cr]) => Math.abs(cx - x) < 6 && Math.abs(cy - y) < 6 && Math.hypot(cx - x, cy - y) < (cr + rad) * 0.62)) continue; crowns.push([x, y, rad]); } }
-  c = scratch(); crowns.sort((a, b) => a[1] - b[1]);
+  c = scratch(); crowns.sort((a2, b2) => a2[1] - b2[1]);
   for (const [x, y, rad] of crowns) crown(c, x, y, rad, { rot: x * 0.7 + y, lit: '#2d5a4c', dark: '#0a1d1f', rim: 0.5 });
   composite();
-  // footpaths: dotted chalk, in the parks and across the plazas only (the pavements stay quiet)
+  // footpaths: dotted chalk in the parks only (the pavements stay quiet)
   c = scratch(); c.beginPath(); gp(c)(footR); c.setLineDash([0.1, 1.6]); c.lineCap = 'round'; c.strokeStyle = 'rgba(230,238,250,0.5)'; c.lineWidth = 0.55; c.stroke();
   composite('normal', 1, i => parkM[i] * (1 - bldM[i]));
-  paper(0.5);
+  // the neighbourhood's lamplight hanging in the air, strongest over High Street (as the city plate glows here)
+  { const cr = hex('#d9cfa8'), haze = gridOf((x, y) => { const dx = x - xOnHigh(y); return 0.08 + 0.15 * Math.exp(-(dx * dx) / (2 * 60 * 60)); });
+    for (let i = 0; i < N; i++) { const a2 = haze[i], q = i * 3; for (let k = 0; k < 3; k++) IMG[q + k] = 1 - (1 - IMG[q + k]) * (1 - cr[k] * a2); } }
+  paper(0);
   present();
 }
 
 // ---------------------------------------------------------------- drawing a layer, and redrawing it magnified
 const LOADERS = [loadWorld, loadAmerica, loadOhio, loadColumbus, loadShortNorth];
 const DRAWERS = [drawWorld, drawAmerica, drawOhio, drawColumbus, drawShortNorth];
-let DATA = null;
+let DATA = null, BASE = null;
 function render() {
   const k = LEVEL - 1;
   DRAWERS[k](LAYER, DATA);
 }
+// A pass plate's ground, matched in tone to the plate it magnifies: lines and glows keep their width
+// when magnified, so the ground would grow darker with each pass. Coarse cells of the unmagnified
+// picture (the part this pass plate shows) and of the new one give a smooth gain per channel.
+function matchTone() {
+  const GX = 6, GY = 13, x0 = MCX - W / 2 / MS, y0 = MCY - H / 2 / MS, cw = W / MS / GX, ch = H / MS / GY;
+  const cell = (img, X0, Y0, w, h) => {
+    const o = [0, 0, 0]; let n = 0;
+    for (let y = Math.max(0, Y0 | 0); y < Math.min(H, Y0 + h); y += 3) for (let x = Math.max(0, X0 | 0); x < Math.min(W, X0 + w); x += 3) { const q = (y * W + x) * 3; o[0] += img[q]; o[1] += img[q + 1]; o[2] += img[q + 2]; n++; }
+    return n ? o.map(v => v / n) : null;
+  };
+  const gain = [];
+  for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
+    const a = cell(BASE, x0 + i * cw, y0 + j * ch, cw, ch), b = cell(IMG, i * W / GX, j * H / GY, W / GX, H / GY);
+    gain.push(a && b ? a.map((v, c) => Math.min(1.45, Math.max(0.75, (v + 0.004) / (b[c] + 0.004)))) : [1, 1, 1]);
+  }
+  for (let y = 0, i = 0; y < H; y++) {
+    const gy = Math.min(GY - 1.001, Math.max(0, y / (H / GY) - 0.5)), j0 = gy | 0, ty = gy - j0;
+    for (let x = 0; x < W; x++, i++) {
+      const gx = Math.min(GX - 1.001, Math.max(0, x / (W / GX) - 0.5)), i0 = gx | 0, tx = gx - i0;
+      const A = gain[j0 * GX + i0], B = gain[j0 * GX + i0 + 1], C = gain[(j0 + 1) * GX + i0], Dd = gain[(j0 + 1) * GX + i0 + 1], q = i * 3;
+      for (let c = 0; c < 3; c++) IMG[q + c] *= (A[c] + (B[c] - A[c]) * tx) * (1 - ty) + (C[c] + (Dd[c] - C[c]) * tx) * ty;
+    }
+  }
+}
 async function start() {
-  await Promise.all(["20px 'Uncial Antiqua'", '20px Alegreya'].map(f => document.fonts.load(f)));
+  await Promise.all(["20px 'Uncial Antiqua'", '20px Alegreya', 'italic 20px Alegreya'].map(f => document.fonts.load(f)));
+  const cv = mk(); document.body.appendChild(cv); out = cv.getContext('2d');
   makeFields();
   DATA = await LOADERS[LEVEL - 1]();
   setMag(1, W / 2, H / 2);
-  render();
-  // The exporter magnifies pass plates with a transform on the root element. Redraw at that scale,
-  // in this same task (before it screenshots), and take the transform off again.
-  const root = document.documentElement;
-  let busy = false;
-  new MutationObserver(() => {
-    if (busy) return;
-    const m = /translate\(\s*([-\d.e]+)px,\s*([-\d.e]+)px\)\s*scale\(\s*([-\d.e]+)\s*\)/.exec(root.style.transform || '');
-    if (!m) return;
-    const tx = +m[1], ty = +m[2], s = +m[3];
-    busy = true;
-    try {
-      setMag(s, (W / 2 - tx) / s, (H / 2 - ty) / s);
-      render();
-      root.style.transform = 'none';
-    } catch (e) { console.error('magnified redraw failed: ' + e.message); }
-    busy = false;
-  }).observe(root, { attributes: true, attributeFilter: ['style'] });
+  if (MAGNIFY > 1.001) {
+    window.platesMagnifies = true;
+    // the ground is drawn unmagnified first, so the pass plate can be matched to it in tone
+    if (LAYER === 'ground') { render(); BASE = IMG; }
+    setMag(MAGNIFY, MAG_CX, MAG_CY); PB_CACHE = null;
+    render();
+    if (LAYER === 'ground') { matchTone(); present(); }
+  } else render();
 }
 addEventListener('DOMContentLoaded', () => start().then(() => { window.platesReady = true; }, e => { console.error(e.stack); window.platesReady = 'failed: ' + e.message; }));
 })();

@@ -188,6 +188,169 @@ const Sprites = (() => {
     return `<g filter="url(#cutout-pt)">${colour}${ink}</g>${sea}`;
   }
 
-  return { ptDefs, place, cubicPts, ptsD, leafD, serpent, ship };
+
+
+  // ---------- Canada geese, flying south in a V ----------
+  // One goose, facing west (its local x runs back to its tail), wings up or down.
+  function goose(up) {
+    const body = `M-6 0C-3 -2.6 5 -2.8 8 -0.6C9 0.2 9 1 8 1.6C4 3 -3 2.6 -6 0Z`;
+    const belly = `M-5 0.9C-2 2.4 4 2.6 7.6 1.4C4 2.9 -3 2.7 -5 0.9Z`;
+    const far = up ? `M0.5 -1.8C2.6 -6 6 -10.6 9.4 -13.6C7.6 -9 5.6 -5 4.4 -1.6Z` : `M0.5 1C2.6 4 5.6 7.4 8.6 9.2C7 6.2 5.4 3.2 4.4 0.8Z`;
+    const near = up ? `M-1.2 -1.6C-1.2 -6 0.8 -11 3.8 -15.6C4.4 -10.2 4 -5.4 3.2 -1.4Z` : `M-1 0.8C-0.4 4.6 1.6 8.6 4.2 11.4C4.4 7.6 3.8 4 3 0.6Z`;
+    const neck = `M-5.4 -0.6C-8.4 -1.2 -11 -1.6 -13.4 -1.8`;
+    const colour = `<path d="${far}" fill="#6a5d4e"/><path d="${body}" fill="#8b7b67"/><path d="${belly}" fill="#ddd1ba"/><path d="${near}" fill="#8f806b"/>
+      <path d="M8 -0.4L11 -1L11.2 1.2L8 1.4Z" fill="#2e2a20"/><path d="${neck}" stroke="#2e2a20" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+      <ellipse cx="-14.6" cy="-1.9" rx="1.9" ry="1.35" fill="#2e2a20"/><ellipse cx="-14.2" cy="-1.3" rx="0.9" ry="0.55" fill="#f4eee0"/><path d="M-16.4 -2.2L-17.9 -1.7L-16.3 -1.3Z" fill="#3a3326"/>`;
+    const fl = up ? `M1.4 -3.4L5.4 -8.6M2.2 -2.6L7 -7.2M-0.4 -3.6L1.8 -10M0.8 -3L3 -11.4` : `M1.6 1.8L5.6 6M2.4 1.4L7 4.6M-0.2 2L1.6 7.6M0.8 1.8L2.8 8.8`;
+    const ink = `<path d="${far}"/><path d="${body}"/><path d="${near}"/><path d="${fl}" stroke-width="0.25"/>`;
+    return { colour, ink };
+  }
+  // The V: the leader at the origin, flying south-west; about x -20..44, y -42..16 in points.
+  function geese() {
+    const birds = [[0, 0, 1], [14, -12, 0], [28, -24, 1], [18, -2, 0], [35, -5, 1]];
+    let colour = '', ink = '';
+    for (const [x, y, up] of birds) {
+      const g = goose(up), t = `transform="translate(${x} ${y}) rotate(-16)"`;
+      colour += `<g ${t}>${g.colour}</g>`; ink += `<g ${t}>${g.ink}</g>`;
+    }
+    return `<g filter="url(#cutout-pt)"><g filter="url(#gouache-pt)">${colour}</g>
+      <g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.4 0.3)">${ink}</g></g>`;
+  }
+
+
+  // ---------- a sprig of Ohio buckeye: two palmate leaves turning, a split husk and its nut ----------
+  // Local frame: the twig's foot at the origin, rising up and to the right; about x -34..62, y -62..6.
+  function buckeyeSprig() {
+    const leafletD = (L, Wd) => `M0 0C${f2(L * 0.22)} ${f2(-Wd * 0.8)} ${f2(L * 0.62)} ${f2(-Wd)} ${L} 0C${f2(L * 0.62)} ${f2(Wd)} ${f2(L * 0.22)} ${f2(Wd * 0.8)} 0 0Z`;
+    const palm = (x, y, ang, size, cols) => {
+      let c = '', k = '';
+      [-1.1, -0.56, 0, 0.56, 1.1].forEach((da, i) => {
+        const L = size * (1 - Math.abs(da) * 0.3), Wd = L * 0.19, t = `transform="translate(${f2(x)} ${f2(y)}) rotate(${f2((ang + da) * 180 / Math.PI)})"`;
+        c += `<path ${t} d="${leafletD(L, Wd)}" fill="${cols[i % cols.length]}"/>`;
+        k += `<path ${t} d="${leafletD(L, Wd)}"/><path ${t} d="M0 0L${f2(L * 0.88)} 0" stroke-width="0.3"/>`;
+        for (let j = 1; j < 5; j++) k += `<path ${t} d="M${f2(L * j / 5.6)} 0l${f2(L * 0.07)} ${f2(-Wd * 0.62)}M${f2(L * j / 5.6)} 0l${f2(L * 0.07)} ${f2(Wd * 0.62)}" stroke-width="0.2"/>`;
+      });
+      return { c, k };
+    };
+    const twig = `M0 0C5 -7 12 -14 20 -19C25 -22 29 -25 32 -28`;
+    const petA = `M6 -8C2 -11 -2 -14 -6 -16`, petB = `M20 -19C23 -25 25 -30 26 -36`;
+    const A = palm(-6, -16, -2.55, 27, [C.ochre, '#b98a3a', '#c9a24e', C.sage, C.ochre]);
+    const B = palm(26, -36, -1.2, 25, [C.sage, '#c08a3e', C.sageDeep, C.ochre, C.sage]);
+    // two husks at the tip: one closed and warty, one split in three around its glossy nut
+    const husk1 = `M36 -26C33 -29 33 -34 37 -36C41 -38 46 -36 47 -32C48 -28 45 -25 41 -24.5C39 -24.3 37.4 -25 36 -26Z`;
+    const huskOpen = `M41 -36C40 -41 43 -45 47 -45.6C51.6 -46 55.4 -43 55 -38.6L52.6 -40.2C52 -42.6 49 -43.6 46.6 -42.8C44.4 -42 43.2 -39.8 43.6 -37.4Z`;
+    const huskLow = `M43.6 -37.4C44.8 -33.6 49.6 -32.6 52.6 -35L55 -38.6C56 -34 52.6 -30.6 48 -30.8C44.4 -31 42 -33.4 41 -36Z`;
+    const nut = `M44.4 -38.6C44.2 -41.6 47 -43.4 49.8 -42.6C52.6 -41.8 53.6 -38.8 52 -36.6C50.4 -34.4 46.8 -34.4 45.4 -36.2C44.8 -36.9 44.5 -37.7 44.4 -38.6Z`;
+    const colour = `<g filter="url(#gouache-pt)"><path d="${twig}${petA}${petB}" stroke="#6b5236" stroke-width="1.6" fill="none" stroke-linecap="round"/>${A.c}${B.c}
+      <path d="${husk1}" fill="#a49a5e"/><path d="${huskOpen}" fill="#b2a66a"/><path d="${huskLow}" fill="#9a9058"/><path d="${nut}" fill="#5a3620"/>
+      <ellipse cx="48.6" cy="-37.6" rx="2.6" ry="1.9" fill="#d6c099"/><ellipse cx="46.6" cy="-40.6" rx="1.1" ry="0.7" fill="#f2e6cc" opacity="0.85"/></g>`;
+    let warts = '';
+    for (const [x, y] of [[38.6, -33], [42.4, -35.2], [44.6, -30.6], [39.6, -28.2], [44, -27], [36.4, -30], [47.2, -44], [51.8, -44], [53.4, -34]]) warts += `<circle cx="${x}" cy="${y}" r="0.4"/>`;
+    const ink = `<g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.4 0.3)">${A.k}${B.k}
+      <path d="${twig}" stroke-width="0.42"/><path d="${husk1}"/><path d="${huskOpen}"/><path d="${huskLow}"/><path d="${nut}" stroke-width="0.32"/></g>
+      <g fill="${C.ink}" opacity="0.7">${warts}</g>`;
+    return `<g filter="url(#cutout-pt)">${colour}${ink}</g>`;
+  }
+  // ---------- a cardinal, perched, facing west ----------
+  // Local frame: its feet at the origin; about x -16..12, y -18..2.
+  function cardinal() {
+    const body = `M-6 -6.5C-7.6 -10 -6 -13.6 -2.4 -14.2C-1.2 -16.6 1.4 -17.6 2.2 -15.6C3.6 -14.4 4.2 -12 3.4 -9.6C5.2 -8.4 7 -6.4 9 -3.4L11.4 0.8L9.4 1.2L6.6 -2.4C4.4 -1.2 1 -0.6 -1.6 -1.4C-4.6 -2.4 -5.8 -4.2 -6 -6.5Z`;
+    const wing = `M-0.6 -9.4C2.4 -9.6 5.4 -7.8 7.6 -4.2C4.8 -4.4 1.6 -5.2 -0.6 -7Z`;
+    const mask = `M-6.2 -11.6C-5 -12.4 -3.4 -12.4 -2.4 -11.4C-3 -10 -4.4 -9.2 -6 -9.6Z`;
+    const beak = `M-6.1 -11.6L-8.8 -10.6L-6 -9.6Z`;
+    const colour = `<g filter="url(#gouache-pt)"><path d="${body}" fill="#b5392b"/><path d="${wing}" fill="#8e2a22"/><path d="${mask}" fill="#2e2a20"/><path d="${beak}" fill="#e08a4a"/>
+      <path d="M-1 -1.2L-1.6 1.6M1.6 -1L1.8 1.6" stroke="#5a4630" stroke-width="0.5"/></g>
+      <circle cx="-4.4" cy="-11.6" r="0.55" fill="#f4eee0"/>`;
+    const ink = `<g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.35 0.3)"><path d="${body}"/><path d="${wing}" stroke-width="0.3"/><path d="M1 -8.4L5.6 -5M1.4 -7.2L4.6 -5" stroke-width="0.22"/></g>`;
+    return `<g filter="url(#cutout-pt)">${colour}${ink}</g>`;
+  }
+
+
+  // ---------- fallen leaves: a maple and an oak, painted and cut out ----------
+  // Local frames: the stalk's end at the origin, the leaf about 40 points long.
+  function mapleLeaf() {
+    const d = `M0 0L0.6 -6C-3 -5 -8 -6.6 -12 -5.4C-10.6 -8 -11.6 -10.4 -13.6 -12C-10.8 -12.4 -9 -13.4 -8.4 -15.4C-6.4 -14.2 -4.4 -14.4 -3.4 -16C-4.6 -19.4 -4.2 -23.6 -2.8 -26.4C-1.6 -24.6 -0.6 -24.6 0.4 -26C1.2 -30 2.4 -33.4 4.4 -36C6 -33 7 -29.6 7.4 -26C8.6 -27 9.8 -26.8 10.8 -25.8C11.8 -22.6 11.8 -19.2 10.6 -16.4C12 -15.4 13.6 -15.6 15 -16.6C15.2 -14.6 16.6 -13.2 18.6 -12.6C16.6 -11 15.8 -8.6 16.8 -6.2C12.8 -7.8 8.6 -6.8 5.2 -6.2L1.8 -6Z`;
+    const veins = `M0.6 -6L4.4 -33M1.6 -7.6L-10.6 -12.2M2 -8.4L-1.6 -23.6M3.4 -8.8L9.8 -22.6M3 -7.4L15.4 -12.4`;
+    return `<g filter="url(#cutout-pt)"><g filter="url(#gouache-pt)"><path d="${d}" fill="#c4502c"/><path d="M4.4 -33C2 -24 1 -14 1.6 -7L4 -7C6 -14 6.6 -24 4.4 -33Z" fill="#d8803a" opacity="0.55"/></g>
+      <g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.4 0.3)"><path d="${d}"/><path d="${veins}" stroke-width="0.28" opacity="0.8"/><path d="M0.6 -6L0 0" stroke-width="0.7"/></g></g>`;
+  }
+  function oakLeaf() {
+    const d = `M0 0L0.4 -4C-2.6 -4.6 -4.6 -6.6 -3.6 -8.6C-6 -9.6 -7.2 -12 -5.4 -13.6C-7.2 -15.6 -6.8 -18.4 -4.4 -19C-5.6 -21.6 -4.4 -24.4 -1.8 -24.4C-2 -27.4 -0.4 -30 1.6 -30.6C3.8 -30 5 -27.4 4.8 -24.4C7.4 -24.4 8.6 -21.6 7.4 -19C9.8 -18.4 10.2 -15.6 8.4 -13.6C10.2 -12 9 -9.6 6.6 -8.6C7.6 -6.6 5.6 -4.6 2.6 -4L2 -4Z`;
+    const veins = `M1.2 -4L1.6 -28.6M1.3 -9L-3.4 -11.4M1.4 -14L-3.6 -16.6M1.5 -19L-2.6 -21.8M1.3 -9L5.8 -11.2M1.4 -14L6.4 -16.4M1.5 -19L5.2 -21.6`;
+    return `<g filter="url(#cutout-pt)"><g filter="url(#gouache-pt)"><path d="${d}" fill="#b98a3a"/><path d="M-3 -12C-1 -10 2 -12 4 -16C2 -20 -1 -19 -3 -12Z" fill="#9a6a2c" opacity="0.4"/></g>
+      <g fill="none" stroke="${C.ink}" stroke-width="0.4" stroke-linejoin="round" filter="url(#inkline-pt)" transform="translate(0.4 0.3)"><path d="${d}"/><path d="${veins}" stroke-width="0.28" opacity="0.8"/><path d="M0.4 -4L0 0" stroke-width="0.7"/></g></g>`;
+  }
+
+  // ---------- stamps: small plants and buildings, a spot-colour block and its key line ----------
+  // Each kind returns [colour, ink] in points, its origin at the foot; put() places one.
+  const STAMP = {
+    spruce: (o) => {
+      const body = `M0 -12L3.2 -6.6L1.6 -6.8L4.4 -2.4L-4.4 -2.4L-1.6 -6.8L-3.2 -6.6Z`;
+      return [`<path d="${body}" fill="${o.fill || C.sageDeep}"/>`, `<path d="${body}" fill="none" stroke="${C.ink}" stroke-width="0.4"/><path d="M0 -2.4V0.4" stroke="${C.ink}" stroke-width="0.6"/>`];
+    },
+    oak: (o) => {
+      const crown = `M-4.4 -4.6C-6.4 -6.2 -5.4 -9.6 -2.8 -9.6C-2 -11.8 2.2 -11.8 3 -9.6C5.6 -9.8 6.6 -6.2 4.6 -4.6C3.4 -3.2 -3.2 -3.2 -4.4 -4.6Z`;
+      return [`<path d="${crown}" fill="${o.fill || C.sageDeep}"/><rect x="-0.55" y="-4.4" width="1.1" height="4.4" fill="#5a4630"/>`,
+        `<path d="${crown}" fill="none" stroke="${C.ink}" stroke-width="0.4"/><path d="M0 0V-4.2" stroke="${C.ink}" stroke-width="0.45"/>${o.ground === false ? '' : `<path d="M-2.6 0.2H2.6" stroke="${C.ink}" stroke-width="0.45"/>`}`];
+    },
+    hawthorn: () => {
+      const crown = `M-7.5 -9C-9.5 -12 -7 -15.5 -3.5 -15C-2 -18 3 -18.2 4.6 -15.4C8 -16 10.6 -12.6 9 -9.6C10.6 -7.4 8 -5 5 -6C3 -4.6 -1 -4.6 -2.6 -6.2C-5.6 -5 -9 -6.6 -7.5 -9Z`;
+      const haws = [[-5, -10], [-1.5, -13.5], [3, -11], [6.5, -9.5], [1, -8], [-4, -7.4], [5.4, -13.6], [-6.2, -12.6]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.85"/>`).join('');
+      return [`<path d="${crown}" fill="${C.sageDeep}"/><path d="M-0.5 0C0 -2 -0.6 -4 0.6 -6.4" stroke="#5a4630" stroke-width="1.3" fill="none"/><g fill="${C.haw}">${haws}</g>`,
+        `<path d="${crown}" fill="none" stroke="${C.ink}" stroke-width="0.45"/><path d="M-0.5 0C0 -2 -0.6 -4 0.6 -6.4M0 -4.2L-3 -6.6M0.3 -5L3.4 -7" stroke="${C.ink}" stroke-width="0.5" fill="none"/><path d="M-6 0.3H6" stroke="${C.ink}" stroke-width="0.4"/>`];
+    },
+    heather: () => {
+      const bl = [[-2.6, -5], [-3, -3.4], [-2.2, -6.6], [0.2, -7.6], [0.4, -5.8], [0.2, -4.2], [2.6, -6], [2.8, -4.4], [2.2, -7.4]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="0.9" ry="0.7"/>`).join('');
+      return [`<g fill="#8a4f6a">${bl}</g>`, `<path d="M0 0C-0.4 -2 -1.8 -3 -2.4 -6.8M0 0C0.2 -2.4 0.2 -4.6 0.2 -8M0 0C0.6 -2 2 -3.4 2.4 -7.4" stroke="${C.ink}" stroke-width="0.35" fill="none"/>`];
+    },
+    wheat: () => {
+      let ears = '', stalks = '';
+      for (const [dx, lean] of [[-2.2, -0.35], [0, 0], [2.2, 0.35]]) {
+        const tx = dx + lean * 6, ty = -9;
+        stalks += `M${dx * 0.3} 0L${f2(tx)} ${ty}`;
+        for (let k = 0; k < 3; k++) { const yy = ty + 0.6 + k * 1.3, xx = tx - lean * k * 1.2; ears += `<ellipse cx="${f2(xx - 0.6)}" cy="${f2(yy)}" rx="0.45" ry="0.9" transform="rotate(-25 ${f2(xx - 0.6)} ${f2(yy)})"/><ellipse cx="${f2(xx + 0.6)}" cy="${f2(yy)}" rx="0.45" ry="0.9" transform="rotate(25 ${f2(xx + 0.6)} ${f2(yy)})"/>`; }
+      }
+      return [`<g fill="${C.ochre}">${ears}</g><path d="M-2.2 -3.2Q0 -2.4 2.2 -3.2" stroke="${C.rust}" stroke-width="0.8" fill="none"/>`, `<path d="${stalks}" stroke="${C.ink}" stroke-width="0.35" fill="none"/>`];
+    },
+    cactus: () => {
+      const body = `M-0.9 0V-9.4Q0 -10.6 0.9 -9.4V0ZM0.9 -5.6H2.4V-7.6Q3.1 -8.4 3.6 -7.6V-4.6H0.9ZM-0.9 -4.2H-2.6V-6.2Q-3.2 -7 -3.8 -6.2V-3.2H-0.9Z`;
+      return [`<path d="${body}" fill="${C.sageDeep}"/>`, `<path d="${body}" fill="none" stroke="${C.ink}" stroke-width="0.35"/><path d="M-4 0.2H4" stroke="${C.ink}" stroke-width="0.4"/>`];
+    },
+    // a street tree's crown, seen from above: a lobed round, its key line broken
+    crown: (o) => {
+      const r = o.r || 4, n = 7, ph = o.ph || 0;
+      let d = '';
+      for (let i = 0; i <= n; i++) {
+        const a = ph + i / n * 2 * Math.PI, a2 = ph + (i + 0.5) / n * 2 * Math.PI;
+        const p = [Math.cos(a) * r, Math.sin(a) * r], q = [Math.cos(a2) * r * 1.22, Math.sin(a2) * r * 1.22];
+        d += i === 0 ? `M${f2(p[0])} ${f2(p[1])}` : `Q${f2(q0x)} ${f2(q0y)} ${f2(p[0])} ${f2(p[1])}`;
+        var q0x = q[0], q0y = q[1];
+      }
+      return [`<path d="${d}Z" fill="${o.fill || C.sageDeep}"/>`, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="0.32" stroke-dasharray="${f2(r * 2.2)} ${f2(r * 0.9)}"/><circle r="0.45" fill="${C.ink}"/>`];
+    },
+    // a town: three gabled houses and a spire, in cut card
+    town: (o) => {
+      const h = [[-5.2, 0, 3.6, 3.6], [-1.4, 0, 3.2, 4.6], [2.2, 0, 3.4, 3.2]];
+      let fill = '', ink = '';
+      const cols = o.cols || [C.kraftLight, '#e9dfc9', C.clay];
+      h.forEach(([x, y, w, hh], i) => {
+        const d = `M${x} ${y}V${y - hh}L${x + w / 2} ${f2(y - hh - w * 0.5)}L${x + w} ${y - hh}V${y}Z`;
+        fill += `<path d="${d}" fill="${cols[i % cols.length]}"/>`;
+        ink += `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="0.32"/>`;
+      });
+      const spire = `M0.2 -4.6L1 -9.4L1.8 -4.6Z`;
+      fill += `<path d="${spire}" fill="${C.rust}"/>`; ink += `<path d="${spire}" fill="none" stroke="${C.ink}" stroke-width="0.3"/>`;
+      return [fill, ink];
+    },
+  };
+  function put(kind, x, y, s, o = {}) {
+    const [a, b] = STAMP[kind](o);
+    const t = `transform="translate(${f1(x)} ${f1(y)}) scale(${f2(s)})${o.rotate ? ` rotate(${o.rotate})` : ''}"`;
+    return [`<g ${t}>${a}</g>`, `<g ${t}>${b}</g>`];
+  }
+  // Many stamps printed together: colours with the riso grain, then the key lines off register.
+  function stamps(list) { return PA.stamp(list.map(l => l[0]).join(''), list.map(l => l[1]).join('')); }
+
+  return { ptDefs, place, cubicPts, ptsD, leafD, serpent, ship, geese, buckeyeSprig, cardinal, mapleLeaf, oakLeaf, STAMP, put, stamps };
 })();
 window.Sprites = Sprites;

@@ -162,7 +162,7 @@ function smoothPts(pts, iter = 2, closed = false) { // Chaikin
   }
   return p;
 }
-function fillShape(c, shape) { if (typeof shape === 'function') shape(c); else c.fill(shape, 'evenodd'); }
+function fillShape(c, shape) { if (typeof shape === 'function') shape(c); else c.fill(shape, 'nonzero'); } // nonzero: overlapping features add up
 function linePath(pts) { const p = new Path2D(); pts.forEach((q, i) => i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1])); return p; }
 function offsetPts(pts, d) {
   return pts.map((p, i) => {
@@ -185,7 +185,7 @@ function wash(shape, o = {}) {
     if (typeof s === 'function') { // drawn on its own sheet first, so its own compositing can't touch the mask
       reset(BX); BX.fillStyle = '#fff'; BX.strokeStyle = '#fff'; s(BX); css(BX);
       MX.setTransform(1, 0, 0, 1, 0, 0); MX.globalCompositeOperation = 'destination-out'; MX.drawImage(BCV, 0, 0); css(MX);
-    } else { MX.globalCompositeOperation = 'destination-out'; MX.fill(s, 'evenodd'); MX.globalCompositeOperation = 'source-over'; }
+    } else { MX.globalCompositeOperation = 'destination-out'; MX.fill(s, 'nonzero'); MX.globalCompositeOperation = 'source-over'; }
   }
   reset(BX); BX.setTransform(1, 0, 0, 1, 0, 0); BX.filter = blurPx(blur); BX.drawImage(MCV, 0, 0); BX.filter = 'none';
   const bb = o.bbox || [-10, -10, W + 10, H + 10], [dx0, dy0] = toDev(bb[0], bb[1]), [dx1, dy1] = toDev(bb[2], bb[3]);
@@ -336,8 +336,8 @@ function initTiles() {
   tiles.roof = makeTile(['#c79a6a', '#b4865a', '#a87a50'], { speck: 8, speckCol: P.umber });
   tiles.roof2 = makeTile(['#bba586', '#a8927a', '#c8b292'], { speck: 8, speckCol: P.sepia });
   tiles.roof3 = makeTile(['#c07a4c', '#ad683e', '#c98a5a'], { speck: 8, speckCol: P.umber });
-  tiles.brick = makeTile(['#b46a48', '#9c573a', '#c47c56'], { speck: 10, speckCol: P.umber });
-  tiles.slate = makeTile(['#9aa09a', '#868c88', '#aab0a8'], { speck: 8, speckCol: P.ink });
+  tiles.brick = makeTile(['#c48a62', '#b07650', '#cf9a70'], { speck: 10, speckCol: P.umber });
+  tiles.slate = makeTile(['#b3a68c', '#a09479', '#c2b598'], { speck: 8, speckCol: P.sepia });
   tiles.stone = makeTile(['#d8d0b4', '#c4bc9e', '#e2dcc4'], { speck: 10, speckCol: P.sepia });
   tiles.white = makeTile(['#fbf7ea', '#f0ead6', '#fffdf4'], { speck: 0, bloom: 0.04, gran: 0.03 });
 }
@@ -618,7 +618,10 @@ async function loadFonts() {
     ['IM Fell English Italic', 'fonts/IMFellEnglish-Italic.ttf'], ['EB Garamond', 'fonts/EBGaramond-Regular.ttf']];
   for (const [name, url] of faces) { const f = new FontFace(name, `url(${url})`); await f.load(); document.fonts.add(f); }
 }
+// Uncial Antiqua's capital H is the true uncial form, which reads as a D at map sizes: its h stands in.
+const uncialText = (text, font) => /Uncial/.test(font) ? text.replace(/H/g, 'h') : text;
 function label(text, x, y, o = {}) {
+  text = uncialText(text, o.font || 'Uncial');
   ctx.save(); ctx.font = o.font || `${o.size || 12}px "Uncial Antiqua"`; ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
   ctx.letterSpacing = (o.ls ?? 0.08) * (o.size || 12) + 'px';
   ctx.translate(x, y); if (o.ang) ctx.rotate(o.ang);
@@ -630,6 +633,7 @@ function label(text, x, y, o = {}) {
   ctx.restore();
 }
 function textOnPath(text, pts, o = {}) {
+  text = uncialText(text, o.font || 'Uncial');
   ctx.save(); ctx.font = o.font || `${o.size || 12}px "Uncial Antiqua"`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   const ls = (o.ls ?? 0.1) * (o.size || 12);
   const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
