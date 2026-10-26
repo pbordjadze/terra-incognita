@@ -138,7 +138,7 @@ const Levels = (() => {
       Geo.stamp(G, Charts.M.bird, LEG, ti - Math.floor(ts.w / 2) - bs.w - 1, tj - 2);
       Geo.stamp(G, Charts.M.bird, LEG, ti + Math.ceil(ts.w / 2) + 1, tj - 2, { mirror: true });
       // and below, a band of tulips, as a sampler closes above its verse
-      const tl = Geo.chartSize(Charts.M.tulip), bandY = CY + R1 + 196;
+      const bandY = CY + R1 + 196;
       for (let k = -4; k <= 4; k++) {
         const [i, j] = Geo.cellAt(G, CX + k * 104, bandY);
         Geo.stamp(G, Charts.M.tulip, { ...LEG, r: k % 2 ? T.indigoMd : T.madder, p: k % 2 ? T.indigoLt : T.rose }, i - 2, j - 3);
@@ -182,7 +182,6 @@ const Levels = (() => {
     },
   };
 
-
   // ---- shared stitches --------------------------------------------------------------------------------
   // the land mask (land drawn, lakes cut out) and the distance of the sea from it, at 2 px a sample
   function seaField(draw, blurR = 3) {
@@ -225,7 +224,8 @@ const Levels = (() => {
       tone[k] = tones.find(t => !used.has(t)) ?? tones[k % tones.length];
     });
     for (let q = 0; q < ids.length; q++) if (ids[q]) G.data[q] = tone[ids[q] - 1];
-    if (window.TONES_LOG) console.log(JSON.stringify(Object.fromEntries(feats.map((f, k) => [f.properties.name, Object.keys(T).find(n => T[n] === tone[k])]))));
+    // (?tones in the page's address logs each region's thread: NEIGHBOURS below copies the continent's)
+    if (location.search.includes('tones')) console.log(JSON.stringify(Object.fromEntries(feats.map((f, k) => [f.properties.name, Object.keys(T).find(n => T[n] === tone[k])]))));
     return ids;
   }
   const FC = features => ({ type: 'FeatureCollection', features });
@@ -239,7 +239,7 @@ const Levels = (() => {
     id: 'america', proj: () => Kit.lens(Kit.km(5200)),
     caption: { eyebrow: 'II · A map of the continent', title: 'North America', text: 'The states pieced like a quilt, and Ohio worked in madder.' },
     sprites() {
-      const proj = this.proj(), [x, y] = proj([-72.6, 33.9]);
+      const [x, y] = [1150, 2098];            // in the open Atlantic, off the Carolinas
       const s = Geo.chartSize(Charts.M.serpent), F = fine(), [i, j] = Geo.cellAt(F, x, y);
       const i0 = i - Math.floor(s.w / 2), j0 = j - Math.floor(s.h / 2);
       return { serpent: { i0, j0, frame: [Math.floor(F.ox + i0 * F.c - 10), Math.floor(F.oy + j0 * F.c - 10), Math.ceil(s.w * F.c + 20), Math.ceil(s.h * F.c + 20)] } };
@@ -283,7 +283,7 @@ const Levels = (() => {
       const lakeCov = Geo.coverage(G, ctx => { ctx.beginPath(); d3.geoPath(proj, ctx)(bigLakes); ctx.fill(); });
       for (let k = 0; k < lakeCov.length; k++) if (lakeCov[k] >= 8) G.data[k] = 0;
       // a few pines in the northern woods
-      for (const [lon, lat, m] of [[-76, 50.5], [-71, 49], [-88, 51.5], [-80, 52.5], [-95, 53.5], [-67, 52]]) {
+      for (const [lon, lat] of [[-76, 50.5], [-71, 49], [-88, 51.5], [-80, 52.5], [-95, 53.5], [-67, 52]]) {
         const [x, y] = proj([lon, lat]), [i, j] = Geo.cellAt(G, x, y);
         Geo.stamp(G, PINE, { g: T.sageDk, n: T.walnut }, i - 2, j - 3);
       }
@@ -526,7 +526,7 @@ nnnnnnonoonRR
       for (let i = 0; i <= G.ncol; i++) if ((i + bo[0]) % B === 0) Geo.running(S0, [[G.ox + i * C, 0], [G.ox + i * C, H]], { len: 7, gap: 7, hw: 0.95, col: T.blush, phase: 0, vary: 0, wobble: 0.3, seed: i, tier: 0 });
       for (let j = 0; j <= G.nrow; j++) if ((j + bo[1]) % B === 0) Geo.running(S0, [[0, G.oy + j * C], [W, G.oy + j * C]], { len: 7, gap: 7, hw: 0.95, col: T.blush, phase: 0, vary: 0, wobble: 0.3, seed: j + 999, tier: 0 });
       append(S, filterSegs(S0, (x, y) => !farm(x, y) || !farm(x + 7, y + 7) || !farm(x - 7, y - 7)));
-      // and the town's blocks quilted finer, in oatmeal
+      // and the town's blocks quilted finer, in a thin brown
       const S1 = new Stitch.Segs(), inTown = (x, y) => { const [i, j] = Geo.cellAt(G, x, y); return G.data[j * G.ncol + i] === T.oat; };
       for (let i = 0; i <= G.ncol; i++) if ((i + bo[0]) % 3 === 0) Geo.running(S1, [[G.ox + i * C, 0], [G.ox + i * C, H]], { len: 6, gap: 8, hw: 0.75, col: T.brown, phase: 0, vary: 0, wobble: 0.3, seed: i + 3, tier: 0 });
       for (let j = 0; j <= G.nrow; j++) if ((j + bo[1]) % 3 === 0) Geo.running(S1, [[0, G.oy + j * C], [W, G.oy + j * C]], { len: 6, gap: 8, hw: 0.75, col: T.brown, phase: 0, vary: 0, wobble: 0.3, seed: j + 1999, tier: 0 });
@@ -535,8 +535,8 @@ nnnnnnonoonRR
       for (const l of Geo.lines(proj, lakes)) if (Geo.length(l) > 30) Geo.backstitch(S, Geo.simplify(l, 0.8), { len: 8, hw: 1.15, col: T.indigoMd, taper: 0.7 });
       const field = seaField(ctx => { ctx.fillRect(-10, -10, W + 20, H + 20); ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); d3.geoPath(proj, ctx)(lakes); ctx.fill(); }, 1);
       append(S, waterLines(field, [5], () => true, 40, [{ len: 7, gap: 5, hw: 1.15, col: 'indigoLt' }]));
-      // rivers and creeks couched in indigo
-      // (the rivers are drawn in the census data as narrow shapes: their two banks, stitched, make one thread)
+      // rivers and creeks in indigo backstitch (the census draws the rivers as narrow shapes: their two banks,
+      // stitched, make one thread)
       const rv = new Stitch.Segs();
       for (const f of [...streams.features, ...water.features]) {
         const w = STREAMS[f.properties.name];
@@ -563,7 +563,7 @@ nnnnnnonoonRR
         Geo.knot(T2, CX, CY, 8.5, T.gold, { shadow: T2 === S ? 1 : 0, tier: 4 });
       }
       const sp = this.sprites().heron, SG = fine();
-      Geo.stamp(SG, HERON, { B: T.blueGrey, t: T.indigoLt, k: T.ink, o: T.ochre }, sp.i0, sp.j0);
+      Geo.stamp(SG, HERON, { B: T.indigoLt, t: T.indigoMd, k: T.ink, o: T.ochre }, sp.i0, sp.j0);
       return {
         ground: { linen: cloth(14), pal, grids: [crossGrid(G, 24)], segs: S },
         labels: { linen: null, pal, grids: [crossGrid(F, 34, { hw: 0.22 })], segs: new Stitch.Segs() },
@@ -629,7 +629,7 @@ wbwbw
 wbdbw`];
   const shortnorth = {
     id: 'shortnorth', proj: () => Kit.lens(Kit.km(1.3)),
-    caption: { eyebrow: 'V · Finished, and signed in the corner', title: 'Short North', text: 'High Street under its arches, every house a few stitches of brick.' },
+    caption: { eyebrow: 'V · The last stitches', title: 'Short North', text: 'High Street under its arches, every house a few stitches of brick.' },
     sprites() {
       const [x, y] = [1290, 850];             // over the gardens east of High Street
       const s = Geo.chartSize(BUTTERFLY), G = fine(), [i, j] = Geo.cellAt(G, x, y);
@@ -652,8 +652,8 @@ wbdbw`];
       // High Street: its x and direction at any height of the plate
       const along = roads.features.filter(f => f.properties.name === 'North High Street').flatMap(f => Geo.lines(proj, f)).flat().sort((a, b) => a[1] - b[1]);
       const atY = y => {
-        let k = along.findIndex(p => p[1] >= y); if (k < 1) k = 1; if (k < 0) k = along.length - 1;
-        let a = along[k - 1], b = along[k];
+        let k = along.findIndex(p => p[1] >= y); if (k < 0) k = along.length - 1; if (k < 1) k = 1;
+        const a = along[k - 1], b = along[k];
         // the two carriageways can interleave: look a little way off for the direction
         const a2 = along[Math.max(0, k - 6)], b2 = along[Math.min(along.length - 1, k + 6)];
         const t = (y - a[1]) / ((b[1] - a[1]) || 1), dx = b2[0] - a2[0], dy = b2[1] - a2[1], h = Math.hypot(dx, dy) || 1;
@@ -684,7 +684,6 @@ wbdbw`];
       };
       const walls = [T.madderLt, T.terra, T.rose, T.madder, T.oat, T.terra, T.straw, T.blush], roofs = [T.madderDk, T.walnut, T.indigoMd, T.ink, T.brown];
       const rh = Geo.rng(61), HW = 5, HH = 6, gap = 18;
-      let houses = 0;
       for (const side of [-1, 1]) {
         for (let y = -20; y < H + 20; y += HH * P + 9) {
           const [x] = atY(y + HH * P / 2), x0 = side < 0 ? x - gap - HW * P : x + gap;
@@ -692,7 +691,6 @@ wbdbw`];
           const [i0, j0] = Geo.cellAt(HG, x0, y);
           const chart = HOUSES[Math.floor(rh() * HOUSES.length)];
           Geo.stamp(HG, chart, { R: roofs[Math.floor(rh() * roofs.length)], w: walls[Math.floor(rh() * walls.length)], b: T.straw, d: T.walnut, c: T.brown }, i0, j0, { mirror: rh() < 0.5 });
-          houses++;
         }
       }
       // every other building a little block of satin stitch, its stitches across its width, in the colours of brick

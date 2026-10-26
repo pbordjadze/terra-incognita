@@ -72,11 +72,6 @@ rprrr
 g.G.g
 .gGg.
 ..G..`;
-  M.blossom = `
-.p.p.
-ppypp
-.pyp.
-..g..`;
   // a bird on the sampler's bough, facing right
   M.bird = `
 .........bb...
@@ -121,9 +116,6 @@ nnnnnnnnnnnnnnnnnnnnn
 .nwnnwnnwnnwnnwnnwnn.
 ..rrrrrrrrrrrrrrrrr..
 ...nnnnnnnnnnnnnnn...`;
-  M.waves = `
-.b...b...b...b...b...b..
-b.b.b.b.b.b.b.b.b.b.b.b.`;
   // the sea serpent, three coils and a curled tail
   M.serpent = `
 ......r.r..........................
@@ -137,13 +129,6 @@ r...ggg...gGGgg..ggGGGGgg..ggGGGGgg
 ..........ggyGg.gGGy..yGGg.gGy..yGg
 bb.bb.bb.bggyGgbgGyb.bbyGgbgGybb.yG
 .bb.bb.bb.bggGbbggb.bb.bggbggb.bb.b`;
-  // the compass rose's lily, pointing north
-  M.lily = `
-..a..
-.aaa.
-aaraa
-.ara.
-..a..`;
   return { A7, A5, letters, M };
 })();
 window.Charts = Charts;

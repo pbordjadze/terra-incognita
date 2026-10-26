@@ -78,7 +78,13 @@ const Stitch = (() => {
         groove *= 1 - a2 * 0.16 * (1 - Math.sqrt(st));
         crown *= 0.6 + 0.4 * st;
       }
-      if (pp > 16) groove *= 1 - clamp01((pp - 16) / 24) * 0.10 * (vnoise(s / (pitch * 0.7) + phase * 50, n * 16, 3) - 0.5) * 2;
+      if (pp > 16) {
+        // the filaments of the floss, once a stitch is large: fine streaks along each strand
+        const k = clamp01((pp - 16) / 30);
+        const f1 = vnoise(s / (pitch * 0.9) + phase * 50, n * 22, 3) - 0.5, f2 = vnoise(s / (pitch * 0.5) + phase * 31, n * 47, 4) - 0.5;
+        groove *= 1 - k * (0.16 * f1 + 0.10 * f2) * 2;
+        crown *= 1 - k * 0.3 * Math.abs(f2) * 2;
+      }
     } else if (pp > 2.2) {
       // the ply twist: two plies cross the thread diagonally, a groove between them
       const ph = 2 * (s / pitch + n * 0.42 + phase), f = ph - Math.floor(ph);
@@ -247,14 +253,21 @@ const Stitch = (() => {
       let dif = nx * LX + ny * LY + nz * LZ; if (dif < 0) dif = 0;
       let spec = nx * HX + ny * HY + nz * HZ; if (spec < 0) spec = 0;
       // the wraps of the knot: a spiral of thread round its crown
-      let groove = 1;
+      // the wraps of the knot: loops of thread coiled round its crown, each with its ply
+      let groove = 1, lit = 1;
       const ppx = hw / px;
       if (ppx > 1.6) {
         const ang = Math.atan2(dy, dx) / (2 * Math.PI);
-        const ph = ang * 3 + rr * 2.2 + phase * 3, f = ph - Math.floor(ph);
-        groove = 1 - clamp01((ppx - 1.6) / 3) * 0.32 * (1 - Math.sin(Math.PI * f));
+        const ph = ang * 4 + rr * 2.6 + phase * 3, f = ph - Math.floor(ph), w = Math.sin(Math.PI * f);
+        const a = clamp01((ppx - 1.6) / 3);
+        groove = 1 - a * 0.42 * (1 - Math.sqrt(w));
+        lit = 1 - a * 0.6 * (1 - w);
+        if (ppx > 8) {
+          const q = ang * 26 + rr * 9 + phase * 7, g = q - Math.floor(q);
+          groove *= 1 - clamp01((ppx - 8) / 10) * 0.12 * (1 - Math.sin(Math.PI * g));
+        }
       }
-      const k = (0.48 + 0.78 * dif) * groove, sp = P.metal ? Math.pow(spec, 8) * 0.9 : Math.pow(spec, 14) * 0.18;
+      const k = (0.48 + 0.78 * dif) * groove, sp = (P.metal ? Math.pow(spec, 7) * 0.85 : Math.pow(spec, 14) * 0.18) * lit;
       over(base[0] * k + sp, base[1] * k + sp * 0.92, base[2] * k + sp * 0.75, c);
       return;
     }
