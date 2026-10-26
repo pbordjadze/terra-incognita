@@ -121,8 +121,9 @@ struct AtlasScreen: View {
                 }
             }
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
-            .padding(.trailing, 16)
-            .padding(.top, 8)
+            // (inside the Persian page's frame)
+            .padding(.trailing, globe && globeStyle == .persian ? PersianCaption.pageRoom : 16)
+            .padding(.top, globe && globeStyle == .persian ? PersianCaption.pageRoom : 8)
         }
         .overlay(alignment: .bottom) {
             if !globe && (model.mode == .free || model.mode == .ended) {

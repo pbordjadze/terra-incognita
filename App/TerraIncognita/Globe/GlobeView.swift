@@ -297,6 +297,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var r0: SIMD4<Float>
         var r1: SIMD4<Float>
         var r2: SIMD4<Float>
+        var u3: SIMD4<Float>
     }
 
     /// Draws a frame; false if it couldn't (no drawable yet), so the next tick tries again.
@@ -316,10 +317,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
             u1: SIMD4(Float(radius * scale), Float(scale * Double(reading)), Float(zoom), Float(ring)),
-            u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), Float(styleMix), 0),
+            u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), Float(styleMix), Float(pageFrame)),
             r0: SIMD4(Float(m[0][0]), Float(m[1][0]), Float(m[2][0]), 0),
             r1: SIMD4(Float(m[0][1]), Float(m[1][1]), Float(m[2][1]), 0),
-            r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0))
+            r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
+            u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
+                      Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
@@ -346,6 +349,18 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let ring = 11 * Double(reading)
         let r = (half - ring) + (half / 1.1833 - (half - ring)) * styleMix
         return (CGPoint(x: box.midX, y: box.midY), max(r, 40) * zoom)
+    }
+
+    /// How far the Persian page's frame has come in: as the globe's own frame leaves the screen, the
+    /// screen becomes the manuscript's panel (Globe.metal's page frame).
+    private var pageFrame: Double { styleMix * smoothstep(1.3, 2.0, zoom) }
+
+    /// The page frame's four strips, in points, while it shows: no name goes under them.
+    private var pageStrips: [CGRect] {
+        guard pageFrame > 0.01 else { return [] }
+        let d = (6 + 16.81) * reading, s = safeAreaInsets, w = bounds.width, h = bounds.height
+        return [CGRect(x: 0, y: 0, width: w, height: s.top + d), CGRect(x: 0, y: h - s.bottom - d, width: w, height: s.bottom + d),
+                CGRect(x: 0, y: 0, width: s.left + d, height: h), CGRect(x: w - s.right - d, y: 0, width: s.right + d, height: h)]
     }
 
     /// Measures the globe's room from the safe area and what covers the screen (`keepClear`: the
@@ -547,7 +562,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         selectedLetters.frame = persian ? CGRect(x: pad.width / 2, y: pad.height / 2, width: ceil(size.width), height: ceil(size.height))
                                         : selectedLabel.bounds
         selectedLabel.backgroundColor = persian ? UIColor(hex: face.halo)?.cgColor : nil
-        selectedLabel.borderColor = UIColor(red: 0xA0 / 255, green: 0x8C / 255, blue: 0x60 / 255, alpha: 1).cgColor
+        selectedLabel.borderColor = UIColor(red: 0xC5 / 255, green: 0xAA / 255, blue: 0x6E / 255, alpha: 1).cgColor
         selectedLabel.borderWidth = persian ? 1.2 : 0
         selectedLabel.shadowColor = UIColor(hex: persian ? face.ink : face.halo)?.cgColor
         selectedLabel.shadowOpacity = persian ? 0.22 : 0.8
@@ -808,7 +823,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var placed: [CGRect] = []
         let fade = min(1, dt * 10)
         let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
-        let clear = keepClear.map { $0.insetBy(dx: -gap, dy: -gap) }
+        let clear = (keepClear + pageStrips).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func fits(_ r: CGRect) -> Bool {

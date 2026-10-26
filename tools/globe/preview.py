@@ -55,13 +55,13 @@ P_SHADE = hexc('#A298A7')
 P_WHITE = hexc('#F5F5F5')
 P_BORDER = hexc('#825947')
 P_LAPIS = hexc('#5F6CA7')
-P_GOLD = hexc('#A08C60')
+P_GOLD = hexc('#C5AA6E')
 P_PINK = hexc('#D1A38F')
 P_GREEN = hexc('#79A18B')
 P_LIGHT_BLUE = hexc('#A2B7D0')
 P_SALMON = hexc('#C47C66')
 P_INK = hexc('#251F14')
-P_SEL = hexc('#9D8A57')
+P_SEL = hexc('#C2A862')
 SEL_ALPHA = 0.85
 
 
@@ -202,6 +202,52 @@ def stand_in_fleuron():
     d.line((128, 240, 128, 110), fill=ink, width=7)
     d.ellipse((93, 40, 163, 120), fill=(169, 181, 216, 255), outline=ink, width=7)
     return img
+
+
+# The page's frame, when the globe is looked at closer than its own frame allows (Globe.metal's): the
+# map becomes the text panel, framed as the opening spread frames its panels, by their rulings and
+# braid, on a margin of paper at the screen's edges. In reading points from the paper's inner edge,
+# outward from the panel: pink, gold, light blue, the braid, gold, green, gold, pink (the measured
+# proportions, the braid 8 points deep).
+PAGE_MARGIN = 6
+PAGE_RULES = ((0, 0.68, 'P_PINK'), (0.68, 2.03, 'P_GOLD'), (2.03, 3.39, 'P_LIGHT_BLUE'), (11.39, 11.66, 'P_GOLD'),
+              (11.66, 13.83, 'P_GREEN'), (13.83, 15.46, 'P_GOLD'), (15.46, 16.81, 'P_PINK'))
+PAGE_BRAID = (3.39, 11.39)
+PAGE_DEPTH = 16.81
+PAGE_ROOM = 27                    # what sits on the page keeps this far in from the safe area: inside the frame
+
+
+def page_frame(col, px, py, W, H, ls, insets, alpha):
+    """The page's frame over `col` (the picture so far), `alpha` of the way in. `insets` are the safe
+    area's (top, bottom, left, right) in pixels; `ls` pixels per reading point."""
+    top, bottom, left, right = insets
+    outer = PAGE_MARGIN * ls
+    # e: reading points inward from the frame's outer edge, to the nearest of the four edges
+    dl, dr, dt, db = px - left - outer, W - right - outer - px, py - top - outer, H - bottom - outer - py
+    e = np.minimum(np.minimum(dl, dr), np.minimum(dt, db)) / ls
+    horizontal = np.minimum(dt, db) <= np.minimum(dl, dr)    # nearest the top or bottom: the braid runs along x
+    out = np.where((e < 0)[..., None], mix(col, P_PAPER, alpha), col)
+    def band(a, b):                                          # (a, b: reading points out from the panel)
+        lo, hi, k = PAGE_DEPTH - b, PAGE_DEPTH - a, 1.0
+        if (hi - lo) * ls < 0.8:                             # (never thinner than 0.8 px: as much fainter)
+            c = (lo + hi) / 2
+            lo, hi, k = c - 0.4 / ls, c + 0.4 / ls, (hi - lo) * ls / 0.8
+        return k * np.clip(np.minimum(e - lo, hi - e) * ls + 0.5, 0, 1)
+    for a, b, c in PAGE_RULES:
+        out = mix(out, globals()[c], alpha * band(a, b))
+    tile = 8 * 4 * ls                                        # the braid's tile: 4:1, 8 points deep
+    wtile = picture('braid.png', (tile, 8 * ls), stand_in_braid)
+    along = np.where(horizontal, px, py) / tile
+    across = (PAGE_DEPTH - PAGE_BRAID[0] - e) / (PAGE_BRAID[1] - PAGE_BRAID[0])   # 0 at the panel's side
+    wb = sample(wtile, along % 1, np.clip(across, 0, 1))
+    return mix(out, wb[..., :3], alpha * band(*PAGE_BRAID) * wb[..., 3])
+
+
+def page_strips(w, h, insets):
+    """The page frame's four strips in points (x0, y0, x1, y1): no name goes under them."""
+    top, bottom, left, right = insets
+    d = PAGE_MARGIN + PAGE_DEPTH
+    return [(0, 0, w, top + d), (0, h - bottom - d, w, h), (0, 0, left + d, h), (w - right - d, 0, w, h)]
 
 
 def persian_page(px, py, x, y, rr, R, W, H, grain):
@@ -378,6 +424,9 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
         col = mix(col, COAST, line((rr - 1) * R, 1.2 * ls))
     edge = smoothstep(1 + 0.5 / R, 1 - 0.5 / R, rr)
     out = np.where(inside[..., None], mix(page, col, edge), page)
+    if persian:
+        # the page's frame comes in as the globe's own frame leaves the screen
+        out = page_frame(out, px, py, W, H, ls, tuple(v * scale for v in safe_insets(w, h)), page_alpha(zoom))
     return Image.fromarray((np.clip(out, 0, 1) * 255).astype(np.uint8), 'RGB'), (cx, cy, r0 * zoom, M)
 
 
@@ -487,13 +536,23 @@ def caption_box(w, h):
     head_h = (pw - 2 * inset) / 8
     cap = TYPE['styles']['persian']['caption']
     body_h = 12 + cap['eyebrow']['size'] * 1.3 + 6 + cap['text']['size'] * 1.3 + 12
-    y1 = h - (20 if min(w, h) >= 700 else 34) - 10
+    y1 = h - safe_insets(w, h)[1] - PAGE_ROOM             # (inside the page's frame, when it shows)
     return x0, y1 - (2 * inset + head_h + body_h), x0 + pw, y1
 
 
+def safe_insets(w, h):
+    """The safe area's insets in points (top, bottom, left, right): an iPad's or an iPhone's."""
+    return (24, 20, 0, 0) if min(w, h) >= 700 else (59, 34, 0, 0)
+
+
+def page_alpha(zoom):
+    """How far the page's frame has come in (GlobeView's pageFrame): as the globe's own frame leaves."""
+    return float(smoothstep(1.3, 2.0, zoom))
+
+
 def buttons_box(w, h):
-    """The style and film buttons, top right, in points (AtlasScreen's)."""
-    return w - 130, 0, w, (24 if min(w, h) >= 700 else 54) + 8 + 48
+    """The style and film buttons, top right, inside the page's frame, in points (AtlasScreen's)."""
+    return w - PAGE_ROOM - 115, 0, w, safe_insets(w, h)[0] + PAGE_ROOM + 48
 
 
 def persian_caption(img, w, h, scale, selected):
@@ -578,6 +637,8 @@ def main():
     img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian')
     if not o.no_labels:
         clear = [buttons_box(w, h)] + ([caption_box(w, h)] if o.style == 'persian' else [])
+        if o.style == 'persian' and page_alpha(o.zoom) > 0:
+            clear += page_strips(w, h, safe_insets(w, h))
         labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian', clear)
         if o.style == 'persian':
             persian_caption(img, w, h, o.scale, selected)

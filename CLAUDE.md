@@ -116,7 +116,8 @@ Every choice in the Persian style traces to one of two references; nothing is a 
   opening and its landscapes, inspected in LACMA's scans (no pixel of them is in the app). Its
   colours are sampled from the scans and white-balanced by one gain that makes its lead-white
   pigment neutral (the varnish's cast is not the painter's): paper F2E4C8, lapis 5F6CA7, gold
-  A08C60, the cartouche's gold 9D8A57, salmon C47C66, pink D1A38F, green 79A18B, light blue A2B7D0,
+  A08C60, the cartouche's gold 9D8A57 (both golds then lifted, +0.10 OKLab lightness and chroma
+  x1.3, to C5AA6E and C2A862: a scan shows shell gold unlit and olive), salmon C47C66, pink D1A38F, green 79A18B, light blue A2B7D0,
   black 251F14, white F5F5F5, the margin's blue ink 6D6793, the text's ink 3B2C16, the rubrics'
   vermilion DD6C51, the landscapes' meadow CCD6C8 and rocks CCBDCB (shadows A298A7).
 - **Wikipedia's map conventions** (WikiProject Maps, location and topographic maps): water C6ECFF
@@ -131,8 +132,8 @@ only as far as the contrast rule needs. The frame's rulings follow the order and
 measured across the opening spread's frame, from its text panel out (Globe.metal's `P_` frame).
 On the map itself, what is drawn on the paper uses the margin's vocabulary (blue ink: coasts,
 rivers, finials, the capitals' rosettes); illumination (gold, lapis, salmon) stays in the frame,
-the caption's headpiece, and the one chosen country, gilded as the cartouche. The gold is the
-scan's matte shell gold: no sheen, no shadows, no vignette (the manuscript has none).
+the caption's headpiece, and the one chosen country, gilded as the cartouche. The gold is matte
+(lifted, as above, but never shining): no sheen, no shadows, no vignette (the manuscript has none).
 
 ## Rules
 

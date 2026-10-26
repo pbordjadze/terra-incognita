@@ -73,10 +73,13 @@ struct GlobeScreen: View {
 
 /// The caption in the Persian style, as the manuscript opens its text: an illuminated headpiece with
 /// the title lettered in its gold cartouche, over a quiet panel ruled in gold, pink and lapis.
-private struct PersianCaption: View {
+struct PersianCaption: View {
     let caption: Plate.Caption
     /// The headpiece (Globe/headpiece.png), and the title's face and the box inside the cartouche
     /// it may fill, as fractions of the headpiece (Globe/type.json).
+    /// How far in from the safe area the caption sits: inside the page's frame (Globe.metal's
+    /// PAGE_MARGIN and PAGE_DEPTH), which comes in when the globe is looked at closer.
+    static let pageRoom: CGFloat = 27
     static let headpiece = UIImage(contentsOfFile: GlobeData.root.appending(path: "headpiece.png").path(percentEncoded: false))
     static let face = GlobeType.shared?.styles[GlobeStyle.persian.rawValue]?.cartouche
     static let cartouche = face.flatMap { $0.box.count == 4 ? CGRect(x: $0.box[0], y: $0.box[1], width: $0.box[2], height: $0.box[3]) : nil }
@@ -110,7 +113,7 @@ private struct PersianCaption: View {
         .background(PersianPanel())
         .frame(maxWidth: CaptionLines.widest)
         .padding(.horizontal, 14)
-        .padding(.bottom, 10)
+        .padding(.bottom, Self.pageRoom)
         .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: [caption.title, caption.eyebrow, caption.text].filter { !$0.isEmpty }.joined(separator: ", ")))
@@ -130,7 +133,7 @@ private struct PersianPanel: View {
             }
             let r = CGRect(origin: .zero, size: size)
             ctx.fill(Path(r), with: .color(colour(0xE5DBBE)))       // the text panels' paper
-            ctx.stroke(Path(r.insetBy(dx: 1, dy: 1)), with: .color(colour(0xA08C60)), lineWidth: 2)
+            ctx.stroke(Path(r.insetBy(dx: 1, dy: 1)), with: .color(colour(0xC5AA6E)), lineWidth: 2)
             ctx.stroke(Path(r.insetBy(dx: 3.2, dy: 3.2)), with: .color(colour(0xD1A38F)), lineWidth: 0.8)
             ctx.stroke(Path(r.insetBy(dx: Self.inset - 0.25, dy: Self.inset - 0.25)), with: .color(colour(0x5F6CA7)), lineWidth: 0.5)
         }

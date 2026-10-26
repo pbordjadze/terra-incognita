@@ -7,10 +7,12 @@ using namespace metal;
 
 struct GlobeUniforms {
     float4 u0;          // drawable size (px), the globe's centre (px)
-    float4 u1;          // radius (px), pixels per point, zoom, the gold ring's strength
+    float4 u1;          // radius (px), pixels per reading point, zoom, the gold ring's strength
     float4 u2;          // the selected country (1 + its index; 0: none), its highlight, the style
-                        // (0 Wikipedia's colours, 1 the Persian; between them while it changes)
+                        // (0 Wikipedia's colours, 1 the Persian; between them while it changes),
+                        // the page's frame (how far it has come in)
     float4 r0, r1, r2;  // world from view, by rows
+    float4 u3;          // the safe area's insets (px): top, bottom, left, right
 };
 
 struct GlobeVertex { float4 position [[position]]; };
@@ -38,7 +40,9 @@ constant float3 SHADOW = float3(0x6E, 0x63, 0x52) / 255;
 // The Persian style, every colour traced (CLAUDE.md › The Persian style's sources). The manuscript's
 // colours are sampled from LACMA's scans of the Khamsa of Nizami (M.85.237.16, Tabriz, 1529),
 // white-balanced so its lead-white pigment is neutral; the map's tints take their lightness from
-// Wikipedia's map conventions (WikiProject Maps) and their hue from the manuscript.
+// Wikipedia's map conventions (WikiProject Maps) and their hue from the manuscript. The golds alone
+// are lifted from the scan's (+0.10 OKLab lightness, chroma x1.3, same hue): a scan shows shell gold
+// unlit, olive, and gold is meant to be seen under light.
 constant float3 P_PAPER = float3(0xF2, 0xE4, 0xC8) / 255;      // the margin's paper
 constant float3 P_SEA = float3(0xE1, 0xEF, 0xFF) / 255;        // Wikipedia's shallowest sea, in the light-blue ruling's hue
 constant float3 P_SEA_DEEP = float3(0xC6, 0xD2, 0xFE) / 255;   // its fourth depth, in lapis
@@ -50,12 +54,12 @@ constant float3 P_SHADE = float3(0xA2, 0x98, 0xA7) / 255;      // the rocks' sha
 constant float3 P_WHITE = float3(0xF5, 0xF5, 0xF5) / 255;      // lead white: the rocks' highlights
 constant float3 P_BORDER = float3(0x82, 0x59, 0x47) / 255;     // Wikipedia's borders, in the pink ruling's hue
 constant float3 P_LAPIS = float3(0x5F, 0x6C, 0xA7) / 255;
-constant float3 P_GOLD = float3(0xA0, 0x8C, 0x60) / 255;
+constant float3 P_GOLD = float3(0xC5, 0xAA, 0x6E) / 255;        // (gold lifted from the scan's: see below)
 constant float3 P_PINK = float3(0xD1, 0xA3, 0x8F) / 255;
 constant float3 P_GREEN = float3(0x79, 0xA1, 0x8B) / 255;
 constant float3 P_LIGHT_BLUE = float3(0xA2, 0xB7, 0xD0) / 255;
 constant float3 P_INK = float3(0x25, 0x1F, 0x14) / 255;        // the black of the rulings
-constant float3 P_SEL = float3(0x9D, 0x8A, 0x57) / 255;        // the headpiece cartouche's gold
+constant float3 P_SEL = float3(0xC2, 0xA8, 0x62) / 255;        // the headpiece cartouche's gold, lifted
 constant float SEL_ALPHA = 0.85;
 // The frame, outward from the globe's edge in units of its radius (so it grows with the globe), in
 // the order and proportions measured across the opening spread's frame, from its text panel out:
@@ -66,6 +70,11 @@ constant float SEL_ALPHA = 0.85;
 constant float P_BRAID_IN = 1.0091, P_BRAID_OUT = 1.0307, P_BRAID_N = 74;
 constant float P_BAND_IN = 1.0650, P_BAND_OUT = 1.1150, P_BAND_N = 30;
 constant float P_FL_BASE = 1.1383, P_FL_TALL = 0.045, P_FL_N = 48;
+// The page's frame, when the globe is looked at closer than its own frame allows: the map becomes
+// the text panel, framed as the spread frames its panels, by their rulings and braid, on a margin of
+// paper at the screen's edges. In reading points out from the panel: pink, gold, light blue, the
+// braid (8 points deep, its tile 4:1), gold, green, gold, pink, in the measured proportions.
+constant float PAGE_MARGIN = 6, PAGE_DEPTH = 16.81, PAGE_BRAID_IN = 3.39, PAGE_BRAID_OUT = 11.39;
 
 /// A hash without sine (whose precision fails at a screen's coordinates in 32 bits).
 static float hash2(float2 p) {
@@ -108,6 +117,15 @@ static float ring(float rr, float a, float b, float R) {
     return k * smoothstep(a - 0.5 / R, a + 0.5 / R, rr) * (1 - smoothstep(b - 0.5 / R, b + 0.5 / R, rr));
 }
 
+/// Coverage of a band of the page's frame from `a` to `b` reading points out from the panel, `e`
+/// being how far in from the frame's outer edge a pixel is; never thinner than 0.8 px (`ppp`: pixels
+/// per reading point).
+static float pageBand(float e, float a, float b, float ppp) {
+    float lo = PAGE_DEPTH - b, hi = PAGE_DEPTH - a, k = 1;
+    if ((hi - lo) * ppp < 0.8) { float c = (lo + hi) / 2; lo = c - 0.4 / ppp; hi = c + 0.4 / ppp; k = (hi - lo) * ppp / 0.8; }
+    return k * clamp(min(e - lo, hi - e) * ppp + 0.5, 0.0, 1.0);
+}
+
 /// How steeply a field changes per texel of the map, from its change per pixel (gs) and the map's
 /// (tx, ty: texels per pixel along the screen's x and y): a distance changes about 1 a texel, the
 /// jump where a line's sign flips about 16.
@@ -139,7 +157,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float2 pix = in.position.xy;
     float2 size = U.u0.xy, centre = U.u0.zw;
     float R = U.u1.x, scale = U.u1.y, zoom = U.u1.z, ringOn = U.u1.w;
-    float selected = U.u2.x, highlight = U.u2.y, style = U.u2.z;
+    float selected = U.u2.x, highlight = U.u2.y, style = U.u2.z, pageOn = U.u2.w;
     float x = (pix.x - centre.x) / R, y = (centre.y - pix.y) / R;
     float rr = sqrt(x * x + y * y);
 
@@ -318,5 +336,30 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
         col = mix(col, pcol, style);
     }
     float edge = 1 - smoothstep(1 - 0.5 / R, 1 + 0.5 / R, rr);
-    return float4(rr < 1 + 2 / R ? mix(page, col, edge) : page, 1);
+    float3 outc = rr < 1 + 2 / R ? mix(page, col, edge) : page;
+    if (pageOn > 0.001) {                               // (the same for every pixel)
+        // e: reading points in from the frame's outer edge, to the nearest of the four edges; the
+        // braid runs along that edge (its gradients worked out, not taken: the edges meet in mitres)
+        float outer = PAGE_MARGIN * scale;
+        float dl = pix.x - U.u3.z - outer, dr = size.x - U.u3.w - outer - pix.x;
+        float dt = pix.y - U.u3.x - outer, db = size.y - U.u3.y - outer - pix.y;
+        float e = min(min(dl, dr), min(dt, db)) / scale;
+        bool horizontal = min(dt, db) <= min(dl, dr);
+        float side = horizontal ? (dt < db ? 1.0 : -1.0) : (dl < dr ? 1.0 : -1.0);   // which way e grows
+        outc = mix(outc, P_PAPER * (0.985 + 0.03 * grain), pageOn * (1 - clamp(e * scale + 0.5, 0.0, 1.0)));
+        outc = mix(outc, P_PINK, pageOn * pageBand(e, 0, 0.68, scale));
+        outc = mix(outc, P_GOLD, pageOn * pageBand(e, 0.68, 2.03, scale));
+        outc = mix(outc, P_LIGHT_BLUE, pageOn * pageBand(e, 2.03, 3.39, scale));
+        outc = mix(outc, P_GOLD, pageOn * pageBand(e, 11.39, 11.66, scale));
+        outc = mix(outc, P_GREEN, pageOn * pageBand(e, 11.66, 13.83, scale));
+        outc = mix(outc, P_GOLD, pageOn * pageBand(e, 13.83, 15.46, scale));
+        outc = mix(outc, P_PINK, pageOn * pageBand(e, 15.46, 16.81, scale));
+        float tile = 8 * 4 * scale, depth = PAGE_BRAID_OUT - PAGE_BRAID_IN;
+        float2 wuv = float2(fract((horizontal ? pix.x : pix.y) / tile), (PAGE_DEPTH - PAGE_BRAID_IN - e) / depth);
+        float2 gx = float2(horizontal ? 1 / tile : 0, horizontal ? 0 : -side / (depth * scale));
+        float2 gy = float2(horizontal ? 0 : 1 / tile, horizontal ? -side / (depth * scale) : 0);
+        float4 braid = braidTex.sample(linearS, float2(wuv.x, clamp(wuv.y, 0.0, 1.0)), gradient2d(gx, gy));
+        outc = mix(outc, braid.rgb, pageOn * pageBand(e, PAGE_BRAID_IN, PAGE_BRAID_OUT, scale) * braid.a);
+    }
+    return float4(outc, 1);
 }
