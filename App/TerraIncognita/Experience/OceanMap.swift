@@ -145,6 +145,9 @@ struct OceanMap: View {
             .accessibilityLabel("Indian Ocean viewing table")
 
         }
+        // Cartographic labels live in fixed geometry: bound their enlargement, as the globe does.
+        // Full-size text remains available in the place notes and the evidence sheet.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private func terrain(_ context: GraphicsContext, chart: Chart) {
@@ -185,11 +188,11 @@ struct OceanMap: View {
             furrow.addQuadCurve(to: CGPoint(x: centre.x, y: grain.maxY - 4), control: CGPoint(x: centre.x + 3, y: centre.y))
             context.stroke(furrow, with: .color(reveal < 0.5 ? ink.opacity(0.3) : gold.opacity(0.8)), lineWidth: 0.7)
             label(reveal < 0.5 ? "a trace below" : "charred rice", at: CGPoint(x: centre.x, y: centre.y + 29), context: context, size: 14, color: ink)
-            label(reveal < 0.5 ? "draw back the layer" : "c. 700–1000 CE", at: CGPoint(x: centre.x, y: centre.y + 44), context: context, size: 10, color: blueInk)
+            label(reveal < 0.5 ? "move layer" : "c. 700–1000 CE", at: CGPoint(x: centre.x, y: centre.y + 40), context: context, size: 10, color: blueInk)
         } else if lens == "words" && (place == "borneo" || place == "madagascar") {
-            label(place == "borneo" ? "jatuh" : "zato", at: CGPoint(x: centre.x, y: centre.y - 11), context: context, size: 29, color: ink)
-            label(place == "borneo" ? "Ma’anyan" : "Malagasy", at: CGPoint(x: centre.x, y: centre.y + 16), context: context, size: 12, color: blueInk)
-            label("hundred", at: CGPoint(x: centre.x, y: centre.y + 35), context: context, size: 14, color: ink)
+            label(place == "borneo" ? "jatuh" : "zato", at: CGPoint(x: centre.x, y: centre.y - 16), context: context, size: 29, color: ink)
+            label(place == "borneo" ? "Ma’anyan" : "Malagasy", at: CGPoint(x: centre.x, y: centre.y + 18), context: context, size: 12, color: blueInk)
+            label("hundred", at: CGPoint(x: centre.x, y: centre.y + 40), context: context, size: 14, color: ink)
         } else {
             let name = place == "borneo" ? "Borneo" : place == "comoros" ? "Comoros" : place == "africa" ? "East Africa" : "Madagascar"
             label(name, at: CGPoint(x: centre.x, y: centre.y - 9), context: context, size: 18, color: ink)
