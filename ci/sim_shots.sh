@@ -3,8 +3,8 @@
 #   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid> <t1> <t2> ...
 # Each moment is a launch with `-film <T>` (the film held at T seconds; Debug builds only), a wait,
 # and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`);
-# with GLOBE=1, the globe too (`-globe`, held at a place with `-globe-at`, a country lit with
-# `-globe-select`).
+# with GLOBE=1, the globe too, in each style (`-globe`, `-globeStyle`, held at a place with
+# `-globe-at`, a country lit with `-globe-select`).
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -25,6 +25,9 @@ run() {
 run 30 xcrun simctl boot "$UDID" 2>/dev/null || true
 run 300 xcrun simctl bootstatus "$UDID" -b > /dev/null; step "booted ($?)"
 run 120 xcrun simctl install "$UDID" "$APP"; step "installed ($?)"
+# (a first launch on a simulator still settling can outlast the shot's wait: one unpictured, to warm it)
+run 180 xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null 2>&1; step "warmed ($?)"
+sleep 10
 shot() {
   run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
   step "launch $1: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" "${@:2}" 2>&1 | tr '\n' ' ')"
@@ -33,15 +36,21 @@ shot() {
 }
 WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
+# the globe first (the film's moments can take long, and a timeout should cut them, not it)
+if [ "${GLOBE:-}" = 1 ]; then
+  # each style (the defaults' `globeStyle`, set by the launch argument)
+  shot globe-whole -globe -globeStyle wikipedia -globe-at -83 28 1
+  shot globe-italy -globe -globeStyle wikipedia -globe-at 12 44 2.6 -globe-select Italy
+  shot globe-lakes -globe -globeStyle wikipedia -globe-at -84 41 4.5 -globe-select "United States of America"
+  shot persian-whole -globe -globeStyle persian -globe-at 30 25 1
+  shot persian-iran -globe -globeStyle persian -globe-at 53 33 1 -globe-select Iran
+  shot persian-region -globe -globeStyle persian -globe-at 53 33 4.5 -globe-select Iran
+  shot persian-himalaya -globe -globeStyle persian -globe-at 84 31 7 -globe-select Nepal
+fi
 if [ -n "${LOOKS:-}" ]; then
   for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
 else
   for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
-fi
-if [ "${GLOBE:-}" = 1 ]; then
-  shot globe-whole -globe -globe-at -83 28 1
-  shot globe-italy -globe -globe-at 12 44 2.6 -globe-select Italy
-  shot globe-lakes -globe -globe-at -84 41 4.5 -globe-select "United States of America"
 fi
 run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
 step done

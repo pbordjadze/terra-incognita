@@ -51,6 +51,10 @@ struct AtlasScreen: View {
     @State private var switching = false
     /// The globe's first frame is on screen.
     @State private var globeDrawn = false
+    /// The globe's style, kept between launches (Debug: `-globeStyle wikipedia` at launch).
+    @AppStorage("globeStyle") private var globeStyle = GlobeStyle.persian
+    /// Where the buttons are, so the globe keeps its names clear of them.
+    @State private var buttonsFrame = CGRect.zero
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -73,7 +77,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe, onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -89,7 +93,20 @@ struct AtlasScreen: View {
                 }
                 .buttonStyle(.glass)
                 .accessibilityLabel(globe ? Text("The film") : Text("The globe"))
-                if model.looks.count > 1 && !globe {
+                if globe {
+                    Menu {
+                        Picker(selection: $globeStyle) {
+                            ForEach(GlobeStyle.allCases) { s in Text(s.name).tag(s) }
+                        } label: { Text("Style") }
+                    } label: {
+                        Image(systemName: "paintpalette")
+                            .font(.title3)
+                            .padding(6)
+                    }
+                    .buttonStyle(.glass)
+                    .accessibilityLabel(Text("Style"))
+                    .accessibilityValue(Text(globeStyle.name))
+                } else if model.looks.count > 1 {
                     Menu {
                         Picker(selection: $model.lookIndex) {
                             ForEach(model.looks.indices, id: \.self) { i in Text(model.looks[i].name).tag(i) }
@@ -103,8 +120,10 @@ struct AtlasScreen: View {
                     .accessibilityLabel(Text("Look"))
                 }
             }
-            .padding(.trailing, 16)
-            .padding(.top, 8)
+            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
+            // (inside the Persian page's frame)
+            .padding(.trailing, globe && globeStyle == .persian ? PersianCaption.pageRoom : 16)
+            .padding(.top, globe && globeStyle == .persian ? PersianCaption.pageRoom : 8)
         }
         .overlay(alignment: .bottom) {
             if !globe && (model.mode == .free || model.mode == .ended) {
@@ -179,24 +198,44 @@ struct CaptionView: View {
     let style: CaptionStyle?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            line(caption.eyebrow, style?.eyebrow, fallback: Fallback(size: 12, color: "#dc7354", tracking: 2.4, uppercase: true), relativeTo: .caption)
-            line(caption.title, style?.title, fallback: Fallback(size: 28, color: "#f7ebcc"), relativeTo: .title)
-            line(caption.text, style?.text, fallback: Fallback(size: 17, color: "#ebdec2", italic: true), relativeTo: .body)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.top, 70)
-        .padding(.bottom, 36)
-        // nearly full by the eyebrow's line (about a third of the way down), so the small type stays
-        // clear over a busy map
-        .background(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
-                                           .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom))
-        .allowsHitTesting(false)
-        .accessibilityElement(children: .combine)
+        CaptionLines(caption: caption, style: style)
+            .frame(maxWidth: CaptionLines.widest, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 70)
+            .padding(.bottom, 36)
+            // nearly full by the eyebrow's line (about a third of the way down), so the small type stays
+            // clear over a busy map
+            .background(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
+                                               .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom))
+            .allowsHitTesting(false)
+            .accessibilityElement(children: .combine)
     }
 
     private var scrim: Color { Color(uiColor: style?.scrim.flatMap { UIColor(hex: $0) } ?? UIColor(white: 0, alpha: 0.55)) }
+}
+
+/// A caption's three lines (eyebrow, title, text) in a look's type.
+struct CaptionLines: View {
+    let caption: Plate.Caption
+    let style: CaptionStyle?
+    /// The widest a caption runs, in points: on an iPad a line any longer is hard to read.
+    static let widest: CGFloat = 560
+
+    var body: some View {
+        // (a line left empty takes no room)
+        VStack(alignment: .leading, spacing: 6) {
+            if !caption.eyebrow.isEmpty {
+                line(caption.eyebrow, style?.eyebrow, fallback: Fallback(size: 12, color: "#dc7354", tracking: 2.4, uppercase: true), relativeTo: .caption)
+            }
+            if !caption.title.isEmpty {
+                line(caption.title, style?.title, fallback: Fallback(size: 28, color: "#f7ebcc"), relativeTo: .title)
+            }
+            if !caption.text.isEmpty {
+                line(caption.text, style?.text, fallback: Fallback(size: 17, color: "#ebdec2", italic: true), relativeTo: .body)
+            }
+        }
+    }
 
     private struct Fallback {
         var size: Double, color: String, tracking = 0.0, uppercase = false, italic = false

@@ -21,7 +21,7 @@ def pick(patterns):
 phone = pick([r"iPhone 17 Pro", r"iPhone 1\d Pro", r"iPhone .*Pro"])
 pad = pick([r"iPad Pro 13-inch \(M5\)", r"iPad Pro 13-inch \(M\d\)", r"iPad Pro 13-inch.*", r"iPad Pro.*"])
 devices = json.loads(sim("list", "devices", "available", "-j"))["devices"].get(runtime["identifier"], [])
-for kind, t in (("iphone", phone), ("ipad", pad)):
+for kind, t in (("ipad", pad), ("iphone", phone)):          # (the iPad first: the primary device)
     if kind not in wanted: continue
     # Reuse a device the runner image already created (its data container exists, so the
     # first boot is much faster than for a brand-new device).

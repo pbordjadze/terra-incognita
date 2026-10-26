@@ -5,8 +5,9 @@ name: CI
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
 #          ci/check_globe.py) and the tools' syntax
 #   apple  macOS: Debug and Release builds for the simulator and the plates checked byte for byte
-#          in the bundle; every look screenshotted at moments of its film only when the workflow
-#          is run by hand, as a report
+#          in the bundle; screenshots only when the workflow is run by hand, as a report: on the
+#          13" iPad Pro (the primary device), the iPhone or both, every look at moments of its film
+#          (unless `film` is off) and the globe in each style
 #   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
@@ -18,6 +19,16 @@ on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore']
   workflow_dispatch:
+    inputs:
+      device:
+        description: Screenshots on
+        type: choice
+        options: [ipad, iphone, both]
+        default: ipad
+      film:
+        description: The films' moments too (off - the globe only)
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -56,9 +67,9 @@ jobs:
         with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
-    name: iPhone simulator builds (screenshots when run by hand)
+    name: Simulator builds (screenshots when run by hand)
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 80
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
@@ -67,11 +78,12 @@ jobs:
         id: sim
         if: github.event_name == 'workflow_dispatch'
         run: |
-          read -r _ UDID MODEL RUNTIME < <(ci/simulators.sh iphone)
-          echo "$MODEL $RUNTIME $UDID"
+          D="${{ inputs.device }}"
+          if [ "$D" = both ]; then D="ipad iphone"; elif [ -z "$D" ]; then D=ipad; fi
           mkdir -p out
-          nohup xcrun simctl boot "$UDID" > out/boot.log 2>&1 &
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          ci/simulators.sh $D > out/sims.txt
+          cat out/sims.txt
+          while read -r KIND UDID _; do nohup xcrun simctl boot "$UDID" > "out/boot-$KIND.log" 2>&1 < /dev/null & done < out/sims.txt
       - name: Build (Debug, simulator)
         id: build
         run: |
@@ -102,12 +114,17 @@ jobs:
         id: shots
         if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
         continue-on-error: true
-        timeout-minutes: 25
+        timeout-minutes: 50
         run: |
-          # every look, at five moments of its film, then the globe (GLOBE=1)
+          # on each device (the iPad first): the globe in each style (GLOBE=1), then every look at
+          # five moments of its film (unless `film` is off); each device's pictures in out/shots/<device>/
           export GLOBE=1
-          export LOOKS="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
-          ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app out/shots "${{ steps.sim.outputs.udid }}" 4 16 28 40 52
+          ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
+          # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)
+          while read -r KIND UDID _ <&3; do
+            if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
+            ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
+          done 3< out/sims.txt
       - name: Collect
         if: always()
         run: |
@@ -207,7 +224,7 @@ jobs:
             echo
             if [ -s apple/errors.txt ]; then echo "## compiler errors and warnings"; head -60 apple/errors.txt; echo; fi
             if [ -f plates/plates-check.log ]; then echo "## plates"; tail -20 plates/plates-check.log; fi
-            if [ -f apple/shots/sim-steps.log ]; then echo "## simulator (report only)"; cat apple/shots/sim-steps.log; fi
+            for f in apple/shots/*/sim-steps.log; do [ -f "$f" ] && { echo "## simulator, $(basename "$(dirname "$f")") (report only)"; cat "$f"; }; done
           } > STATUS.md
           cat STATUS.md
           echo "${GITHUB_SHA}" > COMMIT
