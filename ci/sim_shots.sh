@@ -25,6 +25,9 @@ run() {
 run 30 xcrun simctl boot "$UDID" 2>/dev/null || true
 run 300 xcrun simctl bootstatus "$UDID" -b > /dev/null; step "booted ($?)"
 run 120 xcrun simctl install "$UDID" "$APP"; step "installed ($?)"
+# (a first launch on a simulator still settling can outlast the shot's wait: one unpictured, to warm it)
+run 180 xcrun simctl launch "$UDID" "$BUNDLE_ID" > /dev/null 2>&1; step "warmed ($?)"
+sleep 10
 shot() {
   run 60 xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
   step "launch $1: $(run 120 xcrun simctl launch "$UDID" "$BUNDLE_ID" "${@:2}" 2>&1 | tr '\n' ' ')"
