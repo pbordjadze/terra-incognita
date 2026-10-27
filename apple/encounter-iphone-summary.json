@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "E839A11B-51B4-4AD3-ACF4-A53B95B7C957",
+        "deviceName" : "iPhone 17 Pro",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 20,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "TerraIncognita · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1793113899.441,
+  "passedTests" : 20,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1793112244.698,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertNotEqual failed: (\"Optional(\"Present day\")\") is equal to (\"Optional(\"Present day\")\") - Time must respond to the reader's hand (slider frame: (22.0, 473.33333333333326, 358.0, 31.0), era: Present day · the landscape holds older traces)",
+      "targetName" : "TerraIncognitaUITests",
+      "testIdentifier" : 8,
+      "testIdentifierString" : "OceanEncounterTests/testFreelyExploreAndReturn()",
+      "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/OceanEncounterTests/testFreelyExploreAndReturn",
+      "testName" : "testFreelyExploreAndReturn()"
+    }
+  ],
+  "title" : "Test - TerraIncognita",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 21
+}
