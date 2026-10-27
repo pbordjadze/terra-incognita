@@ -213,3 +213,7 @@ body.large-text .tool-row > span { min-width: 0; flex: 1; text-align: center; ov
 /* Touch targets stay large; symbolic icons do not need prose-sized glyphs. */
 .map-controls button, button.round { font-size: 24px; line-height: 1; }
 .timeline-tools summary { font-size: 18px; line-height: 1; }
+
+/* WebKit resolves percentage heights on replaced grid items against the whole grid. */
+body.large-text #map { height: max(260px, 40dvh); min-height: 260px; align-self: start; z-index: 0; }
+body.large-text .map-header, body.large-text .map-bottom { z-index: 1; }

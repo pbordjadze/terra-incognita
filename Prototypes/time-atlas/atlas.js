@@ -64,7 +64,7 @@ function update(){
   $('selection-title').textContent=title;$('selection-detail').textContent=detail;
   $('clear-selection').hidden=!selection;
   document.querySelectorAll('[data-subject]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.subject==='place'?selection?.kind==='place':selection?.id===b.dataset.subject)));
-  $('map-caption').textContent='Map snapshot: '+s.year+' · Generalized historical boundaries · Modern land reference';
+  $('map-caption').textContent='Nearest available map: '+s.year+' · Generalized historical boundaries · Modern land reference';
   $('time-context').textContent='Drag to travel · Pinch to change scale · Dots are available maps';
   $('previous-snapshot').disabled=!dates.some(y=>y<time.year-.01);
   $('next-snapshot').disabled=!dates.some(y=>y>time.year+.01);
