@@ -18,12 +18,17 @@ final class CamelidEncounterTests: XCTestCase {
     }
 
     @MainActor private func reveal(_ target: XCUIElement, in app: XCUIApplication) {
+        // An iPad sheet leaves the atlas's horizontal timeline in the accessibility tree.
+        // Swipe the reading surface itself; touching behind that sheet dismisses it.
+        let reading = app.scrollViews["camelidReadingScroll"].firstMatch
+        XCTAssertTrue(reading.waitForExistence(timeout: 10), "The reading sheet must expose its scrolling surface")
         for _ in 0..<18 {
-            if target.isHittable { return }
-            let reading = app.scrollViews.firstMatch
-            if reading.exists { reading.swipeUp() } else { app.swipeUp() }
+            if target.exists && target.isHittable { return }
+            XCTAssertTrue(reading.exists, "The reading sheet must remain open while exploring its content")
+            reading.swipeUp()
         }
-        XCTAssertTrue(target.isHittable, "Reading must remain reachable as text grows: \(target.label)")
+        let state = target.exists ? target.label : "Target is absent from the reading sheet"
+        XCTAssertTrue(target.exists && target.isHittable, "Reading must remain reachable as text grows: \(state)")
     }
 
     @MainActor func testCamelWaitsForTheReaderAndCanBeLeft() {

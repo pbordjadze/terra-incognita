@@ -38,6 +38,7 @@ struct CamelidEvidence: View {
                 .padding(.bottom, 44)
                 .frame(maxWidth: .infinity)
             }
+            .accessibilityIdentifier("camelidReadingScroll")
             .background(paper)
             .navigationTitle(reading.title)
             .navigationBarTitleDisplayMode(.inline)
