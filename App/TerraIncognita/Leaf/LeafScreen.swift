@@ -128,7 +128,7 @@ private struct LeafWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
-                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+                     decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void) {
             // No external browsing, popups or downloads. All content is inside the bundled leaf.
             guard let url = action.request.url, url.isFileURL,
                   let root = Bundle.main.resourceURL?.appendingPathComponent("Leaf").standardizedFileURL.path,
