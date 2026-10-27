@@ -23,7 +23,7 @@ final class OceanEncounterTests: XCTestCase {
     }
 
     /// Scroll the reading surface, including backwards after inspecting its lower details.
-    /// The edge drag avoids competing with a map in the middle of the page.
+    /// Start on actual reading content outside the map, whose own drag moves its glass.
     @MainActor private func reveal(_ element: XCUIElement, in app: XCUIApplication, towardsTop: Bool = false) {
         guard !element.isHittable else { return }
         // At the largest accessible size this authored page is more than ten screens long.
@@ -38,8 +38,18 @@ final class OceanEncounterTests: XCTestCase {
             } else {
                 upwards = !towardsTop
             }
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.78 : 0.28))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.28 : 0.78))
+            var startY = viewport.minY + viewport.height * (upwards ? 0.75 : 0.25)
+            let map = app.otherElements["Indian Ocean viewing table"].firstMatch
+            if map.exists && map.frame.insetBy(dx: -10, dy: -10).contains(CGPoint(x: viewport.midX, y: startY)) {
+                let above = max(0, min(map.frame.minY - 12, viewport.maxY) - viewport.minY)
+                let below = max(0, viewport.maxY - max(map.frame.maxY + 12, viewport.minY))
+                startY = below >= above ? viewport.maxY - below / 2 : viewport.minY + above / 2
+            }
+            let distance = min(viewport.height * 0.55, 500)
+            let endY = min(max(startY + (upwards ? -distance : distance), viewport.minY + 18), viewport.maxY - 18)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: viewport.midX, dy: startY))
+            let end = origin.withOffset(CGVector(dx: viewport.midX, dy: endY))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
         let state = element.exists ? "Exists as \(element.elementType): \(element.label)" : "Element query did not match"

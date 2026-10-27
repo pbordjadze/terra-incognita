@@ -59,6 +59,8 @@ struct OceanExperience: View {
                 .padding(.top, 26)
                 .frame(maxWidth: 680)
                 .frame(maxWidth: .infinity)
+                .background(Self.paper)
+                .contentShape(Rectangle())
             }
             .accessibilityIdentifier("oceanExperience")
             .onChange(of: lens) { _, _ in
