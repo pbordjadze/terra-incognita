@@ -1,0 +1,31 @@
+2026-10-27T09:25:32.475011+00:00 xcrun simctl boot 99DEE653-946C-406D-8E9E-238D1FCE93C9
+2026-10-27T09:25:34.680695+00:00 xcrun simctl bootstatus 99DEE653-946C-406D-8E9E-238D1FCE93C9 -b
+2026-10-27T09:26:08.532671+00:00 xcrun simctl install 99DEE653-946C-406D-8E9E-238D1FCE93C9 /Users/runner/work/terra-incognita/terra-incognita/build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+2026-10-27T09:26:39.309626+00:00 xcrun simctl get_app_container 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita data
+2026-10-27T09:26:45.158425+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -globe -globeStyle persian
+2026-10-27T09:27:27.318763+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:28:15.778619+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 4 -whale-capture-token 8a1c5083-0b0e-4a1d-8295-0824d9f4f165
+2026-10-27T09:28:37.249253+00:00 whale first frame submitted: 8a1c5083-0b0e-4a1d-8295-0824d9f4f165
+2026-10-27T09:28:38.415980+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/rewind.png
+2026-10-27T09:28:46.042310+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:28:46.817532+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 18 -whale-capture-token 9aaa2e61-2c4b-4aa2-a927-098077929728
+2026-10-27T09:28:51.804825+00:00 whale first frame submitted: 9aaa2e61-2c4b-4aa2-a927-098077929728
+2026-10-27T09:28:52.958787+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/sea.png
+2026-10-27T09:28:54.712934+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:28:55.229415+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 34 -whale-capture-token 759ca44f-7f65-4a8e-b1c9-8eeaf4cc2908
+2026-10-27T09:28:59.598011+00:00 whale first frame submitted: 759ca44f-7f65-4a8e-b1c9-8eeaf4cc2908
+2026-10-27T09:29:00.674933+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/living.png
+2026-10-27T09:29:01.879263+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:29:02.376055+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 49 -whale-capture-token 2767c828-7728-4a76-9a5c-bb8ef15ad24e
+2026-10-27T09:29:07.977215+00:00 whale first frame submitted: 2767c828-7728-4a76-9a5c-bb8ef15ad24e
+2026-10-27T09:29:09.123831+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/limbs.png
+2026-10-27T09:29:10.509752+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:29:10.948130+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 61 -whale-capture-token 3265dbbd-2379-4e6d-aeb5-eb23d35b20d5
+2026-10-27T09:29:16.545071+00:00 whale first frame submitted: 3265dbbd-2379-4e6d-aeb5-eb23d35b20d5
+2026-10-27T09:29:17.906912+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/later.png
+2026-10-27T09:29:18.751306+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:29:19.561934+00:00 xcrun simctl launch 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita -whale 76 -whale-capture-token 583b9a08-1d68-4eca-be66-d7d301405263
+2026-10-27T09:29:25.032541+00:00 whale first frame submitted: 583b9a08-1d68-4eca-be66-d7d301405263
+2026-10-27T09:29:26.178273+00:00 xcrun simctl io 99DEE653-946C-406D-8E9E-238D1FCE93C9 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/ipad/present.png
+2026-10-27T09:29:27.876416+00:00 xcrun simctl terminate 99DEE653-946C-406D-8E9E-238D1FCE93C9 com.pbordjadze.terraincognita
+2026-10-27T09:29:28.870427+00:00 xcrun simctl shutdown 99DEE653-946C-406D-8E9E-238D1FCE93C9

@@ -1,0 +1,41 @@
+2026-10-27T09:21:28.487735+00:00 xcrun simctl boot E839A11B-51B4-4AD3-ACF4-A53B95B7C957
+2026-10-27T09:21:30.509348+00:00 xcrun simctl bootstatus E839A11B-51B4-4AD3-ACF4-A53B95B7C957 -b
+2026-10-27T09:22:22.178260+00:00 xcrun simctl install E839A11B-51B4-4AD3-ACF4-A53B95B7C957 /Users/runner/work/terra-incognita/terra-incognita/build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+2026-10-27T09:22:42.693157+00:00 xcrun simctl get_app_container E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita data
+2026-10-27T09:22:46.415330+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -globe -globeStyle persian
+2026-10-27T09:23:01.530340+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:08.492160+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 4 -whale-capture-token 02d86c21-6a45-4c55-8d95-23b411d9bb51
+2026-10-27T09:23:13.113108+00:00 whale first frame submitted: 02d86c21-6a45-4c55-8d95-23b411d9bb51
+2026-10-27T09:23:14.206899+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/rewind.png
+2026-10-27T09:23:16.391730+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:17.187581+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 18 -whale-capture-token 12c5b67e-d68a-4781-ba4b-7146fb201178
+2026-10-27T09:23:21.332999+00:00 whale first frame submitted: 12c5b67e-d68a-4781-ba4b-7146fb201178
+2026-10-27T09:23:22.452138+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/sea.png
+2026-10-27T09:23:25.720574+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:26.373143+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 34 -whale-capture-token 0fb7395a-1bc8-4d2e-8bb1-2d9d8674d3d8
+2026-10-27T09:23:30.490385+00:00 whale first frame submitted: 0fb7395a-1bc8-4d2e-8bb1-2d9d8674d3d8
+2026-10-27T09:23:31.637479+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/living.png
+2026-10-27T09:23:32.852233+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:33.525561+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 49 -whale-capture-token 4c2fa30a-e9e5-4670-81da-f31766c0cf0d
+2026-10-27T09:23:36.911081+00:00 whale first frame submitted: 4c2fa30a-e9e5-4670-81da-f31766c0cf0d
+2026-10-27T09:23:38.054182+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/limbs.png
+2026-10-27T09:23:38.620869+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:39.145026+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 61 -whale-capture-token 0c04a530-aee3-4183-baf3-7358398cb0b2
+2026-10-27T09:23:42.615009+00:00 whale first frame submitted: 0c04a530-aee3-4183-baf3-7358398cb0b2
+2026-10-27T09:23:43.776320+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/later.png
+2026-10-27T09:23:44.724026+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:45.101111+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale 76 -whale-capture-token 62f3ab92-a566-463f-8222-c416059d028a
+2026-10-27T09:23:48.638177+00:00 whale first frame submitted: 62f3ab92-a566-463f-8222-c416059d028a
+2026-10-27T09:23:49.784609+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/whale/iphone/present.png
+2026-10-27T09:23:50.420687+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:23:53.009941+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -whale-play -whale-capture-token 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:23:56.805964+00:00 whale first frame submitted: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:23:57.962316+00:00 waiting for whale authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:24:12.976956+00:00 still waiting for native authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:24:28.172243+00:00 still waiting for native authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:24:43.487594+00:00 still waiting for native authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:24:58.861424+00:00 still waiting for native authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:25:14.154134+00:00 still waiting for native authored-clock completion: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:25:20.336067+00:00 whale authored clock reached 82 seconds and paused: 7a5d1b35-6585-4782-9ec7-06f9e7a6bd77
+2026-10-27T09:25:26.822308+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T09:25:28.558145+00:00 xcrun simctl shutdown E839A11B-51B4-4AD3-ACF4-A53B95B7C957

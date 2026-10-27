@@ -1,0 +1,40 @@
+{
+  "kind": "native iOS Simulator output",
+  "real_device_test": false,
+  "measured_frame_rate": null,
+  "authoring_clock_completed": null,
+  "story_duration_seconds": 82,
+  "frames": [
+    {
+      "file": "rewind.png",
+      "guided_time_seconds": 4
+    },
+    {
+      "file": "sea.png",
+      "guided_time_seconds": 18
+    },
+    {
+      "file": "living.png",
+      "guided_time_seconds": 34
+    },
+    {
+      "file": "limbs.png",
+      "guided_time_seconds": 49
+    },
+    {
+      "file": "later.png",
+      "guided_time_seconds": 61,
+      "note": "Intentional quiet geographic reference during the large time jump; not a missing scene."
+    },
+    {
+      "file": "present.png",
+      "guided_time_seconds": 76
+    }
+  ],
+  "capture_readiness": "Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.",
+  "capture_completion": "Full video waits for this launch UUID to be acknowledged after the native authored clock reaches 82 seconds and playback pauses, then records 4 more host seconds. Held screenshots do not wait for clock completion. This does not measure frame rate or GPU completion.",
+  "video": null,
+  "source_commit": "d0e60a11bdafbb3af6002fbc72ced8da9530ed23",
+  "ci_run": "40474988862",
+  "note": "Screenshots use held story times. Video runs the actual native guided clock. The later composition intentionally shows a quiet map between the ancient sea and the present desert."
+}
