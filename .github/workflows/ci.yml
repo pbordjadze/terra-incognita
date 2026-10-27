@@ -30,6 +30,11 @@ on:
         description: Photograph only the atlas leaf
         type: boolean
         default: false
+      interaction_suite:
+        description: Branch interaction check (main always runs all tests)
+        type: choice
+        options: [all, leaf]
+        default: all
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -124,7 +129,12 @@ jobs:
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         timeout-minutes: 30
-        run: bash ci/encounter_tests.sh
+        run: |
+          # A focused branch rerun after a leaf test repair; main's publication gate is always full.
+          if [ "$GITHUB_REF_NAME" != main ] && [ "${{ inputs.interaction_suite }}" = leaf ]; then
+            export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests
+          fi
+          bash ci/encounter_tests.sh
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
