@@ -1,5 +1,6 @@
 import QuartzCore
 import CoreText
+import Foundation
 import SwiftUI
 import UIKit
 
@@ -43,6 +44,21 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             self?.story.pause(); self?.story.exploring = true; self?.resumeCamera = nil
         }
         globe.onFrame = { [weak self] in self?.compose() }
+        #if DEBUG
+        let captureArguments = ProcessInfo.processInfo.arguments
+        if let index = captureArguments.firstIndex(of: "-camelid-capture-token"), index + 1 < captureArguments.count {
+            let token = captureArguments[index + 1]
+            if UUID(uuidString: token) != nil {
+                globe.onDrawn = {
+                    // The globe calls this after its first frame's commands were submitted.
+                    // It is a capture handshake, not proof of GPU completion or device timing.
+                    let marker = FileManager.default.temporaryDirectory.appending(path: "camelid-capture-ready.txt")
+                    do { try token.write(to: marker, atomically: true, encoding: .utf8) }
+                    catch { NSLog("Camelid capture readiness marker failed: %@", error.localizedDescription) }
+                }
+            }
+        }
+        #endif
         let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
         inspect.delegate = self
         addGestureRecognizer(inspect)

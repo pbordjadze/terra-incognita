@@ -28,7 +28,7 @@ struct GlobeScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active && !encounter && !camelid, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, country: $country)
+            GlobeCanvasView(active: active && !encounter && !camelid, style: style, keepClear: keepClear + [captionFrame], onDrawn: atlasDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, country: $country)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 Button { encounter = true } label: {
@@ -66,15 +66,18 @@ struct GlobeScreen: View {
         .animation(.easeInOut(duration: 0.35), value: style)
         .fullScreenCover(isPresented: $encounter) { OceanExperience() }
         .fullScreenCover(isPresented: $camelid) { CamelidExperience(style: style) }
-        .onAppear {
-            #if DEBUG
-            let args = ProcessInfo.processInfo.arguments
-            if !camelidDebugOpened && (args.contains("-camelid") || args.contains("-camelid-play")) {
-                camelidDebugOpened = true
-                camelid = true
-            }
-            #endif
-        }
+    }
+
+    private func atlasDrawn() {
+        onDrawn()
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard active, !camelidDebugOpened,
+              args.contains("-camelid") || args.contains("-camelid-play") else { return }
+        camelidDebugOpened = true
+        // Submit the original globe's first frame before constructing the debug cover's renderer.
+        DispatchQueue.main.async { camelid = true }
+        #endif
     }
 
     private var caption: Plate.Caption {

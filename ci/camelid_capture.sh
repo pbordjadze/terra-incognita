@@ -12,6 +12,9 @@ import signal
 import subprocess
 import sys
 import time
+import traceback
+import uuid
+from datetime import datetime, timezone
 
 app, out, udid = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve(), sys.argv[3]
 out.mkdir(parents=True, exist_ok=True)
@@ -19,6 +22,11 @@ with (app / 'Info.plist').open('rb') as f:
     bundle = plistlib.load(f)['CFBundleIdentifier']
 
 def run(*args, timeout=60, check=True):
+    stamp = datetime.now(timezone.utc).isoformat()
+    message = stamp + ' ' + ' '.join(str(a) for a in args)
+    print(message, flush=True)
+    with (out / 'capture-commands.log').open('a') as log:
+        log.write(message + '\n')
     result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
     if result.stdout.strip():
         print(result.stdout.strip(), flush=True)
@@ -29,20 +37,44 @@ def run(*args, timeout=60, check=True):
 def terminate():
     run('xcrun', 'simctl', 'terminate', udid, bundle, check=False)
 
+def launch_ready(*arguments):
+    token = str(uuid.uuid4())
+    ready_marker.unlink(missing_ok=True)
+    run('xcrun', 'simctl', 'launch', udid, bundle, *arguments,
+        '-camelid-capture-token', token, timeout=120)
+    deadline = time.monotonic() + 90
+    while time.monotonic() < deadline:
+        try:
+            if ready_marker.read_text() == token:
+                message = datetime.now(timezone.utc).isoformat() + ' camelid first frame submitted: ' + token
+                print(message, flush=True)
+                with (out / 'capture-commands.log').open('a') as log:
+                    log.write(message + '\n')
+                # Allow the compositor one brief settling interval after native submission.
+                time.sleep(1)
+                return
+        except FileNotFoundError:
+            pass
+        time.sleep(0.25)
+    raise RuntimeError('Camelid did not submit its first native frame within 90 seconds; readiness token ' + token)
+
 recording = None
 try:
     run('xcrun', 'simctl', 'boot', udid, check=False)
     run('xcrun', 'simctl', 'bootstatus', udid, '-b', timeout=300)
     run('xcrun', 'simctl', 'install', udid, str(app), timeout=120)
+    data_container = Path(run('xcrun', 'simctl', 'get_app_container', udid, bundle, 'data').stdout.strip())
+    if not data_container.is_dir():
+        raise RuntimeError('Simulator did not return an accessible app data container')
+    ready_marker = data_container / 'tmp' / 'camelid-capture-ready.txt'
     # Match the established sim_shots.sh budgets while a cold runtime is still settling.
-    run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', '16', timeout=180)
+    run('xcrun', 'simctl', 'launch', udid, bundle, '-globe', '-globeStyle', 'persian', timeout=180)
     time.sleep(12)
     frames = []
     for label, elapsed in [('rewind', 4), ('origin', 17), ('branches', 32),
                            ('beringia', 47), ('americas', 62), ('cousins', 82)]:
         terminate()
-        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', str(elapsed), timeout=120)
-        time.sleep(6)
+        launch_ready('-camelid', str(elapsed))
         name = f'{label}.png'
         run('xcrun', 'simctl', 'io', udid, 'screenshot', '--type=png', str(out / name), timeout=90)
         frames.append({'file': name, 'guided_time_seconds': elapsed})
@@ -53,7 +85,7 @@ try:
                                       '--codec=h264', '--force', str(out / 'native-playback.mp4')],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         time.sleep(2)
-        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid-play', timeout=120)
+        launch_ready('-camelid-play')
         # Include initial rendering and the final freely explorable resting composition.
         for _ in range(19):
             time.sleep(5)
@@ -70,9 +102,13 @@ try:
         'real_device_test': False,
         'measured_frame_rate': None,
         'frames': frames,
+        'capture_readiness': 'Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.',
         'video': 'native-playback.mp4' if os.environ.get('CAMELID_VIDEO') == '1' else None,
         'note': 'Screenshots use held story times. Video runs the actual native guided clock.'
     }, indent=2) + '\n')
+except Exception:
+    (out / 'capture-error.txt').write_text(traceback.format_exc())
+    raise
 finally:
     if recording is not None and recording.poll() is None:
         recording.send_signal(signal.SIGINT)

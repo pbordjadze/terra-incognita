@@ -59,7 +59,8 @@ Keep design discussions and plans in that private repository.
   Optional evidence and the textual equivalent are bundled in `CamelidEvidence`.
   Debug: `-camelid <seconds>` holds a complete composition, `-camelid-play` runs playback, and
   `-camelid-reduce-motion` exercises held camera compositions. `ci/camelid_capture.sh` captures
-  actual simulator output; `[camelid-capture]` requests it in the ordinary macOS job. Branch
+  actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
+  step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
   `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
