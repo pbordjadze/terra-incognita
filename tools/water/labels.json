@@ -1,0 +1,302 @@
+{
+  "cities": [
+    {
+      "name": "Iquitos",
+      "at": [
+        -73.25,
+        -3.75
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "Porto Velho",
+      "at": [
+        -63.9,
+        -8.75
+      ],
+      "min": 3
+    },
+    {
+      "name": "Cuiabá",
+      "at": [
+        -56.087,
+        -15.568
+      ],
+      "min": 3
+    },
+    {
+      "name": "Georgetown",
+      "at": [
+        -58.167,
+        6.802
+      ],
+      "min": 3
+    },
+    {
+      "name": "Paramaribo",
+      "at": [
+        -55.167,
+        5.835
+      ],
+      "min": 3
+    },
+    {
+      "name": "Cusco",
+      "at": [
+        -71.972,
+        -13.525
+      ],
+      "min": 3
+    },
+    {
+      "name": "Asunción",
+      "at": [
+        -57.626,
+        -25.291
+      ],
+      "min": 3
+    },
+    {
+      "name": "Quito",
+      "at": [
+        -78.502,
+        -0.213
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "Leticia",
+      "at": [
+        -69.955,
+        -4.201
+      ],
+      "min": 3
+    },
+    {
+      "name": "Manaus",
+      "at": [
+        -60.002,
+        -3.098
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "La Paz",
+      "at": [
+        -68.152,
+        -16.496
+      ],
+      "min": 3
+    },
+    {
+      "name": "Belém",
+      "at": [
+        -48.482,
+        -1.448
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "Brasília",
+      "at": [
+        -47.918,
+        -15.781
+      ],
+      "min": 3
+    },
+    {
+      "name": "Recife",
+      "at": [
+        -34.909,
+        -8.061
+      ],
+      "min": 3
+    },
+    {
+      "name": "Caracas",
+      "at": [
+        -66.919,
+        10.503
+      ],
+      "min": 3
+    },
+    {
+      "name": "Lima",
+      "at": [
+        -77.052,
+        -12.046
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "Buenos Aires",
+      "at": [
+        -58.433,
+        -34.611
+      ],
+      "min": 1.8
+    },
+    {
+      "name": "Bogota",
+      "at": [
+        -74.085,
+        4.598
+      ],
+      "min": 3
+    },
+    {
+      "name": "Santiago",
+      "at": [
+        -70.651,
+        -33.44
+      ],
+      "min": 1.8
+    }
+  ],
+  "rivers": [
+    {
+      "name": "Amazon · near Manaus",
+      "label": "Amazon",
+      "major": true,
+      "at": [
+        -59.902,
+        -3.14
+      ],
+      "labelAt": [
+        -57,
+        -2.5
+      ],
+      "system": "Amazon"
+    },
+    {
+      "name": "Orinoco · near Ciudad Bolívar",
+      "label": "Orinoco",
+      "major": true,
+      "at": [
+        -63.6,
+        8.145
+      ],
+      "labelAt": [
+        -65.6,
+        7.3
+      ],
+      "system": "Orinoco"
+    },
+    {
+      "name": "Paraná · near Corrientes",
+      "label": "Paraná",
+      "major": true,
+      "at": [
+        -58.856,
+        -27.482
+      ],
+      "labelAt": [
+        -58.6,
+        -26
+      ],
+      "system": "Paraná"
+    },
+    {
+      "name": "São Francisco",
+      "label": "São Francisco",
+      "at": [
+        -42.949,
+        -10.877
+      ],
+      "labelAt": [
+        -42.5,
+        -10.8
+      ],
+      "system": "São Francisco"
+    },
+    {
+      "name": "Tocantins",
+      "label": "Tocantins",
+      "at": [
+        -49.656,
+        -3.775
+      ],
+      "labelAt": [
+        -49,
+        -7
+      ],
+      "system": "Tocantins"
+    },
+    {
+      "name": "Magdalena",
+      "label": "Magdalena",
+      "at": [
+        -74.71,
+        9.29
+      ],
+      "system": "Magdalena"
+    },
+    {
+      "name": "Ucayali",
+      "label": "Ucayali",
+      "at": [
+        -74.737,
+        -7.902
+      ],
+      "labelAt": [
+        -74,
+        -8.3
+      ]
+    },
+    {
+      "name": "Madeira · near Porto Velho",
+      "label": "Madeira",
+      "at": [
+        -63.922,
+        -8.699
+      ],
+      "labelAt": [
+        -62.7,
+        -9
+      ]
+    },
+    {
+      "name": "Negro · Amazon tributary",
+      "label": "Negro",
+      "at": [
+        -61.42,
+        -1.818
+      ],
+      "labelAt": [
+        -63,
+        -1
+      ]
+    },
+    {
+      "name": "Uruguay",
+      "label": "Uruguay",
+      "at": [
+        -58.031,
+        -31.42
+      ],
+      "system": "Uruguay"
+    },
+    {
+      "name": "Biobío · toward the Pacific",
+      "label": "Biobío",
+      "at": [
+        -72.72,
+        -37.288
+      ],
+      "system": "Biobío"
+    },
+    {
+      "name": "Negro · in Patagonia",
+      "label": "Negro",
+      "at": [
+        -65.235,
+        -39.86
+      ],
+      "labelAt": [
+        -65.7,
+        -39.4
+      ],
+      "system": "Negro"
+    }
+  ]
+}
