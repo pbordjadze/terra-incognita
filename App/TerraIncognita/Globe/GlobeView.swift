@@ -154,6 +154,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             element.accessibilityHint = accessibilityHint
             element.accessibilityTraits = accessibilityTraits
             element.accessibilityValue = accessibilityValue
+            element.accessibilityIdentifier = accessibilityIdentifier
             globeAccessibilityElement = element
         }
         guard let element = globeAccessibilityElement else { return }
@@ -168,6 +169,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if let encounterMark { objects.append(encounterMark) }
         objects.append(element)
         accessibilityElements = objects
+    }
+
+    /// Name the map's direct-interaction accessibility element without hiding its small objects.
+    func setAtlasAccessibilityIdentifier(_ identifier: String) {
+        accessibilityIdentifier = identifier
+        globeAccessibilityElement?.accessibilityIdentifier = identifier
     }
 
     /// A single authored encounter. Its mark follows geography, never a guessed voyage.

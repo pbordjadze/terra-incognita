@@ -44,8 +44,9 @@ if not versions:
 latest = versions[0]
 
 description = (
-    "A medieval map that plays as a film, from the whole world down to a single street. Open it "
-    "and the film plays; touch the map to wander, and switch between looks.")
+    "An offline atlas with a live globe, illustrated natural-history stories, geographic studies "
+    "and films from the whole world down to a single street. Open Demos to choose one; pause, "
+    "wander and return to the atlas whenever you like.")
 app = {
     "name": info.get("CFBundleDisplayName", "Terra Incognita"),
     "bundleIdentifier": info["CFBundleIdentifier"],

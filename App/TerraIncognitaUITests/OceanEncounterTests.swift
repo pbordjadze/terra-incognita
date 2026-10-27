@@ -65,11 +65,11 @@ final class OceanEncounterTests: XCTestCase {
         app.launch()
         defer { app.terminate() }
         let prefix = largeText ? "large-text-" : ""
-        let invitation = button("oceanInvitation", in: app)
-        XCTAssertTrue(invitation.waitForExistence(timeout: 45), "The encounter must be discoverable from the globe")
-        XCTAssertTrue(invitation.isHittable)
+        let menu = button("demosMenu", in: app)
+        XCTAssertTrue(menu.waitForExistence(timeout: 45), "The encounter must be discoverable from the atlas menu")
+        XCTAssertTrue(menu.isHittable)
         capture(prefix + "00-globe-doorway")
-        invitation.tap()
+        chooseDemo("demoOcean", in: app)
         let close = button("closeExperience", in: app)
         XCTAssertTrue(close.waitForExistence(timeout: 15))
         capture(prefix + "01-open")
@@ -165,8 +165,8 @@ final class OceanEncounterTests: XCTestCase {
         closeEvidence.tap()
         XCTAssertTrue(close.waitForExistence(timeout: 10))
         close.tap()
-        XCTAssertTrue(invitation.waitForExistence(timeout: 10))
-        invitation.tap()
+        XCTAssertTrue(menu.waitForExistence(timeout: 10))
+        chooseDemo("demoOcean", in: app)
         XCTAssertTrue(close.waitForExistence(timeout: 10), "Returning must never require completing anything")
         capture(prefix + "08-reopened")
     }

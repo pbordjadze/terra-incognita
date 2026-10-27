@@ -69,7 +69,9 @@ final class WhaleEncounterTests: XCTestCase {
         app.buttons["whaleClose"].tap()
         XCTAssertTrue(fossil.waitForExistence(timeout: 15))
         XCTAssertTrue(fossil.isHittable, "Leaving must preserve the original atlas position")
-        XCTAssertTrue(app.buttons["openWaterStudy"].exists, "The independent atlas studies must remain available")
+        openDemos(in: app)
+        XCTAssertTrue(demoItem("demoWater", in: app).exists, "The independent atlas studies must remain available")
+        demoItem("demoGlobe", in: app).tap()
         fossil.tap()
         XCTAssertTrue(follow.waitForExistence(timeout: 15), "Reopening must not require finishing the earlier visit")
         app.buttons["whaleClose"].tap()
@@ -164,7 +166,7 @@ final class WhaleEncounterTests: XCTestCase {
         closeReading.tap()
         XCTAssertTrue(app.buttons["whaleClose"].isHittable)
         app.buttons["whaleClose"].tap()
-        XCTAssertTrue(app.buttons["openWaterStudy"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["demosMenu"].waitForExistence(timeout: 15))
     }
 
     @MainActor func testReducedMotionCanRevisitAndReadTheStory() {

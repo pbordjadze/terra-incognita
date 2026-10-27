@@ -13,11 +13,25 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     var onCaption: ((Plate.Caption?) -> Void)?
     var onMode: ((Mode) -> Void)?
 
-    private(set) var mode: Mode = .film { didSet { if mode != oldValue { onMode?(mode) } } }
+    private(set) var mode: Mode = .film {
+        didSet { if mode != oldValue { updateAccessibilityProgress(force: true); onMode?(mode) } }
+    }
     /// While the globe is shown the film holds still and nothing is drawn.
     var suspended = false {
-        didSet { displayLink?.isPaused = suspended; lastTick = nil }
+        didSet {
+            guard suspended != oldValue else { return }
+            if suspended { suspendedAt = CACurrentMediaTime() }
+            else if let since = suspendedAt {
+                if mode == .returning { returnStart += CACurrentMediaTime() - since }
+                suspendedAt = nil
+            }
+            displayLink?.isPaused = suspended
+            lastTick = nil
+            updateAccessibilityProgress(force: true)
+        }
     }
+    private var suspendedAt: CFTimeInterval?
+    private var reportedProgressSecond = -1
     private var look: Look?
     private var pending: Look?
     private var ladder: Ladder?
@@ -62,6 +76,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         isAccessibilityElement = true
         accessibilityLabel = String(localized: "A map zooming from the whole world down to a neighbourhood")
         accessibilityTraits = .image
+        updateAccessibilityProgress(force: true)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -102,6 +117,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
             camera = new.rest(0)
         }
         loadAround(camera.plate, now: true)
+        updateAccessibilityProgress(force: true)
         render()
     }
 
@@ -120,6 +136,22 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
     /// Whether the film has played to its end (touching the map after doesn't make it resumable).
     var atEnd: Bool { film.map { filmTime >= $0.duration } ?? false }
 
+    /// Actual film progress for VoiceOver, refreshed once a second and on playback-state changes.
+    /// The integer check avoids formatting strings on ordinary display-link frames.
+    private func updateAccessibilityProgress(force: Bool = false) {
+        let second = Int(filmTime.rounded(.down))
+        guard force || second != reportedProgressSecond else { return }
+        reportedProgressSecond = second
+        let state: String
+        switch mode {
+        case .film: state = "Film"
+        case .free: state = "Exploring"
+        case .returning: state = "Returning to film"
+        case .ended: state = "Film ended"
+        }
+        accessibilityValue = "\(state) · \(look?.name ?? "Atlas") · \(second) seconds · \(suspended ? "Paused" : "Active")"
+    }
+
     /// The glide back to the film starts from here and now (again after a new look or screen size,
     /// whose plates and zooms the old start isn't measured in), in the wider of the two plates.
     private func beginReturn() {
@@ -127,6 +159,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         let target = film.camera(at: filmTime)
         returnFrom = ladder.express(camera, in: min(camera.plate, target.plate))
         returnStart = CACurrentMediaTime()
+        if suspended { suspendedAt = returnStart }
     }
 
     private func enterFree() {
@@ -270,6 +303,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         }
         let shown = mode == .film ? film.caption(at: filmTime).map { ladder.plates[$0].caption } : nil
         if shown != caption { caption = shown; onCaption?(shown) }
+        updateAccessibilityProgress()
         render()
     }
 

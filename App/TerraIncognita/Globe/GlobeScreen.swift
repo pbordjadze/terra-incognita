@@ -11,57 +11,30 @@ struct GlobeScreen: View {
     let keepClear: [CGRect]
     /// Its first frame is on screen.
     let onDrawn: () -> Void
+    let onDemo: (AtlasDemo) -> Void
     @State private var country: GlobeData.Country?
     @State private var captionFrame = CGRect.zero
-    @State private var encounter = false
-    @State private var camelid = false
     @State private var camelidDebugOpened = false
-    @State private var whale = false
     @State private var whaleDebugOpened = false
-    @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}) {
+    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}, onDemo: @escaping (AtlasDemo) -> Void) {
         self.active = active
         self.style = style
         self.keepClear = keepClear
         self.onDrawn = onDrawn
+        self.onDemo = onDemo
         GlobeData.registerFonts()
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active && !encounter && !camelid && !whale, style: style, keepClear: keepClear + [captionFrame], onDrawn: atlasDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, onWhale: {
-                guard !encounter && !camelid else { return }
-                whale = true
-            }, country: $country)
+            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame],
+                            onDrawn: atlasDrawn, onEncounter: { onDemo(.ocean) },
+                            onCamelid: { onDemo(.camelid) }, onWhale: { onDemo(.whale) }, country: $country)
                 .ignoresSafeArea()
-            VStack(spacing: 0) {
-                Button { encounter = true } label: {
-                    VStack(spacing: 4) {
-                        Text("A small thing, far from home")
-                            .font(.custom("LibertinusSerif-Regular", size: 23, relativeTo: .title2))
-                        Text("Look closer  ↗")
-                            .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
-                    }
-                    .foregroundStyle(Color(red: 0.23, green: 0.17, blue: 0.09))
-                    .padding(14)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(red: 0.95, green: 0.89, blue: 0.78))
-                    .overlay(alignment: .top) { Rectangle().fill(Color(red: 0.77, green: 0.67, blue: 0.43)).frame(height: 1) }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("oceanInvitation")
-                .padding(.horizontal, 30)
-                .padding(.bottom, 8)
-                if typeSize.isAccessibilitySize && country == nil {
-                    // The invitation already names this view; leave room for the globe at large type.
-                    EmptyView()
-                } else if style == .persian {
-                    PersianCaption(caption: caption)
-                } else {
-                    CaptionView(caption: caption, style: Self.style)
-                }
+            Group {
+                if style == .persian { PersianCaption(caption: caption) }
+                else { CaptionView(caption: caption, style: Self.style) }
             }
             .id(caption.title + style.rawValue)
             .transition(.opacity.combined(with: .offset(y: 8)))
@@ -69,21 +42,18 @@ struct GlobeScreen: View {
         }
         .animation(.easeInOut(duration: 0.35), value: caption.title)
         .animation(.easeInOut(duration: 0.35), value: style)
-        .fullScreenCover(isPresented: $encounter) { OceanExperience() }
-        .fullScreenCover(isPresented: $camelid) { CamelidExperience(style: style) }
-        .fullScreenCover(isPresented: $whale) { WhaleExperience(style: style) }
     }
 
     private func atlasDrawn() {
         onDrawn()
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        guard active, !encounter, !camelid, !whale else { return }
+        // This one-shot handoff runs only after an actual frame submission. `active` at the
+        // representable's construction can precede scene activation, so it must not gate it.
         if !whaleDebugOpened && (args.contains("-whale") || args.contains("-whale-play")) {
             whaleDebugOpened = true
             DispatchQueue.main.async {
-                guard !encounter && !camelid && !whale else { return }
-                whale = true
+                onDemo(.whale)
             }
             return
         }
@@ -92,8 +62,7 @@ struct GlobeScreen: View {
         camelidDebugOpened = true
         // Submit the original globe's first frame before constructing the debug cover's renderer.
         DispatchQueue.main.async {
-            guard !encounter && !camelid && !whale else { return }
-            camelid = true
+            onDemo(.camelid)
         }
         #endif
     }
@@ -221,6 +190,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> GlobeView {
         let view = GlobeView(frame: .zero)
+        view.setAtlasAccessibilityIdentifier("mainAtlasGlobe")
         view.setStyle(style, animated: false)
         view.onSelect = { country = $0 }
         view.onDrawn = onDrawn

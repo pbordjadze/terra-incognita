@@ -33,7 +33,7 @@ on:
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf, whale]
+        options: [all, leaf, whale, menu]
         default: all
       whale_capture:
         description: Capture the whale experience after interactions (report only)
@@ -141,7 +141,11 @@ jobs:
             case "${{ inputs.interaction_suite }}" in
               leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
               whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
+              menu) export UI_TEST_TARGET=TerraIncognitaUITests/DemoMenuTests ;;
             esac
+            if [ "${{ contains(github.event.head_commit.message, '[menu-check]') }}" = true ]; then
+              export UI_TEST_TARGET=TerraIncognitaUITests/DemoMenuTests
+            fi
           fi
           bash ci/encounter_tests.sh
       - name: Capture camelid playback and compositions
@@ -193,7 +197,7 @@ jobs:
         # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'menu')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |

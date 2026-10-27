@@ -26,8 +26,11 @@ Keep design discussions and plans in that private repository.
     towards the closer plate so it arrives inside it at the hand-over (`steered`): no jumps.
   - `Plates.swift`: decodes `Atlas/`.
   - `AtlasScreen`: SwiftUI around it.
+  - Its **Demos** menu selects both illustrated stories, the Ocean encounter, Water study,
+    Aegean leaf and every film look. A single full-screen route owns immersive presentations;
+    returning to the atlas dismisses it before selecting another. The palette remains separate.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
-- **The globe** (`App/TerraIncognita/Globe/`, the button beside the look menu): the whole Earth
+- **The globe** (`App/TerraIncognita/Globe/`, the opening view and Demos' atlas choice): the whole Earth
   drawn live, in two styles chosen from the palette menu (kept between launches, `globeStyle`):
   Wikipedia's location-map colours (WikiProject Maps), a little prettier, and the Persian, the same
   map in colours and a frame studied from a 1529 Persian manuscript (`Globe.metal`'s `P_` palette).
@@ -51,7 +54,7 @@ Keep design discussions and plans in that private repository.
   - Debug builds take `-globe` (open on it), `-globeStyle wikipedia|persian`, `-globe-at lon lat
     zoom` (held there) and `-globe-select <name>`.
 - **The Aegean leaf** (`Leaf/`, `App/TerraIncognita/Leaf/`): an offline HTML/canvas leaf in an ephemeral
-  WKWebView, entered with the leaf button. The Metal globe and plate player are suspended while it
+  WKWebView, entered through Demos. The Metal globe and plate player are suspended while it
   is open. The host supplies system text size, Reduce Motion and scene activity and permits only
   bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
   - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
@@ -86,6 +89,10 @@ Keep design discussions and plans in that private repository.
   `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction
   suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
   are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
+- **Demo selection checks** (`App/TerraIncognitaUITests/DemoMenuTests.swift`): actual menu selection,
+  voluntary story entry, return from films and studies, and largest-text reachability. Manual
+  branch CI accepts `interaction_suite=menu`; main always runs every interaction suite before
+  publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.

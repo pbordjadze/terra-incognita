@@ -35,31 +35,27 @@ final class AtlasModel {
     }
 }
 
-/// The map edge to edge, the caption at its foot, the look menu, and Resume once the reader has
-/// taken the map in hand.
+/// A single presentation route keeps the atlas's demos from stacking full-screen hosts.
+enum AtlasDemo: String, Identifiable {
+    case camelid, whale, ocean, water, leaf
+    var id: String { rawValue }
+}
+
+/// The atlas stays home; Demos is the one deliberate doorway to the existing studies.
 struct AtlasScreen: View {
     @State private var model = AtlasModel()
-    private enum Study: String, Identifiable {
-        case leaf, water
-        var id: String { rawValue }
-    }
-    @State private var study: Study? = ProcessInfo.processInfo.arguments.contains("-leaf") ? .leaf : nil
-    /// The launch screen's slate over the map: the map fades up from it at launch and dips through it
-    /// between looks.
+    @State private var demo: AtlasDemo? = ProcessInfo.processInfo.arguments.contains("-leaf") ? .leaf : nil
+    @State private var demoCoverActive = ProcessInfo.processInfo.arguments.contains("-leaf")
     @State private var veil = 1.0
-    /// The look's name, shown for a moment after switching.
     @State private var banner: String?
-    /// The whole globe instead of the film; once made, it is kept (its maps decoded once).
     @State private var globe = AtlasScreen.startsOnGlobe
     @State private var globeMade = AtlasScreen.startsOnGlobe
-    /// A switch between them under way (a second tap waits for it).
     @State private var switching = false
-    /// The globe's first frame is on screen.
+    @State private var navigationTask: Task<Void, Never>?
     @State private var globeDrawn = false
-    /// The globe's style, kept between launches (Debug: `-globeStyle wikipedia` at launch).
     @AppStorage("globeStyle") private var globeStyle = GlobeStyle.persian
-    /// Where the buttons are, so the globe keeps its names clear of them.
     @State private var buttonsFrame = CGRect.zero
+    @Environment(\.scenePhase) private var scenePhase
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -72,32 +68,35 @@ struct AtlasScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            AtlasCanvasView(model: model)
+            AtlasCanvasView(model: model, active: !globe && !demoCoverActive && scenePhase == .active)
                 .ignoresSafeArea()
-                .accessibilityHidden(globe)
+                .accessibilityHidden(globe || demoCoverActive)
             if let caption = model.caption {
                 CaptionView(caption: caption, style: model.style)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .id(caption.title)
-                    .accessibilityHidden(globe)
+                    .accessibilityHidden(globe || demoCoverActive)
             }
             if globeMade {
-                GlobeScreen(active: globe && study == nil, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe && !demoCoverActive && scenePhase == .active,
+                            style: globeStyle, keepClear: [buttonsFrame],
+                            onDrawn: { globeDrawn = true }, onDemo: openDemo)
                     .opacity(globe ? 1 : 0)
-                    .allowsHitTesting(globe)
-                    .accessibilityHidden(!globe)
+                    .allowsHitTesting(globe && !demoCoverActive)
+                    .accessibilityHidden(!globe || demoCoverActive)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
             atlasControls
-            .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
-            // (inside the Persian page's frame)
-            .padding(.trailing, globe && globeStyle == .persian ? PersianCaption.pageRoom : 16)
-            .padding(.top, globe && globeStyle == .persian ? PersianCaption.pageRoom : 8)
+                .allowsHitTesting(!demoCoverActive)
+                .accessibilityHidden(demoCoverActive)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
+                .padding(.trailing, globe && globeStyle == .persian ? PersianCaption.pageRoom : 16)
+                .padding(.top, globe && globeStyle == .persian ? PersianCaption.pageRoom : 8)
         }
         .overlay(alignment: .bottom) {
-            if !globe && (model.mode == .free || model.mode == .ended) {
+            if !globe && !demoCoverActive && (model.mode == .free || model.mode == .ended) {
                 Button(model.mode == .ended || model.canvas?.atEnd == true ? "Play again" : "Resume the tour") { model.canvas?.resume() }
                     .buttonStyle(.glassProminent)
                     .tint(Color(red: 0.62, green: 0.29, blue: 0.20))
@@ -124,25 +123,19 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.4), value: banner)
         .onAppear {
-            model.canvas?.suspended = globe || study != nil
+            updatePlayback()
             withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
         }
-        .onChange(of: model.lookIndex) { _, _ in
-            guard let look = model.look else { return }
-            Task {
-                withAnimation(.easeIn(duration: 0.22)) { veil = 1 }
-                try? await Task.sleep(for: .milliseconds(240))
-                model.canvas?.show(look)
-                banner = look.name
-                withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
-                try? await Task.sleep(for: .seconds(1.8))
-                if banner == look.name { banner = nil }
-            }
-        }
-        .fullScreenCover(item: $study) { destination in
+        .onChange(of: scenePhase) { _, _ in updatePlayback() }
+        .fullScreenCover(item: $demo, onDismiss: {
+            demoCoverActive = false
+            updatePlayback()
+        }) { destination in
             switch destination {
-            case .leaf:
-                LeafScreen()
+            case .camelid: CamelidExperience(style: globeStyle)
+            case .whale: WhaleExperience(style: globeStyle)
+            case .ocean: OceanExperience()
+            case .leaf: LeafScreen()
             case .water:
                 NavigationStack {
                     WaterScreen()
@@ -150,7 +143,8 @@ struct AtlasScreen: View {
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
-                                Button("Back to atlas") { study = nil }
+                                Button("Back to atlas") { demo = nil }
+                                    .frame(minHeight: 44)
                                     .accessibilityIdentifier("closeWaterStudy")
                             }
                         }
@@ -159,97 +153,121 @@ struct AtlasScreen: View {
                 .preferredColorScheme(.light)
             }
         }
-        .onChange(of: study) { _, destination in model.canvas?.suspended = globe || destination != nil }
         .background(Color("LaunchBackground"))
     }
 
-    /// Keep full-size controls and reading text; wrap when the available width requires it.
     private var atlasControls: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) { leafEntry; waterEntry; globeControl; styleControl }
+            HStack(spacing: 10) { demosMenu; styleControl }
                 .fixedSize(horizontal: true, vertical: false)
-            VStack(alignment: .trailing, spacing: 10) {
-                HStack(spacing: 10) { leafEntry; waterEntry }
-                HStack(spacing: 10) { globeControl; styleControl }
+            VStack(alignment: .trailing, spacing: 10) { demosMenu; styleControl }
+        }
+    }
+
+    private var demosMenu: some View {
+        Menu {
+            Section("Experiences") {
+                Button("Camel and Llama") { openDemo(.camelid) }.accessibilityIdentifier("demoCamelid")
+                Button("Whale and Desert") { openDemo(.whale) }.accessibilityIdentifier("demoWhale")
+                Button("Ocean encounter") { openDemo(.ocean) }.accessibilityIdentifier("demoOcean")
+                Button("A gathering of water") { openDemo(.water) }.accessibilityIdentifier("demoWater")
+                Button("An Aegean leaf") { openDemo(.leaf) }.accessibilityIdentifier("demoLeaf")
             }
-        }
-    }
-
-    private var leafEntry: some View {
-        Button { study = .leaf } label: {
-            Image(systemName: "leaf")
-                .font(.title3)
-                .frame(minWidth: 44, minHeight: 44)
+            Section("Atlas and film") {
+                Button("The globe") { showAtlas(globe: true) }.accessibilityIdentifier("demoGlobe")
+                Button("Play current film") { showAtlas(globe: false, filmIndex: model.lookIndex) }.accessibilityIdentifier("demoFilm")
+                Menu {
+                    ForEach(model.looks.indices, id: \.self) { index in
+                        Button(model.looks[index].name) { showAtlas(globe: false, filmIndex: index) }
+                            .accessibilityIdentifier("demoLook_" + model.looks[index].id)
+                    }
+                } label: { Text("Film and look studies") }
+                .accessibilityIdentifier("demoFilmLooks")
+            }
+        } label: {
+            Label("Demos", systemImage: "square.grid.2x2")
+                .font(.body)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.glass)
-        .accessibilityLabel(Text("An Aegean leaf"))
-    }
-
-    private var waterEntry: some View {
-        Button { study = .water } label: {
-            Image(systemName: "water.waves")
-                .font(.title3)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.glass)
-        .accessibilityLabel("A gathering of water")
-        .accessibilityIdentifier("openWaterStudy")
-    }
-
-    private var globeControl: some View {
-        Button { toggleGlobe() } label: {
-            Image(systemName: globe ? "film" : "globe.americas.fill")
-                .font(.title3)
-                .padding(6)
-        }
-        .buttonStyle(.glass)
-        .accessibilityLabel(globe ? Text("The film") : Text("The globe"))
+        .accessibilityLabel("Demos")
+        .accessibilityValue(globe ? "Globe" : "Film · " + (model.look?.name ?? ""))
+        .accessibilityIdentifier("demosMenu")
     }
 
     @ViewBuilder private var styleControl: some View {
         if globe {
             Menu {
                 Picker(selection: $globeStyle) {
-                    ForEach(GlobeStyle.allCases) { s in Text(s.name).tag(s) }
+                    ForEach(GlobeStyle.allCases) { style in Text(style.name).tag(style) }
                 } label: { Text("Style") }
             } label: {
-                Image(systemName: "paintpalette").font(.title3).padding(6)
+                Image(systemName: "paintpalette").font(.system(size: 20)).frame(width: 44, height: 44)
             }
             .buttonStyle(.glass)
-            .accessibilityLabel(Text("Style"))
+            .accessibilityLabel("Style")
             .accessibilityValue(Text(globeStyle.name))
         } else if model.looks.count > 1 {
             Menu {
-                Picker(selection: $model.lookIndex) {
-                    ForEach(model.looks.indices, id: \.self) { i in Text(model.looks[i].name).tag(i) }
+                Picker(selection: Binding(get: { model.lookIndex }, set: { showAtlas(globe: false, filmIndex: $0) })) {
+                    ForEach(model.looks.indices, id: \.self) { index in Text(model.looks[index].name).tag(index) }
                 } label: { Text("Look") }
             } label: {
-                Image(systemName: "paintpalette").font(.title3).padding(6)
+                Image(systemName: "paintpalette").font(.system(size: 20)).frame(width: 44, height: 44)
             }
             .buttonStyle(.glass)
-            .accessibilityLabel(Text("Look"))
+            .accessibilityLabel("Look")
+            .accessibilityValue(Text(model.look?.name ?? ""))
         }
     }
 
-    /// Between the film and the globe, through the slate: each holds still while the other shows.
-    private func toggleGlobe() {
-        guard !switching else { return }
+    private func openDemo(_ destination: AtlasDemo) {
+        guard !demoCoverActive else { return }
+        navigationTask?.cancel()
+        switching = false
+        veil = 0
+        banner = nil
+        demoCoverActive = true
+        updatePlayback()
+        demo = destination
+    }
+
+    private func updatePlayback() {
+        let shouldSuspend = globe || demoCoverActive || scenePhase != .active
+        if model.canvas?.suspended != shouldSuspend { model.canvas?.suspended = shouldSuspend }
+    }
+
+    /// One cancellable transition owns film/look changes and globe changes. Selecting an immersive
+    /// demo cancels it before presenting its host, so no delayed callback restarts a hidden player.
+    private func showAtlas(globe target: Bool, filmIndex: Int? = nil) {
+        guard !demoCoverActive else { return }
+        if target && globe && !switching { return }
+        navigationTask?.cancel()
         switching = true
-        Task {
+        navigationTask = Task { @MainActor in
             withAnimation(.easeIn(duration: 0.22)) { veil = 1 }
-            try? await Task.sleep(for: .milliseconds(240))
-            globe.toggle()
-            globeMade = globeMade || globe
-            model.canvas?.suspended = globe || study != nil
-            // the first time, the globe decodes its maps under the veil: it lifts once a frame is drawn
-            // (or after a second, whatever happens)
-            for _ in 0..<40 where globe && !globeDrawn {
-                try? await Task.sleep(for: .milliseconds(25))
+            do { try await Task.sleep(for: .milliseconds(240)) } catch { return }
+            guard !Task.isCancelled else { return }
+            if let index = filmIndex, model.looks.indices.contains(index) {
+                model.lookIndex = index
+                model.canvas?.show(model.looks[index])
+                model.canvas?.resume()
+                banner = model.looks[index].name
             }
+            globe = target
+            globeMade = globeMade || target
+            updatePlayback()
+            for _ in 0..<40 where target && !globeDrawn {
+                do { try await Task.sleep(for: .milliseconds(25)) } catch { return }
+            }
+            guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.5)) { veil = 0 }
             switching = false
+            do { try await Task.sleep(for: .seconds(1.8)) } catch { return }
+            guard !Task.isCancelled else { return }
+            banner = nil
         }
     }
 }
@@ -321,9 +339,12 @@ struct CaptionLines: View {
 
 private struct AtlasCanvasView: UIViewRepresentable {
     let model: AtlasModel
+    let active: Bool
 
     func makeUIView(context: Context) -> AtlasCanvas {
         let canvas = AtlasCanvas(frame: .zero)
+        canvas.accessibilityIdentifier = "mainAtlasFilm"
+        canvas.suspended = !active
         canvas.onCaption = { model.caption = $0 }
         canvas.onMode = { model.mode = $0 }
         model.canvas = canvas
@@ -331,5 +352,7 @@ private struct AtlasCanvasView: UIViewRepresentable {
         return canvas
     }
 
-    func updateUIView(_ canvas: AtlasCanvas, context: Context) {}
+    func updateUIView(_ canvas: AtlasCanvas, context: Context) {
+        if canvas.suspended == active { canvas.suspended = !active }
+    }
 }

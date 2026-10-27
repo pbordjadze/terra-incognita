@@ -140,7 +140,9 @@ final class CamelidEncounterTests: XCTestCase {
         returnButton.tap()
         XCTAssertTrue(app.buttons["camelidClose"].waitForExistence(timeout: 10))
         app.buttons["camelidClose"].tap()
-        XCTAssertTrue(app.buttons["oceanInvitation"].waitForExistence(timeout: 15), "The existing atlas and independent encounter must remain available")
+        openDemos(in: app)
+        XCTAssertTrue(demoItem("demoOcean", in: app).exists, "The independent encounter must remain available")
+        demoItem("demoGlobe", in: app).tap()
     }
 
     @MainActor func testEvidenceAndLivingFamily() { exerciseReading(largeText: false) }
