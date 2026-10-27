@@ -144,6 +144,13 @@ jobs:
             if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
             bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
           done 3< out/sims.txt
+      - name: Preserve camelid review capture separately
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        with:
+          name: camelid-preview
+          path: out/camelid
+          if-no-files-found: warn
       - name: Collect
         if: always()
         run: |
