@@ -278,6 +278,12 @@ jobs:
           git init -q && git checkout -q -b sidestore && git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "SideStore source for build $BUILD"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "sidestore:refs/heads/sidestore"
+      - name: Retire the separate Study II listing after verified main publication
+        if: ${{ success() && github.ref_name == 'main' && contains(github.event.head_commit.message, '[retire-study2]') }}
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/retire_study2.sh
       - uses: actions/upload-artifact@v5
         if: always()
         with:

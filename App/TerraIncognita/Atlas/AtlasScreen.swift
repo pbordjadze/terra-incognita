@@ -41,11 +41,19 @@ enum AtlasDemo: String, Identifiable {
     var id: String { rawValue }
 }
 
+private enum AtlasDemoChoice {
+    case experience(AtlasDemo), globe, film(Int)
+}
+
 /// The atlas stays home; Demos is the one deliberate doorway to the existing studies.
 struct AtlasScreen: View {
     @State private var model = AtlasModel()
     @State private var demo: AtlasDemo? = ProcessInfo.processInfo.arguments.contains("-leaf") ? .leaf : nil
     @State private var demoCoverActive = ProcessInfo.processInfo.arguments.contains("-leaf")
+    @State private var pickerPresented = false
+    /// Keep the atlas held through the sheet's dismissal, not just while its binding is true.
+    @State private var pickerCoverActive = false
+    @State private var pendingDemoChoice: AtlasDemoChoice?
     @State private var veil = 1.0
     @State private var banner: String?
     @State private var globe = AtlasScreen.startsOnGlobe
@@ -66,37 +74,39 @@ struct AtlasScreen: View {
         #endif
     }
 
+    private var atlasCovered: Bool { demoCoverActive || pickerCoverActive }
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            AtlasCanvasView(model: model, active: !globe && !demoCoverActive && scenePhase == .active)
+            AtlasCanvasView(model: model, active: !globe && !atlasCovered && scenePhase == .active)
                 .ignoresSafeArea()
-                .accessibilityHidden(globe || demoCoverActive)
+                .accessibilityHidden(globe || atlasCovered)
             if let caption = model.caption {
                 CaptionView(caption: caption, style: model.style)
                     .transition(.opacity.combined(with: .offset(y: 8)))
                     .id(caption.title)
-                    .accessibilityHidden(globe || demoCoverActive)
+                    .accessibilityHidden(globe || atlasCovered)
             }
             if globeMade {
-                GlobeScreen(active: globe && !demoCoverActive && scenePhase == .active,
+                GlobeScreen(active: globe && !atlasCovered && scenePhase == .active,
                             style: globeStyle, keepClear: [buttonsFrame],
                             onDrawn: { globeDrawn = true }, onDemo: openDemo)
                     .opacity(globe ? 1 : 0)
-                    .allowsHitTesting(globe && !demoCoverActive)
-                    .accessibilityHidden(!globe || demoCoverActive)
+                    .allowsHitTesting(globe && !atlasCovered)
+                    .accessibilityHidden(!globe || atlasCovered)
             }
         }
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
             atlasControls
-                .allowsHitTesting(!demoCoverActive)
-                .accessibilityHidden(demoCoverActive)
+                .allowsHitTesting(!atlasCovered)
+                .accessibilityHidden(atlasCovered)
                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { buttonsFrame = $0 }
                 .padding(.trailing, globe && globeStyle == .persian ? PersianCaption.pageRoom : 16)
                 .padding(.top, globe && globeStyle == .persian ? PersianCaption.pageRoom : 8)
         }
         .overlay(alignment: .bottom) {
-            if !globe && !demoCoverActive && (model.mode == .free || model.mode == .ended) {
+            if !globe && !atlasCovered && (model.mode == .free || model.mode == .ended) {
                 Button(model.mode == .ended || model.canvas?.atEnd == true ? "Play again" : "Resume the tour") { model.canvas?.resume() }
                     .buttonStyle(.glassProminent)
                     .tint(Color(red: 0.62, green: 0.29, blue: 0.20))
@@ -127,6 +137,15 @@ struct AtlasScreen: View {
             withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
         }
         .onChange(of: scenePhase) { _, _ in updatePlayback() }
+        .sheet(isPresented: $pickerPresented, onDismiss: finishDemoPicker) {
+            AtlasDemoPicker(looks: model.looks, currentFilmIndex: model.lookIndex, onSelect: chooseDemo, onClose: {
+                pendingDemoChoice = nil
+                pickerPresented = false
+            })
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .preferredColorScheme(.light)
+        }
         .fullScreenCover(item: $demo, onDismiss: {
             demoCoverActive = false
             updatePlayback()
@@ -165,26 +184,7 @@ struct AtlasScreen: View {
     }
 
     private var demosMenu: some View {
-        Menu {
-            Section("Experiences") {
-                Button("Camel and Llama") { openDemo(.camelid) }.accessibilityIdentifier("demoCamelid")
-                Button("Whale and Desert") { openDemo(.whale) }.accessibilityIdentifier("demoWhale")
-                Button("Ocean encounter") { openDemo(.ocean) }.accessibilityIdentifier("demoOcean")
-                Button("A gathering of water") { openDemo(.water) }.accessibilityIdentifier("demoWater")
-                Button("An Aegean leaf") { openDemo(.leaf) }.accessibilityIdentifier("demoLeaf")
-            }
-            Section("Atlas and film") {
-                Button("The globe") { showAtlas(globe: true) }.accessibilityIdentifier("demoGlobe")
-                Button("Play current film") { showAtlas(globe: false, filmIndex: model.lookIndex) }.accessibilityIdentifier("demoFilm")
-                Menu {
-                    ForEach(model.looks.indices, id: \.self) { index in
-                        Button(model.looks[index].name) { showAtlas(globe: false, filmIndex: index) }
-                            .accessibilityIdentifier("demoLook_" + model.looks[index].id)
-                    }
-                } label: { Text("Film and look studies") }
-                .accessibilityIdentifier("demoFilmLooks")
-            }
-        } label: {
+        Button(action: openDemoPicker) {
             Label("Demos", systemImage: "square.grid.2x2")
                 .font(.body)
                 .padding(.horizontal, 12)
@@ -223,8 +223,41 @@ struct AtlasScreen: View {
         }
     }
 
+    private func openDemoPicker() {
+        guard !atlasCovered else { return }
+        navigationTask?.cancel()
+        switching = false
+        veil = 0
+        banner = nil
+        pendingDemoChoice = nil
+        pickerCoverActive = true
+        updatePlayback()
+        pickerPresented = true
+    }
+
+    private func chooseDemo(_ choice: AtlasDemoChoice) {
+        guard pickerPresented else { return }
+        pendingDemoChoice = choice
+        pickerPresented = false
+    }
+
+    /// UIKit has finished dismissing the picker before another presentation is requested.
+    /// The atlas stays held during that handoff; only cancellation resumes it directly.
+    private func finishDemoPicker() {
+        let choice = pendingDemoChoice
+        pendingDemoChoice = nil
+        pickerCoverActive = false
+        switch choice {
+        case .experience(let destination): openDemo(destination)
+        case .globe: showAtlas(globe: true)
+        case .film(let index): showAtlas(globe: false, filmIndex: index)
+        case nil: break
+        }
+        updatePlayback()
+    }
+
     private func openDemo(_ destination: AtlasDemo) {
-        guard !demoCoverActive else { return }
+        guard !atlasCovered else { return }
         navigationTask?.cancel()
         switching = false
         veil = 0
@@ -235,14 +268,14 @@ struct AtlasScreen: View {
     }
 
     private func updatePlayback() {
-        let shouldSuspend = globe || demoCoverActive || scenePhase != .active
+        let shouldSuspend = globe || atlasCovered || scenePhase != .active
         if model.canvas?.suspended != shouldSuspend { model.canvas?.suspended = shouldSuspend }
     }
 
     /// One cancellable transition owns film/look changes and globe changes. Selecting an immersive
     /// demo cancels it before presenting its host, so no delayed callback restarts a hidden player.
     private func showAtlas(globe target: Bool, filmIndex: Int? = nil) {
-        guard !demoCoverActive else { return }
+        guard !atlasCovered else { return }
         if target && globe && !switching { return }
         navigationTask?.cancel()
         switching = true
@@ -269,6 +302,120 @@ struct AtlasScreen: View {
             guard !Task.isCancelled else { return }
             banner = nil
         }
+    }
+}
+
+/// A bounded native reading surface keeps every choice reachable at the reader's text size.
+/// It dismisses before starting an experience, so it never becomes a parent of another demo.
+private struct AtlasDemoPicker: View {
+    let looks: [Look]
+    let currentFilmIndex: Int
+    let onSelect: (AtlasDemoChoice) -> Void
+    let onClose: () -> Void
+    @State private var filmLooksExpanded = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        heading("Experiences")
+                        VStack(spacing: 0) {
+                            choice("Camel and Llama", id: "demoCamelid", action: .experience(.camelid))
+                            Divider()
+                            choice("Whale and Desert", id: "demoWhale", action: .experience(.whale))
+                            Divider()
+                            choice("Ocean encounter", id: "demoOcean", action: .experience(.ocean))
+                            Divider()
+                            choice("A gathering of water", id: "demoWater", action: .experience(.water))
+                            Divider()
+                            choice("An Aegean leaf", id: "demoLeaf", action: .experience(.leaf))
+                        }
+                        .background(.background, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        heading("Atlas and film")
+                        VStack(spacing: 0) {
+                            choice("The globe", id: "demoGlobe", action: .globe)
+                            Divider()
+                            choice("Play current film", id: "demoFilm", action: .film(currentFilmIndex))
+                            Divider()
+                            Button {
+                                if reduceMotion { filmLooksExpanded.toggle() }
+                                else { withAnimation(.easeInOut(duration: 0.2)) { filmLooksExpanded.toggle() } }
+                            } label: {
+                                row("Film and look studies", symbol: filmLooksExpanded ? "chevron.up" : "chevron.down")
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("demoFilmLooks")
+                            .accessibilityValue(filmLooksExpanded ? "Expanded" : "Collapsed")
+                            if filmLooksExpanded {
+                                ForEach(looks.indices, id: \.self) { index in
+                                    Divider()
+                                    choice(looks[index].name, id: "demoLook_" + looks[index].id, action: .film(index))
+                                        .padding(.leading, 12)
+                                }
+                            }
+                        }
+                        .background(.background, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                }
+                .frame(maxWidth: 560, alignment: .leading)
+                .padding(20)
+                .frame(maxWidth: .infinity)
+            }
+            .accessibilityIdentifier("demoPickerScroll")
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle("Demos")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Back to atlas")
+                    .accessibilityIdentifier("demoPickerClose")
+                }
+            }
+            .toolbarBackground(.visible, for: .navigationBar)
+        }
+    }
+
+    private func heading(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+            .padding(.horizontal, 4)
+    }
+
+    private func choice(_ title: String, id: String, action: AtlasDemoChoice) -> some View {
+        Button { onSelect(action) } label: { row(title) }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier(id)
+    }
+
+    private func row(_ title: String, symbol: String = "chevron.right") -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(.body)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+        }
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 }
 

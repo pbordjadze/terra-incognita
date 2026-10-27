@@ -6,32 +6,33 @@ extension XCTestCase {
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The atlas must expose its consolidated demo menu")
         XCTAssertTrue(menu.isHittable)
         menu.tap()
+        XCTAssertTrue(app.scrollViews["demoPickerScroll"].waitForExistence(timeout: 10),
+                      "The demo picker must expose its own scrollable reading surface")
+        XCTAssertTrue(app.buttons["demoPickerClose"].isHittable, "The picker can always be left without selecting a demo")
     }
 
     @MainActor func demoItem(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
-        // iOS can expose a native popup action as a button or a menu item.
-        let item = app.descendants(matching: .any)[identifier].firstMatch
-        _ = item.waitForExistence(timeout: 3)
-        // A native menu can scroll at the largest text size. Restrict any swipe to the
-        // popup containing this item; never touch the atlas or a sheet behind the menu.
-        for attempt in 0..<12 where !item.isHittable {
-            let scroll = app.scrollViews.containing(.any, identifier: identifier).firstMatch
-            let menu = app.menus.containing(.any, identifier: identifier).firstMatch
-            // The currently presented menu is also safe when its lazy/offscreen action
-            // has not entered the accessibility tree yet. Its frame never comes from the atlas.
-            let visibleMenu = app.menus.allElementsBoundByIndex.first { $0.isHittable && $0.frame.intersects(app.frame) }
-            let popup = scroll.exists ? scroll : (menu.exists ? menu : visibleMenu)
-            guard let popup else { break }
-            guard popup.exists else { break }
-            if item.exists {
-                if item.frame.midY < popup.frame.midY { popup.swipeDown() }
-                else { popup.swipeUp() }
-            } else if attempt < 6 { popup.swipeUp() }
-            else { popup.swipeDown() }
+        let scroll = app.scrollViews["demoPickerScroll"].firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 10), "Reveal choices inside the picker, never on the atlas underneath")
+        let item = scroll.buttons[identifier].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 10), "The demo picker must contain \(identifier)")
+        func visiblyInsidePicker() -> Bool {
+            let clip = scroll.frame.intersection(app.frame).insetBy(dx: 2, dy: 8)
+            return item.exists && item.isHittable && clip.contains(item.frame)
         }
-        XCTAssertTrue(item.exists, "The demo menu must contain \(identifier)")
-        XCTAssertTrue(item.isHittable, "The demo must remain reachable: \(identifier)")
-        XCTAssertTrue(app.frame.contains(item.frame), "The demo item must fit the screen: \(identifier), \(item.frame)")
+        for _ in 0..<20 where !visiblyInsidePicker() {
+            let clip = scroll.frame.intersection(app.frame).insetBy(dx: 8, dy: 12)
+            let upwards = item.frame.midY > clip.midY
+            let excess = upwards ? item.frame.maxY - clip.maxY : clip.minY - item.frame.minY
+            let distance = min(clip.height * 0.55, max(40, excess + 24))
+            let startY = clip.minY + clip.height * (upwards ? 0.8 : 0.2)
+            let endY = min(max(startY + (upwards ? -distance : distance), clip.minY + 8), clip.maxY - 8)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: clip.midX, dy: startY))
+            let end = origin.withOffset(CGVector(dx: clip.midX, dy: endY))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        XCTAssertTrue(visiblyInsidePicker(), "The complete demo choice must remain visible within the picker at this text size: \(identifier), \(item.frame); viewport \(scroll.frame)")
         return item
     }
 

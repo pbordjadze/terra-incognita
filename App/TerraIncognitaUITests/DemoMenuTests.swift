@@ -21,6 +21,7 @@ final class DemoMenuTests: XCTestCase {
             || XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: menu)], timeout: 10) == .completed,
             "The atlas must retain its selected presentation: \(expected); actual \(String(describing: menu.value))")
         XCTAssertTrue(menu.isHittable)
+        XCTAssertFalse(app.scrollViews["demoPickerScroll"].exists, "The picker must finish dismissing before the atlas is restored")
     }
 
     @MainActor private func assertInspection(_ prefix: String, in app: XCUIApplication) {
@@ -60,7 +61,10 @@ final class DemoMenuTests: XCTestCase {
         XCTAssertTrue(demoItem("demoCamelid", in: app).exists)
         XCTAssertTrue(demoItem("demoWhale", in: app).exists)
         capture("ordinary-globe")
-        demoItem("demoCamelid", in: app).tap()
+        app.buttons["demoPickerClose"].tap()
+        assertAtlas("Globe", in: app)
+        XCTAssertTrue(fossil.isHittable, "Cancelling the picker must preserve the atlas position")
+        chooseDemo("demoCamelid", in: app)
 
         for prefix in ["camelid", "whale"] {
             if prefix == "whale" { chooseDemo("demoWhale", in: app) }
@@ -149,10 +153,14 @@ final class DemoMenuTests: XCTestCase {
         XCTAssertTrue(menu.waitForExistence(timeout: 45))
         XCTAssertTrue(app.frame.contains(menu.frame), "The menu launcher must fit at the largest text size")
         openDemos(in: app)
+        let closePicker = app.buttons["demoPickerClose"].firstMatch
+        XCTAssertTrue(closePicker.isHittable)
+        XCTAssertTrue(app.frame.contains(closePicker.frame), "The picker exit must fit at the largest text size")
+        capture("largest-text-opening")
         for identifier in ["demoCamelid", "demoWhale", "demoOcean", "demoWater", "demoLeaf", "demoGlobe", "demoFilm", "demoFilmLooks"] {
             XCTAssertTrue(demoItem(identifier, in: app).exists)
         }
-        capture("largest-text")
+        capture("largest-text-scrolled")
         demoItem("demoGlobe", in: app).tap()
 
         for (identifier, prefix) in [("demoCamelid", "camelid"), ("demoWhale", "whale")] {
@@ -183,6 +191,11 @@ final class DemoMenuTests: XCTestCase {
         assertAtlas("Film", in: app)
         assertAtlas("The Sampler", in: app)
         capture("largest-text-selected-look")
+        chooseDemo("demoGlobe", in: app)
+        assertAtlas("Globe", in: app)
+        chooseDemo("demoFilm", in: app)
+        assertAtlas("Film", in: app)
+        assertAtlas("The Sampler", in: app)
         chooseDemo("demoGlobe", in: app)
         assertAtlas("Globe", in: app)
     }
