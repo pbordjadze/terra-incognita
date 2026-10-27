@@ -137,20 +137,20 @@ final class OceanEncounterTests: XCTestCase {
         let timeline = app.sliders["evidenceTime"].firstMatch
         reveal(timeline, in: app)
         XCTAssertTrue(timeline.waitForExistence(timeout: 10))
-        let initialValue = timeline.value as? String
-        // Keep the spoken value meaningful to a person. Exercise the actual thumb movement
-        // rather than asking XCTest to parse that semantic value as a percentage.
-        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
-            .press(forDuration: 0.08, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5)))
         let earlierValue = timeline.value as? String
         let era = app.staticTexts["evidenceEra"].firstMatch
         XCTAssertTrue(era.exists)
         let earlierEra = era.label
-        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.5))
-            .press(forDuration: 0.08, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
-        XCTAssertNotEqual(earlierValue, timeline.value as? String, "Time must respond to the reader's hand")
+        // Keep the spoken value meaningful to a person. Exercise the actual thumb movement
+        // rather than asking XCTest to parse that semantic value as a percentage.
+        // Start at its actual initial thumb. A preliminary short drag does not reliably move
+        // the iPad thumb, so its assumed endpoint cannot be the next gesture's starting point.
+        // Hold long enough for the surrounding scroll view to hand the touch to the slider.
+        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+            .press(forDuration: 0.35, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
+        XCTAssertNotEqual(earlierValue, timeline.value as? String, "Time must respond to the reader's hand (slider frame: \(timeline.frame), era: \(era.label))")
         XCTAssertNotEqual(earlierEra, era.label, "The explanation must respond to time as well as the slider")
-        XCTAssertNotNil(initialValue)
+        XCTAssertNotNil(earlierValue)
         capture(prefix + "05-time")
 
         let evidence = button("evidenceButton", in: app)

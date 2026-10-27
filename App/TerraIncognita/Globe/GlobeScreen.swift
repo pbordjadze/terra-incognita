@@ -41,6 +41,7 @@ struct GlobeScreen: View {
                     .frame(maxWidth: .infinity)
                     .background(Color(red: 0.95, green: 0.89, blue: 0.78))
                     .overlay(alignment: .top) { Rectangle().fill(Color(red: 0.77, green: 0.67, blue: 0.43)).frame(height: 1) }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("oceanInvitation")
