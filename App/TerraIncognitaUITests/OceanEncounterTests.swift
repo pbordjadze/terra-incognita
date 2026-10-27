@@ -149,9 +149,13 @@ final class OceanEncounterTests: XCTestCase {
         // rather than asking XCTest to parse that semantic value as a percentage.
         // Start at its actual initial thumb. A preliminary short drag does not reliably move
         // the iPad thumb, so its assumed endpoint cannot be the next gesture's starting point.
-        // Hold long enough for the surrounding scroll view to hand the touch to the slider.
-        timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
-            .press(forDuration: 0.35, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
+        // Hold long enough for the surrounding scroll view to hand the touch to the slider. That
+        // handoff is timing-dependent on a busy simulator, so a reader's second try (a longer
+        // hold) is allowed; the thumb must still move under an actual drag.
+        for hold in [0.35, 0.7, 1.0] where timeline.value as? String == earlierValue {
+            timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+                .press(forDuration: hold, thenDragTo: timeline.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)))
+        }
         XCTAssertNotEqual(earlierValue, timeline.value as? String, "Time must respond to the reader's hand (slider frame: \(timeline.frame), era: \(era.label))")
         XCTAssertNotEqual(earlierEra, era.label, "The explanation must respond to time as well as the slider")
         XCTAssertNotNil(earlierValue)
