@@ -124,6 +124,7 @@ struct OceanExperience: View {
                 .overlay(alignment: .bottom) {
                     Rectangle().fill(lens == key ? Self.blue : .clear).frame(height: 2)
                 }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(identifier)
@@ -163,7 +164,7 @@ struct OceanExperience: View {
             margin("A kitchen leaves a different kind of history from a king.")
             prose("Crowther and colleagues read these crops alongside language and genetic evidence as traces of Southeast Asian settlers in the western Indian Ocean. The surprise is not just that food traveled. People made homes across an ocean, and traces of everyday meals help us recover their presence.")
             note("The layer reveals archaeological evidence, not a simulation of migration. These dates are not a first-arrival date. The grain is an original stylised illustration, not an excavated specimen. These finds do not establish an exact voyage.")
-            Button { choose("words") } label: { Text("There is another trace, still spoken  →") }
+            Button { choose("words") } label: { Text("There is another trace, still spoken  →").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
                 .foregroundStyle(Self.blue).padding(.vertical, 10)
         }
@@ -189,7 +190,7 @@ struct OceanExperience: View {
                 .accessibilityIdentifier("encounterClaim")
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { borrowed.toggle() }
-            } label: { Text(borrowed ? "Return to the inherited word  ↶" : "And a word for crossing water?  →") }
+            } label: { Text(borrowed ? "Return to the inherited word  ↶" : "And a word for crossing water?  →").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
                 .foregroundStyle(Self.blue).padding(.vertical, 10)
                 .accessibilityIdentifier("wordTangent")
@@ -212,7 +213,7 @@ struct OceanExperience: View {
             margin("Madagascar is not a misplaced piece of somewhere else.")
             prose("African and Asian connections belong to Malagasy histories together. Bantu-language contact helped shape Malagasy. A large genetic study found both African and Asian ancestry across its sampled communities, with substantial variation. Neither result defines any person’s identity.")
             note("The map offers places to inspect, not a single migration corridor or a claim that geography determined people’s choices.")
-            Button { place = "comoros" } label: { Text("Look at the Comoros  ↗") }
+            Button { place = "comoros" } label: { Text("Look at the Comoros  ↗").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
                 .foregroundStyle(Self.blue).padding(.vertical, 10)
         }
@@ -231,7 +232,7 @@ struct OceanExperience: View {
             Text(key == "borneo" ? "Southern Borneo" : key == "comoros" ? "The Comoros" : key == "africa" ? "The East African coast" : "Madagascar")
                 .font(.custom("LibertinusSerif-Regular", size: 25, relativeTo: .title2))
             prose(key == "borneo" ? "Other South East Barito languages are spoken near the Barito River. The mark is a regional reference, not a known departure port." : key == "comoros" ? "An archipelago between Africa and Madagascar. Sima’s crop remains are one reason the story reaches beyond Madagascar. The mark is an island-group locator, not a precise excavation coordinate." : key == "africa" ? "The crop study compared island sites with coastal East African sites. Its sampled mainland sites were dominated by African crops; that is a local archaeological comparison, not a timeless cultural boundary." : "At Mahilaka in northwestern Madagascar, rice and cotton were recovered. The island mark locates Madagascar, not the excavation itself.")
-            Button("Put this note aside") { place = nil }
+            Button { place = nil } label: { Text("Put this note aside").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body)).foregroundStyle(Self.blue)
                 .frame(minHeight: 44)
         }

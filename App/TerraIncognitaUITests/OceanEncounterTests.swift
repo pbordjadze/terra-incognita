@@ -25,8 +25,8 @@ final class OceanEncounterTests: XCTestCase {
         for upwards in [!towardsTop, towardsTop] {
             for _ in 0..<8 {
                 guard !element.isHittable else { return }
-                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: upwards ? 0.78 : 0.28))
-                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: upwards ? 0.28 : 0.78))
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.78 : 0.28))
+                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.28 : 0.78))
                 start.press(forDuration: 0.05, thenDragTo: end)
             }
         }
@@ -52,13 +52,14 @@ final class OceanEncounterTests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 15))
         capture(prefix + "01-open")
 
-        // Adjustable accessibility actions give this control a slider trait even though its
-        // visible SwiftUI construction is a Button. Query its stable identity, not its trait.
+        // Query the stable identity without depending on the representation's accessibility trait.
         let loupe = app.descendants(matching: .any)["oceanLoupe"].firstMatch
         reveal(loupe, in: app)
         let initialShore = loupe.value as? String
         XCTAssertNotNil(initialShore)
-        let field = app.descendants(matching: .any)["oceanMapSurface"].firstMatch
+        // A container identifier propagates through SwiftUI to its children, so use the
+        // container's descriptive label and leave every interactive child its own identity.
+        let field = app.otherElements["Indian Ocean viewing table"].firstMatch
         XCTAssertTrue(field.exists)
         // A horizontal drag on the map itself must move the glass, without scrolling the page
         // or relying on the discrete place buttons to supply a different rendering.

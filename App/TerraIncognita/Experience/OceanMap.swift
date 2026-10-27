@@ -140,7 +140,7 @@ struct OceanMap: View {
             }
             .coordinateSpace(name: "oceanField")
             .clipped()
-            .accessibilityIdentifier("oceanMapSurface")
+            .contentShape(Rectangle())
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Indian Ocean viewing table")
 
