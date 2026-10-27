@@ -38,9 +38,8 @@ final class RemotePackTests: XCTestCase {
         let revision = app.staticTexts["revision_hello-pack"].firstMatch
         let rolledBack = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "bundled"), object: revision)
         XCTAssertEqual(XCTWaiter().wait(for: [rolledBack], timeout: 10), .completed, revision.label)
-        revealInWorkbench(app.buttons["prototype_hello-pack"].firstMatch, in: app, upwards: false)
-        app.buttons["prototype_hello-pack"].firstMatch.tap()
-        app.buttons["openActivePrototype"].firstMatch.tap()
+        app.buttons["workbenchClose"].firstMatch.tap()
+        startPrototype("hello-pack", open: true, in: app)
         XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "Previous restores the bundled page")
         app.buttons["packBack"].firstMatch.tap()
         openWorkbench(in: app)
