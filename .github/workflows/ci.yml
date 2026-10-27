@@ -20,6 +20,10 @@ on:
     branches-ignore: ['ci-shots/**', 'sidestore']
   workflow_dispatch:
     inputs:
+      study2:
+        description: Build and publish the isolated Study II test app (experiment branch only)
+        type: boolean
+        default: false
       device:
         description: Screenshots on
         type: choice
@@ -57,6 +61,9 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
+          node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
+          node --check Water/water.js || rc=1
+          node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
@@ -67,6 +74,7 @@ jobs:
         with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
+    if: ${{ !(github.ref_name == 'experiment/second-magic' && (inputs.study2 == true || contains(github.event.head_commit.message, '[study2]'))) }}
     name: Simulator builds (screenshots when run by hand)
     runs-on: macos-26
     timeout-minutes: 80
@@ -201,9 +209,87 @@ jobs:
             !out/*.ipa
           if-no-files-found: ignore
 
+  study2:
+    name: Study II — isolated simulator tests and SideStore build
+    needs: plates
+    if: ${{ github.ref_name == 'experiment/second-magic' && (inputs.study2 == true || contains(github.event.head_commit.message, '[study2]')) }}
+    permissions:
+      contents: write
+    runs-on: macos-26
+    timeout-minutes: 80
+    env:
+      BUILD: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Start iPhone and iPad
+        run: |
+          mkdir -p out
+          ci/simulators.sh iphone ipad > out/sims.txt
+          while read -r KIND UDID _; do nohup xcrun simctl boot "$UDID" > "out/boot-$KIND.log" 2>&1 < /dev/null & done < out/sims.txt
+      - name: Debug build
+        run: |
+          set -o pipefail
+          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-debug -quiet \
+            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee out/study2-debug.log | tail -80
+          APP=build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+          python3 - "$APP" <<'PYDATA'
+          from pathlib import Path
+          import sys
+          app=Path(sys.argv[1])
+          for root in ['Atlas','Globe','Water']:
+              for f in Path(root).rglob('*'):
+                  if f.is_file(): assert f.read_bytes()==(app/f).read_bytes(), str(f)
+          print('All three bundled data folders identical')
+          PYDATA
+      - name: Touch, sources and largest text on both simulators
+        run: bash ci/study2_tests.sh
+      - name: Release and device archive
+        run: |
+          set -o pipefail
+          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-release -quiet \
+            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee out/study2-release.log | tail -80
+          xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/StudyII.xcarchive -quiet \
+            PRODUCT_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2 \
+            'INFOPLIST_KEY_CFBundleDisplayName=Terra Incognita II' \
+            MARKETING_VERSION="1.0.$BUILD" CURRENT_PROJECT_VERSION="$BUILD" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee out/study2-device.log | tail -80
+      - name: Package independent test app
+        run: |
+          APP=build/StudyII.xcarchive/Products/Applications/TerraIncognita.app
+          mkdir -p build/study2-ipa/Payload
+          cp -R "$APP" build/study2-ipa/Payload/
+          (cd build/study2-ipa && zip -qry ../../out/TerraIncognita-StudyII.ipa Payload)
+          cp ci/sidestore-icon.png out/icon.png
+          python3 ci/study2_source.py "$APP" out/TerraIncognita-StudyII.ipa \
+            "$GITHUB_REPOSITORY" "study2-$GITHUB_RUN_ID" "$BUILD" > out/study2-source.json
+      - name: Publish only this study's immutable prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > out/notes.txt <<'NOTES'
+          Independent Study II test app. Install using the attached SideStore source, or import the IPA directly. This has its own bundle identifier and leaves the ordinary app and SideStore source intact. No account, location access, or saved exploration.
+          NOTES
+          gh release create "study2-$GITHUB_RUN_ID" out/TerraIncognita-StudyII.ipa out/study2-source.json out/icon.png \
+            --prerelease --target "$GITHUB_SHA" --title "Terra Incognita — Study II ($BUILD)" --notes-file out/notes.txt
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/study2-$GITHUB_RUN_ID/study2-source.json" > out/STUDY2-ACCESS.txt
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: study2
+          path: |
+            out
+            !out/*.ipa
+          if-no-files-found: ignore
+
   report:
     name: Publish report
-    needs: [plates, apple, ipa]
+    needs: [plates, apple, ipa, study2]
     if: ${{ !cancelled() }}
     permissions:
       contents: write
@@ -221,6 +307,7 @@ jobs:
             echo "plates: ${{ needs.plates.result }}"
             echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"
             echo "ipa: ${{ needs.ipa.result }}"
+            echo "study2: ${{ needs.study2.result }}"
             echo
             if [ -s apple/errors.txt ]; then echo "## compiler errors and warnings"; head -60 apple/errors.txt; echo; fi
             if [ -f plates/plates-check.log ]; then echo "## plates"; tail -20 plates/plates-check.log; fi
