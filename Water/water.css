@@ -8,3 +8,7 @@
 #instrument{overflow:auto}.tools{flex-wrap:wrap}.direction button{padding-inline:12px}
 
 #locator span{display:block;font: .6rem/1.5 system-ui,sans-serif;text-align:right;letter-spacing:.025em;color:#526471}
+/* Keep the selector at iOS's non-zooming form size; retain the reader's larger setting. */
+select{font-size:max(16px,.78rem)}
+#locator span{font-size:max(10px,.6rem)}
+@media(max-height:600px){.eyebrow{font-size:max(10px,.6rem)}}

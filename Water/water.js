@@ -59,10 +59,15 @@ function drawBase(){
  for(let lat=-50;lat<=10;lat+=10){const p=project(0,lat);c.beginPath();c.moveTo(0,p[1]);c.lineTo(W,p[1]);c.stroke();}
  c.strokeStyle='#6c85866b';c.lineWidth=.65/scale;landPaths.forEach(p=>c.stroke(p));
  c.lineCap='round';c.lineJoin='round';
- for(let o=minOrder();o<tierPaths.length;o++){
+ let shown=tierPaths;
+ if(zoom>1.5){
+  shown=Array.from({length:12},()=>new Path2D());const a=world(-5,-5),b=world(width+5,height+5);
+  for(const e of edges){const r=e.bounds;if(e.order>=minOrder()&&r[0]<=b[0]&&r[2]>=a[0]&&r[1]<=b[1]&&r[3]>=a[1])shown[Math.min(11,e.order)].addPath(paths[e.i]);}
+ }
+ for(let o=minOrder();o<shown.length;o++){
   const active=!!(traces.length||tree);
   c.strokeStyle=active?(o>=7?'#71909b88':'#8a9da35f'):(o>=7?'#3d638bc0':o>=5?'#4b70958a':'#597a935b');
-  c.lineWidth=(o>=8?1.15:o>=6?.8:o>=4?.55:.4)*Math.min(1.35,Math.pow(zoom,.12))/scale;c.stroke(tierPaths[o]);
+  c.lineWidth=(o>=8?1.15:o>=6?.8:o>=4?.55:.4)*Math.min(1.35,Math.pow(zoom,.12))/scale;c.stroke(shown[o]);
  }
  c.setTransform(dpr,0,0,dpr,0,0);
  drawNames(c);baseDirty=false;
@@ -95,7 +100,7 @@ function drawNames(c){
  }
 }
 function fullInkPath(){
- if(!tree)return null;const p=new Path2D();tree.ids.forEach(i=>p.addPath(paths[i]));p.addPath(linePath(tree.partial));return p;
+ if(!tree)return null;const p=new Path2D(),a=world(-5,-5),b=world(width+5,height+5);tree.ids.forEach(i=>{const r=edges[i].bounds;if(r[0]<=b[0]&&r[2]>=a[0]&&r[1]<=b[1]&&r[3]>=a[1])p.addPath(paths[i]);});p.addPath(linePath(tree.partial));return p;
 }
 function drawInkCache(){
  const c=ictx;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,ink.width,ink.height);transform(c);
@@ -167,7 +172,7 @@ function traceAt(x,y,force=false){
  if(!hit){contact=null;wake();return false;}
  contact={...hit,finger:[x,y]};
  const t=performance.now();if(!force&&(t-lastSample<(mode==='gather'?85:55)||hit.id===lastHit)){wake();return true;}
- lastSample=t;lastHit=hit.id;touched=true;baseDirty=true;const route=net.downstream(hit),e=edges[hit.id];
+ lastSample=t;lastHit=hit.id;touched=true;if(!traces.length&&!tree)baseDirty=true;const route=net.downstream(hit),e=edges[hit.id];
  if(mode==='gather'){
   tree={...net.upstream(hit),color:color(e.basin),hit};treeBorn=t;inkDirty=true;
   const dist=new Map(),queue=edges[hit.id].up.map(i=>[i,core.pathMetrics(tree.partial).length]);let farthest=.001;

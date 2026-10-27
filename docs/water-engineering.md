@@ -54,7 +54,7 @@ brushing never moves the camera. Direction controls, sources and pause are ordin
 controls exposed by WebKit to assistive technology.
 
 Base geography and the selected upstream tree are cached in separate canvases. A spatial grid
-limits nearest-line queries; the frame draws at most 36 transient routes. Drawing resolution is
+limits nearest-line queries; closer views cull offscreen geometry; the frame draws at most 36 transient routes. Drawing resolution is
 capped at 2.5 device pixels per point. Idle ink runs at a lower frame rate. Reduced Motion shows
 connections immediately without animated ink. The source dialog and hidden document suspend
 ongoing animation; the pause control freezes it on demand.

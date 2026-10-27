@@ -12,6 +12,7 @@ function build(data){
   for(let j=0;j<raw.length;j+=2)e.xy.push(...project(raw[j],raw[j+1]));
   for(let j=2;j<e.xy.length;j+=2)e.cum.push(e.cum[e.cum.length-1]+Math.hypot(e.xy[j]-e.xy[j-2],e.xy[j+1]-e.xy[j-1]));
   e.length=e.cum[e.cum.length-1];
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;for(let j=0;j<e.xy.length;j+=2){x0=Math.min(x0,e.xy[j]);y0=Math.min(y0,e.xy[j+1]);x1=Math.max(x1,e.xy[j]);y1=Math.max(y1,e.xy[j+1]);}e.bounds=[x0,y0,x1,y1];
   if(e.next>=0)edges[e.next].up.push(i);
   const used=new Set();
   for(let j=2;j<e.xy.length;j+=2){
