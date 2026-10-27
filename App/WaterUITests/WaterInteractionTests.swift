@@ -44,6 +44,7 @@ final class WaterInteractionTests: XCTestCase {
         app.webViews.firstMatch.swipeUp()
         capture(prefix + "05-evidence-scrolled")
         close.tap(); XCTAssertTrue(gather.isHittable)
+        capture(prefix + "06-return")
         let pause = control("Pause flowing ink", app)
         if pause.isHittable { pause.tap(); XCTAssertTrue(control("Resume flowing ink", app).exists) }
     }

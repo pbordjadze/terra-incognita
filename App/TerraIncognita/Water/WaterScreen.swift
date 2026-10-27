@@ -7,36 +7,10 @@ import UIKit
 struct WaterScreen: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var showingAtlas = false
-
     var body: some View {
-        Group {
-            if showingAtlas {
-                ZStack(alignment: .topTrailing) {
-                    AtlasScreen()
-                    Button("Study II") { showingAtlas = false }
-                        .buttonStyle(.borderedProminent)
-                        .padding(.top, 60)
-                        .padding(.trailing, 20)
-                }
-            } else {
-                WaterWebView(textScale: textScale, reduceMotion: reduceMotion)
-                    .ignoresSafeArea()
-                    .preferredColorScheme(.light)
-                    .overlay(alignment: .topTrailing) {
-                        // The old globe and film remain available, without becoming part of the study.
-                        Button { showingAtlas = true } label: {
-                            Image(systemName: "globe.europe.africa")
-                                .font(.system(size: 17))
-                                .frame(width: 44, height: 44)
-                        }
-                        .foregroundStyle(Color(red: 0.16, green: 0.25, blue: 0.31))
-                        .accessibilityLabel("Open the existing atlas")
-                        .padding(.trailing, 18)
-                        .padding(.top, 0)
-                    }
-            }
-        }
+        WaterWebView(textScale: textScale, reduceMotion: reduceMotion)
+            .ignoresSafeArea()
+            .preferredColorScheme(.light)
     }
 
     private var textScale: Double {
