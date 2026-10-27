@@ -12,7 +12,7 @@ final class RemotePackTests: XCTestCase {
             throw XCTSkip("No local pack server (CI sets TEST_RUNNER_PACKS_URL)")
         }
         let app = XCUIApplication()
-        app.launchArguments = ["-packs-url", source]
+        app.launchArguments = ["-packs-url", source, "-playground-reset"]
         app.launch()
 
         openWorkbench(in: app)
@@ -26,7 +26,7 @@ final class RemotePackTests: XCTestCase {
         let open = app.buttons["openActivePrototype"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 45))
         open.tap()
-        XCTAssertTrue(text(containing: "Second words.", in: app).waitForExistence(timeout: 30), "The remote revision's page opens")
+        pageShows("Second words.", "The remote revision's page opens", in: app)
         attach("41-remote-revision", in: app)
         app.buttons["packBack"].firstMatch.tap()
 
@@ -40,7 +40,7 @@ final class RemotePackTests: XCTestCase {
         XCTAssertEqual(XCTWaiter().wait(for: [rolledBack], timeout: 10), .completed, revision.label)
         app.buttons["workbenchClose"].firstMatch.tap()
         startPrototype("hello-pack", open: true, in: app)
-        XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "Previous restores the bundled page")
+        pageShows("First words.", "Previous restores the bundled page", in: app)
         app.buttons["packBack"].firstMatch.tap()
         openWorkbench(in: app)
         let newest = app.buttons["newest_hello-pack"].firstMatch
@@ -54,7 +54,15 @@ final class RemotePackTests: XCTestCase {
         app.launch()
         defer { app.terminate() }
         startPrototype("hello-pack", open: true, in: app)
-        XCTAssertTrue(text(containing: "Second words.", in: app).waitForExistence(timeout: 30), "Offline, the installed revision opens")
+        pageShows("Second words.", "Offline, the installed revision opens", in: app)
         attach("42-offline", in: app)
+    }
+
+    /// The page says this within a minute; if not, what the screen showed is kept with the failure.
+    @MainActor private func pageShows(_ words: String, _ message: String, in app: XCUIApplication,
+                                      file: StaticString = #filePath, line: UInt = #line) {
+        let shown = webText(containing: words, in: app).waitForExistence(timeout: 60)
+        if !shown { attach("failed-\(words)", in: app) }
+        XCTAssertTrue(shown, message, file: file, line: line)
     }
 }

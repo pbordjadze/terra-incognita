@@ -399,6 +399,12 @@ final class PackWebController: NSObject, WKNavigationDelegate {
             guard !stopped else { return }
             userContent.add(rules)
             view.load(URLRequest(url: url))
+            PackStore.shared.record("\(pack.id) r\(pack.revision): opening \(page)")
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(30))
+                guard let self, !self.ready, !self.stopped else { return }
+                self.fail("Its page did not finish loading in 30 seconds.")
+            }
         } catch {
             fail("The network block could not be set up (\(error.localizedDescription)), so the page was not opened.")
         }
@@ -596,6 +602,17 @@ final class PackWebController: NSObject, WKNavigationDelegate {
         decisionHandler(ours || url.absoluteString == "about:blank" ? .allow : .cancel)
     }
 
+    /// A page the pack doesn't have, or can't serve, would otherwise open blank: say so instead.
+    func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse,
+                 decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void) {
+        if navigationResponse.isForMainFrame, let http = navigationResponse.response as? HTTPURLResponse, http.statusCode >= 400 {
+            decisionHandler(.cancel)
+            fail("Its page \(http.url?.path(percentEncoded: false) ?? "") answered \(http.statusCode).")
+            return
+        }
+        decisionHandler(.allow)
+    }
+
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         navigationFailed(error)
     }
@@ -639,15 +656,25 @@ enum PackWebKit {
     private static let ruleIdentifier = "com.pbordjadze.terraincognita.pack-network"
     private static let ruleSource = #"[{"trigger":{"url-filter":"^https?://"},"action":{"type":"block"}},{"trigger":{"url-filter":"^wss?://"},"action":{"type":"block"}}]"#
     private static var compiled: WKContentRuleList?
+    /// The compile under way: a pack's overlay and its screen often ask at the same moment, and
+    /// they share one compile rather than racing two into the same store entry.
+    private static var compiling: Task<WKContentRuleList, any Error>?
 
     /// Compiled once per launch. Throws if WebKit refuses it: the caller must not load the page then.
     static func contentRules() async throws -> WKContentRuleList {
         if let compiled { return compiled }
-        let result = try await WKContentRuleListStore.default().compileContentRuleList(
-            forIdentifier: ruleIdentifier, encodedContentRuleList: ruleSource)
-        guard let list = result as WKContentRuleList? else {
-            throw PackError("WebKit returned no rule list")
+        if let compiling { return try await compiling.value }
+        let task = Task { () async throws -> WKContentRuleList in
+            let result = try await WKContentRuleListStore.default().compileContentRuleList(
+                forIdentifier: ruleIdentifier, encodedContentRuleList: ruleSource)
+            guard let list = result as WKContentRuleList? else {
+                throw PackError("WebKit returned no rule list")
+            }
+            return list
         }
+        compiling = task
+        defer { compiling = nil }
+        let list = try await task.value
         compiled = list
         return list
     }

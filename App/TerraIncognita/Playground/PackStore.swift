@@ -320,6 +320,16 @@ final class PackStore {
 
     init() {
         storage = Self.makeStorage()
+        #if DEBUG
+        // `-playground-reset` (CI's tests): no downloads, pins or added sources survive from before
+        if ProcessInfo.processInfo.arguments.contains("-playground-reset") {
+            let packs = storage.appending(path: "packs", directoryHint: .isDirectory)
+            try? FileManager.default.removeItem(at: packs)
+            try? FileManager.default.removeItem(at: storage.appending(path: "state.json"))
+            try? FileManager.default.createDirectory(at: packs, withIntermediateDirectories: true)
+            UserDefaults.standard.removeObject(forKey: Self.sourcesKey)
+        }
+        #endif
         loadPins()
         removeLeftovers()
         bundledPacks = scanBundled()

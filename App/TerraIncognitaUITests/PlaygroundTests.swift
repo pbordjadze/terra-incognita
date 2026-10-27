@@ -94,6 +94,7 @@ final class PlaygroundTests: XCTestCase {
     /// The bundled web pack: its marker on the globe, its page from the marker, and back.
     @MainActor func testBundledPackOpensFromTheGlobe() {
         let app = XCUIApplication()
+        app.launchArguments = ["-playground-reset"]
         app.launch()
         defer { app.terminate() }
         startPrototype("hello-pack", in: app)
