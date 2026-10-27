@@ -58,6 +58,9 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
+          node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
+          node --check Water/water.js || rc=1
+          node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
@@ -109,7 +112,7 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter

@@ -1,0 +1,19 @@
+{
+  "source": "RiverATLAS v1.0",
+  "doi": "10.6084/m9.figshare.9890531",
+  "license": "CC BY 4.0",
+  "upstreamThresholdKm2": 500,
+  "simplificationDegrees": 0.006,
+  "roundingDegrees": 0.001,
+  "inputReaches": 1620963,
+  "keptReaches": 218146,
+  "mergedReaches": 18159,
+  "inputs": {
+    "RiverATLAS_v10_sa_north.dbf": "ac9196a997ad62d8ade4326eae8ec4e0c79aff7cf4120a2eebbd407aa5581ea1",
+    "RiverATLAS_v10_sa_north.shp": "5f78f47dc6d0462a9a2d3ba93fb2ae8b573384fce45bb57db37b7f627f196bd7",
+    "RiverATLAS_v10_sa_north.shx": "6846619c48a85aaf173c9d658b1714f0b123977c0f5a7d9079a4d84554c9722c",
+    "RiverATLAS_v10_sa_south.dbf": "f4f5508376a06f531bd7287b880ef55522825e0e854ac525801641f7f9be67d5",
+    "RiverATLAS_v10_sa_south.shp": "a237dde3e81058d60b0bd4c75f43e3860816cccd8a48f61dca611b25216ae294",
+    "RiverATLAS_v10_sa_south.shx": "043814081381888d4c72a0405a509198f8396307b527bb407128f3f68faf0993"
+  }
+}

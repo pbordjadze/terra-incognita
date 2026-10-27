@@ -3,6 +3,14 @@
 A demo app: a medieval map that plays as a film, from the whole world down to a street, each scale a
 finished picture in the chosen look. This file is the map and the rules.
 
+## Documentation scope
+
+This file describes the implemented demo and its engineering constraints. For current product
+direction, read `terra-incognita/DESIGN.md` and its linked latest conversation capture in
+`pbordjadze/painting-company` before design work. Existing style descriptions and label-placement
+rules below document the implementation; they do not select the next product treatment.
+Keep design discussions and plans in that private repository.
+
 ## Map
 
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
