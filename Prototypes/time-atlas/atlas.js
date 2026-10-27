@@ -220,7 +220,7 @@ document.querySelectorAll('[data-subject]').forEach(b=>listen(b,'click',()=>{
 }));
 listen($('clear-selection'),'click',()=>{stop();selection=null;update();});
 listen(document,'keydown',e=>{
-  if(e.target===map&&e.key.startsWith('Arrow')){e.preventDefault();const dx=e.key==='ArrowLeft'?50:e.key==='ArrowRight'?-50:0,dy=e.key==='ArrowUp'?50:e.key==='ArrowDown'?-50:0;camera.pan(dx,dy);mark();return;}
+  if(e.target===map&&e.key.startsWith('Arrow')){e.preventDefault();stop();const dx=e.key==='ArrowLeft'?50:e.key==='ArrowRight'?-50:0,dy=e.key==='ArrowUp'?50:e.key==='ArrowDown'?-50:0;camera.pan(dx,dy);mark();return;}
   if($('sources-dialog').open||['INPUT','BUTTON','SUMMARY','A'].includes(e.target.tagName))return;
   if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stop();time.setYear(time.year+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?10:1));update();}
   if(e.key==='Escape'){stop();selection=null;update();}

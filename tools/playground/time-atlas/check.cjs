@@ -251,6 +251,17 @@ async function pinch(page, context, engine) {
               assert.deepEqual(after.camera, before.camera);
               await setYear(page, 1938);
             });
+            await step('keyboard map movement pauses time', async () => {
+              await setYear(page,1938);
+              await page.locator('#play-toggle').click();
+              await page.waitForFunction(()=>window.timeAtlasState().playing);
+              const before=await state(page);
+              await page.locator('#map').focus();
+              await page.keyboard.press('ArrowLeft');
+              const after=await state(page);
+              assert.equal(after.playing,false);
+              assert.notEqual(after.camera.lon,before.camera.lon);
+            });
             await step('inactive runtime stops playback', async () => {
               await settings(page, { active: true, reduceMotion: false, textScale: 1 });
               const before = await state(page);
