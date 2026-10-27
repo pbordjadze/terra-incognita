@@ -75,7 +75,7 @@ private struct WaterWebView: UIViewRepresentable {
         view.navigationDelegate = context.coordinator
         view.allowsLinkPreview = false
         view.isInspectable = false
-        if let root = Bundle.main.resourceURL?.appending(path: "Water"),
+        if let root = Bundle.main.resourceURL?.appendingPathComponent("Water", isDirectory: true),
            FileManager.default.fileExists(atPath: root.appending(path: "index.html").path(percentEncoded: false)) {
             context.coordinator.root = root
             view.loadFileURL(root.appending(path: "index.html"), allowingReadAccessTo: root)
@@ -95,16 +95,29 @@ private struct WaterWebView: UIViewRepresentable {
         var root: URL?
         var scale: Double = 1
         var reduced = false
+        private var recoveringContent = false
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            recoveringContent = false
+            #if DEBUG
+            print("Study II: bundled document loaded")
+            #endif
             webView.evaluateJavaScript("window.setReaderScale?.(\(scale)); window.setReducedMotion?.(\(reduced ? "true" : "false"));", completionHandler: nil)
         }
 
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            guard !recoveringContent else { return }
+            recoveringContent = true
+            webView.reload()
+        }
+
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
-                     decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+                     decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void) {
             guard let url = action.request.url else { decisionHandler(.cancel); return }
-            if url.isFileURL, let root,
-               url.standardizedFileURL.path.hasPrefix(root.standardizedFileURL.path + "/") {
+            let path = root?.standardizedFileURL.path ?? ""
+            let prefix = path.hasSuffix("/") ? path : path + "/"
+            if url.isFileURL, root != nil,
+               url.standardizedFileURL.path.hasPrefix(prefix) {
                 decisionHandler(.allow)
             } else if url.absoluteString == "about:blank" {
                 decisionHandler(.allow)

@@ -16,6 +16,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   // A real drag brushes multiple rivers; this is not a JS-injected state fixture.
   await p.mouse.move(box.x+box.width*.3,box.y+box.height*.25);await p.mouse.down();await p.waitForTimeout(150);
   await p.mouse.move(box.x+box.width*.72,box.y+box.height*.4,{steps:38});await p.mouse.up();await p.waitForTimeout(120);
+  const afterBrush=await p.locator('#map').boundingBox();assert(Math.abs(afterBrush.height-box.height)<1,'Changing a caption must not shift the map under the hand');
   let d=await p.evaluate(()=>waterDiagnostics());assert(d.traces>1,'Direct brush must leave multiple traced routes');assert.equal(d.pointers,0);
   await p.screenshot({path:path.join(out,config.name+'-02-brush.png')});
   await p.click('#gather');await p.selectOption('#river-menu','0');await p.waitForTimeout(1050);
@@ -43,6 +44,8 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  const a={x:150,y,id:1},c={x:250,y,id:2};
  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[a]});await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[a,c]});
  for(let i=0;i<15;i++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...a,x:150-i*3},{...c,x:250+i*3}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[{...a,x:108}]});
+ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...a,x:122,y:y+35}]});
  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
  const d=await p.evaluate(()=>waterDiagnostics());assert(d.zoom>1.5);assert.equal(d.pointers,0);assert.equal(d.traces,0,'Pinch does not leave accidental ink');
  await p.close();results.push({device:'two-finger-pinch',zoom:d.zoom,passed:true});

@@ -12,3 +12,5 @@
 select{font-size:max(16px,.78rem)}
 #locator span{font-size:max(10px,.6rem)}
 @media(max-height:600px){.eyebrow{font-size:max(10px,.6rem)}}
+/* Reserve the caption's room: a changing description must not move the map under a finger. */
+.reading{height:calc(4.7rem + 5px);min-height:calc(4.7rem + 5px);justify-content:center}

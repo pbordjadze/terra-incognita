@@ -91,7 +91,7 @@ jobs:
           mkdir -p out
           ci/simulators.sh $D > out/sims.txt
           cat out/sims.txt
-          while read -r KIND UDID _; do nohup xcrun simctl boot "$UDID" > "out/boot-$KIND.log" 2>&1 < /dev/null & done < out/sims.txt
+          cat out/sims.txt
       - name: Build (Debug, simulator)
         id: build
         run: |
@@ -221,7 +221,7 @@ jobs:
       BUILD: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v5
-      - name: Start iPhone and iPad
+      - name: Select iPhone and iPad simulators
         run: |
           mkdir -p out
           ci/simulators.sh iphone ipad > out/sims.txt
@@ -243,29 +243,9 @@ jobs:
                   if f.is_file(): assert f.read_bytes()==(app/f).read_bytes(), str(f)
           print('All three bundled data folders identical')
           PYDATA
-      - name: Record native opening views before interaction tests
+      - name: Native opening views, touch and largest text, one simulator at a time
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          APP=build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          mkdir -p out/study2-opening build/study2-preview
-          while read -r KIND UDID _ <&3; do
-            xcrun simctl bootstatus "$UDID" -b
-            xcrun simctl install "$UDID" "$APP"
-            xcrun simctl launch --terminate-running-process "$UDID" com.pbordjadze.terraincognita -water
-            sleep 5
-            xcrun simctl io "$UDID" screenshot "out/study2-opening/$KIND.png"
-            xcrun simctl terminate "$UDID" com.pbordjadze.terraincognita
-          done 3< out/sims.txt
-          cp out/study2-opening/*.png build/study2-preview/
-          echo "$GITHUB_SHA" > build/study2-preview/COMMIT
-          cd build/study2-preview
-          git init -q
-          git add -A
-          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Native opening views"
-          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/ci-shots/${GITHUB_REF_NAME}-opening"
-      - name: Touch, sources and largest text on both simulators
         run: bash ci/study2_tests.sh
       - name: Release and device archive
         run: |

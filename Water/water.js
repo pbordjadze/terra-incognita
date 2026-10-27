@@ -6,12 +6,13 @@ const core=window.WaterCore,{C,W,H,project,invert}=core;
 const net=core.build(window.WATER_DATA), edges=net.edges;
 const base=document.createElement('canvas'), bctx=base.getContext('2d',{alpha:false});
 const ink=document.createElement('canvas'), ictx=ink.getContext('2d');
+const lettering=document.createElement('canvas'), lctx=lettering.getContext('2d');
 const media=matchMedia('(prefers-reduced-motion: reduce)');
 let reduced=media.matches||!!window.__nativeReduceMotion,paused=false,mode='follow',moving=false,ready=false;
 let width=0,height=0,dpr=1,scale=1,tx=0,ty=0,fitScale=1,zoom=1,baseDirty=true,inkDirty=true;
 let traces=[],tree=null,contact=null,focus=null,treeBorn=0,lastSample=0,lastHit=-1,lastFrame=0,raf=0,now=performance.now();
 let touched=false,downTimer=0,statusTimer=0,dragged=false,keyboard=false;
-const pointers=new Map();let gesture=null;
+const pointers=new Map();let gesture=null,hadMulti=false;
 const palette=['#244e9b','#a24e39','#38685a','#62518d','#826423'];
 const named=new Map(),starts=[];
 const colors=new Map();
@@ -48,7 +49,7 @@ function clampCamera(){
 }
 function resize(){
  const rect=canvas.getBoundingClientRect(), old=[width,height];width=Math.round(rect.width);height=Math.round(rect.height);dpr=Math.min(devicePixelRatio||1,2.5);
- for(const c of [canvas,base,ink]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);}
+ for(const c of [canvas,base,ink,lettering]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);}
  if(!ready||!old[0])resetCamera();else{tx+=(width-old[0])/2;ty+=(height-old[1])/2;fitScale=Math.min((width-42)/W,(height-22)/H);zoom=scale/fitScale;clampCamera();baseDirty=inkDirty=true;wake();}
 }
 function drawBase(){
@@ -70,13 +71,14 @@ function drawBase(){
   c.lineWidth=(o>=8?1.15:o>=6?.8:o>=4?.55:.4)*Math.min(1.35,Math.pow(zoom,.12))/scale;c.stroke(shown[o]);
  }
  c.setTransform(dpr,0,0,dpr,0,0);
- drawNames(c);baseDirty=false;
+ lctx.setTransform(1,0,0,1,0,0);lctx.clearRect(0,0,lettering.width,lettering.height);lctx.setTransform(dpr,0,0,dpr,0,0);drawNames(lctx);baseDirty=false;
 }
 function text(c,label,x,y,size,ink,italic=false){
  c.font=`${italic?'italic ':''}${size}px Libertinus, Georgia, serif`;c.textAlign='center';c.textBaseline='middle';c.lineJoin='round';c.lineWidth=3.5;c.strokeStyle='#efeee4e8';c.strokeText(label,x,y);c.fillStyle=ink;c.fillText(label,x,y);
 }
 function drawNames(c){
- const occupied=[];const reader=Math.min(1.5,Number(getComputedStyle(document.documentElement).getPropertyValue('--reader'))||1);
+ const occupied=[];const cr=canvas.getBoundingClientRect();for(const el of [$('zoom'),$('locator'),document.querySelector('.map-corner')]){const r=el.getBoundingClientRect();occupied.push([r.left-cr.left-5,r.top-cr.top-5,r.right-cr.left+5,r.bottom-cr.top+5]);}
+ const reader=Math.min(1.5,Number(getComputedStyle(document.documentElement).getPropertyValue('--reader'))||1);
  const sizes=width>=700?1.15:1;
  function place(label,p,size,ink,italic=false){
   const [x,y]=screen(...project(...p));if(x<52||x>width-35||y<22||y>height-18)return;
@@ -149,7 +151,7 @@ function paint(t){
   ctx.fillStyle='#f5f1e7';ctx.beginPath();ctx.arc(p.x,p.y,4.5/scale,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=color(edges[p.id].basin);ctx.beginPath();ctx.arc(p.x,p.y,1.8/scale,0,Math.PI*2);ctx.fill();
  }
  if(keyboard&&focus){ctx.strokeStyle='#354f7d';ctx.lineWidth=1.2/scale;ctx.beginPath();ctx.arc(...focus,12/scale,0,Math.PI*2);ctx.stroke();}
- ctx.setTransform(dpr,0,0,dpr,0,0);
+ ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(lettering,0,0);
 }
 function frame(t){
  raf=0;if(document.hidden)return;
@@ -192,10 +194,10 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button&&e.button!==0)return;
  e.preventDefault();keyboard=false;canvas.setPointerCapture(e.pointerId);const p=atPointer(e);pointers.set(e.pointerId,p);dragged=false;
  if(pointers.size===1){
-  lastHit=-1;gesture={start:p,tx,ty,scale};
+  hadMulti=false;lastHit=-1;gesture={start:p,tx,ty,scale};
   if(!moving)downTimer=setTimeout(()=>{if(pointers.size===1)traceAt(...world(...p),true);},100);
  }else{
-  stopDelay();contact=null;const a=[...pointers.values()];
+  stopDelay();hadMulti=true;contact=null;const a=[...pointers.values()];
   gesture={distance:Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]),center:[(a[0][0]+a[1][0])/2,(a[0][1]+a[1][1])/2],tx,ty,scale};
  }
  wake();
@@ -210,14 +212,14 @@ canvas.addEventListener('pointermove',e=>{
  }else if(pointers.size===1&&gesture?.start){
   if(Math.hypot(p[0]-gesture.start[0],p[1]-gesture.start[1])>3)dragged=true;
   if(moving){tx=gesture.tx+p[0]-gesture.start[0];ty=gesture.ty+p[1]-gesture.start[1];clampCamera();baseDirty=inkDirty=true;wake();}
-  else if(dragged){stopDelay();traceAt(...world(...p));}
+  else if(dragged&&!hadMulti){stopDelay();traceAt(...world(...p));}
  }
 });
 function endPointer(e){
  if(!pointers.has(e.pointerId))return;const p=pointers.get(e.pointerId);
- if(pointers.size===1&&downTimer&&!moving)traceAt(...world(...p),true);
+ if(pointers.size===1&&downTimer&&!moving&&!hadMulti)traceAt(...world(...p),true);
  stopDelay();pointers.delete(e.pointerId);
- if(pointers.size){const a=[...pointers.values()][0];gesture={start:a,tx,ty,scale};}else{gesture=null;contact=null;lastHit=-1;}
+ if(pointers.size){const a=[...pointers.values()][0];gesture={start:a,tx,ty,scale};}else{gesture=null;contact=null;lastHit=-1;hadMulti=false;}
  wake();
 }
 canvas.addEventListener('pointerup',endPointer);
