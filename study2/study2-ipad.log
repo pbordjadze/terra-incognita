@@ -1,0 +1,502 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test -project App/TerraIncognita.xcodeproj -scheme TerraIncognita -configuration Debug -destination "platform=iOS Simulator,id=687AB7EE-DF9A-4A96-878E-7509AB01A80C" -destination-timeout 180 -derivedDataPath build/study2-debug -resultBundlePath build/study2-ipad.xcresult "-only-testing:WaterUITests" -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 -test-timeouts-enabled YES -default-test-execution-time-allowance 180 -maximum-test-execution-time-allowance 240 ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    ARCHS = arm64
+    CODE_SIGNING_ALLOWED = NO
+    COMPILER_INDEX_STORE_ENABLE = NO
+
+Writing result bundle at path:
+	/Users/runner/work/terra-incognita/terra-incognita/build/study2-ipad.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:687AB7EE-DF9A-4A96-878E-7509AB01A80C, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:687AB7EE-DF9A-4A96-878E-7509AB01A80C, OS:26.5, name:iPad Pro 13-inch (M5) }
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'WaterUITests' in project 'TerraIncognita'
+        ➜ Explicit dependency on target 'TerraIncognita' in project 'TerraIncognita'
+    Target 'TerraIncognita' in project 'TerraIncognita' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognita/Resources/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: f482ddd46e12302f1bd8c804df3548b5
+Build description path: /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/XCBuildData/f482ddd46e12302f1bd8c804df3548b5.xcbuilddata
+ClangStatCache /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+    cd /Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognita.xcodeproj
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+
+CompileAssetCatalogVariant thinned /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app /Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognita/Resources/Assets.xcassets (in target 'TerraIncognita' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognita/Resources/Assets.xcassets --compile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --accent-color AccentColor --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPad17,4-A --filter-for-device-os-version 26.5 --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 26.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/thinned/Assets.car
+
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/empty-WaterUITests.plist (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/empty-WaterUITests.plist
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyMetadataFileList (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyStaticMetadataFileList (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-project-headers.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-own-target-headers.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-generated-files.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-target-headers.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-non-framework-target-headers.hmap (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/ProductTypeInfoPlistAdditions.plist (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/ProductTypeInfoPlistAdditions.plist
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_const_extract_protocols.json (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftConstValuesFileList (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.LinkFileList (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-OutputFileMap.json (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    write-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-OutputFileMap.json
+
+MkDir /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /bin/mkdir -p /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest
+
+SwiftDriver WaterUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WaterUITests -Onone @/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-generated-files.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-project-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-Swift.h -working-directory /Users/runner/work/terra-incognita/terra-incognita/App -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-F4INMV2CFTJLOD1Y93WCZU6T8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-BJSV9S3JYZNTWUJVNUL7X9F6M.pcm
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-K3V5OGWLXJ0G.swiftmodule
+
+SwiftExplicitDependencyCompileModuleFromInterface arm64 /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-2RO9G5NQNJFJE.swiftmodule
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ WaterUITests (in target 'WaterUITests' from project 'TerraIncognita')
+
+SwiftCompile normal arm64 /Users/runner/work/terra-incognita/terra-incognita/App/WaterUITests/WaterInteractionTests.swift (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    
+
+SwiftCompile normal arm64 Compiling\ WaterInteractionTests.swift /Users/runner/work/terra-incognita/terra-incognita/App/WaterUITests/WaterInteractionTests.swift (in target 'WaterUITests' from project 'TerraIncognita')
+
+SwiftCompile normal arm64 /Users/runner/work/terra-incognita/terra-incognita/App/WaterUITests/WaterInteractionTests.swift (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for WaterUITests (in target 'WaterUITests' from project 'TerraIncognita')
+
+SwiftDriver\ Compilation\ Requirements WaterUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WaterUITests -Onone @/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-generated-files.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-project-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-Swift.h -working-directory /Users/runner/work/terra-incognita/terra-incognita/App -experimental-emit-module-separately -disable-cmo
+
+SwiftMergeGeneratedHeaders /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources/WaterUITests-Swift.h /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-Swift.h (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-swiftHeaderTool -arch arm64 /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-Swift.h -o /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources/WaterUITests-Swift.h
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftdoc (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftdoc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.abi.json (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.abi.json /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftsourceinfo (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftsourceinfo /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling WaterInteractionTests.swift (in target 'WaterUITests' from project 'TerraIncognita')
+
+SwiftDriver\ Compilation WaterUITests normal arm64 com.apple.xcode.tools.swift.compiler (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name WaterUITests -Onone @/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList -DDEBUG -module-alias Testing\=_Testing_Unavailable -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios26.0-simulator -g -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 6 -I /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -parse-as-library -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-generated-files.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-own-target-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests-project-headers.hmap -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-Swift.h -working-directory /Users/runner/work/terra-incognita/terra-incognita/App -experimental-emit-module-separately -disable-cmo
+
+LinkAssetCatalog /Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognita/Resources/Assets.xcassets (in target 'TerraIncognita' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-linkAssetCatalog --thinned /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app --plist-output /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Assets.car (in target 'TerraIncognita' from project 'TerraIncognita')
+note: Emplaced /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/AppIcon76x76@2x~ipad.png (in target 'TerraIncognita' from project 'TerraIncognita')
+note: Emplaced /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/AppIcon60x60@2x.png (in target 'TerraIncognita' from project 'TerraIncognita')
+
+ProcessInfoPlistFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Info.plist /Users/runner/work/terra-incognita/terra-incognita/App/Config/Info.plist (in target 'TerraIncognita' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-infoPlistUtility /Users/runner/work/terra-incognita/terra-incognita/App/Config/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/assetcatalog_generated_info.plist -o /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Info.plist
+
+CopySwiftLibs /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app (in target 'TerraIncognita' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/TerraIncognita.debug.dylib --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Frameworks --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/PlugIns --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/SystemExtensions --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.lPtXCw/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/TerraIncognita.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+Ld /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/WaterUITests normal (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios26.0-simulator -bundle -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.LinkFileList -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.swiftmodule @/Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/WaterUITests
+
+ProcessInfoPlistFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Info.plist /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/empty-WaterUITests.plist (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-infoPlistUtility /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/empty-WaterUITests.plist -producttype com.apple.product-type.bundle.ui-testing -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/ProductTypeInfoPlistAdditions.plist -o /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Info.plist
+
+ExtractAppIntentsMetadata (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.lPtXCw/Metal.xctoolchain --module-name WaterUITests --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 26.0 --bundle-identifier com.pbordjadze.terraincognita.uitests --output /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest --target-triple arm64-apple-ios26.0-simulator --binary-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/WaterUITests --dependency-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests_dependency_info.dat --stringsdata-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftFileList --metadata-file-list /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/Objects-normal/arm64/WaterUITests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-27 03:03:01.724 appintentsmetadataprocessor[20612:72983] Starting appintentsmetadataprocessor export
+2026-10-27 03:03:01.737 appintentsmetadataprocessor[20612:72983] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/WaterUITests --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Frameworks --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/PlugIns --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/SystemExtensions --scan-folder /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.lPtXCw/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Info.plist --temp-dir-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/ssu --bundle-id com.pbordjadze.terraincognita.uitests --product-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest --extracted-metadata-path /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Metadata.appintents --metadata-file-list /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Intermediates.noindex/TerraIncognita.build/Debug-iphonesimulator/WaterUITests.build/WaterUITests.DependencyMetadataFileList --source-file /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Info.plist --archive-ssu-assets
+2026-10-27 03:03:01.791 appintentsnltrainingprocessor[20635:73028] Parsing options for appintentsnltrainingprocessor
+2026-10-27 03:03:01.791 appintentsnltrainingprocessor[20635:73028] Starting AppIntents SSU YAML Generation
+2026-10-27 03:03:01.802 appintentsnltrainingprocessor[20635:73028] No AppShortcuts found - Skipping.
+
+MkDir /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /bin/mkdir -p /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app
+
+CopyAndPreserveArchs /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/WaterUITests-Runner (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/XCTRunner -output /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/WaterUITests-Runner -extract arm64
+
+CopyPlistFile /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Info.plist /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copyPlist --validate --convert xml1 --macro-expansion WRAPPEDPRODUCTNAME WaterUITests-Runner --macro-expansion WRAPPEDPRODUCTBUNDLEIDENTIFIER com.pbordjadze.terraincognita.uitests.xctrunner --macro-expansion TESTPRODUCTNAME WaterUITests --macro-expansion TESTPRODUCTBUNDLEIDENTIFIER com.pbordjadze.terraincognita.uitests --copy-value UIDeviceFamily /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest/Info.plist --outdir /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app -- /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/Info.plist
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PkgInfo /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Xcode/Agents/XCTRunner.app/PkgInfo /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCUnit.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCUIAutomation.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCTestSupport.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCTestCore.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCTest.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+Copy /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks/Testing.framework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/Frameworks
+
+RegisterExecutionPolicyException /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    builtin-RegisterExecutionPolicyException /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest
+
+Touch /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest (in target 'WaterUITests' from project 'TerraIncognita')
+    cd /Users/runner/work/terra-incognita/terra-incognita/App
+    /usr/bin/touch -c /Users/runner/work/terra-incognita/terra-incognita/build/study2-debug/Build/Products/Debug-iphonesimulator/WaterUITests-Runner.app/PlugIns/WaterUITests.xctest
+
+2026-10-27 03:03:15.631925+0000 WaterUITests-Runner[20997:74065] [Default] Running tests...
+2026-10-27 03:03:15.840512+0000 WaterUITests-Runner[20997:74065] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+objc[20997]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x104bc0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107a18398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'All tests' started at 2026-10-27 03:03:27.034.
+Test Suite 'WaterUITests.xctest' started at 2026-10-27 03:03:27.040.
+Test Suite 'WaterInteractionTests' started at 2026-10-27 03:03:27.041.
+Test Case '-[WaterUITests.WaterInteractionTests testLargestText]' started.
+    t =     0.00s Start Test at 2026-10-27 03:03:27.046
+    t =     3.60s Set Up
+    t =     3.61s Open com.pbordjadze.terraincognita
+    t =     3.62s     Launch com.pbordjadze.terraincognita
+2026-10-27 03:03:31.581 xcodebuild[18501:67520] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-27 03:03:31.581 xcodebuild[18501:67520] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    11.62s         Setting up automation session
+    t =    13.99s         Wait for com.pbordjadze.terraincognita to idle
+    t =    16.31s Waiting 60.0s for Any (First Match) to exist
+    t =    17.39s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    17.41s         Checking existence of `Any (First Match)`
+    t =    17.85s         Capturing element debug description
+    t =    18.33s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    18.33s         Checking existence of `Any (First Match)`
+    t =    20.40s Find the Any (First Match)
+    t =    24.28s Added attachment named 'large-01-open'
+    t =    24.31s Checking existence of `Any (First Match)`
+    t =    25.30s Find the Any (First Match)
+    t =    25.55s Press "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.30, 0.25] for 0.2 seconds, then drag to "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.72, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    25.55s     Wait for com.pbordjadze.terraincognita to idle
+    t =    25.57s     Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    25.88s     Check for interrupting elements affecting "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    26.20s         Wait for com.apple.springboard to idle
+    t =    26.52s     Synthesize event
+    t =    26.52s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    26.82s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    27.10s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    27.33s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    28.33s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    31.48s     Wait for com.pbordjadze.terraincognita to idle
+    t =    32.08s Waiting 10.0s for StaticText (First Match) to exist
+    t =    33.34s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =    33.37s         Checking existence of `StaticText (First Match)`
+    t =    40.03s Added attachment named 'large-02-touch'
+    t =    40.06s Tap "Gather" Switch
+    t =    40.06s     Wait for com.pbordjadze.terraincognita to idle
+    t =    40.19s     Find the "Gather" Switch
+    t =    42.26s     Check for interrupting elements affecting "Gather" Switch
+    t =    42.73s         Wait for com.apple.springboard to idle
+    t =    42.83s     Synthesize event
+    t =    43.26s     Wait for com.pbordjadze.terraincognita to idle
+    t =    43.29s Press "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.72, 0.40] for 0.3 seconds, then drag to "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.30, 0.25] with velocity of 250.00 pixels per second, and then hold for 0.2 seconds 
+    t =    43.29s     Wait for com.pbordjadze.terraincognita to idle
+    t =    43.54s     Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    50.83s     Check for interrupting elements affecting "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    52.50s         Wait for com.apple.springboard to idle
+    t =    52.57s     Synthesize event
+    t =    52.57s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    54.54s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    54.90s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    55.84s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    56.30s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    59.51s     Wait for com.pbordjadze.terraincognita to idle
+    t =    59.52s Waiting 10.0s for StaticText (First Match) to exist
+    t =    60.57s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =    60.57s         Checking existence of `StaticText (First Match)`
+    t =    61.28s Added attachment named 'large-03-gather'
+    t =    61.28s Find the Any (First Match)
+    t =    61.47s Tap "About this map and its sources" Button
+    t =    61.47s     Wait for com.pbordjadze.terraincognita to idle
+    t =    61.47s     Find the "About this map and its sources" Button
+    t =    61.59s     Check for interrupting elements affecting "About this map and its sources" Button
+    t =    61.64s         Wait for com.apple.springboard to idle
+    t =    61.68s     Synthesize event
+    t =    62.00s     Wait for com.pbordjadze.terraincognita to idle
+    t =    62.01s Waiting 10.0s for Any (First Match) to exist
+    t =    63.04s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    63.04s         Checking existence of `Any (First Match)`
+    t =    63.24s Find the Any (First Match)
+    t =    63.84s Added attachment named 'large-04-evidence'
+    t =    63.84s Swipe up WebView (First Match)
+    t =    63.84s     Wait for com.pbordjadze.terraincognita to idle
+    t =    63.84s     Find the WebView (First Match)
+    t =    64.08s     Check for interrupting elements affecting WebView
+    t =    64.16s         Wait for com.apple.springboard to idle
+    t =    64.20s     Synthesize event
+    t =    64.72s     Wait for com.pbordjadze.terraincognita to idle
+    t =    68.43s Added attachment named 'large-05-evidence-scrolled'
+    t =    68.44s Tap "Close map notes" Button
+    t =    68.44s     Wait for com.pbordjadze.terraincognita to idle
+    t =    68.44s     Find the "Close map notes" Button
+    t =    68.62s     Check for interrupting elements affecting "Close map notes" Button
+    t =    68.75s         Wait for com.apple.springboard to idle
+    t =    68.81s     Synthesize event
+    t =    69.12s     Wait for com.pbordjadze.terraincognita to idle
+    t =    69.13s Find the "Gather" Switch
+    t =    69.62s Added attachment named 'large-06-return'
+    t =    69.62s Find the Any (First Match)
+    t =    69.78s Tap "Pause flowing ink" Switch
+    t =    69.78s     Wait for com.pbordjadze.terraincognita to idle
+    t =    69.79s     Find the "Pause flowing ink" Switch
+    t =    69.93s     Check for interrupting elements affecting "Pause flowing ink" Switch
+    t =    70.00s         Wait for com.apple.springboard to idle
+    t =    70.04s     Synthesize event
+    t =    70.33s     Wait for com.pbordjadze.terraincognita to idle
+    t =    70.34s Checking existence of `Any (First Match)`
+    t =    70.44s Terminate com.pbordjadze.terraincognita:21796
+    t =    71.50s Tear Down
+Test Case '-[WaterUITests.WaterInteractionTests testLargestText]' passed (71.753 seconds).
+Test Case '-[WaterUITests.WaterInteractionTests testTouchAndEvidence]' started.
+    t =     0.00s Start Test at 2026-10-27 03:04:38.799
+    t =     0.14s Set Up
+    t =     0.14s Open com.pbordjadze.terraincognita
+    t =     0.14s     Launch com.pbordjadze.terraincognita
+2026-10-27 03:04:39.277 xcodebuild[18501:67520] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-27 03:04:39.278 xcodebuild[18501:67520] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    17.18s         Setting up automation session
+    t =    20.24s         Wait for com.pbordjadze.terraincognita to idle
+    t =    22.65s Waiting 60.0s for Any (First Match) to exist
+    t =    23.70s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    23.71s         Checking existence of `Any (First Match)`
+    t =    24.70s         Capturing element debug description
+    t =    25.67s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    25.67s         Checking existence of `Any (First Match)`
+    t =    26.47s Find the Any (First Match)
+    t =    27.78s Added attachment named 'regular-01-open'
+    t =    27.78s Checking existence of `Any (First Match)`
+    t =    28.05s Find the Any (First Match)
+    t =    28.36s Press "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.30, 0.25] for 0.2 seconds, then drag to "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.72, 0.40] with velocity of 250.00 pixels per second, and then hold for 0.1 seconds 
+    t =    28.36s     Wait for com.pbordjadze.terraincognita to idle
+    t =    28.37s     Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    28.56s     Check for interrupting elements affecting "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    28.72s         Wait for com.apple.springboard to idle
+    t =    28.81s     Synthesize event
+    t =    28.81s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    28.96s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    29.06s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    29.18s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    29.36s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    31.92s     Wait for com.pbordjadze.terraincognita to idle
+    t =    32.69s Waiting 10.0s for StaticText (First Match) to exist
+    t =    33.75s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =    33.76s         Checking existence of `StaticText (First Match)`
+    t =    34.45s Added attachment named 'regular-02-touch'
+    t =    34.45s Tap "Gather" Switch
+    t =    34.45s     Wait for com.pbordjadze.terraincognita to idle
+    t =    34.46s     Find the "Gather" Switch
+    t =    34.62s     Check for interrupting elements affecting "Gather" Switch
+    t =    34.70s         Wait for com.apple.springboard to idle
+    t =    34.76s     Synthesize event
+    t =    35.08s     Wait for com.pbordjadze.terraincognita to idle
+    t =    35.09s Press "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.72, 0.40] for 0.3 seconds, then drag to "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image[0.30, 0.25] with velocity of 250.00 pixels per second, and then hold for 0.2 seconds 
+    t =    35.09s     Wait for com.pbordjadze.terraincognita to idle
+    t =    35.10s     Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.22s     Check for interrupting elements affecting "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.31s         Wait for com.apple.springboard to idle
+    t =    35.36s     Synthesize event
+    t =    35.36s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.52s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.66s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.78s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    35.92s         Find the "Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom." Image
+    t =    38.65s     Wait for com.pbordjadze.terraincognita to idle
+    t =    38.66s Waiting 10.0s for StaticText (First Match) to exist
+    t =    39.72s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =    39.72s         Checking existence of `StaticText (First Match)`
+    t =    40.33s Added attachment named 'regular-03-gather'
+    t =    40.33s Find the Any (First Match)
+    t =    40.49s Tap "About this map and its sources" Button
+    t =    40.49s     Wait for com.pbordjadze.terraincognita to idle
+    t =    40.49s     Find the "About this map and its sources" Button
+    t =    40.62s     Check for interrupting elements affecting "About this map and its sources" Button
+    t =    40.72s         Wait for com.apple.springboard to idle
+    t =    40.78s     Synthesize event
+    t =    41.09s     Wait for com.pbordjadze.terraincognita to idle
+    t =    41.09s Waiting 10.0s for Any (First Match) to exist
+    t =    42.13s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    42.14s         Checking existence of `Any (First Match)`
+    t =    42.24s Find the Any (First Match)
+    t =    42.89s Added attachment named 'regular-04-evidence'
+    t =    42.90s Swipe up WebView (First Match)
+    t =    42.90s     Wait for com.pbordjadze.terraincognita to idle
+    t =    42.91s     Find the WebView (First Match)
+    t =    42.97s     Check for interrupting elements affecting WebView
+    t =    43.08s         Wait for com.apple.springboard to idle
+    t =    43.17s     Synthesize event
+    t =    43.68s     Wait for com.pbordjadze.terraincognita to idle
+    t =    46.09s Added attachment named 'regular-05-evidence-scrolled'
+    t =    46.09s Tap "Close map notes" Button
+    t =    46.10s     Wait for com.pbordjadze.terraincognita to idle
+    t =    46.10s     Find the "Close map notes" Button
+    t =    46.19s     Check for interrupting elements affecting "Close map notes" Button
+    t =    46.26s         Wait for com.apple.springboard to idle
+    t =    46.30s     Synthesize event
+    t =    46.61s     Wait for com.pbordjadze.terraincognita to idle
+    t =    46.62s Find the "Gather" Switch
+    t =    47.15s Added attachment named 'regular-06-return'
+    t =    47.15s Find the Any (First Match)
+    t =    47.29s Tap "Pause flowing ink" Switch
+    t =    47.29s     Wait for com.pbordjadze.terraincognita to idle
+    t =    47.29s     Find the "Pause flowing ink" Switch
+    t =    47.39s     Check for interrupting elements affecting "Pause flowing ink" Switch
+    t =    47.50s         Wait for com.apple.springboard to idle
+    t =    47.55s     Synthesize event
+    t =    47.85s     Wait for com.pbordjadze.terraincognita to idle
+    t =    47.86s Checking existence of `Any (First Match)`
+    t =    47.99s Terminate com.pbordjadze.terraincognita:23160
+    t =    49.03s Tear Down
+Test Case '-[WaterUITests.WaterInteractionTests testTouchAndEvidence]' passed (49.481 seconds).
+Test Suite 'WaterInteractionTests' passed at 2026-10-27 03:05:28.281.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 121.234 (121.240) seconds
+Test Suite 'WaterUITests.xctest' passed at 2026-10-27 03:05:28.282.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 121.234 (121.242) seconds
+Test Suite 'All tests' passed at 2026-10-27 03:05:28.282.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 121.234 (121.248) seconds
+2026-10-27 03:05:31.349 xcodebuild[18501:67520] [MT] IDETestOperationsObserverDebug: 149.256 elapsed -- Testing started completed.
+2026-10-27 03:05:31.352 xcodebuild[18501:67520] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-27 03:05:31.352 xcodebuild[18501:67520] [MT] IDETestOperationsObserverDebug: 149.256 sec, +149.256 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/terra-incognita/terra-incognita/build/study2-ipad.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started

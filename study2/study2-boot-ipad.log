@@ -1,0 +1,20 @@
+Monitoring boot status for iPad Pro 13-inch (M5) (687AB7EE-DF9A-4A96-878E-7509AB01A80C).
+Booting device...
+[2026-10-27 02:57:49 +0000] Status=0, isTerminal=NO, Elapsed=00:00.
+	Booting
+
+[2026-10-27 02:58:16 +0000] Status=4, isTerminal=NO, Elapsed=00:25.
+	Waiting on System App
+
+[2026-10-27 02:58:19 +0000] Status=4, isTerminal=NO, Elapsed=00:29.
+	Waiting on System App
+
+[2026-10-27 02:58:21 +0000] Status=4, isTerminal=NO, Elapsed=00:31.
+	Waiting on System App
+
+[2026-10-27 02:58:24 +0000] Status=4, isTerminal=NO, Elapsed=00:34.
+	Waiting on System App
+
+[2026-10-27 02:58:25 +0000] Status=4294967295, isTerminal=YES, Elapsed=00:35.
+	Finished
+

@@ -1,0 +1,1 @@
+Independent Study II test app. Install using the attached SideStore source, or import the IPA directly. This has its own bundle identifier and leaves the ordinary app and SideStore source intact. No account, location access, or saved exploration.

@@ -1,0 +1,41 @@
+{
+  "name": "Terra Incognita \u00b7 Study II",
+  "identifier": "com.pbordjadze.terraincognita.study2.source",
+  "subtitle": "Independent test build",
+  "iconURL": "https://github.com/pbordjadze/terra-incognita/releases/download/study2-40440112973/icon.png",
+  "website": "https://github.com/pbordjadze/terra-incognita",
+  "tintColor": "#354F7D",
+  "apps": [
+    {
+      "name": "Terra Incognita \u00b7 Study II",
+      "bundleIdentifier": "com.pbordjadze.terraincognita.study2",
+      "developerName": "pbordjadze",
+      "subtitle": "An independent geographic study",
+      "localizedDescription": "A separately installable experimental experience. The original atlas and other experiments stay installed. Everything is bundled; nothing leaves the device.",
+      "iconURL": "https://github.com/pbordjadze/terra-incognita/releases/download/study2-40440112973/icon.png",
+      "tintColor": "#354F7D",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.68",
+          "buildVersion": "68",
+          "date": "2026-10-27T03:15:37.047570+00:00",
+          "localizedDescription": "An independent geographic study. Open without a briefing.",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/study2-40440112973/TerraIncognita-StudyII.ipa",
+          "size": 88074843,
+          "minOSVersion": "26.0"
+        }
+      ],
+      "version": "1.0.68",
+      "versionDate": "2026-10-27T03:15:37.047570+00:00",
+      "versionDescription": "An independent geographic study. Open without a briefing.",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/study2-40440112973/TerraIncognita-StudyII.ipa",
+      "size": 88074843,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}
