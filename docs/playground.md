@@ -6,6 +6,7 @@ screen, and ending it leaves the plain globe exactly as it was. One prototype is
 its markers, overlays, screens and web views are made when it starts and released when it ends.
 That is a workbench rule for comparing things cleanly, not a decision about the finished atlas.
 
+- [From "prototype this" to the phone](#from-prototype-this-to-the-phone) (the short version)
 - [Kinds of prototype](#kinds-of-prototype)
 - [Make a web prototype](#make-a-web-prototype) (no app build: preview, test, publish, see it on the phone)
 - [Make a native prototype](#make-a-native-prototype) (Swift or Metal: needs an IPA)
@@ -13,6 +14,28 @@ That is a workbench rule for comparing things cleanly, not a decision about the 
 - [The contract](#the-contract): `prototype.json`, `terra.js` (runtime 1), the catalog
 - [Remote delivery](#remote-delivery): sources, integrity, limits, privacy, R2 set-up
 - [What needs a new IPA](#what-needs-a-new-ipa)
+
+## From "prototype this" to the phone
+
+For Claude Code or Codex, the whole loop for a web prototype (most new ideas):
+
+1. `python3 tools/playground/playground.py new <id> --globe` (or `--screen`), then write it.
+2. `node tools/playground/check.cjs <id>`: look at the screenshots in `build/playground/<id>/`.
+3. Commit and push the branch (a pack-only push uses no macOS runner).
+4. Once R2 is set up, `packs.yml` publishes it; tell the owner to open
+   `<PACKS_PUBLIC_URL>/open/<id>.html` (or the workbench, which lists it) on the phone.
+
+Until R2 is set up, a new pack reaches the phone with the next IPA (it is bundled), and the
+simulator can load a local catalog: `playground.py pack --out build/packs`, then
+`node tools/playground/serve.cjs --packs build/packs` and launch the app with
+`-packs-url http://127.0.0.1:8790/packs/catalog.json`. A native prototype is steps 1–4 of
+[Make a native prototype](#make-a-native-prototype) and always an IPA.
+
+In the app: the grid button opens the workbench; a row starts its prototype (one at a time); on
+the globe, the chip at the top right names it, **Open** opens its screen and ✕ returns the plain
+globe. The workbench's **Live** line counts stages, markers, globes, films and web views: on the
+plain globe it reads one globe and nothing else, and a prototype that leaves something behind
+shows up there (and fails `PlaygroundTests`).
 
 ## Kinds of prototype
 
@@ -60,8 +83,8 @@ be able to tell what they are looking at.
 ## Update, compare, park, remove
 
 - **Update** a web pack: change its files and push; the publisher gives it the next revision only
-  if its contents changed. The workbench marks it *update available*, downloads it on the next tap
-  and keeps the previous revision: **Use previous revision** in its details switches back.
+  if its contents changed. The workbench marks it *available*, downloads it on the next tap and
+  keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again.
 - **Compare**: the active prototype's chip has an ✕ for the plain globe and the workbench's first
   row starts the last prototype again; two variants are two packs (`tide-pool`, `tide-pool-b`).
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
