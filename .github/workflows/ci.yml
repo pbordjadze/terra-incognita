@@ -74,20 +74,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - name: Start simulator
-        # An iPhone on branches, both devices sequentially on main; explicit manual selection.
+      - name: Select simulators
+        # Every push validates both devices sequentially; explicit manual selection remains.
         id: sim
         run: |
           D="${{ inputs.device }}"
           if [ "$D" = both ]; then
             D="ipad iphone"
           elif [ -z "$D" ]; then
-            if [ "$GITHUB_REF_NAME" = main ]; then D="ipad iphone"; else D=iphone; fi
+            D="ipad iphone"
           fi
           mkdir -p out
           ci/simulators.sh $D > out/sims.txt
           cat out/sims.txt
-          while read -r KIND UDID _; do nohup xcrun simctl boot "$UDID" > "out/boot-$KIND.log" 2>&1 < /dev/null & done < out/sims.txt
       - name: Build (Debug, simulator)
         id: build
         run: |
@@ -237,6 +236,9 @@ jobs:
           } > STATUS.md
           cat STATUS.md
           echo "${GITHUB_SHA}" > COMMIT
+          # Full test videos stay in the original Actions artifact. Large recordings exceed
+          # GitHub's 100 MB file limit; the Git report keeps screenshots, logs and JSON.
+          find . -type f -name '*.mp4' -delete
           git init -q && git checkout -q -b shots
           git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"

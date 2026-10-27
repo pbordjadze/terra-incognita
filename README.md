@@ -1,8 +1,9 @@
 # Terra Incognita
 
 A medieval map that plays as a film: from the whole world down to a single street, through every
-scale in between, each scale a finished picture in the chosen look. Open the app and the film plays;
-touch the map to wander, then resume. The look menu switches between the looks on the same flight.
+scale in between, each scale a finished picture in the chosen look. The app opens on its globe;
+the Film button opens the flight. Touch the map to wander, then resume. The look menu switches
+between the looks on the same flight.
 
 - `App/TerraIncognita/Atlas/`: the player. `AtlasCanvas` (Core Animation layers moved and scaled by
   a display link; the camera, the film, pan and pinch), `Camera.swift` (nested plates as one
