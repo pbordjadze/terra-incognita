@@ -282,10 +282,10 @@
   $('handle-skiff').onclick=()=>{pendingMenuFocus=$('skiff');$('leaf-menu').close();const p=toScreen([boat.x,boat.y]);if(p[0]<22||p[0]>w-22||p[1]<22||p[1]>h-22){cam.x=boat.x;cam.y=boat.y;}$('skiff').hidden=false;dirty=true;$('announcement').textContent='Paper skiff. Use arrow keys to move it. Activate it to fold or raise its sail.';};
   $('retry').onclick=()=>location.reload();
   $('atlas').onclick=()=>{if(window.webkit?.messageHandlers?.leaf)window.webkit.messageHandlers.leaf.postMessage('close');else openMenu();};
-  function openMenu(){menuReturnFocus=document.activeElement;$('leaf-menu').showModal();}
+  function openMenu(){menuReturnFocus=document.activeElement;$('leaf-menu').showModal();$('menu-button').setAttribute('aria-expanded','true');}
   $('menu-button').onclick=openMenu;
   $('leaf-menu').querySelector('.close-menu').onclick=()=>$('leaf-menu').close();
-  $('leaf-menu').addEventListener('close',()=>{dirty=true;if(!$('note').open){const target=pendingMenuFocus||menuReturnFocus;pendingMenuFocus=null;requestAnimationFrame(()=>target?.focus());}});
+  $('leaf-menu').addEventListener('close',()=>{dirty=true;$('menu-button').setAttribute('aria-expanded','false');if(!$('note').open){const target=pendingMenuFocus||menuReturnFocus;pendingMenuFocus=null;requestAnimationFrame(()=>target?.focus());}});
   function openNote(id){
     const n=notes.find(n=>n.id===id);if(!n)return;
     previousFocus=document.activeElement.closest('#leaf-menu')?$('menu-button'):document.activeElement;activeNote=n;$('note-location').textContent=n.location;$('note-title').textContent=n.title;$('note-deck').textContent=n.deck;

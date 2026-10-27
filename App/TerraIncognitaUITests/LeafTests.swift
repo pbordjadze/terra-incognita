@@ -50,7 +50,7 @@ final class LeafTests: XCTestCase {
         let door = app.buttons["An Aegean leaf"].firstMatch
         XCTAssertTrue(door.waitForExistence(timeout: 45), "The separate leaf must remain reachable beside the globe")
         door.tap()
-        let menu = app.descendants(matching: .any)["Open the leaf menu"].firstMatch
+        let menu = app.buttons["Open the leaf menu"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The bundled leaf menu must remain accessible")
         var painted = false
         for _ in 0..<20 {
