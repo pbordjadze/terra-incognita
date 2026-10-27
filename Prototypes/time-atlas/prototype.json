@@ -1,0 +1,10 @@
+{
+  "id": "time-atlas",
+  "title": "A place through time",
+  "summary": "Touch a country, open the date and scrub its borders through dated maps. Pinch the timeline to change scale, or stay with a place.",
+  "runtime": 1,
+  "presentation": "screen",
+  "entry": "index.html",
+  "shelf": "current",
+  "background": "#C6ECFF"
+}
