@@ -107,3 +107,47 @@ jobs:
           git add .
           git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Time Atlas browser report"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/time-atlas-shots/${GITHUB_SHA}"
+
+  ship:
+    name: One ship, two rhythms
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Numeric cameras and data
+        run: |
+          node --test tools/playground/ship/core.test.cjs
+          node tools/playground/ship/fetch-stations.cjs --self-test
+      - name: Install browser checks
+        run: |
+          npm install --prefix build/time-browser playwright@1.56.1 --fetch-timeout=60000 --fetch-retries=1
+      - name: Interactions in Chromium and WebKit
+        env:
+          NODE_PATH: ${{ github.workspace }}/build/time-browser/node_modules
+        run: node tools/playground/ship/check.cjs
+      - name: Inspect the optional primary station export
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node tools/playground/ship/fetch-stations.cjs --out build/ship-report/primary-stations.json
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: ship-preview
+          path: build/ship-report
+          if-no-files-found: warn
+      - name: Preserve the visual review report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/ship-report
+          cd build/ship-report
+          echo "$GITHUB_SHA" > COMMIT
+          git init -q
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Ship browser report"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/ship-shots/${GITHUB_SHA}"
