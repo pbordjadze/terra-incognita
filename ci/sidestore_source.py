@@ -44,9 +44,9 @@ if not versions:
 latest = versions[0]
 
 description = (
-    "An offline atlas with a live globe, illustrated natural-history stories, geographic studies "
-    "and films from the whole world down to a single street. Open Demos to choose one; pause, "
-    "wander and return to the atlas whenever you like.")
+    "A wandering atlas in the making: a live globe, and a workbench of prototypes to try on it, "
+    "from illustrated natural histories to geographic studies and the first films. Offline, apart "
+    "from the workbench's optional prototype packs.")
 app = {
     "name": info.get("CFBundleDisplayName", "Terra Incognita"),
     "bundleIdentifier": info["CFBundleIdentifier"],

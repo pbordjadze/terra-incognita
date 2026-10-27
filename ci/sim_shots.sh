@@ -4,7 +4,8 @@
 # Each moment is a launch with `-film <T>` (the film held at T seconds; Debug builds only), a wait,
 # and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`);
 # with GLOBE=1, the globe too, in each style (`-globe`, `-globeStyle`, held at a place with
-# `-globe-at`, a country lit with `-globe-select`).
+# `-globe-at`, a country lit with `-globe-select`); always the playground's plain globe, workbench and
+# two prototypes (`-workbench`, `-prototype <id>`).
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -37,6 +38,11 @@ shot() {
 WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
 # the globe first (the film's moments can take long, and a timeout should cut them, not it)
+# the playground: the plain globe, the workbench, prototypes on the globe
+shot plain -globe-at -40 22 1
+shot workbench -workbench
+shot camelid -prototype camelid
+shot hello-pack -prototype hello-pack
 if [ "${LEAF:-}" = 1 ]; then shot leaf -leaf; fi
 if [ "${GLOBE:-}" = 1 ]; then
   # each style (the defaults' `globeStyle`, set by the launch argument)

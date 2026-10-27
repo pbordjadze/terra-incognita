@@ -2,69 +2,73 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// The whole globe, with a caption naming the chosen country, or saying what to do. Kept once made:
-/// `active` false while the film shows instead.
+/// The whole globe, with a caption naming the chosen country, or saying what to do, and an active
+/// prototype's invitation above it if it has one. `active` false while a screen covers it.
 struct GlobeScreen: View {
     let active: Bool
     let style: GlobeStyle
     /// What else covers the screen (the buttons), in global coordinates: no name goes under it.
     let keepClear: [CGRect]
-    /// Its first frame is on screen.
-    let onDrawn: () -> Void
-    let onDemo: (AtlasDemo) -> Void
+    let invitation: Invitation?
+    let onInvitation: () -> Void
+    /// Its first frame is on screen: the view, for the playground's prototypes.
+    let onDrawn: (GlobeView) -> Void
     @State private var country: GlobeData.Country?
     @State private var captionFrame = CGRect.zero
-    @State private var camelidDebugOpened = false
-    @State private var whaleDebugOpened = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}, onDemo: @escaping (AtlasDemo) -> Void) {
+    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil,
+         onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
         self.active = active
         self.style = style
         self.keepClear = keepClear
+        self.invitation = invitation
+        self.onInvitation = onInvitation
         self.onDrawn = onDrawn
-        self.onDemo = onDemo
         GlobeData.registerFonts()
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame],
-                            onDrawn: atlasDrawn, onEncounter: { onDemo(.ocean) },
-                            onCamelid: { onDemo(.camelid) }, onWhale: { onDemo(.whale) }, country: $country)
+            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, country: $country)
                 .ignoresSafeArea()
-            Group {
-                if style == .persian { PersianCaption(caption: caption) }
-                else { CaptionView(caption: caption, style: Self.style) }
+            VStack(spacing: 0) {
+                if let invitation {
+                    Button(action: onInvitation) {
+                        VStack(spacing: 4) {
+                            Text(invitation.title)
+                                .font(.custom("LibertinusSerif-Regular", size: 23, relativeTo: .title2))
+                            Text(invitation.action)
+                                .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
+                        }
+                        .foregroundStyle(Color(red: 0.23, green: 0.17, blue: 0.09))
+                        .padding(14)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(red: 0.95, green: 0.89, blue: 0.78))
+                        .overlay(alignment: .top) { Rectangle().fill(Color(red: 0.77, green: 0.67, blue: 0.43)).frame(height: 1) }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier(invitation.id)
+                    .padding(.horizontal, 30)
+                    .padding(.bottom, 8)
+                }
+                if typeSize.isAccessibilitySize && country == nil && invitation != nil {
+                    // The invitation already names this view; leave room for the globe at large type.
+                    EmptyView()
+                } else if style == .persian {
+                    PersianCaption(caption: caption)
+                } else {
+                    CaptionView(caption: caption, style: Self.style)
+                }
             }
-            .id(caption.title + style.rawValue)
+            .id(caption.title + style.rawValue + (invitation?.id ?? ""))
             .transition(.opacity.combined(with: .offset(y: 8)))
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
         }
         .animation(.easeInOut(duration: 0.35), value: caption.title)
         .animation(.easeInOut(duration: 0.35), value: style)
-    }
-
-    private func atlasDrawn() {
-        onDrawn()
-        #if DEBUG
-        let args = ProcessInfo.processInfo.arguments
-        // This one-shot handoff runs only after an actual frame submission. `active` at the
-        // representable's construction can precede scene activation, so it must not gate it.
-        if !whaleDebugOpened && (args.contains("-whale") || args.contains("-whale-play")) {
-            whaleDebugOpened = true
-            DispatchQueue.main.async {
-                onDemo(.whale)
-            }
-            return
-        }
-        guard !camelidDebugOpened,
-              args.contains("-camelid") || args.contains("-camelid-play") else { return }
-        camelidDebugOpened = true
-        // Submit the original globe's first frame before constructing the debug cover's renderer.
-        DispatchQueue.main.async {
-            onDemo(.camelid)
-        }
-        #endif
+        .animation(.easeInOut(duration: 0.35), value: invitation)
     }
 
     private var caption: Plate.Caption {
@@ -182,10 +186,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     let style: GlobeStyle
     /// In global (the window's) coordinates.
     let keepClear: [CGRect]
-    let onDrawn: () -> Void
-    let onEncounter: () -> Void
-    let onCamelid: () -> Void
-    let onWhale: () -> Void
+    let onDrawn: (GlobeView) -> Void
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
@@ -193,14 +194,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
         view.setAtlasAccessibilityIdentifier("mainAtlasGlobe")
         view.setStyle(style, animated: false)
         view.onSelect = { country = $0 }
-        view.onDrawn = onDrawn
-        view.installEncounter(onOpen: onEncounter)
-        if let image = CamelidArt.image(.dromedary) {
-            view.installCamelid(image: image, onInspect: onCamelid)
-        }
-        if let image = WhaleArt.image(.fossil) {
-            view.installWhaleFossil(image: image, onInspect: onWhale)
-        }
+        view.onDrawn = { [weak view] in if let view { onDrawn(view) } }
         // (a country lit from the start, by -globe-select; told after this update, not during it)
         let initial = view.selectedCountry
         Task { country = initial }

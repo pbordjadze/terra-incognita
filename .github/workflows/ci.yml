@@ -13,12 +13,17 @@ name: CI
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
+# Commit-message tags on branches: `[build-only]` compiles without simulator time; `[playground-check]`
+# runs only PlaygroundTests and RemotePackTests; `[ipa]` packages a device build (main publishes it).
+# A push that changes only web packs (Prototypes/) skips this workflow: packs.yml handles it on Linux.
 # The macOS runners (5 at once) are shared with pbordjadze/paint-by-number and pbordjadze/pigeon:
 # one macOS job per push here.
 
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore']
+    # a web pack alone needs no native build: packs.yml (Linux) validates and publishes it
+    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml']
   workflow_dispatch:
     inputs:
       device:
@@ -33,7 +38,7 @@ on:
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf, whale, menu]
+        options: [all, leaf, whale, playground]
         default: all
       whale_capture:
         description: Capture the whale experience after interactions (report only)
@@ -76,12 +81,16 @@ jobs:
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
+          # the playground's bundled packs and tools (docs/playground.md)
+          python3 tools/playground/playground.py validate 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 tools/playground/test_playground.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
+          for f in $(find Prototypes -name '*.js') tools/playground/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
           node --check Water/water.js || rc=1
           node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -90,7 +99,7 @@ jobs:
   apple:
     name: Simulator builds and encounter interactions
     runs-on: macos-26
-    timeout-minutes: 100
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
@@ -129,24 +138,31 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe Leaf Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Leaf Water Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 70
+        # `[build-only]` in a branch commit's message: compile and check the bundle, no simulator time
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) }}
+        timeout-minutes: 90
         run: |
           # Focused branch checks support iteration; main's publication gate is always full.
           if [ "$GITHUB_REF_NAME" != main ]; then
             case "${{ inputs.interaction_suite }}" in
               leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
               whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
-              menu) export UI_TEST_TARGET=TerraIncognitaUITests/DemoMenuTests ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests" ;;
             esac
-            if [ "${{ contains(github.event.head_commit.message, '[menu-check]') }}" = true ]; then
-              export UI_TEST_TARGET=TerraIncognitaUITests/DemoMenuTests
+            if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests"
             fi
           fi
+          # A remote revision of the bundled hello-pack, served on this machine for RemotePackTests:
+          # the simulator shares the host's loopback, and xcodebuild hands TEST_RUNNER_* to the tests.
+          bash ci/remote_packs.sh build/remote-packs > out/remote-packs.log 2>&1
+          node tools/playground/serve.cjs --packs build/remote-packs --port 8790 > out/pack-server.log 2>&1 &
+          export TEST_RUNNER_PACKS_URL=http://127.0.0.1:8790/packs/catalog.json
+          for _ in $(seq 1 20); do curl -fsS "$TEST_RUNNER_PACKS_URL" > /dev/null 2>&1 && break; sleep 0.5; done
           bash ci/encounter_tests.sh
       - name: Capture camelid playback and compositions
         id: camelid_capture
@@ -197,7 +213,7 @@ jobs:
         # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'menu')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'playground')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |

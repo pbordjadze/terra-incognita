@@ -33,7 +33,7 @@ final class CamelidEncounterTests: XCTestCase {
 
     @MainActor func testCamelWaitsForTheReaderAndCanBeLeft() {
         let app = XCUIApplication()
-        app.launchArguments = ["-globe", "-globeStyle", "persian", "-globe-at", "46", "24", "1.5"]
+        app.launchArguments = ["-prototype", "camelid", "-globe-at", "46", "24", "1.5"]
         app.launch()
         defer { app.terminate() }
         let animal = element("camelidAnimal", in: app)
@@ -140,9 +140,9 @@ final class CamelidEncounterTests: XCTestCase {
         returnButton.tap()
         XCTAssertTrue(app.buttons["camelidClose"].waitForExistence(timeout: 10))
         app.buttons["camelidClose"].tap()
-        openDemos(in: app)
-        XCTAssertTrue(demoItem("demoOcean", in: app).exists, "The independent encounter must remain available")
-        demoItem("demoGlobe", in: app).tap()
+        openWorkbench(in: app)
+        XCTAssertTrue(workbenchItem("ocean", in: app).exists, "The independent encounter must remain available")
+        workbenchItem("plain", in: app).tap()
     }
 
     @MainActor func testEvidenceAndLivingFamily() { exerciseReading(largeText: false) }

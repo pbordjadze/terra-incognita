@@ -34,12 +34,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onSelect: ((GlobeData.Country?) -> Void)?
     /// The first frame is on screen (the veil over the switch to it can lift).
     var onDrawn: (() -> Void)?
-    private var encounterMark: UIButton?
-    private var camelidMark: UIButton?
-    private var whaleFossilMark: UIButton?
-    /// UNESCO's property reference point, locating the fossil-bearing region rather than an
-    /// individual excavation or the illustrated skeleton.
-    private static let whaleLocality = GlobeCamera(lon: 30.18333, lat: 29.33333, zoom: 3)
+    /// What the active prototype has placed on the globe (`add`, `remove`): nothing on the plain globe.
+    private(set) var markers: [GlobeMarker] = []
+    private let live = LiveCount.Token(.globes)
     /// Once the atlas contains accessible objects it becomes a container. Keep the globe itself
     /// as a separate element so VoiceOver can still describe and directly manipulate the map.
     private var globeAccessibilityElement: UIAccessibilityElement?
@@ -47,14 +44,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onUserNavigation: (() -> Void)?
     /// Geographic overlays follow the same camera after it has advanced for this frame.
     var onFrame: (() -> Void)?
+    /// A tap on the globe, offered first to the active prototype (a web overlay that asked for taps):
+    /// true when it took the tap, and no country is chosen. `place` is nil off the globe.
+    var onWorldTap: ((_ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Bool)?
     /// The authored sequence shares this renderer without its idle spin or other encounter marks.
     var authoredMode = false {
         didSet {
             guard authoredMode != oldValue else { return }
             if authoredMode { flight = nil; spin = .zero }
-            encounterMark?.isHidden = authoredMode
-            camelidMark?.isHidden = authoredMode
-            whaleFossilMark?.isHidden = authoredMode
+            for m in markers { m.view.isHidden = authoredMode }
             needsDraw = true
         }
     }
@@ -74,6 +72,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     var authoredCamera: GlobeCamera { GlobeCamera(lon: lon0, lat: lat0, zoom: zoom) }
+
+    /// The camera and where the globe's disc lies in this view, for anything drawn in step with it
+    /// (terra.js projects with the same numbers).
+    var stageCamera: (camera: GlobeCamera, centre: CGPoint, radius: Double) {
+        let (centre, radius) = place
+        return (GlobeCamera(lon: lon0, lat: lat0, zoom: zoom), centre, radius)
+    }
 
     func setAuthoredCamera(_ camera: GlobeCamera, duration: Double = 0) {
         guard camera.lon.isFinite, camera.lat.isFinite, camera.zoom.isFinite else { return }
@@ -100,54 +105,37 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         project(lon: lon, lat: lat)
     }
 
-    /// An illustrated animal in Arabia, sharing the map's geographic projection and ordinary tap.
-    func installCamelid(image: UIImage, onInspect: @escaping () -> Void) {
-        camelidMark?.removeFromSuperview()
-        let mark = UIButton(type: .custom)
-        mark.setImage(image, for: .normal)
-        mark.imageView?.contentMode = .scaleAspectFit
-        mark.bounds = CGRect(x: 0, y: 0, width: 76, height: 64)
-        mark.accessibilityIdentifier = "camelidAnimal"
-        mark.accessibilityLabel = "Dromedary camel"
-        mark.accessibilityHint = "Inspect this animal"
-        mark.addAction(UIAction { _ in onInspect() }, for: .touchUpInside)
-        addSubview(mark)
-        camelidMark = mark
+    /// Places a marker; it follows the geography from the next frame.
+    func add(_ marker: GlobeMarker) {
+        guard !markers.contains(where: { $0 === marker }) else { return }
+        marker.view.isHidden = true
+        addSubview(marker.view)
+        markers.append(marker)
         exposeAtlasObjects()
+        needsDraw = true
     }
 
-    /// A small regional fossil encounter. Its illustration has no button ground or location pin.
-    func installWhaleFossil(image: UIImage, onInspect: @escaping () -> Void) {
-        whaleFossilMark?.removeFromSuperview()
-        let mark = UIButton(type: .custom)
-        mark.setImage(image.withRenderingMode(.alwaysOriginal), for: .normal)
-        mark.imageView?.contentMode = .scaleAspectFit
-        mark.bounds = CGRect(x: 0, y: 0, width: 56, height: 44)
-        mark.accessibilityIdentifier = "whaleFossil"
-        mark.accessibilityLabel = "Whale fossil, Wadi Al-Hitan"
-        mark.accessibilityHint = "Inspect this illustrated fossil"
-        mark.isHidden = true
-        mark.addAction(UIAction { _ in onInspect() }, for: .touchUpInside)
-        addSubview(mark)
-        whaleFossilMark = mark
-        let findName = "Find whale fossil in Egypt"
-        let find = UIAccessibilityCustomAction(name: findName) { [weak self] _ in
-            guard let self, !self.authoredMode else { return false }
-            self.touched()
-            self.select(nil, animated: false)
-            let duration = UIAccessibility.isReduceMotionEnabled ? 0.0 : 0.8
-            self.setAuthoredCamera(Self.whaleLocality, duration: duration)
-            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak self] in
-                guard let mark = self?.whaleFossilMark, !mark.isHidden else { return }
-                UIAccessibility.post(notification: .layoutChanged, argument: mark)
-            }
-            return true
-        }
-        accessibilityCustomActions = (accessibilityCustomActions ?? []).filter { $0.name != findName } + [find]
+    /// Takes a marker away (the prototype that placed it has ended).
+    func remove(_ marker: GlobeMarker) {
+        marker.view.removeFromSuperview()
+        markers.removeAll { $0 === marker }
         exposeAtlasObjects()
+        labelsFading = true
+        needsDraw = true
+    }
+
+    /// Something added above the globe's drawing that follows it (a prototype's web overlay): below
+    /// the markers, taking no touches.
+    func addOverlay(_ overlay: UIView) {
+        overlay.isUserInteractionEnabled = false
+        overlay.frame = bounds
+        overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        insertSubview(overlay, at: 0)
     }
 
     private func exposeAtlasObjects() {
+        // the plain globe is one element; with markers, it becomes their container
+        if markers.isEmpty && globeAccessibilityElement == nil { return }
         if globeAccessibilityElement == nil {
             let element = UIAccessibilityElement(accessibilityContainer: self)
             element.accessibilityLabel = accessibilityLabel
@@ -160,13 +148,28 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard let element = globeAccessibilityElement else { return }
         isAccessibilityElement = false
         element.accessibilityFrameInContainerSpace = bounds
-        element.accessibilityCustomActions = accessibilityCustomActions
+        // each marker can be found from the map (it may be behind the globe or too small yet to show)
+        element.accessibilityCustomActions = markers.flatMap { m -> [UIAccessibilityCustomAction] in
+            var actions = [UIAccessibilityCustomAction(name: String(localized: "Go to \(m.label)")) { [weak self, weak m] _ in
+                guard let self, let m, !self.authoredMode else { return false }
+                self.touched()
+                self.select(nil, animated: false)
+                let duration = UIAccessibility.isReduceMotionEnabled ? 0.0 : 0.8
+                self.setAuthoredCamera(GlobeCamera(lon: m.lon, lat: m.lat, zoom: max(self.zoom, m.minZoom + 0.2)), duration: duration)
+                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak m] in
+                    guard let view = m?.view, !view.isHidden else { return }
+                    UIAccessibility.post(notification: .layoutChanged, argument: view)
+                }
+                return true
+            }]
+            if let name = m.actionName, let open = m.onOpen {
+                actions.append(UIAccessibilityCustomAction(name: name) { _ in open(); return true })
+            }
+            return actions
+        }
         // Small objects precede the full-size map element, so touch exploration can reach them
         // where their frames overlap the map's direct-interaction surface.
-        var objects: [Any] = []
-        if let whaleFossilMark { objects.append(whaleFossilMark) }
-        if let camelidMark { objects.append(camelidMark) }
-        if let encounterMark { objects.append(encounterMark) }
+        var objects: [Any] = markers.map(\.view)
         objects.append(element)
         accessibilityElements = objects
     }
@@ -177,27 +180,6 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         globeAccessibilityElement?.accessibilityIdentifier = identifier
     }
 
-    /// A single authored encounter. Its mark follows geography, never a guessed voyage.
-    func installEncounter(onOpen: @escaping () -> Void) {
-        let mark = UIButton(type: .custom)
-        mark.setImage(UIImage(systemName: "leaf"), for: .normal)
-        mark.tintColor = UIColor(hex: "#3B2C16")
-        mark.backgroundColor = UIColor(hex: "#F2E4C8")
-        mark.layer.cornerRadius = 22
-        mark.layer.borderWidth = 1.5
-        mark.layer.borderColor = UIColor(hex: "#6D6793")?.cgColor
-        mark.bounds = CGRect(x: 0, y: 0, width: 44, height: 44)
-        mark.accessibilityLabel = "A small thing, far from home"
-        mark.addAction(UIAction { _ in onOpen() }, for: .touchUpInside)
-        addSubview(mark)
-        encounterMark = mark
-        accessibilityCustomActions = [UIAccessibilityCustomAction(name: "Look closer at the island's seed", actionHandler: { _ in onOpen(); return true })]
-        if globeAccessibilityElement != nil { exposeAtlasObjects() }
-        if !ProcessInfo.processInfo.arguments.contains("-globe-at") {
-            lon0 = 68; lat0 = -9
-            lastTouch = CACurrentMediaTime()
-        }
-    }
     /// The country in the locator's red, if any.
     var selectedCountry: GlobeData.Country? { selected.flatMap { data?.countries[$0] } }
     /// Parts of the screen covered by something else (the caption, the buttons), in this view's
@@ -627,9 +609,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     // MARK: the reader's hands
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        if let mark = encounterMark, touch.view?.isDescendant(of: mark) == true { return false }
-        if let mark = camelidMark, touch.view?.isDescendant(of: mark) == true { return false }
-        if let mark = whaleFossilMark, touch.view?.isDescendant(of: mark) == true { return false }
+        if markers.contains(where: { touch.view?.isDescendant(of: $0.view) == true }) { return false }
         return !(touch.view is UIControl)
     }
 
@@ -690,6 +670,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func tap(_ g: UITapGestureRecognizer) {
         touched()
+        let p = g.location(in: self)
+        if let onWorldTap, onWorldTap(p, unproject(p)) { return }
         guard !historicalReference else { return }
         guard let k = country(near: g.location(in: self)), k != selected else {
             select(nil, animated: true)
@@ -878,26 +860,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
             needsDraw = true
         }
-        if let mark = encounterMark {
-            let p = project(lon: 46.3, lat: -19.0)
-            mark.center = p.point
-            mark.isHidden = authoredMode || p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
-        }
-        if let mark = camelidMark {
-            let p = project(lon: 46, lat: 24)
-            mark.center = p.point
-            mark.isHidden = authoredMode || p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
-            // A tiny weight/breath shift belongs to the animal layer; it never requests a map draw.
-            let breath = still ? 1 : 1 + 0.004 * sin(now * 1.2)
-            mark.imageView?.transform = CGAffineTransform(scaleX: 1, y: breath)
-        }
-        if let mark = whaleFossilMark {
-            let p = project(lon: Self.whaleLocality.lon, lat: Self.whaleLocality.lat)
-            mark.center = p.point
-            let overlapsCamel = camelidMark.map { !$0.isHidden && $0.frame.insetBy(dx: -4, dy: -4).intersects(mark.frame) } ?? false
-            let hidden = authoredMode || zoom < 2 || p.facing < 0.35 || !bounds.contains(mark.frame)
-                || keepClear.contains(where: { $0.intersects(mark.frame) }) || overlapsCamel
-            if mark.isHidden != hidden { mark.isHidden = hidden; labelsFading = true }
+        for m in markers {
+            let p = project(lon: m.lon, lat: m.lat)
+            m.view.center = p.point
+            let hidden = authoredMode || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
+                || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
+            if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true }
+            // A tiny weight/breath shift belongs to the marker's layer; it never requests a map draw.
+            if m.breathes, let image = m.view.imageView {
+                image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
+            }
         }
         onFrame?()
         if historicalReference { labelsFading = false }
@@ -1077,10 +1049,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var placed: [CGRect] = []
         let fade = min(1, dt * 10)
         let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
-        let encounterClear = encounterMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
-        let camelidClear = camelidMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
-        let whaleClear = whaleFossilMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
-        let clear = (keepClear + pageStrips + encounterClear + camelidClear + whaleClear + authoredLabelExclusions).map { $0.insetBy(dx: -gap, dy: -gap) }
+        let markerClear = markers.compactMap { $0.view.isHidden ? nil : $0.view.frame }
+        let clear = (keepClear + pageStrips + markerClear + authoredLabelExclusions).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func onGlobe(_ r: CGRect) -> Bool {

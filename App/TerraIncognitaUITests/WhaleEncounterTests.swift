@@ -35,7 +35,7 @@ final class WhaleEncounterTests: XCTestCase {
 
     @MainActor func testFossilWaitsForTheReaderAndReturnsToAtlas() {
         let app = XCUIApplication()
-        app.launchArguments = ["-globe", "-globeStyle", "persian", "-globe-at", "30.18333", "29.33333", "3.2"]
+        app.launchArguments = ["-prototype", "whale", "-globe-at", "30.18333", "29.33333", "3.2"]
         app.launch()
         defer { app.terminate() }
         let fossil = element("whaleFossil", in: app)
@@ -69,9 +69,9 @@ final class WhaleEncounterTests: XCTestCase {
         app.buttons["whaleClose"].tap()
         XCTAssertTrue(fossil.waitForExistence(timeout: 15))
         XCTAssertTrue(fossil.isHittable, "Leaving must preserve the original atlas position")
-        openDemos(in: app)
-        XCTAssertTrue(demoItem("demoWater", in: app).exists, "The independent atlas studies must remain available")
-        demoItem("demoGlobe", in: app).tap()
+        openWorkbench(in: app)
+        XCTAssertTrue(workbenchItem("water", in: app).exists, "The independent atlas studies must remain available")
+        app.buttons["workbenchClose"].firstMatch.tap()
         fossil.tap()
         XCTAssertTrue(follow.waitForExistence(timeout: 15), "Reopening must not require finishing the earlier visit")
         app.buttons["whaleClose"].tap()
@@ -166,7 +166,7 @@ final class WhaleEncounterTests: XCTestCase {
         closeReading.tap()
         XCTAssertTrue(app.buttons["whaleClose"].isHittable)
         app.buttons["whaleClose"].tap()
-        XCTAssertTrue(app.buttons["demosMenu"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15))
     }
 
     @MainActor func testReducedMotionCanRevisitAndReadTheStory() {

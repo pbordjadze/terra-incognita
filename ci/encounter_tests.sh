@@ -4,6 +4,9 @@
 set -euo pipefail
 mkdir -p out/encounter-shots
 rc=0
+# UI_TEST_TARGET: one or more test classes, space-separated (default: the whole UI test target)
+ONLY=()
+for target in ${UI_TEST_TARGET:-TerraIncognitaUITests}; do ONLY+=("-only-testing:$target"); done
 active_simulator=""
 shutdown_simulator() {
   [ -n "$active_simulator" ] || return 0
@@ -39,7 +42,7 @@ PY
   if xcodebuild test -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
       -destination "platform=iOS Simulator,id=$UDID" -destination-timeout 180 \
       -derivedDataPath build/dd -resultBundlePath "$RESULT" \
-      -only-testing:"${UI_TEST_TARGET:-TerraIncognitaUITests}" -parallel-testing-enabled NO \
+      "${ONLY[@]}" -parallel-testing-enabled NO \
       -maximum-concurrent-test-simulator-destinations 1 -quiet \
       ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
       2>&1 | tee "out/encounter-$KIND.log" | tail -80; then

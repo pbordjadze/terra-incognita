@@ -31,6 +31,7 @@ final class AtlasCanvas: UIView, UIGestureRecognizerDelegate {
         }
     }
     private var suspendedAt: CFTimeInterval?
+    private let live = LiveCount.Token(.films)
     private var reportedProgressSecond = -1
     private var look: Look?
     private var pending: Look?

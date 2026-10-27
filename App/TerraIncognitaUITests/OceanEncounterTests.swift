@@ -58,18 +58,22 @@ final class OceanEncounterTests: XCTestCase {
 
     @MainActor private func exercise(largeText: Bool) {
         let app = XCUIApplication()
-        app.launchArguments = ["-globe", "-globeStyle", "persian"]
+        app.launchArguments = []
         if largeText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         }
         app.launch()
         defer { app.terminate() }
         let prefix = largeText ? "large-text-" : ""
-        let menu = button("demosMenu", in: app)
-        XCTAssertTrue(menu.waitForExistence(timeout: 45), "The encounter must be discoverable from the atlas menu")
+        let menu = button("workbenchButton", in: app)
+        XCTAssertTrue(menu.waitForExistence(timeout: 45), "The encounter must be discoverable from the workbench")
         XCTAssertTrue(menu.isHittable)
+        startPrototype("ocean", in: app)
+        // on the globe: its seed off Madagascar and its invitation, either of which opens it
+        let invitation = button("oceanInvitation", in: app)
+        XCTAssertTrue(invitation.waitForExistence(timeout: 30))
         capture(prefix + "00-globe-doorway")
-        chooseDemo("demoOcean", in: app)
+        invitation.tap()
         let close = button("closeExperience", in: app)
         XCTAssertTrue(close.waitForExistence(timeout: 15))
         capture(prefix + "01-open")
@@ -166,7 +170,8 @@ final class OceanEncounterTests: XCTestCase {
         XCTAssertTrue(close.waitForExistence(timeout: 10))
         close.tap()
         XCTAssertTrue(menu.waitForExistence(timeout: 10))
-        chooseDemo("demoOcean", in: app)
+        XCTAssertTrue(invitation.waitForExistence(timeout: 10), "Closing its screen leaves the encounter on the globe")
+        invitation.tap()
         XCTAssertTrue(close.waitForExistence(timeout: 10), "Returning must never require completing anything")
         capture(prefix + "08-reopened")
     }

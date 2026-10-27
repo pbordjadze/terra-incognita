@@ -41,13 +41,13 @@ final class LeafTests: XCTestCase {
 
     @MainActor private func exercise(largeText: Bool) {
         let app = XCUIApplication()
-        app.launchArguments = ["-globe", "-globeStyle", "persian"]
+        app.launchArguments = []
         if largeText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         }
         app.launch()
         defer { app.terminate() }
-        chooseDemo("demoLeaf", in: app)
+        startPrototype("leaf", in: app)
         let menu = app.buttons["Open the leaf menu"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The bundled leaf menu must remain accessible")
         var painted = false
@@ -86,7 +86,7 @@ final class LeafTests: XCTestCase {
         let back = app.buttons["Return to the atlas"].firstMatch
         XCTAssertTrue(back.waitForExistence(timeout: 10))
         back.tap()
-        XCTAssertTrue(app.buttons["demosMenu"].waitForExistence(timeout: 15), "The existing atlas must still be present after leaving the leaf")
+        XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15), "The globe must still be present after leaving the leaf")
     }
 
     @MainActor func testBundledLeafAndReturn() { exercise(largeText: false) }
