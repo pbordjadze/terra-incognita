@@ -27,6 +27,28 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onSelect: ((GlobeData.Country?) -> Void)?
     /// The first frame is on screen (the veil over the switch to it can lift).
     var onDrawn: (() -> Void)?
+    private var encounterMark: UIButton?
+
+    /// A single authored encounter. Its mark follows geography, never a guessed voyage.
+    func installEncounter(onOpen: @escaping () -> Void) {
+        let mark = UIButton(type: .custom)
+        mark.setImage(UIImage(systemName: "leaf"), for: .normal)
+        mark.tintColor = UIColor(hex: "#3B2C16")
+        mark.backgroundColor = UIColor(hex: "#F2E4C8")
+        mark.layer.cornerRadius = 22
+        mark.layer.borderWidth = 1.5
+        mark.layer.borderColor = UIColor(hex: "#6D6793")?.cgColor
+        mark.bounds = CGRect(x: 0, y: 0, width: 44, height: 44)
+        mark.accessibilityLabel = "A small thing, far from home"
+        mark.addAction(UIAction { _ in onOpen() }, for: .touchUpInside)
+        addSubview(mark)
+        encounterMark = mark
+        accessibilityCustomActions = [UIAccessibilityCustomAction(name: "Look closer at the island's seed", actionHandler: { _ in onOpen(); return true })]
+        if !ProcessInfo.processInfo.arguments.contains("-globe-at") {
+            lon0 = 68; lat0 = -9
+            lastTouch = CACurrentMediaTime()
+        }
+    }
     /// The country in the locator's red, if any.
     var selectedCountry: GlobeData.Country? { selected.flatMap { data?.countries[$0] } }
     /// Parts of the screen covered by something else (the caption, the buttons), in this view's
@@ -445,6 +467,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     // MARK: the reader's hands
 
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        if let mark = encounterMark, touch.view?.isDescendant(of: mark) == true { return false }
+        return !(touch.view is UIControl)
+    }
+
     private func touched() {
         lastTouch = CACurrentMediaTime()
         flight = nil
@@ -686,6 +713,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
             needsDraw = true
         }
+        if let mark = encounterMark {
+            let p = project(lon: 46.3, lat: -19.0)
+            mark.center = p.point
+            mark.isHidden = p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
+        }
         if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
         if needsDraw, draw() {
             needsDraw = false
@@ -861,7 +893,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var placed: [CGRect] = []
         let fade = min(1, dt * 10)
         let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
-        let clear = (keepClear + pageStrips).map { $0.insetBy(dx: -gap, dy: -gap) }
+        let encounterClear = encounterMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
+        let clear = (keepClear + pageStrips + encounterClear).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func onGlobe(_ r: CGRect) -> Bool {

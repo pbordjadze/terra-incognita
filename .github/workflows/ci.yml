@@ -4,11 +4,12 @@ name: CI
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
 #          ci/check_globe.py) and the tools' syntax
-#   apple  macOS: Debug and Release builds for the simulator and the plates checked byte for byte
+#   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
+#          and the plates checked byte for byte
 #          in the bundle; screenshots only when the workflow is run by hand, as a report: on the
 #          13" iPad Pro (the primary device), the iPhone or both, every look at moments of its film
 #          (unless `film` is off) and the globe in each style
-#   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
+#   ipa    after green `plates` and `apple` jobs, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
@@ -67,19 +68,22 @@ jobs:
         with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
-    name: Simulator builds (screenshots when run by hand)
+    name: Simulator builds and encounter interactions
     runs-on: macos-26
     timeout-minutes: 80
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
       - name: Start simulator
-        # only for screenshots, which run when the workflow is started by hand (below)
+        # An iPhone on branches, both devices sequentially on main; explicit manual selection.
         id: sim
-        if: github.event_name == 'workflow_dispatch'
         run: |
           D="${{ inputs.device }}"
-          if [ "$D" = both ]; then D="ipad iphone"; elif [ -z "$D" ]; then D=ipad; fi
+          if [ "$D" = both ]; then
+            D="ipad iphone"
+          elif [ -z "$D" ]; then
+            if [ "$GITHUB_REF_NAME" = main ]; then D="ipad iphone"; else D=iphone; fi
+          fi
           mkdir -p out
           ci/simulators.sh $D > out/sims.txt
           cat out/sims.txt
@@ -108,6 +112,11 @@ jobs:
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
           for f in $(find Atlas Globe -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
+      - name: Encounter interactions and accessible text
+        id: encounter
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 30
+        run: bash ci/encounter_tests.sh
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
@@ -130,15 +139,15 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
 
   ipa:
     name: IPA for SideStore (unsigned device build)
-    needs: apple
-    if: ${{ !cancelled() && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
+    needs: [plates, apple]
+    if: ${{ !cancelled() && needs.plates.result == 'success' && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
     permissions:
       contents: write
     runs-on: macos-26
