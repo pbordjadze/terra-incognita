@@ -218,7 +218,7 @@ nonisolated enum PackNet {
         guard let http = response as? HTTPURLResponse else { throw PackError("the answer was not HTTP") }
         guard http.statusCode == 200 else { throw PackError("the server answered \(http.statusCode)") }
         // (a redirect may not leave https, or loopback for the simulator)
-        if let final = http.url { try PackRules.validate(source: final) }
+        if let landed = http.url { try PackRules.validate(source: landed) }
     }
 
     private static func request(_ url: URL) -> URLRequest {
@@ -622,7 +622,7 @@ final class PackStore {
         }
     }
 
-    private func hash(of root: URL) async -> String {
+    private func contentHash(of root: URL) async -> String {
         let key = Self.key(root)
         if let known = hashes[key] { return known }
         let value = await PackDisk.contentHash(of: root) ?? ""
@@ -669,7 +669,7 @@ final class PackStore {
         if choice.pinned { return false }
         let current = choice.pack
         if current.origin == .downloaded, entry.revision <= current.revision { return false }
-        return await hash(of: current.root) != entry.hash
+        return await contentHash(of: current.root) != entry.hash
     }
 
     private func install(_ remote: SourceEntry) async throws {
