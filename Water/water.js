@@ -31,6 +31,7 @@ for(const r of places.rivers){
 }
 // Named systems use their own quiet ink; all branches retain that same identity.
 starts.forEach((r,i)=>{const k=edges[r.hit.id].basin;if(!colors.has(k))colors.set(k,palette[i%palette.length]);});
+const ambient=starts.slice(0,3).map(r=>core.pathMetrics(net.downstream(r.hit).xy));
 function minOrder(){return zoom<1.65?4:zoom<3.5?3:1;}
 function screen(x,y){return [x*scale+tx,y*scale+ty];}
 function world(x,y){return [(x-tx)/scale,(y-ty)/scale];}
@@ -113,6 +114,10 @@ function paint(t){
   }
  }
  transform(ctx);ctx.lineCap='round';ctx.lineJoin='round';
+ if(!reduced&&!paused&&!traces.length&&!tree){
+  ctx.strokeStyle='#2f57877a';ctx.lineWidth=1.2/scale;
+  ambient.forEach((p,i)=>{const d=((t/1000+i*6)*Math.max(.25,p.length/34))%Math.max(.001,p.length);ctx.beginPath();for(let k=0;k<9;k++){const q=core.pointAt(p,Math.max(0,d-(8-k)*.07));if(k)ctx.lineTo(...q);else ctx.moveTo(...q);}ctx.stroke();});
+ }
  for(const tr of traces){
   const age=(paused?(tr.frozenAt??t):t)-tr.born;
   const alpha=paused||reduced?1:Math.min(1,(24000-age)/5000);
@@ -143,15 +148,15 @@ function paint(t){
 }
 function frame(t){
  raf=0;if(document.hidden)return;
- if(t-lastFrame<30){wake();return;}lastFrame=t;now=t;
+ if(t-lastFrame<(!traces.length&&!tree?65:30)){wake();return;}lastFrame=t;now=t;
  if(!paused&&!reduced){const count=traces.length;traces=traces.filter(tr=>t-tr.born<24000);if(count&&traces.length===0)baseDirty=true;}
  paint(t);
- if(!paused&&!reduced&&(traces.length||tree&&t-treeBorn<1000))wake();
+ if(!paused&&!reduced&&!$('evidence').open&&(!tree||traces.length||t-treeBorn<1000))wake();
 }
 function describe(hit,route){
  const e=edges[hit.id], name=named.get(e.basin),km=Math.max(1,Math.round(route.km/10)*10);
  const coord=invert(...route.end.xy.slice(-2));
- const ending=route.end.inland?'an inland ending':(coord[0]<-68&&coord[1]>-48?'the Pacific coast':coord[0]>-60?'the Atlantic coast':'the coast');
+ const ending=route.end.inland?'an inland ending':'the coast';
  const title=mode==='gather'?(name?`The ${name} system, gathered at your touch`:'Tributaries, gathered at your touch'):(name?`Toward the ${name} system`:'A river finding its ending');
  const detail=mode==='gather'?'Connected channels upstream · larger rivers only':`~${km.toLocaleString()} km along mapped channels to ${ending}`;
  clearTimeout(statusTimer);statusTimer=setTimeout(()=>{$('river-title').textContent=title;$('river-detail').textContent=detail;},80);
@@ -248,6 +253,7 @@ function setPaused(value){
 }
 $('pause').onclick=()=>setPaused(!paused);
 $('about').onclick=()=>{$('evidence').showModal();};$('close-about').onclick=()=>{$('evidence').close();$('about').focus();};
+$('evidence').addEventListener('close',wake);
 $('evidence').addEventListener('click',e=>{if(e.target===$('evidence')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 window.setReducedMotion=value=>{reduced=!!value;wake();};
 media.addEventListener('change',e=>{reduced=e.matches;wake();});

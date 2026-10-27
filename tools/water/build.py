@@ -84,6 +84,7 @@ def build(folder):
     # Audit mapping useful to validate aggregation against the source (not in app).
     (folder/'reach-audit.json').write_text(json.dumps(allids,separators=(',',':')))
     terrain()
+    write('places.js','window.WATER_PLACES=',json.loads((ROOT/'tools/water/labels.json').read_text()))
 
 def write(name,prefix,obj):
     (OUT/name).write_text(prefix+json.dumps(obj,separators=(',',':'))+';\n')

@@ -6,3 +6,5 @@
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 #instrument{overflow:auto}.tools{flex-wrap:wrap}.direction button{padding-inline:12px}
+
+#locator span{display:block;font: .6rem/1.5 system-ui,sans-serif;text-align:right;letter-spacing:.025em;color:#526471}

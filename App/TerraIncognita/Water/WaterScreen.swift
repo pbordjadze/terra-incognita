@@ -110,7 +110,7 @@ private struct WaterWebView: UIViewRepresentable {
                 decisionHandler(.allow)
             } else {
                 // Only an explicit tap on a cited source opens Safari; the map makes no requests.
-                if action.navigationType == .linkActivated, url.scheme == "https", url.host == "doi.org" {
+                if action.navigationType == .linkActivated, url.scheme == "https", ["doi.org", "creativecommons.org"].contains(url.host ?? "") {
                     UIApplication.shared.open(url)
                 }
                 decisionHandler(.cancel)
