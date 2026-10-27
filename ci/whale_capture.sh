@@ -43,6 +43,7 @@ def terminate():
 def launch_ready(*arguments):
     token = str(uuid.uuid4())
     ready_marker.unlink(missing_ok=True)
+    complete_marker.unlink(missing_ok=True)
     run('xcrun', 'simctl', 'launch', udid, bundle, *arguments,
         '-whale-capture-token', token, timeout=120)
     deadline = time.monotonic() + 90
@@ -51,13 +52,14 @@ def launch_ready(*arguments):
             if ready_marker.read_text() == token:
                 log('whale first frame submitted: ' + token)
                 time.sleep(1)
-                return
+                return token
         except FileNotFoundError:
             pass
         time.sleep(0.25)
     raise RuntimeError('Whale did not submit its first native frame within 90 seconds; readiness token ' + token)
 
 recording = None
+authoring_clock_completed = None
 try:
     run('xcrun', 'simctl', 'boot', udid, check=False)
     run('xcrun', 'simctl', 'bootstatus', udid, '-b', timeout=300)
@@ -66,6 +68,7 @@ try:
     if not data_container.is_dir():
         raise RuntimeError('Simulator did not return an accessible app data container')
     ready_marker = data_container / 'tmp' / 'whale-capture-ready.txt'
+    complete_marker = data_container / 'tmp' / 'whale-capture-complete.txt'
     run('xcrun', 'simctl', 'launch', udid, bundle, '-globe', '-globeStyle', 'persian', timeout=180)
     time.sleep(12)
     frames = []
@@ -86,13 +89,32 @@ try:
                                       '--codec=h264', '--force', str(out / 'native-playback.mp4')],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         time.sleep(2)
-        launch_ready('-whale-play')
-        # Ninety seconds after the acknowledged frame and its compositor settling interval
-        # includes the 82-second sequence and its freely explorable resting composition.
-        for _ in range(18):
-            time.sleep(5)
+        token = launch_ready('-whale-play')
+        # Wait for the native authored clock, rather than infer its progress from host time.
+        deadline = time.monotonic() + 150
+        next_progress = time.monotonic() + 15
+        log('waiting for whale authored-clock completion: ' + token)
+        while time.monotonic() < deadline:
             if recording.poll() is not None:
                 raise RuntimeError('Simulator video recorder ended before playback finished')
+            try:
+                if complete_marker.read_text() == token:
+                    authoring_clock_completed = True
+                    log('whale authored clock reached 82 seconds and paused: ' + token)
+                    break
+            except FileNotFoundError:
+                pass
+            if time.monotonic() >= next_progress:
+                log('still waiting for native authored-clock completion: ' + token)
+                next_progress = time.monotonic() + 15
+            time.sleep(0.25)
+        else:
+            raise RuntimeError('Whale did not acknowledge authored-clock completion within 150 host seconds after readiness; token ' + token)
+        # Retain the paused resting composition after the app confirms its authored ending.
+        for _ in range(4):
+            time.sleep(1)
+            if recording.poll() is not None:
+                raise RuntimeError('Simulator video recorder ended during the final resting capture')
         recording.send_signal(signal.SIGINT)
         _, errors = recording.communicate(timeout=30)
         if recording.returncode:
@@ -103,8 +125,11 @@ try:
         'kind': 'native iOS Simulator output',
         'real_device_test': False,
         'measured_frame_rate': None,
+        'authoring_clock_completed': authoring_clock_completed,
+        'story_duration_seconds': 82,
         'frames': frames,
         'capture_readiness': 'Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.',
+        'capture_completion': 'Full video waits for this launch UUID to be acknowledged after the native authored clock reaches 82 seconds and playback pauses, then records 4 more host seconds. Held screenshots do not wait for clock completion. This does not measure frame rate or GPU completion.',
         'video': 'native-playback.mp4' if os.environ.get('WHALE_VIDEO') == '1' else None,
         'source_commit': os.environ.get('GITHUB_SHA'),
         'ci_run': os.environ.get('GITHUB_RUN_ID'),

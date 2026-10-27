@@ -78,8 +78,9 @@ Keep design discussions and plans in that private repository.
   map's accessibility action “Find whale fossil in Egypt” moves there without starting playback.
   Debug: `-whale <seconds>` holds a composition and `-whale-play` runs the native clock.
   `ci/whale_capture.sh` captures selected simulator compositions and an optional full phone video
-  using a unique first-frame submission acknowledgement, not a guessed launch delay or a frame-rate
-  measurement. The quiet geographic view during the large time jump is intentional.
+  using unique first-frame and authored-clock-completion acknowledgements, rather than guessed
+  launch or ending delays. These are not frame-rate measurements. The quiet geographic view
+  during the large time jump is intentional.
   Manual CI can select `interaction_suite=whale` on a branch for focused `WhaleEncounterTests`,
   and `whale_capture=true` requests report-only capture after interactions. Pushes with
   `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction

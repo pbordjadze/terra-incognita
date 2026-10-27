@@ -20,6 +20,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
     private let living = CALayer()
     private let limb = CALayer()
     private let leader = CAShapeLayer()
+    private let detailLeader = CAShapeLayer()
     private let localityDot = CAShapeLayer()
     private let localityName = CALayer()
     private let regionName = CALayer()
@@ -40,6 +41,9 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
     private var visibleLiving = false
     private var accessibleCamera: GlobeCamera?
     private var accessibleDescription = ""
+    #if DEBUG
+    private var captureToken: String?
+    #endif
     private lazy var animalAccess = WhaleAccessibleArt(container: self) { [weak self] in self?.inspectArt() }
     var reduceMotion = false {
         didSet {
@@ -93,6 +97,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
         if let index = arguments.firstIndex(of: "-whale-capture-token"), index + 1 < arguments.count {
             let token = arguments[index + 1]
             if UUID(uuidString: token) != nil {
+                captureToken = token
                 globe.onDrawn = {
                     // First submitted frame, not a GPU-completion or performance measurement.
                     let marker = FileManager.default.temporaryDirectory.appending(path: "whale-capture-ready.txt")
@@ -112,7 +117,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
                 else { inspect.require(toFail: tap) }
             }
         }
-        for layer in [desert, marine, leader, localityDot, fossil, living, limb,
+        for layer in [desert, marine, leader, localityDot, fossil, living, detailLeader, limb,
                       localityName, regionName, detailName] { globe.layer.addSublayer(layer) }
         for layer in [desert, marine, fossil, limb] {
             layer.contentsGravity = .resizeAspect
@@ -126,6 +131,10 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
         leader.strokeColor = UIColor(hex: "#52686D")?.withAlphaComponent(0.7).cgColor
         leader.lineWidth = 1
         leader.lineCap = .round
+        detailLeader.fillColor = nil
+        detailLeader.strokeColor = UIColor(hex: "#52686D")?.withAlphaComponent(0.8).cgColor
+        detailLeader.lineWidth = 0.9
+        detailLeader.lineCap = .round
         localityDot.fillColor = UIColor(hex: "#344D55")?.cgColor
         localityDot.strokeColor = UIColor(hex: "#F2E6CC")?.cgColor
         localityDot.lineWidth = 2
@@ -257,7 +266,18 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
                 if fraction >= 1 { resumeCamera = nil }
             } else { globe.setAuthoredCamera(target) }
         }
-        if story.preciseTime >= WhaleStory.duration { story.pause() }
+        if story.preciseTime >= WhaleStory.duration {
+            story.pause()
+            compose()
+            #if DEBUG
+            if let token = captureToken {
+                let marker = FileManager.default.temporaryDirectory.appending(path: "whale-capture-complete.txt")
+                do { try token.write(to: marker, atomically: true, encoding: .utf8) }
+                catch { NSLog("Whale capture completion marker failed: %@", error.localizedDescription) }
+                captureToken = nil
+            }
+            #endif
+        }
     }
 
     private func smooth(_ fraction: Double) -> Double {
@@ -282,8 +302,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             (25, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 6.4)),
             (43, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 6.4)),
             (56, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 6.4)),
-            (61, GlobeCamera(lon: 29, lat: 30, zoom: 2.2)),
-            (68, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 5.0)),
+            (64, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 5.0)),
             (82, GlobeCamera(lon: Self.longitude, lat: Self.latitude, zoom: 5.0))
         ]
         guard let index = keys.indices.dropLast().first(where: { time < keys[$0 + 1].0 }) else { return keys.last!.1 }
@@ -302,15 +321,18 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
                       width: max(size.width, 1), height: max(size.height, 1))
     }
 
+    private func bodyDisplacement(_ u: CGFloat, time: Double, width: CGFloat) -> CGFloat {
+        guard !reduceMotion && !story.heldComposition else { return 0 }
+        let phase = CGFloat(time * 2 * .pi / 3.8)
+        let weight = min(max((u - 0.28) / 0.72, 0), 1)
+        let eased = weight * weight * (3 - 2 * weight)
+        return sin(phase - u * 1.9) * width * 0.018 * eased
+    }
+
     private func poseWhale(in frame: CGRect, time: Double) {
         living.frame = frame
-        let animated = !reduceMotion && !story.heldComposition
-        let phase = CGFloat(time * 2 * .pi / 3.8)
-        let amplitude = animated ? frame.width * 0.018 : 0
         func displacement(_ u: CGFloat) -> CGFloat {
-            let weight = min(max((u - 0.28) / 0.72, 0), 1)
-            let eased = weight * weight * (3 - 2 * weight)
-            return sin(phase - u * 1.9) * amplitude * eased
+            bodyDisplacement(u, time: time, width: frame.width)
         }
         let needsLayout = preparedBodySize != frame.size
         if needsLayout { preparedBodySize = frame.size }
@@ -385,7 +407,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
         lastComposition = stamp
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        for layer in [desert, marine, fossil, living, limb, localityDot, leader,
+        for layer in [desert, marine, fossil, living, limb, detailLeader, localityDot, leader,
                       localityName, regionName, detailName] { layer.opacity = 0 }
         artHitFrame = .zero
         visibleLiving = false
@@ -420,9 +442,11 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
                 // A discrete temporal cut lets the body and habitat leave together. The atlas
                 // then stands alone until Today, without a tide draining or an animal stranding.
                 marine.opacity = seaImage == nil ? 0 : alpha
-                living.opacity = livingImage == nil ? 0 : alpha
+                let arrival = current == 1 && !story.heldComposition && !reduceMotion
+                    ? smooth((story.preciseTime - 16) / 7) : 1
+                living.opacity = livingImage == nil ? 0 : alpha * Float(arrival)
                 let detailProgress = current >= 3 ? (story.heldComposition || reduceMotion ? 1 : smooth((story.preciseTime - 43) / 1.5)) : 0
-                let bodyCenter = CGPoint(x: habitat.midX,
+                let bodyCenter = CGPoint(x: habitat.midX + CGFloat(1 - arrival) * width * 0.08,
                                          y: habitat.minY + habitat.height * (0.45 - 0.15 * CGFloat(detailProgress)))
                 let body = fittedRect(image: livingImage, width: min(width * 0.91, 640),
                                       center: bodyCenter, maximumHeight: habitat.height * 0.64)
@@ -436,6 +460,18 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
                                             maximumHeight: habitat.height * 0.42)
                     limb.frame = detail
                     limb.opacity = limbImage == nil ? 0 : alpha * Float(detailProgress)
+                    // The enlarged view is tied to the small appendages near the rear flank.
+                    // This is an illustration connector, not a measured anatomical diagram.
+                    let hindlimbs = CGPoint(x: body.minX + body.width * 0.78,
+                                            y: body.minY + body.height * 0.82
+                                                + bodyDisplacement(0.78, time: story.preciseTime, width: body.width))
+                    let connection = UIBezierPath()
+                    connection.move(to: CGPoint(x: hindlimbs.x, y: hindlimbs.y + 4))
+                    connection.addCurve(to: CGPoint(x: detail.midX, y: detail.minY - 3),
+                                        controlPoint1: CGPoint(x: hindlimbs.x, y: hindlimbs.y + 22),
+                                        controlPoint2: CGPoint(x: detail.midX, y: detail.minY - 20))
+                    detailLeader.path = connection.cgPath
+                    detailLeader.opacity = alpha * Float(detailProgress) * 0.8
                     label(detailName, text: "Enlarged", frame: CGRect(x: detail.midX - 55, y: detail.maxY + 2, width: 110, height: 22), size: 12)
                     detailName.opacity *= alpha * Float(detailProgress)
                     if limb.opacity > 0.3 { artHitFrame = artHitFrame.union(detail) }

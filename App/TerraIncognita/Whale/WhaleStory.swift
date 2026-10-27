@@ -6,7 +6,7 @@ import UIKit
 @Observable
 final class WhaleStory {
     static let duration = 82.0
-    static let milestones = [0.0, 10, 25, 43, 56, 68]
+    static let milestones = [0.0, 10, 25, 43, 56, 64]
     var followed = false
     var playing = false
     var exploring = false
