@@ -7,7 +7,8 @@ No HydroRIVERS-only download is redistributed. RiverATLAS supplies geometry and
 NEXT_DOWN topology; its derived, simplified network is not a water simulation.
 The script keeps reaches with >=500 km² upstream area plus downstream closure,
 merges chains without kept tributaries, simplifies to 0.006°, and rounds to 0.001°.
-Never invents a downstream connection. Full IDs and source checksums in manifest.
+Never invents a downstream connection. Source checksums/settings go in the manifest;
+constituent IDs go in reach-audit.json beside the external source files.
 """
 import sys,json,hashlib,math
 from pathlib import Path
