@@ -24,7 +24,7 @@ class TimeCamera {
   }
   focus(start,end){const span=Math.max(this.minSpan,end-start);this.span=clamp(span*1.15,this.minSpan,this.max-this.min);}
   ticks(width){
-    const target=Math.max(1,this.span/Math.max(2,width/100)), power=10**Math.floor(Math.log10(target));
+    const target=Math.max(1,this.span/Math.max(2,width/80)), power=10**Math.floor(Math.log10(target));
     const step=[1,2,5,10].map(x=>x*power).find(x=>x>=target)||10*power;
     const first=Math.ceil((this.year-this.span/2)/step)*step, ticks=[];
     for(let y=first;y<=this.year+this.span/2+step*.01;y+=step) {
