@@ -73,6 +73,7 @@ jobs:
   time-atlas:
     name: Time Atlas gestures and layouts
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 12
     permissions:
       contents: write
@@ -83,8 +84,7 @@ jobs:
         run: node --test tools/playground/time-atlas/core.test.cjs
       - name: Install browser checks
         run: |
-          npm install --prefix build/time-browser playwright@1.56.1
-          build/time-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+          npm install --prefix build/time-browser playwright@1.56.1 --fetch-timeout=60000 --fetch-retries=1
       - name: Interactions in Chromium and WebKit
         env:
           NODE_PATH: ${{ github.workspace }}/build/time-browser/node_modules
