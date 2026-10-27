@@ -137,8 +137,10 @@ jobs:
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
+        # Focused leaf checks attach opening/reading images through XCTest already.
+        # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && inputs.interaction_suite == 'leaf') }}
         continue-on-error: true
         timeout-minutes: 50
         run: |

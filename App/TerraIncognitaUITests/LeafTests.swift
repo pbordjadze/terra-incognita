@@ -18,10 +18,14 @@ final class LeafTests: XCTestCase {
         guard let image = XCUIScreen.main.screenshot().image.cgImage else { return false }
         let width = 160, height = max(1, image.height * 160 / image.width)
         var pixels = [UInt8](repeating: 0, count: width * height * 4)
-        guard let context = CGContext(data: &pixels, width: width, height: height,
-            bitsPerComponent: 8, bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let drawn = pixels.withUnsafeMutableBytes { bytes -> Bool in
+            guard let context = CGContext(data: bytes.baseAddress, width: width, height: height,
+                bitsPerComponent: 8, bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard drawn else { return false }
         var land = 0, total = 0
         for y in (height / 5)..<(height * 4 / 5) {
             for x in (width / 10)..<(width * 9 / 10) {
@@ -58,16 +62,23 @@ final class LeafTests: XCTestCase {
         menu.tap()
         let place = app.buttons["Read note: Santorini"].firstMatch
         XCTAssertTrue(place.waitForExistence(timeout: 10))
-        for _ in 0..<12 where !place.isHittable {
-            // The iPad sheet lives at the right margin; the screen centre is outside it.
-            let menuClose = app.buttons["Close the leaf menu"].firstMatch
-            let scrollX = menuClose.frame.midX - min(140, app.frame.width * 0.35)
+        let sheet = app.otherElements["An Aegean leaf, web dialog"].firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 10))
+        let menuClose = app.buttons["Close the leaf menu"].firstMatch
+        func visiblyInsideSheet() -> Bool {
+            // WebKit can report hittable for an element below a nested scroll clip.
+            let visible = sheet.frame.insetBy(dx: 8, dy: 8)
+            return place.isHittable && visible.contains(place.frame)
+                && place.frame.minY > menuClose.frame.maxY + 8
+        }
+        for _ in 0..<12 where !visiblyInsideSheet() {
+            let bounds = sheet.frame
             let origin = app.coordinate(withNormalizedOffset: .zero)
-            let start = origin.withOffset(CGVector(dx: scrollX, dy: app.frame.height * 0.73))
-            let end = origin.withOffset(CGVector(dx: scrollX, dy: app.frame.height * 0.43))
+            let start = origin.withOffset(CGVector(dx: bounds.midX, dy: bounds.minY + bounds.height * 0.78))
+            let end = origin.withOffset(CGVector(dx: bounds.midX, dy: bounds.minY + bounds.height * 0.38))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
-        XCTAssertTrue(place.isHittable, "Optional notes remain reachable at the reader's text size. \(app.debugDescription)")
+        XCTAssertTrue(visiblyInsideSheet(), "Optional notes remain visible inside their sheet at the reader's text size. \(app.debugDescription)")
         place.tap()
         let close = app.buttons["Close the note"].firstMatch
         XCTAssertTrue(close.waitForExistence(timeout: 10))
