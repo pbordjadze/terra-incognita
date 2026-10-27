@@ -41,7 +41,7 @@ final class CamelidStory {
     var place: String {
         if exploring { return "" }
         guard followed else { return "Arabia" }
-        return ["", "North America", "North America", "Beringia", "The Americas", "Today"][scene]
+        return ["", "North America", "North America", "Beringia", "The Americas", ""][scene]
     }
     var historical: Bool { followed && scene < 5 }
     var description: String {

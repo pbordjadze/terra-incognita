@@ -16,6 +16,9 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
     private let branchLabel = CATextLayer()
     private let camelPlace = CATextLayer()
     private let llamaPlace = CATextLayer()
+    private let originPlace = CATextLayer()
+    private let asiaPlace = CATextLayer()
+    private let northAmericaPlace = CATextLayer()
     private var link: CADisplayLink?
     private var lastTick: CFTimeInterval?
     private var reportedAt = -1.0
@@ -50,7 +53,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
                 else { inspect.require(toFail: tap) }
             }
         }
-        for layer in [rangeEdge, range, ground, branch, branchLabel, art, secondArt, camelPlace, llamaPlace] { globe.layer.addSublayer(layer) }
+        for layer in [rangeEdge, range, ground, branch, branchLabel, art, secondArt, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { globe.layer.addSublayer(layer) }
         range.fillColor = nil
         range.strokeColor = UIColor(hex: "#6D6793")?.withAlphaComponent(0.18).cgColor
         range.lineWidth = 32
@@ -71,7 +74,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         branchLabel.contentsScale = 3
         branchLabel.foregroundColor = UIColor(hex: "#3B2C16")?.cgColor
         branchLabel.alignmentMode = .center
-        for label in [camelPlace, llamaPlace] {
+        for label in [camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] {
             label.font = UIFont(name: "LibertinusSerif-Regular", size: 14)
             label.fontSize = 14
             label.contentsScale = 3
@@ -184,6 +187,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         return GlobeCamera(lon: a.lon + dl * f, lat: a.lat + (b.lat - a.lat) * f, zoom: a.zoom + (b.zoom - a.zoom) * f)
     }
     private func camera(at t: Double) -> GlobeCamera {
+        if t >= 69 && (story.heldComposition || reduceMotion) { return GlobeCamera(lon: -30, lat: 25, zoom: 0.9) }
         let keys: [(Double, GlobeCamera)] = [
             (0, GlobeCamera(lon: 46, lat: 24, zoom: 1.55)),
             (4, GlobeCamera(lon: -5, lat: 35, zoom: 0.92)),
@@ -195,8 +199,8 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             (65, GlobeCamera(lon: -72, lat: -16, zoom: 1.4)),
             (69, GlobeCamera(lon: -72, lat: -16, zoom: 1.15)),
             (77, GlobeCamera(lon: -100, lat: 27, zoom: 0.95)),
-            (84, GlobeCamera(lon: 46, lat: 24, zoom: 1.12)),
-            (87, GlobeCamera(lon: 46, lat: 24, zoom: 1.12))
+            (84, GlobeCamera(lon: -30, lat: 25, zoom: 0.9)),
+            (87, GlobeCamera(lon: -30, lat: 25, zoom: 0.9))
         ]
         guard let i = keys.indices.dropLast().first(where: { t < keys[$0 + 1].0 }) else { return keys.last!.1 }
         let a = keys[i], b = keys[i + 1]
@@ -211,6 +215,33 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         let breathing = reduceMotion || !story.playing ? 1 : 1 + 0.004 * sin(story.preciseTime * 1.6)
         layer.setAffineTransform(CGAffineTransform(scaleX: flip ? -1 : 1, y: breathing))
     }
+    private func placeRegion(_ label: CATextLayer, text: String, lon: Double, lat: Double, width: CGFloat) {
+        let p = globe.projectedLocation(lon: lon, lat: lat)
+        guard p.facing > 0.25 else { label.opacity = 0; return }
+        if (label.string as? NSAttributedString)?.string != text {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont(name: "LibertinusSerif-Regular", size: 14) ?? UIFont.systemFont(ofSize: 14),
+            .foregroundColor: UIColor(hex: "#3B2C16") ?? UIColor.black,
+            .strokeColor: UIColor(hex: "#F2E4C8") ?? UIColor.white,
+            .strokeWidth: -4
+        ]
+        label.string = NSAttributedString(string: text, attributes: attributes)
+        }
+        label.frame = CGRect(x: min(max(p.point.x - width / 2, 18), bounds.width - width - 18), y: p.point.y + 8, width: width, height: 25)
+        label.opacity = 1
+    }
+    private func placeModernAnimal(_ layer: CALayer, label: CATextLayer, kind: CamelidAnimal, place: String,
+                                   lon: Double, lat: Double, width: CGFloat, flip: Bool) {
+        let p = globe.projectedLocation(lon: lon, lat: lat)
+        let image = CamelidArt.image(kind)
+        let fittedWidth = min(width, 2 * max(min(p.point.x - 20, bounds.width - 20 - p.point.x), 0))
+        let height = fittedWidth * (image.map { $0.size.height / max($0.size.width, 1) } ?? 0.85)
+        sprite(layer, kind: kind, center: CGPoint(x: p.point.x, y: p.point.y - height / 2), width: fittedWidth, flip: flip)
+        let safe = bounds.insetBy(dx: 18, dy: 18)
+        guard p.facing > 0.25, fittedWidth >= 72, safe.contains(layer.frame) else { layer.opacity = 0; label.opacity = 0; return }
+        layer.opacity = 1
+        placeRegion(label, text: place, lon: lon, lat: lat, width: max(width, 85))
+    }
     private func compose() {
         guard bounds.width > 0 else { return }
         CATransaction.begin(); CATransaction.setDisableActions(true)
@@ -220,7 +251,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         let maximum = min(w * 0.55, 260)
         let baseY = h * 0.58
         art.opacity = 1; secondArt.opacity = 0; branch.opacity = 0; range.opacity = 0; rangeEdge.opacity = 0; ground.opacity = 0; branchLabel.opacity = 0
-        camelPlace.opacity = 0; llamaPlace.opacity = 0
+        camelPlace.opacity = 0; llamaPlace.opacity = 0; originPlace.opacity = 0; asiaPlace.opacity = 0; northAmericaPlace.opacity = 0
         globe.historicalReference = story.followed && current < 5
         if !story.followed {
             sprite(art, kind: .dromedary, center: CGPoint(x: w * 0.51, y: h * 0.52), width: min(w * 0.61, 310))
@@ -232,11 +263,10 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             ground.path = UIBezierPath(ovalIn: CGRect(x: w * 0.23, y: baseY + maximum * 0.3, width: w * 0.54, height: 14)).cgPath
             ground.opacity = 1
             art.opacity = story.heldComposition || reduceMotion ? 1 : Float(min((t - 10) / 1.2, 1))
-        } else if current == 2 || current == 5 {
-            let final = current == 5
+        } else if current == 2 {
             let size = min(w * 0.4, 205)
-            sprite(art, kind: final ? .dromedary : .camelini, center: CGPoint(x: w * 0.28, y: baseY - 15), width: size)
-            sprite(secondArt, kind: final ? .llama : .lamini, center: CGPoint(x: w * 0.74, y: baseY - 15), width: size * 0.9, flip: true)
+            sprite(art, kind: .camelini, center: CGPoint(x: w * 0.28, y: baseY - 15), width: size)
+            sprite(secondArt, kind: .lamini, center: CGPoint(x: w * 0.74, y: baseY - 15), width: size * 0.9, flip: true)
             secondArt.opacity = 1
             let tree = UIBezierPath()
             tree.move(to: CGPoint(x: w * 0.5, y: baseY + size * 0.7))
@@ -245,17 +275,15 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             tree.move(to: CGPoint(x: w * 0.5, y: baseY + size * 0.43))
             tree.addCurve(to: CGPoint(x: w * 0.74, y: baseY + size * 0.26), controlPoint1: CGPoint(x: w * 0.5, y: baseY + size * 0.3), controlPoint2: CGPoint(x: w * 0.74, y: baseY + size * 0.45))
             branch.path = tree.cgPath; branch.opacity = 1
-            branchLabel.string = final ? "Shared ancestry · North America" : "Family relationships"
+            branchLabel.string = "Family relationships"
             branchLabel.frame = CGRect(x: w * 0.12, y: baseY + size * 0.73, width: w * 0.76, height: 30)
             branchLabel.opacity = 1
-            if final {
-                camelPlace.string = "Arabia"
-                llamaPlace.string = "Andes"
-                camelPlace.frame = CGRect(x: w * 0.08, y: baseY + size * 0.54, width: w * 0.4, height: 24)
-                llamaPlace.frame = CGRect(x: w * 0.54, y: baseY + size * 0.54, width: w * 0.4, height: 24)
-                camelPlace.opacity = 1; llamaPlace.opacity = 1
-            }
-            branch.strokeEnd = final || reduceMotion || story.heldComposition ? 1 : min(max((t - 26) / 5, 0), 1)
+            branch.strokeEnd = reduceMotion || story.heldComposition ? 1 : min(max((t - 26) / 5, 0), 1)
+        } else if current == 5 {
+            let size = min(max(w * 0.3, 110), 205)
+            placeModernAnimal(art, label: camelPlace, kind: .dromedary, place: "Arabia", lon: 46, lat: 24, width: size, flip: true)
+            placeModernAnimal(secondArt, label: llamaPlace, kind: .llama, place: "Andes", lon: -72, lat: -16, width: size * 0.96, flip: false)
+            placeRegion(originPlace, text: "North America · origin", lon: -100, lat: 40, width: min(205, w * 0.54))
         } else {
             let northern = current == 3
             sprite(art, kind: northern ? .camelini : .lamini,
@@ -274,26 +302,31 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             rangeEdge.path = path.cgPath; rangeEdge.opacity = 1
             range.strokeEnd = reduceMotion || story.heldComposition ? 1 : min(max((t - (northern ? 39 : 54)) / 9, 0), 1)
             rangeEdge.strokeEnd = range.strokeEnd
+            if northern {
+                placeRegion(asiaPlace, text: "Asia", lon: 135, lat: 51, width: 80)
+                placeRegion(northAmericaPlace, text: "North America", lon: -135, lat: 50, width: 120)
+            }
         }
         if story.followed, current > 0, !reduceMotion, !story.heldComposition {
             let begin = CamelidStory.milestones[current]
             let end = current < 5 ? CamelidStory.milestones[current + 1] : 1000
             let alpha = Float(min(max((t - begin) / 1.1, 0), 1) * min(max((end - t) / 0.6, 0), 1))
-            for layer in [art, secondArt, branch, branchLabel, range, rangeEdge, ground, camelPlace, llamaPlace] { layer.opacity *= alpha }
+            for layer in [art, secondArt, branch, branchLabel, range, rangeEdge, ground, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { layer.opacity *= alpha }
         }
         if story.exploring {
-            for layer in [art, secondArt, branch, branchLabel, range, rangeEdge, ground, camelPlace, llamaPlace] { layer.opacity = 0 }
+            for layer in [art, secondArt, branch, branchLabel, range, rangeEdge, ground, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { layer.opacity = 0 }
         }
         if current == 5 && !story.exploring {
-            // Comparison illustrations belong to their named regions, rather than to the map
-            // pixels beneath them. Keep contemporary cartographic labels clear of the composition.
+            // Each modern animal stands at its geographic anchor. Keep contemporary map labels
+            // clear of the animals and the three regional labels.
             func stableFrame(_ layer: CALayer) -> CGRect {
                 CGRect(x: layer.position.x - layer.bounds.width / 2, y: layer.position.y - layer.bounds.height / 2,
                        width: layer.bounds.width, height: layer.bounds.height).insetBy(dx: -8, dy: -8)
             }
-            globe.authoredLabelExclusions = [stableFrame(art), stableFrame(secondArt), branchLabel.frame,
-                                            camelPlace.frame, llamaPlace.frame,
-                                            branch.path?.boundingBoxOfPath.insetBy(dx: -6, dy: -6) ?? .zero]
+            globe.authoredLabelExclusions = [art.opacity > 0 ? stableFrame(art) : .zero, secondArt.opacity > 0 ? stableFrame(secondArt) : .zero,
+                                            camelPlace.opacity > 0 ? camelPlace.frame : .zero, llamaPlace.opacity > 0 ? llamaPlace.frame : .zero, originPlace.frame]
+        } else if !story.followed && !story.exploring {
+            globe.authoredLabelExclusions = [art.frame.insetBy(dx: -8, dy: -8)]
         } else { globe.authoredLabelExclusions = [] }
         let camera = globe.authoredCamera
         var accessible: [Any] = []
@@ -304,13 +337,13 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             firstAnimalAccess.accessibilityFrameInContainerSpace = art.frame
             firstAnimalAccess.accessibilityIdentifier = "camelidStoryAnimal"
             accessible.append(firstAnimalAccess)
-            if secondArt.opacity > 0.3 {
-                secondAnimalAccess.accessibilityLabel = current == 5 ? "Llama" : CamelidAnimal.lamini.name
-                secondAnimalAccess.accessibilityHint = current == 5 ? "Compare llama and alpaca" : "Inspect this illustration and its evidence"
-                secondAnimalAccess.accessibilityFrameInContainerSpace = secondArt.frame
-                secondAnimalAccess.accessibilityIdentifier = "camelidStorySecondAnimal"
-                accessible.append(secondAnimalAccess)
-            }
+        }
+        if story.followed && !story.exploring && current > 0 && secondArt.opacity > 0.3 {
+            secondAnimalAccess.accessibilityLabel = current == 5 ? "Llama" : CamelidAnimal.lamini.name
+            secondAnimalAccess.accessibilityHint = current == 5 ? "Compare llama and alpaca" : "Inspect this illustration and its evidence"
+            secondAnimalAccess.accessibilityFrameInContainerSpace = secondArt.frame
+            secondAnimalAccess.accessibilityIdentifier = "camelidStorySecondAnimal"
+            accessible.append(secondAnimalAccess)
         }
         accessible.append(globe)
         accessibilityElements = accessible

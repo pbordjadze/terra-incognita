@@ -79,7 +79,9 @@ struct CamelidExperience: View {
         .foregroundStyle(ink)
         .tint(blue)
         .buttonStyle(.plain)
-        .safeAreaInset(edge: .bottom, spacing: 0) { transport }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            transport.foregroundStyle(ink).tint(blue).buttonStyle(.plain)
+        }
         .sheet(item: $story.reading) { choice in
             CamelidEvidence(reading: choice)
                 .preferredColorScheme(.light)

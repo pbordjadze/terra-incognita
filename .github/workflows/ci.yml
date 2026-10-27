@@ -116,12 +116,14 @@ jobs:
           echo "bundled data identical"
       - name: Capture camelid playback and compositions
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
-        timeout-minutes: 8
+        timeout-minutes: 20
         run: |
+          # Review the primary iPhone first. Test execution below retains its established order.
+          sort -r out/sims.txt > out/capture-sims.txt
           while read -r KIND UDID _ <&3; do
             if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
             bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
-          done 3< out/sims.txt
+          done 3< out/capture-sims.txt
       - name: Preserve camelid review capture separately
         uses: actions/upload-artifact@v5
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
