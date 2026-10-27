@@ -1,0 +1,357 @@
+{
+  "passed": true,
+  "tests": [
+    {
+      "label": "chromium/phone",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-phone-opening.png",
+        "build/time-atlas-report/chromium-phone-timeline.png",
+        "build/time-atlas-report/chromium-phone-large-text.png"
+      ],
+      "landPixels": 49721,
+      "snapshotHashes": {
+        "1938": 4102852571,
+        "1945": 2522376092
+      }
+    },
+    {
+      "label": "chromium/ipad-landscape",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-ipad-landscape-opening.png",
+        "build/time-atlas-report/chromium-ipad-landscape-timeline.png",
+        "build/time-atlas-report/chromium-ipad-landscape-large-text.png"
+      ],
+      "landPixels": 225553,
+      "snapshotHashes": {
+        "1938": 563035227,
+        "1945": 1843887981
+      }
+    },
+    {
+      "label": "chromium/ipad-portrait",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-ipad-portrait-opening.png",
+        "build/time-atlas-report/chromium-ipad-portrait-timeline.png",
+        "build/time-atlas-report/chromium-ipad-portrait-large-text.png"
+      ],
+      "landPixels": 248527,
+      "snapshotHashes": {
+        "1938": 3287672390,
+        "1945": 52505235
+      }
+    },
+    {
+      "label": "webkit/phone",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/webkit-phone-opening.png",
+        "build/time-atlas-report/webkit-phone-timeline.png",
+        "build/time-atlas-report/webkit-phone-large-text.png"
+      ],
+      "landPixels": 49579,
+      "snapshotHashes": {
+        "1938": 216145225,
+        "1945": 1689033498
+      }
+    },
+    {
+      "label": "webkit/ipad-landscape",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/webkit-ipad-landscape-opening.png",
+        "build/time-atlas-report/webkit-ipad-landscape-timeline.png",
+        "build/time-atlas-report/webkit-ipad-landscape-large-text.png"
+      ],
+      "landPixels": 225268,
+      "snapshotHashes": {
+        "1938": 3405132738,
+        "1945": 3700090518
+      }
+    },
+    {
+      "label": "webkit/ipad-portrait",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/webkit-ipad-portrait-opening.png",
+        "build/time-atlas-report/webkit-ipad-portrait-timeline.png",
+        "build/time-atlas-report/webkit-ipad-portrait-large-text.png"
+      ],
+      "landPixels": 248282,
+      "snapshotHashes": {
+        "1938": 1357430760,
+        "1945": 355826316
+      }
+    }
+  ],
+  "failures": [],
+  "screenshots": [
+    "build/time-atlas-report/chromium-phone-opening.png",
+    "build/time-atlas-report/chromium-phone-timeline.png",
+    "build/time-atlas-report/chromium-phone-large-text.png",
+    "build/time-atlas-report/chromium-ipad-landscape-opening.png",
+    "build/time-atlas-report/chromium-ipad-landscape-timeline.png",
+    "build/time-atlas-report/chromium-ipad-landscape-large-text.png",
+    "build/time-atlas-report/chromium-ipad-portrait-opening.png",
+    "build/time-atlas-report/chromium-ipad-portrait-timeline.png",
+    "build/time-atlas-report/chromium-ipad-portrait-large-text.png",
+    "build/time-atlas-report/webkit-phone-opening.png",
+    "build/time-atlas-report/webkit-phone-timeline.png",
+    "build/time-atlas-report/webkit-phone-large-text.png",
+    "build/time-atlas-report/webkit-ipad-landscape-opening.png",
+    "build/time-atlas-report/webkit-ipad-landscape-timeline.png",
+    "build/time-atlas-report/webkit-ipad-landscape-large-text.png",
+    "build/time-atlas-report/webkit-ipad-portrait-opening.png",
+    "build/time-atlas-report/webkit-ipad-portrait-timeline.png",
+    "build/time-atlas-report/webkit-ipad-portrait-large-text.png"
+  ],
+  "requests": [
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:45073/pack/time-atlas/atlas.js"
+    }
+  ],
+  "notes": [
+    "Chromium pinch checks use CDP native touch input, not synthetic PointerEvents.",
+    "WebKit pinch checks dispatch PointerEvents with a temporary pointer-capture shim; they verify handler mathematics, not physical-device multitouch delivery.",
+    "Simulator/browser checks do not establish physical iPad or iPhone performance."
+  ]
+}
