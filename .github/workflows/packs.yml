@@ -22,8 +22,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: packs-publish
-  cancel-in-progress: false
+  group: ${{ contains(github.event.head_commit.message, '[no-publish]') && format('packs-check-{0}', github.ref) || 'packs-publish' }}
+  cancel-in-progress: ${{ contains(github.event.head_commit.message, '[no-publish]') }}
 
 jobs:
   packs:
@@ -106,4 +106,4 @@ jobs:
           git init -q
           git add .
           git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Time Atlas browser report"
-          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/time-atlas-shots/${GITHUB_REF_NAME}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/time-atlas-shots/${GITHUB_SHA}"
