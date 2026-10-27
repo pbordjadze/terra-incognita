@@ -298,7 +298,7 @@ final class PackStore {
         let catalog: URL
     }
 
-    @ObservationIgnored private let storage: URL
+    private let storage: URL
     @ObservationIgnored private var bundledSources: [URL] = []
     @ObservationIgnored private var sessionSources: [URL] = []
     @ObservationIgnored private var catalogs: [URL: PackCatalog] = [:]
@@ -377,7 +377,7 @@ final class PackStore {
         sessionSources.removeAll { $0.absoluteString == text }
         saveAddedSources()
         rebuildSources()
-        catalogs = catalogs.filter { key, _ in sources.contains(key) }
+        catalogs = catalogs.filter { sources.contains($0.key) }
         mergeRemotes()
         rebuild()
         record("source removed: \(text)")
@@ -471,14 +471,15 @@ final class PackStore {
             }
         }
         session.finishTasksAndInvalidate()
-        catalogs = catalogs.filter { key, _ in targets.contains(key) }
+        catalogs = catalogs.filter { targets.contains($0.key) }
         failures = [:]
         lastChecked = Date()
         checking = false
         mergeRemotes()
         rebuild()
-        record("checked \(targets.count) source\(targets.count == 1 ? "" : "s")"
-               + (problems.isEmpty ? "" : ", \(problems.count) problem\(problems.count == 1 ? "" : "s")"))
+        let sourceWord = targets.count == 1 ? "source" : "sources"
+        let problemNote = problems.isEmpty ? "" : ", \(problems.count) failed"
+        record("checked \(targets.count) \(sourceWord)\(problemNote)")
     }
 
     /// The newest non-retired entry for each id across the sources' catalogs.
@@ -515,10 +516,11 @@ final class PackStore {
     /// Steps the choice down: a newer installed revision, then an older one, then the bundled one.
     func usePrevious(_ id: String) {
         guard let choice = selection(id), choice.index + 1 < choice.count else { return }
-        pins[id] = candidates(id)[choice.index + 1].revision
+        let revision = candidates(id)[choice.index + 1].revision
+        pins[id] = revision
         savePins()
         rebuild()
-        record("\(id): using r\(pins[id] ?? 0)\(pins[id] == 0 ? " (bundled)" : "")")
+        record(revision == 0 ? "\(id): using the bundled revision" : "\(id): using r\(revision)")
     }
 
     /// Clears the choice: the newest revision opens again.

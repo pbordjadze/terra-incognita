@@ -33,6 +33,9 @@ node tools/playground/check.cjs tide-pool                         # headless Chr
 python3 tools/playground/playground.py validate                   # the contract, sizes, offline boundary (CI runs it too)
 ```
 
+`Prototypes/hello-pack/` is the smallest complete example: a marker, a page opened from it, and an
+overlay that answers taps on the sea. `playground.py --help` lists every command.
+
 Then commit and push. `packs.yml` validates and, when R2 is configured, publishes changed packs
 as new revisions (a Linux job; no macOS runner). On the phone: open the workbench, it checks its
 sources, the new revision appears; tap it. A link `<PACKS_PUBLIC_URL>/open/<id>.html` opens it
@@ -64,7 +67,9 @@ be able to tell what they are looking at.
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
   Parked shelf, still one tap away.
 - **Remove**: delete the folder or entry. A published pack is withdrawn with
-  `playground.py retire <id>`; its files stay in the bucket, so the retirement is reversible.
+  `playground.py retire <id>` (`--undo` brings it back; `--out DIR` acts on a local packed folder);
+  its files stay in the bucket. Ids are never reused: nothing can check that across branches, so
+  pick a new one rather than recycling an old one.
 
 ## The contract
 
@@ -112,7 +117,7 @@ same file in the app and the preview):
 
 | | |
 | --- | --- |
-| `terra.pack`, `terra.mode`, `terra.params` | `{ id, revision, origin }`; `'screen'` or `'overlay'`; e.g. `{ marker: 'pool' }` |
+| `terra.pack`, `terra.mode`, `terra.params` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`; revision 0 unless downloaded); `'screen'` or `'overlay'`; e.g. `{ marker: 'pool' }` |
 | `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active }`; also CSS `var(--terra-text-scale)` and `[data-reduce-motion]` on `<html>` |
 | `terra.close()` | back to the globe (a screen) or end the prototype (an overlay) |
 | `terra.open(params)` | an overlay opens the pack's screen |
@@ -124,7 +129,8 @@ same file in the app and the preview):
 
 A screen keeps the top-left 56 pt (inside the safe area) free: the app's own Back button sits
 there, so no page can trap the reader. Pages are loaded from `terra-pack://<id>/…`; relative URLs
-and `fetch()` of the pack's own files work. Storage does not persist between launches.
+and `fetch()` of the pack's own files work (use relative ones: a root-absolute `/x.png` works in the
+app but not in the preview, and `validate` warns). Storage does not persist between launches.
 
 ### `catalog.json` (what a source publishes; written by `playground.py pack`)
 
@@ -154,7 +160,7 @@ files never change under the same revision (they are cached forever).
   the workbench or by the link `terraincognita://source?url=<catalog URL>` (it asks first).
   HTTPS only; `http://127.0.0.1` and `localhost` are allowed for the simulator.
 - **Integrity.** Every file is checked against the catalog's SHA-256 and size; paths are confined
-  to the pack; a pack is at most 50 MB and 500 files. A download is staged and moved into place
+  to the pack; a pack is at most 50 MB and 500 files, a file at most 25 MB. A download is staged and moved into place
   only when complete, so a failed update leaves the previous revision. Two revisions are kept per
   pack; offline, the newest installed revision (or the bundled one) opens.
 - **Containment.** Pack pages run in a non-persistent `WKWebView` that can load only its own
@@ -178,7 +184,7 @@ files never change under the same revision (they are cached forever).
    it now in the workbench.
 
 Locally, the same variables in the environment let `playground.py publish` upload directly;
-`--dry-run` shows what would change. Without them, `packs.yml` validates and keeps the packed
+`--dry-run` shows what would change (with only `PACKS_PUBLIC_URL` set, it reads the public catalog). Without them, `packs.yml` validates and keeps the packed
 output as an artifact, and publishes nothing.
 
 ## What needs a new IPA

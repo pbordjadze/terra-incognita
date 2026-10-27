@@ -367,6 +367,12 @@ class Validate(TempCase):
         self.assertEqual(len(warnings), 1)
         self.assertIn('img/none.png', warnings[0])
 
+    def test_root_absolute_references_warn(self):
+        errors, warnings = self.scan('p.html', '<img src="/m.png"><script src="/x.js"></script>')
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 2)
+        self.assertTrue(all('starts with /' in w for w in warnings))
+
     def test_a_pack_must_not_bring_terra_js(self):
         for text in ('<script src="terra.js"></script>', '<script src="../_runtime/terra.js"></script>',
                      '<script src=/_runtime/terra.js></script>'):

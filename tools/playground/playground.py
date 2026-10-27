@@ -259,7 +259,11 @@ def scan_text(rel, text, files, rep, where):
         here = Path(rel).parent
         for m in ATTR_PATH.finditer(text):
             ref = m.group(1).split('#')[0].split('?')[0]
-            if not ref or ref.startswith('/') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', ref) or '{' in ref:
+            if not ref or ref.startswith('//') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', ref) or '{' in ref:
+                continue
+            if ref.startswith('/'):
+                # the app serves a pack from terra-pack://<id>/, the preview from /pack/<id>/: only a relative path means the same in both
+                rep.warn(f'{where}/{rel}:{_line_of(text, m.start())}', f'"{ref}" starts with /: write it relative so it resolves the same in the app and the preview')
                 continue
             target = os.path.normpath((here / ref).as_posix()).replace('\\', '/')
             if target not in files:
