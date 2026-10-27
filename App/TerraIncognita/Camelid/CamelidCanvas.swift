@@ -1,4 +1,5 @@
 import QuartzCore
+import CoreText
 import SwiftUI
 import UIKit
 
@@ -220,10 +221,10 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         guard p.facing > 0.25 else { label.opacity = 0; return }
         if (label.string as? NSAttributedString)?.string != text {
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont(name: "LibertinusSerif-Regular", size: 14) ?? UIFont.systemFont(ofSize: 14),
-            .foregroundColor: UIColor(hex: "#3B2C16") ?? UIColor.black,
-            .strokeColor: UIColor(hex: "#F2E4C8") ?? UIColor.white,
-            .strokeWidth: -4
+            NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("LibertinusSerif-Regular" as CFString, 14, nil),
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): (UIColor(hex: "#3B2C16") ?? .black).cgColor,
+            NSAttributedString.Key(kCTStrokeColorAttributeName as String): (UIColor(hex: "#F2E4C8") ?? .white).cgColor,
+            NSAttributedString.Key(kCTStrokeWidthAttributeName as String): -22
         ]
         label.string = NSAttributedString(string: text, attributes: attributes)
         }
@@ -283,7 +284,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             let size = min(max(w * 0.3, 110), 205)
             placeModernAnimal(art, label: camelPlace, kind: .dromedary, place: "Arabia", lon: 46, lat: 24, width: size, flip: true)
             placeModernAnimal(secondArt, label: llamaPlace, kind: .llama, place: "Andes", lon: -72, lat: -16, width: size * 0.96, flip: false)
-            placeRegion(originPlace, text: "North America · origin", lon: -100, lat: 40, width: min(205, w * 0.54))
+            placeRegion(originPlace, text: "North America · origin", lon: -100, lat: 52, width: min(205, w * 0.54))
         } else {
             let northern = current == 3
             sprite(art, kind: northern ? .camelini : .lamini,
@@ -303,8 +304,8 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             range.strokeEnd = reduceMotion || story.heldComposition ? 1 : min(max((t - (northern ? 39 : 54)) / 9, 0), 1)
             rangeEdge.strokeEnd = range.strokeEnd
             if northern {
-                placeRegion(asiaPlace, text: "Asia", lon: 135, lat: 51, width: 80)
-                placeRegion(northAmericaPlace, text: "North America", lon: -135, lat: 50, width: 120)
+                placeRegion(asiaPlace, text: "Asia", lon: 135, lat: 61, width: 80)
+                placeRegion(northAmericaPlace, text: "North America", lon: -135, lat: 62, width: 120)
             }
         }
         if story.followed, current > 0, !reduceMotion, !story.heldComposition {
@@ -315,6 +316,10 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         }
         if story.exploring {
             for layer in [art, secondArt, branch, branchLabel, range, rangeEdge, ground, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { layer.opacity = 0 }
+        }
+        if current == 3 && t >= 50 {
+            let departure = Float(max(1 - (t - 50) / 0.8, 0))
+            for layer in [art, range, rangeEdge, asiaPlace, northAmericaPlace] { layer.opacity *= departure }
         }
         if current == 5 && !story.exploring {
             // Each modern animal stands at its geographic anchor. Keep contemporary map labels

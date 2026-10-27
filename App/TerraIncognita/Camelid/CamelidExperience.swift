@@ -57,7 +57,7 @@ struct CamelidExperience: View {
                         .font(.custom("LibertinusSerif-Regular", size: 12, relativeTo: .caption))
                         .multilineTextAlignment(.center)
                 }
-                if story.followed && !story.exploring && (story.scene == 3 || story.scene == 4) {
+                if story.followed && !story.exploring && !story.transitioning && (story.scene == 3 || story.scene == 4) {
                     Text("Broad dispersal · many generations")
                         .font(.custom("LibertinusSerif-Regular", size: 12, relativeTo: .caption))
                 }

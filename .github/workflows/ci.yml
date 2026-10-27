@@ -118,10 +118,12 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
         timeout-minutes: 20
         run: |
-          # Review the primary iPhone first. Test execution below retains its established order.
+          # Capture the uninterrupted primary-phone film. The UI suite below supplies comparable
+          # iPad/phone milestone and interaction screenshots without repeating the iPad cold boot.
           sort -r out/sims.txt > out/capture-sims.txt
           while read -r KIND UDID _ <&3; do
-            if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
+            [ "$KIND" = iphone ] || continue
+            export CAMELID_VIDEO=1
             bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
           done 3< out/capture-sims.txt
       - name: Preserve camelid review capture separately

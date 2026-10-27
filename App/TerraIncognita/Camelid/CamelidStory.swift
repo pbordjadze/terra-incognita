@@ -10,6 +10,7 @@ final class CamelidStory {
     var followed = false
     var playing = false
     var exploring = false
+    var transitioning = false
     @ObservationIgnored var heldComposition = false
     var scene = 0
     var date = "Today"
@@ -34,12 +35,12 @@ final class CamelidStory {
     }
 
     var title: String {
-        if exploring { return "" }
+        if exploring || transitioning { return "" }
         guard followed else { return "Dromedary camel" }
         return ["", "Where camelids began", "One family · two lineages", "Toward Eurasia", "Toward South America", "Camels and llamas are cousins."][scene]
     }
     var place: String {
-        if exploring { return "" }
+        if exploring || transitioning { return "" }
         guard followed else { return "Arabia" }
         return ["", "North America", "North America", "Beringia", "The Americas", ""][scene]
     }
@@ -73,6 +74,8 @@ final class CamelidStory {
     }
     func open(_ choice: CamelidReading) { pause(); reading = choice }
     func reportTime() {
+        let inDeparture = followed && preciseTime >= 50 && preciseTime < 54
+        if transitioning != inDeparture { transitioning = inDeparture }
         let fresh = Self.milestones.lastIndex(where: { preciseTime >= $0 }) ?? 0
         if scene != fresh { scene = fresh }
         let nextDate: String
