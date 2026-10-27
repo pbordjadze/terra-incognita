@@ -15,11 +15,11 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
     private let rangeEdge = CAShapeLayer()
     private let ground = CAShapeLayer()
     private let branchLabel = CATextLayer()
-    private let camelPlace = CATextLayer()
-    private let llamaPlace = CATextLayer()
-    private let originPlace = CATextLayer()
-    private let asiaPlace = CATextLayer()
-    private let northAmericaPlace = CATextLayer()
+    private let camelPlace = CALayer()
+    private let llamaPlace = CALayer()
+    private let originPlace = CALayer()
+    private let asiaPlace = CALayer()
+    private let northAmericaPlace = CALayer()
     private var link: CADisplayLink?
     private var lastTick: CFTimeInterval?
     private var reportedAt = -1.0
@@ -76,11 +76,8 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         branchLabel.foregroundColor = UIColor(hex: "#3B2C16")?.cgColor
         branchLabel.alignmentMode = .center
         for label in [camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] {
-            label.font = UIFont(name: "LibertinusSerif-Regular", size: 14)
-            label.fontSize = 14
             label.contentsScale = 3
-            label.foregroundColor = UIColor(hex: "#3B2C16")?.cgColor
-            label.alignmentMode = .center
+            label.contentsGravity = .resizeAspect
         }
         for layer in [art, secondArt] { layer.contentsGravity = .resizeAspect; layer.contentsScale = 3 }
         story.canvas = self
@@ -216,22 +213,53 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         let breathing = reduceMotion || !story.playing ? 1 : 1 + 0.004 * sin(story.preciseTime * 1.6)
         layer.setAffineTransform(CGAffineTransform(scaleX: flip ? -1 : 1, y: breathing))
     }
-    private func placeRegion(_ label: CATextLayer, text: String, lon: Double, lat: Double, width: CGFloat) {
+    private func placeRegion(_ label: CALayer, text: String, lon: Double, lat: Double, width: CGFloat) {
         let p = globe.projectedLocation(lon: lon, lat: lat)
         guard p.facing > 0.25 else { label.opacity = 0; return }
-        if (label.string as? NSAttributedString)?.string != text {
-        let attributes: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("LibertinusSerif-Regular" as CFString, 14, nil),
-            NSAttributedString.Key(kCTForegroundColorAttributeName as String): (UIColor(hex: "#3B2C16") ?? .black).cgColor,
-            NSAttributedString.Key(kCTStrokeColorAttributeName as String): (UIColor(hex: "#F2E4C8") ?? .white).cgColor,
-            NSAttributedString.Key(kCTStrokeWidthAttributeName as String): -22
-        ]
-        label.string = NSAttributedString(string: text, attributes: attributes)
+        let size = CGSize(width: width, height: 25)
+        if label.name != text || label.bounds.size != size {
+            let ink = UIColor(hex: "#3B2C16") ?? .black
+            let tone = (UIColor(hex: "#F2E4C8") ?? .white).withAlphaComponent(0.92)
+            let letters = NSAttributedString(string: text, attributes: [
+                NSAttributedString.Key(kCTFontAttributeName as String): CTFontCreateWithName("LibertinusSerif-Regular" as CFString, 14, nil),
+                NSAttributedString.Key(kCTForegroundColorAttributeName as String): ink.cgColor
+            ])
+            let toned = NSMutableAttributedString(attributedString: letters)
+            toned.addAttributes([
+                NSAttributedString.Key(kCTForegroundColorAttributeName as String): tone.cgColor,
+                NSAttributedString.Key(kCTStrokeColorAttributeName as String): tone.cgColor
+            ], range: NSRange(location: 0, length: toned.length))
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 3
+            format.opaque = false
+            let image = UIGraphicsImageRenderer(size: size, format: format).image { context in
+                let c = context.cgContext
+                let line = CTLineCreateWithAttributedString(letters)
+                let haloLine = CTLineCreateWithAttributedString(toned)
+                var ascent: CGFloat = 0, descent: CGFloat = 0, leading: CGFloat = 0
+                let textWidth = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, &leading))
+                c.translateBy(x: 0, y: size.height)
+                c.scaleBy(x: 1, y: -1)
+                c.textMatrix = .identity
+                let origin = CGPoint(x: (size.width - textWidth) / 2,
+                                     y: (size.height - ascent - descent) / 2 + descent)
+                c.setLineJoin(.round)
+                c.setLineWidth(3)
+                c.setStrokeColor(tone.cgColor)
+                c.setTextDrawingMode(.fillStroke)
+                c.textPosition = origin
+                CTLineDraw(haloLine, c)
+                c.setTextDrawingMode(.fill)
+                c.textPosition = origin
+                CTLineDraw(line, c)
+            }
+            label.contents = image.cgImage
+            label.name = text
         }
         label.frame = CGRect(x: min(max(p.point.x - width / 2, 18), bounds.width - width - 18), y: p.point.y + 8, width: width, height: 25)
         label.opacity = 1
     }
-    private func placeModernAnimal(_ layer: CALayer, label: CATextLayer, kind: CamelidAnimal, place: String,
+    private func placeModernAnimal(_ layer: CALayer, label: CALayer, kind: CamelidAnimal, place: String,
                                    lon: Double, lat: Double, width: CGFloat, flip: Bool) {
         let p = globe.projectedLocation(lon: lon, lat: lat)
         let image = CamelidArt.image(kind)
