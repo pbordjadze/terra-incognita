@@ -18,6 +18,11 @@ touch the map to wander, then resume. The look menu switches between the looks o
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.
 
+The atlas opens on the globe. A small seed mark and “Look closer” open one offline historical
+encounter: move a magnifying glass over the Indian Ocean, draw back a layer of evidence, and
+follow words or lives. Evidence and limitations are available inside the encounter; the research
+ledger is [docs/encounter-research.md](docs/encounter-research.md). The film remains behind its button.
+
 The looks: Aisling's Forest, Paper Almanac, Night Voyage, Chalk and Slate, and The Sampler.
 
 Map data: Natural Earth and US Census TIGER/Line (public domain); © OpenStreetMap contributors
