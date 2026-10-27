@@ -17,6 +17,13 @@ enum GlobeStyle: String, CaseIterable, Identifiable {
     var name: String { self == .persian ? String(localized: "Persian") : String(localized: "Wikipedia") }
 }
 
+/// A camera position for the camelid sequence; geographic degrees and the globe's existing scale.
+struct GlobeCamera: Equatable {
+    var lon: Double
+    var lat: Double
+    var zoom: Double
+}
+
 /// The whole globe, drawn live by Metal (`Globe.metal`) in either style: drag to spin it, pinch to
 /// zoom, double-tap to fly in, tap a country to light it (in the locator's red, or gilded). Left alone
 /// it turns slowly, as the Earth does.
@@ -28,6 +35,103 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// The first frame is on screen (the veil over the switch to it can lift).
     var onDrawn: (() -> Void)?
     private var encounterMark: UIButton?
+    private var camelidMark: UIButton?
+    /// Once the atlas contains accessible objects it becomes a container. Keep the globe itself
+    /// as a separate element so VoiceOver can still describe and directly manipulate the map.
+    private var globeAccessibilityElement: UIAccessibilityElement?
+    /// Explicit reader navigation yields the authored sequence before the camera moves.
+    var onUserNavigation: (() -> Void)?
+    /// Geographic overlays follow the same camera after it has advanced for this frame.
+    var onFrame: (() -> Void)?
+    /// The authored sequence shares this renderer without its idle spin or other encounter marks.
+    var authoredMode = false {
+        didSet {
+            guard authoredMode != oldValue else { return }
+            if authoredMode { flight = nil; spin = .zero }
+            encounterMark?.isHidden = authoredMode
+            camelidMark?.isHidden = authoredMode
+            needsDraw = true
+        }
+    }
+    /// Modern coastlines remain an explicitly labelled geographic reference. Contemporary political
+    /// lines, names and country selection are suppressed while illustrating prehistoric periods.
+    var historicalReference = false {
+        didSet {
+            guard historicalReference != oldValue else { return }
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            labelLayer.isHidden = historicalReference
+            CATransaction.commit()
+            if historicalReference { select(nil, animated: false) }
+            labelsFading = true
+            needsDraw = true
+        }
+    }
+
+    var authoredCamera: GlobeCamera { GlobeCamera(lon: lon0, lat: lat0, zoom: zoom) }
+
+    func setAuthoredCamera(_ camera: GlobeCamera, duration: Double = 0) {
+        guard camera.lon.isFinite, camera.lat.isFinite, camera.zoom.isFinite else { return }
+        let longitude = (camera.lon + 180).truncatingRemainder(dividingBy: 360)
+        let target = (lon: (longitude < 0 ? longitude + 360 : longitude) - 180,
+                      lat: min(max(camera.lat, -80), 80),
+                      zoom: min(max(camera.zoom, Self.zooms.lowerBound), Self.zooms.upperBound))
+        spin = .zero
+        lastTouch = CACurrentMediaTime()
+        if duration == 0, flight == nil, lon0 == target.lon, lat0 == target.lat, zoom == target.zoom {
+            return
+        }
+        if duration > 0, duration.isFinite, !UIAccessibility.isReduceMotionEnabled {
+            flight = Flight(from: (lon: lon0, lat: lat0, zoom: zoom), to: target,
+                            start: CACurrentMediaTime(), duration: duration)
+        } else {
+            flight = nil
+            lon0 = target.lon; lat0 = target.lat; zoom = target.zoom
+        }
+        needsDraw = true
+    }
+
+    func projectedLocation(lon: Double, lat: Double) -> (point: CGPoint, facing: Double) {
+        project(lon: lon, lat: lat)
+    }
+
+    /// An illustrated animal in Arabia, sharing the map's geographic projection and ordinary tap.
+    func installCamelid(image: UIImage, onInspect: @escaping () -> Void) {
+        camelidMark?.removeFromSuperview()
+        let mark = UIButton(type: .custom)
+        mark.setImage(image, for: .normal)
+        mark.imageView?.contentMode = .scaleAspectFit
+        mark.bounds = CGRect(x: 0, y: 0, width: 76, height: 64)
+        mark.accessibilityIdentifier = "camelidAnimal"
+        mark.accessibilityLabel = "Dromedary camel"
+        mark.accessibilityHint = "Inspect this animal"
+        mark.addAction(UIAction { _ in onInspect() }, for: .touchUpInside)
+        addSubview(mark)
+        camelidMark = mark
+        exposeAtlasObjects()
+    }
+
+    private func exposeAtlasObjects() {
+        if globeAccessibilityElement == nil {
+            let element = UIAccessibilityElement(accessibilityContainer: self)
+            element.accessibilityLabel = accessibilityLabel
+            element.accessibilityHint = accessibilityHint
+            element.accessibilityTraits = accessibilityTraits
+            element.accessibilityValue = accessibilityValue
+            globeAccessibilityElement = element
+        }
+        guard let element = globeAccessibilityElement else { return }
+        isAccessibilityElement = false
+        element.accessibilityFrameInContainerSpace = bounds
+        element.accessibilityCustomActions = accessibilityCustomActions
+        // Small objects precede the full-size map element, so touch exploration can reach them
+        // where their frames overlap the map's direct-interaction surface.
+        var objects: [Any] = []
+        if let camelidMark { objects.append(camelidMark) }
+        if let encounterMark { objects.append(encounterMark) }
+        objects.append(element)
+        accessibilityElements = objects
+    }
 
     /// A single authored encounter. Its mark follows geography, never a guessed voyage.
     func installEncounter(onOpen: @escaping () -> Void) {
@@ -44,6 +148,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         addSubview(mark)
         encounterMark = mark
         accessibilityCustomActions = [UIAccessibilityCustomAction(name: "Look closer at the island's seed", actionHandler: { _ in onOpen(); return true })]
+        if globeAccessibilityElement != nil { exposeAtlasObjects() }
         if !ProcessInfo.processInfo.arguments.contains("-globe-at") {
             lon0 = 68; lat0 = -9
             lastTouch = CACurrentMediaTime()
@@ -61,6 +166,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if !roomSettled { measureRoom() }
             labelsFading = true
             needsDraw = true
+        }
+    }
+    /// Authored illustrations exclude labels without changing the globe's measured room or scale.
+    /// These are local view coordinates, independent of the surrounding controls in `keepClear`.
+    var authoredLabelExclusions: [CGRect] = [] {
+        didSet {
+            guard authoredLabelExclusions != oldValue else { return }
+            labelsFading = true
         }
     }
     /// The part of the screen the globe and its frame fill: between the buttons and the caption.
@@ -330,6 +443,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         var r1: SIMD4<Float>
         var r2: SIMD4<Float>
         var u3: SIMD4<Float>
+        var u4: SIMD4<Float>
     }
 
     /// Draws a frame; false if it couldn't (no drawable yet), so the next tick tries again.
@@ -354,7 +468,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             r1: SIMD4(Float(m[0][1]), Float(m[1][1]), Float(m[2][1]), 0),
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
             u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
-                      Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)))
+                      Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)),
+            u4: SIMD4(historicalReference ? 1 : 0, 0, 0, 0))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
@@ -469,6 +584,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         if let mark = encounterMark, touch.view?.isDescendant(of: mark) == true { return false }
+        if let mark = camelidMark, touch.view?.isDescendant(of: mark) == true { return false }
         return !(touch.view is UIControl)
     }
 
@@ -483,7 +599,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func pan(_ g: UIPanGestureRecognizer) {
         switch g.state {
-        case .began: touching += 1; touched()
+        case .began: onUserNavigation?(); touching += 1; touched()
         case .changed:
             let d = g.translation(in: self)
             g.setTranslation(.zero, in: self)
@@ -500,7 +616,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func pinch(_ g: UIPinchGestureRecognizer) {
         switch g.state {
-        case .began: touching += 1; touched()
+        case .began: onUserNavigation?(); touching += 1; touched()
         case .changed:
             let f = g.location(in: self)
             let under = unproject(f)
@@ -520,6 +636,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func doubleTap(_ g: UITapGestureRecognizer) {
+        onUserNavigation?()
         touched()
         let target = unproject(g.location(in: self)) ?? (lon: lon0, lat: lat0)
         let z = zoom < 4 ? min(zoom * 2, Self.zooms.upperBound) : 1
@@ -528,6 +645,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func tap(_ g: UITapGestureRecognizer) {
         touched()
+        guard !historicalReference else { return }
         guard let k = country(near: g.location(in: self)), k != selected else {
             select(nil, animated: true)
             return
@@ -579,6 +697,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         } else {
             accessibilityValue = nil
         }
+        globeAccessibilityElement?.accessibilityValue = accessibilityValue
         onSelect?(k.flatMap { data?.countries[$0] })
         needsDraw = true
     }
@@ -650,6 +769,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        globeAccessibilityElement?.accessibilityFrameInContainerSpace = bounds
         let scale = traitCollection.displayScale > 0 ? traitCollection.displayScale : pixels
         pixels = scale
         selectedLabel.contentsScale = scale
@@ -716,16 +836,26 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if let mark = encounterMark {
             let p = project(lon: 46.3, lat: -19.0)
             mark.center = p.point
-            mark.isHidden = p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
+            mark.isHidden = authoredMode || p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
         }
-        if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
+        if let mark = camelidMark {
+            let p = project(lon: 46, lat: 24)
+            mark.center = p.point
+            mark.isHidden = authoredMode || p.facing < 0.35 || !bounds.contains(mark.frame) || keepClear.contains(where: { $0.intersects(mark.frame) })
+            // A tiny weight/breath shift belongs to the animal layer; it never requests a map draw.
+            let breath = still ? 1 : 1 + 0.004 * sin(now * 1.2)
+            mark.imageView?.transform = CGAffineTransform(scaleX: 1, y: breath)
+        }
+        onFrame?()
+        if historicalReference { labelsFading = false }
+        else if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
         if needsDraw, draw() {
             needsDraw = false
             if let onDrawn { self.onDrawn = nil; onDrawn() }
         }
         // the hands, a fling, a flight, the highlight fading or the style changing want the full rate;
         // the slow turn (and the names fading with it) is smooth at 30
-        let moving = touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || restyling
+        let moving = authoredMode || touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || restyling
         if moving != busy {
             busy = moving
             link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
@@ -734,6 +864,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     private var idleTurns: Bool {
+        if authoredMode { return false }
         #if DEBUG
         return !held
         #else
@@ -894,7 +1025,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let fade = min(1, dt * 10)
         let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
         let encounterClear = encounterMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
-        let clear = (keepClear + pageStrips + encounterClear).map { $0.insetBy(dx: -gap, dy: -gap) }
+        let camelidClear = camelidMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
+        let clear = (keepClear + pageStrips + encounterClear + camelidClear + authoredLabelExclusions).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func onGlobe(_ r: CGRect) -> Bool {

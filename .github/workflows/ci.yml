@@ -133,6 +133,14 @@ jobs:
             if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
           done 3< out/sims.txt
+      - name: Capture camelid playback and compositions
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        timeout-minutes: 8
+        run: |
+          while read -r KIND UDID _ <&3; do
+            if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
+            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
+          done 3< out/sims.txt
       - name: Collect
         if: always()
         run: |
@@ -208,6 +216,13 @@ jobs:
             out
             !out/*.ipa
           if-no-files-found: ignore
+      - name: Preserve isolated branch device build
+        uses: actions/upload-artifact@v5
+        if: ${{ success() && github.ref_name != 'main' }}
+        with:
+          name: camelid-device-ipa
+          path: out/TerraIncognita.ipa
+          if-no-files-found: error
 
   report:
     name: Publish report
@@ -239,6 +254,9 @@ jobs:
           # Full test videos stay in the original Actions artifact. Large recordings exceed
           # GitHub's 100 MB file limit; the Git report keeps screenshots, logs and JSON.
           find . -type f -name '*.mp4' -delete
+          # Isolated device builds remain downloadable Actions artifacts; do not duplicate them
+          # into the screenshot report's Git history.
+          find . -type f -name '*.ipa' -delete
           git init -q && git checkout -q -b shots
           git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"
