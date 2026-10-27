@@ -32,7 +32,7 @@ const close=(a,b,epsilon=.001)=>Math.abs(a-b)<epsilon;
  await p.waitForTimeout(80);const pinched=await state();assert.ok(pinched.cam.s>pinched.home.s*1.7);
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});s=await state();assert.ok(close(s.cam.x,pinched.cam.x)&&close(s.cam.y,pinched.cam.y));
  // Stillness is respected, including pausing the surprise rather than hiding its accessible note.
- await p.locator('#menu-button').click();await p.locator('#motion').click();await p.locator('.close-menu').click();const t=(await state()).time;await p.waitForTimeout(150);assert.equal((await state()).time,t);
+ await p.locator('#menu-button').click();await p.locator('#motion').click();await p.locator('.close-menu').click();const t=(await state()).time;await p.waitForTimeout(150);assert.equal((await state()).time,t);await p.evaluate(()=>{leafSettings({active:false});leafSettings({active:true});});assert.equal((await state()).still,true);
  await p.locator('#light').fill('100');await p.locator('#light').dispatchEvent('input');await p.waitForTimeout(100);assert.equal((await state()).light,1);await p.screenshot({path:'out/leaf-ipad-blue-hour.png'});
  // The menu provides a non-timed and keyboard-operable alternative to the long press.
  await p.locator('#menu-button').click();await p.locator('#glass').click();assert.ok((await state()).lens);await p.keyboard.press('ArrowRight');let lens=(await state()).lens;assert.ok(lens[0]>chart.width/2);await p.locator('#lens-close').click();

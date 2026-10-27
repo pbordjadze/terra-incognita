@@ -7,6 +7,7 @@
   const mix = (a,b,t) => a+(b-a)*t;
   const tau = Math.PI*2;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  let manualStill=false, nativeReduce=false;
   let still = reduced.matches, w=1,h=1,dpr=1,ready=false, frame=0, last=0, time=0, dirty=true;
   let light=0, targetLight=0, activeNote=null, previousFocus=null, labelBoxes=[], nativeActive=true, suppressClick=false;
   const cam = {x:0,y:80,s:1}, home = {x:0,y:80,s:1};
@@ -256,8 +257,8 @@
     const p=palette[targetLight>.6?1:0],r=document.documentElement;
     r.style.setProperty('--paper',p.paper);r.style.setProperty('--panel',targetLight>.6?'#233d49':'#f8f5ec');r.style.setProperty('--ink',p.ink);r.style.setProperty('--faint',p.faint);r.style.setProperty('--rule',targetLight>.6?'#718b8e':'#9eada7');r.style.setProperty('--copper',p.copper);r.style.setProperty('--water',p.water);dirty=true;
   };
-  function setStill(value){still=value;$('motion').textContent=still?'Let the page move':'Still the page';$('motion').setAttribute('aria-pressed',String(still));dirty=true;}
-  $('motion').onclick=()=>setStill(!still);reduced.addEventListener('change',e=>setStill(e.matches));
+  function setStill(value){const system=nativeReduce||reduced.matches;still=value||system;$('motion').disabled=system;$('motion').textContent=system?'Motion reduced by system':still?'Let the page move':'Still the page';$('motion').setAttribute('aria-pressed',String(still));dirty=true;}
+  $('motion').onclick=()=>{manualStill=!manualStill;setStill(manualStill);};reduced.addEventListener('change',()=>setStill(manualStill));
   $('glass').onclick=()=>{pendingMenuFocus=$('lens-close');$('leaf-menu').close();lens=[w/2,h/2];lensPinned=true;dirty=true;$('announcement').textContent='Sounding glass open at the centre of the map. Use arrow keys to move it, or drag the water to move the map beneath it.';};
   $('skiff').onclick=e=>{if(e.detail===0){boat.sail=boat.sail===1?.16:1;dirty=true;$('announcement').textContent=boat.sail===1?'The paper sail is raised.':'The paper sail is folded.';chime(261.6,.035);}};
   $('handle-skiff').onclick=()=>{pendingMenuFocus=$('skiff');$('leaf-menu').close();const p=toScreen([boat.x,boat.y]);if(p[0]<22||p[0]>w-22||p[1]<22||p[1]>h-22){cam.x=boat.x;cam.y=boat.y;}$('skiff').hidden=false;dirty=true;$('announcement').textContent='Paper skiff. Use arrow keys to move it. Activate it to fold or raise its sail.';};
@@ -308,19 +309,19 @@
       if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();
       soundOn=!soundOn;if(soundOn){await audio.resume();chime(196,.035);}else await audio.suspend();
       $('sound').setAttribute('aria-pressed',String(soundOn));$('sound').setAttribute('aria-label',soundOn?'Turn off the imagined soundscape':'Turn on the imagined soundscape');
-    }catch(_){soundOn=false;$('announcement').textContent='Sound is unavailable. The leaf works silently.';}
+    }catch(_){soundOn=false;$('sound').setAttribute('aria-pressed','false');$('announcement').textContent='Sound is unavailable. The leaf works silently.';}
   };
   document.addEventListener('visibilitychange',()=>{last=performance.now();if(document.hidden){stopHold();fingers.clear();gesture=null;boat.drag=false;lens=lensPinned?lens:null;audio?.suspend();}else{dirty=true;if(soundOn)audio?.resume();}});
   window.leafDispose=()=>{cancelAnimationFrame(frame);stopHold();audio?.close();};window.addEventListener('pagehide',window.leafDispose);
   // The native host supplies system text-size scaling, scene visibility and Reduce Motion.
   window.leafSettings=({textSize=1,reduceMotion=false,active=true}={})=>{
-    document.documentElement.style.fontSize=16*clamp(textSize,1,2)+'px';textScale=clamp(textSize,1,1.6);setStill(reduceMotion||reduced.matches);nativeActive=active;if(!active)audio?.suspend();else if(soundOn)audio?.resume();dirty=true;
+    document.documentElement.style.fontSize=16*clamp(textSize,1,2)+'px';textScale=clamp(textSize,1,1.6);nativeReduce=reduceMotion;setStill(manualStill);nativeActive=active;if(!active)audio?.suspend();else if(soundOn)audio?.resume();dirty=true;
   };
   // Read-only geometry diagnostics for the local interaction harness.
   window.leafDiagnostics=()=>({ready,cam:{...cam},home:{...home},size:[w,h],labels:labelBoxes.map(b=>({...b})),lens:lens?.slice(),still,light,soundOn,boat:{...boat},note:activeNote?.id||null,time});
   window.leafPoint=(lon,lat)=>toScreen(fromLL([lon,lat]));
   async function start(){
-    try{await document.fonts.ready;resize();refreshType();setStill(still);ready=true;dirty=true;$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,850);window.leafReady=true;}
+    try{await document.fonts.ready;resize();refreshType();setStill(manualStill);ready=true;dirty=true;$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,850);window.leafReady=true;}
     catch(e){$('loading').hidden=true;$('error').hidden=false;console.error(e);}
   }
   new ResizeObserver(resize).observe(chart);window.addEventListener('resize',refreshType);start();frame=requestAnimationFrame(render);
