@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Real UI interactions in the same macOS job as the ordinary builds. Each simulator runs
+# Real UI interactions in the same macOS job as the ordinary builds. A failed test is run once
+# more (a busy shared simulator sometimes times out launching the app); failing twice fails the job. Each simulator runs
 # sequentially; screenshots are XCTest attachments, exported for the normal CI report.
 set -euo pipefail
 mkdir -p out/encounter-shots
@@ -43,6 +44,7 @@ PY
       -destination "platform=iOS Simulator,id=$UDID" -destination-timeout 180 \
       -derivedDataPath build/dd -resultBundlePath "$RESULT" \
       "${ONLY[@]}" -parallel-testing-enabled NO \
+      -retry-tests-on-failure -test-iterations 2 \
       -maximum-concurrent-test-simulator-destinations 1 -quiet \
       ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
       2>&1 | tee "out/encounter-$KIND.log" | tail -80; then

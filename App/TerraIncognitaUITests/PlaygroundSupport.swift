@@ -33,11 +33,15 @@ extension XCTestCase {
         let list = named.waitForExistence(timeout: 3) ? named : app.collectionViews.firstMatch
         guard list.waitForExistence(timeout: 10) else { return }
         func clip() -> CGRect { list.frame.intersection(app.frame).insetBy(dx: 0, dy: 16) }
+        /// It exists with a real frame (a row the list has let go of may linger with none).
+        func located() -> Bool { element.exists && !element.frame.isEmpty }
         func visible() -> Bool {
-            guard element.exists, element.isHittable else { return false }
+            guard located() else { return false }
             let c = clip(), f = element.frame
             // (a row taller than the list at the largest text counts once its middle is inside)
-            return c.contains(f) || (f.height > c.height * 0.7 && c.contains(CGPoint(x: f.midX, y: f.midY)))
+            let inside = c.contains(f) || (f.height > c.height * 0.7 && c.contains(CGPoint(x: f.midX, y: f.midY)))
+            // asked only once it is inside: XCTest fails outright on an element with no hit point
+            return inside && element.isHittable
         }
         /// Positive: the content moves up, showing what is below.
         func drag(_ dy: CGFloat) {
@@ -53,7 +57,7 @@ extension XCTestCase {
         var direction: CGFloat = 1
         for _ in 0..<30 where !visible() {
             let c = clip()
-            if element.exists {
+            if located() {
                 let f = element.frame
                 if f.midY > c.midY { drag(max(40, f.maxY - c.maxY + 24)) } else { drag(-max(40, c.minY - f.minY + 24)) }
                 continue
