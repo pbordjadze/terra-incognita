@@ -5,9 +5,9 @@ const S=require(path.join(folder,'voyage.js')),C=require(path.join(folder,'core.
 const env={window:{}};vm.runInNewContext(fs.readFileSync(path.join(folder,'data.js'),'utf8'),env);
 const D=env.window.SHIP_DATA,obs=S.prepare(D.observations,D.land.features,C.contains);
 test('source stations preserve dates, coordinates and reusable attribution',()=>{
- assert.equal(obs.length,23);assert.equal(obs[0].station,'CHA-3');assert.equal(obs[0].date,'1873-02-18');
- assert.equal(obs[0].lon,-20.233333);assert.equal(obs[0].lat,25.75);
- assert.equal(D.sources.pangaea849072.license,'CC-BY-3.0');assert.equal(D.sources.frontiers2025table1.license,'CC-BY-4.0');
+ assert.equal(obs.length,94);const known=obs.find(o=>o.station==='CHA-3');assert.equal(known.date,'1873-02-18');
+ assert.equal(known.lon,-20.233333);assert.equal(known.lat,25.75);
+ assert.equal(D.sources.pangaea849072.license,'CC-BY-3.0');assert.equal(D.primaryExport.inputSha256,'b9597170e4c1494e83937d362b8cc0d5d076d9d53949421d853019c7e3b9fa13');
  assert.equal(D.ship.completeTrack,false);
 });
 test('date labels use UTC day precision',()=>{
@@ -15,16 +15,16 @@ test('date labels use UTC day precision',()=>{
  assert.equal(S.label(d+.9),S.label(d));assert.equal(S.position(obs,d+.9).kind,'recorded');
 });
 test('illustrated transit is reversible and distinct from a recorded position',()=>{
- const a=obs[0].day,p=S.position(obs,a+1),q=S.position(obs,a+2);
+ const known=obs.find(o=>o.station==='CHA-3'),a=known.day,p=S.position(obs,a+1),q=S.position(obs,a+2);
  assert.equal(p.kind,'interpolated');assert.equal(q.kind,'interpolated');
  assert.ok(q.lon<p.lon);assert.equal(S.position(obs,a+1).lon,p.lon);
- assert.equal(S.position(obs,obs[1].day).lon,obs[1].lon);
+ const next=obs.find(o=>o.station==='CHA-7');assert.equal(S.position(obs,next.day).lon,next.lon);
  assert.equal(S.position(obs,a).kind,'recorded');
 });
 test('missing months have no invented location and no world-wrapping connector',()=>{
- const gap=obs[4].day-obs[3].day;assert.ok(gap>14);
- const p=S.position(obs,obs[3].day+gap/2);assert.equal(p.kind,'gap');assert.equal(p.lon,undefined);
- assert.equal(obs[3].connect,false);assert.equal(S.position(obs,obs[0].day-1).kind,'outside');
+ const gaps=obs.slice(1).map((b,i)=>({a:obs[i],b,days:b.day-obs[i].day})).sort((a,b)=>b.days-a.days),gap=gaps[0];assert.ok(gap.days>14);
+ const p=S.position(obs,gap.a.day+gap.days/2);assert.equal(p.kind,'gap');assert.equal(p.lon,undefined);
+ assert.equal(gap.a.connect,false);assert.equal(S.position(obs,obs[0].day-1).kind,'outside');
  assert.equal(S.position(obs,obs.at(-1).day+1).kind,'outside');
 });
 test('great-circle interpolation takes the short path across the date line',()=>{

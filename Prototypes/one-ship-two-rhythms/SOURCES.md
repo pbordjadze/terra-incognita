@@ -5,8 +5,8 @@ The host injects terra; this pack loads only its own assets and does not record 
 
 ## Reading the map
 
-HMS Challenger's 1872–1876 expedition is represented by 23 selected sampling stations dated
-18 February 1873 to 9 April 1876. This is not a complete ship log. The opening is the dense
+HMS Challenger's 1872–1876 expedition is represented by 94 selected sampling stations dated
+2 February 1873 to 6 May 1876. This is not a complete ship log. The opening is the dense
 February–March 1873 Atlantic interval.
 
 Dots identify included observations. On an observed date, the ship symbol is held at the
@@ -38,19 +38,18 @@ are not reconstructed: Empire is a time-scale frame for the British expedition.
 
 - Murray, John; Renard, A F (1891). Annotated record of the detailed examination of Mn deposits
   from the HMS Challenger stations. PANGAEA, https://doi.pangaea.de/10.1594/PANGAEA.849072.
-  CC BY 3.0: https://creativecommons.org/licenses/by/3.0/. Stations CHA-3, CHA-7, CHA-8.
-- Murray, John; Renard, A F (1891). Chemical composition of manganese nodules and other manganese
-  rich deposits discovered during the HMS Challenger expedition (table, page 370). PANGAEA,
-  https://doi.pangaea.de/10.1594/PANGAEA.849018. CC BY 3.0. Stations CHA-16 and CHA-160.
-- Zarkogiannis SD, Wood TJ, Miller CG, Stukins S and Clark B (2025). Reassessing the HMS Challenger
-  collection as a late 19th century surface ocean indicator using X-ray micro-computed tomography,
-  Table 1. https://doi.org/10.3389/fmars.2025.1454260.
-  CC BY 4.0: https://creativecommons.org/licenses/by/4.0/. Eighteen distinct station/date records.
+  CC BY 3.0: https://creativecommons.org/licenses/by/3.0/.
 
-Modification: selected station labels, source dates, reported decimal coordinates and sampling
-depths were transcribed; duplicate sample rows for one station/date were collapsed. PANGAEA
-T00:00:00 timestamps are reduced to dates. Historical measurements are not modern GPS precision.
-Source links and attribution are also bundled in data.js and available in the Sources panel.
+All 94 events were extracted from the licensed primary TSV event metadata. Event timestamps
+were reduced to dates; reported coordinates and event depths were kept. Exact duplicate rows
+were collapsed and records sorted by date. The input TSV SHA256 is
+b9597170e4c1494e83937d362b8cc0d5d076d9d53949421d853019c7e3b9fa13.
+It is recorded alongside the data. These remain selected sampling events, not the complete
+Challenger log. Historical measurements are not modern GPS precision.
+
+A secondary collection transcription was explored during research. Its depths and some
+coordinates differ from this series, so values from different transcriptions were not silently
+merged. The runtime uses the one attributed PANGAEA series throughout.
 
 Physical land: Natural Earth ne_110m_land.geojson, public domain; pinned original:
 https://github.com/nvkelso/natural-earth-vector/blob/ca96624a56bd078437bca8184e78163e5039ad19/geojson/ne_110m_land.geojson
@@ -64,9 +63,7 @@ The existing time-atlas prototype and shared native code remain unchanged.
 - node tools/playground/ship/check.cjs
 - node tools/playground/ship/fetch-stations.cjs --self-test
 
-The optional fetch-stations tool downloads licensed PANGAEA event metadata at authoring time
-to a build artifact; it never silently changes the curated pack. A fuller export needs
-source/precision review before inclusion. The runtime never fetches it.
+The fetch-stations tool downloads licensed PANGAEA event metadata at authoring time to a build artifact. Its reviewed 94-event export is bundled in this pack. Future exports never silently replace that snapshot. The runtime never fetches it.
 
 Browser checks cover real painted ship motion, same-date scale switches, reversibility,
 evidence gaps, map/time camera independence, touch/keyboard alternatives, host settings,

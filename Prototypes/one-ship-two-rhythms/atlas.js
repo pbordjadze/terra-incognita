@@ -1,7 +1,7 @@
 /* One clock; selection changes its viewing scale, never its date. */
 (function(){'use strict';
 const C=window.TimeAtlasCore,S=window.ShipMath,D=window.SHIP_DATA,$=id=>document.getElementById(id);
-const observations=S.prepare(D.observations,D.land.features,C.contains),initialDay=observations[0].day+2;
+const observations=S.prepare(D.observations,D.land.features,C.contains),initialDay=(observations.find(o=>o.station==='CHA-3')||observations[0]).day+2;
 const time=new C.TimeCamera({min:S.day('1800-01-01'),max:S.day('1900-01-01'),year:initialDay,span:30,minSpan:2});
 class OceanCamera extends C.MapCamera{
  pan(dx,dy){const lon=this.lon-dx/this.scale*180/Math.PI;super.pan(dx,dy);this.lon=lon;}

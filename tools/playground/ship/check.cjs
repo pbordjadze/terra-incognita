@@ -214,7 +214,8 @@ async function pinch(page, context, engine) {
               const first=await state(page);assert.equal(first.position?.kind,'recorded');
               assert(Math.abs(first.position.lon-observations[0].lon)<1e-5);
               assert(Math.abs(first.position.lat-observations[0].lat)<1e-5);
-              const a=observations[0].day+1,b=observations[0].day+2;
+              const opening=observations.find(o=>o.station==='CHA-3')||observations[0];
+              const a=opening.day+1,b=opening.day+2;
               await setDay(page,a);const earlier=await state(page),pa=await pixels(page);
               await setDay(page,b);const later=await state(page),pb=await pixels(page);
               assert.equal(earlier.position?.kind,'interpolated');
