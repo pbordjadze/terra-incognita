@@ -68,3 +68,42 @@ jobs:
             exit 0
           fi
           python3 tools/playground/playground.py publish --summary "$GITHUB_STEP_SUMMARY"
+
+
+  time-atlas:
+    name: Time Atlas gestures and layouts
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Numeric cameras and data
+        run: node --test tools/playground/time-atlas/core.test.cjs
+      - name: Install browser checks
+        run: |
+          npm install --prefix build/time-browser playwright@1.56.1
+          build/time-browser/node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Interactions in Chromium and WebKit
+        env:
+          NODE_PATH: ${{ github.workspace }}/build/time-browser/node_modules
+        run: node tools/playground/time-atlas/check.cjs
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: time-atlas-preview
+          path: build/time-atlas-report
+          if-no-files-found: warn
+      - name: Preserve the visual review report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/time-atlas-report
+          cd build/time-atlas-report
+          echo "$GITHUB_SHA" > COMMIT
+          git init -q
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Time Atlas browser report"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/time-atlas-shots/${GITHUB_REF_NAME}"
