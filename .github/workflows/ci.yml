@@ -130,13 +130,36 @@ jobs:
       - name: Encounter interactions and accessible text
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 45
+        timeout-minutes: 50
         run: |
           # A focused branch rerun after a leaf test repair; main's publication gate is always full.
           if [ "$GITHUB_REF_NAME" != main ] && [ "${{ inputs.interaction_suite }}" = leaf ]; then
             export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests
           fi
           bash ci/encounter_tests.sh
+      - name: Capture camelid playback and compositions
+        id: camelid_capture
+        # A review artifact, like the manual film screenshots; native tests remain a gate.
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        timeout-minutes: 20
+        run: |
+          # Capture the uninterrupted primary-phone film after native interactions. The UI suite supplies comparable
+          # iPad/phone milestone and interaction screenshots without repeating the iPad cold boot.
+          sort -r out/sims.txt > out/capture-sims.txt
+          while read -r KIND UDID _ <&3; do
+            [ "$KIND" = iphone ] || continue
+            export CAMELID_VIDEO=1
+            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
+          done 3< out/capture-sims.txt
+      - name: Preserve camelid review capture separately
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        with:
+          name: camelid-preview
+          path: out/camelid
+          if-no-files-found: warn
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
@@ -162,7 +185,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
@@ -232,6 +255,13 @@ jobs:
             out
             !out/*.ipa
           if-no-files-found: ignore
+      - name: Preserve isolated branch device build
+        uses: actions/upload-artifact@v5
+        if: ${{ success() && github.ref_name != 'main' }}
+        with:
+          name: camelid-device-ipa
+          path: out/TerraIncognita.ipa
+          if-no-files-found: error
 
   report:
     name: Publish report
@@ -264,6 +294,9 @@ jobs:
           # Full test videos stay in the original Actions artifact. Large recordings exceed
           # GitHub's 100 MB file limit; the Git report keeps screenshots, logs and JSON.
           find . -type f -name '*.mp4' -delete
+          # Isolated device builds remain downloadable Actions artifacts; do not duplicate them
+          # into the screenshot report's Git history.
+          find . -type f -name '*.ipa' -delete
           git init -q && git checkout -q -b shots
           git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"

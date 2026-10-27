@@ -61,6 +61,18 @@ Keep design discussions and plans in that private repository.
     browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
     `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;
     manual CI can select `leaf_only` to avoid photographing every film and globe style.
+- **The camelid sequence** (`App/TerraIncognita/Camelid/`): the illustrated camel in Arabia opens
+  an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
+  `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
+  Pan, pinch or double-tap pauses the clock and hides the authored composition until resumed.
+  Prehistoric scenes hide modern politics and explicitly identify modern geography as a reference.
+  `CamelidAnimals` in the asset catalog is original generated art, cropped once by `CamelidArt`.
+  Optional evidence and the textual equivalent are bundled in `CamelidEvidence`.
+  Debug: `-camelid <seconds>` holds a complete composition, `-camelid-play` runs playback, and
+  `-camelid-reduce-motion` exercises held camera compositions. `ci/camelid_capture.sh` captures
+  actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
+  step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
+  `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.

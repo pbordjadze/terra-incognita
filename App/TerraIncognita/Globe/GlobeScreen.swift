@@ -14,6 +14,8 @@ struct GlobeScreen: View {
     @State private var country: GlobeData.Country?
     @State private var captionFrame = CGRect.zero
     @State private var encounter = false
+    @State private var camelid = false
+    @State private var camelidDebugOpened = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}) {
@@ -26,7 +28,7 @@ struct GlobeScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active && !encounter, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, onEncounter: { encounter = true }, country: $country)
+            GlobeCanvasView(active: active && !encounter && !camelid, style: style, keepClear: keepClear + [captionFrame], onDrawn: atlasDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, country: $country)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 Button { encounter = true } label: {
@@ -63,6 +65,19 @@ struct GlobeScreen: View {
         .animation(.easeInOut(duration: 0.35), value: caption.title)
         .animation(.easeInOut(duration: 0.35), value: style)
         .fullScreenCover(isPresented: $encounter) { OceanExperience() }
+        .fullScreenCover(isPresented: $camelid) { CamelidExperience(style: style) }
+    }
+
+    private func atlasDrawn() {
+        onDrawn()
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        guard active, !camelidDebugOpened,
+              args.contains("-camelid") || args.contains("-camelid-play") else { return }
+        camelidDebugOpened = true
+        // Submit the original globe's first frame before constructing the debug cover's renderer.
+        DispatchQueue.main.async { camelid = true }
+        #endif
     }
 
     private var caption: Plate.Caption {
@@ -182,6 +197,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     let keepClear: [CGRect]
     let onDrawn: () -> Void
     let onEncounter: () -> Void
+    let onCamelid: () -> Void
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
@@ -190,6 +206,9 @@ private struct GlobeCanvasView: UIViewRepresentable {
         view.onSelect = { country = $0 }
         view.onDrawn = onDrawn
         view.installEncounter(onOpen: onEncounter)
+        if let image = CamelidArt.image(.dromedary) {
+            view.installCamelid(image: image, onInspect: onCamelid)
+        }
         // (a country lit from the start, by -globe-select; told after this update, not during it)
         let initial = view.selectedCountry
         Task { country = initial }
