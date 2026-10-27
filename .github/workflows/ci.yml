@@ -114,6 +114,21 @@ jobs:
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
           for f in $(find Atlas Globe Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
+      - name: Capture camelid playback and compositions
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        timeout-minutes: 8
+        run: |
+          while read -r KIND UDID _ <&3; do
+            if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
+            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
+          done 3< out/sims.txt
+      - name: Preserve camelid review capture separately
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        with:
+          name: camelid-preview
+          path: out/camelid
+          if-no-files-found: warn
       - name: Encounter interactions and accessible text
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
@@ -136,21 +151,6 @@ jobs:
             if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
           done 3< out/sims.txt
-      - name: Capture camelid playback and compositions
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
-        timeout-minutes: 8
-        run: |
-          while read -r KIND UDID _ <&3; do
-            if [ "$KIND" = iphone ]; then export CAMELID_VIDEO=1; else export CAMELID_VIDEO=0; fi
-            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
-          done 3< out/sims.txt
-      - name: Preserve camelid review capture separately
-        uses: actions/upload-artifact@v5
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
-        with:
-          name: camelid-preview
-          path: out/camelid
-          if-no-files-found: warn
       - name: Collect
         if: always()
         run: |
