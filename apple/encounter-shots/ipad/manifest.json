@@ -1,0 +1,50 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "710AD72D-C772-48B9-BD1B-0405689DA594.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "leaf-note_0_6452621B-61DA-4991-A66F-0DA9E9CA3A21.png",
+        "timestamp" : 1793074775.386
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "28B45D1D-D9AC-4692-80EE-CAE8571F69B6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "leaf-opening_0_3C6D23D2-947F-4FC1-91D6-673171AEF01E.png",
+        "timestamp" : 1793074745.131
+      }
+    ],
+    "testIdentifier" : "LeafTests/testBundledLeafAndReturn()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/LeafTests/testBundledLeafAndReturn"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "B62AAFEF-3B55-4E38-BF37-3B4BD07D4F80.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "leaf-large-note_0_CC283814-9C89-46B0-8EAB-91D0A3FB549A.png",
+        "timestamp" : 1793074825.375
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "74525477-C382-4C32-B8FB-89B8937AD362.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "leaf-large-opening_0_9E8A9BD1-7123-4771-9A44-24B01F6635A1.png",
+        "timestamp" : 1793074800.814
+      }
+    ],
+    "testIdentifier" : "LeafTests/testLeafAtLargestText()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/LeafTests/testLeafAtLargestText"
+  }
+]

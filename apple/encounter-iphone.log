@@ -1,0 +1,14 @@
+Writing result bundle at path:
+	/Users/runner/work/terra-incognita/terra-incognita/build/encounter-iphone.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:E839A11B-51B4-4AD3-ACF4-A53B95B7C957, OS:26.5, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:E839A11B-51B4-4AD3-ACF4-A53B95B7C957, OS:26.5, name:iPhone 17 Pro }
+2026-10-27 04:26:04.528 xcodebuild[16286:53884] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-27 04:26:04.528 xcodebuild[16286:53884] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-27 04:27:10.828 xcodebuild[16286:53884] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-27 04:27:10.828 xcodebuild[16286:53884] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-27 04:28:00.991 xcodebuild[16286:53884] [MT] IDETestOperationsObserverDebug: 223.147 elapsed -- Testing started completed.
+2026-10-27 04:28:00.992 xcodebuild[16286:53884] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-27 04:28:00.992 xcodebuild[16286:53884] [MT] IDETestOperationsObserverDebug: 223.147 sec, +223.147 sec -- end
+Testing started
