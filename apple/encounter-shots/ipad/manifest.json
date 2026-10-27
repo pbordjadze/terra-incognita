@@ -1,0 +1,101 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "B2C7ECE1-0836-4C26-A428-504428990F0D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-whale-from-globe_0_44C33316-F838-4CCF-ABEB-17E118789131.png",
+        "timestamp" : 1793104219.395
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "756EAB86-A3F1-442C-A513-F773D549AD71.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-camelid-from-globe_0_D45457E2-CCF7-4C30-B741-364800FC64BF.png",
+        "timestamp" : 1793104195.14
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "4DD018A9-F393-4DB9-9B83-7BD02FE5FF5A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-ordinary-globe_0_8E46319A-7E35-4F78-B535-9BCC04D69D3C.png",
+        "timestamp" : 1793104176.206
+      }
+    ],
+    "testIdentifier" : "DemoMenuTests/testBothStoriesOpenVoluntarilyFromTheGlobe()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/DemoMenuTests/testBothStoriesOpenVoluntarilyFromTheGlobe"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "BFB7EC4A-1C79-4512-84EC-CE6E41A95B07.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-film-restored_0_4A889F17-CBDE-4DC8-9F71-9C7ABABC3CEA.png",
+        "timestamp" : 1793104309.284
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "C3F688F1-424F-469B-B8B8-4DC9258AC90E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-whale-from-film_0_B78491B6-794A-4809-93AC-D3F94CAAC72F.png",
+        "timestamp" : 1793104303.569
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "4C9BA72A-8867-4464-87D9-0C4F865602D0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-camelid-from-film_0_C6BA5412-5A09-495E-969A-68462DF108B8.png",
+        "timestamp" : 1793104279.247
+      }
+    ],
+    "testIdentifier" : "DemoMenuTests/testBothStoriesReturnToTheSelectedFilm()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/DemoMenuTests/testBothStoriesReturnToTheSelectedFilm"
+  },
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "CD46F062-1310-47BE-A024-2DB891F51F39.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-largest-text-selected-look_0_00EB9526-5801-4BE6-87A7-E6A02B1F2900.png",
+        "timestamp" : 1793104655.05
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "C87C0B8D-7FA3-45CE-A354-D21651963D24.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-largest-text-scrolled_0_EC0E1D13-840E-44D6-BBA8-A164D9B55542.png",
+        "timestamp" : 1793104463.056
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "ED77F91A-A662-44C1-A869-67EB655459C9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "demo-menu-largest-text-opening_0_A956C030-8011-4634-B7FD-EDCAB3350194.png",
+        "timestamp" : 1793104372.551
+      }
+    ],
+    "testIdentifier" : "DemoMenuTests/testLargestTextMenuReachesEveryDemoAndFilmLook()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/DemoMenuTests/testLargestTextMenuReachesEveryDemoAndFilmLook"
+  }
+]
