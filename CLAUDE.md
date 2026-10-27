@@ -1,7 +1,8 @@
 # Terra Incognita — engineering notes
 
-A demo app: a medieval map that plays as a film, from the whole world down to a street, each scale a
-finished picture in the chosen look. This file is the map and the rules.
+A playground for a wandering atlas: the app opens on a live globe in Wikipedia's location-map style,
+and a developer workbench starts one prototype at a time on it or beside it. Earlier directions (the
+Persian style, the plate films) are parked prototypes, kept whole. This file is the map and the rules.
 
 ## Documentation scope
 
@@ -13,6 +14,22 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
+- **The playground** (`App/TerraIncognita/Playground/`; how to add a prototype: `docs/playground.md`).
+  `PlaygroundRoot` is the app: the globe, the workbench button (top right) and, while a prototype
+  is active, its chip (Open, ✕). `Playground` holds the one active `PrototypeStage`, which owns
+  everything its prototype adds (markers, a style, an overlay, a screen, an invitation) and takes
+  it all away when it ends: one at a time is the workbench's isolation rule. `Catalog.swift` lists
+  the native prototypes, one entry each; web packs (`Prototypes/<id>/`, and remote catalogs) are
+  found by `PackStore` and hosted by `WebPack.swift` (scheme `terra-pack`, bridge
+  `Prototypes/_runtime/terra.js`, runtime 1). `GlobeMarker`s follow the geography on the globe.
+  The workbench's Live line counts stages, markers, globes, films and web views: ending a
+  prototype returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
+  - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
+    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf`, `-look`/`-film`,
+    `-globeStyle persian` start the matching prototype.
+  - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
+  - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
+    `serve.cjs` previews over a stand-in globe, `check.cjs` checks one in Chromium).
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
@@ -25,10 +42,11 @@ Keep design discussions and plans in that private repository.
     (`contained`; only the first plate clamps), and pinching in past a plate's rest slides the view
     towards the closer plate so it arrives inside it at the hand-over (`steered`): no jumps.
   - `Plates.swift`: decodes `Atlas/`.
-  - `AtlasScreen`: SwiftUI around it.
+  - `FilmScreen`: SwiftUI around it, the parked `film` prototype: made when opened (no plate is
+    decoded for the plain globe), with its look menu and Back.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
-- **The globe** (`App/TerraIncognita/Globe/`, the button beside the look menu): the whole Earth
-  drawn live, in two styles chosen from the palette menu (kept between launches, `globeStyle`):
+- **The globe** (`App/TerraIncognita/Globe/`, the opening view): the whole Earth
+  drawn live, in two styles (the Persian one is the parked `persian` prototype):
   Wikipedia's location-map colours (WikiProject Maps), a little prettier, and the Persian, the same
   map in colours and a frame studied from a 1529 Persian manuscript (`Globe.metal`'s `P_` palette).
   A change of style crossfades.
@@ -40,18 +58,19 @@ Keep design discussions and plans in that private repository.
   - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
     tapping a country (lit from the country map `ids.png`), the names (pictures with their halos
     drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
-    the Persian style, a headpiece with the name in its cartouche). Made the first time it is
-    opened and kept (its maps decoded once), paused while the film shows.
+    the Persian style, a headpiece with the name in its cartouche), and an active prototype's
+    invitation above it. Made at launch and kept (its maps decoded once), paused while a screen
+    covers it.
   - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.
     The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
     `tools/globe/ornament.py` (its docstring is their layout; no source image is used), and
     `type.json` is the type (Design rules).
-  - Debug builds take `-globe` (open on it), `-globeStyle wikipedia|persian`, `-globe-at lon lat
-    zoom` (held there) and `-globe-select <name>`.
+  - Debug builds take `-globe-at lon lat zoom` (held there) and `-globe-select <name>`
+    (`-globe` is accepted and changes nothing: the globe is always the opening view).
 - **The Aegean leaf** (`Leaf/`, `App/TerraIncognita/Leaf/`): an offline HTML/canvas leaf in an ephemeral
-  WKWebView, entered with the leaf button. The Metal globe and plate player are suspended while it
+  WKWebView, the `leaf` prototype (its own screen). The Metal globe and plate player are suspended while it
   is open. The host supplies system text size, Reduce Motion and scene activity and permits only
   bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
   - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
@@ -61,6 +80,40 @@ Keep design discussions and plans in that private repository.
     browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
     `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;
     manual CI can select `leaf_only` to avoid photographing every film and globe style.
+- **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
+  an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
+  `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
+  Pan, pinch or double-tap pauses the clock and hides the authored composition until resumed.
+  Prehistoric scenes hide modern politics and explicitly identify modern geography as a reference.
+  `CamelidAnimals` in the asset catalog is original generated art, cropped once by `CamelidArt`.
+  Optional evidence and the textual equivalent are bundled in `CamelidEvidence`.
+  Debug: `-camelid <seconds>` holds a complete composition, `-camelid-play` runs playback, and
+  `-camelid-reduce-motion` exercises held camera compositions. `ci/camelid_capture.sh` captures
+  actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
+  step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
+  `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
+- **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
+  Al-Hitan opens an authored sequence on the same globe. The entry appears from 2× scale; the
+  map's accessibility action “Go to Whale fossil, Wadi Al-Hitan” moves there without starting playback.
+  Debug: `-whale <seconds>` holds a composition and `-whale-play` runs the native clock.
+  `ci/whale_capture.sh` captures selected simulator compositions and an optional full phone video
+  using unique first-frame and authored-clock-completion acknowledgements, rather than guessed
+  launch or ending delays. These are not frame-rate measurements. The quiet geographic view
+  during the large time jump is intentional.
+  Manual CI can select `interaction_suite=whale` on a branch for focused `WhaleEncounterTests`,
+  and `whale_capture=true` requests report-only capture after interactions. Pushes with
+  `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction
+  suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
+  are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
+- **The other studies**: the Indian Ocean encounter (`App/TerraIncognita/Experience/`, `ocean`: a seed
+  off Madagascar and an invitation), the river study (`Water/`, `App/TerraIncognita/Water/`, `water`;
+  `docs/water-engineering.md`).
+- **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
+  helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar prototypes in succession
+  with the live counts back to the plain globe's, parked work, the bundled pack, and a remote
+  revision served by `tools/playground/serve.cjs` arriving, rolling back and opening offline.
+  `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
+  runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
@@ -80,7 +133,7 @@ Keep design discussions and plans in that private repository.
   2026. Its last state is in `main`'s history at 1f9b941 (`git show 1f9b941:Web/index.html`; also
   `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`, `tools/build_textures.py`,
   `tools/sprites.py`, `ci/web_check.cjs`).
-- **CI** (`ci/` and `.github/workflows/ci.yml`):
+- **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[playground-check]`, `[ipa]`):
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
     and no unused file in the bundle), the globe's data by `ci/check_globe.py`, and the tools' syntax.
   - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
@@ -90,6 +143,9 @@ Keep design discussions and plans in that private repository.
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
+  - `packs.yml` (Linux only): a push that changes only web packs skips the macOS workflow; this one
+    validates them and, once R2 is configured (repository secrets), publishes changed packs as new
+    revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
 
 ## Design rules
 
@@ -162,7 +218,12 @@ the caption's headpiece, and the one chosen country, gilded as the cartouche. Th
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;
   a commit message says what changed and why and quotes no one.
-- No network: everything loads from the bundle; no analytics, no accounts.
+- No network, with one deliberate exception: the workbench fetches prototype packs from its
+  configured sources while it is open, and when a pack is opened (HTTPS, plain GETs, an ephemeral
+  session, hashes checked). The globe and every bundled experience load from the bundle, and a
+  pack's page can reach nothing outside its pack. No analytics, no accounts.
+- Prototypes are additive: a new one adds a folder and an entry, and changes no other. Park, don't
+  delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
 - Name, icon and listing are the owner's to decide (the icon is a placeholder).

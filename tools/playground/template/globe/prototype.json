@@ -1,0 +1,17 @@
+{
+  "id": "{{id}}",
+  "title": "{{title}}",
+  "summary": "One line for the workbench: what this shows.",
+  "runtime": 1,
+  "presentation": "globe",
+  "entry": "index.html",
+  "anchor": { "lon": 10, "lat": 35, "zoom": 2 },
+  "markers": [
+    { "id": "place", "lon": 10, "lat": 35, "image": "marker.png", "width": 44, "height": 44,
+      "label": "{{title}}", "minZoom": 1, "opens": true }
+  ],
+  "overlay": "overlay.html",
+  "taps": false,
+  "shelf": "current",
+  "background": "#F6F2E7"
+}

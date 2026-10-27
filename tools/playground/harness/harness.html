@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview: __TITLE__</title>
+<style>
+  :root { --paper: #F6F2E7; --ink: #2A2113; --quiet: #5A4A33; --line: #D9D2C0; --link: #0A5A80; --err: #8C1D18; }
+  * { box-sizing: border-box; }
+  html { background: #E9E5DA; color: var(--ink); color-scheme: light; }
+  body { margin: 0; font: 15px/1.45 ui-sans-serif, system-ui, sans-serif; }
+  a { color: var(--link); }
+  .bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 12px 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .bar h1 { font-size: 18px; margin: 0; }
+  .bar .meta { color: var(--quiet); }
+  .bar nav { margin-left: auto; display: flex; gap: 14px; }
+  .bar nav a[aria-current] { color: var(--ink); font-weight: 600; text-decoration: none; }
+  .layout { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; align-items: flex-start; padding: 24px 16px 40px; }
+  .frame { padding: 12px; background: #1C1A16; border-radius: 52px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+  .frame.ipad { border-radius: 36px; }
+  #device { position: relative; overflow: hidden; border-radius: 40px; background: #F4F1EA; }
+  .frame.ipad #device { border-radius: 24px; }
+  #stage { position: absolute; inset: 0; touch-action: none; outline-offset: -4px; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+  #globe { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .marker { position: absolute; left: 0; top: 0; padding: 0; margin: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; border-radius: 50%; }
+  .marker[hidden] { display: none; }
+  .marker img { display: block; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
+  .marker:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  iframe.pack { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  iframe.overlay { background: transparent; pointer-events: none; }
+  iframe.screen { background: #fff; }
+  #back { position: absolute; left: 6px; top: 6px; width: 44px; height: 44px; z-index: 5; display: none; border: 0; border-radius: 22px;
+          background: rgba(28, 26, 22, .82); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
+  #back:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  #device.has-screen #back { display: block; }
+  #ended { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+           background: rgba(244, 241, 234, .94); text-align: center; padding: 24px; }
+  #ended[hidden] { display: none; }
+  #ended p { margin: 0; max-width: 24ch; }
+  .controls { width: 320px; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .controls h2 { font-size: 15px; margin: 0 0 8px; }
+  .controls section + section { margin-top: 18px; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row input[type=range] { flex: 1; min-width: 0; }
+  .row output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+  button.plain { font: inherit; padding: 8px 12px; border: 1px solid #8A7F66; border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+  button.plain:focus-visible, input:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  #camera { color: var(--quiet); font-variant-numeric: tabular-nums; margin: 0; }
+  #log { list-style: none; margin: 0; padding: 8px; height: 220px; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 8px;
+         font: 12.5px/1.4 ui-monospace, Menlo, monospace; }
+  #log li { padding: 2px 0; border-bottom: 1px solid #F0ECE0; overflow-wrap: anywhere; }
+  #log li.error { color: var(--err); font-weight: 600; }
+  #log li.warn { color: #7A4A00; }
+  .note { color: var(--quiet); font-size: 13px; margin: 8px 0 0; }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a href="/">All prototypes</a>
+  <h1 id="title"></h1>
+  <span class="meta" id="meta"></span>
+  <nav aria-label="Device"><a id="to-phone">Phone</a><a id="to-ipad">iPad</a></nav>
+</header>
+<div class="layout">
+  <div class="frame" id="frame">
+    <div id="device" class="device">
+      <div id="stage" tabindex="0" role="application" aria-label="Stand-in globe. Arrow keys turn it; plus and minus zoom.">
+        <canvas id="globe"></canvas>
+        <div id="markers"></div>
+      </div>
+      <button id="back" type="button" aria-label="Back to the globe">&lsaquo;</button>
+      <div id="ended" hidden>
+        <p>The prototype ended. The plain globe is as it was.</p>
+        <button class="plain" id="again" type="button">Start again</button>
+      </div>
+    </div>
+  </div>
+  <aside class="controls" aria-label="Preview controls">
+    <section>
+      <h2>Reader settings</h2>
+      <div class="row"><label for="scale">Text size</label><input id="scale" type="range" min="1" max="3.2" step="0.1" value="1"><output id="scale-out" for="scale">1.0</output></div>
+      <div class="row"><input id="motion" type="checkbox"><label for="motion">Reduce Motion</label></div>
+    </section>
+    <section>
+      <h2>Prototype</h2>
+      <div class="row"><button class="plain" id="restart" type="button">Restart</button><button class="plain" id="end" type="button">End prototype</button></div>
+      <p id="camera"></p>
+      <p class="note">A stand-in globe (Natural Earth land, orthographic), not the app's renderer. The host's rules are the same: the pack's page is told the camera and the settings by <code>terra.js</code>.</p>
+    </section>
+    <section>
+      <h2>Log</h2>
+      <ol id="log" role="log" aria-live="polite" aria-label="terra.log messages and errors"></ol>
+    </section>
+  </aside>
+</div>
+<script>window.__proto = __PROTO__;</script>
+<script src="/_runtime/terra.js"></script>
+<script src="/_harness/harness.js"></script>
+</body>
+</html>

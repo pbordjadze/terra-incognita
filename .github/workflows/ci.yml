@@ -13,12 +13,17 @@ name: CI
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
+# Commit-message tags on branches: `[build-only]` compiles without simulator time; `[playground-check]`
+# runs only PlaygroundTests and RemotePackTests; `[ipa]` packages a device build (main publishes it).
+# A push that changes only web packs (Prototypes/) skips this workflow: packs.yml handles it on Linux.
 # The macOS runners (5 at once) are shared with pbordjadze/paint-by-number and pbordjadze/pigeon:
 # one macOS job per push here.
 
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore']
+    # a web pack alone needs no native build: packs.yml (Linux) validates and publishes it
+    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml']
   workflow_dispatch:
     inputs:
       device:
@@ -33,8 +38,12 @@ on:
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf]
+        options: [all, leaf, whale, playground]
         default: all
+      whale_capture:
+        description: Capture the whale experience after interactions (report only)
+        type: boolean
+        default: false
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -72,12 +81,16 @@ jobs:
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
+          # the playground's bundled packs and tools (docs/playground.md)
+          python3 tools/playground/playground.py validate 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 tools/playground/test_playground.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
+          for f in $(find Prototypes -name '*.js') tools/playground/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
           node --check Water/water.js || rc=1
           node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -86,7 +99,7 @@ jobs:
   apple:
     name: Simulator builds and encounter interactions
     runs-on: macos-26
-    timeout-minutes: 80
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
@@ -125,25 +138,82 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe Leaf Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Leaf Water Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 45
+        # `[build-only]` in a branch commit's message: compile and check the bundle, no simulator time
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) }}
+        timeout-minutes: 90
         run: |
-          # A focused branch rerun after a leaf test repair; main's publication gate is always full.
-          if [ "$GITHUB_REF_NAME" != main ] && [ "${{ inputs.interaction_suite }}" = leaf ]; then
-            export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests
+          # Focused branch checks support iteration; main's publication gate is always full.
+          if [ "$GITHUB_REF_NAME" != main ]; then
+            case "${{ inputs.interaction_suite }}" in
+              leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
+              whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests" ;;
+            esac
+            if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests"
+            fi
           fi
+          # A remote revision of the bundled hello-pack, served on this machine for RemotePackTests:
+          # the simulator shares the host's loopback, and xcodebuild hands TEST_RUNNER_* to the tests.
+          bash ci/remote_packs.sh build/remote-packs > out/remote-packs.log 2>&1
+          node tools/playground/serve.cjs --packs build/remote-packs --port 8790 > out/pack-server.log 2>&1 &
+          export TEST_RUNNER_PACKS_URL=http://127.0.0.1:8790/packs/catalog.json
+          for _ in $(seq 1 20); do curl -fsS "$TEST_RUNNER_PACKS_URL" > /dev/null 2>&1 && break; sleep 0.5; done
           bash ci/encounter_tests.sh
+      - name: Capture camelid playback and compositions
+        id: camelid_capture
+        # A review artifact, like the manual film screenshots; native tests remain a gate.
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        timeout-minutes: 20
+        run: |
+          # Capture the uninterrupted primary-phone film after native interactions. The UI suite supplies comparable
+          # iPad/phone milestone and interaction screenshots without repeating the iPad cold boot.
+          sort -r out/sims.txt > out/capture-sims.txt
+          while read -r KIND UDID _ <&3; do
+            [ "$KIND" = iphone ] || continue
+            export CAMELID_VIDEO=1
+            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
+          done 3< out/capture-sims.txt
+      - name: Preserve camelid review capture separately
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
+        with:
+          name: camelid-preview
+          path: out/camelid
+          if-no-files-found: warn
+      - name: Capture whale playback and compositions
+        id: whale_capture
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
+        timeout-minutes: 20
+        run: |
+          # Phone first, with a complete recording; other selected devices supply held scenes.
+          sort -r out/sims.txt > out/whale-capture-sims.txt
+          while read -r KIND UDID _ <&3; do
+            if [ "$KIND" = iphone ]; then export WHALE_VIDEO=1; else export WHALE_VIDEO=0; fi
+            bash ci/whale_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/whale/$KIND" "$UDID"
+          done 3< out/whale-capture-sims.txt
+      - name: Preserve whale review capture separately
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
+        with:
+          name: whale-preview
+          path: out/whale
+          if-no-files-found: warn
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
-        # Focused leaf checks attach opening/reading images through XCTest already.
+        # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && inputs.interaction_suite == 'leaf') }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'playground')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
@@ -162,7 +232,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} whale_capture=${{ steps.whale_capture.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
@@ -224,6 +294,12 @@ jobs:
           git init -q && git checkout -q -b sidestore && git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "SideStore source for build $BUILD"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "sidestore:refs/heads/sidestore"
+      - name: Retire the separate Study II listing after verified main publication
+        if: ${{ success() && github.ref_name == 'main' && contains(github.event.head_commit.message, '[retire-study2]') }}
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/retire_study2.sh
       - uses: actions/upload-artifact@v5
         if: always()
         with:
@@ -232,6 +308,13 @@ jobs:
             out
             !out/*.ipa
           if-no-files-found: ignore
+      - name: Preserve isolated branch device build
+        uses: actions/upload-artifact@v5
+        if: ${{ success() && github.ref_name != 'main' }}
+        with:
+          name: prototype-device-ipa
+          path: out/TerraIncognita.ipa
+          if-no-files-found: error
 
   report:
     name: Publish report
@@ -264,6 +347,9 @@ jobs:
           # Full test videos stay in the original Actions artifact. Large recordings exceed
           # GitHub's 100 MB file limit; the Git report keeps screenshots, logs and JSON.
           find . -type f -name '*.mp4' -delete
+          # Isolated device builds remain downloadable Actions artifacts; do not duplicate them
+          # into the screenshot report's Git history.
+          find . -type f -name '*.ipa' -delete
           git init -q && git checkout -q -b shots
           git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"

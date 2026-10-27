@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{title}}</title>
+<style>
+  /* The host sets --terra-text-scale (the reader's text size, 1 to 3.2) and [data-reduce-motion].
+     Every size below multiplies by the scale; nothing is smaller than 15px at scale 1. */
+  :root {
+    --paper: #F6F2E7;
+    --ink: #3B2C16;       /* 12:1 on the paper */
+    --quiet: #5A4A33;     /* 7.6:1: for the secondary line */
+    --focus: #0A5A80;
+    --scale: var(--terra-text-scale, 1);
+  }
+  html { background: var(--paper); color: var(--ink); color-scheme: light; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: ui-serif, "New York", Georgia, serif;
+    font-size: calc(18px * var(--scale));
+    line-height: 1.5;
+  }
+  main {
+    box-sizing: border-box;
+    max-width: 40rem;
+    margin: 0 auto;
+    /* the app's Back button sits in the top-left 56pt of the safe area: keep clear of it */
+    padding: calc(env(safe-area-inset-top, 0px) + 56px) calc(env(safe-area-inset-right, 0px) + 20px)
+             calc(env(safe-area-inset-bottom, 0px) + 32px) calc(env(safe-area-inset-left, 0px) + 20px);
+    animation: arrive .4s ease-out both;
+  }
+  h1 { font-size: calc(28px * var(--scale)); line-height: 1.2; font-weight: 600; margin: 0 0 .5em; }
+  p { margin: 0 0 1em; }
+  .quiet { color: var(--quiet); font-size: calc(16px * var(--scale)); }
+  button {
+    min-height: 44px;
+    padding: .55em 1.2em;
+    font: inherit;
+    color: var(--paper);
+    background: var(--ink);
+    border: 0;
+    border-radius: 10px;
+  }
+  button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
+  [data-reduce-motion] *, [data-reduce-motion] *::before, [data-reduce-motion] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{title}}</h1>
+  <p>Say what this is in a sentence or two. Someone who taps it first, knowing nothing, should be able to tell what they are looking at.</p>
+  <p class="quiet">Replace this page with the prototype. It runs offline, inside its folder.</p>
+  <button type="button" id="back">Back to the globe</button>
+</main>
+<script>
+  document.getElementById('back').addEventListener('click', function () { terra.close(); });
+</script>
+</body>
+</html>

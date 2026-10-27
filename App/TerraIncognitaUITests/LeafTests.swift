@@ -41,17 +41,13 @@ final class LeafTests: XCTestCase {
 
     @MainActor private func exercise(largeText: Bool) {
         let app = XCUIApplication()
-        app.launchArguments = ["-globe", "-globeStyle", "persian"]
+        app.launchArguments = []
         if largeText {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         }
         app.launch()
         defer { app.terminate() }
-        let door = app.buttons["An Aegean leaf"].firstMatch
-        XCTAssertTrue(door.waitForExistence(timeout: 45), "The separate leaf must remain reachable beside the globe")
-        XCTAssertTrue(door.isHittable)
-        XCTAssertTrue(app.frame.contains(door.frame), "The combined atlas entries must fit the screen at this text size: entry \(door.frame), screen \(app.frame)")
-        door.tap()
+        startPrototype("leaf", in: app)
         let menu = app.buttons["Open the leaf menu"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The bundled leaf menu must remain accessible")
         var painted = false
@@ -90,7 +86,7 @@ final class LeafTests: XCTestCase {
         let back = app.buttons["Return to the atlas"].firstMatch
         XCTAssertTrue(back.waitForExistence(timeout: 10))
         back.tap()
-        XCTAssertTrue(door.waitForExistence(timeout: 15), "The existing globe must still be present after leaving the leaf")
+        XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15), "The globe must still be present after leaving the leaf")
     }
 
     @MainActor func testBundledLeafAndReturn() { exercise(largeText: false) }

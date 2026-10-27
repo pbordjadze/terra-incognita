@@ -284,7 +284,7 @@ def persian_page(px, py, x, y, rr, R, W, H, grain):
     return page
 
 
-def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined):
+def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined, historical_reference=False):
     # the sea: a pale lapis wash, its coasts ruled like a panel, a gold hair close in and a lapis one out
     sea = mix(P_SEA, P_SEA_DEEP, depth)                      # (flat washes, as the manuscript's colours are)
     near = smoothstep(1.4, 2.6, k)                           # the rulings come with a closer look
@@ -305,9 +305,10 @@ def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott,
     # the chosen country gilded in the cartouche's matte gold, its speckle and all, and edged in its pink
     gild = P_SEL * (1 + 0.20 * hill + 0.05 * (vnoise(u * 2400, v * 1200) - 0.5))[..., None]
     land = mix(land, gild, SEL_ALPHA * m)
-    bl = line(border, 0.7 * scale) * lined(border)
+    border_on = lined(border) * (not historical_reference)
+    bl = line(border, 0.7 * scale) * border_on
     land = mix(land, P_BORDER, 0.75 * bl)
-    land = mix(land, P_PINK, line(border, 1.5 * scale) * lined(border) * (m > 0.04))
+    land = mix(land, P_PINK, line(border, 1.5 * scale) * border_on * (m > 0.04))
     col = mix(sea, land, landa)
     col = mix(col, P_COAST, line(d, 0.75 * scale * min(k ** 0.3, 1.3)))
     col = mix(col, P_GOLD, gl * np.where(landa > 0.5, 0.14, 0.22))
@@ -315,7 +316,9 @@ def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott,
     return col
 
 
-def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
+def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_reference=False):
+    if historical_reference:
+        selected = 0
     geo = np.asarray(Image.open(G / 'geo.png'))[..., :3]
     ter = np.asarray(Image.open(G / 'terrain.png'))[..., :3]
     ids = np.asarray(Image.open(G / 'ids.png'))
@@ -402,7 +405,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
     # the selected country (the shader: gather, then bilinear)
     m = sample((ids == selected).astype(np.float32), u, v)[..., 0] if selected else np.zeros_like(u)
     if persian:
-        col = persian_globe(ls, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined)
+        col = persian_globe(ls, k, u, v, d, fine, border, hill, hm, river, depth, mott, gl, m, landa, x, y, z, rr, R, lined, historical_reference)
     else:
         # the sea: deeper is a little bluer, with a faint watercolour mottle and lines along the coasts
         sea = mix(OCEAN_SHALLOW, OCEAN_DEEP, depth)
@@ -415,7 +418,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False):
         land = mix(land, RIVER, 0.75 * line(river, 0.65 * ls) * smoothstep(1.2, 2.2, k) * lined(river))
         # the selected country over its rivers, as a locator map has it; its borders drawn on top
         land = mix(land, LOCATOR * (1 + 0.12 * hill)[..., None], 0.94 * m)
-        land = mix(land, BORDER, 0.8 * line(border, 0.7 * ls) * lined(border))
+        land = mix(land, BORDER, 0.8 * line(border, 0.7 * ls) * lined(border) * (not historical_reference))
         col = mix(sea, land, landa)
         col = mix(col, COAST, line(d, 0.9 * ls * min(k ** 0.25, 1.4)))
         # the graticule, every 15 degrees
@@ -636,13 +639,14 @@ def main():
     a.add_argument('--scale', type=float, default=1)
     a.add_argument('--size', default='1032x1376', help='points: 1032x1376 the 13-inch iPad (the default), 402x874 an iPhone')
     a.add_argument('--no-labels', action='store_true')
+    a.add_argument('--historical-reference', action='store_true', help='modern geographic reference with political boundaries and labels suppressed')
     a.add_argument('--style', default='wikipedia', choices=('wikipedia', 'persian'))
     o = a.parse_args()
     w, h = map(int, o.size.split('x'))
     names = [c['n'] for c in json.loads((G / 'globe.json').read_text())['countries']]
     selected = names.index(o.select) + 1 if o.select else 0
-    img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian')
-    if not o.no_labels:
+    img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian', o.historical_reference)
+    if not o.no_labels and not o.historical_reference:
         clear = [buttons_box(w, h)] + ([caption_box(w, h)] if o.style == 'persian' else [])
         if o.style == 'persian' and page_alpha(o.zoom) > 0:
             clear += page_strips(w, h, safe_insets(w, h))

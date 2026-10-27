@@ -2,7 +2,29 @@ import SwiftUI
 import WebKit
 import UIKit
 
-/// Bundled study presented from the atlas controls. The web surface shares the tested drawing code.
+/// The river study as the workbench opens it: its own navigation bar, with the way back to the globe.
+struct WaterStudyScreen: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            WaterScreen()
+                .navigationTitle("Terra Incognita")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Back to the globe") { dismiss() }
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("closeWaterStudy")
+                    }
+                }
+                .toolbarBackground(.visible, for: .navigationBar)
+        }
+        .preferredColorScheme(.light)
+    }
+}
+
+/// Bundled study, opened from the workbench. The web surface shares the tested drawing code.
 struct WaterScreen: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -66,6 +88,7 @@ private struct WaterWebView: UIViewRepresentable {
 
     @MainActor final class Coordinator: NSObject, WKNavigationDelegate {
         var root: URL?
+        private let live = LiveCount.Token(.webViews)
         var scale: Double = 1
         var reduced = false
         private var recoveringContent = false

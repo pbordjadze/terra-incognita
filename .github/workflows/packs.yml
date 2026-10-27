@@ -1,0 +1,109 @@
+name: Packs
+
+# The web prototypes in Prototypes/ (docs/playground.md): checked on every push that touches them, and
+# published to the Cloudflare R2 bucket when it is configured. Linux only; no macOS runner is used.
+#   validate  every prototype against the contract, the size limits and the offline boundary
+#   check     node --check on the packs' and tools' JavaScript, and the tool's unit tests
+#   pack      catalog.json, packs/<id>/r<rev>/ and open/<id>.html, kept as the `packs` artifact. Packed from
+#             scratch (every pack revision 1): it shows what a pack looks like, not what is live
+#   publish   against the live bucket: only packs whose contents changed get the next revision, and the
+#             catalog is uploaded last. Skipped by `[no-publish]` in the commit message. Without the
+#             secrets and variables below it writes a note to the job summary and publishes nothing.
+# Secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and variables R2_BUCKET, PACKS_PUBLIC_URL
+# reach only the publish step. Publishes never overlap (they read and then write one catalog).
+
+on:
+  push:
+    branches-ignore: ['sidestore', 'ci-shots/**']
+    paths: ['Prototypes/**', 'tools/playground/**', 'ci/remote_packs.sh', '.github/workflows/packs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ contains(github.event.head_commit.message, '[no-publish]') && format('packs-check-{0}', github.ref) || 'packs-publish' }}
+  cancel-in-progress: ${{ contains(github.event.head_commit.message, '[no-publish]') }}
+
+jobs:
+  packs:
+    name: Validate, pack and publish the web prototypes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Validate
+        run: python3 tools/playground/playground.py validate
+      - name: Syntax and unit tests
+        run: |
+          rc=0
+          for f in $(find Prototypes tools/playground -name '*.js' -o -name '*.mjs' -o -name '*.cjs' | grep -v /node_modules/); do
+            node --check "$f" || rc=1
+          done
+          python3 -m unittest tools/playground/test_playground.py || rc=1
+          exit $rc
+      - name: Pack
+        run: python3 tools/playground/playground.py pack --out build/packs
+      - uses: actions/upload-artifact@v5
+        with: { name: packs, path: build/packs, if-no-files-found: error }
+      - name: Publish
+        if: ${{ !contains(github.event.head_commit.message, '[no-publish]') }}
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          PACKS_PUBLIC_URL: ${{ vars.PACKS_PUBLIC_URL }}
+        run: |
+          missing=""
+          for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET PACKS_PUBLIC_URL; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            {
+              echo "### Packs"
+              echo "R2 is not configured (empty:$missing), so nothing was published. The packed output is attached as the \`packs\` artifact."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python3 tools/playground/playground.py publish --summary "$GITHUB_STEP_SUMMARY"
+
+
+  time-atlas:
+    name: Time Atlas gestures and layouts
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Numeric cameras and data
+        run: node --test tools/playground/time-atlas/core.test.cjs
+      - name: Install browser checks
+        run: |
+          npm install --prefix build/time-browser playwright@1.56.1 --fetch-timeout=60000 --fetch-retries=1
+      - name: Interactions in Chromium and WebKit
+        env:
+          NODE_PATH: ${{ github.workspace }}/build/time-browser/node_modules
+        run: node tools/playground/time-atlas/check.cjs
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: time-atlas-preview
+          path: build/time-atlas-report
+          if-no-files-found: warn
+      - name: Preserve the visual review report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p build/time-atlas-report
+          cd build/time-atlas-report
+          echo "$GITHUB_SHA" > COMMIT
+          git init -q
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "Time Atlas browser report"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/time-atlas-shots/${GITHUB_SHA}"

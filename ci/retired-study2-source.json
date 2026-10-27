@@ -1,0 +1,17 @@
+{
+  "name": "Terra Incognita II — Retired",
+  "identifier": "com.pbordjadze.terraincognita.study2.source",
+  "sourceURL": "https://github.com/pbordjadze/terra-incognita/releases/download/study2-40440112973/study2-source.json",
+  "apps": [],
+  "news": [
+    {
+      "title": "The demos now live in Terra Incognita",
+      "identifier": "com.pbordjadze.terraincognita.study2.retired.2026-10-27",
+      "caption": "Install or update Terra Incognita and choose a demo from its menu. Main SideStore source: https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json",
+      "date": "2026-10-27",
+      "tintColor": "#354F7D",
+      "notify": false,
+      "url": "https://github.com/pbordjadze/terra-incognita"
+    }
+  ]
+}

@@ -99,6 +99,7 @@ private struct LeafWebView: UIViewRepresentable {
 
     @MainActor final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         weak var webView: WKWebView?
+        private let live = LiveCount.Token(.webViews)
         var settings = Settings(reduceMotion: false, textSize: 1, active: true)
         private var applied: Settings?
         private var loaded = false

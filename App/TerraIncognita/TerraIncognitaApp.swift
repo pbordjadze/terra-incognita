@@ -1,19 +1,15 @@
 import SwiftUI
-import UIKit
 
-/// Terra Incognita: a medieval map that plays as a film, from the whole world down to a street. The
-/// pictures are each look's plates (`Atlas/`, made by tools/plates); `AtlasScreen` plays them.
+/// Terra Incognita: a playground for a wandering atlas. It opens on the plain Wikipedia-style globe;
+/// the workbench starts one prototype at a time on it or beside it (Playground/, docs/playground.md).
 @main
 struct TerraIncognitaApp: App {
     var body: some Scene {
         WindowGroup {
-            AtlasScreen()
+            PlaygroundRoot()
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
                 .preferredColorScheme(.dark)
-                // The film plays by itself: the screen stays awake while it is open.
-                .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
-                .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         }
     }
 }

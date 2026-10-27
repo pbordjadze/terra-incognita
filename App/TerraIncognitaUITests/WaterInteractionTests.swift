@@ -16,11 +16,11 @@ final class WaterInteractionTests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = []
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); defer { app.terminate() }
-        let entry = app.buttons["openWaterStudy"]
+        let entry = app.buttons["workbenchButton"]
         XCTAssertTrue(entry.waitForExistence(timeout: 60), app.debugDescription)
         XCTAssertTrue(entry.isHittable)
         capture(large ? "large-00-atlas" : "regular-00-atlas")
-        entry.tap()
+        startPrototype("water", in: app)
         let gather = control("Gather", app)
         XCTAssertTrue(gather.waitForExistence(timeout: 60), app.debugDescription)
         XCTAssertTrue(gather.isHittable)

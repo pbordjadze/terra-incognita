@@ -13,6 +13,7 @@ struct GlobeUniforms {
                         // the page's frame (how far it has come in)
     float4 r0, r1, r2;  // world from view, by rows
     float4 u3;          // the safe area's insets (px): top, bottom, left, right
+    float4 u4;          // x: illustrative prehistoric view suppresses modern political boundaries
 };
 
 struct GlobeVertex { float4 position [[position]]; };
@@ -256,6 +257,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     // between lines) it jumps: no line there
     float2 tx = dx * float2(4096, 2048), ty = dy * float2(4096, 2048);
     float borderOn = perTexel(float2(dfdx(border), dfdy(border)), tx, ty) < 1.5 && abs(border) < 7 ? 1.0 : 0.0;
+    borderOn *= 1 - U.u4.x;
     float riverOn = perTexel(float2(dfdx(river), dfdy(river)), tx, ty) < 1.5 && abs(river) < 7 ? 1.0 : 0.0;
     float landa = smoothstep(-0.5, 0.5, d / max(fwD, 1e-5));
     float k = clamp(zoom, 1.0, 8.0);
