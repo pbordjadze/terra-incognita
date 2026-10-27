@@ -27,3 +27,10 @@ globe's relief and seas. Fonts (SIL Open Font License, their licences beside the
 each look's folder and the globe's): IM Fell English, EB Garamond, Uncial Antiqua, Alegreya, Libre
 Caslon Text, Cormorant and Libertinus Serif. The globe follows the WikiProject Maps conventions for
 location maps; it is not affiliated with Wikimedia. Nothing leaves the device.
+
+An offline Aegean atlas leaf is available from the leaf button beside the globe controls. Its
+bundled physical map, optional notes and source qualifications are under `Leaf/`; the native host
+is `App/TerraIncognita/Leaf/LeafScreen.swift`. Local preview: `node tools/aegean/serve.cjs`, then open
+`http://127.0.0.1:8787`. With Playwright and Chromium available, `node tools/aegean/check.cjs` exercises
+the interactions and reading layouts. `CHROMIUM_PATH` can select the browser executable. Native
+screenshots use `-leaf`; CI's manual `leaf_only` option photographs this route on either device.

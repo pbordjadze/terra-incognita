@@ -36,6 +36,7 @@ const close=(a,b,epsilon=.001)=>Math.abs(a-b)<epsilon;
  await p.locator('#light').fill('100');await p.locator('#light').dispatchEvent('input');await p.waitForTimeout(100);assert.equal((await state()).light,1);await p.screenshot({path:'out/leaf-ipad-blue-hour.png'});
  // The menu provides a non-timed and keyboard-operable alternative to the long press.
  await p.locator('#menu-button').click();await p.locator('#glass').click();assert.ok((await state()).lens);await p.keyboard.press('ArrowRight');let lens=(await state()).lens;assert.ok(lens[0]>chart.width/2);await p.locator('#lens-close').click();
+ await p.locator('#menu-button').click();await p.locator('#handle-skiff').click();await p.waitForFunction(()=>document.activeElement.id==='skiff');const sail=(await state()).boat.sail;await p.keyboard.press('Enter');assert.notEqual((await state()).boat.sail,sail);const bx=(await state()).boat.x;await p.keyboard.press('ArrowRight');assert.ok((await state()).boat.x>bx);
  // Labels should never overlap each other, at base size and larger native text settings.
  for(const factor of [1,1.6]){
    await p.evaluate(f=>leafSettings({textSize:f,reduceMotion:true}),factor);await p.locator('#home').click();await p.waitForTimeout(80);s=await state();
@@ -46,6 +47,6 @@ const close=(a,b,epsilon=.001)=>Math.abs(a-b)<epsilon;
  const phone=await browser.newContext({viewport:{width:402,height:874},hasTouch:true,reducedMotion:'reduce'});const q=await phone.newPage();q.on('pageerror',e=>errors.push(e.message));await q.goto(process.env.LEAF_URL||'http://127.0.0.1:8787');await q.waitForFunction(()=>window.leafReady);await q.waitForTimeout(900);assert.equal((await q.evaluate(()=>leafDiagnostics())).still,true);await q.screenshot({path:'out/leaf-iphone.png'});
  await q.evaluate(()=>leafSettings({textSize:1.8,reduceMotion:true}));await q.locator('#menu-button').click();await q.locator('#note-index button').nth(3).click();await q.locator('#note summary').click();await q.screenshot({path:'out/leaf-iphone-large-text.png'});
  const overflow=await q.locator('#note').evaluate(el=>el.scrollWidth>el.clientWidth+1);assert.equal(overflow,false);await q.locator('.return-to-water').click();await q.waitForTimeout(100);assert.equal((await q.evaluate(()=>leafDiagnostics())).note,null);
- assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity, stillness, blue hour, keyboard glass, label collisions, phone large text, local requests only.');
- fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:13,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
+ assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity, stillness, blue hour, keyboard glass and skiff, label collisions, phone large text, local requests only.');
+ fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:14,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});

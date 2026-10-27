@@ -11,10 +11,10 @@
   let light=0, targetLight=0, activeNote=null, previousFocus=null, labelBoxes=[], nativeActive=true, suppressClick=false;
   const cam = {x:0,y:80,s:1}, home = {x:0,y:80,s:1};
   const fingers = new Map();
-  let gesture=null, holdTimer=null, lastTap=0, held=false;
+  let gesture=null, holdTimer=null, lastTap=0, lastTapPoint=null, held=false;
   let lens=null, lensPinned=false;
   let boat={x:-36,y:72,angle:-.22,sail:1,drag:false};
-  let wakes=[], flutter=0, hovered=null, pointer={x:-1000,y:-1000};
+  let wakes=[], menuReturnFocus=null, pendingMenuFocus=null;
   const bounds=data.bounds;
   const fromLL = p => [(p[0]-data.projection.lon0)*data.projection.cos*120,(38-p[1])*120];
   const toScreen = p => [(p[0]-cam.x)*cam.s+w/2,(p[1]-cam.y)*cam.s+h/2];
@@ -150,7 +150,7 @@
     g.fillStyle=palette[light>.6?1:0].copper;g.beginPath();g.moveTo(-6,-19);g.lineTo(-14*sail,2);g.lineTo(-6,2);g.closePath();g.fill();
     g.strokeStyle=palette[light>.6?1:0].line;g.lineWidth=.6;
     for(let i=0;i<3;i++){g.beginPath();g.moveTo(-19,10+i*4);g.quadraticCurveTo(0,13+i*4,20,9+i*4);g.stroke();}
-    g.restore();return pos;
+    g.restore();const b=$('skiff');b.style.left=(pos[0]-22)+'px';b.style.top=(pos[1]-22)+'px';b.hidden=pos[0]<22||pos[0]>w-22||pos[1]<22||pos[1]>h-22;return pos;
   }
   function ornaments(g){
     const [wx,wy]=toScreen(notes[0].world);if(wx>-50&&wx<w+50&&wy>-50&&wy<h+50){g.globalAlpha=.7;drawWind(g,wx,wy,.7,time);g.globalAlpha=1;}
@@ -212,7 +212,7 @@
   function stopHold(){clearTimeout(holdTimer);holdTimer=null;}
   function wake(p){if(still)return;wakes.push({p,t:time});if(wakes.length>4)wakes.shift();dirty=true;}
   chart.addEventListener('pointerdown', e=>{
-    if(e.target.closest('button')&&!e.target.closest('[data-note]'))return;
+    if(e.target.closest('button')&&!e.target.closest('[data-note],#skiff'))return;
     suppressClick=false;
     if(e.pointerType==='mouse'&&e.button!==0)return;
     chart.setPointerCapture(e.pointerId);const p=local(e);fingers.set(e.pointerId,p);stopHold();held=false;
@@ -222,7 +222,7 @@
     if(!skiff&&!isLand(toWorld(p))){holdTimer=setTimeout(()=>{if(!gesture?.moved&&fingers.size===1){held=true;gesture.kind='lens';lens=p.slice();lensPinned=false;dirty=true;chime(174,.03);}},430);}
   });
   chart.addEventListener('pointermove',e=>{
-    const p=local(e);pointer={x:p[0],y:p[1]};if(!fingers.has(e.pointerId))return;
+    const p=local(e);if(!fingers.has(e.pointerId))return;
     fingers.set(e.pointerId,p);if(!gesture)return;
     if(fingers.size>=2){stopHold();const ps=[...fingers.values()],mid=[(ps[0][0]+ps[1][0])/2,(ps[0][1]+ps[1][1])/2];cam.s=gesture.s*Math.hypot(ps[1][0]-ps[0][0],ps[1][1]-ps[0][1])/gesture.distance;constrain();cam.x=gesture.anchor[0]-(mid[0]-w/2)/cam.s;cam.y=gesture.anchor[1]-(mid[1]-h/2)/cam.s;constrain();dirty=true;return;}
     const dx=p[0]-gesture.start[0],dy=p[1]-gesture.start[1];if(Math.hypot(dx,dy)>6){gesture.moved=true;stopHold();}
@@ -237,8 +237,8 @@
     const p=fingers.get(e.pointerId);fingers.delete(e.pointerId);stopHold();boat.drag=false;
     if(fingers.size){const q=[...fingers.values()][0];gesture={kind:'pan',start:q,last:q,cam:{...cam},moved:true};return;}
     if(!cancel&&gesture&&!gesture.moved&&!held){
-      if(gesture.kind==='boat'){boat.sail=boat.sail===1?.16:1;chime(261.6,.045);flutter=1;}
-      else {const q=toWorld(p);if(!isLand(q)){wake(q);chime(196+Math.abs(q[0])*.1,.025);}if(performance.now()-lastTap<320)zoom(1.65,p);lastTap=performance.now();}
+      if(gesture.kind==='boat'){boat.sail=boat.sail===1?.16:1;chime(261.6,.045);}
+      else {const q=toWorld(p);if(!isLand(q)){wake(q);chime(196+Math.abs(q[0])*.1,.025);}if(lastTapPoint&&performance.now()-lastTap<320&&Math.hypot(p[0]-lastTapPoint[0],p[1]-lastTapPoint[1])<28)zoom(1.65,p);lastTap=performance.now();lastTapPoint=p;}
     }
     if(gesture?.kind==='lens'&&!lensPinned)lens=null;
     gesture=null;held=false;dirty=true;
@@ -258,16 +258,18 @@
   };
   function setStill(value){still=value;$('motion').textContent=still?'Let the page move':'Still the page';$('motion').setAttribute('aria-pressed',String(still));dirty=true;}
   $('motion').onclick=()=>setStill(!still);reduced.addEventListener('change',e=>setStill(e.matches));
-  $('glass').onclick=()=>{$('leaf-menu').close();lens=[w/2,h/2];lensPinned=true;dirty=true;$('lens-close').focus();$('announcement').textContent='Sounding glass open at the centre of the map. Use arrow keys to move it, or drag the water to move the map beneath it.';};
+  $('glass').onclick=()=>{pendingMenuFocus=$('lens-close');$('leaf-menu').close();lens=[w/2,h/2];lensPinned=true;dirty=true;$('announcement').textContent='Sounding glass open at the centre of the map. Use arrow keys to move it, or drag the water to move the map beneath it.';};
+  $('skiff').onclick=e=>{if(e.detail===0){boat.sail=boat.sail===1?.16:1;dirty=true;$('announcement').textContent=boat.sail===1?'The paper sail is raised.':'The paper sail is folded.';chime(261.6,.035);}};
+  $('handle-skiff').onclick=()=>{pendingMenuFocus=$('skiff');$('leaf-menu').close();const p=toScreen([boat.x,boat.y]);if(p[0]<22||p[0]>w-22||p[1]<22||p[1]>h-22){cam.x=boat.x;cam.y=boat.y;}$('skiff').hidden=false;dirty=true;$('announcement').textContent='Paper skiff. Use arrow keys to move it. Activate it to fold or raise its sail.';};
   $('retry').onclick=()=>location.reload();
   $('atlas').onclick=()=>{if(window.webkit?.messageHandlers?.leaf)window.webkit.messageHandlers.leaf.postMessage('close');else openMenu();};
-  function openMenu(){previousFocus=document.activeElement;$('leaf-menu').showModal();}
+  function openMenu(){menuReturnFocus=document.activeElement;$('leaf-menu').showModal();}
   $('menu-button').onclick=openMenu;
   $('leaf-menu').querySelector('.close-menu').onclick=()=>$('leaf-menu').close();
-  $('leaf-menu').addEventListener('close',()=>{dirty=true;previousFocus?.focus();});
+  $('leaf-menu').addEventListener('close',()=>{dirty=true;if(!$('note').open){const target=pendingMenuFocus||menuReturnFocus;pendingMenuFocus=null;requestAnimationFrame(()=>target?.focus());}});
   function openNote(id){
     const n=notes.find(n=>n.id===id);if(!n)return;
-    previousFocus=document.activeElement;activeNote=n;$('note-location').textContent=n.location;$('note-title').textContent=n.title;$('note-deck').textContent=n.deck;
+    previousFocus=document.activeElement.closest('#leaf-menu')?$('menu-button'):document.activeElement;activeNote=n;$('note-location').textContent=n.location;$('note-title').textContent=n.title;$('note-deck').textContent=n.deck;
     $('note-body').replaceChildren(...n.body.map(text=>{const p=document.createElement('p');p.textContent=text;return p;}));
     const sources=n.sources.flatMap(s=>{const p=document.createElement('p'),c=document.createElement('cite'),url=document.createElement('p');c.textContent=s.title;p.append(c,document.createElement('br'),document.createTextNode(s.text));url.className='source-url';url.textContent=s.url;return [p,url];});
     const limit=document.createElement('p');limit.className='qualification';limit.textContent=n.limit;$('note-sources').replaceChildren(...sources,limit);
@@ -293,13 +295,13 @@
     if(n.drawing==='caldera'){g.font='20px Libertinus';g.fillStyle=ink();g.textAlign='center';g.fillText('Caldera · minor islands schematic',320,238);}
   }
   document.addEventListener('keydown',e=>{
-    if($('note').open||$('leaf-menu').open||e.target.matches('input,summary')||(e.target.matches('button')&&!lensPinned))return;
+    if($('note').open||$('leaf-menu').open||e.target.matches('input,summary')||(e.target.matches('button')&&e.target.id!=='skiff'&&!lensPinned))return;
     if(e.key==='Escape'){lens=null;dirty=true;return;}
     const moves={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
-    if(moves[e.key]){e.preventDefault();const [dx,dy]=moves[e.key];if(lensPinned&&lens){lens[0]=clamp(lens[0]+dx*20,20,w-20);lens[1]=clamp(lens[1]+dy*20,20,h-20);}else{cam.x+=dx*32/cam.s;cam.y+=dy*32/cam.s;constrain();}dirty=true;}
+    if(moves[e.key]){e.preventDefault();const [dx,dy]=moves[e.key];if(e.target.id==='skiff'){const q=[boat.x+dx*8/cam.s,boat.y+dy*8/cam.s];if(!isLand(q)){boat.x=q[0];boat.y=q[1];}}else if(lensPinned&&lens){lens[0]=clamp(lens[0]+dx*20,20,w-20);lens[1]=clamp(lens[1]+dy*20,20,h-20);}else{cam.x+=dx*32/cam.s;cam.y+=dy*32/cam.s;constrain();}dirty=true;}
     if(e.key==='+'||e.key==='=')zoom(1.25);if(e.key==='-')zoom(.8);
   });
-  let audio=null, soundOn=false, noise=null;
+  let audio=null, soundOn=false;
   function chime(freq,volume){if(!audio||!soundOn)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(0,audio.currentTime);g.gain.linearRampToValueAtTime(volume,audio.currentTime+.025);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+1.7);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+1.8);}
   $('sound').onclick=async()=>{
     try {

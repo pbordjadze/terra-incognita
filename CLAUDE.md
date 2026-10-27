@@ -42,6 +42,16 @@ finished picture in the chosen look. This file is the map and the rules.
     `type.json` is the type (Design rules).
   - Debug builds take `-globe` (open on it), `-globeStyle wikipedia|persian`, `-globe-at lon lat
     zoom` (held there) and `-globe-select <name>`.
+- **The Aegean leaf** (`Leaf/`, `App/TerraIncognita/Leaf/`): an offline HTML/canvas leaf in an ephemeral
+  WKWebView, entered with the leaf button. The Metal globe and plate player are suspended while it
+  is open. The host supplies system text size, Reduce Motion and scene activity and permits only
+  bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
+  - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
+    vectors; never hand-edit `Leaf/data/chart.js`. Runtime uses no fetch, external service or storage.
+  - `node tools/aegean/serve.cjs` previews it locally; `node tools/aegean/check.cjs` exercises the actual
+    browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
+    `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;
+    manual CI can select `leaf_only` to avoid photographing every film and globe style.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
