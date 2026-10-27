@@ -34,16 +34,17 @@ try:
     run('xcrun', 'simctl', 'boot', udid, check=False)
     run('xcrun', 'simctl', 'bootstatus', udid, '-b', timeout=300)
     run('xcrun', 'simctl', 'install', udid, str(app), timeout=120)
-    run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', '16')
+    # Match the established sim_shots.sh budgets while a cold runtime is still settling.
+    run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', '16', timeout=180)
     time.sleep(12)
     frames = []
     for label, elapsed in [('rewind', 4), ('origin', 17), ('branches', 32),
                            ('beringia', 47), ('americas', 62), ('cousins', 82)]:
         terminate()
-        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', str(elapsed))
+        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid', str(elapsed), timeout=120)
         time.sleep(6)
         name = f'{label}.png'
-        run('xcrun', 'simctl', 'io', udid, 'screenshot', '--type=png', str(out / name))
+        run('xcrun', 'simctl', 'io', udid, 'screenshot', '--type=png', str(out / name), timeout=90)
         frames.append({'file': name, 'guided_time_seconds': elapsed})
 
     if os.environ.get('CAMELID_VIDEO') == '1':
@@ -52,7 +53,7 @@ try:
                                       '--codec=h264', '--force', str(out / 'native-playback.mp4')],
                                      stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         time.sleep(2)
-        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid-play')
+        run('xcrun', 'simctl', 'launch', udid, bundle, '-camelid-play', timeout=120)
         # Include initial rendering and the final freely explorable resting composition.
         for _ in range(19):
             time.sleep(5)

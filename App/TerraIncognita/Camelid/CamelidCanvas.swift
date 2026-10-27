@@ -247,7 +247,8 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         guard bounds.width > 0 else { return }
         CATransaction.begin(); CATransaction.setDisableActions(true)
         let t = story.preciseTime
-        let current = story.followed ? scene(at: t) : -1
+        // The displayed date and visible era must change together, even between clock reports.
+        let current = story.followed ? story.scene : -1
         let w = bounds.width, h = bounds.height
         let maximum = min(w * 0.55, 260)
         let baseY = h * 0.58
