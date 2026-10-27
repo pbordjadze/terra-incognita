@@ -444,6 +444,8 @@ final class PackStore {
     /// Reads every source's catalog (at most every 30 seconds unless forced). A check already under
     /// way is waited for, not repeated.
     func refresh(force: Bool = false) async {
+        // (no sources, nothing to check: only the bundled packs)
+        guard !sources.isEmpty else { return }
         if let running = refreshing {
             await running.value
             return

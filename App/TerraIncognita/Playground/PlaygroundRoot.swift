@@ -8,7 +8,6 @@ struct PlaygroundRoot: View {
     @State private var playground = Playground()
     /// Where the controls are, so the globe keeps its names clear of them.
     @State private var controlsFrame = CGRect.zero
-    @State private var chipFrame = CGRect.zero
     /// The launch screen's slate: the globe fades up from it.
     @State private var veil = 1.0
     @Environment(\.scenePhase) private var scenePhase
@@ -20,29 +19,26 @@ struct PlaygroundRoot: View {
 
     var body: some View {
         GlobeScreen(active: !covered && scenePhase == .active, style: style,
-                    keepClear: [controlsFrame, chipFrame], invitation: playground.stage?.invitation,
+                    keepClear: [controlsFrame], invitation: playground.stage?.invitation,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { playground.globeDrawn($0) })
             .accessibilityHidden(covered)
+            // Top right, all of it: iPadOS keeps the window's top-left corner for its own controls.
             .overlay(alignment: .topTrailing) {
-                // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
-                #if WORKBENCH
-                workbenchButton
-                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { controlsFrame = $0 }
-                    .padding(.trailing, inset)
-                    .padding(.top, style == .persian ? PersianCaption.pageRoom : 8)
-                #endif
-            }
-            .overlay(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 8) {
-                    if let stage = playground.stage, !covered { chip(stage) }
+                VStack(alignment: .trailing, spacing: 8) {
+                    HStack(alignment: .top, spacing: 10) {
+                        if let stage = playground.stage, !covered { chip(stage) }
+                        // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
+                        #if WORKBENCH
+                        workbenchButton
+                        #endif
+                    }
                     if let problem = playground.problem { problemNote(problem) }
                 }
-                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { chipFrame = $0 }
-                .padding(.leading, inset)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { controlsFrame = $0 }
+                .padding(.leading, 24)
+                .padding(.trailing, inset)
                 .padding(.top, style == .persian ? PersianCaption.pageRoom : 8)
-                // (clear of the workbench button)
-                .padding(.trailing, 76)
             }
             .animation(.easeInOut(duration: 0.25), value: playground.stage?.prototype.id)
             .overlay {
@@ -101,11 +97,14 @@ struct PlaygroundRoot: View {
                 .padding(.leading, stage.loading ? 0 : 12)
                 .accessibilityIdentifier("activePrototype")
             if stage.canOpen {
-                Button("Open") { stage.open() }
-                    .font(.subheadline)
-                    .frame(minHeight: 44)
-                    .padding(.horizontal, 4)
-                    .accessibilityIdentifier("openActivePrototype")
+                Button { stage.open() } label: {
+                    Text("Open")
+                        .font(.subheadline)
+                        .padding(.horizontal, 6)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityIdentifier("openActivePrototype")
             }
             Button { playground.choosePlainGlobe() } label: {
                 Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).frame(width: 44, height: 44)

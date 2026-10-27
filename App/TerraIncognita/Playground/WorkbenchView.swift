@@ -59,6 +59,8 @@ struct WorkbenchView: View {
             .refreshable { await packs.refresh(force: true) }
             .task { await packs.refresh() }
         }
+        // the app's gold accent is too pale for controls on white: a deep blue (over 7:1)
+        .tint(Color(red: 0.13, green: 0.33, blue: 0.55))
     }
 
     private func row(_ p: Prototype) -> some View {
@@ -72,9 +74,10 @@ struct WorkbenchView: View {
     private func rowLabel(_ title: String, summary: String? = nil, detail: String, active: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.body.weight(.semibold)).foregroundStyle(.primary)
-                if let summary { Text(summary).font(.subheadline).foregroundStyle(.secondary) }
-                Text(detail).font(.caption).foregroundStyle(.secondary)
+                // (explicit label colours: inside a list's button, .primary means the tint)
+                Text(title).font(.body.weight(.semibold)).foregroundStyle(Color(uiColor: .label))
+                if let summary { Text(summary).font(.subheadline).foregroundStyle(Color(uiColor: .secondaryLabel)) }
+                Text(detail).font(.caption).foregroundStyle(Color(uiColor: .secondaryLabel))
             }
             Spacer(minLength: 8)
             if active {
