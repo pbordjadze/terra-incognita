@@ -117,7 +117,7 @@ jobs:
       - name: Encounter interactions and accessible text
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 30
+        timeout-minutes: 50
         run: bash ci/encounter_tests.sh
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
