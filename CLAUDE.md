@@ -73,6 +73,18 @@ Keep design discussions and plans in that private repository.
   actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
   step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
   `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
+- **The whale sequence** (`App/TerraIncognita/Whale/`): a regional fossil illustration at Wadi
+  Al-Hitan opens an authored sequence on the same globe. The entry appears from 2× scale; the
+  map's accessibility action “Find whale fossil in Egypt” moves there without starting playback.
+  Debug: `-whale <seconds>` holds a composition and `-whale-play` runs the native clock.
+  `ci/whale_capture.sh` captures selected simulator compositions and an optional full phone video
+  using a unique first-frame submission acknowledgement, not a guessed launch delay or a frame-rate
+  measurement. The quiet geographic view during the large time jump is intentional.
+  Manual CI can select `interaction_suite=whale` on a branch for focused `WhaleEncounterTests`,
+  and `whale_capture=true` requests report-only capture after interactions. Pushes with
+  `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction
+  suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
+  are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.

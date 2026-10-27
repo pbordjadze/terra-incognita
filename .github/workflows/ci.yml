@@ -33,8 +33,12 @@ on:
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf]
+        options: [all, leaf, whale]
         default: all
+      whale_capture:
+        description: Capture the whale experience after interactions (report only)
+        type: boolean
+        default: false
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -86,7 +90,7 @@ jobs:
   apple:
     name: Simulator builds and encounter interactions
     runs-on: macos-26
-    timeout-minutes: 80
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
@@ -130,11 +134,14 @@ jobs:
       - name: Encounter interactions and accessible text
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 50
+        timeout-minutes: 70
         run: |
-          # A focused branch rerun after a leaf test repair; main's publication gate is always full.
-          if [ "$GITHUB_REF_NAME" != main ] && [ "${{ inputs.interaction_suite }}" = leaf ]; then
-            export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests
+          # Focused branch checks support iteration; main's publication gate is always full.
+          if [ "$GITHUB_REF_NAME" != main ]; then
+            case "${{ inputs.interaction_suite }}" in
+              leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
+              whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
+            esac
           fi
           bash ci/encounter_tests.sh
       - name: Capture camelid playback and compositions
@@ -160,13 +167,33 @@ jobs:
           name: camelid-preview
           path: out/camelid
           if-no-files-found: warn
+      - name: Capture whale playback and compositions
+        id: whale_capture
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
+        timeout-minutes: 20
+        run: |
+          # Phone first, with a complete recording; other selected devices supply held scenes.
+          sort -r out/sims.txt > out/whale-capture-sims.txt
+          while read -r KIND UDID _ <&3; do
+            if [ "$KIND" = iphone ]; then export WHALE_VIDEO=1; else export WHALE_VIDEO=0; fi
+            bash ci/whale_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/whale/$KIND" "$UDID"
+          done 3< out/whale-capture-sims.txt
+      - name: Preserve whale review capture separately
+        continue-on-error: true
+        uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
+        with:
+          name: whale-preview
+          path: out/whale
+          if-no-files-found: warn
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
-        # Focused leaf checks attach opening/reading images through XCTest already.
+        # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && inputs.interaction_suite == 'leaf') }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
@@ -185,7 +212,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} whale_capture=${{ steps.whale_capture.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
@@ -259,7 +286,7 @@ jobs:
         uses: actions/upload-artifact@v5
         if: ${{ success() && github.ref_name != 'main' }}
         with:
-          name: camelid-device-ipa
+          name: prototype-device-ipa
           path: out/TerraIncognita.ipa
           if-no-files-found: error
 

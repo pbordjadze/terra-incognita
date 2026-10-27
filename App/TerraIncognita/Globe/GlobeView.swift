@@ -36,6 +36,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onDrawn: (() -> Void)?
     private var encounterMark: UIButton?
     private var camelidMark: UIButton?
+    private var whaleFossilMark: UIButton?
+    /// UNESCO's property reference point, locating the fossil-bearing region rather than an
+    /// individual excavation or the illustrated skeleton.
+    private static let whaleLocality = GlobeCamera(lon: 30.18333, lat: 29.33333, zoom: 3)
     /// Once the atlas contains accessible objects it becomes a container. Keep the globe itself
     /// as a separate element so VoiceOver can still describe and directly manipulate the map.
     private var globeAccessibilityElement: UIAccessibilityElement?
@@ -50,6 +54,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if authoredMode { flight = nil; spin = .zero }
             encounterMark?.isHidden = authoredMode
             camelidMark?.isHidden = authoredMode
+            whaleFossilMark?.isHidden = authoredMode
             needsDraw = true
         }
     }
@@ -111,6 +116,37 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         exposeAtlasObjects()
     }
 
+    /// A small regional fossil encounter. Its illustration has no button ground or location pin.
+    func installWhaleFossil(image: UIImage, onInspect: @escaping () -> Void) {
+        whaleFossilMark?.removeFromSuperview()
+        let mark = UIButton(type: .custom)
+        mark.setImage(image.withRenderingMode(.alwaysOriginal), for: .normal)
+        mark.imageView?.contentMode = .scaleAspectFit
+        mark.bounds = CGRect(x: 0, y: 0, width: 56, height: 44)
+        mark.accessibilityIdentifier = "whaleFossil"
+        mark.accessibilityLabel = "Whale fossil, Wadi Al-Hitan"
+        mark.accessibilityHint = "Inspect this illustrated fossil"
+        mark.isHidden = true
+        mark.addAction(UIAction { _ in onInspect() }, for: .touchUpInside)
+        addSubview(mark)
+        whaleFossilMark = mark
+        let findName = "Find whale fossil in Egypt"
+        let find = UIAccessibilityCustomAction(name: findName) { [weak self] _ in
+            guard let self, !self.authoredMode else { return false }
+            self.touched()
+            self.select(nil, animated: false)
+            let duration = UIAccessibility.isReduceMotionEnabled ? 0.0 : 0.8
+            self.setAuthoredCamera(Self.whaleLocality, duration: duration)
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.1) { [weak self] in
+                guard let mark = self?.whaleFossilMark, !mark.isHidden else { return }
+                UIAccessibility.post(notification: .layoutChanged, argument: mark)
+            }
+            return true
+        }
+        accessibilityCustomActions = (accessibilityCustomActions ?? []).filter { $0.name != findName } + [find]
+        exposeAtlasObjects()
+    }
+
     private func exposeAtlasObjects() {
         if globeAccessibilityElement == nil {
             let element = UIAccessibilityElement(accessibilityContainer: self)
@@ -127,6 +163,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         // Small objects precede the full-size map element, so touch exploration can reach them
         // where their frames overlap the map's direct-interaction surface.
         var objects: [Any] = []
+        if let whaleFossilMark { objects.append(whaleFossilMark) }
         if let camelidMark { objects.append(camelidMark) }
         if let encounterMark { objects.append(encounterMark) }
         objects.append(element)
@@ -585,6 +622,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         if let mark = encounterMark, touch.view?.isDescendant(of: mark) == true { return false }
         if let mark = camelidMark, touch.view?.isDescendant(of: mark) == true { return false }
+        if let mark = whaleFossilMark, touch.view?.isDescendant(of: mark) == true { return false }
         return !(touch.view is UIControl)
     }
 
@@ -846,6 +884,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             let breath = still ? 1 : 1 + 0.004 * sin(now * 1.2)
             mark.imageView?.transform = CGAffineTransform(scaleX: 1, y: breath)
         }
+        if let mark = whaleFossilMark {
+            let p = project(lon: Self.whaleLocality.lon, lat: Self.whaleLocality.lat)
+            mark.center = p.point
+            let overlapsCamel = camelidMark.map { !$0.isHidden && $0.frame.insetBy(dx: -4, dy: -4).intersects(mark.frame) } ?? false
+            let hidden = authoredMode || zoom < 2 || p.facing < 0.35 || !bounds.contains(mark.frame)
+                || keepClear.contains(where: { $0.intersects(mark.frame) }) || overlapsCamel
+            if mark.isHidden != hidden { mark.isHidden = hidden; labelsFading = true }
+        }
         onFrame?()
         if historicalReference { labelsFading = false }
         else if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
@@ -1026,7 +1072,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let gap = CGFloat(GlobeType.shared?.gap ?? 0.4) * 10 * labelScale     // round the chosen name and what covers the screen
         let encounterClear = encounterMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
         let camelidClear = camelidMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
-        let clear = (keepClear + pageStrips + encounterClear + camelidClear + authoredLabelExclusions).map { $0.insetBy(dx: -gap, dy: -gap) }
+        let whaleClear = whaleFossilMark.flatMap { $0.isHidden ? nil : $0.frame }.map { [$0] } ?? []
+        let clear = (keepClear + pageStrips + encounterClear + camelidClear + whaleClear + authoredLabelExclusions).map { $0.insetBy(dx: -gap, dy: -gap) }
         /// Whether a name's picture, there, may show: wholly on the globe (none spills onto the frame
         /// or the paper), on screen, under nothing else and touching no name already placed.
         func onGlobe(_ r: CGRect) -> Bool {

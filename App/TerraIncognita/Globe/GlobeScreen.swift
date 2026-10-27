@@ -16,6 +16,8 @@ struct GlobeScreen: View {
     @State private var encounter = false
     @State private var camelid = false
     @State private var camelidDebugOpened = false
+    @State private var whale = false
+    @State private var whaleDebugOpened = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}) {
@@ -28,7 +30,10 @@ struct GlobeScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active && !encounter && !camelid, style: style, keepClear: keepClear + [captionFrame], onDrawn: atlasDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, country: $country)
+            GlobeCanvasView(active: active && !encounter && !camelid && !whale, style: style, keepClear: keepClear + [captionFrame], onDrawn: atlasDrawn, onEncounter: { encounter = true }, onCamelid: { camelid = true }, onWhale: {
+                guard !encounter && !camelid else { return }
+                whale = true
+            }, country: $country)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 Button { encounter = true } label: {
@@ -66,17 +71,30 @@ struct GlobeScreen: View {
         .animation(.easeInOut(duration: 0.35), value: style)
         .fullScreenCover(isPresented: $encounter) { OceanExperience() }
         .fullScreenCover(isPresented: $camelid) { CamelidExperience(style: style) }
+        .fullScreenCover(isPresented: $whale) { WhaleExperience(style: style) }
     }
 
     private func atlasDrawn() {
         onDrawn()
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        guard active, !camelidDebugOpened,
+        guard active, !encounter, !camelid, !whale else { return }
+        if !whaleDebugOpened && (args.contains("-whale") || args.contains("-whale-play")) {
+            whaleDebugOpened = true
+            DispatchQueue.main.async {
+                guard !encounter && !camelid && !whale else { return }
+                whale = true
+            }
+            return
+        }
+        guard !camelidDebugOpened,
               args.contains("-camelid") || args.contains("-camelid-play") else { return }
         camelidDebugOpened = true
         // Submit the original globe's first frame before constructing the debug cover's renderer.
-        DispatchQueue.main.async { camelid = true }
+        DispatchQueue.main.async {
+            guard !encounter && !camelid && !whale else { return }
+            camelid = true
+        }
         #endif
     }
 
@@ -198,6 +216,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     let onDrawn: () -> Void
     let onEncounter: () -> Void
     let onCamelid: () -> Void
+    let onWhale: () -> Void
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
@@ -208,6 +227,9 @@ private struct GlobeCanvasView: UIViewRepresentable {
         view.installEncounter(onOpen: onEncounter)
         if let image = CamelidArt.image(.dromedary) {
             view.installCamelid(image: image, onInspect: onCamelid)
+        }
+        if let image = WhaleArt.image(.fossil) {
+            view.installWhaleFossil(image: image, onInspect: onWhale)
         }
         // (a country lit from the start, by -globe-select; told after this update, not during it)
         let initial = view.selectedCountry
