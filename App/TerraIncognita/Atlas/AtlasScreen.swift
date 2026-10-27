@@ -55,13 +55,14 @@ struct AtlasScreen: View {
     @AppStorage("globeStyle") private var globeStyle = GlobeStyle.persian
     /// Where the buttons are, so the globe keeps its names clear of them.
     @State private var buttonsFrame = CGRect.zero
+    @State private var waterStudy = false
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
-        // `-globe` (CI's screenshots): open on the globe
-        return ProcessInfo.processInfo.arguments.contains("-globe")
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-globe") || (!args.contains("-film") && !args.contains("-look"))
         #else
-        return false
+        return true
         #endif
     }
 
@@ -77,7 +78,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe && !waterStudy, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -86,6 +87,14 @@ struct AtlasScreen: View {
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
+                Button { waterStudy = true } label: {
+                    Image(systemName: "water.waves")
+                        .font(.title3)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel("A gathering of water")
+                .accessibilityIdentifier("openWaterStudy")
                 Button { toggleGlobe() } label: {
                     Image(systemName: globe ? "film" : "globe.americas.fill")
                         .font(.title3)
@@ -168,6 +177,22 @@ struct AtlasScreen: View {
                 if banner == look.name { banner = nil }
             }
         }
+        .fullScreenCover(isPresented: $waterStudy) {
+            NavigationStack {
+                WaterScreen()
+                    .navigationTitle("Terra Incognita")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Back to atlas") { waterStudy = false }
+                                .accessibilityIdentifier("closeWaterStudy")
+                        }
+                    }
+                    .toolbarBackground(.visible, for: .navigationBar)
+            }
+            .preferredColorScheme(.light)
+        }
+        .onChange(of: waterStudy) { _, open in model.canvas?.suspended = globe || open }
         .background(Color("LaunchBackground"))
     }
 

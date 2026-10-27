@@ -1,8 +1,9 @@
 # Terra Incognita
 
 A medieval map that plays as a film: from the whole world down to a single street, through every
-scale in between, each scale a finished picture in the chosen look. Open the app and the film plays;
-touch the map to wander, then resume. The look menu switches between the looks on the same flight.
+scale in between, each scale a finished picture in the chosen look. The app opens on its globe;
+the Film button opens the flight. Touch the map to wander, then resume. The look menu switches
+between the looks on the same flight.
 
 - `App/TerraIncognita/Atlas/`: the player. `AtlasCanvas` (Core Animation layers moved and scaled by
   a display link; the camera, the film, pan and pinch), `Camera.swift` (nested plates as one
@@ -17,6 +18,11 @@ touch the map to wander, then resume. The look menu switches between the looks o
 - The first demo, the map drawn in characters by WebGL, is retired; it is in the history at 1f9b941.
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.
+
+The atlas opens on the globe. A small seed mark and “Look closer” open one offline historical
+encounter: move a magnifying glass over the Indian Ocean, draw back a layer of evidence, and
+follow words or lives. Evidence and limitations are available inside the encounter; the research
+ledger is [docs/encounter-research.md](docs/encounter-research.md). The film remains behind its button.
 
 The looks: Aisling's Forest, Paper Almanac, Night Voyage, Chalk and Slate, and The Sampler.
 

@@ -4,11 +4,12 @@ name: CI
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
 #          ci/check_globe.py) and the tools' syntax
-#   apple  macOS: Debug and Release builds for the simulator and the plates checked byte for byte
+#   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
+#          and the plates checked byte for byte
 #          in the bundle; screenshots only when the workflow is run by hand, as a report: on the
 #          13" iPad Pro (the primary device), the iPhone or both, every look at moments of its film
 #          (unless `film` is off) and the globe in each style
-#   ipa    after a green `apple` job, on main (or `[ipa]` in a branch commit's message, without
+#   ipa    after green `plates` and `apple` jobs, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
@@ -20,10 +21,6 @@ on:
     branches-ignore: ['ci-shots/**', 'sidestore']
   workflow_dispatch:
     inputs:
-      study2:
-        description: Build and publish the isolated Study II test app (experiment branch only)
-        type: boolean
-        default: false
       device:
         description: Screenshots on
         type: choice
@@ -74,23 +71,24 @@ jobs:
         with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
-    if: ${{ !(github.ref_name == 'experiment/second-magic' && (inputs.study2 == true || contains(github.event.head_commit.message, '[study2]'))) }}
-    name: Simulator builds (screenshots when run by hand)
+    name: Simulator builds and encounter interactions
     runs-on: macos-26
     timeout-minutes: 80
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - name: Start simulator
-        # only for screenshots, which run when the workflow is started by hand (below)
+      - name: Select simulators
+        # Every push validates both devices sequentially; explicit manual selection remains.
         id: sim
-        if: github.event_name == 'workflow_dispatch'
         run: |
           D="${{ inputs.device }}"
-          if [ "$D" = both ]; then D="ipad iphone"; elif [ -z "$D" ]; then D=ipad; fi
+          if [ "$D" = both ]; then
+            D="ipad iphone"
+          elif [ -z "$D" ]; then
+            D="ipad iphone"
+          fi
           mkdir -p out
           ci/simulators.sh $D > out/sims.txt
-          cat out/sims.txt
           cat out/sims.txt
       - name: Build (Debug, simulator)
         id: build
@@ -114,8 +112,13 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
+      - name: Encounter interactions and accessible text
+        id: encounter
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        timeout-minutes: 30
+        run: bash ci/encounter_tests.sh
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
@@ -138,15 +141,15 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
 
   ipa:
     name: IPA for SideStore (unsigned device build)
-    needs: apple
-    if: ${{ !cancelled() && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
+    needs: [plates, apple]
+    if: ${{ !cancelled() && needs.plates.result == 'success' && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
     permissions:
       contents: write
     runs-on: macos-26
@@ -209,96 +212,9 @@ jobs:
             !out/*.ipa
           if-no-files-found: ignore
 
-  study2:
-    name: Study II — isolated simulator tests and SideStore build
-    needs: plates
-    if: ${{ github.ref_name == 'experiment/second-magic' && (inputs.study2 == true || contains(github.event.head_commit.message, '[study2]')) }}
-    permissions:
-      contents: write
-    runs-on: macos-26
-    timeout-minutes: 80
-    env:
-      BUILD: ${{ github.run_number }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Select iPhone and iPad simulators
-        run: |
-          mkdir -p out
-          ci/simulators.sh iphone ipad > out/sims.txt
-      - name: Debug build
-        run: |
-          set -o pipefail
-          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-debug -quiet \
-            TI_STUDY_ENTRY=water TI_APP_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2.resigned \
-            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee out/study2-debug.log | tail -80
-          APP=build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          python3 - "$APP" <<'PYDATA'
-          from pathlib import Path
-          import sys
-          app=Path(sys.argv[1])
-          for root in ['Atlas','Globe','Water']:
-              for f in Path(root).rglob('*'):
-                  if f.is_file(): assert f.read_bytes()==(app/f).read_bytes(), str(f)
-          import plistlib
-          info=plistlib.loads((app/'Info.plist').read_bytes())
-          assert info['TIStudyEntry']=='water'
-          assert info['CFBundleIdentifier']=='com.pbordjadze.terraincognita.study2.resigned'
-          print('Study entry survives a changed identifier; all bundled data folders identical')
-          PYDATA
-      - name: Native opening views, touch and largest text, one simulator at a time
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash ci/study2_tests.sh
-      - name: Release and device archive
-        run: |
-          set -o pipefail
-          xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
-            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-release -quiet \
-            TI_STUDY_ENTRY=water TI_APP_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2.resigned \
-            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee out/study2-release.log | tail -80
-          xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath build/StudyII.xcarchive -quiet \
-            TI_STUDY_ENTRY=water PRODUCT_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2 \
-            'INFOPLIST_KEY_CFBundleDisplayName=Terra Incognita II' \
-            MARKETING_VERSION="1.0.$BUILD" CURRENT_PROJECT_VERSION="$BUILD" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            2>&1 | tee out/study2-device.log | tail -80
-      - name: Package independent test app
-        run: |
-          APP=build/StudyII.xcarchive/Products/Applications/TerraIncognita.app
-          mkdir -p build/study2-ipa/Payload
-          cp -R "$APP" build/study2-ipa/Payload/
-          (cd build/study2-ipa && zip -qry ../../out/TerraIncognita-StudyII.ipa Payload)
-          cp ci/sidestore-icon.png out/icon.png
-          python3 ci/study2_source.py "$APP" out/TerraIncognita-StudyII.ipa \
-            "$GITHUB_REPOSITORY" "study2-$GITHUB_RUN_ID" "$BUILD" > out/study2-source.json
-      - name: Publish only this study's immutable prerelease
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          cat > out/notes.txt <<'NOTES'
-          Independent Study II test app. Install using the attached SideStore source, or import the IPA directly. This has its own bundle identifier and leaves the ordinary app and SideStore source intact. No account, location access, or saved exploration.
-          NOTES
-          gh release create "study2-$GITHUB_RUN_ID" out/TerraIncognita-StudyII.ipa out/study2-source.json out/icon.png \
-            --prerelease --target "$GITHUB_SHA" --title "Terra Incognita — Study II ($BUILD)" --notes-file out/notes.txt
-          # Update only this study's previously installed source so existing users can refresh.
-          gh release upload study2-40440112973 out/study2-source.json --clobber
-          echo "https://github.com/$GITHUB_REPOSITORY/releases/download/study2-$GITHUB_RUN_ID/study2-source.json" > out/STUDY2-ACCESS.txt
-      - uses: actions/upload-artifact@v5
-        if: always()
-        with:
-          name: study2
-          path: |
-            out
-            !out/*.ipa
-          if-no-files-found: ignore
-
   report:
     name: Publish report
-    needs: [plates, apple, ipa, study2]
+    needs: [plates, apple, ipa]
     if: ${{ !cancelled() }}
     permissions:
       contents: write
@@ -316,7 +232,6 @@ jobs:
             echo "plates: ${{ needs.plates.result }}"
             echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"
             echo "ipa: ${{ needs.ipa.result }}"
-            echo "study2: ${{ needs.study2.result }}"
             echo
             if [ -s apple/errors.txt ]; then echo "## compiler errors and warnings"; head -60 apple/errors.txt; echo; fi
             if [ -f plates/plates-check.log ]; then echo "## plates"; tail -20 plates/plates-check.log; fi
@@ -324,6 +239,9 @@ jobs:
           } > STATUS.md
           cat STATUS.md
           echo "${GITHUB_SHA}" > COMMIT
+          # Full test videos stay in the original Actions artifact. Large recordings exceed
+          # GitHub's 100 MB file limit; the Git report keeps screenshots, logs and JSON.
+          find . -type f -name '*.mp4' -delete
           git init -q && git checkout -q -b shots
           git add -A
           git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "CI report for ${GITHUB_SHA}"

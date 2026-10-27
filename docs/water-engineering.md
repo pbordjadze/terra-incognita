@@ -1,8 +1,8 @@
 # Bundled river instrument
 
-An isolated, offline surface in `Water/`, hosted by `WaterScreen`. Launch with `-water`.
-Ordinary app builds retain the existing launch screen. The separately installable study app
-uses `com.pbordjadze.terraincognita.study2`, selected only by the opt-in branch build.
+An offline surface in `Water/`, hosted by `WaterScreen`. Open it with the wave button
+in the original atlas controls; Back to atlas returns to the existing view. Entry uses ordinary
+SwiftUI presentation and does not depend on a signing identifier or launch argument.
 
 The drawing is the same HTML/Canvas code in the native host and local browser checks. The host
 uses a nonpersistent WKWebView, restricts file navigation to its bundled folder, and opens only
@@ -79,11 +79,11 @@ cannot express; the bundled notes cite Laraque et al. (2019),
 https://doi.org/10.3390/w11102068 . No historical route, cultural connection or causal claim
 about a community is encoded by the ink.
 
-## Independent testing release
+## Integration and testing release
 
-The existing CI workflow has a branch-restricted opt-in `study2` job, enabled by `[study2]`
-in a push message or `study2=true` on manual dispatch. It runs the Linux data gate, Debug and
-Release builds, byte-for-byte bundle checks, native UI tests on both simulators, and a device
-archive. Only after passing does it create an immutable `study2-<run-id>` prerelease with an IPA
-and its own SideStore source. It does not update the `sidestore` branch, prune releases, merge
-code or replace the ordinary app. The job never runs on `main`.
+The study is part of the original app and its ordinary SideStore source. No separate app identifier
+or source is needed. The existing shared UI-test target includes `WaterInteractionTests` alongside
+the historical encounter tests. These cases launch normally, tap the atlas entry button, exercise
+touch and source notes at regular/largest text, and return through the native navigation control.
+The web surface respects the navigation bar's safe area so native controls cannot overlap its modal.
+CI checks all three resource folders byte for byte and follows the existing build/release workflow.

@@ -16,6 +16,11 @@ final class WaterInteractionTests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = []
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); defer { app.terminate() }
+        let entry = app.buttons["openWaterStudy"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 60), app.debugDescription)
+        XCTAssertTrue(entry.isHittable)
+        capture(large ? "large-00-atlas" : "regular-00-atlas")
+        entry.tap()
         let gather = control("Gather", app)
         XCTAssertTrue(gather.waitForExistence(timeout: 60), app.debugDescription)
         XCTAssertTrue(gather.isHittable)
@@ -47,6 +52,10 @@ final class WaterInteractionTests: XCTestCase {
         capture(prefix + "06-return")
         let pause = control("Pause flowing ink", app)
         if pause.isHittable { pause.tap(); XCTAssertTrue(control("Resume flowing ink", app).exists) }
+        app.buttons["closeWaterStudy"].tap()
+        XCTAssertTrue(entry.waitForExistence(timeout: 10))
+        XCTAssertTrue(entry.isHittable)
+        capture(prefix + "07-atlas-return")
     }
     @MainActor func testTouchAndEvidence() { exercise(large: false) }
     @MainActor func testLargestText() { exercise(large: true) }

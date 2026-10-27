@@ -2,14 +2,13 @@ import SwiftUI
 import WebKit
 import UIKit
 
-/// Isolated, bundled study. A separate test bundle identifier opts into its launch route;
-/// ordinary builds keep the existing atlas. The web surface shares the tested drawing code.
+/// Bundled study presented from the atlas controls. The web surface shares the tested drawing code.
 struct WaterScreen: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         WaterWebView(textScale: textScale, reduceMotion: reduceMotion)
-            .ignoresSafeArea()
+            .ignoresSafeArea(edges: .bottom)
             .preferredColorScheme(.light)
     }
 

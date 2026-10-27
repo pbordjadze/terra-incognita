@@ -13,6 +13,8 @@ struct GlobeScreen: View {
     let onDrawn: () -> Void
     @State private var country: GlobeData.Country?
     @State private var captionFrame = CGRect.zero
+    @State private var encounter = false
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], onDrawn: @escaping () -> Void = {}) {
         self.active = active
@@ -24,10 +26,31 @@ struct GlobeScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, country: $country)
+            GlobeCanvasView(active: active && !encounter, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, onEncounter: { encounter = true }, country: $country)
                 .ignoresSafeArea()
-            Group {
-                if style == .persian {
+            VStack(spacing: 0) {
+                Button { encounter = true } label: {
+                    VStack(spacing: 4) {
+                        Text("A small thing, far from home")
+                            .font(.custom("LibertinusSerif-Regular", size: 23, relativeTo: .title2))
+                        Text("Look closer  ↗")
+                            .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
+                    }
+                    .foregroundStyle(Color(red: 0.23, green: 0.17, blue: 0.09))
+                    .padding(14)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(red: 0.95, green: 0.89, blue: 0.78))
+                    .overlay(alignment: .top) { Rectangle().fill(Color(red: 0.77, green: 0.67, blue: 0.43)).frame(height: 1) }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("oceanInvitation")
+                .padding(.horizontal, 30)
+                .padding(.bottom, 8)
+                if typeSize.isAccessibilitySize && country == nil {
+                    // The invitation already names this view; leave room for the globe at large type.
+                    EmptyView()
+                } else if style == .persian {
                     PersianCaption(caption: caption)
                 } else {
                     CaptionView(caption: caption, style: Self.style)
@@ -39,6 +62,7 @@ struct GlobeScreen: View {
         }
         .animation(.easeInOut(duration: 0.35), value: caption.title)
         .animation(.easeInOut(duration: 0.35), value: style)
+        .fullScreenCover(isPresented: $encounter) { OceanExperience() }
     }
 
     private var caption: Plate.Caption {
@@ -157,6 +181,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     /// In global (the window's) coordinates.
     let keepClear: [CGRect]
     let onDrawn: () -> Void
+    let onEncounter: () -> Void
     @Binding var country: GlobeData.Country?
 
     func makeUIView(context: Context) -> GlobeView {
@@ -164,6 +189,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
         view.setStyle(style, animated: false)
         view.onSelect = { country = $0 }
         view.onDrawn = onDrawn
+        view.installEncounter(onOpen: onEncounter)
         // (a country lit from the start, by -globe-select; told after this update, not during it)
         let initial = view.selectedCountry
         Task { country = initial }

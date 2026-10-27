@@ -7,13 +7,7 @@ import UIKit
 struct TerraIncognitaApp: App {
     var body: some Scene {
         WindowGroup {
-            Group {
-                if Bundle.main.object(forInfoDictionaryKey: "TIStudyEntry") as? String == "water" || ProcessInfo.processInfo.arguments.contains("-water") {
-                    WaterScreen()
-                } else {
-                    AtlasScreen()
-                }
-            }
+            AtlasScreen()
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
                 .preferredColorScheme(.dark)

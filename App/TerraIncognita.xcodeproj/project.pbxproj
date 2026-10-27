@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0D0000000000000000000001 /* Water in Resources */ = {isa = PBXBuildFile; fileRef = 0D0000000000000000000002 /* Water */; };
+        0D0000000000000000000001 /* Water in Resources */ = {isa = PBXBuildFile; fileRef = 0D0000000000000000000002 /* Water */; };
 		0B00000000000000000000F3 /* Atlas in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B06 /* Atlas */; };
 		0B00000000000000000000F4 /* Globe in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B07 /* Globe */; };
 /* End PBXBuildFile section */
@@ -17,8 +17,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0D0000000000000000000002 /* Water */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Water; path = ../Water; sourceTree = "<group>"; };
-        0C0000000000000000000002 /* WaterUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WaterUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+        0D0000000000000000000002 /* Water */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Water; path = ../Water; sourceTree = "<group>"; };
+        0C0000000000000000000002 /* TerraIncognitaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TerraIncognitaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B01 /* TerraIncognita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TerraIncognita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0B0000000000000000000B06 /* Atlas */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Atlas; path = ../Atlas; sourceTree = "<group>"; };
@@ -26,7 +26,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-        0C0000000000000000000003 /* WaterUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = WaterUITests; sourceTree = "<group>"; };
+        0C0000000000000000000003 /* TerraIncognitaUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = TerraIncognitaUITests; sourceTree = "<group>"; };
 		0B0000000000000000000D01 /* TerraIncognita */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TerraIncognita;
@@ -50,7 +50,7 @@
 			isa = PBXGroup;
 			children = (
 				0B0000000000000000000D01 /* TerraIncognita */,
-                0C0000000000000000000003 /* WaterUITests */,
+                0C0000000000000000000003 /* TerraIncognitaUITests */,
 				0B0000000000000000000B06 /* Atlas */,
 				0B0000000000000000000B07 /* Globe */,
                 0D0000000000000000000002 /* Water */,
@@ -63,7 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				0B0000000000000000000B01 /* TerraIncognita.app */,
-                0C0000000000000000000002 /* WaterUITests.xctest */,
+                0C0000000000000000000002 /* TerraIncognitaUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -79,15 +79,15 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-        0C0000000000000000000005 /* WaterUITests */ = {
+        0C0000000000000000000005 /* TerraIncognitaUITests */ = {
             isa = PBXNativeTarget;
             buildConfigurationList = 0C0000000000000000000006;
             buildPhases = (0C0000000000000000000007, 0C0000000000000000000004, 0C0000000000000000000008);
             buildRules = ();
             dependencies = (0C0000000000000000000009);
             fileSystemSynchronizedGroups = (0C0000000000000000000003);
-            name = WaterUITests;
-            productName = WaterUITests;
+            name = TerraIncognitaUITests;
+            productName = TerraIncognitaUITests;
             productReference = 0C0000000000000000000002;
             productType = "com.apple.product-type.bundle.ui-testing";
         };
@@ -141,7 +141,7 @@
 			projectRoot = "";
 			targets = (
 				0B0000000000000000000A01 /* TerraIncognita */,
-                0C0000000000000000000005 /* WaterUITests */,
+                0C0000000000000000000005 /* TerraIncognitaUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -290,9 +290,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "$(TI_APP_BUNDLE_IDENTIFIER)";
-				TI_APP_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
-				TI_STUDY_ENTRY = atlas;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -330,9 +328,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "$(TI_APP_BUNDLE_IDENTIFIER)";
-				TI_APP_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
-				TI_STUDY_ENTRY = atlas;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
