@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 leaf=ROOT/'Leaf'
-expected={'index.html','leaf.js','leaf.css','notes.js','SOURCES.md','data/chart.js','fonts/LibertinusSerif-Regular.otf','fonts/LibertinusSerif-Italic.otf','fonts/LibertinusSerif-Semibold.otf','fonts/OFL-Libertinus.txt'}
+expected={'index.html','leaf.js','leaf.css','notes.js','SOURCES.md','data/chart.js','data/day.png','data/night.png','fonts/LibertinusSerif-Regular.otf','fonts/LibertinusSerif-Italic.otf','fonts/LibertinusSerif-Semibold.otf','fonts/OFL-Libertinus.txt'}
 actual={str(p.relative_to(leaf)) for p in leaf.rglob('*') if p.is_file()}
 assert actual==expected, f'Unexpected/missing Leaf resources: {actual^expected}'
 html=(leaf/'index.html').read_text()

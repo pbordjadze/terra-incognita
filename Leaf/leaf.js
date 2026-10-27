@@ -63,7 +63,13 @@
     g.strokeStyle=p.coast;g.lineWidth=.75;g.stroke(coast);
     return c;
   }
-  const maps=palette.map(makeMap);
+  // Paint the static engraving offline. A cold WKWebView should not rasterise the whole atlas.
+  const painting=new URLSearchParams(location.search).has('paint');
+  const maps=painting?palette.map(makeMap):[];
+  if(painting)window.leafPaintedMap=i=>maps[i].toDataURL('image/png');
+  function imageAsset(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('A bundled engraving could not load'));im.src=src;});}
+  let nightLoading=null;
+  function ensureNight(){if(maps[1])return Promise.resolve();return nightLoading??=(imageAsset('data/night.png').then(im=>{maps[1]=im;dirty=true;}));}
   const geoLabels=[
     ['GREECE',22.35,40.18,17,'region'],['TÜRKİYE',29.14,39.55,17,'region'],['PELOPONNESE',22.25,37.56,12,'region'],
     ['CRETE',24.7,35.10,20,'region'],['Euboea',23.73,38.64,15,'land'],['Lesbos',26.25,39.16,15,'land'],['Chios',26.09,38.37,14,'land'],
@@ -201,7 +207,7 @@
     // Idle animation is deliberately capped at 30Hz; input draws immediately on its next frame.
     if(!dirty&&now-lastDraw<32)return;lastDraw=now;dirty=false;
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=palette[light>.6?1:0].water;ctx.fillRect(0,0,w,h);
-    drawMap(ctx,0);if(light>.001){ctx.globalAlpha=light;drawMap(ctx,1);ctx.globalAlpha=1;}
+    drawMap(ctx,0);if(light>.001&&maps[1]){ctx.globalAlpha=light;drawMap(ctx,1);ctx.globalAlpha=1;}
     life(ctx,dt);labels(ctx);ornaments(ctx);soundingGlass(ctx);
     const nw=toWorld([20,20]),ne=toWorld([w-20,20]);
     const lat=38-nw[1]/120,lon=24.6+ne[0]/(120*data.projection.cos);
@@ -252,7 +258,8 @@
   $('zoom-in').onclick=()=>zoom(1.35);$('zoom-out').onclick=()=>zoom(1/1.35);
   $('home').onclick=()=>{Object.assign(cam,home);lens=null;dirty=true;};
   $('lens-close').onclick=()=>{lens=null;lensPinned=false;dirty=true;};
-  $('light').oninput=e=>{
+  $('light').oninput=async e=>{
+    if(Number(e.target.value)>0)await ensureNight();
     targetLight=Number(e.target.value)/100;$('light-name').textContent=targetLight>.62?'Blue hour':targetLight>.22?'Late light':'Daylight';
     const p=palette[targetLight>.6?1:0],r=document.documentElement;
     r.style.setProperty('--paper',p.paper);r.style.setProperty('--panel',targetLight>.6?'#233d49':'#f8f5ec');r.style.setProperty('--ink',p.ink);r.style.setProperty('--faint',p.faint);r.style.setProperty('--rule',targetLight>.6?'#718b8e':'#9eada7');r.style.setProperty('--copper',p.copper);r.style.setProperty('--water',p.water);dirty=true;
@@ -321,7 +328,7 @@
   window.leafDiagnostics=()=>({ready,cam:{...cam},home:{...home},size:[w,h],labels:labelBoxes.map(b=>({...b})),lens:lens?.slice(),still,light,soundOn,boat:{...boat},note:activeNote?.id||null,time});
   window.leafPoint=(lon,lat)=>toScreen(fromLL([lon,lat]));
   async function start(){
-    try{await document.fonts.ready;resize();refreshType();setStill(manualStill);ready=true;dirty=true;$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,850);window.leafReady=true;}
+    try{if(!painting)maps[0]=await imageAsset('data/day.png');await document.fonts.ready;resize();refreshType();setStill(manualStill);ready=true;dirty=true;$('loading').style.opacity='0';setTimeout(()=>$('loading').hidden=true,850);window.leafReady=true;}
     catch(e){$('loading').hidden=true;$('error').hidden=false;console.error(e);}
   }
   new ResizeObserver(resize).observe(chart);window.addEventListener('resize',refreshType);start();frame=requestAnimationFrame(render);

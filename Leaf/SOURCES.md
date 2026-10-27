@@ -78,3 +78,9 @@ inspecting NASA astronaut photograph ISS017-E-5037, Expedition 17 crew, NASA/JSC
 NASA Earth Observatory, *Santorini Volcano, Greece*, 30 June 2008:
 <https://science.nasa.gov/earth/earth-observatory/santorini-volcano-greece-8872/>.
 No photograph is reproduced. The inset's schematic status is printed on it and explained offline.
+
+The static day and blue-hour engravings are prepainted into `data/day.png` and `data/night.png` by
+`node tools/aegean/paint.cjs` against the local leaf server, using the same original drawing code.
+The native first visit loads the day image; the second image loads only when paper light changes.
+This follows the app's existing prepainted-plate approach and avoids rasterising a full map inside
+a cold WebKit process. The geographic sounding glass and type remain live.
