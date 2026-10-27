@@ -196,6 +196,19 @@ async function pinch(page, context, engine) {
               assert.equal(await page.locator('#date-toggle').getAttribute('aria-expanded'),'true');
               result.scaleComparison={ship:ship.span,empire:empire.span};
             });
+            await step('attention changes pace without stopping playback',async()=>{
+              await setDay(page,initialDay);
+              await page.locator('#play-toggle').click();
+              await page.waitForFunction(()=>window.shipAtlasState().playing);
+              await page.locator('#select-empire').click();
+              assert.equal((await state(page)).playing,true);
+              assert((await state(page)).span>1000);
+              await page.locator('#select-ship').click();
+              assert.equal((await state(page)).playing,true);
+              assert((await state(page)).span<100);
+              await page.locator('#play-toggle').click();
+              assert.equal((await state(page)).playing,false);
+            });
             await step('dated positions and reversible movement share one clock',async()=>{
               await setDay(page,observations[0].day);
               const first=await state(page);assert.equal(first.position?.kind,'recorded');

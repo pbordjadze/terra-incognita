@@ -23,7 +23,7 @@ function setPlaying(on){
 }
 function expand(on=true){$('time-panel').classList.toggle('collapsed',!on);$('date-toggle').setAttribute('aria-expanded',String(on));mark();}
 function select(kind){
- stop();selection=kind;if(kind)time.span=C.clamp(S.focusSpan(kind),time.minSpan,time.max-time.min);
+ selection=kind;if(kind)time.span=C.clamp(S.focusSpan(kind),time.minSpan,time.max-time.min);
  expand();update();announce(kind==='empire'?'British Empire selected. The date is unchanged; time now spans a century.':'Ship selected. The date is unchanged; time now spans thirty days.');
 }
 function update(){
@@ -74,6 +74,9 @@ function drawLand(){
 }
 function drawMap(now){
  const [w,h]=mapSize;if(!w||!h)return;ctx.fillStyle='#c6ecff';ctx.fillRect(0,0,w,h);drawLand();
+ ctx.save();ctx.textAlign='center';ctx.font='italic '+Math.min(20,16*textScale)+'px Georgia';ctx.lineWidth=4;
+ for(const label of [{lon:-36,lat:35,name:'Atlantic Ocean'},{lon:-140,lat:10,name:'Pacific Ocean'},{lon:80,lat:-20,name:'Indian Ocean'}]){const p=project(label);if(p[0]>75&&p[0]<w-75&&p[1]>140&&p[1]<h-240){ctx.strokeStyle='#c6ecff';ctx.strokeText(label.name,...p);ctx.fillStyle='#276987';ctx.fillText(label.name,...p);}}
+ ctx.restore();
  // Only short ocean-only schematic links; no lines across missing months or years.
  ctx.strokeStyle='#668c9a';ctx.lineWidth=1.2;ctx.setLineDash([3,6]);
  for(let i=0;i<observations.length-1;i++){
@@ -183,7 +186,7 @@ function bindGestures(canvas,pointers,isTime){
 
 bindGestures(map,mapPointers,false);bindGestures(ruler,timePointers,true);
 listen($('select-ship'),'click',()=>select('ship'));listen($('select-empire'),'click',()=>select('empire'));
-listen($('clear-selection'),'click',()=>{stop();selection=null;update();});
+listen($('clear-selection'),'click',()=>{selection=null;update();});
 listen($('follow-ship'),'click',()=>{follow=!follow;update();});
 listen($('return-voyage'),'click',()=>{stop();time.setYear(initialDay);update();announce('Returned to the Atlantic passage. Time scale is unchanged.');});
 listen($('date-toggle'),'click',()=>expand($('time-panel').classList.contains('collapsed')));

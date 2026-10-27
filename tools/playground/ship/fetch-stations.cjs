@@ -46,8 +46,8 @@ async function main(){
   if(value('--input'))text=await fs.readFile(value('--input'),'utf8');
   else{
     const response=await fetch(URL,{signal:AbortSignal.timeout(45000),
-      headers:{Accept:'text/tab-separated-values','User-Agent':'TerraIncognita-source-rebuild/1'}});
-    if(!response.ok)throw Error('PANGAEA download failed: HTTP '+response.status);
+      headers:{Accept:'*/*','User-Agent':'TerraIncognita-source-rebuild/1'}});
+    if(!response.ok)throw Error('PANGAEA download failed: HTTP '+response.status+' '+(await response.text()).slice(0,1000));
     text=await response.text();
   }
   const observations=parseEvents(text);
