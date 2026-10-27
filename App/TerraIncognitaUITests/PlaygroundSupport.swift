@@ -22,15 +22,37 @@ extension XCTestCase {
         return item
     }
 
-    /// Swipes the open workbench until the element is on screen (rows below the fold are made lazily).
-    @MainActor func revealInWorkbench(_ element: XCUIElement, in app: XCUIApplication, upwards: Bool = true) {
-        let list = app.collectionViews["workbenchList"].firstMatch.exists ? app.collectionViews["workbenchList"].firstMatch
-                                                                          : app.descendants(matching: .any)["workbenchList"].firstMatch
-        for _ in 0..<14 where !(element.exists && element.isHittable) {
-            if upwards { list.swipeUp(velocity: .slow) } else { list.swipeDown(velocity: .slow) }
+    /// Drags the open workbench until the element lies inside the list. Rows below the fold are made
+    /// lazily, so while it doesn't exist the list moves up by most of a screen; once it does, each drag
+    /// is measured from where it is. Drags start inside the list, never on the sheet's grabber, so the
+    /// sheet itself is never pulled down.
+    @MainActor func revealInWorkbench(_ element: XCUIElement, in app: XCUIApplication) {
+        // (the List carries its identifier when SwiftUI passes it on; otherwise it is the sheet's
+        // only collection view)
+        let named = app.collectionViews["workbenchList"].firstMatch
+        let list = named.waitForExistence(timeout: 3) ? named : app.collectionViews.firstMatch
+        guard list.waitForExistence(timeout: 10) else { return }
+        func clip() -> CGRect { list.frame.intersection(app.frame).insetBy(dx: 0, dy: 16) }
+        func visible() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let c = clip(), f = element.frame
+            // (a row taller than the list at the largest text counts once its middle is inside)
+            return c.contains(f) || (f.height > c.height * 0.7 && c.contains(CGPoint(x: f.midX, y: f.midY)))
         }
-        if !(element.exists && element.isHittable) {
-            for _ in 0..<14 where !(element.exists && element.isHittable) { list.swipeDown(velocity: .slow) }
+        /// Positive: the content moves up, showing what is below.
+        func drag(_ dy: CGFloat) {
+            let c = clip()
+            let distance = min(abs(dy), c.height * 0.6)
+            let startY = dy > 0 ? c.maxY - c.height * 0.15 : c.minY + c.height * 0.15
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            origin.withOffset(CGVector(dx: c.midX, dy: startY))
+                .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: c.midX, dy: dy > 0 ? startY - distance : startY + distance)))
+        }
+        for _ in 0..<24 where !visible() {
+            let c = clip()
+            guard element.exists else { drag(c.height * 0.6); continue }
+            let f = element.frame
+            if f.midY > c.midY { drag(max(40, f.maxY - c.maxY + 24)) } else { drag(-max(40, c.minY - f.minY + 24)) }
         }
     }
 
