@@ -1,0 +1,454 @@
+{
+  "passed": false,
+  "tests": [
+    {
+      "label": "chromium/phone",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-phone-opening.png",
+        "build/time-atlas-report/chromium-phone-timeline.png",
+        "build/time-atlas-report/chromium-phone-large-text.png"
+      ],
+      "landPixels": 49721,
+      "snapshotHashes": {
+        "1938": 4102852571,
+        "1945": 2522376092
+      }
+    },
+    {
+      "label": "chromium/ipad-landscape",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-ipad-landscape-opening.png",
+        "build/time-atlas-report/chromium-ipad-landscape-timeline.png",
+        "build/time-atlas-report/chromium-ipad-landscape-large-text.png"
+      ],
+      "landPixels": 225553,
+      "snapshotHashes": {
+        "1938": 563035227,
+        "1945": 1843887981
+      }
+    },
+    {
+      "label": "chromium/ipad-portrait",
+      "passed": true,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "actual CDP two-finger pinch",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay",
+        "large text has no horizontal overflow and controls are reachable",
+        "runtime close disposes listeners and clock"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/time-atlas-report/chromium-ipad-portrait-opening.png",
+        "build/time-atlas-report/chromium-ipad-portrait-timeline.png",
+        "build/time-atlas-report/chromium-ipad-portrait-large-text.png"
+      ],
+      "landPixels": 248527,
+      "snapshotHashes": {
+        "1938": 3287672390,
+        "1945": 52505235
+      }
+    },
+    {
+      "label": "webkit/phone",
+      "passed": false,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay"
+      ],
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "screenshots": [
+        "build/time-atlas-report/webkit-phone-opening.png",
+        "build/time-atlas-report/webkit-phone-timeline.png",
+        "build/time-atlas-report/webkit-phone-failure.png"
+      ],
+      "landPixels": 49579,
+      "snapshotHashes": {
+        "1938": 216145225,
+        "1945": 1689033498
+      },
+      "state": {
+        "year": 1938.0217856,
+        "span": 16.339199999999998,
+        "snapshot": 1938,
+        "playing": false,
+        "active": true,
+        "disposed": false,
+        "selection": {
+          "kind": "place",
+          "point": [
+            18.743092857142855,
+            52.358889248361514
+          ]
+        },
+        "camera": {
+          "lon": 16.648569047619045,
+          "lat": 52.358889248361514,
+          "scale": 1367.7519265371475
+        }
+      }
+    },
+    {
+      "label": "webkit/ipad-landscape",
+      "passed": false,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay"
+      ],
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "screenshots": [
+        "build/time-atlas-report/webkit-ipad-landscape-opening.png",
+        "build/time-atlas-report/webkit-ipad-landscape-timeline.png",
+        "build/time-atlas-report/webkit-ipad-landscape-failure.png"
+      ],
+      "landPixels": 225268,
+      "snapshotHashes": {
+        "1938": 3405132738,
+        "1945": 3700090518
+      },
+      "state": {
+        "year": 1938.040848,
+        "span": 16.3392,
+        "snapshot": 1938,
+        "playing": false,
+        "active": true,
+        "disposed": false,
+        "selection": {
+          "kind": "place",
+          "point": [
+            14.503091445347586,
+            52.32058816731734
+          ]
+        },
+        "camera": {
+          "lon": 13.128099036070585,
+          "lat": 52.32058816731734,
+          "scale": 2083.4943933694026
+        }
+      }
+    },
+    {
+      "label": "webkit/ipad-portrait",
+      "passed": false,
+      "steps": [
+        "injected runtime and collapsed opening",
+        "select Poland and verify painted land",
+        "1938 and 1945 paint different boundary snapshots",
+        "drag timeline changes date",
+        "map pan preserves date",
+        "timeline zoom preserves map camera",
+        "WebKit pointer pinch handler fallback",
+        "place stays fixed across historical dates",
+        "keyboard map movement pauses time",
+        "inactive runtime stops playback",
+        "Reduce Motion prevents autoplay"
+      ],
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ],
+      "screenshots": [
+        "build/time-atlas-report/webkit-ipad-portrait-opening.png",
+        "build/time-atlas-report/webkit-ipad-portrait-timeline.png",
+        "build/time-atlas-report/webkit-ipad-portrait-failure.png"
+      ],
+      "landPixels": 248282,
+      "snapshotHashes": {
+        "1938": 1357430760,
+        "1945": 355826316
+      },
+      "state": {
+        "year": 1938.0367632,
+        "span": 16.33919999999999,
+        "snapshot": 1938,
+        "playing": false,
+        "active": true,
+        "disposed": false,
+        "selection": {
+          "kind": "place",
+          "point": [
+            17.866508198872292,
+            52.33583219767184
+          ]
+        },
+        "camera": {
+          "lon": 16.855766296158215,
+          "lat": 52.33583219767184,
+          "scale": 2834.3427416648037
+        }
+      }
+    }
+  ],
+  "failures": [
+    {
+      "test": "webkit/phone",
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" width=\"390\" tabindex=\"0\" height=\"1468\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.4°N · 18.7°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ]
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1366\" height=\"1025\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 14.5°E · Germany\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ]
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "errors": [
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+        "large text has no horizontal overflow and controls are reachable: locator.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator('#map-zoom-in')\n    - locator resolved to <button id=\"map-zoom-in\" aria-label=\"Zoom in on the map\">+</button>\n  - attempting click action (trial run)\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <canvas id=\"map\" role=\"img\" tabindex=\"0\" width=\"1024\" height=\"1186\" aria-label=\"This place. Selected date 1938. Map snapshot 1938. 52.3°N · 17.9°E · Poland\"></canvas> intercepts pointer events\n    - retrying click action (trial run)\n      - waiting 500ms\n",
+        "console: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+      ]
+    }
+  ],
+  "screenshots": [
+    "build/time-atlas-report/chromium-phone-opening.png",
+    "build/time-atlas-report/chromium-phone-timeline.png",
+    "build/time-atlas-report/chromium-phone-large-text.png",
+    "build/time-atlas-report/chromium-ipad-landscape-opening.png",
+    "build/time-atlas-report/chromium-ipad-landscape-timeline.png",
+    "build/time-atlas-report/chromium-ipad-landscape-large-text.png",
+    "build/time-atlas-report/chromium-ipad-portrait-opening.png",
+    "build/time-atlas-report/chromium-ipad-portrait-timeline.png",
+    "build/time-atlas-report/chromium-ipad-portrait-large-text.png",
+    "build/time-atlas-report/webkit-phone-opening.png",
+    "build/time-atlas-report/webkit-phone-timeline.png",
+    "build/time-atlas-report/webkit-phone-failure.png",
+    "build/time-atlas-report/webkit-ipad-landscape-opening.png",
+    "build/time-atlas-report/webkit-ipad-landscape-timeline.png",
+    "build/time-atlas-report/webkit-ipad-landscape-failure.png",
+    "build/time-atlas-report/webkit-ipad-portrait-opening.png",
+    "build/time-atlas-report/webkit-ipad-portrait-timeline.png",
+    "build/time-atlas-report/webkit-ipad-portrait-failure.png"
+  ],
+  "requests": [
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/timeline.css"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/core.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/data.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:46455/pack/time-atlas/atlas.js"
+    }
+  ],
+  "notes": [
+    "Chromium pinch checks use CDP native touch input, not synthetic PointerEvents.",
+    "WebKit pinch checks dispatch PointerEvents with a temporary pointer-capture shim; they verify handler mathematics, not physical-device multitouch delivery.",
+    "Simulator/browser checks do not establish physical iPad or iPhone performance."
+  ]
+}
