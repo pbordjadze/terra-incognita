@@ -14,6 +14,10 @@ On the workbench today:
   research ledger is [docs/encounter-research.md](docs/encounter-research.md).
 - **A gathering of water** (a river study, [docs/water-engineering.md](docs/water-engineering.md))
   and **The sea between** (an engraved Aegean leaf, `Leaf/SOURCES.md`).
+- **A place through time** (`Prototypes/time-atlas/`): touch a country and scrub its borders
+  through eight dated historical maps; each year shows the nearest map, labelled.
+- **One ship, two rhythms** (`Prototypes/one-ship-two-rhythms/`): HMS Challenger's 1873–1876
+  stations on one clock, at the scale of a month or a century.
 - **Delivery check**: the example web pack (`Prototypes/hello-pack/`).
 - Parked: **The Persian globe** (the globe in colours from a 1529 manuscript) and **The film** (a
   flight from the whole world down to a street in five looks: Aisling's Forest, Paper Almanac,
@@ -38,7 +42,10 @@ CI publishes it only from a `main` commit tagged `[retire-study2]`.
 Map data: Natural Earth and US Census TIGER/Line (public domain); © OpenStreetMap contributors
 (ODbL), for the streets and buildings of the closest scale; NASA Blue Marble (public domain), for
 where the forest look's woods grow; NASA's GEBCO elevation and bathymetry (public domain), for the
-globe's relief and seas; RiverATLAS (CC BY 4.0) for the river study. Fonts (SIL Open Font License,
+globe's relief and seas; RiverATLAS (CC BY 4.0) for the river study; historical boundaries from
+aourednik/historical-basemaps (GPL-3.0, its licence in `Prototypes/time-atlas/LICENSE-HISTORY.txt`)
+for A place through time; HMS Challenger station metadata from PANGAEA (CC BY 3.0) for One ship,
+two rhythms. Each pack's `SOURCES.md` has the details. Fonts (SIL Open Font License,
 their licences beside them in each look's folder and the globe's): IM Fell English, EB Garamond,
 Uncial Antiqua, Alegreya, Libre Caslon Text, Cormorant and Libertinus Serif. The globe follows the
 WikiProject Maps conventions for location maps; it is not affiliated with Wikimedia.
