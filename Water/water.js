@@ -48,9 +48,9 @@ function clampCamera(){
  ty=Math.max(-H*scale+height*.2,Math.min(height*.8,ty));
 }
 function resize(){
- const rect=canvas.getBoundingClientRect(), old=[width,height];width=Math.round(rect.width);height=Math.round(rect.height);dpr=Math.min(devicePixelRatio||1,2.5);
+ const rect=canvas.getBoundingClientRect(), old=[width,height],center=old[0]?world(old[0]/2,old[1]/2):null,level=zoom;width=Math.round(rect.width);height=Math.round(rect.height);dpr=Math.min(devicePixelRatio||1,2.5);
  for(const c of [canvas,base,ink,lettering]){c.width=Math.round(width*dpr);c.height=Math.round(height*dpr);}
- if(!ready||!old[0])resetCamera();else{tx+=(width-old[0])/2;ty+=(height-old[1])/2;fitScale=Math.min((width-42)/W,(height-22)/H);zoom=scale/fitScale;clampCamera();baseDirty=inkDirty=true;wake();}
+ if(!ready||!old[0])resetCamera();else{fitScale=Math.min((width-42)/W,(height-22)/H);zoom=Math.max(1,Math.min(7,level));scale=fitScale*zoom;tx=width/2-center[0]*scale;ty=height/2-center[1]*scale;clampCamera();baseDirty=inkDirty=true;wake();}
 }
 function drawBase(){
  const c=bctx;c.setTransform(dpr,0,0,dpr,0,0);c.fillStyle='#e1eaeb';c.fillRect(0,0,width,height);transform(c);

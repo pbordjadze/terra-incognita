@@ -3,8 +3,10 @@ import XCTest
 final class WaterInteractionTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    @MainActor private func button(_ containing: String, _ app: XCUIApplication) -> XCUIElement {
-        app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", containing)).firstMatch
+    @MainActor private func control(_ containing: String, _ app: XCUIApplication) -> XCUIElement {
+        // WebKit exposes aria-pressed controls as native switches. Query the accessible
+        // label across roles so the test exercises the same control users encounter.
+        app.webViews.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH[c] %@", containing)).firstMatch
     }
     @MainActor private func capture(_ name: String) {
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
@@ -14,7 +16,7 @@ final class WaterInteractionTests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = ["-water"]
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); defer { app.terminate() }
-        let gather = button("Gather", app)
+        let gather = control("Gather", app)
         XCTAssertTrue(gather.waitForExistence(timeout: 60), app.debugDescription)
         XCTAssertTrue(gather.isHittable)
         let prefix = large ? "large-" : "regular-"
@@ -33,17 +35,17 @@ final class WaterInteractionTests: XCTestCase {
         let upstream = app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Connected channels upstream")).firstMatch
         XCTAssertTrue(upstream.waitForExistence(timeout: 10), app.debugDescription)
         capture(prefix + "03-gather")
-        let about = button("About this map", app)
+        let about = control("About this map", app)
         XCTAssertTrue(about.isHittable); about.tap()
-        let close = button("Close map notes", app)
+        let close = control("Close map notes", app)
         XCTAssertTrue(close.waitForExistence(timeout: 10))
         XCTAssertTrue(close.isHittable)
         capture(prefix + "04-evidence")
         app.webViews.firstMatch.swipeUp()
         capture(prefix + "05-evidence-scrolled")
         close.tap(); XCTAssertTrue(gather.isHittable)
-        let pause = button("Pause flowing ink", app)
-        if pause.isHittable { pause.tap(); XCTAssertTrue(button("Resume flowing ink", app).exists) }
+        let pause = control("Pause flowing ink", app)
+        if pause.isHittable { pause.tap(); XCTAssertTrue(control("Resume flowing ink", app).exists) }
     }
     @MainActor func testTouchAndEvidence() { exercise(large: false) }
     @MainActor func testLargestText() { exercise(large: true) }
