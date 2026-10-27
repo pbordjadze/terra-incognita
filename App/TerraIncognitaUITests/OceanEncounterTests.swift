@@ -1,3 +1,4 @@
+import Foundation
 import XCTest
 
 /// Exercises real controls and records what the simulator actually displayed, rather than
@@ -8,6 +9,9 @@ final class OceanEncounterTests: XCTestCase {
     }
 
     @MainActor private func capture(_ name: String) {
+        // The app's crossfade and scroll-to-place transitions last up to 0.4 seconds.
+        // XCTest can finish a tap before those visual layers settle; picture the final state.
+        Thread.sleep(forTimeInterval: 0.65)
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
@@ -22,13 +26,21 @@ final class OceanEncounterTests: XCTestCase {
     /// The edge drag avoids competing with a map in the middle of the page.
     @MainActor private func reveal(_ element: XCUIElement, in app: XCUIApplication, towardsTop: Bool = false) {
         guard !element.isHittable else { return }
-        for upwards in [!towardsTop, towardsTop] {
-            for _ in 0..<8 {
-                guard !element.isHittable else { return }
-                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.78 : 0.28))
-                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.28 : 0.78))
-                start.press(forDuration: 0.05, thenDragTo: end)
+        // At the largest accessible size this authored page is more than ten screens long.
+        // Follow the target's current frame instead of reversing after an arbitrary short run.
+        for _ in 0..<24 {
+            guard !element.isHittable else { return }
+            let readingSurface = app.scrollViews["oceanExperience"].firstMatch
+            let viewport = readingSurface.exists ? readingSurface.frame : app.frame
+            let upwards: Bool
+            if element.exists {
+                upwards = element.frame.midY > viewport.midY
+            } else {
+                upwards = !towardsTop
             }
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.78 : 0.28))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: upwards ? 0.28 : 0.78))
+            start.press(forDuration: 0.05, thenDragTo: end)
         }
         let state = element.exists ? "Exists as \(element.elementType): \(element.label)" : "Element query did not match"
         XCTAssertTrue(element.isHittable, "A control or explanation must remain reachable when text grows. \(state).\n\(app.debugDescription)")

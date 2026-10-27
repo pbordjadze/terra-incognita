@@ -36,6 +36,7 @@ struct OceanExperience: View {
                     lensMenu
                     OceanMap(lens: lens, time: time, onPlace: { place = $0 })
                         .frame(height: 320)
+                        .id("encounterMap")
                     Text("Move the glass across the islands. Tap a place to stay with it.")
                         .font(.custom("LibertinusSerif-Italic", size: 17, relativeTo: .body))
                         .foregroundStyle(Self.blue)
@@ -64,8 +65,8 @@ struct OceanExperience: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { proxy.scrollTo("encounterTop", anchor: .top) }
             }
             .onChange(of: place) { _, value in
-                if value != nil {
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { proxy.scrollTo("placeNote", anchor: .top) }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(value == nil ? "encounterMap" : "placeNote", anchor: .top)
                 }
             }
             }
