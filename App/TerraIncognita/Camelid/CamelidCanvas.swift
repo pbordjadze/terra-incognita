@@ -4,7 +4,7 @@ import UIKit
 
 /// Composition lives in native layers above the existing Metal globe. Only transforms and a small
 /// projected range path change each frame; the illustrations and map textures are reused.
-final class CamelidCanvas: UIView {
+final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
     let globe = GlobeView(frame: .zero)
     private let story: CamelidStory
     private let art = CALayer()
@@ -23,6 +23,8 @@ final class CamelidCanvas: UIView {
     private var resumeCamera: GlobeCamera?
     private var resumedAt = 0.0
     private var isActive = true
+    private lazy var firstAnimalAccess = CamelidAccessibleAnimal(container: self) { [weak self] in self?.inspectAnimal(second: false) }
+    private lazy var secondAnimalAccess = CamelidAccessibleAnimal(container: self) { [weak self] in self?.inspectAnimal(second: true) }
     var reduceMotion = false
 
     init(story: CamelidStory, style: GlobeStyle) {
@@ -37,6 +39,17 @@ final class CamelidCanvas: UIView {
             self?.story.pause(); self?.story.exploring = true; self?.resumeCamera = nil
         }
         globe.onFrame = { [weak self] in self?.compose() }
+        let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
+        inspect.delegate = self
+        addGestureRecognizer(inspect)
+        // A tap on an illustration opens its evidence. Drags and pinches still belong to the
+        // underlying globe; there is no view-sized transparent button over the map.
+        for recognizer in globe.gestureRecognizers ?? [] {
+            if let tap = recognizer as? UITapGestureRecognizer {
+                if tap.numberOfTapsRequired == 1 { tap.require(toFail: inspect) }
+                else { inspect.require(toFail: tap) }
+            }
+        }
         for layer in [rangeEdge, range, ground, branch, branchLabel, art, secondArt, camelPlace, llamaPlace] { globe.layer.addSublayer(layer) }
         range.fillColor = nil
         range.strokeColor = UIColor(hex: "#6D6793")?.withAlphaComponent(0.18).cgColor
@@ -123,6 +136,20 @@ final class CamelidCanvas: UIView {
         response.duration = 0.85
         response.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         art.add(response, forKey: "attention")
+    }
+    private func inspectAnimal(second: Bool) {
+        guard story.followed, !story.exploring, story.scene > 0 else { return }
+        story.open(second && story.scene == 5 ? .family : .evidence)
+    }
+    @objc private func inspectTapped(_ tap: UITapGestureRecognizer) {
+        let point = tap.location(in: globe)
+        if secondArt.opacity > 0.3 && secondArt.frame.contains(point) { inspectAnimal(second: true) }
+        else if art.opacity > 0.3 && art.frame.contains(point) { inspectAnimal(second: false) }
+    }
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard story.followed, !story.exploring, story.scene > 0 else { return false }
+        let point = touch.location(in: globe)
+        return (art.opacity > 0.3 && art.frame.contains(point)) || (secondArt.opacity > 0.3 && secondArt.frame.contains(point))
     }
     fileprivate func tick(_ frame: CADisplayLink) {
         let dt = min(max(frame.timestamp - (lastTick ?? frame.timestamp), 0), 0.1)
@@ -269,11 +296,40 @@ final class CamelidCanvas: UIView {
                                             branch.path?.boundingBoxOfPath.insetBy(dx: -6, dy: -6) ?? .zero]
         } else { globe.authoredLabelExclusions = [] }
         let camera = globe.authoredCamera
+        var accessible: [Any] = []
+        if story.followed && !story.exploring && current > 0 && art.opacity > 0.3 {
+            let firstKind: CamelidAnimal = current == 1 ? .early : (current == 4 ? .lamini : (current == 5 ? .dromedary : .camelini))
+            firstAnimalAccess.accessibilityLabel = firstKind.name
+            firstAnimalAccess.accessibilityHint = "Inspect this illustration and its evidence"
+            firstAnimalAccess.accessibilityFrameInContainerSpace = art.frame
+            firstAnimalAccess.accessibilityIdentifier = "camelidStoryAnimal"
+            accessible.append(firstAnimalAccess)
+            if secondArt.opacity > 0.3 {
+                secondAnimalAccess.accessibilityLabel = current == 5 ? "Llama" : CamelidAnimal.lamini.name
+                secondAnimalAccess.accessibilityHint = current == 5 ? "Compare llama and alpaca" : "Inspect this illustration and its evidence"
+                secondAnimalAccess.accessibilityFrameInContainerSpace = secondArt.frame
+                secondAnimalAccess.accessibilityIdentifier = "camelidStorySecondAnimal"
+                accessible.append(secondAnimalAccess)
+            }
+        }
+        accessible.append(globe)
+        accessibilityElements = accessible
         globe.accessibilityLabel = story.exploring ? "Freely exploring the globe. The historical sequence is paused at \(story.date). Resume to return to its composition." : story.description
         globe.accessibilityValue = String(format: "Longitude %.1f, latitude %.1f, scale %.2f", camera.lon, camera.lat, camera.zoom)
         drawnScene = current
         CATransaction.commit()
     }
+}
+
+private final class CamelidAccessibleAnimal: UIAccessibilityElement {
+    let activate: () -> Void
+    init(container: Any, activate: @escaping () -> Void) {
+        self.activate = activate
+        super.init(accessibilityContainer: container)
+        accessibilityTraits = .button
+        isAccessibilityElement = true
+    }
+    override func accessibilityActivate() -> Bool { activate(); return true }
 }
 
 private final class CamelidLink: NSObject {

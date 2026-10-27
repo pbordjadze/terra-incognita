@@ -110,7 +110,7 @@ final class CamelidEncounterTests: XCTestCase {
         }
         app.launch()
         defer { app.terminate() }
-        let evidence = app.buttons["camelidEvidence"].firstMatch
+        let evidence = largeText ? app.buttons["camelidEvidence"].firstMatch : element("camelidStoryAnimal", in: app)
         XCTAssertTrue(evidence.waitForExistence(timeout: 45))
         XCTAssertTrue(evidence.isHittable)
         capture(largeText ? "large-04-cousins" : "04-cousins")
@@ -121,7 +121,7 @@ final class CamelidEncounterTests: XCTestCase {
         reveal(reconstruction, in: app)
         capture(largeText ? "large-05-evidence" : "05-evidence")
         returnButton.tap()
-        let family = app.buttons["camelidFamily"].firstMatch
+        let family = largeText ? app.buttons["camelidFamily"].firstMatch : element("camelidStorySecondAnimal", in: app)
         XCTAssertTrue(family.waitForExistence(timeout: 10))
         XCTAssertTrue(family.isHittable)
         family.tap()
