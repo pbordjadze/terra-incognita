@@ -27,7 +27,7 @@ final class LeafTests: XCTestCase {
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The bundled leaf must load without an external service")
         capture(largeText ? "leaf-large-opening" : "leaf-opening")
         menu.tap()
-        let place = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Santorini")).firstMatch
+        let place = app.buttons["Read note: Santorini"].firstMatch
         XCTAssertTrue(place.waitForExistence(timeout: 10))
         for _ in 0..<12 where !place.isHittable {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.73))

@@ -80,7 +80,7 @@
     n.world=fromLL(n.point); const b=document.createElement('button');b.setAttribute('aria-label',`${n.name}: ${n.title}`);b.dataset.note=n.id;
     b.addEventListener('click',e=>{if(e.detail===0||(!suppressClick&&!held))openNote(n.id);e.stopPropagation();});$('places').append(b);return b;
   });
-  for(const n of notes){const b=document.createElement('button');const name=document.createElement('span');name.textContent=n.name;const small=document.createElement('small');small.textContent=n.title;b.append(name,small);b.onclick=()=>{$('leaf-menu').close();openNote(n.id);};$('note-index').append(b);}
+  for(const n of notes){const b=document.createElement('button');b.setAttribute('aria-label',`Read note: ${n.name}`);const name=document.createElement('span');name.textContent=n.name;const small=document.createElement('small');small.textContent=n.title;b.append(name,small);b.onclick=()=>{$('leaf-menu').close();openNote(n.id);};$('note-index').append(b);}
 
   function resize() {
     const r=chart.getBoundingClientRect();if(!r.width||!r.height)return;
