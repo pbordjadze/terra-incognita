@@ -142,7 +142,8 @@ final class CamelidEncounterTests: XCTestCase {
         app.buttons["camelidClose"].tap()
         openWorkbench(in: app)
         XCTAssertTrue(workbenchItem("ocean", in: app).exists, "The independent encounter must remain available")
-        workbenchItem("plain", in: app).tap()
+        app.buttons["workbenchClose"].firstMatch.tap()
+        endPrototype(in: app)
     }
 
     @MainActor func testEvidenceAndLivingFamily() { exerciseReading(largeText: false) }

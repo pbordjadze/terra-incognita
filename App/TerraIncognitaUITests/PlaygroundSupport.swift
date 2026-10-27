@@ -22,9 +22,9 @@ extension XCTestCase {
         return item
     }
 
-    /// Drags the open workbench until the element lies inside the list. Rows below the fold are made
-    /// lazily, so while it doesn't exist the list moves up by most of a screen; once it does, each drag
-    /// is measured from where it is. Drags start inside the list, never on the sheet's grabber, so the
+    /// Drags the open workbench until the element lies inside the list. The list makes and lets go of
+    /// rows lazily, so while it doesn't exist the list moves by most of a screen; once it does, each
+    /// drag is measured from where it is. Drags start inside the list, never on the sheet's grabber, so the
     /// sheet itself is never pulled down.
     @MainActor func revealInWorkbench(_ element: XCUIElement, in app: XCUIApplication) {
         // (the List carries its identifier when SwiftUI passes it on; otherwise it is the sheet's
@@ -48,11 +48,20 @@ extension XCTestCase {
             origin.withOffset(CGVector(dx: c.midX, dy: startY))
                 .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: c.midX, dy: dy > 0 ? startY - distance : startY + distance)))
         }
-        for _ in 0..<24 where !visible() {
+        // While it doesn't exist, look further down; when the list stops moving (its end), look the
+        // other way, in smaller steps, since a row the list has let go of may be above.
+        var direction: CGFloat = 1
+        for _ in 0..<30 where !visible() {
             let c = clip()
-            guard element.exists else { drag(c.height * 0.6); continue }
-            let f = element.frame
-            if f.midY > c.midY { drag(max(40, f.maxY - c.maxY + 24)) } else { drag(-max(40, c.minY - f.minY + 24)) }
+            if element.exists {
+                let f = element.frame
+                if f.midY > c.midY { drag(max(40, f.maxY - c.maxY + 24)) } else { drag(-max(40, c.minY - f.minY + 24)) }
+                continue
+            }
+            let cell = list.cells.firstMatch
+            let before = cell.exists ? cell.frame : .zero
+            drag(direction * c.height * (direction > 0 ? 0.6 : 0.4))
+            if (cell.exists ? cell.frame : .zero) == before { direction = -direction }
         }
     }
 
