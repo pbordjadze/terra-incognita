@@ -49,6 +49,8 @@ final class LeafTests: XCTestCase {
         defer { app.terminate() }
         let door = app.buttons["An Aegean leaf"].firstMatch
         XCTAssertTrue(door.waitForExistence(timeout: 45), "The separate leaf must remain reachable beside the globe")
+        XCTAssertTrue(door.isHittable)
+        XCTAssertTrue(app.frame.contains(door.frame), "The combined atlas entries must fit the screen at this text size")
         door.tap()
         let menu = app.buttons["Open the leaf menu"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 45), "The bundled leaf menu must remain accessible")

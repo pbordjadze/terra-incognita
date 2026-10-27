@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>A gathering of water · Terra Incognita</title>
+<link rel="stylesheet" href="water.css">
+<script src="land.js" defer></script>
+<script src="network.js" defer></script>
+<script src="places.js" defer></script>
+<script src="core.js" defer></script>
+<script src="water.js" defer></script>
+</head>
+<body>
+<main id="instrument">
+<header>
+<div class="eyebrow">Terra Incognita <span>Study II</span></div>
+<div class="heading"><h1>A gathering of water</h1><button id="about" aria-label="About this map and its sources" title="About this map">i</button></div>
+<p id="invitation">Brush a river. See where it takes you.</p>
+</header>
+<div id="map-area">
+<canvas id="map" tabindex="0" role="img" aria-label="Interactive river map of South America. Brush a blue line to trace downstream; choose Gather to see its tributaries. Use the river menu for an alternative to gestures. Arrow keys move the cursor, Space touches a river, plus and minus zoom."></canvas>
+<div class="map-corner"><span class="north">N<br>↑</span></div>
+<div id="zoom" aria-label="Map controls"><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="fit" aria-label="Show all of South America" title="Show whole map">⌑</button></div>
+<div id="locator" aria-hidden="true">South America<span>Simplified network</span></div>
+<div id="loading" role="status">Unfolding the rivers…</div>
+</div>
+<footer>
+<div class="reading" aria-live="polite" aria-atomic="true"><span id="river-title">Every line has somewhere to go.</span><span id="river-detail">Trace with one finger · Move &amp; zoom with two</span></div>
+<div class="tools">
+<div class="direction" role="group" aria-label="Trace direction"><button id="follow" aria-pressed="true"><span aria-hidden="true">↓</span> Follow</button><button id="gather" aria-pressed="false"><span aria-hidden="true">↑</span> Gather</button></div>
+<button id="clear" aria-label="Clear the ink" title="Clear the ink"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 18-5-5 10-10 8 8-7 7H8Zm-1-9 10 10M7 21h14"/></svg></button>
+<button id="move" aria-pressed="false" aria-label="Move the map with one finger" title="Move the map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button>
+</div>
+<div class="lower"><label for="river-menu" class="sr">Find a river</label><select id="river-menu"><option value="">Find a river…</option></select><button id="pause" aria-pressed="false" aria-label="Pause flowing ink">Pause ink</button></div>
+</footer>
+</main>
+<dialog id="evidence" aria-labelledby="evidence-title">
+<div class="sheet-head"><span class="eyebrow">A note in the margin</span><button id="close-about" aria-label="Close map notes">×</button></div>
+<div class="sheet-body">
+<h2 id="evidence-title">A continent, written in water.</h2>
+<p>Run a finger across the blue lines. A touch follows a river to its mapped ending. Switch to <strong>Gather</strong>, and the tributaries that lead to your touch appear together.</p>
+<p>Try a broad stroke, or stay with a single line. There is no route to finish.</p>
+<h3>What the ink means</h3>
+<p>The connections come from <strong>RiverATLAS v1.0</strong>, a river network derived from elevation data. A touch snaps visibly to the nearest displayed channel. The ink follows that dataset’s downstream links; Gather reverses those links. Connected channels share an ink; the five colors are reused across the continent.</p>
+<p>Only larger channels are shown: reaches with at least <strong>500 km² of upstream land</strong>, plus their downstream connections. Gather shows the tributaries retained here, not every stream or a surveyed catchment boundary.</p>
+<p>The flowing ink is an illustration of connectivity. <strong>Its speed is invented.</strong> This is not a simulation of rainfall, travel time, present flow, flood risk, or navigability. Distances are rounded sums of mapped channel lengths, not straight lines. The first partial reach is estimated from the simplified line.</p>
+<h3>The limits of a line</h3>
+<p>A branching dataset gives each reach one downstream connection. Real rivers can divide, shift, flood, flow through wetlands, and be changed by people. The Casiquiare, for example, links the Orinoco and Amazon systems; this simplified tree cannot express that connection. An inland ending does not mean an empty landscape.</p>
+<p>These rivers are lived places, with many names and meanings. The few city and river labels here are orientation aids. A drainage network cannot stand in for the lives, histories, or knowledge of the people along it.</p>
+<h3>Sources you can inspect</h3>
+<p class="citation"><strong>Network and topology</strong><br>Linke, S. et al. (2019), “Global hydro-environmental sub-basin and river reach characteristics at high spatial resolution.” <em>Scientific Data</em> 6, 283. RiverATLAS v1.0, South America. <a href="https://doi.org/10.1038/s41597-019-0300-6">Article</a> · <a href="https://doi.org/10.6084/m9.figshare.9890531">Data</a>. <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Modified: larger reaches selected, chains merged, geometry simplified and rounded.</p>
+<p class="citation"><strong>How connections were derived</strong><br>Lehner, B. &amp; Grill, G. (2013), “Global river hydrography and network routing: baseline data and new approaches to study the world’s large river systems.” <em>Hydrological Processes</em> 27, 2171–2186. The NEXT_DOWN field records the next downstream reach; zero means a coast or inland sink. <a href="https://doi.org/10.1002/hyp.9740">Paper</a>.</p>
+<p class="citation"><strong>The Casiquiare exception</strong><br>Laraque, A. et al. (2019), “Water and Sediment Budget of Casiquiare Channel Linking Orinoco and Amazon Catchments, Venezuela.” <em>Water</em> 11, 2068. <a href="https://doi.org/10.3390/w11102068">Paper</a>. An important limit of the single-outlet model.</p>
+<p class="citation"><strong>Land, relief &amp; names</strong><br>Natural Earth, public domain, for coastlines and cities. GEBCO 2008, via NASA Earth Observatory and the bundled globe, for generalized relief. Relief is an original color rendering, not survey contours. River names identify nearby mapped channels; labels and coastlines are generalized. Equirectangular map, standard parallel 20° S.</p>
+<p class="citation"><strong>Type &amp; drawing</strong><br>Libertinus Serif, SIL Open Font License. Original interface and line treatments. No manuscript image is reproduced.</p>
+<p class="small">All content is bundled. No accounts, tracking, location access, or saved exploration. Source links open your browser only when you choose them.</p>
+</div>
+</dialog>
+</body>
+</html>

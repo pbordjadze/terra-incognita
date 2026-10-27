@@ -56,6 +56,7 @@ struct AtlasScreen: View {
     @AppStorage("globeStyle") private var globeStyle = GlobeStyle.persian
     /// Where the buttons are, so the globe keeps its names clear of them.
     @State private var buttonsFrame = CGRect.zero
+    @State private var waterStudy = false
 
     private static var startsOnGlobe: Bool {
         #if DEBUG
@@ -78,7 +79,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe && !leaf, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe && !leaf && !waterStudy, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -86,17 +87,30 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
+            // Keep four map-tool symbols within a phone at accessibility text sizes.
+            // Only the images are bounded; menu and study reading text retain the full size.
             HStack(spacing: 10) {
                 Button { leaf = true } label: {
                     Image(systemName: "leaf")
                         .font(.title3)
-                        .padding(6)
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.glass)
                 .accessibilityLabel(Text("An Aegean leaf"))
+                Button { waterStudy = true } label: {
+                    Image(systemName: "water.waves")
+                        .font(.title3)
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel("A gathering of water")
+                .accessibilityIdentifier("openWaterStudy")
                 Button { toggleGlobe() } label: {
                     Image(systemName: globe ? "film" : "globe.americas.fill")
                         .font(.title3)
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .padding(6)
                 }
                 .buttonStyle(.glass)
@@ -109,6 +123,7 @@ struct AtlasScreen: View {
                     } label: {
                         Image(systemName: "paintpalette")
                             .font(.title3)
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                             .padding(6)
                     }
                     .buttonStyle(.glass)
@@ -122,6 +137,7 @@ struct AtlasScreen: View {
                     } label: {
                         Image(systemName: "paintpalette")
                             .font(.title3)
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                             .padding(6)
                     }
                     .buttonStyle(.glass)
@@ -161,7 +177,7 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.4), value: banner)
         .onAppear {
-            model.canvas?.suspended = globe || leaf
+            model.canvas?.suspended = globe || leaf || waterStudy
             withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
         }
         .onChange(of: model.lookIndex) { _, _ in
@@ -179,7 +195,23 @@ struct AtlasScreen: View {
         .fullScreenCover(isPresented: $leaf) {
             LeafScreen()
         }
-        .onChange(of: leaf) { _, open in model.canvas?.suspended = open || globe }
+        .onChange(of: leaf) { _, open in model.canvas?.suspended = open || globe || waterStudy }
+        .fullScreenCover(isPresented: $waterStudy) {
+            NavigationStack {
+                WaterScreen()
+                    .navigationTitle("Terra Incognita")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Back to atlas") { waterStudy = false }
+                                .accessibilityIdentifier("closeWaterStudy")
+                        }
+                    }
+                    .toolbarBackground(.visible, for: .navigationBar)
+            }
+            .preferredColorScheme(.light)
+        }
+        .onChange(of: waterStudy) { _, open in model.canvas?.suspended = globe || leaf || open }
         .background(Color("LaunchBackground"))
     }
 
@@ -192,7 +224,7 @@ struct AtlasScreen: View {
             try? await Task.sleep(for: .milliseconds(240))
             globe.toggle()
             globeMade = globeMade || globe
-            model.canvas?.suspended = globe
+            model.canvas?.suspended = globe || leaf || waterStudy
             // the first time, the globe decodes its maps under the veil: it lifts once a frame is drawn
             // (or after a second, whatever happens)
             for _ in 0..<40 where globe && !globeDrawn {
