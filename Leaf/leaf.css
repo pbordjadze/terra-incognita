@@ -10,3 +10,4 @@ dialog p{font-size:1.0625rem}details p{font-size:.875rem}summary{font-size:.9375
 @media(min-width:701px){dialog{max-height:calc(100dvh - 245px)}}.note-top{position:sticky;top:-22px;background:var(--panel);z-index:2;padding-top:8px;padding-bottom:2px}@media(max-width:700px){.note-top{top:-18px}}
 /* Very large reading sizes may need to break a single long word inside the narrow sheet. */
 dialog{overflow-wrap:anywhere;hyphens:auto}
+@media(max-width:700px){.atlas-link{min-width:44px}.zoom-controls button{width:44px;min-width:44px}.light-control input{min-height:44px}}
