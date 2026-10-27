@@ -97,6 +97,8 @@ final class CamelidEncounterTests: XCTestCase {
             milestone.tap()
             XCTAssertTrue(resume.waitForExistence(timeout: 10))
             XCTAssertTrue(element("camelidDate", in: app).label.contains(date))
+            XCTAssertTrue(element("camelidStoryAnimal", in: app).waitForExistence(timeout: 5),
+                          "A revisited milestone must show an inspectable illustration, not an empty transition frame")
             capture("03-milestone-\(index)")
         }
         XCTAssertTrue(element("camelidScene", in: app).label.contains("cousins"))
