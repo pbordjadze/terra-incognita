@@ -52,11 +52,16 @@ const close=(a,b,epsilon=.001)=>Math.abs(a-b)<epsilon;
    assert.ok(cam.x-size[0]/(2*cam.s)>=bx-.001&&cam.x+size[0]/(2*cam.s)<=bx+bw+.001);
    assert.ok(cam.y-size[1]/(2*cam.s)>=by-.001&&cam.y+size[1]/(2*cam.s)<=by+bh+.001);
  }
+ // An inactive or still scene must retain a painted frame after a layout refresh.
+ await p.evaluate(()=>leafSettings({active:false,reduceMotion:true}));
+ await p.setViewportSize({width:1200,height:1000});await p.waitForTimeout(150);
+ const colours=await p.locator('#map').evaluate(c=>{const a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let warm=0;for(let i=0;i<a.length;i+=16)if(a[i]-a[i+2]>12&&a[i+1]-a[i+2]>6)warm++;return warm;});
+ assert.ok(colours>100,'Paused layout must paint the geography');
  await context.close();
  // Fresh phone view, Reduce Motion, and oversized reading text in the actual scrolled source panel.
  const phone=await browser.newContext({viewport:{width:402,height:874},hasTouch:true,reducedMotion:'reduce'});const q=await phone.newPage();q.on('pageerror',e=>errors.push(e.message));await q.goto(process.env.LEAF_URL||'http://127.0.0.1:8787');await q.waitForFunction(()=>window.leafReady);await q.waitForTimeout(900);assert.equal((await q.evaluate(()=>leafDiagnostics())).still,true);await q.screenshot({path:'out/leaf-iphone.png'});
  await q.evaluate(()=>leafSettings({textSize:3.12,reduceMotion:true}));await q.locator('#menu-button').click();await q.locator('#note-index button').nth(3).click();await q.locator('#note summary').click();await q.screenshot({path:'out/leaf-iphone-large-text.png'});
  const overflow=await q.locator('#note').evaluate(el=>el.scrollWidth>el.clientWidth+1);assert.equal(overflow,false);await q.locator('.return-to-water').click();await q.waitForTimeout(100);assert.equal((await q.evaluate(()=>leafDiagnostics())).note,null);
- assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity and finite-page bounds, stillness, blue hour, keyboard glass and skiff, label collisions, phone large text, local requests only.');
- fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:15,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
+ assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity and finite-page bounds, paused redraw, stillness, blue hour, keyboard glass and skiff, label collisions, phone large text, local requests only.');
+ fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:16,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});

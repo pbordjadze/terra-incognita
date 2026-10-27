@@ -91,7 +91,10 @@
   function resize() {
     const r=chart.getBoundingClientRect();if(!r.width||!r.height)return;
     const old={w,h,s:home.s};w=r.width;h=r.height;dpr=Math.min(devicePixelRatio||1,2);
-    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const pixelWidth=Math.round(w*dpr),pixelHeight=Math.round(h*dpr);
+    // Assigning even an unchanged canvas dimension clears its pixels in WebKit.
+    if(canvas.width!==pixelWidth)canvas.width=pixelWidth;
+    if(canvas.height!==pixelHeight)canvas.height=pixelHeight;
     home.s=w<700?Math.min(w/620,h/830):Math.min(w/1030,h/880);
     if(!ready)Object.assign(cam,home);else cam.s*=home.s/old.s;
     constrain();dirty=true;
@@ -207,15 +210,16 @@
   function render(now){
     frame=requestAnimationFrame(render);
     const dt=Math.min((now-last)/1000,.05)||0;last=now;
-    if(document.hidden||!nativeActive||!ready)return;
-    if(!still&&!$('leaf-menu').open)time+=dt;
+    if(!ready)return;
+    const moving=!still&&nativeActive&&!document.hidden;
+    if(moving&&!$('leaf-menu').open)time+=dt;
     if(Math.abs(light-targetLight)>.001){light=still?targetLight:mix(light,targetLight,.1);dirty=true;}
-    if(still&&!dirty)return;
+    if(!moving&&!dirty)return;
     // Idle animation is deliberately capped at 30Hz; input draws immediately on its next frame.
     if(!dirty&&now-lastDraw<32)return;lastDraw=now;dirty=false;
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=palette[light>.6?1:0].water;ctx.fillRect(0,0,w,h);
     drawMap(ctx,0);if(light>.001&&maps[1]){ctx.globalAlpha=light;drawMap(ctx,1);ctx.globalAlpha=1;}
-    life(ctx,dt);labels(ctx);ornaments(ctx);soundingGlass(ctx);
+    life(ctx,moving?dt:0);labels(ctx);ornaments(ctx);soundingGlass(ctx);
     const nw=toWorld([20,20]),ne=toWorld([w-20,20]);
     const lat=38-nw[1]/120,lon=24.6+ne[0]/(120*data.projection.cos);
     document.querySelector('.top-left').textContent=lat.toFixed(1)+'° N';document.querySelector('.top-right').textContent=lon.toFixed(1)+'° E';
