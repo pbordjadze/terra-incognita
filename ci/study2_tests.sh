@@ -2,6 +2,7 @@
 set -euo pipefail
 mkdir -p out/study2-shots out/study2-opening build/study2-preview
 APP=build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+APP_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
 rc=0
 # These are this job's two simulators; only one should consume memory while testing.
 while read -r KIND UDID _ <&3; do
@@ -22,13 +23,13 @@ PY
     continue
   fi
   xcrun simctl install "$UDID" "$APP"
-  xcrun simctl launch --terminate-running-process "$UDID" com.pbordjadze.terraincognita -water
+  xcrun simctl launch --terminate-running-process "$UDID" "$APP_ID"
   sleep 10
-  xcrun simctl terminate "$UDID" com.pbordjadze.terraincognita
-  xcrun simctl launch "$UDID" com.pbordjadze.terraincognita -water
+  xcrun simctl terminate "$UDID" "$APP_ID"
+  xcrun simctl launch "$UDID" "$APP_ID"
   sleep 15
   xcrun simctl io "$UDID" screenshot "out/study2-opening/$KIND.png"
-  xcrun simctl terminate "$UDID" com.pbordjadze.terraincognita
+  xcrun simctl terminate "$UDID" "$APP_ID"
   # Same report-ref mechanism as ordinary CI, published before the interaction stage.
   cp out/study2-opening/*.png build/study2-preview/
   echo "$GITHUB_SHA" > build/study2-preview/COMMIT
@@ -47,6 +48,7 @@ PY
       -maximum-concurrent-test-simulator-destinations 1 \
       -test-timeouts-enabled YES -default-test-execution-time-allowance 180 \
       -maximum-test-execution-time-allowance 240 \
+      TI_STUDY_ENTRY=water TI_APP_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2.resigned \
       ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
       2>&1 | tee "out/study2-$KIND.log" | tail -100; then
     echo "Native interactions passed: $KIND"

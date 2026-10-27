@@ -225,12 +225,12 @@ jobs:
         run: |
           mkdir -p out
           ci/simulators.sh iphone ipad > out/sims.txt
-          while read -r KIND UDID _; do nohup xcrun simctl boot "$UDID" > "out/boot-$KIND.log" 2>&1 < /dev/null & done < out/sims.txt
       - name: Debug build
         run: |
           set -o pipefail
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-debug -quiet \
+            TI_STUDY_ENTRY=water TI_APP_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2.resigned \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee out/study2-debug.log | tail -80
           APP=build/study2-debug/Build/Products/Debug-iphonesimulator/TerraIncognita.app
@@ -241,7 +241,11 @@ jobs:
           for root in ['Atlas','Globe','Water']:
               for f in Path(root).rglob('*'):
                   if f.is_file(): assert f.read_bytes()==(app/f).read_bytes(), str(f)
-          print('All three bundled data folders identical')
+          import plistlib
+          info=plistlib.loads((app/'Info.plist').read_bytes())
+          assert info['TIStudyEntry']=='water'
+          assert info['CFBundleIdentifier']=='com.pbordjadze.terraincognita.study2.resigned'
+          print('Study entry survives a changed identifier; all bundled data folders identical')
           PYDATA
       - name: Native opening views, touch and largest text, one simulator at a time
         env:
@@ -252,11 +256,12 @@ jobs:
           set -o pipefail
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/study2-release -quiet \
+            TI_STUDY_ENTRY=water TI_APP_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2.resigned \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee out/study2-release.log | tail -80
           xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
             -destination 'generic/platform=iOS' -archivePath build/StudyII.xcarchive -quiet \
-            PRODUCT_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2 \
+            TI_STUDY_ENTRY=water PRODUCT_BUNDLE_IDENTIFIER=com.pbordjadze.terraincognita.study2 \
             'INFOPLIST_KEY_CFBundleDisplayName=Terra Incognita II' \
             MARKETING_VERSION="1.0.$BUILD" CURRENT_PROJECT_VERSION="$BUILD" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
@@ -279,6 +284,8 @@ jobs:
           NOTES
           gh release create "study2-$GITHUB_RUN_ID" out/TerraIncognita-StudyII.ipa out/study2-source.json out/icon.png \
             --prerelease --target "$GITHUB_SHA" --title "Terra Incognita — Study II ($BUILD)" --notes-file out/notes.txt
+          # Update only this study's previously installed source so existing users can refresh.
+          gh release upload study2-40440112973 out/study2-source.json --clobber
           echo "https://github.com/$GITHUB_REPOSITORY/releases/download/study2-$GITHUB_RUN_ID/study2-source.json" > out/STUDY2-ACCESS.txt
       - uses: actions/upload-artifact@v5
         if: always()

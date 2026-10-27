@@ -8,7 +8,7 @@ struct TerraIncognitaApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if Bundle.main.bundleIdentifier == "com.pbordjadze.terraincognita.study2" || ProcessInfo.processInfo.arguments.contains("-water") {
+                if Bundle.main.object(forInfoDictionaryKey: "TIStudyEntry") as? String == "water" || ProcessInfo.processInfo.arguments.contains("-water") {
                     WaterScreen()
                 } else {
                     AtlasScreen()

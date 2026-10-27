@@ -13,7 +13,7 @@ final class WaterInteractionTests: XCTestCase {
         shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }
     @MainActor private func exercise(large: Bool) {
-        let app = XCUIApplication(); app.launchArguments = ["-water"]
+        let app = XCUIApplication(); app.launchArguments = []
         if large { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
         app.launch(); defer { app.terminate() }
         let gather = control("Gather", app)

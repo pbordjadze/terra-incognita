@@ -290,7 +290,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TI_APP_BUNDLE_IDENTIFIER)";
+				TI_APP_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
+				TI_STUDY_ENTRY = atlas;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -328,7 +330,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(TI_APP_BUNDLE_IDENTIFIER)";
+				TI_APP_BUNDLE_IDENTIFIER = com.pbordjadze.terraincognita;
+				TI_STUDY_ENTRY = atlas;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
