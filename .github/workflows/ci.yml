@@ -26,6 +26,15 @@ on:
         type: choice
         options: [ipad, iphone, both]
         default: ipad
+      leaf_only:
+        description: Photograph only the atlas leaf
+        type: boolean
+        default: false
+      interaction_suite:
+        description: Branch interaction check (main always runs all tests)
+        type: choice
+        options: [all, leaf]
+        default: all
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -58,13 +67,17 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 ci/check_leaf.py 2>&1 | tee -a out/plates-check.log || rc=1
+          for f in Leaf/*.js Leaf/data/*.js tools/aegean/*.cjs; do
+            node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
+          done
           node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
           node --check Water/water.js || rc=1
           node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -112,28 +125,36 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Leaf Water -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        timeout-minutes: 30
-        run: bash ci/encounter_tests.sh
+        timeout-minutes: 45
+        run: |
+          # A focused branch rerun after a leaf test repair; main's publication gate is always full.
+          if [ "$GITHUB_REF_NAME" != main ] && [ "${{ inputs.interaction_suite }}" = leaf ]; then
+            export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests
+          fi
+          bash ci/encounter_tests.sh
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
+        # Focused leaf checks attach opening/reading images through XCTest already.
+        # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && inputs.interaction_suite == 'leaf') }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
           # on each device (the iPad first): the globe in each style (GLOBE=1), then every look at
           # five moments of its film (unless `film` is off); each device's pictures in out/shots/<device>/
-          export GLOBE=1
+          export GLOBE=1 LEAF=1
+          if [ "${{ inputs.leaf_only }}" = true ]; then export GLOBE=0; fi
           ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
           # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)
           while read -r KIND UDID _ <&3; do
-            if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
+            if [ "${{ inputs.film }}" = false ] || [ "${{ inputs.leaf_only }}" = true ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
           done 3< out/sims.txt
       - name: Collect
@@ -228,6 +249,7 @@ jobs:
           {
             echo "commit: ${GITHUB_SHA}"
             echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "recordings: retained in the Actions artifact, outside this git report"
             echo
             echo "plates: ${{ needs.plates.result }}"
             echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"

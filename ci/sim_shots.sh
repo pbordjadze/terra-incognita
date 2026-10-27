@@ -37,6 +37,7 @@ shot() {
 WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
 # the globe first (the film's moments can take long, and a timeout should cut them, not it)
+if [ "${LEAF:-}" = 1 ]; then shot leaf -leaf; fi
 if [ "${GLOBE:-}" = 1 ]; then
   # each style (the defaults' `globeStyle`, set by the launch argument)
   shot globe-whole -globe -globeStyle wikipedia -globe-at -83 28 1
