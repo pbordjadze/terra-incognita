@@ -9,6 +9,7 @@ struct OceanExperience: View {
     @State private var time = 0.0
     @State private var evidence = false
     @State private var place: String?
+    @State private var placeRequest = 0
     @State private var borrowed = false
 
     static let paper = Color(red: 0.949, green: 0.894, blue: 0.784)
@@ -34,13 +35,20 @@ struct OceanExperience: View {
                 VStack(alignment: .leading, spacing: 22) {
                     heading.id("encounterTop")
                     lensMenu
-                    OceanMap(lens: lens, time: time, onPlace: { place = $0 })
+                    OceanMap(lens: lens, time: time, onPlace: showPlace)
                         .frame(height: 320)
                         .id("encounterMap")
                     Text("Move the glass across the islands. Tap a place to stay with it.")
                         .font(.custom("LibertinusSerif-Italic", size: 17, relativeTo: .body))
                         .foregroundStyle(Self.blue)
-                    if let place { placeNote(place).id("placeNote") }
+                    if let place {
+                        placeNote(place) {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
+                                self.place = nil
+                                proxy.scrollTo("encounterMap", anchor: .top)
+                            }
+                        }.id("placeNote")
+                    }
                     Group {
                         switch lens {
                         case "words": words
@@ -66,9 +74,9 @@ struct OceanExperience: View {
             .onChange(of: lens) { _, _ in
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) { proxy.scrollTo("encounterTop", anchor: .top) }
             }
-            .onChange(of: place) { _, value in
+            .onChange(of: placeRequest) { _, _ in
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
-                    proxy.scrollTo(value == nil ? "encounterMap" : "placeNote", anchor: .top)
+                    proxy.scrollTo("placeNote", anchor: .top)
                 }
             }
             }
@@ -216,7 +224,7 @@ struct OceanExperience: View {
             margin("Madagascar is not a misplaced piece of somewhere else.")
             prose("African and Asian connections belong to Malagasy histories together. Bantu-language contact helped shape Malagasy. A large genetic study found both African and Asian ancestry across its sampled communities, with substantial variation. Neither result defines any person’s identity.")
             note("The map offers places to inspect, not a single migration corridor or a claim that geography determined people’s choices.")
-            Button { place = "comoros" } label: { Text("Look at the Comoros  ↗").frame(minHeight: 44).contentShape(Rectangle()) }
+            Button { showPlace("comoros") } label: { Text("Look at the Comoros  ↗").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
                 .foregroundStyle(Self.blue).padding(.vertical, 10)
         }
@@ -230,12 +238,12 @@ struct OceanExperience: View {
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func placeNote(_ key: String) -> some View {
+    private func placeNote(_ key: String, onDismiss: @escaping () -> Void) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(key == "borneo" ? "Southern Borneo" : key == "comoros" ? "The Comoros" : key == "africa" ? "The East African coast" : "Madagascar")
                 .font(.custom("LibertinusSerif-Regular", size: 25, relativeTo: .title2))
             prose(key == "borneo" ? "Other South East Barito languages are spoken near the Barito River. The mark is a regional reference, not a known departure port." : key == "comoros" ? "An archipelago between Africa and Madagascar. Sima’s crop remains are one reason the story reaches beyond Madagascar. The mark is an island-group locator, not a precise excavation coordinate." : key == "africa" ? "The crop study compared island sites with coastal East African sites. Its sampled mainland sites were dominated by African crops; that is a local archaeological comparison, not a timeless cultural boundary." : "At Mahilaka in northwestern Madagascar, rice and cotton were recovered. The island mark locates Madagascar, not the excavation itself.")
-            Button { place = nil } label: { Text("Put this note aside").frame(minHeight: 44).contentShape(Rectangle()) }
+            Button(action: onDismiss) { Text("Put this note aside").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body)).foregroundStyle(Self.blue)
                 .frame(minHeight: 44)
         }
@@ -259,6 +267,10 @@ struct OceanExperience: View {
     }
     private func choose(_ key: String) {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { lens = key; place = nil }
+    }
+    private func showPlace(_ key: String) {
+        place = key
+        placeRequest += 1
     }
 }
 

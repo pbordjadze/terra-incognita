@@ -47,7 +47,8 @@ finished picture in the chosen look. This file is the map and the rules.
   is open. The host supplies system text size, Reduce Motion and scene activity and permits only
   bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
   - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
-    vectors; never hand-edit `Leaf/data/chart.js`. Runtime uses no fetch, external service or storage.
+    vectors; never hand-edit `Leaf/data/chart.js`. Then run `tools/aegean/paint.cjs` against the local
+    server to prepare both matching engraving images. Runtime uses no fetch, external service or storage.
   - `node tools/aegean/serve.cjs` previews it locally; `node tools/aegean/check.cjs` exercises the actual
     browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
     `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;

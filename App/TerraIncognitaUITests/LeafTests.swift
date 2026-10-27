@@ -30,11 +30,15 @@ final class LeafTests: XCTestCase {
         let place = app.buttons["Read note: Santorini"].firstMatch
         XCTAssertTrue(place.waitForExistence(timeout: 10))
         for _ in 0..<12 where !place.isHittable {
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.73))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.43))
+            // The iPad sheet lives at the right margin; the screen centre is outside it.
+            let menuClose = app.buttons["Close the leaf menu"].firstMatch
+            let scrollX = menuClose.frame.midX - min(140, app.frame.width * 0.35)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: scrollX, dy: app.frame.height * 0.73))
+            let end = origin.withOffset(CGVector(dx: scrollX, dy: app.frame.height * 0.43))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
-        XCTAssertTrue(place.isHittable, "Optional notes remain reachable at the reader's text size")
+        XCTAssertTrue(place.isHittable, "Optional notes remain reachable at the reader's text size. \(app.debugDescription)")
         place.tap()
         let close = app.buttons["Close the note"].firstMatch
         XCTAssertTrue(close.waitForExistence(timeout: 10))
