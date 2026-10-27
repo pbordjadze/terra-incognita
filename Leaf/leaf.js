@@ -96,7 +96,14 @@
     if(!ready)Object.assign(cam,home);else cam.s*=home.s/old.s;
     constrain();dirty=true;
   }
-  function constrain(){cam.s=clamp(cam.s,home.s*.75,home.s*6);cam.x=clamp(cam.x,bounds[0]+w/cam.s*.15,bounds[0]+bounds[2]-w/cam.s*.15);cam.y=clamp(cam.y,bounds[1]+h/cam.s*.15,bounds[1]+bounds[3]-h/cam.s*.15);}
+  function constrain(){
+    // This is a finite printed leaf. Keep its prepared geographic edge outside the window.
+    const minimum=Math.max(home.s*.75,w/bounds[2],h/bounds[3]);
+    cam.s=clamp(cam.s,minimum,Math.max(minimum,home.s*6));
+    const hw=w/(2*cam.s),hh=h/(2*cam.s);
+    cam.x=clamp(cam.x,bounds[0]+hw,bounds[0]+bounds[2]-hw);
+    cam.y=clamp(cam.y,bounds[1]+hh,bounds[1]+bounds[3]-hh);
+  }
   function zoom(f,anchor=[w/2,h/2]){const p=toWorld(anchor);cam.s*=f;constrain();cam.x=p[0]-(anchor[0]-w/2)/cam.s;cam.y=p[1]-(anchor[1]-h/2)/cam.s;constrain();dirty=true;}
   function worldTransform(g){g.translate(w/2,h/2);g.scale(cam.s,cam.s);g.translate(-cam.x,-cam.y);}
   function drawMap(g,night){g.save();worldTransform(g);g.drawImage(maps[night],...bounds);g.restore();}

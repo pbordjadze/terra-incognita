@@ -42,11 +42,21 @@ const close=(a,b,epsilon=.001)=>Math.abs(a-b)<epsilon;
    await p.evaluate(f=>leafSettings({textSize:f,reduceMotion:true}),factor);await p.locator('#home').click();await p.waitForTimeout(80);s=await state();
    for(let i=0;i<s.labels.length;i++)for(let j=i+1;j<s.labels.length;j++){let a=s.labels[i],b=s.labels[j];assert.ok(!(a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y),`${a.name} overlaps ${b.name}`);}
  }
+ // Extreme wandering must not expose a clipped coastline or unpainted data edge.
+ for(let i=0;i<8;i++)await p.locator('#zoom-out').click();
+ for(const side of [-1,1]){
+   await p.mouse.move(chart.x+chart.width/2,chart.y+chart.height/2);await p.mouse.down();
+   await p.mouse.move(chart.x+chart.width/2+side*chart.width*.44,chart.y+chart.height/2+side*chart.height*.4,{steps:8});await p.mouse.up();
+   const d=await p.evaluate(()=>({state:leafDiagnostics(),bounds:LeafChart.bounds}));
+   const {cam,size}=d.state,[bx,by,bw,bh]=d.bounds;
+   assert.ok(cam.x-size[0]/(2*cam.s)>=bx-.001&&cam.x+size[0]/(2*cam.s)<=bx+bw+.001);
+   assert.ok(cam.y-size[1]/(2*cam.s)>=by-.001&&cam.y+size[1]/(2*cam.s)<=by+bh+.001);
+ }
  await context.close();
  // Fresh phone view, Reduce Motion, and oversized reading text in the actual scrolled source panel.
  const phone=await browser.newContext({viewport:{width:402,height:874},hasTouch:true,reducedMotion:'reduce'});const q=await phone.newPage();q.on('pageerror',e=>errors.push(e.message));await q.goto(process.env.LEAF_URL||'http://127.0.0.1:8787');await q.waitForFunction(()=>window.leafReady);await q.waitForTimeout(900);assert.equal((await q.evaluate(()=>leafDiagnostics())).still,true);await q.screenshot({path:'out/leaf-iphone.png'});
  await q.evaluate(()=>leafSettings({textSize:3.12,reduceMotion:true}));await q.locator('#menu-button').click();await q.locator('#note-index button').nth(3).click();await q.locator('#note summary').click();await q.screenshot({path:'out/leaf-iphone-large-text.png'});
  const overflow=await q.locator('#note').evaluate(el=>el.scrollWidth>el.clientWidth+1);assert.equal(overflow,false);await q.locator('.return-to-water').click();await q.waitForTimeout(100);assert.equal((await q.evaluate(()=>leafDiagnostics())).note,null);
- assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity, stillness, blue hour, keyboard glass and skiff, label collisions, phone large text, local requests only.');
- fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:14,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
+ assert.deepEqual(errors,[]);assert.ok(requests.every(u=>u.startsWith('http://127.0.0.1:8787/')));console.log('PASS: bundled resources, pan/note return, gesture conflict, long press, pinch, camera continuity and finite-page bounds, stillness, blue hour, keyboard glass and skiff, label collisions, phone large text, local requests only.');
+ fs.writeFileSync('out/leaf-check.json',JSON.stringify({passed:true,checks:15,browser:'Chromium',requests:requests.length,errors},null,2)+'\n');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});
