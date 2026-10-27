@@ -1,0 +1,34 @@
+2026-10-27T06:43:49.052827+00:00 xcrun simctl boot E839A11B-51B4-4AD3-ACF4-A53B95B7C957
+2026-10-27T06:43:51.738087+00:00 xcrun simctl bootstatus E839A11B-51B4-4AD3-ACF4-A53B95B7C957 -b
+2026-10-27T06:44:50.610275+00:00 xcrun simctl install E839A11B-51B4-4AD3-ACF4-A53B95B7C957 /Users/runner/work/terra-incognita/terra-incognita/build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
+2026-10-27T06:45:23.613787+00:00 xcrun simctl get_app_container E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita data
+2026-10-27T06:45:28.809086+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -globe -globeStyle persian
+2026-10-27T06:46:15.758253+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:46:33.976757+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 4 -camelid-capture-token 2441c574-8bec-4aa6-a016-0ca859500563
+2026-10-27T06:46:38.077993+00:00 camelid first frame submitted: 2441c574-8bec-4aa6-a016-0ca859500563
+2026-10-27T06:46:39.107086+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/rewind.png
+2026-10-27T06:46:41.862907+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:46:42.468171+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 17 -camelid-capture-token 89949317-05cd-40e2-b9b4-1461101649af
+2026-10-27T06:46:45.820939+00:00 camelid first frame submitted: 89949317-05cd-40e2-b9b4-1461101649af
+2026-10-27T06:46:47.030457+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/origin.png
+2026-10-27T06:46:49.512337+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:46:50.670506+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 32 -camelid-capture-token cd559dc6-e6d3-41c6-9a0c-26f0cd57ab1b
+2026-10-27T06:46:54.310133+00:00 camelid first frame submitted: cd559dc6-e6d3-41c6-9a0c-26f0cd57ab1b
+2026-10-27T06:46:55.429216+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/branches.png
+2026-10-27T06:46:56.617835+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:46:57.351038+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 47 -camelid-capture-token 3df54717-cc1f-4aef-951d-4de39ef92dc3
+2026-10-27T06:47:01.717818+00:00 camelid first frame submitted: 3df54717-cc1f-4aef-951d-4de39ef92dc3
+2026-10-27T06:47:02.755401+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/beringia.png
+2026-10-27T06:47:04.840423+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:47:05.629505+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 62 -camelid-capture-token cdd8be5d-e5cc-4f75-a5be-5afb06f18672
+2026-10-27T06:47:10.151804+00:00 camelid first frame submitted: cdd8be5d-e5cc-4f75-a5be-5afb06f18672
+2026-10-27T06:47:11.226594+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/americas.png
+2026-10-27T06:47:12.872290+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:47:13.903929+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid 82 -camelid-capture-token 06f60b81-8cb9-4ef3-a68d-73cf3ec3d79d
+2026-10-27T06:47:18.058011+00:00 camelid first frame submitted: 06f60b81-8cb9-4ef3-a68d-73cf3ec3d79d
+2026-10-27T06:47:19.187248+00:00 xcrun simctl io E839A11B-51B4-4AD3-ACF4-A53B95B7C957 screenshot --type=png /Users/runner/work/terra-incognita/terra-incognita/out/camelid/iphone/cousins.png
+2026-10-27T06:47:20.758516+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:47:23.932498+00:00 xcrun simctl launch E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita -camelid-play -camelid-capture-token c4fe7bff-9564-4d69-9ce1-28313beeee14
+2026-10-27T06:47:28.839580+00:00 camelid first frame submitted: c4fe7bff-9564-4d69-9ce1-28313beeee14
+2026-10-27T06:49:10.119497+00:00 xcrun simctl terminate E839A11B-51B4-4AD3-ACF4-A53B95B7C957 com.pbordjadze.terraincognita
+2026-10-27T06:49:12.269484+00:00 xcrun simctl shutdown E839A11B-51B4-4AD3-ACF4-A53B95B7C957

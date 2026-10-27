@@ -1,0 +1,1 @@
+build=success encounter=success camelid_capture=success shots=skipped release=success

@@ -1,0 +1,34 @@
+{
+  "kind": "native iOS Simulator output",
+  "real_device_test": false,
+  "measured_frame_rate": null,
+  "frames": [
+    {
+      "file": "rewind.png",
+      "guided_time_seconds": 4
+    },
+    {
+      "file": "origin.png",
+      "guided_time_seconds": 17
+    },
+    {
+      "file": "branches.png",
+      "guided_time_seconds": 32
+    },
+    {
+      "file": "beringia.png",
+      "guided_time_seconds": 47
+    },
+    {
+      "file": "americas.png",
+      "guided_time_seconds": 62
+    },
+    {
+      "file": "cousins.png",
+      "guided_time_seconds": 82
+    }
+  ],
+  "capture_readiness": "Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.",
+  "video": "native-playback.mp4",
+  "note": "Screenshots use held story times. Video runs the actual native guided clock."
+}
