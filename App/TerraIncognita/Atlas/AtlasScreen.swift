@@ -39,6 +39,7 @@ final class AtlasModel {
 /// taken the map in hand.
 struct AtlasScreen: View {
     @State private var model = AtlasModel()
+    @State private var leaf = ProcessInfo.processInfo.arguments.contains("-leaf")
     /// The launch screen's slate over the map: the map fades up from it at launch and dips through it
     /// between looks.
     @State private var veil = 1.0
@@ -77,7 +78,7 @@ struct AtlasScreen: View {
                     .accessibilityHidden(globe)
             }
             if globeMade {
-                GlobeScreen(active: globe, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
+                GlobeScreen(active: globe && !leaf, style: globeStyle, keepClear: [buttonsFrame], onDrawn: { globeDrawn = true })
                     .opacity(globe ? 1 : 0)
                     .allowsHitTesting(globe)
                     .accessibilityHidden(!globe)
@@ -86,6 +87,13 @@ struct AtlasScreen: View {
         .animation(.easeInOut(duration: 0.6), value: model.caption)
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
+                Button { leaf = true } label: {
+                    Image(systemName: "leaf")
+                        .font(.title3)
+                        .padding(6)
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel(Text("An Aegean leaf"))
                 Button { toggleGlobe() } label: {
                     Image(systemName: globe ? "film" : "globe.americas.fill")
                         .font(.title3)
@@ -153,7 +161,7 @@ struct AtlasScreen: View {
         }
         .animation(.easeInOut(duration: 0.4), value: banner)
         .onAppear {
-            model.canvas?.suspended = globe
+            model.canvas?.suspended = globe || leaf
             withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 }
         }
         .onChange(of: model.lookIndex) { _, _ in
@@ -168,6 +176,10 @@ struct AtlasScreen: View {
                 if banner == look.name { banner = nil }
             }
         }
+        .fullScreenCover(isPresented: $leaf) {
+            LeafScreen()
+        }
+        .onChange(of: leaf) { _, open in model.canvas?.suspended = open || globe }
         .background(Color("LaunchBackground"))
     }
 

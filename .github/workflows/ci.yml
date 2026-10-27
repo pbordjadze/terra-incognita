@@ -25,6 +25,10 @@ on:
         type: choice
         options: [ipad, iphone, both]
         default: ipad
+      leaf_only:
+        description: Photograph only the atlas leaf
+        type: boolean
+        default: false
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -57,10 +61,14 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 ci/check_leaf.py 2>&1 | tee -a out/plates-check.log || rc=1
+          for f in Leaf/*.js Leaf/data/*.js tools/aegean/*.cjs; do
+            node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
+          done
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -106,7 +114,7 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Leaf -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
@@ -118,11 +126,12 @@ jobs:
         run: |
           # on each device (the iPad first): the globe in each style (GLOBE=1), then every look at
           # five moments of its film (unless `film` is off); each device's pictures in out/shots/<device>/
-          export GLOBE=1
+          export GLOBE=1 LEAF=1
+          if [ "${{ inputs.leaf_only }}" = true ]; then export GLOBE=0; fi
           ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
           # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)
           while read -r KIND UDID _ <&3; do
-            if [ "${{ inputs.film }}" = false ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
+            if [ "${{ inputs.film }}" = false ] || [ "${{ inputs.leaf_only }}" = true ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
           done 3< out/sims.txt
       - name: Collect
