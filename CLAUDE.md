@@ -50,6 +50,17 @@ Keep design discussions and plans in that private repository.
     `type.json` is the type (Design rules).
   - Debug builds take `-globe` (open on it), `-globeStyle wikipedia|persian`, `-globe-at lon lat
     zoom` (held there) and `-globe-select <name>`.
+- **The camelid sequence** (`App/TerraIncognita/Camelid/`): the illustrated camel in Arabia opens
+  an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
+  `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
+  Pan, pinch or double-tap pauses the clock and hides the authored composition until resumed.
+  Prehistoric scenes hide modern politics and explicitly identify modern geography as a reference.
+  `CamelidAnimals` in the asset catalog is original generated art, cropped once by `CamelidArt`.
+  Optional evidence and the textual equivalent are bundled in `CamelidEvidence`.
+  Debug: `-camelid <seconds>` holds a complete composition, `-camelid-play` runs playback, and
+  `-camelid-reduce-motion` exercises held camera compositions. `ci/camelid_capture.sh` captures
+  actual simulator output; `[camelid-capture]` requests it in the ordinary macOS job. Branch
+  `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
   `node tools/plates/export.cjs <look> "<Name>"` from the look's page `tools/plates/<look>/index.html`
   (the page contract is in `tools/plates/kit.js`). Re-export, never hand-edit.
