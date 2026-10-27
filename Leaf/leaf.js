@@ -315,7 +315,7 @@
   window.leafDispose=()=>{cancelAnimationFrame(frame);stopHold();audio?.close();};window.addEventListener('pagehide',window.leafDispose);
   // The native host supplies system text-size scaling, scene visibility and Reduce Motion.
   window.leafSettings=({textSize=1,reduceMotion=false,active=true}={})=>{
-    document.documentElement.style.fontSize=16*clamp(textSize,1,2)+'px';textScale=clamp(textSize,1,1.6);nativeReduce=reduceMotion;setStill(manualStill);nativeActive=active;if(!active)audio?.suspend();else if(soundOn)audio?.resume();dirty=true;
+    document.documentElement.style.fontSize=16*clamp(textSize,1,3.2)+'px';textScale=clamp(textSize,1,1.6);nativeReduce=reduceMotion;setStill(manualStill);nativeActive=active;if(!active)audio?.suspend();else if(soundOn)audio?.resume();dirty=true;
   };
   // Read-only geometry diagnostics for the local interaction harness.
   window.leafDiagnostics=()=>({ready,cam:{...cam},home:{...home},size:[w,h],labels:labelBoxes.map(b=>({...b})),lens:lens?.slice(),still,light,soundOn,boat:{...boat},note:activeNote?.id||null,time});

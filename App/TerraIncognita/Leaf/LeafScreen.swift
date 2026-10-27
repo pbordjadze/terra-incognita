@@ -38,7 +38,7 @@ struct LeafScreen: View {
     private var textScale: Double {
         // Explicitly read the environment so changes while the leaf is open update the web view.
         _ = typeSize
-        return min(2, max(1, Double(UIFont.preferredFont(forTextStyle: .body).pointSize / 17)))
+        return min(3.2, max(1, Double(UIFont.preferredFont(forTextStyle: .body).pointSize / 17)))
     }
 }
 
