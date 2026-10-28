@@ -92,24 +92,26 @@ final class PlaygroundTests: XCTestCase {
         assertLive(Self.plainGlobeLive, in: app, "The film's canvas is released when it closes")
     }
 
-    /// The bundled web pack: its marker on the globe, its page from the marker, and back.
-    @MainActor func testBundledPackOpensFromTheGlobe() {
+    /// The bundled pack: its script runs in the app (no page, no web view), says at the foot which copy
+    /// it is, shows its panel from the chip's Open, and leaves nothing when it ends.
+    @MainActor func testBundledPackRunsOnTheGlobe() {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset"]
         app.launch()
         defer { app.terminate() }
         startPrototype("hello-pack", in: app)
-        let marker = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "hello-pack.")).firstMatch
-        XCTAssertTrue(marker.waitForExistence(timeout: 30), "The pack's marker is drawn by the app on the globe")
+        XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "The bundled pack's script runs")
+        XCTAssertTrue(text(containing: "Bundled", in: app).exists, "It knows where it came from")
         attach("30-pack-on-globe", in: app)
-        app.buttons["openActivePrototype"].firstMatch.tap()
-        XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "The bundled page opens")
-        XCTAssertTrue(text(containing: "Bundled", in: app).exists, "The page knows where it came from")
-        attach("31-pack-screen", in: app)
-        app.buttons["packBack"].firstMatch.tap()
-        XCTAssertTrue(marker.waitForExistence(timeout: 10))
+        let open = app.buttons["openActivePrototype"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 10), "Its script listens for Open")
+        open.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["packPanelTitle"].firstMatch.waitForExistence(timeout: 15), "Open shows its panel")
+        attach("31-pack-panel", in: app)
+        app.buttons["packPanelClose"].firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["packPanel"].firstMatch.waitForNonExistence(timeout: 10))
         endPrototype(in: app)
         openWorkbench(in: app)
-        assertLive(Self.plainGlobeLive, in: app, "The pack's markers and web views are released")
+        assertLive(Self.plainGlobeLive, in: app, "The pack's script and everything it asked for are released")
     }
 }

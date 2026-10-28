@@ -22,13 +22,9 @@ final class RemotePackTests: XCTestCase {
         attach("40-update-listed", in: app)
         row.tap()
 
-        // it downloads, starts on the globe, and its page is the published one
-        let open = app.buttons["openActivePrototype"].firstMatch
-        XCTAssertTrue(open.waitForExistence(timeout: 45))
-        open.tap()
-        pageShows("Second words.", "The remote revision's page opens", in: app)
+        // it downloads and starts on the globe, and the words at the foot are the published ones
+        pageShows("Second words.", "The remote revision runs", in: app)
         attach("41-remote-revision", in: app)
-        app.buttons["packBack"].firstMatch.tap()
 
         // back to the bundled copy, and forward again
         openWorkbench(in: app)
@@ -39,9 +35,8 @@ final class RemotePackTests: XCTestCase {
         let rolledBack = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", "bundled"), object: revision)
         XCTAssertEqual(XCTWaiter().wait(for: [rolledBack], timeout: 10), .completed, revision.label)
         app.buttons["workbenchClose"].firstMatch.tap()
-        startPrototype("hello-pack", open: true, in: app)
-        pageShows("First words.", "Previous restores the bundled page", in: app)
-        app.buttons["packBack"].firstMatch.tap()
+        startPrototype("hello-pack", in: app)
+        pageShows("First words.", "Previous restores the bundled copy", in: app)
         openWorkbench(in: app)
         let newest = app.buttons["newest_hello-pack"].firstMatch
         revealInWorkbench(newest, in: app)
@@ -53,15 +48,15 @@ final class RemotePackTests: XCTestCase {
         app.launchArguments = ["-packs-url", "http://127.0.0.1:9/catalog.json"]
         app.launch()
         defer { app.terminate() }
-        startPrototype("hello-pack", open: true, in: app)
-        pageShows("Second words.", "Offline, the installed revision opens", in: app)
+        startPrototype("hello-pack", in: app)
+        pageShows("Second words.", "Offline, the installed revision runs", in: app)
         attach("42-offline", in: app)
     }
 
-    /// The page says this within a minute; if not, what the screen showed is kept with the failure.
+    /// The pack says this at the foot within a minute; if not, what the screen showed is kept with the failure.
     @MainActor private func pageShows(_ words: String, _ message: String, in app: XCUIApplication,
                                       file: StaticString = #filePath, line: UInt = #line) {
-        let shown = webText(containing: words, in: app).waitForExistence(timeout: 60)
+        let shown = text(containing: words, in: app).waitForExistence(timeout: 60)
         if !shown { attach("failed-\(words)", in: app) }
         XCTAssertTrue(shown, message, file: file, line: line)
     }

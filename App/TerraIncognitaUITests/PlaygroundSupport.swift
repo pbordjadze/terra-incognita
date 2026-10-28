@@ -2,8 +2,9 @@ import XCTest
 
 /// Entering and leaving prototypes the way a reader does: the workbench button, a row, the chip.
 extension XCTestCase {
-    /// What the plain globe leaves alive: one globe, nothing else.
-    static let plainGlobeLive = "stages 0 · markers 0 · globes 1 · films 0 · web views 0"
+    /// What the globe leaves alive with no prototype running: one globe, nothing else (the doorways are
+    /// the atlas's own, not counted).
+    static let plainGlobeLive = "stages 0 · markers 0 · globes 1 · films 0 · scripts 0 · web views 0"
 
     @MainActor func openWorkbench(in app: XCUIApplication) {
         let button = app.buttons["workbenchButton"].firstMatch
@@ -128,13 +129,7 @@ extension XCTestCase {
         XCTAssertEqual(result, .completed, "\(message): \(live.exists ? live.label : "no live counts")", file: file, line: line)
     }
 
-    /// Text inside the page of an open pack, by what it says (looking only in web views keeps the
-    /// query light on a busy simulator).
-    @MainActor func webText(containing words: String, in app: XCUIApplication) -> XCUIElement {
-        app.webViews.firstMatch.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
-    }
-
-    /// Text inside a web view (or anywhere), by what it says.
+    /// Text anywhere on screen, by what it says.
     @MainActor func text(containing words: String, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", words)).firstMatch
     }
