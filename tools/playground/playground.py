@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""The prototype playground's developer tool (docs/playground.md): scaffold, check, pack and publish
-the web prototypes in Prototypes/. Standard library only.
+"""The prototype playground's developer tool (docs/runtime3.md, docs/playground.md): scaffold, check,
+pack and publish the packs in Prototypes/. A pack is runtime 3: scripts run in JavaScriptCore, whose
+geography, pictures and sprites the globe draws; no pack has a web page. Standard library only.
 
-    playground.py new <id> (--globe | --screen) [--title T]    scaffold Prototypes/<id>/ from template/
+    playground.py new <id> [--title T]                         scaffold Prototypes/<id>/ from template/
     playground.py validate [ids...]                            the contract, sizes and the offline boundary
     playground.py pack [ids...] [--from DIR ...] [--out DIR] [--base FILE_OR_URL]
                                                                catalog.json, packs/<id>/r<rev>/, open/<id>.html
+    playground.py publish --into DIR [ids...] [--public-url URL] [--commit-message FILE] [--dry-run] [--summary FILE]
+                                                               revise the published tree in DIR (a checkout of
+                                                               the `packs` branch); committing is the caller's
     playground.py publish [ids...] [--dry-run] [--summary FILE]
-                                                               pack against the live bucket, upload what changed
+                                                               pack against the live R2 bucket, upload what changed
     playground.py retire <id> [--out DIR] [--undo]             mark a pack withdrawn (catalog only)
     playground.py list [--remote URL]                          the bundled prototypes, and a remote catalog's
 
-publish and retire (without --out) read R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-R2_BUCKET and PACKS_PUBLIC_URL from the environment (R2_ENDPOINT overrides the S3 endpoint, for a
-local S3-compatible server). Exit status: 0 done, 1 findings or a failed check, 2 usage or environment.
+publish --into needs no credentials (packs.yml publishes the `packs` branch with it). publish and
+retire without a folder use R2 and read R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
+and PACKS_PUBLIC_URL from the environment (R2_ENDPOINT overrides the S3 endpoint, for a local
+S3-compatible server). Exit status: 0 done, 1 findings or a failed check, 2 usage or environment.
 """
 import argparse
 import datetime
@@ -38,25 +43,30 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 2
+RUNTIME = 3
 OPEN_SCHEME = 'terraincognita'
+R3_ONLY = 'runtime 3 only: a pack is scripts drawn by the globe'
 
 ID_RE = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])')
 PATH_RE = re.compile(r'[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*')
-COLOUR_RE = re.compile(r'#[0-9A-Fa-f]{6}')
+REVISION_DIR = re.compile(r'r([1-9][0-9]*)')
 
 # decimal megabytes: if the app counts in binary ones, a pack that passes here passes there too
 MAX_PACK_BYTES = 50_000_000
 MAX_FILE_BYTES = 25_000_000
 MAX_FILES = 500
+MAX_FRAMES = 24   # a sprite's (or doorway's) look, docs/runtime3.md
 
-TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'entry', 'anchor', 'markers', 'overlay',
-            'taps', 'shelf', 'background'}
-MARKER_KEYS = {'id', 'lon', 'lat', 'image', 'width', 'height', 'label', 'minZoom', 'maxZoom', 'opens'}
+TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'scripts', 'anchor', 'doorway', 'taps', 'shelf'}
+# what runtimes 1 and 2 declared and runtime 3 has no place for
+WEB_KEYS = {'entry': 'a web page', 'overlay': 'a web page over the globe',
+            'markers': 'pictures placed by the host; a "doorway" or terra.sprites does that now'}
 ANCHOR_KEYS = {'lon', 'lat', 'zoom'}
-GLOBE_ONLY = ('anchor', 'markers', 'overlay', 'taps')
+DOORWAY_KEYS = {'lon', 'lat', 'label', 'look'}
+LOOK_KEYS = {'image', 'frames', 'fps', 'size', 'minZoom', 'maxZoom', 'every', 'for', 'face'}
 IMAGE_EXTS = ('.png', '.jpg', '.jpeg')
-TEXT_EXTS = ('.html', '.htm', '.js', '.mjs', '.css')
+PAGE_EXTS = ('.html', '.htm')
+SCRIPT_EXTS = ('.js', '.mjs')
 
 CONTENT_TYPES = {
     '.html': 'text/html; charset=utf-8', '.htm': 'text/html; charset=utf-8',
@@ -218,56 +228,150 @@ def _line_of(text, pos):
     return text.count('\n', 0, pos) + 1
 
 
-_REMOTE = r'(?:(?:https?|wss?):)?//'
-_QUOTE = r'''["'`]'''
-# a load of something remote, by the pack's own page: the host would block it, so say so before a phone does
-REMOTE_LOADS = [
-    (re.compile(r'''\b(?:src|href|poster|srcset|action)\s*=\s*["']?\s*''' + _REMOTE, re.I), 'remote src/href'),
-    (re.compile(r'''url\(\s*["']?\s*''' + _REMOTE, re.I), 'remote url()'),
-    (re.compile(r'''@import\s+["']\s*''' + _REMOTE, re.I), 'remote @import'),
-    (re.compile(r'\b(?:fetch|importScripts)\s*\(\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote fetch/importScripts'),
-    (re.compile(r'\bimport\s*\(?\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote import'),
-    (re.compile(r'\bfrom\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote import'),
-    (re.compile(r'\bnew\s+(?:WebSocket|EventSource|Worker|SharedWorker)\s*\(\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote socket/worker'),
-    (re.compile(r'\.open\s*\(\s*' + _QUOTE + r'[A-Za-z]+' + _QUOTE + r'\s*,\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote XMLHttpRequest'),
-    (re.compile(r'\bsendBeacon\s*\(\s*' + _QUOTE + r'\s*' + _REMOTE), 'remote sendBeacon'),
+_WORD = re.compile(r'[A-Za-z0-9_$]+')
+# after these a "/" starts a regular expression; after a value (a name, a number, ")" or "]") it divides
+_REGEX_AFTER = set('(,=:[!&|?{};+-*%<>~^')
+_REGEX_WORDS = {'return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void', 'throw', 'case', 'do',
+                'else', 'yield', 'await'}
+
+
+def js_scan(text):
+    """A script split, approximately, into code, string literals and comments: enough to tell a call
+    from the same word in a string or a comment. Returns (code, strings, comments): `code` is the text
+    with every literal's contents (strings, template literals, regular expressions) and every comment
+    blanked, newlines kept; `strings` is [(start, end, raw text between the quotes)] and `comments`
+    [(start, end)]."""
+    n = len(text)
+    out = list(text)
+    strings, comments = [], []
+    braces, templates = 0, []   # brace depth, and the depth at each open ${ of a template literal
+    last = ''                   # the last token: a punctuator, a word, or 'value' after a literal
+    i = 0
+
+    def blank(a, b):
+        for k in range(a, b):
+            if out[k] != '\n':
+                out[k] = ' '
+
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ''
+        if c.isspace() or c == '\ufeff':
+            i += 1
+        elif c == '/' and nxt == '/':
+            j = text.find('\n', i)
+            j = n if j < 0 else j
+            comments.append((i, j))
+            blank(i, j)
+            i = j
+        elif c == '/' and nxt == '*':
+            j = text.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            comments.append((i, j))
+            blank(i, j)
+            i = j
+        elif c in '"\'':
+            j = i + 1
+            while j < n and text[j] != c and text[j] != '\n':
+                j += 2 if text[j] == '\\' else 1
+            j = min(j, n)
+            strings.append((i, j + 1, text[i + 1:j]))
+            blank(i + 1, j)
+            i, last = j + 1, 'value'
+        elif c == '`' or (c == '}' and templates and braces == templates[-1]):
+            # a template literal, or the rest of one after a ${ … }
+            if c == '}':
+                templates.pop()
+            j = i + 1
+            while j < n and text[j] != '`' and not (text[j] == '$' and j + 1 < n and text[j + 1] == '{'):
+                j += 2 if text[j] == '\\' else 1
+            j = min(j, n)
+            strings.append((i, j + 1, text[i + 1:j]))
+            blank(i + 1, j)
+            if j < n and text[j] == '$':
+                templates.append(braces)
+                i, last = j + 2, '{'
+            else:
+                i, last = j + 1, 'value'
+        elif c == '/' and (last == '' or last in _REGEX_AFTER or last in _REGEX_WORDS):
+            j, in_class = i + 1, False
+            while j < n and text[j] != '\n':
+                ch = text[j]
+                if ch == '\\':
+                    j += 2
+                    continue
+                if in_class:
+                    in_class = ch != ']'
+                elif ch == '[':
+                    in_class = True
+                elif ch == '/':
+                    break
+                j += 1
+            if j < n and text[j] == '/':
+                blank(i + 1, j)
+                m = _WORD.match(text, j + 1)
+                i, last = (m.end() if m else j + 1), 'value'
+            else:
+                i, last = i + 1, '/'
+        else:
+            m = _WORD.match(text, i)
+            if m:
+                i, last = m.end(), m.group(0)
+            else:
+                if c == '{':
+                    braces += 1
+                elif c == '}':
+                    braces -= 1
+                i, last = i + 1, c
+    return ''.join(out), strings, comments
+
+
+_GLOBAL = r'(?<![\w$.])(?:(?:window|globalThis|self)\.)?'
+_NO_NET = 'a pack has no network and loads nothing beyond its "scripts" (docs/runtime3.md): bundle the data and read it with terra.read'
+# what a script must not use: there is no network in JavaScriptCore, and scripts are plain scripts run in order
+NO_NETWORK = [
+    (re.compile(_GLOBAL + r'fetch\s*\('), 'fetch()', _NO_NET),
+    (re.compile(_GLOBAL + r'XMLHttpRequest\b'), 'XMLHttpRequest', _NO_NET),
+    (re.compile(_GLOBAL + r'WebSocket\b'), 'WebSocket', _NO_NET),
+    (re.compile(_GLOBAL + r'EventSource\b'), 'EventSource', _NO_NET),
+    (re.compile(r'\bsendBeacon\s*\('), 'sendBeacon()', _NO_NET),
+    (re.compile(r'(?<![\w$.])importScripts\s*\('), 'importScripts()', _NO_NET),
+    (re.compile(r'(?<![\w$.])new\s+(?:Shared)?Worker\s*\('), 'a Worker', 'a pack runs in one context, with no workers'),
+    (re.compile(r'(?<![\w$.])import\s*\('), 'import()', _NO_NET),
+    (re.compile(r'''(?<![\w$.])import\b(?=\s*[\w$*{"'`.])'''), 'an import statement',
+     'scripts are plain scripts, run in the order "scripts" lists them (no modules)'),
 ]
 ANY_URL = re.compile(r'''(?:https?|wss?)://[^\s"'`<>)\]]+''')
-NAMESPACE = re.compile(r'https?://www\.w3\.org/(?:2000/svg|1999/xhtml|1999/xlink|1998/Math/MathML)')
-TERRA_REF = [
-    re.compile(r'''\b(?:src|href)\s*=\s*["']?[^"'\s>]*\bterra\.js\b''', re.I),
-    re.compile(r'\b(?:import|importScripts|fetch)\b[^;\n]*\bterra\.js\b'),
-]
-ATTR_PATH = re.compile(r'''\b(?:src|href)\s*=\s*["']([^"']+)["']''', re.I)
+# a string that is the value of a `url` key: a source link, as terra.panel's sources give them
+SOURCE_KEY = re.compile(r'''(?:(?<![\w$])url|["']url["'])\s*:\s*$''')
 
 
-def scan_text(rel, text, files, rep, where):
-    """The offline boundary in one .html/.js/.css/.mjs file, and references to files that are not there."""
-    spans = []
-    for pattern, kind in REMOTE_LOADS:
-        for m in pattern.finditer(text):
-            spans.append((m.start(), m.end()))
-            rep.error(f'{where}/{rel}:{_line_of(text, m.start())}', f'{kind}: a pack cannot load anything outside itself')
-    for pattern in TERRA_REF:
-        for m in pattern.finditer(text):
-            rep.error(f'{where}/{rel}:{_line_of(text, m.start())}', 'references terra.js, which the host injects itself')
-    for m in ANY_URL.finditer(text):
-        if any(a <= m.start() < b for a, b in spans) or NAMESPACE.match(m.group(0)):
-            continue
-        rep.warn(f'{where}/{rel}:{_line_of(text, m.start())}', f'mentions {m.group(0)[:60]} (a link is fine to cite; it is never loaded)')
-    if rel.lower().endswith(('.html', '.htm')):
-        here = Path(rel).parent
-        for m in ATTR_PATH.finditer(text):
-            ref = m.group(1).split('#')[0].split('?')[0]
-            if not ref or ref.startswith('//') or re.match(r'[A-Za-z][A-Za-z0-9+.-]*:', ref) or '{' in ref:
-                continue
-            if ref.startswith('/'):
-                # the app serves a pack from terra-pack://<id>/, the preview from /pack/<id>/: only a relative path means the same in both
-                rep.warn(f'{where}/{rel}:{_line_of(text, m.start())}', f'"{ref}" starts with /: write it relative so it resolves the same in the app and the preview')
-                continue
-            target = os.path.normpath((here / ref).as_posix()).replace('\\', '/')
-            if target not in files:
-                rep.warn(f'{where}/{rel}:{_line_of(text, m.start())}', f'refers to "{ref}", which is not in the pack')
+def scan_script(rel, text, files, rep, where):
+    """The offline boundary in one script: no network and no code from outside the pack (errors);
+    links outside a source's `url` (warnings: a link is fine to cite, and never loaded); pictures it
+    names that are not in the pack (warnings)."""
+    code, strings, comments = js_scan(text)
+    for pattern, what, why in NO_NETWORK:
+        for m in pattern.finditer(code):
+            rep.error(f'{where}/{rel}:{_line_of(text, m.start())}', f'{what}: {why}')
+    said = set()   # each missing picture and each link once a file: data files repeat them
+
+    def mention(pos, url):
+        if url not in said:
+            said.add(url)
+            rep.warn(f'{where}/{rel}:{_line_of(text, pos)}',
+                     f'mentions {url[:60]}: cite a link in SOURCES.md or as a terra.panel source\'s url (it is never loaded)')
+
+    for start, end, value in strings:
+        if value.lower().endswith(IMAGE_EXTS) and safe_path(value) and value not in files and value not in said:
+            said.add(value)
+            rep.warn(f'{where}/{rel}:{_line_of(text, start)}', f'refers to "{value}", which is not in the pack')
+        if not SOURCE_KEY.search(text[max(0, start - 40):start]):
+            for m in ANY_URL.finditer(value):
+                mention(start, m.group(0))
+    for start, end in comments:
+        for m in ANY_URL.finditer(text, start, end):
+            mention(m.start(), m.group(0))
 
 
 def _check_str(rep, where, m, key, lo, hi):
@@ -312,12 +416,80 @@ def _check_image_bytes(rep, where, key, path):
         rep.error(where, f'{key} is not really a {ext[1:].upper()} file')
 
 
+def _check_zooms(rep, where, tag, obj):
+    lo_z = hi_z = None
+    for k in ('minZoom', 'maxZoom'):
+        if k in obj and _check_num(rep, where, f'{tag}.{k}', obj[k], 0.8, 8):
+            if k == 'minZoom':
+                lo_z = obj[k]
+            else:
+                hi_z = obj[k]
+    if lo_z is not None and hi_z is not None and lo_z > hi_z:
+        rep.error(where, f'{tag}.minZoom {lo_z} is above maxZoom {hi_z}')
+
+
+def _check_picture(rep, where, key, ref, files):
+    if _check_file(rep, where, key, ref, files, IMAGE_EXTS):
+        _check_image_bytes(rep, where, key, files[ref])
+
+
+def check_look(rep, where, tag, look, files):
+    """A look, as a sprite's (docs/runtime3.md › Sprites): one picture or frames, a size in points, a
+    zoom range, an occasional showing (`every`/`for`), `face`."""
+    if not isinstance(look, dict):
+        rep.error(where, f'{tag} must be an object {{ image or frames, size, minZoom, maxZoom, every, for }}')
+        return
+    for k in look:
+        if k not in LOOK_KEYS:
+            rep.warn(where, f'unknown key "{tag}.{k}"')
+    if ('image' in look) == ('frames' in look):
+        rep.error(where, f'{tag} needs one picture ("image") or a list of them shown in turn ("frames"), not both')
+    if 'image' in look:
+        _check_picture(rep, where, f'{tag}.image', look['image'], files)
+    if 'frames' in look:
+        frames = look['frames']
+        if not isinstance(frames, list) or not 1 <= len(frames) <= MAX_FRAMES:
+            rep.error(where, f'{tag}.frames must be a list of 1 to {MAX_FRAMES} pictures')
+        else:
+            for j, f in enumerate(frames):
+                _check_picture(rep, where, f'{tag}.frames[{j}]', f, files)
+        if 'fps' not in look:
+            rep.error(where, f'{tag}.fps is required with "frames": how many are shown a second')
+    if 'fps' in look:
+        if 'frames' not in look:
+            rep.warn(where, f'{tag}.fps only times "frames"')
+        _check_num(rep, where, f'{tag}.fps', look['fps'], 0.1, 60)
+    size = look.get('size')
+    if 'size' not in look:
+        rep.error(where, f'{tag}.size is required: [width, height] in points')
+    elif not (isinstance(size, list) and len(size) == 2):
+        rep.error(where, f'{tag}.size must be [width, height] in points')
+    else:
+        for name, v in zip(('width', 'height'), size):
+            _check_num(rep, where, f'{tag}.size {name}', v, 1, 512)
+    _check_zooms(rep, where, tag, look)
+    timed = [k for k in ('every', 'for') if k in look and _check_num(rep, where, f'{tag}.{k}', look[k], 0.05, 3600)]
+    if ('every' in look) != ('for' in look):
+        rep.warn(where, f'{tag}: "every" and "for" go together (it shows for "for" seconds every "every")')
+    elif len(timed) == 2 and look['for'] > look['every']:
+        rep.error(where, f'{tag}.for {look["for"]} is longer than every {look["every"]}')
+    if 'face' in look and not isinstance(look['face'], bool):
+        rep.error(where, f'{tag}.face must be true or false')
+
+
 def validate_manifest(m, name, files, rep, where):
+    """Checks one prototype.json against docs/runtime3.md. Returns True when it is a runtime 1 or 2
+    manifest (one error says so; nothing more is checked)."""
     if not isinstance(m, dict):
         rep.error(where, 'prototype.json must be a JSON object')
-        return
+        return False
+    runtime = m.get('runtime')
+    if is_int(runtime) and 1 <= runtime < RUNTIME:
+        rep.error(where, f'"runtime" is {runtime}: {R3_ONLY} (docs/runtime3.md). Its pages become scripts; '
+                         'its markers, a doorway or sprites')
+        return True
     for k in m:
-        if k not in TOP_KEYS:
+        if k not in TOP_KEYS and k not in WEB_KEYS:
             rep.warn(where, f'unknown key "{k}"')
 
     if not ID_RE.fullmatch(name):
@@ -329,32 +501,33 @@ def validate_manifest(m, name, files, rep, where):
         rep.error(where, f'"id" ("{pid}") must equal the folder name ("{name}")')
     _check_str(rep, where, m, 'title', 1, 60)
     _check_str(rep, where, m, 'summary', 1, 200)
-    if not is_int(m.get('runtime')) or not 1 <= m.get('runtime') <= RUNTIME:
-        rep.error(where, f'"runtime" must be an integer from 1 to {RUNTIME} (the newest this repository\'s app hosts)')
+    if runtime != RUNTIME or not is_int(runtime):
+        rep.error(where, f'"runtime" must be {RUNTIME} (the newest this repository\'s app hosts)')
     pres = m.get('presentation')
-    if pres not in ('screen', 'globe'):
-        rep.error(where, '"presentation" must be "screen" or "globe"')
+    if pres == 'screen':
+        rep.error(where, f'"presentation" is "screen": {R3_ONLY}, and there are no pack screens ("globe")')
+    elif pres != 'globe':
+        rep.error(where, '"presentation" must be "globe"')
+    for k, what in WEB_KEYS.items():
+        if k in m:
+            rep.error(where, f'"{k}" ({what}) is runtime 1 and 2: {R3_ONLY}')
     if 'shelf' in m and m['shelf'] not in ('current', 'parked'):
         rep.error(where, '"shelf" must be "current" or "parked"')
-    if 'background' in m and not (isinstance(m['background'], str) and COLOUR_RE.fullmatch(m['background'])):
-        rep.error(where, '"background" must be a colour like #RRGGBB')
     if 'taps' in m and not isinstance(m['taps'], bool):
         rep.error(where, '"taps" must be true or false')
 
-    entry_ok = False
-    if 'entry' in m:
-        entry_ok = _check_file(rep, where, 'entry', m['entry'], files)
-        if entry_ok and not m['entry'].lower().endswith(('.html', '.htm')):
-            rep.warn(where, f'entry "{m["entry"]}" is not an .html page')
+    scripts = m.get('scripts')
+    if 'scripts' not in m:
+        rep.error(where, '"scripts" is required: the pack\'s .js files, run in order (e.g. ["main.js"])')
+    elif not isinstance(scripts, list) or not scripts:
+        rep.error(where, '"scripts" must be a non-empty list of the pack\'s .js files, run in order')
     else:
-        entry_ok = 'index.html' in files
-        if pres == 'screen' and not entry_ok:
-            rep.error(where, 'a screen prototype needs its entry page: index.html (or "entry")')
-
-    if pres == 'screen':
-        for k in GLOBE_ONLY:
-            if k in m:
-                rep.warn(where, f'"{k}" is only used by globe prototypes')
+        seen = set()
+        for i, s in enumerate(scripts):
+            if _check_file(rep, where, f'scripts[{i}]', s, files, ('.js',)):
+                if s in seen:
+                    rep.error(where, f'scripts[{i}] "{s}" is listed twice')
+                seen.add(s)
 
     anchor = m.get('anchor')
     if 'anchor' in m:
@@ -370,66 +543,37 @@ def validate_manifest(m, name, files, rep, where):
                 else:
                     _check_num(rep, where, f'anchor.{k}', anchor[k], lo, hi)
 
-    opens = False
-    markers = m.get('markers')
-    if 'markers' in m:
-        if not isinstance(markers, list):
-            rep.error(where, '"markers" must be a list')
+    door = m.get('doorway')
+    if 'doorway' in m:
+        if not isinstance(door, dict):
+            rep.error(where, '"doorway" must be an object { lon, lat, label, look }')
         else:
-            seen = set()
-            for i, mk in enumerate(markers):
-                tag = f'markers[{i}]'
-                if not isinstance(mk, dict):
-                    rep.error(where, f'{tag} must be an object')
-                    continue
-                for k in mk:
-                    if k not in MARKER_KEYS:
-                        rep.warn(where, f'unknown key "{tag}.{k}"')
-                mid = mk.get('id')
-                if not isinstance(mid, str) or not 1 <= len(mid) <= 40:
-                    rep.error(where, f'{tag}.id is required: a string of 1-40 characters')
-                elif mid in seen:
-                    rep.error(where, f'{tag}.id "{mid}" is used twice')
+            for k in door:
+                if k not in DOORWAY_KEYS:
+                    rep.warn(where, f'unknown key "doorway.{k}"')
+            for k, lo, hi in (('lon', -180, 180), ('lat', -90, 90)):
+                if k not in door:
+                    rep.error(where, f'doorway.{k} is required')
                 else:
-                    seen.add(mid)
-                    tag = f'markers[{mid}]'
-                for k, lo, hi in (('lon', -180, 180), ('lat', -90, 90), ('width', 8, 200), ('height', 8, 200)):
-                    if k not in mk:
-                        rep.error(where, f'{tag}.{k} is required')
-                    else:
-                        _check_num(rep, where, f'{tag}.{k}', mk[k], lo, hi)
-                if 'image' not in mk:
-                    rep.error(where, f'{tag}.image is required')
-                elif _check_file(rep, where, f'{tag}.image', mk['image'], files, IMAGE_EXTS):
-                    _check_image_bytes(rep, where, f'{tag}.image', files[mk['image']])
-                if not isinstance(mk.get('label'), str) or not mk['label'].strip():
-                    rep.error(where, f'{tag}.label is required: the words VoiceOver speaks')
-                lo_z = hi_z = None
-                for k in ('minZoom', 'maxZoom'):
-                    if k in mk and _check_num(rep, where, f'{tag}.{k}', mk[k], 0.8, 8):
-                        if k == 'minZoom':
-                            lo_z = mk[k]
-                        else:
-                            hi_z = mk[k]
-                if lo_z is not None and hi_z is not None and lo_z > hi_z:
-                    rep.error(where, f'{tag}.minZoom {lo_z} is above maxZoom {hi_z}')
-                if 'opens' in mk and not isinstance(mk['opens'], bool):
-                    rep.error(where, f'{tag}.opens must be true or false')
-                opens = opens or mk.get('opens') is True
-    if opens and not entry_ok:
-        rep.error(where, 'a marker has "opens": true but the pack has no entry page to open')
-
-    overlay = m.get('overlay')
-    if 'overlay' in m:
-        _check_file(rep, where, 'overlay', overlay, files)
-    if m.get('taps') is True and 'overlay' not in m:
-        rep.warn(where, '"taps": true does nothing without an overlay')
-    if pres == 'globe' and not m.get('markers') and 'overlay' not in m:
-        rep.warn(where, 'a globe prototype with no markers and no overlay shows nothing')
+                    _check_num(rep, where, f'doorway.{k}', door[k], lo, hi)
+            label = door.get('label')
+            if not isinstance(label, str) or not label.strip() or len(label) > 200:
+                rep.error(where, 'doorway.label is required: the words VoiceOver speaks (1-200 characters)')
+            if 'look' not in door:
+                rep.error(where, 'doorway.look is required: how it shows on the globe (as a sprite\'s look)')
+            else:
+                check_look(rep, where, 'doorway.look', door['look'], files)
+                look = door['look']
+                if isinstance(look, dict) and 'minZoom' not in look and 'every' not in look:
+                    rep.warn(where, 'doorway.look shows on the whole Earth: keep that view sparse with a minZoom, '
+                                    'or make it a small trace (every/for)')
+        if m.get('shelf') == 'parked':
+            rep.warn(where, 'a parked pack shows no doorway')
+    return False
 
 
 def validate_pack(folder, rep):
-    """Everything docs/playground.md asks of one Prototypes/<id>/ folder. Returns (manifest, files),
+    """Everything docs/runtime3.md asks of one Prototypes/<id>/ folder. Returns (manifest, files),
     or (None, files) when prototype.json could not be read."""
     folder = Path(folder)
     where = display(folder)
@@ -446,12 +590,22 @@ def validate_pack(folder, rep):
     except (ValueError, UnicodeDecodeError) as e:
         rep.error(f'{where}/prototype.json', f'cannot be read: {e}')
         return None, files
-    validate_manifest(manifest, folder.name, files, rep, f'{where}/prototype.json')
     if 'terra.js' in {Path(f).name for f in files}:
-        rep.error(where, 'a pack must not contain its own terra.js: the host injects the runtime')
+        rep.error(where, 'a pack must not contain its own terra.js: the host provides the runtime')
+    if validate_manifest(manifest, folder.name, files, rep, f'{where}/prototype.json'):
+        return manifest, files
+    listed = manifest.get('scripts') if isinstance(manifest, dict) else None
+    listed = set(listed) if isinstance(listed, list) and all(isinstance(s, str) for s in listed) else None
+    if 'SOURCES.md' not in files:
+        rep.warn(where, 'SOURCES.md is missing: where its facts and pictures come from, and what it does not claim')
     for rel, full in files.items():
-        if rel.lower().endswith(TEXT_EXTS):
-            scan_text(rel, full.read_text(encoding='utf-8', errors='replace'), files, rep, where)
+        low = rel.lower()
+        if low.endswith(PAGE_EXTS):
+            rep.error(f'{where}/{rel}', f'a web page: {R3_ONLY}, and nothing opens a page (move what it does into the scripts)')
+        elif low.endswith(SCRIPT_EXTS):
+            if listed is not None and low.endswith('.js') and rel not in listed and Path(rel).name != 'terra.js':
+                rep.warn(f'{where}/{rel}', 'is not in "scripts", so it never runs (terra.read can still read it)')
+            scan_script(rel, full.read_text(encoding='utf-8', errors='replace'), files, rep, where)
     return manifest, files
 
 
@@ -593,23 +747,27 @@ class Result:
         return self.status != 'same'
 
 
-def plan(packs, base, now):
+def plan(packs, base, now, floors=None):
     """Decide each pack's revision against the base catalog. Returns (catalog, results).
     New id: revision 1. Same content hash: the base entry, untouched (so `published` stays).
-    Different: the base revision + 1. Entries for packs not packed are kept as they are. A retired
-    pack stays retired until `retire --undo`."""
+    Different: the base revision + 1. `floors` ({id: the highest revision already stored}) lifts a
+    new revision above any stored one, so no revision's files are ever replaced. Entries for packs
+    not packed are kept as they are. A retired pack stays retired until `retire --undo`."""
     entries = {e['id']: e for e in base['packs']}
+    floors = floors or {}
     results = []
     for p in packs:
         old = entries.get(p.id)
+        floor = floors.get(p.id, 0)
         if old is None:
-            results.append(Result(p, 'new', 1, None))
-            entries[p.id] = make_entry(p, 1, now)
+            results.append(Result(p, 'new', floor + 1, None))
+            entries[p.id] = make_entry(p, floor + 1, now)
         elif old.get('hash') == p.hash:
             results.append(Result(p, 'same', old['revision'], old['revision']))
         else:
-            results.append(Result(p, 'updated', old['revision'] + 1, old['revision']))
-            entries[p.id] = make_entry(p, old['revision'] + 1, now, bool(old.get('retired', False)))
+            revision = max(old['revision'], floor) + 1
+            results.append(Result(p, 'updated', revision, old['revision']))
+            entries[p.id] = make_entry(p, revision, now, bool(old.get('retired', False)))
     changed = any(r.changed for r in results)
     catalog = {
         'format': 1,
@@ -677,6 +835,13 @@ def _dir_matches(dest, pack):
     return all((dest / f['path']).read_bytes() == f['data'] for f in pack.files)
 
 
+def _write_revision(dest, pack):
+    shutil.rmtree(dest, ignore_errors=True)
+    for f in pack.files:
+        (dest / f['path']).parent.mkdir(parents=True, exist_ok=True)
+        (dest / f['path']).write_bytes(f['data'])
+
+
 def write_tree(out, results, catalog):
     """The packed output: packs/<id>/r<rev>/, open/<id>.html, and catalog.json last (atomically), so
     a catalog never names files that are not there yet."""
@@ -684,12 +849,86 @@ def write_tree(out, results, catalog):
     for r in results:
         dest = out / 'packs' / r.pack.id / f'r{r.revision}'
         if not _dir_matches(dest, r.pack):
-            shutil.rmtree(dest, ignore_errors=True)
-            for f in r.pack.files:
-                (dest / f['path']).parent.mkdir(parents=True, exist_ok=True)
-                (dest / f['path']).write_bytes(f['data'])
+            _write_revision(dest, r.pack)
         atomic_write(out / 'open' / f'{r.pack.id}.html', open_page(r.pack.id, r.pack.manifest['title']).encode('utf-8'))
     atomic_write(out / 'catalog.json', catalog_bytes(catalog))
+
+
+IMMUTABLE = 'public, max-age=31536000, immutable'
+NO_CACHE = 'no-cache'
+CATALOG_CACHE = 'no-cache, max-age=0'
+
+
+def uploads(results, catalog, open_pages=True):
+    """What a publish writes, in order, whatever the store (a folder, a git branch, a bucket):
+    [(key, bytes, content type, cache control)]: each changed pack's files under packs/<id>/r<rev>/
+    (a new revision's: a published revision's files never change), its open page when the store
+    serves web pages, and catalog.json last, so a reader never finds a catalog naming files that are
+    not there yet. Empty when nothing changed."""
+    changed = [r for r in results if r.changed]
+    out = []
+    for r in changed:
+        for f in r.pack.files:
+            out.append((f'packs/{r.pack.id}/r{r.revision}/{f["path"]}', f['data'], content_type(f['path']), IMMUTABLE))
+        if open_pages:
+            page = open_page(r.pack.id, r.pack.manifest['title']).encode('utf-8')
+            out.append((f'open/{r.pack.id}.html', page, content_type('x.html'), NO_CACHE))
+    if changed:
+        out.append(('catalog.json', catalog_bytes(catalog), 'application/json', CATALOG_CACHE))
+    return out
+
+
+def stored_revisions(folder):
+    """{id: the highest r<n> folder} under <folder>/packs/: revisions a new one must stay above."""
+    out = {}
+    base = Path(folder) / 'packs'
+    if not base.is_dir():
+        return out
+    for d in base.iterdir():
+        if d.is_dir():
+            revs = [int(m.group(1)) for r in d.iterdir() if r.is_dir() and (m := REVISION_DIR.fullmatch(r.name))]
+            if revs:
+                out[d.name] = max(revs)
+    return out
+
+
+# the published tree is bytes the catalog has hashed: git must never convert a line ending in it
+GITATTRIBUTES = b'# Written by tools/playground/playground.py: every file is kept byte for byte (the catalog has its SHA-256).\n* -text\n'
+
+
+def publish_dir(packs, into, now, dry_run=False):
+    """Publishes into a folder that holds a published tree (a checkout of the `packs` branch, or an
+    empty folder for the first time): reads its catalog.json, gives each pack whose contents changed
+    the next revision (never one already stored there), writes packs/<id>/r<rev>/ and then
+    catalog.json, with paths relative to it. Unchanged packs keep their revision; if one's stored
+    files are missing or altered they are restored from the pack, which the catalog's hash vouches
+    for. Retired entries stay retired. Writes nothing on a dry run. Returns (catalog, results,
+    restored), restored being the unchanged results whose files were (or would be) rewritten."""
+    into = Path(into)
+    existing = into / 'catalog.json'
+    base = parse_catalog(existing.read_text(encoding='utf-8'), display(existing)) if existing.is_file() else empty_catalog()
+    catalog, results = plan(packs, base, now, stored_revisions(into))
+    restored = [r for r in results if not r.changed
+                and not _dir_matches(into / 'packs' / r.pack.id / f'r{r.revision}', r.pack)]
+    if dry_run:
+        return catalog, results, restored
+    for r in results:
+        if r.changed and (into / 'packs' / r.pack.id / f'r{r.revision}').exists():
+            raise ToolError(f'packs/{r.pack.id}/r{r.revision} already exists: a revision\'s files never change')
+    for r in restored:
+        _write_revision(into / 'packs' / r.pack.id / f'r{r.revision}', r.pack)
+    for key, data, _, _ in uploads(results, catalog, open_pages=False):
+        if key == 'catalog.json':
+            atomic_write(into / key, data)
+        else:
+            (into / key).parent.mkdir(parents=True, exist_ok=True)
+            (into / key).write_bytes(data)
+    if not existing.is_file():
+        atomic_write(existing, catalog_bytes(catalog))
+    attributes = into / '.gitattributes'
+    if not attributes.is_file() or attributes.read_bytes() != GITATTRIBUTES:
+        atomic_write(attributes, GITATTRIBUTES)
+    return catalog, results, restored
 
 
 # ---------------------------------------------------------------- network
@@ -802,11 +1041,6 @@ class R2:
         self.request('PUT', key, body, {'Content-Type': ctype, 'Cache-Control': cache})
 
 
-IMMUTABLE = 'public, max-age=31536000, immutable'
-NO_CACHE = 'no-cache'
-CATALOG_CACHE = 'no-cache, max-age=0'
-
-
 def public_url(env, path):
     base = (env.get('PACKS_PUBLIC_URL') or '').rstrip('/')
     return f'{base or "<PACKS_PUBLIC_URL>"}/{path}'
@@ -820,16 +1054,13 @@ def default_title(pid):
 
 
 def _substitute(name, data, pid, title):
+    """{{id}} and {{title}} in a template file. In JSON and scripts the title lands inside a
+    double-quoted string, escaped as one; Markdown takes it as it is."""
     ext = Path(name).suffix.lower()
-    if ext not in ('.json', '.html', '.js', '.css', '.md'):
+    if ext not in ('.json', '.js', '.md'):
         return data
     text = data.decode('utf-8')
-    if ext == '.json':
-        t = json.dumps(title)[1:-1]
-    elif ext == '.html':
-        t = html.escape(title)
-    else:
-        t = title
+    t = json.dumps(title)[1:-1] if ext in ('.json', '.js') else title
     return text.replace('{{id}}', pid).replace('{{title}}', t).encode('utf-8')
 
 
@@ -844,7 +1075,9 @@ def cmd_new(args):
     dest = PROTOTYPES / pid
     if dest.exists():
         raise ToolError(f'{display(dest)} already exists (ids are never reused; pick another)')
-    kind = 'globe' if args.globe else 'screen'
+    if args.screen:
+        print('note: --screen makes a globe pack too: in runtime 3 every pack lives on the globe (there are no pack screens).')
+    kind = 'globe'
     src = TEMPLATES / kind
     if not src.is_dir():
         raise ToolError(f'template missing: {display(src)}')
@@ -862,7 +1095,7 @@ def cmd_new(args):
     rep.print()
     if rep.errors:
         raise ToolError('the scaffold does not validate; this is a bug in the template')
-    print(f'Created {display(dest)}/ ({kind}).')
+    print(f'Created {display(dest)}/ (runtime {RUNTIME}: prototype.json, main.js, SOURCES.md, marker.png).')
     print(f'  preview   node tools/playground/serve.cjs      then  http://127.0.0.1:8790/preview/{pid}')
     print(f'  check     node tools/playground/check.cjs {pid}')
     print('  validate  python3 tools/playground/playground.py validate')
@@ -933,7 +1166,50 @@ def cmd_pack(args):
     return 0
 
 
+def publish_into(args):
+    """publish --into DIR: revise the published tree in a folder (a checkout of the `packs` branch);
+    committing and pushing are the caller's (packs.yml)."""
+    into = Path(args.into)
+    if not into.is_dir():
+        raise ToolError(f'--into {args.into}: no such folder (check out the packs branch there, or make an empty folder)')
+    if args.public_url and not url_ok(args.public_url):
+        raise ToolError('--public-url must be an https:// URL')
+    packs = prepare(args.ids, [], Report())
+    catalog, results, restored = publish_dir(packs, into, now_eastern(), args.dry_run)
+    describe(results)
+    changed = [r for r in results if r.changed]
+    base = (args.public_url or '').rstrip('/')
+    where = f'{base}/catalog.json' if base else display(into / 'catalog.json')
+    for r in restored:
+        print(f'  {"would restore" if args.dry_run else "restored"} packs/{r.pack.id}/r{r.revision}/ (its files were missing or altered)')
+    if not changed and not restored:
+        print('Nothing to publish: every pack is already at its current revision.')
+    elif args.dry_run:
+        print(f'Dry run: nothing written. {len(changed)} pack{"" if len(changed) == 1 else "s"} would get a new revision.')
+    else:
+        print(f'Published into {display(into)}: {len(changed)} new revision{"" if len(changed) == 1 else "s"}. Catalog: {where}')
+    parts = [f'{r.pack.id} r{r.revision}' for r in changed] + [f'{r.pack.id} r{r.revision} restored' for r in restored]
+    if args.commit_message and parts and not args.dry_run:
+        Path(args.commit_message).write_text('Publish packs: ' + ', '.join(parts) + '\n', encoding='utf-8')
+    if args.summary:
+        with open(args.summary, 'a', encoding='utf-8') as f:
+            if not parts:
+                f.write('### Packs\nNothing to publish: every pack is already at its current revision.\n')
+            else:
+                f.write(f'### Packs {"that would be published (dry run)" if args.dry_run else "published"}\n')
+                for r in changed:
+                    f.write(f'- `{r.pack.id}` revision {r.revision}: opens with `{OPEN_SCHEME}://open/{r.pack.id}`\n')
+                for r in restored:
+                    f.write(f'- `{r.pack.id}` revision {r.revision}: its files restored\n')
+                f.write(f'\nCatalog: {where}\n')
+    return 0
+
+
 def cmd_publish(args, env=None):
+    if args.into:
+        return publish_into(args)
+    if args.public_url or args.commit_message:
+        raise ToolError('--public-url and --commit-message go with --into DIR')
     env = os.environ if env is None else env
     missing = [v for v in R2_VARS if not env.get(v)]
     have_keys = not [v for v in R2_VARS[:4] if not env.get(v)]
@@ -958,30 +1234,20 @@ def cmd_publish(args, env=None):
     print(f'Live catalog: {len(base["packs"])} pack{"" if len(base["packs"]) == 1 else "s"} ({source}'
           f'{"" if raw is not None else ", none yet"}).')
 
-    with tempfile.TemporaryDirectory(prefix='playground-pack-') as tmp:
-        catalog, results = plan(packs, base, now_eastern())
-        write_tree(tmp, results, catalog)
-        describe(results)
-        changed = [r for r in results if r.changed]
-        uploads = []  # (key, body, content type, cache control); the catalog goes last
-        for r in changed:
-            for f in r.pack.files:
-                uploads.append((f'packs/{r.pack.id}/r{r.revision}/{f["path"]}', f['data'], content_type(f['path']), IMMUTABLE))
-            page = (Path(tmp) / 'open' / f'{r.pack.id}.html').read_bytes()
-            uploads.append((f'open/{r.pack.id}.html', page, content_type('x.html'), NO_CACHE))
-        if changed:
-            uploads.append(('catalog.json', (Path(tmp) / 'catalog.json').read_bytes(), 'application/json', CATALOG_CACHE))
-
-        if not changed:
-            print('Nothing to publish: every pack is already at its current revision.')
-        elif args.dry_run:
-            print(f'Dry run: would upload {len(uploads)} objects ({fmt_bytes(sum(len(u[1]) for u in uploads))}), catalog last:')
-            for key, body, _, _ in uploads:
-                print(f'  {key}  ({fmt_bytes(len(body))})')
-        else:
-            for i, (key, body, ctype, cache) in enumerate(uploads, 1):
-                client.put(key, body, ctype, cache)
-                print(f'  uploaded {i}/{len(uploads)}  {key}')
+    catalog, results = plan(packs, base, now_eastern())
+    describe(results)
+    changed = [r for r in results if r.changed]
+    objects = uploads(results, catalog)
+    if not changed:
+        print('Nothing to publish: every pack is already at its current revision.')
+    elif args.dry_run:
+        print(f'Dry run: would upload {len(objects)} objects ({fmt_bytes(sum(len(u[1]) for u in objects))}), catalog last:')
+        for key, body, _, _ in objects:
+            print(f'  {key}  ({fmt_bytes(len(body))})')
+    else:
+        for i, (key, body, ctype, cache) in enumerate(objects, 1):
+            client.put(key, body, ctype, cache)
+            print(f'  uploaded {i}/{len(objects)}  {key}')
     if changed:
         print('Open pages:' if not args.dry_run else 'Open pages (after a real publish):')
         for r in changed:
@@ -1065,11 +1331,11 @@ def build_parser():
     p = argparse.ArgumentParser(prog='playground.py', description=__doc__.split('\n\n')[0])
     sub = p.add_subparsers(dest='command', required=True)
 
-    s = sub.add_parser('new', help='scaffold Prototypes/<id>/')
+    s = sub.add_parser('new', help='scaffold a runtime-3 pack in Prototypes/<id>/')
     s.add_argument('id')
-    kind = s.add_mutually_exclusive_group(required=True)
-    kind.add_argument('--globe', action='store_true', help='markers and an overlay on the globe')
-    kind.add_argument('--screen', action='store_true', help='its own full-screen page')
+    kind = s.add_mutually_exclusive_group()
+    kind.add_argument('--globe', action='store_true', help='accepted, and the default: every pack lives on the globe')
+    kind.add_argument('--screen', action='store_true', help='accepted for older instructions: makes a globe pack too')
     s.add_argument('--title')
     s.set_defaults(run=cmd_new)
 
@@ -1084,15 +1350,23 @@ def build_parser():
     s.add_argument('--base', help='catalog to revise: a file or https URL (default <out>/catalog.json)')
     s.set_defaults(run=cmd_pack)
 
-    s = sub.add_parser('publish', help='pack against the live bucket and upload what changed')
+    s = sub.add_parser('publish', help='give changed packs their next revision: into a folder (--into, the '
+                                       'packs branch) or the R2 bucket')
     s.add_argument('ids', nargs='*')
-    s.add_argument('--dry-run', action='store_true', help='print the plan; upload nothing')
+    s.add_argument('--into', metavar='DIR', help='a checkout of the packs branch (or an empty folder): '
+                                                 'write the new revisions and catalog.json there; commit them yourself')
+    s.add_argument('--public-url', metavar='URL', help='with --into: where DIR is served, for the summary '
+                                                       '(e.g. https://raw.githubusercontent.com/<owner>/<repo>/packs)')
+    s.add_argument('--commit-message', metavar='FILE', help='with --into: write "Publish packs: <id> r<n>, ..." '
+                                                            'there when something changed')
+    s.add_argument('--dry-run', action='store_true', help='print the plan; write or upload nothing')
     s.add_argument('--summary', metavar='FILE', help='append a markdown summary (e.g. $GITHUB_STEP_SUMMARY)')
     s.set_defaults(run=cmd_publish)
 
     s = sub.add_parser('retire', help='withdraw a published pack (catalog only)')
     s.add_argument('id')
-    s.add_argument('--out', help='a packed folder instead of the bucket')
+    s.add_argument('--out', '--into', dest='out', metavar='DIR',
+                   help='a published folder (a checkout of the packs branch, or pack\'s output) instead of the bucket')
     s.add_argument('--undo', action='store_true')
     s.set_defaults(run=cmd_retire)
 

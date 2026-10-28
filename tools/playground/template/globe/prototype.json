@@ -2,16 +2,12 @@
   "id": "{{id}}",
   "title": "{{title}}",
   "summary": "One line for the workbench: what this shows.",
-  "runtime": 1,
+  "runtime": 3,
   "presentation": "globe",
-  "entry": "index.html",
+  "scripts": ["main.js"],
   "anchor": { "lon": 10, "lat": 35, "zoom": 2 },
-  "markers": [
-    { "id": "place", "lon": 10, "lat": 35, "image": "marker.png", "width": 44, "height": 44,
-      "label": "{{title}}", "minZoom": 1, "opens": true }
-  ],
-  "overlay": "overlay.html",
+  "doorway": { "lon": 10, "lat": 35, "label": "{{title}}",
+               "look": { "image": "marker.png", "size": [28, 28], "minZoom": 1.5 } },
   "taps": false,
-  "shelf": "current",
-  "background": "#F6F2E7"
+  "shelf": "current"
 }
