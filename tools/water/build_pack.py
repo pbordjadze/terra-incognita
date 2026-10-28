@@ -223,21 +223,16 @@ def doorway(rivers, anchors):
 
 
 def glint():
-    """The bead of light that runs down a traced river, drawn facing east: a fading tail, a bright head."""
-    S, w, h = 8, 42, 18                  # 14 by 6 points at 3x
-    im = Image.new('RGBA', (w * S, h * S), (0, 0, 0, 0))
+    """The bead of light that runs down a traced river: round (a sprite is mirrored, never turned, as
+    it moves, so a pointed picture would go sideways down a north-south river), a bright core in the
+    trace's deep ink, on a faint glow."""
+    S, n = 8, 24                         # 8 by 8 points at 3x
+    W, c = n * S, n * S / 2
+    im = Image.new('RGBA', (W, W), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    cy = h * S / 2
-    for i in range(60):
-        f = i / 59
-        x = (4 + f * (w - 14)) * S
-        r = (0.7 + 2.0 * f) * S
-        d.ellipse([x - r, cy - r, x + r, cy + r], fill=(255, 253, 244, round(40 + 180 * f)))
-    hx, r = (w - 9) * S, 4.4 * S
-    d.ellipse([hx - r, cy - r, hx + r, cy + r], fill=(13, 74, 120, 255))
-    r2 = 2.6 * S
-    d.ellipse([hx - r2, cy - r2, hx + r2, cy + r2], fill=(255, 253, 244, 255))
-    im.resize((w, h), Image.Resampling.LANCZOS).save(OUT / 'glint.png', optimize=True)
+    for r, fill in ((11.5, (255, 253, 244, 90)), (8.5, (13, 74, 120, 255)), (5.0, (255, 253, 244, 255))):
+        d.ellipse([c - r * S, c - r * S, c + r * S, c + r * S], fill=fill)
+    im.resize((n, n), Image.Resampling.LANCZOS).save(OUT / 'glint.png', optimize=True)
 
 
 if __name__ == '__main__':
