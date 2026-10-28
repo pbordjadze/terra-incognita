@@ -270,9 +270,9 @@ final class PrototypeStage {
         if let images { return images }
         let view = GlobeImageLayer()
         images = view
+        // (addOverlay puts it lowest of what the globe draws for a pack, just above the sky: the
+        // geography, made later or earlier, stays above it)
         globe?.addOverlay(view)
-        // (added at the bottom: the geography, made later or earlier, stays above it)
-        view.superview?.sendSubviewToBack(view)
         return view
     }
 
