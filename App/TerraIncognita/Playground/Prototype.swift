@@ -86,6 +86,8 @@ final class PrototypeStage {
     @ObservationIgnored private var playback: Task<Void, Never>?
     /// It changed how the globe behaves (hid today's borders, stopped its turn): undone at the end.
     @ObservationIgnored private var globeChanged = false
+    /// The globe's month before a date to the day moved it (`dateMoved`).
+    @ObservationIgnored private var monthBefore: Int?
     private let live = LiveCount.Token(.stages)
     static let spriteBudget = 64
 
@@ -225,6 +227,7 @@ final class PrototypeStage {
         case .timeHide:
             stopPlayback()
             time = nil
+            dateMoved()
         case .caption(let caption): self.caption = caption
         case .globe(let historical, let still, let maxZoom):
             globeChanged = true
@@ -304,6 +307,7 @@ final class PrototypeStage {
             if v >= t.min, v <= t.max { t.value = v }
         }
         time = t
+        dateMoved()
         playground?.lastYear = t.year
         script?.time(t.value, playing: false, by: .host)
         if wanted, !UIAccessibility.isReduceMotionEnabled { play(true) }
@@ -316,6 +320,7 @@ final class PrototypeStage {
         if mover == .reader, t.playing { stopPlayback(); t.playing = false }
         t.value = t.clamped(value)
         time = t
+        dateMoved()
         playground?.lastYear = t.year
         if let mover { script?.time(t.value, playing: t.playing, by: mover) }
     }
@@ -330,6 +335,7 @@ final class PrototypeStage {
         if playing, t.value >= t.max { t.value = t.min }
         t.playing = playing && t.playable
         time = t
+        dateMoved()
         if (t.playing, t.value) != was { script?.time(t.value, playing: t.playing, by: mover) }
         guard t.playing else { return }
         playback = Task { [weak self] in
@@ -348,10 +354,24 @@ final class PrototypeStage {
                 if next >= t.max { t.playing = false }
                 t.value = next
                 self.time = t
+                self.dateMoved()
                 self.playground?.lastYear = t.year
                 self.script?.time(t.value, playing: t.playing, by: .play)
                 if !t.playing { return }
             }
+        }
+    }
+
+    /// The globe's month follows a date to the day (`GlobeTime.month`: the ground's and the clouds'
+    /// season); a year leaves it alone, and the month it had comes back when the date goes.
+    private func dateMoved() {
+        guard let globe else { return }
+        if let month = time?.month {
+            if monthBefore == nil { monthBefore = globe.month }
+            if globe.month != month { globe.month = month }
+        } else if let before = monthBefore {
+            globe.month = before
+            monthBefore = nil
         }
     }
 
@@ -390,6 +410,7 @@ final class PrototypeStage {
         images = nil
         stopPlayback()
         time = nil
+        dateMoved()
         caption = nil
         geo?.clear()
         geo?.removeFromSuperview()

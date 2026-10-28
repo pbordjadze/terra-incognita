@@ -5,7 +5,7 @@ import QuartzCore
 import UIKit
 import os
 
-/// The stage's sky: clouds where they usually are this month, as satellites have seen them
+/// The stage's sky: clouds where they usually are in the globe's month, as satellites have seen them
 /// (ISCCP-H, 2000–2016: CloudsSky.png, made by tools/clouds/build.py), drawn as weather that could be
 /// (`Clouds.metal`). A Metal layer of its own between the globe's drawing and its names (`GlobeView.sky`),
 /// drawn as the globe ticks, so the globe's own drawing is untouched. The reader can turn it off
@@ -177,7 +177,8 @@ final class CloudsLayer {
         let ca = Float(cos(a)), sa = Float(sin(a)), cb = Float(cos(b)), sb = Float(sin(b))
         let side = Double(min(globe.bounds.width, globe.bounds.height))
         let reading = GlobeType.shared?.readingScale(shortSide: side) ?? 1
-        let month = heldMonth ?? Self.monthNow()
+        // the globe's month, which the ground shows too (mid-month: the measured month's own sky)
+        let month = heldMonth ?? Double(min(max(globe.month, 1), 12) - 1)
         let m0 = floor(month)
         return Uniforms(
             frame: SIMD4(Float(size.width), Float(size.height), Float(scale), Float(reading)),
@@ -227,16 +228,6 @@ final class CloudsLayer {
     private static func smoothstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
         let t = min(max((x - a) / (b - a), 0), 1)
         return t * t * (3 - 2 * t)
-    }
-
-    /// Today as months from mid-January (0) round the year: the sky between the two nearest months'.
-    private static func monthNow() -> Double {
-        let calendar = Calendar.current, now = Date()
-        let month = calendar.component(.month, from: now) - 1
-        let day = Double(calendar.component(.day, from: now) - 1) + Double(calendar.component(.hour, from: now)) / 24
-        let length = Double(calendar.range(of: .day, in: .month, for: now)?.count ?? 30)
-        let m = Double(month) + (day - length / 2) / length
-        return (m.truncatingRemainder(dividingBy: 12) + 12).truncatingRemainder(dividingBy: 12)
     }
 
     /// Finer while a frame costs little, coarser when it costs more; looked at twice a second.

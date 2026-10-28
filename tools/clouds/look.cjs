@@ -1,7 +1,7 @@
 'use strict';
 // Pictures of the clouds (their web twin, tools/clouds/web/) over the app's own globe, names on top, for judging the look:
 // compose.py draws the globe and the names, headless Chromium the overlay between them.
-//   node tools/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [view ...]
+//   node tools/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [--ground] [view ...]
 // A view is name:lon,lat,zoom (default: a set from the whole Earth down to the ground). Pictures go
 // to build/clouds/look/. Reads only this machine.
 const { chromium } = require('playwright');
@@ -28,6 +28,9 @@ function option(args, name, fallback) {
   const month = option(args, '--month', String(new Date().getMonth() + 1));
   const days = option(args, '--days', '0.4');
   const scale = +option(args, '--scale', '2');
+  // over the ground style, in the same month (where tools/globe/preview.py has it)
+  const ground = args.includes('--ground') ? args.splice(args.indexOf('--ground'), 1) && month : null;
+  const env = ground ? { ...process.env, CLOUDS_GROUND: String(ground) } : process.env;
   const [w, h] = SIZES[device];
   const views = (args.length ? args : VIEWS).map((v) => {
     const [name, at] = v.split(':');
@@ -51,8 +54,8 @@ function option(args, name, fallback) {
       await page.evaluate((c) => { terra._receive({ type: 'camera', camera: c }); window.__clouds.draw(); }, cam);
       const overlay = path.join(out, `${device}-${v.name}-overlay.png`);
       await page.screenshot({ path: overlay, omitBackground: true });
-      const file = path.join(out, `${device}-${v.name}.png`);
-      execFileSync('python3', [COMPOSE, 'compose', `${w}x${h}`, v.lon, v.lat, v.zoom, scale, overlay, file].map(String));
+      const file = path.join(out, `${device}-${v.name}${ground ? '-ground' : ''}.png`);
+      execFileSync('python3', [COMPOSE, 'compose', `${w}x${h}`, v.lon, v.lat, v.zoom, scale, overlay, file].map(String), { env });
       console.log(path.relative(ROOT, file));
     }
     if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }

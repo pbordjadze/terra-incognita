@@ -161,7 +161,7 @@ terra.touch.scheme('one-finger')
 
 | | |
 | --- | --- |
-| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left |
+| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left. A `day` date is also the globe's season: the ground's month and the clouds' follow it, and go back when it hides |
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
 | `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters |

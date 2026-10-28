@@ -6,9 +6,10 @@ layers them (GlobeView: the Metal globe, then a prototype's overlay, then the la
     python3 tools/clouds/compose.py compose <w>x<h> <lon> <lat> <zoom> <scale> <overlay.png> <out.png>
     python3 tools/clouds/compose.py frames <listing.json>                  # a film's frames
 
-look.cjs and film.cjs run these (they draw the overlay in Chromium between them).
+look.cjs and film.cjs run these (they draw the overlay in Chromium between them). The globe is the
+Wikipedia style, or the ground with CLOUDS_GROUND=<month 1-12> (where the globe's preview has it).
 """
-import json, sys
+import json, os, sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -23,10 +24,12 @@ def camera(w, h, lon, lat, zoom):
 
 
 def compose(w, h, lon, lat, zoom, scale, overlay, out):
-    img, geom = preview.render(w, h, scale, lon, lat, zoom, 0)
+    month = os.environ.get('CLOUDS_GROUND')
+    ground = {'ground': True, 'month': int(month)} if month else {}
+    img, geom = preview.render(w, h, scale, lon, lat, zoom, 0, **ground)
     over = Image.open(overlay).convert('RGBA').resize(img.size, Image.LANCZOS)
     img = Image.alpha_composite(img.convert('RGBA'), over).convert('RGB')
-    preview.labels(img, w, h, scale, geom, zoom, 0, False, [preview.buttons_box(w, h)])
+    preview.labels(img, w, h, scale, geom, zoom, 0, False, [preview.buttons_box(w, h)], **ground)
     img.save(out)
 
 

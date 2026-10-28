@@ -99,9 +99,10 @@ Keep design discussions and plans in that private repository.
   actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
   step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
   `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
-- **The clouds** (`App/TerraIncognita/Clouds/`), part of the stage: this month's clouds, where
-  satellites usually see them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could be;
-  zooming in passes down through them. `CloudsLayer` is the globe's `sky`, a Metal layer of its own
+- **The clouds** (`App/TerraIncognita/Clouds/`), part of the stage: the clouds of the globe's month
+  (`GlobeView.month`, the ground's; a pack's date to the day moves it), where satellites usually see
+  them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could be; zooming in passes down through
+  them. `CloudsLayer` is the globe's `sky`, a Metal layer of its own
   over the globe's drawing and under everything else on it (names, markers, what experiences draw),
   drawn as the globe ticks (ten times a second while the camera rests), so `Globe.metal` is
   untouched. It draws at a fraction of the screen's pixels and follows the GPU's timings (the
