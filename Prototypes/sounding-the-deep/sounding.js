@@ -9,7 +9,7 @@
   'use strict';
   var M = window.ShipMath, D = window.SHIP_DATA;
   var NEAR = 1.5;            // closer than this the voyage shows; further, only the ship, small
-  var PT_PER_M = 0.026;      // the hanging line: 26 points to a kilometre of depth
+  var PT_PER_M = 0.018;      // the hanging line: 18 points to a kilometre of depth (the deepest here, ~110)
   var REACH = 24;            // how near a touch must be to a station or the ship, in points
 
   function inRing(p, ring) {
@@ -153,6 +153,11 @@
 
   terra.on('time', function (e) {
     day = e.value;
+    // a date carried from another prototype outside this record: its nearest end, with the ship there
+    if (e.by === 'host' && (day < first || day > last)) {
+      day = day < first ? first : last;
+      terra.time.set(day);
+    }
     // playing on across a gap in the record: on to the next station, rather than months of empty sea
     var here = M.position(stations, day);
     if (e.by === 'play' && here.kind === 'gap') {
@@ -182,7 +187,7 @@
   terra.time.show({
     unit: 'day', min: first - 2, max: last + 2, value: opening.day,
     ticks: stations.map(function (s) { return s.day; }),
-    playable: true, rate: 1.5, playing: true, carry: true
+    playable: true, rate: 0.8, playing: true, carry: true
   });
   draw();
 })();

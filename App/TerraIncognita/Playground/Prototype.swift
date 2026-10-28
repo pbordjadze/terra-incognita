@@ -299,10 +299,8 @@ final class PrototypeStage {
         var t = shown
         let wanted = t.playing
         t.playing = false
-        if carry, let year = playground?.lastYear {
-            let v = t.value(forYear: year)
-            if v >= t.min, v <= t.max { t.value = v }
-        }
+        // from the date the last time-aware prototype left, or the nearest end of this one's range to it
+        if carry, let year = playground?.lastYear { t.value = t.clamped(t.value(forYear: year)) }
         time = t
         playground?.lastYear = t.year
         script?.time(t.value, playing: false, by: .host)
