@@ -216,7 +216,7 @@ class Validate(TempCase):
             (drop('title'), '"title"'), (put('title', ''), '"title"'), (put('title', 'x' * 61), '"title"'),
             (put('title', '   '), '"title"'), (put('title', 3), '"title"'),
             (drop('summary'), '"summary"'), (put('summary', 'x' * 201), '"summary"'), (put('summary', ''), '"summary"'),
-            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 4), '"runtime" must be 3'),
+            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 5), '"runtime" must be 3 or 4'),
             (put('runtime', 0), '"runtime" must be 3'), (put('runtime', '3'), '"runtime" must be 3'),
             (put('runtime', True), '"runtime" must be 3'), (put('runtime', 3.0), '"runtime" must be 3'),
             (drop('presentation'), '"presentation" must be "globe"'), (put('presentation', 'both'), '"presentation" must be "globe"'),
@@ -311,6 +311,46 @@ class Validate(TempCase):
         def frames(m):
             m['doorway']['look'] = {'frames': ['m.png', 'f/2.png', 'm.png'], 'fps': 5, 'size': [46, 20], 'minZoom': 3, 'face': True}
         self.assertEqual(self.mutate(frames, extra={'f/2.png': PNG}).items, [])
+
+    def test_a_doorway_with_a_life_is_runtime_4(self):
+        """Looks by zoom, a path and a breath (docs/runtime3.md › Many at once) need "runtime": 4; a
+        runtime-3 pack with them is told so in one error."""
+        def life(m):
+            m['runtime'] = 4
+            m['doorway'].pop('look')
+            m['doorway']['looks'] = [{'image': 'm.png', 'size': [11, 11], 'maxZoom': 1.5, 'every': 9, 'for': 1.2},
+                                     {'frames': ['m.png', 'f/2.png'], 'fps': 2, 'size': [18, 21], 'minZoom': 1.5, 'face': True}]
+            m['doorway']['path'] = {'coordinates': [[-30.2, 29.9], [-29.8, 30.1]], 'seconds': 150, 'loop': 'back'}
+            m['doorway']['breathes'] = True
+        self.assertEqual(self.mutate(life, extra={'f/2.png': PNG}).items, [])
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: (life(m), m.update(runtime=3)), extra={'f/2.png': PNG})
+        self.assertEqual(len(self.errors(rep)), 1, rep.lines())
+        self.assertIn('doorway.looks is new in runtime 4', self.errors(rep)[0])
+        cases = [
+            (lambda m: (life(m), m['doorway'].__setitem__('look', m['doorway']['looks'][1])), 'not both'),
+            (lambda m: (life(m), m['doorway'].__setitem__('looks', [])), 'list of 1 to 8 looks'),
+            (lambda m: (life(m), m['doorway']['looks'].__setitem__(1, 3)), 'doorway.looks[1] must be an object'),
+            (lambda m: (life(m), m['doorway'].__setitem__('path', [1, 2])), 'doorway.path must be an object'),
+            (lambda m: (life(m), m['doorway']['path'].__setitem__('coordinates', [[0, 0]])), '2 to 200 places'),
+            (lambda m: (life(m), m['doorway']['path'].__setitem__('coordinates', [[0, 0], [0, 91]])), 'lat'),
+            (lambda m: (life(m), m['doorway']['path'].__setitem__('coordinates', [[0, 0], 'x'])), 'must be [lon, lat]'),
+            (lambda m: (life(m), m['doorway']['path'].__setitem__('seconds', 0)), 'doorway.path.seconds'),
+            (lambda m: (life(m), m['doorway']['path'].__setitem__('loop', 'forth')), 'true, false or "back"'),
+            (lambda m: (life(m), m['doorway'].__setitem__('breathes', 'yes')), 'doorway.breathes must be true or false'),
+        ]
+        for change, needle in cases:
+            with self.subTest(needle=needle):
+                shutil.rmtree(self.tmp / 'demo-pack', ignore_errors=True)
+                self.assertError(self.mutate(change, extra={'f/2.png': PNG}), needle)
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: (life(m), m['doorway']['path'].__setitem__('speed', 3)), extra={'f/2.png': PNG})
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('doorway.path.speed', self.warnings(rep)[0])
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: (life(m), m['doorway']['looks'][0].pop('every'), m['doorway']['looks'][0].pop('for')), extra={'f/2.png': PNG})
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('doorway.looks[0] shows on the whole Earth', self.warnings(rep)[0])
 
     def test_unlisted_scripts_and_missing_sources_warn(self):
         folder = write_pack(self.tmp, extra={'data.js': 'window.DATA = { a: 1 };', 'tool.cjs': 'module.exports = 1;'})

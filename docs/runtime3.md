@@ -1,9 +1,15 @@
-# Runtime 3: packs drawn by the globe, scripted in JavaScriptCore
+# The pack runtime (3 and 4): packs drawn by the globe, scripted in JavaScriptCore
 
 A pack is data, pictures and a small script. The script runs in JavaScriptCore inside the app, in
 the app's own process, with no web page and no web view: it decides, and the globe draws, in
 Swift, in step with the camera. Everything a pack asks for belongs to its stage and goes when the
 prototype ends. This page is the contract; `docs/playground.md` is the workflow.
+
+**Runtime 4** (October 28, 2026) is the same contract with the stage shared: several experiences
+run on the one globe at once, each entered and left by touch, and every doorway has a life of its
+own while its experience sleeps ([Many at once](#many-at-once-runtime-4)). What it adds is marked
+*new in 4*; a pack that uses none of it keeps `"runtime": 3` and runs on either app. A pack that
+declares `"runtime": 4` needs an app that hosts it (an older one lists it as needing a new build).
 
 ## The pack
 
@@ -34,7 +40,8 @@ Prototypes/<id>/
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: 3. An app with an older runtime lists the pack as needing a new build.
+- `runtime`: 3, or 4 if the pack uses anything marked *new in 4* (an app with an older runtime
+  lists the pack as needing a new build).
 - `presentation`: always `"globe"`. Every pack lives on the globe; there are no pack screens.
 - `scripts`: run in order in one context, like script tags. The global object is also `window`
   and `globalThis`, so a data file may say `window.TIDE = {...}`.
@@ -43,7 +50,20 @@ Prototypes/<id>/
 - `doorway` (optional): how the pack shows on the globe while it is *not* running, so the atlas
   has its things on it: a place, a VoiceOver label and a `look` (as a sprite's look, below).
   Touching it starts the pack. Keep the whole-Earth view sparse: give it a `minZoom`, or make it a
-  small trace (`every`/`for`).
+  small trace (`every`/`for`). *New in 4:* a doorway may have a small life of its own, so it can be
+  seen from afar and draws the reader closer: `looks` (a list, as a sprite's: the first whose zoom
+  range holds is drawn, so it can be a glint now and then from far out and itself up close),
+  `path` (as a sprite's: it stirs along a short way, `loop: 'back'` to and fro) and
+  `breathes: true` (a slow breath). Reduce Motion holds it still at its first place and frame, and a
+  trace shows steadily. Entered by its doorway, a pack starts where the reader is: no flight to its
+  `anchor` (`terra.entry` says how it was entered).
+
+  ```json
+  "doorway": { "lon": 24.5, "lat": 39.55, "label": "The sea between: an engraved chart of the Aegean",
+               "looks": [ { "image": "glint.png", "size": [11, 11], "maxZoom": 1.5, "every": 9, "for": 1.2 },
+                          { "frames": ["skiff-1.png", "skiff-2.png"], "fps": 1.4, "size": [18, 21], "minZoom": 1.5 } ],
+               "path": { "coordinates": [[24.4, 39.5], [24.7, 39.7]], "seconds": 120, "loop": "back" } }
+  ```
 - `taps`: true gives the pack every tap on the globe (its `touch` events with `target: null`)
   instead of choosing countries. Taps on its own touchable things reach it either way.
 - `shelf`: `current` or `parked` (the workbench's Parked shelf; no doorway).
@@ -54,8 +74,10 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 3 |
+| `terra.runtime` | 4 (3 on an app before October 28, 2026) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
+| `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
+| `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
 | `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active }` |
 | `terra.camera` | `{ lon, lat, zoom, cx, cy, radius, width, height }` now (points) |
 | `terra.on('camera', fn)` | the camera, at most 20 times a second while it moves and once when it stops |
@@ -127,8 +149,9 @@ terra.sprites.remove('whale'); terra.sprites.clear()
 - `looks`: the first look whose `minZoom`–`maxZoom` holds the zoom is drawn, so one thing can be a
   trace from afar and itself up close. A look is `image` (one picture) or `frames` (pictures shown in
   turn at `fps`), `size: [w, h]` in points at the reading scale, and optionally `every` and `for`
-  (seconds: it shows for `for` seconds every `every`, a splash now and then) and `face: true` (the
-  picture, drawn facing east, is mirrored when it moves west).
+  (seconds: it shows for `for` seconds every `every`, a splash now and then; *new in 4:* a showing
+  fades up and down over its first and last 0.3 s, so a glint is a glint and not a blink) and
+  `face: true` (the picture, drawn facing east, is mirrored when it moves west).
 - `label`: its VoiceOver name (needed when `touchable`). It is hidden behind the globe, off screen,
   and where the app keeps clear (the chip, the foot).
 - `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`. A trace
@@ -185,11 +208,38 @@ A native sheet over the globe (half height, can be pulled up), in the app's type
 still visible and live above it. Plain text only (paragraphs split on blank lines). Source links
 open in Safari only when the reader taps them.
 
-## Many at once
+## Many at once (runtime 4)
 
-Every pack and tool assumes others may share the stage. Today the workbench runs one prototype at a
-time, and the atlas shows every pack's doorway on the globe at once; a pack must still never assume
-it owns what it didn't ask for.
+The globe is one world. Every current experience's doorway is on it at once, each alive in its own
+small way, and several experiences run on it together: the reader touches a doorway and that
+experience starts beside the ones already running, with nothing reset; touches a sprite or a
+touchable feature of another and that one comes to the **front**; touches ✕ on the chip and the
+front one ends, leaving the others as they were. Each running experience has a stage of its own,
+and ending one takes away exactly what it made (the workbench's Live counts say so). Every pack and
+tool assumes others share the stage; the host keeps these rules so none can take it from the reader:
+
+- **The front experience** is the one the reader is with: the last started, or the last touched (a
+  tap or drag on its things brings it to the front; so does its row in the workbench). The chip
+  names it (and says how many others run), its date and caption are the foot, its gesture scheme
+  is the globe's, its `historical` hides today's borders, and its `flyTo` moves the globe. The
+  others run on in the **background**: their sprites, geography and pictures stay on the globe,
+  their timers tick, they hear the camera, and they keep their date and caption for when they are
+  in front again. A script hears the change as `terra.on('focus')` and can read `terra.focus`.
+- **What a background experience asks for:** `flyTo` is dropped (logged once), `panel.show` is
+  dropped unless it answers a touch of its own, `touch.scheme` and `historical` wait until it is in
+  front, and its date is paused (it may `time.play` again when it hears it is in front).
+  `still` holds while any experience asks for it; `maxZoom` is the deepest any asks for.
+- **The reader's hands win.** A flight asked for while the reader's fingers are on the globe, or
+  within a second of their last turn or pinch, is dropped. Two fingers always turn and zoom the
+  globe, in any scheme. A touch on the globe ends any flight. ✕ is always there.
+- **A lens** (a native sequence that takes the screen: the camel's, the whale's) is an excursion:
+  while it is open, every other experience's things are hidden with the names, and closing it puts
+  them back.
+- **Budget:** at most 6 experiences run at once; starting a seventh ends the one the reader left
+  longest ago, never the front one. Each stage keeps its own budgets (sprites, layers, pictures).
+- **The preview** (`serve.cjs`) mirrors all of it: `/atlas` is every current pack's doorway on the
+  stand-in globe, each alive, and `?with=<id>,<id>` runs several together; `check.cjs --living`
+  checks that two packs run side by side, by touch, and that ending one leaves the other whole.
 
 ## The desktop preview
 

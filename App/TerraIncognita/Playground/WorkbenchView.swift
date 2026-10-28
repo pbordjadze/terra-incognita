@@ -16,8 +16,7 @@ struct WorkbenchView: View {
             List {
                 Section {
                     Button { playground.choosePlainGlobe() } label: {
-                        rowLabel("The plain globe", detail: playground.stage == nil ? "Showing now" : "End \(playground.stage?.prototype.title ?? "")",
-                              active: playground.stage == nil)
+                        rowLabel("The plain globe", detail: plainDetail, active: playground.stages.isEmpty)
                     }
                     .accessibilityIdentifier("prototype_plain")
                     if let recent = playground.recent, recent != playground.stage?.prototype.id, let again = playground.prototype(recent) {
@@ -63,9 +62,18 @@ struct WorkbenchView: View {
         .tint(Color(red: 0.13, green: 0.33, blue: 0.55))
     }
 
+    /// What choosing the plain globe does: nothing, or end what runs (several run at once).
+    private var plainDetail: String {
+        switch playground.stages.count {
+        case 0: "Showing now"
+        case 1: "End \(playground.stage?.prototype.title ?? "")"
+        default: "End all \(playground.stages.count) running"
+        }
+    }
+
     private func row(_ p: Prototype) -> some View {
         Button { playground.choose(p.id) } label: {
-            rowLabel(p.title, summary: p.summary, detail: detail(p), active: playground.stage?.prototype.id == p.id)
+            rowLabel(p.title, summary: p.summary, detail: detail(p), active: playground.isRunning(p.id))
         }
         .disabled(isUnavailable(p))
         .accessibilityIdentifier("prototype_\(p.id)")
@@ -92,9 +100,11 @@ struct WorkbenchView: View {
         return false
     }
 
-    /// What it is and where it opens, in a few words.
+    /// What it is and where it opens, in a few words (and, running, whether it is the one in front).
     private func detail(_ p: Prototype) -> String {
-        let place = p.ownScreen ? "own screen" : "on the globe"
+        var place = p.ownScreen ? "own screen" : "on the globe"
+        if playground.stage?.prototype.id == p.id { place += " · in front" }
+        else if playground.isRunning(p.id) { place += " · running behind" }
         switch p.made {
         case .native:
             return "Native · \(place)"

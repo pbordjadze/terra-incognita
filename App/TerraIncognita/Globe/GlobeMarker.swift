@@ -104,6 +104,8 @@ final class GlobeMarker {
     private var setOut = CACurrentMediaTime()
     private var frameView: UIImageView?
     private var shownLook: Int?
+    /// Heading west: a `face` look is mirrored (kept while it pauses, so it doesn't flip back).
+    private var mirrored = false
     /// Hidden now by its look: out of every look's zoom range, or between its showings.
     private(set) var resting = false
     /// It moves or animates, so the globe draws a little more often while it shows.
@@ -141,12 +143,13 @@ final class GlobeMarker {
         if let onOpen { view.addAction(UIAction { _ in onOpen() }, for: .touchUpInside) }
     }
 
-    /// A sprite: its looks by zoom, a place or a path. `onTap` makes it touchable.
+    /// A sprite: its looks by zoom, a place or a path. `onTap` makes it touchable; `breathes` gives it
+    /// a slow breath (a doorway's life, runtime 4).
     convenience init(sprite id: String, at place: (lon: Double, lat: Double)?, path: Path?, looks: [SpriteLook], label: String,
-                     hint: String? = nil, counted: Bool = true, onTap: (() -> Void)?) {
+                     hint: String? = nil, counted: Bool = true, breathes: Bool = false, onTap: (() -> Void)?) {
         let start = place ?? path?.places.first ?? (0, 0)
         self.init(id: id, lon: start.lon, lat: start.lat, look: .picture(UIImage()), size: looks.first?.size ?? CGSize(width: 28, height: 28),
-                  label: label, hint: hint, counted: counted, onOpen: onTap)
+                  label: label, hint: hint, breathes: breathes, counted: counted, onOpen: onTap)
         view.setImage(nil, for: .normal)
         let frames = UIImageView()
         frames.contentMode = .scaleAspectFit
@@ -174,11 +177,16 @@ final class GlobeMarker {
         shownLook = nil
     }
 
-    /// A sprite's state for this frame: where it is along its path, which look shows, whether it rests.
-    /// The globe calls it before placing the marker; `ahead` is where it will be a moment later.
+    /// A sprite's state for this frame: where it is along its path, which look shows, whether it rests,
+    /// its breath. The globe calls it before placing the marker; `ahead` is where it will be a moment later.
     func advance(now: CFTimeInterval, zoom: Double, reading: CGFloat, still: Bool,
                  project: (Double, Double) -> CGPoint) {
-        guard frameView != nil else { return }
+        // A tiny weight/breath shift belongs to the marker's own layer; it never asks for a map draw.
+        let breath: CGFloat = breathes && !still ? 1 + 0.004 * sin(now * 1.2) : 1
+        guard frameView != nil else {
+            if breathes, let image = view.imageView { image.transform = CGAffineTransform(scaleX: 1, y: breath) }
+            return
+        }
         var heading: CGFloat = 0
         if let path {
             let t = still ? 0 : now - setOut
@@ -211,15 +219,18 @@ final class GlobeMarker {
                 frameView?.image = look.frames.first
             }
         }
-        if look.face, heading != 0 {
-            frameView?.transform = heading < 0 ? CGAffineTransform(scaleX: -1, y: 1) : .identity
-        }
+        if look.face, heading != 0 { mirrored = heading < 0 }
+        frameView?.transform = CGAffineTransform(scaleX: look.face && mirrored ? -1 : 1, y: breath)
         if let every = look.every, let duration = look.duration, !still {
             // each sprite keeps its own phase, so traces don't all blink together
             let phase = (now - setOut + Double(abs(label.hashValue % 997)) / 997 * every).truncatingRemainder(dividingBy: every)
             resting = phase > duration
+            // a showing fades up over its first 0.3 s and down over its last (a glint, not a blink)
+            let edge = min(0.3, duration / 3)
+            frameView?.alpha = resting ? 1 : CGFloat(max(0, min(1, min(phase, duration - phase) / edge)))
         } else {
             resting = false
+            frameView?.alpha = 1
         }
     }
 }

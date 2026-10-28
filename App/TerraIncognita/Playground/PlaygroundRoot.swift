@@ -14,7 +14,7 @@ struct PlaygroundRoot: View {
     @State private var veil = 1.0
     @Environment(\.scenePhase) private var scenePhase
 
-    private var style: GlobeStyle { playground.stage?.style ?? .base }
+    private var style: GlobeStyle { playground.style }
     private var covered: Bool { playground.screen != nil }
     private var lens: PlaygroundLens? { playground.stage?.lens }
     /// Inside the Persian page's frame, when that parked style is on.
@@ -121,15 +121,24 @@ struct PlaygroundRoot: View {
         .accessibilityIdentifier("workbenchButton")
     }
 
-    /// The active prototype: its name, Open if something opens, ✕ back to the plain globe.
+    /// The prototype in front: its name (and how many others run), Open if something opens, ✕ to end it
+    /// (the next one is then in front; with none left, the plain globe).
     private func chip(_ stage: PrototypeStage) -> some View {
-        HStack(spacing: 6) {
+        let others = playground.stages.count - 1
+        return HStack(spacing: 6) {
             if stage.loading { ProgressView().controlSize(.small).padding(.leading, 6) }
             Text(stage.prototype.title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(2)
                 .padding(.leading, stage.loading ? 0 : 12)
                 .accessibilityIdentifier("activePrototype")
+            if others > 0 {
+                Text(verbatim: "+\(others)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("otherPrototypes")
+                    .accessibilityLabel(Text("and \(others) more running"))
+            }
             if stage.canOpen {
                 Button { stage.open() } label: {
                     Text("Open")
@@ -140,16 +149,17 @@ struct PlaygroundRoot: View {
                 }
                 .accessibilityIdentifier("openActivePrototype")
             }
-            Button { playground.choosePlainGlobe() } label: {
+            Button { playground.endFront() } label: {
                 Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).frame(width: 44, height: 44)
             }
-            .accessibilityLabel("Back to the plain globe")
+            .accessibilityLabel(others > 0 ? Text("End \(stage.prototype.title)") : Text("Back to the plain globe"))
             .accessibilityIdentifier("endActivePrototype")
         }
         .foregroundStyle(.primary)
         .glassEffect(.regular, in: Capsule())
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("Active prototype: \(stage.prototype.title)"))
+        .accessibilityLabel(others > 0 ? Text("Active prototype: \(stage.prototype.title), and \(others) more running")
+                                       : Text("Active prototype: \(stage.prototype.title)"))
     }
 
     private func problemNote(_ problem: String) -> some View {

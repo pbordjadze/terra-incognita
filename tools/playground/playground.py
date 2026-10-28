@@ -43,7 +43,9 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 3
+RUNTIME = 4
+# a pack declares the runtime it needs: 3, or 4 for what docs/runtime3.md marks new in 4
+RUNTIMES = (3, 4)
 OPEN_SCHEME = 'terraincognita'
 R3_ONLY = 'runtime 3 only: a pack is scripts drawn by the globe'
 
@@ -62,7 +64,10 @@ TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'scripts', 'anc
 WEB_KEYS = {'entry': 'a web page', 'overlay': 'a web page over the globe',
             'markers': 'pictures placed by the host; a "doorway" or terra.sprites does that now'}
 ANCHOR_KEYS = {'lon', 'lat', 'zoom'}
-DOORWAY_KEYS = {'lon', 'lat', 'label', 'look'}
+DOORWAY_KEYS = {'lon', 'lat', 'label', 'look', 'looks', 'path', 'breathes'}
+# a doorway's life (runtime 4): its looks by zoom, the way it stirs along, a slow breath
+DOORWAY_LIFE_KEYS = ('looks', 'path', 'breathes')
+PATH_KEYS = {'coordinates', 'seconds', 'loop'}
 LOOK_KEYS = {'image', 'frames', 'fps', 'size', 'minZoom', 'maxZoom', 'every', 'for', 'face'}
 IMAGE_EXTS = ('.png', '.jpg', '.jpeg')
 PAGE_EXTS = ('.html', '.htm')
@@ -484,7 +489,7 @@ def validate_manifest(m, name, files, rep, where):
         rep.error(where, 'prototype.json must be a JSON object')
         return False
     runtime = m.get('runtime')
-    if is_int(runtime) and 1 <= runtime < RUNTIME:
+    if is_int(runtime) and 1 <= runtime < RUNTIMES[0]:
         rep.error(where, f'"runtime" is {runtime}: {R3_ONLY} (docs/runtime3.md). Its pages become scripts; '
                          'its markers, a doorway or sprites')
         return True
@@ -501,8 +506,9 @@ def validate_manifest(m, name, files, rep, where):
         rep.error(where, f'"id" ("{pid}") must equal the folder name ("{name}")')
     _check_str(rep, where, m, 'title', 1, 60)
     _check_str(rep, where, m, 'summary', 1, 200)
-    if runtime != RUNTIME or not is_int(runtime):
-        rep.error(where, f'"runtime" must be {RUNTIME} (the newest this repository\'s app hosts)')
+    if not is_int(runtime) or runtime not in RUNTIMES:
+        rep.error(where, f'"runtime" must be {RUNTIMES[0]} or {RUNTIME} (the newest this repository\'s app hosts; '
+                         f'{RUNTIME} for what docs/runtime3.md marks new in {RUNTIME})')
     pres = m.get('presentation')
     if pres == 'screen':
         rep.error(where, f'"presentation" is "screen": {R3_ONLY}, and there are no pack screens ("globe")')
@@ -559,17 +565,59 @@ def validate_manifest(m, name, files, rep, where):
             label = door.get('label')
             if not isinstance(label, str) or not label.strip() or len(label) > 200:
                 rep.error(where, 'doorway.label is required: the words VoiceOver speaks (1-200 characters)')
-            if 'look' not in door:
-                rep.error(where, 'doorway.look is required: how it shows on the globe (as a sprite\'s look)')
+            life = [k for k in DOORWAY_LIFE_KEYS if k in door]
+            if life and runtime == RUNTIMES[0]:
+                rep.error(where, f'doorway.{life[0]} is new in runtime {RUNTIME} (docs/runtime3.md › Many at once): '
+                                 f'declare "runtime": {RUNTIME}')
+            if 'look' not in door and 'looks' not in door:
+                rep.error(where, 'doorway.look is required: how it shows on the globe (as a sprite\'s look), '
+                                 'or doorway.looks, its looks by zoom')
+            elif 'look' in door and 'looks' in door:
+                rep.error(where, 'doorway: one "look", or "looks" by zoom, not both')
             else:
-                check_look(rep, where, 'doorway.look', door['look'], files)
-                look = door['look']
-                if isinstance(look, dict) and 'minZoom' not in look and 'every' not in look:
-                    rep.warn(where, 'doorway.look shows on the whole Earth: keep that view sparse with a minZoom, '
+                looks = door['looks'] if 'looks' in door else [door['look']]
+                if 'looks' in door and not (isinstance(looks, list) and 1 <= len(looks) <= 8):
+                    rep.error(where, 'doorway.looks must be a list of 1 to 8 looks (as a sprite\'s: the first whose zoom range holds is drawn)')
+                    looks = []
+                for i, look in enumerate(looks):
+                    check_look(rep, where, f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look', look, files)
+                first = looks[0] if looks else None
+                if isinstance(first, dict) and 'minZoom' not in first and 'every' not in first:
+                    tag = 'doorway.looks[0]' if 'looks' in door else 'doorway.look'
+                    rep.warn(where, f'{tag} shows on the whole Earth: keep that view sparse with a minZoom, '
                                     'or make it a small trace (every/for)')
+            if 'path' in door:
+                check_path(rep, where, 'doorway.path', door['path'])
+            if 'breathes' in door and not isinstance(door['breathes'], bool):
+                rep.error(where, 'doorway.breathes must be true or false')
         if m.get('shelf') == 'parked':
             rep.warn(where, 'a parked pack shows no doorway')
     return False
+
+
+def check_path(rep, where, tag, path):
+    """A way along great circles, as a sprite's (docs/runtime3.md › Sprites): coordinates [[lon, lat], …]
+    (2 to 200 of them), the seconds the whole of it takes, and loop true, false or "back"."""
+    if not isinstance(path, dict):
+        rep.error(where, f'{tag} must be an object {{ coordinates: [[lon, lat], …], seconds, loop }}')
+        return
+    for k in path:
+        if k not in PATH_KEYS:
+            rep.warn(where, f'unknown key "{tag}.{k}"')
+    coords = path.get('coordinates')
+    if not isinstance(coords, list) or not 2 <= len(coords) <= 200:
+        rep.error(where, f'{tag}.coordinates must be a list of 2 to 200 places [lon, lat]')
+    else:
+        for i, c in enumerate(coords):
+            if not (isinstance(c, list) and len(c) == 2 and all(is_num(v) for v in c)):
+                rep.error(where, f'{tag}.coordinates[{i}] must be [lon, lat]')
+                break
+            _check_num(rep, where, f'{tag}.coordinates[{i}] lon', c[0], -540, 540)
+            _check_num(rep, where, f'{tag}.coordinates[{i}] lat', c[1], -90, 90)
+    if 'seconds' in path:
+        _check_num(rep, where, f'{tag}.seconds', path['seconds'], 1, 86400)
+    if 'loop' in path and path['loop'] not in (True, False, 'back'):
+        rep.error(where, f'{tag}.loop must be true, false or "back"')
 
 
 def validate_pack(folder, rep):
@@ -1095,7 +1143,7 @@ def cmd_new(args):
     rep.print()
     if rep.errors:
         raise ToolError('the scaffold does not validate; this is a bug in the template')
-    print(f'Created {display(dest)}/ (runtime {RUNTIME}: prototype.json, main.js, SOURCES.md, marker.png).')
+    print(f'Created {display(dest)}/ (runtime {RUNTIMES[0]}: prototype.json, main.js, SOURCES.md, marker.png).')
     print(f'  preview   node tools/playground/serve.cjs      then  http://127.0.0.1:8790/preview/{pid}')
     print(f'  check     node tools/playground/check.cjs {pid}')
     print('  validate  python3 tools/playground/playground.py validate')

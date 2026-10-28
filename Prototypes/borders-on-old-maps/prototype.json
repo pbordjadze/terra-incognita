@@ -2,7 +2,7 @@
   "id": "borders-on-old-maps",
   "title": "Borders on old maps",
   "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
-  "runtime": 3,
+  "runtime": 4,
   "presentation": "globe",
   "scripts": [
     "data.js",
@@ -18,14 +18,26 @@
     "lon": 19,
     "lat": 51,
     "label": "Borders on old maps",
-    "look": {
-      "image": "ghost.png",
-      "size": [
-        30,
-        22
-      ],
-      "minZoom": 1.6
-    }
+    "looks": [
+      {
+        "image": "doorway-glint.png",
+        "size": [
+          11,
+          11
+        ],
+        "maxZoom": 1.6,
+        "every": 12,
+        "for": 1.2
+      },
+      {
+        "image": "ghost.png",
+        "size": [
+          30,
+          22
+        ],
+        "minZoom": 1.6
+      }
+    ]
   },
   "taps": true,
   "shelf": "current"
