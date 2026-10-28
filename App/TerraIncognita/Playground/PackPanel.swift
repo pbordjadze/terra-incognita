@@ -101,6 +101,8 @@ struct PackPanelView: View {
             .padding(.bottom, 32)
         }
         .background(Self.paper)
+        // (named before the close button is laid over it: named after, the button takes the name too)
+        .accessibilityIdentifier("packPanel")
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).frame(width: 44, height: 44)
@@ -111,7 +113,6 @@ struct PackPanelView: View {
             .padding(.trailing, 8)
             .padding(.top, 4)
         }
-        .accessibilityIdentifier("packPanel")
     }
 
     @ViewBuilder private func paragraphs(_ text: String) -> some View {
