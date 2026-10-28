@@ -42,7 +42,7 @@
     gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-    ['uSize', 'uPx', 'uDisc', 'uRot', 'uZoom', 'uReading', 'uDays', 'uMonth', 'uSky', 'uLand', 'uNoise', 'uSun', 'uSeaShadow', 'uLandShadow', 'uTone'].forEach(function (n) {
+    ['uSize', 'uPx', 'uDisc', 'uRot', 'uZoom', 'uReading', 'uDays', 'uMonth', 'uSky', 'uLand', 'uNoise', 'uSun', 'uSeaShadow', 'uLandShadow', 'uTone', 'uCyclone'].forEach(function (n) {
       loc[n] = gl.getUniformLocation(program, n);
     });
     var buf = gl.createBuffer();
@@ -82,13 +82,13 @@
     x = (x + Math.imul(y, z)) >>> 0; y = (y + Math.imul(z, x)) >>> 0; z = (z + Math.imul(x, y)) >>> 0;
     x = (x ^ (x >>> 16)) >>> 0; y = (y ^ (y >>> 16)) >>> 0; z = (z ^ (z >>> 16)) >>> 0;
     x = (x + Math.imul(y, z)) >>> 0; y = (y + Math.imul(z, x)) >>> 0; z = (z + Math.imul(x, y)) >>> 0;
-    return [x / 4294967295 * 2 - 1, y / 4294967295 * 2 - 1, z / 4294967295 * 2 - 1];
+    return [x / 4294967295, y / 4294967295, z / 4294967295];
   }
   function noiseTile() {
     var g = new Float32Array(CELLS * CELLS * CELLS * 3), i, x, y, z;
     for (i = 0, z = 0; z < CELLS; z++) for (y = 0; y < CELLS; y++) for (x = 0; x < CELLS; x++, i += 3) {
       var h = pcg3d(x, y, z);
-      g[i] = h[0]; g[i + 1] = h[1]; g[i + 2] = h[2];
+      g[i] = h[0] * 2 - 1; g[i + 1] = h[1] * 2 - 1; g[i + 2] = h[2] * 2 - 1;
     }
     var out = new Uint8Array(N * N * N), q = function (t) { return t * t * t * (t * (t * 6 - 15) + 10); };
     for (var k = 0, sz = 0; sz < N; sz++) for (var sy = 0; sy < N; sy++) for (var sx = 0; sx < N; sx++, k++) {
@@ -120,6 +120,24 @@
       sky = t;
       texture('land.png', gl.R8, gl.RED, gl.REPEAT, function (t) { land = t; done(); });
     });
+  }
+
+  // the cyclones (shader.js's cyclones()): where each is and how hard it turns, the same for every
+  // pixel, so worked out once a frame. Two vec4s each: its centre and size, its turn and reach.
+  var cycloneData = new Float32Array(80);
+  function smooth(a, b, x) { var t = Math.min(Math.max((x - a) / (b - a), 0), 1); return t * t * (3 - 2 * t); }
+  function cyclones(d) {
+    for (var k = 0; k < 10; k++) {
+      var hemi = k < 5 ? 1 : -1;
+      var t = d / 6 + k * 0.2 + (hemi < 0 ? 0.1 : 0), n = Math.floor(t), age = t - n;
+      var r = pcg3d(k, n, 977);
+      var lat = hemi * (38 + 22 * r[1]) * Math.PI / 180, lon = 2 * Math.PI * r[0];
+      var size = 0.09 + 0.07 * r[2];
+      var wind = 2.6 * smooth(0, 0.55, age) * (1 - smooth(0.78, 1, age));
+      cycloneData.set([Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon), size,
+                       -hemi * wind, Math.cos(3 * size), 0, 0], k * 8);
+    }
+    return cycloneData;
   }
 
   // ---- time: this month, and the drift --------------------------------------------------------------
@@ -183,7 +201,9 @@
     gl.uniformMatrix3fv(loc.uRot, false, rotation(cam.lon, cam.lat));
     gl.uniform1f(loc.uZoom, cam.zoom);
     gl.uniform1f(loc.uReading, reading(cam.width || window.innerWidth, cam.height || window.innerHeight));
-    gl.uniform1f(loc.uDays, days());
+    var d = days();
+    gl.uniform1f(loc.uDays, d);
+    gl.uniform4fv(loc.uCyclone, cyclones(d));
     gl.uniform3f(loc.uMonth, Math.floor(m), (Math.floor(m) + 1) % 12, m - Math.floor(m));
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, sky);

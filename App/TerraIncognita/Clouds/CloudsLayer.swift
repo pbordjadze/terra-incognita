@@ -102,6 +102,8 @@ final class CloudsLayer: GlobeFollower {
         var u = uniforms(globe: globe, size: size)
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
+        let turning = Self.cyclones(days: days)
+        turning.withUnsafeBytes { encoder.setFragmentBytes($0.baseAddress!, length: $0.count, index: 1) }
         encoder.setFragmentTexture(sky, index: 0)
         encoder.setFragmentTexture(land, index: 1)
         encoder.setFragmentTexture(tile, index: 2)
@@ -160,6 +162,43 @@ final class CloudsLayer: GlobeFollower {
             seaShadow: look.seaShadow,
             landShadow: look.landShadow,
             tone: SIMD4(look.opacity, look.night, 0, 0))
+    }
+
+    /// The cyclones (`cyclones` in Clouds.metal): where each is and how hard it turns are the same for
+    /// every pixel, so worked out here once a frame. Two float4s each: its centre (the globe's world
+    /// coordinates) and size (radians), then its turn (signed: anticlockwise in the north) and the
+    /// cosine of its reach. Five a hemisphere, each six days long, born at a place the hash of its
+    /// number and its life's gives (the shader's pcg3d, as Clouds.metal's noise uses).
+    private static func cyclones(days: Double) -> [SIMD4<Float>] {
+        var out = [SIMD4<Float>](repeating: .zero, count: 20)
+        for k in 0..<10 {
+            let hemi = k < 5 ? 1.0 : -1.0
+            let t = days / 6 + Double(k) * 0.2 + (hemi < 0 ? 0.1 : 0)
+            let n = t.rounded(.down), age = t - n
+            let r = hash3(Int32(k), Int32(n), 977)
+            let lat = hemi * (38 + 22 * r.y) * .pi / 180, lon = 2 * .pi * r.x
+            let size = 0.09 + 0.07 * r.z
+            let wind = 2.6 * smoothstep(0, 0.55, age) * (1 - smoothstep(0.78, 1, age))
+            out[2 * k] = SIMD4(Float(cos(lat) * sin(lon)), Float(sin(lat)), Float(cos(lat) * cos(lon)), Float(size))
+            out[2 * k + 1] = SIMD4(Float(-hemi * wind), Float(cos(3 * size)), 0, 0)
+        }
+        return out
+    }
+
+    /// pcg3d (Clouds.metal), as three numbers from 0 to 1.
+    private static func hash3(_ x: Int32, _ y: Int32, _ z: Int32) -> SIMD3<Double> {
+        var a = UInt32(bitPattern: x) &* 1664525 &+ 1013904223
+        var b = UInt32(bitPattern: y) &* 1664525 &+ 1013904223
+        var c = UInt32(bitPattern: z) &* 1664525 &+ 1013904223
+        a = a &+ b &* c; b = b &+ c &* a; c = c &+ a &* b
+        a ^= a >> 16; b ^= b >> 16; c ^= c >> 16
+        a = a &+ b &* c; b = b &+ c &* a; c = c &+ a &* b
+        return SIMD3(Double(a), Double(b), Double(c)) / 4294967295
+    }
+
+    private static func smoothstep(_ a: Double, _ b: Double, _ x: Double) -> Double {
+        let t = min(max((x - a) / (b - a), 0), 1)
+        return t * t * (3 - 2 * t)
     }
 
     /// Today as months from mid-January (0) round the year: the sky between the two nearest months'.

@@ -113,23 +113,19 @@ static float3 rotateAbout(float3 p, float3 k, float a) {   // Rodrigues
 // Each hemisphere keeps five cyclones in the westerlies, each six days long: born somewhere between
 // 38 and 60 degrees, winding up (anticlockwise in the north, clockwise in the south) and letting go.
 // They live in the westerlies' turning frame, so they travel east with it. Invented, as all the
-// particular weather here is; where cyclones run is where the measured cloud lets them show.
-static float3 cyclones(float3 p, float strength, float days) {
+// particular weather here is; where cyclones run is where the measured cloud lets them show. Where
+// each is and how hard it turns are the same for every pixel, so the CPU works them out each frame
+// (CloudsLayer.cyclones): two float4s each, its centre and size, then its turn (signed: which way)
+// and the cosine of its reach.
+static float3 cyclones(float3 p, float strength, constant float4 *cyclone) {
     if (strength <= 0.0) return p;
     for (int k = 0; k < 10; k++) {
-        float hemi = k < 5 ? 1.0 : -1.0;
-        float life = 6.0;
-        float t = days / life + float(k) * 0.2 + (hemi < 0.0 ? 0.1 : 0.0);
-        float n = floor(t), age = t - n;
-        float3 r = hash3(int3(k, int(n), 977));
-        float lat = hemi * (38.0 + 22.0 * r.y) * PI / 180.0, lon = 2.0 * PI * r.x;
-        float3 c = float3(cos(lat) * sin(lon), sin(lat), cos(lat) * cos(lon));
-        float d = acos(clamp(dot(p, c), -1.0, 1.0));
-        float size = 0.09 + 0.07 * r.z;
-        if (d > 3.0 * size) continue;
-        float wind = 2.6 * smoothstep(0.0, 0.55, age) * (1.0 - smoothstep(0.78, 1.0, age));
+        float4 at = cyclone[2 * k], turning = cyclone[2 * k + 1];
+        float reach = dot(p, at.xyz);
+        if (turning.x == 0.0 || reach < turning.y) continue;
+        float d = acos(clamp(reach, -1.0, 1.0)), size = at.w;
         // drawn turning anticlockwise (north): what is here came from clockwise of here
-        p = rotateAbout(p, c, -hemi * strength * wind * exp(-d * d / (size * size)));
+        p = rotateAbout(p, at.xyz, strength * turning.x * exp(-d * d / (size * size)));
     }
     return p;
 }
@@ -152,12 +148,12 @@ static float2 shape(texture3d<float> tile, thread const Layer &l, float3 p, int 
 // a layer's noise at q, carried by its belts' winds (the easterly trades; the westerlies, which
 // carry the polar caps too, where the record is least sure: radians a day), each belt turning as
 // one and blended where they meet, over the subtropical highs, so no shear piles up
-static float2 field(texture3d<float> tile, thread const Layer &l, float3 q, int octaves, float foot, float days) {
+static float2 field(texture3d<float> tile, thread const Layer &l, float3 q, int octaves, float foot, float days, constant float4 *cyclone) {
     float lat = abs(asin(clamp(q.y, -1.0, 1.0))) * 180.0 / PI;
     float wt = 1.0 - smoothstep(22.0, 34.0, lat), wm = 1.0 - wt;
     float2 s = float2(0.0); float n = 0.0;
     if (wt > 0.001) { s += wt * shape(tile, l, turn(q, -l.belts.x * days), octaves, foot, days); n += wt * wt; }
-    if (wm > 0.001) { s += wm * shape(tile, l, cyclones(turn(q, -l.belts.y * days), l.spin, days), octaves, foot, days); n += wm * wm; }
+    if (wm > 0.001) { s += wm * shape(tile, l, cyclones(turn(q, -l.belts.y * days), l.spin, cyclone), octaves, foot, days); n += wm * wm; }
     return float2(s.x / sqrt(n), s.y);
 }
 
@@ -203,6 +199,7 @@ vertex CloudsVertex cloudsVertex(uint id [[vertex_id]]) {
 
 fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
                                constant CloudsUniforms &U [[buffer(0)]],
+                               constant float4 *cyclone [[buffer(1)]],   // twenty: cyclones(), above
                                texture2d<float> sky [[texture(0)]],
                                texture2d<float> landMask [[texture(1)]],
                                texture3d<float> tile [[texture(2)]]) {
@@ -253,7 +250,7 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
             float on = present(zoom, l.a, l.b) * (l.from == 0.0 ? 1.0 : smoothstep(l.from, l.from + 1.0, zoom));
             if (l.cover < 0.01 || l.shadow <= 0.0 || on < 0.01) continue;
             float3 s = normalize(g + l.lift * reading * sqrt(zoom) / R * toL);
-            float2 f = field(tile, l, s, 4, px * l.freq * 1.5, days);
+            float2 f = field(tile, l, s, 4, px * l.freq * 1.5, days, cyclone);
             float edge = 1.0 - l.cover;
             float d = mix(l.cover, smoothstep(edge - 0.06, edge + 0.12, cdf(f.x)), f.y);
             lit *= 1.0 - on * l.shadow * d * (1.0 - 0.6 * l.cover);
@@ -275,7 +272,7 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
         float3 q; float facing;
         if (!shell(rot, v, m, l.h, q, facing)) continue;
         float foot = px * l.freq / (m * max(facing, 0.08));
-        float2 f = field(tile, l, q, 6, foot, days);
+        float2 f = field(tile, l, q, 6, foot, days, cyclone);
         float u = cdf(f.x), edge = 1.0 - l.cover, t = u - edge;  // t > 0 inside
         // (the view's y runs up, the pixels' down)
         float2 grad = float2(dfdx(u), -dfdy(u));

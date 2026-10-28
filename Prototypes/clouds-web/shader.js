@@ -30,6 +30,7 @@ uniform vec4 uSun;         // xyz the sun (world, towards it); w 1 to light by i
 uniform vec4 uSeaShadow;   // rgb, and how strong on the sea
 uniform vec4 uLandShadow;  // rgb, and how strong on land
 uniform vec4 uTone;        // x the clouds' opacity, y how far the night side darkens them
+uniform vec4 uCyclone[20];  // the cyclones (cyclones(), below)
 out vec4 outColor;
 
 const float PI = 3.14159265;
@@ -46,7 +47,6 @@ uvec3 pcg3d(uvec3 v) {
   v.x += v.y * v.z; v.y += v.z * v.x; v.z += v.x * v.y;
   return v;
 }
-float hash(ivec3 c) { return float(pcg3d(uvec3(c)).x) * (1.0 / 4294967295.0); }
 vec3 hash3(ivec3 c) { return vec3(pcg3d(uvec3(c))) * (1.0 / 4294967295.0); }
 
 // one tile of the noise, 16 cells a side, is drawn once by sky.js into a 3D texture (six samples
@@ -96,23 +96,19 @@ vec3 rotateAbout(vec3 p, vec3 k, float a) {   // Rodrigues
 // Each hemisphere keeps five cyclones in the westerlies, each six days long: born somewhere between
 // 38 and 60 degrees, winding up (anticlockwise in the north, clockwise in the south) and letting go.
 // They live in the westerlies' turning frame, so they travel east with it. Invented, as all the
-// particular weather here is; where cyclones run is where the measured cloud lets them show.
+// particular weather here is; where cyclones run is where the measured cloud lets them show. Where
+// each is and how hard it turns are the same for every pixel, so the CPU works them out each frame
+// (sky.js's cyclones): two vec4s each, its centre and size, then its turn (signed: which way) and
+// the cosine of its reach.
 vec3 cyclones(vec3 p, float strength) {
   if (strength <= 0.0) return p;
   for (int k = 0; k < 10; k++) {
-    float hemi = k < 5 ? 1.0 : -1.0;
-    float life = 6.0;
-    float t = uDays / life + float(k) * 0.2 + (hemi < 0.0 ? 0.1 : 0.0);
-    float n = floor(t), age = t - n;
-    vec3 r = hash3(ivec3(k, int(n), 977));
-    float lat = hemi * radians(38.0 + 22.0 * r.y), lon = 2.0 * PI * r.x;
-    vec3 c = vec3(cos(lat) * sin(lon), sin(lat), cos(lat) * cos(lon));
-    float d = acos(clamp(dot(p, c), -1.0, 1.0));
-    float size = 0.09 + 0.07 * r.z;
-    if (d > 3.0 * size) continue;
-    float wind = 2.6 * smoothstep(0.0, 0.55, age) * (1.0 - smoothstep(0.78, 1.0, age));
+    vec4 at = uCyclone[2 * k], turning = uCyclone[2 * k + 1];
+    float reach = dot(p, at.xyz);
+    if (turning.x == 0.0 || reach < turning.y) continue;
+    float d = acos(clamp(reach, -1.0, 1.0)), size = at.w;
     // drawn turning anticlockwise (north): what is here came from clockwise of here
-    p = rotateAbout(p, c, -hemi * strength * wind * exp(-d * d / (size * size)));
+    p = rotateAbout(p, at.xyz, strength * turning.x * exp(-d * d / (size * size)));
   }
   return p;
 }
