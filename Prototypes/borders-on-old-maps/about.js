@@ -5,7 +5,7 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'Borders on old maps',
-      text: 'Each year on the date strip shows one of eight maps of Europe\'s states, drawn for 1530, 1600, 1815, 1878, 1920, 1938, 1945 and 1994. A year with no map of its own shows the nearest one, and the caption says which.',
+      text: 'Each year on the date strip shows one of eight maps of Europe\'s states, drawn for 1530, 1600, 1815, 1878, 1920, 1938, 1945 and 1994. Between them the borders do not move: a year with no map of its own shows the nearest one, and the caption says which, so no border is invented for the years between.',
       sections: [
         { title: 'Reading the globe',
           text: 'The filled country is the one you chose, as that map draws it.\n\n' +
