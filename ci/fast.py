@@ -1,5 +1,6 @@
-"""What a branch's run checks, when it is asked for less than everything: from the pushed commit's
-message, or the inputs of a run started by hand. Prints GitHub step outputs (fast, tests, places).
+"""What a branch's run checks, when it is asked for less than everything: from the first line of the
+pushed commit's message (a body that mentions `[shots]` asks for nothing), or the inputs of a run
+started by hand. Prints GitHub step outputs (fast, tests, places).
 
     [shots]                          the stage at the default places, on the iPad: no Release build,
                                      no UI tests (about 8 minutes on a free runner)
@@ -25,7 +26,8 @@ def parse(message, branch, tests='', places=''):
     if branch == 'main':
         return out
     asked_tests, asked_places, shots = tests.split(), places.split(), bool(places.strip())
-    for m in re.finditer(r'\[(shots|test)(?:\s+([^\]]*))?\]', message or ''):
+    subject = (message or '').split('\n', 1)[0]
+    for m in re.finditer(r'\[(shots|test)(?:\s+([^\]]*))?\]', subject):
         words = (m.group(2) or '').split()
         if m.group(1) == 'shots':
             shots = True
