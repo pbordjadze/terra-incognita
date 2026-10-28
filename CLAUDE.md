@@ -99,6 +99,22 @@ Keep design discussions and plans in that private repository.
   actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
   step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
   `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
+- **The clouds** (`App/TerraIncognita/Clouds/`), part of the stage: the clouds of the globe's month
+  (`GlobeView.month`, the ground's; a pack's date to the day moves it), where satellites usually see
+  them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could be; zooming in passes down through
+  them. `CloudsLayer` is the globe's `sky`, a Metal layer of its own
+  over the globe's drawing and under everything else on it (names, markers, what experiences draw),
+  drawn as the globe ticks (ten times a second while the camera rests), so `Globe.metal` is
+  untouched. It draws at a fraction of the screen's pixels and follows the GPU's timings (the
+  workbench's log says what a frame costs). `CloudsLook.on(style)` says how they sit on each
+  globe style: near-black shadows that darken any ground, and none on the Persian page. The reader's
+  switch is the cloud button beside the workbench's (`CloudsSwitch`, remembered); they also fade
+  out for the authored films. `Clouds.metal` and its web twin `tools/clouds/web/shader.js` are the
+  same line for line: change both together (the twin is the desktop preview: `tools/clouds/look.cjs`
+  and `film.cjs` draw it over the globe's preview). `tools/clouds/build.py` makes `CloudsSky.png`
+  and `CloudsLand.png` for both; never hand-edit them; `tools/clouds/SOURCES.md` separates what is
+  measured from what is drawn. Debug: `-clouds-days <d>` holds the drift, `-clouds-month <1-12>` the
+  month.
 - **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
   Al-Hitan opens an authored sequence on the same globe. The entry appears from 2× scale; the
   map's accessibility action “Go to Whale fossil, Wadi Al-Hitan” moves there without starting playback.

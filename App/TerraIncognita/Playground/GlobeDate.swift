@@ -205,3 +205,13 @@ private struct DateStrip: View {
         CGFloat((v - time.min) / (time.max - time.min)) * width
     }
 }
+
+extension GlobeTime {
+    /// The month (1 to 12) of a date to the day, for the globe's season; a year has none.
+    var month: Int? {
+        guard unit == .day, value.isFinite else { return nil }
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(identifier: "UTC") ?? .current
+        return utc.component(.month, from: Date(timeIntervalSince1970: value.rounded(.down) * 86_400))
+    }
+}

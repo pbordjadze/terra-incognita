@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clouds, the preview twin</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<script>
+  // What the twin needs of a host: the camera, the reader's settings and a log. The tools set the
+  // camera through terra._receive, as the app's layer is told it each frame.
+  window.terra = (function () {
+    var heard = {};
+    return {
+      settings: { active: true, reduceMotion: false },
+      log: function (m) { console.error(m); },
+      on: function (kind, f) { (heard[kind] = heard[kind] || []).push(f); },
+      _receive: function (m) { (heard[m.type] || []).forEach(function (f) { f(m.camera || m); }); },
+    };
+  })();
+</script>
+<script src="shader.js"></script>
+<script src="sky.js"></script>
+</body>
+</html>

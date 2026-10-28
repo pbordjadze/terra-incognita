@@ -55,6 +55,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onUserNavigation: (() -> Void)?
     /// Geographic overlays follow the same camera after it has advanced for this frame.
     var onFrame: (() -> Void)?
+    /// The stage's sky (Clouds/): over the globe's drawing and under everything else on it, drawn in
+    /// step with the camera each frame. Set once, by the screen that makes the opening globe.
+    var sky: CloudsLayer? {
+        didSet {
+            oldValue?.stop()
+            oldValue?.layer.removeFromSuperlayer()
+            if let sky { layer.insertSublayer(sky.layer, at: 0) }
+        }
+    }
     /// A tap on the globe, offered first to the active prototype (a web overlay that asked for taps):
     /// true when it took the tap, and no country is chosen. `place` is nil off the globe.
     var onWorldTap: ((_ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Bool)?
@@ -1071,6 +1080,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
             }
         }
+        sky?.frame(of: self)
         onFrame?()
         if historicalReference { labelsFading = false }
         else if needsDraw || labelsFading { labelsFading = updateLabels(dt: dt) }
