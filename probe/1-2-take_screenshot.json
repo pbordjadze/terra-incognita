@@ -1,0 +1,16 @@
+{
+ "tool": "take_screenshot",
+ "arguments": {},
+ "seconds": 152.9,
+ "isError": false,
+ "text": [],
+ "images": [
+  {
+   "file": "1-2-take_screenshot-1.jpg",
+   "mimeType": "image/jpeg",
+   "bytes": 190513,
+   "width": 919,
+   "height": 2000
+  }
+ ]
+}

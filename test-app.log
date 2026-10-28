@@ -1,0 +1,12 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-28 07:47:20.829 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:47:30.861 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.4 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:47:40.863 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.5 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:47:50.905 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.7 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:00.896 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.5 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:10.929 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.3 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:20.930 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.2 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:30.995 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:40.996 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.6 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 07:48:51.063 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 1.9 ms of GPU a frame, at 1.35 pixels a point
+2026-10-28 07:49:01.096 I  TerraIncognita[10670:93ae] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
