@@ -3,7 +3,7 @@ import SwiftUI
 import UIKit
 
 /// The whole globe, with a caption naming the chosen country, or saying what to do, and an active
-/// prototype's invitation above it if it has one. `active` false while a screen covers it.
+/// prototype's invitation above it if it has one. `active` false while a screen or the workbench covers it.
 struct GlobeScreen: View {
     let active: Bool
     let style: GlobeStyle

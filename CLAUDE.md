@@ -60,7 +60,7 @@ Keep design discussions and plans in that private repository.
     drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
     the Persian style, a headpiece with the name in its cartouche), and an active prototype's
     invitation above it. Made at launch and kept (its maps decoded once), paused while a screen
-    covers it.
+    or the workbench covers it.
   - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.

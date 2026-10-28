@@ -22,51 +22,81 @@ extension XCTestCase {
         return item
     }
 
+    /// The open workbench's list: the collection view SwiftUI gives its identifier to, or else the
+    /// sheet's only one.
+    @MainActor func workbenchList(in app: XCUIApplication) -> XCUIElement? {
+        guard app.collectionViews.firstMatch.waitForExistence(timeout: 10) else { return nil }
+        let named = app.collectionViews["workbenchList"].firstMatch
+        return named.exists ? named : app.collectionViews.firstMatch
+    }
+
+    /// Where the list's rows can be seen, a little in from its edges.
+    @MainActor private func clip(_ list: XCUIElement, in app: XCUIApplication) -> CGRect {
+        list.frame.intersection(app.frame).insetBy(dx: 0, dy: 16)
+    }
+
+    /// Drags the list's content by `dy` points (positive: up, showing what is below), from inside the
+    /// list, never from the sheet's grabber, so the sheet itself is never pulled down.
+    @MainActor private func drag(_ list: XCUIElement, by dy: CGFloat, in app: XCUIApplication) {
+        let c = clip(list, in: app)
+        let distance = min(abs(dy), c.height * 0.6)
+        let startY = dy > 0 ? c.maxY - c.height * 0.15 : c.minY + c.height * 0.15
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        origin.withOffset(CGVector(dx: c.midX, dy: startY))
+            .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: c.midX, dy: dy > 0 ? startY - distance : startY + distance)))
+    }
+
     /// Drags the open workbench until the element lies inside the list. The list makes and lets go of
     /// rows lazily, so while it doesn't exist the list moves by most of a screen; once it does, each
-    /// drag is measured from where it is. Drags start inside the list, never on the sheet's grabber, so the
-    /// sheet itself is never pulled down.
+    /// drag is measured from where it is.
     @MainActor func revealInWorkbench(_ element: XCUIElement, in app: XCUIApplication) {
-        // (the List carries its identifier when SwiftUI passes it on; otherwise it is the sheet's
-        // only collection view)
-        let named = app.collectionViews["workbenchList"].firstMatch
-        let list = named.waitForExistence(timeout: 3) ? named : app.collectionViews.firstMatch
-        guard list.waitForExistence(timeout: 10) else { return }
-        func clip() -> CGRect { list.frame.intersection(app.frame).insetBy(dx: 0, dy: 16) }
+        guard let list = workbenchList(in: app) else { return }
         /// It exists with a real frame (a row the list has let go of may linger with none).
         func located() -> Bool { element.exists && !element.frame.isEmpty }
         func visible() -> Bool {
             guard located() else { return false }
-            let c = clip(), f = element.frame
+            let c = clip(list, in: app), f = element.frame
             // (a row taller than the list at the largest text counts once its middle is inside)
             let inside = c.contains(f) || (f.height > c.height * 0.7 && c.contains(CGPoint(x: f.midX, y: f.midY)))
             // asked only once it is inside: XCTest fails outright on an element with no hit point
             return inside && element.isHittable
         }
-        /// Positive: the content moves up, showing what is below.
-        func drag(_ dy: CGFloat) {
-            let c = clip()
-            let distance = min(abs(dy), c.height * 0.6)
-            let startY = dy > 0 ? c.maxY - c.height * 0.15 : c.minY + c.height * 0.15
-            let origin = app.coordinate(withNormalizedOffset: .zero)
-            origin.withOffset(CGVector(dx: c.midX, dy: startY))
-                .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(dx: c.midX, dy: dy > 0 ? startY - distance : startY + distance)))
-        }
         // While it doesn't exist, look further down; when the list stops moving (its end), look the
         // other way, in smaller steps, since a row the list has let go of may be above.
         var direction: CGFloat = 1
         for _ in 0..<30 where !visible() {
-            let c = clip()
+            let c = clip(list, in: app)
             if located() {
                 let f = element.frame
-                if f.midY > c.midY { drag(max(40, f.maxY - c.maxY + 24)) } else { drag(-max(40, c.minY - f.minY + 24)) }
+                if f.midY > c.midY { drag(list, by: max(40, f.maxY - c.maxY + 24), in: app) } else { drag(list, by: -max(40, c.minY - f.minY + 24), in: app) }
                 continue
             }
             let cell = list.cells.firstMatch
             let before = cell.exists ? cell.frame : .zero
-            drag(direction * c.height * (direction > 0 ? 0.6 : 0.4))
+            drag(list, by: direction * c.height * (direction > 0 ? 0.6 : 0.4), in: app)
             if (cell.exists ? cell.frame : .zero) == before { direction = -direction }
         }
+    }
+
+    /// Every prototype the open workbench lists, gathered in one pass down the list with one snapshot
+    /// a screenful (each query of a busy app costs seconds, so finding each row in turn costs minutes).
+    @MainActor func listedPrototypes(in app: XCUIApplication) -> Set<String> {
+        guard let list = workbenchList(in: app) else { return [] }
+        func identifiers(_ element: any XCUIElementSnapshot) -> [String] {
+            [element.identifier] + element.children.flatMap(identifiers)
+        }
+        var listed = Set<String>()
+        var before: [String] = []
+        for _ in 0..<20 {
+            guard let snapshot = try? app.snapshot() else { break }
+            let now = identifiers(snapshot).filter { !$0.isEmpty }
+            listed.formUnion(now.filter { $0.hasPrefix("prototype_") }.map { String($0.dropFirst("prototype_".count)) })
+            // the end of the list, or it no longer moves
+            if now.contains("playgroundLive") || now == before { break }
+            before = now
+            drag(list, by: clip(list, in: app).height * 0.6, in: app)
+        }
+        return listed
     }
 
     /// From the globe: the workbench, a prototype, and (`open`) its screen through the chip's Open.

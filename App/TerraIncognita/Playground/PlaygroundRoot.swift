@@ -18,7 +18,8 @@ struct PlaygroundRoot: View {
     private var inset: CGFloat { style == .persian ? PersianCaption.pageRoom : 16 }
 
     var body: some View {
-        GlobeScreen(active: !covered && scenePhase == .active, style: style,
+        // (paused under the workbench too: nothing turns behind a menu, and its list has the main thread)
+        GlobeScreen(active: !covered && !playground.workbenchShown && scenePhase == .active, style: style,
                     keepClear: [controlsFrame], invitation: playground.stage?.invitation,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { playground.globeDrawn($0) })

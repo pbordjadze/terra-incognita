@@ -28,8 +28,9 @@ final class PlaygroundTests: XCTestCase {
         app.launch()
         defer { app.terminate() }
         openWorkbench(in: app)
+        let listed = listedPrototypes(in: app)
         for id in ["plain", "camelid", "whale", "ocean", "water", "leaf", "hello-pack", "persian", "film"] {
-            _ = workbenchItem(id, in: app)
+            XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }
     }
 
