@@ -4,10 +4,11 @@ import QuartzCore
 import SwiftUI
 import UIKit
 
-/// A local illustrated visit, composed above the atlas's existing geographic renderer.
-/// Images are decoded once. Native layer transforms animate the whale independently of Metal.
-final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
-    let globe = GlobeView(frame: .zero)
+/// A local illustrated visit, composed above the playground's one globe, lent while the visit is
+/// open (a lens, `PrototypeStage.openLens`). Images are decoded once. Native layer transforms animate
+/// the whale independently of Metal.
+final class WhaleCanvas: UIView, UIGestureRecognizerDelegate, GlobeLensCanvas {
+    let globe: GlobeView
     private let story: WhaleStory
     private let livingImage: UIImage?
     private let fossilImage: UIImage?
@@ -70,55 +71,20 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
         let size: CGSize
     }
 
-    init(story: WhaleStory, style: GlobeStyle) {
+    /// Made for the playground's globe; nothing on it changes until the stage lays this over it and
+    /// calls `attach`.
+    init(story: WhaleStory, globe: GlobeView) {
         self.story = story
+        self.globe = globe
         livingImage = WhaleArt.image(.living)
         fossilImage = WhaleArt.image(.fossil)
         limbImage = WhaleArt.image(.limb)
         desertImage = WhaleArt.image(.desert)
         seaImage = WhaleArt.image(.sea)
         super.init(frame: .zero)
-        backgroundColor = UIColor(hex: "#F2E6CC")
-        addSubview(globe)
-        globe.authoredMode = true
-        globe.setStyle(style, animated: false)
-        globe.accessibilityIdentifier = "whaleGlobe"
-        globe.onUserNavigation = { [weak self] in
-            guard let self else { return }
-            story.pause()
-            story.exploring = true
-            resumeCamera = nil
-            lastComposition = nil
-            compose()
-        }
-        globe.onFrame = { [weak self] in self?.compose() }
-        #if DEBUG
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "-whale-capture-token"), index + 1 < arguments.count {
-            let token = arguments[index + 1]
-            if UUID(uuidString: token) != nil {
-                captureToken = token
-                globe.onDrawn = {
-                    // First submitted frame, not a GPU-completion or performance measurement.
-                    let marker = FileManager.default.temporaryDirectory.appending(path: "whale-capture-ready.txt")
-                    do { try token.write(to: marker, atomically: true, encoding: .utf8) }
-                    catch { NSLog("Whale capture readiness marker failed: %@", error.localizedDescription) }
-                }
-            }
-        }
-        #endif
-
-        let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
-        inspect.delegate = self
-        addGestureRecognizer(inspect)
-        for recognizer in globe.gestureRecognizers ?? [] {
-            if let tap = recognizer as? UITapGestureRecognizer {
-                if tap.numberOfTapsRequired == 1 { tap.require(toFail: inspect) }
-                else { inspect.require(toFail: tap) }
-            }
-        }
+        backgroundColor = .clear
         for layer in [desert, marine, leader, localityDot, fossil, living, detailLeader, limb,
-                      localityName, regionName, detailName] { globe.layer.addSublayer(layer) }
+                      localityName, regionName, detailName] { self.layer.addSublayer(layer) }
         for layer in [desert, marine, fossil, limb] {
             layer.contentsGravity = .resizeAspect
             layer.contentsScale = 3
@@ -151,11 +117,51 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             bodySlices.append(slice)
         }
         story.canvas = self
-        globe.setAuthoredCamera(camera(at: story.preciseTime))
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     isolated deinit { link?.invalidate() }
+
+    /// Lent the globe (it lies over it now): its hooks, and the camera where the visit begins. The
+    /// stage puts back everything set here when the lens closes.
+    func attach() {
+        globe.setAtlasAccessibilityIdentifier("whaleGlobe")
+        globe.onUserNavigation = { [weak self] in
+            guard let self else { return }
+            story.pause()
+            story.exploring = true
+            resumeCamera = nil
+            lastComposition = nil
+            compose()
+        }
+        globe.onFrame = { [weak self] in self?.compose() }
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-whale-capture-token"), index + 1 < arguments.count {
+            let token = arguments[index + 1]
+            if UUID(uuidString: token) != nil {
+                captureToken = token
+                globe.onDrawn = {
+                    // First submitted frame with the visit on the globe, not a GPU-completion or
+                    // performance measurement.
+                    let marker = FileManager.default.temporaryDirectory.appending(path: "whale-capture-ready.txt")
+                    do { try token.write(to: marker, atomically: true, encoding: .utf8) }
+                    catch { NSLog("Whale capture readiness marker failed: %@", error.localizedDescription) }
+                }
+            }
+        }
+        #endif
+        // (the taps' order is asked of this recognizer's delegate, so nothing stays on the globe's own)
+        let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
+        inspect.delegate = self
+        globe.addGestureRecognizer(inspect)
+        globe.setAuthoredCamera(camera(at: story.preciseTime))
+        lastComposition = nil
+        compose()
+    }
+
+    /// Only while it lies on the globe: once the lens has closed, nothing here moves or marks it.
+    private var lent: Bool { superview === globe }
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
@@ -165,15 +171,13 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             ticker.add(to: .main, forMode: .common)
             ticker.isPaused = !isActive
             link = ticker
-            globe.suspended = !isActive
         } else if window == nil {
-            link?.invalidate(); link = nil; lastTick = nil; globe.suspended = true
+            link?.invalidate(); link = nil; lastTick = nil
         }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        globe.frame = bounds
         updateClearAreas()
         lastComposition = nil
         compose()
@@ -197,7 +201,6 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             localKeepClear = [CGRect(x: 0, y: 0, width: bounds.width, height: top),
                               CGRect(x: 0, y: bounds.height - bottom, width: bounds.width, height: bottom)]
         }
-        globe.keepClear = localKeepClear
     }
 
     private var room: CGRect {
@@ -210,15 +213,16 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
         return CGRect(x: 18, y: top, width: max(bounds.width - 36, 1), height: max(bottom - top, 50))
     }
 
+    /// The visit's clock (the globe itself is the playground's to pause).
     func setActive(_ active: Bool) {
         guard active != isActive else { return }
         isActive = active
-        globe.suspended = !active
         link?.isPaused = !active
         lastTick = nil
     }
 
     func seek() {
+        guard lent else { return }
         resumeCamera = nil
         globe.setAuthoredCamera(camera(at: story.preciseTime), duration: reduceMotion ? 0 : 1.2)
         drawnScene = -1
@@ -235,7 +239,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
 
     /// Fossil stone stays still. Touch reveals the drawing's ink instead of making bones breathe.
     func attend() {
-        guard !reduceMotion else { return }
+        guard !reduceMotion, lent else { return }
         let response = CABasicAnimation(keyPath: "opacity")
         response.fromValue = 0.58
         response.toValue = 1
@@ -247,7 +251,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
     fileprivate func tick(_ frame: CADisplayLink) {
         let dt = min(max(frame.timestamp - (lastTick ?? frame.timestamp), 0), 0.1)
         lastTick = frame.timestamp
-        guard story.playing else { return }
+        guard story.playing, lent else { return }
         story.preciseTime = min(story.preciseTime + dt, WhaleStory.duration)
         let fresh = WhaleStory.scene(at: story.preciseTime)
         if fresh != story.scene || frame.timestamp - reportedAt > 0.25 || (story.scene == 0 && story.preciseTime >= 2 && story.date == "Today") {
@@ -396,7 +400,7 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
     }
 
     private func compose() {
-        guard bounds.width > 0, bounds.height > 0 else { return }
+        guard lent, bounds.width > 0, bounds.height > 0 else { return }
         let current = story.followed ? story.scene : -1
         let viewport = room
         let stamp = Composition(camera: globe.authoredCamera, time: story.preciseTime, scene: current,
@@ -512,8 +516,9 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             if desert.opacity > 0.05 || marine.opacity > 0.05 { exclusions.append(habitat.insetBy(dx: -6, dy: -6)) }
             if localityName.opacity > 0 { exclusions.append(localityName.frame) }
             if regionName.opacity > 0 { exclusions.append(regionName.frame) }
-            globe.authoredLabelExclusions = exclusions
-        } else { globe.authoredLabelExclusions = [] }
+            // (and no name under the chrome, the header and the transport)
+            globe.authoredLabelExclusions = localKeepClear + exclusions
+        } else { globe.authoredLabelExclusions = localKeepClear }
 
         var elements: [Any] = []
         if !story.exploring && !artHitFrame.isEmpty {
@@ -523,16 +528,16 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
             animalAccess.accessibilityFrameInContainerSpace = artHitFrame
             elements.append(animalAccess)
         }
-        elements.append(globe)
+        // (the map's own element follows these among the globe's, describing the visit while it is open)
         accessibilityElements = elements
         if accessibleDescription != story.description {
             accessibleDescription = story.description
-            globe.accessibilityLabel = accessibleDescription
+            globe.atlasLabel = accessibleDescription
         }
         if accessibleCamera != globe.authoredCamera {
             accessibleCamera = globe.authoredCamera
             let camera = globe.authoredCamera
-            globe.accessibilityValue = String(format: "Longitude %.2f, latitude %.2f, scale %.2f", camera.lon, camera.lat, camera.zoom)
+            globe.atlasValue = String(format: "Longitude %.2f, latitude %.2f, scale %.2f", camera.lon, camera.lat, camera.zoom)
         }
         drawnScene = story.scene
         CATransaction.commit()
@@ -548,6 +553,15 @@ final class WhaleCanvas: UIView, UIGestureRecognizerDelegate {
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         !story.exploring && !artHitFrame.isEmpty && artHitFrame.contains(touch.location(in: globe))
+    }
+
+    /// A tap on the art waits for the globe's double tap to fail, and the globe's own tap waits for it.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf other: UIGestureRecognizer) -> Bool {
+        other.view === globe && (other as? UITapGestureRecognizer)?.numberOfTapsRequired == 2
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+        other !== gestureRecognizer && other.view === globe && (other as? UITapGestureRecognizer)?.numberOfTapsRequired == 1
     }
 }
 
@@ -566,18 +580,4 @@ private final class WhaleClockLink: NSObject {
     weak var canvas: WhaleCanvas?
     init(_ canvas: WhaleCanvas) { self.canvas = canvas }
     @objc func tick(_ link: CADisplayLink) { canvas?.tick(link) }
-}
-
-struct WhaleCanvasView: UIViewRepresentable {
-    let story: WhaleStory
-    let style: GlobeStyle
-    let active: Bool
-    let reduceMotion: Bool
-    var keepClear: [CGRect] = []
-    func makeUIView(context: Context) -> WhaleCanvas { WhaleCanvas(story: story, style: style) }
-    func updateUIView(_ view: WhaleCanvas, context: Context) {
-        view.reduceMotion = reduceMotion
-        view.setKeepClear(keepClear)
-        view.setActive(active)
-    }
 }

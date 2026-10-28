@@ -37,10 +37,28 @@ struct Prototype: Identifiable {
     let start: (PrototypeStage) -> Void
 }
 
-/// A full-screen surface over the paused globe: a native experience or a pack's page.
+/// A full-screen surface over the paused globe: a native experience with a map of its own (the ocean),
+/// or the films.
 struct PlaygroundScreen: Identifiable {
     let id: String
     let content: () -> AnyView
+}
+
+/// A native experience on the globe itself (`PrototypeStage.openLens`; the camelid and whale
+/// sequences): a canvas lying on the one globe, composing in step with it and driving its authored
+/// camera, and its chrome (date, scrubber, buttons, its reading) over the playground.
+struct PlaygroundLens: Identifiable {
+    let id: String
+    let canvas: any GlobeLensCanvas
+    let chrome: () -> AnyView
+}
+
+/// The part of a lens on the globe: a view laid over it, above its names (`GlobeView.addLens`).
+/// `attach` sets the lens's hooks on the globe and its camera where the experience begins. When the
+/// lens closes the view leaves the globe, which stops its clock, and the stage puts back whatever it
+/// set (`GlobeLease`); off the globe, it changes nothing there.
+protocol GlobeLensCanvas: UIView {
+    func attach()
 }
 
 /// An accessible, visible way in for a prototype on the globe, above the caption.
@@ -52,8 +70,8 @@ struct Invitation: Equatable {
 
 /// One prototype's time on the globe. It is made when the prototype starts and owns everything the
 /// prototype adds (markers and sprites, a pack's script, geography and pictures drawn by the globe, a
-/// date, words at the foot, a panel, a style, a screen, an invitation); `end` takes all of it away, so
-/// the globe is exactly as it was. The workbench's isolation rule lives here.
+/// date, words at the foot, a panel, a style, a screen, a lens, an invitation); `end` takes all of it
+/// away, so the globe is exactly as it was. The workbench's isolation rule lives here.
 @Observable
 final class PrototypeStage {
     let prototype: Prototype
@@ -71,8 +89,12 @@ final class PrototypeStage {
     /// The globe's date while it runs (runtime 2), and what it says at the foot of the screen.
     private(set) var time: GlobeTime?
     private(set) var caption: StageCaption?
+    /// A native experience on the globe itself, while it is open: the playground shows its chrome.
+    private(set) var lens: PlaygroundLens?
 
     @ObservationIgnored private weak var playground: Playground?
+    /// What the open lens may change on the globe, as it was before: put back when it closes.
+    @ObservationIgnored private var lease: GlobeLease?
     @ObservationIgnored private var markers: [GlobeMarker] = []
     @ObservationIgnored private var script: PackScript?
     @ObservationIgnored private var sprites: [String: GlobeMarker] = [:]
@@ -129,6 +151,34 @@ final class PrototypeStage {
     func present<Content: View>(_ id: String, @ViewBuilder _ content: @escaping () -> Content) {
         guard !ended else { return }
         playground?.screen = PlaygroundScreen(id: id) { AnyView(content()) }
+    }
+
+    /// Opens a native experience on the globe itself (a lens): made for the globe, with the way to
+    /// close it, its canvas lies on the globe and its chrome over the playground. The globe is lent as
+    /// the reader has it, with no country chosen, and whatever the lens changes there comes back when
+    /// it closes (`closeLens`, or the prototype ending).
+    func openLens(_ make: (_ globe: GlobeView, _ close: @escaping () -> Void) -> PlaygroundLens) {
+        guard !ended, let globe else { return }
+        closeLens()
+        lease = GlobeLease(globe)
+        let lens = make(globe) { [weak self] in self?.closeLens() }
+        globe.selectedIndex = nil
+        globe.authoredMode = true
+        globe.addLens(lens.canvas)
+        lens.canvas.attach()
+        self.lens = lens
+    }
+
+    /// Back to the globe as the reader left it: the lens's canvas leaves it, and what the lens changed
+    /// is put back. Safe to call more than once.
+    func closeLens() {
+        guard let lens else { return }
+        self.lens = nil
+        if let globe {
+            globe.removeLens(lens.canvas)
+            lease?.restore(globe)
+        }
+        lease = nil
     }
 
     func invite(_ invitation: Invitation, action: @escaping () -> Void) {
@@ -403,6 +453,7 @@ final class PrototypeStage {
     func end() {
         guard !ended else { return }
         ended = true
+        closeLens()
         for m in markers { globe?.remove(m) }
         markers = []
         if let script {
@@ -439,5 +490,57 @@ final class PrototypeStage {
         openAction = nil
         canOpen = false
         style = .base
+    }
+}
+
+/// What a lens may change on the globe, as it was when the lens opened (`PrototypeStage.openLens`):
+/// its hooks, its modes, its camera and chosen country, what VoiceOver reads of it and the gestures on
+/// it. What the lens draws lies in its canvas and leaves with it; the globe's style, room, pause and
+/// keep-clear stay the playground's, which a lens never sets.
+private struct GlobeLease {
+    let authoredMode: Bool
+    let historicalReference: Bool
+    let labelExclusions: [CGRect]
+    let onFrame: (() -> Void)?
+    let onUserNavigation: (() -> Void)?
+    let onDrawn: (() -> Void)?
+    let camera: GlobeCamera
+    let selected: Int?
+    let label: String?
+    let value: String?
+    let identifier: String?
+    let recognizers: [UIGestureRecognizer]
+
+    init(_ globe: GlobeView) {
+        authoredMode = globe.authoredMode
+        historicalReference = globe.historicalReference
+        labelExclusions = globe.authoredLabelExclusions
+        onFrame = globe.onFrame
+        onUserNavigation = globe.onUserNavigation
+        onDrawn = globe.onDrawn
+        // (where a flight is taking it: a debug launch opens the lens while the stage flies to its anchor)
+        camera = globe.restingCamera
+        selected = globe.selectedIndex
+        label = globe.atlasLabel
+        value = globe.atlasValue
+        identifier = globe.accessibilityIdentifier
+        recognizers = globe.gestureRecognizers ?? []
+    }
+
+    func restore(_ globe: GlobeView) {
+        for g in globe.gestureRecognizers ?? [] where !recognizers.contains(where: { $0 === g }) {
+            globe.removeGestureRecognizer(g)
+        }
+        globe.onFrame = onFrame
+        globe.onUserNavigation = onUserNavigation
+        globe.onDrawn = onDrawn
+        globe.authoredLabelExclusions = labelExclusions
+        globe.historicalReference = historicalReference
+        globe.setAuthoredCamera(camera)
+        globe.selectedIndex = selected
+        globe.atlasLabel = label
+        globe.atlasValue = value
+        globe.setAtlasAccessibilityIdentifier(identifier)
+        globe.authoredMode = authoredMode
     }
 }

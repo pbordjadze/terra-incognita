@@ -1,7 +1,8 @@
 import Foundation
 import XCTest
 
-/// Real native controls and gestures, with held launch times used only to reach review scenes.
+/// Real native controls and gestures, with held launch times used only to reach review scenes. The
+/// sequence lies on the playground's one globe, which answers to "camelidGlobe" while it is open.
 final class CamelidEncounterTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
@@ -68,6 +69,9 @@ final class CamelidEncounterTests: XCTestCase {
         XCTAssertTrue(resume.waitForExistence(timeout: 15), "Returning from the background must leave playback paused")
         app.buttons["camelidClose"].tap()
         XCTAssertTrue(animal.waitForExistence(timeout: 15), "Leaving must not require an ending")
+        XCTAssertTrue(animal.isHittable, "Leaving must give the globe back where the reader had it")
+        XCTAssertTrue(element("mainAtlasGlobe", in: app).exists, "The globe is the atlas's again")
+        XCTAssertFalse(element("camelidGlobe", in: app).exists)
     }
 
     @MainActor func testGlobeGesturesYieldAndMilestonesRemainCoherent() {

@@ -1,13 +1,17 @@
 import SwiftUI
+import UIKit
 
-/// A quiet authored lens on the atlas. All reading is optional and leaves the playback paused.
+/// A quiet authored lens on the atlas: the sequence composes on the playground's one globe
+/// (`CamelidCanvas`), and this chrome lies over it. All reading is optional and leaves the playback
+/// paused.
 struct CamelidExperience: View {
-    let style: GlobeStyle
-    @Environment(\.dismiss) private var dismiss
+    @Bindable var story: CamelidStory
+    let canvas: CamelidCanvas
+    /// Back to the atlas: the stage closes the lens and gives the globe back as it was.
+    let close: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
-    @State private var story = CamelidStory()
     private let ink = Color(red: 0.23, green: 0.17, blue: 0.09)
     private let paper = Color(red: 0.95, green: 0.89, blue: 0.78)
     private let blue = Color(red: 0.31, green: 0.30, blue: 0.47)
@@ -19,17 +23,22 @@ struct CamelidExperience: View {
         #endif
     }
 
+    /// The sequence on the globe, made for it, and its chrome (`PrototypeStage.openLens`).
+    static func lens(on globe: GlobeView, close: @escaping () -> Void) -> PlaygroundLens {
+        let story = CamelidStory()
+        let canvas = CamelidCanvas(story: story, globe: globe)
+        return PlaygroundLens(id: "camelid", canvas: canvas) {
+            AnyView(CamelidExperience(story: story, canvas: canvas, close: close))
+        }
+    }
+
     var body: some View {
+        // (the globe beneath is the playground's: the empty middle leaves it to the reader's hands)
         ZStack {
-            paper.ignoresSafeArea()
-            CamelidCanvasView(story: story, style: style,
-                              active: scenePhase == .active && story.reading == nil,
-                              reduceMotion: reduceMotion)
-                .ignoresSafeArea()
             VStack(spacing: 0) {
             VStack(spacing: 6) {
                 HStack {
-                    Button { story.pause(); dismiss() } label: {
+                    Button { story.pause(); close() } label: {
                         Image(systemName: "xmark").frame(width: 44, height: 44)
                     }
                     .accessibilityLabel("Return to atlas")
@@ -69,7 +78,7 @@ struct CamelidExperience: View {
                 Spacer(minLength: 0)
             }
             if !story.followed && !story.exploring {
-                Button { story.canvas?.attend() } label: { Color.clear }
+                Button { canvas.attend() } label: { Color.clear }
                     .frame(width: 220, height: 220)
                     .accessibilityLabel("Dromedary camel")
                     .accessibilityHint("Responds to your touch")
@@ -87,7 +96,9 @@ struct CamelidExperience: View {
                 .preferredColorScheme(.light)
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { story.pause() } }
-        .onDisappear { story.pause(); story.canvas?.setActive(false) }
+        .onChange(of: scenePhase == .active && story.reading == nil, initial: true) { _, active in canvas.setActive(active) }
+        .onChange(of: reduceMotion, initial: true) { _, reduced in canvas.reduceMotion = reduced }
+        .onDisappear { story.pause(); canvas.setActive(false) }
         .statusBarHidden()
     }
 
@@ -157,7 +168,7 @@ struct CamelidExperience: View {
                             .accessibilityIdentifier("camelidStory")
                         Button("The evidence") { story.open(.evidence) }
                         Button("Return to the camel") { story.inspectCamel() }
-                        Button("Return to atlas") { story.pause(); dismiss() }
+                        Button("Return to atlas") { story.pause(); close() }
                     } label: {
                         Image(systemName: "ellipsis").frame(width: 44, height: 44)
                     }

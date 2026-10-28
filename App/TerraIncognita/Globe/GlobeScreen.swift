@@ -19,11 +19,15 @@ struct GlobeScreen: View {
 
     /// What an active prototype puts at the foot instead of the caption (its words and its date).
     let foot: AnyView?
+    /// A lens's chrome lies over the screen: the caption and the invitation keep their place (the
+    /// globe's room is measured with them) but are neither shown nor read.
+    let quiet: Bool
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil, foot: AnyView? = nil,
-         onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
+         quiet: Bool = false, onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
         self.active = active
         self.foot = foot
+        self.quiet = quiet
         self.style = style
         self.keepClear = keepClear
         self.invitation = invitation
@@ -68,6 +72,7 @@ struct GlobeScreen: View {
                     CaptionView(caption: caption, style: Self.style)
                 }
             }
+            .unseen(quiet)
             .id(foot == nil ? caption.title + style.rawValue + (invitation?.id ?? "") : "foot")
             .transition(.opacity.combined(with: .offset(y: 8)))
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
@@ -115,6 +120,16 @@ struct GlobeScreen: View {
     /// title in the manuscript's ink.
     static let style = GlobeType.shared?.styles[GlobeStyle.wikipedia.rawValue]?.caption
     static let persianStyle = GlobeType.shared?.styles[GlobeStyle.persian.rawValue]?.caption
+}
+
+extension View {
+    /// Hidden but keeping its place, when asked (`hidden()`: neither seen, touched nor read): under a
+    /// lens's chrome the caption and the buttons keep the room they give the globe. (Opacity and
+    /// accessibilityHidden leave the glass buttons in VoiceOver's reach, and the workbench's button
+    /// half-touchable after.)
+    @ViewBuilder func unseen(_ unseen: Bool) -> some View {
+        if unseen { hidden() } else { self }
+    }
 }
 
 /// The caption in the Persian style, as the manuscript opens its text: an illuminated headpiece with
