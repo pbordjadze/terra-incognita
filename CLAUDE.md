@@ -143,6 +143,10 @@ Keep design discussions and plans in that private repository.
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
   - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
+  - `qa-explore.yml`, exploratory QA on request: an agent uses the app in a simulator through
+    Maestro's MCP server and reports (`refs/qa-runs/<run id>`); `ci/qa/README.md` says how. It
+    and `ci/qa/` are generated from the copy all the apps share (painting-company row 152):
+    change them there and sync, never here.
   - `packs.yml` (Linux only): a push that changes only web packs skips the macOS workflow; this one
     validates them and, once R2 is configured (repository secrets), publishes changed packs as new
     revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
