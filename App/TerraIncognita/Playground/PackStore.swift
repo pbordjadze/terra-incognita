@@ -865,15 +865,16 @@ final class PackStore {
         guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        guard manifest.runtime == runtime else {
-            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime \(runtime), drawn by the globe")
+        // (runtime 4 hosts runtime-3 packs unchanged: docs/runtime3.md)
+        guard manifest.runtime >= 3, manifest.runtime <= runtime else {
+            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime 3 and \(runtime), drawn by the globe")
         }
         guard manifest.presentation == "globe" else {
             throw PackError("presentation must be “globe”: every pack lives on the globe")
         }
         guard let scripts = manifest.scripts, !scripts.isEmpty else { throw PackError("it lists no scripts") }
         var named = scripts
-        named += manifest.doorway?.look.pictures ?? []
+        if let door = manifest.doorway { named += (door.looks ?? door.look.map { [$0] } ?? []).flatMap(\.pictures) }
         for path in named where !PackRules.isSafePath(path) {
             throw PackError("“\(path)” is not a path inside the pack")
         }
