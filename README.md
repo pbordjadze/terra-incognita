@@ -12,27 +12,29 @@ On the workbench today:
   their original artwork, evidence and textual equivalents are bundled.
 - **A small thing, far from home**: an offline historical encounter in the Indian Ocean; its
   research ledger is [docs/encounter-research.md](docs/encounter-research.md).
-- **A gathering of water** (a river study, [docs/water-engineering.md](docs/water-engineering.md))
-  and **The sea between** (an engraved Aegean leaf, `Leaf/SOURCES.md`).
+- **A gathering of water** (`Prototypes/gathering-of-water/`): South America's rivers on the globe;
+  touch one to follow where its water goes. **The sea between** (`Prototypes/sea-between/`): an
+  engraved Aegean leaf lying on the globe, with notes and a sounding glass.
 - **Sounding the deep** (`Prototypes/sounding-the-deep/`): HMS Challenger exploring the deep
   ocean, 1873–76, drawn by the globe itself; touch a station to lower the line to its recorded depth.
 - **Borders on old maps** (`Prototypes/borders-on-old-maps/`): Europe on eight dated maps drawn on
   the globe; a chosen country filled, its outline on the map before dashed.
-- **Delivery check**: the example web pack (`Prototypes/hello-pack/`).
+- **Delivery check** (parked): the smallest pack (`Prototypes/hello-pack/`).
 - Parked: **The Persian globe** (the globe in colours from a 1529 manuscript) and **The film** (a
   flight from the whole world down to a street in five looks: Aisling's Forest, Paper Almanac,
   Night Voyage, Chalk and Slate, The Sampler).
 
 The code:
 
-- `App/TerraIncognita/Playground/`: the workbench, the one active prototype's stage, the catalog of
-  native prototypes, and the host for web packs (`Prototypes/`, bundled or downloaded).
+- `App/TerraIncognita/Playground/`: the workbench, the doorways, the one active prototype's stage, the
+  catalog of native prototypes, and runtime 3, which runs packs' scripts in JavaScriptCore
+  (`Prototypes/`, bundled or downloaded from the `packs` branch; [docs/runtime3.md](docs/runtime3.md)).
 - `App/TerraIncognita/Globe/`: the globe; its data, `Globe/`, is made by `tools/globe/build.py`.
 - `App/TerraIncognita/Atlas/`: the film player; `Atlas/` holds each look's plates, made by
   `tools/plates/export.cjs` from the look's page (`tools/plates/<look>/index.html`).
-- `App/TerraIncognita/{Camelid,Whale,Experience,Water,Leaf}/`: the native experiences and the hosts
-  of the bundled studies (`Water/`, `Leaf/`).
-- `tools/playground/`: scaffold, preview, check, pack and publish web prototypes.
+- `App/TerraIncognita/{Camelid,Whale,Experience}/`: the native experiences. `Leaf/` and `Water/` are the
+  former web studies, kept as the sources their packs are built from.
+- `tools/playground/`: scaffold, preview, check, pack and publish packs.
 - The first demo, the map drawn in characters by WebGL, is retired; it is in the history at 1f9b941.
 
 Install from SideStore: add `https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json`.

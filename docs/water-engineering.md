@@ -1,5 +1,9 @@
 # Bundled river instrument
 
+> October 28, 2026: the study is now the runtime-3 pack `Prototypes/gathering-of-water/`, built by
+> `tools/water/build_pack.py` from the data described here. `Water/` is no longer in the app; what
+> follows describes that data and the former web study.
+
 An offline surface in `Water/`, hosted by `WaterScreen`. Open it with the wave button
 in the original atlas controls; Back to atlas returns to the existing view. Entry uses ordinary
 SwiftUI presentation and does not depend on a signing identifier or launch argument.

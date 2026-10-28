@@ -29,13 +29,13 @@ final class PlaygroundTests: XCTestCase {
         defer { app.terminate() }
         openWorkbench(in: app)
         let listed = listedPrototypes(in: app)
-        for id in ["plain", "camelid", "whale", "ocean", "water", "leaf", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "film"] {
+        for id in ["plain", "camelid", "whale", "ocean", "gathering-of-water", "sea-between", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "film"] {
             XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }
     }
 
-    /// A native prototype on the globe and its screen, then a web study on its own screen, then the
-    /// plain globe again: each start ends the one before, and nothing they made outlives them.
+    /// A native prototype on the globe and its screen, then a pack lying on the globe, then the atlas
+    /// again: each start ends the one before, and nothing they made outlives them.
     @MainActor func testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind() {
         let app = XCUIApplication()
         app.launch()
@@ -53,17 +53,16 @@ final class PlaygroundTests: XCTestCase {
         close.tap()
         XCTAssertTrue(camel.waitForExistence(timeout: 15), "Closing its screen leaves it on the globe until ended")
 
-        startPrototype("leaf", in: app)
+        startPrototype("sea-between", in: app)
         XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists, "Starting another ends the first")
-        let leafMenu = app.buttons["Open the leaf menu"].firstMatch
-        XCTAssertTrue(leafMenu.waitForExistence(timeout: 45), "The leaf opens on its own screen")
+        XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45),
+                      "The leaf, a pack now, lies on the globe and says what it is")
+        Thread.sleep(forTimeInterval: 1.5)
         attach("12-leaf", in: app)
-        let back = app.buttons["Return to the atlas"].firstMatch
-        XCTAssertTrue(back.waitForExistence(timeout: 10))
-        back.tap()
+        endPrototype(in: app)
 
         XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15))
-        XCTAssertFalse(app.descendants(matching: .any)["activePrototype"].firstMatch.exists, "An own-screen prototype ends with its screen")
+        XCTAssertFalse(app.descendants(matching: .any)["activePrototype"].firstMatch.exists, "Ending it from its chip ends it")
         XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists)
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Back on the plain globe, nothing from either prototype is alive")

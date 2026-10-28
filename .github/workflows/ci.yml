@@ -76,17 +76,13 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
-          python3 ci/check_leaf.py 2>&1 | tee -a out/plates-check.log || rc=1
-          for f in Leaf/*.js Leaf/data/*.js tools/aegean/*.cjs; do
+          for f in tools/aegean/*.cjs; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          node ci/check_water.cjs 2>&1 | tee -a out/plates-check.log || rc=1
           # the playground's bundled packs and tools (docs/playground.md)
           python3 tools/playground/playground.py validate 2>&1 | tee -a out/plates-check.log || rc=1
           python3 tools/playground/test_playground.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
           for f in $(find Prototypes -name '*.js') tools/playground/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
-          node --check Water/water.js || rc=1
-          node --check Water/core.js || rc=1
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
@@ -138,7 +134,7 @@ jobs:
           # the plates and the globe's maps must reach the app byte for byte (an image tool would
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe Leaf Water Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Atlas Globe Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter
@@ -150,12 +146,12 @@ jobs:
           # Focused branch checks support iteration; main's publication gate is always full.
           if [ "$GITHUB_REF_NAME" != main ]; then
             case "${{ inputs.interaction_suite }}" in
-              leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
+              leaf) export UI_TEST_TARGET=TerraIncognitaUITests/MovedPackTests ;;
               whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
-              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests" ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests" ;;
             esac
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
-              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests"
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests"
             fi
           fi
           # A remote revision of the bundled hello-pack, served on this machine for RemotePackTests:

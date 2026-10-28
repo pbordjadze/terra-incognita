@@ -29,7 +29,7 @@ Keep design discussions and plans in that private repository.
   workbench's Live line counts stages, markers, globes, films and scripts: ending a prototype returns
   them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
   - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
-    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf`, `-look`/`-film`,
+    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf` (the sea between), `-look`/`-film`,
     `-globeStyle persian` start the matching prototype.
   - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
@@ -74,17 +74,12 @@ Keep design discussions and plans in that private repository.
     `type.json` is the type (Design rules).
   - Debug builds take `-globe-at lon lat zoom` (held there) and `-globe-select <name>`
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
-- **The Aegean leaf** (`Leaf/`, `App/TerraIncognita/Leaf/`): an offline HTML/canvas leaf in an ephemeral
-  WKWebView, the `leaf` prototype (its own screen). The Metal globe and plate player are suspended while it
-  is open. The host supplies system text size, Reduce Motion and scene activity and permits only
-  bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
-  - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
-    vectors; never hand-edit `Leaf/data/chart.js`. Then run `tools/aegean/paint.cjs` against the local
-    server to prepare both matching engraving images. Runtime uses no fetch, external service or storage.
-  - `node tools/aegean/serve.cjs` previews it locally; `node tools/aegean/check.cjs` exercises the actual
-    browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
-    `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;
-    manual CI can select `leaf_only` to avoid photographing every film and globe style.
+- **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
+  on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass
+  (`SOURCES.md` in the pack). `-leaf` starts it. It is built from the former web leaf in `Leaf/`, which
+  is no longer in the app and stays as its source: `tools/aegean/build.py <cache>` prepares
+  `Leaf/data/chart.js` (never hand-edit), `tools/aegean/paint.cjs` its engravings, and
+  `tools/aegean/pack.cjs` with `pack_engraving.py` the pack from them.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
   `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
@@ -111,8 +106,10 @@ Keep design discussions and plans in that private repository.
   suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
   are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
 - **The other studies**: the Indian Ocean encounter (`App/TerraIncognita/Experience/`, `ocean`: a seed
-  off Madagascar and an invitation), the river study (`Water/`, `App/TerraIncognita/Water/`, `water`;
-  `docs/water-engineering.md`).
+  off Madagascar and an invitation), the river study **A gathering of
+  water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each
+  traced to the sea), built by `tools/water/build_pack.py` from the former web study's data in
+  `Water/` (no longer in the app; `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
   prototypes in succession with the live counts back to the plain globe's, parked work, the bundled
@@ -185,9 +182,8 @@ and what every experience relies on and none owns. When in doubt, it's runtime.
 - **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
   date and touches rather than taking them, and leaves nothing behind when its experience ends.
 - **Runtime 3 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
-  them; the pack web host is gone. The Aegean leaf and the river study, still web pages in their own
-  screens, are being moved onto it; their web hosts go when they have. The native prototypes move
-  onto the runtime's tools when they are next reworked.
+  them. There are no web views in the app: the Aegean leaf and the river study are packs now. The
+  native prototypes move onto the runtime's tools when they are next reworked.
 
 ## Design rules
 

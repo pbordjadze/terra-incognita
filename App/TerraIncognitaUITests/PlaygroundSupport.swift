@@ -4,7 +4,7 @@ import XCTest
 extension XCTestCase {
     /// What the globe leaves alive with no prototype running: one globe, nothing else (the doorways are
     /// the atlas's own, not counted).
-    static let plainGlobeLive = "stages 0 · markers 0 · globes 1 · films 0 · scripts 0 · web views 0"
+    static let plainGlobeLive = "stages 0 · markers 0 · globes 1 · films 0 · scripts 0"
 
     @MainActor func openWorkbench(in app: XCUIApplication) {
         let button = app.buttons["workbenchButton"].firstMatch

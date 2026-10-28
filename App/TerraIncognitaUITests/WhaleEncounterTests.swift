@@ -70,7 +70,7 @@ final class WhaleEncounterTests: XCTestCase {
         XCTAssertTrue(fossil.waitForExistence(timeout: 15))
         XCTAssertTrue(fossil.isHittable, "Leaving must preserve the original atlas position")
         openWorkbench(in: app)
-        XCTAssertTrue(workbenchItem("water", in: app).exists, "The independent atlas studies must remain available")
+        XCTAssertTrue(workbenchItem("gathering-of-water", in: app).exists, "The independent atlas studies must remain available")
         app.buttons["workbenchClose"].firstMatch.tap()
         fossil.tap()
         XCTAssertTrue(follow.waitForExistence(timeout: 15), "Reopening must not require finishing the earlier visit")

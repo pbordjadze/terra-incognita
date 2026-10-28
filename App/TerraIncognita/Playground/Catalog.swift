@@ -13,7 +13,7 @@ enum Catalog {
             frames: [image], fps: 1, size: size, minZoom: minZoom, maxZoom: .infinity, every: nil, duration: nil, face: false)])
     }
 
-    static let native: [Prototype] = [camelid, whale, ocean, water, leaf, persian, film]
+    static let native: [Prototype] = [camelid, whale, ocean, persian, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`).
     static let camelid = Prototype(
@@ -59,24 +59,6 @@ enum Catalog {
         stage.place(GlobeMarker(id: "oceanSeed", lon: 46.3, lat: -19.0, look: .seal(symbol: "leaf"), size: CGSize(width: 44, height: 44),
                                 label: "A small thing, far from home", actionName: "Look closer at the island's seed", onOpen: open))
         stage.invite(Invitation(id: "oceanInvitation", title: "A small thing, far from home", action: "Look closer  ↗"), action: open)
-    }
-
-    /// The river study (`Water/`, a bundled web page in its own host).
-    static let water = Prototype(
-        id: "water", title: "A gathering of water",
-        summary: "A river study in South America: touch the network to follow where its water goes.",
-        ownScreen: true
-    ) { stage in
-        stage.present("water") { WaterStudyScreen() }
-    }
-
-    /// The Aegean leaf (`Leaf/`, a bundled web page in its own host).
-    static let leaf = Prototype(
-        id: "leaf", title: "The sea between",
-        summary: "An engraved leaf of the Aegean to look at and touch, with optional notes on its places.",
-        ownScreen: true
-    ) { stage in
-        stage.present("leaf") { LeafScreen() }
     }
 
     /// The globe's second style, parked: the Wikipedia style is the base for now (`Globe.metal`'s P_).
