@@ -45,9 +45,7 @@ struct PlaygroundRoot: View {
                 .padding(.trailing, inset)
                 .padding(.top, style == .persian ? PersianCaption.pageRoom : 8)
                 // (under a lens's chrome they keep their place, so the globe's room stays as it was)
-                .opacity(lens == nil ? 1 : 0)
-                .allowsHitTesting(lens == nil)
-                .accessibilityHidden(lens != nil)
+                .unseen(lens != nil)
             }
             .animation(.easeInOut(duration: 0.25), value: playground.stage?.prototype.id)
             // a lens: the experience on the globe itself, its chrome over the globe it drives
