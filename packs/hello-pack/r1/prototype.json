@@ -1,0 +1,17 @@
+{
+  "id": "hello-pack",
+  "title": "Delivery check",
+  "summary": "A test pack: which revision arrived, and from where. Tap the sea for a ring.",
+  "runtime": 3,
+  "presentation": "globe",
+  "scripts": [
+    "main.js"
+  ],
+  "anchor": {
+    "lon": -30,
+    "lat": 30,
+    "zoom": 1.6
+  },
+  "taps": true,
+  "shelf": "parked"
+}

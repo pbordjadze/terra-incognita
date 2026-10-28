@@ -1,0 +1,486 @@
+{
+  "format": 1,
+  "generated": "2026-10-28T03:16:23-04:00",
+  "packs": [
+    {
+      "id": "borders-on-old-maps",
+      "revision": 1,
+      "runtime": 3,
+      "title": "Borders on old maps",
+      "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "f691b42bfcdd38ca2d105988e7401795fced89a96163d89c2dae4b8f637e09ad",
+      "path": "packs/borders-on-old-maps/r1/",
+      "bytes": 856484,
+      "files": [
+        {
+          "path": "LICENSE-HISTORY.txt",
+          "bytes": 35147,
+          "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+        },
+        {
+          "path": "LICENSE-NATURAL-EARTH.md",
+          "bytes": 4636,
+          "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b"
+        },
+        {
+          "path": "SOURCES.md",
+          "bytes": 1771,
+          "sha256": "b45f7d752e6a6a6269838c57f65994055994bb52304ff437ba87ddfc41dc2e98"
+        },
+        {
+          "path": "about.js",
+          "bytes": 2142,
+          "sha256": "77e7c25dfb1212738701f3866f7276657a8ac828015c508ef5b4bbae37d589fb"
+        },
+        {
+          "path": "borders.js",
+          "bytes": 9980,
+          "sha256": "0e2fae850ad6a469c6d5787b37462512ba17e4d5e23e505ef66f428c7994f02f"
+        },
+        {
+          "path": "data.js",
+          "bytes": 801646,
+          "sha256": "15d08def7cffef6e73e0f692b8a4c039eef671f1ddc89372bf439e65a3b1c44a"
+        },
+        {
+          "path": "ghost.png",
+          "bytes": 523,
+          "sha256": "53b769f1b353904dcf0053d006bb13f64abbdd482afc18468b9716b12dc5cd81"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 639,
+          "sha256": "c384705cb4464e8d3078458d3ded9eb37b9308efd30a0e9385fe481d465df0a1"
+        }
+      ],
+      "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    },
+    {
+      "id": "gathering-of-water",
+      "revision": 1,
+      "runtime": 3,
+      "title": "A gathering of water",
+      "summary": "The rivers of South America on the globe: touch one to follow its water to the coast and see the tributaries that gather into it.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "f5a8a6eac73a7cdb45db4fa0466bb643654864eb4781c67bc1f69588f6a0d139",
+      "path": "packs/gathering-of-water/r1/",
+      "bytes": 2479117,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 4837,
+          "sha256": "c6b06b21089a799f7da01f4491c5fcd21013e4dd76972521fb93e1833d846f27"
+        },
+        {
+          "path": "about.json",
+          "bytes": 4612,
+          "sha256": "c71313096e6a32c8e90eb893ed912bffbbc0e41fa1db1df4d0401448177ad952"
+        },
+        {
+          "path": "core.js",
+          "bytes": 7205,
+          "sha256": "b06e7d8425488a549804a0e3eb5aa5e396a37cd1dd7e2348b1a67836a89c1848"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 12325,
+          "sha256": "d2000ad2c37f1a23976ba59e9804358a15bad5199a73de5abb3e82401ed1b2b9"
+        },
+        {
+          "path": "glint.png",
+          "bytes": 1552,
+          "sha256": "6f46a3ee53b99f964b6deafb176a27bd114fde32b6e3f7ae3aaa9415807f16e7"
+        },
+        {
+          "path": "main.js",
+          "bytes": 22429,
+          "sha256": "b90ca67ca2c808f2d26bed41fc517dbe6869a768a96c368f607081cbcb3643a8"
+        },
+        {
+          "path": "network.json",
+          "bytes": 2422325,
+          "sha256": "cf9515ad08b57adced901ed8576b1272169e07fee8d0c20b2f58315d96f131bd"
+        },
+        {
+          "path": "places.json",
+          "bytes": 3258,
+          "sha256": "6bf608ff612f301e073b50f21e43e3eb9ab246ee63c250e0bf3fd2a7c1baae7b"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 574,
+          "sha256": "53c5e336dfb1a5fbc75bdfbb3b66ec708580ceb71acda4c7c408b3e1e157ff2f"
+        }
+      ],
+      "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    },
+    {
+      "id": "hello-pack",
+      "revision": 1,
+      "runtime": 3,
+      "title": "Delivery check",
+      "summary": "A test pack: which revision arrived, and from where. Tap the sea for a ring.",
+      "presentation": "globe",
+      "shelf": "parked",
+      "hash": "39d5a050a1c765148e24ed88eb05f28f657ff12c69732268a885f06ef83c90fd",
+      "path": "packs/hello-pack/r1/",
+      "bytes": 2000,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 333,
+          "sha256": "6e1334bd85839d234dd37b159c73e157ac8a5ebea48eea5c895844739097a622"
+        },
+        {
+          "path": "main.js",
+          "bytes": 1340,
+          "sha256": "ac61bea5951a55e846cf3190340cf32eca0e9112f8dccdeedf859009cab3d624"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 327,
+          "sha256": "55be9df7df1e3be6e43884c4ac0d04f18c4b41ec9840244601d6fda1676bf7f5"
+        }
+      ],
+      "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    },
+    {
+      "id": "sea-between",
+      "revision": 1,
+      "runtime": 3,
+      "title": "The sea between",
+      "summary": "An engraved chart of the Aegean lying on the globe: sound the sea between the islands, and read its notes on the wind, a caldera, a palm and the deep.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "957ce0aad1cb93dff98b267b931d2820eca8cfdf8e39b0704dd3dfdf706c42dd",
+      "path": "packs/sea-between/r1/",
+      "bytes": 1260019,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 8075,
+          "sha256": "dadc2f819f1c424398dd8b3c7476ca782a9676785d1acde7bed418a5bb2eaca3"
+        },
+        {
+          "path": "blow-1.png",
+          "bytes": 1155,
+          "sha256": "dd507d1f6b9c41892667d62ca23aa9005321fc30452fa66493d613a29de5e493"
+        },
+        {
+          "path": "blow-2.png",
+          "bytes": 1962,
+          "sha256": "b05c3fd6b77954a655aaf4139dcb3f91c7707b9a5ad18b24dedf5a5cd6c33737"
+        },
+        {
+          "path": "blow-3.png",
+          "bytes": 2536,
+          "sha256": "e415dae5cdc8a5f769acecccf6db66f4e0df02bf2b6057c4bc0d9cf0d401e954"
+        },
+        {
+          "path": "blow-4.png",
+          "bytes": 2818,
+          "sha256": "a0d1b0814aff9913fd38eb2a148e0fe1f09e43f01c80b178f1145b3b24a92be2"
+        },
+        {
+          "path": "data.js",
+          "bytes": 267074,
+          "sha256": "a207552ea7d21428d1baa9a3084e07f9fc67d2fb32e0b380d3a8fa355d25ac17"
+        },
+        {
+          "path": "engraving.png",
+          "bytes": 713382,
+          "sha256": "f015a776aca525d720c33b1bbc74d79c5b33b3b936f1f7c485d798f8d78c6dce"
+        },
+        {
+          "path": "main.js",
+          "bytes": 26013,
+          "sha256": "f6b6cfc035925243fee9f92326c02214431de6a526a389e9787b09993b7ce7ae"
+        },
+        {
+          "path": "notes.js",
+          "bytes": 5096,
+          "sha256": "62a101a29e6d9d058a89f47e26fef334df2bbc6f64cc078a22a92f515f639cf6"
+        },
+        {
+          "path": "palm.png",
+          "bytes": 7494,
+          "sha256": "9fc202d4c2d9f703b128035a96b5c39cbf2d49bebd94ea976432f15412ac4fdd"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 543,
+          "sha256": "9899c42c2f0e8619e385ef571cd6e386cc164b356a1eb0b3b573dbd49f68e364"
+        },
+        {
+          "path": "skiff-1.png",
+          "bytes": 9957,
+          "sha256": "5952441652306f81c9dc8df1b886062e9a2053df970842572c23802cde91b27e"
+        },
+        {
+          "path": "skiff-2.png",
+          "bytes": 9492,
+          "sha256": "b5aed6ca34ec551cee9783edd6faab8116d22ab22757ab20422f5e6d8b132a59"
+        },
+        {
+          "path": "skiff-3.png",
+          "bytes": 9730,
+          "sha256": "f72434e5ed1932c8cf4d14d25d8f644e06772d9563b960db6e27002a1aa1b6bb"
+        },
+        {
+          "path": "skiff-4.png",
+          "bytes": 9389,
+          "sha256": "68066453ed1d9c674948f630512d0a9b00023b8d432fcb12e75fc7a42aa99e68"
+        },
+        {
+          "path": "skiff-5.png",
+          "bytes": 9934,
+          "sha256": "7857da240c34ff5fddb71ee633f2b6be11a9bba090fe8c5842fb2496603e090c"
+        },
+        {
+          "path": "skiff-6.png",
+          "bytes": 9470,
+          "sha256": "b20edd62da9d678181b2be1f46ae2564a27576ba3d5eaf6894c59e6c8978250e"
+        },
+        {
+          "path": "skiff-7.png",
+          "bytes": 9754,
+          "sha256": "98d245aea5f4a8e4f55edcefbcd1c7a16009696aa0512a93f5ab964cf31caa2c"
+        },
+        {
+          "path": "skiff-8.png",
+          "bytes": 9560,
+          "sha256": "8b4e6067bde5e993207e1624e9ec31190cb43287133b6aa2e4fc3b6804a60f1b"
+        },
+        {
+          "path": "skiff-folded-1.png",
+          "bytes": 8971,
+          "sha256": "5ba85a73e7537be5fe9ad607e87e67689faa9e44bca9db5ed83061990396dbf1"
+        },
+        {
+          "path": "skiff-folded-2.png",
+          "bytes": 8901,
+          "sha256": "0661e2c554807e6df01a7bae4513fc9a0b21036b8e8aefe1674ee99b6984318b"
+        },
+        {
+          "path": "skiff-folded-3.png",
+          "bytes": 8828,
+          "sha256": "3bd0b8033a68b119347ad2f659483afde15c5e48c73a7d60617c9ce6e663006b"
+        },
+        {
+          "path": "skiff-folded-4.png",
+          "bytes": 8787,
+          "sha256": "8602f8f837a4471631073c8d95236ef3aea65b4b736fe9715377020b5cdc4aff"
+        },
+        {
+          "path": "skiff-folded-5.png",
+          "bytes": 8969,
+          "sha256": "c99f630d3793aa5c4c512caa26b1d6773010d2f23480ac03c2c7567a9a0d9e95"
+        },
+        {
+          "path": "skiff-folded-6.png",
+          "bytes": 8962,
+          "sha256": "185437ed2b289065c1ef47d50dba19d253213d50b7253275c2c460502a46a760"
+        },
+        {
+          "path": "skiff-folded-7.png",
+          "bytes": 9046,
+          "sha256": "e5933a19b87e339e52c8da81f09214edb8cadc2d3a270487e6beddb5c49cb792"
+        },
+        {
+          "path": "skiff-folded-8.png",
+          "bytes": 8881,
+          "sha256": "8a59ac7eb810883a4bb4a933df196af64c8ebd6e4ff245cb00dec0f7cc9da7e4"
+        },
+        {
+          "path": "stream-01.png",
+          "bytes": 1399,
+          "sha256": "f0843fd65c603528738f4dc616baeb4dff95fddd91e7f276198e6d7a6c67001f"
+        },
+        {
+          "path": "stream-02.png",
+          "bytes": 1399,
+          "sha256": "9c75f50d18c2cbc9f10561d7799d5def39ce26b01db12132f8898bc8cd7f355e"
+        },
+        {
+          "path": "stream-03.png",
+          "bytes": 1367,
+          "sha256": "a1c48bef6aa5a887be2b91b88fee0bbf2361fd1b44a266e6249a8a0be5e13dc0"
+        },
+        {
+          "path": "stream-04.png",
+          "bytes": 1365,
+          "sha256": "3e2f92412a757402ac984e4d7614d99510467febbaf420ec806ff0d24f57cf3b"
+        },
+        {
+          "path": "stream-05.png",
+          "bytes": 1367,
+          "sha256": "e5b265248493b39cf891dc0dba108cdba0c58cf67d3acd7662309463c95e69d4"
+        },
+        {
+          "path": "stream-06.png",
+          "bytes": 1353,
+          "sha256": "6cafc87844cae2e3090777faed809af6efe4491b40c9461adab9750ba6edbdf3"
+        },
+        {
+          "path": "stream-07.png",
+          "bytes": 1333,
+          "sha256": "a928d2b78361a9fb00252fdad9150e81df1735987a548ab7949b97ea3b27c551"
+        },
+        {
+          "path": "stream-08.png",
+          "bytes": 1338,
+          "sha256": "ca89f330a4c30f8643029f717ffe4a496250f40d4558f29c26d04b63bc5912e0"
+        },
+        {
+          "path": "stream-09.png",
+          "bytes": 401,
+          "sha256": "c2aa7d7394544162553ac74ddfc4381937963cea5f616e03ff2b8e93edeb7dca"
+        },
+        {
+          "path": "stream-10.png",
+          "bytes": 1279,
+          "sha256": "d7b0dc92f3285fda632d5265f2167eae7bd4bed1d2ce35db1becfd431bff5c44"
+        },
+        {
+          "path": "stream-11.png",
+          "bytes": 1314,
+          "sha256": "f51f08ac7a34f75b54793abf990a1301a1ac061a0d00e2f065ac11622554b1d8"
+        },
+        {
+          "path": "stream-12.png",
+          "bytes": 1345,
+          "sha256": "3b74426ef8f11e48cfb386855dfcdf930bb2b824d5e773b116db8c37bf227dc7"
+        },
+        {
+          "path": "stream-13.png",
+          "bytes": 1383,
+          "sha256": "adf117820dbeb6dcdf6203fd565bc54e622dd529a46fa8e898011ed08757aac0"
+        },
+        {
+          "path": "stream-14.png",
+          "bytes": 1348,
+          "sha256": "6a6a9cf02fc6089b9006fc1ba4ae74717242837caeef9fd7c63d485c1ac62f8b"
+        },
+        {
+          "path": "stream-15.png",
+          "bytes": 1376,
+          "sha256": "008ec18c5641f27a103628a1b2824606c2679fee89c0b978bea43e05aca6baf7"
+        },
+        {
+          "path": "stream-16.png",
+          "bytes": 1410,
+          "sha256": "533ba80c12b109a7653260c7080f1a942b6d056a8952d0887085564f36164530"
+        },
+        {
+          "path": "whale-1.png",
+          "bytes": 5921,
+          "sha256": "aa13001d871568e370b3f6eae27390fc352bcf93a187a0ba6796af20585fc5dd"
+        },
+        {
+          "path": "whale-2.png",
+          "bytes": 5772,
+          "sha256": "85e5a404bbb90a44dd79fa8de7ce639fe2408da7fe46269bb11f559fe54b5639"
+        },
+        {
+          "path": "whale-3.png",
+          "bytes": 5808,
+          "sha256": "b23829660175b5c6dde7bd4819cca706a68d70055dd4185f2fa9b2d2ce5e8d10"
+        },
+        {
+          "path": "whale-4.png",
+          "bytes": 5772,
+          "sha256": "85e5a404bbb90a44dd79fa8de7ce639fe2408da7fe46269bb11f559fe54b5639"
+        },
+        {
+          "path": "whale-5.png",
+          "bytes": 5921,
+          "sha256": "aa13001d871568e370b3f6eae27390fc352bcf93a187a0ba6796af20585fc5dd"
+        },
+        {
+          "path": "whale-6.png",
+          "bytes": 5904,
+          "sha256": "a14afef840202f4bc76b242f51e6882a4f4e7e631ed24a828099ab040985b327"
+        },
+        {
+          "path": "whale-7.png",
+          "bytes": 5878,
+          "sha256": "cc8052d2745a9d3c436b93be807348f4f15c464894144e069f2cb554ef2d31f2"
+        },
+        {
+          "path": "whale-8.png",
+          "bytes": 5904,
+          "sha256": "a14afef840202f4bc76b242f51e6882a4f4e7e631ed24a828099ab040985b327"
+        },
+        {
+          "path": "wind.png",
+          "bytes": 7583,
+          "sha256": "4275f9c1103d75478cbe19b70148ddef59b883153ecaf8dc8081f83829706b4a"
+        }
+      ],
+      "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    },
+    {
+      "id": "sounding-the-deep",
+      "revision": 1,
+      "runtime": 3,
+      "title": "Sounding the deep",
+      "summary": "HMS Challenger exploring the deep ocean, 1873–76, station by station on the globe. Touch a station to lower the line to the recorded depth.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "0d06f4c710bbfd5722fbc0924b94c4ee328631d4e8d89a87e05d673f54532f54",
+      "path": "packs/sounding-the-deep/r1/",
+      "bytes": 177989,
+      "files": [
+        {
+          "path": "LICENSE-NATURAL-EARTH.md",
+          "bytes": 4636,
+          "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b"
+        },
+        {
+          "path": "SOURCES.md",
+          "bytes": 1811,
+          "sha256": "572151d8699dff78f8ef4e60eaa7a4236a54032d328ce6da9af4a254428c816f"
+        },
+        {
+          "path": "about.js",
+          "bytes": 2272,
+          "sha256": "93fe9ea532e8e3b0dd8abbd02af8c63ad7b12ee796fa9ec8f9910d2d8bbe9605"
+        },
+        {
+          "path": "data.js",
+          "bytes": 150627,
+          "sha256": "285cd13f64a3090d182539cc4535af07f2af477126c1feb582651156fdcdba7e"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 657,
+          "sha256": "cf5b3acb4c7d15cde17c01de6611f4168700edd67a802583b182c4c6bbf1ba78"
+        },
+        {
+          "path": "ship.png",
+          "bytes": 6403,
+          "sha256": "f13d08b5c89e7788d8fb26d02043f43ce6c799b0a749990daaed7dc36e912994"
+        },
+        {
+          "path": "sounding.js",
+          "bytes": 9130,
+          "sha256": "23ede4f1813ee1cf5e4a667d1b0c362783236be7f6727e2874b8641f61a86d63"
+        },
+        {
+          "path": "voyage.js",
+          "bytes": 2453,
+          "sha256": "29d326c2003eb18feecc38de6de2473dfe356200941522a07ef75a9e87f1430d"
+        }
+      ],
+      "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    }
+  ]
+}
