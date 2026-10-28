@@ -39,7 +39,7 @@ struct CamelidExperience: View {
             VStack(spacing: 6) {
                 HStack {
                     Button { story.pause(); close() } label: {
-                        Image(systemName: "xmark").frame(width: 44, height: 44)
+                        Image(systemName: "xmark").frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .accessibilityLabel("Return to atlas")
                     .accessibilityIdentifier("camelidClose")
@@ -50,7 +50,7 @@ struct CamelidExperience: View {
                         .accessibilityIdentifier("camelidDate")
                     Spacer(minLength: 4)
                     Button { story.open(.evidence) } label: {
-                        Image(systemName: "info.circle").frame(width: 44, height: 44)
+                        Image(systemName: "info.circle").frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .accessibilityLabel("The evidence")
                     .accessibilityIdentifier("camelidEvidence")
@@ -170,7 +170,7 @@ struct CamelidExperience: View {
                         Button("Return to the camel") { story.inspectCamel() }
                         Button("Return to atlas") { story.pause(); close() }
                     } label: {
-                        Image(systemName: "ellipsis").frame(width: 44, height: 44)
+                        Image(systemName: "ellipsis").frame(width: 44, height: 44).contentShape(Rectangle())
                     }
                     .accessibilityLabel("More ways to explore")
                     .accessibilityIdentifier("camelidMore")
