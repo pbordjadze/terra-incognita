@@ -5,136 +5,160 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Preview: __TITLE__</title>
 <style>
-  /* the globe's own type (Globe/fonts), for what a runtime-2 pack asks the host to draw */
+  /* the globe's own type (Globe/fonts): the foot, the panel, the names the globe draws for a pack */
   @font-face { font-family: "Libertinus Serif"; font-style: normal; font-weight: 400; src: url(/_harness/fonts/LibertinusSerif-Regular.otf) format("opentype"); }
   @font-face { font-family: "Libertinus Serif"; font-style: italic; font-weight: 400; src: url(/_harness/fonts/LibertinusSerif-Italic.otf) format("opentype"); }
   @font-face { font-family: "Libertinus Serif"; font-style: normal; font-weight: 600; src: url(/_harness/fonts/LibertinusSerif-Semibold.otf) format("opentype"); }
-  :root { --paper: #F6F2E7; --ink: #2A2113; --quiet: #5A4A33; --line: #D9D2C0; --link: #0A5A80; --err: #8C1D18; }
+  :root { --paper: #F6F2E7; --ink: #2A2113; --quiet: #5A4A33; --line: #D9D2C0; --link: #0A5A80; --err: #8C1D18; --ts: 1; color-scheme: light; }
   * { box-sizing: border-box; }
-  html { background: #E9E5DA; color: var(--ink); color-scheme: light; }
+  html { background: #E9E5DA; color: var(--ink); }
   body { margin: 0; font: 15px/1.45 ui-sans-serif, system-ui, sans-serif; }
   a { color: var(--link); }
-  .bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 12px 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+  .bar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; padding: 12px 16px; background: var(--paper); border-bottom: 1px solid var(--line); }
   .bar h1 { font-size: 18px; margin: 0; }
   .bar .meta { color: var(--quiet); }
   .bar nav { margin-left: auto; display: flex; gap: 14px; }
   .bar nav a[aria-current] { color: var(--ink); font-weight: 600; text-decoration: none; }
   .layout { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; align-items: flex-start; padding: 24px 16px 40px; }
-  .frame { padding: 12px; background: #1C1A16; border-radius: 52px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+  .frame { padding: 12px; background: #1C1A16; border-radius: 52px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); max-width: 100%; overflow: auto; }
   .frame.ipad { border-radius: 36px; }
-  #device { position: relative; overflow: hidden; border-radius: 40px; background: #F4F1EA; }
+  #device { position: relative; overflow: hidden; border-radius: 40px; background: #F6F2E7; isolation: isolate; }
   .frame.ipad #device { border-radius: 24px; }
+  body.bare { background: #F6F2E7; overflow: hidden; }
+  body.bare .bar, body.bare .controls { display: none; }
+  body.bare .layout { display: block; padding: 0; }
+  body.bare .frame { padding: 0; border-radius: 0; box-shadow: none; background: none; overflow: visible; }
+  body.bare #device { border-radius: 0; }
   #stage { position: absolute; inset: 0; touch-action: none; outline-offset: -4px; cursor: grab; }
-  #stage:active { cursor: grabbing; }
+  #stage.dragging { cursor: grabbing; }
+  #stage.pointing { cursor: pointer; }
+  #stage.reach { cursor: crosshair; }
   #globe { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  #markers { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-  .marker { position: absolute; left: 0; top: 0; padding: 0; margin: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; border-radius: 50%; }
-  .marker[hidden] { display: none; }
-  .marker img { display: block; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
-  .marker:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
-  iframe.pack { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  iframe.overlay { background: transparent; pointer-events: none; }
-  iframe.screen { background: #fff; }
-  #back { position: absolute; left: 6px; top: 6px; width: 44px; height: 44px; z-index: 5; display: none; border: 0; border-radius: 22px;
-          background: rgba(28, 26, 22, .82); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-  #back:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-  #device.has-screen #back { display: block; }
-  #ended { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-           background: rgba(244, 241, 234, .94); text-align: center; padding: 24px; }
-  #ended[hidden] { display: none; }
-  #ended p { margin: 0; max-width: 24ch; }
 
-  /* The foot of the screen while a pack shows a date or a caption (terra.time, terra.caption): a paper ground fading up,
-     the eyebrow, the date, the words, then the time strip. The ground starts above the content: its first third is the fade. */
-  #foot { --ts: 1; position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; isolation: isolate; pointer-events: none;
-          padding: 8px 20px 26px; font-family: "Libertinus Serif", Georgia, serif; }
+  /* the chip: the running pack's name, Open (once it listens for 'open') and ✕; before it runs, Start */
+  .chip { position: absolute; z-index: 4; right: 12px; display: flex; align-items: center; gap: 2px; max-width: calc(100% - 24px);
+          padding: 0 4px 0 14px; height: 40px; border-radius: 20px; background: rgba(246, 242, 231, .94); border: 1px solid rgba(90, 74, 51, .25);
+          box-shadow: 0 1px 6px rgba(42, 33, 19, .12); font: 15px/1 "Libertinus Serif", Georgia, serif; color: #2A2925; }
+  .chip[hidden] { display: none; }
+  .chip .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 6px; }
+  .chip button { flex: none; min-width: 40px; height: 34px; padding: 0 10px; border: 0; border-radius: 17px; background: none; color: #0A5A80;
+                 font: 600 15px/1 "Libertinus Serif", Georgia, serif; cursor: pointer; }
+  .chip button[hidden] { display: none; }
+  .chip button:hover { background: rgba(10, 90, 128, .08); }
+  .chip button:focus-visible { outline: 3px solid var(--link); outline-offset: 1px; }
+  #start { padding-left: 4px; }
+  #start button { color: #2A2925; }
+
+  /* the foot (GlobeFoot): the caption's eyebrow (the pack's title), the date as the title, the text, then the date's strip */
+  #foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; pointer-events: none; padding: 70px 24px 14px; }
   #foot[hidden] { display: none; }
-  #foot::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; top: -50%;
-                  background: linear-gradient(to bottom, rgba(246, 242, 231, 0) 0%, rgba(246, 242, 231, .92) 33.333%, rgba(246, 242, 231, .92) 100%); }
-  #foot .inner { max-width: 560px; margin: 0 auto; }
-  #foot .eyebrow { font-size: calc(12.5px * var(--ts)); line-height: 1.3; letter-spacing: .18em; text-transform: uppercase; color: #B04234; }
-  #foot .title { font-size: calc(30px * var(--ts)); line-height: 1.15; font-weight: 600; color: #253440; margin: 2px 0 0; }
-  #foot .text { font-size: calc(17px * var(--ts)); line-height: 1.35; font-style: italic; color: #3C464E; margin: 6px 0 0; }
+  #foot::before { content: ""; position: absolute; inset: 0; z-index: -1;
+                  background: linear-gradient(to bottom, rgba(246, 242, 231, 0) 0%, rgba(246, 242, 231, .82) 30%, rgba(246, 242, 231, .95) 55%); }
+  #foot .inner { max-width: 560px; display: flex; flex-direction: column; gap: 6px; }
+  #foot .line { margin: 0; font-family: "Libertinus Serif", Georgia, serif; }
+  #foot .eyebrow { font-size: calc(12.5px * var(--ts)); letter-spacing: 2.2px; text-transform: uppercase; color: #C12838; line-height: 1.25; }
+  #foot .title { font-size: calc(30px * var(--ts)); font-weight: 600; color: #2A2925; line-height: 1.12; }
+  #foot .text { font-size: calc(17px * var(--ts)); font-style: italic; color: #5A564E; line-height: 1.3; }
   #foot [hidden] { display: none !important; }
-  #foot .row { display: flex; align-items: center; gap: 6px; margin-top: 10px; pointer-events: auto; }
+  #foot .date { display: flex; align-items: center; gap: 6px; margin-top: 4px; pointer-events: auto; }
   #date-play { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 22px; background: none; color: #253440; cursor: pointer; }
   #date-play svg { display: block; width: 100%; height: 100%; }
+  #date-strip { flex: 1; min-width: 0; height: 44px; display: block; touch-action: none; cursor: ew-resize; }
   #date-play:focus-visible, #date-strip:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
-  #date-strip { --inset: 14px; position: relative; flex: 1; min-width: 0; height: 44px; touch-action: none; cursor: ew-resize; user-select: none; }
-  #date-strip .line { position: absolute; left: var(--inset); right: var(--inset); top: 50%; height: 1px; background: rgba(37, 52, 64, .45); }
-  #date-strip .at { position: absolute; top: 50%; left: calc(var(--inset) + (100% - 2 * var(--inset)) * var(--f)); }
-  #date-strip .tick { width: 5.2px; height: 5.2px; margin: -2.6px 0 0 -2.6px; border-radius: 50%; background: #3B4A54; box-sizing: border-box; }
-  #date-strip .tick.hollow { background: #F6F2E7; border: 1.2px solid #3B4A54; }
-  #date-strip .needle { width: 2px; height: 26px; margin: -13px 0 0 -1px; border-radius: 1px; background: #B04234; }
-  .controls { width: 320px; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+
+  /* the panel: a sheet over the globe, half the height, pulled up by its grabber */
+  #panel { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: 50%; display: flex; flex-direction: column;
+           background: #FBF8F1; border-radius: 14px 14px 0 0; box-shadow: 0 -2px 18px rgba(42, 33, 19, .22); transition: height .25s ease; }
+  #panel.tall { height: 92%; }
+  #panel[hidden] { display: none; }
+  #panel .grab { flex: none; height: 22px; display: flex; justify-content: center; align-items: center; cursor: ns-resize; border: 0; background: none; padding: 0; }
+  #panel .grab::before { content: ""; width: 38px; height: 5px; border-radius: 3px; background: rgba(60, 60, 67, .3); }
+  #panel .close { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 16px; background: rgba(118, 118, 128, .14);
+                  color: #3C3C43; font-size: 15px; cursor: pointer; }
+  #panel .grab:focus-visible, #panel .close:focus-visible { outline: 3px solid var(--link); outline-offset: 1px; }
+  #panel .body { flex: 1; overflow: auto; padding: 4px 22px calc(24px + var(--safe-bottom, 0px)); font: calc(17px * var(--ts))/1.4 "Libertinus Serif", Georgia, serif; color: #2A2925; }
+  #panel h2 { font-size: calc(26px * var(--ts)); font-weight: 600; line-height: 1.15; margin: 6px 44px 10px 0; }
+  #panel h3 { font-size: calc(19px * var(--ts)); font-weight: 600; margin: 18px 0 4px; }
+  #panel p { margin: 0 0 10px; }
+  #panel ul { padding: 0; margin: 0; list-style: none; }
+  #panel li { margin: 0 0 8px; }
+  #panel .note { color: #6B655A; font-style: italic; }
+
+  .controls { width: 330px; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
   .controls h2 { font-size: 15px; margin: 0 0 8px; }
   .controls section + section { margin-top: 18px; }
-  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-  .row input[type=range] { flex: 1; min-width: 0; }
-  .row output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
-  button.plain { font: inherit; padding: 8px 12px; border: 1px solid #8A7F66; border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+  .controls .row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; margin: 6px 0; }
+  .controls .row input[type=range] { flex: 1; min-width: 0; }
+  .controls output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+  button.plain { font: inherit; padding: 7px 12px; border: 1px solid #8A7F66; border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; }
+  button.plain:disabled { opacity: .45; cursor: default; }
   button.plain:focus-visible, input:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
-  #camera { color: var(--quiet); font-variant-numeric: tabular-nums; margin: 0; }
-  #log { list-style: none; margin: 0; padding: 8px; height: 220px; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  #readout, #state { color: var(--quiet); font-variant-numeric: tabular-nums; margin: 4px 0 0; white-space: pre-wrap; font-size: 13px; }
+  #log { list-style: none; margin: 0; padding: 8px; height: 260px; overflow: auto; background: #fff; border: 1px solid var(--line); border-radius: 8px;
          font: 12.5px/1.4 ui-monospace, Menlo, monospace; }
-  #log li { padding: 2px 0; border-bottom: 1px solid #F0ECE0; overflow-wrap: anywhere; }
+  #log li { padding: 2px 0; border-bottom: 1px solid #F0ECE0; overflow-wrap: anywhere; white-space: pre-wrap; }
   #log li.error { color: var(--err); font-weight: 600; }
   #log li.warn { color: #7A4A00; }
-  .note { color: var(--quiet); font-size: 13px; margin: 8px 0 0; }
+  .controls .note { color: var(--quiet); font-size: 13px; margin: 8px 0 0; }
 </style>
 </head>
 <body>
 <header class="bar">
-  <a href="/">All prototypes</a>
+  <a href="/">All packs</a>
   <h1 id="title"></h1>
   <span class="meta" id="meta"></span>
-  <nav aria-label="Device"><a id="to-phone">Phone</a><a id="to-ipad">iPad</a></nav>
+  <nav aria-label="Device"><a id="to-iphone">iPhone</a><a id="to-ipad">iPad</a></nav>
 </header>
 <div class="layout">
   <div class="frame" id="frame">
-    <div id="device" class="device">
-      <div id="stage" tabindex="0" role="application" aria-label="Stand-in globe. Arrow keys turn it; plus and minus zoom.">
+    <div id="device">
+      <div id="stage" tabindex="0" role="application" aria-label="Stand-in globe. Drag to turn, scroll to zoom; arrow keys turn it, plus and minus zoom.">
         <canvas id="globe"></canvas>
-        <div id="markers"></div>
+      </div>
+      <div class="chip" id="start" hidden><button type="button" id="start-button">Start</button></div>
+      <div class="chip" id="chip" hidden>
+        <span class="name" id="chip-name"></span>
+        <button type="button" id="chip-open" hidden>Open</button>
+        <button type="button" id="chip-close" aria-label="End the prototype">&#x2715;</button>
       </div>
       <div id="foot" hidden data-testid="foot">
         <div class="inner">
-          <div class="eyebrow" id="foot-eyebrow" data-testid="foot-eyebrow" hidden></div>
-          <div class="title" id="foot-title" data-testid="foot-title" hidden></div>
-          <p class="text" id="foot-text" data-testid="foot-text" hidden></p>
-          <div class="row" id="foot-time" hidden>
-            <button id="date-play" data-testid="date-play" type="button" aria-label="Play" hidden></button>
-            <div id="date-strip" data-testid="date-strip" role="slider" tabindex="0" aria-label="Date"></div>
+          <p class="line eyebrow" id="foot-eyebrow" hidden></p>
+          <p class="line title" id="foot-title" hidden></p>
+          <p class="line text" id="foot-text" hidden></p>
+          <div class="date" id="foot-date" hidden>
+            <button id="date-play" type="button" aria-label="Play" hidden></button>
+            <canvas id="date-strip" role="slider" tabindex="0" aria-label="Date"></canvas>
           </div>
         </div>
       </div>
-      <button id="back" type="button" aria-label="Back to the globe">&lsaquo;</button>
-      <div id="ended" hidden>
-        <p>The prototype ended. The plain globe is as it was.</p>
-        <button class="plain" id="again" type="button">Start again</button>
-      </div>
+      <section id="panel" hidden role="dialog" aria-labelledby="panel-title">
+        <button class="grab" id="panel-grab" type="button" aria-label="Pull up"></button>
+        <button class="close" id="panel-close" type="button" aria-label="Close">&#x2715;</button>
+        <div class="body" id="panel-body"></div>
+      </section>
     </div>
   </div>
   <aside class="controls" aria-label="Preview controls">
+    <section>
+      <h2>Prototype</h2>
+      <div class="row"><button class="plain" id="ctl-start" type="button">Start</button><button class="plain" id="ctl-end" type="button">End</button><button class="plain" id="ctl-restart" type="button">Restart</button></div>
+      <p id="readout"></p>
+      <p id="state"></p>
+    </section>
     <section>
       <h2>Reader settings</h2>
       <div class="row"><label for="scale">Text size</label><input id="scale" type="range" min="1" max="3.2" step="0.1" value="1"><output id="scale-out" for="scale">1.0</output></div>
       <div class="row"><input id="motion" type="checkbox"><label for="motion">Reduce Motion</label></div>
     </section>
     <section>
-      <h2>Prototype</h2>
-      <div class="row"><button class="plain" id="restart" type="button">Restart</button><button class="plain" id="end" type="button">End prototype</button></div>
-      <p id="camera"></p>
-      <p class="note">A stand-in globe (Natural Earth land, orthographic), not the app's renderer. The host's rules are the same: the pack's page is told the camera and the settings by <code>terra.js</code>.</p>
-    </section>
-    <section>
       <h2>Log</h2>
       <ol id="log" role="log" aria-live="polite" aria-label="terra.log messages and errors"></ol>
+      <p class="note">Drag turns the globe; a drag that begins on something touchable is the pack's (with the one-finger scheme, every drag is: shift-drag or right-drag turns). Scroll zooms. A stand-in globe (Natural Earth, the app's colours), not the app's renderer; the pack's scripts run in a worker with what JavaScriptCore gives them and nothing else.</p>
     </section>
   </aside>
 </div>
 <script>window.__proto = __PROTO__;</script>
-<script src="/_runtime/terra.js"></script>
 <script src="/_harness/harness.js"></script>
 </body>
 </html>
