@@ -18,15 +18,18 @@ final class GlobeImageLayer: UIView {
         /// The zoom range over which it fades in above `minZoom`.
         let fade: Double
 
-        /// Reads the picture, at most `longest` pixels a side (larger ones are scaled down as they are read).
-        init?(id: String, file: URL, west: Double, south: Double, east: Double, north: Double,
-              opacity: Double, minZoom: Double, maxZoom: Double, fade: Double, longest: Int = GlobeImageLayer.longestSide) {
+        /// Reads a picture file, at most `longest` pixels a side (larger ones are scaled down as they are read).
+        static func read(_ file: URL, longest: Int = GlobeImageLayer.longestSide) -> CGImage? {
             guard let source = CGImageSourceCreateWithURL(file as CFURL, nil) else { return nil }
             let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
                                             kCGImageSourceCreateThumbnailWithTransform: true,
                                             kCGImageSourceShouldCacheImmediately: true,
                                             kCGImageSourceThumbnailMaxPixelSize: longest]
-            guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+            return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+        }
+
+        init(id: String, image: CGImage, west: Double, south: Double, east: Double, north: Double,
+             opacity: Double, minZoom: Double, maxZoom: Double, fade: Double) {
             self.id = id
             self.image = image
             self.west = west; self.south = south; self.east = east; self.north = north

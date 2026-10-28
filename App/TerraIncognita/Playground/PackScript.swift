@@ -62,6 +62,8 @@ final class PackScript {
     private var lastCameraEvent = 0.0
     private var lastCameraChange = 0.0
     private var cameraSettle: Timer?
+    /// The pictures this pack has laid on the globe, decoded, by path.
+    private var decoded: [String: CGImage] = [:]
 
     /// The most timers a pack may keep at once, and the shortest repeat.
     static let timerBudget = 256
@@ -134,6 +136,7 @@ final class PackScript {
         observers = []
         context?.setObject(nil, forKeyedSubscript: "__terraSend" as NSString)
         context = nil
+        decoded = [:]
         onEvent = nil
     }
 
@@ -365,15 +368,17 @@ final class PackScript {
                 onEvent?(.log("error: image \(id) needs an image of the pack and bounds [west, south, east, north]"))
                 return
             }
-            guard let picture = GlobeImageLayer.Picture(
-                id: id, file: pack.root.appending(path: name), west: b[0], south: b[1], east: b[2], north: b[3],
-                opacity: min(1, max(0, Self.number(o["opacity"]) ?? 1)),
-                minZoom: Self.number(o["minZoom"]) ?? 0, maxZoom: Self.number(o["maxZoom"]) ?? .infinity,
-                fade: max(0, Self.number(o["fade"]) ?? 0)) else {
+            // (decoded once per pack: setting the same picture again costs nothing)
+            guard let image = decoded[name] ?? GlobeImageLayer.Picture.read(pack.root.appending(path: name)) else {
                 onEvent?(.log("error: image \(id): “\(name)” could not be read as a picture"))
                 return
             }
-            onEvent?(.imageSet(picture))
+            decoded[name] = image
+            onEvent?(.imageSet(GlobeImageLayer.Picture(
+                id: id, image: image, west: b[0], south: b[1], east: b[2], north: b[3],
+                opacity: min(1, max(0, Self.number(o["opacity"]) ?? 1)),
+                minZoom: Self.number(o["minZoom"]) ?? 0, maxZoom: Self.number(o["maxZoom"]) ?? .infinity,
+                fade: max(0, Self.number(o["fade"]) ?? 0))))
         case "remove": if let id = body["id"] as? String { onEvent?(.imageRemove(id)) }
         case "clear": onEvent?(.imageClear)
         default: break
