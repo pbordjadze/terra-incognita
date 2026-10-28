@@ -153,7 +153,8 @@ private struct PackWebView: UIViewRepresentable {
                     switch event {
                     case .close: onClose()
                     case .log(let line): PackStore.shared.record("\(pack.id): \(line)")
-                    case .open, .flyTo: break // (an overlay's to ask for)
+                    case .open, .flyTo, .geoSet, .geoRemove, .geoClear, .timeShow, .timeSet, .timePlay, .timeHide, .caption, .globe:
+                        break // (an overlay's to ask for; the controller sends a screen none of the runtime-2 ones)
                     }
                 },
                 onFailure: onFailure)
