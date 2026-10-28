@@ -1,0 +1,6 @@
+   5m 12s  Passed   RemotePackTests/testRemoteRevisionArrivesRollsBackAndWorksOffline()
+   3m 12s  Passed   PlaygroundTests/testParkedDirectionsRemainOneTapAway()
+    3m 9s  Passed   PlaygroundTests/testBundledPackOpensFromTheGlobe()
+    3m 3s  Passed   PlaygroundTests/testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind()
+   1m 42s  Passed   PlaygroundTests/testColdLaunchIsThePlainGlobe()
+      21s  Passed   PlaygroundTests/testEveryPrototypeIsListed()
