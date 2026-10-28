@@ -2,7 +2,7 @@
 
 python3 tools/aegean/build.py /path/to/cache
 land.geojson: Natural Earth ne_10m_land.geojson
-elevation.png, bathymetry.png: NASA's GEBCO 2008 grayscale sources (see Leaf/SOURCES.md).
+elevation.png, bathymetry.png: NASA Visible Earth's grayscale GEBCO 2008 imagery (see Leaf/SOURCES.md).
 No network at build time. Geometry is a cylindrical local chart, not a navigation chart.
 """
 import base64, json, sys
