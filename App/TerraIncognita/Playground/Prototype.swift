@@ -10,8 +10,15 @@ struct Prototype: Identifiable {
     enum Shelf: String { case current, parked }
     enum Made: Equatable {
         case native
-        /// A web pack: bundled with the app, downloaded, or only listed by a source so far.
+        /// A pack: bundled with the app, downloaded, or only listed by a source so far.
         case pack(PackListing.State, revision: Int, bundled: Bool)
+    }
+    /// A place on the globe and how it looks there (a sprite's looks: a trace from afar, itself closer).
+    struct Doorway {
+        let lon: Double
+        let lat: Double
+        let label: String
+        let looks: [GlobeMarker.SpriteLook]
     }
 
     let id: String
@@ -23,6 +30,9 @@ struct Prototype: Identifiable {
     /// Its own screen (it ends when the screen closes), or it lives on the globe until ended.
     var ownScreen = false
     var made: Made = .native
+    /// How it shows on the globe while it isn't running (touching it starts it), so the atlas has its
+    /// things on it; nil for none (a parked direction, a pack not on this device yet).
+    var doorway: Doorway?
     /// What starting it does with the stage. Everything it adds there goes when it ends.
     let start: (PrototypeStage) -> Void
 }
@@ -41,9 +51,9 @@ struct Invitation: Equatable {
 }
 
 /// One prototype's time on the globe. It is made when the prototype starts and owns everything the
-/// prototype adds (markers, an overlay, geography drawn by the globe, a date, words at the foot, a
-/// style, a screen, an invitation); `end` takes all of it away, so the plain globe is exactly as it
-/// was. The workbench's isolation rule lives here.
+/// prototype adds (markers and sprites, a pack's script, geography and pictures drawn by the globe, a
+/// date, words at the foot, a panel, a style, a screen, an invitation); `end` takes all of it away, so
+/// the globe is exactly as it was. The workbench's isolation rule lives here.
 @Observable
 final class PrototypeStage {
     let prototype: Prototype
@@ -63,7 +73,11 @@ final class PrototypeStage {
 
     @ObservationIgnored private weak var playground: Playground?
     @ObservationIgnored private var markers: [GlobeMarker] = []
-    @ObservationIgnored private var overlay: WebPackOverlay?
+    @ObservationIgnored private var script: PackScript?
+    @ObservationIgnored private var sprites: [String: GlobeMarker] = [:]
+    @ObservationIgnored private var images: GlobeImageLayer?
+    /// What the drag in progress began on (a touchable feature), if anything.
+    @ObservationIgnored private var dragTarget: [String: Any]?
     @ObservationIgnored private var invitationAction: (() -> Void)?
     /// A globe pack's own page (its sources, its longer account), for the chip's Open.
     @ObservationIgnored private var openAction: (() -> Void)?
@@ -72,6 +86,7 @@ final class PrototypeStage {
     /// It changed how the globe behaves (hid today's borders, stopped its turn): undone at the end.
     @ObservationIgnored private var globeChanged = false
     private let live = LiveCount.Token(.stages)
+    static let spriteBudget = 64
 
     init(prototype: Prototype, playground: Playground) {
         self.prototype = prototype
@@ -117,70 +132,88 @@ final class PrototypeStage {
         else { openAction?() }
     }
 
-    /// A pack on the globe: its anchor, markers, and overlay; or its own screen.
-    func start(pack: WebPack) {
+    /// A pack on the globe (runtime 3): its anchor, then its scripts, whose requests become the globe's
+    /// own drawing. Its touches come here first.
+    func start(pack: PlaygroundPack) {
         loading = false
         guard !ended else { return }
         let m = pack.manifest
         if let a = m.anchor { fly(to: GlobeCamera(lon: a.lon, lat: a.lat, zoom: a.zoom ?? 1)) }
-        if m.presentation != "globe" {
-            endsWithScreen = true
-            present("pack:" + pack.id) { WebPackScreen(pack: pack) }
-            return
+        guard let globe else { return }
+        // a pack the globe draws for holds it where it flew, from the start: its scripts may take a
+        // moment, and the globe turns again after it has been left alone a while
+        globeChanged = true
+        globe.holdsStill = true
+        let script = PackScript(pack: pack, active: UIApplication.shared.applicationState == .active)
+        self.script = script
+        script.onEvent = { [weak self] event in self?.handle(event, pack: pack) }
+        globe.onFrame = { [weak self, weak globe] in
+            guard let self, let globe else { return }
+            let s = globe.stageCamera
+            let size = globe.bounds.size
+            self.script?.update(camera: .init(lon: s.camera.lon, lat: s.camera.lat, zoom: s.camera.zoom,
+                                              cx: Double(s.centre.x), cy: Double(s.centre.y), radius: s.radius,
+                                              width: Double(size.width), height: Double(size.height)))
+            self.images?.update(globe: globe)
+            self.geo?.update(globe: globe)
         }
-        for marker in m.markers ?? [] {
-            let image = UIImage(contentsOfFile: pack.root.appending(path: marker.image).path(percentEncoded: false))
-            let opens = (marker.opens ?? false) && (m.entry != nil || FileManager.default.fileExists(
-                atPath: pack.root.appending(path: "index.html").path(percentEncoded: false)))
-            place(GlobeMarker(id: "\(pack.id).\(marker.id)", lon: marker.lon, lat: marker.lat,
-                              look: image.map { GlobeMarker.Look.picture($0) } ?? .seal(symbol: "questionmark"),
-                              size: CGSize(width: marker.width, height: marker.height), label: marker.label,
-                              minZoom: marker.minZoom ?? 0, maxZoom: marker.maxZoom ?? .infinity,
-                              onOpen: opens ? { [weak self] in
-                                  self?.present("pack:\(pack.id):\(marker.id)") { WebPackScreen(pack: pack, params: ["marker": marker.id]) }
-                              } : nil))
-        }
-        if m.runtime >= 2 {
-            // a pack the globe draws for holds it where it flew, from the start: its page may take
-            // longer to load than the globe waits before turning again
-            globeChanged = true
-            globe?.holdsStill = true
-        }
-        if !canOpen, FileManager.default.fileExists(atPath: pack.root.appending(path: m.entry ?? "index.html").path(percentEncoded: false)) {
-            openAction = { [weak self] in self?.present("pack:\(pack.id):page") { WebPackScreen(pack: pack) } }
-            canOpen = true
-        }
-        if m.overlay != nil, let globe {
-            let overlay = WebPackOverlay(pack: pack) { [weak self] event in self?.handle(event, pack: pack) }
-            self.overlay = overlay
-            globe.addOverlay(overlay)
-            globe.onFrame = { [weak self, weak overlay, weak globe] in
-                guard let globe else { return }
-                if let overlay {
-                    let s = globe.stageCamera
-                    overlay.update(camera: s.camera, centre: s.centre, radius: s.radius)
-                }
-                self?.geo?.update(globe: globe)
+        let takesTaps = m.taps ?? false
+        globe.onWorldTap = { [weak self, weak globe] point, place in
+            guard let self, let globe, let script = self.script else { return false }
+            if let hit = self.geo?.hit(point, globe: globe) {
+                script.touch("tap", target: ["layer": hit.layer, "index": hit.index], at: point, place: place)
+                return true
             }
-            if m.taps ?? false {
-                globe.onWorldTap = { [weak overlay] point, place in
-                    overlay?.tap(at: point, place: place)
-                    return overlay != nil
-                }
+            if takesTaps {
+                script.touch("tap", target: nil, at: point, place: place)
+                return true
             }
+            return false
+        }
+        globe.worldDragBegins = { [weak self, weak globe] point in
+            guard let self, let globe else { return false }
+            return self.geo?.hit(point, globe: globe) != nil
+        }
+        globe.onWorldDrag = { [weak self, weak globe] phase, point, place in
+            guard let self, let globe, let script = self.script else { return }
+            if phase == "began" {
+                self.dragTarget = self.geo?.hit(point, globe: globe).map { ["layer": $0.layer, "index": $0.index] }
+            }
+            script.touch(phase, target: self.dragTarget, at: point, place: place)
+            if phase == "ended" { self.dragTarget = nil }
+        }
+        if !script.start() {
+            fail(String(localized: "\(prototype.title) could not start. The workbench's log says why."))
         }
     }
 
-    private func handle(_ event: WebPackEvent, pack: WebPack) {
+    private func handle(_ event: PackScriptEvent, pack: PlaygroundPack) {
         switch event {
         case .close: playground?.end()
-        case .open(let params): present("pack:\(pack.id):open") { WebPackScreen(pack: pack, params: params) }
         case .flyTo(let camera, let duration): fly(to: camera, duration: duration)
         case .log(let line): PackStore.shared.record("\(pack.id): \(line)")
+        case .listensForOpen:
+            if openAction == nil {
+                openAction = { [weak self] in self?.script?.open() }
+                canOpen = true
+            }
         case .geoSet(let layer):
             if !geoLayers().set(layer) { PackStore.shared.record("\(pack.id): error: geo layer \(layer.id) is over the globe's budget") }
         case .geoRemove(let id): geo?.remove(id)
         case .geoClear: geo?.clear()
+        case .imageSet(let picture):
+            if !imageLayer().set(picture) { PackStore.shared.record("\(pack.id): error: image \(picture.id) is over the globe's budget") }
+        case .imageRemove(let id): images?.remove(id)
+        case .imageClear: images?.clear()
+        case .spriteSet(let id, let spec): setSprite(id, spec, pack: pack)
+        case .spriteRemove(let id):
+            if let marker = sprites.removeValue(forKey: id) { remove(marker) }
+        case .spriteClear:
+            for (_, marker) in sprites { remove(marker) }
+            sprites = [:]
+        case .touchScheme(let scheme):
+            globeChanged = true
+            globe?.dragScheme = scheme
         case .timeShow(let time, let carry): show(time, carry: carry)
         case .timeSet(let value): setTime(value, by: nil)
         case .timePlay(let playing): play(playing, by: .host)
@@ -192,7 +225,46 @@ final class PrototypeStage {
             globeChanged = true
             globe?.historicalReference = historical
             globe?.holdsStill = still
+        case .panelShow(let panel): playground?.show(panel) { [weak self] in self?.script?.panelClosed() }
+        case .panelHide: playground?.hidePanel(from: pack.id)
         }
+    }
+
+    /// A sprite: made, or changed in place (keeping its place along the same path).
+    private func setSprite(_ id: String, _ spec: SpriteSpec, pack: PlaygroundPack) {
+        if let marker = sprites[id] {
+            marker.update(at: spec.at, path: spec.path, looks: spec.looks)
+            return
+        }
+        guard sprites.count < Self.spriteBudget else {
+            PackStore.shared.record("\(pack.id): error: sprite \(id) is over the globe's budget of \(Self.spriteBudget)")
+            return
+        }
+        let tap: (() -> Void)? = spec.touchable ? { [weak self] in
+            guard let self, let marker = self.sprites[id] else { return }
+            self.script?.touch("tap", target: ["sprite": id], at: marker.view.center, place: (marker.lon, marker.lat))
+        } : nil
+        let marker = GlobeMarker(sprite: "\(pack.id).\(id)", at: spec.at, path: spec.path, looks: spec.looks,
+                                 label: spec.label, onTap: tap)
+        sprites[id] = marker
+        markers.append(marker)
+        globe?.add(marker)
+    }
+
+    private func remove(_ marker: GlobeMarker) {
+        globe?.remove(marker)
+        markers.removeAll { $0 === marker }
+    }
+
+    /// Pictures lying on the globe, made on first use, under the geography.
+    private func imageLayer() -> GlobeImageLayer {
+        if let images { return images }
+        let view = GlobeImageLayer()
+        images = view
+        globe?.addOverlay(view)
+        // (added at the bottom: the geography, made later or earlier, stays above it)
+        view.superview?.sendSubviewToBack(view)
+        return view
     }
 
     /// The globe's own drawing of what the page asks for, made on first use, under the markers.
@@ -218,7 +290,7 @@ final class PrototypeStage {
         }
         time = t
         playground?.lastYear = t.year
-        overlay?.time(t.value, playing: false, by: .host)
+        script?.time(t.value, playing: false, by: .host)
         if wanted, !UIAccessibility.isReduceMotionEnabled { play(true) }
     }
 
@@ -230,7 +302,7 @@ final class PrototypeStage {
         t.value = t.clamped(value)
         time = t
         playground?.lastYear = t.year
-        if let mover { overlay?.time(t.value, playing: t.playing, by: mover) }
+        if let mover { script?.time(t.value, playing: t.playing, by: mover) }
     }
 
     /// Plays the date forward at its rate, about thirty steps a second, to its end; the page hears of
@@ -243,7 +315,7 @@ final class PrototypeStage {
         if playing, t.value >= t.max { t.value = t.min }
         t.playing = playing && t.playable
         time = t
-        if (t.playing, t.value) != was { overlay?.time(t.value, playing: t.playing, by: mover) }
+        if (t.playing, t.value) != was { script?.time(t.value, playing: t.playing, by: mover) }
         guard t.playing else { return }
         playback = Task { [weak self] in
             var last = ContinuousClock.now
@@ -262,7 +334,7 @@ final class PrototypeStage {
                 t.value = next
                 self.time = t
                 self.playground?.lastYear = t.year
-                self.overlay?.time(t.value, playing: t.playing, by: .play)
+                self.script?.time(t.value, playing: t.playing, by: .play)
                 if !t.playing { return }
             }
         }
@@ -287,13 +359,20 @@ final class PrototypeStage {
         ended = true
         for m in markers { globe?.remove(m) }
         markers = []
-        if let overlay {
-            overlay.stop()
-            overlay.removeFromSuperview()
+        if let script {
+            script.stop()
             globe?.onFrame = nil
             globe?.onWorldTap = nil
+            globe?.worldDragBegins = nil
+            globe?.onWorldDrag = nil
+            playground?.hidePanel(from: script.pack.id)
         }
-        overlay = nil
+        script = nil
+        sprites = [:]
+        dragTarget = nil
+        images?.clear()
+        images?.removeFromSuperview()
+        images = nil
         stopPlayback()
         time = nil
         caption = nil
@@ -303,6 +382,7 @@ final class PrototypeStage {
         if globeChanged {
             globe?.historicalReference = false
             globe?.holdsStill = false
+            globe?.dragScheme = .touchables
             globeChanged = false
         }
         invitation = nil

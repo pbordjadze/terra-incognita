@@ -47,6 +47,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// A tap on the globe, offered first to the active prototype (a web overlay that asked for taps):
     /// true when it took the tap, and no country is chosen. `place` is nil off the globe.
     var onWorldTap: ((_ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Bool)?
+    /// How one-finger drags are shared between the globe and the active pack (terra.js runtime 3):
+    /// `touchables`, a drag that begins on something touchable is the pack's (`worldDragBegins` says);
+    /// `oneFinger`, every one-finger drag is the pack's and two fingers turn and zoom the globe.
+    enum DragScheme { case touchables, oneFinger }
+    var dragScheme = DragScheme.touchables {
+        didSet { panRecognizer?.minimumNumberOfTouches = dragScheme == .oneFinger ? 2 : 1 }
+    }
+    /// Whether a one-finger drag starting at this point is the pack's (the `touchables` scheme).
+    var worldDragBegins: ((CGPoint) -> Bool)?
+    /// A drag that is the pack's: "began", "moved", "ended", with the place under the finger.
+    var onWorldDrag: ((_ phase: String, _ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Void)?
+    private weak var panRecognizer: UIPanGestureRecognizer?
+    private weak var worldDragRecognizer: UIPanGestureRecognizer?
+    /// Where the touch that may become a world drag began.
+    private var worldDragStart: CGPoint?
     /// The authored sequence shares this renderer without its idle spin or other encounter marks.
     var authoredMode = false {
         didSet {
@@ -243,6 +258,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private(set) var style = GlobeStyle.persian
     private var styleMix = 1.0
     private var displayLink: CADisplayLink?
+    /// The rate the display link was last asked for: 0 idle, 1 something living moves, 2 the hands.
+    private var busyRate = -1
     private var lastTick: CFTimeInterval?
     private var needsDraw = true
     private var busy = true
@@ -327,7 +344,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         double.numberOfTapsRequired = 2
         let tap = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
         tap.require(toFail: double)
-        for g in [pan, pinch, double, tap] as [UIGestureRecognizer] { g.delegate = self; addGestureRecognizer(g) }
+        // a pack's drag on the world (runtime 3): the globe's own turn waits until it is clear the
+        // drag is not the pack's
+        let world = UIPanGestureRecognizer(target: self, action: #selector(worldDragged(_:)))
+        world.maximumNumberOfTouches = 1
+        pan.require(toFail: world)
+        for g in [pan, pinch, double, tap, world] as [UIGestureRecognizer] { g.delegate = self; addGestureRecognizer(g) }
+        panRecognizer = pan
+        worldDragRecognizer = world
         isAccessibilityElement = true
         accessibilityLabel = String(localized: "The globe")
         accessibilityHint = String(localized: "Drag to spin it, pinch to zoom, tap a country to name it")
@@ -612,7 +636,31 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         if markers.contains(where: { touch.view?.isDescendant(of: $0.view) == true }) { return false }
+        if gestureRecognizer === worldDragRecognizer { worldDragStart = touch.location(in: self) }
         return !(touch.view is UIControl)
+    }
+
+    override func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+        guard g === worldDragRecognizer else { return super.gestureRecognizerShouldBegin(g) }
+        guard onWorldDrag != nil, !authoredMode else { return false }
+        if dragScheme == .oneFinger { return true }
+        return worldDragBegins?(worldDragStart ?? g.location(in: self)) ?? false
+    }
+
+    @objc private func worldDragged(_ g: UIPanGestureRecognizer) {
+        let p = g.location(in: self)
+        switch g.state {
+        case .began:
+            touched()
+            let start = worldDragStart ?? p
+            onWorldDrag?("began", start, unproject(start))
+            if start != p { onWorldDrag?("moved", p, unproject(p)) }
+        case .changed: onWorldDrag?("moved", p, unproject(p))
+        case .ended, .cancelled, .failed:
+            onWorldDrag?("ended", p, unproject(p))
+            lastTouch = CACurrentMediaTime()
+        default: break
+        }
     }
 
     private func touched() {
@@ -790,6 +838,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             link.isPaused = suspended
             displayLink = link
             busy = true
+            busyRate = 2
         } else if window == nil {
             displayLink?.invalidate()
             displayLink = nil
@@ -862,12 +911,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
             needsDraw = true
         }
+        var animating = false
         for m in markers {
+            m.advance(now: now, zoom: zoom, reading: reading, still: still) { lon, lat in project(lon: lon, lat: lat).point }
             let p = project(lon: m.lon, lat: m.lat)
             m.view.center = p.point
-            let hidden = authoredMode || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
+            let hidden = authoredMode || m.resting || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
                 || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
             if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true }
+            if !hidden, m.animates, !still { animating = true }
             // A tiny weight/breath shift belongs to the marker's layer; it never requests a map draw.
             if m.breathes, let image = m.view.imageView {
                 image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
@@ -883,10 +935,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         // the hands, a fling, a flight, the highlight fading or the style changing want the full rate;
         // the slow turn (and the names fading with it) is smooth at 30
         let moving = authoredMode || touching > 0 || flight != nil || abs(spin.dx) + abs(spin.dy) > 2 || fadingUp || restyling
-        if moving != busy {
+        // something living on the globe (a sprite on its way) is smooth at 60
+        let rate = moving ? 2 : animating ? 1 : 0
+        if rate != busyRate {
+            busyRate = rate
             busy = moving
-            link.preferredFrameRateRange = moving ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
-                                                  : CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
+            link.preferredFrameRateRange = rate == 2 ? CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+                : rate == 1 ? CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60)
+                : CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
         }
     }
 

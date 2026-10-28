@@ -3,7 +3,7 @@ import Observation
 
 /// What the workbench counts: the resources a prototype makes and must give back when it ends.
 nonisolated enum LiveKind: String, CaseIterable, Sendable {
-    case stages, markers, globes, films, webViews = "web views"
+    case stages, markers, globes, films, scripts, webViews = "web views"
 }
 
 /// How many of each kind exist now, for the workbench's leak check: once a prototype has ended,
