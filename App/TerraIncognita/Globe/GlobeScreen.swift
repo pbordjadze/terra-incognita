@@ -19,11 +19,15 @@ struct GlobeScreen: View {
 
     /// What an active prototype puts at the foot instead of the caption (its words and its date).
     let foot: AnyView?
+    /// A lens's chrome lies over the screen: the caption and the invitation keep their place (the
+    /// globe's room is measured with them) but are neither shown nor read.
+    let quiet: Bool
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil, foot: AnyView? = nil,
-         onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
+         quiet: Bool = false, onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
         self.active = active
         self.foot = foot
+        self.quiet = quiet
         self.style = style
         self.keepClear = keepClear
         self.invitation = invitation
@@ -68,6 +72,9 @@ struct GlobeScreen: View {
                     CaptionView(caption: caption, style: Self.style)
                 }
             }
+            .opacity(quiet ? 0 : 1)
+            .allowsHitTesting(!quiet)
+            .accessibilityHidden(quiet)
             .id(foot == nil ? caption.title + style.rawValue + (invitation?.id ?? "") : "foot")
             .transition(.opacity.combined(with: .offset(y: 8)))
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }

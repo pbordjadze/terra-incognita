@@ -2,9 +2,10 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// The app: the Wikipedia globe with the atlas's doorways on it, one small workbench button, and while
-/// a prototype is active, its chip (what it is, Open, and ✕ back to the atlas) with whatever it has
-/// added to the globe, and its panel when it shows one.
+/// The app: the globe with the atlas's doorways on it, one small workbench button, and while a
+/// prototype is active, its chip (what it is, Open, and ✕ back to the atlas) with whatever it has
+/// added to the globe, its panel when it shows one, and a lens's chrome while one is open (the
+/// experience on the globe itself, which then has the screen to itself).
 struct PlaygroundRoot: View {
     @State private var playground = Playground()
     /// Where the controls are, so the globe keeps its names clear of them.
@@ -15,13 +16,14 @@ struct PlaygroundRoot: View {
 
     private var style: GlobeStyle { playground.stage?.style ?? .base }
     private var covered: Bool { playground.screen != nil }
+    private var lens: PlaygroundLens? { playground.stage?.lens }
     /// Inside the Persian page's frame, when that parked style is on.
     private var inset: CGFloat { style == .persian ? PersianCaption.pageRoom : 16 }
 
     var body: some View {
         // (paused under the workbench too: nothing turns behind a menu, and its list has the main thread)
         GlobeScreen(active: !covered && !playground.workbenchShown && scenePhase == .active, style: style,
-                    keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot,
+                    keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot, quiet: lens != nil,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { playground.globeDrawn($0) })
             .accessibilityHidden(covered)
@@ -42,8 +44,21 @@ struct PlaygroundRoot: View {
                 .padding(.leading, 24)
                 .padding(.trailing, inset)
                 .padding(.top, style == .persian ? PersianCaption.pageRoom : 8)
+                // (under a lens's chrome they keep their place, so the globe's room stays as it was)
+                .opacity(lens == nil ? 1 : 0)
+                .allowsHitTesting(lens == nil)
+                .accessibilityHidden(lens != nil)
             }
             .animation(.easeInOut(duration: 0.25), value: playground.stage?.prototype.id)
+            // a lens: the experience on the globe itself, its chrome over the globe it drives
+            .overlay {
+                if let lens {
+                    lens.chrome()
+                        .id(lens.id)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: lens?.id)
             .overlay {
                 Color("LaunchBackground").opacity(veil).ignoresSafeArea().allowsHitTesting(false)
             }
