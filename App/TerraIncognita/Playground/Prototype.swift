@@ -277,6 +277,8 @@ final class PrototypeStage {
         let view = GeoLayerView()
         geo = view
         globe?.addOverlay(view)
+        // (geography lies above any pictures, whichever was asked for first)
+        if let images { view.superview?.insertSubview(view, aboveSubview: images) }
         return view
     }
 
