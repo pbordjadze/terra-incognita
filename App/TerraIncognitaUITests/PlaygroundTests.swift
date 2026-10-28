@@ -29,7 +29,7 @@ final class PlaygroundTests: XCTestCase {
         defer { app.terminate() }
         openWorkbench(in: app)
         let listed = listedPrototypes(in: app)
-        for id in ["plain", "camelid", "whale", "ocean", "water", "leaf", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "film"] {
+        for id in ["plain", "camelid", "whale", "ocean", "water", "leaf", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "wikipedia", "film"] {
             XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }
     }
@@ -70,7 +70,7 @@ final class PlaygroundTests: XCTestCase {
         attach("13-live-after", in: app)
     }
 
-    /// The Persian style and the films are parked, not gone.
+    /// The Persian and Wikipedia styles and the films are parked, not gone.
     @MainActor func testParkedDirectionsRemainOneTapAway() {
         let app = XCUIApplication()
         app.launch()
@@ -79,6 +79,11 @@ final class PlaygroundTests: XCTestCase {
         startPrototype("persian", in: app)
         XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.waitForExistence(timeout: 10))
         attach("20-persian", in: app)
+        endPrototype(in: app)
+
+        startPrototype("wikipedia", in: app)
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.waitForExistence(timeout: 10))
+        attach("20-wikipedia", in: app)
         endPrototype(in: app)
 
         startPrototype("film", in: app)

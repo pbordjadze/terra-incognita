@@ -12,7 +12,7 @@ struct PlaygroundRoot: View {
     @State private var veil = 1.0
     @Environment(\.scenePhase) private var scenePhase
 
-    private var style: GlobeStyle { playground.stage?.style ?? .wikipedia }
+    private var style: GlobeStyle { playground.stage?.style ?? .base }
     private var covered: Bool { playground.screen != nil }
     /// Inside the Persian page's frame, when that parked style is on.
     private var inset: CGFloat { style == .persian ? PersianCaption.pageRoom : 16 }
