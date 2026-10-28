@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Preview: __TITLE__</title>
 <style>
+  /* the globe's own type (Globe/fonts), for what a runtime-2 pack asks the host to draw */
+  @font-face { font-family: "Libertinus Serif"; font-style: normal; font-weight: 400; src: url(/_harness/fonts/LibertinusSerif-Regular.otf) format("opentype"); }
+  @font-face { font-family: "Libertinus Serif"; font-style: italic; font-weight: 400; src: url(/_harness/fonts/LibertinusSerif-Italic.otf) format("opentype"); }
+  @font-face { font-family: "Libertinus Serif"; font-style: normal; font-weight: 600; src: url(/_harness/fonts/LibertinusSerif-Semibold.otf) format("opentype"); }
   :root { --paper: #F6F2E7; --ink: #2A2113; --quiet: #5A4A33; --line: #D9D2C0; --link: #0A5A80; --err: #8C1D18; }
   * { box-sizing: border-box; }
   html { background: #E9E5DA; color: var(--ink); color-scheme: light; }
@@ -39,6 +43,29 @@
            background: rgba(244, 241, 234, .94); text-align: center; padding: 24px; }
   #ended[hidden] { display: none; }
   #ended p { margin: 0; max-width: 24ch; }
+
+  /* The foot of the screen while a pack shows a date or a caption (terra.time, terra.caption): a paper ground fading up,
+     the eyebrow, the date, the words, then the time strip. The ground starts above the content: its first third is the fade. */
+  #foot { --ts: 1; position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; isolation: isolate; pointer-events: none;
+          padding: 8px 20px 26px; font-family: "Libertinus Serif", Georgia, serif; }
+  #foot[hidden] { display: none; }
+  #foot::before { content: ""; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; top: -50%;
+                  background: linear-gradient(to bottom, rgba(246, 242, 231, 0) 0%, rgba(246, 242, 231, .92) 33.333%, rgba(246, 242, 231, .92) 100%); }
+  #foot .inner { max-width: 560px; margin: 0 auto; }
+  #foot .eyebrow { font-size: calc(12.5px * var(--ts)); line-height: 1.3; letter-spacing: .18em; text-transform: uppercase; color: #B04234; }
+  #foot .title { font-size: calc(30px * var(--ts)); line-height: 1.15; font-weight: 600; color: #253440; margin: 2px 0 0; }
+  #foot .text { font-size: calc(17px * var(--ts)); line-height: 1.35; font-style: italic; color: #3C464E; margin: 6px 0 0; }
+  #foot [hidden] { display: none !important; }
+  #foot .row { display: flex; align-items: center; gap: 6px; margin-top: 10px; pointer-events: auto; }
+  #date-play { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 22px; background: none; color: #253440; cursor: pointer; }
+  #date-play svg { display: block; width: 100%; height: 100%; }
+  #date-play:focus-visible, #date-strip:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  #date-strip { --inset: 14px; position: relative; flex: 1; min-width: 0; height: 44px; touch-action: none; cursor: ew-resize; user-select: none; }
+  #date-strip .line { position: absolute; left: var(--inset); right: var(--inset); top: 50%; height: 1px; background: rgba(37, 52, 64, .45); }
+  #date-strip .at { position: absolute; top: 50%; left: calc(var(--inset) + (100% - 2 * var(--inset)) * var(--f)); }
+  #date-strip .tick { width: 5.2px; height: 5.2px; margin: -2.6px 0 0 -2.6px; border-radius: 50%; background: #3B4A54; box-sizing: border-box; }
+  #date-strip .tick.hollow { background: #F6F2E7; border: 1.2px solid #3B4A54; }
+  #date-strip .needle { width: 2px; height: 26px; margin: -13px 0 0 -1px; border-radius: 1px; background: #B04234; }
   .controls { width: 320px; max-width: 100%; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
   .controls h2 { font-size: 15px; margin: 0 0 8px; }
   .controls section + section { margin-top: 18px; }
@@ -69,6 +96,17 @@
       <div id="stage" tabindex="0" role="application" aria-label="Stand-in globe. Arrow keys turn it; plus and minus zoom.">
         <canvas id="globe"></canvas>
         <div id="markers"></div>
+      </div>
+      <div id="foot" hidden data-testid="foot">
+        <div class="inner">
+          <div class="eyebrow" id="foot-eyebrow" data-testid="foot-eyebrow" hidden></div>
+          <div class="title" id="foot-title" data-testid="foot-title" hidden></div>
+          <p class="text" id="foot-text" data-testid="foot-text" hidden></p>
+          <div class="row" id="foot-time" hidden>
+            <button id="date-play" data-testid="date-play" type="button" aria-label="Play" hidden></button>
+            <div id="date-strip" data-testid="date-strip" role="slider" tabindex="0" aria-label="Date"></div>
+          </div>
+        </div>
       </div>
       <button id="back" type="button" aria-label="Back to the globe">&lsaquo;</button>
       <div id="ended" hidden>

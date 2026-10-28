@@ -41,8 +41,9 @@ struct Invitation: Equatable {
 }
 
 /// One prototype's time on the globe. It is made when the prototype starts and owns everything the
-/// prototype adds (markers, an overlay, a style, a screen, an invitation); `end` takes all of it
-/// away, so the plain globe is exactly as it was. The workbench's isolation rule lives here.
+/// prototype adds (markers, an overlay, geography drawn by the globe, a date, words at the foot, a
+/// style, a screen, an invitation); `end` takes all of it away, so the plain globe is exactly as it
+/// was. The workbench's isolation rule lives here.
 @Observable
 final class PrototypeStage {
     let prototype: Prototype
@@ -56,11 +57,20 @@ final class PrototypeStage {
     var loading = false
     /// Something here opens a screen: the chip offers Open.
     private(set) var canOpen = false
+    /// The globe's date while it runs (runtime 2), and what it says at the foot of the screen.
+    private(set) var time: GlobeTime?
+    private(set) var caption: StageCaption?
 
     @ObservationIgnored private weak var playground: Playground?
     @ObservationIgnored private var markers: [GlobeMarker] = []
     @ObservationIgnored private var overlay: WebPackOverlay?
     @ObservationIgnored private var invitationAction: (() -> Void)?
+    /// A globe pack's own page (its sources, its longer account), for the chip's Open.
+    @ObservationIgnored private var openAction: (() -> Void)?
+    @ObservationIgnored private var geo: GeoLayerView?
+    @ObservationIgnored private var playback: Task<Void, Never>?
+    /// It changed how the globe behaves (hid today's borders, stopped its turn): undone at the end.
+    @ObservationIgnored private var globeChanged = false
     private let live = LiveCount.Token(.stages)
 
     init(prototype: Prototype, playground: Playground) {
@@ -118,9 +128,12 @@ final class PrototypeStage {
 
     func acceptInvitation() { invitationAction?() }
 
-    /// What the chip's Open does: the first marker that opens something.
+    /// What the chip's Open does: the first marker that opens something, else the invitation, else a
+    /// globe pack's own page.
     func open() {
-        if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() } else { invitationAction?() }
+        if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() }
+        else if let invitationAction { invitationAction() }
+        else { openAction?() }
     }
 
     /// A pack on the globe: its anchor, markers, and overlay; or its own screen.
@@ -146,14 +159,27 @@ final class PrototypeStage {
                                   self?.present("pack:\(pack.id):\(marker.id)") { WebPackScreen(pack: pack, params: ["marker": marker.id]) }
                               } : nil))
         }
+        if m.runtime >= 2 {
+            // a pack the globe draws for holds it where it flew, from the start: its page may take
+            // longer to load than the globe waits before turning again
+            globeChanged = true
+            globe?.holdsStill = true
+        }
+        if !canOpen, FileManager.default.fileExists(atPath: pack.root.appending(path: m.entry ?? "index.html").path(percentEncoded: false)) {
+            openAction = { [weak self] in self?.present("pack:\(pack.id):page") { WebPackScreen(pack: pack) } }
+            canOpen = true
+        }
         if m.overlay != nil, let globe {
             let overlay = WebPackOverlay(pack: pack) { [weak self] event in self?.handle(event, pack: pack) }
             self.overlay = overlay
             globe.addOverlay(overlay)
-            globe.onFrame = { [weak overlay, weak globe] in
-                guard let overlay, let globe else { return }
-                let s = globe.stageCamera
-                overlay.update(camera: s.camera, centre: s.centre, radius: s.radius)
+            globe.onFrame = { [weak self, weak overlay, weak globe] in
+                guard let globe else { return }
+                if let overlay {
+                    let s = globe.stageCamera
+                    overlay.update(camera: s.camera, centre: s.centre, radius: s.radius)
+                }
+                self?.geo?.update(globe: globe)
             }
             if m.taps ?? false {
                 globe.onWorldTap = { [weak overlay] point, place in
@@ -170,7 +196,101 @@ final class PrototypeStage {
         case .open(let params): present("pack:\(pack.id):open") { WebPackScreen(pack: pack, params: params) }
         case .flyTo(let camera, let duration): fly(to: camera, duration: duration)
         case .log(let line): PackStore.shared.record("\(pack.id): \(line)")
+        case .geoSet(let layer):
+            if !geoLayers().set(layer) { PackStore.shared.record("\(pack.id): error: geo layer \(layer.id) is over the globe's budget") }
+        case .geoRemove(let id): geo?.remove(id)
+        case .geoClear: geo?.clear()
+        case .timeShow(let time, let carry): show(time, carry: carry)
+        case .timeSet(let value): setTime(value, by: nil)
+        case .timePlay(let playing): play(playing, by: .host)
+        case .timeHide:
+            stopPlayback()
+            time = nil
+        case .caption(let caption): self.caption = caption
+        case .globe(let historical, let still):
+            globeChanged = true
+            globe?.historicalReference = historical
+            globe?.holdsStill = still
         }
+    }
+
+    /// The globe's own drawing of what the page asks for, made on first use, under the markers.
+    private func geoLayers() -> GeoLayerView {
+        if let geo { return geo }
+        let view = GeoLayerView()
+        geo = view
+        globe?.addOverlay(view)
+        return view
+    }
+
+    // MARK: the globe's date (runtime 2)
+
+    private func show(_ shown: GlobeTime, carry: Bool) {
+        guard !ended else { return }
+        stopPlayback()
+        var t = shown
+        let wanted = t.playing
+        t.playing = false
+        if carry, let year = playground?.lastYear {
+            let v = t.value(forYear: year)
+            if v >= t.min, v <= t.max { t.value = v }
+        }
+        time = t
+        playground?.lastYear = t.year
+        overlay?.time(t.value, playing: false, by: .host)
+        if wanted, !UIAccessibility.isReduceMotionEnabled { play(true) }
+    }
+
+    /// Moves the date: the reader's drag (which pauses playback), playback's tick, or the page's own
+    /// `terra.time.set` (`by` nil: the page knows already).
+    func setTime(_ value: Double, by mover: GlobeTime.Mover?) {
+        guard !ended, var t = time, value.isFinite else { return }
+        if mover == .reader, t.playing { stopPlayback(); t.playing = false }
+        t.value = t.clamped(value)
+        time = t
+        playground?.lastYear = t.year
+        if let mover { overlay?.time(t.value, playing: t.playing, by: mover) }
+    }
+
+    /// Plays the date forward at its rate, about thirty steps a second, to its end; the page hears of
+    /// it only when something changed. It holds while the globe is out of sight (the workbench or a
+    /// screen over it, the app in the background).
+    func play(_ playing: Bool, by mover: GlobeTime.Mover = .reader) {
+        guard !ended, var t = time else { return }
+        let was = (t.playing, t.value)
+        stopPlayback()
+        if playing, t.value >= t.max { t.value = t.min }
+        t.playing = playing && t.playable
+        time = t
+        if (t.playing, t.value) != was { overlay?.time(t.value, playing: t.playing, by: mover) }
+        guard t.playing else { return }
+        playback = Task { [weak self] in
+            var last = ContinuousClock.now
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(33))
+                guard let self, !Task.isCancelled, var t = self.time, t.playing else { return }
+                let now = ContinuousClock.now
+                let elapsed = (now - last).components
+                // (a pause, a lock or the background is not time played)
+                let dt = min(0.1, Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18)
+                last = now
+                guard self.playground?.screen == nil, self.playground?.workbenchShown != true,
+                      UIApplication.shared.applicationState == .active else { continue }
+                let next = min(t.max, t.value + t.rate * dt)
+                if next >= t.max { t.playing = false }
+                t.value = next
+                self.time = t
+                self.playground?.lastYear = t.year
+                self.overlay?.time(t.value, playing: t.playing, by: .play)
+                if !t.playing { return }
+            }
+        }
+    }
+
+    private func stopPlayback() {
+        playback?.cancel()
+        playback = nil
+        if var t = time, t.playing { t.playing = false; time = t }
     }
 
     /// It could not start: say why, and give the reader back the plain globe.
@@ -196,8 +316,20 @@ final class PrototypeStage {
             globe?.onWorldTap = nil
         }
         overlay = nil
+        stopPlayback()
+        time = nil
+        caption = nil
+        geo?.clear()
+        geo?.removeFromSuperview()
+        geo = nil
+        if globeChanged {
+            globe?.historicalReference = false
+            globe?.holdsStill = false
+            globeChanged = false
+        }
         invitation = nil
         invitationAction = nil
+        openAction = nil
         canOpen = false
         style = .wikipedia
     }

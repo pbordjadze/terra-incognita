@@ -5,6 +5,9 @@
 //   /                       the prototypes
 //   /preview/<id>           the harness, ?device=phone|ipad
 //   /pack/<id>/<path>       a pack's files, html with terra.js injected (?mode=overlay, ?marker=x)
+//   /_harness/...           the harness's own files: harness.js, the stand-in globe's land and countries, and
+//                           (for the geography, date and caption a runtime-2 pack asks the host to draw)
+//                           the globe's type spec (type.json) and fonts (fonts/<file>, from Globe/fonts/)
 //   /packs/...              with --packs: a packed folder (catalog.json, packs/, open/), for the simulator
 // Binds 127.0.0.1 only and makes no outgoing request.
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -118,14 +121,19 @@ function start(options) {
   const opts = Object.assign({ port: 8790, packs: null, prototypes: path.join(ROOT, 'Prototypes') }, options);
   const protos = path.resolve(opts.prototypes);
   const packsDir = opts.packs ? path.resolve(opts.packs) : null;
-  const runtime = path.join(protos, '_runtime', 'terra.js');
+  // the runtime comes with the prototypes it serves, or (a temporary folder of them has none) from the repository's
+  const own = path.join(protos, '_runtime', 'terra.js');
+  const runtime = fs.existsSync(own) ? own : path.join(ROOT, 'Prototypes', '_runtime', 'terra.js');
   const land = path.join(ROOT, 'tools/plates/data/land-50m.json');
+  const countries = path.join(ROOT, 'tools/plates/data/countries-50m.json');
+  const globe = path.join(ROOT, 'Globe');
 
   const server = http.createServer((req, res) => {
     if (req.method !== 'GET' && req.method !== 'HEAD') return sendText(res, 405, 'GET only');
     let url;
     try { url = new URL(req.url, 'http://127.0.0.1'); } catch (e) { return sendText(res, 400, 'Bad request'); }
     const p = url.pathname;
+    let m;
     const file = (full, type, extra) => fs.readFile(full, (err, data) => err ? sendText(res, 404, 'Not found')
       : send(res, 200, req.method === 'HEAD' ? '' : data, Object.assign({ 'Content-Type': type || typeOf(full) }, extra)));
 
@@ -133,8 +141,15 @@ function start(options) {
     if (p === '/_runtime/terra.js') return file(runtime, 'text/javascript; charset=utf-8');
     if (p === '/_harness/harness.js') return file(path.join(HARNESS, 'harness.js'), 'text/javascript; charset=utf-8');
     if (p === '/_harness/land-50m.json') return file(land, 'application/json');
+    if (p === '/_harness/countries-50m.json') return file(countries, 'application/json');
+    if (p === '/_harness/type.json') return file(path.join(globe, 'type.json'), 'application/json');
+    m = /^\/_harness\/fonts\/([^/]+\.(?:otf|ttf))$/.exec(p);
+    if (m) {
+      const font = resolveIn(path.join(globe, 'fonts'), m[1]);
+      return font ? file(font) : sendText(res, 404, 'Not found');
+    }
 
-    let m = /^\/preview\/([^/]+)\/?$/.exec(p);
+    m = /^\/preview\/([^/]+)\/?$/.exec(p);
     if (m) {
       const { manifest, error } = readManifest(protos, m[1]);
       if (error) return sendText(res, 404, `${m[1]}: ${error}`);

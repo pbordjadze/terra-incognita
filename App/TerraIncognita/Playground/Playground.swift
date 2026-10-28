@@ -15,6 +15,8 @@ final class Playground {
     private(set) var stage: PrototypeStage?
     var screen: PlaygroundScreen?
     var workbenchShown = false
+    /// The date the last time-aware prototype left (as a year with its fraction), for one that carries it.
+    @ObservationIgnored var lastYear: Double?
     /// The last prototype started, for the workbench's "Again".
     private(set) var recent: String?
     /// Something that went wrong starting a prototype, shown until dismissed.

@@ -1,0 +1,13 @@
+{
+  "id": "borders-on-old-maps",
+  "title": "Borders on old maps",
+  "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
+  "runtime": 2,
+  "presentation": "globe",
+  "entry": "index.html",
+  "anchor": { "lon": 19, "lat": 51, "zoom": 3 },
+  "overlay": "overlay.html",
+  "taps": true,
+  "shelf": "current",
+  "background": "#F6F2E7"
+}

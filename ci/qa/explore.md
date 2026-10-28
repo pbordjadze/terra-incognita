@@ -57,14 +57,18 @@ HTTP.
     seen; list it under Not tested.
   - Maestro has no pinch and no two-finger pan: zoom and move by the app's other ways, and note
     what you couldn't try.
-  What to expect of Terra Incognita (no session has explored it yet: add what you learn under
-  Automation problems):
+  What earlier sessions learned about Terra Incognita:
   - The globe is drawn by Metal in one view: its names, coasts and borders are pixels, not
     elements, so read them from screenshots; `inspect_screen` lists the buttons, captions and
     sheets around it. Tap a country by point, from the screenshot.
-  - Maestro's `swipe` turns the globe (a one-finger drag); a fast one flings it, and the globe
-    also turns slowly when left alone, so take a fresh screenshot before tapping a place. Double
-    tap zooms in; there is no pinch to zoom out, so zoom in sparingly.
+  - The globe turns by itself, fast enough to move about 70° of longitude between a screenshot
+    and your next flow (October 27: a tap aimed at Brazil chose Kiribati). Read the caption after
+    every tap to see what was chosen, aim at large countries, and judge a tap by the caption, not
+    by where you aimed. Maestro's `swipe` turns the globe too (a fast one flings it). Double tap
+    zooms in; there is no pinch to zoom out, so zoom in sparingly.
+  - A name fades in or out over a moment as the globe turns: a screenshot can catch it half-faded.
+    Take a second screenshot before calling a name half-toned.
+  - The workbench is a popover whose list scrolls: swipe within it to reach the lower entries.
 - Read and Write, in your folder `{{DIR}}`: `app.log` is the app's live log, `crashes/` gets any
   crash report and `crashes.txt` names them (you can't list a folder; empty means none),
   `report.md` is your report. Save evidence with

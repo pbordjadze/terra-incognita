@@ -15,6 +15,11 @@ import WebKit
 /// What a pack's page asks of the host.
 enum WebPackEvent {
     case close, open([String: String]), flyTo(GlobeCamera, duration: Double), log(String)
+    // runtime 2, from an overlay: geography drawn by the globe, its date, the foot's words, the globe itself
+    case geoSet(GeoLayerView.Layer), geoRemove(String), geoClear
+    case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeHide
+    case caption(StageCaption?)
+    case globe(historical: Bool, still: Bool)
 }
 
 // MARK: - The screen
@@ -148,7 +153,8 @@ private struct PackWebView: UIViewRepresentable {
                     switch event {
                     case .close: onClose()
                     case .log(let line): PackStore.shared.record("\(pack.id): \(line)")
-                    case .open, .flyTo: break // (an overlay's to ask for)
+                    case .open, .flyTo, .geoSet, .geoRemove, .geoClear, .timeShow, .timeSet, .timePlay, .timeHide, .caption, .globe:
+                        break // (an overlay's to ask for; the controller sends a screen none of the runtime-2 ones)
                     }
                 },
                 onFailure: onFailure)
@@ -208,6 +214,11 @@ final class WebPackOverlay: UIView {
     /// The globe was tapped at `point` (this view's coordinates; the place under it, if any).
     func tap(at point: CGPoint, place: (lon: Double, lat: Double)?) {
         controller.sendTap(x: Double(point.x), y: Double(point.y), place: place)
+    }
+
+    /// The globe's date moved (runtime 2).
+    func time(_ value: Double, playing: Bool, by mover: GlobeTime.Mover) {
+        controller.sendTime(value, playing: playing, by: mover)
     }
 
     /// Tears the page down. Safe to call more than once.
@@ -526,6 +537,30 @@ final class PackWebController: NSObject, WKNavigationDelegate {
         pumpCamera()
     }
 
+    /// The globe's date moved (runtime 2): by the reader, by playback, or by the host. One message in
+    /// flight at a time, as with the camera: while one is, only the latest waits, so a drag or playback
+    /// never queues up behind a busy page.
+    func sendTime(_ value: Double, playing: Bool, by mover: GlobeTime.Mover) {
+        guard !stopped, value.isFinite else { return }
+        pendingTime = ["type": "time", "value": value, "playing": playing, "by": mover.rawValue]
+        pumpTime()
+    }
+
+    private var pendingTime: [String: Any]?
+    private var timeInFlight = false
+
+    private func pumpTime() {
+        guard !stopped, !timeInFlight, let message = pendingTime, let view = webView, let json = Self.json(message) else { return }
+        pendingTime = nil
+        timeInFlight = true
+        let script = "window.terra&&window.terra._receive(\(json));0"
+        Task { [weak self] in
+            _ = try? await view.evaluateJavaScript(script)
+            self?.timeInFlight = false
+            self?.pumpTime()
+        }
+    }
+
     func sendTap(x: Double, y: Double, place: (lon: Double, lat: Double)?) {
         guard ready, !stopped, x.isFinite, y.isFinite else { return }
         var message: [String: Any] = ["type": "tap", "x": x, "y": y]
@@ -550,6 +585,47 @@ final class PackWebController: NSObject, WKNavigationDelegate {
         case "open": onEvent?(.open(Self.stringParameters(body["params"])))
         case "flyTo": pageFlies(body)
         case "log": pageLogged(body)
+        case "geo" where mode == .overlay: pageDraws(body)
+        case "time" where mode == .overlay: pageDates(body)
+        case "caption" where mode == .overlay:
+            // (the foot is a caption, not a page: a line or two)
+            let title = String(((body["title"] as? String) ?? "").prefix(120)), text = String(((body["text"] as? String) ?? "").prefix(280))
+            onEvent?(.caption(title.isEmpty && text.isEmpty ? nil : StageCaption(title: title, text: text)))
+        case "globe" where mode == .overlay:
+            onEvent?(.globe(historical: (body["historical"] as? Bool) ?? false, still: (body["still"] as? Bool) ?? false))
+        default: break
+        }
+    }
+
+    private func pageDraws(_ body: [String: Any]) {
+        switch body["op"] as? String {
+        case "set":
+            guard let id = body["id"] as? String, !id.isEmpty, id.count <= 64 else { return }
+            if let layer = GeoLayerView.layer(id: id, features: body["features"], options: (body["options"] as? [String: Any]) ?? [:],
+                                              packRoot: pack.root) {
+                onEvent?(.geoSet(layer))
+            } else {
+                onEvent?(.log("error: geo layer \(id) has a style the globe does not draw"))
+            }
+        case "remove": if let id = body["id"] as? String { onEvent?(.geoRemove(id)) }
+        case "clear": onEvent?(.geoClear)
+        default: break
+        }
+    }
+
+    private func pageDates(_ body: [String: Any]) {
+        switch body["op"] as? String {
+        case "show":
+            let options = (body["options"] as? [String: Any]) ?? [:]
+            guard var time = GlobeTime.from(options) else {
+                onEvent?(.log("error: terra.time.show needs a min below its max"))
+                return
+            }
+            time.playing = (options["playing"] as? Bool) ?? false
+            onEvent?(.timeShow(time, carry: (options["carry"] as? Bool) ?? false))
+        case "set": if let v = Self.number(body["value"]) { onEvent?(.timeSet(v)) }
+        case "play": onEvent?(.timePlay((body["playing"] as? Bool) ?? true))
+        case "hide": onEvent?(.timeHide)
         default: break
         }
     }

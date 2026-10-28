@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '../../..');
-const directory = path.join(root, 'Prototypes/time-atlas');
+const directory = path.join(root, 'Prototypes/borders-on-old-maps');
 const inputSha = {
   1530:'743b3db1fd414891e5d9e9eb868c2aaf2b04810e',
   1600:'ea95bd8fcfb7cdf889739aa6222cbc62329d93ec',

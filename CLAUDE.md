@@ -120,9 +120,10 @@ Keep design discussions and plans in that private repository.
   off Madagascar and an invitation), the river study (`Water/`, `App/TerraIncognita/Water/`, `water`;
   `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
-  helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar prototypes in succession
-  with the live counts back to the plain globe's, parked work, the bundled pack, and a remote
-  revision served by `tools/playground/serve.cjs` arriving, rolling back and opening offline.
+  `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
+  prototypes in succession with the live counts back to the plain globe's, parked work, the bundled
+  pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
+  offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
@@ -161,6 +162,39 @@ Keep design discussions and plans in that private repository.
   - `packs.yml` (Linux only): a push that changes only web packs skips the macOS workflow; this one
     validates them and, once R2 is configured (repository secrets), publishes changed packs as new
     revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
+
+## The runtime: one library that grows
+
+Every new experience, and every new element on the map, is built on the playground's runtime: a
+pack using the tools the runtime offers (the plan is painting-company row 154). Built into the app
+instead: the stage itself (the globe, camera, date, caption, touch routing, workbench, downloads)
+and what every experience relies on and none owns. When in doubt, it's runtime.
+
+- **Reuse first.** Read what the runtime offers (`docs/playground.md` › The contract, and the
+  shared script modules once there are any) before building.
+- **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
+  never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
+  experience that needs it.
+- **No web views.** Nothing new runs or draws in a web view. If a tool is missing, build it
+  (script, or Swift with the next release) and let the experience wait for it. Until runtime 3
+  (pack scripts in JavaScriptCore) exists, the next new experience starts by building it.
+- **Script before native.** A tool goes in shared script when it can (it ships with packs, no
+  IPA); in Swift (a new `terra.*` capability, raising the runtime version) only when it must draw
+  or animate every frame, take touches, be fast, or reach the system. The script decides; the
+  globe draws.
+- **Whoever changes a tool updates everything that uses it, in the same change.** A tool with one
+  user may change freely; with more, only compatibly. Packs on older runtime versions keep working
+  until they have moved.
+- **A tool lands complete:** in the contract with an example, tested, mirrored in the preview
+  (`serve.cjs`) so an agent can see it without a Mac, and accessible inside the tool (VoiceOver,
+  text size, Reduce Motion).
+- **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
+  date and touches rather than taking them, and leaves nothing behind when its experience ends.
+- **What runs in a web view today moves onto the runtime:** the runtime-2 packs' logic and the
+  delivery check with runtime 3, then Clouds' shader to Metal, the Aegean leaf and the river study
+  rebuilt natively (order and status: painting-company row 154). Each keeps opening as it does
+  until it has moved; the web host goes once nothing uses it (the owner's call). The native prototypes move onto the
+  runtime's tools when they are next reworked.
 
 ## Design rules
 

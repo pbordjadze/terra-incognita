@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 1
+RUNTIME = 2
 OPEN_SCHEME = 'terraincognita'
 
 ID_RE = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])')
@@ -329,8 +329,8 @@ def validate_manifest(m, name, files, rep, where):
         rep.error(where, f'"id" ("{pid}") must equal the folder name ("{name}")')
     _check_str(rep, where, m, 'title', 1, 60)
     _check_str(rep, where, m, 'summary', 1, 200)
-    if not is_int(m.get('runtime')) or m.get('runtime') != RUNTIME:
-        rep.error(where, f'"runtime" must be the integer {RUNTIME} (the only runtime there is)')
+    if not is_int(m.get('runtime')) or not 1 <= m.get('runtime') <= RUNTIME:
+        rep.error(where, f'"runtime" must be an integer from 1 to {RUNTIME} (the newest this repository\'s app hosts)')
     pres = m.get('presentation')
     if pres not in ('screen', 'globe'):
         rep.error(where, '"presentation" must be "screen" or "globe"')
