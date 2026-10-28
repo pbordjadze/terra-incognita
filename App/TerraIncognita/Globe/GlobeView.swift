@@ -56,6 +56,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
     }
+    /// A prototype asked the globe to stay where the reader leaves it: no idle turn.
+    var holdsStill = false
     /// Modern coastlines remain an explicitly labelled geographic reference. Contemporary political
     /// lines, names and country selection are suppressed while illustrating prehistoric periods.
     var historicalReference = false {
@@ -889,7 +891,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     private var idleTurns: Bool {
-        if authoredMode { return false }
+        if authoredMode || holdsStill { return false }
         #if DEBUG
         return !held
         #else

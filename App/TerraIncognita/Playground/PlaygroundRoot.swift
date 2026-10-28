@@ -20,7 +20,7 @@ struct PlaygroundRoot: View {
     var body: some View {
         // (paused under the workbench too: nothing turns behind a menu, and its list has the main thread)
         GlobeScreen(active: !covered && !playground.workbenchShown && scenePhase == .active, style: style,
-                    keepClear: [controlsFrame], invitation: playground.stage?.invitation,
+                    keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { playground.globeDrawn($0) })
             .accessibilityHidden(covered)
@@ -73,6 +73,14 @@ struct PlaygroundRoot: View {
             }
             .onOpenURL { playground.handle($0) }
             .background(Color("LaunchBackground"))
+    }
+
+    /// A prototype's words and date at the foot of the screen (runtime 2), in the caption's place.
+    private var foot: AnyView? {
+        guard let stage = playground.stage, stage.time != nil || stage.caption != nil else { return nil }
+        return AnyView(GlobeFoot(caption: stage.caption, time: stage.time,
+                                 onTime: { [weak stage] in stage?.setTime($0, by: .reader) },
+                                 onPlay: { [weak stage] in stage?.play($0) }))
     }
 
     private var workbenchButton: some View {

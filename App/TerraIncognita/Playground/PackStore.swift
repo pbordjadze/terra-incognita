@@ -270,7 +270,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 1
+    nonisolated static let runtime = 2
     static let shared = PackStore()
 
     /// One per pack id, by title.

@@ -17,9 +17,13 @@ struct GlobeScreen: View {
     @State private var captionFrame = CGRect.zero
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil,
+    /// What an active prototype puts at the foot instead of the caption (its words and its date).
+    let foot: AnyView?
+
+    init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil, foot: AnyView? = nil,
          onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
         self.active = active
+        self.foot = foot
         self.style = style
         self.keepClear = keepClear
         self.invitation = invitation
@@ -53,7 +57,9 @@ struct GlobeScreen: View {
                     .padding(.horizontal, 30)
                     .padding(.bottom, 8)
                 }
-                if typeSize.isAccessibilitySize && country == nil && invitation != nil {
+                if let foot {
+                    foot
+                } else if typeSize.isAccessibilitySize && country == nil && invitation != nil {
                     // The invitation already names this view; leave room for the globe at large type.
                     EmptyView()
                 } else if style == .persian {
@@ -62,7 +68,7 @@ struct GlobeScreen: View {
                     CaptionView(caption: caption, style: Self.style)
                 }
             }
-            .id(caption.title + style.rawValue + (invitation?.id ?? ""))
+            .id(foot == nil ? caption.title + style.rawValue + (invitation?.id ?? "") : "foot")
             .transition(.opacity.combined(with: .offset(y: 8)))
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
         }

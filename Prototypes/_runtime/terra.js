@@ -1,4 +1,5 @@
-// The playground's runtime, version 1: the whole API a web prototype gets from its host.
+// The playground's runtime, version 2: the whole API a web prototype gets from its host (version 1's,
+// plus geo, time, caption and globe for packs drawn on the globe itself).
 // The app injects this file before a pack's own scripts (App/TerraIncognita/Playground/WebPrototype.swift),
 // and so does the desktop preview (tools/playground/serve.cjs): a page never includes it itself.
 // Change it compatibly, or raise `runtime` here, in Playground.runtime (Swift) and in the docs, together:
@@ -39,7 +40,7 @@
   }
 
   var terra = {
-    runtime: 1,
+    runtime: 2,
     /** { id, revision, origin: 'bundled' | 'downloaded' | 'preview' } */
     pack: boot.pack || { id: 'preview', revision: 0, origin: 'preview' },
     /** 'screen' (its own surface over the paused globe) or 'overlay' (drawn over the live globe) */
@@ -51,7 +52,8 @@
     /** Overlay only: { lon, lat, zoom, cx, cy, radius, width, height }, in CSS pixels (= iOS points). */
     camera: boot.camera || null,
 
-    /** 'settings', 'camera' (overlay), 'tap' (overlay with taps: { x, y, lon, lat }), 'close' */
+    /** 'settings', 'camera' (overlay), 'tap' (overlay with taps: { x, y, lon, lat }), 'time' (overlay,
+     *  the globe's date: { value, playing, by: 'reader' | 'play' | 'host' }), 'close' */
     on: function (type, fn) {
       (listeners[type] = listeners[type] || []).push(fn);
       if (type === 'settings') fn(terra.settings);
@@ -92,6 +94,66 @@
       var wz = -Math.sin(a) * vx + Math.cos(a) * Math.sin(b) * vy + Math.cos(a) * Math.cos(b) * vz;
       return { lon: Math.atan2(wx, wz) / D, lat: Math.asin(Math.max(-1, Math.min(1, wy))) / D };
     },
+    /** Runtime 2, overlay only: geography the app draws on the globe itself, in the globe's own style
+     *  (its line widths, type and halos, at the reader's scale), moving with it at full frame rate.
+     *  A layer is a list of GeoJSON features or bare geometries ([lon, lat] coordinates: Point,
+     *  MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon) and one style:
+     *    'border'   a thin line in the globe's border ink         'area'   a soft fill and its outline
+     *    'ghost'    a dashed outline (another map's, another time) 'track'  a fine dashed line
+     *    'dot'      filled dots at points                          'ring'   hollow dots at points
+     *    'label'    a name at each point (properties.label), on a halo; earlier features win room
+     *    'symbol'   options.image (a file of the pack) at each point, options.width × options.height pt
+     *    'sounding' a line hanging below each point, properties.length pt long, properties.label at its foot
+     *  options: { style, color: '#rrggbb' (fills, dots, labels), minZoom, maxZoom (shown only between),
+     *  font: 'regular' | 'italic' | 'caps' (labels), size (labels, pt), image, width, height (symbols),
+     *  offset: [dx, dy] (labels and symbols: points from their place, right and down) }.
+     *  Setting an id again replaces that layer; a later id draws above an earlier one. */
+    geo: {
+      set: function (id, features, options) {
+        send({ type: 'geo', op: 'set', id: String(id), features: features || [], options: options || {} });
+      },
+      remove: function (id) { send({ type: 'geo', op: 'remove', id: String(id) }); },
+      clear: function () { send({ type: 'geo', op: 'clear' }); }
+    },
+
+    /** Runtime 2, overlay only: the globe's date, at the foot of the screen, which the reader drags.
+     *  show({ unit: 'year' | 'day', min, max, value, ticks: [at | { at, hollow }], playable, rate,
+     *  playing, carry }): 'day' values count days since 1 January 1970 (UTC, negative before);
+     *  ticks mark where the evidence is; rate is units a second while playing (playing starts it;
+     *  never under Reduce Motion); carry starts from the date another prototype left, when it lies
+     *  within min–max. The page hears every change as 'time' and redraws what it shows. */
+    time: {
+      value: null,
+      show: function (options) {
+        var o = Object.assign({ unit: 'year', ticks: [], playable: false, rate: 1, playing: false, carry: false }, options || {});
+        terra.time.value = o.value;
+        send({ type: 'time', op: 'show', options: o });
+      },
+      set: function (value) { terra.time.value = +value; send({ type: 'time', op: 'set', value: +value }); },
+      play: function (playing) { send({ type: 'time', op: 'play', playing: playing !== false }); },
+      hide: function () { send({ type: 'time', op: 'hide' }); }
+    },
+
+    /** Runtime 2, overlay only: the words at the foot of the screen, in the globe's caption type
+     *  (title above the date, text below it). Say what the reader is looking at before why it matters. */
+    caption: {
+      set: function (caption) {
+        var c = caption || {};
+        send({ type: 'caption', title: String(c.title || ''), text: String(c.text || '') });
+      },
+      clear: function () { send({ type: 'caption', title: '', text: '' }); }
+    },
+
+    /** Runtime 2, overlay only: how the globe itself behaves while this runs.
+     *  { historical: true } hides today's borders and names (coasts stay, as a reference);
+     *  { still: true } stops its slow idle turn. Both end with the prototype. */
+    globe: {
+      set: function (options) {
+        var o = options || {};
+        send({ type: 'globe', historical: !!o.historical, still: !!o.still });
+      }
+    },
+
     /** To the workbench's log (and the Xcode console). */
     log: function () {
       send({ type: 'log', level: 'info', message: Array.prototype.map.call(arguments, String).join(' ') });
@@ -112,6 +174,10 @@
           break;
         case 'tap':
           emit('tap', { x: message.x, y: message.y, lon: message.lon, lat: message.lat });
+          break;
+        case 'time':
+          terra.time.value = message.value;
+          emit('time', { value: message.value, playing: !!message.playing, by: message.by || 'host' });
           break;
         case 'close':
           emit('close');
