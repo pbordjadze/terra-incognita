@@ -1,0 +1,8 @@
+    5m 3s  Passed   RemotePackTests/testRemoteRevisionArrivesRollsBackAndWorksOffline()
+   3m 28s  Passed   PlaygroundTests/testParkedDirectionsRemainOneTapAway()
+   3m 17s  Passed   GlobePackTests/testOldMapsChangeWithTheDate()
+    3m 2s  Passed   PlaygroundTests/testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind()
+   2m 55s  Passed   PlaygroundTests/testBundledPackOpensFromTheGlobe()
+   2m 43s  Passed   GlobePackTests/testTheVoyageIsDrawnByTheGlobe()
+   1m 16s  Passed   PlaygroundTests/testColdLaunchIsThePlainGlobe()
+      22s  Passed   PlaygroundTests/testEveryPrototypeIsListed()
