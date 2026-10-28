@@ -170,14 +170,18 @@ final class PackScript {
             sendCamera()
         }
         // once it has stopped (no change for a tenth of a second), the script hears where it came to rest
-        guard cameraSettle == nil else { return }
-        let settle = Timer(timeInterval: 0.05, repeats: true) { [weak self] timer in
+        armSettle()
+    }
+
+    /// A one-shot check that re-arms itself until the camera has rested (so it never outlives the script).
+    private func armSettle() {
+        guard cameraSettle == nil, !stopped else { return }
+        let settle = Timer(timeInterval: 0.05, repeats: false) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, !self.stopped else { timer.invalidate(); return }
-                guard CACurrentMediaTime() - self.lastCameraChange >= 0.1 else { return }
-                timer.invalidate()
+                guard let self else { return }
                 self.cameraSettle = nil
-                self.sendCamera()
+                guard !self.stopped else { return }
+                if CACurrentMediaTime() - self.lastCameraChange >= 0.1 { self.sendCamera() } else { self.armSettle() }
             }
         }
         RunLoop.main.add(settle, forMode: .common)
