@@ -185,8 +185,8 @@ void main() {
   // cover; noise frequency (cells a radian), stretch, warp, octaves, seed; winds (trades,
   // westerlies: radians a day); cyclones' grip. Shown from zoom 'from'; passed from 'a' to 'b';
   // height (radii); shadow and its offset (points); opacity; wisps (filaments rather than shapes)
-  L[0] = Layer(COVER(sCu), 46.0, vec3(1.0), 0.0, 2, 11.0, vec2(-0.11, 0.17), 0.3,
-               1.8, 6.0, 16.0, 0.002, 0.07, 4.0, 0.62, 0.0, white, grey);
+  L[0] = Layer(COVER(sCu), 40.0, vec3(1.0), 0.0, 3, 11.0, vec2(-0.11, 0.17), 0.3,
+               1.8, 6.0, 16.0, 0.002, 0.08, 4.0, 0.72, 0.0, white, grey);
   L[1] = Layer(COVER(sLow), 4.5, vec3(0.85, 1.2, 0.85), 0.5, 7, 23.0, vec2(-0.10, 0.19), 0.8,
                0.0, 2.8, 5.2, 0.004, 0.14, 4.0, 0.80, 0.0, white, grey);
   L[2] = Layer(COVER(sMid), 2.6, vec3(0.6, 1.7, 0.6), 0.5, 7, 37.0, vec2(-0.05, 0.31), 1.2,
@@ -255,7 +255,7 @@ void main() {
       col = mix(col, vec3(1.0), rim * max(toward, 0.0) * 0.6);
     } else {
       // as from space: thin and grey at the edges, thick and white within, the tops lit like relief
-      float feather = max(slope * 1.2, 0.07);
+      float feather = max(slope * 1.2, i == 0 ? 0.035 : 0.07);   // cumulus: crisper
       d = mix(l.cover, smoothstep(-feather, feather, t), f.y);
       if (d < 0.002) continue;
       float body = smoothstep(0.0, 0.3, t);

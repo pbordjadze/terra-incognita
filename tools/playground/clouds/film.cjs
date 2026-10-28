@@ -4,7 +4,7 @@
 //   descent  the whole Earth at the app's pace (a day a minute), then down through the clouds to
 //            the Namib coast, and a moment under them
 //   week     a week of weather at the whole-Earth scale in twenty seconds (21x the app's pace)
-//   node tools/playground/clouds/film.cjs <descent|week> [--device phone|ipad] [--month 10] [--fps 20]
+//   node tools/playground/clouds/film.cjs <descent|week> [--device phone|ipad] [--month 10] [--fps n] [--scale n]
 // Frames and the film go to build/playground/clouds/film/. Needs ffmpeg. Reads only this machine.
 const { chromium } = require('playwright');
 const { execFileSync } = require('node:child_process');
@@ -19,13 +19,13 @@ const lerp = (a, b, t) => a + (b - a) * t;
 
 // keyframes: seconds, then the camera and the simulated day; between them, eased
 const FILMS = {
-  descent: [
+  descent: [   // at 20 frames a second, 1.5x
     { t: 0, lon: 18, lat: 6, zoom: 1, days: 0.40 },
     { t: 6, lon: 15, lat: 2, zoom: 1, days: 0.40 + 6 / 60 },
     { t: 15, lon: 13, lat: -21, zoom: 8, days: 0.40 + 15 / 60 },
     { t: 19, lon: 13, lat: -21, zoom: 8, days: 0.40 + 19 / 60 },
   ],
-  week: [
+  week: [     // at 12 frames a second, 1x: the whole Earth needs fewer pixels, and it is long
     { t: 0, lon: 20, lat: -5, zoom: 1, days: 0 },
     { t: 20, lon: 20, lat: -5, zoom: 1, days: 7, linear: true },
   ],
@@ -54,9 +54,10 @@ function option(args, name, fallback) {
   const args = process.argv.slice(2);
   const device = option(args, '--device', 'phone');
   const month = option(args, '--month', String(new Date().getMonth() + 1));
-  const fps = +option(args, '--fps', '20');
-  const scale = +option(args, '--scale', '1.5');
+  const fpsArg = option(args, '--fps', null), scaleArg = option(args, '--scale', null);
   const name = args[0] || 'descent';
+  const fps = +(fpsArg || (name === 'week' ? 12 : 20));
+  const scale = +(scaleArg || (name === 'week' ? 1 : 1.5));
   const keys = FILMS[name];
   if (!keys) throw new Error(`no film called ${name} (${Object.keys(FILMS).join(', ')})`);
   const [w, h] = SIZES[device];
