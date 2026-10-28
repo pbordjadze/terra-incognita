@@ -437,7 +437,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         guard style == .ground || groundMix > 0, groundMonth != month, let device, let queue else { return }
         let folder = GlobeData.root.appending(path: "ground", directoryHint: .isDirectory)
         let name = String(format: "%02d", month)
-        let land = Self.texture(folder.appending(path: "\(name).jpg"), device: device, queue: queue)
+        let land = Self.colourTexture(folder.appending(path: "\(name).jpg"), device: device, queue: queue)
         let sea = Self.texture(folder.appending(path: "ice-\(name).png"), device: device, queue: queue)
         if seaFloor == nil { seaFloor = Self.texture(folder.appending(path: "floor.png"), device: device, queue: queue) }
         if land == nil || sea == nil || seaFloor == nil {
@@ -450,6 +450,34 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         groundSample = Self.sample(folder.appending(path: "\(name).jpg"), size: 512)
         relabel()
         needsDraw = true
+    }
+
+    /// A colour picture (the ground's month) drawn into RGBA bytes and uploaded, with mipmaps: unlike
+    /// a map of distances it may pass through colour management, so whatever layout the decoder
+    /// gives (a JPEG's often isn't RGBA) is drawn into one the shader reads.
+    private static func colourTexture(_ url: URL, device: MTLDevice, queue: MTLCommandQueue) -> MTLTexture? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+        let w = image.width, h = image.height
+        var rgba = [UInt8](repeating: 255, count: w * h * 4)
+        let drawn = rgba.withUnsafeMutableBytes { buffer -> Bool in
+            guard let c = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return false }
+            c.interpolationQuality = .none
+            c.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard drawn else { return nil }
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: w, height: h, mipmapped: true)
+        d.usage = .shaderRead
+        guard let texture = device.makeTexture(descriptor: d) else { return nil }
+        texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: rgba, bytesPerRow: w * 4)
+        if let commands = queue.makeCommandBuffer(), let blit = commands.makeBlitCommandEncoder() {
+            blit.generateMipmaps(for: texture)
+            blit.endEncoding()
+            commands.commit()
+        }
+        return texture
     }
 
     /// A small RGB copy of a map (its longer side `size` pixels), to look colours up on the CPU.
@@ -571,7 +599,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let scale = Double(metalLayer.contentsScale)
         let (centre, radius) = place
         let m = rotation
-        let ring = (1 - smoothstep(1.25, 1.7, zoom)) * (1 - groundMix)
+        // (the ground's maps not read, or unreadable: Wikipedia's colours rather than a black land)
+        let groundShown = ground != nil && ice != nil && seaFloor != nil ? groundMix : 0
+        let ring = (1 - smoothstep(1.25, 1.7, zoom)) * (1 - groundShown)
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
             u1: SIMD4(Float(radius * scale), Float(scale * Double(reading)), Float(zoom), Float(ring)),
@@ -581,7 +611,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
             u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
                       Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)),
-            u4: SIMD4(historicalReference ? 1 : 0, Float(groundMix), 0, 0))
+            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), 0, 0))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
