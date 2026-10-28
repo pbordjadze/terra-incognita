@@ -152,6 +152,34 @@ Keep design discussions and plans in that private repository.
     validates them and, once R2 is configured (repository secrets), publishes changed packs as new
     revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
 
+## The runtime: one library that grows
+
+Every new experience, and every new element on the map, is built on the playground's runtime: a
+pack using the tools the runtime offers (the plan is painting-company row 154). Built into the app
+instead: the stage itself (the globe, camera, date, caption, touch routing, workbench, downloads)
+and what every experience relies on and none owns. When in doubt, it's runtime.
+
+- **Reuse first.** Read what the runtime offers (`docs/playground.md` › The contract, and the
+  shared script modules once there are any) before building.
+- **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
+  never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
+  experience that needs it.
+- **Script before native.** A tool goes in shared script when it can (it ships with packs, no
+  IPA); in Swift (a new `terra.*` capability, raising the runtime version) only when it must draw
+  or animate every frame, take touches, be fast, or reach the system. The page decides; the globe
+  draws.
+- **Whoever changes a tool updates everything that uses it, in the same change.** A tool with one
+  user may change freely; with more, only compatibly. Packs on older runtime versions keep working.
+- **A tool lands complete:** in the contract with an example, tested, mirrored in the preview
+  (`serve.cjs`) so an agent can see it without a Mac, and accessible inside the tool (VoiceOver,
+  text size, Reduce Motion).
+- **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
+  date and touches rather than taking them, and leaves nothing behind when its experience ends.
+- **A web view drawing on the globe is the escape hatch,** not the default; a pack that needs one
+  says which tool was missing.
+- What is already built (the native prototypes, the packs so far) stays as it is until it is next
+  reworked.
+
 ## Design rules
 
 The globe is for reading, on the iPad first, then the iPhone. The numbers live in one spec,
