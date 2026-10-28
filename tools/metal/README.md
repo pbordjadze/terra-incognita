@@ -42,7 +42,10 @@ a shader was first compiled, and first seen, at the end of a macOS run.
 
 The same places have the same names in `metal.py shot --at <name>` and in CI's `[shots]`
 (`ci/fast.py`: the month 10, day 0.4 of the clouds' drift, the sea at 12 s), so a simulator's picture
-and the stand-in's can be set side by side.
+and the stand-in's can be set side by side. Set so on October 28, 2026, the simulator's Metal and the
+stand-in drew the same clouds, sea and ground at every place; the stand-in's globe sat about 40
+points lower on the iPad, as it takes its room from `tools/globe/preview.py`'s `layout` (an estimate)
+where the app measures its buttons and caption.
 
 ## What it can't vouch for
 

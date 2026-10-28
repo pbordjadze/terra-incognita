@@ -16,7 +16,7 @@ name: CI
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
 # Commit-message tags on branches: `[build-only]` compiles without simulator time (about 3 minutes);
 # `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places on the iPad,
-# with no Release build and no UI tests (about 6 minutes); `[test Class ...]` runs only those UI test
+# with no Release build and no UI tests (about 8 minutes); `[test Class ...]` runs only those UI test
 # classes (or Class/testMethod) on the iPad; `[playground-check]` runs only the playground's checks;
 # `[ipa]` packages a device build (main publishes it). ci/fast.py reads `[shots]` and `[test]`. Main
 # ignores the narrowing tags: merge into it with a merge commit whose message carries none, as a

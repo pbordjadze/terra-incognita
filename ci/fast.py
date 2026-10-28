@@ -2,7 +2,7 @@
 message, or the inputs of a run started by hand. Prints GitHub step outputs (fast, tests, places).
 
     [shots]                          the stage at the default places, on the iPad: no Release build,
-                                     no UI tests (about 6 minutes on a free runner)
+                                     no UI tests (about 8 minutes on a free runner)
     [shots earth:15,8,1 12,-20,3.4]  those places (a name is optional)
     [test OceanEncounterTests]       only those UI test classes (or Class/testMethod), on the iPad
 

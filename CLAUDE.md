@@ -192,8 +192,8 @@ Keep design discussions and plans in that private repository.
 - **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[shots]`, `[test Class]`,
   `[playground-check]`, `[ipa]`). The quick ones on a free runner: `[build-only]` compiles in about
   3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places
-  on the iPad in about 6, no Release build and no UI tests; `[test OceanEncounterTests]` runs only
-  that class (or `Class/testMethod`) on the iPad (`ci/fast.py`; a run started by hand takes `places`
+  on the iPad in about 8, no Release build and no UI tests; `[test OceanEncounterTests]` runs only
+  that class (or `Class/testMethod`) on the iPad (that one: 13 minutes) (`ci/fast.py`; a run started by hand takes `places`
   and `tests`). An untagged branch push runs every UI test on both devices: an hour and more. Main
   ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
   fast-forward brings the branch head's `[skip ci]` with it).
