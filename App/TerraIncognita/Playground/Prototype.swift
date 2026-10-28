@@ -140,6 +140,12 @@ final class PrototypeStage {
                                   self?.present("pack:\(pack.id):\(marker.id)") { WebPackScreen(pack: pack, params: ["marker": marker.id]) }
                               } : nil))
         }
+        if m.runtime >= 2 {
+            // a pack the globe draws for holds it where it flew, from the start: its page may take
+            // longer to load than the globe waits before turning again
+            globeChanged = true
+            globe?.holdsStill = true
+        }
         if !canOpen, FileManager.default.fileExists(atPath: pack.root.appending(path: m.entry ?? "index.html").path(percentEncoded: false)) {
             openAction = { [weak self] in self?.present("pack:\(pack.id):page") { WebPackScreen(pack: pack) } }
             canOpen = true

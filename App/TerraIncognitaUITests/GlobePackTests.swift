@@ -15,7 +15,8 @@ final class GlobePackTests: XCTestCase {
         startPrototype("sounding-the-deep", in: app)
         let date = app.descendants(matching: .any)["globeDate"].firstMatch
         XCTAssertTrue(date.waitForExistence(timeout: 30), "The globe shows the voyage's date")
-        XCTAssertTrue(text(containing: "HMS Challenger", in: app).waitForExistence(timeout: 15), "The foot says what this is")
+        // (the foot's first line is set in capitals: look for its words below it)
+        XCTAssertTrue(text(containing: "explore the deep ocean", in: app).waitForExistence(timeout: 15), "The foot says what this is")
         attach("50-voyage-far", in: app)
         // closer (a double tap doubles the zoom where it lands): the stations and passages appear
         let globe = app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch
