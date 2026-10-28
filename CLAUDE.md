@@ -1,7 +1,8 @@
 # Terra Incognita — engineering notes
 
-A playground for a wandering atlas: the app opens on a live globe in Wikipedia's location-map style
-with each prototype's doorway on it, and a developer workbench starts one prototype at a time. Earlier directions (the
+A playground for a wandering atlas: the app opens on a live globe, the ground as satellites saw it
+this month in a light key (the Wikipedia style it opened on before is parked), with each prototype's
+doorway on it, and a developer workbench starts one prototype at a time. Earlier directions (the
 Persian style, the plate films) are parked prototypes, kept whole. This file is the map and the rules.
 
 ## Documentation scope
@@ -51,15 +52,18 @@ Keep design discussions and plans in that private repository.
     decoded for the plain globe), with its look menu and Back.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
 - **The globe** (`App/TerraIncognita/Globe/`, the opening view): the whole Earth
-  drawn live, in two styles (the Persian one is the parked `persian` prototype):
-  Wikipedia's location-map colours (WikiProject Maps), a little prettier, and the Persian, the same
-  map in colours and a frame studied from a 1529 Persian manuscript (`Globe.metal`'s `P_` palette).
-  A change of style crossfades.
+  drawn live, in three styles. The ground (`GlobeStyle.base`, the plain globe's since October 28,
+  2026; `Globe.metal`'s `G_` palette): the month's land as NASA's Blue Marble saw it, in a light
+  key, the sea by depth with its floor's relief and the month's usual sea ice, a haze at the limb,
+  no names at the whole Earth and the land's own names (`Globe/regions.json`) before the
+  countries'. Wikipedia's location-map colours (WikiProject Maps), a little prettier: the parked
+  `wikipedia` prototype. The Persian, the same map in colours and a frame studied from a 1529
+  Persian manuscript (`P_`): the parked `persian` prototype. A change of style crossfades.
   - `Globe.metal`: one fragment per pixel inverts the orthographic projection and samples the
-    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; both
-    styles, mixed by the style uniform. `tools/globe/preview.py` is the same, line for line, in
-    numpy (`--style persian`; iPad-sized by default): change both together, and look at the preview
-    before CI.
+    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; the
+    styles mixed by their uniforms. `tools/globe/preview.py` is the same, line for line, in
+    numpy (`--style persian`, `--style ground --month 7`; iPad-sized by default): change both
+    together, and look at the preview before CI.
   - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
     tapping a country (lit from the country map `ids.png`), the names (pictures with their halos
     drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
@@ -71,8 +75,11 @@ Keep design discussions and plans in that private repository.
     textures are uploaded as decoded, without colour management, which would bend the distances.
     The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
     `tools/globe/ornament.py` (its docstring is their layout; no source image is used), and
-    `type.json` is the type (Design rules).
-  - Debug builds take `-globe-at lon lat zoom` (held there) and `-globe-select <name>`
+    `type.json` is the type (Design rules). The ground's maps (`Globe/ground/`: twelve months'
+    land, their sea ice, the sea floor) and `regions.json` are built by `tools/globe/ground.py`
+    (its docstring is their layout and sources); GlobeView reads them only once the style is chosen.
+  - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
+    (the ground's month)
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
 - **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
   on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass

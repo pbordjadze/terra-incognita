@@ -252,7 +252,7 @@ final class Playground {
     #if DEBUG
     /// `-prototype <id>` starts one (`-prototype-open`: and opens it); `-workbench` opens the
     /// workbench. The older flags still work: `-camelid <s>`/`-camelid-play`, `-whale <s>`/
-    /// `-whale-play`, `-leaf` (the sea between, a pack now), `-look <id>`/`-film <s>`, `-globeStyle persian`.
+    /// `-whale-play`, `-leaf` (the sea between, a pack now), `-look <id>`/`-film <s>`, `-globeStyle persian` (or `wikipedia`).
     private func launchFromArguments() {
         let args = ProcessInfo.processInfo.arguments
         func value(_ flag: String) -> String? {
@@ -267,6 +267,7 @@ final class Playground {
             else if args.contains("-leaf") { id = "sea-between" }
             else if args.contains("-look") || args.contains("-film") { id = "film" }
             else if value("-globeStyle") == "persian" { id = "persian" }
+            else if value("-globeStyle") == "wikipedia" { id = "wikipedia" }
         }
         if let id {
             start(id)

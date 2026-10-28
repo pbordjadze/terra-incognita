@@ -34,6 +34,19 @@ nonisolated struct GlobeData: Sendable {
         let r: Double?
     }
 
+    /// One of the land's own names for the ground style (Globe/regions.json, tools/globe/ground.py): a
+    /// range, desert, plateau, basin or plain, its class, Natural Earth's rank, where the name goes.
+    nonisolated struct Region: Decodable, Sendable {
+        let n: String
+        let k: String
+        let r: Double
+        let c: [Double]
+    }
+
+    private nonisolated struct Regions: Decodable {
+        let regions: [Region]
+    }
+
     private nonisolated struct File: Decodable {
         let countries: [Country]
         let seas: [Sea]
@@ -43,6 +56,8 @@ nonisolated struct GlobeData: Sendable {
     let countries: [Country]
     let seas: [Sea]
     let capitals: [Capital]
+    /// The land's own names (none if regions.json is missing: the ground then names only seas and countries).
+    var regions: [Region] = []
     /// 1 + the index of the country under each pixel of the map (0: none), row by row: the tap's
     /// lookup, and the shader's texture of it.
     let ids: [UInt8]
@@ -55,7 +70,12 @@ nonisolated struct GlobeData: Sendable {
         guard let json = try? Data(contentsOf: root.appending(path: "globe.json")),
               let file = try? JSONDecoder().decode(File.self, from: json),
               let map = grey(root.appending(path: "ids.png")) else { return nil }
-        return GlobeData(countries: file.countries, seas: file.seas, capitals: file.capitals, ids: map.bytes, width: map.width, height: map.height)
+        var data = GlobeData(countries: file.countries, seas: file.seas, capitals: file.capitals, ids: map.bytes, width: map.width, height: map.height)
+        if let regions = try? Data(contentsOf: root.appending(path: "regions.json")),
+           let file = try? JSONDecoder().decode(Regions.self, from: regions) {
+            data.regions = file.regions
+        }
+        return data
     }
 
     /// The index of the country at a point of the globe, if any.

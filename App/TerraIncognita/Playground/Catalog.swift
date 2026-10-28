@@ -13,7 +13,7 @@ enum Catalog {
             frames: [image], fps: 1, size: size, minZoom: minZoom, maxZoom: .infinity, every: nil, duration: nil, face: false)])
     }
 
-    static let native: [Prototype] = [camelid, whale, ocean, persian, film]
+    static let native: [Prototype] = [camelid, whale, ocean, persian, wikipedia, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`).
     static let camelid = Prototype(
@@ -61,13 +61,23 @@ enum Catalog {
         stage.invite(Invitation(id: "oceanInvitation", title: "A small thing, far from home", action: "Look closer  ↗"), action: open)
     }
 
-    /// The globe's second style, parked: the Wikipedia style is the base for now (`Globe.metal`'s P_).
+    /// The globe's second style, parked: the ground is the base (`Globe.metal`'s P_).
     static let persian = Prototype(
         id: "persian", title: "The Persian globe",
         summary: "The globe in colours and a frame studied from a 1529 Persian manuscript.",
         shelf: .parked
     ) { stage in
         stage.style = .persian
+    }
+
+    /// The globe's first base style, parked when the ground became the base (October 28, 2026):
+    /// Wikipedia's location-map colours, the political map.
+    static let wikipedia = Prototype(
+        id: "wikipedia", title: "The Wikipedia globe",
+        summary: "The political map in Wikipedia's location-map colours, as the globe was until the ground.",
+        shelf: .parked
+    ) { stage in
+        stage.style = .wikipedia
     }
 
     /// The first atlas, parked: the plate films and their five looks (`Atlas/`), made only when opened.

@@ -1,7 +1,8 @@
 # Terra Incognita
 
-A playground for a wandering atlas. The app opens on a live globe, drawn by Metal in the colours of
-Wikipedia's location maps: spin it, pinch it, tap a country. The small grid button opens the
+A playground for a wandering atlas. The app opens on a live globe, drawn by Metal: the ground as
+satellites saw it this month, in a light key, with the sea's floor and its ice, and the land's own
+names as you come closer: spin it, pinch it, tap a country. The small grid button opens the
 **workbench**, which starts one prototype at a time, on the globe or on its own screen; ✕ on its
 chip returns the plain globe. How to make and publish one: [docs/playground.md](docs/playground.md).
 
@@ -20,7 +21,9 @@ On the workbench today:
 - **Borders on old maps** (`Prototypes/borders-on-old-maps/`): Europe on eight dated maps drawn on
   the globe; a chosen country filled, its outline on the map before dashed.
 - **Delivery check** (parked): the smallest pack (`Prototypes/hello-pack/`).
-- Parked: **The Persian globe** (the globe in colours from a 1529 manuscript) and **The film** (a
+- Parked: **The Wikipedia globe** (the political map in Wikipedia's location-map colours, the
+  globe's style until October 28, 2026), **The Persian globe** (the globe in colours from a 1529
+  manuscript) and **The film** (a
   flight from the whole world down to a street in five looks: Aisling's Forest, Paper Almanac,
   Night Voyage, Chalk and Slate, The Sampler).
 
@@ -43,7 +46,9 @@ CI publishes it only from a `main` commit tagged `[retire-study2]`.
 
 Map data: Natural Earth and US Census TIGER/Line (public domain); © OpenStreetMap contributors
 (ODbL), for the streets and buildings of the closest scale; NASA Blue Marble (public domain), for
-where the forest look's woods grow; NASA's GEBCO elevation and bathymetry (public domain), for the
+where the forest look's woods grow, and NASA Earth Observatory's Blue Marble Next Generation (Reto
+Stöckli; public domain) for the globe's ground, month by month; the NSIDC Sea Ice Index, version 4
+(NOAA@NSIDC) for its sea ice; NASA's GEBCO elevation and bathymetry (public domain), for the
 globe's relief and seas; RiverATLAS (CC BY 4.0) for the river study; historical boundaries from
 aourednik/historical-basemaps (GPL-3.0, its licence in `Prototypes/borders-on-old-maps/LICENSE-HISTORY.txt`)
 for Borders on old maps; HMS Challenger station metadata from PANGAEA (CC BY 3.0) for Sounding the

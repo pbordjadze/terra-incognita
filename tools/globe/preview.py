@@ -2,6 +2,7 @@
 for line), so its look can be judged without a phone.
 
     python3 tools/globe/preview.py out.png [--lon -83 --lat 40 --zoom 1 --select Italy --scale 2]
+    python3 tools/globe/preview.py out.png --style ground [--month 7]
 
 Coordinates: the screen in points, y down; the globe's centre and radius come from `layout`, as in
 GlobeView's `place`. --select names a country (globe.json); its locator red is drawn at full strength.
@@ -64,6 +65,15 @@ P_INK = hexc('#251F14')
 P_SEL = hexc('#C2A862')
 SEL_ALPHA = 0.85
 
+# The ground style (Globe.metal's G_ palette, line for line; the land is baked by tools/globe/ground.py).
+G_SHELF = hexc('#D3F0EE')
+G_OPEN = hexc('#C2E4F4')
+G_DEEP = hexc('#A9D2EC')
+G_COAST = hexc('#5E9CC0')
+G_RIVER = hexc('#6FAED3')
+G_ICE = hexc('#F1F5F8')
+G_ATMOS = hexc('#DCEEFB')
+
 
 def layout(w, h, persian=False):
     """The globe's centre and resting radius in points (GlobeView's `place`): as large as its room
@@ -99,6 +109,21 @@ def vnoise(x, y):
     a, b = hash2(xi, yi), hash2(xi + 1, yi)
     c, d = hash2(xi, yi + 1), hash2(xi + 1, yi + 1)
     return (a + (b - a) * u) * (1 - v) + (c + (d - c) * u) * v
+
+
+def vnoise3(x, y, z):
+    """Globe.metal's vnoise3: value noise in three dimensions (no seam, no pole on the sphere)."""
+    xi, yi, zi = np.floor(x), np.floor(y), np.floor(z)
+    f = lambda a: a * a * (3 - 2 * a)
+    u, v, w = f(x - xi), f(y - yi), f(z - zi)
+    n = 0
+    for dz in (0, 1):
+        for dy in (0, 1):
+            for dx in (0, 1):
+                cx, cy, cz = xi + dx, yi + dy, zi + dz
+                h = hash2(hash2(cx, cy) * np.float32(157.0) + cz * np.float32(1.37), cz * np.float32(0.71) + hash2(cy, cx) * np.float32(89.0))
+                n = n + h * (u if dx else 1 - u) * (v if dy else 1 - v) * (w if dz else 1 - w)
+    return n
 
 
 def worley(x, y):
@@ -316,7 +341,14 @@ def persian_globe(scale, k, u, v, d, fine, border, hill, hm, river, depth, mott,
     return col
 
 
-def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_reference=False):
+def ground_maps(month):
+    """The ground style's maps for a month (Globe/ground/): the land, its sea ice, the sea floor."""
+    g = G / 'ground'
+    return (np.asarray(Image.open(g / f'{month:02d}.jpg').convert('RGB')), np.asarray(Image.open(g / f'ice-{month:02d}.png').convert('RGB')),
+            np.asarray(Image.open(g / 'floor.png').convert('RGB')))
+
+
+def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_reference=False, ground=False, month=None):
     if historical_reference:
         selected = 0
     geo = np.asarray(Image.open(G / 'geo.png'))[..., :3]
@@ -336,7 +368,7 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_re
     page = page * (1 - 0.07 * smoothstep(0.35, 0.8, vig))[..., None]
     sh = np.exp(-np.maximum(np.hypot(x, y + 0.035) - 0.985, 0) ** 2 / 0.0035) * (rr > 0.97)
     page = mix(page, SHADOW, 0.16 * sh)
-    ring_on = 1 - smoothstep(1.25, 1.7, zoom)
+    ring_on = (1 - smoothstep(1.25, 1.7, zoom)) * (0 if ground else 1)
     ringpx = (rr - 1) * R / ls                   # points outside the globe's edge
     gold = np.zeros_like(rr)
     for at, wd in ((6.5, 1.1), (10.0, 0.7)):
@@ -353,6 +385,9 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_re
     page = mix(page, GOLD, np.clip(np.maximum(np.maximum(gold, tick * 0.8), dots), 0, 1) * ring_on)
     if persian:
         page = persian_page(px, py, x, y, rr, R, W, H, grain)
+    if ground:
+        # the ground style's air: a thin bright haze just outside the limb, as it is seen edge on
+        page = mix(page, G_ATMOS, 0.85 * np.exp(-np.maximum(ringpx, 0) / 3.5) * (rr >= 1))
 
     # the globe
     inside = rr < 1.0 + 2 / R
@@ -426,6 +461,30 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_re
         # roundness: the limb a little shaded; the rim drawn
         col = col * (1 - 0.07 * (1 - z) ** 2)[..., None]
         col = mix(col, COAST, line((rr - 1) * R, 1.2 * ls))
+        if ground:
+            # the ground (Globe.metal's, line for line): the month's land, shaded from the north-west;
+            # rivers from the regional scale; borders a pencil line from about x2 to x3; the chosen
+            # country's red let down
+            land_m, ice_m, floor_m = ground_maps(month)
+            gland = sample(land_m, u, v) / 255 * (1 + 0.20 * hill)[..., None]
+            gland = mix(gland, G_RIVER, 0.7 * line(river, 0.6 * ls) * smoothstep(1.4, 2.4, k) * lined(river))
+            gland = mix(gland, LOCATOR * (1 + 0.12 * hill)[..., None], 0.75 * m)
+            gland = mix(gland, BORDER, 0.55 * smoothstep(2.0, 3.2, zoom) * line(border, 0.6 * ls) * lined(border) * (not historical_reference))
+            depth_m = -np.minimum(height, 0) * 87
+            gsea = mix(G_SHELF, G_OPEN, smoothstep(60, 900, depth_m))
+            gsea = mix(gsea, G_DEEP, smoothstep(2500, 6000, depth_m))
+            fl = (sample(floor_m, u, v)[..., 0] - 128) / 127
+            gsea = gsea * (1 + 0.04 * fl)[..., None]
+            ice = sample(ice_m, u, v)[..., 0] / 255
+            o = (np.float32(17.3), np.float32(5.1), np.float32(9.7))
+            jag = np.where(ice > 0.02, vnoise3(wx * 220 + o[0], wy * 220 + o[1], wz * 220 + o[2]) * 0.6
+                           + vnoise3(wx * 900 + o[0], wy * 900 + o[1], wz * 900 + o[2]) * 0.4, 0.5)
+            gsea = mix(gsea, G_ICE * (0.97 + 0.04 * jag)[..., None], smoothstep(0.30, 0.55, ice + 0.25 * (jag - 0.5)))
+            g = mix(gsea, gland, landa)
+            pale = smoothstep(0.90, 0.97, gland.mean(-1))
+            g = mix(g, G_COAST, (0.55 - 0.35 * pale) * line(d, 0.6 * ls * min(k ** 0.3, 1.5)))
+            g = g * (1 - 0.05 * (1 - z) ** 2)[..., None]
+            col = mix(g, G_ATMOS, 0.55 * (1 - z) ** 4)
     edge = smoothstep(1 + 0.5 / R, 1 - 0.5 / R, rr)
     out = np.where(inside[..., None], mix(page, col, edge), page)
     if persian:
@@ -444,15 +503,24 @@ def cartouche(name):
     return special.get(name, name.replace(' and ', ' & '))
 
 
-def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=()):
+def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=(), ground=False, month=None):
     """The app's names (GlobeView, CLAUDE.md › Design rules), in the faces of Globe/type.json at the
     screen's reading scale: the selected country, oceans and seas, then countries (larger the more
     prominent) and capitals, in that order of claim; each on a halo of its ground's tone, wholly on
     the globe and on screen, clear of `keep_clear` (x0, y0, x1, y1 in points) and its gap from any
-    other."""
+    other. On the ground (GlobeView's makeLabels): no names at the whole Earth, the land's own names
+    (regions.json) from the regional scale, countries closer in, each on a halo of the ground under it."""
     cx, cy, R, M = geom
     data = json.loads((G / 'globe.json').read_text())
-    faces = TYPE['styles']['persian' if persian else 'wikipedia']['names']
+    faces = TYPE['styles']['persian' if persian else 'ground' if ground else 'wikipedia']['names']
+    if ground:
+        # (GlobeView's groundSample: a small copy of the month's land, for the halos)
+        small = np.asarray(Image.open(G / 'ground' / f'{month:02d}.jpg').convert('RGB').resize((512, 256), Image.BOX)).astype(np.float32)
+
+        def halo_at(lon, lat):
+            x = int(np.floor((lon + 180) / 360 * 512)) % 512
+            y = min(max(int(np.floor((90 - lat) / 180 * 256)), 0), 255)
+            return np.round(small[y, x] * 0.6 + np.array([0xF6, 0xF2, 0xE7]) * 0.4) / 255
     k = reading(w, h)
     fonts = {}
 
@@ -471,7 +539,7 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=())
     halo = TYPE['halo'] * k * scale
     col = lambda c: tuple(int(255 * v) for v in c)
 
-    def put(text, lon, lat, face, panel=False, mark=False, silhouette=False):
+    def put(text, lon, lat, face, panel=False, mark=False, silhouette=False, sampled=False):
         la, lo = np.radians(lat), np.radians(lon)
         wv = np.array([np.cos(la) * np.sin(lo), np.sin(la), np.cos(la) * np.cos(lo)])
         vx, vy, vz = M.T @ wv
@@ -496,7 +564,7 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=())
         if any(not (g[2] < b[0] or g[0] > b[2] or g[3] < b[1] or g[1] > b[3]) for b in placed):
             return
         placed.append(g)
-        ink, ground = hexc(face['ink']), hexc(face['halo'])
+        ink, ground = hexc(face['ink']), halo_at(lon, lat) if sampled else hexc(face['halo'])
         if panel:                                       # a quiet text panel, ruled in gold and lapis
             draw.rectangle(box, fill=col(ground), outline=col(P_GOLD), width=max(1, int(1.2 * scale)))
             i = 2.2 * scale
@@ -523,15 +591,22 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=())
     for i, c in enumerate(data['countries']):
         if i + 1 == selected:
             put(short(c['n']).upper(), *c['c'], faces['selected'], panel=persian, silhouette=not persian)
+    # the ground's zooms, whatever the screen (GlobeView's makeLabels): seas and the great features from
+    # x1.5, the lesser from x2.5 and x4, countries from x3.2, capitals from x5
+    sea_z, country_z, capital_z = (1.5, 3.2, 5) if ground else (0, 0, 0)
     for s in sorted(data['seas'], key=lambda s: (not s['ocean'], s['r'])):
-        if s['ocean'] or s['r'] <= level - 2.5:
+        if (s['ocean'] or s['r'] <= level - 2.5) and zoom >= sea_z:
             put(s['n'], *s['c'], faces['ocean' if s['ocean'] else 'sea'])
+    if ground:
+        for r in json.loads((G / 'regions.json').read_text())['regions']:
+            if level >= 4 + (r['r'] - 1) * 0.9 and zoom >= (1.5 if r['r'] <= 1 else 2.5 if r['r'] <= 2 else 4):
+                put(r['n'].upper(), *r['c'], faces['region'], sampled=True)
     for i, c in sorted(enumerate(data['countries']), key=lambda ic: (ic[1]['min'], ic[1]['r'])):
-        if c['min'] <= level - 0.5 and i + 1 != selected:
-            put(short(c['n']).upper(), *c['c'], faces[tier(c['r'])])
+        if c['min'] <= level - 0.5 and i + 1 != selected and zoom >= country_z:
+            put(short(c['n']).upper(), *c['c'], faces[tier(c['r'])], sampled=ground)
     for c in sorted(data['capitals'], key=lambda c: c.get('r') or 9):
-        if level >= 5.6 + (c.get('r') or 5) * 0.25:
-            put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], faces['capital'], mark=persian)
+        if level >= 5.6 + (c.get('r') or 5) * 0.25 and zoom >= capital_z:
+            put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], faces['capital'], mark=persian, sampled=ground)
 
 
 CAPTION_WIDTH = 560                                    # the caption's widest, in points (a readable line)
@@ -640,17 +715,21 @@ def main():
     a.add_argument('--size', default='1032x1376', help='points: 1032x1376 the 13-inch iPad (the default), 402x874 an iPhone')
     a.add_argument('--no-labels', action='store_true')
     a.add_argument('--historical-reference', action='store_true', help='modern geographic reference with political boundaries and labels suppressed')
-    a.add_argument('--style', default='wikipedia', choices=('wikipedia', 'persian'))
+    a.add_argument('--style', default='wikipedia', choices=('wikipedia', 'persian', 'ground'))
+    a.add_argument('--month', type=int, default=None, help='the ground style\'s month, 1-12 (default: this month)')
     o = a.parse_args()
     w, h = map(int, o.size.split('x'))
     names = [c['n'] for c in json.loads((G / 'globe.json').read_text())['countries']]
     selected = names.index(o.select) + 1 if o.select else 0
-    img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian', o.historical_reference)
+    import datetime
+    month = o.month or datetime.date.today().month
+    img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian', o.historical_reference,
+                       o.style == 'ground', month)
     if not o.no_labels and not o.historical_reference:
         clear = [buttons_box(w, h)] + ([caption_box(w, h)] if o.style == 'persian' else [])
         if o.style == 'persian' and page_alpha(o.zoom) > 0:
             clear += page_strips(w, h, safe_insets(w, h))
-        labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian', clear)
+        labels(img, w, h, o.scale, geom, o.zoom, selected, o.style == 'persian', clear, o.style == 'ground', month)
         if o.style == 'persian':
             persian_caption(img, w, h, o.scale, selected)
     img.save(o.out)

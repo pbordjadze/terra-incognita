@@ -57,8 +57,9 @@ struct Invitation: Equatable {
 @Observable
 final class PrototypeStage {
     let prototype: Prototype
-    /// The globe's style while it runs (the parked Persian style is a prototype of its own).
-    var style: GlobeStyle = .wikipedia
+    /// The globe's style while it runs (the parked Persian and Wikipedia styles are prototypes of
+    /// their own).
+    var style: GlobeStyle = .base
     private(set) var invitation: Invitation?
     /// It ends when its screen closes (an own-screen prototype, or a pack's screen presentation).
     var endsWithScreen: Bool
@@ -405,6 +406,6 @@ final class PrototypeStage {
         invitationAction = nil
         openAction = nil
         canOpen = false
-        style = .wikipedia
+        style = .base
     }
 }

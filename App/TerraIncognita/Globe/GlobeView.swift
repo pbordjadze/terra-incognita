@@ -8,13 +8,24 @@ import QuartzCore
 import UIKit
 import simd
 
-/// The globe's two styles: Wikipedia's location-map colours, a little prettier, and the Persian, the
-/// same map in colours studied from a Persian manuscript, inside its frame (Globe.metal's P_ palette).
+/// The globe's styles: Wikipedia's location-map colours, a little prettier; the Persian, the same map
+/// in colours studied from a Persian manuscript, inside its frame (Globe.metal's P_ palette); and the
+/// ground, the land as satellites saw it that month, in the atlas's light key (Globe/ground/).
 enum GlobeStyle: String, CaseIterable, Identifiable {
-    case persian, wikipedia
+    case persian, wikipedia, ground
+
+    /// The plain globe's style: the ground since October 28, 2026 (`.wikipedia` undoes it; the
+    /// Wikipedia style is then a parked prototype, as the Persian is).
+    static let base: GlobeStyle = .ground
 
     var id: String { rawValue }
-    var name: String { self == .persian ? String(localized: "Persian") : String(localized: "Wikipedia") }
+    var name: String {
+        switch self {
+        case .persian: String(localized: "Persian")
+        case .wikipedia: String(localized: "Wikipedia")
+        case .ground: String(localized: "The ground")
+        }
+    }
 }
 
 /// A camera position for the camelid sequence; geographic degrees and the globe's existing scale.
@@ -262,9 +273,26 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var braid: MTLTexture?
     /// The Persian capitals' marker (Globe/rosette.png).
     private var rosette: CGImage?
-    /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian.
+    /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian; and from
+    /// Wikipedia's to the ground's, 0 to 1.
     private(set) var style = GlobeStyle.persian
     private var styleMix = 1.0
+    private var groundMix = 0.0
+    /// The ground style's month (1 to 12): its land and its sea ice. This month, unless told
+    /// (`-globe-month n` in debug builds); a new month's maps are read when it is next drawn.
+    var month = Calendar.current.component(.month, from: Date()) {
+        didSet {
+            month = min(max(month, 1), 12)
+            if month != oldValue { loadGround() }
+        }
+    }
+    /// The ground style's maps, read the first time the style is chosen (Globe/ground/): the month's
+    /// land, its sea ice, the sea floor's relief; and a small copy of the land for the names' halos.
+    private var ground: MTLTexture?
+    private var ice: MTLTexture?
+    private var seaFloor: MTLTexture?
+    private var groundMonth = 0
+    private var groundSample: (bytes: [UInt8], width: Int, height: Int)?
     private var displayLink: CADisplayLink?
     /// The rate the display link was last asked for: 0 idle, 1 something living moves, 2 the hands.
     private var busyRate = -1
@@ -320,7 +348,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let duration: Double
     }
 
-    private enum Kind { case country, sea, capital }
+    private enum Kind { case country, sea, region, capital }
 
     /// A name on the globe: where it goes, from what zoom, its picture once first shown.
     private struct Label {
@@ -330,8 +358,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let lat: Double
         let kind: Kind
         let index: Int
-        /// The web-map zoom from which it shows.
+        /// The web-map zoom from which it shows, and (the ground) the globe's zoom, whatever the screen.
         let from: Double
+        var minZoom = 0.0
         /// A Persian capital's rosette, left of its name and on the city itself, and its size.
         let mark: Bool
         let markSize: CGFloat
@@ -378,6 +407,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
            let lon = Double(args[i + 1]), let lat = Double(args[i + 2]), let z = Double(args[i + 3]) {
             lon0 = lon; lat0 = lat; zoom = z; held = true
         }
+        if let i = args.firstIndex(of: "-globe-month"), i + 1 < args.count, let m = Int(args[i + 1]) {
+            month = min(max(m, 1), 12)
+        }
         if let i = args.firstIndex(of: "-globe-select"), i + 1 < args.count,
            let k = data?.countries.firstIndex(where: { $0.n == args[i + 1] }) {
             select(k, animated: false)
@@ -416,6 +448,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         }
         // (an ornament that won't load leaves its place empty; the globe still draws)
         let blank = Self.blank(device: device)
+        self.blank = blank
         if band == nil || fleuron == nil || braid == nil {
             Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
                 .error("ornament missing or unreadable: band \(self.band != nil) fleuron \(self.fleuron != nil) braid \(self.braid != nil)")
@@ -434,6 +467,91 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             ids = device.makeTexture(descriptor: d)
             ids?.replace(region: MTLRegionMake2D(0, 0, data.width, data.height), mipmapLevel: 0, withBytes: data.ids, bytesPerRow: data.width)
         }
+    }
+
+    /// What the shader reads in place of a map not (yet) read: the ground's, while the style isn't on.
+    private var blank: MTLTexture?
+
+    /// Reads the ground style's maps for the month, if not read already (only once the style is
+    /// chosen: the globes a prototype makes for itself in Wikipedia's style never read them).
+    private func loadGround() {
+        guard style == .ground || groundMix > 0, groundMonth != month, let device, let queue else { return }
+        let folder = GlobeData.root.appending(path: "ground", directoryHint: .isDirectory)
+        let name = String(format: "%02d", month)
+        let land = Self.colourTexture(folder.appending(path: "\(name).jpg"), device: device, queue: queue)
+        let sea = Self.texture(folder.appending(path: "ice-\(name).png"), device: device, queue: queue)
+        if seaFloor == nil { seaFloor = Self.texture(folder.appending(path: "floor.png"), device: device, queue: queue) }
+        if land == nil || sea == nil || seaFloor == nil {
+            Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe")
+                .error("ground maps missing or unreadable for month \(name): land \(land != nil) ice \(sea != nil) floor \(self.seaFloor != nil)")
+        }
+        ground = land
+        ice = sea
+        groundMonth = month
+        groundSample = Self.sample(folder.appending(path: "\(name).jpg"), size: 512)
+        relabel()
+        needsDraw = true
+    }
+
+    /// A colour picture (the ground's month) drawn into RGBA bytes and uploaded, with mipmaps: unlike
+    /// a map of distances it may pass through colour management, so whatever layout the decoder
+    /// gives (a JPEG's often isn't RGBA) is drawn into one the shader reads.
+    private static func colourTexture(_ url: URL, device: MTLDevice, queue: MTLCommandQueue) -> MTLTexture? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
+        let w = image.width, h = image.height
+        var rgba = [UInt8](repeating: 255, count: w * h * 4)
+        let drawn = rgba.withUnsafeMutableBytes { buffer -> Bool in
+            guard let c = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return false }
+            c.interpolationQuality = .none
+            c.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard drawn else { return nil }
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: w, height: h, mipmapped: true)
+        d.usage = .shaderRead
+        guard let texture = device.makeTexture(descriptor: d) else { return nil }
+        texture.replace(region: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0, withBytes: rgba, bytesPerRow: w * 4)
+        if let commands = queue.makeCommandBuffer(), let blit = commands.makeBlitCommandEncoder() {
+            blit.generateMipmaps(for: texture)
+            blit.endEncoding()
+            commands.commit()
+        }
+        return texture
+    }
+
+    /// A small RGB copy of a map (its longer side `size` pixels), to look colours up on the CPU.
+    private static func sample(_ url: URL, size: Int) -> (bytes: [UInt8], width: Int, height: Int)? {
+        let options = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: size] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else { return nil }
+        let w = image.width, h = image.height
+        var rgba = [UInt8](repeating: 0, count: w * h * 4)
+        let drawn = rgba.withUnsafeMutableBytes { buffer -> Bool in
+            guard let c = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return false }
+            c.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        return drawn ? (rgba, w, h) : nil
+    }
+
+    /// The tone of a name's halo on the ground style: the ground under its place, lifted 40% towards
+    /// the paper, so the darkest forest still gives its ink the contrast type.json holds it to.
+    private func groundHalo(lon: Double, lat: Double, fallback: String) -> String {
+        guard let s = groundSample, s.width > 0, s.height > 0 else { return fallback }
+        let x = (Int(((lon + 180) / 360 * Double(s.width)).rounded(.down)) % s.width + s.width) % s.width
+        let y = min(max(Int(((90 - lat) / 180 * Double(s.height)).rounded(.down)), 0), s.height - 1)
+        let i = (y * s.width + x) * 4
+        let paper: [Double] = [0xF6, 0xF2, 0xE7]
+        var c: [Int] = []
+        for k in 0..<3 {
+            let ground = Double(s.bytes[i + k])
+            let lifted: Double = ground * 0.6 + paper[k] * 0.4
+            c.append(Int(lifted.rounded()))
+        }
+        return String(format: "#%02X%02X%02X", c[0], c[1], c[2])
     }
 
     /// One transparent pixel, in place of an ornament that won't load.
@@ -527,7 +645,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let scale = Double(metalLayer.contentsScale)
         let (centre, radius) = place
         let m = rotation
-        let ring = 1 - smoothstep(1.25, 1.7, zoom)
+        // (the ground's maps not read, or unreadable: Wikipedia's colours rather than a black land)
+        let groundShown = ground != nil && ice != nil && seaFloor != nil ? groundMix : 0
+        let ring = (1 - smoothstep(1.25, 1.7, zoom)) * (1 - groundShown)
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
             u1: SIMD4(Float(radius * scale), Float(scale * Double(reading)), Float(zoom), Float(ring)),
@@ -537,7 +657,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
             u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
                       Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)),
-            u4: SIMD4(historicalReference ? 1 : 0, 0, 0, 0))
+            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), 0, 0))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
@@ -546,6 +666,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         encoder.setFragmentTexture(band, index: 3)
         encoder.setFragmentTexture(fleuron, index: 4)
         encoder.setFragmentTexture(braid, index: 5)
+        encoder.setFragmentTexture(ground ?? blank, index: 6)
+        encoder.setFragmentTexture(ice ?? blank, index: 7)
+        encoder.setFragmentTexture(seaFloor ?? blank, index: 8)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
         commands.present(drawable)
@@ -799,7 +922,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     func setStyle(_ new: GlobeStyle, animated: Bool) {
         guard new != style || !animated else { return }
         style = new
-        if !animated || UIAccessibility.isReduceMotionEnabled { styleMix = new == .persian ? 1 : 0 }
+        if !animated || UIAccessibility.isReduceMotionEnabled {
+            styleMix = new == .persian ? 1 : 0
+            groundMix = new == .ground ? 1 : 0
+        }
+        loadGround()
         // (the other style's caption is another size: measured again once it has been laid out)
         unsettleRoom()
         backgroundColor = new == .persian ? UIColor(red: 0xF3 / 255, green: 0xE9 / 255, blue: 0xD2 / 255, alpha: 1)
@@ -921,10 +1048,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         let styleTarget = style == .persian ? 1.0 : 0.0
-        let restyling = styleMix != styleTarget
+        let groundTarget = style == .ground ? 1.0 : 0.0
+        let restyling = styleMix != styleTarget || groundMix != groundTarget
         if restyling {
             styleMix = still ? styleTarget : styleMix + (styleTarget - styleMix) * min(1, dt * 6)
             if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
+            groundMix = still ? groundTarget : groundMix + (groundTarget - groundMix) * min(1, dt * 6)
+            if abs(groundMix - groundTarget) < 0.005 { groundMix = groundTarget }
             needsDraw = true
         }
         var animating = false
@@ -1082,28 +1212,42 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let persian = style == .persian
         let scale = labelScale, halo = self.halo
         letteredScale = scale
-        func label(_ text: String, _ key: String, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false) -> Label? {
+        func label(_ text: String, _ key: String, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false,
+                   minZoom: Double = 0) -> Label? {
             guard c.count == 2, let face = faces[key] else { return nil }
             let s = NSAttributedString(string: text, attributes: Self.attributes(face, scale))
             let size = s.size()
             let room = 2 * halo + 2
             let markSize = CGFloat(face.size) * 0.9 * scale
+            let tone = style == .ground && kind != .sea ? groundHalo(lon: c[0], lat: c[1], fallback: face.halo) : face.halo
             return Label(text: s, size: CGSize(width: ceil(size.width) + room + (mark ? markSize * 1.33 : 0), height: ceil(size.height) + room),
-                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark, markSize: markSize,
-                         halo: face.halo, gap: CGFloat(type.gap * face.size) * scale)
+                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, minZoom: minZoom, mark: mark, markSize: markSize,
+                         halo: tone, gap: CGFloat(type.gap * face.size) * scale)
         }
-        // in the order they claim room: oceans, seas, countries, capitals
+        // in the order they claim room: oceans, seas, (on the ground, the land's own names), countries,
+        // capitals. The ground keeps the whole Earth unnamed, names the seas and the land's great
+        // features from x1.5, the countries from x3.2 and the capitals from x5 on any screen (a larger
+        // screen's room would otherwise name every country at once), each on a halo of the ground
+        // under it (`groundHalo`).
+        let onGround = style == .ground
+        let sea = onGround ? 1.5 : 0, country = onGround ? 3.2 : 0, capital = onGround ? 5.0 : 0
         var all: [Label?] = []
-        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: 0)) }
+        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: 0, minZoom: sea)) }
         for (i, s) in data.seas.enumerated().sorted(by: { $0.element.r < $1.element.r }) where !s.ocean {
-            all.append(label(s.n, "sea", s.c, .sea, i, from: s.r + 2.5))
+            all.append(label(s.n, "sea", s.c, .sea, i, from: s.r + 2.5, minZoom: sea))
+        }
+        if onGround {
+            for (i, r) in data.regions.enumerated() {
+                all.append(label(r.n.uppercased(), "region", r.c, .region, i, from: 4 + (r.r - 1) * 0.9,
+                                 minZoom: r.r <= 1 ? 1.5 : r.r <= 2 ? 2.5 : 4))
+            }
         }
         for (i, c) in data.countries.enumerated().sorted(by: { ($0.element.min, $0.element.r) < ($1.element.min, $1.element.r) }) {
-            all.append(label(Self.short(c.n).uppercased(), type.countryFace(rank: c.r), c.c, .country, i, from: c.min + 0.5))
+            all.append(label(Self.short(c.n).uppercased(), type.countryFace(rank: c.r), c.c, .country, i, from: c.min + 0.5, minZoom: country))
         }
         for (i, c) in data.capitals.enumerated().sorted(by: { ($0.element.r ?? 9) < ($1.element.r ?? 9) }) {
             all.append(persian ? label(c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, mark: true)
-                               : label("· " + c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
+                               : label("· " + c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, minZoom: capital))
         }
         labels = all.compactMap { $0 }
     }
@@ -1158,7 +1302,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             var l = labels[i]
             var target = 0.0
             var point: CGPoint?
-            if level >= l.from, !(l.kind == .country && l.index == shown && highlight > 0.01) {
+            if level >= l.from, zoom >= l.minZoom, !(l.kind == .country && l.index == shown && highlight > 0.01) {
                 let (p, facing) = project(lon: l.lon, lat: l.lat)
                 point = facing > 0 ? p : nil
                 if facing > (l.alpha > 0.5 ? 0.3 : 0.4) {
