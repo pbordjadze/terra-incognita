@@ -505,7 +505,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let y = min(max(Int(((90 - lat) / 180 * Double(s.height)).rounded(.down)), 0), s.height - 1)
         let i = (y * s.width + x) * 4
         let paper: [Double] = [0xF6, 0xF2, 0xE7]
-        let c = (0..<3).map { Int((Double(s.bytes[i + $0]) * 0.6 + paper[$0] * 0.4).rounded()) }
+        var c: [Int] = []
+        for k in 0..<3 {
+            let ground = Double(s.bytes[i + k])
+            let lifted: Double = ground * 0.6 + paper[k] * 0.4
+            c.append(Int(lifted.rounded()))
+        }
         return String(format: "#%02X%02X%02X", c[0], c[1], c[2])
     }
 
@@ -1144,8 +1149,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             let markSize = CGFloat(face.size) * 0.9 * scale
             let tone = style == .ground && kind != .sea ? groundHalo(lon: c[0], lat: c[1], fallback: face.halo) : face.halo
             return Label(text: s, size: CGSize(width: ceil(size.width) + room + (mark ? markSize * 1.33 : 0), height: ceil(size.height) + room),
-                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark, markSize: markSize,
-                         halo: tone, gap: CGFloat(type.gap * face.size) * scale, minZoom: minZoom)
+                         lon: c[0], lat: c[1], kind: kind, index: index, from: from, minZoom: minZoom, mark: mark, markSize: markSize,
+                         halo: tone, gap: CGFloat(type.gap * face.size) * scale)
         }
         // in the order they claim room: oceans, seas, (on the ground, the land's own names), countries,
         // capitals. The ground keeps the whole Earth unnamed, names the seas and the land's great

@@ -110,7 +110,7 @@ static float vnoise3(float3 p) {
     for (int dz = 0; dz <= 1; dz++) {
         for (int dy = 0; dy <= 1; dy++) {
             for (int dx = 0; dx <= 1; dx++) {
-                float3 c = i + float3(dx, dy, dz);
+                float3 c = i + float3(float(dx), float(dy), float(dz));
                 float h = hash2(float2(hash2(c.xy) * 157.0 + c.z * 1.37, c.z * 0.71 + hash2(c.yx) * 89.0));
                 n += h * (dx ? u.x : 1 - u.x) * (dy ? u.y : 1 - u.y) * (dz ? u.z : 1 - u.z);
             }
