@@ -325,8 +325,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let lat: Double
         let kind: Kind
         let index: Int
-        /// The web-map zoom from which it shows.
+        /// The web-map zoom from which it shows, and (the ground) the globe's zoom, whatever the screen.
         let from: Double
+        var minZoom = 0.0
         /// A Persian capital's rosette, left of its name and on the city itself, and its size.
         let mark: Bool
         let markSize: CGFloat
@@ -1134,7 +1135,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let persian = style == .persian
         let scale = labelScale, halo = self.halo
         letteredScale = scale
-        func label(_ text: String, _ key: String, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false) -> Label? {
+        func label(_ text: String, _ key: String, _ c: [Double], _ kind: Kind, _ index: Int, from: Double, mark: Bool = false,
+                   minZoom: Double = 0) -> Label? {
             guard c.count == 2, let face = faces[key] else { return nil }
             let s = NSAttributedString(string: text, attributes: Self.attributes(face, scale))
             let size = s.size()
@@ -1143,30 +1145,32 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             let tone = style == .ground && kind != .sea ? groundHalo(lon: c[0], lat: c[1], fallback: face.halo) : face.halo
             return Label(text: s, size: CGSize(width: ceil(size.width) + room + (mark ? markSize * 1.33 : 0), height: ceil(size.height) + room),
                          lon: c[0], lat: c[1], kind: kind, index: index, from: from, mark: mark, markSize: markSize,
-                         halo: tone, gap: CGFloat(type.gap * face.size) * scale)
+                         halo: tone, gap: CGFloat(type.gap * face.size) * scale, minZoom: minZoom)
         }
         // in the order they claim room: oceans, seas, (on the ground, the land's own names), countries,
-        // capitals. The ground keeps the whole Earth unnamed (`updateLabels`), names the land's great
-        // features from the regional scale and the countries only closer in, each on a halo of the
-        // ground under it (`groundHalo`).
+        // capitals. The ground keeps the whole Earth unnamed, names the seas and the land's great
+        // features from x1.5, the countries from x3.2 and the capitals from x5 on any screen (a larger
+        // screen's room would otherwise name every country at once), each on a halo of the ground
+        // under it (`groundHalo`).
         let onGround = style == .ground
+        let sea = onGround ? 1.5 : 0, country = onGround ? 3.2 : 0, capital = onGround ? 5.0 : 0
         var all: [Label?] = []
-        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: onGround ? 4 : 0)) }
+        for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: 0, minZoom: sea)) }
         for (i, s) in data.seas.enumerated().sorted(by: { $0.element.r < $1.element.r }) where !s.ocean {
-            all.append(label(s.n, "sea", s.c, .sea, i, from: onGround ? max(s.r + 2.5, 4) : s.r + 2.5))
+            all.append(label(s.n, "sea", s.c, .sea, i, from: s.r + 2.5, minZoom: sea))
         }
         if onGround {
             for (i, r) in data.regions.enumerated() {
-                all.append(label(r.n.uppercased(), "region", r.c, .region, i, from: 4 + (r.r - 1) * 0.9))
+                all.append(label(r.n.uppercased(), "region", r.c, .region, i, from: 4 + (r.r - 1) * 0.9,
+                                 minZoom: r.r <= 1 ? 1.5 : r.r <= 2 ? 2.5 : 4))
             }
         }
         for (i, c) in data.countries.enumerated().sorted(by: { ($0.element.min, $0.element.r) < ($1.element.min, $1.element.r) }) {
-            all.append(label(Self.short(c.n).uppercased(), type.countryFace(rank: c.r), c.c, .country, i,
-                             from: onGround ? max(c.min + 0.5, 5.3) : c.min + 0.5))
+            all.append(label(Self.short(c.n).uppercased(), type.countryFace(rank: c.r), c.c, .country, i, from: c.min + 0.5, minZoom: country))
         }
         for (i, c) in data.capitals.enumerated().sorted(by: { ($0.element.r ?? 9) < ($1.element.r ?? 9) }) {
             all.append(persian ? label(c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, mark: true)
-                               : label("· " + c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25))
+                               : label("· " + c.n, "capital", c.c, .capital, i, from: 5.6 + (c.r ?? 5) * 0.25, minZoom: capital))
         }
         labels = all.compactMap { $0 }
     }
@@ -1221,7 +1225,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             var l = labels[i]
             var target = 0.0
             var point: CGPoint?
-            if level >= l.from, !(style == .ground && zoom < 1.5), !(l.kind == .country && l.index == shown && highlight > 0.01) {
+            if level >= l.from, zoom >= l.minZoom, !(l.kind == .country && l.index == shown && highlight > 0.01) {
                 let (p, facing) = project(lon: l.lon, lat: l.lat)
                 point = facing > 0 ? p : nil
                 if facing > (l.alpha > 0.5 ? 0.3 : 0.4) {

@@ -591,20 +591,21 @@ def labels(img, w, h, scale, geom, zoom, selected, persian=False, keep_clear=(),
     for i, c in enumerate(data['countries']):
         if i + 1 == selected:
             put(short(c['n']).upper(), *c['c'], faces['selected'], panel=persian, silhouette=not persian)
-    if ground and zoom < 1.5:                       # (the ground keeps the whole Earth unnamed)
-        return
+    # the ground's zooms, whatever the screen (GlobeView's makeLabels): seas and the great features from
+    # x1.5, the lesser from x2.5 and x4, countries from x3.2, capitals from x5
+    sea_z, country_z, capital_z = (1.5, 3.2, 5) if ground else (0, 0, 0)
     for s in sorted(data['seas'], key=lambda s: (not s['ocean'], s['r'])):
-        if (s['ocean'] or s['r'] <= level - 2.5) and (not ground or level >= 4):
+        if (s['ocean'] or s['r'] <= level - 2.5) and zoom >= sea_z:
             put(s['n'], *s['c'], faces['ocean' if s['ocean'] else 'sea'])
     if ground:
         for r in json.loads((G / 'regions.json').read_text())['regions']:
-            if level >= 4 + (r['r'] - 1) * 0.9:
+            if level >= 4 + (r['r'] - 1) * 0.9 and zoom >= (1.5 if r['r'] <= 1 else 2.5 if r['r'] <= 2 else 4):
                 put(r['n'].upper(), *r['c'], faces['region'], sampled=True)
     for i, c in sorted(enumerate(data['countries']), key=lambda ic: (ic[1]['min'], ic[1]['r'])):
-        if c['min'] <= level - 0.5 and i + 1 != selected and (not ground or level >= 5.3):
+        if c['min'] <= level - 0.5 and i + 1 != selected and zoom >= country_z:
             put(short(c['n']).upper(), *c['c'], faces[tier(c['r'])], sampled=ground)
     for c in sorted(data['capitals'], key=lambda c: c.get('r') or 9):
-        if level >= 5.6 + (c.get('r') or 5) * 0.25:
+        if level >= 5.6 + (c.get('r') or 5) * 0.25 and zoom >= capital_z:
             put(c['n'] if persian else '\u00b7 ' + c['n'], *c['c'], faces['capital'], mark=persian, sampled=ground)
 
 
