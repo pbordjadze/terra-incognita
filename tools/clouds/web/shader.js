@@ -37,7 +37,7 @@ const float PI = 3.14159265;
 
 // ---- noise: pcg3d-hashed gradient noise, quintic (sky.js's tile of it); fbm with a rotation
 // between octaves. One octave's sd, as the tile is sampled (0.185), is measured by
-// tools/playground/clouds/calibrate.py, which makes the same tile in numpy: so scored, the fbm is
+// tools/clouds/calibrate.py, which makes the same tile in numpy: so scored, the fbm is
 // close to a standard normal, and a cover becomes a threshold.
 
 uvec3 pcg3d(uvec3 v) {
@@ -221,10 +221,10 @@ void main() {
       float d = mix(l.cover, smoothstep(edge - 0.06, edge + 0.12, cdf(f.x)), f.y);
       lit *= 1.0 - on * l.shadow * d * (1.0 - 0.6 * l.cover);
     }
-    // on the sea a cool blue-grey; on land the globe's own shadow colour (its drop shadow's, 6E6352)
+    // a near-black over the ground, darkening it as a multiply would (CloudsLook), on sea or land
     vec2 uv = vec2(atan(g.x, g.z) / PI + 1.0, 1.0 - asin(clamp(g.y, -1.0, 1.0)) * 2.0 / PI) * 0.5;
     float land = texture(uLand, uv).r;
-    float strength = mix(uSeaShadow.w, uLandShadow.w, land);
+    float strength = uTone.x * mix(uSeaShadow.w, uLandShadow.w, land);
     over(acc, mix(uSeaShadow.rgb, uLandShadow.rgb, land), (1.0 - lit) * strength);
   }
 

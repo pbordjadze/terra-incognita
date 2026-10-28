@@ -2,9 +2,9 @@
 draws it (tools/globe/preview.py), the pack's overlay over it, and the names over that, as the app
 layers them (GlobeView: the Metal globe, then a prototype's overlay, then the label layer).
 
-    python3 tools/playground/clouds/compose.py camera <w>x<h> <lon> <lat> <zoom>   # the overlay's camera, JSON
-    python3 tools/playground/clouds/compose.py compose <w>x<h> <lon> <lat> <zoom> <scale> <overlay.png> <out.png>
-    python3 tools/playground/clouds/compose.py frames <listing.json>                  # a film's frames
+    python3 tools/clouds/compose.py camera <w>x<h> <lon> <lat> <zoom>   # the overlay's camera, JSON
+    python3 tools/clouds/compose.py compose <w>x<h> <lon> <lat> <zoom> <scale> <overlay.png> <out.png>
+    python3 tools/clouds/compose.py frames <listing.json>                  # a film's frames
 
 look.cjs and film.cjs run these (they draw the overlay in Chromium between them).
 """
@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'globe'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'globe'))
 import preview  # noqa: E402
 
 

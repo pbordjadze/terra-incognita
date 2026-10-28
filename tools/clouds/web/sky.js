@@ -1,5 +1,5 @@
 // Clouds over the globe: where they usually are in this month, as satellites have seen them
-// (ISCCP-H 2000-2016: sky.png, made by tools/playground/clouds/build.py), drawn as weather that
+// (ISCCP-H 2000-2016: sky.png, made by tools/clouds/build.py), drawn as weather that
 // could be (shader.js). This file is the host: the camera, the month, the drift (a simulated day a
 // minute; none under Reduce Motion, none while the app is in the background) and the drawing.
 (function () {
@@ -214,11 +214,11 @@
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_3D, noise);
     gl.uniform1i(loc.uNoise, 2);
-    // the Wikipedia map's look (CloudsLook in the app): shadows blue-grey on the sea, the globe's own
-    // warm grey on land, lit from the north-west (no sun)
+    // the app's CloudsLook: near-black shadows that darken any ground as a multiply would (on the
+    // Wikipedia map, its blue-grey on the sea and its warm grey on land), lit from the north-west
     gl.uniform4f(loc.uSun, 0, 0, 0, 0);
-    gl.uniform4f(loc.uSeaShadow, 0.20, 0.26, 0.38, 1);
-    gl.uniform4f(loc.uLandShadow, 0.43, 0.39, 0.32, 0.8);
+    gl.uniform4f(loc.uSeaShadow, 0.05, 0.09, 0.18, 0.78);
+    gl.uniform4f(loc.uLandShadow, 0.06, 0.05, 0.04, 0.47);
     gl.uniform4f(loc.uTone, 1, 0.75, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }

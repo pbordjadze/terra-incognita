@@ -6,7 +6,7 @@ import UIKit
 /// folder under App/TerraIncognita/, and one entry here (docs/playground.md). Web prototypes need
 /// no entry: `PackStore` finds their folders and sources.
 enum Catalog {
-    static let native: [Prototype] = [camelid, whale, ocean, water, leaf, clouds, persian, film]
+    static let native: [Prototype] = [camelid, whale, ocean, water, leaf, persian, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`).
     static let camelid = Prototype(
@@ -63,16 +63,6 @@ enum Catalog {
         ownScreen: true
     ) { stage in
         stage.present("leaf") { LeafScreen() }
-    }
-
-    /// Clouds over the globe (`Clouds/`): where they usually are this month, as satellites have seen
-    /// them, drawn as weather that could be; coming closer passes down through them.
-    static let clouds = Prototype(
-        id: "clouds", title: "Clouds",
-        summary: "This month's clouds, where satellites usually see them (2000–2016): drifting on the usual winds, parting as you come down through them.",
-        anchor: GlobeCamera(lon: 15, lat: 8, zoom: 1)
-    ) { stage in
-        stage.follow(CloudsLayer())
     }
 
     /// The globe's second style, parked: the Wikipedia style is the base for now (`Globe.metal`'s P_).

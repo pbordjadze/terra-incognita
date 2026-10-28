@@ -1,6 +1,6 @@
 """Builds the clouds pack's sky: where clouds usually are, month by month, from satellites.
 
-    python3 tools/playground/clouds/build.py <cache> [--fetch [--discard]]
+    python3 tools/clouds/build.py <cache> [--fetch [--discard]]
 
 The source is ISCCP-H, the International Satellite Cloud Climatology Project's gridded monthly means
 (HGM, version 1.0, NOAA NCEI; "no constraints on data access or use"): 1-degree cells, every
@@ -11,7 +11,7 @@ deletes each once read). The running sums are kept in `<cache>/sums-2000-2016.np
 build reads no files.
 
 Out, the same files twice: for the native prototype (App/TerraIncognita/Clouds/CloudsSky.png and
-CloudsLand.png, decoded by Clouds.metal) and for its web twin (Prototypes/clouds-web/sky.png and
+CloudsLand.png, decoded by Clouds.metal) and for its web twin (tools/clouds/web/sky.png and
 land.png, decoded by shader.js, the same line for line). The sky, 1448 x 1092 RGB:
 
     a 4 x 6 grid of 362 x 182 tiles, each one month's 360 x 180 cells (north up, west edge 180 W)
@@ -41,9 +41,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[3]
-SKY = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsSky.png', ROOT / 'Prototypes' / 'clouds-web' / 'sky.png']
-LAND = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsLand.png', ROOT / 'Prototypes' / 'clouds-web' / 'land.png']
+ROOT = Path(__file__).resolve().parents[2]
+SKY = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsSky.png', ROOT / 'tools' / 'clouds' / 'web' / 'sky.png']
+LAND = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsLand.png', ROOT / 'tools' / 'clouds' / 'web' / 'land.png']
 NCEI = ('https://www.ncei.noaa.gov/data/international-satellite-cloud-climate-project-isccp-h-series-data/'
         'access/isccp-basic/hgm/')
 YEARS = range(2000, 2017)

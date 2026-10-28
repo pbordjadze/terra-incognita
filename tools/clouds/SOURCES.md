@@ -1,10 +1,9 @@
-# Clouds, in a web view
+# Clouds: sources
 
-The web twin of the native **Clouds** prototype (`App/TerraIncognita/Clouds/`): a runtime-1 globe
-pack, an overlay over the globe taking no touches, parked in the workbench. Its shader
-(`shader.js`) is the native one's (`Clouds.metal`) line for line, and it is what the desktop tools
-(`tools/playground/clouds/look.cjs`, `film.cjs`) draw over the globe's preview. It makes no
-requests and keeps nothing. What follows describes both.
+The clouds are part of the app's stage (`App/TerraIncognita/Clouds/`): a Metal layer over the globe.
+Their web twin (`web/`: `shader.js`, the native `Clouds.metal` line for line, and a small page to
+host it) is the desktop preview, what `look.cjs` and `film.cjs` draw over the globe's preview; the
+app has no web view for it. Neither makes requests or keeps anything. What follows describes both.
 
 ## What it shows
 
@@ -13,7 +12,7 @@ drawn cloud for the share of the time it was seen cloudy in this month, on avera
 and its sky is made of the kinds of cloud seen there. The particular clouds are not observed: they
 are drawn so that their cover matches the record, and they are not today's weather.
 
-| | Measured (the record) | Drawn (this pack's choices) |
+| | Measured (the record) | Drawn (our choices) |
 | --- | --- | --- |
 | Where | how often each 1° cell is cloudy, this month | the clouds' shapes |
 | What kind | the shares of stratocumulus and stratus, altostratus and nimbostratus, cirrostratus, deep convection, cumulus, and thin clouds aloft | how each kind looks: decks, sheets, towers, puffs, filaments |
@@ -40,8 +39,10 @@ are drawn so that their cover matches the record, and they are not today's weath
 - **Reduce Motion** holds the clouds still (no drift). The descent follows the reader's own pinch.
 - **The native one** draws at a fraction of the screen's pixels (about 1.25 a point to start) and
   follows the GPU's own timings, finer while a frame is cheap, coarser when it isn't; the
-  workbench's log says what a frame costs. Its look (`CloudsLook`) holds the shadows' colours and the
-  light, so a globe drawn another way can give its own, a sun among them.
+  workbench's log says what a frame costs; while the camera rests it draws ten times a second. Its
+  look (`CloudsLook`, one per globe style) holds the shadows (near black, so they darken any ground
+  as a multiply would) and the light, so a globe drawn another way can give its own, a sun among
+  them. The reader can turn them off with the cloud button beside the workbench's.
 
 ## Data
 
@@ -59,7 +60,7 @@ file: "No constraints on data access or use."
   ISCCP. Bulletin of the American Meteorological Society, 80, 2261–2287.
   doi:10.1175/1520-0477(1999)080<2261:AIUCFI>2.0.CO;2
 
-`sky.png` (and the native `CloudsSky.png`, the same file) is made by `tools/playground/clouds/build.py` (its docstring is the encoding): the 204
+`sky.png` (and the native `CloudsSky.png`, the same file) is made by `tools/clouds/build.py` (its docstring is the encoding): the 204
 months averaged into twelve; ISCCP's eighteen cloud types grouped by height and thickness; each field
 smoothed by about a cell (more towards the poles, where cloud over snow and ice is least certain;
 some blocks and seams in the record would otherwise look like weather). Types are known only by day,

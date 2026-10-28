@@ -1,15 +1,15 @@
 'use strict';
-// Pictures of the clouds pack over the app's own globe, names on top, for judging the look:
+// Pictures of the clouds (their web twin, tools/clouds/web/) over the app's own globe, names on top, for judging the look:
 // compose.py draws the globe and the names, headless Chromium the overlay between them.
-//   node tools/playground/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [view ...]
+//   node tools/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [view ...]
 // A view is name:lon,lat,zoom (default: a set from the whole Earth down to the ground). Pictures go
-// to build/playground/clouds/look/. Reads only this machine.
+// to build/clouds/look/. Reads only this machine.
 const { chromium } = require('playwright');
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs'), path = require('node:path');
-const { start } = require('../serve.cjs');
+const { pathToFileURL } = require('node:url');
 
-const ROOT = path.resolve(__dirname, '../../..');
+const ROOT = path.resolve(__dirname, '../..');
 const COMPOSE = path.join(__dirname, 'compose.py');
 const SIZES = { phone: [402, 874], ipad: [1032, 1376] };
 const VIEWS = [
@@ -34,18 +34,17 @@ function option(args, name, fallback) {
     const [lon, lat, zoom] = at.split(',').map(Number);
     return { name, lon, lat, zoom };
   });
-  const out = path.join(ROOT, 'build', 'playground', 'clouds', 'look');
+  const out = path.join(ROOT, 'build', 'clouds', 'look');
   fs.mkdirSync(out, { recursive: true });
 
-  const server = await start({ port: 0 });
-  const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const browser = await chromium.launch({ args: ['--allow-file-access-from-files', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   try {
     const context = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale });
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error' || /clouds:/.test(m.text())) errors.push(m.text()); });
-    await page.goto(`${server.url}/pack/clouds-web/overlay.html?mode=overlay&month=${month}&days=${days}`);
+    await page.goto(`${pathToFileURL(path.join(__dirname, 'web', 'preview.html'))}?month=${month}&days=${days}`);
     await page.waitForSelector('html[data-clouds="ready"]', { timeout: 60000 });
     for (const v of views) {
       const cam = JSON.parse(execFileSync('python3', [COMPOSE, 'camera', `${w}x${h}`, v.lon, v.lat, v.zoom].map(String)));
@@ -59,6 +58,5 @@ function option(args, name, fallback) {
     if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }
   } finally {
     await browser.close();
-    server.close();
   }
 })().catch((e) => { console.error(e); process.exit(1); });

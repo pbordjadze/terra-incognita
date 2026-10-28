@@ -1,6 +1,6 @@
 """Measures the clouds shader's noise, so a measured cloud cover can become a threshold.
 
-    python3 tools/playground/clouds/calibrate.py
+    python3 tools/clouds/calibrate.py
 
 The noise here is the shader's, line for line: pcg3d-hashed gradient noise, quintic, which sky.js
 draws once into a tile 16 cells a side (wrapping round, six samples a cell, a byte each) that the

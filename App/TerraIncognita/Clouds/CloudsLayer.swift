@@ -5,17 +5,19 @@ import QuartzCore
 import UIKit
 import os
 
-/// Clouds over the globe: where they usually are this month, as satellites have seen them (ISCCP-H,
-/// 2000–2016: CloudsSky.png, made by tools/playground/clouds/build.py), drawn as weather that could
-/// be (`Clouds.metal`). A Metal layer of its own between the globe's drawing and its names, drawn each
-/// frame the globe ticks (`GlobeFollower`), so that the globe and its code are untouched.
+/// The stage's sky: clouds where they usually are this month, as satellites have seen them
+/// (ISCCP-H, 2000–2016: CloudsSky.png, made by tools/clouds/build.py), drawn as weather that could be
+/// (`Clouds.metal`). A Metal layer of its own between the globe's drawing and its names (`GlobeView.sky`),
+/// drawn as the globe ticks, so the globe's own drawing is untouched. The reader can turn it off
+/// (`CloudsSwitch`); it also fades out where it doesn't belong: the Persian page, the authored films.
 ///
 /// Soft things need few pixels: it draws at about one and a quarter pixels a point and lets Core
 /// Animation scale that up, then follows the GPU's own timings, drawing finer while a frame costs
 /// little and coarser when it costs more, within a budget the globe can spare. When the GPU is two
-/// frames behind it skips one rather than wait. The drift is a simulated day a minute; Reduce
-/// Motion holds it still, and so does nothing being on screen (the globe's ticks stop).
-final class CloudsLayer: GlobeFollower {
+/// frames behind it skips one rather than wait, and while the camera rests it draws ten times a
+/// second, enough for its drift. The drift is a simulated day a minute; Reduce Motion holds it
+/// still, and so does nothing being on screen (the globe's ticks stop).
+final class CloudsLayer {
     var layer: CALayer { metal }
 
     private static let daySeconds = 60.0
@@ -41,12 +43,13 @@ final class CloudsLayer: GlobeFollower {
     private var heldMonth: Double?
     private var lastTick: CFTimeInterval?
     private var lastAdjust: CFTimeInterval = 0
+    /// How far it is shown (0 to 1: it fades in and out), and what the last frame drew from.
+    private var shown = 0.0
+    private var drawn: (camera: SIMD8<Double>, at: CFTimeInterval, shown: Double)?
     /// (the first report once frames have been timed)
     private var lastReport = CACurrentMediaTime()
-    private let look: CloudsLook
 
-    init(look: CloudsLook = CloudsLook()) {
-        self.look = look
+    init() {
         metal.device = device
         metal.pixelFormat = .bgra8Unorm
         metal.framebufferOnly = true
@@ -68,19 +71,29 @@ final class CloudsLayer: GlobeFollower {
         setUp()
     }
 
-    // MARK: GlobeFollower
+    // MARK: each frame
 
+    /// Draws the sky for the globe's camera this frame (GlobeView's tick, before the globe draws).
     func frame(of globe: GlobeView) {
         guard !stopped else { return }
         let now = CACurrentMediaTime()
         let dt = lastTick.map { min(now - $0, 0.1) } ?? 0
         lastTick = now
         if heldDays == nil, !UIAccessibility.isReduceMotionEnabled { days += dt / Self.daySeconds }
-        guard let pipeline, let queue, let sky, let land, let tile else { return }
+        guard let look = CloudsLook.on(globe.style) else { return fade(to: 0, dt: dt) }
+        fade(to: CloudsSwitch.shared.on && !globe.authoredMode ? 1 : 0, dt: dt)
+        guard shown > 0, let pipeline, let queue, let sky, let land, let tile else { return }
         // (the GPU two frames behind: skip this one rather than wait for a drawable)
         guard gpu.inFlight < 2 else { return }
         let bounds = globe.bounds
         guard bounds.width > 0, bounds.height > 0 else { return }
+        // while nothing changes but the drift, ten frames a second are plenty (one, with it held)
+        let s = globe.stageCamera
+        let camera = SIMD8<Double>(s.camera.lon, s.camera.lat, s.camera.zoom, s.radius,
+                                  Double(s.centre.x), Double(s.centre.y), Double(bounds.width), Double(bounds.height))
+        let held = heldDays != nil || UIAccessibility.isReduceMotionEnabled
+        if let d = drawn, d.camera == camera, d.shown == shown, now - d.at < (held ? 1 : 0.1) { return }
+        drawn = (camera, now, shown)
         finest = min(Double(globe.traitCollection.displayScale), 2)
         adjust(now: now)
         let size = CGSize(width: (bounds.width * scale).rounded(), height: (bounds.height * scale).rounded())
@@ -99,7 +112,7 @@ final class CloudsLayer: GlobeFollower {
         pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
         pass.colorAttachments[0].storeAction = .store
         guard let encoder = commands.makeRenderCommandEncoder(descriptor: pass) else { return }
-        var u = uniforms(globe: globe, size: size)
+        var u = uniforms(globe: globe, size: size, look: look)
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         let turning = Self.cyclones(days: days)
@@ -126,6 +139,21 @@ final class CloudsLayer: GlobeFollower {
         tile = nil
     }
 
+    /// Towards shown (1) or gone (0) in about a third of a second; hidden once gone, so Core
+    /// Animation composites nothing for it.
+    private func fade(to target: Double, dt: Double) {
+        if shown != target {
+            shown = target > shown ? min(target, shown + dt * 3) : max(target, shown - dt * 3)
+        }
+        let hidden = shown == 0
+        if metal.isHidden != hidden {
+            CATransaction.begin()
+            CATransaction.setDisableActions(true)
+            metal.isHidden = hidden
+            CATransaction.commit()
+        }
+    }
+
     // MARK: drawing
 
     /// The shader's uniforms (`CloudsUniforms` in Clouds.metal: the same order).
@@ -142,7 +170,7 @@ final class CloudsLayer: GlobeFollower {
         var tone: SIMD4<Float>
     }
 
-    private func uniforms(globe: GlobeView, size: CGSize) -> Uniforms {
+    private func uniforms(globe: GlobeView, size: CGSize, look: CloudsLook) -> Uniforms {
         let s = globe.stageCamera
         // world from view, Ry(lon) . Rx(-lat), as the globe turns (GlobeView.rotation), by columns
         let a = s.camera.lon * .pi / 180, b = -s.camera.lat * .pi / 180
@@ -161,7 +189,7 @@ final class CloudsLayer: GlobeFollower {
             sun: look.sun.map { SIMD4($0, 1) } ?? .zero,
             seaShadow: look.seaShadow,
             landShadow: look.landShadow,
-            tone: SIMD4(look.opacity, look.night, 0, 0))
+            tone: SIMD4(look.opacity * Float(shown), look.night, 0, 0))
     }
 
     /// The cyclones (`cyclones` in Clouds.metal): where each is and how hard it turns are the same for
@@ -329,20 +357,28 @@ final class CloudsLayer: GlobeFollower {
     }
 }
 
-/// How the clouds sit on a globe: their opacity, their shadows' colours and strengths on sea and
-/// land, and the light. These are the Wikipedia map's: a cool blue-grey on its pale sea, its own
-/// drop shadow's warm grey (6E6352) on its cream land, lit from the north-west as its relief is. A
-/// globe drawn another way (a satellite view, say) would give its own: darker shadows on darker
-/// ground, perhaps a sun, which also turns the clouds' night side down (`night`).
+/// How the clouds sit on a globe: their opacity, their shadows on sea and land (a colour laid over
+/// the ground, and how strongly), and the light. The shadows are near black, so they darken whatever
+/// ground is under them, keeping its hue, as a multiply would: on the Wikipedia map's pale sea and
+/// cream land they come out as its cool blue-grey and its drop shadow's warm grey, and they suit a
+/// greener, darker ground as well. Lit from the north-west, as the globe's relief is; a globe with
+/// a sun would give it (`sun`), which also turns the clouds' night side down (`night`).
 struct CloudsLook {
     var opacity: Float = 1
-    var seaShadow = SIMD4<Float>(0.20, 0.26, 0.38, 1)
-    var landShadow = SIMD4<Float>(0.43, 0.39, 0.32, 0.8)
+    var seaShadow = SIMD4<Float>(0.05, 0.09, 0.18, 0.78)
+    var landShadow = SIMD4<Float>(0.06, 0.05, 0.04, 0.47)
     /// Towards the sun in the globe's world coordinates (y to the north pole, z to 0° 0°); nil lights
     /// from the map's north-west, everywhere.
     var sun: SIMD3<Float>?
     var night: Float = 0.75
+
+    /// The look on a globe style, or nil where clouds don't belong (the Persian page: a manuscript
+    /// has no weather).
+    static func on(_ style: GlobeStyle) -> CloudsLook? {
+        style == .persian ? nil : CloudsLook()
+    }
 }
+
 
 /// The GPU's timings and the frames it has in hand, written by Metal's completion handlers (any
 /// thread) and read by the main one.

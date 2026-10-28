@@ -1,17 +1,17 @@
 'use strict';
-// A short film of the clouds pack over the app's own globe (as look.cjs, frame by frame), for
+// A short film of the clouds (their web twin) over the app's own globe (as look.cjs, frame by frame), for
 // judging its motion without a phone. Two films:
 //   descent  the whole Earth at the app's pace (a day a minute), then down through the clouds to
 //            the Namib coast, and a moment under them
 //   week     a week of weather at the whole-Earth scale in twenty seconds (21x the app's pace)
-//   node tools/playground/clouds/film.cjs <descent|week> [--device phone|ipad] [--month 10] [--fps n] [--scale n]
-// Frames and the film go to build/playground/clouds/film/. Needs ffmpeg. Reads only this machine.
+//   node tools/clouds/film.cjs <descent|week> [--device phone|ipad] [--month 10] [--fps n] [--scale n]
+// Frames and the film go to build/clouds/film/. Needs ffmpeg. Reads only this machine.
 const { chromium } = require('playwright');
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs'), path = require('node:path');
-const { start } = require('../serve.cjs');
+const { pathToFileURL } = require('node:url');
 
-const ROOT = path.resolve(__dirname, '../../..');
+const ROOT = path.resolve(__dirname, '../..');
 const COMPOSE = path.join(__dirname, 'compose.py');
 const SIZES = { phone: [402, 874], ipad: [1032, 1376] };
 const ease = (t) => t * t * (3 - 2 * t);
@@ -61,17 +61,16 @@ function option(args, name, fallback) {
   const keys = FILMS[name];
   if (!keys) throw new Error(`no film called ${name} (${Object.keys(FILMS).join(', ')})`);
   const [w, h] = SIZES[device];
-  const dir = path.join(ROOT, 'build', 'playground', 'clouds', 'film', `${device}-${name}`);
+  const dir = path.join(ROOT, 'build', 'clouds', 'film', `${device}-${name}`);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
 
-  const server = await start({ port: 0 });
-  const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
+  const browser = await chromium.launch({ args: ['--allow-file-access-from-files', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'] });
   const jobs = [];
   try {
     const context = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale });
     const page = await context.newPage();
-    await page.goto(`${server.url}/pack/clouds-web/overlay.html?mode=overlay&month=${month}&days=0`);
+    await page.goto(`${pathToFileURL(path.join(__dirname, 'web', 'preview.html'))}?month=${month}&days=0`);
     await page.waitForSelector('html[data-clouds="ready"]', { timeout: 60000 });
     const n = Math.round(keys[keys.length - 1].t * fps);
     for (let f = 0; f <= n; f++) {
@@ -89,13 +88,12 @@ function option(args, name, fallback) {
     }
   } finally {
     await browser.close();
-    server.close();
   }
   const listing = path.join(dir, 'frames.json');
   fs.writeFileSync(listing, JSON.stringify(jobs));
   console.error('composing over the globe');
   execFileSync('python3', [COMPOSE, 'frames', listing], { stdio: 'inherit' });
-  const film = path.join(ROOT, 'build', 'playground', 'clouds', 'film', `${device}-${name}.mp4`);
+  const film = path.join(ROOT, 'build', 'clouds', 'film', `${device}-${name}.mp4`);
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(dir, 'c-%04d.png'),
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', film]);
   console.log(path.relative(ROOT, film));

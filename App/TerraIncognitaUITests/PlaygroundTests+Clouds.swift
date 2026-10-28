@@ -1,22 +1,25 @@
 import XCTest
 
-/// The clouds (`App/TerraIncognita/Clouds/`): listed, drawn over the globe with its names still
-/// there, a real pinch down through them, what a frame costs in the workbench's log, and nothing
-/// left when they end. Part of `PlaygroundTests`, so `[playground-check]` runs it.
+/// The clouds (`App/TerraIncognita/Clouds/`), part of the stage: over the opening globe with its
+/// names still there, a real pinch down through them, what a frame costs in the workbench's log, and
+/// the switch beside the workbench turning them off and on, the Live counts the plain globe's
+/// throughout. Part of `PlaygroundTests`, so `[playground-check]` runs it.
 extension PlaygroundTests {
-    @MainActor @objc func testCloudsComeDownAndGoWithoutLeavingAnything() {
+    @MainActor @objc func testCloudsAreOnTheGlobeAndTurnOff() {
         let app = XCUIApplication()
-        // October's sky, its drift held: the same pictures every run
-        app.launchArguments = ["-clouds-days", "0.4", "-clouds-month", "10"]
+        // October's sky over Africa, its drift held: the same pictures every run
+        app.launchArguments = ["-clouds-days", "0.4", "-clouds-month", "10", "-globe-at", "15", "8", "1"]
         app.launch()
         defer { app.terminate() }
 
-        startPrototype("clouds", in: app)
-        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.waitForExistence(timeout: 15))
-        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Clouds"), "The chip names the clouds")
         let globe = app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch
-        XCTAssertTrue(globe.waitForExistence(timeout: 15), "The clouds are drawn over the globe, which stays")
-        sleep(4)   // the flight to Africa, and the sky decoded
+        XCTAssertTrue(globe.waitForExistence(timeout: 15))
+        let clouds = app.buttons["cloudsButton"].firstMatch
+        XCTAssertTrue(clouds.waitForExistence(timeout: 10), "The clouds' switch is beside the workbench button")
+        // (the switch is remembered: a run before may have left it off)
+        if clouds.value as? String == "Off" { clouds.tap() }
+        XCTAssertEqual(clouds.value as? String, "On", "The clouds are on until the reader turns them off")
+        sleep(3)   // the sky decoded, and faded in
         attach("40-clouds-earth", in: app)
 
         // down through them, with a reader's own pinch
@@ -37,11 +40,16 @@ extension PlaygroundTests {
         cost.lifetime = .keepAlways
         add(cost)
         XCTAssertTrue(report.exists, "The clouds say what a frame costs, in the workbench's log")
+        assertLive(Self.plainGlobeLive, in: app, "The clouds belong to the globe: no stage, nothing more live")
         app.buttons["workbenchClose"].firstMatch.tap()
 
-        endPrototype(in: app)
-        attach("44-clouds-gone", in: app)
-        openWorkbench(in: app)
-        assertLive(Self.plainGlobeLive, in: app, "Ending the clouds leaves only the globe")
+        clouds.tap()
+        XCTAssertEqual(clouds.value as? String, "Off")
+        sleep(1)   // faded out
+        attach("44-clouds-off", in: app)
+        clouds.tap()
+        XCTAssertEqual(clouds.value as? String, "On", "The switch brings them back")
+        sleep(1)
+        attach("45-clouds-on-again", in: app)
     }
 }

@@ -77,9 +77,6 @@ be able to tell what they are looking at.
    screen). Existing entries are examples of each kind.
 3. Close its screen with `@Environment(\.dismiss)`; stop timers and display links when its views
    go away. The workbench's live counts show anything left behind.
-   To draw over the globe in step with it (as `clouds` does), give the stage a `GlobeFollower`
-   (`stage.follow`): its layer lies between the globe's drawing and its names, it is told every
-   frame the globe ticks, and it is taken away when the prototype ends.
 4. Push with `[build-only]` in the commit message for a quick compile; a full push runs the
    interaction tests; `main` publishes the IPA to SideStore.
 

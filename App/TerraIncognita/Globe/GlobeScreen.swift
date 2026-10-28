@@ -199,6 +199,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
         let view = GlobeView(frame: .zero)
         view.setAtlasAccessibilityIdentifier("mainAtlasGlobe")
         view.setStyle(style, animated: false)
+        view.sky = CloudsLayer()
         view.onSelect = { country = $0 }
         view.onDrawn = { [weak view] in if let view { onDrawn(view) } }
         // (a country lit from the start, by -globe-select; told after this update, not during it)
