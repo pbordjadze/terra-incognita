@@ -339,6 +339,12 @@ final class PackStore {
         bundledPacks = scanBundled()
         installedPacks = scanAllInstalled()
         bundledSources = loadBundledSources()
+        #if DEBUG
+        // CI's checks use only the sources they name: a test never reaches the live packs branch
+        if ProcessInfo.processInfo.arguments.contains("-packs-url") || ProcessInfo.processInfo.arguments.contains("-playground-reset") {
+            bundledSources = []
+        }
+        #endif
         addedSources = loadAddedSources()
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
