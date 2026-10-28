@@ -2,8 +2,8 @@
 'use strict';
 // Optional authoring-time extraction from the licensed primary station dataset. Node18+.
 // Writes a build artifact; never changes the curated pack data.
-// node tools/playground/ship-time/fetch-stations.cjs [--input cached.tsv] [--out build/challenger-stations.json]
-// node tools/playground/ship-time/fetch-stations.cjs --self-test
+// node tools/playground/sounding-the-deep/fetch-stations.cjs [--input cached.tsv] [--out build/challenger-stations.json]
+// node tools/playground/sounding-the-deep/fetch-stations.cjs --self-test
 const fs=require('node:fs/promises'),path=require('node:path'),crypto=require('node:crypto');
 const URL='https://doi.pangaea.de/10.1594/PANGAEA.849072?format=textfile';
 function parseEvents(text){

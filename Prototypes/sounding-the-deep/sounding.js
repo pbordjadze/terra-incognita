@@ -67,7 +67,7 @@
     } else if (here.kind === 'outside') {
       text = day < first ? 'Before the first station in this record.' : 'After the last station in this record.';
     } else {
-      text = 'Each dot is a station where the crew stopped to measure the depth and bring up the sea floor. ' +
+      text = 'Each dot is a station where the crew stopped to measure the depth and bring up samples of the sea floor. ' +
         'Touch one to lower the line.';
     }
     var note = title + '|' + text;
@@ -86,7 +86,7 @@
     var at = here.kind === 'recorded' || here.kind === 'interpolated';
     terra.geo.set('ship', at ? [point(here.lon, here.lat)] : [], { style: 'symbol', image: 'ship.png', width: 26, height: 26 });
     terra.geo.set('name', at ? [point(here.lon, here.lat, { label: 'HMS Challenger' })] : [],
-                  { style: 'label', font: 'italic', size: 16, minZoom: NEAR, offset: [0, -26] });
+                  { style: 'label', font: 'italic', size: 16, minZoom: NEAR, offset: [0, -38] });
     say();
   }
 
@@ -177,7 +177,7 @@
   terra.geo.set('ahead', [], { style: 'ring', minZoom: NEAR });
   terra.geo.set('reached', [], { style: 'dot', minZoom: NEAR });
   terra.geo.set('ship', [], { style: 'symbol', image: 'ship.png', width: 26, height: 26 });
-  terra.geo.set('name', [], { style: 'label', font: 'italic', size: 16, minZoom: NEAR, offset: [0, -26] });
+  terra.geo.set('name', [], { style: 'label', font: 'italic', size: 16, minZoom: NEAR, offset: [0, -38] });
   terra.geo.set('sounding', [], { style: 'sounding' });
   terra.time.show({
     unit: 'day', min: first - 2, max: last + 2, value: opening.day,

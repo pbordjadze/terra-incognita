@@ -1,4 +1,4 @@
-/* From one-ship-two-rhythms (the first version of this study). Day-resolution observations and an explicitly illustrative transit model. */
+/* From "One ship, two rhythms" (the first version of this study, removed; in the repository's history). Day-resolution observations and an explicitly illustrative transit model. */
 (function(root){'use strict';
 const DAY=86400000,rad=Math.PI/180;
 const day=s=>Date.parse(s+'T00:00:00Z')/DAY;

@@ -9,8 +9,10 @@ map (dashed), the date at the foot and the caption. `index.html` is its own page
 - Dated maps: André Ourednik and contributors, historical-basemaps,
   https://github.com/aourednik/historical-basemaps/tree/da7a4b735ecef70aebdc9c73e409d8a2500d50f3,
   files `geojson/world_<year>.geojson` for 1530, 1600, 1815, 1878, 1920, 1938, 1945 and 1994. GPL-3.0;
-  see LICENSE-HISTORY.txt. `data.js` was prepared for the earlier study `time-atlas` (its selection,
-  exclusions, simplification and limitations are recorded inside it, in `TIME_DATA.source`).
+  see LICENSE-HISTORY.txt. `data.js` is written by `tools/playground/borders-on-old-maps/build-data.cjs`
+  (made for the first version of this study, "A place through time", now removed and kept in the
+  repository's history); its selection, exclusions, simplification and limitations are recorded
+  inside it, in `TIME_DATA.source`. Rebuild, never hand-edit.
 - Land reference: Natural Earth ne_110m_land (public domain), only to tell uncovered land from sea.
 
 ## Rules

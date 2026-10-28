@@ -10,8 +10,9 @@ its own page (about and sources), opened from the chip.
 - Observations: Murray, John; Renard, A F (1891). Annotated record of the detailed examination of Mn
   deposits from the HMS Challenger stations. PANGAEA, https://doi.pangaea.de/10.1594/PANGAEA.849072.
   CC BY 3.0. 94 events, dates reduced to days, coordinates and depths as published; exact duplicates
-  collapsed (`data.js`, prepared for the earlier study `one-ship-two-rhythms`; its SHA-256 and
-  transformations are recorded inside it).
+  collapsed (`data.js`, prepared for the first version of this study, "One ship, two rhythms", now
+  removed and kept in the repository's history; its SHA-256 and transformations are recorded inside
+  it). `tools/playground/sounding-the-deep/fetch-stations.cjs` reads the published export again.
 - Land reference: Natural Earth ne_110m_land (public domain), used only to keep illustrated passages
   off land. See LICENSE-NATURAL-EARTH.md.
 

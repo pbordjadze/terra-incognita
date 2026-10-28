@@ -145,8 +145,17 @@ private struct DateStrip: View {
                     line.move(to: CGPoint(x: 0, y: y))
                     line.addLine(to: CGPoint(x: size.width, y: y))
                     context.stroke(line, with: .color(Self.ink.opacity(0.35)), lineWidth: 1)
+                    // (many ticks, closer than a dot's width, read as fine strokes rather than a blur of dots)
+                    let fine = Double(time.ticks.count) * 7 > Double(size.width)
                     for t in time.ticks {
                         let x = position(t.at, width: size.width)
+                        if fine {
+                            var stroke = Path()
+                            stroke.move(to: CGPoint(x: x, y: y - 4))
+                            stroke.addLine(to: CGPoint(x: x, y: y + 4))
+                            context.stroke(stroke, with: .color(Self.ink.opacity(t.hollow ? 0.35 : 0.8)), lineWidth: 1)
+                            continue
+                        }
                         let dot = Path(ellipseIn: CGRect(x: x - 2.6, y: y - 2.6, width: 5.2, height: 5.2))
                         if t.hollow {
                             context.fill(dot, with: .color(Color(red: 0.965, green: 0.949, blue: 0.906)))
