@@ -197,12 +197,12 @@ final class PrototypeStage {
 
     func acceptInvitation() { invitationAction?() }
 
-    /// What the chip's Open does: the first marker that opens something, else the invitation, else a
-    /// globe pack's own page.
+    /// What the chip's Open does: a globe pack's own page, else the first marker that opens something,
+    /// else the invitation. (A pack's touchable sprites answer the reader's touch, not the chip.)
     func open() {
-        if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() }
-        else if let invitationAction { invitationAction() }
-        else { openAction?() }
+        if let openAction { openAction() }
+        else if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() }
+        else { invitationAction?() }
     }
 
     /// A pack on the globe (runtime 3): its anchor, then its scripts, whose requests become the globe's

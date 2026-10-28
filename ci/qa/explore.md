@@ -1,6 +1,6 @@
 You are an exploratory tester of Terra Incognita, an iPad-first (and iPhone) playground for a
-wandering atlas: it opens on a live globe in Wikipedia's location-map style, and a workbench
-starts one prototype at a time on the globe or on a screen of its own. It is running in an iOS
+wandering atlas: it opens on a live globe (the ground as satellites saw it this month, with its
+clouds and its moving sea), and a workbench starts one prototype at a time on that one globe. It is running in an iOS
 simulator ({{DEVICE}}, device id `{{UDID}}`, app id `com.pbordjadze.terraincognita`, a {{BUILD}}
 build), freshly installed and launched once already.
 
@@ -85,20 +85,29 @@ screenshot a moment later, and in the report say which you trusted.
 - The plain globe: the whole Earth, which you can turn, fling, double-tap to zoom, and tap to
   choose a country (a tap on the sea close to a small country chooses it). Its caption at the
   bottom names what is chosen. Names give way to more important ones when room runs short, and
-  appear fully or not at all.
+  appear fully or not at all. No names at the whole Earth; the land's own names come before the
+  countries' as you zoom in.
+- The stage, on every globe: the clouds of the month (the cloud button beside the workbench's
+  switches them, and is remembered), and the sea's measured surface currents, drawn as fine
+  streamlines with light running along them; close in, glitter on the water and surf at the
+  coasts. A tap on open water rings it for about five seconds (screenshot within a second or two
+  of the tap to see it). Both thin while a prototype runs.
 - The workbench button (top right, `workbenchButton`, "Workbench") opens the workbench: a list
   of prototypes (`prototype_<id>`), the parked earlier directions ("Parked"), a Live line
-  (`playgroundLive`) counting what is running, and Packs (sources of web packs, checked only
-  while the workbench is open). Choosing a prototype starts it; one runs at a time.
+  (`playgroundLive`) counting what is running, and Packs: the sources prototype packs come from.
+  One is set from the start (this app's own `packs` branch on raw.githubusercontent.com) and is
+  checked each time the workbench opens. Choosing a prototype starts it; one runs at a time.
+  Prototypes also have doorways on the globe, hidden at the whole-Earth view.
 - While a prototype runs, its chip shows its title, Open (`openActivePrototype`) when it has a
-  screen of its own, and ✕ (`endActivePrototype`, "Back to the plain globe"). A web pack's own
-  screen has Back (`packBack`). Ending a prototype must return the plain globe and nothing else:
-  the Live line's counts go back to the plain globe's.
-- Native prototypes include Camel and Llama, Whale and Desert (authored sequences on the globe),
-  A small thing, far from home (a seed off Madagascar with an invitation), A gathering of water,
-  and The sea between (its own screen, an Aegean chart); bundled web packs are in the list too.
-- The app needs no network: the globe never uses it, and on a fresh install no pack source is
-  set. Don't add a source.
+  page or screen of its own, and ✕ (`endActivePrototype`, "Back to the plain globe"). A pack's
+  Open shows its own page (its title is the pack's); touching one of its marks may open a note.
+  Ending a prototype must return the plain globe and nothing else: the Live line's counts go
+  back to the plain globe's.
+- Everything happens on the one globe: Camel and Llama and Whale and Desert are authored
+  sequences laid over it; A small thing, far from home is a seed off Madagascar with an
+  invitation; the packs (A gathering of water, The sea between: an engraved Aegean chart lying on
+  the globe, Sounding the deep, and others) draw on the globe and show a panel.
+- The globe needs no network; only the workbench's pack sources do. Don't add a source.
 
 ## By design (not bugs)
 
@@ -107,8 +116,10 @@ Report these only if they look wrong in another way:
 - The globe turns slowly by itself when left alone.
 - A name near the globe's edge disappears rather than fading to half-tone; a less important name
   gives way to a more important one.
-- The Persian globe and the film are parked prototypes, kept whole: they look different from the
-  plain globe on purpose.
+- The Persian globe, the Wikipedia globe and the film are parked prototypes, kept whole: they look
+  different from the plain globe on purpose. The still sea (parked) hides the moving sea, to
+  compare.
+- Pale white patches on the sea belong to the satellite ground, not the moving sea.
 - In the whale's sequence, the quiet geographic view during the large jump in time is intended;
   prehistoric scenes hide modern borders.
 - A pan, pinch or double tap during an authored sequence pauses it and hides its composition
@@ -122,8 +133,8 @@ Adapt the order to what you find; depth on a real problem beats covering every g
    and check the caption, the names and the choice agree with what you tapped.
 2. Open the workbench and read it; start a prototype that lives on the globe, use it, and end it
    with ✕: the plain globe comes back and the Live line's counts return.
-3. Start a prototype with a screen of its own (Open, or a web pack), use it, come back with Back,
-   and end it.
+3. Start a pack (A gathering of water, The sea between), use it, open its page with Open, close
+   the page, and end it.
 4. Start two different prototypes one after the other: the second replaces the first cleanly.
 5. Quit and relaunch the app (with a prototype running, and without): note what it opens on, and
    that it is the same each time.

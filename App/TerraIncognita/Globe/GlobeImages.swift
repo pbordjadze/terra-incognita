@@ -170,16 +170,34 @@ final class GlobeImageLayer: UIView {
                         tile.isHidden = true
                         continue
                     }
-                    let w = tile.bounds.width - 0.6, h = tile.bounds.height - 0.6
-                    // the tile's north-west, north-east and south-west corners fix its affine map; the
-                    // fourth lands within a hair of its place at this size
+                    // all four corners fix a projective map, so neighbouring tiles meet at their shared
+                    // corners and edges however large the picture is drawn (three, an affine map, left
+                    // the fourth a few points out once a picture filled the screen: a step at every row)
                     tile.position = nw
-                    tile.setAffineTransform(CGAffineTransform(a: (ne.x - nw.x) / w, b: (ne.y - nw.y) / w,
-                                                              c: (sw.x - nw.x) / h, d: (sw.y - nw.y) / h, tx: 0, ty: 0))
+                    tile.transform = Self.quad(width: tile.bounds.width - 0.6, height: tile.bounds.height - 0.6,
+                                               ne: ne - nw, se: se - nw, sw: sw - nw)
                     tile.isHidden = false
                 }
             }
         }
         CATransaction.commit()
     }
+
+    /// The transform taking a width × height rectangle at the origin to the quadrilateral from the
+    /// origin to `ne`, `se` and `sw` (Heckbert's square-to-quad), affine when it is a parallelogram
+    /// or too far from convex to map.
+    static func quad(width w: CGFloat, height h: CGFloat, ne: CGPoint, se: CGPoint, sw: CGPoint) -> CATransform3D {
+        let sx = se.x - ne.x - sw.x, sy = se.y - ne.y - sw.y
+        let dx1 = ne.x - se.x, dx2 = sw.x - se.x, dy1 = ne.y - se.y, dy2 = sw.y - se.y
+        let den = dx1 * dy2 - dx2 * dy1
+        var g = abs(den) > 1e-9 ? (sx * dy2 - dx2 * sy) / den : 0
+        var k = abs(den) > 1e-9 ? (dx1 * sy - sx * dy1) / den : 0
+        if min(1 + g, 1 + k, 1 + g + k) < 0.05 { g = 0; k = 0 }
+        var t = CATransform3DIdentity
+        t.m11 = ne.x * (1 + g) / w; t.m12 = ne.y * (1 + g) / w; t.m14 = g / w
+        t.m21 = sw.x * (1 + k) / h; t.m22 = sw.y * (1 + k) / h; t.m24 = k / h
+        return t
+    }
 }
+
+private func - (a: CGPoint, b: CGPoint) -> CGPoint { CGPoint(x: a.x - b.x, y: a.y - b.y) }
