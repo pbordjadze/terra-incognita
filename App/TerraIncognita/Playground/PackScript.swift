@@ -60,6 +60,7 @@ final class PackScript {
     private var camera: CameraState?
     private var sentCamera: CameraState?
     private var lastCameraEvent = 0.0
+    private var lastCameraChange = 0.0
     private var cameraSettle: Timer?
 
     /// The most timers a pack may keep at once, and the shortest repeat.
@@ -164,13 +165,23 @@ final class PackScript {
         guard !stopped, state.finite, state != camera else { return }
         camera = state
         let now = CACurrentMediaTime()
+        lastCameraChange = now
         if now - lastCameraEvent >= 0.05 {
             sendCamera()
         }
-        cameraSettle?.invalidate()
-        cameraSettle = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: false) { [weak self] _ in
-            MainActor.assumeIsolated { self?.sendCamera() }
+        // once it has stopped (no change for a tenth of a second), the script hears where it came to rest
+        guard cameraSettle == nil else { return }
+        let settle = Timer(timeInterval: 0.05, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self, !self.stopped else { timer.invalidate(); return }
+                guard CACurrentMediaTime() - self.lastCameraChange >= 0.1 else { return }
+                timer.invalidate()
+                self.cameraSettle = nil
+                self.sendCamera()
+            }
         }
+        RunLoop.main.add(settle, forMode: .common)
+        cameraSettle = settle
     }
 
     private func sendCamera() {

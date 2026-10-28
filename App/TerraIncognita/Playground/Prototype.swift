@@ -188,6 +188,10 @@ final class PrototypeStage {
     }
 
     private func handle(_ event: PackScriptEvent, pack: PlaygroundPack) {
+        // (a script told it is ending may still ask for things: nothing new outlives the stage)
+        if ended {
+            guard case .log = event else { return }
+        }
         switch event {
         case .close: playground?.end()
         case .flyTo(let camera, let duration): fly(to: camera, duration: duration)
