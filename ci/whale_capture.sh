@@ -52,7 +52,8 @@ def launch_ready(*arguments):
         try:
             if ready_marker.read_text() == token:
                 log('whale first frame submitted: ' + token)
-                time.sleep(1)
+                # (and the app's launch veil, 1.6 seconds from its first appearance, has lifted)
+                time.sleep(2)
                 return token
         except FileNotFoundError:
             pass
@@ -130,7 +131,7 @@ try:
         'authoring_clock_completed': authoring_clock_completed,
         'story_duration_seconds': 82,
         'frames': frames,
-        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 1 second compositor settling; not a GPU completion or performance measurement.',
+        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 2 seconds for the compositor and the launch veil; not a GPU completion or performance measurement.',
         'capture_completion': 'Full video waits for this launch UUID to be acknowledged after the native authored clock reaches 82 seconds and playback pauses, then records 4 more host seconds. Held screenshots do not wait for clock completion. This does not measure frame rate or GPU completion.',
         'video': 'native-playback.mp4' if os.environ.get('WHALE_VIDEO') == '1' else None,
         'source_commit': os.environ.get('GITHUB_SHA'),

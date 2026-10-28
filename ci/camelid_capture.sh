@@ -51,8 +51,9 @@ def launch_ready(*arguments):
                 print(message, flush=True)
                 with (out / 'capture-commands.log').open('a') as log:
                     log.write(message + '\n')
-                # Allow the compositor one brief settling interval after native submission.
-                time.sleep(1)
+                # Allow the compositor a brief settling interval after native submission, and the
+                # app's launch veil (1.6 seconds from its first appearance) time to lift.
+                time.sleep(2)
                 return
         except FileNotFoundError:
             pass
@@ -104,7 +105,7 @@ try:
         'real_device_test': False,
         'measured_frame_rate': None,
         'frames': frames,
-        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 1 second compositor settling; not a GPU completion or performance measurement.',
+        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 2 seconds for the compositor and the launch veil; not a GPU completion or performance measurement.',
         'video': 'native-playback.mp4' if os.environ.get('CAMELID_VIDEO') == '1' else None,
         'note': 'Screenshots use held story times. Video runs the actual native guided clock.'
     }, indent=2) + '\n')
