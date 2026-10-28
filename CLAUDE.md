@@ -184,16 +184,32 @@ Keep design discussions and plans in that private repository.
   2026. Its last state is in `main`'s history at 1f9b941 (`git show 1f9b941:Web/index.html`; also
   `MapView.swift`, `BundleScheme.swift`, `PageStatus.swift`, `tools/build_textures.py`,
   `tools/sprites.py`, `ci/web_check.cjs`).
-- **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[playground-check]`, `[ipa]`):
+- **Metal off the Mac** (`tools/metal/`; its README says what it can't vouch for): the shaders
+  compiled as C++ by clang on Linux (`metal.py check`, a second), drawn on the CPU as the device
+  draws them (`metal.py shot globe+ocean+clouds out.png --at descent`), and set beside their twins
+  (`metal.py twin clouds`). Check a shader here before any macOS run; `layers.py` mirrors the Metal
+  layers' Swift (their bindings and uniforms): change them together.
+- **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[shots]`, `[test Class]`,
+  `[playground-check]`, `[ipa]`). The quick ones on a free runner: `[build-only]` compiles in about
+  3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places
+  on the iPad in about 6, no Release build and no UI tests; `[test OceanEncounterTests]` runs only
+  that class (or `Class/testMethod`) on the iPad (`ci/fast.py`; a run started by hand takes `places`
+  and `tests`). An untagged branch push runs every UI test on both devices: an hour and more. Main
+  ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
+  fast-forward brings the branch head's `[skip ci]` with it).
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
-    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, and the tools' syntax.
+    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, the tools' syntax, and
+    every Metal shader by `tools/metal/metal.py check` with the stand-in's tests.
   - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
     in the bundle. Simulator screenshots run only when the workflow is started by hand
     (`ci/sim_shots.sh`): on the 13" iPad Pro (the primary device; `device` also takes `iphone` or
     `both`), every look's film at moments (unless `film` is off) and the globe in each style.
   - `ipa`: on `main`, the `build-<n>` prerelease and the SideStore source on the `sidestore`
     branch. CI owns that branch.
-  - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it.
+  - `report`: to `refs/ci-shots/<branch>`. `CI_BRANCH=<branch> ci/fetch.sh <sha> <dir>` waits for it,
+    says every 5 minutes how the run stands, and stops by itself if the run ends without a report
+    (a newer push cancels a branch's running check); `TIMEOUT=<minutes>`. `ci/shots.py <dir> <name>`
+    finds a screenshot by its name.
   - `qa-explore.yml`, exploratory QA on request: an agent uses the app in a simulator through
     Maestro's MCP server and reports (`refs/qa-runs/<run id>`); `ci/qa/README.md` says how. It
     and `ci/qa/` are generated from the copy all the apps share (painting-company row 152):
