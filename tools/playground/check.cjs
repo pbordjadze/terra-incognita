@@ -1,167 +1,250 @@
 'use strict';
-// Loads a prototype in headless Chromium, as the preview harness hosts it, and fails on what a phone
-// would trip over: a page error, a console error, a terra.log error, a request or response that is not
-// local, a page that never says ready. Screenshots go to build/playground/<id>/.
-//   node tools/playground/check.cjs <id> [--device phone|ipad]
+// Runs a runtime-3 pack in headless Chromium as the desktop preview hosts it (tools/playground/serve.cjs), and fails
+// on what the phone would trip over: a script error, a terra.log at level error, a contract the host refuses, a
+// request that is not local, a pack that never starts. Screenshots go to build/playground/<id>/<device>-*.png:
+// the doorway (if any), the anchor, sprites after a few seconds, closer zooms where something shows only up close,
+// and what touching the first touchable thing does.
+//   node tools/playground/check.cjs <id> [--device iphone|ipad] [--root <dir>]...
+//   node tools/playground/check.cjs --all [--device iphone|ipad] [--root <dir>]...
+// --root adds a folder of pack folders (a pack being made outside Prototypes/). Exit code 1 if any check failed.
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
-const { start } = require('./serve.cjs');
+const { start, listPacks } = require('./serve.cjs');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LOCAL = new Set(['127.0.0.1', 'localhost']);
-const SIZES = { phone: { viewport: { width: 1000, height: 1000 }, w: 390, h: 844 }, ipad: { viewport: { width: 1500, height: 1500 }, w: 1024, h: 1366 } };
-const ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])$/;
+const SIZES = { iphone: { width: 393, height: 852 }, ipad: { width: 1032, height: 1376 } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function usage(message) {
-  console.error((message ? message + '\n' : '') + 'usage: node tools/playground/check.cjs <id> [--device phone|ipad]');
+  console.error((message ? message + '\n' : '') + 'usage: node tools/playground/check.cjs <id> | --all  [--device iphone|ipad] [--root <dir>]...');
   process.exit(2);
 }
 
-(async () => {
-  const args = process.argv.slice(2);
-  const di = args.indexOf('--device');
-  const device = di >= 0 ? args.splice(di, 2)[1] : 'phone';
-  if (!SIZES[device]) usage(`--device must be phone or ipad (got ${device})`);
-  const id = args[0];
-  if (!id || !ID_RE.test(id)) usage(id ? `"${id}" is not a prototype id` : 'which prototype?');
-  const manifestPath = path.join(ROOT, 'Prototypes', id, 'prototype.json');
-  if (!fs.existsSync(manifestPath)) usage(`Prototypes/${id}/prototype.json does not exist`);
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+function parseArgs(argv) {
+  const out = { ids: [], all: false, device: 'iphone', roots: [] };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (a === '--all') out.all = true;
+    else if (a === '--device') out.device = argv[++i];
+    else if (a === '--root') out.roots.push(argv[++i]);
+    else if (a === '-h' || a === '--help') usage();
+    else if (a.startsWith('--')) usage('unknown option ' + a);
+    else out.ids.push(a);
+  }
+  if (out.device === 'phone') out.device = 'iphone';
+  if (!SIZES[out.device]) usage(`--device is iphone or ipad (got ${out.device})`);
+  for (const r of out.roots) if (!r || !fs.existsSync(r)) usage(`--root ${r || ''}: no such folder`);
+  if (!out.all && !out.ids.length) usage('which pack?');
+  return out;
+}
 
+async function checkPack(browser, server, pack, device) {
+  const id = pack.id, size = SIZES[device];
   const outDir = path.join(ROOT, 'build', 'playground', id);
   fs.mkdirSync(outDir, { recursive: true });
   for (const f of fs.readdirSync(outDir)) if (f.startsWith(device + '-') && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
-
-  const failures = [], warnings = [], shots = [], steps = [], requests = [], nonLocal = [];
+  const failures = [], warnings = [], shots = [], steps = [], nonLocal = [];
   const fail = (m) => { if (!failures.includes(m)) failures.push(m); };
   const warn = (m) => { if (!warnings.includes(m)) warnings.push(m); };
-  const server = await start({ port: 0 });
-  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-  let logs = [];
+  const started = Date.now();
+  let logs = [], state = null, touched = null;
+
+  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 2 });
+  // nothing leaves this machine, whatever the pack asks for
+  await context.route((url) => !LOCAL.has(url.hostname) && !['data:', 'blob:', 'about:'].includes(url.protocol), (route) => {
+    nonLocal.push(route.request().url());
+    route.abort();
+  });
+  const page = await context.newPage();
+  page.on('pageerror', (e) => fail('preview page error: ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error') fail('console error: ' + m.text()); });
+  page.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/favicon.ico')) fail(`${r.status()} for ${r.url().replace(server.url, '')}`); });
+  const pg = (fn, arg) => page.evaluate(fn, arg);
+  const shot = async (name) => {
+    const file = `${device}-${name}.png`;
+    await page.screenshot({ path: path.join(outDir, file) });
+    shots.push(path.relative(ROOT, path.join(outDir, file)));
+    steps.push(`+${((Date.now() - started) / 1000).toFixed(1)}s screenshot ${file}`);
+  };
+  const settle = async (ms, what) => {
+    try {
+      await page.waitForFunction(() => window.__playground.settled(), null, { timeout: ms || 8000 });
+    } catch (e) { warn(`${what || 'the preview'} did not settle (a flight or a picture still loading)`); }
+    // two frames drawn after it settled
+    const f = await pg(() => { window.__playground.redraw(); return window.__playground.frame; });
+    await page.waitForFunction((f0) => window.__playground.frame >= f0 + 2, f, { timeout: 2000 }).catch(() => {});
+  };
 
   try {
-    const size = SIZES[device];
-    const context = await browser.newContext({ viewport: size.viewport, deviceScaleFactor: 2 });
-    // nothing leaves this machine, whatever the pack asks for
-    await context.route((url) => !LOCAL.has(url.hostname) && !['data:', 'blob:', 'about:'].includes(url.protocol), (route) => {
-      nonLocal.push(route.request().url());
-      route.abort();
-    });
-    const page = await context.newPage();
-    page.on('pageerror', (e) => fail('page error: ' + e.message));
-    page.on('console', (m) => { if (m.type() === 'error') fail('console error: ' + m.text()); });
-    page.on('request', (r) => requests.push(r.url()));
-    page.on('response', (r) => {
-      if (r.status() >= 400 && !r.url().endsWith('/favicon.ico')) fail(`${r.status()} for ${r.url().replace(server.url, '')}`);
-    });
+    await page.goto(`${server.url}/preview/${id}?device=${device}&bare=1&idleAfter=100000`);
+    await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
+    steps.push('preview ready');
 
-    const shot = async (name) => {
-      const file = `${device}-${name}.png`;
-      await page.locator('#device').screenshot({ path: path.join(outDir, file) });
-      shots.push(path.relative(ROOT, path.join(outDir, file)));
-      steps.push('screenshot ' + file);
-    };
-    const waitReady = async (what) => {
-      try {
-        await page.waitForFunction((w) => window.__playground.ready[w], what, { timeout: 8000 });
-        steps.push(`${what} ready`);
-      } catch (e) {
-        fail(`the ${what} never said ready (does the page load, and does it finish loading?)`);
-        throw new Error('stopped: ' + what + ' not ready');
+    const door = await pg(() => window.__playground.doorway());
+    if (door) {
+      await settle(4000, 'the doorway');
+      await shot('doorway');
+      const d = await pg(() => window.__playground.doorway());
+      if (d.visible) {
+        await page.mouse.click(d.x, d.y);
+        steps.push(`touched the doorway "${d.label}"`);
+      } else {
+        warn(`the doorway "${d.label}" is not drawn at its own place and zoom (its look's minZoom/maxZoom, or every/for between showings?): started with Start`);
+        await pg(() => window.__playground.start());
       }
-    };
-    // the Back button's zone, and sideways overflow, inside the screen's frame
-    const inspectScreen = async (label) => {
-      const frame = page.frames().find((f) => f.url().includes(`/pack/${id}/`) && f.url().includes('mode=screen'));
-      if (!frame) return;
-      const found = await frame.evaluate(() => {
-        const root = document.documentElement, out = { overflow: root.scrollWidth > root.clientWidth + 1, cover: [] };
-        for (const el of document.querySelectorAll('body *')) {
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0 || r.left >= 56 || r.top >= 56 || r.right <= 0 || r.bottom <= 0) continue;
-          const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-          if (own || /^(BUTTON|A|INPUT|SELECT|TEXTAREA|IMG|SVG|CANVAS|VIDEO)$/i.test(el.tagName)) out.cover.push(el.tagName.toLowerCase() + (el.id ? '#' + el.id : ''));
-        }
-        return out;
-      });
-      if (found.overflow) warn(`${label}: the page scrolls sideways`);
-      if (found.cover.length) warn(`${label}: ${found.cover.join(', ')} sit in the top-left 56 pt, where the app's Back button is`);
-    };
-
-    await page.goto(`${server.url}/preview/${id}?device=${device}`);
-    await page.waitForFunction(() => window.__playground);
-    await page.waitForTimeout(400);   // the land data and the first frame
-
+    }
     try {
-      if (manifest.presentation === 'globe') {
-        if (manifest.overlay) await waitReady('overlay');
-        await page.waitForTimeout(900);
-        await shot('globe');
-        if (manifest.taps && manifest.overlay) {
-          const box = await page.locator('#stage').boundingBox();
-          await page.mouse.click(box.x + box.width / 2 + 30, box.y + box.height / 2 - 20);
-          await page.waitForTimeout(450);
-          await shot('globe-tap');
-          steps.push('tapped the globe');
-        }
-        const opening = (manifest.markers || []).find((m) => m.opens);
-        if (opening) {
-          const target = page.locator('.marker').nth(manifest.markers.indexOf(opening));
-          if (await target.isVisible()) {
-            await target.click();
-            steps.push(`opened the screen from marker "${opening.id}"`);
-          } else {
-            await page.evaluate((m) => window.__playground.openScreen({ marker: m }), opening.id);
-            warn(`the opening marker "${opening.id}" is not visible at the starting camera; the screen was opened directly`);
-          }
-        } else if (manifest.entry) {
-          await page.evaluate(() => window.__playground.openScreen({}));   // reached by terra.open() in the app
-          steps.push('opened the screen directly');
-        }
-      }
-      if (manifest.presentation === 'screen' || await page.locator('iframe.screen').count()) {
-        await waitReady('screen');
-        await page.waitForTimeout(700);   // a fade-in finishes
-        await shot('screen');
-        await inspectScreen('text size 1');
-        await page.evaluate(() => window.__playground.setSettings({ textScale: 2 }));
-        await page.waitForTimeout(400);
-        await shot('screen-large');
-        await inspectScreen('text size 2');
-        await page.evaluate(() => window.__playground.setSettings({ textScale: 3.2 }));
-        await page.waitForTimeout(300);
-        await inspectScreen('text size 3.2');
-        await page.evaluate(() => window.__playground.setSettings({ textScale: 1, reduceMotion: true }));
-        await page.waitForTimeout(300);
-        steps.push('reduce motion on, text size 3.2 and back');
-        await page.evaluate(() => window.__playground.closeScreen());
-        steps.push('closed the screen');
-      } else if (manifest.presentation === 'globe') {
-        warn('this prototype has no screen to open (no marker with "opens": true)');
-      }
-    } catch (e) {
-      if (!/^stopped:/.test(e.message)) fail('check stopped: ' + e.message);
+      await page.waitForFunction(() => window.__playground.started || window.__playground.ended, null, { timeout: 10000 });
+    } catch (e) { fail('the pack never started (its scripts did not finish loading in 10 s)'); throw new Error('stopped'); }
+    if (!(await pg(() => window.__playground.started))) { fail('the pack did not start'); throw new Error('stopped'); }
+    steps.push('started');
+    await settle(8000, 'the anchor');
+    await sleep(250);                                  // what a script does on its first timers
+    await settle(4000, 'the anchor');
+    await shot('anchor');
+    state = await pg(() => window.__playground.state());
+
+    if (state.sprites.length) {
+      await sleep(2500);
+      await shot('motion');
+      const after = await pg(() => window.__playground.state());
+      const moved = after.sprites.filter((s, i) => s.moving && s.drawn && state.sprites[i] && state.sprites[i].drawn
+        && Math.hypot(s.drawn.x - state.sprites[i].drawn.x, s.drawn.y - state.sprites[i].drawn.y) > 0.5);
+      steps.push(`after 2.5 s: ${moved.length} of ${after.sprites.filter((s) => s.moving).length} moving sprites moved on screen`);
+      state = after;
     }
 
-    logs = await page.evaluate(() => window.__playground.log);
-    for (const l of logs) if (l.level === 'error') fail(`terra.log error from ${l.source}: ${l.message}`);
-    for (const l of logs) if (l.level === 'warn') warn(`${l.source}: ${l.message}`);
-    for (const u of nonLocal) fail('request to a non-local host: ' + u);
-    for (const u of requests) {
-      let host = ''; try { host = new URL(u).hostname; } catch (e) { /* data: */ }
-      if (host && !LOCAL.has(host)) fail('request to a non-local host: ' + u);
+    // closer, where something shows only up close (a sprite's look, a picture, a layer with minZoom)
+    const anchorZoom = state.camera.zoom;
+    const thresholds = [
+      ...state.sprites.flatMap((s) => s.looks.map((l) => l.minZoom)),
+      ...state.images.map((im) => im.minZoom), ...state.geo.map((L) => L.minZoom),
+    ].filter((z) => z > 0 && z <= 8);
+    if (thresholds.length) {
+      const zooms = [3, 5].filter((z) => z > anchorZoom + 0.2);
+      const top = Math.max(...thresholds);
+      if (top > 5 && top + 0.5 > anchorZoom + 0.2) zooms.push(Math.min(8, +(top + 0.5).toFixed(2)));
+      // where: the first sprite with a close look, or the first picture with a minZoom, or the anchor
+      const closeSprite = state.sprites.find((s) => s.looks.some((l) => l.minZoom > 0));
+      const closeImage = state.images.find((im) => im.minZoom > 0);
+      let focus = { lon: state.camera.lon, lat: state.camera.lat, what: 'the anchor' };
+      if (closeSprite) {
+        const ll = await pg((sid) => { const s = window.__playground.state().sprites.find((x) => x.id === sid); return s && s.drawn ? window.__playground.unproject(s.drawn.x, s.drawn.y) : null; }, closeSprite.id);
+        if (ll) focus = { lon: ll.lon, lat: ll.lat, what: `sprite "${closeSprite.id}"` };
+      } else if (closeImage) {
+        const [w, s, e, n] = closeImage.bounds;
+        focus = { lon: e > w ? (w + e) / 2 : (w + e + 360) / 2, lat: (s + n) / 2, what: `picture "${closeImage.id}"` };
+      }
+      for (const z of zooms) {
+        await pg((a) => window.__playground.flyTo(a.lon, a.lat, a.z, 0), { lon: focus.lon, lat: focus.lat, z });
+        await settle(4000, `zoom ${z}`);
+        await sleep(400);
+        await shot(`zoom-${z}`);
+        const s = await pg(() => window.__playground.state());
+        const looks = s.sprites.filter((x) => x.drawn).map((x) => `${x.id} look ${x.drawn.look}`).join(', ');
+        steps.push(`zoom ${z} on ${focus.what}${looks ? ': ' + looks : ''}${s.images.length ? '; pictures ' + s.images.map((im) => im.id + ' ' + Math.round(im.alpha * 100) + '%').join(', ') : ''}`);
+      }
+      if (zooms.length) {
+        await pg((c) => window.__playground.flyTo(c.lon, c.lat, c.zoom, 0), state.camera);
+        await settle(3000, 'back at the anchor');
+      }
     }
-    await context.close();
+
+    // touch the first touchable thing on screen (from further out if none is in view)
+    let found = await pg(() => window.__playground.touchables());
+    if (!found.length && state.camera.zoom > 1.2) {
+      await pg((c) => window.__playground.flyTo(c.lon, c.lat, Math.max(0.8, c.zoom / 2), 0), state.camera);
+      await settle(3000, 'further out');
+      found = await pg(() => window.__playground.touchables());
+    }
+    if (found.length) {
+      const t = found[0], before = await pg(() => ({ state: window.__playground.state(), touches: window.__playground.touches.length }));
+      await page.mouse.click(t.x, t.y);
+      await sleep(700);
+      await settle(3000, 'after the touch');
+      await shot('touch');
+      const after = await pg(() => ({ state: window.__playground.state(), touches: window.__playground.touches.slice() }));
+      const sent = after.touches.slice(before.touches);
+      const tap = sent.find((x) => x.phase === 'tap');
+      const same = tap && JSON.stringify(tap.target) === JSON.stringify(t.target);
+      if (!same) fail(`touching ${t.what} at ${t.x.toFixed(0)}, ${t.y.toFixed(0)} did not reach the pack as a tap on it`);
+      const changes = [];
+      if (after.state.panel && JSON.stringify(after.state.panel) !== JSON.stringify(before.state.panel)) changes.push(`the panel "${after.state.panel.title}"`);
+      if (JSON.stringify(after.state.caption) !== JSON.stringify(before.state.caption)) changes.push(`the caption "${after.state.caption.title}: ${after.state.caption.text}"`);
+      if (JSON.stringify(after.state.geo.map((L) => [L.id, L.features])) !== JSON.stringify(before.state.geo.map((L) => [L.id, L.features]))) changes.push('its geography');
+      if (JSON.stringify(after.state.sprites.map((s) => s.id)) !== JSON.stringify(before.state.sprites.map((s) => s.id))) changes.push('its sprites');
+      touched = { what: t.what, target: t.target, changes };
+      steps.push(`tapped ${t.what}: ${changes.length ? 'it showed ' + changes.join(', ') : 'nothing visible changed'}`);
+      state = after.state;
+    } else {
+      warn('nothing touchable on screen at the anchor (or further out): no touch was tried');
+    }
+  } catch (e) {
+    if (e.message !== 'stopped') fail('check stopped: ' + e.message.split('\n')[0]);
+  }
+
+  try {
+    logs = await pg(() => window.__playground.log);
+  } catch (e) { /* the page is gone */ }
+  for (const l of logs) if (l.level === 'error') fail(`${l.source === 'script' ? 'script' : l.source === 'host' ? 'host refused' : l.source}: ${l.message}`);
+  for (const l of logs) if (l.level === 'warn') warn(`${l.source}: ${l.message}`);
+  for (const u of nonLocal) fail('request to a non-local host: ' + u);
+  await context.close();
+
+  const result = { id, device, passed: failures.length === 0, seconds: +((Date.now() - started) / 1000).toFixed(1), failures, warnings, screenshots: shots, steps,
+                   touched, state: state && { geo: state.geo, images: state.images, sprites: state.sprites, time: state.time, caption: state.caption, panel: state.panel, scheme: state.scheme },
+                   logs: logs.slice(-300).map((l) => Object.assign({}, l, { t: +l.t.toFixed(2) })) };
+  fs.writeFileSync(path.join(outDir, `check-${device}.json`), JSON.stringify(result, null, 2) + '\n');
+  return result;
+}
+
+function summarize(r) {
+  const s = r.state, lines = [];
+  lines.push(`${r.passed ? 'PASS' : 'FAIL'} ${r.id} (${r.device}, ${r.seconds} s): ${r.screenshots.length} screenshots in build/playground/${r.id}/`);
+  if (s) {
+    const n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+    const parts = [n(s.geo.length, 'geo layer', 'geo layers') + (s.geo.some((L) => L.touchable) ? ` (${s.geo.filter((L) => L.touchable).length} touchable)` : ''),
+      n(s.images.length, 'picture', 'pictures'), n(s.sprites.length, 'sprite', 'sprites')];
+    if (s.time) parts.push(`date ${s.time.label}`);
+    if (s.caption && (s.caption.title || s.caption.text)) parts.push(`caption "${[s.caption.title, s.caption.text].filter(Boolean).join(': ').slice(0, 90)}"`);
+    lines.push('  ' + parts.join(', '));
+  }
+  if (r.touched) lines.push(`  touched ${r.touched.what}: ${r.touched.changes.length ? r.touched.changes.join(', ') : 'nothing visible changed'}`);
+  for (const w of r.warnings) lines.push('  warn: ' + w);
+  for (const f of r.failures) lines.push('  FAIL: ' + f);
+  return lines.join('\n');
+}
+
+(async () => {
+  const args = parseArgs(process.argv.slice(2));
+  const server = await start({ port: 0, roots: args.roots });
+  const all = listPacks(server.roots);
+  let packs;
+  if (args.all) packs = all;
+  else {
+    packs = args.ids.map((id) => all.find((p) => p.id === id) || { id, missing: true });
+    for (const p of packs) if (p.missing) { await server.close(); usage(`no pack "${p.id}" (no ${p.id}/prototype.json in ${server.roots.map((r) => path.relative(ROOT, r) || r).join(', ')})`); }
+  }
+  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+  const results = [], skipped = [];
+  try {
+    for (const p of packs) {
+      if (p.error) { results.push({ id: p.id, device: args.device, passed: false, failures: [p.error], warnings: [], screenshots: [], seconds: 0 }); continue; }
+      if (p.manifest.runtime !== 3) {
+        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a runtime-3 pack (docs/runtime3.md)`;
+        if (args.all) { skipped.push(`${p.id} (${why})`); continue; }
+        results.push({ id: p.id, device: args.device, passed: false, failures: [why], warnings: [], screenshots: [], seconds: 0 });
+        continue;
+      }
+      results.push(await checkPack(browser, server, p, args.device));
+    }
   } finally {
     await browser.close();
     await server.close();
   }
-
-  const result = { id, device, passed: failures.length === 0, failures, warnings, screenshots: shots, steps, requests: requests.length, logs };
-  fs.writeFileSync(path.join(outDir, 'check.json'), JSON.stringify(result, null, 2) + '\n');
-  for (const w of warnings) console.log('warn: ' + w);
-  for (const f of failures) console.error('FAIL: ' + f);
-  for (const l of logs) console.log(`  log ${l.source} ${l.level}: ${l.message}`);
-  console.log(`${result.passed ? 'PASS' : 'FAIL'}: ${id} on ${device}, ${shots.length} screenshots in ${path.relative(ROOT, outDir)}/ (${warnings.length} warnings)`);
-  process.exit(result.passed ? 0 : 1);
+  for (const r of results) console.log(summarize(r));
+  if (skipped.length) console.log('skipped: ' + skipped.join('; '));
+  if (args.all) console.log(`${results.filter((r) => r.passed).length} of ${results.length} runtime-3 packs passed on ${args.device}`);
+  process.exit(results.every((r) => r.passed) ? 0 : 1);
 })().catch((e) => { console.error(e); process.exit(1); });

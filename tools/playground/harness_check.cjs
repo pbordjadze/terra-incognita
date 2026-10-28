@@ -1,30 +1,24 @@
 'use strict';
-// Checks the preview harness's runtime-2 host in headless Chromium: the geography, date, caption and globe
-// behaviour a pack asks for through terra.geo / terra.time / terra.caption / terra.globe, drawn and heard as the
-// app would. It builds a throwaway runtime-2 pack (build/harness-fixture/geo-fixture/, never in Prototypes/),
-// serves it with tools/playground/serve.cjs, and at phone (402x874) and iPad (1032x1376) point sizes:
-//   - draws every geo style and reads the canvas's pixels (fills, outlines, dashes, dots, rings, labels with
-//     halos, symbols, soundings, offsets, zoom limits, layer order, the far side, the limb),
-//   - drives the date strip with the mouse, the keyboard and the play button, and reads what the page heard,
-//   - checks the caption, today's politics and `globe.historical`, the idle turn and `globe.still`, the reset.
+// The desktop preview's own check: it writes a runtime-3 pack that uses every tool once (build/harness-fixture/
+// preview-fixture/, never in Prototypes/), runs it in headless Chromium at iPhone and iPad sizes, and holds the
+// preview to docs/runtime3.md: the doorway starts it, the anchor flight lands, the script's world has no DOM and
+// reads its files, geography, the picture and sprites are drawn where terra.project puts them (read off the
+// canvas), sprites move and change look with the zoom, touch reaches the script (taps with targets, drags that
+// begin on a touchable thing, the one-finger scheme), the camera is told at most 20 times a second and once when it
+// stops, the date strip and play, the panel and its closing, Open, and the end leaves the globe as it was.
 // Screenshots go to build/harness-check/<device>-*.png and the verdicts to build/harness-check/report.json.
-//   node tools/playground/harness_check.cjs [--device phone|ipad]      (default: both)
-const { chromium } = require('playwright');
+//   node tools/playground/harness_check.cjs [--device iphone|ipad]       (default: both)
+//   node tools/playground/harness_check.cjs --write [dir]                (only write the fixture pack; default
+//                                                                         build/harness-fixture: then
+//                                                                         node tools/playground/check.cjs preview-fixture --root build/harness-fixture)
 const fs = require('node:fs'), path = require('node:path'), zlib = require('node:zlib');
-const { start } = require('./serve.cjs');
 
 const ROOT = path.resolve(__dirname, '../..');
 const FIXTURE = path.join(ROOT, 'build', 'harness-fixture');
 const OUT = path.join(ROOT, 'build', 'harness-check');
-const PACK = 'geo-fixture';
-const LOCAL = new Set(['127.0.0.1', 'localhost']);
-const DEVICES = {
-  phone: { size: [402, 874], viewport: { width: 1100, height: 1100 }, reading: 1.0 },
-  ipad: { size: [1032, 1376], viewport: { width: 1700, height: 1700 }, reading: 1.2 },
-};
-const CAMERA = { lon: 30, lat: 36, zoom: 3 };
+const PACK = 'preview-fixture';
 
-// ---- the fixture pack: a runtime-2 overlay that only listens; the check drives terra from outside
+// ---- pictures, drawn here: shapes with 4 x 4 samples a pixel, written as PNG
 function crc32(buf) {
   let c, crc = ~0;
   for (let n = 0; n < buf.length; n++) {
@@ -34,10 +28,12 @@ function crc32(buf) {
   }
   return ~crc >>> 0;
 }
-function png(w, h, [r, g, b]) {
-  const row = Buffer.alloc(1 + 4 * w);
-  for (let x = 0; x < w; x++) row.set([r, g, b, 255], 1 + 4 * x);
-  const raw = Buffer.concat(Array.from({ length: h }, () => row));
+function encodePng(w, h, rgba) {
+  const raw = Buffer.alloc((1 + 4 * w) * h);
+  for (let y = 0; y < h; y++) {
+    raw[y * (1 + 4 * w)] = 0;
+    for (let i = 0; i < 4 * w; i++) raw[y * (1 + 4 * w) + 1 + i] = Math.round(Math.max(0, Math.min(255, rgba[y * 4 * w + i])));
+  }
   const chunk = (type, data) => {
     const t = Buffer.concat([Buffer.from(type), data]), len = Buffer.alloc(4), crc = Buffer.alloc(4);
     len.writeUInt32BE(data.length); crc.writeUInt32BE(crc32(t));
@@ -47,708 +43,578 @@ function png(w, h, [r, g, b]) {
   head.writeUInt32BE(w, 0); head.writeUInt32BE(h, 4); head.set([8, 6, 0, 0, 0], 8);
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', head), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
-const SYMBOL_RGB = [46, 139, 87];
-function writeFixture() {
-  const dir = path.join(FIXTURE, PACK);
-  fs.rmSync(FIXTURE, { recursive: true, force: true });
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'prototype.json'), JSON.stringify({
-    id: PACK, title: 'Geo fixture', summary: 'A runtime-2 pack for the harness check.', runtime: 2, presentation: 'globe',
-    overlay: 'overlay.html', taps: true, shelf: 'current', background: '#F6F2E7', anchor: CAMERA,
-  }, null, 2));
-  fs.writeFileSync(path.join(dir, 'overlay.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Fixture overlay</title>
-<style>html, body { margin: 0; height: 100%; background: transparent; }</style></head><body>
-<script>
-  window.heard = []; window.taps = [];
-  terra.on('time', function (e) { window.heard.push({ value: e.value, playing: e.playing, by: e.by, t: Date.now() }); });
-  terra.on('tap', function (e) { window.taps.push(e); });
-</script></body></html>`);
-  fs.writeFileSync(path.join(dir, 'symbol.png'), png(20, 20, SYMBOL_RGB));
+// a picture: layers of [inside(x, y), [r, g, b, a]] composited in order; x, y in pixels
+function paint(w, h, layers) {
+  const out = new Float64Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let r = 0, g = 0, b = 0, a = 0;
+    for (const [inside, colour] of layers) {
+      let cover = 0;
+      for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) if (inside(x + (i + 0.5) / 4, y + (j + 0.5) / 4)) cover++;
+      if (!cover) continue;
+      const c = typeof colour === 'function' ? colour(x, y) : colour, A = (c[3] == null ? 1 : c[3]) * cover / 16;
+      const oA = A + a * (1 - A);
+      r = (c[0] * A + r * a * (1 - A)) / oA; g = (c[1] * A + g * a * (1 - A)) / oA; b = (c[2] * A + b * a * (1 - A)) / oA; a = oA;
+    }
+    out.set([r, g, b, a * 255], (y * w + x) * 4);
+  }
+  return encodePng(w, h, out);
 }
-
-// ---- in the page: reading the canvas the harness draws the globe on (colours are [r, g, b])
-function installProbe() {
-  const cv = () => document.getElementById('globe');
-  const dpr = () => window.devicePixelRatio || 1;
-  let before = null;
-  const whole = () => { const c = cv(); return c.getContext('2d').getImageData(0, 0, c.width, c.height); };
-  const near = (d, i, rgb, tol) => Math.abs(d[i] - rgb[0]) <= tol && Math.abs(d[i + 1] - rgb[1]) <= tol && Math.abs(d[i + 2] - rgb[2]) <= tol && d[i + 3] > 250;
-  // the pixels of a box given in points: { d, x0, y0, w, h, k } (device pixels from x0, y0; d is row-major RGBA)
-  const grab = (x, y, w, h) => {
-    const c = cv(), k = dpr();
-    const x0 = Math.max(0, Math.floor(x * k)), y0 = Math.max(0, Math.floor(y * k));
-    const x1 = Math.min(c.width, Math.ceil((x + w) * k)), y1 = Math.min(c.height, Math.ceil((y + h) * k));
-    const pw = Math.max(0, x1 - x0), ph = Math.max(0, y1 - y0);
-    return { d: pw && ph ? c.getContext('2d').getImageData(x0, y0, pw, ph).data : new Uint8ClampedArray(0), x0, y0, w: pw, h: ph, k };
+const disc = (cx, cy, r) => (x, y) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
+const annulus = (cx, cy, r0, r1) => (x, y) => { const d = (x - cx) ** 2 + (y - cy) ** 2; return d >= r0 * r0 && d <= r1 * r1; };
+function polygon(pts) {
+  return (x, y) => {
+    let inside = false;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i], [xj, yj] = pts[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
   };
-  window.__t = {
-    snap() { before = whole(); },
-    // how many pixels within r points of (x, y) are within tol of `rgb` laid at `alpha` over what the snapshot had there
-    match(x, y, r, rgb, alpha, tol) {
-      const g = grab(x - r, y - r, 2 * r + 1 / dpr(), 2 * r + 1 / dpr()), b = before.data, bw = before.width;
-      let n = 0;
-      for (let py = 0; py < g.h; py++) for (let px = 0; px < g.w; px++) {
-        if (Math.hypot((g.x0 + px + 0.5) / g.k - x, (g.y0 + py + 0.5) / g.k - y) > r + 1 / g.k) continue;
-        const i = 4 * (py * g.w + px), j = 4 * ((g.y0 + py) * bw + g.x0 + px);
-        let ok = g.d[i + 3] > 250;
-        for (let c = 0; c < 3 && ok; c++) ok = Math.abs(g.d[i + c] - (b[j + c] * (1 - alpha) + rgb[c] * alpha)) <= tol;
-        if (ok) n++;
-      }
-      return n;
-    },
-    // pixels in a box (points) near a colour, and where they lie (points, pixel centres)
-    scan(x, y, w, h, rgb, tol) {
-      const g = grab(x, y, w, h);
-      let n = 0, sx = 0, sy = 0, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      for (let py = 0; py < g.h; py++) for (let px = 0; px < g.w; px++) {
-        if (!near(g.d, 4 * (py * g.w + px), rgb, tol)) continue;
-        const X = (g.x0 + px + 0.5) / g.k, Y = (g.y0 + py + 0.5) / g.k;
-        n++; sx += X; sy += Y; x0 = Math.min(x0, X); y0 = Math.min(y0, Y); x1 = Math.max(x1, X); y1 = Math.max(y1, Y);
-      }
-      return n ? { n, cx: sx / n, cy: sy / n, x0, y0, x1, y1 } : { n: 0 };
-    },
-    // pixels in a box (points) that differ from the snapshot by more than 24 in any channel
-    changed(x, y, w, h) {
-      const g = grab(x, y, w, h), b = before.data, bw = before.width;
-      let n = 0;
-      for (let py = 0; py < g.h; py++) for (let px = 0; px < g.w; px++) {
-        const i = 4 * (py * g.w + px), j = 4 * ((g.y0 + py) * bw + g.x0 + px);
-        for (let c = 0; c < 4; c++) if (Math.abs(g.d[i + c] - b[j + c]) > 24) { n++; break; }
-      }
-      return n;
-    },
-    hash(x, y, w, h) {
-      const g = grab(x, y, w, h);
-      let hsh = 2166136261 >>> 0;
-      for (let i = 0; i < g.d.length; i++) hsh = Math.imul(hsh ^ g.d[i], 16777619) >>> 0;
-      return hsh;
-    },
-    // pixels with any alpha in the ring of radius r0..r1 points about (cx, cy): a layer must not spill past the limb
-    annulus(cx, cy, r0, r1) {
-      const g = grab(cx - r1, cy - r1, 2 * r1, 2 * r1);
-      let n = 0;
-      for (let py = 0; py < g.h; py++) for (let px = 0; px < g.w; px++) {
-        const r = Math.hypot((g.x0 + px + 0.5) / g.k - cx, (g.y0 + py + 0.5) / g.k - cy);
-        if (r >= r0 && r <= r1 && g.d[4 * (py * g.w + px) + 3] > 0) n++;
-      }
-      return n;
-    },
-    // a pixel of a PNG screenshot (base64), for the DOM that is not on the canvas
-    async png(b64, points) {
-      const img = new Image();
-      img.src = 'data:image/png;base64,' + b64;
-      await img.decode();
-      const c = document.createElement('canvas');
-      c.width = img.width; c.height = img.height;
-      const g = c.getContext('2d');
-      g.drawImage(img, 0, 0);
-      return points.map(([x, y]) => Array.from(g.getImageData(Math.round(x * img.width), Math.round(y * img.height), 1, 1).data));
-    },
+}
+const all = () => true;
+
+// The fixture's colours, known to the check: what it looks for on the canvas
+const CHART = { w: 240, h: 180 };
+const chartColour = (x, y) => [214 - (y / CHART.h) * 40, 168 + (x / CHART.w) * 50, 112 + (x / CHART.w) * 90, 1];
+const BOAT_HULL = [92, 52, 30], DOT = [24, 44, 96], DOOR = [178, 74, 46], MARK = [46, 139, 87], SPLASH = [30, 110, 190];
+
+function pictures() {
+  const boat = (sail) => paint(88, 44, [
+    [polygon([[6, 26], [70, 26], [86, 18], [80, 34], [14, 36]]), BOAT_HULL],          // the bow to the east (right)
+    [polygon([[40, 4], [40, 24], [66, 24]]), sail],
+    [polygon([[38, 2], [42, 2], [42, 26], [38, 26]]), [60, 40, 24]],
+  ]);
+  return {
+    'chart.png': paint(CHART.w, CHART.h, [
+      [all, chartColour],
+      [(x, y) => x % 30 < 2 || y % 30 < 2, [96, 70, 44, 0.9]],
+      [(x, y) => Math.abs(x - y * 1.33) < 6, [40, 90, 160, 0.8]],
+      [(x, y) => x < 5 || y < 5 || x > CHART.w - 5 || y > CHART.h - 5, [150, 52, 36]],
+    ]),
+    'dot.png': paint(24, 24, [[disc(12, 12, 11), [255, 255, 255]], [disc(12, 12, 8.5), DOT]]),
+    'boat-1.png': boat([250, 248, 240]),
+    'boat-2.png': boat([236, 214, 170]),
+    'splash.png': paint(40, 40, [[annulus(20, 20, 9, 14), SPLASH.concat(0.9)], [disc(20, 20, 4), SPLASH]]),
+    'door.png': paint(52, 52, [[disc(26, 26, 25), [255, 250, 240]], [disc(26, 26, 22), DOOR], [polygon([[17, 40], [17, 22], [26, 13], [35, 22], [35, 40]]), [246, 236, 214]]]),
+    'mark.png': paint(36, 36, [[polygon([[18, 2], [34, 18], [18, 34], [2, 18]]), MARK]]),
   };
 }
 
-// ---- the run
-const results = [];
-function check(name, ok, detail) {
-  results.push({ name, ok: !!ok, detail: ok ? undefined : detail === undefined ? undefined : String(typeof detail === 'string' ? detail : JSON.stringify(detail)) });
-  if (!ok) console.error('FAIL: ' + name + (detail === undefined ? '' : ' -- ' + (typeof detail === 'string' ? detail : JSON.stringify(detail))));
-}
-const near = (a, b, tol) => Math.abs(a - b) <= tol;
-// the extent of a scan along an axis, pixel edge to pixel edge (a scan reports the pixels' centres; the screenshots are at 2x)
-const wide = (s, axis) => (axis === 'x' ? s.x1 - s.x0 : s.y1 - s.y0) + 0.5;
-const rgbNear = (a, b, tol) => a.slice(0, 3).every((v, i) => Math.abs(v - b[i]) <= tol);
-const blend = (base, rgb, a) => rgb.map((v, i) => base[i] * (1 - a) + v * a);
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-const INK = hex('#3B4A54'), PAPER = hex('#F6F2E7'), BORDER = hex('#8C8478'), SOUND = hex('#1C7AB0'), SOUND_TEXT = hex('#1C5C8C');
-const OCEAN = hex('#C6ECFF'), LAND = hex('#F6E1B9'), NAME_INK = hex('#5F5A51');
-const darken = (rgb) => rgb.map((v) => v * 0.7);
-const yearText = (v) => { const y = Math.floor(v); return y < 0 ? -y + ' BCE' : String(y); };
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// ---- the pack: invented shapes on the Mediterranean (places named for where they are; nothing else is a fact).
+// At zoom 3 a degree is about 9 points on an iPhone, so the shapes are a few degrees across.
+const FIX = {
+  anchor: { lon: 21, lat: 35.5, zoom: 3 },
+  doorway: { lon: 22, lat: 36.5, minZoom: 1.5 },
+  area: [[16.5, 35.0], [20.5, 34.6], [21.5, 37.0], [18.0, 38.0], [16.5, 35.0]],
+  route: [[23.64, 37.94], [25.4, 36.4], [25.13, 35.34], [29.92, 31.2]],
+  outline: [[31.5, 34.2], [35.0, 34.2], [35.0, 36.0], [31.5, 36.0], [31.5, 34.2]],
+  ports: [['Piraeus', 23.64, 37.94], ['Heraklion', 25.13, 35.34], ['Alexandria', 29.92, 31.2], ['Valletta', 14.51, 35.9]],
+  marks: [[19.0, 33.0], [27.5, 34.0]],
+  sounding: [17.0, 33.4],
+  chart: [8.5, 37.5, 15.5, 42.5],
+  splash: [28.5, 33.2],
+  boatClose: 4.5,
+  voyage: { coordinates: [[14.51, 35.9], [20.0, 35.0], [25.13, 35.34], [29.92, 31.2]], seconds: 30, loop: 'back' },
+};
 
-async function runDevice(browser, server, name, outLog) {
-  const dev = DEVICES[name], [W, H] = dev.size, rs = dev.reading;
-  const context = await browser.newContext({ viewport: dev.viewport, deviceScaleFactor: 2 });
-  const requests = [];
-  await context.route((url) => !LOCAL.has(url.hostname) && !['data:', 'blob:', 'about:'].includes(url.protocol), (route) => { requests.push('BLOCKED ' + route.request().url()); route.abort(); });
-  const page = await context.newPage();
-  const problems = [];
-  page.on('pageerror', (e) => problems.push('page error: ' + e.message));
-  page.on('console', (m) => { if (m.type() === 'error') problems.push('console error: ' + m.text()); });
-  page.on('request', (r) => requests.push(r.url()));
-  page.on('response', (r) => { if (r.status() >= 400) problems.push(`${r.status()} for ${r.url().replace(server.url, '')}`); });
-  await page.addInitScript(installProbe);
-  const tag = (s) => `[${name}] ${s}`;
-  const t = (n, ok, d) => check(tag(n), ok, d);
+function mainJs() {
+  return `/* The preview's fixture: every runtime-3 tool once, and each event echoed to the log for the check. */
+(function () {
+  'use strict';
+  var F = window.FIXTURE, scheme = 'touchables';
+  function echo(kind, value) { terra.log('echo ' + kind + ' ' + JSON.stringify(value)); }
+  echo('world', { document: typeof document, fetch: typeof fetch, XMLHttpRequest: typeof XMLHttpRequest, navigator: typeof navigator,
+                  windowIsGlobal: typeof window === 'object' && window === globalThis, runtime: terra.runtime, pack: terra.pack,
+                  setTimeout: typeof setTimeout, camera: !!terra.camera });
+  echo('read', { notes: terra.read('notes.txt'), facts: terra.readJSON('data/facts.json'), missing: terra.read('nope.txt'),
+                 escape: terra.read('../prototype.json') });
 
-  // ---- helpers
-  const stage = { x: 0, y: 0 };
-  const url = (extra) => `${server.url}/preview/${PACK}?device=${name}&size=${W}x${H}&idleAfter=3600${extra || ''}`;
-  const overlay = () => page.frames().find((f) => f.url().includes(`/pack/${PACK}/`) && f.url().includes('mode=overlay'));
-  const ov = (fn, arg) => overlay().evaluate(fn, arg);
-  const pg = (fn, arg) => page.evaluate(fn, arg);
-  const frames = (n = 3) => pg((k) => new Promise((res) => { let i = 0; const f = () => (++i >= k ? res() : requestAnimationFrame(f)); requestAnimationFrame(f); }), n);
-  let syncN = 0;
-  // the page's messages arrive in order: once a log line sent after them has arrived, they all have, then a frame draws
-  const sync = async () => {
-    const mark = `sync-${name}-${++syncN}`;
-    await ov((m) => terra.log(m), mark);
-    await page.waitForFunction((m) => window.__playground.log.some((l) => l.message === m), mark);
-    await frames();
+  function feature(geometry, properties) { return { type: 'Feature', geometry: geometry, properties: properties || {} }; }
+  terra.images.set('chart', { image: 'chart.png', bounds: F.chart, opacity: 0.9, minZoom: 2.2, fade: 0.4 });
+  terra.geo.set('sea', [feature({ type: 'Polygon', coordinates: [F.area] }, { name: 'A shaded sea' })], { style: 'area', color: '#2E7DAF', touchable: true });
+  terra.geo.set('route', { type: 'LineString', coordinates: F.route }, { style: 'track' });
+  terra.geo.set('outline', [{ type: 'Polygon', coordinates: [F.outline] }], { style: 'ghost', color: '#7A3B2E' });
+  var ports = F.ports.map(function (p) { return feature({ type: 'Point', coordinates: [p[1], p[2]] }, { label: p[0] }); });
+  terra.geo.set('ports', ports, { style: 'ring', touchable: true });
+  terra.geo.set('names', ports, { style: 'label', font: 'italic', size: 14, offset: [0, -14] });
+  terra.geo.set('marks', { type: 'MultiPoint', coordinates: F.marks }, { style: 'symbol', image: 'mark.png', width: 16, height: 16 });
+  terra.geo.set('depth', [feature({ type: 'Point', coordinates: F.sounding }, { length: 48, label: '48 points down' })], { style: 'sounding' });
+  terra.sprites.set('boat', {
+    path: F.voyage,
+    looks: [{ image: 'dot.png', size: [12, 12], maxZoom: F.boatClose },
+            { frames: ['boat-1.png', 'boat-2.png'], fps: 3, size: [44, 22], minZoom: F.boatClose, face: true }],
+    label: 'A boat (the fixture\\'s)', touchable: true
+  });
+  terra.sprites.set('splash', { at: F.splash, looks: [{ image: 'splash.png', size: [20, 20], every: 2, for: 1.4 }] });
+  terra.caption.set({ title: 'Preview fixture', text: 'Every runtime-3 tool once. Touch the boat, a port or the shaded sea.' });
+  terra.time.show({ unit: 'year', min: 1800, max: 1900, value: 1850, ticks: [1810, 1830, { at: 1860, hollow: true }, 1890], playable: true, rate: 20 });
+  terra.globe.set({ still: true });
+
+  var panels = {
+    sea: { title: 'A shaded sea', text: 'An area the fixture draws, touchable.\\n\\nIts second paragraph.' },
+    boat: { title: 'A boat', text: 'A sprite on a great-circle path, to and fro; a dot from afar and a boat up close.' },
+    ports: { title: 'A port', text: 'A ring the fixture draws, touchable.' }
   };
-  const put = async (id, features, options) => { await ov(([i, f, o]) => terra.geo.set(i, f, o), [id, features, options]); await sync(); };
-  const proj = (lon, lat) => pg(([a, b]) => terra.project(a, b, window.__playground.camera()), [lon, lat]);
-  const probe = (fn, ...args) => pg(([f, a]) => window.__t[f](...a), [fn, args]);
-  const pixel = (x, y) => pg(([x0, y0]) => { const c = document.getElementById('globe'), k = window.devicePixelRatio; return Array.from(c.getContext('2d').getImageData(Math.round(x0 * k), Math.round(y0 * k), 1, 1).data); }, [x, y]);
-  const reset = async (cam) => {
-    await ov(() => { terra.geo.clear(); terra.time.hide(); terra.caption.clear(); terra.globe.set({}); });
-    const c = cam || CAMERA;
-    await pg(([c0]) => window.__playground.flyTo(c0.lon, c0.lat, c0.zoom, 0), [c]);
-    await page.evaluate(() => window.__playground.setSettings({ reduceMotion: false, textScale: 1 }));
-    await sync();
-  };
-  const heard = () => ov(() => window.heard.slice());
-  const shot = async (n) => {
-    await frames();
-    await page.locator('#device').screenshot({ path: path.join(OUT, `${name}-${n}.png`) });
-    outLog.push(`${name}-${n}.png`);
-  };
-  const dot = (x, y, r = 3) => ({ x0: x - r, y0: y - r, w: 2 * r + 1, h: 2 * r + 1 });
-  const point = (lon, lat) => ({ type: 'Point', coordinates: [lon, lat] });
-  const feat = (geometry, properties) => ({ type: 'Feature', geometry, properties: properties || {} });
-  const rect = (lon0, lat0, lon1, lat1) => [[lon0, lat1], [lon1, lat1], [lon1, lat0], [lon0, lat0], [lon0, lat1]];
-
-  // ---- load
-  await page.goto(url());
-  await page.waitForFunction(() => window.__playground && window.__playground.ready.overlay, null, { timeout: 8000 });
-  await pg(() => window.__playground.fonts);
-  await page.waitForTimeout(500);
-  const box0 = await page.locator('#stage').boundingBox();
-  Object.assign(stage, box0);
-  t('the device is the requested size', near(box0.width, W, 0.5) && near(box0.height, H, 0.5), box0);
-  t('the reading scale follows Globe/type.json (' + rs + ')', near(await pg(() => window.__playground.reading()), rs, 1e-6), await pg(() => window.__playground.reading()));
-  t('the globe\'s type is loaded', await pg(() => document.fonts.check('15px "Libertinus Serif"') && document.fonts.check('italic 15px "Libertinus Serif"') && document.fonts.check('600 15px "Libertinus Serif"')));
-  t('the page told the harness it is runtime 2 and was heard ready', await pg(() => window.terra.runtime === 2));
-  await reset();
-
-  const c0 = await proj(CAMERA.lon, CAMERA.lat);        // the middle of the screen
-  t('the camera looks at the middle of the screen', near(c0.x, W / 2, 0.01) && near(c0.y, H / 2, 0.01) && near(c0.facing, 1, 1e-9), c0);
-
-  // ---- area: fill at 28% of the colour, outline 30% darker, in layer order, replaced in place, removed
-  {
-    await probe('snap');
-    const geom = { type: 'Polygon', coordinates: [rect(26, 33, 34, 38)] };
-    await put('a', [feat(geom)], { style: 'area' });
-    const mid = await proj(30, 35.5), corner = await proj(26, 38);
-    const orange = hex('#C17846');
-    t('area: the fill is the colour at 28% over the globe', (await probe('match', mid.x, mid.y, 0.6, orange, 0.28, 3)) > 0, await pixel(mid.x, mid.y));
-    t('area: the outline is the colour 30% darker, opaque', (await probe('match', corner.x, corner.y, 1.2, darken(orange), 1, 6)) > 0);
-    const edge = await proj(30, 38);
-    t('area: the outline is 2.2 pt wide (x reading scale)', await (async () => {
-      const s = await probe('scan', edge.x - 6, edge.y - 8 * rs, 12, 16 * rs, darken(orange).map(Math.round), 8);
-      return s.n > 0 && near(wide(s, 'y'), 2.2 * rs, 1.0);
-    })(), await probe('scan', edge.x - 6, edge.y - 8 * rs, 12, 16 * rs, darken(orange).map(Math.round), 8));
-    // a hole stays unfilled; a colour option is used
-    await put('hole', [feat({ type: 'Polygon', coordinates: [rect(24, 40, 32, 46), rect(26, 42, 30, 44)] })], { style: 'area', color: '#1F7A8C' });
-    const ring_ = await proj(25, 43), hole = await proj(28, 43), teal = hex('#1F7A8C');
-    t('area: a colour option fills with that colour', (await probe('match', ring_.x, ring_.y, 0.6, teal, 0.28, 3)) > 0);
-    t('area: a hole in the polygon is not filled', (await probe('changed', hole.x - 2, hole.y - 2, 5, 5)) === 0, await probe('changed', hole.x - 2, hole.y - 2, 5, 5));
-    await shot('area');
-
-    // order: a later id is above an earlier one; setting an id again replaces it where it was
-    await ov(() => terra.geo.clear()); await sync();
-    await probe('snap');
-    const both = { type: 'Polygon', coordinates: [rect(27, 34, 33, 38)] };
-    await put('under', [feat(both)], { style: 'area', color: '#C03030' });
-    await put('over', [feat(both)], { style: 'area', color: '#3040C0' });
-    const red = hex('#C03030'), blue = hex('#3040C0'), green = hex('#30C030'), m2 = await proj(30, 36);
-    const under = await pixel(m2.x, m2.y);
-    await ov(() => terra.geo.clear()); await sync();
-    const clean = await pixel(m2.x, m2.y);
-    await put('under', [feat(both)], { style: 'area', color: '#C03030' });
-    await put('over', [feat(both)], { style: 'area', color: '#3040C0' });
-    const px = await pixel(m2.x, m2.y);
-    const redFirst = blend(blend(clean, red, 0.28), blue, 0.28), blueFirst = blend(blend(clean, blue, 0.28), red, 0.28);
-    t('order: a later layer draws above an earlier one', rgbNear(px, redFirst, 3) && !rgbNear(px, blueFirst, 3), { px, redFirst, blueFirst });
-    await put('under', [feat(both)], { style: 'area', color: '#30C030' });       // set again: replaced, still underneath
-    t('order: setting an id again replaces the layer in its place', rgbNear(await pixel(m2.x, m2.y), blend(blend(clean, green, 0.28), blue, 0.28), 3), await pixel(m2.x, m2.y));
-    await ov(() => terra.geo.remove('over')); await sync();
-    t('order: remove takes a layer away', rgbNear(await pixel(m2.x, m2.y), blend(clean, green, 0.28), 3), await pixel(m2.x, m2.y));
-    await ov(() => terra.geo.clear()); await sync();
-    t('order: clear takes them all away', rgbNear(await pixel(m2.x, m2.y), clean, 1), { now: await pixel(m2.x, m2.y), clean, under });
+  function show(target) {
+    var p = target.sprite ? panels.boat : panels[target.layer];
+    if (!p) return;
+    terra.panel.show({ title: p.title + (target.index != null ? ' (' + target.index + ')' : ''), text: p.text,
+      sections: [{ title: 'What the preview shows', text: 'Geography, a picture, sprites, the date, this panel.' }],
+      sources: [{ title: 'docs/runtime3.md', url: 'https://github.com/', note: 'the contract' }] });
+    terra.caption.set({ title: 'Preview fixture', text: 'Touched ' + JSON.stringify(target) + '.' });
   }
-
-  // ---- lines: border solid, ghost and track dashed
-  {
-    await reset();
-    await probe('snap');
-    const pts = [[24, 36], [30, 34], [36, 36]];
-    await put('line', [feat({ type: 'LineString', coordinates: pts })], { style: 'border' });
-    const v = await proj(30, 34);
-    t('border: a solid line in #8C8478', (await probe('match', v.x, v.y, 2, BORDER, 1, 6)) > 0);
-    const a = await proj(26, 35), b = await proj(34, 35);
-    // along the straight stretch between two vertices of a ghost/track
-    const along = async (style, dash, alpha) => {
-      await ov(() => terra.geo.clear());
-      await put('d', [feat({ type: 'LineString', coordinates: [[24, 38], [36, 38]] })], { style });
-      const p = await proj(24, 38), q = await proj(36, 38), n = 240;
-      const hits = await pg(async ([p0, q0, n0, alpha0, ink]) => {
-        let on = 0, off = 0;
-        for (let i = 0; i <= n0; i++) {
-          const f = i / n0, x = p0.x + (q0.x - p0.x) * f, y = p0.y + (q0.y - p0.y) * f;
-          // a small cross: the line is 1.2-1.6 pt wide
-          const hit = window.__t.match(x, y, 0.5, ink, alpha0, 10);
-          if (hit > 0) on++; else off++;
-        }
-        return { on, off };
-      }, [p, q, n, alpha, INK]);
-      return { ...hits, frac: hits.on / (hits.on + hits.off) };
-    };
-    const g = await along('ghost', [5, 4], 0.8), tr = await along('track', [3, 4], 0.47);
-    t('ghost: dashed [5, 4], #3B4A54 at 80%', g.frac > 0.4 && g.frac < 0.72, g);
-    t('track: dashed [3, 4], #3B4A54 at 47%', tr.frac > 0.28 && tr.frac < 0.58, tr);
-    // a polygon given to a line style is its outline
-    await ov(() => terra.geo.clear()); await sync();
-    await put('outline', [feat({ type: 'Polygon', coordinates: [rect(26, 33, 34, 37)] })], { style: 'ghost' });
-    const corner = await proj(26, 37), centre = await proj(30, 35);
-    t('ghost: a polygon is drawn as its outline, not filled', (await probe('changed', centre.x - 4, centre.y - 4, 9, 9)) === 0 && (await probe('changed', corner.x - 8, corner.y - 8, 17, 17)) > 4);
-  }
-
-  // ---- points: dot, ring, label, symbol, sounding, offsets
-  {
-    await reset();
-    await probe('snap');
-    const P = await proj(30, 36);
-    await put('dots', [point(30, 36)], { style: 'dot' });
-    t('dot: filled #3B4A54, radius 3.4 pt (x reading scale)', await (async () => {
-      const s = await probe('scan', P.x - 8, P.y - 8, 16, 16, INK, 8);
-      return s.n > 0 && near(wide(s, 'x'), 6.8 * rs, 1.2) && near(wide(s, 'y'), 6.8 * rs, 1.2) && near(s.cx, P.x, 0.4) && near(s.cy, P.y, 0.4);
-    })(), await probe('scan', P.x - 8, P.y - 8, 16, 16, INK, 8));
-    await put('dots', [point(30, 36)], { style: 'dot', color: '#C03030' });
-    t('dot: options.color', (await probe('scan', P.x - 8, P.y - 8, 16, 16, hex('#C03030'), 8)).n > 0);
-    await put('dots', [{ type: 'MultiPoint', coordinates: [[30, 36]] }], { style: 'ring' });
-    const centre = await probe('scan', P.x - 1, P.y - 1, 2, 2, PAPER, 8), edge = await probe('scan', P.x - 8, P.y - 8, 16, 16, INK, 10);
-    t('ring: hollow, #F6F2E7 inside, #3B4A54 stroke, radius 3.4 pt', centre.n > 0 && edge.n > 0 && near(wide(edge, 'x'), (6.8 + 1.3) * rs, 1.5), { centre, edge });
-
-    // labels: regular, italic, caps; halo; colour; size; overlap; offset
-    const text = (id, str, options, lon = 30, lat = 36) => put(id, [feat(point(lon, lat), { label: str })], Object.assign({ style: 'label' }, options));
-    await ov(() => terra.geo.clear()); await sync();
-    const area = [P.x - 120, P.y - 30, 240, 110];
-    await text('l', 'Smyrna', {});
-    const plain = await probe('hash', ...area);
-    const ink = await probe('scan', ...area, INK, 6), halo = await probe('scan', ...area, PAPER, 4);
-    t('label: drawn in #3B4A54 on a #F6F2E7 halo, centred on the point', ink.n > 20 && halo.n > 20 && near(ink.cx, P.x, 3) && near(ink.cy, P.y, 3 * rs + 2), { ink, halo });
-    const size15 = wide(ink, 'y');
-    await text('l', 'Smyrna', { size: 30 });
-    const big = await probe('scan', ...area, INK, 6);
-    t('label: options.size (pt, x reading scale)', big.n > 0 && wide(big, 'y') > size15 * 1.6, { size15, big: wide(big, 'y') });
-    await text('l', 'Smyrna', { color: '#C03030' });
-    t('label: options.color', (await probe('scan', ...area, hex('#C03030'), 6)).n > 20);
-    await text('l', 'Smyrna', { font: 'italic' });
-    const italic = await probe('hash', ...area);
-    await text('l', 'smyrna', { font: 'caps' });
-    const capsLower = await probe('hash', ...area);
-    await text('l', 'SMYRNA', { font: 'caps' });
-    const capsUpper = await probe('hash', ...area);
-    await text('l', 'SMYRNA', {});
-    const regularUpper = await probe('hash', ...area);
-    t('label: italic differs from regular', italic !== plain);
-    t('label: caps is uppercase (and semibold, spaced)', capsLower === capsUpper && capsUpper !== regularUpper);
-    // earlier features win room: a second label on the same spot is skipped
-    await put('l', [feat(point(30, 36), { label: 'Alpha' }), feat(point(30, 36), { label: 'Beta' })], { style: 'label' });
-    const two = await probe('hash', ...area);
-    await put('l', [feat(point(30, 36), { label: 'Alpha' })], { style: 'label' });
-    const one = await probe('hash', ...area);
-    t('label: one that overlaps a placed label is skipped (earlier wins)', two === one);
-    await put('l', [feat(point(30, 36), { label: 'Alpha' })], { style: 'label' });
-    await put('m', [feat(point(30, 36), { label: 'Beta' })], { style: 'label' });
-    t('label: the rule holds across layers', (await probe('hash', ...area)) === one);
-    await put('m', [feat(point(30, 36), { label: 'Beta' })], { style: 'label', offset: [0, 40] });
-    const lower = await probe('scan', P.x - 60, P.y + 40 * rs - 12, 120, 24, INK, 6);
-    t('label: options.offset moves it right/down by points x reading scale, and its collision box with it', (await probe('hash', ...area)) !== one && lower.n > 20 && near(lower.cy, P.y + 40 * rs, 3 * rs + 2), lower);
-    await ov(() => terra.geo.clear()); await sync();
-    await text('l', 'Smyrna', {});
-    const home = await probe('scan', ...area, INK, 6);
-    await text('l', 'Smyrna', { offset: [30, 20] });
-    const moved = await probe('scan', P.x - 120, P.y - 30, 240 + 30 * rs, 60 + 20 * rs, INK, 6);
-    t('label: offset [30, 20] shifts the ink by (30, 20) x reading scale', near(moved.cx - home.cx, 30 * rs, 1) && near(moved.cy - home.cy, 20 * rs, 1), { home, moved });
-
-    // not drawn behind the globe
-    await reset({ lon: 30, lat: 36, zoom: 1 });
-    await text('far', 'Antipodes', {}, -150, -36);
-    await put('fardot', [point(-150, -36)], { style: 'dot' });
-    const whole = [W / 2 - 169, H / 2 - 169, 338, 338];
-    await probe('snap');
-    t('points on the far side are not drawn', (await probe('changed', 0, 0, W, H)) === 0);
-    await reset();
-
-    // symbols: the pack's image, centred, width x height pt
-    await probe('snap');
-    await put('s', [point(30, 36)], { style: 'symbol', image: 'symbol.png', width: 24, height: 12 });
-    await page.waitForFunction(() => true); await sync();
-    const sy = await probe('scan', P.x - 40, P.y - 40, 80, 80, SYMBOL_RGB, 14);
-    t('symbol: the pack\'s image, centred, options.width x options.height pt (x reading scale)', sy.n > 0 && near(sy.cx, P.x, 0.6) && near(sy.cy, P.y, 0.6) && near(wide(sy, 'x'), 24 * rs, 2.2) && near(wide(sy, 'y'), 12 * rs, 2.2), sy);
-    await put('s', [point(30, 36)], { style: 'symbol', image: 'symbol.png', width: 24, height: 12, offset: [20, -10] });
-    const sy2 = await probe('scan', P.x - 40, P.y - 40, 120, 80, SYMBOL_RGB, 14);
-    t('symbol: options.offset shifts it by points x reading scale', near(sy2.cx - sy.cx, 20 * rs, 1) && near(sy2.cy - sy.cy, -10 * rs, 1), { sy, sy2 });
-
-    // sounding: a dashed line down properties.length pt, a 16 pt foot, the label to its right
-    await ov(() => terra.geo.clear()); await sync();
-    await probe('snap');
-    await put('snd', [feat(point(30, 36), { length: 60, label: 'Depth 40' })], { style: 'sounding' });
-    const len = 60 * rs, bottom = P.y + len;
-    const lineArea = await probe('scan', P.x - 3, P.y, 6, len - 4 * rs, SOUND, 12);
-    const foot = await probe('scan', P.x - 14 * rs, bottom - 3, 28 * rs, 6, SOUND, 12);
-    const txt = await probe('scan', P.x + 10 * rs, bottom - 12 * rs, 120, 24 * rs, SOUND_TEXT, 8);
-    // dashed [2, 3]: along the line some pixels are in, some out
-    const ys = []; for (let y = P.y + 2; y < bottom - 4; y += 0.5) ys.push(y);
-    const dashHits = await pg(([x, list, ink]) => list.map((y) => window.__t.match(x, y, 0.4, ink, 1, 14) > 0), [P.x, ys, SOUND]);
-    const dashFrac = dashHits.filter(Boolean).length / dashHits.length;
-    t('sounding: a dashed [2, 3] line #1C7AB0 hangs from the point', lineArea.n > 10 && dashFrac > 0.25 && dashFrac < 0.65, { dashFrac, lineArea: lineArea.n });
-    t('sounding: the line is properties.length pt (x reading scale) long and ends in a 16 pt foot', foot.n > 0 && near(wide(foot, 'x'), 16 * rs, 2) && near(foot.cy, bottom, 1.5), { foot, bottom });
-    t('sounding: properties.label to the right of the foot, #1C5C8C', txt.n > 15 && txt.x0 > P.x + 8 * rs, txt);
-    await shot('sounding');
-  }
-
-  // ---- zoom limits
-  {
-    await reset();
-    const spots = { min4: [30, 39], max2: [30, 36], both: [30, 33] };
-    const mk = (id, lat, o) => put(id, [point(30, lat)], Object.assign({ style: 'dot' }, o));
-    await mk('min4', 39, { minZoom: 4 }); await mk('max2', 36, { maxZoom: 2 }); await mk('both', 33, { minZoom: 2, maxZoom: 4 });
-    const seen = async () => {
-      const out = {};
-      for (const [k, [lon, lat]] of Object.entries(spots)) {
-        const p = await proj(lon, lat);
-        out[k] = (await probe('scan', p.x - 4, p.y - 4, 9, 9, INK, 10)).n > 0;
-      }
-      return out;
-    };
-    t('zoom 3: only the layer whose limits include it', JSON.stringify(await seen()) === JSON.stringify({ min4: false, max2: false, both: true }), await seen());
-    await pg(() => window.__playground.flyTo(30, 36, 5, 0)); await frames();
-    t('zoom 5: only minZoom 4', JSON.stringify(await seen()) === JSON.stringify({ min4: true, max2: false, both: false }), await seen());
-    await pg(() => window.__playground.flyTo(30, 36, 1.5, 0)); await frames();
-    t('zoom 1.5: only maxZoom 2', JSON.stringify(await seen()) === JSON.stringify({ min4: false, max2: true, both: false }), await seen());
-    await reset();
-  }
-
-  // ---- the far side and the limb
-  {
-    await reset({ lon: 30, lat: 36, zoom: 1 });
-    const c = await pg(() => window.__playground.camera());
-    await probe('snap');
-    await put('line', [feat({ type: 'LineString', coordinates: [[30, 36], [90, 36], [150, 36], [-150, 0], [-60, 36], [10, 40]] })], { style: 'border' });
-    t('a line that goes behind the globe stops at the limb and comes back', (await probe('annulus', c.cx, c.cy, c.radius + 3, c.radius + 60)) === 0);
-    const cr = await probe('scan', c.cx - c.radius - 2, c.cy - c.radius - 2, 2 * c.radius + 4, 2 * c.radius + 4, BORDER, 4);
-    t('...and is drawn on the near side', cr.n > 40, cr);
-    await put('fill', [feat({ type: 'Polygon', coordinates: [[[30, 36], [120, 36], [120, -30], [30, -30], [30, 36]]] })], { style: 'area', color: '#C03030' });
-    t('a polygon that reaches behind the globe is pulled to the limb and does not spill', (await probe('annulus', c.cx, c.cy, c.radius + 3, c.radius + 60)) === 0);
-    const inside = await proj(60, 10);
-    t('...and is filled where it faces us', inside.facing > 0 && (await probe('scan', inside.x - 3, inside.y - 3, 7, 7, blend(OCEAN, hex('#C03030'), 0.28).map(Math.round), 14)).n > 0);
-    await shot('limb');
-    await reset();
-  }
-
-  // ---- layers move with the camera
-  {
-    await reset();
-    await put('dot', [point(30, 36)], { style: 'dot' });
-    await pg(() => window.__playground.flyTo(26, 34, 3, 0)); await frames();
-    const p = await proj(30, 36), p0 = await proj(26, 34);
-    t('geography follows the camera', (await probe('scan', p.x - 4, p.y - 4, 9, 9, INK, 8)).n > 0 && (await probe('scan', p0.x - 4, p0.y - 4, 9, 9, INK, 8)).n === 0, { p, p0 });
-    const before = await pg(() => window.__playground.camera().lon);
-    const sbox = await page.locator('#stage').boundingBox();
-    await page.mouse.move(sbox.x + 100, sbox.y + 300); await page.mouse.down(); await page.mouse.move(sbox.x + 160, sbox.y + 300, { steps: 5 }); await page.mouse.up();
-    await frames();
-    const p2 = await proj(30, 36);
-    t('...and a drag of the globe', (await pg(() => window.__playground.camera().lon)) !== before && (await probe('scan', p2.x - 4, p2.y - 4, 9, 9, INK, 8)).n > 0, p2);
-    await reset();
-  }
-
-  // ---- a bad layer is told to the author
-  {
-    await ov(() => terra.geo.set('bad', [], { style: 'sparkle' })); await sync();
-    const errors = await pg(() => window.__playground.log.filter((l) => l.level === 'error' && /options\.style/.test(l.message)).length);
-    t('an unknown style is an error in the log', errors === 1, errors);
-    await pg(() => { const log = window.__playground.log; for (let i = log.length - 1; i >= 0; i--) if (log[i].level === 'error' && /options\.style/.test(log[i].message)) log.splice(i, 1); });
-    t('...and draws nothing', (await pg(() => window.__playground.geo().length)) === 0);
-    await ov(() => terra.geo.set('few', [{ type: 'Point', coordinates: [30, 36] }, { type: 'Polygon', coordinates: [] }], { style: 'dot' })); await sync();
-    const warned = await pg(() => window.__playground.log.filter((l) => l.level === 'warn' && /skipped/.test(l.message)).length);
-    t('geometry a style cannot draw is a warning', warned === 1, warned);
-    await pg(() => { const log = window.__playground.log; for (let i = log.length - 1; i >= 0; i--) if (log[i].level === 'warn' && /skipped/.test(log[i].message)) log.splice(i, 1); });
-    await reset();
-  }
-
-  // ---- the date: year units, BCE, ticks, drag, click, keys, play
-  {
-    await reset();
-    const yearOpts = { unit: 'year', min: -500, max: 1500, value: -500, ticks: [-300, 0, { at: 1000, hollow: true }, { at: 1400 }], playable: true, rate: 200, playing: false };
-    await ov((o) => { terra.caption.set({ title: 'Evidence', text: 'What we can see of the harbour at this date.' }); terra.time.show(o); }, yearOpts);
-    await sync();
-    t('date: the foot is shown', await page.locator('#foot').isVisible());
-    t('date: year units show the integer year, BCE when negative', (await page.getByTestId('foot-title').innerText()) === '500 BCE', await page.getByTestId('foot-title').innerText());
-    t('date: caption.title is the eyebrow (capitals), caption.text under the date', (await page.getByTestId('foot-eyebrow').innerText()) === 'EVIDENCE' && /harbour/.test(await page.getByTestId('foot-text').innerText()));
-    t('date: window.harnessTime() is the value', (await pg(() => window.harnessTime())) === -500);
-    t('date: the page heard the first value from the host', JSON.stringify((await heard()).map((e) => [e.value, e.playing, e.by])) === JSON.stringify([[-500, false, 'host']]), await heard());
-    t('date: filled and hollow ticks', (await page.locator('#date-strip .tick').count()) === 4 && (await page.locator('#date-strip .tick.hollow').count()) === 1);
-    const tickBox = await page.locator('#date-strip .tick').first().boundingBox();
-    t('date: a tick is r 2.6 pt', near(tickBox.width, 5.2, 0.3), tickBox);
-    t('date: the play button is 44 pt, at the strip\'s left', await (async () => { const b = await page.getByTestId('date-play').boundingBox(), s = await page.getByTestId('date-strip').boundingBox(); return near(b.width, 44, 0.5) && near(b.height, 44, 0.5) && b.x + b.width <= s.x + 1; })());
-    const inner = await page.locator('#foot .inner').boundingBox();
-    t('date: the foot\'s column is at most 560 pt wide and centred', inner.width <= 560.5 && near(inner.x + inner.width / 2 - stage.x, W / 2, 1), inner);
-    t('date: the ground fades up from the paper colour', /rgba\(246, 242, 231, 0\) 0%, rgba\(246, 242, 231, 0\.92\) 33\.3/.test(await pg(() => getComputedStyle(document.getElementById('foot'), '::before').backgroundImage)), await pg(() => getComputedStyle(document.getElementById('foot'), '::before').backgroundImage));
-    const png0 = (await page.locator('#device').screenshot()).toString('base64');
-    const [corner, high] = await pg(([b]) => window.__t.png(b, [[0.2, 0.99], [0.5, 0.0]]), [png0]);
-    t('date: the foot\'s ground is paper at the bottom', rgbNear(corner, PAPER, 14), corner);
-    await shot('year');
-
-    const strip = await page.getByTestId('date-strip').boundingBox();
-    const fAt = (x) => Math.min(1, Math.max(0, (x - strip.x - 14) / (strip.width - 28)));
-    const yAt = (x) => -500 + 2000 * fAt(x);
-    const y0 = strip.y + strip.height / 2;
-    const x1 = strip.x + strip.width * 0.25, x2 = strip.x + strip.width * 0.75;
-    const n0 = (await heard()).length;
-    await page.mouse.move(x1, y0); await page.mouse.down(); await page.mouse.move(x2, y0, { steps: 8 });
-    const mid = await pg(() => window.harnessTime());
-    await page.mouse.up(); await sync();
-    const h1 = (await heard()).slice(n0);
-    const last = h1[h1.length - 1];
-    t('date: dragging the strip sets the value in proportion', near(await pg(() => window.harnessTime()), yAt(x2), 1.0) && mid > yAt(x1), { value: await pg(() => window.harnessTime()), expect: yAt(x2) });
-    t('date: the page hears every drag step as "reader"', h1.length >= 6 && h1.every((e) => e.by === 'reader') && near(last.value, yAt(x2), 1.0) && last.playing === false, h1.slice(-2));
-    t('date: the title follows the value', (await page.getByTestId('foot-title').innerText()) === yearText(await pg(() => window.harnessTime())));
-    const needle = await page.getByTestId('date-needle').boundingBox();
-    t('date: the red needle is at the value', near(needle.x + needle.width / 2, strip.x + 14 + fAt(x2) * (strip.width - 28), 1.0) && /rgb\(176, 66, 52\)/.test(await page.getByTestId('date-needle').evaluate((e) => getComputedStyle(e).backgroundColor)), needle);
-    await page.mouse.click(strip.x + strip.width * 0.5, y0); await sync();
-    t('date: a click sets the value too', near(await pg(() => window.harnessTime()), yAt(strip.x + strip.width * 0.5), 1.0), await pg(() => window.harnessTime()));
-    await page.mouse.click(strip.x + 1, y0); await sync();
-    t('date: the left end is min', (await pg(() => window.harnessTime())) === -500);
-    await page.mouse.click(strip.x + strip.width - 1, y0); await sync();
-    t('date: the right end is max', (await pg(() => window.harnessTime())) === 1500 && (await page.getByTestId('foot-title').innerText()) === '1500');
-    await page.getByTestId('date-strip').focus(); await page.keyboard.press('Home'); await sync();
-    t('date: keys move it (Home)', (await pg(() => window.harnessTime())) === -500);
-    await page.keyboard.press('ArrowRight'); await sync();
-    t('date: keys move it (arrow: a hundredth of the range)', near(await pg(() => window.harnessTime()), -480, 1e-6) && (await heard()).slice(-1)[0].by === 'reader', await pg(() => window.harnessTime()));
-
-    // the page sets the date: no echo
-    const nBefore = (await heard()).length;
-    await ov(() => terra.time.set(1200)); await sync();
-    t('date: terra.time.set moves the strip and is not echoed to the page', (await pg(() => window.harnessTime())) === 1200 && (await heard()).length === nBefore && (await page.getByTestId('foot-title').innerText()) === '1200');
-    await ov(() => terra.time.set(-100)); await sync();
-
-    // play: rate units a second, at most 30 messages a second, 'play'
-    await page.getByTestId('date-play').click(); await sync();
-    const tPlay = Date.now(), vPlay = await pg(() => window.harnessTime());
-    t('date: the play button starts playback', (await pg(() => window.__playground.time().playing)) === true && (await page.getByTestId('date-play').getAttribute('data-playing')) === 'true');
-    await sleep(1000);
-    const played = (await heard()).filter((e) => e.t >= tPlay && e.by === 'play');
-    const span = played.length > 1 ? (played[played.length - 1].t - played[0].t) / 1000 : 0;
-    const speed = span > 0 ? (played[played.length - 1].value - played[0].value) / span : 0;
-    t('date: playback advances by rate units a second', near(speed, 200, 50), { speed, n: played.length });
-    t('date: playback is told to the page as "play", at most 30 times a second', played.length >= 8 && played.length <= 31 && played.every((e) => e.playing === true), { n: played.length });
-    await page.getByTestId('date-play').click(); await sync();
-    const paused = await pg(() => window.harnessTime()), hp = (await heard()).slice(-1)[0];
-    await sleep(300);
-    t('date: the button pauses it, as "reader" with playing false', hp.by === 'reader' && hp.playing === false && (await pg(() => window.harnessTime())) === paused && (await page.getByTestId('date-play').getAttribute('data-playing')) === 'false', hp);
-    t('date: the value moved on from where it started', paused > vPlay + 80, { vPlay, paused });
-
-    // dragging while it plays takes it from the clock
-    await page.getByTestId('date-play').click(); await sleep(150);
-    await page.mouse.click(strip.x + strip.width * 0.3, y0); await sync();
-    t('date: a hand on the strip stops playback', (await pg(() => window.__playground.time().playing)) === false);
-
-    // to the end: stops at max, last message playing false
-    await ov(() => terra.time.set(1450)); await sync();
-    await page.getByTestId('date-play').click();
-    await page.waitForFunction(() => window.__playground.time().playing === false, null, { timeout: 4000 });
-    const end = (await heard()).slice(-1)[0];
-    t('date: playing ends at max and says so', end.value === 1500 && end.playing === false && end.by === 'play' && (await pg(() => window.harnessTime())) === 1500, end);
-    await page.getByTestId('date-play').click(); await sleep(250);
-    t('date: playing again from the end starts over from min', (await pg(() => window.harnessTime())) < -300 + 200, await pg(() => window.harnessTime()));
-    await page.getByTestId('date-play').click();
-
-    // playing: true in show starts it unless Reduce Motion is on
-    await ov((o) => terra.time.show(Object.assign({}, o, { playing: true, value: 0 })), yearOpts); await sleep(400); await sync();
-    t('date: show({ playing: true }) starts playback', (await pg(() => window.__playground.time().playing)) === true && (await pg(() => window.harnessTime())) > 20);
-    await pg(() => window.__playground.setSettings({ reduceMotion: true })); await sync();
-    t('date: Reduce Motion stops playback and hides the button', (await pg(() => window.__playground.time().playing)) === false && !(await page.getByTestId('date-play').isVisible()));
-    await ov((o) => terra.time.show(Object.assign({}, o, { playing: true, value: 0 })), yearOpts); await sleep(300); await sync();
-    t('date: under Reduce Motion show({ playing: true }) does not play', (await pg(() => window.__playground.time().playing)) === false && (await pg(() => window.harnessTime())) === 0);
-    await ov(() => terra.time.play(true)); await sleep(300); await sync();
-    t('date: ...nor does terra.time.play(true)', (await pg(() => window.__playground.time().playing)) === false && (await pg(() => window.harnessTime())) === 0);
-    await pg(() => window.__playground.setSettings({ reduceMotion: false })); await sync();
-
-    // text size: the foot follows the reader's
-    await pg(() => window.__playground.setSettings({ textScale: 2 })); await frames();
-    t('date: the title grows with the reader\'s text size (30 pt x 2)', near(parseFloat(await page.getByTestId('foot-title').evaluate((e) => getComputedStyle(e).fontSize)), 60, 0.01));
-    await pg(() => window.__playground.setSettings({ textScale: 1 })); await frames();
-    t('date: the title is Libertinus 30 pt, #253440', await page.getByTestId('foot-title').evaluate((e) => { const s = getComputedStyle(e); return s.fontSize === '30px' && /Libertinus/.test(s.fontFamily) && s.color === 'rgb(37, 52, 64)'; }));
-    await ov(() => terra.time.hide()); await sync();
-    t('date: hide removes the strip and the date, keeps the caption', !(await page.getByTestId('date-strip').isVisible()) && !(await page.getByTestId('foot-title').isVisible()) && (await page.getByTestId('foot-text').isVisible()));
-  }
-
-  // ---- the date: day units
-  {
-    await reset();
-    const day = (y, m, d) => Date.UTC(y, m, d) / 864e5;
-    await ov(([v]) => terra.time.show({ unit: 'day', min: -800000, max: 100000, value: v, ticks: [v], playable: false }), [day(1873, 1, 26)]); await sync();
-    const text = () => page.getByTestId('foot-title').innerText();
-    t('date: day units: "26 February 1873"', (await text()) === '26 February 1873', await text());
-    t('date: no play button unless playable', !(await page.getByTestId('date-play').isVisible()));
-    await ov(([v]) => terra.time.set(v), [0]); await sync();
-    t('date: day 0 is 1 January 1970', (await text()) === '1 January 1970', await text());
-    await ov(([v]) => terra.time.set(v), [-1]); await sync();
-    t('date: day -1 is 31 December 1969', (await text()) === '31 December 1969', await text());
-    await ov(([v]) => terra.time.set(v), [day(-43, 2, 15)]); await sync();
-    t('date: before the common era, "N BCE"', (await text()) === '15 March 44 BCE', await text());
-    t('date: no caption, no eyebrow or words', !(await page.getByTestId('foot-eyebrow').isVisible()) && !(await page.getByTestId('foot-text').isVisible()));
-    await ov(([v]) => terra.time.set(v), [day(1873, 1, 26)]); await sync();
-    await shot('day');
-  }
-
-  // ---- the caption alone
-  {
-    await reset();
-    t('no date, no caption: no foot', !(await page.locator('#foot').isVisible()));
-    await ov(() => terra.caption.set({ title: 'The harbour', text: 'Ships came here from the whole coast.' })); await sync();
-    t('caption: eyebrow and words, no date, no strip', (await page.getByTestId('foot-eyebrow').isVisible()) && (await page.getByTestId('foot-text').isVisible()) && !(await page.getByTestId('foot-title').isVisible()) && !(await page.getByTestId('date-strip').isVisible()));
-    await shot('caption');
-    await ov(() => terra.caption.clear()); await sync();
-    t('caption: clear hides the foot', !(await page.locator('#foot').isVisible()));
-  }
-
-  // ---- modern politics and globe.historical
-  {
-    await reset({ lon: 25, lat: 27, zoom: 3 });
-    const home = await proj(25, 27);
-    await probe('snap');
-    const everything = [0, 0, W, H];
-    const namesWith = (await probe('scan', ...everything, NAME_INK, 4)).n, coastWith = (await probe('scan', ...everything, hex('#0978AB'), 3)).n;
-    const borderBox = [home.x - 6, home.y - 14, 12, 28];
-    const withBorder = await probe('hash', ...borderBox);
-    t('politics: the stand-in draws country names for a runtime-2 pack', namesWith > 30, namesWith);
-    await shot('modern');
-    await ov(() => terra.globe.set({ historical: true })); await sync();
-    const namesWithout = (await probe('scan', ...everything, NAME_INK, 4)).n, coastWithout = (await probe('scan', ...everything, hex('#0978AB'), 3)).n;
-    const noBorder = await pg(([b]) => window.__t.scan(b[0], b[1], b[2], b[3], [0xF6, 0xE1, 0xB9], 10), [borderBox]);
-    t('historical: country names are gone', namesWithout === 0, { namesWith, namesWithout });
-    t('historical: the border (Egypt-Libya, 25 E) is gone: only land colour is left there', (await probe('hash', ...borderBox)) !== withBorder && noBorder.n === Math.ceil(12 * 2) * Math.ceil(28 * 2), noBorder);
-    t('historical: coasts stay', coastWithout > 100 && coastWithout >= coastWith * 0.95, { coastWith, coastWithout });
-    t('historical: the page asked, the harness reports it', (await pg(() => window.__playground.globe().historical)) === true);
-    await shot('historical');
-    await ov(() => terra.globe.set({})); await sync();
-    t('historical: set({}) brings today\'s politics back', (await probe('hash', ...borderBox)) === withBorder && (await probe('scan', ...everything, NAME_INK, 4)).n === namesWith);
-    await ov(() => terra.globe.set({ historical: true })); await sync();
-    await page.click('#restart'); await page.waitForFunction(() => window.__playground.ready.overlay); await sync();
-    t('historical: ends with the prototype (a restart brings politics back)', (await pg(() => window.__playground.globe().historical)) === false && (await probe('hash', ...borderBox)) === withBorder);
-    await reset();
-  }
-
-  // ---- everything on one globe, for the eye
-  {
-    await reset();
-    await ov(() => {
-      const f = (geometry, properties) => ({ type: 'Feature', geometry, properties: properties || {} });
-      const p = (lon, lat) => ({ type: 'Point', coordinates: [lon, lat] });
-      const r = (a, b, c, d) => [[a, d], [c, d], [c, b], [a, b], [a, d]];
-      terra.geo.set('ghost-sea', [f({ type: 'Polygon', coordinates: [r(22, 30, 29, 33)] })], { style: 'ghost' });
-      terra.geo.set('area', [f({ type: 'Polygon', coordinates: [r(22, 37, 29, 41)] })], { style: 'area' });
-      terra.geo.set('lake', [f({ type: 'Polygon', coordinates: [r(31, 35, 38, 41), r(33, 37, 36, 39)] })], { style: 'area', color: '#1F7A8C' });
-      terra.geo.set('border', [f({ type: 'LineString', coordinates: [[31, 33], [34, 32], [38, 33]] })], { style: 'border' });
-      terra.geo.set('track', [f({ type: 'LineString', coordinates: [[24, 26], [30, 28], [36, 27]] })], { style: 'track' });
-      terra.geo.set('dots', [p(26, 43), p(28, 44)], { style: 'dot' });
-      terra.geo.set('hot', [p(30, 43)], { style: 'dot', color: '#B04234' });
-      terra.geo.set('rings', [p(33, 43), p(35, 44)], { style: 'ring' });
-      terra.geo.set('names', [f(p(25.2, 39), { label: 'Ephesus' }), f(p(34.5, 40), { label: 'Lake' })], { style: 'label' });
-      terra.geo.set('sea', [f(p(24.5, 31.5), { label: 'Old shoreline' })], { style: 'label', font: 'italic' });
-      terra.geo.set('region', [f(p(30, 33), { label: 'Mediterranean' })], { style: 'label', font: 'caps', size: 13 });
-      terra.geo.set('ship', [p(34, 30)], { style: 'symbol', image: 'symbol.png', width: 28, height: 28 });
-      terra.geo.set('depth', [f(p(28, 28), { length: 70, label: '40 fathoms' })], { style: 'sounding' });
-    });
-    await sync();
-    await shot('geo');
-    await ov(() => { terra.caption.set({ title: 'Evidence', text: 'A coast as it was drawn then, with the coast of today dashed under it.' }); terra.time.show({ unit: 'year', min: -500, max: 1500, value: 640, ticks: [-300, 0, { at: 640, hollow: true }, 1000], playable: true, rate: 100 }); });
-    await sync();
-    await shot('scene');
-    await reset();
-  }
-
-  // ---- taps still go to the page
-  {
-    await reset();
-    await page.mouse.click(stage.x + W / 2, stage.y + H / 2); await sleep(150);
-    const taps = await ov(() => window.taps.slice());
-    t('a tap on the globe still goes to the page', taps.length === 1 && near(taps[0].lon, 30, 0.5) && near(taps[0].lat, 36, 0.5), taps);
-  }
-
-  t('nothing left the machine', requests.every((u) => { try { return LOCAL.has(new URL(u).hostname) || /^(data|blob):/.test(u); } catch (e) { return true; } }), requests.filter((u) => /^BLOCKED/.test(u)));
-  t('the globe\'s fonts came from the harness', ['Regular', 'Italic', 'Semibold'].every((f) => requests.some((u) => u.endsWith('/_harness/fonts/LibertinusSerif-' + f + '.otf'))));
-  const errs = await pg(() => window.__playground.log.filter((l) => l.level === 'error').map((l) => l.source + ': ' + l.message));
-  for (const p of problems) check(tag('no page problem: ' + p), false);
-  t('no error reached the harness log', errs.length === 0, errs);
-  await context.close();
-}
-
-async function runIdle(browser, server) {
-  // The idle turn belongs to a pack that does not ask for stillness; ?idleAfter=1 shortens the 8 s wait.
-  const context = await browser.newContext({ viewport: { width: 1100, height: 1100 }, deviceScaleFactor: 1 });
-  const page = await context.newPage();
-  const problems = [];
-  page.on('pageerror', (e) => problems.push(e.message));
-  await page.goto(`${server.url}/preview/${PACK}?device=phone&size=402x874&idleAfter=1`);
-  await page.waitForFunction(() => window.__playground && window.__playground.ready.overlay, null, { timeout: 8000 });
-  const lon = () => page.evaluate(() => window.__playground.camera().lon);
-  const overlay = () => page.frames().find((f) => f.url().includes('mode=overlay'));
-  const l0 = await lon();
-  await page.waitForFunction((l) => window.__playground.camera().lon < l - 1.5, l0, { timeout: 8000 }).then(() => check('[idle] an untouched globe turns west to east', true), () => check('[idle] an untouched globe turns west to east', false, { l0, now: 'unchanged' }));
-  await overlay().evaluate(() => terra.globe.set({ still: true }));
-  await sleep(300);
-  const s0 = await lon(); await sleep(1200); const s1 = await lon();
-  check('[idle] globe.set({ still: true }) stops the turn', s0 === s1, { s0, s1 });
-  await overlay().evaluate(() => terra.globe.set({}));
-  await sleep(300);
-  const r0 = await lon(); await sleep(800);
-  check('[idle] globe.set({}) lets it turn again', (await lon()) < r0 - 1, { r0, now: await lon() });
-  await page.evaluate(() => window.__playground.setSettings({ reduceMotion: true }));
-  await sleep(300);
-  const m0 = await lon(); await sleep(1200); const m1 = await lon();
-  check('[idle] Reduce Motion stops it', m0 === m1, { m0, m1 });
-  await page.evaluate(() => window.__playground.setSettings({ reduceMotion: false }));
-  await overlay().evaluate(() => terra.globe.set({ still: true }));
-  await sleep(200);
-  await page.click('#restart');
-  await page.waitForFunction(() => window.__playground.ready.overlay);
-  check('[idle] still ends with the prototype', (await page.evaluate(() => window.__playground.globe().still)) === false);
-  const n0 = await lon();
-  await page.waitForFunction((l) => window.__playground.camera().lon < l - 1, n0, { timeout: 5000 }).then(() => check('[idle] ...and the globe turns again after a restart', true), () => check('[idle] ...and the globe turns again after a restart', false));
-  // a touch holds it still for the wait
-  const box = await page.locator('#stage').boundingBox();
-  await page.mouse.click(box.x + 200, box.y + 300);
-  const t0 = await lon(); await sleep(600); const t1 = await lon();
-  check('[idle] a touch holds the turn off for the wait', t0 === t1, { t0, t1 });
-  for (const p of problems) check('[idle] no page problem: ' + p, false);
-  await context.close();
-}
-
-(async () => {
-  const args = process.argv.slice(2), di = args.indexOf('--device');
-  const only = di >= 0 ? args[di + 1] : null;
-  if (only && !DEVICES[only]) { console.error('usage: node tools/playground/harness_check.cjs [--device phone|ipad]'); process.exit(2); }
-  writeFixture();
-  fs.mkdirSync(OUT, { recursive: true });
-  for (const f of fs.readdirSync(OUT)) if (f.endsWith('.png') && (!only || f.startsWith(only + '-'))) fs.rmSync(path.join(OUT, f));
-  const server = await start({ port: 0, prototypes: FIXTURE });
-  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
-  const shots = [];
-  try {
-    for (const name of Object.keys(DEVICES)) if (!only || only === name) await runDevice(browser, server, name, shots);
-    if (!only || only === 'phone') await runIdle(browser, server);
-  } catch (e) {
-    check('the check ran to the end', false, e && e.stack || String(e));
-  } finally {
-    await browser.close();
-    await server.close();
-  }
-  const failed = results.filter((r) => !r.ok);
-  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ passed: failed.length === 0, checks: results.length, failed: failed.length, results, screenshots: shots }, null, 2) + '\n');
-  console.log(`${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length}/${results.length} checks; screenshots in ${path.relative(ROOT, OUT)}/ (${shots.length})`);
-  process.exit(failed.length ? 1 : 0);
+  terra.on('touch', function (t) {
+    echo('touch', t);
+    if (t.phase === 'tap' && t.target) show(t.target);
+    // a port flies the globe to it
+    if (t.phase === 'tap' && t.target && t.target.layer === 'ports') { var p = F.ports[t.target.index]; terra.flyTo(p[1], p[2], 4, 0.4); }
+  });
+  terra.on('time', function (t) {
+    echo('time', t);
+    terra.globe.set({ historical: t.value >= 1890, still: true });      // the last decade: today's borders hidden
+  });
+  terra.on('camera', function (c) { echo('camera', { lon: +c.lon.toFixed(3), lat: +c.lat.toFixed(3), zoom: +c.zoom.toFixed(3) }); });
+  terra.on('settings', function (s) { echo('settings', s); });
+  terra.on('panel', function (p) { echo('panel', p); });
+  terra.on('open', function (p) {
+    scheme = scheme === 'one-finger' ? 'touchables' : 'one-finger';
+    terra.touch.scheme(scheme);
+    echo('open', { scheme: scheme });
+  });
+  terra.on('close', function () { echo('close', {}); });
+  setTimeout(function () { echo('timeout', { ms: 120 }); }, 120);
 })();
+`;
+}
+
+function writeFixture(base) {
+  const dir = path.join(base, PACK);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(path.join(dir, 'data'), { recursive: true });
+  const manifest = {
+    id: PACK, title: 'Preview fixture', summary: 'The desktop preview\'s own test pack: every runtime-3 tool once.',
+    runtime: 3, presentation: 'globe', scripts: ['data.js', 'main.js'], anchor: FIX.anchor,
+    doorway: { lon: FIX.doorway.lon, lat: FIX.doorway.lat, label: 'Preview fixture', look: { image: 'door.png', size: [26, 26], minZoom: FIX.doorway.minZoom } },
+    taps: true, shelf: 'current',
+  };
+  fs.writeFileSync(path.join(dir, 'prototype.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'data.js'), '/* the fixture\'s shapes (invented) */\nwindow.FIXTURE = ' + JSON.stringify({
+    area: FIX.area, route: FIX.route, outline: FIX.outline, ports: FIX.ports, marks: FIX.marks, sounding: FIX.sounding,
+    chart: FIX.chart, splash: FIX.splash, voyage: FIX.voyage, boatClose: FIX.boatClose }) + ';\n');
+  fs.writeFileSync(path.join(dir, 'main.js'), mainJs());
+  fs.writeFileSync(path.join(dir, 'notes.txt'), 'Read by terra.read.\n');
+  fs.writeFileSync(path.join(dir, 'data', 'facts.json'), JSON.stringify({ read: 'by terra.readJSON', n: 3 }) + '\n');
+  fs.writeFileSync(path.join(dir, 'SOURCES.md'), '# Sources\n\nEverything in this pack is invented for the preview\'s own check; the pictures are drawn by tools/playground/harness_check.cjs.\n');
+  for (const [name, buf] of Object.entries(pictures())) fs.writeFileSync(path.join(dir, name), buf);
+  return dir;
+}
+
+// A pack that reaches for the DOM, as a pack written for a web page would: the preview must say so, as the phone would.
+function writeBroken(base) {
+  const dir = path.join(base, 'preview-broken');
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'prototype.json'), JSON.stringify({ id: 'preview-broken', title: 'Preview broken', summary: 'Reaches for the DOM.',
+    runtime: 3, presentation: 'globe', scripts: ['main.js', 'after.js'], shelf: 'current' }, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'main.js'), '// a web page\'s habit\nterra.log("before");\ndocument.title = "nope";\n');
+  fs.writeFileSync(path.join(dir, 'after.js'), 'terra.log("after: the next script still runs");\nterra.geo.set("x", [], { style: "squiggle" });\n');
+  return dir;
+}
+
+module.exports = { writeFixture, FIX, PACK };
+
+// ---- the check
+const SIZES = { iphone: { width: 393, height: 852 }, ipad: { width: 1032, height: 1376 } };
+const LOCAL = new Set(['127.0.0.1', 'localhost']);
+const SEA = [221, 243, 253];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const blend = (base, rgb, a) => rgb.map((v, i) => base[i] * (1 - a) + v * a);
+const near = (a, b, tol) => a.every((v, i) => Math.abs(v - b[i]) <= tol);
+const close = (a, b, tol) => Math.abs(a - b) <= tol;
+const unitV = (lon, lat) => { const lo = lon * Math.PI / 180, la = lat * Math.PI / 180; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; };
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const angle = (a, b) => Math.acos(Math.max(-1, Math.min(1, dot(a, b))));
+// how far (degrees) a place is from a path of great circles
+function offPath(lon, lat, coords) {
+  const u = unitV(lon, lat);
+  let best = Infinity;
+  for (let i = 0; i + 1 < coords.length; i++) {
+    const a = unitV(...coords[i]), b = unitV(...coords[i + 1]);
+    const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], nl = Math.hypot(...n);
+    const nn = n.map((v) => v / nl), k = dot(u, nn), p = u.map((v, j) => v - k * nn[j]), pl = Math.hypot(...p), q = p.map((v) => v / pl);
+    const along = Math.abs(angle(a, q) + angle(q, b) - angle(a, b)) < 1e-6;
+    best = Math.min(best, along ? Math.asin(Math.abs(k)) : Math.min(angle(u, a), angle(u, b)));
+  }
+  return best * 180 / Math.PI;
+}
+
+async function runDevice(browser, server, device) {
+  const results = [], nonLocal = [], pageErrors = [];
+  const t = (name, ok, detail) => {
+    results.push({ device, name, ok: !!ok, detail: ok ? undefined : detail });
+    console.log(`${ok ? 'ok  ' : 'FAIL'} ${device}: ${name}${ok || detail === undefined ? '' : '  ' + JSON.stringify(detail)}`);
+  };
+  const context = await browser.newContext({ viewport: SIZES[device], deviceScaleFactor: 2 });
+  await context.route((url) => !LOCAL.has(url.hostname) && !['data:', 'blob:', 'about:'].includes(url.protocol), (route) => { nonLocal.push(route.request().url()); route.abort(); });
+  const page = await context.newPage();
+  page.on('pageerror', (e) => pageErrors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(m.text()); });
+  const pg = (fn, arg) => page.evaluate(fn, arg);
+  const echoes = (kind, since) => pg(([k, s]) => window.__playground.log
+    .filter((l) => l.source === 'script' && l.t >= s && l.message.startsWith('echo ' + k + ' '))
+    .map((l) => ({ t: l.t, v: JSON.parse(l.message.slice(6 + k.length)) })), [kind, since || 0]);
+  const clock = () => pg(() => window.__playground.clock());
+  // until the script has echoed `n` of a kind since then (it may come late while the main thread draws)
+  const until = (kind, since, n = 1, ms = 4000) => page.waitForFunction(([k, s0, n0]) => window.__playground.log
+    .filter((l) => l.source === 'script' && l.t >= s0 && l.message.startsWith('echo ' + k + ' ')).length >= n0, [kind, since, n], { timeout: ms }).catch(() => {});
+  // the echoes of what came before, all in (an echo of something sent after them comes after it)
+  const quiet = async () => { const s0 = await clock(); await pg(() => window.__playground.setSettings({})); await until('settings', s0); };
+  const pixel = (x, y) => pg(([x0, y0]) => {
+    const cv = document.getElementById('globe'), k = window.devicePixelRatio || 1;
+    const d = cv.getContext('2d').getImageData(Math.round(x0 * k) - 1, Math.round(y0 * k) - 1, 3, 3).data, s = [0, 0, 0];
+    for (let i = 0; i < 9; i++) for (let j = 0; j < 3; j++) s[j] += d[i * 4 + j];
+    return s.map((v) => Math.round(v / 9));
+  }, [x, y]);
+  const project = (lon, lat) => pg(([a, b]) => window.__playground.project(a, b), [lon, lat]);
+  const camera = () => pg(() => window.__playground.camera());
+  const state = () => pg(() => window.__playground.state());
+  const shot = (name) => page.screenshot({ path: path.join(OUT, `${device}-${name}.png`) });
+  const rest = async () => {          // the camera still, everything loaded, drawn again at rest
+    await page.waitForFunction(() => window.__playground.settled(), null, { timeout: 8000 });
+    await sleep(260);
+    const f = await pg(() => { window.__playground.redraw(); return window.__playground.frame; });
+    await page.waitForFunction((f0) => window.__playground.frame >= f0 + 2, f, { timeout: 4000 });
+  };
+  const anchor = () => pg((a) => window.__playground.flyTo(a.lon, a.lat, a.zoom, 0), FIX.anchor).then(rest);
+  const drag = async (from, to, opts = {}) => {
+    if (opts.shift) await page.keyboard.down('Shift');
+    await page.mouse.move(from[0], from[1]);
+    await page.mouse.down();
+    const steps = opts.steps || 8;
+    for (let i = 1; i <= steps; i++) {
+      await page.mouse.move(from[0] + (to[0] - from[0]) * i / steps, from[1] + (to[1] - from[1]) * i / steps);
+      if (opts.pause) await sleep(opts.pause);
+    }
+    await page.mouse.up();
+    if (opts.shift) await page.keyboard.up('Shift');
+    await sleep(120);
+  };
+
+  try {
+    await page.goto(`${server.url}/preview/${PACK}?device=${device}&bare=1&idleAfter=0`);
+    await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
+    await page.waitForFunction(() => window.__playground.settled() && window.__playground.doorway().visible, null, { timeout: 8000 });
+
+    // ---- before it runs: the doorway on a turning globe
+    const door = await pg(() => {
+      const d = window.__playground.doorway(), cv = document.getElementById('globe'), k = window.devicePixelRatio || 1;
+      // (left of its middle: the terracotta ring, outside the door's arch)
+      const at = (x, y) => Array.from(cv.getContext('2d').getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data).slice(0, 3);
+      return Object.assign(d, { ring: at(d.x - 10 * window.__playground.reading(), d.y), camera: window.__playground.camera() });
+    });
+    t('doorway: drawn before the pack starts, at its place', door.visible && near(door.ring, DOOR, 30), door);
+    t('doorway: the camera starts on it, close enough for its look (minZoom 1.5)', close(door.camera.zoom, FIX.doorway.minZoom + 0.25, 1e-6), door.camera);
+    await shot('doorway');
+    const lon0 = (await camera()).lon;
+    await sleep(500);
+    const lon1 = (await camera()).lon;
+    t('the globe turns west to east when left alone (4° a second)', close(((lon0 - lon1) + 540) % 360 - 180, 2, 0.8), { lon0, lon1 });
+
+    // ---- touching the doorway starts it; the anchor flight
+    const d2 = await pg(() => window.__playground.doorway());
+    await page.mouse.click(d2.x, d2.y);
+    await page.waitForFunction(() => window.__playground.started, null, { timeout: 8000 });
+    await rest();
+    const cam = await camera();
+    t('start: the flight lands on the anchor, and globe.set({ still }) stops the turn', close(cam.lon, FIX.anchor.lon, 0.01) && close(cam.lat, FIX.anchor.lat, 0.01) && close(cam.zoom, FIX.anchor.zoom, 0.001), cam);
+    const chip = await pg(() => ({ chip: !document.getElementById('chip').hidden, open: !document.getElementById('chip-open').hidden, start: !document.getElementById('start').hidden }));
+    t('the chip shows the pack, with Open once it listens for "open"', chip.chip && chip.open && !chip.start, chip);
+
+    // ---- the script's world
+    const world = (await echoes('world'))[0];
+    const w = world && world.v;
+    t('script world: no DOM, no fetch, no XMLHttpRequest, no navigator', w && w.document === 'undefined' && w.fetch === 'undefined' && w.XMLHttpRequest === 'undefined' && w.navigator === 'undefined', w);
+    t('script world: window is the global, runtime 3, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 3 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
+    const read = (await echoes('read'))[0];
+    const r = read && read.v;
+    t('terra.read / readJSON: the pack\'s files; null for a missing one and outside the pack', r && r.notes === 'Read by terra.read.\n' && r.facts && r.facts.n === 3 && r.missing === null && r.escape === null, r);
+    t('setTimeout runs', (await echoes('timeout')).length === 1);
+    const st0 = await echoes('settings');
+    t('settings: heard at start', st0.length >= 1 && st0[st0.length - 1].v.textScale === 1, st0);
+    const time0 = await echoes('time');
+    t('time.show: the first value told by the host', time0.length >= 1 && time0[0].v.by === 'host' && time0[0].v.value === 1850, time0);
+
+    // ---- drawn where terra.project puts it
+    const sea = await project(19.5, 37.0);
+    const seaPx = await pixel(sea.x, sea.y);
+    t('geo area: its fill over the sea (#2E7DAF at 0.28)', near(seaPx, blend(SEA, [46, 125, 175], 0.28), 14), seaPx);
+    const lon = 8.5 + 135 / 240 * 7, lat = 42.5 - 75 / 180 * 5, chartAt = await project(lon, lat), chartPx = await pixel(chartAt.x, chartAt.y);
+    const want = blend(SEA, [214 - 75 / 180 * 40, 168 + 135 / 240 * 50, 112 + 135 / 240 * 90], 0.9);
+    t('picture: lies on the globe by its bounds (a known pixel of it, at 0.9 opacity)', near(chartPx, want, 12), { chartPx, want });
+    const outside = await project(8.0, 40.0), outPx = await pixel(outside.x, outside.y);
+    t('picture: nothing drawn outside its bounds', near(outPx, SEA, 14) || outPx[0] > 230, outPx);
+    let s = await state();
+    const boat = s.sprites.find((x) => x.id === 'boat');
+    const boatPx = boat && boat.drawn ? await pixel(boat.drawn.x, boat.drawn.y) : null;
+    t('sprite: the far look (a dot) where the sprite is, at zoom 3', boat && boat.drawn && boat.drawn.look === 0 && near(boatPx, DOT, 40), { boat, boatPx });
+    const ll0 = boat && await pg(([x, y]) => window.__playground.unproject(x, y), [boat.drawn.x, boat.drawn.y]);
+    t('sprite: on its path of great circles', ll0 && offPath(ll0.lon, ll0.lat, FIX.voyage.coordinates) < 0.15, ll0 && offPath(ll0.lon, ll0.lat, FIX.voyage.coordinates));
+    await sleep(1000);
+    s = await state();
+    const boat2 = s.sprites.find((x) => x.id === 'boat');
+    t('sprite: moves along it', boat2.drawn && Math.hypot(boat2.drawn.x - boat.drawn.x, boat2.drawn.y - boat.drawn.y) > 2, [boat.drawn, boat2.drawn]);
+    await shot('anchor');
+    const ll1 = await pg(([x, y]) => window.__playground.unproject(x, y), [boat2.drawn.x, boat2.drawn.y]);
+    await pg((a) => window.__playground.flyTo(a.lon, a.lat, 5, 0), ll1);
+    await rest();
+    s = await state();
+    const close5 = s.sprites.find((x) => x.id === 'boat');
+    t('sprite: the close look (the boat, its frames) at zoom 5, facing its way', close5.drawn && close5.drawn.look === 1 && close5.drawn.flipped === false, close5);
+    const hull = close5.drawn && await pixel(close5.drawn.x, close5.drawn.y + 4 * s.reading);
+    t('sprite: its picture drawn at the reading scale', hull && near(hull, BOAT_HULL, 50), hull);
+    await shot('zoom-5');
+    await anchor();
+
+    // ---- touch
+    let since = await clock();
+    await page.mouse.click(sea.x, sea.y);
+    await until('touch', since);
+    await sleep(100);
+    let touches = await echoes('touch', since);
+    t('tap on a touchable area: target { layer, index }', touches.length === 1 && touches[0].v.phase === 'tap' && touches[0].v.target && touches[0].v.target.layer === 'sea' && touches[0].v.target.index === 0
+      && close(touches[0].v.lon, 19.5, 0.3) && close(touches[0].v.lat, 37.0, 0.3), touches);
+    s = await state();
+    const panel = await pg(() => ({ shown: !document.getElementById('panel').hidden, title: document.querySelector('#panel h2').textContent,
+      paragraphs: document.querySelectorAll('#panel p').length, link: (document.querySelector('#panel a') || {}).href }));
+    t('panel: shown with its title, paragraphs, a section and sources as links', panel.shown && panel.title === 'A shaded sea (0)' && panel.paragraphs === 3 && panel.link === 'https://github.com/', panel);
+    await shot('panel');
+    since = await clock();
+    await page.click('#panel-close');
+    await until('panel', since);
+    const closed = await echoes('panel', since);
+    t('panel: closing it tells the script { open: false }', closed.length === 1 && closed[0].v.open === false && (await state()).panel === null, closed);
+
+    const port = await project(23.64, 37.94), camBefore = await camera();
+    since = await clock();
+    await drag([port.x, port.y], [port.x + 50, port.y + 30]);
+    await quiet();
+    touches = await echoes('touch', since);
+    const phases = touches.map((x) => x.v.phase);
+    t('a drag that begins on a touchable ring is the pack\'s: began, moved…, ended, with its target',
+      phases[0] === 'began' && phases[phases.length - 1] === 'ended' && phases.includes('moved') && touches.every((x) => x.v.target && x.v.target.layer === 'ports' && x.v.target.index === 0), phases);
+    const camAfter = await camera();
+    t('… and the globe stays put', close(camAfter.lon, camBefore.lon, 1e-9) && close(camAfter.lat, camBefore.lat, 1e-9), [camBefore, camAfter]);
+
+    const empty = await project(5.0, 38.5);
+    since = await clock();
+    await drag([empty.x, empty.y], [empty.x + 40, empty.y]);
+    await quiet();
+    t('any other drag turns the globe, and the pack hears nothing', (await camera()).lon !== camAfter.lon && (await echoes('touch', since)).length === 0);
+    await anchor();
+
+    const landAt = await project(25, 45.5);
+    since = await clock();
+    await page.mouse.click(landAt.x, landAt.y);
+    await until('touch', since);
+    await quiet();
+    touches = await echoes('touch', since);
+    t('with "taps": true, a tap on nothing touchable reaches the pack with target null and its place', touches.length === 1 && touches[0].v.target === null
+      && close(touches[0].v.lon, 25, 0.3) && close(touches[0].v.lat, 45.5, 0.3), touches);
+
+    since = await clock();
+    await page.click('#chip-open');
+    await until('open', since);
+    const opened = await echoes('open', since);
+    t('Open tells the script "open" (the fixture then asks for the one-finger scheme)', opened.length === 1 && opened[0].v.scheme === 'one-finger' && (await state()).scheme === 'one-finger', opened);
+    since = await clock();
+    const camOF = await camera();
+    await drag([empty.x, empty.y], [empty.x + 40, empty.y + 20]);
+    await quiet();
+    touches = await echoes('touch', since);
+    t('one-finger: a drag on nothing touchable is the pack\'s (target null), the globe stays', touches.length >= 3 && touches[0].v.phase === 'began' && touches[0].v.target === null
+      && close((await camera()).lon, camOF.lon, 1e-9), touches.map((x) => x.v.phase));
+    since = await clock();
+    await drag([empty.x, empty.y], [empty.x + 40, empty.y], { shift: true });
+    await quiet();
+    t('one-finger: shift-drag turns the globe', (await camera()).lon !== camOF.lon && (await echoes('touch', since)).length === 0);
+    await page.click('#chip-open');
+    await anchor();
+
+    // ---- the camera told at most 20 times a second while it moves, and once when it stops
+    await page.mouse.move(empty.x, empty.y);
+    await page.mouse.down();
+    since = await clock();
+    for (let i = 1; i <= 60; i++) { await page.mouse.move(empty.x + 2 * i, empty.y + i / 6); await sleep(16); }
+    await page.mouse.up();
+    await sleep(450);
+    await quiet();
+    // (the host's own times: the echoes come back late while the main thread draws)
+    const sent = await pg((s0) => ({ times: window.__playground.cameraSends.filter((x) => x >= s0), lastMove: window.__playground.lastMove() }), since);
+    const moving = sent.times.filter((x) => x <= sent.lastMove + 0.001), span = Math.max(sent.lastMove - since, 0.001);
+    const gaps = moving.slice(1).map((x, i) => x - moving[i]);
+    t('camera events: at most 20 a second while it moves', moving.length >= 5 && Math.min(...gaps) >= 0.0495 && moving.length / span <= 21,
+      { n: moving.length, seconds: +span.toFixed(2), minGap: Math.min(...gaps) });
+    const stops = sent.times.filter((x) => x > sent.lastMove + 0.001), cams = await echoes('camera', since), last = cams[cams.length - 1], camNow = await camera();
+    // (before it, the last move's own report may still be on its way: at most one, behind the throttle's 50 ms and a busy frame)
+    const stop = stops[stops.length - 1], trailing = stops.slice(0, -1);
+    t('camera events: one more when it stops (0.16 s after), with the camera at rest', stop != null && stop - sent.lastMove >= 0.155 && stop - sent.lastMove < 0.3
+      && trailing.length <= 1
+      && last && close(last.v.lon, camNow.lon, 0.002) && close(last.v.lat, camNow.lat, 0.002), { stops, lastMove: sent.lastMove, last, camNow });
+    await anchor();
+
+    // ---- the date
+    const strip = await page.locator('#date-strip').boundingBox();
+    since = await clock();
+    await page.mouse.click(strip.x + strip.width * 0.25, strip.y + strip.height / 2);
+    await until('time', since);
+    let times = await echoes('time', since);
+    t('date strip: a touch along it sets the date (by "reader")', times.length >= 1 && times[0].v.by === 'reader' && close(times[0].v.value, 1825, 0.6), times);
+    since = await clock();
+    await page.keyboard.press('ArrowRight');
+    await until('time', since);
+    await quiet();
+    times = await echoes('time', since);
+    t('date strip: the arrow keys step to the next tick', times.length === 1 && times[0].v.value === 1830, times);
+    since = await clock();
+    await page.click('#date-play');
+    await sleep(600);
+    await page.click('#date-play');
+    await quiet();
+    times = await echoes('time', since);
+    const plays = times.filter((x) => x.v.by === 'play');
+    t('date: play plays (by "play", rising, at most 30 a second) and pauses', times[0] && times[0].v.playing === true && plays.length >= 3 && plays.length <= 22
+      && plays.every((x, i) => i === 0 || x.v.value > plays[i - 1].v.value) && times[times.length - 1].v.playing === false, { n: plays.length, first: times[0], last: times[times.length - 1] });
+    const foot = await pg(() => ({ eyebrow: document.getElementById('foot-eyebrow').textContent, title: document.getElementById('foot-title').textContent }));
+    t('the foot: the caption\'s title above the date', foot.eyebrow === 'Preview fixture' && /^18\d\d$/.test(foot.title), foot);
+    since = await clock();
+    await page.focus('#date-strip');
+    await page.keyboard.press('End');
+    await until('time', since);
+    await quiet();
+    await rest();
+    const hist = await state();
+    await shot('historical');
+    since = await clock();
+    await page.keyboard.press('Home');
+    await until('time', since);
+    await quiet();
+    t('globe.set({ historical }): today\'s borders and names hidden, and back', hist.globe.historical === true && hist.time.value === 1900 && (await state()).globe.historical === false, hist.globe);
+
+    // ---- a script's own flight
+    const piraeus = await project(23.64, 37.94);
+    since = await clock();
+    await page.mouse.click(piraeus.x, piraeus.y);
+    await until('touch', since);
+    await page.waitForFunction(() => !window.__playground.flying() && window.__playground.camera().zoom > 3.9, null, { timeout: 4000 }).catch(() => {});
+    const flown = await camera();
+    t('terra.flyTo: the globe flies where the script says (a port, zoom 4)', close(flown.lon, 23.64, 0.01) && close(flown.lat, 37.94, 0.01) && close(flown.zoom, 4, 0.001), flown);
+    await page.click('#panel-close');
+    await anchor();
+
+    // ---- settings
+    since = await clock();
+    await pg(() => window.__playground.setSettings({ textScale: 1.5 }));
+    await until('settings', since);
+    const st = await echoes('settings', since);
+    t('settings: a change is told to the script', st.length === 1 && st[0].v.textScale === 1.5, st);
+    await pg(() => window.__playground.setSettings({ textScale: 1 }));
+
+    // ---- the end
+    since = await clock();
+    await page.click('#chip-close');
+    await until('close', since);
+    await sleep(200);
+    s = await state();
+    const after = await pg(() => ({ foot: document.getElementById('foot').hidden, panel: document.getElementById('panel').hidden, chip: document.getElementById('chip').hidden,
+      start: document.getElementById('start-button').textContent, door: window.__playground.doorway().visible }));
+    t('✕ ends it: the script hears "close"', (await echoes('close', since)).length === 1);
+    t('… and the globe is as it was: no layers, pictures, sprites, foot, panel; the doorway back', !s.running && !s.geo.length && !s.images.length && !s.sprites.length
+      && after.foot && after.panel && after.chip && after.start === 'Start again' && after.door, { s: { running: s.running, geo: s.geo.length }, after });
+    await rest();
+    await shot('ended');
+
+    const errors = (await pg(() => window.__playground.log)).filter((l) => l.level === 'error');
+    t('no errors logged', errors.length === 0, errors);
+  } catch (e) {
+    t('the check ran to its end', false, e.message.split('\n')[0]);
+  }
+  t('no error on the preview page', pageErrors.length === 0, pageErrors);
+  t('no request left this machine', nonLocal.length === 0, nonLocal);
+  await context.close();
+  return results;
+}
+
+// terra.js's own timers (as in JavaScriptCore), Reduce Motion, and a pack that reaches for the DOM
+async function runOthers(browser, server) {
+  const results = [];
+  const t = (name, ok, detail) => {
+    results.push({ device: 'iphone', name, ok: !!ok, detail: ok ? undefined : detail });
+    console.log(`${ok ? 'ok  ' : 'FAIL'} iphone: ${name}${ok || detail === undefined ? '' : '  ' + JSON.stringify(detail)}`);
+  };
+  const context = await browser.newContext({ viewport: SIZES.iphone, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const logOf = () => page.evaluate(() => window.__playground.log);
+  try {
+    await page.goto(`${server.url}/preview/${PACK}?device=iphone&bare=1&start=1&timers=host`);
+    await page.waitForFunction(() => window.__playground.started, null, { timeout: 10000 });
+    await sleep(400);
+    let log = await logOf();
+    t('timers=host: terra.js keeps the timers through the host, and they fire', log.some((l) => l.message.startsWith('echo timeout ')) && !log.some((l) => l.level === 'error'),
+      log.filter((l) => l.level !== 'info'));
+
+    await page.goto(`${server.url}/preview/${PACK}?device=iphone&bare=1&start=1&reduceMotion=1`);
+    await page.waitForFunction(() => window.__playground.started && window.__playground.settled(), null, { timeout: 10000 });
+    await sleep(300);
+    const s = await page.evaluate(() => ({ cam: window.__playground.camera(), boat: window.__playground.state().sprites.find((x) => x.id === 'boat'), at: window.__playground.project(14.51, 35.9) }));
+    t('Reduce Motion: the anchor is arrived at, not flown to', close(s.cam.lon, FIX.anchor.lon, 1e-6) && close(s.cam.zoom, FIX.anchor.zoom, 1e-6), s.cam);
+    t('Reduce Motion: a sprite holds still at its first place', s.boat && s.boat.drawn && Math.hypot(s.boat.drawn.x - s.at.x, s.boat.drawn.y - s.at.y) < 0.5, s);
+
+    await page.goto(`${server.url}/preview/preview-broken?device=iphone&bare=1`);
+    await page.waitForFunction(() => window.__playground.started, null, { timeout: 10000 });
+    await sleep(300);
+    log = await logOf();
+    const err = log.find((l) => l.level === 'error' && /document/.test(l.message));
+    t('a pack reaching for the DOM fails as on the phone, with its file and line', err && /^main\.js:3:\d+: ReferenceError: document is not defined/.test(err.message), log);
+    t('… and the next script still runs', log.some((l) => /after: the next script still runs/.test(l.message)));
+    t('the host refuses what the contract does not have (an unknown style), as an error', log.some((l) => l.source === 'host' && l.level === 'error' && /squiggle/.test(l.message)));
+  } catch (e) {
+    t('the other checks ran to their end', false, e.message.split('\n')[0]);
+  }
+  await context.close();
+  return results;
+}
+
+if (require.main === module) {
+  if (process.argv.includes('--write')) {
+    const i = process.argv.indexOf('--write'), base = process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? path.resolve(process.argv[i + 1]) : FIXTURE;
+    const dir = writeFixture(base);
+    console.log('wrote ' + path.relative(ROOT, dir) + '/  (node tools/playground/check.cjs ' + PACK + ' --root ' + path.relative(ROOT, base) + ')');
+  } else {
+    (async () => {
+      const { chromium } = require('playwright');
+      const { start } = require('./serve.cjs');
+      const di = process.argv.indexOf('--device'), asked = di >= 0 ? process.argv[di + 1] : null;
+      const devices = asked ? [asked === 'phone' ? 'iphone' : asked] : ['iphone', 'ipad'];
+      if (devices.some((d) => !SIZES[d])) { console.error('--device is iphone or ipad'); process.exit(2); }
+      writeFixture(FIXTURE);
+      const brokenBase = path.join(ROOT, 'build', 'harness-fixture-broken');
+      writeBroken(brokenBase);
+      fs.mkdirSync(OUT, { recursive: true });
+      const server = await start({ port: 0, roots: [FIXTURE, brokenBase] });
+      const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+      const results = [];
+      try {
+        for (const d of devices) results.push(...await runDevice(browser, server, d));
+        results.push(...await runOthers(browser, server));
+      } finally {
+        await browser.close();
+        await server.close();
+      }
+      const failed = results.filter((r) => !r.ok);
+      fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({ passed: !failed.length, results }, null, 2) + '\n');
+      console.log(`${failed.length ? 'FAIL' : 'PASS'}: ${results.length - failed.length} of ${results.length} checks; screenshots in ${path.relative(ROOT, OUT)}/`);
+      process.exit(failed.length ? 1 : 0);
+    })().catch((e) => { console.error(e); process.exit(1); });
+  }
+}
