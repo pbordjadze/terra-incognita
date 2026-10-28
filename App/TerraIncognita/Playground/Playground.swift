@@ -149,6 +149,10 @@ final class Playground {
     /// The chip's ✕: the prototype in front ends; the next one is in front.
     func endFront() { stages.last?.end() }
 
+    /// Ends one prototype if it runs (the workbench switching a pack's revision, or removing its
+    /// downloads: the running copy is the old one, and the next start opens the chosen one).
+    func end(_ id: String) { stages.first { $0.prototype.id == id }?.end() }
+
     /// A stage has ended (`PrototypeStage.end`): off the list, its screen closed, the next in front.
     func stageEnded(_ stage: PrototypeStage) {
         guard let i = stages.firstIndex(where: { $0 === stage }) else { return }

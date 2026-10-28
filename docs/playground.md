@@ -103,7 +103,8 @@ of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
 
 - **Update** a pack: change its files and push; the publisher gives it the next revision only
   if its contents changed. The workbench marks it *available*, downloads it on the next tap and
-  keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again.
+  keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again (a running
+  copy of the pack ends with the switch; the next start opens the chosen revision).
 - **Compare**: start both and touch one, then the other: each comes to the front with its own date
   and caption; the chip's ✕ ends the one in front and the workbench's first row starts the last one
   again; two variants are two packs (`tide-pool`, `tide-pool-b`).

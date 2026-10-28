@@ -192,16 +192,17 @@ struct WorkbenchView: View {
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("revision_\(listing.id)")
             HStack(spacing: 16) {
+                // (a running copy is the old revision: it ends, and the next start opens the chosen one)
                 if listing.canUsePrevious {
-                    Button("Previous") { packs.usePrevious(listing.id) }
+                    Button("Previous") { playground.end(listing.id); packs.usePrevious(listing.id) }
                         .accessibilityIdentifier("previous_\(listing.id)")
                 }
                 if let newest = listing.installedRevisions.first, (listing.current?.revision ?? 0) < newest {
-                    Button("Newest") { packs.useNewest(listing.id) }
+                    Button("Newest") { playground.end(listing.id); packs.useNewest(listing.id) }
                         .accessibilityIdentifier("newest_\(listing.id)")
                 }
                 if !listing.installedRevisions.isEmpty {
-                    Button("Remove downloads", role: .destructive) { packs.removeDownloads(listing.id) }
+                    Button("Remove downloads", role: .destructive) { playground.end(listing.id); packs.removeDownloads(listing.id) }
                         .accessibilityIdentifier("remove_\(listing.id)")
                 }
             }
