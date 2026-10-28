@@ -1,0 +1,5 @@
+Query chain:
+ →Find: Target Application 'com.pbordjadze.terraincognita'
+  ↪︎Find: Descendants matching type Button
+    ↪︎Find: Elements matching predicate '"cloudsButton" IN identifiers'
+      ↪︎Find: First Match

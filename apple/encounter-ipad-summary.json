@@ -1,0 +1,56 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "687AB7EE-DF9A-4A96-878E-7509AB01A80C",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "modelName" : "iPad Pro 13-inch (M5)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 8,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "TerraIncognita · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1793167954.398,
+  "passedTests" : 8,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1793166166.557,
+  "statistics" : [
+    {
+      "subtitle" : "10 test runs",
+      "title" : "1 configuration ran with test repetitions"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertTrue failed - The clouds' switch is beside the workbench button",
+      "targetName" : "TerraIncognitaUITests",
+      "testIdentifier" : 4,
+      "testIdentifierString" : "PlaygroundTests/testCloudsAreOnTheGlobeAndTurnOff()",
+      "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testCloudsAreOnTheGlobeAndTurnOff",
+      "testName" : "testCloudsAreOnTheGlobeAndTurnOff()"
+    }
+  ],
+  "title" : "Test - TerraIncognita",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "100% of failures",
+      "text" : "2 runs of 1 test failed with XCTAssertTrue failed - The clouds' switch is beside the workbench button"
+    }
+  ],
+  "totalTestCount" : 9
+}

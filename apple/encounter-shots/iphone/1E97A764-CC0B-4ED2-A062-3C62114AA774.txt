@@ -1,0 +1,13 @@
+Application, 0x11358ca00, pid: 93496, label: 'Terra Incognita' <App element pid: 93496>
+  Window (Main), 0x11358e800, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 93496, elementOrHash.elementID: 4406446080.4>
+    Other, 0x11358e6c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 93496, elementOrHash.elementID: 4459498496.5>
+      Other, 0x11358d900, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 93496, elementOrHash.elementID: 4460773376.6>
+        Other, 0x11358f700, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 93496, elementOrHash.elementID: 4406445056.7>
+          Other, 0x11358c780, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 93496, elementOrHash.elementID: 4407938112.8>
+            Image, 0x11358f0c0, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 93496, elementOrHash.elementID: 4406379776.9>
+            StaticText, 0x11358e1c0, {{0.0, 653.0}, {402.0, 221.0}}, label: 'THE GLOBE, The whole world, Spin it, pinch it, tap a country.' <AX element pid: 93496, elementOrHash.elementID: 4407935424.10>
+              StaticText, 0x11358e440, {{24.0, 723.0}, {87.3, 15.0}}, label: 'THE GLOBE' <AX element pid: 93496, elementOrHash.elementID: 4407785472.13>
+              StaticText, 0x11358c280, {{24.0, 744.0}, {216.7, 34.3}}, label: 'The whole world' <AX element pid: 93496, elementOrHash.elementID: 4408081728.14>
+              StaticText, 0x11358f480, {{24.0, 784.3}, {204.3, 19.7}}, label: 'Spin it, pinch it, tap a country.' <AX element pid: 93496, elementOrHash.elementID: 4459477440.15>
+            Switch, 0x11358c000, {{240.0, 70.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 93496, elementOrHash.elementID: 4407936320.11>
+            Button, 0x11358cdc0, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 93496, elementOrHash.elementID: 4407937216.12>

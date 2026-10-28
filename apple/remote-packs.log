@@ -1,0 +1,49 @@
+  new      hello-pack  r1  (5 files, 6.6 KB)
+Packed 1 prototype into build/remote-packs (1 changed). Catalog: build/remote-packs/catalog.json
+{
+  "format": 1,
+  "generated": "2026-10-28T01:40:49-04:00",
+  "packs": [
+    {
+      "id": "hello-pack",
+      "revision": 1,
+      "runtime": 1,
+      "title": "Delivery check",
+      "summary": "A test pack: which revision arrived, and from where.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "6318da3a1527dab6d8838f0acf2282ba6359e1e44a92804f19eca60a2cb4f7e8",
+      "path": "packs/hello-pack/r1/",
+      "bytes": 6708,
+      "files": [
+        {
+          "path": "index.html",
+          "bytes": 2680,
+          "sha256": "865bb16675104df58e4d2f097f55576f5a219b25ea218a19632c8e5c169673d0"
+        },
+        {
+          "path": "marker.png",
+          "bytes": 895,
+          "sha256": "1e7e6b94e4ac84d13fc4887079b1780073d8b2a11c6c4a4ef0ffc139c68f31c8"
+        },
+        {
+          "path": "overlay.html",
+          "bytes": 490,
+          "sha256": "3f194ab1637abc6f2fe1498abdff9ca4621b51119559788e9499c6e6ed5a3a4d"
+        },
+        {
+          "path": "overlay.js",
+          "bytes": 2129,
+          "sha256": "b9e24e0e0ee749f788b0e958dc66b957dd07ec01232a97cd8e087ba9394c957a"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 514,
+          "sha256": "c91de1cc4c27217b42064d1ffaeb00a21cc3d34dd9bf4f9860aa63f25c84434c"
+        }
+      ],
+      "published": "2026-10-28T01:40:49-04:00",
+      "retired": false
+    }
+  ]
+}

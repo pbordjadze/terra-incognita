@@ -1,0 +1,14 @@
+Application, 0x1130b5b80, pid: 37026, label: 'Terra Incognita' <App element pid: 37026>
+  Window (Main), 0x1130b6a80, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4335142912.3>
+    Other, 0x1130b5900, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4392390144.4>
+      Other, 0x1130b7ac0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4393633664.5>
+        Other, 0x1130b6080, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4392373312.6>
+          Other, 0x1130b75c0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4335141888.7>
+            Other, 0x1130b6bc0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 37026, elementOrHash.elementID: 4336665024.8>
+              Image, 0x1130b7480, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 37026, elementOrHash.elementID: 4335158528.9>
+              StaticText, 0x1130b5e00, {{0.0, 1169.0}, {1032.0, 207.0}}, label: 'THE GLOBE, The whole world, Spin it, pinch it, tap a country.' <AX element pid: 37026, elementOrHash.elementID: 4392371968.10>
+                StaticText, 0x1130b7d40, {{24.0, 1239.0}, {87.5, 15.0}}, label: 'THE GLOBE' <AX element pid: 37026, elementOrHash.elementID: 4336596544.14>
+                StaticText, 0x11314fac0, {{24.0, 1260.0}, {216.5, 34.5}}, label: 'The whole world' <AX element pid: 37026, elementOrHash.elementID: 4336597440.15>
+                StaticText, 0x11314cdc0, {{24.0, 1300.5}, {204.5, 19.5}}, label: 'Spin it, pinch it, tap a country.' <AX element pid: 37026, elementOrHash.elementID: 4336598336.16>
+              Switch, 0x11314d400, {{870.0, 8.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 37026, elementOrHash.elementID: 4336548736.11>
+              Button, 0x11314fe80, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 37026, elementOrHash.elementID: 4336075200.12>
