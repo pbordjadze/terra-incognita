@@ -106,9 +106,10 @@ struct GlobeFoot: View {
         .padding(.horizontal, 24)
         .padding(.top, 70)
         .padding(.bottom, 14)
+        // (a shape style, so the paper reaches the screen's edge below the date, as the caption's does)
         .background(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
-                                           .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom)
-            .allowsHitTesting(false))
+                                           .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom),
+                    ignoresSafeAreaEdges: .bottom)
     }
 
     private var scrim: Color {
@@ -172,8 +173,15 @@ private struct DateStrip: View {
                 }
                 .contentShape(Rectangle())
                 .gesture(DragGesture(minimumDistance: 0).onChanged { drag in
-                    let f = Double(min(max(drag.location.x / max(g.size.width, 1), 0), 1))
-                    onTime(time.min + f * (time.max - time.min))
+                    let x = drag.location.x
+                    // a touch within a fingertip of a tick lands on it: the dated map, the station
+                    let near = time.ticks.min { abs(position($0.at, width: g.size.width) - x) < abs(position($1.at, width: g.size.width) - x) }
+                    if let near, abs(position(near.at, width: g.size.width) - x) <= 10 {
+                        onTime(near.at)
+                    } else {
+                        let f = Double(min(max(x / max(g.size.width, 1), 0), 1))
+                        onTime(time.min + f * (time.max - time.min))
+                    }
                 })
             }
             .frame(height: 44)

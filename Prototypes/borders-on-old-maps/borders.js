@@ -9,7 +9,13 @@
   var maps = D.snapshots.slice().sort(function (a, b) { return a.year - b.year; });
   var land = (D.land && D.land.features) || [];
   // the 1945 map's occupation zones, named as a first-time reader would recognise them
-  var NAMES = { 'Germany (UK)': 'British zone', 'Germany (USA)': 'American zone', 'Germany (France)': 'French zone', 'Germany (Soviet)': 'Soviet zone' };
+  var NAMES = { 'Germany (UK)': 'British zone', 'Germany (USA)': 'American zone', 'Germany (France)': 'French zone', 'Germany (Soviet)': 'Soviet zone',
+    // a name that would run across the sea onto another country, and today's spelling
+    'United Kingdom of Great Britain and Ireland': 'United Kingdom', 'Byelarus': 'Belarus' };
+  // where the maps' Europe lies: a country whose largest part centres outside it (the Russian Empire,
+  // the USSR) is named from its part inside it
+  var EUROPE = [-15, 33, 45, 72];
+  function inEurope(p) { return p[0] >= EUROPE[0] && p[0] <= EUROPE[2] && p[1] >= EUROPE[1] && p[1] <= EUROPE[3]; }
 
   var year = 1945, chosen = 'poland', shownMap = null, shownChosen = null, lastNote = null, notice = null;
 
@@ -54,8 +60,17 @@
       polygons(f.geometry).forEach(function (poly) {
         var s = ringStats(poly[0]);
         c.area += s.area;
-        if (s.area > c.best && inRing(s.at, poly[0])) { c.best = s.area; c.at = s.at; }
+        if (s.area > c.best && inRing(s.at, poly[0])) { c.best = s.area; c.at = s.at; c.ring = poly[0]; }
       });
+    });
+    Object.keys(bySubject).forEach(function (k) {
+      var c = bySubject[k];
+      if (!c.at || inEurope(c.at)) return;
+      var inside = (c.ring || []).filter(inEurope);
+      if (!inside.length) { c.at = null; return; }
+      var at = [inside.reduce(function (a, p) { return a + p[0]; }, 0) / inside.length,
+                inside.reduce(function (a, p) { return a + p[1]; }, 0) / inside.length];
+      c.at = c.features.some(function (f) { return contains(f.geometry, at); }) ? at : null;
     });
     m.countries = Object.keys(bySubject).map(function (k) { return bySubject[k]; })
       .sort(function (a, b) { return b.area - a.area; });
@@ -71,6 +86,18 @@
     return null;
   }
   function geometries(c) { return c ? c.features.map(function (f) { return f.geometry; }) : []; }
+  /** Whether two maps draw a country almost alike (its dashed outline would hide under the line). */
+  function alike(a, b) {
+    var ca = centre(a), cb = centre(b);
+    return Math.abs(a.area - b.area) <= 0.02 * Math.max(a.area, b.area) && Math.hypot(ca[0] - cb[0], ca[1] - cb[1]) < 0.15;
+  }
+  function centre(c) {
+    var x = 0, y = 0, w = 0;
+    c.features.forEach(function (f) { polygons(f.geometry).forEach(function (poly) {
+      var s = ringStats(poly[0]); x += s.at[0] * s.area; y += s.at[1] * s.area; w += s.area;
+    }); });
+    return w ? [x / w, y / w] : [0, 0];
+  }
   function yearLabel(y) { var r = Math.round(y); return r < 1 ? (1 - r) + ' BCE' : String(r); }
 
   function say() {
@@ -79,12 +106,14 @@
     var only = m.year < 1700 ? ' The maps this early show only the Ottoman Empire.' : '';
     var c = chosen ? country(m, chosen) : null, title, text;
     if (notice) {
-      title = notice.title; text = notice.text;
+      // (a touch where the maps draw nothing leaves the chosen country chosen, and named)
+      title = c ? c.name : notice.title; text = notice.text;
     } else if (c) {
       var prior = before(m, chosen);
       title = c.name;
-      text = 'As drawn on ' + which + '.' +
-        (prior ? ' The dashed line is ' + prior.country.name + ' on the ' + prior.map.year + ' map.' : '') + only;
+      text = 'As drawn on ' + which + '.' + (!prior ? '' : alike(c, prior.country)
+        ? ' The ' + prior.map.year + ' map draws it almost the same.'
+        : ' The dashed line is ' + prior.country.name + ' on the ' + prior.map.year + ' map.') + only;
     } else if (chosen) {
       var known = maps.map(function (k) { return country(k, chosen); }).filter(Boolean)[0];
       title = known ? known.name : 'Borders on old maps';
@@ -110,7 +139,7 @@
       shownChosen = chosen;
       var c = chosen ? country(m, chosen) : null, prior = chosen ? before(m, chosen) : null;
       terra.geo.set('chosen', geometries(c), { style: 'area', color: '#C17846' });
-      terra.geo.set('before', prior ? geometries(prior.country) : [], { style: 'ghost' });
+      terra.geo.set('before', prior && (!c || !alike(c, prior.country)) ? geometries(prior.country) : [], { style: 'ghost' });
       // names, larger countries first; the chosen one before all, so it always has room
       var named = m.countries.filter(function (k) { return k.at; });
       named.sort(function (a, b) { return (b.id === chosen) - (a.id === chosen) || b.area - a.area; });
@@ -124,6 +153,9 @@
   terra.on('time', function (e) {
     year = e.value;
     notice = null;
+    // opened on a date carried from elsewhere where the chosen country isn't drawn: choose nothing,
+    // so the first words say what this is rather than what is missing
+    if (e.by === 'host' && chosen && !country(nearestMap(year), chosen)) chosen = null;
     draw();
   });
 

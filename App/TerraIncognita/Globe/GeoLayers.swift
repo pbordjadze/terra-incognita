@@ -198,14 +198,20 @@ final class GeoLayerView: UIView {
                 guard let text = s.label, !text.isEmpty, let v = s.parts.first?.first, let q = p.point(v, facing: 0.3),
                       reach.contains(q), let image = picture(text, layer: layer, reading: k) else { continue }
                 let w = CGFloat(image.width) / contentScale, h = CGFloat(image.height) / contentScale
-                let frame = CGRect(x: q.x + layer.offset.dx * k - w / 2, y: q.y + layer.offset.dy * k - h / 2, width: w, height: h)
-                let room = frame.insetBy(dx: -0.2 * CGFloat(layer.size) * k, dy: -0.2 * CGFloat(layer.size) * k)
-                guard bounds.contains(frame), !placed.contains(where: { $0.intersects(room) }) else { continue }
-                placed.append(room)
+                // at its place, or just above or below it when a name already there would hide it
+                let margin = -0.2 * CGFloat(layer.size) * k
+                var fit: (frame: CGRect, room: CGRect)?
+                for shift: CGFloat in [0, -0.85, 0.85] {
+                    let f = CGRect(x: q.x + layer.offset.dx * k - w / 2, y: q.y + layer.offset.dy * k - h / 2 + shift * h, width: w, height: h)
+                    let room = f.insetBy(dx: margin, dy: margin)
+                    if bounds.contains(f), !placed.contains(where: { $0.intersects(room) }) { fit = (f, room); break }
+                }
+                guard let fit else { continue }
+                placed.append(fit.room)
                 let l = CALayer()
                 l.contents = image
                 l.contentsScale = contentScale
-                l.frame = frame
+                l.frame = fit.frame
                 host.addSublayer(l)
             }
         case .symbol:
