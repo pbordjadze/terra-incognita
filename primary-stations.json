@@ -1,0 +1,772 @@
+{
+  "source": {
+    "id": "pangaea849072",
+    "url": "https://doi.pangaea.de/10.1594/PANGAEA.849072?format=textfile",
+    "doi": "10.1594/PANGAEA.849072",
+    "citation": "Murray, John; Renard, A F (1891): Annotated record of the detailed examination of Mn deposits from the HMS Challenger stations. PANGAEA.",
+    "license": "CC-BY-3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "inputSha256": "b9597170e4c1494e83937d362b8cc0d5d076d9d53949421d853019c7e3b9fa13"
+  },
+  "observations": [
+    {
+      "station": "CHA-VIIB",
+      "date": "1873-02-02",
+      "lat": 32.1,
+      "lon": -15.125,
+      "depth": 3653,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-3",
+      "date": "1873-02-18",
+      "lat": 25.75,
+      "lon": -20.233333,
+      "depth": 2504,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-7",
+      "date": "1873-02-24",
+      "lat": 23.383333,
+      "lon": -31.516667,
+      "depth": 4516,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-8",
+      "date": "1873-02-25",
+      "lat": 23.2,
+      "lon": -32.933333,
+      "depth": 4433,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-9",
+      "date": "1873-02-26",
+      "lat": 23.383333,
+      "lon": -35.183333,
+      "depth": 5172,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-12",
+      "date": "1873-03-03",
+      "lat": 21.95,
+      "lon": -43.483333,
+      "depth": 3325,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-13",
+      "date": "1873-03-04",
+      "lat": 21.65,
+      "lon": -44.65,
+      "depth": 3120,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-15",
+      "date": "1873-03-06",
+      "lat": 20.816667,
+      "lon": -48.75,
+      "depth": 3818,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-16",
+      "date": "1873-03-07",
+      "lat": 20.65,
+      "lon": -50.55,
+      "depth": 3998,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-18",
+      "date": "1873-03-10",
+      "lat": 19.683333,
+      "lon": -55.216667,
+      "depth": 4351,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-19",
+      "date": "1873-03-11",
+      "lat": 19.25,
+      "lon": -57.783333,
+      "depth": 4926,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-26",
+      "date": "1873-03-27",
+      "lat": 21.433333,
+      "lon": -65.266667,
+      "depth": 4598,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-28",
+      "date": "1873-03-29",
+      "lat": 24.65,
+      "lon": -65.416667,
+      "depth": 4680,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-29",
+      "date": "1873-03-31",
+      "lat": 27.816667,
+      "lon": -64.983333,
+      "depth": 4433,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-38",
+      "date": "1873-04-25",
+      "lat": 33.05,
+      "lon": -66.533333,
+      "depth": 4269,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-39",
+      "date": "1873-04-27",
+      "lat": 34.05,
+      "lon": -67.533333,
+      "depth": 4680,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-40",
+      "date": "1873-04-28",
+      "lat": 34.85,
+      "lon": -68.5,
+      "depth": 4392,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-46",
+      "date": "1873-05-06",
+      "lat": 40.283333,
+      "lon": -66.8,
+      "depth": 2217,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-61",
+      "date": "1873-06-17",
+      "lat": 34.9,
+      "lon": -56.633333,
+      "depth": 4680,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-63",
+      "date": "1873-06-19",
+      "lat": 35.483333,
+      "lon": -50.883333,
+      "depth": 4516,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-64",
+      "date": "1873-06-20",
+      "lat": 35.583333,
+      "lon": -50.45,
+      "depth": 4433,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-65",
+      "date": "1873-06-21",
+      "lat": 36.55,
+      "lon": -47.966667,
+      "depth": 4433,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-70",
+      "date": "1873-06-26",
+      "lat": 38.416667,
+      "lon": -35.833333,
+      "depth": 2750,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-71",
+      "date": "1873-06-27",
+      "lat": 38.3,
+      "lon": -34.8,
+      "depth": 2750,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-85",
+      "date": "1873-07-19",
+      "lat": 28.7,
+      "lon": -18.1,
+      "depth": 1847,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-86",
+      "date": "1873-07-21",
+      "lat": 25.766667,
+      "lon": -20.566667,
+      "depth": 3777,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-88",
+      "date": "1873-07-22",
+      "lat": 23.966667,
+      "lon": -21.3,
+      "depth": 3777,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-95",
+      "date": "1873-08-10",
+      "lat": 13.6,
+      "lon": -22.816667,
+      "depth": 3777,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-101",
+      "date": "1873-08-19",
+      "lat": 5.8,
+      "lon": -14.333333,
+      "depth": 4105,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-104",
+      "date": "1873-08-23",
+      "lat": 2.416667,
+      "lon": -20.016667,
+      "depth": 4105,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-106",
+      "date": "1873-08-25",
+      "lat": 1.783333,
+      "lon": -24.433333,
+      "depth": 3038,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-130",
+      "date": "1873-10-03",
+      "lat": -26.25,
+      "lon": -32.933333,
+      "depth": 3859,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-131",
+      "date": "1873-10-06",
+      "lat": -29.583333,
+      "lon": -28.15,
+      "depth": 3736,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-138",
+      "date": "1873-10-25",
+      "lat": -36.366667,
+      "lon": 8.2,
+      "depth": 4351,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-143",
+      "date": "1873-12-19",
+      "lat": -36.8,
+      "lon": 19.4,
+      "depth": 3120,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-144",
+      "date": "1873-12-24",
+      "lat": -45.95,
+      "lon": 34.65,
+      "depth": 2578,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-147",
+      "date": "1873-12-30",
+      "lat": -46.266667,
+      "lon": 48.45,
+      "depth": 2627,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-159",
+      "date": "1874-03-10",
+      "lat": -47.416667,
+      "lon": 130.366667,
+      "depth": 3530,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-160",
+      "date": "1874-03-13",
+      "lat": -42.7,
+      "lon": 134.166667,
+      "depth": 4269,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-165",
+      "date": "1874-06-17",
+      "lat": -34.833333,
+      "lon": 155.466667,
+      "depth": 4269,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-166C",
+      "date": "1874-06-24",
+      "lat": -39.35,
+      "lon": 171.466667,
+      "depth": 657,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-175",
+      "date": "1874-08-12",
+      "lat": -19.033333,
+      "lon": 177.166667,
+      "depth": 2217,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-176",
+      "date": "1874-08-15",
+      "lat": -18.5,
+      "lon": 173.866667,
+      "depth": 2381,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-181",
+      "date": "1874-08-25",
+      "lat": -13.833333,
+      "lon": 151.816667,
+      "depth": 4006,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-184",
+      "date": "1874-08-29",
+      "lat": -12.133333,
+      "lon": 145.166667,
+      "depth": 2299,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-189",
+      "date": "1874-09-11",
+      "lat": -9.583333,
+      "lon": 137.916667,
+      "depth": 48,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-195",
+      "date": "1874-10-03",
+      "lat": -4.35,
+      "lon": 129.116667,
+      "depth": 2340,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-196",
+      "date": "1874-10-13",
+      "lat": -0.808333,
+      "lon": 126.975,
+      "depth": 1355,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-215",
+      "date": "1875-02-12",
+      "lat": 4.316667,
+      "lon": 130.25,
+      "depth": 4187,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-218",
+      "date": "1875-03-01",
+      "lat": -2.55,
+      "lon": 144.066667,
+      "depth": 1757,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-220",
+      "date": "1875-03-11",
+      "lat": -0.7,
+      "lon": 147,
+      "depth": 1806,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-222",
+      "date": "1875-03-16",
+      "lat": 2.25,
+      "lon": 146.266667,
+      "depth": 4023,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-226",
+      "date": "1875-03-25",
+      "lat": 14.733333,
+      "lon": 142.216667,
+      "depth": 3777,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-230",
+      "date": "1875-04-05",
+      "lat": 26.483333,
+      "lon": 137.95,
+      "depth": 3982,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-232",
+      "date": "1875-05-12",
+      "lat": 35.183333,
+      "lon": 139.466667,
+      "depth": 566,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-239",
+      "date": "1875-06-19",
+      "lat": 35.3,
+      "lon": 147.15,
+      "depth": 5952,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-240",
+      "date": "1875-06-21",
+      "lat": 35.333333,
+      "lon": 153.65,
+      "depth": 4762,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-241",
+      "date": "1875-06-23",
+      "lat": 35.683333,
+      "lon": 157.7,
+      "depth": 3777,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-246",
+      "date": "1875-07-02",
+      "lat": 36.166667,
+      "lon": 178,
+      "depth": 3366,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-247",
+      "date": "1875-07-03",
+      "lat": 35.8,
+      "lon": -179.95,
+      "depth": 4154,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-251",
+      "date": "1875-07-10",
+      "lat": 37.616667,
+      "lon": -163.433333,
+      "depth": 4844,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-252",
+      "date": "1875-07-12",
+      "lat": 37.866667,
+      "lon": -160.283333,
+      "depth": 4499,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-254",
+      "date": "1875-07-17",
+      "lat": 35.216667,
+      "lon": -154.716667,
+      "depth": 4967,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-255",
+      "date": "1875-07-19",
+      "lat": 32.466667,
+      "lon": -154.55,
+      "depth": 4680,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-269",
+      "date": "1875-09-02",
+      "lat": 5.9,
+      "lon": -147.033333,
+      "depth": 4187,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-270",
+      "date": "1875-09-04",
+      "lat": 2.566667,
+      "lon": -149.15,
+      "depth": 4803,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-272",
+      "date": "1875-09-08",
+      "lat": -3.8,
+      "lon": -152.933333,
+      "depth": 4269,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-273",
+      "date": "1875-09-09",
+      "lat": -5.183333,
+      "lon": -152.933333,
+      "depth": 3859,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-274",
+      "date": "1875-09-11",
+      "lat": -7.416667,
+      "lon": -152.25,
+      "depth": 4516,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-276",
+      "date": "1875-09-16",
+      "lat": -13.466667,
+      "lon": -149.5,
+      "depth": 3859,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-280",
+      "date": "1875-10-04",
+      "lat": -18.666667,
+      "lon": -149.866667,
+      "depth": 3185,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-281",
+      "date": "1875-10-06",
+      "lat": -22.35,
+      "lon": -150.283333,
+      "depth": 3916,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-283",
+      "date": "1875-10-09",
+      "lat": -26.15,
+      "lon": -145.283333,
+      "depth": 3407,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-285",
+      "date": "1875-10-14",
+      "lat": -32.6,
+      "lon": -137.716667,
+      "depth": 3900,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-286",
+      "date": "1875-10-16",
+      "lat": -33.483333,
+      "lon": -133.366667,
+      "depth": 3834,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-287",
+      "date": "1875-10-19",
+      "lat": -36.533333,
+      "lon": -132.866667,
+      "depth": 3941,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-289",
+      "date": "1875-10-23",
+      "lat": -39.683333,
+      "lon": -131.383333,
+      "depth": 4187,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-292",
+      "date": "1875-10-29",
+      "lat": -38.716667,
+      "lon": -112.516667,
+      "depth": 2627,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-293",
+      "date": "1875-11-01",
+      "lat": -39.066667,
+      "lon": -105.083333,
+      "depth": 3325,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-296",
+      "date": "1875-11-09",
+      "lat": -38.1,
+      "lon": -88.033333,
+      "depth": 2997,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-297",
+      "date": "1875-11-11",
+      "lat": -37.483333,
+      "lon": -83.116667,
+      "depth": 2915,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-298",
+      "date": "1875-11-17",
+      "lat": -34.116667,
+      "lon": -73.933333,
+      "depth": 3653,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-299",
+      "date": "1875-12-14",
+      "lat": -33.516667,
+      "lon": -74.716667,
+      "depth": 3547,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-300",
+      "date": "1875-12-17",
+      "lat": -33.7,
+      "lon": -78.3,
+      "depth": 2258,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-302",
+      "date": "1875-12-28",
+      "lat": -42.716667,
+      "lon": -82.183333,
+      "depth": 2381,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-330",
+      "date": "1876-03-08",
+      "lat": -37.75,
+      "lon": -33,
+      "depth": 4006,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-335",
+      "date": "1876-03-16",
+      "lat": -32.4,
+      "lon": -13.083333,
+      "depth": 2340,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-337",
+      "date": "1876-03-19",
+      "lat": -24.633333,
+      "lon": -13.6,
+      "depth": 2036,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-339",
+      "date": "1876-03-23",
+      "lat": -17.433333,
+      "lon": -13.866667,
+      "depth": 2323,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-343",
+      "date": "1876-03-27",
+      "lat": -8.05,
+      "lon": -14.45,
+      "depth": 698,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-344",
+      "date": "1876-04-03",
+      "lat": -7.9055,
+      "lon": -14.472167,
+      "depth": 690,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-347",
+      "date": "1876-04-07",
+      "lat": -0.25,
+      "lon": -14.416667,
+      "depth": 3695,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-353",
+      "date": "1876-05-03",
+      "lat": 26.35,
+      "lon": -33.616667,
+      "depth": 4869,
+      "source": "pangaea849072"
+    },
+    {
+      "station": "CHA-354",
+      "date": "1876-05-06",
+      "lat": 32.683333,
+      "lon": -36.1,
+      "depth": 2750,
+      "source": "pangaea849072"
+    }
+  ],
+  "notes": [
+    "Selected sampling-event metadata, not a complete ship log or documented route.",
+    "Timestamps reduced to source dates. Midnight sampling times are not asserted.",
+    "Depth is negative event elevation, not an interpolated seafloor profile.",
+    "Gaps remain explicit. Connecting observations is illustrative, not navigation evidence.",
+    "Optional export only: does not overwrite or automatically extend curated runtime data."
+  ]
+}

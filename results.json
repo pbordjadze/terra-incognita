@@ -1,0 +1,453 @@
+{
+  "passed": true,
+  "tests": [
+    {
+      "label": "chromium/phone",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "actual CDP two-finger time pinch",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/chromium-phone-opening.png",
+        "build/ship-report/chromium-phone-ship-scale.png",
+        "build/ship-report/chromium-phone-large-text.png",
+        "build/ship-report/chromium-phone-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 787975748,
+        "later": 1467771927
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    },
+    {
+      "label": "chromium/ipad-landscape",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "actual CDP two-finger time pinch",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/chromium-ipad-landscape-opening.png",
+        "build/ship-report/chromium-ipad-landscape-ship-scale.png",
+        "build/ship-report/chromium-ipad-landscape-large-text.png",
+        "build/ship-report/chromium-ipad-landscape-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 4072264015,
+        "later": 1101066363
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    },
+    {
+      "label": "chromium/ipad-portrait",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "actual CDP two-finger time pinch",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/chromium-ipad-portrait-opening.png",
+        "build/ship-report/chromium-ipad-portrait-ship-scale.png",
+        "build/ship-report/chromium-ipad-portrait-large-text.png",
+        "build/ship-report/chromium-ipad-portrait-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 3222915073,
+        "later": 4193099519
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    },
+    {
+      "label": "webkit/phone",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "WebKit pointer pinch handler fallback",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/webkit-phone-opening.png",
+        "build/ship-report/webkit-phone-ship-scale.png",
+        "build/ship-report/webkit-phone-large-text.png",
+        "build/ship-report/webkit-phone-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 3570548123,
+        "later": 1084982504
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    },
+    {
+      "label": "webkit/ipad-landscape",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "WebKit pointer pinch handler fallback",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/webkit-ipad-landscape-opening.png",
+        "build/ship-report/webkit-ipad-landscape-ship-scale.png",
+        "build/ship-report/webkit-ipad-landscape-large-text.png",
+        "build/ship-report/webkit-ipad-landscape-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 1808599787,
+        "later": 3446267589
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    },
+    {
+      "label": "webkit/ipad-portrait",
+      "passed": true,
+      "steps": [
+        "injected runtime and real map surface",
+        "selection changes time scale without rewinding the world",
+        "attention changes pace without stopping playback",
+        "dated positions and reversible movement share one clock",
+        "clicking the visible ship selects it at the current date",
+        "sparse evidence stays a gap instead of an invented route",
+        "outside the voyage has an explicit return without resetting attention",
+        "follow control is explicit and can be turned off",
+        "timeline drag changes day while map pan keeps it",
+        "timeline zoom keeps map camera and current day",
+        "WebKit pointer pinch handler fallback",
+        "keyboard map movement pauses playback",
+        "backgrounding and Reduce Motion hold the same clock",
+        "large text keeps controls reachable",
+        "empire overview is the same date at a different scale",
+        "runtime close removes handlers and animation"
+      ],
+      "errors": [],
+      "screenshots": [
+        "build/ship-report/webkit-ipad-portrait-opening.png",
+        "build/ship-report/webkit-ipad-portrait-ship-scale.png",
+        "build/ship-report/webkit-ipad-portrait-large-text.png",
+        "build/ship-report/webkit-ipad-portrait-empire-scale.png"
+      ],
+      "scaleComparison": {
+        "ship": 30,
+        "empire": 36524
+      },
+      "motionHashes": {
+        "earlier": 2851712611,
+        "later": 1946096787
+      },
+      "evidenceGap": {
+        "days": 122,
+        "status": "No included positions between 1874-10-13 and 1875-02-12"
+      }
+    }
+  ],
+  "failures": [],
+  "screenshots": [
+    "build/ship-report/chromium-phone-opening.png",
+    "build/ship-report/chromium-phone-ship-scale.png",
+    "build/ship-report/chromium-phone-large-text.png",
+    "build/ship-report/chromium-phone-empire-scale.png",
+    "build/ship-report/chromium-ipad-landscape-opening.png",
+    "build/ship-report/chromium-ipad-landscape-ship-scale.png",
+    "build/ship-report/chromium-ipad-landscape-large-text.png",
+    "build/ship-report/chromium-ipad-landscape-empire-scale.png",
+    "build/ship-report/chromium-ipad-portrait-opening.png",
+    "build/ship-report/chromium-ipad-portrait-ship-scale.png",
+    "build/ship-report/chromium-ipad-portrait-large-text.png",
+    "build/ship-report/chromium-ipad-portrait-empire-scale.png",
+    "build/ship-report/webkit-phone-opening.png",
+    "build/ship-report/webkit-phone-ship-scale.png",
+    "build/ship-report/webkit-phone-large-text.png",
+    "build/ship-report/webkit-phone-empire-scale.png",
+    "build/ship-report/webkit-ipad-landscape-opening.png",
+    "build/ship-report/webkit-ipad-landscape-ship-scale.png",
+    "build/ship-report/webkit-ipad-landscape-large-text.png",
+    "build/ship-report/webkit-ipad-landscape-empire-scale.png",
+    "build/ship-report/webkit-ipad-portrait-opening.png",
+    "build/ship-report/webkit-ipad-portrait-ship-scale.png",
+    "build/ship-report/webkit-ipad-portrait-large-text.png",
+    "build/ship-report/webkit-ipad-portrait-empire-scale.png"
+  ],
+  "requests": [
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "chromium/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "chromium/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "chromium/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "webkit/phone",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "webkit/ipad-landscape",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/index.html?mode=screen"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/_runtime/terra.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/ship.css"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/core.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/data.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/voyage.js"
+    },
+    {
+      "test": "webkit/ipad-portrait",
+      "url": "http://127.0.0.1:44859/pack/one-ship-two-rhythms/atlas.js"
+    }
+  ],
+  "notes": [
+    "Chromium pinch checks use CDP native touch input, not synthetic PointerEvents.",
+    "WebKit pinch checks dispatch PointerEvents with a temporary pointer-capture shim; they verify handler mathematics, not physical-device multitouch delivery.",
+    "Simulator/browser checks do not establish physical iPad or iPhone performance."
+  ]
+}
