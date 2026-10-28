@@ -69,6 +69,15 @@ final class GeoLayerView: UIView {
 
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool { false }
 
+    /// VoiceOver activated a touchable feature: (layer id, feature index, where it is on screen).
+    var onActivate: ((String, Int, CGPoint) -> Void)?
+
+    /// A touchable named place as VoiceOver finds it: a button that touches it.
+    private final class TouchElement: UIAccessibilityElement {
+        var activate: (() -> Void)?
+        override func accessibilityActivate() -> Bool { activate?(); return activate != nil }
+    }
+
     // MARK: what the page asks
 
     /// Adds or replaces a layer (false: over the budget, nothing changed).
@@ -131,6 +140,32 @@ final class GeoLayerView: UIView {
             draw(layer, in: host, projection: projection, reading: reading, placed: &placed)
         }
         CATransaction.commit()
+        exposeTouchables(projection: projection, zoom: stage.camera.zoom, reading: reading)
+    }
+
+    /// The touchable features that have a name and are on screen, as VoiceOver buttons (so a pack's
+    /// touchable places can be reached without seeing or aiming at them).
+    private func exposeTouchables(projection p: Projection, zoom: Double, reading k: CGFloat) {
+        // (made only while VoiceOver runs: they cost nothing a frame otherwise)
+        guard UIAccessibility.isVoiceOverRunning else {
+            if accessibilityElements?.isEmpty == false { accessibilityElements = [] }
+            return
+        }
+        var elements: [Any] = []
+        for layer in layers where layer.touchable && zoom >= layer.minZoom && zoom <= layer.maxZoom {
+            for s in layer.shapes where s.kind == .points {
+                guard let name = s.label, !name.isEmpty, let v = s.parts.first?.first, let q = p.point(v, facing: 0.1),
+                      bounds.contains(q), elements.count < 200 else { continue }
+                let e = TouchElement(accessibilityContainer: self)
+                e.accessibilityLabel = name
+                e.accessibilityTraits = .button
+                e.accessibilityFrameInContainerSpace = CGRect(x: q.x - 22 * k, y: q.y - 22 * k, width: 44 * k, height: 44 * k)
+                let id = layer.id, feature = s.feature
+                e.activate = { [weak self] in self?.onActivate?(id, feature, q) }
+                elements.append(e)
+            }
+        }
+        accessibilityElements = elements
     }
 
     private func draw(_ layer: Layer, in host: CALayer, projection p: Projection, reading k: CGFloat, placed: inout [CGRect]) {

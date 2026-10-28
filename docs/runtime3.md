@@ -88,7 +88,8 @@ Also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`,
 for `border`, `area`, `ghost` and `track`: a river's order, a traced way) and **`touchable: true`**: its features take touches
 (points and labels within 22 points, lines within 14, areas inside). Setting an id again replaces
 it; the first set of an id fixes its place in the drawing order. Budgets: 100,000 vertices, 64
-layers, 400 named or pictured places a layer.
+layers, 400 named or pictured places a layer. A touchable place with a name (`properties.label`)
+is a VoiceOver button that touches it, so it can be reached without seeing or aiming at it.
 
 ## Pictures lying on the globe: `terra.images` (new in 3)
 

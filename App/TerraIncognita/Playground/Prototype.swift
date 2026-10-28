@@ -278,6 +278,13 @@ final class PrototypeStage {
         let view = GeoLayerView()
         geo = view
         globe?.addOverlay(view)
+        // its touchable named places are VoiceOver buttons that touch them
+        view.onActivate = { [weak self, weak view] id, index, point in
+            guard let self, let globe = self.globe, view != nil else { return }
+            let place = globe.unprojectedPlace(point)
+            self.script?.touch("tap", target: ["layer": id, "index": index], at: point, place: place)
+        }
+        globe?.accessibleOverlays.append(view)
         // (geography lies above any pictures, whichever was asked for first)
         if let images { view.superview?.insertSubview(view, aboveSubview: images) }
         return view
@@ -385,6 +392,7 @@ final class PrototypeStage {
         caption = nil
         geo?.clear()
         geo?.removeFromSuperview()
+        if let geo { globe?.accessibleOverlays.removeAll { $0 === geo } }
         geo = nil
         if globeChanged {
             globe?.historicalReference = false

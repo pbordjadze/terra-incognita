@@ -122,6 +122,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         project(lon: lon, lat: lat)
     }
 
+    /// The place under a point of this view, or nil off the globe.
+    func unprojectedPlace(_ point: CGPoint) -> (lon: Double, lat: Double)? { unproject(point) }
+
     /// Places a marker; it follows the geography from the next frame.
     func add(_ marker: GlobeMarker) {
         guard !markers.contains(where: { $0 === marker }) else { return }
@@ -150,9 +153,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         insertSubview(overlay, at: 0)
     }
 
+    /// Views above the globe whose own accessibility elements VoiceOver should reach (a pack's
+    /// touchable geography); the stage adds and removes them.
+    var accessibleOverlays: [UIView] = [] { didSet { exposeAtlasObjects() } }
+
     private func exposeAtlasObjects() {
         // the plain globe is one element; with markers, it becomes their container
-        if markers.isEmpty && globeAccessibilityElement == nil { return }
+        if markers.isEmpty && accessibleOverlays.isEmpty && globeAccessibilityElement == nil { return }
         if globeAccessibilityElement == nil {
             let element = UIAccessibilityElement(accessibilityContainer: self)
             element.accessibilityLabel = accessibilityLabel
@@ -187,6 +194,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         // Small objects precede the full-size map element, so touch exploration can reach them
         // where their frames overlap the map's direct-interaction surface.
         var objects: [Any] = markers.map(\.view)
+        objects.append(contentsOf: accessibleOverlays as [Any])
         objects.append(element)
         accessibilityElements = objects
     }
