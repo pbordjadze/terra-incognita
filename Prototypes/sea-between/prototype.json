@@ -15,16 +15,6 @@
     "label": "The sea between: an engraved chart of the Aegean",
     "looks": [
       {
-        "image": "doorway-glint.png",
-        "size": [
-          11,
-          11
-        ],
-        "maxZoom": 1.5,
-        "every": 9,
-        "for": 1.2
-      },
-      {
         "frames": [
           "skiff-1.png",
           "skiff-2.png",
@@ -42,6 +32,16 @@
         ],
         "minZoom": 1.5,
         "face": true
+      },
+      {
+        "image": "doorway-glint.png",
+        "size": [
+          11,
+          11
+        ],
+        "maxZoom": 1.5,
+        "every": 9,
+        "for": 1.2
       }
     ],
     "path": {

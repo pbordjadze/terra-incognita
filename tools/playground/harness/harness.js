@@ -1945,8 +1945,8 @@
     const own = primaryPack ? doorways.find((d) => d.pack === primaryPack) : null;
     const autostart = !!primaryPack && (Q.start === '1' || !own);
     if (own && !autostart) {
-      // the atlas round the doorway, close enough for its picture itself (its last look) to show
-      const close = own.looks[own.looks.length - 1];
+      // the atlas round the doorway, close enough for its picture itself (the look that needs the most zoom) to show
+      const close = own.looks.reduce((a, b) => (b.minZoom > a.minZoom ? b : a), own.looks[0]);
       Object.assign(cam, { lon: wrapLon(own.lon), lat: clamp(own.lat, -80, 80), zoom: clamp(Math.max(1, close.minZoom + 0.25), 0.8, 8) });
       if (!zoomHolds(close, cam.zoom)) cam.zoom = clamp(close.maxZoom, 0.8, 8);
       cameraMoved();

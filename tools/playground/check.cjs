@@ -82,7 +82,8 @@ async function checkLiving(browser, server, ids, device) {
   const enter = async (id) => {
     const d = (await pg(() => window.__playground.doorways())).find((x) => x.pack === id);
     if (!d) { fail(`${id} has no doorway on the living globe`); return false; }
-    const close = d.looks[d.looks.length - 1];
+    // close enough for its picture itself (the look that needs the most zoom), not its glint from afar
+    const close = d.looks.reduce((a, b) => (b.minZoom > a.minZoom ? b : a), d.looks[0]);
     await pg((a) => window.__playground.flyTo(a.lon, a.lat, a.z, 0), { lon: d.lon, lat: d.lat, z: Math.min(8, Math.max(1, close.minZoom + 0.25)) });
     await settle(4000, `the doorway of ${id}`);
     await sleep(300);

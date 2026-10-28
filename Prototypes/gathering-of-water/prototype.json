@@ -19,6 +19,14 @@
     "label": "A gathering of water: the rivers of South America",
     "looks": [
       {
+        "image": "doorway.png",
+        "size": [
+          32,
+          32
+        ],
+        "minZoom": 1.5
+      },
+      {
         "image": "doorway-glint.png",
         "size": [
           11,
@@ -27,14 +35,6 @@
         "maxZoom": 1.5,
         "every": 10,
         "for": 1.2
-      },
-      {
-        "image": "doorway.png",
-        "size": [
-          32,
-          32
-        ],
-        "minZoom": 1.5
       }
     ]
   },

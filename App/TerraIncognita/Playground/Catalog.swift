@@ -7,12 +7,13 @@ import UIKit
 /// `PackStore` finds their folders and sources. A doorway puts it on the globe while it isn't running,
 /// with a small life of its own (runtime 4): a glint now and then from afar, itself from `minZoom`.
 enum Catalog {
-    /// A doorway's looks: from afar a glint, now and then (every `every` seconds, for 1.2: the eye is
-    /// drawn before it knows to what); from `minZoom`, the picture itself.
+    /// A doorway's looks: from `minZoom`, the picture itself; before that, from afar, a glint now and
+    /// then (every `every` seconds, for 1.2: the eye is drawn before it knows to what). The picture's
+    /// look comes first, so at the boundary itself (a double tap lands exactly on 2) the picture wins.
     private static func looks(_ image: UIImage, size: CGSize, minZoom: Double, every: Double, face: Bool) -> [GlobeMarker.SpriteLook] {
-        [GlobeMarker.SpriteLook(frames: [Glint.image], fps: 1, size: CGSize(width: 11, height: 11), minZoom: 0, maxZoom: minZoom,
-                                every: every, duration: 1.2, face: false),
-         GlobeMarker.SpriteLook(frames: [image], fps: 1, size: size, minZoom: minZoom, maxZoom: .infinity, every: nil, duration: nil, face: face)]
+        [GlobeMarker.SpriteLook(frames: [image], fps: 1, size: size, minZoom: minZoom, maxZoom: .infinity, every: nil, duration: nil, face: face),
+         GlobeMarker.SpriteLook(frames: [Glint.image], fps: 1, size: CGSize(width: 11, height: 11), minZoom: 0, maxZoom: minZoom,
+                                every: every, duration: 1.2, face: false)]
     }
 
     /// A doorway: its picture from `minZoom`, a glint before that, and its life (a way it stirs along,

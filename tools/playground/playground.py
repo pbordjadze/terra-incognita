@@ -581,11 +581,12 @@ def validate_manifest(m, name, files, rep, where):
                     looks = []
                 for i, look in enumerate(looks):
                     check_look(rep, where, f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look', look, files)
-                first = looks[0] if looks else None
-                if isinstance(first, dict) and 'minZoom' not in first and 'every' not in first:
-                    tag = 'doorway.looks[0]' if 'looks' in door else 'doorway.look'
-                    rep.warn(where, f'{tag} shows on the whole Earth: keep that view sparse with a minZoom, '
-                                    'or make it a small trace (every/for)')
+                for i, look in enumerate(looks):
+                    if isinstance(look, dict) and 'minZoom' not in look and 'every' not in look:
+                        tag = f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look'
+                        rep.warn(where, f'{tag} shows on the whole Earth: keep that view sparse with a minZoom, '
+                                        'or make it a small trace (every/for)')
+                        break
             if 'path' in door:
                 check_path(rep, where, 'doorway.path', door['path'])
             if 'breathes' in door and not isinstance(door['breathes'], bool):
