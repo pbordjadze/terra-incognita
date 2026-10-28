@@ -177,7 +177,7 @@ final class PrototypeStage {
         case .geoClear: geo?.clear()
         case .timeShow(let time, let carry): show(time, carry: carry)
         case .timeSet(let value): setTime(value, by: nil)
-        case .timePlay(let playing): play(playing)
+        case .timePlay(let playing): play(playing, by: .host)
         case .timeHide:
             stopPlayback()
             time = nil
@@ -227,14 +227,17 @@ final class PrototypeStage {
         if let mover { overlay?.time(t.value, playing: t.playing, by: mover) }
     }
 
-    /// Plays the date forward at its rate, about thirty steps a second, to its end.
-    func play(_ playing: Bool) {
+    /// Plays the date forward at its rate, about thirty steps a second, to its end; the page hears of
+    /// it only when something changed. It holds while the globe is out of sight (the workbench or a
+    /// screen over it, the app in the background).
+    func play(_ playing: Bool, by mover: GlobeTime.Mover = .reader) {
         guard !ended, var t = time else { return }
+        let was = (t.playing, t.value)
         stopPlayback()
         if playing, t.value >= t.max { t.value = t.min }
         t.playing = playing && t.playable
         time = t
-        overlay?.time(t.value, playing: t.playing, by: .reader)
+        if (t.playing, t.value) != was { overlay?.time(t.value, playing: t.playing, by: mover) }
         guard t.playing else { return }
         playback = Task { [weak self] in
             var last = ContinuousClock.now
@@ -243,8 +246,11 @@ final class PrototypeStage {
                 guard let self, !Task.isCancelled, var t = self.time, t.playing else { return }
                 let now = ContinuousClock.now
                 let elapsed = (now - last).components
-                let dt = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
+                // (a pause, a lock or the background is not time played)
+                let dt = min(0.1, Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18)
                 last = now
+                guard self.playground?.screen == nil, self.playground?.workbenchShown != true,
+                      UIApplication.shared.applicationState == .active else { continue }
                 let next = min(t.max, t.value + t.rate * dt)
                 if next >= t.max { t.playing = false }
                 t.value = next

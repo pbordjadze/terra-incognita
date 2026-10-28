@@ -145,9 +145,9 @@
       clear: function () { send({ type: 'caption', title: '', text: '' }); }
     },
 
-    /** Runtime 2, overlay only: how the globe itself behaves while this runs.
-     *  { historical: true } hides today's borders and names (coasts stay, as a reference);
-     *  { still: true } stops its slow idle turn. Both end with the prototype. */
+    /** Runtime 2, overlay only: how the globe itself behaves while this runs, as a whole each call
+     *  (a flag left out is false): { historical: true } hides today's borders and names (coasts
+     *  stay, as a reference); { still: true } stops its slow idle turn. Both end with the prototype. */
     globe: {
       set: function (options) {
         var o = options || {};

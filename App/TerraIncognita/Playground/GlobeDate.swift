@@ -27,6 +27,7 @@ struct GlobeTime: Equatable {
     var label: String {
         switch unit {
         case .year:
+            // (the range is clamped to ten million years either way, so this can't overflow)
             let y = Int(value.rounded())
             return y < 1 ? String(localized: "\(1 - y) BCE") : String(y)
         case .day:
@@ -42,10 +43,11 @@ struct GlobeTime: Equatable {
 
     func clamped(_ v: Double) -> Double { Swift.min(Swift.max(v, min), max) }
 
-    /// The next tick past the value (VoiceOver's increment), or a hundredth of the span.
+    /// The next tick past the value (VoiceOver's increment), or a hundredth of the span, never less
+    /// than the one year or day the label shows.
     func step(_ direction: Double) -> Double {
         let ahead = direction > 0 ? ticks.map(\.at).filter { $0 > value + 1e-6 }.min() : ticks.map(\.at).filter { $0 < value - 1e-6 }.max()
-        return clamped(ahead ?? value + direction * (max - min) / 100)
+        return clamped(ahead ?? value + direction * Swift.max(1, (max - min) / 100))
     }
 
     private static let days: DateFormatter = {
@@ -59,13 +61,15 @@ struct GlobeTime: Equatable {
     /// From `terra.time.show(options)`; nil if its range is not a range.
     static func from(_ o: [String: Any]) -> GlobeTime? {
         func number(_ x: Any?) -> Double? { (x as? NSNumber).map(\.doubleValue).flatMap { $0.isFinite ? $0 : nil } }
-        guard let lo = number(o["min"]), let hi = number(o["max"]), hi > lo else { return nil }
+        // ten million years either way (in days for a day unit) is room enough, and keeps every label finite
+        let unit = Unit(rawValue: (o["unit"] as? String) ?? "year") ?? .year
+        let limit = unit == .year ? 1e7 : 3.66e9
+        guard let lo = number(o["min"]).map({ Swift.max($0, -limit) }), let hi = number(o["max"]).map({ Swift.min($0, limit) }), hi > lo else { return nil }
         let ticks: [Tick] = ((o["ticks"] as? [Any]) ?? []).prefix(2000).compactMap { t in
             if let at = number(t) { return Tick(at: at, hollow: false) }
             if let d = t as? [String: Any], let at = number(d["at"]) { return Tick(at: at, hollow: (d["hollow"] as? Bool) ?? false) }
             return nil
         }.filter { $0.at >= lo && $0.at <= hi }
-        let unit = Unit(rawValue: (o["unit"] as? String) ?? "year") ?? .year
         return GlobeTime(unit: unit, min: lo, max: hi, value: Swift.min(Swift.max(number(o["value"]) ?? lo, lo), hi),
                          ticks: ticks, playable: (o["playable"] as? Bool) ?? false,
                          rate: Swift.min(Swift.max(number(o["rate"]) ?? 1, 0.001), (hi - lo) / 2))
@@ -165,6 +169,7 @@ private struct DateStrip: View {
             }
             .frame(height: 44)
             .accessibilityElement()
+            .accessibilityAddTraits(time.playing ? .updatesFrequently : [])
             .accessibilityLabel(Text("Date"))
             .accessibilityValue(Text(time.label))
             .accessibilityHint(Text("Swipe up or down to move through time"))

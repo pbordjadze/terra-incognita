@@ -537,10 +537,28 @@ final class PackWebController: NSObject, WKNavigationDelegate {
         pumpCamera()
     }
 
-    /// The globe's date moved (runtime 2): by the reader, by playback, or by the host.
+    /// The globe's date moved (runtime 2): by the reader, by playback, or by the host. One message in
+    /// flight at a time, as with the camera: while one is, only the latest waits, so a drag or playback
+    /// never queues up behind a busy page.
     func sendTime(_ value: Double, playing: Bool, by mover: GlobeTime.Mover) {
         guard !stopped, value.isFinite else { return }
-        send(["type": "time", "value": value, "playing": playing, "by": mover.rawValue])
+        pendingTime = ["type": "time", "value": value, "playing": playing, "by": mover.rawValue]
+        pumpTime()
+    }
+
+    private var pendingTime: [String: Any]?
+    private var timeInFlight = false
+
+    private func pumpTime() {
+        guard !stopped, !timeInFlight, let message = pendingTime, let view = webView, let json = Self.json(message) else { return }
+        pendingTime = nil
+        timeInFlight = true
+        let script = "window.terra&&window.terra._receive(\(json));0"
+        Task { [weak self] in
+            _ = try? await view.evaluateJavaScript(script)
+            self?.timeInFlight = false
+            self?.pumpTime()
+        }
     }
 
     func sendTap(x: Double, y: Double, place: (lon: Double, lat: Double)?) {
@@ -570,7 +588,8 @@ final class PackWebController: NSObject, WKNavigationDelegate {
         case "geo" where mode == .overlay: pageDraws(body)
         case "time" where mode == .overlay: pageDates(body)
         case "caption" where mode == .overlay:
-            let title = String(((body["title"] as? String) ?? "").prefix(200)), text = String(((body["text"] as? String) ?? "").prefix(600))
+            // (the foot is a caption, not a page: a line or two)
+            let title = String(((body["title"] as? String) ?? "").prefix(120)), text = String(((body["text"] as? String) ?? "").prefix(280))
             onEvent?(.caption(title.isEmpty && text.isEmpty ? nil : StageCaption(title: title, text: text)))
         case "globe" where mode == .overlay:
             onEvent?(.globe(historical: (body["historical"] as? Bool) ?? false, still: (body["still"] as? Bool) ?? false))

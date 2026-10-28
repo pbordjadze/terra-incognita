@@ -8,11 +8,12 @@ import UIKit
 final class GeoLayerView: UIView {
     enum Style: String { case border, area, ghost, track, dot, ring, label, symbol, sounding }
 
-    /// One feature: points, line parts, or polygon rings (each [lon, lat] pairs).
+    /// One feature: points, line parts, or polygon rings, each place as its unit vector on the globe
+    /// (worked out once, so a frame only turns them).
     struct Shape {
         enum Kind { case points, lines, polygon }
         let kind: Kind
-        let parts: [[SIMD2<Double>]]
+        let parts: [[SIMD3<Double>]]
         let label: String?
         /// A sounding's length, in points.
         let length: Double?
@@ -34,13 +35,19 @@ final class GeoLayerView: UIView {
         var vertices: Int { shapes.reduce(0) { $0 + $1.parts.reduce(0) { $0 + $1.count } } }
     }
 
-    /// The most vertices all layers together may hold: enough for a continent of simplified borders.
-    static let vertexBudget = 400_000
+    /// The most vertices all layers together may hold (a continent of simplified borders is about
+    /// 7,000), the most layers, and the most named or pictured places in one layer.
+    static let vertexBudget = 100_000
+    static let layerBudget = 64
+    static let placesPerLayer = 400
 
     private var layers: [Layer] = []
     private var sublayers: [String: CALayer] = [:]
     private var version = 0
-    private var drawn: (version: Int, camera: GlobeCamera, size: CGSize)?
+    /// What the layers were last drawn for: the globe's camera and where its disc lies (the room it
+    /// fills can change with the camera still, as when the foot of the screen changes), the size, and
+    /// the parts of the screen kept clear of names.
+    private var drawn: (version: Int, camera: GlobeCamera, centre: CGPoint, radius: Double, size: CGSize, clear: [CGRect])?
     /// Name pictures, by what they say and how.
     private var pictures: [String: CGImage] = [:]
 
@@ -62,7 +69,8 @@ final class GeoLayerView: UIView {
     @discardableResult
     func set(_ layer: Layer) -> Bool {
         let others = layers.filter { $0.id != layer.id }
-        guard others.reduce(0, { $0 + $1.vertices }) + layer.vertices <= Self.vertexBudget else { return false }
+        guard others.reduce(0, { $0 + $1.vertices }) + layer.vertices <= Self.vertexBudget,
+              others.count < layers.count || layers.count < Self.layerBudget else { return false }
         if let i = layers.firstIndex(where: { $0.id == layer.id }) {
             // (another style draws with other sublayers: start its host afresh)
             if layers[i].style != layer.style { sublayers.removeValue(forKey: layer.id)?.removeFromSuperlayer() }
@@ -93,11 +101,13 @@ final class GeoLayerView: UIView {
     func update(globe: GlobeView) {
         let stage = globe.stageCamera
         let size = bounds.size
-        if let d = drawn, d.version == version, d.camera == stage.camera, d.size == size { return }
-        drawn = (version, stage.camera, size)
+        let clear = globe.keepClear
+        if let d = drawn, d.version == version, d.camera == stage.camera, d.centre == stage.centre, d.radius == stage.radius,
+           d.size == size, d.clear == clear { return }
+        drawn = (version, stage.camera, stage.centre, stage.radius, size, clear)
         let projection = Projection(camera: stage.camera, centre: stage.centre, radius: stage.radius)
         let reading = CGFloat(GlobeType.shared?.readingScale(shortSide: Double(min(size.width, size.height) > 0 ? min(size.width, size.height) : 400)) ?? 1)
-        var placed = globe.keepClear
+        var placed = clear
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         for (order, layer) in layers.enumerated() {
@@ -183,9 +193,10 @@ final class GeoLayerView: UIView {
             }
         case .label:
             host.sublayers?.forEach { $0.removeFromSuperlayer() }
+            let reach = bounds.insetBy(dx: -120, dy: -60)
             for s in layer.shapes {
                 guard let text = s.label, !text.isEmpty, let v = s.parts.first?.first, let q = p.point(v, facing: 0.3),
-                      let image = picture(text, layer: layer, reading: k) else { continue }
+                      reach.contains(q), let image = picture(text, layer: layer, reading: k) else { continue }
                 let w = CGFloat(image.width) / contentScale, h = CGFloat(image.height) / contentScale
                 let frame = CGRect(x: q.x + layer.offset.dx * k - w / 2, y: q.y + layer.offset.dy * k - h / 2, width: w, height: h)
                 let room = frame.insetBy(dx: -0.2 * CGFloat(layer.size) * k, dy: -0.2 * CGFloat(layer.size) * k)
@@ -204,7 +215,7 @@ final class GeoLayerView: UIView {
             for s in layer.shapes {
                 for part in s.parts {
                     for v in part {
-                        guard let q = p.point(v, facing: 0.2) else { continue }
+                        guard let q = p.point(v, facing: 0.2), bounds.insetBy(dx: -w, dy: -h).contains(q) else { continue }
                         let l = CALayer()
                         l.contents = image
                         l.contentsGravity = .resizeAspect
@@ -218,8 +229,8 @@ final class GeoLayerView: UIView {
             host.sublayers?.forEach { $0.removeFromSuperlayer() }
             let blue = UIColor(red: 0.11, green: 0.478, blue: 0.69, alpha: 1)
             for s in layer.shapes {
-                guard let v = s.parts.first?.first, let q = p.point(v, facing: 0.2) else { continue }
-                let length = CGFloat(max(0, s.length ?? 0)) * k
+                guard let v = s.parts.first?.first, let q = p.point(v, facing: 0.2), bounds.insetBy(dx: -40, dy: -40).contains(q) else { continue }
+                let length = CGFloat(min(max(0, s.length ?? 0), 2000)) * k
                 let line = CAShapeLayer()
                 let path = CGMutablePath()
                 path.move(to: q)
@@ -360,23 +371,28 @@ final class GeoLayerView: UIView {
             self.radius = radius
         }
 
-        private func view(_ v: SIMD2<Double>) -> SIMD3<Double> {
-            let la = v.y * .pi / 180, lo = v.x * .pi / 180
-            let wx = cos(la) * sin(lo), wy = sin(la), wz = cos(la) * cos(lo)
+        /// A place's unit vector on the globe, from degrees.
+        static func world(lon: Double, lat: Double) -> SIMD3<Double> {
+            let la = lat * .pi / 180, lo = lon * .pi / 180
+            return SIMD3(cos(la) * sin(lo), sin(la), cos(la) * cos(lo))
+        }
+
+        private func view(_ w: SIMD3<Double>) -> SIMD3<Double> {
+            let wx = w.x, wy = w.y, wz = w.z
             return SIMD3(ax * wx - bx * wz,
                          bx * by * wx + ay * wy + ax * by * wz,
                          bx * ay * wx - by * wy + ax * ay * wz)
         }
 
         /// On screen, when it faces the reader by more than `facing`.
-        func point(_ v: SIMD2<Double>, facing: Double) -> CGPoint? {
+        func point(_ v: SIMD3<Double>, facing: Double) -> CGPoint? {
             let w = view(v)
             guard w.z > facing else { return nil }
             return CGPoint(x: Double(centre.x) + w.x * radius, y: Double(centre.y) - w.y * radius)
         }
 
         /// On screen, or on the globe's edge when behind it.
-        func clamped(_ v: SIMD2<Double>) -> (point: CGPoint, facing: Double) {
+        func clamped(_ v: SIMD3<Double>) -> (point: CGPoint, facing: Double) {
             let w = view(v)
             var x = w.x, y = w.y
             if w.z <= 0 {
@@ -394,15 +410,18 @@ final class GeoLayerView: UIView {
         guard let style = Style(rawValue: (options["style"] as? String) ?? "border") else { return nil }
         var shapes: [Shape] = []
         func number(_ x: Any?) -> Double? { (x as? NSNumber).map(\.doubleValue).flatMap { $0.isFinite ? $0 : nil } }
-        func position(_ x: Any?) -> SIMD2<Double>? {
-            guard let a = x as? [Any], a.count >= 2, let lon = number(a[0]), let lat = number(a[1]),
+        var budget = vertexBudget
+        func position(_ x: Any?) -> SIMD3<Double>? {
+            guard budget > 0, let a = x as? [Any], a.count >= 2, let lon = number(a[0]), let lat = number(a[1]),
                   abs(lat) <= 90, abs(lon) <= 540 else { return nil }
-            return SIMD2(lon, lat)
+            budget -= 1
+            return Projection.world(lon: lon, lat: lat)
         }
-        func ring(_ x: Any?) -> [SIMD2<Double>] { ((x as? [Any]) ?? []).compactMap(position) }
-        func add(geometry: [String: Any], properties: [String: Any]) {
-            let label = properties["label"] as? String
-            let length = number(properties["length"])
+        func ring(_ x: Any?) -> [SIMD3<Double>] { ((x as? [Any]) ?? []).compactMap(position) }
+        func add(geometry: [String: Any], properties: [String: Any], depth: Int = 0) {
+            guard depth < 4, budget > 0 else { return }
+            let label = (properties["label"] as? String).map { String($0.prefix(80)) }
+            let length = number(properties["length"]).map { min(max($0, 0), 2000) }
             let c = geometry["coordinates"]
             switch geometry["type"] as? String {
             case "Point": if let v = position(c) { shapes.append(Shape(kind: .points, parts: [[v]], label: label, length: length)) }
@@ -415,7 +434,7 @@ final class GeoLayerView: UIView {
                     shapes.append(Shape(kind: .polygon, parts: ((polygon as? [Any]) ?? []).map(ring), label: label, length: length))
                 }
             case "GeometryCollection":
-                for g in (geometry["geometries"] as? [[String: Any]]) ?? [] { add(geometry: g, properties: properties) }
+                for g in (geometry["geometries"] as? [[String: Any]]) ?? [] { add(geometry: g, properties: properties, depth: depth + 1) }
             default: break
             }
         }
@@ -423,8 +442,10 @@ final class GeoLayerView: UIView {
         if let collection = features as? [String: Any] {
             items = (collection["features"] as? [Any]) ?? [collection]
         }
-        for item in items {
-            guard let object = item as? [String: Any] else { continue }
+        // (a named or pictured place costs a layer of its own on screen: a few hundred at most)
+        let places = [Style.label, .symbol, .sounding].contains(style) ? placesPerLayer : Int.max
+        for item in items.prefix(50_000) {
+            guard budget > 0, shapes.count < places, let object = item as? [String: Any] else { continue }
             if (object["type"] as? String) == "Feature" {
                 if let g = object["geometry"] as? [String: Any] { add(geometry: g, properties: (object["properties"] as? [String: Any]) ?? [:]) }
             } else {
