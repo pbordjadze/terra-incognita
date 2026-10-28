@@ -26,19 +26,26 @@
   // the smaller rivers; what gathers at a touch in its coast ink; the way down deeper still. Names in
   // the globe's own water and town inks.
   var INK = { trace: '#0B3D66', gathered: '#1C7AB0', brushed: '#1C7AB099', water: '#2A6A99', town: '#4A463F' };
-  // Strahler order bands, the great rivers last so they lie on top. Each shows from a reading density
-  // in points a degree (as the globe sizes its own names by the screen), so a phone and an iPad show
-  // rivers equally far apart: the smallest only close in on a large screen. While water is traced the
-  // rest goes quieter, as the study's did, so what is lit stands out.
+  // Strahler order bands, the great rivers last so they lie on top, heavier the greater. Each shows
+  // from a reading density in points a degree (as the globe sizes its own names by the screen), so a
+  // phone and an iPad show rivers equally far apart: the smallest only close in. While water is
+  // traced the rest goes quieter, as the study's did, so what is lit stands out.
   var BANDS = [
-    { id: 'rivers-3', from: 1, to: 3, ppd: 34, color: '#4E9CCB6B', quiet: '#86A6B84D' },
-    { id: 'rivers-4', from: 4, to: 4, ppd: 22, color: '#4E9CCB80', quiet: '#86A6B85C' },
-    { id: 'rivers-5', from: 5, to: 5, ppd: 14, color: '#4E9CCB94', quiet: '#86A6B86B' },
-    { id: 'rivers-6', from: 6, to: 6, ppd: 9, color: '#4E9CCBB0', quiet: '#86A6B87A' },
-    { id: 'rivers-7', from: 7, to: 7, ppd: 6.3, color: '#4E9CCBCC', quiet: '#86A6B88C' },
-    { id: 'rivers-8', from: 8, to: 8, ppd: 4.5, color: '#4E9CCBE6', quiet: '#86A6B8A3' },
-    { id: 'rivers-9', from: 9, to: 99, ppd: 0, color: '#4E9CCB', quiet: '#86A6B8BF' }
+    { id: 'rivers-3', from: 1, to: 3, ppd: 34, width: 0.7, color: '#4E9CCBB3', quiet: '#86A6B859' },
+    { id: 'rivers-4', from: 4, to: 4, ppd: 22, width: 0.75, color: '#4E9CCBBF', quiet: '#86A6B866' },
+    { id: 'rivers-5', from: 5, to: 5, ppd: 14, width: 0.85, color: '#4E9CCBCC', quiet: '#86A6B873' },
+    { id: 'rivers-6', from: 6, to: 6, ppd: 9, width: 1.0, color: '#4E9CCBD9', quiet: '#86A6B880' },
+    { id: 'rivers-7', from: 7, to: 7, ppd: 6.3, width: 1.3, color: '#4E9CCBE6', quiet: '#86A6B88C' },
+    { id: 'rivers-8', from: 8, to: 8, ppd: 4.5, width: 1.7, color: '#4E9CCBF2', quiet: '#86A6B899' },
+    { id: 'rivers-9', from: 9, to: 99, ppd: 0, width: 2.2, color: '#4E9CCB', quiet: '#86A6B8A6' }
   ];
+  // What is lit is heavier than what lies under it: the way down, the great rivers gathered (over
+  // the network's 1.7 and 2.2), and the smaller ones gathered (over its 1.3 and less).
+  var WIDTH = { trace: 2.6, gatheredGreat: 2.4, gathered: 1.6, brushed: 2.2 };
+  var GREAT = 8;
+  // Deep enough for the smallest rivers to show (about 34 points a degree) with room to spare: a
+  // phone may zoom past 8; a large screen already gets there.
+  var DEEPEST = 42;
   BANDS.forEach(function (b) {
     b.edges = edges.filter(function (e) { return e.order >= b.from && e.order <= b.to; }).map(function (e) { return e.i; });
   });
@@ -48,6 +55,9 @@
   var cam = terra.camera || { lon: -60, lat: -18, zoom: 1.9, cx: 195, cy: 400, radius: 330, width: 390, height: 800 };
   var perZoom = cam.radius / Math.max(0.1, cam.zoom);  // this screen's points a radian at zoom 1
   function zoomAt(ppd) { return ppd / (perZoom * D); }
+  /** A study read closely: the globe doesn't turn by itself, and lets the reader in as far as the
+      smallest rivers need on this screen. */
+  function globe() { terra.globe.set({ still: true, maxZoom: Math.max(8, Math.min(32, zoomAt(DEEPEST))) }); }
 
   // Every layer once, in drawing order (the first set fixes it), its options kept for each set; a
   // layer with a reading density takes its minZoom from this screen.
@@ -65,19 +75,21 @@
     if (Math.abs(p - perZoom) < perZoom * 0.02) return false;
     perZoom = p;
     Object.keys(PPD).forEach(function (id) { OPTIONS[id].minZoom = zoomAt(PPD[id]); put(id, FEATURES[id]); });
+    globe();
     return true;
   }
-  BANDS.forEach(function (b) { layer(b.id, { style: 'border', color: b.color, touchable: true }, b.ppd); });
-  layer('brushed', { style: 'border', color: INK.brushed, touchable: true });
-  layer('gathered', { style: 'border', color: INK.gathered, touchable: true });
-  layer('trace', { style: 'border', color: INK.trace, touchable: true });
+  BANDS.forEach(function (b) { layer(b.id, { style: 'border', color: b.color, lineWidth: b.width, touchable: true }, b.ppd); });
+  layer('brushed', { style: 'border', color: INK.brushed, lineWidth: WIDTH.brushed, touchable: true });
+  layer('gathered', { style: 'border', color: INK.gathered, lineWidth: WIDTH.gathered, touchable: true });
+  layer('gathered-great', { style: 'border', color: INK.gathered, lineWidth: WIDTH.gatheredGreat, touchable: true });
+  layer('trace', { style: 'border', color: INK.trace, lineWidth: WIDTH.trace, touchable: true });
   layer('ending', { style: 'dot', color: INK.trace });
   layer('touched', { style: 'ring', color: INK.trace });
   layer('names-great', { style: 'label', font: 'italic', size: 13, color: INK.water, touchable: true }, 5);
   layer('names-rivers', { style: 'label', font: 'italic', size: 11.5, color: INK.water, touchable: true }, 8.5);
   layer('names-towns', { style: 'label', font: 'italic', size: 10, color: INK.town }, 8);
   layer('names-towns-close', { style: 'label', font: 'italic', size: 10, color: INK.town }, 11);
-  var RIVERS = { brushed: true, gathered: true, trace: true };
+  var RIVERS = { brushed: true, gathered: true, 'gathered-great': true, trace: true };
   BANDS.forEach(function (b) { RIVERS[b.id] = true; });
 
   // ---- the named rivers and towns (the study's orientation aids) ----
@@ -140,11 +152,11 @@
   }
 
   /** Lines for these stretches at a level, within a box, as the globe takes them, and their vertices. */
-  function lines(ids, lod, box, minOrder) {
+  function lines(ids, lod, box, minOrder, maxOrder) {
     var geoms = [], count = 0;
     for (var k = 0; k < ids.length; k++) {
       var e = edges[ids[k]];
-      if (e.order < (minOrder || 1) || !meets(e.bounds, box)) continue;
+      if (e.order < (minOrder || 1) || e.order > (maxOrder || 99) || !meets(e.bounds, box)) continue;
       var l = net.line(e, lod);
       geoms.push({ type: 'LineString', coordinates: l });
       count += l.length;
@@ -205,15 +217,18 @@
       put('touched', [point(hit.lon, hit.lat)]);
       put('ending', [point(end[0], end[1])]);
       if (current.gather) {
-        var g = lines(current.gather.ids, lod, cover, shownOrder(cam.zoom));
-        if (g.count > GATHER_BUDGET) g = lines(current.gather.ids, 1, cover, shownOrder(cam.zoom));
-        g.geoms.push({ type: 'LineString', coordinates: net.line(edges[hit.id], lod, null, hit) });
-        put('gathered', g.geoms);
+        var ids = current.gather.ids, min = shownOrder(cam.zoom), at = lod;
+        var small = lines(ids, at, cover, min, GREAT - 1), great = lines(ids, at, cover, Math.max(min, GREAT));
+        if (small.count + great.count > GATHER_BUDGET) { at = 1; small = lines(ids, at, cover, min, GREAT - 1); great = lines(ids, at, cover, Math.max(min, GREAT)); }
+        (edges[hit.id].order >= GREAT ? great : small).geoms.push({ type: 'LineString', coordinates: net.line(edges[hit.id], at, null, hit) });
+        put('gathered', small.geoms);
+        put('gathered-great', great.geoms);
       } else {
         put('gathered', []);
+        put('gathered-great', []);
       }
     } else {
-      ['trace', 'touched', 'ending', 'gathered'].forEach(function (id) { put(id, []); });
+      ['trace', 'touched', 'ending', 'gathered', 'gathered-great'].forEach(function (id) { put(id, []); });
     }
     // the earlier ways down: each partial first stretch, then every stretch below once
     var geoms = [], seen = {};
@@ -237,13 +252,14 @@
   }
 
   /** A bead of light running down the way traced; its speed is invented (the study's: the whole way
-      in at most nine seconds). Not under Reduce Motion: it would only stand still. */
+      in at most nine seconds). Round, so it needs no facing: its motion shows the way. Not under
+      Reduce Motion: it would only stand still. */
   function glint() {
     if (!current || terra.settings.reduceMotion) { terra.sprites.remove('glint'); return; }
     var path = net.routeLine(current.route, 2);
     terra.sprites.set('glint', {
       path: { coordinates: path, seconds: Math.max(0.6, Math.min(9, degrees(path) / 0.35)), loop: true },
-      looks: [{ image: 'glint.png', size: [14, 6], face: true }],
+      looks: [{ image: 'glint.png', size: [8, 8] }],
       label: 'Which way this water goes (its speed is invented)'
     });
   }
@@ -260,7 +276,7 @@
       if (!on) { terra.sprites.remove('drift-' + i); return; }
       terra.sprites.set('drift-' + i, {
         path: { coordinates: path, seconds: Math.min(34, degrees(path) / 0.25), loop: true },
-        looks: [{ image: 'glint.png', size: [14, 6], face: true }],
+        looks: [{ image: 'glint.png', size: [8, 8] }],
         label: 'Water going down the ' + anchors[i].label + ', drawn (its speed is invented)'
       });
     });
@@ -322,12 +338,14 @@
   // ---- touch ----
 
   /** The nearest line drawn within reach of a touch (a degree is fewer points towards the globe's
-      edge, so when the globe says a river was touched and none is found, look a little further). */
+      edge, so when the globe says a river is under a tap or the start of a drag and none is found,
+      look a little further; a drag's later events carry the target it began on, so not then). */
   function near(t) {
     if (t.lon == null || t.lat == null) return null;
     var reach = REACH / Math.max(1e-6, cam.radius * D), min = shownOrder(cam.zoom);
     var hit = net.nearest(t.lon, t.lat, reach, min);
-    if (!hit && t.target && RIVERS[t.target.layer]) hit = net.nearest(t.lon, t.lat, reach * 4, min);
+    var under = t.phase === 'tap' || t.phase === 'began';
+    if (!hit && under && t.target && RIVERS[t.target.layer]) hit = net.nearest(t.lon, t.lat, reach * 4, min);
     return hit;
   }
 
@@ -427,7 +445,7 @@
   });
   terra.on('close', function () { clearTimeout(settle); clearTimeout(fadeTimer); });
 
-  terra.globe.set({ still: true });     // a study read closely: the globe doesn't turn by itself
+  globe();
   network(cam, true);
   say(IDLE);
 })();
