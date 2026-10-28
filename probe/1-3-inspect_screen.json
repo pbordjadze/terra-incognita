@@ -1,0 +1,10 @@
+{
+ "tool": "inspect_screen",
+ "arguments": {},
+ "seconds": 15.1,
+ "isError": false,
+ "text": [
+  "{\"ui_schema\":{\"platform\":\"ios\",\"abbreviations\":{\"b\":\"bounds\",\"txt\":\"text\",\"rid\":\"resource-id\",\"a11y\":\"accessibilityText\",\"hint\":\"hintText\",\"val\":\"value\",\"c\":\"children\"},\"defaults\":{\"enabled\":true,\"focused\":false,\"selected\":false,\"checked\":false,\"txt\":\"\",\"hint\":\"\",\"rid\":\"\",\"val\":\"\",\"a11y\":\"\"}},\"elements\":[{\"b\":\"[0,0][1032,1376]\",\"a11y\":\"Terra Incognita\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"a11y\":\"The globe\",\"rid\":\"mainAtlasGlobe\"},{\"b\":\"[0,1169][1032,1376]\",\"a11y\":\"THE GLOBE, The whole world, Spin it, pinch it, tap a country.\",\"c\":[{\"b\":\"[24,1239][111,1254]\",\"a11y\":\"THE GLOBE\"},{\"b\":\"[24,1260][240,1294]\",\"a11y\":\"The whole world\"},{\"b\":\"[24,1300][228,1320]\",\"a11y\":\"Spin it, pinch it, tap a country.\"}]},{\"b\":\"[948,8][1016,66]\",\"a11y\":\"Workbench\",\"rid\":\"workbenchButton\"}]}]}]}]}]}]}]},{\"b\":\"[0,0][1032,32]\"},{\"b\":\"[0,0][1032,32]\"}]}"
+ ],
+ "images": []
+}

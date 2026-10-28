@@ -1,0 +1,9 @@
+getpwuid_r did not find a match for uid 501
+Filtering the log data using "subsystem == "com.pbordjadze.terraincognita""
+Timestamp               Ty Process[PID:TID]
+2026-10-28 04:45:07.896 I  TerraIncognita[9805:81e5] [com.pbordjadze.terraincognita:playground] sounding-the-deep r0: opening overlay.html
+2026-10-28 04:47:34.070 I  TerraIncognita[9805:81e5] [com.pbordjadze.terraincognita:playground] sounding-the-deep r0: opening index.html
+2026-10-28 04:49:39.494 I  TerraIncognita[9805:81e5] [com.pbordjadze.terraincognita:playground] borders-on-old-maps r0: opening overlay.html
+2026-10-28 04:54:02.838 I  TerraIncognita[9805:81e5] [com.pbordjadze.terraincognita:playground] borders-on-old-maps r0: opening index.html
+2026-10-28 04:55:05.520 I  TerraIncognita[9805:81e5] [com.pbordjadze.terraincognita:playground] sounding-the-deep r0: opening overlay.html
+Child process terminated with signal 15: Terminated

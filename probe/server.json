@@ -1,0 +1,13 @@
+{
+ "protocolVersion": "2025-06-18",
+ "capabilities": {
+  "tools": {
+   "listChanged": true
+  }
+ },
+ "serverInfo": {
+  "name": "maestro",
+  "version": "1.0.0"
+ },
+ "instructions": "Maestro MCP authors, edits and runs UI tests via declarative YAML flows on Android emulators, iOS simulators, Chromium browsers, or Maestro Cloud. Use when the user wants to write, run, or debug a mobile or web UI test, reproduce a bug, or self-validate a user-facing change you just built.\n\nEvery local tool (`take_screenshot`, `inspect_screen`, `run`) needs a `device_id` from `list_devices` first.\n\nDocs: https://docs.maestro.dev/llms.txt. Call `cheat_sheet` before authoring unfamiliar commands, required args, nested properties, conditionals, or multi-screen flows.\n\n## Local workflow\n\n`list_devices` -> `inspect_screen` -> `run`.\n\n1. `list_devices`: pick a `device_id` (mobile simulator/emulator, or `chromium` for web). If empty, ask the user to boot one. Use only IDs returned.\n2. `inspect_screen`: fetch the current screen's view hierarchy before targeting elements. Use `take_screenshot` when a visual helps. Re-inspect after any UI change.\n3. `run`: pass exactly one of `{ yaml }` (inline, preferred for exploration), `{ files }`, or `{ dir, include_tags, exclude_tags }`. Always include `device_id`. Pass `env` for flow variables. `run` validates syntax.\n\nMobile flows declare `appId` and start with `launchApp`; web flows declare `url` and start with `openLink`. `include_tags`/`exclude_tags` are bare names without `@`. Prefer one full flow over many single-command calls.\n\n## Cloud workflow\n\n`list_cloud_devices` -> `run_on_cloud` -> `get_cloud_run_status` (poll).\n\n`list_cloud_devices` returns valid `{device_model, device_os}` pairs. Pass them verbatim; never lowercase, reformat, or infer. `run_on_cloud` submits a flow or folder, returns `upload_id`, `project_id`, and a dashboard URL (async). Poll `get_cloud_run_status` every 60s until `status` is terminal (SUCCESS, ERROR, CANCELED, WARNING). `describe_cloud_run`: a `run_id`'s (not `upload_id`) metadata + artifacts. Tags only apply with a folder. No tool lists past runs.\n\nAuth: `maestro login` (or `MAESTRO_CLOUD_API_KEY` for non-interactive). Never echo the API key."
+}
