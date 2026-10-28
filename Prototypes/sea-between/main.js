@@ -9,25 +9,38 @@
   var SEA = window.SEA, NOTES = window.LeafNotes, G = SEA.grid, SHEET = SEA.engraving; // [west, south, east, north]
   var D = Math.PI / 180;
 
-  var ANCHOR = { lon: 24.9, lat: 37.4, zoom: 7.5 };
+  var CENTRE = { lon: (SHEET[0] + SHEET[2]) / 2, lat: (SHEET[1] + SHEET[3]) / 2 };   // the sheet's
+  var MAX_ZOOM = 32;       // the globe lets the pack come this close (it is put back when the pack ends):
+                           // the leaf's own first view is about zoom 14 on an iPad and 25 on a phone
   var PT_PER_M = 0.014;    // the sounding line hangs 14 points for each kilometre of depth
   var INK = '#294652', COPPER = '#9B4934', PAPER = '#F4F1E8', COAST = '#4B6A6B';
 
   // How big the globe is on this screen decides where things show. A degree is radius × π/180 points,
-  // and the globe's radius at zoom 1 is about 489 points on the 13-inch iPad but 176 on an iPhone, whose
-  // closest zoom (8) shows the Aegean about as large as the iPad does at 3. So names and drawings come in
-  // when a degree is so many points across, not at one zoom for every screen (`at`), capped so the notes
-  // and the marginal life still come by the phone's closest zoom; and sprites are drawn smaller there (K).
-  var R1 = 0, K = 1, NEAR = 2.6;
-  function at(ppd, lo, hi) { return Math.max(lo, Math.min(hi, ppd / (R1 * D))); }
-  function sized(w, h) { return [Math.round(w * K), Math.round(h * K)]; }
+  // and the globe's radius at zoom 1 is about 489 points on the 13-inch iPad but 176 on an iPhone. So the
+  // engraving, the names and the drawings come in when a degree is so many points across (`at`), not at
+  // one zoom for every screen: the chart shows the same at the same size on either, and the phone zooms
+  // further for it. What would need more than MAX_ZOOM (the drawings' larger close looks on a phone) waits.
+  var R1 = 0, SHOWN = 2.2, SEEN = 2.6, NEAR = 2.6;
+  function zoomFor(ppd) { return Math.round(ppd / (R1 * D) * 100) / 100; }
+  function at(ppd, lo, hi) { return Math.max(lo || 0, Math.min(hi || MAX_ZOOM, zoomFor(ppd))); }
+  function close(ppd) { var z = zoomFor(ppd); return z <= MAX_ZOOM ? z : 99; }
+  function larger(size) { return [Math.round(size[0] * 1.4), Math.round(size[1] * 1.4)]; }
+  /** The zoom at which the whole sheet fits this screen with room round it: about 12 on the 13-inch iPad,
+      13.5 on an iPhone. The pack flies there itself, once it may zoom past 8 (a manifest anchor may not). */
+  function fitZoom(c) {
+    var across = (SHEET[2] - SHEET[0]) * Math.cos(CENTRE.lat * D) * D, down = (SHEET[3] - SHEET[1]) * D;
+    var width = (c && c.width) || 1032, height = (c && c.height) || 1376;
+    var z = Math.min(0.88 * width / (across * R1), 0.6 * height / (down * R1));
+    return Math.round(Math.max(4, Math.min(MAX_ZOOM, z)) * 10) / 10;
+  }
   /** From a camera: the globe's radius at zoom 1 here; true when it changed enough to arrange again. */
   function measure(c) {
     var r1 = c && c.radius > 0 && c.zoom > 0 ? c.radius / c.zoom : 489;
     if (R1 && Math.abs(r1 - R1) / R1 < 0.08) return false;
     R1 = r1;
-    K = Math.max(0.55, Math.min(1, R1 / 489));
-    NEAR = at(22, 2.6, 5); // the engraving is coming in (it fades in from 2.2 to 3.0) and big enough to sound
+    SHOWN = at(17, 2.2);                    // the engraving starts to come in (over 0.8 of zoom)
+    SEEN = SHOWN + 0.4;                     // half in
+    NEAR = Math.max(SEEN, at(22, 2.6));     // large enough to sound
     return true;
   }
 
@@ -151,7 +164,6 @@
 
   var TITLE = 'The sea between';
   var FAR = 'An engraved chart of the Aegean lies on the globe here. Come closer to see it.';
-  var SEEN = 2.6; // the engraving is half in
   var MID = 'An engraved chart of the Aegean, lying on the globe. Come closer to sound its sea and read its notes.';
   var CLOSE = 'An engraved chart of the Aegean, lying on the globe. Beneath its islands the sea falls ' +
               'thousands of metres: tap the water to sound it, or touch a copper name for its note.';
@@ -202,10 +214,10 @@
     terra.geo.set('glass', [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} }],
                   { style: 'area', color: PAPER, touchable: true, minZoom: NEAR });
     terra.geo.set('glass-minor', lines.minor.length ? [{ type: 'MultiLineString', coordinates: lines.minor }] : [],
-                  { style: 'track', color: INK, minZoom: NEAR });
+                  { style: 'track', color: INK, lineWidth: 0.8, minZoom: NEAR });
     terra.geo.set('glass-major', lines.major.length ? [{ type: 'MultiLineString', coordinates: lines.major }] : [],
-                  { style: 'border', color: COAST, minZoom: NEAR });
-    terra.geo.set('glass-rim', [{ type: 'LineString', coordinates: ring }], { style: 'border', color: COPPER, minZoom: NEAR });
+                  { style: 'border', color: COAST, lineWidth: 1, minZoom: NEAR });
+    terra.geo.set('glass-rim', [{ type: 'LineString', coordinates: ring }], { style: 'border', color: COPPER, lineWidth: 1.3, minZoom: NEAR });
     var reading = glass.reading;
     terra.geo.set('sounding', [point(glass.lon, glass.lat, {
       length: reading.land ? 0 : Math.round(Math.min(120, reading.metres * PT_PER_M) * 10) / 10,
@@ -316,11 +328,13 @@
   var sailUp = true;
 
   function setSkiff() {
+    var skiff = frames(sailUp ? 'skiff-' : 'skiff-folded-', 8);
     terra.sprites.set('skiff', {
       path: { coordinates: SEA.places.skiff, seconds: 150, loop: 'back' },
       looks: [
-        { frames: frames(sailUp ? 'skiff-' : 'skiff-folded-', 8), fps: 1.4, size: sized(28, 32), minZoom: at(34, 4, 7) },
-        { image: sailUp ? 'skiff-1.png' : 'skiff-folded-1.png', size: sized(18, 21), minZoom: 1.5, maxZoom: at(34, 4, 7) }
+        { frames: skiff, fps: 1.4, size: larger([28, 32]), minZoom: close(130) },
+        { frames: skiff, fps: 1.4, size: [28, 32], minZoom: at(34, 4) },
+        { image: skiff[0], size: [18, 21], minZoom: 1.5, maxZoom: at(34, 4) }
       ],
       label: 'A paper skiff, drawn: not a vessel or a route. Touch it to fold or raise its sail.',
       touchable: true
@@ -332,26 +346,29 @@
     SEA.places.streams.forEach(function (place, i) {
       terra.sprites.set('stream-' + (i + 1), {
         at: place,
-        looks: [{ frames: turned(STREAM, [0, 2, -2, 3, -3, 1][i % 6]), fps: 3.5 + (i % 3) * 0.5, size: sized(10, 36), minZoom: at(43, 5, 7.5) }]
+        looks: [{ frames: turned(STREAM, [0, 2, -2, 3, -3, 1][i % 6]), fps: 3.5 + (i % 3) * 0.5, size: [10, 36], minZoom: at(43, 5) }]
       });
     });
     terra.sprites.set('wind', {
       at: SEA.places.wind,
-      looks: [{ image: 'wind.png', size: sized(28, 26), minZoom: at(38, 4.5, 7) }],
+      looks: [{ image: 'wind.png', size: larger([28, 26]), minZoom: close(130) },
+              { image: 'wind.png', size: [28, 26], minZoom: at(34, 4) }],
       label: 'Wind strokes over the Cyclades, drawn: not measured wind. Touch for the note on the summer wind.',
       touchable: true
     });
     terra.sprites.set('palm', {
       at: note('vai').point,
-      looks: [{ image: 'palm.png', size: sized(22, 50), minZoom: at(38, 4.5, 7) }],
+      looks: [{ image: 'palm.png', size: larger([22, 50]), minZoom: close(130) },
+              { image: 'palm.png', size: [22, 50], minZoom: at(34, 4) }],
       label: 'A Cretan date palm at Vai, an emblem far larger than the grove. Touch for its note.',
       touchable: true
     });
     terra.sprites.set('whale', {
       path: { coordinates: SEA.places.whale, seconds: 320, loop: 'back' },
       looks: [
-        { frames: WHALE, fps: 3, size: sized(46, 24), minZoom: at(43, 5, 7.5), face: true, every: 60, for: 38 },
-        { frames: BLOW, fps: 3, size: sized(16, 16), minZoom: 1.6, maxZoom: at(43, 5, 7.5), every: 11, for: 1.4 }
+        { frames: WHALE, fps: 3, size: larger([46, 24]), minZoom: close(130), face: true, every: 60, for: 38 },
+        { frames: WHALE, fps: 3, size: [46, 24], minZoom: at(40, 4.7), face: true, every: 60, for: 38 },
+        { frames: BLOW, fps: 3, size: [16, 16], minZoom: 1.6, maxZoom: at(40, 4.7), every: 11, for: 1.4 }
       ],
       label: 'A sperm whale, drawn: an imaginative mark, not a sighting or a track. Touch for the note on the deep water south of Crete.',
       touchable: true
@@ -364,7 +381,7 @@
   var NOTE_LAYERS = {};
   NOTES.forEach(function (n) { NOTE_LAYERS['note-' + n.id] = n.id; });
 
-  function comeClose() { terra.flyTo(ANCHOR.lon, ANCHOR.lat, ANCHOR.zoom, 1.4); }
+  function comeClose() { terra.flyTo(CENTRE.lon, CENTRE.lat, fitZoom(terra.camera), 1.4); }
 
   function touchSprite(id) {
     if (!near) { comeClose(); return; }
@@ -423,9 +440,9 @@
   terra.on('camera', function (c) {
     if (!c) return;
     if (measure(c)) arrange();
-    var close = c.zoom >= NEAR, visible = c.zoom >= SEEN;
-    if (close !== near || visible !== seen) {
-      near = close; seen = visible;
+    var closeBy = c.zoom >= NEAR, visible = c.zoom >= SEEN;
+    if (closeBy !== near || visible !== seen) {
+      near = closeBy; seen = visible;
       if (!near) closeGlass();
       say();
     }
@@ -438,8 +455,8 @@
 
   var c0 = terra.camera;
   measure(c0);
-  terra.globe.set({ still: true });
-  terra.images.set('leaf', { image: 'engraving.png', bounds: SEA.engraving, opacity: 1, minZoom: 2.2, fade: 0.8 });
+  terra.globe.set({ still: true, maxZoom: MAX_ZOOM });
+  terra.flyTo(CENTRE.lon, CENTRE.lat, fitZoom(c0), 1.6);   // the pack's anchor: the whole sheet, on this screen
 
   // geography, lowest first (the first set of an id fixes its place); names claim room in this order
   terra.geo.set('glass', [], { style: 'area', color: PAPER, touchable: true, minZoom: NEAR });
@@ -452,16 +469,15 @@
   }
   /** The names and the marginal life, for this screen (again when the globe's size changes). */
   function arrange() {
+    terra.images.set('leaf', { image: 'engraving.png', bounds: SHEET, opacity: 1, minZoom: SHOWN, fade: 0.8 });
     NOTES.forEach(function (n) {
-      var off = NOTE_PLACES[n.id] || [0, 0], k = n.id === 'santorini' ? 1 : K; // clear of its drawing, which K shrinks
       terra.geo.set('note-' + n.id, [point(notePlace(n)[0], notePlace(n)[1], { label: n.name })],
-                    { style: 'label', color: COPPER, size: 14, minZoom: at(34, 3.6, 7), offset: [Math.round(off[0] * k), Math.round(off[1] * k)], touchable: true });
+                    { style: 'label', color: COPPER, size: 14, minZoom: at(34, 3.6), offset: NOTE_PLACES[n.id] || [0, 0], touchable: true });
     });
-    var sea = at(25, 3, 6);
-    names('name-sea', SEA.names.sea, { style: 'label', font: 'italic', size: 20, color: INK, minZoom: sea, maxZoom: sea + 3 });
-    names('name-regions', SEA.names.regions, { style: 'label', size: 13, color: INK, minZoom: at(38, 4.5, 8) });
-    names('name-waters', SEA.names.waters, { style: 'label', font: 'italic', size: 14, color: INK, minZoom: at(38, 4.5, 99) });
-    names('name-islands', SEA.names.islands, { style: 'label', size: 12, color: INK, minZoom: at(47, 5.5, 99), offset: [0, 11] });
+    names('name-sea', SEA.names.sea, { style: 'label', font: 'italic', size: 20, color: INK, minZoom: at(25, 3), maxZoom: at(75, 6) });
+    names('name-regions', SEA.names.regions, { style: 'label', size: 13, color: INK, minZoom: at(36, 4.2) });
+    names('name-waters', SEA.names.waters, { style: 'label', font: 'italic', size: 14, color: INK, minZoom: at(40, 4.5) });
+    names('name-islands', SEA.names.islands, { style: 'label', size: 12, color: INK, minZoom: at(47, 5.5), offset: [0, 11] });
     life();
     if (glass) drawGlass();
   }

@@ -30,15 +30,18 @@ longitude and of latitude (a plate carrée up to scale).
 
 ## What the pack holds
 
-- **`engraving.png`** (1681 × 1584): the leaf's day engraving, `Leaf/data/day.png`, painted by
-  `tools/aegean/paint.cjs` with the leaf's own drawing code (water strokes, coordinate ruling, land,
-  relief contours and gradient hachures derived from elevation, not invented mountain symbols, and
-  coast; no lettering). It is cropped at whole pixels 707, 713 to 2388, 2297 of the 3142 × 2772
-  painting, which has 1.65 pixels a chart unit from the chart's corner, so its bounds are exact:
-  west 19.500778, south 33.39899, east 30.202061, north 41.39899 (degrees). That is about what the
-  leaf first shows on an iPad; beyond it the globe's own map carries on. Its pixels are the
-  painting's (about one to a pixel on the 13-inch iPad at the globe's closest zoom); a neat line is
-  ruled inside its edge, as round the leaf's page, and it is reduced to 256 colours without dithering.
+- **`engraving.png`** (3072 × 2895): the leaf's day engraving, the drawing of `Leaf/data/day.png`
+  (water strokes, coordinate ruling, land, relief contours and gradient hachures derived from
+  elevation, not invented mountain symbols, and coast; no lettering), painted again by the leaf's own
+  drawing code (`leaf.js` `makeMap`, in paint mode, as `tools/aegean/paint.cjs` does) at 3.0157
+  pixels a chart unit instead of 1.65, so it stays sharp in the pack's close views. Only that scale
+  is changed, and only in what Chromium is served. The whole chart is painted from its corner, so
+  pixel columns and rows are equal steps of longitude and latitude; the sheet is cropped at whole
+  pixels 1292, 1303 to 4364, 4198, and its bounds are exact: west 19.50013, south 33.399635, east
+  30.20013, north 41.39941 (degrees). That is about what the leaf first shows on an iPad; beyond it
+  the globe's own map carries on. A pixel is about a screen pixel on the 13-inch iPad at zoom 20,
+  and on an iPhone at zoom 32; a neat line is ruled inside its edge, as round the leaf's page, and it
+  is reduced to 256 colours without dithering. Decoded, it is about 36 MB.
 - **`data.js`**: from `chart.js`, the sounding grid (350 × 315 cells over 15–35° E and 31–45° N, roughly
   5 km cells: the land mask, one bit a cell, and the depth in 25 m steps, one byte a cell, 255 meaning
   6,375 m or deeper); the 250, 500, 1,000, 1,500, 2,000, 3,000 and 4,000 m depth contours in degrees,
@@ -47,8 +50,9 @@ longitude and of latitude (a plate carrée up to scale).
   marginal drawings, each checked against the land mask.
 - **Sprites** (`whale-*.png`, `blow-*.png`, `skiff-*.png`, `skiff-folded-*.png`, `wind.png`,
   `stream-*.png`, `palm.png`): drawn in Chromium by the leaf's canvas routines (`whale`, `drawSkiff`,
-  `drawWind`, `palm` and the drifting strokes of `life` in `leaf.js`), in the leaf's day inks, at 3
-  pixels a point. The whale faces east (as a sprite that turns along its way must) with its flukes
+  `drawWind`, `palm` and the drifting strokes of `life` in `leaf.js`), in the leaf's day inks, at 4
+  pixels a point (enough for their close looks, 1.4 times larger, as the leaf's marks grow when it
+  is zoomed). The whale faces east (as a sprite that turns along its way must) with its flukes
   lifted a little frame by frame; the skiff's bob and sail are frames of one loop; the small blow
   that stands for the whale from afar is original to the pack, in the same ink.
 - **`notes.js`**: the leaf's notes, unchanged: summaries, sources, qualifications.
@@ -69,9 +73,13 @@ longitude and of latitude (a plate carrée up to scale).
   panel says instead that the note has no drawing here and that the general coastline leaves out
   the small central islands, keeping the note's other qualifications (no reconstruction, no exact
   eruption date). Every other note's summary, sources and limits are shown as written.
-- Names and drawings come in when a degree is so many points across the screen, not at one zoom
-  for every screen, so the phone (where the globe is smallest) gets fewer names, smaller drawings,
-  and its notes by its closest zoom.
+- The pack lets the globe zoom to 32 while it runs (`terra.globe.set({ maxZoom })`; the leaf's own
+  first view is about zoom 14 on an iPad and 25 on a phone). It opens on the whole sheet, about zoom
+  12 on the 13-inch iPad and 13.5 on an iPhone: the script flies there itself, once it may zoom past
+  8, so the manifest has no anchor. The engraving, names and drawings come in when a degree is so
+  many points across the screen, not at one zoom for every screen, so the chart reads the same at
+  the same size on a phone, which zooms further for it; the whole-Earth view keeps only the
+  doorway's skiff and, from zoom 1.6, the whale's occasional blow.
 
 ## The notes' sources
 

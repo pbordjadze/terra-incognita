@@ -5,7 +5,6 @@
   "runtime": 3,
   "presentation": "globe",
   "scripts": ["data.js", "notes.js", "main.js"],
-  "anchor": { "lon": 24.9, "lat": 37.4, "zoom": 7.5 },
   "doorway": { "lon": 24.5, "lat": 39.55, "label": "The sea between: an engraved chart of the Aegean",
                "look": { "image": "skiff-1.png", "size": [18, 21], "minZoom": 1.5 } },
   "taps": true,
