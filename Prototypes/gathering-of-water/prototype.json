@@ -5,7 +5,7 @@
   "runtime": 3,
   "presentation": "globe",
   "scripts": ["core.js", "main.js"],
-  "anchor": { "lon": -60, "lat": -18, "zoom": 1.9 },
+  "anchor": { "lon": -60, "lat": -18, "zoom": 2.1 },
   "doorway": { "lon": -60, "lat": -3.1, "label": "A gathering of water: the rivers of South America",
                "look": { "image": "doorway.png", "size": [32, 32], "minZoom": 1.5 } },
   "taps": true,
