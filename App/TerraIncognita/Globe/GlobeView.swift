@@ -91,6 +91,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 flight = nil
                 spin = .zero
                 for m in markers { m.view.isHidden = true }
+                exposeAtlasObjects()
             }
             needsDraw = true
         }
@@ -240,8 +241,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             return actions
         }
         // Small objects precede the full-size map element, so touch exploration can reach them
-        // where their frames overlap the map's direct-interaction surface.
-        var objects: [Any] = markers.map(\.view)
+        // where their frames overlap the map's direct-interaction surface. Only those drawn now: one
+        // behind the globe, too small yet or resting is reached by its Go to action instead.
+        var objects: [Any] = markers.filter { !$0.view.isHidden }.map(\.view)
         objects.append(contentsOf: accessibleOverlays as [Any])
         objects.append(element)
         accessibilityElements = objects
@@ -960,6 +962,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                         start: CACurrentMediaTime(), duration: duration)
     }
 
+    /// No country chosen: a prototype starts on the globe as it is, without the last one lit.
+    func clearSelection() {
+        if selected != nil { select(nil, animated: true) }
+    }
+
     private func select(_ k: Int?, animated: Bool) {
         let still = !animated || UIAccessibility.isReduceMotionEnabled
         // straight from one country to another, the new one fades up from nothing too
@@ -1118,19 +1125,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         var animating = false
+        var shownChanged = false
         for m in markers {
             m.advance(now: now, zoom: zoom, reading: reading, still: still) { lon, lat in project(lon: lon, lat: lat).point }
             let p = project(lon: m.lon, lat: m.lat)
             m.view.center = p.point
             let hidden = authoredMode || m.resting || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
                 || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
-            if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true }
+            if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true; shownChanged = true }
             if !hidden, m.animates, !still { animating = true }
             // A tiny weight/breath shift belongs to the marker's layer; it never requests a map draw.
             if m.breathes, let image = m.view.imageView {
                 image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
             }
         }
+        if shownChanged { exposeAtlasObjects() }
         sky?.frame(of: self)
         onFrame?()
         if historicalReference { labelsFading = false }

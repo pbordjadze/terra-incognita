@@ -390,7 +390,7 @@ final class PackScript {
         case "set":
             guard let id = body["id"] as? String, !id.isEmpty, id.count <= 64 else { return }
             let o = (body["options"] as? [String: Any]) ?? [:]
-            var spec = SpriteSpec(at: nil, path: nil, looks: [], label: String(((o["label"] as? String) ?? "").prefix(120)),
+            var spec = SpriteSpec(at: nil, path: nil, looks: [], label: String(((o["label"] as? String) ?? "").prefix(300)),
                                   touchable: (o["touchable"] as? Bool) ?? false)
             if let at = (o["at"] as? [Any])?.compactMap(Self.number), at.count == 2 { spec.at = (at[0], at[1]) }
             if let p = o["path"] as? [String: Any] {

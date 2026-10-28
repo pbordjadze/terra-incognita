@@ -93,6 +93,7 @@ final class Playground {
         }
         whenGlobeReady { [self] in
             end()
+            globe?.clearSelection()
             let stage = PrototypeStage(prototype: prototype, playground: self)
             self.stage = stage
             recent = id

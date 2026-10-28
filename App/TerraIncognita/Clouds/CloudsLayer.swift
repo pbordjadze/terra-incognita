@@ -21,6 +21,8 @@ final class CloudsLayer {
     var layer: CALayer { metal }
 
     private static let daySeconds = 60.0
+    /// How much of them shows while an experience runs (`CloudsSwitch.veiled`).
+    private static let veil = 0.35
     /// The GPU time a frame may take (ms), and what it aims below: the globe and its names share
     /// the frame, at up to 120 a second.
     private static let budget = (over: 3.5, under: 1.8)
@@ -81,7 +83,8 @@ final class CloudsLayer {
         lastTick = now
         if heldDays == nil, !UIAccessibility.isReduceMotionEnabled { days += dt / Self.daySeconds }
         guard let look = CloudsLook.on(globe.style) else { return fade(to: 0, dt: dt) }
-        fade(to: CloudsSwitch.shared.on && !globe.authoredMode ? 1 : 0, dt: dt)
+        let wanted = CloudsSwitch.shared
+        fade(to: !wanted.on || globe.authoredMode ? 0 : wanted.veiled ? Self.veil : 1, dt: dt)
         guard shown > 0, let pipeline, let queue, let sky, let land, let tile else { return }
         // (the GPU two frames behind: skip this one rather than wait for a drawable)
         guard gpu.inFlight < 2 else { return }
@@ -139,7 +142,7 @@ final class CloudsLayer {
         tile = nil
     }
 
-    /// Towards shown (1) or gone (0) in about a third of a second; hidden once gone, so Core
+    /// Towards shown (1), a veil or gone (0) in about a third of a second; hidden once gone, so Core
     /// Animation composites nothing for it.
     private func fade(to target: Double, dt: Double) {
         if shown != target {
