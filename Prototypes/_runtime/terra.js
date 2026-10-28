@@ -121,7 +121,8 @@
      *  playing, carry }): 'day' values count days since 1 January 1970 (UTC, negative before);
      *  ticks mark where the evidence is; rate is units a second while playing (playing starts it;
      *  never under Reduce Motion); carry starts from the date another prototype left, when it lies
-     *  within min–max. The page hears every change as 'time' and redraws what it shows. */
+     *  within min–max. The page hears every move by the reader, playback or the host as 'time' and
+     *  redraws what it shows; its own set() is not echoed back. */
     time: {
       value: null,
       show: function (options) {

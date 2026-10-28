@@ -211,6 +211,7 @@ final class PrototypeStage {
             if v >= t.min, v <= t.max { t.value = v }
         }
         time = t
+        playground?.lastYear = t.year
         overlay?.time(t.value, playing: false, by: .host)
         if wanted, !UIAccessibility.isReduceMotionEnabled { play(true) }
     }

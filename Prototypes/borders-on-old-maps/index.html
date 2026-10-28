@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Borders on old maps: about and sources</title>
+<style>
+  :root { --ink: #253440; --soft: #4a5a64; --rule: #d9cfb8; --paper: #f6f2e7; --blue: #1c5c8c; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font: calc(18px * var(--terra-text-scale, 1)) / 1.5 "Iowan Old Style", Georgia, serif;
+         padding: calc(72px + env(safe-area-inset-top)) 24px calc(40px + env(safe-area-inset-bottom)); }
+  main { max-width: 560px; margin: 0 auto; }
+  .eyebrow { font-size: 0.72em; letter-spacing: 0.16em; text-transform: uppercase; color: #b04234; margin: 0 0 4px; }
+  h1 { font-weight: normal; font-size: 1.7em; line-height: 1.15; margin: 0 0 16px; }
+  h2 { font-weight: normal; font-size: 1.15em; margin: 32px 0 6px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  p, li { margin: 0 0 10px; }
+  ul { padding-left: 1.1em; margin: 0; }
+  .small { color: var(--soft); font-size: 0.88em; }
+  cite { font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Borders on old maps</p>
+  <h1>Europe on eight dated maps</h1>
+  <p>Each year on the date strip shows one of eight maps of Europe's states, drawn for 1530, 1600, 1815,
+  1878, 1920, 1938, 1945 and 1994. Between them the borders do not move: a year with no map shows the
+  nearest one, and the caption says which. Nothing is drawn for the years in between.</p>
+
+  <h2>Reading the globe</h2>
+  <ul>
+    <li><strong>The filled country</strong> is the one you chose, as that map draws it.</li>
+    <li><strong>The dashed line</strong> is the same country on the closest earlier map that has it.</li>
+    <li>The 1530 and 1600 maps here show only the Ottoman Empire. Later maps cover Europe and its edges only.</li>
+    <li>The 1945 map shows Germany in four zones of occupation, named here as the British, American, French and Soviet zones.</li>
+    <li>Today's borders and names are hidden; the coasts are today's, as a reference.</li>
+  </ul>
+
+  <h2>What these maps are</h2>
+  <p>Generalised maps of states made for a world atlas of history, simplified further here (to about
+  0.025°). They are not precise records of a treaty or a day: 1945, for example, combines arrangements
+  made after the war. A country missing from a map means only that this map has no shape by that name; it
+  says nothing about the people who lived there.</p>
+
+  <h2>Sources</h2>
+  <ul>
+    <li>André Ourednik and contributors, <cite>historical-basemaps</cite>, files world_&lt;year&gt;.geojson at
+    commit da7a4b7, cut to Europe and simplified. GPL-3.0 (LICENSE-HISTORY.txt).</li>
+    <li>Natural Earth, 1:110m land (public domain): only to tell land the maps don't cover from the sea.</li>
+  </ul>
+  <p class="small">An earlier version of this study, “A place through time”, chose these maps and prepared them.</p>
+</main>
+</body>
+</html>

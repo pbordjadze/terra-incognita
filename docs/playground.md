@@ -11,7 +11,7 @@ That is a workbench rule for comparing things cleanly, not a decision about the 
 - [Make a web prototype](#make-a-web-prototype) (no app build: preview, test, publish, see it on the phone)
 - [Make a native prototype](#make-a-native-prototype) (Swift or Metal: needs an IPA)
 - [Update, compare, park, remove](#update-compare-park-remove)
-- [The contract](#the-contract): `prototype.json`, `terra.js` (runtime 1), the catalog
+- [The contract](#the-contract): `prototype.json`, `terra.js` (runtimes 1 and 2), the catalog
 - [Remote delivery](#remote-delivery): sources, integrity, limits, privacy, R2 set-up
 - [What needs a new IPA](#what-needs-a-new-ipa)
 
@@ -119,12 +119,13 @@ be able to tell what they are looking at.
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: the `terra.js` version it needs (1). An app with an older runtime lists it as
-  needing a new build instead of opening it.
+- `runtime`: the `terra.js` version it needs (1, or 2 for geography, a date and a caption drawn by
+  the globe). An app with an older runtime lists it as needing a new build instead of opening it.
 - `presentation`: `screen` (its own full-screen page over the paused globe; ends when it closes)
   or `globe` (lives on the globe while active: markers, an optional overlay; ends from the chip).
 - `entry`: the screen's page (default `index.html`). A globe prototype opens it from a marker with
-  `"opens": true`, or with `terra.open()`; it is optional for a globe prototype.
+  `"opens": true`, with `terra.open()`, or (when nothing else opens) from the chip's **Open**; it
+  is optional for a globe prototype.
 - `anchor`: where the globe flies when it starts (`zoom` 0.8–8, 1 = the whole globe).
 - `markers` (globe): pictures from the pack drawn by the app at places on the globe, in points;
   hidden behind the limb and outside `minZoom`–`maxZoom`; accessible by `label`; names keep clear.
@@ -149,6 +150,25 @@ same file in the app and the preview):
 | `terra.on('tap', fn)` | overlay with `taps`: `{ x, y, lon, lat }` (`lon`/`lat` null off the globe) |
 | `terra.flyTo(lon, lat, zoom, seconds)` | overlay: move the globe |
 | `terra.log(...)` | the workbench's log and the Xcode console |
+
+### `terra.js`, runtime 2: drawn by the globe
+
+For a globe prototype whose overlay page draws nothing itself: it tells the globe what to show,
+and the app draws it natively, in the globe's own inks, type and reading scale, in step with the
+camera. The two examples are `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/`.
+
+| | |
+| --- | --- |
+| `terra.geo.set(id, features, options)` | a layer of GeoJSON features or geometries ([lon, lat]); `options.style`: `border`, `area`, `ghost` (dashed outline), `track` (fine dashes), `dot`, `ring`, `label` (`properties.label`, on a halo; earlier ones win room), `symbol` (`options.image` from the pack), `sounding` (a line hanging `properties.length` pt with `properties.label`); also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`, `width`/`height`, `offset: [dx, dy]`. Setting an id again replaces it; the first set of an id fixes its place in the drawing order. |
+| `terra.geo.remove(id)`, `terra.geo.clear()` | take layers away |
+| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left |
+| `terra.on('time', fn)` | `{ value, playing, by }`: every move by the reader (`reader`), playback (`play`, ≤ 30 a second) or the host (`host`, the first) |
+| `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it from the page (not echoed back), play or pause, hide |
+| `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: the title above the date, the text below. Say what the reader is looking at before why it matters. |
+| `terra.globe.set({ historical, still })` | hide today's borders and names (coasts stay, as a reference); stop the idle turn |
+
+Everything a runtime-2 page asks for belongs to the prototype's stage and goes when it ends; the
+preview (`serve.cjs`) draws the same things over its stand-in globe.
 
 A screen keeps the top-left 56 pt (inside the safe area) free: the app's own Back button sits
 there, so no page can trap the reader. Pages are loaded from `terra-pack://<id>/…`; relative URLs

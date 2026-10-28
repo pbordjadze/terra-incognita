@@ -1,0 +1,13 @@
+{
+  "id": "sounding-the-deep",
+  "title": "Sounding the deep",
+  "summary": "HMS Challenger exploring the deep ocean, 1873–76, station by station on the globe. Touch a station to lower the line to the recorded depth.",
+  "runtime": 2,
+  "presentation": "globe",
+  "entry": "index.html",
+  "anchor": { "lon": -38, "lat": 22, "zoom": 1 },
+  "overlay": "overlay.html",
+  "taps": true,
+  "shelf": "current",
+  "background": "#F6F2E7"
+}

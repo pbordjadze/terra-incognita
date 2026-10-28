@@ -152,10 +152,10 @@ jobs:
             case "${{ inputs.interaction_suite }}" in
               leaf) export UI_TEST_TARGET=TerraIncognitaUITests/LeafTests ;;
               whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
-              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests" ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests" ;;
             esac
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
-              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests"
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests"
             fi
           fi
           # A remote revision of the bundled hello-pack, served on this machine for RemotePackTests:

@@ -109,9 +109,10 @@ Keep design discussions and plans in that private repository.
   off Madagascar and an invitation), the river study (`Water/`, `App/TerraIncognita/Water/`, `water`;
   `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
-  helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar prototypes in succession
-  with the live counts back to the plain globe's, parked work, the bundled pack, and a remote
-  revision served by `tools/playground/serve.cjs` arriving, rolling back and opening offline.
+  `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
+  prototypes in succession with the live counts back to the plain globe's, parked work, the bundled
+  pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
+  offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
