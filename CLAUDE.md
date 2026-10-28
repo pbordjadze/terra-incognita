@@ -164,21 +164,26 @@ and what every experience relies on and none owns. When in doubt, it's runtime.
 - **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
   never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
   experience that needs it.
+- **No web views.** Nothing new runs or draws in a web view. If a tool is missing, build it
+  (script, or Swift with the next release) and let the experience wait for it. Until runtime 3
+  (pack scripts in JavaScriptCore) exists, the next new experience starts by building it.
 - **Script before native.** A tool goes in shared script when it can (it ships with packs, no
   IPA); in Swift (a new `terra.*` capability, raising the runtime version) only when it must draw
-  or animate every frame, take touches, be fast, or reach the system. The page decides; the globe
-  draws.
+  or animate every frame, take touches, be fast, or reach the system. The script decides; the
+  globe draws.
 - **Whoever changes a tool updates everything that uses it, in the same change.** A tool with one
-  user may change freely; with more, only compatibly. Packs on older runtime versions keep working.
+  user may change freely; with more, only compatibly. Packs on older runtime versions keep working
+  until they have moved.
 - **A tool lands complete:** in the contract with an example, tested, mirrored in the preview
   (`serve.cjs`) so an agent can see it without a Mac, and accessible inside the tool (VoiceOver,
   text size, Reduce Motion).
 - **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
   date and touches rather than taking them, and leaves nothing behind when its experience ends.
-- **A web view drawing on the globe is the escape hatch,** not the default; a pack that needs one
-  says which tool was missing.
-- What is already built (the native prototypes, the packs so far) stays as it is until it is next
-  reworked.
+- **What runs in a web view today moves onto the runtime:** the runtime-2 packs' logic and the
+  delivery check with runtime 3, then Clouds' shader to Metal, the Aegean leaf and the river study
+  rebuilt natively (order and status: painting-company row 154). Each keeps opening as it does
+  until it has moved; the web host goes once nothing uses it (the owner's call). The native prototypes move onto the
+  runtime's tools when they are next reworked.
 
 ## Design rules
 
