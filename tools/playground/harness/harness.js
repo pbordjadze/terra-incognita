@@ -103,6 +103,7 @@
   measure();
 
   // ---- the camera (terra.camera: lon, lat, zoom 0.8-8; radius = the resting radius x zoom)
+  let zoomLimit = 8;   // the deepest zoom: 8, or what the pack asked for (terra.globe.set({ maxZoom }))
   const cam = { lon: -40, lat: 22, zoom: 1 };
   let flight = null, lastTouch = -1e9, camVersion = 0, lastCamMove = -1e9, needsRender = true;
   // something under the sprites changed: the cached layer is drawn again (camera moves are in its key)
@@ -120,7 +121,7 @@
   }
   function flyTo(lon, lat, zoom, seconds) {
     if (!Number.isFinite(+lon) || !Number.isFinite(+lat)) return hostError('terra.flyTo(' + lon + ', ' + lat + '): longitude and latitude must be numbers');
-    const to = { lon: wrapLon(+lon), lat: clamp(+lat, -80, 80), zoom: zoom == null || !Number.isFinite(+zoom) ? cam.zoom : clamp(+zoom, 0.8, 8) };
+    const to = { lon: wrapLon(+lon), lat: clamp(+lat, -80, 80), zoom: zoom == null || !Number.isFinite(+zoom) ? cam.zoom : clamp(+zoom, 0.8, zoomLimit) };
     const ms = (seconds == null || !Number.isFinite(+seconds) ? 0.8 : Math.max(0, +seconds)) * 1000;
     if (settings.reduceMotion || ms <= 0) {           // Reduce Motion: arrive, don't travel
       flight = null;
@@ -147,7 +148,7 @@
     cameraMoved();
   }
   function zoomBy(k) {
-    cam.zoom = clamp(cam.zoom * k, 0.8, 8);
+    cam.zoom = clamp(cam.zoom * k, 0.8, zoomLimit);
     cameraMoved();
   }
 
@@ -535,13 +536,16 @@
   // ---- terra.geo: geography drawn by the globe (GeoLayers.swift), with touchable features
   const STYLE_KIND = { border: 'line', ghost: 'line', track: 'line', area: 'area', dot: 'point', ring: 'point', label: 'point', symbol: 'point', sounding: 'point' };
   const VERTEX_BUDGET = 100000, LAYER_BUDGET = 64, PLACES = 400;
+  // as the app reads them (UIColor(hex:)): #rrggbb, or #rrggbbaa with its alpha
   function parseColor(v) {
-    const m = typeof v === 'string' && /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(v.trim());
+    const m = typeof v === 'string' && /^#?([0-9a-f]{6}|[0-9a-f]{8})$/i.exec(v.trim());
     if (!m) return null;
-    const h = m[1].length === 3 ? m[1].replace(/./g, (x) => x + x) : m[1];
-    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    const h = m[1];
+    const c = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    c.alpha = h.length === 8 ? parseInt(h.slice(6, 8), 16) / 255 : 1;
+    return c;
   }
-  const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a == null ? 1 : a) + ')';
+  const rgba = (c, a) => 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (a == null ? 1 : a) * (c.alpha == null ? 1 : c.alpha) + ')';
   function darker(c) {        // GeoLayers.swift: saturation x1.15, brightness x0.7
     const [r, gg, b] = c.map((v) => v / 255), mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), d = mx - mn;
     let h = 0;
@@ -556,7 +560,7 @@
     const style = options.style == null ? 'border' : options.style, kind = STYLE_KIND[style];
     const color = parseColor(options.color);
     const where = 'terra.geo.set("' + id + '")';
-    if (options.color != null && !color) hostWarn(where + ': color must be "#rrggbb" (got ' + JSON.stringify(options.color) + ')');
+    if (options.color != null && !color) hostWarn(where + ': color must be "#rrggbb" or "#rrggbbaa" (got ' + JSON.stringify(options.color) + ')');
     if (options.font != null && !['regular', 'italic', 'caps'].includes(options.font)) hostWarn(where + ': font is regular, italic or caps');
     let offset = [0, 0];
     if (options.offset != null) {
@@ -1441,6 +1445,8 @@
         return;
       case 'globe':
         host.globe = { historical: !!msg.historical, still: !!msg.still };
+        // (a pack may let the reader zoom deeper than 8, to 32, for its close views: as the app does)
+        if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) zoomLimit = clamp(+msg.maxZoom, 8, 32);
         dirty();
         return;
       case 'panel':
@@ -1468,6 +1474,7 @@
     host.time = null;
     host.caption = { title: '', text: '' };
     host.globe = { historical: false, still: false };
+    zoomLimit = 8;
     host.scheme = 'touchables';
     host.listensOpen = false;
     imagesVersion++;
