@@ -10,7 +10,9 @@ them); --fetch downloads the missing ones from NCEI first (204 files, about 4 MB
 deletes each once read). The running sums are kept in `<cache>/sums-2000-2016.npz`, so a second
 build reads no files.
 
-Out: Prototypes/clouds/sky.png, 1448 x 1092 RGB, decoded by shader.js:
+Out, the same files twice: for the native prototype (App/TerraIncognita/Clouds/CloudsSky.png and
+CloudsLand.png, decoded by Clouds.metal) and for its web twin (Prototypes/clouds-web/sky.png and
+land.png, decoded by shader.js, the same line for line). The sky, 1448 x 1092 RGB:
 
     a 4 x 6 grid of 362 x 182 tiles, each one month's 360 x 180 cells (north up, west edge 180 W)
     with a one-cell border repeated from the opposite side (east-west) or the edge (north, south),
@@ -23,7 +25,7 @@ Out: Prototypes/clouds/sky.png, 1448 x 1092 RGB, decoded by shader.js:
                  B  cumulus: low and thin
     each a share of the typed clouds; the rest are thin and above the low ones (altocumulus, cirrus).
 
-And Prototypes/clouds/land.png, 2048 x 1024 grey, 255 on land: the globe's own coast (the sign of
+And the land, 2048 x 1024 grey, 255 on land: the globe's own coast (the sign of
 Globe/geo.png's distance to it), so that a shadow falling on land takes the land's shadow colour.
 
 ISCCP types a cloud by the pressure at its top (low below the 680 hPa level, high above 440) and its
@@ -40,8 +42,8 @@ import numpy as np
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / 'Prototypes' / 'clouds' / 'sky.png'
-LAND = ROOT / 'Prototypes' / 'clouds' / 'land.png'
+SKY = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsSky.png', ROOT / 'Prototypes' / 'clouds-web' / 'sky.png']
+LAND = [ROOT / 'App' / 'TerraIncognita' / 'Clouds' / 'CloudsLand.png', ROOT / 'Prototypes' / 'clouds-web' / 'land.png']
 NCEI = ('https://www.ncei.noaa.gov/data/international-satellite-cloud-climate-project-isccp-h-series-data/'
         'access/isccp-basic/hgm/')
 YEARS = range(2000, 2017)
@@ -176,15 +178,17 @@ def main():
         for c in range(3):
             atlas[y:y + TILE_H, x:x + TILE_W, c] = tile(np.clip(smooth(fill(orient(a[c]))), 0, 1))
             atlas[3 * TILE_H + y:3 * TILE_H + y + TILE_H, x:x + TILE_W, c] = tile(np.clip(smooth(fill(orient(b[c]))), 0, 1))
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(np.round(atlas * 255).astype(np.uint8), 'RGB').save(OUT, optimize=True)
-    print(f'{OUT.relative_to(ROOT)}: {OUT.stat().st_size:,} bytes', file=sys.stderr)
+    for out in SKY:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(np.round(atlas * 255).astype(np.uint8), 'RGB').save(out, optimize=True)
+        print(f'{out.relative_to(ROOT)}: {out.stat().st_size:,} bytes', file=sys.stderr)
     # the land: the globe's coarse distance to the coast (G, 128 + d / 2) is above 128 on land
     geo = np.asarray(Image.open(ROOT / 'Globe' / 'geo.png'))
     land = (geo[..., 1] > 128) | ((geo[..., 1] == 128) & (geo[..., 0] > 128))
     half = land.reshape(1024, 2, 2048, 2).mean((1, 3))
-    Image.fromarray(np.round(half * 255).astype(np.uint8), 'L').save(LAND, optimize=True)
-    print(f'{LAND.relative_to(ROOT)}: {LAND.stat().st_size:,} bytes', file=sys.stderr)
+    for out in LAND:
+        Image.fromarray(np.round(half * 255).astype(np.uint8), 'L').save(out, optimize=True)
+        print(f'{out.relative_to(ROOT)}: {out.stat().st_size:,} bytes', file=sys.stderr)
 
 
 if __name__ == '__main__':

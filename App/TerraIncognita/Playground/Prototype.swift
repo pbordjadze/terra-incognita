@@ -84,6 +84,25 @@ final class PrototypeStage {
         if marker.onOpen != nil { canOpen = true }
     }
 
+    /// What a native prototype draws over the globe in step with it (`GlobeFollower`), between the
+    /// globe's drawing and its names; taken away at the end.
+    @ObservationIgnored private var followers: [any GlobeFollower] = []
+
+    func follow(_ follower: any GlobeFollower) {
+        guard !ended, let globe else { return }
+        followers.append(follower)
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        follower.layer.frame = globe.bounds
+        // (first: over the globe's drawing, which is its layer's own contents, and under the names)
+        globe.layer.insertSublayer(follower.layer, at: 0)
+        CATransaction.commit()
+        globe.onFrame = { [weak self, weak globe] in
+            guard let self, let globe else { return }
+            for f in self.followers { f.frame(of: globe) }
+        }
+    }
+
     /// Opens a screen over the paused globe.
     func present<Content: View>(_ id: String, @ViewBuilder _ content: @escaping () -> Content) {
         guard !ended else { return }
@@ -167,6 +186,9 @@ final class PrototypeStage {
         ended = true
         for m in markers { globe?.remove(m) }
         markers = []
+        for f in followers { f.stop(); f.layer.removeFromSuperlayer() }
+        if !followers.isEmpty { globe?.onFrame = nil }
+        followers = []
         if let overlay {
             overlay.stop()
             overlay.removeFromSuperview()

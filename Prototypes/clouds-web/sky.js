@@ -42,7 +42,7 @@
     gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-    ['uSize', 'uPx', 'uDisc', 'uRot', 'uZoom', 'uReading', 'uDays', 'uMonth', 'uSky', 'uLand', 'uNoise', 'uPaper'].forEach(function (n) {
+    ['uSize', 'uPx', 'uDisc', 'uRot', 'uZoom', 'uReading', 'uDays', 'uMonth', 'uSky', 'uLand', 'uNoise', 'uSun', 'uSeaShadow', 'uLandShadow', 'uTone'].forEach(function (n) {
       loc[n] = gl.getUniformLocation(program, n);
     });
     var buf = gl.createBuffer();
@@ -194,7 +194,12 @@
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_3D, noise);
     gl.uniform1i(loc.uNoise, 2);
-    gl.uniform1f(loc.uPaper, query.get('style') === 'paper' ? 1 : 0);
+    // the Wikipedia map's look (CloudsLook in the app): shadows blue-grey on the sea, the globe's own
+    // warm grey on land, lit from the north-west (no sun)
+    gl.uniform4f(loc.uSun, 0, 0, 0, 0);
+    gl.uniform4f(loc.uSeaShadow, 0.20, 0.26, 0.38, 1);
+    gl.uniform4f(loc.uLandShadow, 0.43, 0.39, 0.32, 0.8);
+    gl.uniform4f(loc.uTone, 1, 0.75, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 

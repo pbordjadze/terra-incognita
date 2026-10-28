@@ -1,7 +1,7 @@
 'use strict';
 // Pictures of the clouds pack over the app's own globe, names on top, for judging the look:
 // compose.py draws the globe and the names, headless Chromium the overlay between them.
-//   node tools/playground/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [--style soft|paper] [view ...]
+//   node tools/playground/clouds/look.cjs [--device phone|ipad] [--month 10] [--days 0.4] [view ...]
 // A view is name:lon,lat,zoom (default: a set from the whole Earth down to the ground). Pictures go
 // to build/playground/clouds/look/. Reads only this machine.
 const { chromium } = require('playwright');
@@ -27,7 +27,6 @@ function option(args, name, fallback) {
   const device = option(args, '--device', 'phone');
   const month = option(args, '--month', String(new Date().getMonth() + 1));
   const days = option(args, '--days', '0.4');
-  const style = option(args, '--style', 'soft');
   const scale = +option(args, '--scale', '2');
   const [w, h] = SIZES[device];
   const views = (args.length ? args : VIEWS).map((v) => {
@@ -46,14 +45,14 @@ function option(args, name, fallback) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error' || /clouds:/.test(m.text())) errors.push(m.text()); });
-    await page.goto(`${server.url}/pack/clouds/overlay.html?mode=overlay&month=${month}&days=${days}&style=${style}`);
+    await page.goto(`${server.url}/pack/clouds-web/overlay.html?mode=overlay&month=${month}&days=${days}`);
     await page.waitForSelector('html[data-clouds="ready"]', { timeout: 60000 });
     for (const v of views) {
       const cam = JSON.parse(execFileSync('python3', [COMPOSE, 'camera', `${w}x${h}`, v.lon, v.lat, v.zoom].map(String)));
       await page.evaluate((c) => { terra._receive({ type: 'camera', camera: c }); window.__clouds.draw(); }, cam);
-      const overlay = path.join(out, `${device}-${v.name}-${style}-overlay.png`);
+      const overlay = path.join(out, `${device}-${v.name}-overlay.png`);
       await page.screenshot({ path: overlay, omitBackground: true });
-      const file = path.join(out, `${device}-${v.name}-${style}.png`);
+      const file = path.join(out, `${device}-${v.name}.png`);
       execFileSync('python3', [COMPOSE, 'compose', `${w}x${h}`, v.lon, v.lat, v.zoom, scale, overlay, file].map(String));
       console.log(path.relative(ROOT, file));
     }

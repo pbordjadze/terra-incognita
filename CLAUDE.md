@@ -92,6 +92,17 @@ Keep design discussions and plans in that private repository.
   actual simulator output after the interaction suite; `[camelid-capture]` requests this report-only
   step in the ordinary macOS job. Its outcome and command diagnostics are preserved separately. Branch
   `[ipa]` builds have a separate downloadable IPA artifact and never update the shared source.
+- **The clouds** (`App/TerraIncognita/Clouds/`, the `clouds` prototype): this month's clouds over the
+  globe, where satellites usually see them (NOAA's ISCCP-H, 2000–2016), drawn as weather that could
+  be; zooming in passes down through them. `CloudsLayer` is a Metal layer of its own between the
+  globe's drawing and its names (`GlobeFollower`, through `PrototypeStage.follow`), so the globe's
+  code is untouched; it draws at a fraction of the screen's pixels and follows the GPU's timings
+  (the workbench's log says what a frame costs). `Clouds.metal` and the parked web twin
+  `Prototypes/clouds-web/shader.js` are the same line for line: change both together (the twin is
+  what `tools/playground/clouds/look.cjs` and `film.cjs` draw over the globe's preview).
+  `tools/playground/clouds/build.py` makes `CloudsSky.png` and `CloudsLand.png` for both; never
+  hand-edit them; `SOURCES.md` in the twin separates what is measured from what is drawn. Debug:
+  `-clouds-days <d>` holds the drift, `-clouds-month <1-12>` the month.
 - **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
   Al-Hitan opens an authored sequence on the same globe. The entry appears from 2× scale; the
   map's accessibility action “Go to Whale fossil, Wadi Al-Hitan” moves there without starting playback.

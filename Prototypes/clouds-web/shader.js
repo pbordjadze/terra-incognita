@@ -1,14 +1,17 @@
 // The clouds' fragment shader, as text for sky.js (which draws a full-screen triangle with it).
 window.CLOUDS_FRAG = `#version 300 es
 // The clouds, one pixel at a time (sky.js draws a full-screen triangle with this).
+// App/TerraIncognita/Clouds/Clouds.metal is the same, line for line, in Metal (the native
+// prototype): change both together.
 //
 // Measured: how often each place is under cloud this month, and which kinds of cloud make up its
 // sky (sky.png, from ISCCP-H). Drawn: particular clouds, noise thresholded so that each place's
 // drawn cover is its measured cover; cyclones wound into the westerlies; everything carried by
 // the usual winds at its height. Five layers, low to high: cumulus; stratocumulus and stratus;
 // altostratus and nimbostratus; the thin clouds aloft (altocumulus, cirrus); cirrostratus and
-// deep convection. Each is matte, lit from the north-west as the globe's relief is, and casts a
-// soft shadow; coming closer, the reader passes down through them, the highest first.
+// deep convection. Each is lit from the north-west as the globe's relief is (or by a sun, for a
+// globe that has one), and casts a soft shadow; coming closer, the reader passes down through them,
+// the highest first.
 precision highp float;
 precision highp int;
 
@@ -23,7 +26,10 @@ uniform vec3 uMonth;       // this month (0 = January), the next, how far betwee
 uniform sampler2D uSky;
 uniform sampler2D uLand;    // 1 on land (the globe's own coast)
 uniform highp sampler3D uNoise;
-uniform float uPaper;      // 0: soft, as from space; 1: cut paper, edged
+uniform vec4 uSun;         // xyz the sun (world, towards it); w 1 to light by it, 0 the map's north-west
+uniform vec4 uSeaShadow;   // rgb, and how strong on the sea
+uniform vec4 uLandShadow;  // rgb, and how strong on land
+uniform vec4 uTone;        // x the clouds' opacity, y how far the night side darkens them
 out vec4 outColor;
 
 const float PI = 3.14159265;
@@ -149,7 +155,12 @@ bool shell(vec2 v, float m, float h, out vec3 q, out float facing) {
   return true;
 }
 
-vec3 towardLight(vec3 q) {               // the north-west, along the ground
+// towards the light along the ground at q: the map's north-west, or a sun's direction
+vec3 towardLight(vec3 q) {
+  if (uSun.w > 0.5) {
+    vec3 t = uSun.xyz - q * dot(q, uSun.xyz);
+    if (dot(t, t) > 1e-8) return normalize(t);
+  }
   vec3 e = vec3(q.z, 0.0, -q.x);
   e = dot(e, e) > 1e-8 ? normalize(e) : vec3(1.0, 0.0, 0.0);
   return normalize(cross(q, e) - e);
@@ -217,10 +228,11 @@ void main() {
     // on the sea a cool blue-grey; on land the globe's own shadow colour (its drop shadow's, 6E6352)
     vec2 uv = vec2(atan(g.x, g.z) / PI + 1.0, 1.0 - asin(clamp(g.y, -1.0, 1.0)) * 2.0 / PI) * 0.5;
     float land = texture(uLand, uv).r;
-    over(acc, mix(vec3(0.20, 0.26, 0.38), vec3(0.43, 0.39, 0.32), land), (1.0 - lit) * mix(1.0, 0.8, land));
+    float strength = mix(uSeaShadow.w, uLandShadow.w, land);
+    over(acc, mix(uSeaShadow.rgb, uLandShadow.rgb, land), (1.0 - lit) * strength);
   }
 
-  // the layers, low to high, lit from the north-west
+  // the layers, low to high, lit from the north-west (or the sun)
   for (int i = 0; i < 5; i++) {
     Layer l = L[i];
     if (l.cover < 0.01) continue;
@@ -244,15 +256,6 @@ void main() {
       float thread = 1.0 - abs(gnoise(qs) + 0.5 * gnoise(OCT * qs * 2.03)) * 2.6;
       d = covered * smoothstep(0.15, 0.85, thread) * (1.0 - smoothstep(0.35, 0.6, px * 104.0 / (m * max(facing, 0.08))));
       col = l.lit;
-    } else if (uPaper > 0.5) {
-      // cut paper: a crisp edge a pixel wide; a rim a few pixels in, lighter facing the light
-      d = mix(l.cover, smoothstep(-slope * 0.9, slope * 0.9, t), f.y);
-      if (d < 0.002) continue;
-      float rim = (1.0 - smoothstep(0.0, 2.5 * uPx * uReading, t / slope)) * f.y;
-      float toward = dot(-grad / slope, lv);
-      float body = smoothstep(0.0, 0.5, t);
-      col = mix(l.lit, l.shade, clamp(0.10 * (1.0 - body) + rim * (0.5 - 0.5 * toward) * 0.85, 0.0, 1.0));
-      col = mix(col, vec3(1.0), rim * max(toward, 0.0) * 0.6);
     } else {
       // as from space: thin and grey at the edges, thick and white within, the tops lit like relief
       float feather = max(slope * 1.2, i == 0 ? 0.035 : 0.07);   // cumulus: crisper
@@ -265,7 +268,9 @@ void main() {
       col = mix(l.lit, l.shade, clamp(0.34 * (1.0 - body) + 0.34 * max(relief, 0.0), 0.0, 1.0));
       col = mix(col, vec3(1.0), 0.6 * max(-relief, 0.0) * body);
     }
-    float a = l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
+    // by a sun, the night side's clouds darken (a globe without one has no night)
+    if (uSun.w > 0.5) col *= mix(1.0 - uTone.y, 1.0, smoothstep(-0.12, 0.08, dot(q, uSun.xyz)));
+    float a = uTone.x * l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
     over(acc, col, a);
   }
   outColor = acc;

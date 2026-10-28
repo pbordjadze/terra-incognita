@@ -71,7 +71,7 @@ function option(args, name, fallback) {
   try {
     const context = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: scale });
     const page = await context.newPage();
-    await page.goto(`${server.url}/pack/clouds/overlay.html?mode=overlay&month=${month}&days=0`);
+    await page.goto(`${server.url}/pack/clouds-web/overlay.html?mode=overlay&month=${month}&days=0`);
     await page.waitForSelector('html[data-clouds="ready"]', { timeout: 60000 });
     const n = Math.round(keys[keys.length - 1].t * fps);
     for (let f = 0; f <= n; f++) {
