@@ -177,9 +177,13 @@
     caption: {
       set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '' }); }
     },
-    /** { historical: hide today's borders and names, still: no idle turn } */
+    /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32) } */
     globe: {
-      set: function (o) { send({ type: 'globe', historical: !!(o && o.historical), still: !!(o && o.still) }); }
+      set: function (o) {
+        var m = { type: 'globe', historical: !!(o && o.historical), still: !!(o && o.still) };
+        if (o && o.maxZoom != null) m.maxZoom = +o.maxZoom;
+        send(m);
+      }
     },
     /** Longer words and their sources, in a sheet over the globe. */
     panel: {

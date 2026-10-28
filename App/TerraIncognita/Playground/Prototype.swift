@@ -225,10 +225,11 @@ final class PrototypeStage {
             stopPlayback()
             time = nil
         case .caption(let caption): self.caption = caption
-        case .globe(let historical, let still):
+        case .globe(let historical, let still, let maxZoom):
             globeChanged = true
             globe?.historicalReference = historical
             globe?.holdsStill = still
+            if let maxZoom { globe?.zoomLimit = maxZoom }
         case .panelShow(let panel): playground?.show(panel) { [weak self] in self?.script?.panelClosed() }
         case .panelHide: playground?.hidePanel(from: pack.id)
         }
@@ -389,6 +390,7 @@ final class PrototypeStage {
             globe?.historicalReference = false
             globe?.holdsStill = false
             globe?.dragScheme = .touchables
+            globe?.zoomLimit = 8
             globeChanged = false
         }
         invitation = nil

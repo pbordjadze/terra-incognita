@@ -71,7 +71,9 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 | `terra.close()` | end the prototype (back to the atlas) |
 
 Scripts react to events and timers. They never draw and never run every frame: the globe animates
-what they set up. An error is logged and the pack keeps running.
+what they set up. An error is logged and the pack keeps running. JavaScriptCore in an app runs
+without a JIT, so do heavy preparation (parsing, indexing, simplifying) in the pack's build step,
+not at start-up.
 
 ## Geography drawn by the globe: `terra.geo` (since runtime 2)
 
@@ -82,7 +84,8 @@ GeoJSON (a FeatureCollection, an array of Features, or bare geometries; position
 `label` (`properties.label`, on a halo; earlier ones win room), `symbol` (`options.image`, a picture
 of the pack), `sounding` (a line hanging `properties.length` points, with `properties.label`).
 Also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`,
-`width`/`height`, `offset: [dx, dy]`, and, new in 3, **`touchable: true`**: its features take touches
+`width`/`height` (a symbol's picture), `offset: [dx, dy]`, and, new in 3, `lineWidth` (reading points,
+for `border`, `area`, `ghost` and `track`: a river's order, a traced way) and **`touchable: true`**: its features take touches
 (points and labels within 22 points, lines within 14, areas inside). Setting an id again replaces
 it; the first set of an id fixes its place in the drawing order. Budgets: 100,000 vertices, 64
 layers, 400 named or pictured places a layer.
@@ -124,10 +127,11 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   trace from afar and itself up close. A look is `image` (one picture) or `frames` (pictures shown in
   turn at `fps`), `size: [w, h]` in points at the reading scale, and optionally `every` and `for`
   (seconds: it shows for `for` seconds every `every`, a splash now and then) and `face: true` (the
-  picture, drawn facing east, turns to face the way it moves).
+  picture, drawn facing east, is mirrored when it moves west).
 - `label`: its VoiceOver name (needed when `touchable`). It is hidden behind the globe, off screen,
   and where the app keeps clear (the chip, the foot).
-- `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`.
+- `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`. A trace
+  resting between its showings can't be touched. Sprites don't make room for names: place them.
 - Reduce Motion: sprites hold still at their first place and first frame; traces show steadily.
 - Budget: 64 sprites, each look at most 24 frames.
 
@@ -149,6 +153,8 @@ terra.touch.scheme('one-finger')
   pack's; other taps choose countries (or are the pack's with `"taps": true`).
 - `one-finger`: every one-finger drag on the globe is the pack's, and two fingers turn and zoom the
   globe. For close-up worlds you reach into. The scheme goes back to `touchables` when the pack ends.
+- A drag's `moved` and `ended` carry the `target` it began on; find what is under the finger now
+  yourself if it matters. No long press yet.
 
 ## The date and the words at the foot (since runtime 2)
 
@@ -158,7 +164,7 @@ terra.touch.scheme('one-finger')
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
 | `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters |
-| `terra.globe.set({ historical, still })` | hide today's borders and names (coasts stay); stop the idle turn |
+| `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
 
 ## The panel: longer words and sources (new in 3)
 

@@ -102,7 +102,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let longitude = (camera.lon + 180).truncatingRemainder(dividingBy: 360)
         let target = (lon: (longitude < 0 ? longitude + 360 : longitude) - 180,
                       lat: min(max(camera.lat, -80), 80),
-                      zoom: min(max(camera.zoom, Self.zooms.lowerBound), Self.zooms.upperBound))
+                      zoom: min(max(camera.zoom, Self.zooms.lowerBound), zoomLimit))
         spin = .zero
         lastTouch = CACurrentMediaTime()
         if duration == 0, flight == nil, lon0 == target.lon, lat0 == target.lat, zoom == target.zoom {
@@ -271,6 +271,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var lat0 = 22.0
     private var zoom = 1.0
     private static let zooms = 0.8...8.0
+    /// The deepest the reader may zoom: 8, unless the active pack asks for more for its own close
+    /// views (`terra.globe.set({ maxZoom })`, up to 32); the stage puts it back when it ends.
+    var zoomLimit = GlobeView.zooms.upperBound {
+        didSet {
+            zoomLimit = min(max(zoomLimit, Self.zooms.upperBound), 32)
+            if zoom > zoomLimit { zoom = zoomLimit; needsDraw = true }
+        }
+    }
     // a fling, in degrees a second; a double tap's flight
     private var spin = CGVector.zero
     private var touching = 0
@@ -695,7 +703,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         case .changed:
             let f = g.location(in: self)
             let under = unproject(f)
-            zoom = min(max(zoom * Double(g.scale), Self.zooms.lowerBound), Self.zooms.upperBound)
+            zoom = min(max(zoom * Double(g.scale), Self.zooms.lowerBound), zoomLimit)
             g.scale = 1
             // the point under the fingers stays under them (two passes: the turn is a little curved)
             if let under {
@@ -714,7 +722,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         onUserNavigation?()
         touched()
         let target = unproject(g.location(in: self)) ?? (lon: lon0, lat: lat0)
-        let z = zoom < 4 ? min(zoom * 2, Self.zooms.upperBound) : 1
+        let z = zoom < zoomLimit / 2 ? min(zoom * 2, zoomLimit) : 1
         fly(to: (lon: zoom < 4 ? target.lon : lon0, lat: zoom < 4 ? target.lat : lat0, zoom: z))
     }
 

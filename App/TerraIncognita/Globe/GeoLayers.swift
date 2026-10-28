@@ -36,6 +36,8 @@ final class GeoLayerView: UIView {
         let offset: CGVector
         /// Its features take touches (terra.js runtime 3).
         var touchable = false
+        /// A line's width in reading points, for border, area, ghost and track (nil: the style's own).
+        var lineWidth: Double?
         var vertices: Int { shapes.reduce(0) { $0 + $1.parts.reduce(0) { $0 + $1.count } } }
     }
 
@@ -149,23 +151,23 @@ final class GeoLayerView: UIView {
             case .border:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? UIColor(red: 0.549, green: 0.518, blue: 0.471, alpha: 1)).cgColor
-                shape.lineWidth = 1.1 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.1) * k
                 shape.lineDashPattern = nil
             case .area:
                 let base = layer.color ?? UIColor(red: 0.757, green: 0.471, blue: 0.275, alpha: 1)
                 shape.fillColor = base.withAlphaComponent(0.28).cgColor
                 shape.strokeColor = Self.darker(base).cgColor
-                shape.lineWidth = 2.2 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 2.2) * k
                 shape.lineDashPattern = nil
             case .ghost:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? ink).withAlphaComponent(0.8).cgColor
-                shape.lineWidth = 1.6 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.6) * k
                 shape.lineDashPattern = [NSNumber(value: Double(5 * k)), NSNumber(value: Double(4 * k))]
             default:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? ink).withAlphaComponent(0.47).cgColor
-                shape.lineWidth = 1.2 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.2) * k
                 shape.lineDashPattern = [NSNumber(value: Double(3 * k)), NSNumber(value: Double(4 * k))]
             }
         case .dot, .ring:
@@ -533,6 +535,7 @@ final class GeoLayerView: UIView {
                      minZoom: number(options["minZoom"]) ?? 0, maxZoom: number(options["maxZoom"]) ?? .infinity,
                      font: (options["font"] as? String) ?? "regular", size: min(40, max(10, number(options["size"]) ?? 15)),
                      image: image, imageSize: CGSize(width: width, height: height), offset: shift,
-                     touchable: (options["touchable"] as? Bool) ?? false)
+                     touchable: (options["touchable"] as? Bool) ?? false,
+                     lineWidth: number(options["lineWidth"]).map { min(12, max(0.3, $0)) })
     }
 }
