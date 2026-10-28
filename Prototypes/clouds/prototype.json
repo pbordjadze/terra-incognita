@@ -1,0 +1,12 @@
+{
+  "id": "clouds",
+  "title": "Clouds",
+  "summary": "This month's clouds, where satellites usually see them (2000–2016): drifting on the usual winds, parting as you come down through them.",
+  "runtime": 1,
+  "presentation": "globe",
+  "anchor": { "lon": 15, "lat": 8, "zoom": 1 },
+  "overlay": "overlay.html",
+  "taps": false,
+  "shelf": "current",
+  "background": "#F6F2E7"
+}
