@@ -73,6 +73,7 @@ G_COAST = hexc('#5E9CC0')
 G_RIVER = hexc('#6FAED3')
 G_ICE = hexc('#F1F5F8')
 G_ATMOS = hexc('#DCEEFB')
+G_CHOSEN = hexc('#9E1F2C')
 
 
 def layout(w, h, persian=False):
@@ -470,6 +471,8 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_re
             gland = mix(gland, G_RIVER, 0.7 * line(river, 0.6 * ls) * smoothstep(1.4, 2.4, k) * lined(river))
             gland = mix(gland, LOCATOR * (1 + 0.12 * hill)[..., None], 0.75 * m)
             gland = mix(gland, BORDER, 0.55 * smoothstep(2.0, 3.2, zoom) * line(border, 0.6 * ls) * lined(border) * (not historical_reference))
+            # the chosen country's land borders a firm line, over its fill's stepped edge
+            gland = mix(gland, G_CHOSEN, line(border, 1.6 * ls) * lined(border) * (not historical_reference) * (m > 0.04))
             depth_m = -np.minimum(height, 0) * 87
             gsea = mix(G_SHELF, G_OPEN, smoothstep(60, 900, depth_m))
             gsea = mix(gsea, G_DEEP, smoothstep(2500, 6000, depth_m))
