@@ -164,13 +164,15 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         needsDraw = true
     }
 
-    /// Something added above the globe's drawing that follows it (a prototype's web overlay): below
-    /// the markers, taking no touches.
+    /// Something added above the globe's drawing that follows it (a prototype's geography or
+    /// pictures): above the sky, below the markers, taking no touches.
     func addOverlay(_ overlay: UIView) {
         overlay.isUserInteractionEnabled = false
         overlay.frame = bounds
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         insertSubview(overlay, at: 0)
+        // (a subview's index counts the sky's layer too, so at 0 it would land under the clouds)
+        if let sky { layer.insertSublayer(overlay.layer, above: sky.layer) }
     }
 
     /// Views above the globe whose own accessibility elements VoiceOver should reach (a pack's
