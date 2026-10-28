@@ -237,6 +237,16 @@ tool assumes others share the stage; the host keeps these rules so none can take
   them back.
 - **Budget:** at most 6 experiences run at once; starting a seventh ends the one the reader left
   longest ago, never the front one. Each stage keeps its own budgets (sprites, layers, pictures).
+
+A pack needs none of this to run beside others; what it may use:
+
+```js
+if (terra.entry.by === 'doorway') { /* the reader is here already: no flight to the anchor */ }
+terra.on('focus', function (f) {
+  if (f.front) terra.time.play(true)       // back in front: the clock may run again
+  else terra.caption.set({ title: 'The voyage', text: 'Paused while you are elsewhere.' })
+})
+```
 - **The preview** (`serve.cjs`) mirrors all of it: `/atlas` is every current pack's doorway on the
   stand-in globe, each alive, and `?with=<id>,<id>` runs several together; `check.cjs --living`
   checks that two packs run side by side, by touch, and that ending one leaves the other whole.
