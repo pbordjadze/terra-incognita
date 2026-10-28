@@ -1,0 +1,68 @@
+Application, 0x118005040, pid: 29210, label: 'Terra Incognita' <App element pid: 29210>
+  Window (Main), 0x118005f40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4373021696.4>
+    Other, 0x118006800, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4426449920.5>
+      Other, 0x118006e40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4427351936.6>
+        Other, 0x118006300, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4426092928.7>
+          Other, 0x118006440, {{-1032.0, -1376.0}, {3096.0, 4128.0}} <AX element pid: 29210, elementOrHash.elementID: 4427355136.211>
+          Other, 0x118007480, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4373022720.8>
+            Other, 0x118005900, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4374271232.9>
+              Image, 0x118006580, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 29210, elementOrHash.elementID: 4373071104.10>
+                Button, 0x118005e00, {{-3149.3, 953.4}, {38.4, 38.4}}, identifier: 'doorway.gathering-of-water', label: 'A gathering of water: the rivers of South America' <AX element pid: 29210, elementOrHash.elementID: 4428891648.13>
+                Button, 0x1180052c0, {{260.8, -265.2}, {36.0, 26.4}}, identifier: 'doorway.borders-on-old-maps', label: 'Borders on old maps' <AX element pid: 29210, elementOrHash.elementID: 4428893184.15>
+                Button, 0x118005cc0, {{-2519.5, 457.4}, {19.2, 19.2}}, identifier: 'doorway.sounding-the-deep', label: 'HMS Challenger, 1873' <AX element pid: 29210, elementOrHash.elementID: 4428893952.16>
+                Button, 0x118004c80, {{1697.7, 1310.3}, {48.0, 40.8}}, identifier: 'doorway.camelid', label: 'Dromedary camel' <AX element pid: 29210, elementOrHash.elementID: 4428897792.17>
+                Button, 0x118006a80, {{789.9, 1107.5}, {40.8, 32.4}}, identifier: 'doorway.whale', label: 'Whale fossil, Wadi Al-Hitan' <AX element pid: 29210, elementOrHash.elementID: 4428898560.18>
+                Button, 0x118004f00, {{1765.2, 3510.2}, {31.2, 31.2}}, identifier: 'doorway.ocean', label: 'A small thing, far from home' <AX element pid: 29210, elementOrHash.elementID: 4428899328.19>
+                Image, 0x1180057c0, {{517.5, 503.1}, {12.0, 43.2}}, identifier: 'sea-between.stream-1' <AX element pid: 29210, elementOrHash.elementID: 4428900864.190>
+                Image, 0x11801c000, {{502.5, 538.3}, {12.0, 43.2}}, identifier: 'sea-between.stream-2' <AX element pid: 29210, elementOrHash.elementID: 4428904704.191>
+                Image, 0x11801c140, {{570.8, 623.7}, {12.0, 43.2}}, identifier: 'sea-between.stream-3' <AX element pid: 29210, elementOrHash.elementID: 4428903936.192>
+                Image, 0x11801c280, {{537.2, 464.7}, {12.0, 43.2}}, identifier: 'sea-between.stream-4' <AX element pid: 29210, elementOrHash.elementID: 4428901632.193>
+                Image, 0x11801c3c0, {{469.1, 624.5}, {12.0, 43.2}}, identifier: 'sea-between.stream-5' <AX element pid: 29210, elementOrHash.elementID: 4428902400.194>
+                Image, 0x11801c500, {{592.6, 672.0}, {12.0, 43.2}}, identifier: 'sea-between.stream-6' <AX element pid: 29210, elementOrHash.elementID: 4428892416.195>
+                Button, 0x11801c640, {{526.9, 563.4}, {33.6, 31.2}}, identifier: 'sea-between.wind', label: 'Wind strokes over the Cyclades, drawn: not measured wind. Touch for the note on the summer wind.' <AX element pid: 29210, elementOrHash.elementID: 4428903168.196>
+                Button, 0x11801c780, {{573.9, 724.5}, {26.4, 60.0}}, identifier: 'sea-between.palm', label: 'A Cretan date palm at Vai, an emblem far larger than the grove. Touch for its note.' <AX element pid: 29210, elementOrHash.elementID: 4428890880.197>
+                Button, 0x11801c8c0, {{377.9, 782.2}, {55.2, 28.8}}, identifier: 'sea-between.whale', label: 'A sperm whale, drawn: an imaginative mark, not a sighting or a track. Touch for the note on the deep water south of Cret' <AX element pid: 29210, elementOrHash.elementID: 4428905472.198>
+                Button, 0x11801ca00, {{480.5, 461.8}, {33.6, 38.4}}, identifier: 'sea-between.skiff', label: 'A paper skiff, drawn: not a vessel or a route. Touch it to fold or raise its sail.' <AX element pid: 29210, elementOrHash.elementID: 4750311424.199>
+                Image, 0x11801cb40, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 29210, elementOrHash.elementID: 4370624608.20>
+              StaticText, 0x11801cc80, {{24.0, 1262.5}, {551.0, 79.5}}, identifier: 'globeFootCaption', label: 'THE SOUNDING GLASS, Less than 50 m deep here, from NASA’s GEBCO 2008 imagery, generalised and rounded to 100 m: not survey data. Drag the glass to sound along; tap its centre to put it away.' <AX element pid: 29210, elementOrHash.elementID: 4374350912.188>
+                StaticText, 0x11801cdc0, {{24.0, 1262.5}, {172.5, 15.0}}, label: 'THE SOUNDING GLASS' <AX element pid: 29210, elementOrHash.elementID: 4374353152.200>
+                StaticText, 0x11801cf00, {{24.0, 1283.5}, {551.0, 58.5}}, label: 'Less than 50 m deep here, from NASA’s GEBCO 2008 imagery, generalised and rounded to 100 m: not survey data. Drag the glass to sound along; tap its centre to put it away.' <AX element pid: 29210, elementOrHash.elementID: 4374357632.201>
+              Other, 0x11801d040, {{711.0, 8.0}, {227.0, 44.0}}, label: 'Active prototype: The sea between' <AX element pid: 29210, elementOrHash.elementID: 4425567744.189>
+                StaticText, 0x11801d180, {{711.0, 21.0}, {121.5, 18.0}}, identifier: 'activePrototype', label: 'The sea between' <AX element pid: 29210, elementOrHash.elementID: 4425569088.202>
+                Button, 0x11801d2c0, {{838.5, 8.0}, {49.5, 44.0}}, identifier: 'openActivePrototype', label: 'Open' <AX element pid: 29210, elementOrHash.elementID: 4374355392.203>
+                Button, 0x11801d400, {{894.0, 8.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'Back to the plain globe' <AX element pid: 29210, elementOrHash.elementID: 4425568640.204>
+              Button, 0x11801d540, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 29210, elementOrHash.elementID: 4374270336.12>
+    Other, 0x11801d680, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 29210, elementOrHash.elementID: 4773760000.205>
+      Other, 0x11801d7c0, {{-1032.0, -1376.0}, {3096.0, 4128.0}} <AX element pid: 29210, elementOrHash.elementID: 4425742080.206>
+      Other, 0x11801d900, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4427360256.207>
+        Button, 0x11801da40, {{478.0, 639.0}, {76.0, 25.0}}, label: 'Sheet Grabber', value: Collapsed <AX element pid: 29210, elementOrHash.elementID: 4773763072.208>
+        Other, 0x11801db80, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374358976.209>
+          Other, 0x11801dcc0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374362112.212>
+            Other, 0x11801de00, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374359872.214>
+              Other, 0x11801df40, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374361216.216>
+                Other, 0x11801e080, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4373030912.219>
+                  Other, 0x11801e1c0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4425573120.222>
+                    ScrollView, 0x11801e300, {{226.0, 644.0}, {580.0, 364.0}}, identifier: 'packPanel' <AX element pid: 29210, elementOrHash.elementID: 4427077632.224>
+                      Other, 0x11801e440, {{226.0, 644.0}, {580.0, 461.5}} <AX element pid: 29210, elementOrHash.elementID: 4773766144.226>
+                        StaticText, 0x11801e580, {{250.0, 672.0}, {193.0, 26.5}}, identifier: 'packPanelTitle', label: 'The summer wind' <AX element pid: 29210, elementOrHash.elementID: 4425570432.228>
+                        StaticText, 0x11801e6c0, {{250.0, 712.5}, {464.0, 42.5}}, label: 'The islands comb the wind. Sometimes the invisible leaves a drawing.' <AX element pid: 29210, elementOrHash.elementID: 4425568192.229>
+                        StaticText, 0x11801e800, {{250.0, 769.0}, {500.5, 64.5}}, label: 'The Aegean’s summer northerlies are known as the Etesians, or meltemia. When they meet the islands, the air can leave long streaks and curling wakes visible in satellite images of the sea.' <AX element pid: 29210, elementOrHash.elementID: 4425578496.230>
+                        StaticText, 0x11801e940, {{250.0, 847.5}, {532.0, 42.5}}, label: 'A coastline is more than an edge. It is something the moving air has to negotiate.' <AX element pid: 29210, elementOrHash.elementID: 4425578944.231>
+                        StaticText, 0x11801ea80, {{250.0, 904.0}, {217.0, 20.5}}, label: 'The drawing and its limits' <AX element pid: 29210, elementOrHash.elementID: 4425575808.232>
+                        StaticText, 0x11801ebc0, {{250.0, 930.5}, {528.0, 64.5}}, label: 'The strokes here are an imaginative illustration of air moving among islands. Their paths and speeds are not measured wind or a physical simulation.' <AX element pid: 29210, elementOrHash.elementID: 4425577600.233>
+                        StaticText, 0x11801ed00, {{250.0, 1015.0}, {58.5, 18.0}}, label: 'Sources' <AX element pid: 29210, elementOrHash.elementID: 4425577152.234>
+                        Button, 0x11801ee40, {{250.0, 1041.0}, {271.0, 16.0}}, label: 'European Union, Copernicus · 1 August 2024' <AX element pid: 29210, elementOrHash.elementID: 4425576704.235>
+                        StaticText, 0x11801ef80, {{250.0, 1059.0}, {515.5, 14.5}}, label: '“wind streaks/vortices generated by the Etesian winds” — image of 31 July 2024, Cyclades.' <AX element pid: 29210, elementOrHash.elementID: 4425574912.236>
+                      Other, 0x11801f0c0, {{773.0, 676.0}, {30.0, 300.0}}, label: 'Vertical scroll bar, 2 pages', value: 0% <AX element pid: 29210, elementOrHash.elementID: 4773769216.227>
+                        Other, 0x11801f200, {{800.0, 1252.0}, {3.0, 7.0}} <AX element pid: 29210, elementOrHash.elementID: 4374620224.237>
+                      Other, 0x11801f340, {{773.0, 676.0}, {30.0, 300.0}}, label: 'Vertical scroll bar, 2 pages', value: 0% <AX element pid: 29210, elementOrHash.elementID: 4773769216.227>
+                        Other, 0x11801f480, {{800.0, 1252.0}, {3.0, 7.0}} <AX element pid: 29210, elementOrHash.elementID: 4374620224.237>
+                    Button, 0x11801f5c0, {{754.0, 648.0}, {44.0, 44.0}}, identifier: 'packPanel', label: 'Close' <AX element pid: 29210, elementOrHash.elementID: 4425573568.225>
+        Other, 0x11801f700, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4773761536.210>
+          Other, 0x11801f840, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4425173632.213>
+            Other, 0x11801f980, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374216000.215>
+              Other, 0x11801fac0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4374018944.217>
+                Other, 0x11801fc00, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4773762048.220>
+                  Other, 0x11801fd40, {{226.0, 644.0}, {580.0, 650.0}} <AX element pid: 29210, elementOrHash.elementID: 4373939072.223>
+              Other, 0x11801fe80, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 29210, elementOrHash.elementID: 4773762560.218>
+                Other, 0x118020000, {{226.0, 644.0}, {580.0, 650.0}} <AX element pid: 29210, elementOrHash.elementID: 4374615296.221>

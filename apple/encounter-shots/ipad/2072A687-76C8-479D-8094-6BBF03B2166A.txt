@@ -1,0 +1,54 @@
+Application, 0x11802abc0, pid: 34493, label: 'Terra Incognita' <App element pid: 34493>
+  Window (Main), 0x11802ad00, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4410902528.3>
+    Other, 0x11802af80, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4468704256.4>
+      Other, 0x118029a40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4469294976.5>
+        Other, 0x11802a940, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4468051904.6>
+          Other, 0x11802b340, {{-1032.0, -1376.0}, {3096.0, 4128.0}} <AX element pid: 34493, elementOrHash.elementID: 4467702144.264>
+          Other, 0x11802a080, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4410901504.7>
+            Other, 0x11802a800, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4411998208.8>
+              Image, 0x11802b0c0, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 34493, elementOrHash.elementID: 4410918144.9>
+                Button, 0x118029680, {{106.3, 973.1}, {38.4, 38.4}}, identifier: 'doorway.gathering-of-water', label: 'A gathering of water: the rivers of South America' <AX element pid: 34493, elementOrHash.elementID: 4469506816.13>
+                Button, 0x118029900, {{1090.5, 441.7}, {34.0, 27.0}}, identifier: 'doorway.whale', label: 'Whale fossil, Wadi Al-Hitan' <AX element pid: 34493, elementOrHash.elementID: 4469508352.14>
+                Button, 0x11802b700, {{869.5, 239.4}, {36.0, 26.4}}, identifier: 'doorway.borders-on-old-maps', label: 'Borders on old maps' <AX element pid: 34493, elementOrHash.elementID: 4469509120.15>
+                Button, 0x11802b480, {{1185.2, 408.0}, {48.0, 40.8}}, identifier: 'doorway.camelid', label: 'Dromedary camel' <AX element pid: 34493, elementOrHash.elementID: 4469509888.16>
+                Button, 0x11802bac0, {{1218.8, 910.0}, {31.2, 31.2}}, identifier: 'doorway.ocean', label: 'A small thing, far from home' <AX element pid: 34493, elementOrHash.elementID: 4469513728.17>
+                Button, 0x11802a300, {{405.5, 713.2}, {19.2, 19.2}}, identifier: 'doorway.sounding-the-deep', label: 'HMS Challenger, 1873' <AX element pid: 34493, elementOrHash.elementID: 4469514496.18>
+                Button, 0x11802a440, {{996.1, 348.7}, {21.6, 25.2}}, identifier: 'doorway.sea-between', label: 'The sea between: an engraved chart of the Aegean' <AX element pid: 34493, elementOrHash.elementID: 4469515264.19>
+                Image, 0x11802a580, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 34493, elementOrHash.elementID: 4411080992.20>
+              StaticText, 0x11802a6c0, {{24.0, 1301.5}, {229.5, 40.5}}, identifier: 'globeFootCaption', label: 'DELIVERY CHECK, First words. Bundled with the app.' <AX element pid: 34493, elementOrHash.elementID: 4412175488.251>
+                StaticText, 0x11802b200, {{24.0, 1301.5}, {134.5, 15.0}}, label: 'DELIVERY CHECK' <AX element pid: 34493, elementOrHash.elementID: 4412165632.253>
+                StaticText, 0x118029e00, {{24.0, 1322.5}, {229.5, 19.5}}, label: 'First words. Bundled with the app.' <AX element pid: 34493, elementOrHash.elementID: 4412166528.254>
+              Other, 0x11802b840, {{727.0, 8.0}, {211.0, 44.0}}, label: 'Active prototype: Delivery check' <AX element pid: 34493, elementOrHash.elementID: 4466943168.252>
+                StaticText, 0x11802be80, {{727.0, 21.0}, {105.5, 18.0}}, identifier: 'activePrototype', label: 'Delivery check' <AX element pid: 34493, elementOrHash.elementID: 4466946752.255>
+                Button, 0x118074000, {{838.5, 8.0}, {49.5, 44.0}}, identifier: 'openActivePrototype', label: 'Open' <AX element pid: 34493, elementOrHash.elementID: 4412005376.256>
+                Button, 0x118074140, {{894.0, 8.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'Back to the plain globe' <AX element pid: 34493, elementOrHash.elementID: 4466940928.257>
+              Button, 0x118074280, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 34493, elementOrHash.elementID: 4411449216.11>
+    Other, 0x1180743c0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 34493, elementOrHash.elementID: 4503436800.258>
+      Other, 0x118074500, {{-1032.0, -1376.0}, {3096.0, 4128.0}} <AX element pid: 34493, elementOrHash.elementID: 4467701504.259>
+      Other, 0x118074640, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4469298176.260>
+        Button, 0x118074780, {{478.0, 639.0}, {76.0, 25.0}}, label: 'Sheet Grabber', value: Collapsed <AX element pid: 34493, elementOrHash.elementID: 4793115648.261>
+        Other, 0x1180748c0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4412001344.262>
+          Other, 0x118074a00, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4412004032.265>
+            Other, 0x118074b40, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4412169216.267>
+              Other, 0x118074c80, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4411941632.269>
+                Other, 0x118074dc0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4410910720.272>
+                  Other, 0x118074f00, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4412114240.275>
+                    ScrollView, 0x118075040, {{226.0, 644.0}, {580.0, 364.0}}, identifier: 'packPanel' <AX element pid: 34493, elementOrHash.elementID: 4469053440.277>
+                      Other, 0x118075180, {{226.0, 644.0}, {580.0, 212.0}} <AX element pid: 34493, elementOrHash.elementID: 4793120256.279>
+                        StaticText, 0x1180752c0, {{250.0, 672.0}, {154.0, 26.5}}, identifier: 'packPanelTitle', label: 'Delivery check' <AX element pid: 34493, elementOrHash.elementID: 4412335744.281>
+                        StaticText, 0x118075400, {{250.0, 712.5}, {91.5, 20.5}}, label: 'First words.' <AX element pid: 34493, elementOrHash.elementID: 4412012544.282>
+                        StaticText, 0x118075540, {{250.0, 747.0}, {172.5, 20.5}}, label: 'Bundled with the app.' <AX element pid: 34493, elementOrHash.elementID: 4412126336.283>
+                        StaticText, 0x118075680, {{250.0, 781.5}, {515.5, 42.5}}, label: 'These words came from a pack rather than from the app build, so its words can change without a new version of the app.' <AX element pid: 34493, elementOrHash.elementID: 4412125440.284>
+                      Other, 0x1180757c0, {{773.0, 676.0}, {30.0, 300.0}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 34493, elementOrHash.elementID: 4793111040.280>
+                        Other, 0x118075900, {{800.0, 1252.0}, {3.0, 7.0}} <AX element pid: 34493, elementOrHash.elementID: 4412326784.285>
+                      Other, 0x118075a40, {{773.0, 676.0}, {30.0, 300.0}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 34493, elementOrHash.elementID: 4793111040.280>
+                        Other, 0x118075b80, {{800.0, 1252.0}, {3.0, 7.0}} <AX element pid: 34493, elementOrHash.elementID: 4412326784.285>
+                    Button, 0x118075cc0, {{754.0, 648.0}, {44.0, 44.0}}, identifier: 'packPanel', label: 'Close' <AX element pid: 34493, elementOrHash.elementID: 4412123200.278>
+        Other, 0x118075e00, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4793121792.263>
+          Other, 0x118075f40, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4466969216.266>
+            Other, 0x118076080, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4411942976.268>
+              Other, 0x1180761c0, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4411946560.270>
+                Other, 0x118076300, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4793121280.273>
+                  Other, 0x118076440, {{226.0, 644.0}, {580.0, 650.0}} <AX element pid: 34493, elementOrHash.elementID: 4411679936.276>
+              Other, 0x118076580, {{226.0, 644.0}, {580.0, 364.0}} <AX element pid: 34493, elementOrHash.elementID: 4793122304.271>
+                Other, 0x1180766c0, {{226.0, 644.0}, {580.0, 650.0}} <AX element pid: 34493, elementOrHash.elementID: 4466944960.274>

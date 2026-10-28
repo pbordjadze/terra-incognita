@@ -1,0 +1,51 @@
+Application, 0x117c34f00, pid: 98126, label: 'Terra Incognita' <App element pid: 98126>
+  Window (Main), 0x117c36800, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4347955200.3>
+    Other, 0x117c37700, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4401365504.4>
+      Other, 0x117c37840, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4402268032.5>
+        Other, 0x117c36940, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 98126, elementOrHash.elementID: 4400625408.242>
+        Other, 0x117c37200, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4347954176.6>
+          Other, 0x117c366c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4349228608.7>
+            Image, 0x117c35400, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 98126, elementOrHash.elementID: 4347921664.8>
+              Button, 0x117c35540, {{430.6, 305.4}, {40.0, 34.0}}, identifier: 'doorway.camelid', label: 'Dromedary camel' <AX element pid: 98126, elementOrHash.elementID: 4402382336.12>
+              Button, 0x117c37c00, {{156.7, 420.4}, {16.0, 16.0}}, identifier: 'doorway.sounding-the-deep', label: 'HMS Challenger, 1873' <AX element pid: 98126, elementOrHash.elementID: 4402383104.13>
+              Button, 0x117c357c0, {{397.0, 318.6}, {34.0, 27.0}}, identifier: 'doorway.whale', label: 'Whale fossil, Wadi Al-Hitan' <AX element pid: 98126, elementOrHash.elementID: 4402383872.14>
+              Button, 0x117c37980, {{368.8, 287.8}, {18.0, 21.0}}, identifier: 'doorway.sea-between', label: 'The sea between: an engraved chart of the Aegean' <AX element pid: 98126, elementOrHash.elementID: 4402384640.15>
+              Button, 0x117c35e00, {{319.7, 248.1}, {30.0, 22.0}}, identifier: 'doorway.borders-on-old-maps', label: 'Borders on old maps' <AX element pid: 98126, elementOrHash.elementID: 4402388480.16>
+              Button, 0x117c36300, {{44.4, 509.4}, {32.0, 32.0}}, identifier: 'doorway.gathering-of-water', label: 'A gathering of water: the rivers of South America' <AX element pid: 98126, elementOrHash.elementID: 4402389248.17>
+              Button, 0x117c36440, {{446.7, 488.4}, {26.0, 26.0}}, identifier: 'doorway.ocean', label: 'A small thing, far from home' <AX element pid: 98126, elementOrHash.elementID: 4402390016.18>
+              Image, 0x117c36580, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 98126, elementOrHash.elementID: 4434540272.19>
+            StaticText, 0x117c370c0, {{24.0, 785.3}, {229.3, 40.7}}, identifier: 'globeFootCaption', label: 'DELIVERY CHECK, First words. Bundled with the app.' <AX element pid: 98126, elementOrHash.elementID: 4400553408.232>
+              StaticText, 0x117c35f40, {{24.0, 785.3}, {134.3, 15.0}}, label: 'DELIVERY CHECK' <AX element pid: 98126, elementOrHash.elementID: 4400552512.234>
+              StaticText, 0x117c35cc0, {{24.0, 806.3}, {229.3, 19.7}}, label: 'First words. Bundled with the app.' <AX element pid: 98126, elementOrHash.elementID: 4400552960.235>
+            Other, 0x117c361c0, {{97.3, 70.0}, {210.7, 44.0}}, label: 'Active prototype: Delivery check' <AX element pid: 98126, elementOrHash.elementID: 4400549824.233>
+              StaticText, 0x117c36bc0, {{97.3, 83.0}, {105.3, 18.0}}, identifier: 'activePrototype', label: 'Delivery check' <AX element pid: 98126, elementOrHash.elementID: 4400548032.236>
+              Button, 0x117c35b80, {{208.7, 70.0}, {49.3, 44.0}}, identifier: 'openActivePrototype', label: 'Open' <AX element pid: 98126, elementOrHash.elementID: 4400553856.237>
+              Button, 0x117c34c80, {{264.0, 70.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'Back to the plain globe' <AX element pid: 98126, elementOrHash.elementID: 4400548928.238>
+            Button, 0x117c36080, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 98126, elementOrHash.elementID: 4349228160.10>
+    Other, 0x117c36a80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 98126, elementOrHash.elementID: 4435815424.239>
+      Other, 0x117c35040, {{-402.0, -874.0}, {1206.0, 2622.0}} <AX element pid: 98126, elementOrHash.elementID: 4400626048.240>
+      Other, 0x117c35180, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400626688.241>
+        Button, 0x117c35a40, {{164.5, 410.2}, {73.0, 24.0}}, label: 'Sheet Grabber', value: Half screen <AX element pid: 98126, elementOrHash.elementID: 4401368576.243>
+        Other, 0x117c35680, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400547584.244>
+          Other, 0x117c34b40, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400547136.246>
+            Other, 0x117c35900, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4347961344.248>
+              Other, 0x117c36e40, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4349082048.250>
+                ScrollView, 0x117c36f80, {{8.0, 415.0}, {386.0, 451.0}}, identifier: 'packPanel' <AX element pid: 98126, elementOrHash.elementID: 4347792384.253>
+                  Other, 0x117c3c000, {{8.0, 415.0}, {386.0, 224.0}} <AX element pid: 98126, elementOrHash.elementID: 4401372160.257>
+                    StaticText, 0x117c3c140, {{31.0, 441.9}, {147.9, 25.3}}, identifier: 'packPanelTitle', label: 'Delivery check' <AX element pid: 98126, elementOrHash.elementID: 4349226368.260>
+                    StaticText, 0x117c3c280, {{31.0, 480.6}, {87.7, 19.5}}, label: 'First words.' <AX element pid: 98126, elementOrHash.elementID: 4349227264.261>
+                    StaticText, 0x117c3c3c0, {{31.0, 513.6}, {165.8, 19.5}}, label: 'Bundled with the app.' <AX element pid: 98126, elementOrHash.elementID: 4349229504.262>
+                    StaticText, 0x117c3c500, {{31.0, 546.6}, {330.0, 61.8}}, label: 'These words came from a pack rather than from the app build, so its words can change without a new version of the app.' <AX element pid: 98126, elementOrHash.elementID: 4400552064.263>
+                  Other, 0x117c3c640, {{362.3, 451.5}, {28.8, 360.5}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 98126, elementOrHash.elementID: 4401373184.258>
+                    Other, 0x117c3c780, {{388.2, 648.7}, {2.9, 168.4}} <AX element pid: 98126, elementOrHash.elementID: 4400560128.264>
+                  Other, 0x117c3c8c0, {{362.3, 451.5}, {28.8, 360.5}}, label: 'Vertical scroll bar, 1 page', value: 0% <AX element pid: 98126, elementOrHash.elementID: 4401373184.258>
+                    Other, 0x117c3ca00, {{388.2, 648.7}, {2.9, 168.4}} <AX element pid: 98126, elementOrHash.elementID: 4400560128.264>
+                Button, 0x117c3cb40, {{344.1, 418.9}, {42.2, 42.2}}, identifier: 'packPanel', label: 'Close' <AX element pid: 98126, elementOrHash.elementID: 4348825536.254>
+        Other, 0x117c3cc80, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4401377792.245>
+          Other, 0x117c3cdc0, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400042368.247>
+            Other, 0x117c3cf00, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400554304.249>
+              Other, 0x117c3d040, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400554752.251>
+                Other, 0x117c3d180, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4401375744.255>
+                  Other, 0x117c3d2c0, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400555200.259>
+              Other, 0x117c3d400, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4401376256.252>
+                Other, 0x117c3d540, {{8.0, 415.0}, {386.0, 451.0}} <AX element pid: 98126, elementOrHash.elementID: 4400556544.256>
