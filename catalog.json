@@ -1,18 +1,18 @@
 {
   "format": 1,
-  "generated": "2026-10-28T03:16:23-04:00",
+  "generated": "2026-10-28T03:35:07-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
-      "revision": 1,
+      "revision": 2,
       "runtime": 3,
       "title": "Borders on old maps",
       "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "f691b42bfcdd38ca2d105988e7401795fced89a96163d89c2dae4b8f637e09ad",
-      "path": "packs/borders-on-old-maps/r1/",
-      "bytes": 856484,
+      "hash": "0d519e2801d72e5c9a2317bef0d61153a93403a32094c585ca53b7d999d6b135",
+      "path": "packs/borders-on-old-maps/r2/",
+      "bytes": 856668,
       "files": [
         {
           "path": "LICENSE-HISTORY.txt",
@@ -31,8 +31,8 @@
         },
         {
           "path": "about.js",
-          "bytes": 2142,
-          "sha256": "77e7c25dfb1212738701f3866f7276657a8ac828015c508ef5b4bbae37d589fb"
+          "bytes": 2326,
+          "sha256": "ae24850907af32641861f54e7b820d84aadcb5bce2baa67e9eff847294db1e67"
         },
         {
           "path": "borders.js",
@@ -55,7 +55,7 @@
           "sha256": "c384705cb4464e8d3078458d3ded9eb37b9308efd30a0e9385fe481d465df0a1"
         }
       ],
-      "published": "2026-10-28T03:16:23-04:00",
+      "published": "2026-10-28T03:35:07-04:00",
       "retired": false
     },
     {
@@ -152,15 +152,15 @@
     },
     {
       "id": "sea-between",
-      "revision": 1,
+      "revision": 2,
       "runtime": 3,
       "title": "The sea between",
       "summary": "An engraved chart of the Aegean lying on the globe: sound the sea between the islands, and read its notes on the wind, a caldera, a palm and the deep.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "957ce0aad1cb93dff98b267b931d2820eca8cfdf8e39b0704dd3dfdf706c42dd",
-      "path": "packs/sea-between/r1/",
-      "bytes": 1260019,
+      "hash": "cada8969ae8b756e69810b4acfdb866daa7e1867149316cf9084901ac5880836",
+      "path": "packs/sea-between/r2/",
+      "bytes": 1260082,
       "files": [
         {
           "path": "SOURCES.md",
@@ -189,8 +189,8 @@
         },
         {
           "path": "data.js",
-          "bytes": 267074,
-          "sha256": "a207552ea7d21428d1baa9a3084e07f9fc67d2fb32e0b380d3a8fa355d25ac17"
+          "bytes": 267088,
+          "sha256": "48bdbc681118e25358d25683d348b826107e11e408405e16f5923f2cab986f69"
         },
         {
           "path": "engraving.png",
@@ -199,8 +199,8 @@
         },
         {
           "path": "main.js",
-          "bytes": 26013,
-          "sha256": "f6b6cfc035925243fee9f92326c02214431de6a526a389e9787b09993b7ce7ae"
+          "bytes": 26062,
+          "sha256": "7bde6bd616d35667fb5782cb8be7702f7efa82e6b5b41355692acd1a81ed12d2"
         },
         {
           "path": "notes.js",
@@ -423,20 +423,20 @@
           "sha256": "4275f9c1103d75478cbe19b70148ddef59b883153ecaf8dc8081f83829706b4a"
         }
       ],
-      "published": "2026-10-28T03:16:23-04:00",
+      "published": "2026-10-28T03:35:07-04:00",
       "retired": false
     },
     {
       "id": "sounding-the-deep",
-      "revision": 1,
+      "revision": 2,
       "runtime": 3,
       "title": "Sounding the deep",
       "summary": "HMS Challenger exploring the deep ocean, 1873–76, station by station on the globe. Touch a station to lower the line to the recorded depth.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "0d06f4c710bbfd5722fbc0924b94c4ee328631d4e8d89a87e05d673f54532f54",
-      "path": "packs/sounding-the-deep/r1/",
-      "bytes": 177989,
+      "hash": "9846195aaa40a7e9f0ef5989130c928731d990cc87e050c8fd756696b460568e",
+      "path": "packs/sounding-the-deep/r2/",
+      "bytes": 182235,
       "files": [
         {
           "path": "LICENSE-NATURAL-EARTH.md",
@@ -445,18 +445,18 @@
         },
         {
           "path": "SOURCES.md",
-          "bytes": 1811,
-          "sha256": "572151d8699dff78f8ef4e60eaa7a4236a54032d328ce6da9af4a254428c816f"
+          "bytes": 2945,
+          "sha256": "5a3881bce83854aa59e11c2d6d16b1f829d3c0597710fb0ec8e0583a57a9e89c"
         },
         {
           "path": "about.js",
-          "bytes": 2272,
-          "sha256": "93fe9ea532e8e3b0dd8abbd02af8c63ad7b12ee796fa9ec8f9910d2d8bbe9605"
+          "bytes": 3023,
+          "sha256": "4c6cd8db54df5fd44c8e4aad2898815a6662c0f91d5540199bc0ec16810be770"
         },
         {
           "path": "data.js",
-          "bytes": 150627,
-          "sha256": "285cd13f64a3090d182539cc4535af07f2af477126c1feb582651156fdcdba7e"
+          "bytes": 152725,
+          "sha256": "4e9e61235ea5008dc4788e17229c8e9415a7ef0bc832447bf25672781188cafa"
         },
         {
           "path": "prototype.json",
@@ -470,8 +470,8 @@
         },
         {
           "path": "sounding.js",
-          "bytes": 9130,
-          "sha256": "23ede4f1813ee1cf5e4a667d1b0c362783236be7f6727e2874b8641f61a86d63"
+          "bytes": 9393,
+          "sha256": "cf62c4dae1698b0a2873b77c107d93923afc167988bc5cd5fb19b319ed4a2344"
         },
         {
           "path": "voyage.js",
@@ -479,7 +479,7 @@
           "sha256": "29d326c2003eb18feecc38de6de2473dfe356200941522a07ef75a9e87f1430d"
         }
       ],
-      "published": "2026-10-28T03:16:23-04:00",
+      "published": "2026-10-28T03:35:07-04:00",
       "retired": false
     }
   ]
