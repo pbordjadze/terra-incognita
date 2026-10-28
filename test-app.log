@@ -1,0 +1,4 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-28 10:02:06.720 I  TerraIncognita[12054:99f7] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 10:02:16.799 I  TerraIncognita[12054:99f7] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-28 10:02:46.316 I  TerraIncognita[12054:99f7] [com.pbordjadze.terraincognita:playground] checked 1 source
