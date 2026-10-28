@@ -14,11 +14,17 @@ extension PlaygroundTests {
 
         let globe = app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch
         XCTAssertTrue(globe.waitForExistence(timeout: 15))
-        let clouds = app.buttons["cloudsButton"].firstMatch
+        // (a toggle: VoiceOver and the tests see it as a switch, so it is found by its identifier alone)
+        let clouds = app.descendants(matching: .any)["cloudsButton"].firstMatch
         XCTAssertTrue(clouds.waitForExistence(timeout: 10), "The clouds' switch is beside the workbench button")
+        // (what it says, once the tap has been heard)
+        func says(_ value: String) -> Bool {
+            let said = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: clouds)
+            return XCTWaiter().wait(for: [said], timeout: 5) == .completed
+        }
         // (the switch is remembered: a run before may have left it off)
         if clouds.value as? String == "Off" { clouds.tap() }
-        XCTAssertEqual(clouds.value as? String, "On", "The clouds are on until the reader turns them off")
+        XCTAssertTrue(says("On"), "The clouds are on until the reader turns them off")
         sleep(3)   // the sky decoded, and faded in
         attach("40-clouds-earth", in: app)
 
@@ -44,11 +50,11 @@ extension PlaygroundTests {
         app.buttons["workbenchClose"].firstMatch.tap()
 
         clouds.tap()
-        XCTAssertEqual(clouds.value as? String, "Off")
+        XCTAssertTrue(says("Off"), "The switch turns them off")
         sleep(1)   // faded out
         attach("44-clouds-off", in: app)
         clouds.tap()
-        XCTAssertEqual(clouds.value as? String, "On", "The switch brings them back")
+        XCTAssertTrue(says("On"), "The switch brings them back")
         sleep(1)
         attach("45-clouds-on-again", in: app)
     }
