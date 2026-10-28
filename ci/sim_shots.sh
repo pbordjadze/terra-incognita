@@ -5,7 +5,8 @@
 # and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`);
 # with GLOBE=1, the globe too, in each style (`-globe`, `-globeStyle`, held at a place with
 # `-globe-at`, a country lit with `-globe-select`); always the playground's plain globe, workbench and
-# two prototypes (`-workbench`, `-prototype <id>`).
+# two prototypes (`-workbench`, `-prototype <id>`), unless STAGE_ONLY=1; with PLACES="name:lon,lat,zoom
+# ...", the stage at rest at each (ci/fast.py: the ground's month, the clouds' drift and the sea held).
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -39,10 +40,20 @@ WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
 # the globe first (the film's moments can take long, and a timeout should cut them, not it)
 # the playground: the plain globe, the workbench, prototypes on the globe
-shot plain -globe-at -40 22 1
-shot workbench -workbench
-shot camelid -prototype camelid
-shot hello-pack -prototype hello-pack
+if [ -n "${PLACES:-}" ]; then
+  # (as tools/metal/metal.py's `shot` draws the same names: month 10, day 0.4 of the drift, the sea at 12 s)
+  for P in $PLACES; do
+    NAME="${P%%:*}"
+    IFS=, read -r LON LAT ZOOM <<< "${P#*:}"
+    shot "stage-$NAME" -globe-at "$LON" "$LAT" "$ZOOM" -globe-month 10 -clouds-days 0.4 -ocean-time 12
+  done
+fi
+if [ "${STAGE_ONLY:-}" != 1 ]; then
+  shot plain -globe-at -40 22 1
+  shot workbench -workbench
+  shot camelid -prototype camelid
+  shot hello-pack -prototype hello-pack
+fi
 if [ "${LEAF:-}" = 1 ]; then shot leaf -leaf; fi
 if [ "${GLOBE:-}" = 1 ]; then
   # each style (the defaults' `globeStyle`, set by the launch argument)

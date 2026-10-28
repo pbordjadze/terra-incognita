@@ -3,7 +3,8 @@ name: CI
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
-#          ci/check_globe.py) and the tools' syntax
+#          ci/check_globe.py), the tools' syntax, and every Metal shader compiled as C++
+#          (tools/metal/metal.py check: seconds, where a macOS build waits on a runner)
 #   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
 #          and the plates checked byte for byte
 #          in the bundle; screenshots only when the workflow is run by hand, as a report: on the
@@ -13,8 +14,13 @@ name: CI
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
-# Commit-message tags on branches: `[build-only]` compiles without simulator time; `[playground-check]`
-# runs only PlaygroundTests and RemotePackTests; `[ipa]` packages a device build (main publishes it).
+# Commit-message tags on branches: `[build-only]` compiles without simulator time (about 3 minutes);
+# `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places on the iPad,
+# with no Release build and no UI tests (about 8 minutes); `[test Class ...]` runs only those UI test
+# classes (or Class/testMethod) on the iPad; `[playground-check]` runs only the playground's checks;
+# `[ipa]` packages a device build (main publishes it). ci/fast.py reads `[shots]` and `[test]`. Main
+# ignores the narrowing tags: merge into it with a merge commit whose message carries none, as a
+# fast-forward would bring a branch head's `[skip ci]` along.
 # A push that changes only web packs (Prototypes/) skips this workflow: packs.yml handles it on Linux.
 # The macOS runners (5 at once) are shared with pbordjadze/paint-by-number and pbordjadze/pigeon:
 # one macOS job per push here.
@@ -48,6 +54,14 @@ on:
         description: The films' moments too (off - the globe only)
         type: boolean
         default: true
+      tests:
+        description: Only these UI test classes or Class/testMethod, on the iPad (branch only; ci/fast.py)
+        type: string
+        default: ''
+      places:
+        description: Only the stage at these places, name:lon,lat,zoom (branch only; ci/fast.py)
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -86,8 +100,13 @@ jobs:
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          for f in tools/ocean/*.cjs tools/ocean/web/*.js; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py tools/ocean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          for f in tools/ocean/*.cjs tools/ocean/web/*.js tools/clouds/*.cjs tools/clouds/web/*.js tools/metal/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          # the Metal shaders compiled as C++ by clang, in seconds (tools/metal/README.md), and the
+          # stand-in's own tests (numpy for its textures)
+          python3 tools/metal/metal.py check 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m pip install --quiet --break-system-packages numpy > /dev/null 2>&1 || python3 -m pip install --quiet numpy > /dev/null 2>&1 || true
+          python3 tools/metal/tests/test_metal.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -100,13 +119,27 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
+      - name: What this run checks
+        # `[shots]` and `[test]` on a branch, or the hand-started run's places and tests (ci/fast.py)
+        id: fast
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+          BRANCH: ${{ github.ref_name }}
+          TESTS: ${{ inputs.tests }}
+          PLACES: ${{ inputs.places }}
+        run: |
+          set -o pipefail
+          python3 ci/fast.py | tee -a "$GITHUB_OUTPUT"
       - name: Select simulators
-        # Every push validates both devices sequentially; explicit manual selection remains.
+        # Every push validates both devices sequentially; explicit manual selection remains; a fast
+        # check (ci/fast.py) is the iPad's alone, the primary device.
         id: sim
         run: |
           D="${{ inputs.device }}"
           if [ "$D" = both ]; then
             D="ipad iphone"
+          elif [ -z "$D" ] && [ -n "${{ steps.fast.outputs.fast }}" ]; then
+            D="ipad"
           elif [ -z "$D" ]; then
             D="ipad iphone"
           fi
@@ -123,7 +156,7 @@ jobs:
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/app-build.log | tail -80
       - name: Release build
         id: release
-        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.fast.outputs.fast == '' }}
         run: |
           set -o pipefail
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
@@ -141,7 +174,7 @@ jobs:
       - name: Encounter interactions and accessible text
         id: encounter
         # `[build-only]` in a branch commit's message: compile and check the bundle, no simulator time
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) && steps.fast.outputs.fast != 'shots' }}
         # both devices in turn, each about an hour on a busy runner, and a crashed test's one rerun
         timeout-minutes: 170
         run: |
@@ -155,6 +188,7 @@ jobs:
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
               export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests"
             fi
+            if [ -n "${{ steps.fast.outputs.tests }}" ]; then export UI_TEST_TARGET="${{ steps.fast.outputs.tests }}"; fi
           fi
           # A remote revision of the bundled hello-pack, served on this machine for RemotePackTests:
           # the simulator shares the host's loopback, and xcodebuild hands TEST_RUNNER_* to the tests.
@@ -206,13 +240,25 @@ jobs:
           name: whale-preview
           path: out/whale
           if-no-files-found: warn
+      - name: The stage at places
+        # `[shots]`: the stage at rest (the ground's month, the clouds and the sea held) at each place,
+        # as tools/metal/metal.py's `shot` draws it at the same names; a report, like the film's
+        id: stage
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.fast.outputs.places != '' }}
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          export STAGE_ONLY=1 PLACES="${{ steps.fast.outputs.places }}"
+          while read -r KIND UDID _ <&3; do
+            ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID"
+          done 3< out/sims.txt
       - name: Screenshots of the film on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
         # pictures a person looks at.
         # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'playground')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && steps.fast.outputs.fast == '' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'playground')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
@@ -231,7 +277,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} whale_capture=${{ steps.whale_capture.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} whale_capture=${{ steps.whale_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
