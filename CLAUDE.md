@@ -75,7 +75,7 @@ Keep design discussions and plans in that private repository.
     the Persian style, a headpiece with the name in its cartouche), and an active prototype's
     invitation above it. Made at launch and kept (its maps decoded once), paused while a screen
     or the workbench covers it.
-  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
+  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and GEBCO, as NASA Visible Earth's imagery (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.
     The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by

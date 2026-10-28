@@ -9,7 +9,7 @@
   'use strict';
   var M = window.ShipMath, D = window.SHIP_DATA;
   var NEAR = 1.5;            // closer than this the voyage shows; further, only the ship, small
-  var PT_PER_M = 0.018;      // the hanging line: 18 points to a kilometre of depth (the deepest here, ~110)
+  var PT_PER_M = 0.018;      // the hanging line: 18 points to a kilometre of depth (the deepest here, about 120)
   var REACH = 24;            // how near a touch must be to a station or the ship, in points
 
   function inRing(p, ring) {
@@ -38,6 +38,10 @@
     return M.date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   }
   function metres(m) { return Math.round(m).toLocaleString('en-GB') + ' m'; }
+  /** As the expedition recorded it, in fathoms, then about how far that is (read to the nearest mark). */
+  function recorded(s) {
+    return s.fathoms.toLocaleString('en-GB') + ' fathoms (about ' + metres(Math.round(s.depth / 10) * 10) + ')';
+  }
   function stationName(s) { return s.station.replace(/^CHA-/, ''); }
 
   function transits() {
@@ -56,8 +60,8 @@
   function say() {
     var here = M.position(stations, day), title = 'HMS Challenger', text;
     if (sounding) {
-      text = 'Station ' + stationName(sounding) + ', ' + longDate(sounding.day) + ': the depth recorded here was ' +
-        metres(sounding.depth) + '. Touch another station, or drag the date.';
+      text = 'Station ' + stationName(sounding) + ', ' + longDate(sounding.day) + ': the line ran out to ' +
+        recorded(sounding) + '. Touch another station, or drag the date.';
     } else if (!near) {
       text = 'A British ship sent out in 1872 to explore the deep ocean. ' + (here.kind === 'recorded' || here.kind === 'interpolated'
         ? 'Zoom in on the little ship to follow it.' : 'This record has no position for it on ' + longDate(day) + '; drag the date.');
@@ -108,7 +112,7 @@
       var e = 1 - (1 - f) * (1 - f);
       terra.geo.set('sounding', [point(s.lon, s.lat, {
         length: full * e,
-        label: f < 1 ? metres(s.depth * e) : metres(s.depth) + ' to the floor'
+        label: f < 1 ? Math.round(s.fathoms * e).toLocaleString('en-GB') + ' fathoms' : recorded(s)
       })], { style: 'sounding' });
       raf = f < 1 ? requestAnimationFrame(step) : 0;
     }

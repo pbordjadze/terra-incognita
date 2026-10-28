@@ -11,7 +11,7 @@
           text: 'The filled country is the one you chose, as that map draws it.\n\n' +
                 'The dashed line is the same country on the closest earlier map that has it.\n\n' +
                 'The 1530 and 1600 maps here show only the Ottoman Empire. Later maps cover Europe and its edges only.\n\n' +
-                'The 1945 map shows Germany in four zones of occupation, named here as the British, American, French and Soviet zones.\n\n' +
+                'The 1945 map shows Germany in four zones of occupation, named here as the British, American, French and Soviet zones, as agreed by the four Allied powers in 1944–45 and in force from mid-1945. Their borders are approximate: some towns near them fall in the wrong zone, and Berlin is not drawn apart.\n\n' +
                 'Today\'s borders and names are hidden; the coasts are today\'s, as a reference.' },
         { title: 'What these maps are',
           text: 'Generalised maps of states made for a world atlas of history, simplified further here (to about 0.025°). They are not precise records of a treaty or a day: 1945, for example, combines arrangements made after the war. A country missing from a map means only that this map has no shape by that name; it says nothing about the people who lived there.' }

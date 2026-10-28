@@ -121,6 +121,19 @@ final class PrototypeStage {
 
     private var globe: GlobeView? { playground?.globe }
 
+    /// Holds the globe where the prototype put it (no idle turn) until the prototype ends.
+    func holdStill() {
+        guard !ended, let globe else { return }
+        globeChanged = true
+        globe.holdsStill = true
+    }
+
+    /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
+    func describe(title: String, text: String) {
+        guard !ended, caption == nil else { return }
+        caption = StageCaption(title: title, text: text)
+    }
+
     /// Moves the globe (Reduce Motion: at once).
     func fly(to camera: GlobeCamera, duration: Double = 0.9) {
         guard !ended else { return }

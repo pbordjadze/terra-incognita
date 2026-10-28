@@ -145,7 +145,7 @@ fs.writeFileSync(path.join(OUT, 'data.js'),
   '   engraving: the bounds of engraving.png [west, south, east, north], degrees.\n' +
   '   grid: the sounding grid over [west, east] x [north, south], row by row from the north-west; land one bit a\n' +
   '   cell (most significant first), depth one byte a cell in steps of metresPerStep (255: that or deeper).\n' +
-  '   Generalised from NASA\'s GEBCO 2008 grayscale imagery: not survey data (SOURCES.md).\n' +
+  '   Generalised from NASA Visible Earth\'s grayscale GEBCO 2008 imagery: not survey data (SOURCES.md).\n' +
   '   contours: [metres, [lon, lat, lon, lat, ...]], the same source, generalised. names: the leaf\'s lettering. */\n' +
   'window.SEA = ' + JSON.stringify(data) + ';\n');
 console.log(`data.js: ${contours.length} contours, ${before} -> ${after} vertices; engraving pixels ${crop.join(', ')}, bounds ${engraving.join(', ')}`);
