@@ -41,7 +41,7 @@ for i in $(seq 1 "$POLLS"); do
   if (( i % 10 == 1 )); then
     state="$(runs | head -1)"
     echo "$(date +%T) ${SHA:0:8} on ${BRANCH}: ${state:-no run seen yet}"
-    # ended with no report: give the report job two more polls, then say so and stop
+    # ended with no report for this commit: look once more in 5 minutes, then say so and stop
     if [[ "$state" == completed* ]]; then
       ended=$((ended + 1))
       if (( ended > 1 )); then

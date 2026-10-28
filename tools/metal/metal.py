@@ -449,9 +449,11 @@ def main():
     try:
         import layers
         layers.commands(sub)
-    except ImportError as e:
-        if 'layers' not in str(e):
-            raise
+    except ImportError as e:                            # (`check` needs only clang: CI's Linux job)
+        for name in ('shot', 'twin'):
+            p = sub.add_parser(name, help=f'(needs {e.name}: pip install numpy pillow)')
+            p.add_argument('rest', nargs='*')
+            p.set_defaults(fn=lambda _, name=name, need=e.name: sys.exit(f'{name} needs {need}: pip install numpy pillow'))
     args = a.parse_args()
     sys.exit(args.fn(args))
 
