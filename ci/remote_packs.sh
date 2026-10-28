@@ -12,7 +12,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 # the folder keeps its name: a pack's id is its folder's name
 cp -R "$ROOT/Prototypes/hello-pack" "$TMP/hello-pack"
-python3 - "$TMP/hello-pack/index.html" <<'PY'
+python3 - "$TMP/hello-pack/main.js" <<'PY'
 import sys
 path = sys.argv[1]
 text = open(path, encoding='utf-8').read()

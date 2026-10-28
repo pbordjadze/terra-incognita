@@ -57,6 +57,19 @@
     };
   }
 
+  // A clock and animation frames, where the host has none (JavaScriptCore). Frames ride the timers:
+  // fine for a short eased change (a line let down); a pack never animates the globe frame by frame.
+  if (!global.performance || typeof global.performance.now !== 'function') {
+    var t0 = Date.now();
+    global.performance = { now: function () { return Date.now() - t0; } };
+  }
+  if (typeof global.requestAnimationFrame !== 'function') {
+    global.requestAnimationFrame = function (fn) {
+      return global.setTimeout(function () { fn(global.performance.now()); }, 1000 / 60);
+    };
+    global.cancelAnimationFrame = function (id) { global.clearTimeout(id); };
+  }
+
   function log(level, args) {
     send({ type: 'log', level: level, message: Array.prototype.map.call(args, function (a) {
       if (typeof a === 'string') return a;
@@ -92,7 +105,7 @@
     /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded) } */
     settings: Object.assign({ reduceMotion: false, textScale: 1, active: true }, boot.settings || {}),
 
-    /** 'settings', 'camera', 'touch', 'time', 'open', 'panel', 'close' */
+    /** 'settings', 'camera', 'touch' (and 'tap', its taps alone), 'time', 'open', 'panel', 'close' */
     on: function (type, fn) {
       (listeners[type] = listeners[type] || []).push(fn);
       if (type === 'settings') { try { fn(terra.settings); } catch (e) { report(e); } }
@@ -186,8 +199,11 @@
           emit('camera', terra.camera);
           break;
         case 'touch':
-          emit('touch', { phase: message.phase, target: message.target || null, x: message.x, y: message.y,
-                          lon: message.lon == null ? null : message.lon, lat: message.lat == null ? null : message.lat });
+          var touch = { phase: message.phase, target: message.target || null, x: message.x, y: message.y,
+                        lon: message.lon == null ? null : message.lon, lat: message.lat == null ? null : message.lat };
+          emit('touch', touch);
+          // (taps alone, for a script that wants only those)
+          if (touch.phase === 'tap') emit('tap', touch);
           break;
         case 'time':
           emit('time', { value: message.value, playing: !!message.playing, by: message.by });
