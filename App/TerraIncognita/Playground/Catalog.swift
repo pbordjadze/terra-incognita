@@ -13,7 +13,7 @@ enum Catalog {
             frames: [image], fps: 1, size: size, minZoom: minZoom, maxZoom: .infinity, every: nil, duration: nil, face: false)])
     }
 
-    static let native: [Prototype] = [camelid, whale, ocean, persian, wikipedia, film]
+    static let native: [Prototype] = [camelid, whale, ocean, persian, wikipedia, stillSea, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`), on the globe itself.
     static let camelid = Prototype(
@@ -79,6 +79,16 @@ enum Catalog {
         shelf: .parked
     ) { stage in
         stage.style = .wikipedia
+    }
+
+    /// The sea as it was before it moved, parked when the ocean joined the stage (October 28, 2026):
+    /// no currents, light, glitter, surf or rings.
+    static let stillSea = Prototype(
+        id: "still-sea", title: "The still sea",
+        summary: "The globe with its sea still, as it was before the currents, the light on the water and the surf.",
+        shelf: .parked
+    ) { stage in
+        stage.stillSea()
     }
 
     /// The first atlas, parked: the plate films and their five looks (`Atlas/`), made only when opened.

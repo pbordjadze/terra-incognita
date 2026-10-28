@@ -86,7 +86,8 @@ jobs:
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          for f in tools/ocean/*.cjs tools/ocean/web/*.js; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py tools/ocean/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           exit $rc
       - uses: actions/upload-artifact@v5
         if: always()
@@ -135,6 +136,7 @@ jobs:
           # recompress the one and bend the other's distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
           for f in $(find Atlas Globe Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in OceanCurrents.png OceanStream.png; do cmp "App/TerraIncognita/Ocean/$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: Encounter interactions and accessible text
         id: encounter

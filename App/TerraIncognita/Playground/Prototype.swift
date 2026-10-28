@@ -128,6 +128,13 @@ final class PrototypeStage {
         globe.holdsStill = true
     }
 
+    /// The parked still sea: the globe's sea hidden until the prototype ends.
+    func stillSea() {
+        guard !ended, let globe else { return }
+        globeChanged = true
+        globe.seaHidden = true
+    }
+
     /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
     func describe(title: String, text: String) {
         guard !ended, caption == nil else { return }
@@ -481,6 +488,7 @@ final class PrototypeStage {
         if globeChanged {
             globe?.historicalReference = false
             globe?.holdsStill = false
+            globe?.seaHidden = false
             globe?.dragScheme = .touchables
             globe?.zoomLimit = 8
             globeChanged = false
