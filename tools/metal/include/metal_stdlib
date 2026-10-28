@@ -1,0 +1,559 @@
+// A stand-in for Metal's standard library, so that a .metal file compiles as C++ on Linux and runs on
+// the CPU (tools/metal/metal.py rewrites the source a little first; README.md says what it covers).
+// The vector types are clang's extended vectors, the same machinery Metal's own compiler is built on:
+// swizzles, splats and arithmetic behave as they do on the GPU. Only what Terra's shaders use, and its
+// near relatives, is here: a shader that needs more adds it here, in the same change.
+#pragma once
+
+#define kernel
+#define vertex
+#define fragment
+#define constant const
+#define device
+#define thread
+#define threadgroup
+
+#define M_PI_F 3.14159265358979323846f
+#define M_PI_2_F 1.57079632679489661923f
+#define M_PI_4_F 0.78539816339744830962f
+#define M_1_PI_F 0.31830988618379067154f
+#define M_2_PI_F 0.63661977236758134308f
+#define M_E_F 2.71828182845904523536f
+#define M_LN2_F 0.69314718055994530942f
+#define M_SQRT2_F 1.41421356237309504880f
+#define M_SQRT1_2_F 0.70710678118654752440f
+#define FLT_MAX 3.402823466e+38f
+#define FLT_MIN 1.175494351e-38f
+#define FLT_EPSILON 1.192092896e-07f
+#define MAXFLOAT 3.402823466e+38f
+#define INFINITY __builtin_inff()
+#define NAN __builtin_nanf("")
+
+typedef unsigned int uint;
+typedef unsigned short ushort;
+typedef unsigned char uchar;
+typedef float half;                                     // (computed in float here: a check, not a twin)
+
+typedef float float2 __attribute__((ext_vector_type(2)));
+typedef float float3 __attribute__((ext_vector_type(3)));
+typedef float float4 __attribute__((ext_vector_type(4)));
+typedef float2 half2;
+typedef float3 half3;
+typedef float4 half4;
+typedef int int2 __attribute__((ext_vector_type(2)));
+typedef int int3 __attribute__((ext_vector_type(3)));
+typedef int int4 __attribute__((ext_vector_type(4)));
+typedef uint uint2 __attribute__((ext_vector_type(2)));
+typedef uint uint3 __attribute__((ext_vector_type(3)));
+typedef uint uint4 __attribute__((ext_vector_type(4)));
+typedef short short2 __attribute__((ext_vector_type(2)));
+typedef short short3 __attribute__((ext_vector_type(3)));
+typedef short short4 __attribute__((ext_vector_type(4)));
+typedef ushort ushort2 __attribute__((ext_vector_type(2)));
+typedef ushort ushort3 __attribute__((ext_vector_type(3)));
+typedef ushort ushort4 __attribute__((ext_vector_type(4)));
+typedef uchar uchar2 __attribute__((ext_vector_type(2)));
+typedef uchar uchar3 __attribute__((ext_vector_type(3)));
+typedef uchar uchar4 __attribute__((ext_vector_type(4)));
+// A comparison of vectors gives a vector of ints, -1 where true (clang's rule; Metal's gives bools):
+// boolN is that type, so `bool3 b = v < w`, select, all and any read as Metal's do. A comparison
+// among a vector's elements, float3(v < w), is rewritten to give 1 and 0 (metal.py); a bool vector
+// held in a variable and then converted, float3(b), would give -1: compare in the conversion.
+typedef int2 bool2;
+typedef int3 bool3;
+typedef int4 bool4;
+
+// ---- vector construction: metal.py rewrites float3(a, b, c) to __mtl_make<float3>(a, b, c), which
+// takes scalars and vectors in any mix (as Metal does) and converts values, never bits
+
+namespace __mtl {
+template <class T> struct traits { static constexpr int n = 0; };
+#define MTL_TRAITS(V, E, N) template <> struct traits<V> { static constexpr int n = N; typedef E elem; };
+MTL_TRAITS(float, float, 1) MTL_TRAITS(float2, float, 2) MTL_TRAITS(float3, float, 3) MTL_TRAITS(float4, float, 4)
+MTL_TRAITS(int, int, 1) MTL_TRAITS(int2, int, 2) MTL_TRAITS(int3, int, 3) MTL_TRAITS(int4, int, 4)
+MTL_TRAITS(uint, uint, 1) MTL_TRAITS(uint2, uint, 2) MTL_TRAITS(uint3, uint, 3) MTL_TRAITS(uint4, uint, 4)
+MTL_TRAITS(short, short, 1) MTL_TRAITS(short2, short, 2) MTL_TRAITS(short3, short, 3) MTL_TRAITS(short4, short, 4)
+MTL_TRAITS(ushort, ushort, 1) MTL_TRAITS(ushort2, ushort, 2) MTL_TRAITS(ushort3, ushort, 3) MTL_TRAITS(ushort4, ushort, 4)
+MTL_TRAITS(uchar, uchar, 1) MTL_TRAITS(uchar2, uchar, 2) MTL_TRAITS(uchar3, uchar, 3) MTL_TRAITS(uchar4, uchar, 4)
+MTL_TRAITS(bool, bool, 1) MTL_TRAITS(double, double, 1) MTL_TRAITS(long, long, 1) MTL_TRAITS(unsigned long, unsigned long, 1)
+#undef MTL_TRAITS
+
+template <class T> constexpr int count() { return traits<T>::n; }
+template <class... A> constexpr int total() { return (0 + ... + count<A>()); }
+
+template <class E, class A> inline void put(E *out, int &k, A a) {
+    if constexpr (count<A>() == 1) out[k++] = E(a);
+    else for (int i = 0; i < count<A>(); i++) out[k++] = E(a[i]);
+}
+
+template <class V> struct zero_last { static V of() { return V(0); } };
+}  // namespace __mtl
+
+template <class V, class... A> inline V __mtl_make(A... a) {
+    typedef typename __mtl::traits<V>::elem E;
+    constexpr int n = __mtl::traits<V>::n, given = __mtl::total<A...>();
+    static_assert(given > 0, "a vector needs its elements");
+    static_assert(given == n || (sizeof...(A) == 1 && given == 1),
+                  "the elements given don't fill the vector (Metal wants exactly as many, or one to splat)");
+    E e[4] = {};
+    int k = 0;
+    (__mtl::put(e, k, a), ...);
+    V v;
+    for (int i = 0; i < n; i++) v[i] = (given == 1) ? e[0] : e[i];
+    return v;
+}
+
+// float3(v < w), float4(v < w, 0, 1): metal.py wraps a comparison among a vector's elements, as
+// Metal's true is 1 and clang's -1
+inline bool __mtl_truth(bool b) { return b; }
+template <class V> inline V __mtl_truth(V v) {
+    if constexpr (__mtl::traits<V>::n == 1) return v;
+    else {
+        V r;
+        for (int i = 0; i < __mtl::traits<V>::n; i++) r[i] = v[i] ? 1 : 0;
+        return r;
+    }
+}
+
+// ---- matrices, by columns
+
+template <int C, int R> struct __mtl_matrix;
+#define MTL_MATRIX(C, R, COL)                                                                   \
+    template <> struct __mtl_matrix<C, R> {                                                     \
+        COL columns[C];                                                                         \
+        COL &operator[](int i) { return columns[i]; }                                           \
+        const COL &operator[](int i) const { return columns[i]; }                               \
+    };
+MTL_MATRIX(2, 2, float2) MTL_MATRIX(3, 3, float3) MTL_MATRIX(4, 4, float4)
+#undef MTL_MATRIX
+typedef __mtl_matrix<2, 2> float2x2;
+typedef __mtl_matrix<3, 3> float3x3;
+typedef __mtl_matrix<4, 4> float4x4;
+namespace __mtl {
+template <> struct traits<float2x2> { static constexpr int n = 2; typedef float2 elem; };
+template <> struct traits<float3x3> { static constexpr int n = 3; typedef float3 elem; };
+template <> struct traits<float4x4> { static constexpr int n = 4; typedef float4 elem; };
+template <int N> struct column_of;
+template <> struct column_of<2> { typedef float2 type; };
+template <> struct column_of<3> { typedef float3 type; };
+template <> struct column_of<4> { typedef float4 type; };
+}  // namespace __mtl
+
+// float3x3(c0, c1, c2) by columns; float3x3(s) the diagonal; or every element, column by column
+template <class M, class... A> inline M __mtl_make_matrix(A... a) {
+    constexpr int n = __mtl::traits<M>::n;
+    typedef typename __mtl::column_of<n>::type Col;
+    M m;
+    if constexpr (sizeof...(A) == 1 && __mtl::total<A...>() == 1) {
+        float s = float(a...);
+        for (int c = 0; c < n; c++) { m.columns[c] = Col(0); m.columns[c][c] = s; }
+    } else {
+        static_assert(__mtl::total<A...>() == n * n, "a matrix wants its columns, or every element");
+        float e[16] = {};
+        int k = 0;
+        (__mtl::put(e, k, a), ...);
+        for (int c = 0; c < n; c++) for (int r = 0; r < n; r++) m.columns[c][r] = e[c * n + r];
+    }
+    return m;
+}
+
+template <int N> inline typename __mtl::column_of<N>::type operator*(const __mtl_matrix<N, N> &m, typename __mtl::column_of<N>::type v) {
+    typename __mtl::column_of<N>::type r = 0;
+    for (int c = 0; c < N; c++) r += m.columns[c] * v[c];
+    return r;
+}
+template <int N> inline typename __mtl::column_of<N>::type operator*(typename __mtl::column_of<N>::type v, const __mtl_matrix<N, N> &m) {
+    typename __mtl::column_of<N>::type r;
+    for (int c = 0; c < N; c++) { float s = 0; for (int i = 0; i < N; i++) s += v[i] * m.columns[c][i]; r[c] = s; }
+    return r;
+}
+template <int N> inline __mtl_matrix<N, N> operator*(const __mtl_matrix<N, N> &a, const __mtl_matrix<N, N> &b) {
+    __mtl_matrix<N, N> r;
+    for (int c = 0; c < N; c++) r.columns[c] = a * b.columns[c];
+    return r;
+}
+template <int N> inline __mtl_matrix<N, N> operator*(const __mtl_matrix<N, N> &a, float s) {
+    __mtl_matrix<N, N> r;
+    for (int c = 0; c < N; c++) r.columns[c] = a.columns[c] * s;
+    return r;
+}
+template <int N> inline __mtl_matrix<N, N> operator*(float s, const __mtl_matrix<N, N> &a) { return a * s; }
+template <int N> inline __mtl_matrix<N, N> operator+(const __mtl_matrix<N, N> &a, const __mtl_matrix<N, N> &b) {
+    __mtl_matrix<N, N> r;
+    for (int c = 0; c < N; c++) r.columns[c] = a.columns[c] + b.columns[c];
+    return r;
+}
+template <int N> inline __mtl_matrix<N, N> operator-(const __mtl_matrix<N, N> &a, const __mtl_matrix<N, N> &b) {
+    __mtl_matrix<N, N> r;
+    for (int c = 0; c < N; c++) r.columns[c] = a.columns[c] - b.columns[c];
+    return r;
+}
+
+#include "metal_runtime.h"
+
+namespace metal {
+
+namespace __detail {
+template <class V, class F> inline V map1(V a, F f) {
+    if constexpr (__mtl::count<V>() == 1) return f(a);
+    else { V r; for (int i = 0; i < __mtl::count<V>(); i++) r[i] = f(a[i]); return r; }
+}
+template <class V, class F> inline V map2(V a, V b, F f) {
+    if constexpr (__mtl::count<V>() == 1) return f(a, b);
+    else { V r; for (int i = 0; i < __mtl::count<V>(); i++) r[i] = f(a[i], b[i]); return r; }
+}
+template <class V, class F> inline V map3(V a, V b, V c, F f) {
+    if constexpr (__mtl::count<V>() == 1) return f(a, b, c);
+    else { V r; for (int i = 0; i < __mtl::count<V>(); i++) r[i] = f(a[i], b[i], c[i]); return r; }
+}
+inline float clampf(float x, float a, float b) { return __builtin_fminf(__builtin_fmaxf(x, a), b); }
+inline float smooth01(float t) { return t * t * (3.0f - 2.0f * t); }
+}  // namespace __detail
+
+// Each function for each type, as Metal declares them: a scalar given for a vector splats (clang's
+// conversion, and Metal's).
+#define MTL_FLOATS(M) M(float) M(float2) M(float3) M(float4)
+#define MTL_INTS(M) M(int) M(int2) M(int3) M(int4) M(uint) M(uint2) M(uint3) M(uint4) \
+    M(short) M(short2) M(short3) M(short4) M(ushort) M(ushort2) M(ushort3) M(ushort4)
+
+#define MTL_F1_DECLARE(name) \
+    inline float name(float x) { return __detail::name##_1(x); } \
+    inline float2 name(float2 v) { return __detail::map1(v, __detail::name##_1); } \
+    inline float3 name(float3 v) { return __detail::map1(v, __detail::name##_1); } \
+    inline float4 name(float4 v) { return __detail::map1(v, __detail::name##_1); }
+
+#define MTL_UNARY(name, body) \
+    namespace __detail { inline float name##_1(float x) { return body; } } \
+    MTL_F1_DECLARE(name)
+
+MTL_UNARY(acos, __builtin_acosf(x))
+MTL_UNARY(asin, __builtin_asinf(x))
+MTL_UNARY(atan, __builtin_atanf(x))
+MTL_UNARY(ceil, __builtin_ceilf(x))
+MTL_UNARY(cos, __builtin_cosf(x))
+MTL_UNARY(cosh, __builtin_coshf(x))
+MTL_UNARY(exp, __builtin_expf(x))
+MTL_UNARY(exp2, __builtin_exp2f(x))
+MTL_UNARY(exp10, __builtin_powf(10.0f, x))
+MTL_UNARY(fabs, __builtin_fabsf(x))
+MTL_UNARY(floor, __builtin_floorf(x))
+MTL_UNARY(fract, __builtin_fminf(x - __builtin_floorf(x), 0x1.fffffep-1f))
+MTL_UNARY(log, __builtin_logf(x))
+MTL_UNARY(log2, __builtin_log2f(x))
+MTL_UNARY(log10, __builtin_log10f(x))
+MTL_UNARY(rint, __builtin_rintf(x))
+MTL_UNARY(round, __builtin_roundf(x))
+MTL_UNARY(rsqrt, 1.0f / __builtin_sqrtf(x))
+MTL_UNARY(saturate, __detail::clampf(x, 0.0f, 1.0f))
+MTL_UNARY(sign, x > 0.0f ? 1.0f : (x < 0.0f ? -1.0f : (x != x ? 0.0f : x)))
+MTL_UNARY(sin, __builtin_sinf(x))
+MTL_UNARY(sinh, __builtin_sinhf(x))
+MTL_UNARY(sqrt, __builtin_sqrtf(x))
+MTL_UNARY(tan, __builtin_tanf(x))
+MTL_UNARY(tanh, __builtin_tanhf(x))
+MTL_UNARY(trunc, __builtin_truncf(x))
+
+#define MTL_BINARY(name, body) \
+    namespace __detail { inline float name##_2(float x, float y) { return body; } } \
+    inline float name(float x, float y) { return __detail::name##_2(x, y); } \
+    inline float2 name(float2 x, float2 y) { return __detail::map2(x, y, __detail::name##_2); } \
+    inline float3 name(float3 x, float3 y) { return __detail::map2(x, y, __detail::name##_2); } \
+    inline float4 name(float4 x, float4 y) { return __detail::map2(x, y, __detail::name##_2); }
+
+MTL_BINARY(atan2, __builtin_atan2f(x, y))
+MTL_BINARY(copysign, __builtin_copysignf(x, y))
+MTL_BINARY(fdim, __builtin_fdimf(x, y))
+MTL_BINARY(fmax, __builtin_fmaxf(x, y))
+MTL_BINARY(fmin, __builtin_fminf(x, y))
+MTL_BINARY(fmod, __builtin_fmodf(x, y))
+MTL_BINARY(pow, __builtin_powf(x, y))
+MTL_BINARY(powr, __builtin_powf(x, y))
+MTL_BINARY(step, y < x ? 0.0f : 1.0f)                  // step(edge, x)
+
+#define MTL_TERNARY(name, body) \
+    namespace __detail { inline float name##_3(float x, float y, float z) { return body; } } \
+    inline float name(float x, float y, float z) { return __detail::name##_3(x, y, z); } \
+    inline float2 name(float2 x, float2 y, float2 z) { return __detail::map3(x, y, z, __detail::name##_3); } \
+    inline float3 name(float3 x, float3 y, float3 z) { return __detail::map3(x, y, z, __detail::name##_3); } \
+    inline float4 name(float4 x, float4 y, float4 z) { return __detail::map3(x, y, z, __detail::name##_3); }
+
+MTL_TERNARY(fma, __builtin_fmaf(x, y, z))
+MTL_TERNARY(mix, x + (y - x) * z)
+MTL_TERNARY(smoothstep, __detail::smooth01(__detail::clampf((z - x) / (y - x), 0.0f, 1.0f)))
+
+// min, max, clamp, abs: for floats and ints alike
+#define MTL_MINMAX(T) \
+    inline T min(T x, T y) { return __detail::map2(x, y, [](auto a, auto b) { return b < a ? b : a; }); } \
+    inline T max(T x, T y) { return __detail::map2(x, y, [](auto a, auto b) { return a < b ? b : a; }); } \
+    inline T clamp(T x, T lo, T hi) { return min(max(x, lo), hi); }
+MTL_FLOATS(MTL_MINMAX)
+MTL_INTS(MTL_MINMAX)
+#undef MTL_MINMAX
+
+#define MTL_ABS_F(T) inline T abs(T x) { return fabs(x); }
+MTL_FLOATS(MTL_ABS_F)
+#undef MTL_ABS_F
+#define MTL_ABS_I(T) inline T abs(T x) { return __detail::map1(x, [](auto a) { return decltype(a)(a < 0 ? -a : a); }); }
+MTL_ABS_I(int) MTL_ABS_I(int2) MTL_ABS_I(int3) MTL_ABS_I(int4) MTL_ABS_I(short) MTL_ABS_I(short2) MTL_ABS_I(short3) MTL_ABS_I(short4)
+#undef MTL_ABS_I
+#define MTL_ABS_U(T) inline T abs(T x) { return x; }
+MTL_ABS_U(uint) MTL_ABS_U(uint2) MTL_ABS_U(uint3) MTL_ABS_U(uint4) MTL_ABS_U(ushort) MTL_ABS_U(ushort2) MTL_ABS_U(ushort3) MTL_ABS_U(ushort4)
+#undef MTL_ABS_U
+
+// ---- geometry
+
+#define MTL_GEOMETRY(T) \
+    inline float dot(T a, T b) { T p = a * b; float s = 0; for (int i = 0; i < __mtl::count<T>(); i++) s += p[i]; return s; } \
+    inline float length_squared(T a) { return dot(a, a); } \
+    inline float length(T a) { return __builtin_sqrtf(dot(a, a)); } \
+    inline float distance(T a, T b) { return length(a - b); } \
+    inline float distance_squared(T a, T b) { return dot(a - b, a - b); } \
+    inline T normalize(T a) { return a * (1.0f / length(a)); } \
+    inline T reflect(T i, T n) { return i - 2.0f * dot(n, i) * n; } \
+    inline T faceforward(T n, T i, T nref) { return dot(nref, i) < 0.0f ? n : -n; }
+MTL_GEOMETRY(float2) MTL_GEOMETRY(float3) MTL_GEOMETRY(float4)
+#undef MTL_GEOMETRY
+inline float dot(float a, float b) { return a * b; }
+inline float length(float a) { return __builtin_fabsf(a); }
+inline float distance(float a, float b) { return __builtin_fabsf(a - b); }
+inline float normalize(float a) { return a < 0.0f ? -1.0f : 1.0f; }
+inline float3 cross(float3 a, float3 b) { return __mtl_make<float3>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
+
+template <int N> inline __mtl_matrix<N, N> transpose(const __mtl_matrix<N, N> &m) {
+    __mtl_matrix<N, N> r;
+    for (int c = 0; c < N; c++) for (int k = 0; k < N; k++) r.columns[c][k] = m.columns[k][c];
+    return r;
+}
+inline float determinant(const float2x2 &m) { return m[0][0] * m[1][1] - m[1][0] * m[0][1]; }
+inline float determinant(const float3x3 &m) { return dot(m[0], cross(m[1], m[2])); }
+
+// ---- relational: Metal's bool vectors are int vectors here (above)
+
+inline bool all(bool b) { return b; }
+inline bool any(bool b) { return b; }
+#define MTL_ALLANY(T) \
+    inline bool all(T b) { for (int i = 0; i < __mtl::count<T>(); i++) if (!b[i]) return false; return true; } \
+    inline bool any(T b) { for (int i = 0; i < __mtl::count<T>(); i++) if (b[i]) return true; return false; }
+MTL_ALLANY(int2) MTL_ALLANY(int3) MTL_ALLANY(int4)
+#undef MTL_ALLANY
+inline float select(float a, float b, bool c) { return c ? b : a; }
+inline int select(int a, int b, bool c) { return c ? b : a; }
+#define MTL_SELECT(T, B) \
+    inline T select(T a, T b, B c) { T r; for (int i = 0; i < __mtl::count<T>(); i++) r[i] = c[i] ? b[i] : a[i]; return r; } \
+    inline T select(T a, T b, bool c) { return c ? b : a; }
+MTL_SELECT(float2, int2) MTL_SELECT(float3, int3) MTL_SELECT(float4, int4)
+MTL_SELECT(int2, int2) MTL_SELECT(int3, int3) MTL_SELECT(int4, int4)
+#undef MTL_SELECT
+inline bool isnan(float x) { return x != x; }
+inline bool isinf(float x) { return __builtin_isinf(x); }
+inline bool isfinite(float x) { return __builtin_isfinite(x); }
+inline bool signbit(float x) { return __builtin_signbit(x); }
+
+// ---- derivatives
+
+namespace __detail {
+template <class T> inline void derive(T v, int line, T &dx, T &dy) {
+    float in[4] = {}, ox[4], oy[4];
+    constexpr int n = __mtl::count<T>();
+    if constexpr (n == 1) in[0] = v; else for (int i = 0; i < n; i++) in[i] = v[i];
+    __mtl_quad(in, n, line, ox, oy);
+    if constexpr (n == 1) { dx = ox[0]; dy = oy[0]; }
+    else for (int i = 0; i < n; i++) { dx[i] = ox[i]; dy[i] = oy[i]; }
+}
+}  // namespace __detail
+#define MTL_DERIVATIVES(T) \
+    inline T dfdx(T v, int line = __builtin_LINE()) { T x, y; __detail::derive(v, line, x, y); return x; } \
+    inline T dfdy(T v, int line = __builtin_LINE()) { T x, y; __detail::derive(v, line, x, y); return y; } \
+    inline T fwidth(T v, int line = __builtin_LINE()) { T x, y; __detail::derive(v, line, x, y); return fabs(x) + fabs(y); }
+MTL_FLOATS(MTL_DERIVATIVES)
+#undef MTL_DERIVATIVES
+
+// ---- samplers and textures
+
+enum class filter { nearest, linear };
+enum class mag_filter { nearest, linear };
+enum class min_filter { nearest, linear };
+enum class mip_filter { none, nearest, linear };
+enum class address { repeat, mirrored_repeat, clamp_to_edge, clamp_to_zero, clamp_to_border };
+enum class s_address { repeat, mirrored_repeat, clamp_to_edge, clamp_to_zero, clamp_to_border };
+enum class t_address { repeat, mirrored_repeat, clamp_to_edge, clamp_to_zero, clamp_to_border };
+enum class r_address { repeat, mirrored_repeat, clamp_to_edge, clamp_to_zero, clamp_to_border };
+enum class coord { normalized, pixel };
+enum class border_color { transparent_black, opaque_black, opaque_white };
+enum class compare_func { none, less, less_equal, greater, greater_equal, equal, not_equal, always, never };
+enum class access { sample, read, write, read_write };
+enum class component { x, y, z, w };
+
+struct sampler {
+    int mag = 0, min = 0, mip = 0;                      // filter: 0 nearest, 1 linear; mip: 0 none, 1 nearest, 2 linear
+    int s = 2, t = 2, r = 2;                            // address: as the enum (clamp_to_edge by default, as Metal's)
+    int pixel = 0, border = 0;
+    template <class... A> constexpr sampler(A... a) { (set(a), ...); }
+    constexpr void set(filter f) { mag = min = int(f); }
+    constexpr void set(mag_filter f) { mag = int(f); }
+    constexpr void set(min_filter f) { min = int(f); }
+    constexpr void set(mip_filter f) { mip = int(f); }
+    constexpr void set(address a) { s = t = r = int(a); }
+    constexpr void set(s_address a) { s = int(a); }
+    constexpr void set(t_address a) { t = int(a); }
+    constexpr void set(r_address a) { r = int(a); }
+    constexpr void set(coord c) { pixel = int(c); }
+    constexpr void set(border_color b) { border = int(b); }
+    constexpr void set(compare_func) {}
+};
+
+struct gradient2d { float2 dx, dy; gradient2d(float2 x, float2 y) : dx(x), dy(y) {} };
+struct gradient3d { float3 dx, dy; gradient3d(float3 x, float3 y) : dx(x), dy(y) {} };
+struct level { float lod; level(float l) : lod(l) {} };
+struct bias { float value; bias(float b) : value(b) {} };
+struct min_lod_clamp { float lod; min_lod_clamp(float l) : lod(l) {} };
+
+namespace __detail {
+inline int dimension(const __mtl_texture *t, int axis, int lod) {
+    int n = axis == 0 ? t->width : axis == 1 ? t->height : t->depth;
+    n >>= lod;
+    return n < 1 ? 1 : n;
+}
+// an index along one axis by the address mode, or -1 for none (clamp to zero, or the border)
+inline int address_index(int i, int n, int mode) {
+    switch (mode) {
+    case 0: { int k = i % n; return k < 0 ? k + n : k; }
+    case 1: { int p = 2 * n, k = i % p; if (k < 0) k += p; return k < n ? k : p - 1 - k; }
+    case 2: return i < 0 ? 0 : (i >= n ? n - 1 : i);
+    default: return (i < 0 || i >= n) ? -1 : i;
+    }
+}
+inline float4 border_of(const sampler &s) {
+    return s.border == 0 ? __mtl_make<float4>(0.0f) : s.border == 1 ? __mtl_make<float4>(0.0f, 0.0f, 0.0f, 1.0f) : __mtl_make<float4>(1.0f);
+}
+inline float4 texel(const __mtl_texture *t, const sampler &s, int lod, int x, int y, int z) {
+    int w = dimension(t, 0, lod), h = dimension(t, 1, lod), d = dimension(t, 2, lod);
+    int ix = address_index(x, w, s.s), iy = address_index(y, h, s.t), iz = address_index(z, d, s.r);
+    if (ix < 0 || iy < 0 || iz < 0) return border_of(s);
+    long at = 4 * ((long(iz) * h + iy) * w + ix);
+    if (t->format == 1) {
+        const unsigned char *p = (const unsigned char *)t->level[lod] + at;
+        return __mtl_make<float4>(p[0], p[1], p[2], p[3]) * (1.0f / 255.0f);
+    }
+    const float *p = (const float *)t->level[lod] + at;
+    return __mtl_make<float4>(p[0], p[1], p[2], p[3]);
+}
+inline float4 filtered(const __mtl_texture *t, const sampler &s, int lod, float3 c, bool linear, int dims) {
+    int w = dimension(t, 0, lod), h = dimension(t, 1, lod), d = dimension(t, 2, lod);
+    float3 size = __mtl_make<float3>(float(w), float(h), float(d));
+    float3 p = s.pixel ? c : c * size;
+    if (!linear) {
+        int3 i = __mtl_make<int3>(__builtin_floorf(p.x), __builtin_floorf(p.y), dims == 3 ? __builtin_floorf(p.z) : 0.0f);
+        return texel(t, s, lod, i.x, i.y, i.z);
+    }
+    float3 q = p - 0.5f;
+    float3 f = q - floor(q);
+#ifdef MTL_FILTER_BITS
+    f = floor(f * float(1 << MTL_FILTER_BITS) + 0.5f) * (1.0f / float(1 << MTL_FILTER_BITS));
+#endif
+    int x0 = int(__builtin_floorf(q.x)), y0 = int(__builtin_floorf(q.y)), z0 = dims == 3 ? int(__builtin_floorf(q.z)) : 0;
+    float4 a = mix(texel(t, s, lod, x0, y0, z0), texel(t, s, lod, x0 + 1, y0, z0), f.x);
+    float4 b = mix(texel(t, s, lod, x0, y0 + 1, z0), texel(t, s, lod, x0 + 1, y0 + 1, z0), f.x);
+    float4 near = mix(a, b, f.y);
+    if (dims != 3) return near;
+    float4 c2 = mix(texel(t, s, lod, x0, y0, z0 + 1), texel(t, s, lod, x0 + 1, y0, z0 + 1), f.x);
+    float4 d2 = mix(texel(t, s, lod, x0, y0 + 1, z0 + 1), texel(t, s, lod, x0 + 1, y0 + 1, z0 + 1), f.x);
+    return mix(near, mix(c2, d2, f.y), f.z);
+}
+// at a level of detail: the base level's filter when magnified, the min filter's when minified,
+// between two levels by the mip filter
+inline float4 at_lod(const __mtl_texture *t, const sampler &s, float3 c, float lod, int dims) {
+#ifdef MTL_BASE_LEVEL
+    lod = -1.0f;                                        // (a twin that has no mipmaps: tools/metal/layers.py)
+#endif
+    int top = t->levels - 1;
+    if (s.mip == 0 || top == 0) return filtered(t, s, 0, c, lod <= 0.0f ? s.mag : s.min, dims);
+    lod = clampf(lod, 0.0f, float(top));
+    if (s.mip == 1) return filtered(t, s, int(__builtin_floorf(lod + 0.5f)), c, lod <= 0.0f ? s.mag : s.min, dims);
+    int l0 = int(__builtin_floorf(lod));
+    int l1 = l0 < top ? l0 + 1 : l0;
+    float4 a = filtered(t, s, l0, c, lod <= 0.0f ? s.mag : s.min, dims);
+    if (l1 == l0) return a;
+    return mix(a, filtered(t, s, l1, c, s.min, dims), lod - float(l0));
+}
+inline float lod_of(const __mtl_texture *t, float2 dx, float2 dy) {
+    float2 size = __mtl_make<float2>(float(t->width), float(t->height));
+    float rho = __builtin_fmaxf(length(dx * size), length(dy * size));
+    return rho > 0.0f ? __builtin_log2f(rho) : -32.0f;
+}
+inline float lod_of(const __mtl_texture *t, float3 dx, float3 dy) {
+    float3 size = __mtl_make<float3>(float(t->width), float(t->height), float(t->depth));
+    float rho = __builtin_fmaxf(length(dx * size), length(dy * size));
+    return rho > 0.0f ? __builtin_log2f(rho) : -32.0f;
+}
+inline void store(__mtl_texture *t, int lod, int x, int y, int z, float4 v) {
+    int w = dimension(t, 0, lod), h = dimension(t, 1, lod), d = dimension(t, 2, lod);
+    if (x < 0 || y < 0 || z < 0 || x >= w || y >= h || z >= d) return;
+    long at = 4 * ((long(z) * h + y) * w + x);
+    for (int i = 0; i < 4; i++) {
+        // an 8-bit unorm keeps the nearest of its 256 steps
+        if (t->format == 1) ((unsigned char *)t->level[lod])[at + i] = (unsigned char)__builtin_rintf(clampf(v[i], 0.0f, 1.0f) * 255.0f);
+        else ((float *)t->level[lod])[at + i] = v[i];
+    }
+}
+}  // namespace __detail
+
+template <class T, access A = access::sample> struct texture2d {
+    __mtl_texture *t;
+    // implicit derivatives, as a fragment takes them across its quad, only when there are levels to choose
+    float4 sample(sampler s, float2 c, int line = __builtin_LINE()) const {
+        if (s.mip == 0 || t->levels < 2) return __detail::at_lod(t, s, __mtl_make<float3>(c, 0.0f), -1.0f, 2);
+        float2 dx, dy;
+        __detail::derive(c, line, dx, dy);
+        return __detail::at_lod(t, s, __mtl_make<float3>(c, 0.0f), __detail::lod_of(t, dx, dy), 2);
+    }
+    float4 sample(sampler s, float2 c, gradient2d g) const {
+        return __detail::at_lod(t, s, __mtl_make<float3>(c, 0.0f), __detail::lod_of(t, g.dx, g.dy), 2);
+    }
+    float4 sample(sampler s, float2 c, level l) const { return __detail::at_lod(t, s, __mtl_make<float3>(c, 0.0f), l.lod, 2); }
+    float4 sample(sampler s, float2 c, bias b, int line = __builtin_LINE()) const {
+        float2 dx, dy;
+        __detail::derive(c, line, dx, dy);
+        return __detail::at_lod(t, s, __mtl_make<float3>(c, 0.0f), __detail::lod_of(t, dx, dy) + b.value, 2);
+    }
+    // the four texels a bilinear sample would blend, one component each: (0,1), (1,1), (1,0), (0,0)
+    float4 gather(sampler s, float2 c, int2 offset = 0, component k = component::x) const {
+        float2 p = (s.pixel ? c : c * __mtl_make<float2>(float(t->width), float(t->height))) - 0.5f;
+        int x0 = int(__builtin_floorf(p.x)) + offset.x, y0 = int(__builtin_floorf(p.y)) + offset.y, i = int(k);
+        return __mtl_make<float4>(__detail::texel(t, s, 0, x0, y0 + 1, 0)[i], __detail::texel(t, s, 0, x0 + 1, y0 + 1, 0)[i],
+                                  __detail::texel(t, s, 0, x0 + 1, y0, 0)[i], __detail::texel(t, s, 0, x0, y0, 0)[i]);
+    }
+    float4 read(uint2 c, uint lod = 0) const {
+        sampler s(address::clamp_to_zero);
+        return __detail::texel(t, s, int(lod), int(c.x), int(c.y), 0);
+    }
+    float4 read(ushort2 c, uint lod = 0) const { return read(__mtl_make<uint2>(c), lod); }
+    void write(float4 v, uint2 c, uint lod = 0) const { __detail::store(t, int(lod), int(c.x), int(c.y), 0, v); }
+    void write(float4 v, ushort2 c, uint lod = 0) const { write(v, __mtl_make<uint2>(c), lod); }
+    uint get_width(uint lod = 0) const { return uint(__detail::dimension(t, 0, int(lod))); }
+    uint get_height(uint lod = 0) const { return uint(__detail::dimension(t, 1, int(lod))); }
+    uint get_num_mip_levels() const { return uint(t->levels); }
+};
+
+template <class T, access A = access::sample> struct texture3d {
+    __mtl_texture *t;
+    float4 sample(sampler s, float3 c, int line = __builtin_LINE()) const {
+        if (s.mip == 0 || t->levels < 2) return __detail::at_lod(t, s, c, -1.0f, 3);
+        float3 dx, dy;
+        __detail::derive(c, line, dx, dy);
+        return __detail::at_lod(t, s, c, __detail::lod_of(t, dx, dy), 3);
+    }
+    float4 sample(sampler s, float3 c, gradient3d g) const { return __detail::at_lod(t, s, c, __detail::lod_of(t, g.dx, g.dy), 3); }
+    float4 sample(sampler s, float3 c, level l) const { return __detail::at_lod(t, s, c, l.lod, 3); }
+    float4 read(uint3 c, uint lod = 0) const {
+        sampler s(address::clamp_to_zero);
+        return __detail::texel(t, s, int(lod), int(c.x), int(c.y), int(c.z));
+    }
+    void write(float4 v, uint3 c, uint lod = 0) const { __detail::store(t, int(lod), int(c.x), int(c.y), int(c.z), v); }
+    uint get_width(uint lod = 0) const { return uint(__detail::dimension(t, 0, int(lod))); }
+    uint get_height(uint lod = 0) const { return uint(__detail::dimension(t, 1, int(lod))); }
+    uint get_depth(uint lod = 0) const { return uint(__detail::dimension(t, 2, int(lod))); }
+    uint get_num_mip_levels() const { return uint(t->levels); }
+};
+
+}  // namespace metal
