@@ -40,13 +40,27 @@ def run(*argv, env=None):
     return code, out.getvalue(), err.getvalue()
 
 
+MAIN_JS = '''(function () {
+  'use strict';
+  terra.caption.set({ title: 'Demo', text: 'A demonstration.' });
+  terra.sprites.set('m', { at: [-30, 30], looks: [{ image: 'm.png', size: [44, 44] }],
+                           label: 'Demo marker', touchable: true });
+  terra.on('touch', function (t) {
+    if (!t.target || t.target.sprite !== 'm') return;
+    terra.panel.show({ title: 'Demo', text: 'More words.',
+                       sources: [{ title: 'A source', url: 'https://example.org/source', note: 'the facts' }] });
+  });
+})();
+'''
+
+
 def good_manifest(pid='demo-pack'):
     return {
-        'id': pid, 'title': 'Demo', 'summary': 'A demonstration.', 'runtime': 1, 'presentation': 'globe',
-        'entry': 'index.html', 'anchor': {'lon': -30, 'lat': 30, 'zoom': 1.6},
-        'markers': [{'id': 'm', 'lon': -30, 'lat': 30, 'image': 'm.png', 'width': 44, 'height': 44,
-                     'label': 'Demo marker', 'minZoom': 1, 'maxZoom': 6, 'opens': True}],
-        'overlay': 'overlay.html', 'taps': True, 'shelf': 'current', 'background': '#F6F2E7',
+        'id': pid, 'title': 'Demo', 'summary': 'A demonstration.', 'runtime': 3, 'presentation': 'globe',
+        'scripts': ['main.js'], 'anchor': {'lon': -30, 'lat': 30, 'zoom': 1.6},
+        'doorway': {'lon': -30, 'lat': 30, 'label': 'Demo doorway',
+                    'look': {'image': 'm.png', 'size': [28, 28], 'minZoom': 1.5, 'maxZoom': 8}},
+        'taps': True, 'shelf': 'current',
     }
 
 
@@ -54,8 +68,8 @@ def write_pack(root, pid='demo-pack', manifest=None, extra=None):
     folder = Path(root) / pid
     folder.mkdir(parents=True, exist_ok=True)
     (folder / 'prototype.json').write_text(json.dumps(manifest or good_manifest(pid)), encoding='utf-8')
-    (folder / 'index.html').write_text('<!doctype html><html lang="en"><body><h1>Demo</h1></body></html>', encoding='utf-8')
-    (folder / 'overlay.html').write_text('<!doctype html><html lang="en"><body></body></html>', encoding='utf-8')
+    (folder / 'main.js').write_text(MAIN_JS, encoding='utf-8')
+    (folder / 'SOURCES.md').write_text('# Demo\n\nWhere its facts come from: https://example.org/source\n', encoding='utf-8')
     (folder / 'm.png').write_bytes(PNG)
     for name, data in (extra or {}).items():
         (folder / name).parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +81,12 @@ def findings(folder):
     rep = pg.Report()
     pg.validate_pack(folder, rep)
     return rep
+
+
+def tree(folder):
+    """{posix path: bytes} of every file under folder."""
+    folder = Path(folder)
+    return {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob('*')) if p.is_file()}
 
 
 class TempCase(unittest.TestCase):
@@ -164,6 +184,10 @@ class Validate(TempCase):
         rep = findings(write_pack(self.tmp))
         self.assertEqual(rep.items, [])
 
+    def test_the_smallest_pack_is_clean(self):
+        manifest = {k: v for k, v in good_manifest().items() if k in ('id', 'title', 'summary', 'runtime', 'presentation', 'scripts')}
+        self.assertEqual(findings(write_pack(self.tmp, manifest=manifest)).items, [])
+
     def test_every_class_of_manifest_error(self):
         def drop(key):
             return lambda m: m.pop(key)
@@ -171,11 +195,20 @@ class Validate(TempCase):
         def put(key, value):
             return lambda m: m.__setitem__(key, value)
 
-        def marker(key, value):
-            return lambda m: m['markers'][0].__setitem__(key, value)
-
         def anchor(key, value):
             return lambda m: m['anchor'].__setitem__(key, value)
+
+        def door(key, value):
+            return lambda m: m['doorway'].__setitem__(key, value)
+
+        def look(key, value):
+            return lambda m: m['doorway']['look'].__setitem__(key, value)
+
+        def frames(fs, **more):
+            def change(m):
+                m['doorway']['look'].pop('image')
+                m['doorway']['look'].update(frames=fs, **more)
+            return change
 
         cases = [
             (drop('id'), '"id" is required'), (put('id', 'other-id'), 'must equal the folder name'),
@@ -183,57 +216,116 @@ class Validate(TempCase):
             (drop('title'), '"title"'), (put('title', ''), '"title"'), (put('title', 'x' * 61), '"title"'),
             (put('title', '   '), '"title"'), (put('title', 3), '"title"'),
             (drop('summary'), '"summary"'), (put('summary', 'x' * 201), '"summary"'), (put('summary', ''), '"summary"'),
-            (drop('runtime'), '"runtime"'), (put('runtime', 3), '"runtime"'), (put('runtime', 0), '"runtime"'), (put('runtime', '1'), '"runtime"'),
-            (put('runtime', True), '"runtime"'), (put('runtime', 1.5), '"runtime"'),
-            (drop('presentation'), '"presentation"'), (put('presentation', 'both'), '"presentation"'),
-            (put('shelf', 'archive'), '"shelf"'),
-            (put('background', 'red'), '"background"'), (put('background', '#FFF'), '"background"'),
-            (put('background', '#GGGGGG'), '"background"'),
-            (put('taps', 'yes'), '"taps"'),
-            (put('entry', 'missing.html'), 'does not exist'), (put('entry', '../x.html'), 'relative path'),
-            (put('overlay', 'missing.html'), 'does not exist'), (put('overlay', '/abs.html'), 'relative path'),
+            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 4), '"runtime" must be 3'),
+            (put('runtime', 0), '"runtime" must be 3'), (put('runtime', '3'), '"runtime" must be 3'),
+            (put('runtime', True), '"runtime" must be 3'), (put('runtime', 3.0), '"runtime" must be 3'),
+            (drop('presentation'), '"presentation" must be "globe"'), (put('presentation', 'both'), '"presentation" must be "globe"'),
+            (put('presentation', 'screen'), 'no pack screens'),
+            (put('shelf', 'archive'), '"shelf"'), (put('taps', 'yes'), '"taps"'),
+            (drop('scripts'), '"scripts" is required'), (put('scripts', []), 'non-empty list'),
+            (put('scripts', 'main.js'), 'non-empty list'), (put('scripts', ['missing.js']), 'does not exist'),
+            (put('scripts', ['../main.js']), 'relative path'), (put('scripts', ['SOURCES.md']), 'must be .js'),
+            (put('scripts', ['main.js', 'main.js']), 'listed twice'), (put('scripts', [3]), 'must be a path'),
+            (put('entry', 'main.js'), 'runtime 3 only'), (put('overlay', 'main.js'), 'runtime 3 only'),
+            (put('markers', []), 'runtime 3 only'),
             (put('anchor', [1, 2]), '"anchor" must be an object'),
             (anchor('lon', 181), 'anchor.lon'), (anchor('lon', -181), 'anchor.lon'), (anchor('lat', 91), 'anchor.lat'),
             (anchor('lat', -91), 'anchor.lat'), (anchor('zoom', 0.79), 'anchor.zoom'), (anchor('zoom', 8.1), 'anchor.zoom'),
             (anchor('lon', '1'), 'anchor.lon'), (lambda m: m['anchor'].pop('zoom'), 'anchor.zoom is required'),
-            (put('markers', {}), '"markers" must be a list'), (put('markers', [3]), 'must be an object'),
-            (marker('lon', 180.5), 'lon'), (marker('lat', -90.5), 'lat'), (marker('lon', None), 'lon'),
-            (marker('image', 'nope.png'), 'does not exist'), (marker('image', 'index.html'), 'must be .png'),
-            (marker('width', 7), 'width'), (marker('width', 201), 'width'), (marker('height', 7), 'height'),
-            (marker('height', 201), 'height'), (marker('width', 'wide'), 'width'),
-            (marker('label', ''), 'label'), (marker('label', '  '), 'label'), (lambda m: m['markers'][0].pop('label'), 'label'),
-            (marker('minZoom', 0.7), 'minZoom'), (marker('maxZoom', 8.5), 'maxZoom'),
-            (lambda m: m['markers'][0].update(minZoom=5, maxZoom=2), 'above maxZoom'),
-            (marker('opens', 'yes'), 'opens'), (lambda m: m['markers'][0].pop('id'), 'id is required'),
-            (lambda m: m['markers'].append(dict(m['markers'][0])), 'used twice'),
+            (put('doorway', [1]), '"doorway" must be an object'),
+            (door('lon', 180.5), 'doorway.lon'), (door('lat', -90.5), 'doorway.lat'), (door('lon', None), 'doorway.lon'),
+            (lambda m: m['doorway'].pop('lat'), 'doorway.lat is required'),
+            (door('label', ''), 'doorway.label'), (door('label', '  '), 'doorway.label'), (door('label', 'x' * 201), 'doorway.label'),
+            (lambda m: m['doorway'].pop('label'), 'doorway.label'),
+            (lambda m: m['doorway'].pop('look'), 'doorway.look is required'), (door('look', 3), 'doorway.look must be an object'),
+            (look('image', 'nope.png'), 'does not exist'), (look('image', 'main.js'), 'must be .png'),
+            (look('frames', ['m.png']), 'not both'), (lambda m: m['doorway']['look'].pop('image'), 'not both'),
+            (frames([], fps=4), 'frames must be a list'), (frames(['m.png'] * 25, fps=4), 'frames must be a list'),
+            (frames('m.png', fps=4), 'frames must be a list'), (frames(['m.png', 'nope.png'], fps=4), 'frames[1]'),
+            (frames(['m.png']), 'fps is required'), (frames(['m.png'], fps=0), 'fps'), (frames(['m.png'], fps='fast'), 'fps'),
+            (lambda m: m['doorway']['look'].pop('size'), 'size is required'), (look('size', [10]), 'size must be'),
+            (look('size', 10), 'size must be'), (look('size', ['a', 2]), 'size width'), (look('size', [0, 10]), 'size width'),
+            (look('size', [10, 600]), 'size height'),
+            (look('minZoom', 0.7), 'minZoom'), (look('maxZoom', 8.5), 'maxZoom'),
+            (lambda m: m['doorway']['look'].update(minZoom=5, maxZoom=2), 'above maxZoom'),
+            (lambda m: m['doorway']['look'].update(every=2, **{'for': 3}), 'longer than every'),
+            (lambda m: m['doorway']['look'].update(every=-1, **{'for': 1}), 'every'),
+            (look('face', 'yes'), 'face'),
         ]
         for change, needle in cases:
             with self.subTest(needle=needle):
                 shutil.rmtree(self.tmp / 'demo-pack', ignore_errors=True)
                 self.assertError(self.mutate(change), needle)
 
-    def test_screen_needs_its_entry_page(self):
-        def screen(m):
-            for k in ('anchor', 'markers', 'overlay', 'taps'):
-                m.pop(k)
-            m['presentation'] = 'screen'
-            m.pop('entry')
-        folder = write_pack(self.tmp, manifest=(lambda m: (screen(m), m)[1])(good_manifest()))
-        self.assertEqual(findings(folder).items, [])
-        (folder / 'index.html').unlink()
-        self.assertError(findings(folder), 'needs its entry page')
+    def test_runtime_1_and_2_manifests_fail_with_one_clear_message(self):
+        old = {'id': 'demo-pack', 'title': 'Demo', 'summary': 'A demonstration.', 'presentation': 'screen',
+               'entry': 'index.html', 'overlay': 'overlay.html', 'background': '#F6F2E7'}
+        for runtime in (1, 2):
+            with self.subTest(runtime=runtime):
+                shutil.rmtree(self.tmp / 'demo-pack', ignore_errors=True)
+                folder = write_pack(self.tmp, manifest=dict(old, runtime=runtime),
+                                    extra={'index.html': '<!doctype html><title>x</title>', 'overlay.html': '<p>x</p>'})
+                rep = findings(folder)
+                self.assertEqual(len(rep.items), 1, rep.lines())
+                self.assertIn(f'"runtime" is {runtime}: runtime 3 only: a pack is scripts drawn by the globe', self.errors(rep)[0])
 
-    def test_globe_entry_is_optional_unless_a_marker_opens_it(self):
-        def quiet(m):
-            m.pop('entry')
-            m['markers'][0]['opens'] = False
-        folder = write_pack(self.tmp, manifest=(lambda m: (quiet(m), m)[1])(good_manifest()))
-        (folder / 'index.html').unlink()
-        self.assertEqual(self.errors(findings(folder)), [])
+    def test_web_pages_are_refused(self):
+        rep = findings(write_pack(self.tmp, extra={'index.html': '<!doctype html><title>x</title>', 'about/more.htm': 'x'}))
+        self.assertEqual(len(self.errors(rep)), 2)
+        self.assertTrue(all('a web page: runtime 3 only: a pack is scripts drawn by the globe' in e for e in self.errors(rep)))
+
+    def test_unknown_keys_only_warn(self):
+        def extra(m):
+            m['colour'] = 'blue'
+            m['background'] = '#F6F2E7'
+            m['anchor']['tilt'] = 3
+            m['doorway']['glow'] = True
+            m['doorway']['look']['sparkle'] = 1
+        rep = self.mutate(extra)
+        self.assertEqual(self.errors(rep), [])
+        self.assertEqual(sorted(re.search(r'"([^"]+)"', w).group(1) for w in self.warnings(rep)),
+                         ['anchor.tilt', 'background', 'colour', 'doorway.glow', 'doorway.look.sparkle'])
+
+    def test_doorway_advice(self):
+        rep = self.mutate(lambda m: m['doorway']['look'].pop('minZoom'))
+        self.assertEqual(self.errors(rep), [])
+        self.assertEqual(len(self.warnings(rep)), 1)
+        self.assertIn('keep that view sparse', self.warnings(rep)[0])
+        trace = lambda m: (m['doorway']['look'].pop('minZoom'), m['doorway']['look'].update(every=11, **{'for': 1.4}))  # noqa: E731
+        shutil.rmtree(self.tmp / 'demo-pack')
+        self.assertEqual(self.mutate(trace).items, [])
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: m['doorway']['look'].update(every=11))
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('"every" and "for" go together', self.warnings(rep)[0])
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: m['doorway']['look'].update(fps=4))
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('fps only times "frames"', self.warnings(rep)[0])
+        shutil.rmtree(self.tmp / 'demo-pack')
+        rep = self.mutate(lambda m: m.update(shelf='parked'))
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('a parked pack shows no doorway', self.warnings(rep)[0])
+
+    def test_a_doorway_may_be_frames(self):
+        def frames(m):
+            m['doorway']['look'] = {'frames': ['m.png', 'f/2.png', 'm.png'], 'fps': 5, 'size': [46, 20], 'minZoom': 3, 'face': True}
+        self.assertEqual(self.mutate(frames, extra={'f/2.png': PNG}).items, [])
+
+    def test_unlisted_scripts_and_missing_sources_warn(self):
+        folder = write_pack(self.tmp, extra={'data.js': 'window.DATA = { a: 1 };', 'tool.cjs': 'module.exports = 1;'})
+        rep = findings(folder)
+        self.assertEqual(self.errors(rep), [])
+        self.assertEqual(len(self.warnings(rep)), 1)
+        self.assertIn('is not in "scripts", so it never runs', self.warnings(rep)[0])
         manifest = good_manifest()
-        manifest.pop('entry')
+        manifest['scripts'] = ['data.js', 'main.js']
         (folder / 'prototype.json').write_text(json.dumps(manifest))
-        self.assertError(findings(folder), 'no entry page to open')
+        self.assertEqual(findings(folder).items, [])
+        (folder / 'SOURCES.md').unlink()
+        rep = findings(folder)
+        self.assertEqual(self.errors(rep), [])
+        self.assertIn('SOURCES.md is missing', self.warnings(rep)[0])
 
     def test_unreadable_manifests(self):
         folder = write_pack(self.tmp)
@@ -252,23 +344,6 @@ class Validate(TempCase):
         folder = write_pack(self.tmp, 'Bad_Name', good_manifest('Bad_Name'))
         self.assertError(findings(folder), 'folder name')
 
-    def test_unknown_keys_only_warn(self):
-        def extra(m):
-            m['colour'] = 'blue'
-            m['anchor']['tilt'] = 3
-            m['markers'][0]['glow'] = True
-        rep = self.mutate(extra)
-        self.assertEqual(self.errors(rep), [])
-        self.assertEqual(sorted(re.search(r'"([^"]+)"', w).group(1) for w in self.warnings(rep)),
-                         ['anchor.tilt', 'colour', 'markers[0].glow'])
-
-    def test_screen_prototypes_warn_about_globe_keys(self):
-        manifest = good_manifest()
-        manifest['presentation'] = 'screen'
-        rep = findings(write_pack(self.tmp, manifest=manifest))
-        self.assertEqual(self.errors(rep), [])
-        self.assertEqual(len(self.warnings(rep)), 4)
-
     def test_images_must_be_what_they_say(self):
         folder = write_pack(self.tmp)
         (folder / 'm.png').write_bytes(b'GIF89a....')
@@ -285,7 +360,7 @@ class Validate(TempCase):
         self.assertEqual(findings(folder).items, [])
 
     def test_the_real_limits_are_the_documented_ones(self):
-        self.assertEqual((pg.MAX_PACK_BYTES, pg.MAX_FILE_BYTES, pg.MAX_FILES), (50_000_000, 25_000_000, 500))
+        self.assertEqual((pg.MAX_PACK_BYTES, pg.MAX_FILE_BYTES, pg.MAX_FILES, pg.MAX_FRAMES), (50_000_000, 25_000_000, 500, 24))
 
     def test_paths_hidden_files_and_symlinks(self):
         folder = write_pack(self.tmp, extra={'.DS_Store': 'x', '.hidden/secret.txt': 'x', 'ok/data.json': '{}'})
@@ -302,83 +377,94 @@ class Validate(TempCase):
         (folder / 'Data.json').unlink()
         (folder / 'data.json').unlink()
         try:
-            (folder / 'link.html').symlink_to(folder / 'index.html')
+            (folder / 'link.txt').symlink_to(folder / 'SOURCES.md')
         except OSError:
             self.skipTest('symlinks unavailable')
         self.assertError(findings(folder), 'symlinks are not allowed')
-        (folder / 'link.html').unlink()
+        (folder / 'link.txt').unlink()
         (folder / 'linkdir').symlink_to(folder / 'ok')
         self.assertError(findings(folder), 'symlinks are not allowed')
 
-    def scan(self, name, text):
+    def scan(self, text, name='main.js'):
         shutil.rmtree(self.tmp / 'demo-pack', ignore_errors=True)
-        rep = findings(write_pack(self.tmp, extra={name: text}))
+        folder = write_pack(self.tmp, extra={name: text})
+        rep = findings(folder)
         return self.errors(rep), self.warnings(rep)
 
-    def test_the_offline_boundary_errors(self):
-        remote = [
-            ('p.html', '<script src="https://cdn.example.com/a.js"></script>'),
-            ('p.html', "<img src='http://example.com/a.png'>"),
-            ('p.html', '<link rel="stylesheet" href="//cdn.example.com/a.css">'),
-            ('p.html', '<a href=https://example.com/>x</a>'),
-            ('p.html', '<img src = "https://example.com/a.png">'),
-            ('p.css', 'body { background: url(https://example.com/a.png) }'),
-            ('p.css', 'body { background: url( "//example.com/a.png" ) }'),
-            ('p.css', '@import "https://example.com/a.css";'),
-            ('p.css', '@import url(//example.com/a.css);'),
-            ('p.js', 'fetch("https://api.example.com/x")'),
-            ('p.js', "fetch('//api.example.com/x')"),
-            ('p.js', 'import("https://example.com/m.js")'),
-            ('p.js', 'import "https://example.com/m.js";'),
-            ('p.js', 'import x from "https://example.com/m.js";'),
-            ('p.mjs', "import { a } from 'https://example.com/m.mjs';"),
-            ('p.js', 'new WebSocket("wss://example.com/s")'),
-            ('p.js', "new EventSource('https://example.com/e')"),
-            ('p.js', 'x.open("GET", "https://example.com/d")'),
-            ('p.js', 'navigator.sendBeacon("https://example.com/b", "x")'),
-            ('p.js', 'importScripts("https://example.com/w.js")'),
-            ('p.js', 'img.src = "https://example.com/a.png"'),
+    def test_no_network_and_no_code_from_outside(self):
+        cases = [
+            ('fetch("data.json")', 'fetch()'), ('window.fetch(url)', 'fetch()'), ('globalThis.fetch (u)', 'fetch()'),
+            ('var x = new XMLHttpRequest();', 'XMLHttpRequest'), ('var s = new WebSocket("wss://example.com/s");', 'WebSocket'),
+            ('new EventSource(u)', 'EventSource'), ('navigator.sendBeacon(u, d)', 'sendBeacon()'),
+            ('importScripts("x.js")', 'importScripts()'), ('new Worker("w.js")', 'a Worker'),
+            ('import("./x.js").then(go)', 'import()'), ('import x from "./x.js";', 'an import statement'),
+            ("import './x.js';", 'an import statement'), ('import { a } from "./a.js";', 'an import statement'),
+            ('import * as a from "./a.js";', 'an import statement'), ('var u = import.meta.url;', 'an import statement'),
+            ('if (ok) { var t = `${fetch(u)}`; }', 'fetch()'),
         ]
-        for name, text in remote:
+        for text, what in cases:
             with self.subTest(text=text):
-                errors, _ = self.scan(name, text)
-                self.assertTrue(any('a pack cannot load anything outside itself' in e for e in errors), errors)
-                self.assertTrue(errors and not [e for e in errors if 'outside' not in e], errors)
+                errors, _ = self.scan(text)
+                self.assertTrue(any(e.startswith(what + ':') for e in errors), errors)
+        errors, _ = self.scan('fetch(u)', name='lib/mod.mjs')
+        self.assertTrue(any(e.startswith('fetch()') for e in errors), errors)
 
-    def test_a_mentioned_link_is_only_a_warning(self):
-        for name, text in (('p.html', '<p>See https://en.wikipedia.org/wiki/Atlas for more.</p>'),
-                           ('p.js', '// source: https://example.org/data.csv\nvar a = 1;'),
-                           ('p.css', '/* from https://example.org/style */ body{}')):
+    def test_the_same_words_in_strings_comments_and_names_are_fine(self):
+        text = '\n'.join([
+            "// we never fetch() anything: no XMLHttpRequest, no import()",
+            '/* new WebSocket("x"); import x from "y"; */',
+            "var s = \"fetch(this) and import('x')\";",
+            "var t = `no fetch() ${ ({ a: 1 }).a } here, nor XMLHttpRequest ${ `nested fetch()` }`;",
+            "var cache = { fetch: function () {}, import: 1 };",
+            "cache.fetch('k'); prefetch(1); fetchData(2); var important = 1; cache.import(3);",
+            "var re = /fetch\\(/g, re2 = /[\"'/]/, half = 4 / 2 / 1;",
+            "var q = 'it\\'s fine: fetch(x)';",
+            "function f() { return /import\\(/.test(s); }",
+        ])
+        errors, warnings = self.scan(text)
+        self.assertEqual(errors, [])
+        self.assertEqual(warnings, [])
+
+    def test_links_in_scripts_only_warn_unless_they_are_sources(self):
+        quiet = [
+            "terra.panel.show({ sources: [{ title: 'S', url: 'https://example.org/a', note: 'n' }] });",
+            'var d = { "url": "https://example.org/b" };',
+        ]
+        for text in quiet:
             with self.subTest(text=text):
-                errors, warnings = self.scan(name, text)
+                self.assertEqual(self.scan(text), ([], []))
+        for text in ('// from https://example.org/data.csv\nvar a = 1;',
+                     "var credit = 'https://example.org/c';",
+                     "var a = 'https://x.org/1', b = 'see https://x.org/1';",
+                     "var ws = 'wss://x.org/socket';"):
+            with self.subTest(text=text):
+                errors, warnings = self.scan(text)
                 self.assertEqual(errors, [])
-                self.assertEqual(len(warnings), 1)
-                self.assertIn('https://', warnings[0])
+                self.assertEqual(len(warnings), 1, warnings)
+                self.assertIn('://', warnings[0])
+                self.assertIn('never loaded', warnings[0])
 
-    def test_local_loads_and_namespaces_are_fine(self):
-        errors, warnings = self.scan('p.html', '<svg xmlns="http://www.w3.org/2000/svg"></svg>'
-                                              '<img src="m.png"><script>fetch("data.json"); import("./x.js")</script>')
+    def test_pictures_a_script_names_must_be_in_the_pack(self):
+        errors, warnings = self.scan("terra.sprites.set('a', { at: [0, 0], looks: [{ image: 'nope.png', size: [4, 4] },"
+                                     " { frames: ['m.png', 'gone/2.jpg', 'nope.png'], fps: 2, size: [4, 4] }] });")
         self.assertEqual(errors, [])
-        self.assertEqual([w for w in warnings if 'mentions' in w], [])
+        self.assertEqual(sorted(re.search(r'"([^"]+)"', w).group(1) for w in warnings), ['gone/2.jpg', 'nope.png'])
 
-    def test_missing_local_references_warn(self):
-        errors, warnings = self.scan('p.html', '<img src="img/none.png"><a href="#top">x</a><a href="mailto:a@b.c">m</a>')
-        self.assertEqual(errors, [])
-        self.assertEqual(len(warnings), 1)
-        self.assertIn('img/none.png', warnings[0])
+    def test_line_numbers_point_at_the_call(self):
+        rep = findings(write_pack(self.tmp, extra={'main.js': '// one\nvar a = 1;\n\nfetch("x");\n'}))
+        self.assertEqual([w for level, w, _ in rep.items if level == 'ERROR'], [f'{pg.display(self.tmp / "demo-pack")}/main.js:4'])
 
-    def test_root_absolute_references_warn(self):
-        errors, warnings = self.scan('p.html', '<img src="/m.png"><script src="/x.js"></script>')
-        self.assertEqual(errors, [])
-        self.assertEqual(len(warnings), 2)
-        self.assertTrue(all('starts with /' in w for w in warnings))
+    def test_js_scan_keeps_the_shape_of_the_text(self):
+        text = "var a = 'x\\'y'; // c\nvar b = `t ${ {k: 'v'}.k } u`; /* d\ne */ var r = /[/]/g;\n"
+        code, strings, comments = pg.js_scan(text)
+        self.assertEqual(len(code), len(text))
+        self.assertEqual(code.count('\n'), text.count('\n'))
+        self.assertEqual([s[2] for s in strings], ["x\\'y", 't ', 'v', ' u'])
+        self.assertEqual([text[a:b] for a, b in comments], ['// c', '/* d\ne */'])
+        self.assertNotIn('[/]', code)
+        self.assertIn('var r =', code)
 
     def test_a_pack_must_not_bring_terra_js(self):
-        for text in ('<script src="terra.js"></script>', '<script src="../_runtime/terra.js"></script>',
-                     '<script src=/_runtime/terra.js></script>'):
-            with self.subTest(text=text):
-                errors, _ = self.scan('p.html', text)
-                self.assertTrue(any('terra.js' in e for e in errors), errors)
         folder = write_pack(self.tmp, 'other-pack', extra={'lib/terra.js': '// a copy'})
         self.assertError(findings(folder), 'must not contain its own terra.js')
 
@@ -412,6 +498,14 @@ class Validate(TempCase):
                 self.assertTrue(any(needle in e for e in self.errors(rep)), (data, rep.items))
         self.assertTrue(any('cannot be read' in e for e in self.errors(check(None, raw='{'))))
         self.assertEqual(self.warnings(check({'format': 1, 'sources': [], 'x': 1})), ['unknown key "x"'])
+
+    def test_the_bundled_sources_name_the_packs_branch(self):
+        path = ROOT / 'Prototypes/_runtime/sources.json'
+        rep = pg.Report()
+        pg.validate_sources(path, rep)
+        self.assertEqual(rep.items, [])
+        urls = [s['url'] for s in json.loads(path.read_text())['sources']]
+        self.assertIn('https://raw.githubusercontent.com/pbordjadze/terra-incognita/packs/catalog.json', urls)
 
     def test_validate_exit_status_and_summary(self):
         write_pack(self.tmp)
@@ -453,10 +547,10 @@ class Packing(TempCase):
         e = self.entry(catalog)
         self.assertEqual(list(e), ['id', 'revision', 'runtime', 'title', 'summary', 'presentation', 'shelf', 'hash', 'path',
                                    'bytes', 'files', 'published', 'retired'])
-        self.assertEqual((e['id'], e['revision'], e['runtime'], e['path'], e['retired']), ('demo-pack', 1, 1, 'packs/demo-pack/r1/', False))
+        self.assertEqual((e['id'], e['revision'], e['runtime'], e['path'], e['retired']), ('demo-pack', 1, 3, 'packs/demo-pack/r1/', False))
         self.assertEqual(e['bytes'], sum(f['bytes'] for f in e['files']))
         self.assertEqual([f['path'] for f in e['files']], sorted(f['path'] for f in e['files']))
-        self.assertEqual(sorted(f['path'] for f in e['files']), ['index.html', 'm.png', 'overlay.html', 'prototype.json'])
+        self.assertEqual(sorted(f['path'] for f in e['files']), ['SOURCES.md', 'm.png', 'main.js', 'prototype.json'])
 
     def test_files_are_byte_identical_copies(self):
         write_pack(self.src, extra={'sub/data.bin': bytes(range(256))})
@@ -478,14 +572,14 @@ class Packing(TempCase):
     def test_a_changed_file_is_the_next_revision(self):
         write_pack(self.src)
         first = self.entry(self.pack())
-        (self.src / 'demo-pack' / 'index.html').write_text('<!doctype html><html lang="en"><body><h1>Changed</h1></body></html>')
+        (self.src / 'demo-pack' / 'main.js').write_text(MAIN_JS.replace("title: 'Demo'", "title: 'Changed'"))
         second = self.entry(self.pack())
         self.assertEqual(second['revision'], 2)
         self.assertEqual(second['path'], 'packs/demo-pack/r2/')
         self.assertNotEqual(second['hash'], first['hash'])
         self.assertNotEqual(second['published'], first['published'])
-        self.assertIn('Changed', (self.out / 'packs/demo-pack/r2/index.html').read_text())
-        self.assertIn('h1>Demo<', (self.out / 'packs/demo-pack/r1/index.html').read_text())   # the old revision stays
+        self.assertIn("title: 'Changed'", (self.out / 'packs/demo-pack/r2/main.js').read_text())
+        self.assertIn("title: 'Demo'", (self.out / 'packs/demo-pack/r1/main.js').read_text())   # the old revision stays
         (self.src / 'demo-pack' / 'extra.txt').write_text('new file')
         self.assertEqual(self.entry(self.pack())['revision'], 3)
         (self.src / 'demo-pack' / 'extra.txt').unlink()
@@ -597,92 +691,65 @@ class New(TempCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def test_both_kinds_validate_cleanly(self):
-        for pid, flag in (('tide-pool', '--globe'), ('quiet-room', '--screen')):
-            with self.subTest(kind=flag):
-                code, out, err = run('new', pid, flag)
-                self.assertEqual(code, 0, err + out)
-                rep = findings(self.tmp / pid)
-                self.assertEqual(rep.items, [], rep.lines())
-        manifest = json.loads((self.tmp / 'tide-pool' / 'prototype.json').read_text())
-        self.assertEqual((manifest['id'], manifest['title'], manifest['presentation']), ('tide-pool', 'Tide pool', 'globe'))
-        self.assertTrue((self.tmp / 'tide-pool' / 'marker.png').read_bytes().startswith(b'\x89PNG'))
-        self.assertTrue((self.tmp / 'tide-pool' / 'overlay.html').is_file())
-        self.assertFalse((self.tmp / 'quiet-room' / 'overlay.html').exists())
-        self.assertEqual(json.loads((self.tmp / 'quiet-room' / 'prototype.json').read_text())['presentation'], 'screen')
+    def test_the_scaffold_is_a_clean_runtime_3_pack(self):
+        code, out, err = run('new', 'tide-pool')
+        self.assertEqual(code, 0, err + out)
+        folder = self.tmp / 'tide-pool'
+        self.assertEqual(findings(folder).items, [], findings(folder).lines())
+        self.assertEqual(sorted(tree(folder)), ['SOURCES.md', 'main.js', 'marker.png', 'prototype.json'])
+        manifest = json.loads((folder / 'prototype.json').read_text())
+        self.assertEqual((manifest['id'], manifest['title'], manifest['runtime'], manifest['presentation'], manifest['scripts']),
+                         ('tide-pool', 'Tide pool', 3, 'globe', ['main.js']))
+        self.assertEqual(manifest['doorway']['label'], 'Tide pool')
+        self.assertTrue((folder / 'marker.png').read_bytes().startswith(b'\x89PNG'))
+        main = (folder / 'main.js').read_text()
+        for needle in ('terra.caption.set', 'terra.sprites.set', "terra.on('touch'", 'terra.panel.show', 'label:'):
+            self.assertIn(needle, main)
+        self.assertIn('# Tide pool', (folder / 'SOURCES.md').read_text())
+        for text in (main, (folder / 'prototype.json').read_text(), (folder / 'SOURCES.md').read_text()):
+            self.assertNotIn('{{', text)
 
-    def test_title_is_escaped_for_json_and_html(self):
-        code, _, err = run('new', 'odd-title', '--screen', '--title', 'The "odd" <one> & co')
+    def test_globe_and_screen_are_accepted_and_both_make_a_globe_pack(self):
+        code, out, err = run('new', 'on-globe', '--globe')
         self.assertEqual(code, 0, err)
-        self.assertEqual(json.loads((self.tmp / 'odd-title' / 'prototype.json').read_text())['title'], 'The "odd" <one> & co')
-        self.assertIn('The &quot;odd&quot; &lt;one&gt; &amp; co', (self.tmp / 'odd-title' / 'index.html').read_text())
-        self.assertEqual(findings(self.tmp / 'odd-title').items, [])
-        self.assertNotIn('{{', (self.tmp / 'odd-title' / 'index.html').read_text())
+        self.assertNotIn('note:', out)
+        code, out, err = run('new', 'on-screen', '--screen')
+        self.assertEqual(code, 0, err)
+        self.assertIn('--screen makes a globe pack too', out)
+        for pid in ('on-globe', 'on-screen'):
+            self.assertEqual(json.loads((self.tmp / pid / 'prototype.json').read_text())['presentation'], 'globe')
+            self.assertEqual(findings(self.tmp / pid).items, [])
+
+    def test_title_is_escaped_for_json_and_scripts(self):
+        title = 'The "odd" <one> & co\\'
+        code, _, err = run('new', 'odd-title', '--title', title)
+        self.assertEqual(code, 0, err)
+        folder = self.tmp / 'odd-title'
+        self.assertEqual(json.loads((folder / 'prototype.json').read_text())['title'], title)
+        main = (folder / 'main.js').read_text()
+        self.assertIn(json.dumps(title), main)
+        self.assertEqual(findings(folder).items, [])
+        if shutil.which('node'):
+            done = subprocess.run(['node', '--check', str(folder / 'main.js')], capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
 
     def test_refusals(self):
-        self.assertEqual(run('new', 'one-pack', '--globe')[0], 0)
-        code, _, err = run('new', 'one-pack', '--screen')
+        self.assertEqual(run('new', 'one-pack')[0], 0)
+        code, _, err = run('new', 'one-pack')
         self.assertEqual(code, 2)
         self.assertIn('already exists', err)
         for bad in ('Bad', 'x', 'no-', 'a_b', 'x' * 41, '../up'):
             with self.subTest(id=bad):
-                code, _, err = run('new', bad, '--screen')
+                code, _, err = run('new', bad)
                 self.assertEqual(code, 2)
                 self.assertIn('not a valid id', err)
-        self.assertEqual(run('new', 'long-title', '--screen', '--title', 'x' * 61)[0], 2)
+        self.assertEqual(run('new', 'long-title', '--title', 'x' * 61)[0], 2)
         self.assertEqual(sorted(p.name for p in self.tmp.iterdir()), ['one-pack'])   # nothing half-made
 
-
-class Templates(unittest.TestCase):
-    """The accessibility rules the scaffolds and the delivery-check pack promise."""
-    PAGES = [HERE / 'template/screen/index.html', HERE / 'template/globe/index.html', ROOT / 'Prototypes/hello-pack/index.html']
-
-    @staticmethod
-    def luminance(hex_colour):
-        r, g, b = (int(hex_colour[i:i + 2], 16) / 255 for i in (1, 3, 5))
-        lin = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4  # noqa: E731
-        return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-
-    def contrast(self, a, b):
-        hi, lo = sorted((self.luminance(a), self.luminance(b)), reverse=True)
-        return (hi + 0.05) / (lo + 0.05)
-
-    def test_pages(self):
-        for page in self.PAGES:
-            text = page.read_text()
-            with self.subTest(page=page.relative_to(ROOT).as_posix()):
-                self.assertIn('<html lang="en">', text)
-                self.assertIn('<meta name="viewport"', text)
-                self.assertIn('viewport-fit=cover', text)
-                for needle in ('<main', '<h1', '<button type="button"', '--terra-text-scale', 'safe-area-inset-top',
-                               'ui-serif, "New York", Georgia, serif', 'terra.close()'):
-                    self.assertIn(needle, text)
-                self.assertIn('56px', text)                                   # the Back button's zone, below the safe area
-                for size in re.findall(r'font-size:\s*(?:calc\()?(\d+(?:\.\d+)?)px', text):
-                    self.assertGreaterEqual(float(size), 15, 'text below 15px at scale 1')
-                colours = dict(re.findall(r'--(paper|ink|quiet|focus):\s*(#[0-9A-Fa-f]{6})', text))
-                self.assertEqual(set(colours), {'paper', 'ink', 'quiet', 'focus'})
-                self.assertGreaterEqual(self.contrast(colours['ink'], colours['paper']), 4.5)
-                self.assertGreaterEqual(self.contrast(colours['quiet'], colours['paper']), 4.5)
-                self.assertGreaterEqual(self.contrast(colours['focus'], colours['paper']), 3)   # a focus ring, not text
-
-    def test_scaffolds_honour_reduced_motion(self):
-        for page in self.PAGES[:2]:
-            self.assertIn('[data-reduce-motion]', page.read_text())
-        self.assertIn('terra.settings.reduceMotion', (HERE / 'template/globe/overlay.html').read_text())
-        self.assertIn('terra.settings.reduceMotion', (ROOT / 'Prototypes/hello-pack/overlay.js').read_text())
-
-    def test_hello_pack(self):
-        pack = ROOT / 'Prototypes/hello-pack'
-        manifest = json.loads((pack / 'prototype.json').read_text())
-        self.assertEqual((manifest['title'], manifest['summary'], manifest['presentation'], manifest['taps']),
-                         ('Delivery check', 'A test pack: which revision arrived, and from where.', 'globe', True))
-        self.assertTrue(manifest['markers'][0]['opens'])
-        index = (pack / 'index.html').read_text()
-        self.assertEqual(index.count('First words.'), 1)
-        self.assertIn('<p id="note">First words.</p>', index)
-        self.assertIn('Back to the globe', index)
-        self.assertEqual(findings(pack).items, [])
+    def test_the_template_has_no_pages(self):
+        files = [p.relative_to(HERE / 'template').as_posix() for p in (HERE / 'template').rglob('*') if p.is_file()]
+        self.assertEqual(sorted(files), ['globe/SOURCES.md', 'globe/main.js', 'globe/marker.png', 'globe/prototype.json'])
+        self.assertFalse([f for f in files if f.endswith(pg.PAGE_EXTS)])
 
 
 class FakeBucket(http.server.ThreadingHTTPServer):
@@ -785,7 +852,7 @@ class Publishing(TempCase):
         body, ctype, cache = self.bucket.objects['packs/demo-pack/r1/m.png']
         self.assertEqual((ctype, cache), ('image/png', 'public, max-age=31536000, immutable'))
         self.assertEqual(body, PNG)
-        self.assertEqual(self.bucket.objects['packs/demo-pack/r1/index.html'][1], 'text/html; charset=utf-8')
+        self.assertEqual(self.bucket.objects['packs/demo-pack/r1/main.js'][1], 'text/javascript; charset=utf-8')
         self.assertEqual(self.bucket.objects['open/demo-pack.html'][2], 'no-cache')
         self.assertEqual(self.bucket.objects['catalog.json'][1:], ('application/json', 'no-cache, max-age=0'))
         catalog = json.loads(self.bucket.objects['catalog.json'][0])
@@ -804,7 +871,7 @@ class Publishing(TempCase):
     def test_only_a_changed_pack_goes_up_and_the_catalog_last(self):
         self.publish()
         n = len(self.bucket.puts)
-        (self.src / 'demo-pack' / 'index.html').write_text('<!doctype html><html lang="en"><body>new</body></html>')
+        (self.src / 'demo-pack' / 'main.js').write_text(MAIN_JS + '// new\n')
         summary = self.tmp / 'summary.md'
         code, out, err = self.publish('--summary', str(summary))
         self.assertEqual(code, 0, err)
@@ -813,7 +880,7 @@ class Publishing(TempCase):
         self.assertTrue(all(k.startswith(('packs/demo-pack/r2/', 'open/demo-pack.html')) or k == 'catalog.json' for k in new), new)
         self.assertEqual(len(new), 4 + 1 + 1)   # four files, its open page, the catalog
         self.assertEqual(json.loads(self.bucket.objects['catalog.json'][0])['packs'][0]['revision'], 2)
-        self.assertIn('packs/demo-pack/r1/index.html', self.bucket.objects)          # the old revision stays
+        self.assertIn('packs/demo-pack/r1/main.js', self.bucket.objects)             # the old revision stays
         text = summary.read_text()
         self.assertIn('https://packs.example.test/open/demo-pack.html', text)
         self.assertNotIn('second-pack', text)
@@ -887,18 +954,187 @@ class Publishing(TempCase):
         self.assertEqual(run('list')[0], 0)
 
 
+class BranchPublishing(TempCase):
+    """publish --into: the packs branch's checkout, revised in place; the caller commits."""
+
+    def setUp(self):
+        super().setUp()
+        self.src = self.tmp / 'protos'
+        write_pack(self.src)
+        write_pack(self.src, 'second-pack')
+        self.into = self.tmp / 'packs-branch'
+        self.into.mkdir()
+        self.message = self.tmp / 'message.txt'
+        self.clock = iter(f'2026-10-28T09:00:{n:02d}-04:00' for n in range(60))
+        for patcher in (mock.patch.object(pg, 'PROTOTYPES', self.src), mock.patch.object(pg, 'now_eastern', lambda: next(self.clock))):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def publish(self, *argv, code=0):
+        if self.message.exists():
+            self.message.unlink()
+        # no environment at all: the branch publish needs no credentials
+        result, out, err = run('publish', '--into', str(self.into), '--commit-message', str(self.message), *argv, env={})
+        self.assertEqual(result, code, out + err)
+        return out + err
+
+    def catalog(self):
+        return json.loads((self.into / 'catalog.json').read_text())
+
+    def entry(self, pid='demo-pack'):
+        return next(e for e in self.catalog()['packs'] if e['id'] == pid)
+
+    def test_a_fresh_branch(self):
+        out = self.publish()
+        catalog = self.catalog()
+        self.assertEqual(list(catalog), ['format', 'generated', 'packs'])
+        self.assertEqual(catalog['format'], 1)
+        self.assertEqual([(e['id'], e['revision'], e['path'], e['runtime'], e['presentation'], e['retired']) for e in catalog['packs']],
+                         [('demo-pack', 1, 'packs/demo-pack/r1/', 3, 'globe', False),
+                          ('second-pack', 1, 'packs/second-pack/r1/', 3, 'globe', False)])
+        for e in catalog['packs']:
+            self.assertEqual(list(e), ['id', 'revision', 'runtime', 'title', 'summary', 'presentation', 'shelf', 'hash', 'path',
+                                       'bytes', 'files', 'published', 'retired'])
+            self.assertEqual(sorted(f['path'] for f in e['files']), ['SOURCES.md', 'm.png', 'main.js', 'prototype.json'])
+            for f in e['files']:   # paths relative to the catalog
+                data = (self.into / e['path'] / f['path']).read_bytes()
+                self.assertEqual((len(data), hashlib.sha256(data).hexdigest()), (f['bytes'], f['sha256']))
+        self.assertEqual(sorted(p.name for p in self.into.iterdir()), ['.gitattributes', 'catalog.json', 'packs'])
+        self.assertIn('* -text', (self.into / '.gitattributes').read_text())   # no line ending is ever converted
+        self.assertEqual(self.message.read_text(), 'Publish packs: demo-pack r1, second-pack r1\n')
+        self.assertIn('new      demo-pack  r1', out)
+
+    def test_an_unchanged_pack_keeps_its_revision_and_nothing_is_written(self):
+        self.publish()
+        before = tree(self.into)
+        out = self.publish()
+        self.assertIn('Nothing to publish', out)
+        self.assertFalse(self.message.exists())
+        self.assertEqual(tree(self.into), before)
+
+    def test_a_changed_pack_gets_the_next_revision_and_the_old_one_stays(self):
+        self.publish()
+        first = self.catalog()
+        old_files = {k: v for k, v in tree(self.into).items() if k.startswith('packs/demo-pack/r1/')}
+        (self.src / 'demo-pack' / 'main.js').write_text(MAIN_JS.replace('A demonstration.', 'Changed.'))
+        self.publish()
+        e = self.entry()
+        self.assertEqual((e['revision'], e['path']), (2, 'packs/demo-pack/r2/'))
+        self.assertIn('Changed.', (self.into / 'packs/demo-pack/r2/main.js').read_text())
+        self.assertEqual({k: v for k, v in tree(self.into).items() if k.startswith('packs/demo-pack/r1/')}, old_files)
+        self.assertEqual(self.entry('second-pack'), next(x for x in first['packs'] if x['id'] == 'second-pack'))
+        self.assertNotEqual(self.catalog()['generated'], first['generated'])
+        self.assertEqual(self.message.read_text(), 'Publish packs: demo-pack r2\n')
+        (self.src / 'demo-pack' / 'extra.json').write_text('{}')
+        self.publish()
+        self.assertEqual(self.entry()['revision'], 3)
+
+    def test_only_the_named_packs_and_other_entries_kept(self):
+        self.publish('second-pack')
+        self.assertEqual([e['id'] for e in self.catalog()['packs']], ['second-pack'])
+        self.publish('demo-pack')
+        self.assertEqual([(e['id'], e['revision']) for e in self.catalog()['packs']], [('demo-pack', 1), ('second-pack', 1)])
+
+    def test_retired_stays_retired(self):
+        self.publish()
+        code, _, err = run('retire', 'demo-pack', '--into', str(self.into))
+        self.assertEqual(code, 0, err)
+        self.assertTrue(self.entry()['retired'])
+        self.publish()
+        self.assertEqual((self.entry()['revision'], self.entry()['retired']), (1, True))
+        (self.src / 'demo-pack' / 'main.js').write_text(MAIN_JS + '\n')
+        self.publish()
+        self.assertEqual((self.entry()['revision'], self.entry()['retired']), (2, True))
+        self.assertFalse(self.entry('second-pack')['retired'])
+        self.assertEqual(run('retire', 'demo-pack', '--out', str(self.into), '--undo')[0], 0)
+        self.assertFalse(self.entry()['retired'])
+
+    def test_revisions_only_go_up_even_when_the_catalog_forgets(self):
+        self.publish()
+        r1 = tree(self.into / 'packs/demo-pack/r1')
+        (self.into / 'catalog.json').unlink()
+        self.publish()
+        self.assertEqual(self.entry()['revision'], 2)          # above the r1 already stored, never over it
+        self.assertEqual(tree(self.into / 'packs/demo-pack/r1'), r1)
+        shutil.copytree(self.into / 'packs/demo-pack/r2', self.into / 'packs/demo-pack/r7')   # a stray revision
+        (self.src / 'demo-pack' / 'x.json').write_text('{}')
+        self.publish()
+        self.assertEqual(self.entry()['revision'], 8)
+
+    def test_missing_files_are_restored_under_the_same_revision(self):
+        self.publish()
+        catalog = (self.into / 'catalog.json').read_bytes()
+        shutil.rmtree(self.into / 'packs/second-pack/r1')
+        out = self.publish()
+        self.assertIn('restored packs/second-pack/r1/', out)
+        self.assertTrue((self.into / 'packs/second-pack/r1/main.js').is_file())
+        self.assertEqual((self.into / 'catalog.json').read_bytes(), catalog)
+        self.assertEqual(self.message.read_text(), 'Publish packs: second-pack r1 restored\n')
+
+    def test_dry_run_writes_nothing(self):
+        out = self.publish('--dry-run')
+        self.assertIn('Dry run', out)
+        self.assertEqual(list(self.into.iterdir()), [])
+        self.assertFalse(self.message.exists())
+
+    def test_summary(self):
+        summary = self.tmp / 'summary.md'
+        self.publish('--public-url', 'https://raw.githubusercontent.com/owner/repo/packs/', '--summary', str(summary))
+        text = summary.read_text()
+        self.assertIn('### Packs published', text)
+        self.assertIn('`demo-pack` revision 1', text)
+        self.assertIn('terraincognita://open/demo-pack', text)
+        self.assertIn('Catalog: https://raw.githubusercontent.com/owner/repo/packs/catalog.json', text)
+        self.publish('--summary', str(summary))
+        self.assertIn('Nothing to publish', summary.read_text())
+
+    def test_refusals(self):
+        code, _, err = run('publish', '--into', str(self.tmp / 'nowhere'), env={})
+        self.assertEqual(code, 2)
+        self.assertIn('no such folder', err)
+        self.assertEqual(run('publish', '--into', str(self.into), '--public-url', 'http://example.com/', env={})[0], 2)
+        code, _, err = run('publish', '--commit-message', str(self.message), env={})
+        self.assertEqual(code, 2)
+        self.assertIn('go with --into', err)
+        (self.src / 'second-pack' / 'prototype.json').write_text('{}')
+        code, out, err = run('publish', '--into', str(self.into), env={})
+        self.assertEqual(code, 2)
+        self.assertIn('nothing was packed', err)
+        self.assertEqual(list(self.into.iterdir()), [])
+
+    def test_a_git_checkout_keeps_every_byte(self):
+        if not shutil.which('git'):
+            self.skipTest('git unavailable')
+        crlf = b'line one\r\nline two\r\n'
+        (self.src / 'demo-pack' / 'notes.txt').write_bytes(crlf)
+
+        def git(*args):
+            done = subprocess.run(['git', '-C', str(self.into), *args], capture_output=True, text=True,
+                                  env=dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1'))
+            self.assertEqual(done.returncode, 0, done.stderr)
+            return done.stdout
+        git('init', '-q', '-b', 'packs')
+        git('config', 'core.autocrlf', 'true')                   # the worst case: a checkout that converts
+        self.publish()
+        git('add', '-A')
+        git('-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', self.message.read_text())
+        blob = subprocess.run(['git', '-C', str(self.into), 'show', 'HEAD:packs/demo-pack/r1/notes.txt'], capture_output=True).stdout
+        self.assertEqual(blob, crlf)
+        self.assertEqual(git('log', '--format=%s'), 'Publish packs: demo-pack r1, second-pack r1\n')
+
+
 class RemotePacksScript(TempCase):
     def test_the_remote_copy_differs_from_the_bundled_one(self):
+        pack = ROOT / 'Prototypes/hello-pack'
+        if json.loads((pack / 'prototype.json').read_text()).get('runtime') != pg.RUNTIME:
+            self.skipTest('hello-pack is not a runtime-3 pack yet')
         out = self.tmp / 'remote'
         done = subprocess.run(['bash', str(ROOT / 'ci/remote_packs.sh'), str(out)], capture_output=True, text=True, cwd=self.tmp)
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
         catalog = json.loads((out / 'catalog.json').read_text())
         entry = next(e for e in catalog['packs'] if e['id'] == 'hello-pack')
         self.assertEqual(entry['revision'], 1)
-        self.assertIn('Second words.', (out / 'packs/hello-pack/r1/index.html').read_text())
-        self.assertNotIn('First words.', (out / 'packs/hello-pack/r1/index.html').read_text())
-        self.assertIn('First words.', (ROOT / 'Prototypes/hello-pack/index.html').read_text())   # the bundled copy is untouched
-        bundled = pg.Pack(ROOT / 'Prototypes/hello-pack', *pg.validate_pack(ROOT / 'Prototypes/hello-pack', pg.Report()))
+        bundled = pg.Pack(pack, *pg.validate_pack(pack, pg.Report()))
         self.assertNotEqual(entry['hash'], bundled.hash)
         self.assertIn('hello-pack', done.stdout)                                      # the catalog is printed
 
