@@ -17,6 +17,12 @@ final class GlobePackTests: XCTestCase {
         XCTAssertTrue(date.waitForExistence(timeout: 30), "The globe shows the voyage's date")
         XCTAssertTrue(text(containing: "HMS Challenger", in: app).waitForExistence(timeout: 15), "The foot says what this is")
         attach("50-voyage-far", in: app)
+        // closer (a double tap doubles the zoom where it lands): the stations and passages appear
+        let globe = app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch
+        globe.doubleTap()
+        XCTAssertTrue(text(containing: "Each dot is a station", in: app).waitForExistence(timeout: 10), "Closer, the foot explains the dots")
+        Thread.sleep(forTimeInterval: 1.5)
+        attach("52-voyage-near", in: app)
         let play = app.buttons["globeDatePlay"].firstMatch
         XCTAssertTrue(play.exists, "The voyage can play")
         if play.label == "Pause" { play.tap() }
