@@ -117,23 +117,26 @@ enum Catalog {
     }
 }
 
-/// A glint: a small warm light with four fine rays, drawn once, on nothing. A doorway's look from afar
-/// (shown now and then, fading up and down), the same mark for every experience: it means something
-/// is here, and the picture itself comes as the reader does.
+/// A glint: a small warm light with four fine rays, drawn once, on nothing (the same recipe as
+/// tools/playground/glint_png.py draws for the packs). A doorway's look from afar (shown now and then,
+/// fading up and down), the same mark for every experience: it means something is here, and the
+/// picture itself comes as the reader does.
 enum Glint {
     static let image: UIImage = {
         let side: CGFloat = 44
-        let gold = UIColor(red: 0.84, green: 0.72, blue: 0.42, alpha: 1)
+        // the atlas's gold (the ring's B08A3E), deep enough to read on the pale land, and its lifted glow
+        let gold = UIColor(red: 176 / 255, green: 138 / 255, blue: 62 / 255, alpha: 1)
+        let light = UIColor(red: 232 / 255, green: 208 / 255, blue: 140 / 255, alpha: 1)
         return UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { context in
             let c = context.cgContext
             let mid = CGPoint(x: side / 2, y: side / 2)
-            let colors = [gold.withAlphaComponent(0.95).cgColor, gold.withAlphaComponent(0.35).cgColor, gold.withAlphaComponent(0).cgColor] as CFArray
+            let colors = [gold.cgColor, light.withAlphaComponent(0.55).cgColor, light.withAlphaComponent(0).cgColor] as CFArray
             if let shade = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.35, 1]) {
-                c.drawRadialGradient(shade, startCenter: mid, startRadius: 0, endCenter: mid, endRadius: side * 0.32, options: [])
+                c.drawRadialGradient(shade, startCenter: mid, startRadius: 0, endCenter: mid, endRadius: side * 0.34, options: [])
             }
             c.setLineCap(.round)
             let rays: [(dx: CGFloat, dy: CGFloat, reach: CGFloat, width: CGFloat)] = [
-                (1, 0, 0.46, 1.6), (0, 1, 0.46, 1.6), (0.7071, 0.7071, 0.2, 1.0), (-0.7071, 0.7071, 0.2, 1.0),
+                (1, 0, 0.46, 1.8), (0, 1, 0.46, 1.8), (0.7071, 0.7071, 0.22, 1.2), (-0.7071, 0.7071, 0.22, 1.2),
             ]
             for ray in rays {
                 c.setStrokeColor(UIColor.white.withAlphaComponent(0.92).cgColor)

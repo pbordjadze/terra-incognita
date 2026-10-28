@@ -18,7 +18,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SIZE = 44
-GOLD = (214, 184, 107)      # the atlas's gold, lifted (Globe.metal's C5AA6E, a little warmer)
+GOLD = (176, 138, 62)       # the atlas's gold (the ring's B08A3E), deep enough to read on the pale land
+LIGHT = (232, 208, 140)     # the same gold lifted, for the glow round it
 WHITE = (255, 255, 255)
 SAMPLES = 3
 
@@ -33,17 +34,22 @@ def png(width, height, rgba_rows):
 
 
 def glint():
-    """The core: a radial fall-off in gold (0.95 at the centre, 0.35 a third of the way out, 0 at
-    0.32 of the side). The rays: white, round-capped, two long (0.46 of the side each way, 1.6 px) and
-    two short diagonals (0.2, 1 px), as Catalog.swift's Glint draws them."""
+    """The core: a radial fall-off from the gold (opaque at the centre) through its lifted glow (0.55 a
+    third of the way out) to nothing at 0.34 of the side. The rays: white, round-capped, two long (0.46
+    of the side each way, 1.8 px) and two short diagonals (0.22, 1.2 px), as Catalog.swift's Glint
+    draws them."""
     c = SIZE / 2
-    rays = [((1, 0), 0.46, 1.6), ((0, 1), 0.46, 1.6), ((0.7071, 0.7071), 0.2, 1.0), ((-0.7071, 0.7071), 0.2, 1.0)]
+    rays = [((1, 0), 0.46, 1.8), ((0, 1), 0.46, 1.8), ((0.7071, 0.7071), 0.22, 1.2), ((-0.7071, 0.7071), 0.22, 1.2)]
 
     def core(dx, dy):
-        r = math.hypot(dx, dy) / (SIZE * 0.32)
+        """Alpha and colour of the core at a point: the gold at the centre, its lifted glow outward."""
+        r = math.hypot(dx, dy) / (SIZE * 0.34)
         if r >= 1:
-            return 0.0
-        return 0.95 + (0.35 - 0.95) * r / 0.35 if r < 0.35 else 0.35 * (1 - (r - 0.35) / 0.65)
+            return 0.0, GOLD
+        if r < 0.35:
+            k = r / 0.35
+            return 1.0 + (0.55 - 1.0) * k, tuple(round(GOLD[i] + (LIGHT[i] - GOLD[i]) * k) for i in range(3))
+        return 0.55 * (1 - (r - 0.35) / 0.65), LIGHT
 
     def ray(dx, dy):
         a = 0.0
@@ -66,14 +72,14 @@ def glint():
                 for j in range(SAMPLES):
                     dx = x + (i + .5) / SAMPLES - c
                     dy = y + (j + .5) / SAMPLES - c
-                    ca, ra = core(dx, dy), ray(dx, dy)
+                    (ca, colour), ra = core(dx, dy), ray(dx, dy)
                     # the ray over the core (premultiplied, then unmultiplied below)
                     a = ra + ca * (1 - ra)
                     if a <= 0:
                         continue
-                    r = (WHITE[0] * ra + GOLD[0] * ca * (1 - ra)) / a
-                    g = (WHITE[1] * ra + GOLD[1] * ca * (1 - ra)) / a
-                    b = (WHITE[2] * ra + GOLD[2] * ca * (1 - ra)) / a
+                    r = (WHITE[0] * ra + colour[0] * ca * (1 - ra)) / a
+                    g = (WHITE[1] * ra + colour[1] * ca * (1 - ra)) / a
+                    b = (WHITE[2] * ra + colour[2] * ca * (1 - ra)) / a
                     cr += r * a; gr += g * a; br += b * a; ar += a
             n = SAMPLES * SAMPLES
             if ar <= 0:

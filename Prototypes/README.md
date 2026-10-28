@@ -1,8 +1,10 @@
 # Prototypes
 
-The playground's packs: one folder each, runtime 3. A pack is data, pictures and a small script that runs in
-JavaScriptCore inside the app; the globe draws what the script asks for (geography, pictures, sprites, the date,
-the words at the foot, a panel). There are no pack pages and no web views. Packs are bundled in the app and
+The playground's packs: one folder each, runtime 3 or 4. A pack is data, pictures and a small script that runs
+in JavaScriptCore inside the app; the globe draws what the script asks for (geography, pictures, sprites, the
+date, the words at the foot, a panel). Several packs run on the one globe at once, each entered by touching its
+doorway, which has a life of its own meanwhile (runtime 4: a glint from afar, `doorway-glint.png`, drawn by
+`tools/playground/glint_png.py`). There are no pack pages and no web views. Packs are bundled in the app and
 published as remote revisions. `_runtime/` is the host's side (`terra.js`, the bundled sources), not a pack.
 The contract is [docs/runtime3.md](../docs/runtime3.md); the workflow is [docs/playground.md](../docs/playground.md).
 
@@ -18,6 +20,7 @@ The contract is [docs/runtime3.md](../docs/runtime3.md); the workflow is [docs/p
 python3 tools/playground/playground.py new <id>              # scaffold Prototypes/<id>/ (prototype.json, main.js, SOURCES.md)
 node tools/playground/serve.cjs                              # preview over a stand-in globe, http://127.0.0.1:8790/
 node tools/playground/check.cjs <id> [--device ipad]         # headless Chromium: errors fail, screenshots in build/playground/
+node tools/playground/check.cjs --living                     # two packs side by side on the preview's /atlas, by touch
 python3 tools/playground/playground.py validate              # the contract, sizes and the offline boundary
 ```
 

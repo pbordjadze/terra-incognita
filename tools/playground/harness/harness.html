@@ -142,7 +142,7 @@
   <aside class="controls" aria-label="Preview controls">
     <section>
       <h2>Prototype</h2>
-      <div class="row"><button class="plain" id="ctl-start" type="button">Start</button><button class="plain" id="ctl-end" type="button">End</button><button class="plain" id="ctl-restart" type="button">Restart</button></div>
+      <div class="row"><button class="plain" id="ctl-start" type="button">Start</button><button class="plain" id="ctl-end" type="button">End</button><button class="plain" id="ctl-end-all" type="button">End all</button><button class="plain" id="ctl-restart" type="button">Restart</button></div>
       <p id="readout"></p>
       <p id="state"></p>
     </section>
@@ -154,7 +154,7 @@
     <section>
       <h2>Log</h2>
       <ol id="log" role="log" aria-live="polite" aria-label="terra.log messages and errors"></ol>
-      <p class="note">Drag turns the globe; a drag that begins on something touchable is the pack's (with the one-finger scheme, every drag is: shift-drag or right-drag turns). Scroll zooms. A stand-in globe (Natural Earth, the app's colours), not the app's renderer; the pack's scripts run in a worker with what JavaScriptCore gives them and nothing else.</p>
+      <p class="note">Drag turns the globe; a drag that begins on something touchable is its pack's (with the one-finger scheme, every drag is the front pack's: shift-drag or right-drag turns). Scroll zooms. Every pack on the page has its doorway on the globe, alive; touching one starts that pack beside the others, a touch on a running pack's things brings it to the front, and ✕ ends the front one. A stand-in globe (Natural Earth, the app's colours), not the app's renderer; each pack's scripts run in a worker with what JavaScriptCore gives them and nothing else.</p>
     </section>
   </aside>
 </div>

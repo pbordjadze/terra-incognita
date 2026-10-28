@@ -6,7 +6,12 @@
 // and what touching the first touchable thing does.
 //   node tools/playground/check.cjs <id> [--device iphone|ipad] [--root <dir>]...
 //   node tools/playground/check.cjs --all [--device iphone|ipad] [--root <dir>]...
+//   node tools/playground/check.cjs --living [<id> <id>] [--device iphone|ipad] [--root <dir>]...
 // --root adds a folder of pack folders (a pack being made outside Prototypes/). Exit code 1 if any check failed.
+// --living checks the living globe (docs/runtime3.md › Many at once): every current pack's doorway on the one
+// globe, two packs (the first two with doorways, or the two named) started by touching their doorways, run
+// side by side, the second in front; a touch on the first's things brings it back to the front; ending the one
+// in front leaves the other exactly as it was. Screenshots go to build/playground/_living/.
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
 const { start, listPacks } = require('./serve.cjs');
@@ -22,10 +27,11 @@ function usage(message) {
 }
 
 function parseArgs(argv) {
-  const out = { ids: [], all: false, device: 'iphone', roots: [] };
+  const out = { ids: [], all: false, living: false, device: 'iphone', roots: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--all') out.all = true;
+    else if (a === '--living') out.living = true;
     else if (a === '--device') out.device = argv[++i];
     else if (a === '--root') out.roots.push(argv[++i]);
     else if (a === '-h' || a === '--help') usage();
@@ -35,8 +41,142 @@ function parseArgs(argv) {
   if (out.device === 'phone') out.device = 'iphone';
   if (!SIZES[out.device]) usage(`--device is iphone or ipad (got ${out.device})`);
   for (const r of out.roots) if (!r || !fs.existsSync(r)) usage(`--root ${r || ''}: no such folder`);
-  if (!out.all && !out.ids.length) usage('which pack?');
+  if (!out.all && !out.living && !out.ids.length) usage('which pack?');
+  if (out.living && out.ids.length && out.ids.length !== 2) usage('--living takes two packs, or none (the first two with doorways)');
   return out;
+}
+
+/** The living globe: several packs at once, by touch, on /atlas. */
+async function checkLiving(browser, server, ids, device) {
+  const size = SIZES[device], outDir = path.join(ROOT, 'build', 'playground', '_living');
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const f of fs.readdirSync(outDir)) if (f.startsWith(device + '-') && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
+  const failures = [], warnings = [], shots = [], steps = [], nonLocal = [];
+  const fail = (m) => { if (!failures.includes(m)) failures.push(m); };
+  const warn = (m) => { if (!warnings.includes(m)) warnings.push(m); };
+  const started = Date.now();
+  let logs = [];
+  const context = await browser.newContext({ viewport: size, deviceScaleFactor: 2 });
+  await context.route((url) => !LOCAL.has(url.hostname) && !['data:', 'blob:', 'about:'].includes(url.protocol), (route) => {
+    nonLocal.push(route.request().url());
+    route.abort();
+  });
+  const page = await context.newPage();
+  page.on('pageerror', (e) => fail('preview page error: ' + e.message));
+  page.on('console', (m) => { if (m.type() === 'error') fail('console error: ' + m.text()); });
+  page.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/favicon.ico')) fail(`${r.status()} for ${r.url().replace(server.url, '')}`); });
+  const pg = (fn, arg) => page.evaluate(fn, arg);
+  const shot = async (name) => {
+    const file = `${device}-${name}.png`;
+    await page.screenshot({ path: path.join(outDir, file) });
+    shots.push(path.relative(ROOT, path.join(outDir, file)));
+    steps.push(`+${((Date.now() - started) / 1000).toFixed(1)}s screenshot ${file}`);
+  };
+  const settle = async (ms, what) => {
+    try { await page.waitForFunction(() => window.__playground.settled(), null, { timeout: ms || 8000 }); }
+    catch (e) { warn(`${what || 'the preview'} did not settle (a flight or a picture still loading)`); }
+    const f = await pg(() => { window.__playground.redraw(); return window.__playground.frame; });
+    await page.waitForFunction((f0) => window.__playground.frame >= f0 + 2, f, { timeout: 2000 }).catch(() => {});
+  };
+  // the globe over a doorway, close enough for its picture itself (its last look) to show, then a touch on it
+  const enter = async (id) => {
+    const d = (await pg(() => window.__playground.doorways())).find((x) => x.pack === id);
+    if (!d) { fail(`${id} has no doorway on the living globe`); return false; }
+    const close = d.looks[d.looks.length - 1];
+    await pg((a) => window.__playground.flyTo(a.lon, a.lat, a.z, 0), { lon: d.lon, lat: d.lat, z: Math.min(8, Math.max(1, close.minZoom + 0.25)) });
+    await settle(4000, `the doorway of ${id}`);
+    await sleep(300);
+    const now = (await pg(() => window.__playground.doorways())).find((x) => x.pack === id);
+    if (!now || !now.visible) { fail(`${id}'s doorway is not drawn at its own place and zoom`); return false; }
+    await page.mouse.click(now.x, now.y);
+    steps.push(`touched the doorway "${now.label}" (${id})`);
+    try {
+      await page.waitForFunction((pid) => (window.__playground.stages().find((s) => s.id === pid) || {}).started, id, { timeout: 10000 });
+    } catch (e) { fail(`${id} never started from its doorway`); return false; }
+    await settle(8000, id);
+    await sleep(300);
+    return true;
+  };
+  const stagesNow = () => pg(() => window.__playground.stages());
+  const counts = (s) => s && `${s.geo} geo, ${s.images} pictures, ${s.sprites} sprites`;
+  try {
+    await page.goto(`${server.url}/atlas?device=${device}&bare=1&idleAfter=100000`);
+    await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
+    const doors = await pg(() => window.__playground.doorways());
+    steps.push(`${doors.length} doorways on the globe: ${doors.map((d) => d.pack).join(', ')}`);
+    if (!ids.length) ids = doors.slice(0, 2).map((d) => d.pack);
+    if (ids.length < 2) { fail('the living globe needs two packs with doorways'); throw new Error('stopped'); }
+    const [a, b] = ids;
+    await settle(4000, 'the living globe');
+    await shot('doorways');
+
+    if (!(await enter(a))) throw new Error('stopped');
+    let st = await stagesNow();
+    const A1 = st.find((s) => s.id === a);
+    steps.push(`${a} runs: ${counts(A1)}; entry ${A1 && A1.entry}`);
+    if (!A1 || A1.entry !== 'doorway') fail(`${a} should know it was entered by its doorway (got ${A1 && A1.entry})`);
+    await shot('one');
+
+    if (!(await enter(b))) throw new Error('stopped');
+    st = await stagesNow();
+    const A2 = st.find((s) => s.id === a), B2 = st.find((s) => s.id === b);
+    if (!A2) fail(`starting ${b} ended ${a}: the stage is shared`);
+    if (!B2 || !B2.front) fail(`${b}, just started, should be in front`);
+    if (A2 && A2.front) fail(`${a} should be behind ${b}`);
+    if (A2 && counts(A2) !== counts(A1)) fail(`${a}'s things changed when ${b} started (${counts(A1)} → ${counts(A2)})`);
+    steps.push(`${b} runs in front: ${counts(B2)}; ${a} behind: ${counts(A2)}`);
+    await shot('two');
+
+    // a touch on something of the first (or its row) brings it to the front; the second stays
+    const front1 = await pg(() => window.__playground.front());
+    const touchable = (await pg(() => window.__playground.touchables())).find((t) => t.stage === a);
+    if (touchable) {
+      await page.mouse.click(touchable.x, touchable.y);
+      await sleep(400);
+      steps.push(`touched ${touchable.what} of ${a}`);
+    } else {
+      await pg((pid) => window.__playground.bringToFront(pid), a);
+      steps.push(`nothing touchable of ${a} in view: brought to the front as a workbench row would`);
+    }
+    const front2 = await pg(() => window.__playground.front());
+    if (front1 !== b || front2 !== a) fail(`the front should pass from ${b} to ${a} by touch (was ${front1}, then ${front2})`);
+    st = await stagesNow();
+    if (!st.find((s) => s.id === b)) fail(`${b} should still run behind ${a}`);
+    await settle(4000, 'after the touch');
+    await shot('front-again');
+
+    // ending the one in front leaves the other exactly as it was
+    const before = st.find((s) => s.id === b);
+    await pg(() => window.__playground.end(window.__playground.front()));
+    await sleep(300);
+    st = await stagesNow();
+    if (st.find((s) => s.id === a)) fail(`✕ should end ${a}, the one in front`);
+    const after = st.find((s) => s.id === b);
+    if (!after) fail(`ending ${a} should leave ${b} running`);
+    else if (counts(after) !== counts(before) || !after.front) fail(`${b} should be as it was, in front (${counts(before)} → ${counts(after)}, front ${after.front})`);
+    steps.push(`ended ${a}: ${b} ${after ? 'in front, ' + counts(after) : 'gone'}`);
+    const door = (await pg(() => window.__playground.doorways())).find((d) => d.pack === a);
+    if (!door || door.running) fail(`${a}'s doorway should be back on the globe once it has ended`);
+    await settle(4000, 'after ending');
+    await shot('one-left');
+    await pg(() => window.__playground.endAll());
+    await sleep(300);
+    if ((await stagesNow()).length) fail('ending all should leave nothing running');
+    const back = await pg(() => window.__playground.doorways());
+    if (back.some((d) => d.running)) fail('every doorway should be back on the globe');
+    steps.push('ended all: every doorway back');
+  } catch (e) {
+    if (e.message !== 'stopped') fail('check stopped: ' + e.message.split('\n')[0]);
+  }
+  try { logs = await pg(() => window.__playground.log); } catch (e) { /* the page is gone */ }
+  for (const l of logs) if (l.level === 'error') fail(`${l.source === 'script' ? 'script' : l.source === 'host' ? 'host refused' : l.source}: ${l.message}`);
+  for (const l of logs) if (l.level === 'warn') warn(`${l.source}: ${l.message}`);
+  for (const u of nonLocal) fail('request to a non-local host: ' + u);
+  await context.close();
+  const result = { id: 'the living globe (' + ids.join(' + ') + ')', folder: '_living', device, passed: failures.length === 0, seconds: +((Date.now() - started) / 1000).toFixed(1),
+                   failures, warnings, screenshots: shots, steps, logs: logs.slice(-300).map((l) => Object.assign({}, l, { t: +l.t.toFixed(2) })) };
+  fs.writeFileSync(path.join(outDir, `check-${device}.json`), JSON.stringify(result, null, 2) + '\n');
+  return result;
 }
 
 async function checkPack(browser, server, pack, device) {
@@ -201,7 +341,7 @@ async function checkPack(browser, server, pack, device) {
 
 function summarize(r) {
   const s = r.state, lines = [];
-  lines.push(`${r.passed ? 'PASS' : 'FAIL'} ${r.id} (${r.device}, ${r.seconds} s): ${r.screenshots.length} screenshots in build/playground/${r.id}/`);
+  lines.push(`${r.passed ? 'PASS' : 'FAIL'} ${r.id} (${r.device}, ${r.seconds} s): ${r.screenshots.length} screenshots in build/playground/${r.folder || r.id}/`);
   if (s) {
     const n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
     const parts = [n(s.geo.length, 'geo layer', 'geo layers') + (s.geo.some((L) => L.touchable) ? ` (${s.geo.filter((L) => L.touchable).length} touchable)` : ''),
@@ -221,18 +361,30 @@ function summarize(r) {
   const server = await start({ port: 0, roots: args.roots });
   const all = listPacks(server.roots);
   let packs;
-  if (args.all) packs = all;
+  if (args.all || args.living) packs = all;
   else {
     packs = args.ids.map((id) => all.find((p) => p.id === id) || { id, missing: true });
     for (const p of packs) if (p.missing) { await server.close(); usage(`no pack "${p.id}" (no ${p.id}/prototype.json in ${server.roots.map((r) => path.relative(ROOT, r) || r).join(', ')})`); }
   }
   const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
   const results = [], skipped = [];
+  if (args.living) {
+    let living;
+    try {
+      living = await checkLiving(browser, server, args.ids, args.device);
+      console.log(summarize(living));
+      for (const s of living.steps) console.log('  ' + s);
+    } finally {
+      await browser.close();
+      await server.close();
+    }
+    process.exit(living && living.passed ? 0 : 1);
+  }
   try {
     for (const p of packs) {
       if (p.error) { results.push({ id: p.id, device: args.device, passed: false, failures: [p.error], warnings: [], screenshots: [], seconds: 0 }); continue; }
-      if (p.manifest.runtime !== 3) {
-        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a runtime-3 pack (docs/runtime3.md)`;
+      if (p.manifest.runtime !== 3 && p.manifest.runtime !== 4) {
+        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a runtime-3 or runtime-4 pack (docs/runtime3.md)`;
         if (args.all) { skipped.push(`${p.id} (${why})`); continue; }
         results.push({ id: p.id, device: args.device, passed: false, failures: [why], warnings: [], screenshots: [], seconds: 0 });
         continue;
@@ -245,6 +397,6 @@ function summarize(r) {
   }
   for (const r of results) console.log(summarize(r));
   if (skipped.length) console.log('skipped: ' + skipped.join('; '));
-  if (args.all) console.log(`${results.filter((r) => r.passed).length} of ${results.length} runtime-3 packs passed on ${args.device}`);
+  if (args.all) console.log(`${results.filter((r) => r.passed).length} of ${results.length} packs passed on ${args.device}`);
   process.exit(results.every((r) => r.passed) ? 0 : 1);
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -321,13 +321,21 @@ async function runDevice(browser, server, device) {
     const lon1 = (await camera()).lon;
     t('the globe turns west to east when left alone (4° a second)', close(((lon0 - lon1) + 540) % 360 - 180, 2, 0.8), { lon0, lon1 });
 
-    // ---- touching the doorway starts it; the anchor flight
+    // ---- touching the doorway starts it where the reader is (runtime 4: no flight to the anchor), and
+    // globe.set({ still }) stops the turn; then the anchor, as a check flies there
     const d2 = await pg(() => window.__playground.doorway());
+    const cam0 = await camera();
     await page.mouse.click(d2.x, d2.y);
     await page.waitForFunction(() => window.__playground.started, null, { timeout: 8000 });
     await rest();
+    const cam1 = await camera();
+    const entry = (await pg(() => window.__playground.state())).entry;
+    // (the globe was still turning, 4° a second, until the script asked it to stop: a few degrees at most)
+    t('start by the doorway: the globe stays where the reader is (terra.entry says "doorway"), and globe.set({ still }) stops the turn',
+      entry === 'doorway' && Math.abs(((cam1.lon - cam0.lon) + 540) % 360 - 180) < 4 && close(cam1.lat, cam0.lat, 1e-6) && close(cam1.zoom, cam0.zoom, 0.001), { cam0, cam1, entry });
+    await anchor();
     const cam = await camera();
-    t('start: the flight lands on the anchor, and globe.set({ still }) stops the turn', close(cam.lon, FIX.anchor.lon, 0.01) && close(cam.lat, FIX.anchor.lat, 0.01) && close(cam.zoom, FIX.anchor.zoom, 0.001), cam);
+    t('flyTo: the flight lands on the anchor', close(cam.lon, FIX.anchor.lon, 0.01) && close(cam.lat, FIX.anchor.lat, 0.01) && close(cam.zoom, FIX.anchor.zoom, 0.001), cam);
     const chip = await pg(() => ({ chip: !document.getElementById('chip').hidden, open: !document.getElementById('chip-open').hidden, start: !document.getElementById('start').hidden }));
     t('the chip shows the pack, with Open once it listens for "open"', chip.chip && chip.open && !chip.start, chip);
 
@@ -335,7 +343,7 @@ async function runDevice(browser, server, device) {
     const world = (await echoes('world'))[0];
     const w = world && world.v;
     t('script world: no DOM, no fetch, no XMLHttpRequest, no navigator', w && w.document === 'undefined' && w.fetch === 'undefined' && w.XMLHttpRequest === 'undefined' && w.navigator === 'undefined', w);
-    t('script world: window is the global, runtime 3, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 3 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
+    t('script world: window is the global, runtime 4, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 4 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
     const read = (await echoes('read'))[0];
     const r = read && read.v;
     t('terra.read / readJSON: the pack\'s files; null for a missing one and outside the pack', r && r.notes === 'Read by terra.read.\n' && r.facts && r.facts.n === 3 && r.missing === null && r.escape === null, r);
