@@ -64,6 +64,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 | `terra.flyTo(lon, lat, zoom, seconds)` | move the globe |
 | `terra.read(path)`, `terra.readJSON(path)` | a file of the pack, as text or parsed (null if missing) |
 | `setTimeout`, `setInterval`, `clearTimeout`, `clearInterval` | as in a browser |
+| `performance.now()`, `requestAnimationFrame` | a clock, and frames on the host's timers: for a short eased change (a line let down), not for animating the globe |
 | `console.log/warn/error`, `terra.log(...)` | the workbench's log and the Xcode console |
 | `terra.on('open', fn)` | the chip's **Open**; registering it shows Open |
 | `terra.on('close', fn)` | the prototype is ending |
@@ -138,6 +139,7 @@ terra.on('touch', function (t) {
   // t.target: { layer: id, index: n } (a touchable geography feature), { sprite: id }, or null
   // t.x, t.y (points), t.lon, t.lat (null off the globe)
 })
+terra.on('tap', fn)                // the same, taps alone
 terra.touch.scheme('touchables')   // the default
 terra.touch.scheme('one-finger')
 ```

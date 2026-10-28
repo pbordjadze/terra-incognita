@@ -1,192 +1,118 @@
 # The playground
 
-The app opens on the Wikipedia globe and nothing else. Everything being tried lives in the
-**workbench** (the small grid button, top right): pick one, it starts on the globe or on its own
-screen, and ending it leaves the plain globe exactly as it was. One prototype is active at a time;
-its markers, overlays, screens and web views are made when it starts and released when it ends.
-That is a workbench rule for comparing things cleanly, not a decision about the finished atlas.
+The app opens on the Wikipedia globe. Every prototype has a **doorway** on it while it isn't running
+(hidden at the whole-Earth view, showing as you come closer): touch one and it starts. The
+**workbench** (the small grid button, top right) lists them all, parked ones too. One prototype runs
+at a time; its sprites, pictures, geography, script and screens are made when it starts and released
+when it ends. That is a workbench rule for comparing things cleanly, not a decision about the
+finished atlas.
+
+Every new experience or map element is a **pack on runtime 3**: data, pictures and a small script
+that runs in JavaScriptCore inside the app, with no web view; the globe draws what it asks for.
+[`docs/runtime3.md`](runtime3.md) is the contract. Native code is for the stage itself and for new
+runtime tools (CLAUDE.md › The runtime).
 
 - [From "prototype this" to the phone](#from-prototype-this-to-the-phone) (the short version)
 - [Kinds of prototype](#kinds-of-prototype)
-- [Make a web prototype](#make-a-web-prototype) (no app build: preview, test, publish, see it on the phone)
-- [Make a native prototype](#make-a-native-prototype) (Swift or Metal: needs an IPA)
+- [Make a pack](#make-a-pack) (no app build: preview, check, publish, see it on the phone)
+- [Add a runtime tool, or a native prototype](#add-a-runtime-tool-or-a-native-prototype) (Swift: an IPA)
 - [Update, compare, park, remove](#update-compare-park-remove)
-- [The contract](#the-contract): `prototype.json`, `terra.js` (runtimes 1 and 2), the catalog
-- [Remote delivery](#remote-delivery): sources, integrity, limits, privacy, R2 set-up
+- [The catalog](#the-catalog), [Remote delivery](#remote-delivery)
 - [What needs a new IPA](#what-needs-a-new-ipa)
 
 ## From "prototype this" to the phone
 
-For Claude Code or Codex, the whole loop for a web prototype (most new ideas):
+For Claude Code or Codex, the whole loop for a pack (most new ideas):
 
-1. `python3 tools/playground/playground.py new <id> --globe` (or `--screen`), then write it.
-2. `node tools/playground/check.cjs <id>`: look at the screenshots in `build/playground/<id>/`.
-3. Commit and push the branch (a pack-only push uses no macOS runner).
-4. Once R2 is set up, `packs.yml` publishes it; tell the owner to open
-   `<PACKS_PUBLIC_URL>/open/<id>.html` (or the workbench, which lists it) on the phone.
+1. `python3 tools/playground/playground.py new <id>`, then write it against `docs/runtime3.md`.
+2. `node tools/playground/check.cjs <id>`: look at the screenshots in `build/playground/<id>/`
+   (`node tools/playground/serve.cjs` to try it in a browser).
+3. `python3 tools/playground/playground.py validate`, then commit. A push that changes only packs
+   uses no macOS runner.
+4. On `main`, `packs.yml` publishes changed packs to the `packs` branch, which the app reads
+   (`Prototypes/_runtime/sources.json`). Open the workbench on the phone: the new revision is listed,
+   or the pack's doorway is on the globe once it has been downloaded. A link
+   `terraincognita://open/<id>` starts it.
 
-Until R2 is set up, a new pack reaches the phone with the next IPA (it is bundled), and the
-simulator can load a local catalog: `playground.py pack --out build/packs`, then
-`node tools/playground/serve.cjs --packs build/packs` and launch the app with
-`-packs-url http://127.0.0.1:8790/packs/catalog.json`. A native prototype is steps 1–4 of
-[Make a native prototype](#make-a-native-prototype) and always an IPA.
+If a pack needs something the runtime can't do yet, add it to the runtime (Swift, the next IPA)
+rather than working around it; there are no web views to fall back on.
 
-In the app: the grid button opens the workbench; a row starts its prototype (one at a time); on
-the globe, the chip at the top right names it, **Open** opens its screen and ✕ returns the plain
-globe. The workbench's **Live** line counts stages, markers, globes, films and web views: on the
-plain globe it reads one globe and nothing else, and a prototype that leaves something behind
-shows up there (and fails `PlaygroundTests`).
+In the app: a doorway or a workbench row starts a prototype; the chip at the top right names it,
+**Open** shows its panel (or its screen) and ✕ returns the atlas. The workbench's **Live** line counts
+stages, markers, globes, films and scripts: with nothing running it reads one globe and nothing else,
+and a prototype that leaves something behind shows up there (and fails `PlaygroundTests`).
 
 ## Kinds of prototype
 
 | Kind | Lives in | Starts | Needs an IPA to change |
 | --- | --- | --- | --- |
-| Native, on the globe | `App/TerraIncognita/<Name>/` + an entry in `Playground/Catalog.swift` | markers on the globe; a marker opens its screen | yes |
-| Native, own screen | same | its screen over the paused globe | yes |
-| Web pack, bundled | `Prototypes/<id>/` (bundled in the app) | per its `prototype.json` | no, once published as a remote revision |
-| Web pack, remote | a source's `catalog.json` (Cloudflare R2) | the same, downloaded on demand | no |
-| Parked | the Persian globe style, the films | from the workbench's Parked shelf | yes |
+| Pack, bundled | `Prototypes/<id>/` (bundled in the app) | from its doorway or the workbench | no, once published as a remote revision |
+| Pack, remote | the `packs` branch's `catalog.json` | the same, downloaded on demand | no |
+| Native | `App/TerraIncognita/<Name>/` + an entry in `Playground/Catalog.swift` | from its doorway (it opens straight away) or the workbench | yes |
+| Parked | the Persian globe style, the films, test packs | from the workbench's Parked shelf | per its kind |
 
-## Make a web prototype
+## Make a pack
 
 ```sh
-python3 tools/playground/playground.py new tide-pool --globe     # or --screen; scaffolds Prototypes/tide-pool/
-node tools/playground/serve.cjs                                   # http://127.0.0.1:8790/ : every prototype, over a stand-in globe
-node tools/playground/check.cjs tide-pool                         # headless Chromium: loads it, fails on errors, screenshots
-python3 tools/playground/playground.py validate                   # the contract, sizes, offline boundary (CI runs it too)
+python3 tools/playground/playground.py new tide-pool          # scaffolds Prototypes/tide-pool/
+node tools/playground/serve.cjs                               # http://127.0.0.1:8790/ : every pack, over a stand-in globe
+node tools/playground/check.cjs tide-pool                     # headless Chromium: runs it, fails on errors, screenshots
+python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
 
-`Prototypes/hello-pack/` is the smallest complete example: a marker, a page opened from it, and an
-overlay that answers taps on the sea. `playground.py --help` lists every command.
+`Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
+the sea is tapped); `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/` use the
+globe's date and geography. A pack is a script, its data and pictures, with everything inside its
+folder; it cannot reach the network. Keep the first-reader test in mind: someone who touches this
+first, knowing nothing, should be able to tell what they are looking at.
 
-Then commit and push. `packs.yml` validates and, when R2 is configured, publishes changed packs
-as new revisions (a Linux job; no macOS runner). On the phone: open the workbench, it checks its
-sources, the new revision appears; tap it. A link `<PACKS_PUBLIC_URL>/open/<id>.html` opens it
-straight from Safari or a message.
+## Add a runtime tool, or a native prototype
 
-A pack is plain HTML, CSS, JavaScript and media, with everything it needs inside its folder. It
-cannot reach the network (the host blocks every request outside the pack), so data is bundled in
-the pack. Keep the first-reader test in mind: someone who taps this first, knowing nothing, should
-be able to tell what they are looking at.
+A runtime tool (a new `terra.*` capability: something drawn, animated or touched every frame, or
+something the system has):
 
-## Make a native prototype
+1. The native side in Swift (`Playground/PackScript.swift` turns the script's message into a
+   `PackScriptEvent`; `PrototypeStage` turns that into the globe's drawing), the script side in
+   `Prototypes/_runtime/terra.js`, its mirror in the desktop preview (`tools/playground/harness/`),
+   and its entry in `docs/runtime3.md` with an example. Raise the runtime version only for an
+   incompatible change.
+2. The packs that use it, and a UI check (`GlobePackTests` or `PlaygroundTests`).
+3. `[build-only]` in the commit message for a quick compile, then `[playground-check]`; `main`
+   publishes the IPA to SideStore.
 
-1. Put the code in its own folder, `App/TerraIncognita/<Name>/` (the project picks up new files).
-2. Add one entry in `App/TerraIncognita/Playground/Catalog.swift`: an id, a title, a one-line
-   summary, an optional anchor, and what `start` does with the stage (place markers, present a
-   screen). Existing entries are examples of each kind.
-3. Close its screen with `@Environment(\.dismiss)`; stop timers and display links when its views
-   go away. The workbench's live counts show anything left behind.
-4. Push with `[build-only]` in the commit message for a quick compile; a full push runs the
-   interaction tests; `main` publishes the IPA to SideStore.
+A native prototype: its code in its own folder `App/TerraIncognita/<Name>/`, one entry in
+`Playground/Catalog.swift` (an id, a title, a one-line summary, an anchor, a doorway, and what
+`start` does with the stage), its screen closed with `@Environment(\.dismiss)`, its timers stopped
+when its views go away.
 
 ## Update, compare, park, remove
 
-- **Update** a web pack: change its files and push; the publisher gives it the next revision only
+- **Update** a pack: change its files and push; the publisher gives it the next revision only
   if its contents changed. The workbench marks it *available*, downloads it on the next tap and
   keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again.
-- **Compare**: the active prototype's chip has an ✕ for the plain globe and the workbench's first
+- **Compare**: the active prototype's chip has an ✕ back to the atlas and the workbench's first
   row starts the last prototype again; two variants are two packs (`tide-pool`, `tide-pool-b`).
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
-  Parked shelf, still one tap away.
+  Parked shelf, still one tap away (and takes its doorway off the globe).
 - **Remove**: delete the folder or entry. A published pack is withdrawn with
   `playground.py retire <id>` (`--undo` brings it back; `--out DIR` acts on a local packed folder);
-  its files stay in the bucket. Ids are never reused: nothing can check that across branches, so
+  its files stay on the `packs` branch. Ids are never reused: nothing can check that across branches, so
   pick a new one rather than recycling an old one.
 
-## The contract
+## The catalog
 
-### `Prototypes/<id>/prototype.json`
-
-```json
-{
-  "id": "tide-pool",
-  "title": "Tide pool",
-  "summary": "One line for the workbench.",
-  "runtime": 1,
-  "presentation": "globe",
-  "entry": "index.html",
-  "anchor": { "lon": -4.5, "lat": 48.4, "zoom": 3 },
-  "markers": [
-    { "id": "pool", "lon": -4.5, "lat": 48.4, "image": "pool.png", "width": 44, "height": 44,
-      "label": "A tide pool", "minZoom": 2, "opens": true }
-  ],
-  "overlay": "overlay.html",
-  "taps": false,
-  "shelf": "current",
-  "background": "#F6F2E7"
-}
-```
-
-- `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: the `terra.js` version it needs (1, or 2 for geography, a date and a caption drawn by
-  the globe). An app with an older runtime lists it as needing a new build instead of opening it.
-- `presentation`: `screen` (its own full-screen page over the paused globe; ends when it closes)
-  or `globe` (lives on the globe while active: markers, an optional overlay; ends from the chip).
-- `entry`: the screen's page (default `index.html`). A globe prototype opens it from a marker with
-  `"opens": true`, with `terra.open()`, or (when nothing else opens) from the chip's **Open**; it
-  is optional for a globe prototype.
-- `anchor`: where the globe flies when it starts (`zoom` 0.8–8, 1 = the whole globe).
-- `markers` (globe): pictures from the pack drawn by the app at places on the globe, in points;
-  hidden behind the limb and outside `minZoom`–`maxZoom`; accessible by `label`; names keep clear.
-- `overlay` (globe): a transparent page laid over the globe, told the camera every frame it moves,
-  that never takes touches. With `"taps": true` it receives the globe's taps instead of country
-  selection.
-- `shelf`: `current` or `parked`. `background`: the screen's colour while it loads.
-
-### `terra.js`, runtime 1
-
-The host injects `window.terra` before the page's scripts (`Prototypes/_runtime/terra.js`; the
-same file in the app and the preview):
-
-| | |
-| --- | --- |
-| `terra.pack`, `terra.mode`, `terra.params` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`; revision 0 unless downloaded); `'screen'` or `'overlay'`; e.g. `{ marker: 'pool' }` |
-| `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active }`; also CSS `var(--terra-text-scale)` and `[data-reduce-motion]` on `<html>` |
-| `terra.close()` | back to the globe (a screen) or end the prototype (an overlay) |
-| `terra.open(params)` | an overlay opens the pack's screen |
-| `terra.on('camera', fn)`, `terra.camera` | overlay: `{ lon, lat, zoom, cx, cy, radius, width, height }` in CSS px |
-| `terra.project(lon, lat)`, `terra.unproject(x, y)` | the globe's orthographic projection, both ways |
-| `terra.on('tap', fn)` | overlay with `taps`: `{ x, y, lon, lat }` (`lon`/`lat` null off the globe) |
-| `terra.flyTo(lon, lat, zoom, seconds)` | overlay: move the globe |
-| `terra.log(...)` | the workbench's log and the Xcode console |
-
-### `terra.js`, runtime 2: drawn by the globe
-
-For a globe prototype whose overlay page draws nothing itself: it tells the globe what to show,
-and the app draws it natively, in the globe's own inks, type and reading scale, in step with the
-camera. The two examples are `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/`.
-
-| | |
-| --- | --- |
-| `terra.geo.set(id, features, options)` | a layer of GeoJSON features or geometries ([lon, lat]); `options.style`: `border`, `area`, `ghost` (dashed outline), `track` (fine dashes), `dot`, `ring`, `label` (`properties.label`, on a halo; earlier ones win room), `symbol` (`options.image` from the pack), `sounding` (a line hanging `properties.length` pt with `properties.label`); also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`, `width`/`height`, `offset: [dx, dy]`. Setting an id again replaces it; the first set of an id fixes its place in the drawing order. |
-| `terra.geo.remove(id)`, `terra.geo.clear()` | take layers away |
-| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left |
-| `terra.on('time', fn)` | `{ value, playing, by }`: every move by the reader (`reader`), playback (`play`, ≤ 30 a second) or the host (`host`, the first) |
-| `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it from the page (not echoed back), play or pause, hide |
-| `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: the title above the date, the text below. Say what the reader is looking at before why it matters. |
-| `terra.globe.set({ historical, still })` | hide today's borders and names (coasts stay, as a reference); stop the idle turn |
-
-Everything a runtime-2 page asks for belongs to the prototype's stage and goes when it ends; the
-preview (`serve.cjs`) draws the same things over its stand-in globe.
-
-A screen keeps the top-left 56 pt (inside the safe area) free: the app's own Back button sits
-there, so no page can trap the reader. Pages are loaded from `terra-pack://<id>/…`; relative URLs
-and `fetch()` of the pack's own files work (use relative ones: a root-absolute `/x.png` works in the
-app but not in the preview, and `validate` warns). Storage does not persist between launches.
-
-### `catalog.json` (what a source publishes; written by `playground.py pack`)
+`catalog.json`, what a source publishes (written by `playground.py`):
 
 ```json
 {
   "format": 1,
-  "generated": "2026-10-27T14:03:00-04:00",
+  "generated": "2026-10-28T05:03:00-04:00",
   "packs": [
-    { "id": "tide-pool", "revision": 3, "runtime": 1, "title": "Tide pool", "summary": "…",
+    { "id": "tide-pool", "revision": 3, "runtime": 3, "title": "Tide pool", "summary": "…",
       "presentation": "globe", "shelf": "current", "hash": "<sha256 of the file list>",
       "path": "packs/tide-pool/r3/", "bytes": 20480,
       "files": [ { "path": "prototype.json", "bytes": 512, "sha256": "…" } ],
-      "published": "2026-10-27T14:03:00-04:00", "retired": false }
+      "published": "2026-10-28T05:03:00-04:00", "retired": false }
   ]
 }
 ```
@@ -196,42 +122,29 @@ files never change under the same revision (they are cached forever).
 
 ## Remote delivery
 
-- **Only from the workbench.** The globe and every bundled experience make no requests. Opening
-  the workbench checks its sources (at most every 30 seconds); tapping a remote prototype
-  downloads it. No identifiers, cookies or analytics: an ephemeral session, plain GETs.
-- **Sources** are catalog URLs: `Prototypes/_runtime/sources.json` (bundled), plus any added in
-  the workbench or by the link `terraincognita://source?url=<catalog URL>` (it asks first).
-  HTTPS only; `http://127.0.0.1` and `localhost` are allowed for the simulator.
-- **Integrity.** Every file is checked against the catalog's SHA-256 and size; paths are confined
-  to the pack; a pack is at most 50 MB and 500 files, a file at most 25 MB. A download is staged and moved into place
-  only when complete, so a failed update leaves the previous revision. Two revisions are kept per
-  pack; offline, the newest installed revision (or the bundled one) opens.
-- **Containment.** Pack pages run in a non-persistent `WKWebView` that can load only its own
-  pack's files: other schemes and every `http(s)` request are blocked by a content rule and the
-  navigation policy; the bridge exposes only the table above. The catalog is not signed: it is
-  trusted because only the owner's CI can write the bucket. Signing is the next step before any
-  wider distribution.
-- **App Store.** This is a development path for the SideStore build. Apple's App Review
-  Guidelines restrict downloading code that changes an app's features (2.5.2) and set conditions
-  for HTML5 mini apps (4.7); do not assume remote packs would pass review. A store build would
-  bundle its prototypes and compile the workbench out (`WORKBENCH` in the build settings).
-
-### Setting up R2 (owner, once)
-
-1. Cloudflare dashboard → R2 → create a bucket (e.g. `terra-packs`), and allow public access (an
-   `r2.dev` URL for development, or a custom domain on a Cloudflare zone).
-2. R2 → Manage API tokens → create a token with *Object Read & Write* on that bucket only.
-3. In this repository's settings → Secrets and variables → Actions: secrets `R2_ACCOUNT_ID`,
-   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and variables `R2_BUCKET`, `PACKS_PUBLIC_URL`.
-4. Add `<PACKS_PUBLIC_URL>/catalog.json` to `Prototypes/_runtime/sources.json` (next IPA), or add
-   it now in the workbench.
-
-Locally, the same variables in the environment let `playground.py publish` upload directly;
-`--dry-run` shows what would change (with only `PACKS_PUBLIC_URL` set, it reads the public catalog). Without them, `packs.yml` validates and keeps the packed
-output as an artifact, and publishes nothing.
+- **The source** is this repository's `packs` branch, which `packs.yml` writes on pushes to `main`
+  that change packs, read through `https://raw.githubusercontent.com/pbordjadze/terra-incognita/packs/catalog.json`
+  (`Prototypes/_runtime/sources.json`; raw.githubusercontent.com caches for about five minutes).
+  Other sources can be added in the workbench or by the link `terraincognita://source?url=<catalog URL>`
+  (it asks first). HTTPS only; `http://127.0.0.1` and `localhost` are allowed for the simulator.
+- **Only from the workbench.** The globe and every bundled experience make no requests. Opening the
+  workbench checks its sources (at most every 30 seconds); starting a remote pack downloads it. No
+  identifiers, cookies or analytics: an ephemeral session, plain GETs.
+- **Integrity.** Every file is checked against the catalog's SHA-256 and size; paths are confined to
+  the pack; a pack is at most 50 MB and 500 files, a file at most 25 MB. A download is staged and
+  moved into place only when complete, so a failed update leaves the previous revision. Two
+  revisions are kept per pack; offline, the newest installed revision (or the bundled one) runs.
+- **Containment.** A pack's scripts run in their own JavaScriptCore context with no network, no
+  storage that lasts and no access to anything but their pack's files and the `terra` bridge
+  (docs/runtime3.md). The catalog is not signed: it is trusted because only this repository's CI
+  writes the `packs` branch. Signing is the next step before any wider distribution.
+- **App Store.** This is a development path for the SideStore build. Apple's rules on downloaded
+  code (App Review 2.5.2, and the developer agreement's terms for interpreted code) need checking
+  before any store build; a store build would bundle its packs and compile the workbench out
+  (`WORKBENCH` in the build settings).
 
 ## What needs a new IPA
 
-Anything in Swift or Metal: a new native prototype, a change to the globe, the host, the
-workbench, `terra.js` (the runtime ships in the app), new entitlements or permissions. A web
-pack's HTML, CSS, JavaScript, images and data, its markers, overlay and anchor do not.
+Anything in Swift or Metal: a runtime tool, a native prototype, the globe, the host, the workbench,
+`terra.js` (the runtime ships in the app), new entitlements or permissions. A pack's scripts, data,
+pictures, doorway and anchor do not.

@@ -1,7 +1,7 @@
 # Terra Incognita — engineering notes
 
-A playground for a wandering atlas: the app opens on a live globe in Wikipedia's location-map style,
-and a developer workbench starts one prototype at a time on it or beside it. Earlier directions (the
+A playground for a wandering atlas: the app opens on a live globe in Wikipedia's location-map style
+with each prototype's doorway on it, and a developer workbench starts one prototype at a time. Earlier directions (the
 Persian style, the plate films) are parked prototypes, kept whole. This file is the map and the rules.
 
 ## Documentation scope
@@ -14,22 +14,27 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
-- **The playground** (`App/TerraIncognita/Playground/`; how to add a prototype: `docs/playground.md`).
-  `PlaygroundRoot` is the app: the globe, the workbench button (top right) and, while a prototype
-  is active, its chip (Open, ✕). `Playground` holds the one active `PrototypeStage`, which owns
-  everything its prototype adds (markers, a style, an overlay, a screen, an invitation) and takes
-  it all away when it ends: one at a time is the workbench's isolation rule. `Catalog.swift` lists
-  the native prototypes, one entry each; web packs (`Prototypes/<id>/`, and remote catalogs) are
-  found by `PackStore` and hosted by `WebPack.swift` (scheme `terra-pack`, bridge
-  `Prototypes/_runtime/terra.js`, runtime 1). `GlobeMarker`s follow the geography on the globe.
-  The workbench's Live line counts stages, markers, globes, films and web views: ending a
-  prototype returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
+- **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
+  workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
+  prototype's doorway on it (hidden at the whole-Earth view; touching one starts it), the workbench
+  button (top right) and, while a prototype is active, its chip (Open, ✕) and its panel. `Playground`
+  holds the one active `PrototypeStage`, which owns everything its prototype adds (markers and
+  sprites, a pack's script, geography and pictures drawn by the globe, a date, words at the foot, a
+  panel, a style, a screen) and takes it all away when it ends: one at a time is the workbench's
+  isolation rule. `Catalog.swift` lists the native prototypes, one entry each; packs
+  (`Prototypes/<id>/`, and remote catalogs) are found by `PackStore`, and their scripts run in
+  JavaScriptCore in `PackScript.swift` (runtime 3, `Prototypes/_runtime/terra.js`; no web view). The
+  globe draws for them: `GeoLayers.swift` (geography, touchable), `GlobeImages.swift` (pictures lying
+  on the globe), `GlobeMarker` sprites (paths, frames, a look per zoom), `PackPanel.swift`. The
+  workbench's Live line counts stages, markers, globes, films and scripts: ending a prototype returns
+  them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
   - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
     `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf`, `-look`/`-film`,
     `-globeStyle persian` start the matching prototype.
   - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
-    `serve.cjs` previews over a stand-in globe, `check.cjs` checks one in Chromium).
+    `serve.cjs` runs a pack over a stand-in globe in a browser, `check.cjs` checks one headless and
+    screenshots it).
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
@@ -148,9 +153,9 @@ Keep design discussions and plans in that private repository.
     Maestro's MCP server and reports (`refs/qa-runs/<run id>`); `ci/qa/README.md` says how. It
     and `ci/qa/` are generated from the copy all the apps share (painting-company row 152):
     change them there and sync, never here.
-  - `packs.yml` (Linux only): a push that changes only web packs skips the macOS workflow; this one
-    validates them and, once R2 is configured (repository secrets), publishes changed packs as new
-    revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
+  - `packs.yml` (Linux only): a push that changes only packs skips the macOS workflow; this one
+    validates them and, on `main`, publishes changed packs as new revisions to the `packs` branch,
+    which the app reads through raw.githubusercontent.com (`[no-publish]` holds it back).
 
 ## The runtime: one library that grows
 
@@ -179,11 +184,10 @@ and what every experience relies on and none owns. When in doubt, it's runtime.
   text size, Reduce Motion).
 - **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
   date and touches rather than taking them, and leaves nothing behind when its experience ends.
-- **What runs in a web view today moves onto the runtime:** the runtime-2 packs' logic and the
-  delivery check with runtime 3, then Clouds' shader to Metal, the Aegean leaf and the river study
-  rebuilt natively (order and status: painting-company row 154). Each keeps opening as it does
-  until it has moved; the web host goes once nothing uses it (the owner's call). The native prototypes move onto the
-  runtime's tools when they are next reworked.
+- **Runtime 3 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
+  them; the pack web host is gone. The Aegean leaf and the river study, still web pages in their own
+  screens, are being moved onto it; their web hosts go when they have. The native prototypes move
+  onto the runtime's tools when they are next reworked.
 
 ## Design rules
 
@@ -259,7 +263,7 @@ the caption's headpiece, and the one chosen country, gilded as the cartouche. Th
 - No network, with one deliberate exception: the workbench fetches prototype packs from its
   configured sources while it is open, and when a pack is opened (HTTPS, plain GETs, an ephemeral
   session, hashes checked). The globe and every bundled experience load from the bundle, and a
-  pack's page can reach nothing outside its pack. No analytics, no accounts.
+  pack's script can reach nothing outside its pack. No analytics, no accounts.
 - Prototypes are additive: a new one adds a folder and an entry, and changes no other. Park, don't
   delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
