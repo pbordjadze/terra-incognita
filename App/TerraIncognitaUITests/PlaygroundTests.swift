@@ -29,13 +29,13 @@ final class PlaygroundTests: XCTestCase {
         defer { app.terminate() }
         openWorkbench(in: app)
         let listed = listedPrototypes(in: app)
-        for id in ["plain", "camelid", "whale", "ocean", "water", "leaf", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "film"] {
+        for id in ["plain", "camelid", "whale", "ocean", "gathering-of-water", "sea-between", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "persian", "wikipedia", "film"] {
             XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }
     }
 
-    /// A native prototype on the globe and its screen, then a web study on its own screen, then the
-    /// plain globe again: each start ends the one before, and nothing they made outlives them.
+    /// A native prototype on the globe and its screen, then a pack lying on the globe, then the atlas
+    /// again: each start ends the one before, and nothing they made outlives them.
     @MainActor func testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind() {
         let app = XCUIApplication()
         app.launch()
@@ -53,24 +53,23 @@ final class PlaygroundTests: XCTestCase {
         close.tap()
         XCTAssertTrue(camel.waitForExistence(timeout: 15), "Closing its screen leaves it on the globe until ended")
 
-        startPrototype("leaf", in: app)
+        startPrototype("sea-between", in: app)
         XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists, "Starting another ends the first")
-        let leafMenu = app.buttons["Open the leaf menu"].firstMatch
-        XCTAssertTrue(leafMenu.waitForExistence(timeout: 45), "The leaf opens on its own screen")
+        XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45),
+                      "The leaf, a pack now, lies on the globe and says what it is")
+        Thread.sleep(forTimeInterval: 1.5)
         attach("12-leaf", in: app)
-        let back = app.buttons["Return to the atlas"].firstMatch
-        XCTAssertTrue(back.waitForExistence(timeout: 10))
-        back.tap()
+        endPrototype(in: app)
 
         XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15))
-        XCTAssertFalse(app.descendants(matching: .any)["activePrototype"].firstMatch.exists, "An own-screen prototype ends with its screen")
+        XCTAssertFalse(app.descendants(matching: .any)["activePrototype"].firstMatch.exists, "Ending it from its chip ends it")
         XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists)
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Back on the plain globe, nothing from either prototype is alive")
         attach("13-live-after", in: app)
     }
 
-    /// The Persian style and the films are parked, not gone.
+    /// The Persian and Wikipedia styles and the films are parked, not gone.
     @MainActor func testParkedDirectionsRemainOneTapAway() {
         let app = XCUIApplication()
         app.launch()
@@ -79,6 +78,11 @@ final class PlaygroundTests: XCTestCase {
         startPrototype("persian", in: app)
         XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.waitForExistence(timeout: 10))
         attach("20-persian", in: app)
+        endPrototype(in: app)
+
+        startPrototype("wikipedia", in: app)
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.waitForExistence(timeout: 10))
+        attach("20-wikipedia", in: app)
         endPrototype(in: app)
 
         startPrototype("film", in: app)
@@ -92,24 +96,26 @@ final class PlaygroundTests: XCTestCase {
         assertLive(Self.plainGlobeLive, in: app, "The film's canvas is released when it closes")
     }
 
-    /// The bundled web pack: its marker on the globe, its page from the marker, and back.
-    @MainActor func testBundledPackOpensFromTheGlobe() {
+    /// The bundled pack: its script runs in the app (no page, no web view), says at the foot which copy
+    /// it is, shows its panel from the chip's Open, and leaves nothing when it ends.
+    @MainActor func testBundledPackRunsOnTheGlobe() {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset"]
         app.launch()
         defer { app.terminate() }
         startPrototype("hello-pack", in: app)
-        let marker = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "hello-pack.")).firstMatch
-        XCTAssertTrue(marker.waitForExistence(timeout: 30), "The pack's marker is drawn by the app on the globe")
+        XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "The bundled pack's script runs")
+        XCTAssertTrue(text(containing: "Bundled", in: app).exists, "It knows where it came from")
         attach("30-pack-on-globe", in: app)
-        app.buttons["openActivePrototype"].firstMatch.tap()
-        XCTAssertTrue(text(containing: "First words.", in: app).waitForExistence(timeout: 30), "The bundled page opens")
-        XCTAssertTrue(text(containing: "Bundled", in: app).exists, "The page knows where it came from")
-        attach("31-pack-screen", in: app)
-        app.buttons["packBack"].firstMatch.tap()
-        XCTAssertTrue(marker.waitForExistence(timeout: 10))
+        let open = app.buttons["openActivePrototype"].firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 10), "Its script listens for Open")
+        open.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["packPanelTitle"].firstMatch.waitForExistence(timeout: 15), "Open shows its panel")
+        attach("31-pack-panel", in: app)
+        app.buttons["packPanelClose"].firstMatch.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["packPanel"].firstMatch.waitForNonExistence(timeout: 10))
         endPrototype(in: app)
         openWorkbench(in: app)
-        assertLive(Self.plainGlobeLive, in: app, "The pack's markers and web views are released")
+        assertLive(Self.plainGlobeLive, in: app, "The pack's script and everything it asked for are released")
     }
 }

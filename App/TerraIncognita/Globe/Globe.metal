@@ -13,7 +13,8 @@ struct GlobeUniforms {
                         // the page's frame (how far it has come in)
     float4 r0, r1, r2;  // world from view, by rows
     float4 u3;          // the safe area's insets (px): top, bottom, left, right
-    float4 u4;          // x: illustrative prehistoric view suppresses modern political boundaries
+    float4 u4;          // x: illustrative prehistoric view suppresses modern political boundaries;
+                        // y: how far the drawing has crossed to the ground style (0 Wikipedia's, 1 the ground)
 };
 
 struct GlobeVertex { float4 position [[position]]; };
@@ -37,6 +38,16 @@ constant float3 RIVER = float3(0x4E, 0x9C, 0xCB) / 255;
 constant float3 LOCATOR = float3(0xC1, 0x28, 0x38) / 255;
 constant float3 GOLD = float3(0xB0, 0x8A, 0x3E) / 255;
 constant float3 SHADOW = float3(0x6E, 0x63, 0x52) / 255;
+
+// The ground style (tools/globe/ground.py: the land is baked, in the atlas's light key, from NASA's Blue
+// Marble for the month): the sea's tints by depth, its lines and its ice, the air at the limb.
+constant float3 G_SHELF = float3(0xD3, 0xF0, 0xEE) / 255;      // under 60 m: shallow water's turquoise
+constant float3 G_OPEN = float3(0xC2, 0xE4, 0xF4) / 255;       // the open ocean
+constant float3 G_DEEP = float3(0xA9, 0xD2, 0xEC) / 255;       // past 6000 m
+constant float3 G_COAST = float3(0x5E, 0x9C, 0xC0) / 255;
+constant float3 G_RIVER = float3(0x6F, 0xAE, 0xD3) / 255;
+constant float3 G_ICE = float3(0xF1, 0xF5, 0xF8) / 255;
+constant float3 G_ATMOS = float3(0xDC, 0xEE, 0xFB) / 255;
 
 // The Persian style, every colour traced (CLAUDE.md › The Persian style's sources). The manuscript's
 // colours are sampled from LACMA's scans of the Khamsa of Nizami (M.85.237.16, Tabriz, 1529),
@@ -89,6 +100,23 @@ static float vnoise(float2 p) {
     float2 u = f * f * (3 - 2 * f);
     float a = hash2(i), b = hash2(i + float2(1, 0)), c = hash2(i + float2(0, 1)), d = hash2(i + float2(1, 1));
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+/// Value noise in three dimensions: on the sphere it has no seam and no pole.
+static float vnoise3(float3 p) {
+    float3 i = floor(p), f = p - i;
+    float3 u = f * f * (3 - 2 * f);
+    float n = 0;
+    for (int dz = 0; dz <= 1; dz++) {
+        for (int dy = 0; dy <= 1; dy++) {
+            for (int dx = 0; dx <= 1; dx++) {
+                float3 c = i + float3(float(dx), float(dy), float(dz));
+                float h = hash2(float2(hash2(c.xy) * 157.0 + c.z * 1.37, c.z * 0.71 + hash2(c.yx) * 89.0));
+                n += h * (dx ? u.x : 1 - u.x) * (dy ? u.y : 1 - u.y) * (dz ? u.z : 1 - u.z);
+            }
+        }
+    }
+    return n;
 }
 
 /// Floored modulo, as Python's %.
@@ -151,7 +179,10 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
                                texture2d<float> idsTex [[texture(2)]],
                                texture2d<float> bandTex [[texture(3)]],
                                texture2d<float> fleuronTex [[texture(4)]],
-                               texture2d<float> braidTex [[texture(5)]]) {
+                               texture2d<float> braidTex [[texture(5)]],
+                               texture2d<float> groundTex [[texture(6)]],
+                               texture2d<float> iceTex [[texture(7)]],
+                               texture2d<float> floorTex [[texture(8)]]) {
     constexpr sampler linearS(s_address::repeat, t_address::clamp_to_edge, filter::linear, mip_filter::linear);
     constexpr sampler nearestS(s_address::repeat, t_address::clamp_to_edge, filter::nearest);
     constexpr sampler spriteS(address::clamp_to_zero, filter::linear, mip_filter::linear);
@@ -159,6 +190,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float2 size = U.u0.xy, centre = U.u0.zw;
     float R = U.u1.x, scale = U.u1.y, zoom = U.u1.z, ringOn = U.u1.w;
     float selected = U.u2.x, highlight = U.u2.y, style = U.u2.z, pageOn = U.u2.w;
+    float ground = U.u4.y;
     float x = (pix.x - centre.x) / R, y = (centre.y - pix.y) / R;
     float rr = sqrt(x * x + y * y);
 
@@ -228,6 +260,10 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
             }
         }
         page = mix(page, GOLD, clamp(max(max(gold, tick * 0.8), dots), 0.0, 1.0) * ringOn);
+    }
+    if (ground > 0.001) {                               // (the same for every pixel)
+        // the ground style's air: a thin bright haze just outside the limb, as it is seen edge on
+        page = mix(page, G_ATMOS, 0.85 * ground * exp(-max(ringpx, 0.0) / 3.5) * (rr >= 1 ? 1.0 : 0.0));
     }
     page = mix(page, ppage, style);
     // the globe: the point of the sphere under this pixel, and where it is on the map (worked out for
@@ -302,6 +338,34 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
         // roundness: the limb a little shaded; the rim drawn
         col *= 1 - 0.07 * (1 - z) * (1 - z);
         col = mix(col, COAST, stroke((rr - 1) * R, 1.2 * scale, fwRing * scale));
+        if (ground > 0.001) {                           // (the same for every pixel)
+            // the ground: the month's land as satellites saw it, in the atlas's light key, shaded
+            // from the north-west; rivers from the regional scale; borders a pencil line from about
+            // x2 to x3; the chosen country's red let down so the ground shows through it
+            float3 gland = groundTex.sample(linearS, uv, gradient2d(dx, dy)).rgb * (1 + 0.20 * hill);
+            gland = mix(gland, G_RIVER, 0.7 * stroke(river, 0.6 * scale, fwRiver) * smoothstep(1.4, 2.4, k) * riverOn);
+            gland = mix(gland, LOCATOR * (1 + 0.12 * hill), 0.75 * m);
+            gland = mix(gland, BORDER, 0.55 * smoothstep(2.0, 3.2, zoom) * stroke(border, 0.6 * scale, fwBorder) * borderOn);
+            // the sea: shelves pale, the open ocean, the abyss, the floor's relief shaded faintly
+            float depthM = -min(height, 0.0) * 87;
+            float3 gsea = mix(G_SHELF, G_OPEN, smoothstep(60.0, 900.0, depthM));
+            gsea = mix(gsea, G_DEEP, smoothstep(2500.0, 6000.0, depthM));
+            float fl = (floorTex.sample(linearS, uv, gradient2d(dx, dy)).r * 255 - 128) / 127;
+            gsea *= 1 + 0.04 * fl;
+            // the month's usual sea ice, its edge broken a little (drawn, not measured)
+            float ice = iceTex.sample(linearS, uv, gradient2d(dx, dy)).r;
+            float jag = 0.5;
+            if (ice > 0.02) jag = vnoise3(w * 220 + float3(17.3, 5.1, 9.7)) * 0.6 + vnoise3(w * 900 + float3(17.3, 5.1, 9.7)) * 0.4;
+            gsea = mix(gsea, G_ICE * (0.97 + 0.04 * jag), smoothstep(0.30, 0.55, ice + 0.25 * (jag - 0.5)));
+            float3 g = mix(gsea, gland, landa);
+            // the coast lighter and finer than Wikipedia's, fading where both sides are white
+            float pale = smoothstep(0.90, 0.97, (gland.r + gland.g + gland.b) / 3);
+            g = mix(g, G_COAST, (0.55 - 0.35 * pale) * stroke(d, 0.6 * scale * min(pow(k, 0.3), 1.5), fwD));
+            // roundness, and the air at the limb
+            g *= 1 - 0.05 * (1 - z) * (1 - z);
+            g = mix(g, G_ATMOS, 0.55 * pow(1 - z, 4.0));
+            col = mix(col, g, ground);
+        }
     }
     if (style > 0.001) {                                // (the same for every pixel)
         // the sea: a pale lapis wash, its coasts ruled like a panel when looked at closer, a gold hair

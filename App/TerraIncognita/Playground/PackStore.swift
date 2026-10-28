@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import OSLog
 
-// The web packs the workbench can open: the ones bundled in the app (`Prototypes/<id>/`), the ones
+// The packs the workbench can open: the ones bundled in the app (`Prototypes/<id>/`), the ones
 // downloaded from a source's catalog (Application Support/Playground/packs/<id>/r<revision>/), and
 // the ones a source lists that are not here yet. The contract is docs/playground.md.
 //
@@ -12,16 +12,20 @@ import OSLog
 
 // MARK: - The contract's data
 
-/// `prototype.json`.
+/// `prototype.json` (runtime 3: docs/runtime3.md).
 nonisolated struct PackManifest: Codable, Equatable, Sendable {
     nonisolated struct Anchor: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var zoom: Double? }
-    nonisolated struct Marker: Codable, Equatable, Sendable {
-        var id: String; var lon: Double; var lat: Double; var image: String; var width: Double; var height: Double
-        var label: String; var minZoom: Double?; var maxZoom: Double?; var opens: Bool?
+    /// How something shows on the globe at a range of zooms: a picture, or frames in turn; now and then
+    /// (`every`, `for`) or always; turned to face the way it moves (`face`). A doorway's or a sprite's.
+    nonisolated struct Look: Codable, Equatable, Sendable {
+        var image: String?; var frames: [String]?; var fps: Double?; var size: [Double]?
+        var minZoom: Double?; var maxZoom: Double?; var every: Double?; var `for`: Double?; var face: Bool?
+        var pictures: [String] { frames ?? image.map { [$0] } ?? [] }
     }
+    /// How the pack shows on the globe while it is not running; touching it starts the pack.
+    nonisolated struct Doorway: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var label: String; var look: Look }
     var id: String; var title: String; var summary: String; var runtime: Int; var presentation: String
-    var entry: String?; var anchor: Anchor?; var markers: [Marker]?; var overlay: String?; var taps: Bool?
-    var shelf: String?; var background: String?
+    var scripts: [String]?; var anchor: Anchor?; var doorway: Doorway?; var taps: Bool?; var shelf: String?
 }
 
 /// `catalog.json`, as a source publishes it.
@@ -39,7 +43,7 @@ nonisolated struct PackEntry: Codable, Equatable, Sendable {
 }
 
 /// A pack ready to open.
-struct WebPack: Equatable {
+struct PlaygroundPack: Equatable {
     enum Origin: String, Equatable { case bundled, downloaded }
     let manifest: PackManifest
     /// The folder holding prototype.json.
@@ -59,7 +63,7 @@ struct PackListing: Identifiable, Equatable {
     var presentation: String
     var shelf: String
     /// What opens now without a download (the pinned or newest installed revision, else the bundled one).
-    var current: WebPack?
+    var current: PlaygroundPack?
     var bundled: Bool
     /// Newest first.
     var installedRevisions: [Int]
@@ -270,7 +274,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 2
+    nonisolated static let runtime = 3
     static let shared = PackStore()
 
     /// One per pack id, by title.
@@ -287,7 +291,7 @@ final class PackStore {
     private(set) var log: [String] = []
 
     private struct Selection {
-        let pack: WebPack
+        let pack: PlaygroundPack
         let pinned: Bool
         let index: Int
         let count: Int
@@ -303,9 +307,9 @@ final class PackStore {
     @ObservationIgnored private var sessionSources: [URL] = []
     @ObservationIgnored private var catalogs: [URL: PackCatalog] = [:]
     @ObservationIgnored private var remotes: [String: SourceEntry] = [:]
-    @ObservationIgnored private var bundledPacks: [String: WebPack] = [:]
+    @ObservationIgnored private var bundledPacks: [String: PlaygroundPack] = [:]
     /// Newest first.
-    @ObservationIgnored private var installedPacks: [String: [WebPack]] = [:]
+    @ObservationIgnored private var installedPacks: [String: [PlaygroundPack]] = [:]
     @ObservationIgnored private var pins: [String: Int] = [:]
     @ObservationIgnored private var progress: [String: Double] = [:]
     @ObservationIgnored private var failures: [String: String] = [:]
@@ -335,6 +339,12 @@ final class PackStore {
         bundledPacks = scanBundled()
         installedPacks = scanAllInstalled()
         bundledSources = loadBundledSources()
+        #if DEBUG
+        // CI's checks use only the sources they name: a test never reaches the live packs branch
+        if ProcessInfo.processInfo.arguments.contains("-packs-url") || ProcessInfo.processInfo.arguments.contains("-playground-reset") {
+            bundledSources = []
+        }
+        #endif
         addedSources = loadAddedSources()
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
@@ -510,7 +520,7 @@ final class PackStore {
     // MARK: choosing a revision
 
     /// Installed revisions, newest first, then the bundled one.
-    private func candidates(_ id: String) -> [WebPack] {
+    private func candidates(_ id: String) -> [PlaygroundPack] {
         var list = installedPacks[id] ?? []
         if let bundled = bundledPacks[id] { list.append(bundled) }
         return list
@@ -572,7 +582,7 @@ final class PackStore {
                 id: id,
                 title: manifest?.title ?? remote?.title ?? id,
                 summary: manifest?.summary ?? remote?.summary ?? "",
-                presentation: manifest?.presentation ?? remote?.presentation ?? "screen",
+                presentation: manifest?.presentation ?? remote?.presentation ?? "globe",
                 shelf: manifest?.shelf ?? remote?.shelf ?? "current",
                 current: current,
                 bundled: bundledPacks[id] != nil,
@@ -589,7 +599,7 @@ final class PackStore {
         warmHashes()
     }
 
-    private func state(for id: String, current: WebPack?, pinned: Bool, remote: PackEntry?) -> PackListing.State {
+    private func state(for id: String, current: PlaygroundPack?, pinned: Bool, remote: PackEntry?) -> PackListing.State {
         if let fraction = progress[id] { return .downloading(fraction) }
         if let remote, remote.runtime > Self.runtime { return .needsNewBuild(remote.runtime) }
         guard let current else {
@@ -603,7 +613,7 @@ final class PackStore {
 
     /// Whether the remote entry differs from what opens now. Unknown (the hash is still being
     /// computed) counts as no, and the listing is rebuilt when the hash arrives.
-    private func isUpdate(_ remote: PackEntry, over current: WebPack) -> Bool {
+    private func isUpdate(_ remote: PackEntry, over current: PlaygroundPack) -> Bool {
         guard remote.runtime <= Self.runtime else { return false }
         if current.origin == .downloaded, remote.revision <= current.revision { return false }
         guard let known = hashes[Self.key(current.root)] else { return false }
@@ -646,7 +656,7 @@ final class PackStore {
 
     /// The newest usable revision of a pack, downloading it first if a compatible newer one is listed.
     /// A download that fails leaves what was there; it throws only when there is nothing to open.
-    func prepare(_ id: String) async throws -> WebPack {
+    func prepare(_ id: String) async throws -> PlaygroundPack {
         guard PackRules.isValidID(id) else { throw PackError("“\(id)” is not a prototype id.") }
         failures[id] = nil
         if let remote = remotes[id] {
@@ -673,7 +683,7 @@ final class PackStore {
             throw PackError("“\(id)” is not on this device, and no source lists it.")
         }
         let manifest = try Self.loadManifest(at: choice.pack.root, expecting: id)
-        return WebPack(manifest: manifest, root: choice.pack.root, origin: choice.pack.origin, revision: choice.pack.revision)
+        return PlaygroundPack(manifest: manifest, root: choice.pack.root, origin: choice.pack.origin, revision: choice.pack.revision)
     }
 
     private func wantsDownload(_ entry: PackEntry) async -> Bool {
@@ -821,16 +831,18 @@ final class PackStore {
             throw PackError("prototype.json could not be read")
         }
         guard manifest.id == id else { throw PackError("prototype.json names “\(manifest.id)”, not “\(id)”") }
-        guard manifest.runtime >= 1, manifest.runtime <= runtime else {
+        guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        guard manifest.presentation == "screen" || manifest.presentation == "globe" else {
-            throw PackError("presentation must be “screen” or “globe”")
+        guard manifest.runtime == runtime else {
+            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime \(runtime), drawn by the globe")
         }
-        var named: [String] = []
-        if let entry = manifest.entry { named.append(entry) }
-        if let overlay = manifest.overlay { named.append(overlay) }
-        for marker in manifest.markers ?? [] { named.append(marker.image) }
+        guard manifest.presentation == "globe" else {
+            throw PackError("presentation must be “globe”: every pack lives on the globe")
+        }
+        guard let scripts = manifest.scripts, !scripts.isEmpty else { throw PackError("it lists no scripts") }
+        var named = scripts
+        named += manifest.doorway?.look.pictures ?? []
         for path in named where !PackRules.isSafePath(path) {
             throw PackError("“\(path)” is not a path inside the pack")
         }
@@ -877,8 +889,8 @@ final class PackStore {
     }
 
     /// Prototypes/<id>/ in the app bundle (`_runtime` is the host's own, not a pack).
-    private func scanBundled() -> [String: WebPack] {
-        var found: [String: WebPack] = [:]
+    private func scanBundled() -> [String: PlaygroundPack] {
+        var found: [String: PlaygroundPack] = [:]
         guard let base = Bundle.main.resourceURL?.appending(path: "Prototypes", directoryHint: .isDirectory),
               let items = try? FileManager.default.contentsOfDirectory(
                 at: base, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else { return found }
@@ -888,7 +900,7 @@ final class PackStore {
                   (try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
             do {
                 let manifest = try Self.loadManifest(at: item, expecting: name)
-                found[name] = WebPack(manifest: manifest, root: item, origin: .bundled, revision: 0)
+                found[name] = PlaygroundPack(manifest: manifest, root: item, origin: .bundled, revision: 0)
             } catch {
                 record("bundled pack \(name) is unusable: \(error.localizedDescription)")
             }
@@ -897,16 +909,16 @@ final class PackStore {
     }
 
     /// The `r<N>` folders of one pack, newest first. Only a complete download ever has that name.
-    private func scanInstalled(_ id: String) -> [WebPack] {
+    private func scanInstalled(_ id: String) -> [PlaygroundPack] {
         let folder = packsDirectory.appending(path: id, directoryHint: .isDirectory)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false))) ?? []
-        var packs: [WebPack] = []
+        var packs: [PlaygroundPack] = []
         for name in names {
             guard let revision = Self.revision(ofFolder: name) else { continue }
             let root = folder.appending(path: name, directoryHint: .isDirectory)
             do {
                 let manifest = try Self.loadManifest(at: root, expecting: id)
-                packs.append(WebPack(manifest: manifest, root: root, origin: .downloaded, revision: revision))
+                packs.append(PlaygroundPack(manifest: manifest, root: root, origin: .downloaded, revision: revision))
             } catch {
                 record("\(id) r\(revision) is unusable: \(error.localizedDescription)")
             }
@@ -915,8 +927,8 @@ final class PackStore {
         return packs
     }
 
-    private func scanAllInstalled() -> [String: [WebPack]] {
-        var found: [String: [WebPack]] = [:]
+    private func scanAllInstalled() -> [String: [PlaygroundPack]] {
+        var found: [String: [PlaygroundPack]] = [:]
         let ids = (try? FileManager.default.contentsOfDirectory(atPath: packsDirectory.path(percentEncoded: false))) ?? []
         for id in ids where PackRules.isValidID(id) {
             let packs = scanInstalled(id)

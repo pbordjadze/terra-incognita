@@ -1,20 +1,23 @@
 name: Packs
 
-# The web prototypes in Prototypes/ (docs/playground.md): checked on every push that touches them, and
-# published to the Cloudflare R2 bucket when it is configured. Linux only; no macOS runner is used.
-#   validate  every prototype against the contract, the size limits and the offline boundary
+# The packs in Prototypes/ (docs/runtime3.md, docs/playground.md): checked on every push that touches
+# them and, on main, published to this repository's `packs` branch, which the app reads through
+# https://raw.githubusercontent.com/pbordjadze/terra-incognita/packs/catalog.json. Linux only; no
+# macOS runner is used.
+#   validate  every pack against the runtime-3 contract, the size limits and the offline boundary
 #   check     node --check on the packs' and tools' JavaScript, and the tool's unit tests
 #   pack      catalog.json, packs/<id>/r<rev>/ and open/<id>.html, kept as the `packs` artifact. Packed from
 #             scratch (every pack revision 1): it shows what a pack looks like, not what is live
-#   publish   against the live bucket: only packs whose contents changed get the next revision, and the
-#             catalog is uploaded last. Skipped by `[no-publish]` in the commit message. Without the
-#             secrets and variables below it writes a note to the job summary and publishes nothing.
-# Secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and variables R2_BUCKET, PACKS_PUBLIC_URL
-# reach only the publish step. Publishes never overlap (they read and then write one catalog).
+#   publish   main only, after the checks: the `packs` branch (an orphan, made the first time) is checked
+#             out beside the repository; only packs whose contents changed get the next revision there,
+#             and the result is committed and pushed with the workflow's own token (no secret is used).
+#             `[no-publish]` in the commit message holds it back. Other branches validate and pack only.
+# Publishes never overlap (each reads and then writes one catalog). The `packs` branch holds no workflow
+# files, so pushing it starts nothing.
 
 on:
   push:
-    branches-ignore: ['sidestore', 'ci-shots/**']
+    branches-ignore: ['sidestore', 'packs', 'ci-shots/**']
     paths: ['Prototypes/**', 'tools/playground/**', 'ci/remote_packs.sh', '.github/workflows/packs.yml']
   workflow_dispatch:
 
@@ -22,12 +25,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ contains(github.event.head_commit.message, '[no-publish]') && format('packs-check-{0}', github.ref) || 'packs-publish' }}
-  cancel-in-progress: ${{ contains(github.event.head_commit.message, '[no-publish]') }}
+  group: ${{ github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[no-publish]') && 'packs-publish' || format('packs-check-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' || contains(github.event.head_commit.message, '[no-publish]') }}
 
 jobs:
   packs:
-    name: Validate, pack and publish the web prototypes
+    name: Validate and pack the prototypes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -47,27 +50,69 @@ jobs:
         run: python3 tools/playground/playground.py pack --out build/packs
       - uses: actions/upload-artifact@v5
         with: { name: packs, path: build/packs, if-no-files-found: error }
+
+  publish:
+    name: Publish to the packs branch
+    needs: packs
+    if: ${{ github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[no-publish]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
       - name: Publish
-        if: ${{ !contains(github.event.head_commit.message, '[no-publish]') }}
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ vars.R2_BUCKET }}
-          PACKS_PUBLIC_URL: ${{ vars.PACKS_PUBLIC_URL }}
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE: ${{ github.sha }}
         run: |
-          missing=""
-          for v in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET PACKS_PUBLIC_URL; do
-            [ -n "${!v}" ] || missing="$missing $v"
+          set -euo pipefail
+          export GIT_TERMINAL_PROMPT=0
+          remote="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          dir="$RUNNER_TEMP/packs-branch"
+          message="$RUNNER_TEMP/packs-message"
+          summary="$RUNNER_TEMP/packs-summary"
+
+          # the packs branch as it is now, or a new orphan (no history shared with main) the first time
+          checkout() {
+            rm -rf "$dir"
+            set +e
+            git ls-remote --exit-code --heads "$remote" packs > /dev/null
+            found=$?
+            set -e
+            case "$found" in
+              0) git clone --quiet --depth 1 --branch packs --single-branch "$remote" "$dir" ;;
+              2) git init --quiet -b packs "$dir" && git -C "$dir" remote add origin "$remote" ;;
+              *) echo "::error::Could not read the packs branch (git ls-remote exited $found)"; exit 1 ;;
+            esac
+          }
+
+          checkout
+          for attempt in 1 2 3; do
+            rm -f "$message" "$summary"
+            python3 tools/playground/playground.py publish --into "$dir" \
+              --public-url "https://raw.githubusercontent.com/${REPO}/packs" \
+              --commit-message "$message" --summary "$summary"
+            if [ ! -s "$message" ]; then
+              cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            printf '\nFrom %s on main.\n' "$SOURCE" >> "$message"
+            git -C "$dir" add -A
+            git -C "$dir" -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --quiet -F "$message"
+            if git -C "$dir" push --quiet origin HEAD:refs/heads/packs; then
+              head -n 1 "$message"
+              cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "The packs branch moved while publishing (attempt $attempt); starting again from it."
+            checkout
           done
-          if [ -n "$missing" ]; then
-            {
-              echo "### Packs"
-              echo "R2 is not configured (empty:$missing), so nothing was published. The packed output is attached as the \`packs\` artifact."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          python3 tools/playground/playground.py publish --summary "$GITHUB_STEP_SUMMARY"
+          echo "::error::Could not push the packs branch after 3 attempts"
+          exit 1
 
   globe-packs:
     name: The globe-drawn packs' data tools

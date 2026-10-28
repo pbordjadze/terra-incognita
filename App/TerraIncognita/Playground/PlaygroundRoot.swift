@@ -2,8 +2,9 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// The app: the plain Wikipedia globe, one small workbench button, and while a prototype is active,
-/// its chip (what it is, Open, and ✕ for the plain globe) with whatever it has added to the globe.
+/// The app: the Wikipedia globe with the atlas's doorways on it, one small workbench button, and while
+/// a prototype is active, its chip (what it is, Open, and ✕ back to the atlas) with whatever it has
+/// added to the globe, and its panel when it shows one.
 struct PlaygroundRoot: View {
     @State private var playground = Playground()
     /// Where the controls are, so the globe keeps its names clear of them.
@@ -12,7 +13,7 @@ struct PlaygroundRoot: View {
     @State private var veil = 1.0
     @Environment(\.scenePhase) private var scenePhase
 
-    private var style: GlobeStyle { playground.stage?.style ?? .wikipedia }
+    private var style: GlobeStyle { playground.stage?.style ?? .base }
     private var covered: Bool { playground.screen != nil }
     /// Inside the Persian page's frame, when that parked style is on.
     private var inset: CGFloat { style == .persian ? PersianCaption.pageRoom : 16 }
@@ -55,6 +56,16 @@ struct PlaygroundRoot: View {
             }
             .fullScreenCover(item: $playground.screen, onDismiss: playground.screenClosed) { screen in
                 screen.content()
+            }
+            // a pack's panel: half height, the globe live above it (on its own view, beside the workbench's sheet)
+            .background {
+                Color.clear.sheet(item: $playground.panel, onDismiss: playground.panelDismissed) { panel in
+                    PackPanelView(panel: panel)
+                        .presentationDetents([.medium, .large])
+                        .presentationDragIndicator(.visible)
+                        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+                        .preferredColorScheme(.light)
+                }
             }
             .alert("Add this source?", isPresented: Binding(get: { playground.proposedSource != nil },
                                                              set: { if !$0 { playground.proposedSource = nil } }),

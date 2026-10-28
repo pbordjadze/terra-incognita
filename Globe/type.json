@@ -1,5 +1,5 @@
 {
-  "about": "The globe's type and its scale: read by GlobeView and GlobeScreen, mirrored by tools/globe/preview.py, checked by ci/check_globe.py (CLAUDE.md › Design rules). Sizes are points at reading scale 1; a face's tracking is a fraction of its size. Persian inks: Wikipedia's label lightness in the manuscript's inks (country names its text ink, water names its margin ink), the caption's first line a rubric in its vermilion, set large as its rubrics are.",
+  "about": "The globe's type and its scale: read by GlobeView and GlobeScreen, mirrored by tools/globe/preview.py, checked by ci/check_globe.py (CLAUDE.md › Design rules). Sizes are points at reading scale 1; a face's tracking is a fraction of its size. Persian inks: Wikipedia's label lightness in the manuscript's inks (country names its text ink, water names its margin ink), the caption's first line a rubric in its vermilion, set large as its rubrics are. Ground: each name on a halo of the ground under it (the land's tone lifted 40% towards the paper; the halo given here is the darkest that can be, a shaded forest slope, which the check holds the inks to), the seas' in the open sea's tone.",
   "reading": {
     "shortSide": [
       430,
@@ -96,6 +96,39 @@
           0.6
         ]
       }
+    },
+    "ground": {
+      "names": {
+        "ocean": {"font": "LibertinusSerif-Italic", "size": 12, "tracking": 0.06, "ink": "#17506F", "halo": "#C2E4F4"},
+        "sea": {"font": "LibertinusSerif-Italic", "size": 10.5, "tracking": 0.06, "ink": "#17506F", "halo": "#C2E4F4"},
+        "region": {"font": "LibertinusSerif-Italic", "size": 11, "tracking": 0.22, "ink": "#3A3128", "halo": "#AFB6A4"},
+        "country1": {"font": "LibertinusSerif-Regular", "size": 11, "tracking": 0.12, "ink": "#463E35", "halo": "#AFB6A4"},
+        "country2": {"font": "LibertinusSerif-Regular", "size": 10.5, "tracking": 0.12, "ink": "#463E35", "halo": "#AFB6A4"},
+        "country3": {"font": "LibertinusSerif-Regular", "size": 10, "tracking": 0.12, "ink": "#463E35", "halo": "#AFB6A4"},
+        "capital": {"font": "LibertinusSerif-Italic", "size": 10, "tracking": 0, "ink": "#3A3128", "halo": "#AFB6A4"},
+        "selected": {"font": "LibertinusSerif-Semibold", "size": 12.5, "tracking": 0.08, "ink": "#FFF7EA", "halo": "#B02232"}
+      },
+      "caption": {
+        "eyebrow": {
+          "font": "LibertinusSerif-Regular",
+          "size": 12.5,
+          "color": "#C12838",
+          "tracking": 2.2,
+          "uppercase": true
+        },
+        "title": {
+          "font": "LibertinusSerif-Semibold",
+          "size": 30,
+          "color": "#2A2925"
+        },
+        "text": {
+          "font": "LibertinusSerif-Italic",
+          "size": 17,
+          "color": "#5A564E"
+        },
+        "scrim": "#F6F2E7F2"
+      },
+      "captionGround": "#F6F2E7"
     }
   }
 }

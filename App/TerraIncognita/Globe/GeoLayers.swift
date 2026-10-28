@@ -1,7 +1,7 @@
 import CoreText
 import UIKit
 
-/// Geography a prototype asks the globe to draw (terra.js runtime 2, `terra.geo`): borders, areas,
+/// Geography a prototype asks the globe to draw (terra.js runtimes 2 and 3, `terra.geo`): borders, areas,
 /// dashed outlines and tracks, dots, names, a picture and a line hanging to a depth, in the globe's own
 /// inks and at its reading scale, moved with the camera every frame. It lies above the globe's drawing
 /// and below its markers and takes no touches; the stage that made it takes it away.
@@ -17,6 +17,8 @@ final class GeoLayerView: UIView {
         let label: String?
         /// A sounding's length, in points.
         let length: Double?
+        /// Which of the script's features it came from (a multi-part feature makes several shapes).
+        var feature = 0
     }
 
     struct Layer {
@@ -32,6 +34,10 @@ final class GeoLayerView: UIView {
         let imageSize: CGSize
         /// Labels and symbols: points from their place (right, down), at the reading scale.
         let offset: CGVector
+        /// Its features take touches (terra.js runtime 3).
+        var touchable = false
+        /// A line's width in reading points, for border, area, ghost and track (nil: the style's own).
+        var lineWidth: Double?
         var vertices: Int { shapes.reduce(0) { $0 + $1.parts.reduce(0) { $0 + $1.count } } }
     }
 
@@ -62,6 +68,15 @@ final class GeoLayerView: UIView {
     required init?(coder: NSCoder) { fatalError("GeoLayerView is made in code") }
 
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool { false }
+
+    /// VoiceOver activated a touchable feature: (layer id, feature index, where it is on screen).
+    var onActivate: ((String, Int, CGPoint) -> Void)?
+
+    /// A touchable named place as VoiceOver finds it: a button that touches it.
+    private final class TouchElement: UIAccessibilityElement {
+        var activate: (() -> Void)?
+        override func accessibilityActivate() -> Bool { activate?(); return activate != nil }
+    }
 
     // MARK: what the page asks
 
@@ -125,6 +140,32 @@ final class GeoLayerView: UIView {
             draw(layer, in: host, projection: projection, reading: reading, placed: &placed)
         }
         CATransaction.commit()
+        exposeTouchables(projection: projection, zoom: stage.camera.zoom, reading: reading)
+    }
+
+    /// The touchable features that have a name and are on screen, as VoiceOver buttons (so a pack's
+    /// touchable places can be reached without seeing or aiming at them).
+    private func exposeTouchables(projection p: Projection, zoom: Double, reading k: CGFloat) {
+        // (made only while VoiceOver runs: they cost nothing a frame otherwise)
+        guard UIAccessibility.isVoiceOverRunning else {
+            if accessibilityElements?.isEmpty == false { accessibilityElements = [] }
+            return
+        }
+        var elements: [Any] = []
+        for layer in layers where layer.touchable && zoom >= layer.minZoom && zoom <= layer.maxZoom {
+            for s in layer.shapes where s.kind == .points {
+                guard let name = s.label, !name.isEmpty, let v = s.parts.first?.first, let q = p.point(v, facing: 0.1),
+                      bounds.contains(q), elements.count < 200 else { continue }
+                let e = TouchElement(accessibilityContainer: self)
+                e.accessibilityLabel = name
+                e.accessibilityTraits = .button
+                e.accessibilityFrameInContainerSpace = CGRect(x: q.x - 22 * k, y: q.y - 22 * k, width: 44 * k, height: 44 * k)
+                let id = layer.id, feature = s.feature
+                e.activate = { [weak self] in self?.onActivate?(id, feature, q) }
+                elements.append(e)
+            }
+        }
+        accessibilityElements = elements
     }
 
     private func draw(_ layer: Layer, in host: CALayer, projection p: Projection, reading k: CGFloat, placed: inout [CGRect]) {
@@ -145,23 +186,23 @@ final class GeoLayerView: UIView {
             case .border:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? UIColor(red: 0.549, green: 0.518, blue: 0.471, alpha: 1)).cgColor
-                shape.lineWidth = 1.1 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.1) * k
                 shape.lineDashPattern = nil
             case .area:
                 let base = layer.color ?? UIColor(red: 0.757, green: 0.471, blue: 0.275, alpha: 1)
                 shape.fillColor = base.withAlphaComponent(0.28).cgColor
                 shape.strokeColor = Self.darker(base).cgColor
-                shape.lineWidth = 2.2 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 2.2) * k
                 shape.lineDashPattern = nil
             case .ghost:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? ink).withAlphaComponent(0.8).cgColor
-                shape.lineWidth = 1.6 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.6) * k
                 shape.lineDashPattern = [NSNumber(value: Double(5 * k)), NSNumber(value: Double(4 * k))]
             default:
                 shape.fillColor = nil
                 shape.strokeColor = (layer.color ?? ink).withAlphaComponent(0.47).cgColor
-                shape.lineWidth = 1.2 * k
+                shape.lineWidth = CGFloat(layer.lineWidth ?? 1.2) * k
                 shape.lineDashPattern = [NSNumber(value: Double(3 * k)), NSNumber(value: Double(4 * k))]
             }
         case .dot, .ring:
@@ -356,6 +397,65 @@ final class GeoLayerView: UIView {
         return UIColor(hue: h, saturation: min(1, s * 1.15), brightness: b * 0.7, alpha: 1)
     }
 
+    // MARK: touch (runtime 3)
+
+    /// The touchable feature under a point of the screen, from the topmost layer down: points and
+    /// names within 22 reading points, lines within 14, areas inside. Nil when nothing touchable is there.
+    func hit(_ point: CGPoint, globe: GlobeView) -> (layer: String, index: Int)? {
+        let stage = globe.stageCamera
+        let p = Projection(camera: stage.camera, centre: stage.centre, radius: stage.radius)
+        let size = bounds.size
+        let k = CGFloat(GlobeType.shared?.readingScale(shortSide: Double(min(size.width, size.height) > 0 ? min(size.width, size.height) : 400)) ?? 1)
+        let zoom = stage.camera.zoom
+        for layer in layers.reversed() where layer.touchable && zoom >= layer.minZoom && zoom <= layer.maxZoom {
+            var best: (index: Int, distance: CGFloat)?
+            func consider(_ index: Int, _ d: CGFloat, within reach: CGFloat) {
+                if d <= reach, d < best?.distance ?? .infinity { best = (index, d) }
+            }
+            for s in layer.shapes {
+                switch s.kind {
+                case .points:
+                    for part in s.parts {
+                        for v in part {
+                            guard let q = p.point(v, facing: 0.1) else { continue }
+                            var c = q
+                            if layer.style == .label || layer.style == .symbol {
+                                c = CGPoint(x: q.x + layer.offset.dx * k, y: q.y + layer.offset.dy * k)
+                            }
+                            consider(s.feature, hypot(point.x - c.x, point.y - c.y), within: 22 * k)
+                        }
+                    }
+                case .lines:
+                    for part in s.parts where part.count > 1 {
+                        var previous: CGPoint?
+                        for v in part {
+                            let q = p.point(v, facing: 0)
+                            if let a = previous, let b = q { consider(s.feature, Self.distance(point, a, b), within: 14 * k) }
+                            previous = q
+                        }
+                    }
+                case .polygon:
+                    guard let ring = s.parts.first, ring.count > 2 else { continue }
+                    let points = ring.map { p.clamped($0) }
+                    guard points.contains(where: { $0.facing > 0 }) else { continue }
+                    let path = CGMutablePath()
+                    path.addLines(between: points.map(\.point))
+                    path.closeSubpath()
+                    if path.contains(point, using: .evenOdd) { consider(s.feature, 0, within: 1) }
+                }
+            }
+            if let best { return (layer.id, best.index) }
+        }
+        return nil
+    }
+
+    private static func distance(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let length = dx * dx + dy * dy
+        let t = length > 0 ? max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / length)) : 0
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+    }
+
     // MARK: projection
 
     /// The globe's orthographic projection, from its stage camera (the same numbers terra.js uses).
@@ -406,6 +506,7 @@ final class GeoLayerView: UIView {
     // MARK: from the page
 
     /// A layer from `terra.geo.set(id, features, options)`; nil if nothing in it can be drawn.
+    /// (`touchable` makes its features take touches; each shape remembers its feature.)
     static func layer(id: String, features: Any?, options: [String: Any], packRoot: URL) -> Layer? {
         guard let style = Style(rawValue: (options["style"] as? String) ?? "border") else { return nil }
         var shapes: [Shape] = []
@@ -418,8 +519,11 @@ final class GeoLayerView: UIView {
             return Projection.world(lon: lon, lat: lat)
         }
         func ring(_ x: Any?) -> [SIMD3<Double>] { ((x as? [Any]) ?? []).compactMap(position) }
+        var feature = 0
         func add(geometry: [String: Any], properties: [String: Any], depth: Int = 0) {
             guard depth < 4, budget > 0 else { return }
+            let first = shapes.count
+            defer { for i in first..<shapes.count { shapes[i].feature = feature } }
             let label = (properties["label"] as? String).map { String($0.prefix(80)) }
             let length = number(properties["length"]).map { min(max($0, 0), 2000) }
             let c = geometry["coordinates"]
@@ -444,7 +548,8 @@ final class GeoLayerView: UIView {
         }
         // (a named or pictured place costs a layer of its own on screen: a few hundred at most)
         let places = [Style.label, .symbol, .sounding].contains(style) ? placesPerLayer : Int.max
-        for item in items.prefix(50_000) {
+        for (n, item) in items.prefix(50_000).enumerated() {
+            feature = n
             guard budget > 0, shapes.count < places, let object = item as? [String: Any] else { continue }
             if (object["type"] as? String) == "Feature" {
                 if let g = object["geometry"] as? [String: Any] { add(geometry: g, properties: (object["properties"] as? [String: Any]) ?? [:]) }
@@ -464,6 +569,8 @@ final class GeoLayerView: UIView {
         return Layer(id: id, style: style, shapes: shapes, color: (options["color"] as? String).flatMap { UIColor(hex: $0) },
                      minZoom: number(options["minZoom"]) ?? 0, maxZoom: number(options["maxZoom"]) ?? .infinity,
                      font: (options["font"] as? String) ?? "regular", size: min(40, max(10, number(options["size"]) ?? 15)),
-                     image: image, imageSize: CGSize(width: width, height: height), offset: shift)
+                     image: image, imageSize: CGSize(width: width, height: height), offset: shift,
+                     touchable: (options["touchable"] as? Bool) ?? false,
+                     lineWidth: number(options["lineWidth"]).map { min(12, max(0.3, $0)) })
     }
 }

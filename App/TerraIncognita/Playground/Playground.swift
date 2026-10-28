@@ -3,10 +3,10 @@ import Observation
 import SwiftUI
 import UIKit
 
-/// The playground: the plain globe, at most one active prototype (its stage), and the screen over the
-/// globe when one is open. The workbench chooses; this starts and ends, so that ending anything
-/// returns the plain globe. One at a time is the workbench's rule for clean comparison, not a
-/// decision about the finished atlas.
+/// The playground: the globe with every prototype's doorway on it, at most one active prototype (its
+/// stage), and the screen or panel over the globe when one is open. A doorway or the workbench
+/// chooses; this starts and ends, so that ending anything returns the globe as it was. One running at
+/// a time is the workbench's rule for clean comparison, not a decision about the finished atlas.
 @Observable
 final class Playground {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
@@ -23,6 +23,11 @@ final class Playground {
     var problem: String?
     /// A source a link proposed, waiting for the reader's yes.
     var proposedSource: URL?
+    /// A pack's longer words and sources, over the globe (runtime 3, `terra.panel`).
+    var panel: PackPanel?
+    @ObservationIgnored private var panelClosed: (() -> Void)?
+    /// Every prototype's doorway on the globe while it isn't running, by prototype id.
+    @ObservationIgnored private var doorways: [String: GlobeMarker] = [:]
     @ObservationIgnored private(set) weak var globe: GlobeView?
 
     private enum Choice { case start(String), plainGlobe }
@@ -63,6 +68,8 @@ final class Playground {
     }
 
     func workbenchDismissed() {
+        // (the workbench may have downloaded packs: their doorways join the globe)
+        refreshDoorways()
         guard let choice = pending else { return }
         pending = nil
         run(choice)
@@ -92,22 +99,95 @@ final class Playground {
             problem = nil
             if let anchor = prototype.anchor { stage.fly(to: anchor) }
             prototype.start(stage)
+            refreshDoorways()
         }
     }
 
-    /// Back to the plain globe: the stage takes away everything the prototype added.
+    /// Back to the atlas: the stage takes away everything the prototype added.
     func end() {
         stage?.end()
         stage = nil
         if screen != nil { screen = nil }
+        refreshDoorways()
+    }
+
+    // MARK: the panel
+
+    func show(_ panel: PackPanel, onClose: @escaping () -> Void) {
+        panelClosed = onClose
+        self.panel = panel
+    }
+
+    /// The pack's script hid its panel, or the pack ended.
+    func hidePanel(from pack: String) {
+        guard panel?.pack == pack else { return }
+        panelClosed = nil
+        panel = nil
+    }
+
+    func panelDismissed() {
+        let closed = panelClosed
+        panelClosed = nil
+        closed?()
+    }
+
+    // MARK: doorways: the atlas's things on the one globe
+
+    /// Places every current prototype's doorway, except the running one's (its stage shows it).
+    /// Touching one starts its prototype; a native one opens straight away.
+    func refreshDoorways() {
+        guard let globe else { return }
+        var wanted: [String: Prototype.Doorway] = [:]
+        for p in Catalog.native where p.shelf == .current { if let d = p.doorway { wanted[p.id] = d } }
+        for listing in packs.listings where listing.shelf != "parked" {
+            if let pack = listing.current, let d = Self.doorway(of: pack) { wanted[listing.id] = d }
+        }
+        if let running = stage?.prototype.id { wanted[running] = nil }
+        for (id, marker) in doorways where wanted[id] == nil {
+            globe.remove(marker)
+            doorways[id] = nil
+        }
+        for (id, door) in wanted where doorways[id] == nil {
+            let marker = GlobeMarker(sprite: "doorway.\(id)", at: (door.lon, door.lat), path: nil, looks: door.looks,
+                                     label: door.label, hint: String(localized: "Starts it"), counted: false) { [weak self] in
+                self?.enter(id)
+            }
+            doorways[id] = marker
+            globe.add(marker)
+        }
+    }
+
+    /// A doorway was touched.
+    private func enter(_ id: String) {
+        request(.start(id))
+        // a native prototype's doorway opens it (its experience is the point of touching it)
+        if let stage, stage.prototype.id == id, case .native = stage.prototype.made, stage.canOpen { stage.open() }
+    }
+
+    /// A pack's doorway from its manifest, its pictures read from the pack.
+    private static func doorway(of pack: PlaygroundPack) -> Prototype.Doorway? {
+        guard let d = pack.manifest.doorway else { return nil }
+        let images = d.look.pictures.prefix(24).compactMap { name -> UIImage? in
+            guard PackRules.isSafePath(name) else { return nil }
+            return UIImage(contentsOfFile: pack.root.appending(path: name).path(percentEncoded: false))
+        }
+        guard !images.isEmpty else { return nil }
+        let size = d.look.size ?? [28, 28]
+        let look = GlobeMarker.SpriteLook(
+            frames: images, fps: min(30, max(0.2, d.look.fps ?? 6)),
+            size: CGSize(width: min(200, max(4, size.first ?? 28)), height: min(200, max(4, size.dropFirst().first ?? size.first ?? 28))),
+            minZoom: d.look.minZoom ?? 0, maxZoom: d.look.maxZoom ?? .infinity,
+            every: d.look.every.map { max(0.2, $0) }, duration: d.look.for.map { max(0.05, $0) }, face: false)
+        return Prototype.Doorway(lon: d.lon, lat: d.lat, label: String(d.label.prefix(120)), looks: [look])
     }
 
     // MARK: the globe
 
-    /// The globe has drawn its first frame: prototypes can start on it.
+    /// The globe has drawn its first frame: prototypes can start on it, and the doorways go on it.
     func globeDrawn(_ view: GlobeView) {
         globe = view
         globeReady = true
+        refreshDoorways()
         let ready = waiting
         waiting = []
         ready.forEach { $0() }
@@ -153,7 +233,6 @@ final class Playground {
         let revision = listing.current?.revision ?? listing.remote?.revision ?? 0
         return Prototype(id: listing.id, title: listing.title, summary: listing.summary,
                          shelf: listing.shelf == "parked" ? .parked : .current,
-                         ownScreen: listing.presentation != "globe",
                          made: .pack(listing.state, revision: revision, bundled: listing.bundled)) { stage in
             stage.loading = true
             Task {
@@ -173,7 +252,7 @@ final class Playground {
     #if DEBUG
     /// `-prototype <id>` starts one (`-prototype-open`: and opens it); `-workbench` opens the
     /// workbench. The older flags still work: `-camelid <s>`/`-camelid-play`, `-whale <s>`/
-    /// `-whale-play`, `-leaf`, `-look <id>`/`-film <s>`, `-globeStyle persian`.
+    /// `-whale-play`, `-leaf` (the sea between, a pack now), `-look <id>`/`-film <s>`, `-globeStyle persian` (or `wikipedia`).
     private func launchFromArguments() {
         let args = ProcessInfo.processInfo.arguments
         func value(_ flag: String) -> String? {
@@ -185,9 +264,10 @@ final class Playground {
         if id == nil {
             if args.contains("-camelid") || args.contains("-camelid-play") { id = "camelid"; open = true }
             else if args.contains("-whale") || args.contains("-whale-play") { id = "whale"; open = true }
-            else if args.contains("-leaf") { id = "leaf" }
+            else if args.contains("-leaf") { id = "sea-between" }
             else if args.contains("-look") || args.contains("-film") { id = "film" }
             else if value("-globeStyle") == "persian" { id = "persian" }
+            else if value("-globeStyle") == "wikipedia" { id = "wikipedia" }
         }
         if let id {
             start(id)

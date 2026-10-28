@@ -1,17 +1,17 @@
 {
   "id": "hello-pack",
   "title": "Delivery check",
-  "summary": "A test pack: which revision arrived, and from where.",
-  "runtime": 1,
+  "summary": "A test pack: which revision arrived, and from where. Tap the sea for a ring.",
+  "runtime": 3,
   "presentation": "globe",
-  "entry": "index.html",
-  "anchor": { "lon": -30, "lat": 30, "zoom": 1.6 },
-  "markers": [
-    { "id": "shell", "lon": -30, "lat": 30, "image": "marker.png", "width": 44, "height": 44,
-      "label": "Delivery check", "minZoom": 1, "opens": true }
+  "scripts": [
+    "main.js"
   ],
-  "overlay": "overlay.html",
+  "anchor": {
+    "lon": -30,
+    "lat": 30,
+    "zoom": 1.6
+  },
   "taps": true,
-  "shelf": "current",
-  "background": "#F6F2E7"
+  "shelf": "parked"
 }

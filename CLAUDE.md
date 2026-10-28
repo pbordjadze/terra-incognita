@@ -1,7 +1,8 @@
 # Terra Incognita — engineering notes
 
-A playground for a wandering atlas: the app opens on a live globe in Wikipedia's location-map style,
-and a developer workbench starts one prototype at a time on it or beside it. Earlier directions (the
+A playground for a wandering atlas: the app opens on a live globe, the ground as satellites saw it
+this month in a light key (the Wikipedia style it opened on before is parked), with each prototype's
+doorway on it, and a developer workbench starts one prototype at a time. Earlier directions (the
 Persian style, the plate films) are parked prototypes, kept whole. This file is the map and the rules.
 
 ## Documentation scope
@@ -14,22 +15,27 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
-- **The playground** (`App/TerraIncognita/Playground/`; how to add a prototype: `docs/playground.md`).
-  `PlaygroundRoot` is the app: the globe, the workbench button (top right) and, while a prototype
-  is active, its chip (Open, ✕). `Playground` holds the one active `PrototypeStage`, which owns
-  everything its prototype adds (markers, a style, an overlay, a screen, an invitation) and takes
-  it all away when it ends: one at a time is the workbench's isolation rule. `Catalog.swift` lists
-  the native prototypes, one entry each; web packs (`Prototypes/<id>/`, and remote catalogs) are
-  found by `PackStore` and hosted by `WebPack.swift` (scheme `terra-pack`, bridge
-  `Prototypes/_runtime/terra.js`, runtime 1). `GlobeMarker`s follow the geography on the globe.
-  The workbench's Live line counts stages, markers, globes, films and web views: ending a
-  prototype returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
+- **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
+  workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
+  prototype's doorway on it (hidden at the whole-Earth view; touching one starts it), the workbench
+  button (top right) and, while a prototype is active, its chip (Open, ✕) and its panel. `Playground`
+  holds the one active `PrototypeStage`, which owns everything its prototype adds (markers and
+  sprites, a pack's script, geography and pictures drawn by the globe, a date, words at the foot, a
+  panel, a style, a screen) and takes it all away when it ends: one at a time is the workbench's
+  isolation rule. `Catalog.swift` lists the native prototypes, one entry each; packs
+  (`Prototypes/<id>/`, and remote catalogs) are found by `PackStore`, and their scripts run in
+  JavaScriptCore in `PackScript.swift` (runtime 3, `Prototypes/_runtime/terra.js`; no web view). The
+  globe draws for them: `GeoLayers.swift` (geography, touchable), `GlobeImages.swift` (pictures lying
+  on the globe), `GlobeMarker` sprites (paths, frames, a look per zoom), `PackPanel.swift`. The
+  workbench's Live line counts stages, markers, globes, films and scripts: ending a prototype returns
+  them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
   - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
-    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf`, `-look`/`-film`,
+    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf` (the sea between), `-look`/`-film`,
     `-globeStyle persian` start the matching prototype.
   - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
-    `serve.cjs` previews over a stand-in globe, `check.cjs` checks one in Chromium).
+    `serve.cjs` runs a pack over a stand-in globe in a browser, `check.cjs` checks one headless and
+    screenshots it).
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
@@ -46,15 +52,18 @@ Keep design discussions and plans in that private repository.
     decoded for the plain globe), with its look menu and Back.
   - Debug builds take `-film 21.5` (the film held at that moment, for CI's screenshots).
 - **The globe** (`App/TerraIncognita/Globe/`, the opening view): the whole Earth
-  drawn live, in two styles (the Persian one is the parked `persian` prototype):
-  Wikipedia's location-map colours (WikiProject Maps), a little prettier, and the Persian, the same
-  map in colours and a frame studied from a 1529 Persian manuscript (`Globe.metal`'s `P_` palette).
-  A change of style crossfades.
+  drawn live, in three styles. The ground (`GlobeStyle.base`, the plain globe's since October 28,
+  2026; `Globe.metal`'s `G_` palette): the month's land as NASA's Blue Marble saw it, in a light
+  key, the sea by depth with its floor's relief and the month's usual sea ice, a haze at the limb,
+  no names at the whole Earth and the land's own names (`Globe/regions.json`) before the
+  countries'. Wikipedia's location-map colours (WikiProject Maps), a little prettier: the parked
+  `wikipedia` prototype. The Persian, the same map in colours and a frame studied from a 1529
+  Persian manuscript (`P_`): the parked `persian` prototype. A change of style crossfades.
   - `Globe.metal`: one fragment per pixel inverts the orthographic projection and samples the
-    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; both
-    styles, mixed by the style uniform. `tools/globe/preview.py` is the same, line for line, in
-    numpy (`--style persian`; iPad-sized by default): change both together, and look at the preview
-    before CI.
+    map's distance fields, so coasts, borders and rivers stay a constant width at any zoom; the
+    styles mixed by their uniforms. `tools/globe/preview.py` is the same, line for line, in
+    numpy (`--style persian`, `--style ground --month 7`; iPad-sized by default): change both
+    together, and look at the preview before CI.
   - `GlobeView`: the camera (drag, pinch, fling, double tap; it turns slowly when left alone),
     tapping a country (lit from the country map `ids.png`), the names (pictures with their halos
     drawn in, placed as the camera moves by the design rules below). `GlobeScreen`: its caption (in
@@ -66,20 +75,18 @@ Keep design discussions and plans in that private repository.
     textures are uploaded as decoded, without colour management, which would bend the distances.
     The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
     `tools/globe/ornament.py` (its docstring is their layout; no source image is used), and
-    `type.json` is the type (Design rules).
-  - Debug builds take `-globe-at lon lat zoom` (held there) and `-globe-select <name>`
+    `type.json` is the type (Design rules). The ground's maps (`Globe/ground/`: twelve months'
+    land, their sea ice, the sea floor) and `regions.json` are built by `tools/globe/ground.py`
+    (its docstring is their layout and sources); GlobeView reads them only once the style is chosen.
+  - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
+    (the ground's month)
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
-- **The Aegean leaf** (`Leaf/`, `App/TerraIncognita/Leaf/`): an offline HTML/canvas leaf in an ephemeral
-  WKWebView, the `leaf` prototype (its own screen). The Metal globe and plate player are suspended while it
-  is open. The host supplies system text size, Reduce Motion and scene activity and permits only
-  bundled navigation. `Leaf/SOURCES.md` records the data and schematic qualifications.
-  - `tools/aegean/build.py <cache>` prepares the committed chart from public source rasters and
-    vectors; never hand-edit `Leaf/data/chart.js`. Then run `tools/aegean/paint.cjs` against the local
-    server to prepare both matching engraving images. Runtime uses no fetch, external service or storage.
-  - `node tools/aegean/serve.cjs` previews it locally; `node tools/aegean/check.cjs` exercises the actual
-    browser gestures, camera continuity, keyboard alternatives, stillness and enlarged text.
-    `ci/check_leaf.py` checks bundle completeness and the offline boundary. Native shots use `-leaf`;
-    manual CI can select `leaf_only` to avoid photographing every film and globe style.
+- **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
+  on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass
+  (`SOURCES.md` in the pack). `-leaf` starts it. It is built from the former web leaf in `Leaf/`, which
+  is no longer in the app and stays as its source: `tools/aegean/build.py <cache>` prepares
+  `Leaf/data/chart.js` (never hand-edit), `tools/aegean/paint.cjs` its engravings, and
+  `tools/aegean/pack.cjs` with `pack_engraving.py` the pack from them.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
   `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
@@ -121,8 +128,10 @@ Keep design discussions and plans in that private repository.
   suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
   are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
 - **The other studies**: the Indian Ocean encounter (`App/TerraIncognita/Experience/`, `ocean`: a seed
-  off Madagascar and an invitation), the river study (`Water/`, `App/TerraIncognita/Water/`, `water`;
-  `docs/water-engineering.md`).
+  off Madagascar and an invitation), the river study **A gathering of
+  water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each
+  traced to the sea), built by `tools/water/build_pack.py` from the former web study's data in
+  `Water/` (no longer in the app; `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
   prototypes in succession with the live counts back to the plain globe's, parked work, the bundled
@@ -163,9 +172,9 @@ Keep design discussions and plans in that private repository.
     Maestro's MCP server and reports (`refs/qa-runs/<run id>`); `ci/qa/README.md` says how. It
     and `ci/qa/` are generated from the copy all the apps share (painting-company row 152):
     change them there and sync, never here.
-  - `packs.yml` (Linux only): a push that changes only web packs skips the macOS workflow; this one
-    validates them and, once R2 is configured (repository secrets), publishes changed packs as new
-    revisions (`[no-publish]` holds it back). Nothing is published without those secrets.
+  - `packs.yml` (Linux only): a push that changes only packs skips the macOS workflow; this one
+    validates them and, on `main`, publishes changed packs as new revisions to the `packs` branch,
+    which the app reads through raw.githubusercontent.com (`[no-publish]` holds it back).
 
 ## The runtime: one library that grows
 
@@ -194,11 +203,9 @@ and what every experience relies on and none owns. When in doubt, it's runtime.
   text size, Reduce Motion).
 - **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
   date and touches rather than taking them, and leaves nothing behind when its experience ends.
-- **What runs in a web view today moves onto the runtime:** the runtime-2 packs' logic and the
-  delivery check with runtime 3, then Clouds' shader to Metal, the Aegean leaf and the river study
-  rebuilt natively (order and status: painting-company row 154). Each keeps opening as it does
-  until it has moved; the web host goes once nothing uses it (the owner's call). The native prototypes move onto the
-  runtime's tools when they are next reworked.
+- **Runtime 3 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
+  them. There are no web views in the app: the Aegean leaf and the river study are packs now. The
+  native prototypes move onto the runtime's tools when they are next reworked.
 
 ## Design rules
 
@@ -274,7 +281,7 @@ the caption's headpiece, and the one chosen country, gilded as the cartouche. Th
 - No network, with one deliberate exception: the workbench fetches prototype packs from its
   configured sources while it is open, and when a pack is opened (HTTPS, plain GETs, an ephemeral
   session, hashes checked). The globe and every bundled experience load from the bundle, and a
-  pack's page can reach nothing outside its pack. No analytics, no accounts.
+  pack's script can reach nothing outside its pack. No analytics, no accounts.
 - Prototypes are additive: a new one adds a folder and an entry, and changes no other. Park, don't
   delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before

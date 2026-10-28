@@ -1,4 +1,6 @@
 {
   "format": 1,
-  "sources": []
+  "sources": [
+    { "name": "Packs branch", "url": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/packs/catalog.json" }
+  ]
 }

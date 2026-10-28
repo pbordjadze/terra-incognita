@@ -7,11 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-        0D0000000000000000000001 /* Water in Resources */ = {isa = PBXBuildFile; fileRef = 0D0000000000000000000002 /* Water */; };
         0E0000000000000000000001 /* Prototypes in Resources */ = {isa = PBXBuildFile; fileRef = 0E0000000000000000000002 /* Prototypes */; };
 		0B00000000000000000000F3 /* Atlas in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B06 /* Atlas */; };
 		0B00000000000000000000F4 /* Globe in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B07 /* Globe */; };
-		0B00000000000000000000F5 /* Leaf in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B08 /* Leaf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,14 +17,12 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-        0D0000000000000000000002 /* Water */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Water; path = ../Water; sourceTree = "<group>"; };
         0E0000000000000000000002 /* Prototypes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Prototypes; path = ../Prototypes; sourceTree = "<group>"; };
         0C0000000000000000000002 /* TerraIncognitaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TerraIncognitaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B01 /* TerraIncognita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TerraIncognita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		0B0000000000000000000B06 /* Atlas */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Atlas; path = ../Atlas; sourceTree = "<group>"; };
 		0B0000000000000000000B07 /* Globe */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Globe; path = ../Globe; sourceTree = "<group>"; };
-		0B0000000000000000000B08 /* Leaf */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Leaf; path = ../Leaf; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -57,8 +53,6 @@
                 0C0000000000000000000003 /* TerraIncognitaUITests */,
 				0B0000000000000000000B06 /* Atlas */,
 				0B0000000000000000000B07 /* Globe */,
-				0B0000000000000000000B08 /* Leaf */,
-                0D0000000000000000000002 /* Water */,
                 0E0000000000000000000002 /* Prototypes */,
 				0B0000000000000000000004 /* Config */,
 				0B0000000000000000000003 /* Products */,
@@ -160,8 +154,6 @@
 			files = (
 				0B00000000000000000000F3 /* Atlas in Resources */,
 				0B00000000000000000000F4 /* Globe in Resources */,
-				0B00000000000000000000F5 /* Leaf in Resources */,
-                0D0000000000000000000001 /* Water in Resources */,
                 0E0000000000000000000001 /* Prototypes in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

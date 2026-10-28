@@ -7,7 +7,9 @@ globe.json has every field the app's decoder requires (App/TerraIncognita/Globe/
 missing one leaves the globe blank), the three maps are the sizes and kinds the shader and the tap
 lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
 (RGBA: the band 1152 x 256, the braid 1024 x 256, the finial 256 x 256, the rosette 96 x 96, the
-caption's headpiece 2048 x 256), no country index in globe.json exceeds what a grey byte holds, the fonts are there
+caption's headpiece 2048 x 256), the ground style's maps are all there (tools/globe/ground.py: twelve
+months' land as JPEG 4096 x 2048, their sea ice and the sea floor as RGB PNGs 1440 x 720) and its
+names (regions.json) have what the decoder requires, no country index in globe.json exceeds what a grey byte holds, the fonts are there
 with their licences, and the type (type.json) keeps the design rules: bundled fonts, no name under
 the smallest size, every ink at least the set contrast against its halo or ground. Reads PNG
 headers itself (no image library on the runner).
@@ -46,6 +48,38 @@ for name, (w, h0, kind) in KINDS.items():
         err(f'{name}: {h[0]}x{h[1]}, {h[2]}-bit, colour type {h[3]}; expected {w}x{h0}, 8-bit, colour type {kind}')
 
 
+# the ground style's maps (tools/globe/ground.py): the land a JPEG of the globe's size, its ice and the
+# sea floor RGB PNGs (colour type 2)
+def jpeg(path):
+    """(width, height, components) from a JPEG's first frame header."""
+    with open(path, 'rb') as f:
+        b = f.read()
+    if b[:2] != b'\xff\xd8':
+        return None
+    i = 2
+    while i + 9 < len(b):
+        if b[i] != 0xFF:
+            return None
+        marker, length = b[i + 1], struct.unpack('>H', b[i + 2:i + 4])[0]
+        if marker in (0xC0, 0xC1, 0xC2):
+            h, w, n = struct.unpack('>HHB', b[i + 5:i + 10])
+            return w, h, n
+        i += 2 + length
+    return None
+
+
+for m in range(1, 13):
+    p = os.path.join(root, 'ground', f'{m:02d}.jpg')
+    j = jpeg(p) if os.path.isfile(p) else None
+    if j != (4096, 2048, 3):
+        err(f'ground/{m:02d}.jpg: {"missing or not a JPEG" if j is None else j}; expected 4096 x 2048, RGB')
+for name in [f'ice-{m:02d}.png' for m in range(1, 13)] + ['floor.png']:
+    p = os.path.join(root, 'ground', name)
+    h = png(p) if os.path.isfile(p) else None
+    if h != (1440, 720, 8, 2):
+        err(f'ground/{name}: {"missing or not a PNG" if h is None else h}; expected 1440 x 720, 8-bit RGB')
+
+
 def no_nan(name):
     raise ValueError(f'{name} (Swift\'s JSONDecoder refuses it)')
 
@@ -80,6 +114,15 @@ for i, s in enumerate(data.get('seas') or []):
     need(f'sea {i}', s, {'n': str, 'r': NUM, 'ocean': bool, 'c': list})
 for i, c in enumerate(data.get('capitals') or []):
     need(f'capital {i}', c, {'n': str, 'c': list})
+try:
+    regions = json.load(open(os.path.join(root, 'regions.json')), parse_constant=no_nan).get('regions')
+except (OSError, ValueError, AttributeError) as e:
+    err(f'regions.json: {e}')
+    regions = []
+if not isinstance(regions, list) or not regions:
+    err('regions.json: no regions')
+for i, r in enumerate(regions or []):
+    need(f'region {i}', r, {'n': str, 'k': str, 'r': NUM, 'c': list})
 if len(data.get('countries') or []) > 255:
     err('more countries than a grey byte can index')
 
@@ -150,14 +193,14 @@ def typed(where, obj, fields):
 
 NAMES = ('ocean', 'sea', 'country1', 'country2', 'country3', 'capital', 'selected')
 styles = t.get('styles') or {}
-for sname in ('wikipedia', 'persian'):                       # (GlobeStyle's cases)
+for sname in ('wikipedia', 'persian', 'ground'):             # (GlobeStyle's cases)
     if sname not in styles:
         err(f'type.json: no style {sname}')
 for sname, st in styles.items():
     if not typed(f'type.json {sname}', st, {'names': dict, 'caption': dict, 'captionGround': str}):
         continue
     names = st['names']
-    for n in NAMES:
+    for n in NAMES + (('region',) if sname == 'ground' else ()):
         f = names.get(n)
         if not typed(f'type.json {sname} {n}', f, {'font': str, 'size': NUM, 'tracking': NUM, 'ink': str, 'halo': str}):
             continue

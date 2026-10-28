@@ -1,0 +1,13 @@
+{
+  "id": "gathering-of-water",
+  "title": "A gathering of water",
+  "summary": "The rivers of South America on the globe: touch one to follow its water to the coast and see the tributaries that gather into it.",
+  "runtime": 3,
+  "presentation": "globe",
+  "scripts": ["core.js", "main.js"],
+  "anchor": { "lon": -60, "lat": -18, "zoom": 1.9 },
+  "doorway": { "lon": -60, "lat": -3.1, "label": "A gathering of water: the rivers of South America",
+               "look": { "image": "doorway.png", "size": [32, 32], "minZoom": 1.5 } },
+  "taps": true,
+  "shelf": "current"
+}
