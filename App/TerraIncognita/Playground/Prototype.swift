@@ -128,6 +128,13 @@ final class PrototypeStage {
         globe.holdsStill = true
     }
 
+    /// The parked still sea: the globe's sea hidden until the prototype ends.
+    func stillSea() {
+        guard !ended, let globe else { return }
+        globeChanged = true
+        globe.seaHidden = true
+    }
+
     /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
     func describe(title: String, text: String) {
         guard !ended, caption == nil else { return }
@@ -190,12 +197,12 @@ final class PrototypeStage {
 
     func acceptInvitation() { invitationAction?() }
 
-    /// What the chip's Open does: the first marker that opens something, else the invitation, else a
-    /// globe pack's own page.
+    /// What the chip's Open does: a globe pack's own page, else the first marker that opens something,
+    /// else the invitation. (A pack's touchable sprites answer the reader's touch, not the chip.)
     func open() {
-        if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() }
-        else if let invitationAction { invitationAction() }
-        else { openAction?() }
+        if let openAction { openAction() }
+        else if let open = markers.first(where: { $0.onOpen != nil })?.onOpen { open() }
+        else { invitationAction?() }
     }
 
     /// A pack on the globe (runtime 3): its anchor, then its scripts, whose requests become the globe's
@@ -481,6 +488,7 @@ final class PrototypeStage {
         if globeChanged {
             globe?.historicalReference = false
             globe?.holdsStill = false
+            globe?.seaHidden = false
             globe?.dragScheme = .touchables
             globe?.zoomLimit = 8
             globeChanged = false

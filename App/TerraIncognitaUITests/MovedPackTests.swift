@@ -7,14 +7,15 @@ final class MovedPackTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
     @MainActor func testTheSeaBetweenLiesOnTheGlobe() {
-        checkPack("sea-between", shots: "60")
+        checkPack("sea-between", about: "The sea between", shots: "60")
     }
 
     @MainActor func testAGatheringOfWaterLiesOnTheGlobe() {
-        checkPack("gathering-of-water", shots: "65")
+        checkPack("gathering-of-water", about: "A gathering of water", shots: "65")
     }
 
-    @MainActor private func checkPack(_ id: String, shots: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// `about`: the title of the page the pack's Open shows (not one of its notes, which its touchable sprites open).
+    @MainActor private func checkPack(_ id: String, about: String, shots: String, file: StaticString = #filePath, line: UInt = #line) {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset"]
         app.launch()
@@ -36,8 +37,9 @@ final class MovedPackTests: XCTestCase {
         let open = app.buttons["openActivePrototype"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 10), "\(id) offers Open", file: file, line: line)
         open.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["packPanelTitle"].firstMatch.waitForExistence(timeout: 15),
-                      "\(id)'s Open shows its panel", file: file, line: line)
+        let title = app.descendants(matching: .any)["packPanelTitle"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 15), "\(id)'s Open shows its panel", file: file, line: line)
+        XCTAssertEqual(title.label, about, "\(id)'s Open shows its own page", file: file, line: line)
         attach("\(shots)-\(id)-panel", in: app)
         app.buttons["packPanelClose"].firstMatch.tap()
         XCTAssertTrue(app.descendants(matching: .any)["packPanel"].firstMatch.waitForNonExistence(timeout: 10), file: file, line: line)

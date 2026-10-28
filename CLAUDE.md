@@ -122,6 +122,21 @@ Keep design discussions and plans in that private repository.
   `tools/clouds/build.py` makes `CloudsSky.png` and `CloudsLand.png` for both; never hand-edit them;
   `tools/clouds/SOURCES.md` separates what is measured from what is drawn. Debug: `-clouds-days <d>`
   holds the drift, `-clouds-month <1-12>` the month.
+- **The ocean** (`App/TerraIncognita/Ocean/`), part of the stage: how the sea's surface usually
+  moves in the globe's month, measured by drifting buoys (the NOAA Global Drifter Program's
+  climatology, CC BY 4.0), drawn as the streamlines of its stream function (the water's paths,
+  closer where it runs faster) with light running along them the way it goes, and close in the
+  glitter of the light on the water and the surf at the coasts; a tap on the water rings it.
+  `OceanLayer` is the globe's `sea`, a Metal layer of its own over the globe's drawing and under the
+  sky (and so under everything the sky is under), drawn as the globe ticks (thirty times a second
+  while the camera rests); it reads the globe's own coast and the month's ice (`GlobeView.seaMaps`),
+  so `Globe.metal` is untouched. It thins while an experience runs, goes for the authored sequences
+  and the Persian page, and the parked `still-sea` prototype hides it. `Ocean.metal` and its web twin
+  `tools/ocean/web/shader.js` are the same line for line: change both together (the twin is the
+  desktop preview: `tools/ocean/look.cjs` draws it over the globe's preview). `tools/ocean/build.py`
+  makes `OceanCurrents.png` and `OceanStream.png` for both (its docstring is their layout); never
+  hand-edit them; `tools/ocean/SOURCES.md` separates what is measured from what is drawn. Debug:
+  `-ocean-time <s>` holds the drawn motion, `-ocean-month <1-12>` the month.
 - **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
   Al-Hitan opens an authored sequence on the playground's one globe, as a lens like the camelid's
   (`WhaleCanvas` over the globe, which answers to `whaleGlobe` meanwhile, `WhaleExperience` the

@@ -61,8 +61,28 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         didSet {
             oldValue?.stop()
             oldValue?.layer.removeFromSuperlayer()
-            if let sky { layer.insertSublayer(sky.layer, at: 0) }
+            if let sky {
+                if let sea { layer.insertSublayer(sky.layer, above: sea.layer) } else { layer.insertSublayer(sky.layer, at: 0) }
+            }
         }
+    }
+    /// The stage's sea (Ocean/): over the globe's drawing and under the sky and everything else on
+    /// it, drawn in step with the camera each frame. Set once, by the screen that makes the opening
+    /// globe. A tap on the water rings it.
+    var sea: OceanLayer? {
+        didSet {
+            oldValue?.stop()
+            oldValue?.layer.removeFromSuperlayer()
+            if let sea { layer.insertSublayer(sea.layer, at: 0) }
+        }
+    }
+    /// The parked still sea: the sea's layer fades out while it is set.
+    var seaHidden = false
+    /// The globe's own maps for the sea drawn over it (OceanLayer): the coast's distances and the
+    /// month's ice (an empty map while the ground's isn't read).
+    var seaMaps: (coast: MTLTexture, ice: MTLTexture)? {
+        guard let geo, let empty = ice ?? blank else { return nil }
+        return (geo, empty)
     }
     /// A tap on the globe, offered first to the active prototype (a web overlay that asked for taps):
     /// true when it took the tap, and no country is chosen. `place` is nil off the globe.
@@ -182,8 +202,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         overlay.frame = bounds
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         insertSubview(overlay, at: 0)
-        // (a subview's index counts the sky's layer too, so at 0 it would land under the clouds)
-        if let sky { layer.insertSublayer(overlay.layer, above: sky.layer) }
+        // (a subview's index counts the sky's and the sea's layers too, so at 0 it would land under them)
+        if let top = sky?.layer ?? sea?.layer { layer.insertSublayer(overlay.layer, above: top) }
     }
 
     /// An authored experience's canvas (a lens, `PrototypeStage.openLens`): above everything on the
@@ -922,6 +942,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     @objc private func tap(_ g: UITapGestureRecognizer) {
         touched()
         let p = g.location(in: self)
+        // the water rings where it is touched, whatever else the touch does
+        if let w = unproject(p), data?.country(lon: w.lon, lat: w.lat) == nil { sea?.touch(lon: w.lon, lat: w.lat) }
         if let onWorldTap, onWorldTap(p, unproject(p)) { return }
         guard !historicalReference else { return }
         guard let k = country(near: g.location(in: self)), k != selected else {
@@ -1140,6 +1162,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             }
         }
         if shownChanged { exposeAtlasObjects() }
+        sea?.frame(of: self)
         sky?.frame(of: self)
         onFrame?()
         if historicalReference { labelsFading = false }
