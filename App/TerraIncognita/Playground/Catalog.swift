@@ -15,7 +15,7 @@ enum Catalog {
 
     static let native: [Prototype] = [camelid, whale, ocean, persian, wikipedia, film]
 
-    /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`).
+    /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`), on the globe itself.
     static let camelid = Prototype(
         id: "camelid", title: "Camel and Llama",
         summary: "An illustrated lineage of the camels, from North America to Arabia and the Andes. Tap the dromedary.",
@@ -26,12 +26,13 @@ enum Catalog {
         guard let image = CamelidArt.image(.dromedary) else { return }
         stage.place(GlobeMarker(id: "camelidAnimal", lon: 46, lat: 24, look: .picture(image), size: CGSize(width: 76, height: 64),
                                 label: "Dromedary camel", hint: "Inspect this animal", breathes: true) { [weak stage] in
-            stage?.present("camelid") { CamelidExperience(style: .wikipedia) }
+            stage?.openLens { CamelidExperience.lens(on: $0, close: $1) }
         })
     }
 
-    /// A fossil at Wadi Al-Hitan opens the visit to its ancient sea (`Whale/`). The point is UNESCO's
-    /// property reference, locating the fossil-bearing region, not an excavation; it shows from 2×.
+    /// A fossil at Wadi Al-Hitan opens the visit to its ancient sea (`Whale/`), on the globe itself. The
+    /// point is UNESCO's property reference, locating the fossil-bearing region, not an excavation; it
+    /// shows from 2×.
     static let whale = Prototype(
         id: "whale", title: "Whale and Desert",
         summary: "A whale fossil in Egypt's Western Desert opens a visit to the shallow sea it swam in. Tap the fossil.",
@@ -42,7 +43,7 @@ enum Catalog {
         guard let image = WhaleArt.image(.fossil) else { return }
         stage.place(GlobeMarker(id: "whaleFossil", lon: 30.18333, lat: 29.33333, look: .picture(image), size: CGSize(width: 56, height: 44),
                                 label: "Whale fossil, Wadi Al-Hitan", hint: "Inspect this illustrated fossil", minZoom: 2) { [weak stage] in
-            stage?.present("whale") { WhaleExperience(style: .wikipedia) }
+            stage?.openLens { WhaleExperience.lens(on: $0, close: $1) }
         })
     }
 

@@ -86,8 +86,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var authoredMode = false {
         didSet {
             guard authoredMode != oldValue else { return }
-            if authoredMode { flight = nil; spin = .zero }
-            for m in markers { m.view.isHidden = authoredMode }
+            // (back from it, the next frame shows each marker again where its zoom and place allow)
+            if authoredMode {
+                flight = nil
+                spin = .zero
+                for m in markers { m.view.isHidden = true }
+                exposeAtlasObjects()
+            }
             needsDraw = true
         }
     }
@@ -109,6 +114,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     var authoredCamera: GlobeCamera { GlobeCamera(lon: lon0, lat: lat0, zoom: zoom) }
+
+    /// Where the camera is, or where its flight is taking it: where the reader will have it.
+    var restingCamera: GlobeCamera {
+        guard let f = flight else { return authoredCamera }
+        return GlobeCamera(lon: f.to.lon, lat: f.to.lat, zoom: f.to.zoom)
+    }
 
     /// The camera and where the globe's disc lies in this view, for anything drawn in step with it
     /// (terra.js projects with the same numbers).
@@ -175,6 +186,22 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if let sky { layer.insertSublayer(overlay.layer, above: sky.layer) }
     }
 
+    /// An authored experience's canvas (a lens, `PrototypeStage.openLens`): above everything on the
+    /// globe, its names too, taking no touches (they reach the globe beneath), its accessibility
+    /// elements before the map's own.
+    func addLens(_ canvas: UIView) {
+        canvas.isUserInteractionEnabled = false
+        canvas.frame = bounds
+        canvas.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(canvas)
+        accessibleOverlays.append(canvas)
+    }
+
+    func removeLens(_ canvas: UIView) {
+        canvas.removeFromSuperview()
+        accessibleOverlays.removeAll { $0 === canvas }
+    }
+
     /// Views above the globe whose own accessibility elements VoiceOver should reach (a pack's
     /// touchable geography); the stage adds and removes them.
     var accessibleOverlays: [UIView] = [] { didSet { exposeAtlasObjects() } }
@@ -214,21 +241,45 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             return actions
         }
         // Small objects precede the full-size map element, so touch exploration can reach them
-        // where their frames overlap the map's direct-interaction surface.
-        var objects: [Any] = markers.map(\.view)
+        // where their frames overlap the map's direct-interaction surface. Only those drawn now: one
+        // behind the globe, too small yet or resting is reached by its Go to action instead.
+        var objects: [Any] = markers.filter { !$0.view.isHidden }.map(\.view)
         objects.append(contentsOf: accessibleOverlays as [Any])
         objects.append(element)
         accessibilityElements = objects
     }
 
     /// Name the map's direct-interaction accessibility element without hiding its small objects.
-    func setAtlasAccessibilityIdentifier(_ identifier: String) {
+    func setAtlasAccessibilityIdentifier(_ identifier: String?) {
         accessibilityIdentifier = identifier
         globeAccessibilityElement?.accessibilityIdentifier = identifier
     }
 
+    /// What VoiceOver reads for the map, on the globe and on its own element once it is a container:
+    /// an authored experience describes the globe while it borrows it, and gives back its words after.
+    var atlasLabel: String? {
+        get { accessibilityLabel }
+        set {
+            accessibilityLabel = newValue
+            globeAccessibilityElement?.accessibilityLabel = newValue
+        }
+    }
+    var atlasValue: String? {
+        get { accessibilityValue }
+        set {
+            accessibilityValue = newValue
+            globeAccessibilityElement?.accessibilityValue = newValue
+        }
+    }
+
     /// The country in the locator's red, if any.
     var selectedCountry: GlobeData.Country? { selected.flatMap { data?.countries[$0] } }
+    /// The chosen country by its place in the globe's data (nil: none), chosen at once: an authored
+    /// experience begins with none, and the reader's comes back when it ends.
+    var selectedIndex: Int? {
+        get { selected }
+        set { if newValue != selected { select(newValue, animated: false) } }
+    }
     /// Parts of the screen covered by something else (the caption, the buttons), in this view's
     /// points: no name is placed under them.
     var keepClear: [CGRect] = [] {
@@ -484,7 +535,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var blank: MTLTexture?
 
     /// Reads the ground style's maps for the month, if not read already (only once the style is
-    /// chosen: the globes a prototype makes for itself in Wikipedia's style never read them).
+    /// chosen).
     private func loadGround() {
         guard style == .ground || groundMix > 0, groundMonth != month, let device, let queue else { return }
         let folder = GlobeData.root.appending(path: "ground", directoryHint: .isDirectory)
@@ -911,6 +962,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                         start: CACurrentMediaTime(), duration: duration)
     }
 
+    /// No country chosen: a prototype starts on the globe as it is, without the last one lit.
+    func clearSelection() {
+        if selected != nil { select(nil, animated: true) }
+    }
+
     private func select(_ k: Int?, animated: Bool) {
         let still = !animated || UIAccessibility.isReduceMotionEnabled
         // straight from one country to another, the new one fades up from nothing too
@@ -1069,19 +1125,21 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         var animating = false
+        var shownChanged = false
         for m in markers {
             m.advance(now: now, zoom: zoom, reading: reading, still: still) { lon, lat in project(lon: lon, lat: lat).point }
             let p = project(lon: m.lon, lat: m.lat)
             m.view.center = p.point
             let hidden = authoredMode || m.resting || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
                 || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
-            if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true }
+            if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true; shownChanged = true }
             if !hidden, m.animates, !still { animating = true }
             // A tiny weight/breath shift belongs to the marker's layer; it never requests a map draw.
             if m.breathes, let image = m.view.imageView {
                 image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
             }
         }
+        if shownChanged { exposeAtlasObjects() }
         sky?.frame(of: self)
         onFrame?()
         if historicalReference { labelsFading = false }

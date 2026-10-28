@@ -95,7 +95,7 @@ final class GlobeMarker {
     /// VoiceOver's name for opening it directly from the map (beside "Go to …").
     let actionName: String?
     let onOpen: (() -> Void)?
-    let view = UIButton(type: .custom)
+    let view: UIButton = MarkerButton(type: .custom)
     private let live: LiveCount.Token?
 
     // sprites
@@ -221,5 +221,13 @@ final class GlobeMarker {
         } else {
             resting = false
         }
+    }
+}
+
+/// A marker's button: touchable within a fingertip (44 points) however small it is drawn.
+private final class MarkerButton: UIButton {
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        let dx = max(0, 44 - bounds.width) / 2, dy = max(0, 44 - bounds.height) / 2
+        return bounds.insetBy(dx: -dx, dy: -dy).contains(point)
     }
 }

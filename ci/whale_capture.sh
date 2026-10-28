@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Actual Debug-app simulator output, including the intentional quiet map at the large time jump.
+# Actual Debug-app simulator output (the visit on the playground's one globe, its chrome over it),
+# including the intentional quiet map at the large time jump.
 # Usage: ci/whale_capture.sh <TerraIncognita.app> <outdir> <udid>
 # Set WHALE_VIDEO=1 to record the full native sequence. This does not measure device performance.
 set -euo pipefail
@@ -51,12 +52,13 @@ def launch_ready(*arguments):
         try:
             if ready_marker.read_text() == token:
                 log('whale first frame submitted: ' + token)
-                time.sleep(1)
+                # (and the app's launch veil, 1.6 seconds from its first appearance, has lifted)
+                time.sleep(2)
                 return token
         except FileNotFoundError:
             pass
         time.sleep(0.25)
-    raise RuntimeError('Whale did not submit its first native frame within 90 seconds; readiness token ' + token)
+    raise RuntimeError('Whale did not submit its first frame on the globe within 90 seconds; readiness token ' + token)
 
 recording = None
 authoring_clock_completed = None
@@ -69,7 +71,8 @@ try:
         raise RuntimeError('Simulator did not return an accessible app data container')
     ready_marker = data_container / 'tmp' / 'whale-capture-ready.txt'
     complete_marker = data_container / 'tmp' / 'whale-capture-complete.txt'
-    run('xcrun', 'simctl', 'launch', udid, bundle, '-globe', '-globeStyle', 'persian', timeout=180)
+    # (a plain launch: the sequence lies on the playground's one globe, in its own style)
+    run('xcrun', 'simctl', 'launch', udid, bundle, timeout=180)
     time.sleep(12)
     frames = []
     for label, elapsed in [('rewind', 4), ('sea', 18), ('living', 34),
@@ -128,7 +131,7 @@ try:
         'authoring_clock_completed': authoring_clock_completed,
         'story_duration_seconds': 82,
         'frames': frames,
-        'capture_readiness': 'Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.',
+        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 2 seconds for the compositor and the launch veil; not a GPU completion or performance measurement.',
         'capture_completion': 'Full video waits for this launch UUID to be acknowledged after the native authored clock reaches 82 seconds and playback pauses, then records 4 more host seconds. Held screenshots do not wait for clock completion. This does not measure frame rate or GPU completion.',
         'video': 'native-playback.mp4' if os.environ.get('WHALE_VIDEO') == '1' else None,
         'source_commit': os.environ.get('GITHUB_SHA'),

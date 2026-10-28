@@ -48,6 +48,7 @@ constant float3 G_COAST = float3(0x5E, 0x9C, 0xC0) / 255;
 constant float3 G_RIVER = float3(0x6F, 0xAE, 0xD3) / 255;
 constant float3 G_ICE = float3(0xF1, 0xF5, 0xF8) / 255;
 constant float3 G_ATMOS = float3(0xDC, 0xEE, 0xFB) / 255;
+constant float3 G_CHOSEN = float3(0x9E, 0x1F, 0x2C) / 255;     // the chosen country's edge: the locator's red, deeper
 
 // The Persian style, every colour traced (CLAUDE.md › The Persian style's sources). The manuscript's
 // colours are sampled from LACMA's scans of the Khamsa of Nizami (M.85.237.16, Tabriz, 1529),
@@ -346,6 +347,9 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
             gland = mix(gland, G_RIVER, 0.7 * stroke(river, 0.6 * scale, fwRiver) * smoothstep(1.4, 2.4, k) * riverOn);
             gland = mix(gland, LOCATOR * (1 + 0.12 * hill), 0.75 * m);
             gland = mix(gland, BORDER, 0.55 * smoothstep(2.0, 3.2, zoom) * stroke(border, 0.6 * scale, fwBorder) * borderOn);
+            // the chosen country's land borders a firm line, over its fill's edge (the country map's
+            // texels show as steps close in where the pencil borders are too faint to cover them)
+            gland = mix(gland, G_CHOSEN, stroke(border, 1.6 * scale, fwBorder) * borderOn * (m > 0.04 * highlight ? highlight : 0.0));
             // the sea: shelves pale, the open ocean, the abyss, the floor's relief shaded faintly
             float depthM = -min(height, 0.0) * 87;
             float3 gsea = mix(G_SHELF, G_OPEN, smoothstep(60.0, 900.0, depthM));

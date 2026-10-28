@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Captures actual Debug-app simulator output. No device-performance inference is made.
+# Captures actual Debug-app simulator output: the sequence on the playground's one globe, its chrome
+# over it. No device-performance inference is made.
 # Usage: ci/camelid_capture.sh <TerraIncognita.app> <outdir> <udid>
 # Set CAMELID_VIDEO=1 for a full, uninterrupted native playback recording.
 set -euo pipefail
@@ -50,13 +51,14 @@ def launch_ready(*arguments):
                 print(message, flush=True)
                 with (out / 'capture-commands.log').open('a') as log:
                     log.write(message + '\n')
-                # Allow the compositor one brief settling interval after native submission.
-                time.sleep(1)
+                # Allow the compositor a brief settling interval after native submission, and the
+                # app's launch veil (1.6 seconds from its first appearance) time to lift.
+                time.sleep(2)
                 return
         except FileNotFoundError:
             pass
         time.sleep(0.25)
-    raise RuntimeError('Camelid did not submit its first native frame within 90 seconds; readiness token ' + token)
+    raise RuntimeError('Camelid did not submit its first frame on the globe within 90 seconds; readiness token ' + token)
 
 recording = None
 try:
@@ -68,7 +70,8 @@ try:
         raise RuntimeError('Simulator did not return an accessible app data container')
     ready_marker = data_container / 'tmp' / 'camelid-capture-ready.txt'
     # Match the established sim_shots.sh budgets while a cold runtime is still settling.
-    run('xcrun', 'simctl', 'launch', udid, bundle, '-globe', '-globeStyle', 'persian', timeout=180)
+    # (a plain launch: the sequence lies on the playground's one globe, in its own style)
+    run('xcrun', 'simctl', 'launch', udid, bundle, timeout=180)
     time.sleep(12)
     frames = []
     for label, elapsed in [('rewind', 4), ('origin', 17), ('branches', 32),
@@ -102,7 +105,7 @@ try:
         'real_device_test': False,
         'measured_frame_rate': None,
         'frames': frames,
-        'capture_readiness': 'Unique app acknowledgement after first native globe frame submission, then 1 second compositor settling; not a GPU completion or performance measurement.',
+        'capture_readiness': 'Unique app acknowledgement after the playground globe submits its first frame with the sequence composed on it, then 2 seconds for the compositor and the launch veil; not a GPU completion or performance measurement.',
         'video': 'native-playback.mp4' if os.environ.get('CAMELID_VIDEO') == '1' else None,
         'note': 'Screenshots use held story times. Video runs the actual native guided clock.'
     }, indent=2) + '\n')

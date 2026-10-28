@@ -82,8 +82,12 @@ something the system has):
 
 A native prototype: its code in its own folder `App/TerraIncognita/<Name>/`, one entry in
 `Playground/Catalog.swift` (an id, a title, a one-line summary, an anchor, a doorway, and what
-`start` does with the stage), its screen closed with `@Environment(\.dismiss)`, its timers stopped
-when its views go away.
+`start` does with the stage), its timers stopped when its views go away. An experience on the globe
+opens as a lens (`stage.openLens`, as the camelid and whale sequences do): its canvas, a view the
+stage lays over the one globe, sets its hooks in `attach` and drives the globe's authored camera;
+its chrome lies over the playground and closes it through the `close` it is given; the stage puts
+back everything it set on the globe. It never makes a globe of its own. Only an experience with a map
+of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
 
 ## Update, compare, park, remove
 

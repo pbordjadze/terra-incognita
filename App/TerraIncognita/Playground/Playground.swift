@@ -93,12 +93,16 @@ final class Playground {
         }
         whenGlobeReady { [self] in
             end()
+            globe?.clearSelection()
             let stage = PrototypeStage(prototype: prototype, playground: self)
             self.stage = stage
             recent = id
             problem = nil
-            if let anchor = prototype.anchor { stage.fly(to: anchor) }
+            // (held where it flew, so its subject isn't carried off by the idle turn)
+            if let anchor = prototype.anchor { stage.fly(to: anchor); stage.holdStill() }
             prototype.start(stage)
+            // a native prototype on the globe says at the foot what it is and what to touch
+            if prototype.made == .native, prototype.doorway != nil { stage.describe(title: prototype.title, text: prototype.summary) }
             refreshDoorways()
         }
     }

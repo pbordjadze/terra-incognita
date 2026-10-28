@@ -1,12 +1,15 @@
 import SwiftUI
+import UIKit
 
-/// A voluntary visit to one place's ancient marine setting, on the atlas the reader already knows.
+/// A voluntary visit to one place's ancient marine setting, on the atlas the reader already knows: it
+/// composes on the playground's one globe (`WhaleCanvas`), and this chrome lies over it.
 struct WhaleExperience: View {
-    let style: GlobeStyle
-    @Environment(\.dismiss) private var dismiss
+    @Bindable var story: WhaleStory
+    let canvas: WhaleCanvas
+    /// Back to the atlas: the stage closes the lens and gives the globe back as it was.
+    let close: () -> Void
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @State private var story = WhaleStory()
     @State private var headerFrame = CGRect.zero
     @State private var transportFrame = CGRect.zero
     private let ink = Color(red: 0.20, green: 0.18, blue: 0.15)
@@ -21,16 +24,20 @@ struct WhaleExperience: View {
         #endif
     }
 
+    /// The visit on the globe, made for it, and its chrome (`PrototypeStage.openLens`).
+    static func lens(on globe: GlobeView, close: @escaping () -> Void) -> PlaygroundLens {
+        let story = WhaleStory()
+        let canvas = WhaleCanvas(story: story, globe: globe)
+        return PlaygroundLens(id: "whale", canvas: canvas) {
+            AnyView(WhaleExperience(story: story, canvas: canvas, close: close))
+        }
+    }
+
     var body: some View {
+        // (the globe beneath is the playground's: the empty middle leaves it to the reader's hands)
         GeometryReader { viewport in
             let width = max(viewport.size.width, 1)
             ZStack {
-                paper.ignoresSafeArea()
-                WhaleCanvasView(story: story, style: style,
-                                active: scenePhase == .active && story.reading == nil,
-                                reduceMotion: reduceMotion,
-                                keepClear: [headerFrame, transportFrame].filter { !$0.isEmpty })
-                    .ignoresSafeArea()
                 VStack(spacing: 0) {
                     header(width: width)
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { headerFrame = $0 }
@@ -55,7 +62,10 @@ struct WhaleExperience: View {
                 .preferredColorScheme(.light)
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { story.pause() } }
-        .onDisappear { story.pause(); story.canvas?.setActive(false) }
+        .onChange(of: scenePhase == .active && story.reading == nil, initial: true) { _, active in canvas.setActive(active) }
+        .onChange(of: reduceMotion, initial: true) { _, reduced in canvas.reduceMotion = reduced }
+        .onChange(of: [headerFrame, transportFrame], initial: true) { _, frames in canvas.setKeepClear(frames.filter { !$0.isEmpty }) }
+        .onDisappear { story.pause(); canvas.setActive(false) }
         .statusBarHidden()
     }
 
@@ -63,7 +73,7 @@ struct WhaleExperience: View {
         let readingWidth = max(width - 40, 1)
         return VStack(spacing: 6) {
             HStack(spacing: 4) {
-                Button { story.pause(); dismiss() } label: {
+                Button { story.pause(); close() } label: {
                     Image(systemName: "xmark")
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -189,7 +199,7 @@ struct WhaleExperience: View {
                 .accessibilityIdentifier("whaleLimbsMenu")
             Button("The evidence") { story.open(.evidence) }
             Button("Return to the fossil") { story.inspectFossil() }
-            Button("Return to atlas") { story.pause(); dismiss() }
+            Button("Return to atlas") { story.pause(); close() }
         } label: {
             Image(systemName: "ellipsis")
                 .frame(width: 44, height: 44)

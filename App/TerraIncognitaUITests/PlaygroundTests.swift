@@ -34,8 +34,8 @@ final class PlaygroundTests: XCTestCase {
         }
     }
 
-    /// A native prototype on the globe and its screen, then a pack lying on the globe, then the atlas
-    /// again: each start ends the one before, and nothing they made outlives them.
+    /// A native prototype on the globe and its sequence on the same globe, then a pack lying on the
+    /// globe, then the atlas again: each start ends the one before, and nothing they made outlives them.
     @MainActor func testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind() {
         let app = XCUIApplication()
         app.launch()
@@ -48,10 +48,12 @@ final class PlaygroundTests: XCTestCase {
         attach("10-camelid-on-globe", in: app)
         camel.tap()
         let close = app.buttons["camelidClose"].firstMatch
-        XCTAssertTrue(close.waitForExistence(timeout: 20), "Its marker opens its screen")
+        XCTAssertTrue(close.waitForExistence(timeout: 20), "Its marker opens its sequence, on the one globe")
+        XCTAssertTrue(app.descendants(matching: .any)["camelidGlobe"].firstMatch.exists, "The sequence has the globe meanwhile")
         attach("11-camelid-screen", in: app)
         close.tap()
-        XCTAssertTrue(camel.waitForExistence(timeout: 15), "Closing its screen leaves it on the globe until ended")
+        XCTAssertTrue(camel.waitForExistence(timeout: 15), "Closing the sequence leaves it on the globe until ended")
+        XCTAssertTrue(app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch.exists, "and gives the globe back")
 
         startPrototype("sea-between", in: app)
         XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists, "Starting another ends the first")

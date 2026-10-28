@@ -21,8 +21,13 @@ Keep design discussions and plans in that private repository.
   button (top right) and, while a prototype is active, its chip (Open, ✕) and its panel. `Playground`
   holds the one active `PrototypeStage`, which owns everything its prototype adds (markers and
   sprites, a pack's script, geography and pictures drawn by the globe, a date, words at the foot, a
-  panel, a style, a screen) and takes it all away when it ends: one at a time is the workbench's
-  isolation rule. `Catalog.swift` lists the native prototypes, one entry each; packs
+  panel, a style, a screen, a lens) and takes it all away when it ends: one at a time is the
+  workbench's isolation rule. A lens (`openLens`, `Prototype.swift`) is a native experience on the
+  globe itself: its canvas lies over the one globe (`GlobeView.addLens`, above the names, taking no
+  touches) and drives its authored camera, its chrome lies over the playground (whose buttons and
+  caption keep their place unseen), and closing it puts back everything it set on the globe
+  (`GlobeLease`: hooks, modes, camera, chosen country, VoiceOver's words, gestures). No experience
+  makes a globe of its own. `Catalog.swift` lists the native prototypes, one entry each; packs
   (`Prototypes/<id>/`, and remote catalogs) are found by `PackStore`, and their scripts run in
   JavaScriptCore in `PackScript.swift` (runtime 3, `Prototypes/_runtime/terra.js`; no web view). The
   globe draws for them: `GeoLayers.swift` (geography, touchable), `GlobeImages.swift` (pictures lying
@@ -70,7 +75,7 @@ Keep design discussions and plans in that private repository.
     the Persian style, a headpiece with the name in its cartouche), and an active prototype's
     invitation above it. Made at launch and kept (its maps decoded once), paused while a screen
     or the workbench covers it.
-  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and NASA's GEBCO (its
+  - The data, `Globe/`: built by `tools/globe/build.py` from Natural Earth and GEBCO, as NASA Visible Earth's imagery (its
     docstring is the textures' layout, which the shader decodes). Rebuild, never hand-edit. The
     textures are uploaded as decoded, without colour management, which would bend the distances.
     The Persian ornaments (band, finial, rosette, headpiece) are drawn from code by
@@ -88,8 +93,10 @@ Keep design discussions and plans in that private repository.
   `Leaf/data/chart.js` (never hand-edit), `tools/aegean/paint.cjs` its engravings, and
   `tools/aegean/pack.cjs` with `pack_engraving.py` the pack from them.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
-  an authored camera sequence on the same Metal globe. `CamelidStory` holds playback state;
-  `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers.
+  an authored camera sequence on the playground's one globe, as a lens, in the globe's own style; the
+  globe answers to `camelidGlobe` while it is open. `CamelidStory` holds playback state;
+  `CamelidCanvas` composes cached animal images and projected dispersal bands as native layers over
+  the globe, and `CamelidExperience` is the chrome over the playground.
   Pan, pinch or double-tap pauses the clock and hides the authored composition until resumed.
   Prehistoric scenes hide modern politics and explicitly identify modern geography as a reference.
   `CamelidAnimals` in the asset catalog is original generated art, cropped once by `CamelidArt`.
@@ -116,7 +123,9 @@ Keep design discussions and plans in that private repository.
   `tools/clouds/SOURCES.md` separates what is measured from what is drawn. Debug: `-clouds-days <d>`
   holds the drift, `-clouds-month <1-12>` the month.
 - **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
-  Al-Hitan opens an authored sequence on the same globe. The entry appears from 2× scale; the
+  Al-Hitan opens an authored sequence on the playground's one globe, as a lens like the camelid's
+  (`WhaleCanvas` over the globe, which answers to `whaleGlobe` meanwhile, `WhaleExperience` the
+  chrome over the playground). The entry appears from 2× scale; the
   map's accessibility action “Go to Whale fossil, Wadi Al-Hitan” moves there without starting playback.
   Debug: `-whale <seconds>` holds a composition and `-whale-play` runs the native clock.
   `ci/whale_capture.sh` captures selected simulator compositions and an optional full phone video
@@ -135,7 +144,8 @@ Keep design discussions and plans in that private repository.
   `Water/` (no longer in the app; `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
-  prototypes in succession with the live counts back to the plain globe's, parked work, the bundled
+  prototypes in succession with the live counts back to the plain globe's, a lens given back
+  (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
   offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always

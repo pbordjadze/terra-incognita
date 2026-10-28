@@ -2,7 +2,8 @@ import Foundation
 import XCTest
 
 /// Exercises the atlas encounter, real globe gestures and optional native reading surfaces.
-/// Held launch times reach review compositions; the full film is captured separately.
+/// Held launch times reach review compositions; the full film is captured separately. The visit lies
+/// on the playground's one globe, which answers to "whaleGlobe" while it is open.
 final class WhaleEncounterTests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
@@ -69,6 +70,8 @@ final class WhaleEncounterTests: XCTestCase {
         app.buttons["whaleClose"].tap()
         XCTAssertTrue(fossil.waitForExistence(timeout: 15))
         XCTAssertTrue(fossil.isHittable, "Leaving must preserve the original atlas position")
+        XCTAssertTrue(element("mainAtlasGlobe", in: app).exists, "The globe is the atlas's again")
+        XCTAssertFalse(element("whaleGlobe", in: app).exists)
         openWorkbench(in: app)
         XCTAssertTrue(workbenchItem("gathering-of-water", in: app).exists, "The independent atlas studies must remain available")
         app.buttons["workbenchClose"].firstMatch.tap()

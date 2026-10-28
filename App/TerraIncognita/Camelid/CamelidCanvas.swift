@@ -4,10 +4,11 @@ import Foundation
 import SwiftUI
 import UIKit
 
-/// Composition lives in native layers above the existing Metal globe. Only transforms and a small
-/// projected range path change each frame; the illustrations and map textures are reused.
-final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
-    let globe = GlobeView(frame: .zero)
+/// Composition lives in native layers above the playground's one Metal globe, lent while the sequence
+/// is open (a lens, `PrototypeStage.openLens`). Only transforms and a small projected range path change
+/// each frame; the illustrations and map textures are reused.
+final class CamelidCanvas: UIView, UIGestureRecognizerDelegate, GlobeLensCanvas {
+    let globe: GlobeView
     private let story: CamelidStory
     private let art = CALayer()
     private let secondArt = CALayer()
@@ -28,49 +29,20 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
     private var resumeCamera: GlobeCamera?
     private var resumedAt = 0.0
     private var isActive = true
+    /// Where the chrome lies (the date above, the transport below): no name goes under it.
+    private var chromeClear: [CGRect] = []
     private lazy var firstAnimalAccess = CamelidAccessibleAnimal(container: self) { [weak self] in self?.inspectAnimal(second: false) }
     private lazy var secondAnimalAccess = CamelidAccessibleAnimal(container: self) { [weak self] in self?.inspectAnimal(second: true) }
     var reduceMotion = false
 
-    init(story: CamelidStory, style: GlobeStyle) {
+    /// Made for the playground's globe; nothing on it changes until the stage lays this over it and
+    /// calls `attach`.
+    init(story: CamelidStory, globe: GlobeView) {
         self.story = story
+        self.globe = globe
         super.init(frame: .zero)
-        backgroundColor = UIColor(hex: "#F2E4C8")
-        addSubview(globe)
-        globe.authoredMode = true
-        globe.setStyle(style, animated: false)
-        globe.accessibilityIdentifier = "camelidGlobe"
-        globe.onUserNavigation = { [weak self] in
-            self?.story.pause(); self?.story.exploring = true; self?.resumeCamera = nil
-        }
-        globe.onFrame = { [weak self] in self?.compose() }
-        #if DEBUG
-        let captureArguments = ProcessInfo.processInfo.arguments
-        if let index = captureArguments.firstIndex(of: "-camelid-capture-token"), index + 1 < captureArguments.count {
-            let token = captureArguments[index + 1]
-            if UUID(uuidString: token) != nil {
-                globe.onDrawn = {
-                    // The globe calls this after its first frame's commands were submitted.
-                    // It is a capture handshake, not proof of GPU completion or device timing.
-                    let marker = FileManager.default.temporaryDirectory.appending(path: "camelid-capture-ready.txt")
-                    do { try token.write(to: marker, atomically: true, encoding: .utf8) }
-                    catch { NSLog("Camelid capture readiness marker failed: %@", error.localizedDescription) }
-                }
-            }
-        }
-        #endif
-        let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
-        inspect.delegate = self
-        addGestureRecognizer(inspect)
-        // A tap on an illustration opens its evidence. Drags and pinches still belong to the
-        // underlying globe; there is no view-sized transparent button over the map.
-        for recognizer in globe.gestureRecognizers ?? [] {
-            if let tap = recognizer as? UITapGestureRecognizer {
-                if tap.numberOfTapsRequired == 1 { tap.require(toFail: inspect) }
-                else { inspect.require(toFail: tap) }
-            }
-        }
-        for layer in [rangeEdge, range, ground, branch, branchLabel, art, secondArt, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { globe.layer.addSublayer(layer) }
+        backgroundColor = .clear
+        for layer in [rangeEdge, range, ground, branch, branchLabel, art, secondArt, camelPlace, llamaPlace, originPlace, asiaPlace, northAmericaPlace] { self.layer.addSublayer(layer) }
         range.fillColor = nil
         range.strokeColor = UIColor(hex: "#6D6793")?.withAlphaComponent(0.18).cgColor
         range.lineWidth = 32
@@ -97,15 +69,44 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         }
         for layer in [art, secondArt] { layer.contentsGravity = .resizeAspect; layer.contentsScale = 3 }
         story.canvas = self
-        globe.setAuthoredCamera(camera(at: story.preciseTime))
-        #if DEBUG
-        if !story.followed { globe.setAuthoredCamera(GlobeCamera(lon: 46, lat: 24, zoom: 1.55)) }
-        #else
-        if !story.followed { globe.setAuthoredCamera(GlobeCamera(lon: 46, lat: 24, zoom: 1.55)) }
-        #endif
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     isolated deinit { link?.invalidate() }
+
+    /// Lent the globe (it lies over it now): its hooks, and the camera where the sequence begins.
+    /// The stage puts back everything set here when the lens closes.
+    func attach() {
+        globe.setAtlasAccessibilityIdentifier("camelidGlobe")
+        globe.onUserNavigation = { [weak self] in
+            self?.story.pause(); self?.story.exploring = true; self?.resumeCamera = nil
+        }
+        globe.onFrame = { [weak self] in self?.compose() }
+        #if DEBUG
+        let captureArguments = ProcessInfo.processInfo.arguments
+        if let index = captureArguments.firstIndex(of: "-camelid-capture-token"), index + 1 < captureArguments.count {
+            let token = captureArguments[index + 1]
+            if UUID(uuidString: token) != nil {
+                globe.onDrawn = {
+                    // The globe calls this after its first frame with the sequence on it was submitted.
+                    // It is a capture handshake, not proof of GPU completion or device timing.
+                    let marker = FileManager.default.temporaryDirectory.appending(path: "camelid-capture-ready.txt")
+                    do { try token.write(to: marker, atomically: true, encoding: .utf8) }
+                    catch { NSLog("Camelid capture readiness marker failed: %@", error.localizedDescription) }
+                }
+            }
+        }
+        #endif
+        // A tap on an illustration opens its evidence. Drags and pinches still belong to the
+        // underlying globe; there is no view-sized transparent button over the map. (The taps'
+        // order is asked of this recognizer's delegate, so nothing stays on the globe's own.)
+        let inspect = UITapGestureRecognizer(target: self, action: #selector(inspectTapped(_:)))
+        inspect.delegate = self
+        globe.addGestureRecognizer(inspect)
+        globe.setAuthoredCamera(story.followed ? camera(at: story.preciseTime) : GlobeCamera(lon: 46, lat: 24, zoom: 1.55))
+        compose()
+    }
+    /// Only while it lies on the globe: once the lens has closed, nothing here moves or marks it.
+    private var lent: Bool { superview === globe }
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
@@ -115,28 +116,27 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             ticker.add(to: .main, forMode: .common)
             ticker.isPaused = !isActive
             link = ticker
-            globe.suspended = !isActive
         } else if window == nil {
-            link?.invalidate(); link = nil; lastTick = nil; globe.suspended = true
+            link?.invalidate(); link = nil; lastTick = nil
         }
     }
     override func layoutSubviews() {
         super.layoutSubviews()
-        globe.frame = bounds
         let top = safeAreaInsets.top + 105
         let bottom = max(160, safeAreaInsets.bottom + 145)
-        globe.keepClear = [CGRect(x: 0, y: 0, width: bounds.width, height: top),
-                           CGRect(x: 0, y: bounds.height - bottom, width: bounds.width, height: bottom)]
+        chromeClear = [CGRect(x: 0, y: 0, width: bounds.width, height: top),
+                       CGRect(x: 0, y: bounds.height - bottom, width: bounds.width, height: bottom)]
         compose()
     }
+    /// The sequence's clock (the globe itself is the playground's to pause).
     func setActive(_ active: Bool) {
         guard active != isActive else { return }
         isActive = active
-        globe.suspended = !active
         link?.isPaused = !active
         lastTick = nil
     }
     func seek() {
+        guard lent else { return }
         resumeCamera = nil
         globe.setAuthoredCamera(camera(at: story.preciseTime), duration: reduceMotion ? 0 : 1.2)
         drawnScene = -1; compose()
@@ -146,7 +146,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         resumedAt = story.preciseTime
     }
     func attend() {
-        guard !reduceMotion else { return }
+        guard !reduceMotion, lent else { return }
         let response = CAKeyframeAnimation(keyPath: "transform.scale")
         response.values = [1, 1.016, 1.008, 1]
         response.keyTimes = [0, 0.25, 0.65, 1]
@@ -168,10 +168,17 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         let point = touch.location(in: globe)
         return (art.opacity > 0.3 && art.frame.contains(point)) || (secondArt.opacity > 0.3 && secondArt.frame.contains(point))
     }
+    /// A tap on the art waits for the globe's double tap to fail, and the globe's own tap waits for it.
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf other: UIGestureRecognizer) -> Bool {
+        other.view === globe && (other as? UITapGestureRecognizer)?.numberOfTapsRequired == 2
+    }
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+        other !== gestureRecognizer && other.view === globe && (other as? UITapGestureRecognizer)?.numberOfTapsRequired == 1
+    }
     fileprivate func tick(_ frame: CADisplayLink) {
         let dt = min(max(frame.timestamp - (lastTick ?? frame.timestamp), 0), 0.1)
         lastTick = frame.timestamp
-        guard story.playing else { return }
+        guard story.playing, lent else { return }
         story.preciseTime = min(story.preciseTime + dt, CamelidStory.duration)
         if frame.timestamp - reportedAt > 0.25 {
             story.reportTime(); reportedAt = frame.timestamp
@@ -288,7 +295,7 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
         placeRegion(label, text: place, lon: lon, lat: lat, width: max(width, 85))
     }
     private func compose() {
-        guard bounds.width > 0 else { return }
+        guard lent, bounds.width > 0 else { return }
         CATransaction.begin(); CATransaction.setDisableActions(true)
         let t = story.preciseTime
         // The displayed date and visible era must change together, even between clock reports.
@@ -373,11 +380,11 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
                 CGRect(x: layer.position.x - layer.bounds.width / 2, y: layer.position.y - layer.bounds.height / 2,
                        width: layer.bounds.width, height: layer.bounds.height).insetBy(dx: -8, dy: -8)
             }
-            globe.authoredLabelExclusions = [art.opacity > 0 ? stableFrame(art) : .zero, secondArt.opacity > 0 ? stableFrame(secondArt) : .zero,
+            globe.authoredLabelExclusions = chromeClear + [art.opacity > 0 ? stableFrame(art) : .zero, secondArt.opacity > 0 ? stableFrame(secondArt) : .zero,
                                             camelPlace.opacity > 0 ? camelPlace.frame : .zero, llamaPlace.opacity > 0 ? llamaPlace.frame : .zero, originPlace.frame]
         } else if !story.followed && !story.exploring {
-            globe.authoredLabelExclusions = [art.frame.insetBy(dx: -8, dy: -8)]
-        } else { globe.authoredLabelExclusions = [] }
+            globe.authoredLabelExclusions = chromeClear + [art.frame.insetBy(dx: -8, dy: -8)]
+        } else { globe.authoredLabelExclusions = chromeClear }
         let camera = globe.authoredCamera
         var accessible: [Any] = []
         if story.followed && !story.exploring && current > 0 && art.opacity > 0.3 {
@@ -395,10 +402,10 @@ final class CamelidCanvas: UIView, UIGestureRecognizerDelegate {
             secondAnimalAccess.accessibilityIdentifier = "camelidStorySecondAnimal"
             accessible.append(secondAnimalAccess)
         }
-        accessible.append(globe)
+        // (the map's own element follows these among the globe's, describing the sequence while it is open)
         accessibilityElements = accessible
-        globe.accessibilityLabel = story.exploring ? "Freely exploring the globe. The historical sequence is paused at \(story.date). Resume to return to its composition." : story.description
-        globe.accessibilityValue = String(format: "Longitude %.1f, latitude %.1f, scale %.2f", camera.lon, camera.lat, camera.zoom)
+        globe.atlasLabel = story.exploring ? "Freely exploring the globe. The historical sequence is paused at \(story.date). Resume to return to its composition." : story.description
+        globe.atlasValue = String(format: "Longitude %.1f, latitude %.1f, scale %.2f", camera.lon, camera.lat, camera.zoom)
         drawnScene = current
         CATransaction.commit()
     }
@@ -419,16 +426,4 @@ private final class CamelidLink: NSObject {
     weak var canvas: CamelidCanvas?
     init(_ canvas: CamelidCanvas) { self.canvas = canvas }
     @objc func tick(_ link: CADisplayLink) { canvas?.tick(link) }
-}
-
-struct CamelidCanvasView: UIViewRepresentable {
-    let story: CamelidStory
-    let style: GlobeStyle
-    let active: Bool
-    let reduceMotion: Bool
-    func makeUIView(context: Context) -> CamelidCanvas { CamelidCanvas(story: story, style: style) }
-    func updateUIView(_ view: CamelidCanvas, context: Context) {
-        view.reduceMotion = reduceMotion
-        view.setActive(active)
-    }
 }
