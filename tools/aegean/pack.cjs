@@ -4,15 +4,19 @@
 //                 its depth contours in longitude and latitude, the leaf's names, the engraving's bounds
 //   *.png         the leaf's marginal drawings (whale, blow, skiff, wind, palm) as sprite frames, drawn
 //                 by the leaf's own canvas routines (Leaf/leaf.js) in Chromium
-//   engraving.png the Aegean of Leaf/data/day.png, for the globe (tools/aegean/pack_engraving.py)
-// node tools/aegean/pack.cjs   (Playwright's Chromium, or CHROMIUM_PATH). No network; Leaf/ is only read.
+//   engraving.png the Aegean of the leaf's day engraving, painted again by the leaf's own code at the
+//                 resolution the globe's close views need (then tools/aegean/pack_engraving.py)
+// node tools/aegean/pack.cjs   (Playwright's Chromium, or CHROMIUM_PATH). No network: the leaf's files
+// are served to Chromium from disk, and Leaf/ is only read.
 const fs = require('fs'), path = require('path'), { spawnSync } = require('child_process');
 const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LEAF = path.join(ROOT, 'Leaf');
 const OUT = path.join(ROOT, 'Prototypes', 'sea-between');
-const PX = 3;            // pixels per point in the sprite pictures (an iPhone's 3x; the iPad's 2x at 1.2 reading)
+const PX = 4;            // pixels per point in the sprite pictures (an iPhone's 3x, and their close looks, 1.4x larger)
+const SHEET_PX = 3072;   // the engraving's width in pixels: about one to a screen pixel on the 13-inch iPad at zoom 20,
+                         // and on an iPhone at the deepest zoom the pack allows (32); 36 MB decoded
 
 // ---------------------------------------------------------------------------------------------
 // The chart (Leaf/data/chart.js, from tools/aegean/build.py): a local cylindrical chart, longitude
@@ -47,19 +51,23 @@ function sea(lon, lat, reach = 0) {
   return true;
 }
 
-// The engraving: painted at 1.65 pixels a chart unit from the chart's corner (leaf.js makeMap), so its
-// pixel columns and rows are equal steps of longitude and latitude, and a crop at whole pixels has
-// exact bounds. The sheet on the globe is the leaf's Aegean, about what the leaf first shows on an
-// iPad (leaf.js home), not the whole prepared chart: beyond it the globe's own map carries on.
+// The engraving. leaf.js makeMap paints the whole chart at cacheScale pixels a chart unit from its corner
+// (1.65 for Leaf/data/day.png), so pixel columns and rows are equal steps of longitude and latitude, and
+// a crop at whole pixels has exact bounds. The pack has it paint the same drawing at PAINT pixels a unit
+// (its strokes keep their size on the chart, so they stay fine), then keeps the sheet: the leaf's Aegean,
+// about what the leaf first shows on an iPad (leaf.js home); beyond it the globe's own map carries on.
 const SHEET = { west: 19.5, south: 33.4, east: 30.2, north: 41.4 };
-const png = fs.readFileSync(path.join(LEAF, 'data', 'day.png'));
-const dayW = png.readUInt32BE(16), dayH = png.readUInt32BE(20), PAINT = 1.65;
+const PAINT = SHEET_PX / ((SHEET.east - SHEET.west) * P.cos * P.scale);
 const pxX = lon => Math.round(((lon - P.lon0) * P.cos * P.scale - B[0]) * PAINT);
 const pxY = lat => Math.round(((P.lat0 - lat) * P.scale - B[1]) * PAINT);
 const crop = [pxX(SHEET.west), pxY(SHEET.north), pxX(SHEET.east), pxY(SHEET.south)];
-if (crop[0] < 0 || crop[1] < 0 || crop[2] > dayW || crop[3] > dayH) throw new Error('the sheet is outside the painted chart');
+if (crop[0] < 0 || crop[1] < 0 || crop[2] > Math.ceil(B[2] * PAINT) || crop[3] > Math.ceil(B[3] * PAINT)) throw new Error('the sheet is outside the chart');
 const engraving = [round(lonOf(B[0] + crop[0] / PAINT), 6), round(latOf(B[1] + crop[3] / PAINT), 6),
                    round(lonOf(B[0] + crop[2] / PAINT), 6), round(latOf(B[1] + crop[1] / PAINT), 6)];
+// leaf.js, painting at PAINT instead of 1.65: the one change, made only in what Chromium is served
+const leafJs = fs.readFileSync(path.join(LEAF, 'leaf.js'), 'utf8');
+const paintingJs = leafJs.replace('const cacheScale=1.65;', `const cacheScale=${PAINT};`);
+if (paintingJs === leafJs) throw new Error('leaf.js no longer says const cacheScale=1.65;');
 
 // Depth contours (the sounding glass's 250 to 4,000 m), in degrees, simplified to about 300 m.
 function simplify(points, tolerance) {
@@ -235,8 +243,37 @@ window.sprites = () => {
 };
 </script>`;
 
+// The leaf's own page in paint mode (tools/aegean/paint.cjs does the same for day.png), its files served
+// from disk under a name that resolves nowhere; anything else is refused.
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.otf': 'font/otf', '.txt': 'text/plain' };
+async function paintSheet(browser) {
+  const tab = await browser.newPage({ viewport: { width: 800, height: 600 } });
+  await tab.route('**/*', route => {
+    const url = new URL(route.request().url());
+    if (url.hostname !== 'leaf.invalid') return route.abort();
+    const file = path.resolve(LEAF, '.' + decodeURIComponent(url.pathname));
+    if (!file.startsWith(LEAF + path.sep) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+    const body = url.pathname === '/leaf.js' ? paintingJs : fs.readFileSync(file);
+    return route.fulfill({ status: 200, body, contentType: MIME[path.extname(file)] || 'application/octet-stream' });
+  });
+  await tab.goto('http://leaf.invalid/index.html?paint=1');
+  await tab.waitForFunction(() => window.leafReady, null, { timeout: 180000 });
+  const b64 = await tab.evaluate(async box => {
+    const im = new Image();
+    im.src = window.leafPaintedMap(0);
+    await im.decode();
+    const c = document.createElement('canvas');
+    c.width = box[2] - box[0]; c.height = box[3] - box[1];
+    c.getContext('2d').drawImage(im, -box[0], -box[1]);
+    return c.toDataURL('image/png').split(',')[1];
+  }, crop);
+  await tab.close();
+  return Buffer.from(b64, 'base64');
+}
+
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox'] });
+  const sheet = path.join(ROOT, 'build', 'aegean-pack', 'sheet.png');
   try {
     const tab = await browser.newPage();
     await tab.route('**/*', route => route.abort()); // nothing is fetched
@@ -246,7 +283,10 @@ window.sprites = () => {
     let bytes = 0;
     for (const [name, b64] of Object.entries(files)) { const buf = Buffer.from(b64, 'base64'); bytes += buf.length; fs.writeFileSync(path.join(OUT, name), buf); }
     console.log(`sprites: ${Object.keys(files).length} pictures, ${bytes} bytes`);
+    fs.mkdirSync(path.dirname(sheet), { recursive: true });
+    fs.writeFileSync(sheet, await paintSheet(browser));
+    console.log(`painted the sheet at ${PAINT.toFixed(4)} pixels a chart unit: ${crop[2] - crop[0]} x ${crop[3] - crop[1]}`);
   } finally { await browser.close(); }
-  const r = spawnSync('python3', [path.join(__dirname, 'pack_engraving.py'), ...crop.map(String)], { stdio: 'inherit' });
+  const r = spawnSync('python3', [path.join(__dirname, 'pack_engraving.py'), sheet], { stdio: 'inherit' });
   if (r.status !== 0) process.exit(r.status || 1);
 })().catch(e => { console.error(e); process.exit(1); });
