@@ -167,7 +167,7 @@
   var MID = 'An engraved chart of the Aegean, lying on the globe. Come closer to sound its sea and read its notes.';
   var CLOSE = 'An engraved chart of the Aegean, lying on the globe. Beneath its islands the sea falls ' +
               'thousands of metres: tap the water to sound it, or touch a copper name for its note.';
-  var QUALIFIED = 'from NASA’s GEBCO 2008 imagery, generalised and rounded to 100 m: not survey data.';
+  var QUALIFIED = 'from GEBCO 2008 imagery (NASA Visible Earth), generalised and rounded to 100 m: not survey data.';
   var near = false, seen = false, glass = null, flash = null, flashTimer = 0, shown = '';
 
   function say() {
@@ -287,10 +287,10 @@
               'Touch a copper name, the wind strokes, the palm or the whale to read its note. Touch the paper skiff to fold or raise its sail.' },
       { title: 'What is drawn',
         text: 'The coasts are Natural Earth’s, at 1:10 million. The relief contours and short hachures on the land are derived from ' +
-              'elevation in NASA’s GEBCO 2008 imagery, not invented mountain symbols: they are an illustration of terrain, not survey ' +
+              'elevation in GEBCO 2008 imagery (NASA Visible Earth), not invented mountain symbols: they are an illustration of terrain, not survey ' +
               'contours. The engraving was prepainted from the chart by the leaf’s own drawing code.' },
       { title: 'What is measured',
-        text: 'The sounding glass reads a grid of roughly 5 km cells prepared from NASA’s GEBCO 2008 grayscale bathymetry, rounded to ' +
+        text: 'The sounding glass reads a grid of roughly 5 km cells prepared from NASA Visible Earth’s grayscale imagery of GEBCO 2008 bathymetry, rounded to ' +
               '100 m, and its 250 to 4,000 m contours are generalised from the same source. These are legacy imagery derivatives, not ' +
               'current hydrographic survey data: they must not be used to infer local water depths or island-scale coast accuracy. ' +
               'The line hangs 14 points for each kilometre of depth.' },
