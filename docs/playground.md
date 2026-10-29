@@ -81,7 +81,7 @@ date with an uneven pace, slowed as the reader comes close. A pack's art is draw
 rendered by `node tools/packart/render.cjs tools/<pack>/art.js Prototypes/<id>` (headless Chromium,
 three pixels a point); and `node tools/packart/moments.cjs <id> <out dir> '<plan>'` photographs a pack
 over time in the preview (camera, waits, touches, drags, the date's strip), for what `check.cjs`'s fixed
-screenshots can't show. A pack is a script, its data and pictures, with everything inside its
+screenshots can't show (`check.cjs` taps a thing under way where it is at that moment). A pack is a script, its data and pictures, with everything inside its
 folder; it cannot reach the network. Keep the first-reader test in mind: someone who touches this
 first, knowing nothing, should be able to tell what they are looking at.
 
