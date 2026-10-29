@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare the data of the pack Prototypes/gathering-of-water-alive/ (A gathering of water, alive).
 
-Usage: node tools/water/boto.cjs            (the boto's frames, which the doorway uses)
+Usage: node tools/packart/render.cjs tools/water/boto.cjs Prototypes/gathering-of-water-alive   (the boto's frames)
        python3 tools/water/build_alive.py
 
 Reads Prototypes/gathering-of-water/ (built by tools/water/build_pack.py) and the ocean layer's

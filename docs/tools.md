@@ -109,10 +109,11 @@ A pack's art is code, rebuilt and never hand-edited.
 
 | Tool | What it does | Run | Used by | Limits |
 | --- | --- | --- | --- | --- |
-| Pack art sheets | draws a sheet of 2D-canvas drawings (frames, doorways, pictures for the globe) in headless Chromium at 3 px a point | `node tools/packart/render.cjs <sheet.js> <pack dir> [--only a,b] [--scale 3]` | sheets `tools/whales/art.js`, `monsoon/art.js`, `beacons/art.js`, `leadline/art.js`, `lowsea/art.js`, `vine/art.js` | canvas only; writes pictures, no index of sizes or frames |
+| The one art drawer | draws a sheet in headless Chromium at 3 px a point: a canvas sheet (`.js`, 2D drawings, frames named `name-1.png …`) or an SVG sheet (`.cjs`, a Node module whose `sheet()` gives SVG markup and an index to write); `--contact` lays them all on one page | `node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png]` | canvas sheets `tools/whales/art.js`, `monsoon/art.js`, `beacons/art.js`, `leadline/art.js`, `lowsea/art.js`, `vine/art.js`; SVG sheets `tools/herds/draw.cjs`, `tools/water/boto.cjs` | SVG only from Node; no sprite sheets (one file a frame) |
+| All the art again | every pack's art redrawn in place; a clean `git status` says a drawer change left it the same to the byte | `tools/packart/all.sh` | changes to the drawer, Brush or a sheet | a new sheet adds its line |
 | Brush | the sheets' helpers: seeded random, smooth curves, ink under fill, glow, colour mix, the halo round a tiny figure | `window.Brush` in a sheet, `tools/packart/brush.js` | the six sheets above | |
-| The herds' animals | one camelid drawn from parameters (inverse-kinematic legs, gaits) in every kind, look and pose, as SVG; writes the pack's art index | `node tools/herds/draw.cjs [--sheet contact.png] [--only kind]` | herds | its own Chromium loop: see [One job, two tools](#one-job-two-tools); 458 of the pack's 500 files |
-| The boto | a river dolphin surfacing, 24 frames, as SVG; writes `boto.json` | `node tools/water/boto.cjs` | gathering of water, alive | its own Chromium loop; skips frames already on disk |
+| The herds' animals | one camelid drawn from parameters (inverse-kinematic legs, gaits) in every kind, look and pose; writes `herds/art.js`, the index | an SVG sheet: `node tools/packart/render.cjs tools/herds/draw.cjs Prototypes/herds` (or `node tools/herds/draw.cjs`) | herds | 458 of the pack's 500 files |
+| The boto | a river dolphin surfacing, 24 frames; writes `boto.json` | an SVG sheet: `node tools/packart/render.cjs tools/water/boto.cjs Prototypes/gathering-of-water-alive` | gathering of water, alive | |
 | Glint | the doorway's glint from afar | `python3 tools/playground/glint_png.py [png ...]` | every current pack, the scaffold's template | standard library PNG |
 | Marker | the template's and hello-pack's marker | `python3 tools/playground/marker_png.py` | template, hello | standard library PNG |
 | Persian ornaments | band, braid, finial, rosette, headpiece, from geometry | `python3 tools/globe/ornament.py [--sheet out.png]` | persian | |
@@ -195,13 +196,12 @@ There is no `swift.sh`: Swift is built only by the macOS jobs.
 
 Found October 29, 2026 (painting-company row 178). Each says what differs and what to do.
 
-- **Art drawers: `tools/packart/render.cjs`, `tools/herds/draw.cjs`, `tools/water/boto.cjs`.** All three
-  drive headless Chromium to turn code into PNG frames. `render.cjs` takes a browser sheet of canvas
-  drawings and names frames `name-1.png …`; the other two build SVG markup in Node, screenshot it
-  with their own Playwright loop, and write an index the pack reads (`herds/art.js`, `boto.json`).
-  What differs is the drawing language (canvas or SVG) and the index, not the rendering. They
-  should be one renderer that takes either kind of sheet; branch `claude/one-art-drawer` does that,
-  with every pack's art unchanged to the byte.
+- **Art drawers: `tools/packart/render.cjs`, `tools/herds/draw.cjs`, `tools/water/boto.cjs`** (merged).
+  All three drove headless Chromium to turn code into PNG frames: `render.cjs` from a browser sheet of
+  canvas drawings, the other two from SVG built in Node, each with its own Playwright loop and an
+  index the pack reads. What differed was the drawing language and the index, not the rendering, so
+  `render.cjs` now draws both kinds of sheet and the other two are SVG sheets for it; every pack's
+  art came out the same to the byte.
 - **Pack moments: `tools/playground/explore.cjs` and `tools/packart/moments.cjs`.** Both play a pack
   in the preview from a JSON plan and screenshot it; they were written the same night. `explore`
   has flights with a duration, a tap on a touchable thing by name, the chip's Open, and prints the

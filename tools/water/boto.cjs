@@ -3,11 +3,10 @@
 // surfacing, as 24 frames the sprite runs through at 4 a second (six seconds: a breath, its back arching over,
 // the ripples, then quiet water until the next). Drawn here from code as SVG and rendered by Chromium; no
 // picture is traced from a photograph. Facing east, as a sprite's `face` expects. Frame 1 is its whole head up
-// (what Reduce Motion holds).
-//   node tools/water/boto.cjs
+// (what Reduce Motion holds). An SVG sheet for the one art drawer:
+//   node tools/packart/render.cjs tools/water/boto.cjs Prototypes/gathering-of-water-alive
 // Writes boto-01.png ... (the frames with something in them), boto-quiet.png (the quiet water) and boto.json
 // (the frames in order, fps, size in points) into the pack. Never hand-edit those; change this and run it.
-const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
 
 const OUT = path.resolve(__dirname, '../../Prototypes/gathering-of-water-alive');
@@ -87,22 +86,31 @@ function svg(content) {
 </svg>`;
 }
 
-(async () => {
-  const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: SIZE[0] * SCALE, height: SIZE[1] * SCALE }, deviceScaleFactor: 1 });
-  for (const f of fs.readdirSync(OUT)) if (/^boto-.*\.png$/.test(f)) fs.rmSync(path.join(OUT, f));
-  const names = [];
+/** The sheet for tools/packart/render.cjs: the frames in order (the quiet water is one file, shown
+    wherever the boto is under), and `done` writes boto.json. */
+function sheet({ out = OUT } = {}) {
+  for (const f of fs.readdirSync(out)) if (/^boto-.*\.png$/.test(f)) fs.rmSync(path.join(out, f));
+  const names = [], pictures = [];
   let n = 0;
   for (const content of FRAMES) {
     const name = content ? `boto-${String(++n).padStart(2, '0')}.png` : 'boto-quiet.png';
     names.push(name);
-    if (fs.existsSync(path.join(OUT, name))) continue;
-    await page.setContent(`<html><body style="margin:0;background:transparent">${svg(content)}</body></html>`);
-    await page.locator('svg').screenshot({ path: path.join(OUT, name), omitBackground: true });
+    pictures.push({ file: name, width: SIZE[0], height: SIZE[1], scale: SCALE, svg: svg(content) });
   }
-  await browser.close();
-  const spec = { about: 'A boto, drawn by tools/water/boto.cjs: the frames in order (six seconds at 4 a second), and the still one',
-                 fps: 4, size: SIZE, frames: names, still: names[0] };
-  fs.writeFileSync(path.join(OUT, 'boto.json'), JSON.stringify(spec, null, 1) + '\n');
-  console.log(`${n} frames and the quiet water in ${path.relative(process.cwd(), OUT)}/`);
-})();
+  return {
+    pictures,
+    done() {
+      const spec = { about: 'A boto, drawn by tools/water/boto.cjs: the frames in order (six seconds at 4 a second), and the still one',
+                     fps: 4, size: SIZE, frames: names, still: names[0] };
+      fs.writeFileSync(path.join(out, 'boto.json'), JSON.stringify(spec, null, 1) + '\n');
+    }
+  };
+}
+
+module.exports = { sheet };
+
+// run alone, it is the one art drawer's sheet: `node tools/water/boto.cjs`
+if (require.main === module) {
+  require('../packart/render.cjs').main([__filename, OUT, ...process.argv.slice(2)])
+    .catch((e) => { console.error(e); process.exit(1); });
+}
