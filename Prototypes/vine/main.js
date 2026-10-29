@@ -89,8 +89,10 @@
         terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22 * sz, height: 22 * sz, minZoom: NEAR, maxZoom: CLOSE, offset: [1, -7 * sz], dated: true, bloom: 0.9 });
         terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 9.5 * sz, height: 9.5 * sz, minZoom: MID, maxZoom: NEAR, offset: [0.5, -3 * sz], dated: true, bloom: 0.7 });
       }
+      // from afar, a few leaves still: one in four, small, so the whole Earth sees a plant and not a cable
+      var far = V.leaves.filter(function (l, i) { return l[4] === hemi && i % (4 * sparse) === 0; }).map(function (l) { return point(l[0], l[1], l[2]); });
+      terra.geo.set('leaves-far-' + hemi, far, { style: 'symbol', image: FAR_LEAF[s], width: 6, height: 6, maxZoom: MID, offset: [0, -2], dated: true, bloom: 0.6 });
     }
-    // (from afar the leaf is the tinted band under the thread, not specks)
     // the clusters, hanging where the vine arrives, in the hemisphere's summer and autumn; touchable:
     // light runs to them. None from afar: the whole Earth sees the vine as one thread
     for (hemi = 0; hemi < 2; hemi++) {
@@ -101,6 +103,11 @@
       terra.geo.set('clusters-close-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 30, height: 45, minZoom: CLOSE, offset: [0, 21], dated: true, bloom: 1.6, touchable: true });
       terra.geo.set('clusters-near-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 15, height: 22.5, minZoom: NEAR, maxZoom: CLOSE, offset: [0, 10], dated: true, bloom: 1.2, touchable: true });
       terra.geo.set('clusters-mid-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 7, height: 10.5, minZoom: MID, maxZoom: NEAR, offset: [0, 4.5], dated: true, bloom: 0.9, touchable: true });
+      // from afar, the trunks' own places only (not the twigs'), tiny: fruit where the record is
+      var farClusters = grapes ? V.clusters.filter(function (c) { return (c.lat < 0 ? 1 : 0) === hemi && !V.branches[c.branch].twig; }).map(function (c) {
+        return point(c.lon, c.lat, c.year, { label: c.name + ', ' + said(c.year) });
+      }) : [];
+      terra.geo.set('clusters-far-' + hemi, farClusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 4.5, height: 6.75, maxZoom: MID, offset: [0, 3], dated: true, bloom: 0.7, touchable: true });
     }
     // the qvevri, where it all begins: a picture lying on the globe, so it grows as the reader comes close
     // (a mouth in the earth two degrees across; the stems grow out of it, drawn over it). A tap on it

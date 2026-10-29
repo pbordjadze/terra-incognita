@@ -199,3 +199,19 @@ date (Swift, the preview, the contract, the catalog); the qvevri's picture widen
 ground round it (trodden earth, stones, tufts of grass) with the rim a fifth of the screen at the
 opening; the picture drawn at two pixels a point (it lies on the globe). Validated in the preview's own
 check (96 of 96).
+
+Critic 7 (the hater): the hemisphere still a wire diagram with nothing alive on it; the strands
+"parallel copies that never cross"; three arms radiating over the rim and the lid at 14 s; the ship a
+fingertip; the touch generic. Kept: the qvevri as a drawn object, the one line at the foot.
+
+## Round 9 · the far view alive, the strands twining, the rim clear (October 30)
+
+Changed: from afar a few leaves (one in four, small) and the trunks' own clusters stay, so the whole
+Earth sees a plant with fruit on it and not a cable; the strands are built on a run resampled four
+times finer, so they twine as curves and cross the trunk rather than running beside it; the first
+branches leave the mouth's rim clear (Colchis north of it, the Zagros east of it). The far view's
+leaf is one of the three drawn leaves by name, so the validator sees it.
+
+The hater's remaining asks (a stem drawn as an organic stroke, ways that follow valleys, a ship that
+grows with the sea it crosses) are the tools listed at the end; the round's changes answer what a
+pack can answer. The rounds stop here: eight critics, the worst complaint now the premise's drawing.

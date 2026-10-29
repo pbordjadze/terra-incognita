@@ -46,9 +46,9 @@ ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the
 TRUNKS = [
     ('The first vine', [ORIGIN, (44.95, 41.58, -5960, None), (45.4, 41.62, -5850, None), (46.0, 41.7, -5700, 'Kakheti'), (46.9, 41.3, -5600, None),
                         (47.8, 40.5, -5300, None), (49.0, 40.3, -5000, None)]),
-    ('West to Colchis', [(45.4, 41.62, -5760, None), (44.9, 41.95, -5730, None), (44.2, 41.7, -5690, 'Shulaveris Gora'), (43.9, 42.0, -5660, None),
+    ('West to Colchis', [(45.4, 41.62, -5760, None), (45.0, 42.15, -5730, None), (44.3, 42.05, -5700, None), (44.2, 41.7, -5690, 'Shulaveris Gora'), (43.9, 42.0, -5660, None),
                          (42.9, 42.15, -5600, None), (42.0, 42.2, -5400, 'Colchis'), (41.95, 41.8, -5200, None)]),
-    ('Down the Zagros', [(45.4, 41.62, -5720, None), (45.1, 41.1, -5650, None), (45.0, 40.6, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
+    ('Down the Zagros', [(45.4, 41.62, -5720, None), (45.55, 41.0, -5650, None), (45.1, 40.5, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
                          (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
                          (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
     ('Into Anatolia', [(44.2, 41.7, -5520, None), (43.9, 41.1, -5460, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
@@ -390,16 +390,24 @@ def main():
                 # two thinner stems twine round the trunk: each offset to one side by a sine of the distance
                 # along the way (in degrees of latitude, a few tens of km), crossing the trunk twice a wave,
                 # dated as the trunk is, so they grow with it
+                # (the run resampled four times finer first, so the twining is a curve and not a zigzag)
+                fine = []
+                for i in range(s, e - 1):
+                    a, b = way[i], way[i + 1]
+                    for k in range(4):
+                        t = k / 4
+                        fine.append([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t])
+                fine.append(list(way[e - 1][:3]))
                 for side in (1, -1):
                     pts, dist = [], 0.0
-                    for i in range(s, e):
-                        if i > s:
-                            dist += arc((way[i - 1][0], way[i - 1][1]), (way[i][0], way[i][1])) * KM
-                        a, b = way[max(s, i - 1)], way[min(e - 1, i + 1)]
+                    for i in range(len(fine)):
+                        if i > 0:
+                            dist += arc((fine[i - 1][0], fine[i - 1][1]), (fine[i][0], fine[i][1])) * KM
+                        a, b = fine[max(0, i - 1)], fine[min(len(fine) - 1, i + 1)]
                         dx, dy = b[0] - a[0], b[1] - a[1]
                         L = math.hypot(dx, dy) or 1
-                        off = side * 0.16 * math.sin(dist / 140.0 + bi)
-                        pts.append([round(way[i][0] + (-dy / L) * off / max(0.2, math.cos(way[i][1] * D)), 3), round(way[i][1] + (dx / L) * off, 3), way[i][2]])
+                        off = side * 0.14 * math.sin(dist / 110.0 + bi)
+                        pts.append([round(fine[i][0] + (-dy / L) * off / max(0.2, math.cos(fine[i][1] * D)), 3), round(fine[i][1] + (dx / L) * off, 3), round(fine[i][2], 1)])
                     strands.append({'branch': bi, 'coordinates': pts})
             if kind == 'land':
                 # leaves along the land at uneven gaps (55 to 125 km), either side, a little off the stem,
