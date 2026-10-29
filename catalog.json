@@ -1,18 +1,18 @@
 {
   "format": 1,
-  "generated": "2026-10-28T03:35:07-04:00",
+  "generated": "2026-10-29T00:07:02-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
-      "revision": 2,
-      "runtime": 3,
+      "revision": 3,
+      "runtime": 4,
       "title": "Borders on old maps",
       "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "0d519e2801d72e5c9a2317bef0d61153a93403a32094c585ca53b7d999d6b135",
-      "path": "packs/borders-on-old-maps/r2/",
-      "bytes": 856668,
+      "hash": "ab6117c0adfd1abaf8534b297657dff395cf410bfd45861682d611971da2eca2",
+      "path": "packs/borders-on-old-maps/r3/",
+      "bytes": 857703,
       "files": [
         {
           "path": "LICENSE-HISTORY.txt",
@@ -45,30 +45,35 @@
           "sha256": "15d08def7cffef6e73e0f692b8a4c039eef671f1ddc89372bf439e65a3b1c44a"
         },
         {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
           "path": "ghost.png",
           "bytes": 523,
           "sha256": "53b769f1b353904dcf0053d006bb13f64abbdd482afc18468b9716b12dc5cd81"
         },
         {
           "path": "prototype.json",
-          "bytes": 639,
-          "sha256": "c384705cb4464e8d3078458d3ded9eb37b9308efd30a0e9385fe481d465df0a1"
+          "bytes": 843,
+          "sha256": "44d1d8adf5c80a6e1232cb54b0c9c2881cb822b926a6d08728c79f5fb9ef673c"
         }
       ],
-      "published": "2026-10-28T03:35:07-04:00",
+      "published": "2026-10-29T00:07:02-04:00",
       "retired": false
     },
     {
       "id": "gathering-of-water",
-      "revision": 1,
-      "runtime": 3,
+      "revision": 2,
+      "runtime": 4,
       "title": "A gathering of water",
       "summary": "The rivers of South America on the globe: touch one to follow its water to the coast and see the tributaries that gather into it.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "f5a8a6eac73a7cdb45db4fa0466bb643654864eb4781c67bc1f69588f6a0d139",
-      "path": "packs/gathering-of-water/r1/",
-      "bytes": 2479117,
+      "hash": "aeb66ac71bcd52333c32520ed4d782e59dd6cb0b146d0a63cea52fa44a109c34",
+      "path": "packs/gathering-of-water/r2/",
+      "bytes": 2480227,
       "files": [
         {
           "path": "SOURCES.md",
@@ -84,6 +89,11 @@
           "path": "core.js",
           "bytes": 7205,
           "sha256": "b06e7d8425488a549804a0e3eb5aa5e396a37cd1dd7e2348b1a67836a89c1848"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
         },
         {
           "path": "doorway.png",
@@ -112,11 +122,11 @@
         },
         {
           "path": "prototype.json",
-          "bytes": 574,
-          "sha256": "53c5e336dfb1a5fbc75bdfbb3b66ec708580ceb71acda4c7c408b3e1e157ff2f"
+          "bytes": 853,
+          "sha256": "982ae507d308b98b91824ecb69fe4ae2ea1231cc2a014f65f7f868fa97d03a09"
         }
       ],
-      "published": "2026-10-28T03:16:23-04:00",
+      "published": "2026-10-29T00:07:02-04:00",
       "retired": false
     },
     {
@@ -152,15 +162,15 @@
     },
     {
       "id": "sea-between",
-      "revision": 2,
-      "runtime": 3,
+      "revision": 3,
+      "runtime": 4,
       "title": "The sea between",
       "summary": "An engraved chart of the Aegean lying on the globe: sound the sea between the islands, and read its notes on the wind, a caldera, a palm and the deep.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "cada8969ae8b756e69810b4acfdb866daa7e1867149316cf9084901ac5880836",
-      "path": "packs/sea-between/r2/",
-      "bytes": 1260082,
+      "hash": "25d590bbbebc92027f6c74bea29875b4d8031ab35a8b65754486a243be739179",
+      "path": "packs/sea-between/r3/",
+      "bytes": 1261623,
       "files": [
         {
           "path": "SOURCES.md",
@@ -193,6 +203,11 @@
           "sha256": "48bdbc681118e25358d25683d348b826107e11e408405e16f5923f2cab986f69"
         },
         {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
           "path": "engraving.png",
           "bytes": 713382,
           "sha256": "f015a776aca525d720c33b1bbc74d79c5b33b3b936f1f7c485d798f8d78c6dce"
@@ -214,8 +229,8 @@
         },
         {
           "path": "prototype.json",
-          "bytes": 543,
-          "sha256": "9899c42c2f0e8619e385ef571cd6e386cc164b356a1eb0b3b573dbd49f68e364"
+          "bytes": 1253,
+          "sha256": "ac3d4e6950d2cf72321abab4cf8138fd03d9876419ca8b797fac4e94cb1a94bd"
         },
         {
           "path": "skiff-1.png",
@@ -423,20 +438,20 @@
           "sha256": "4275f9c1103d75478cbe19b70148ddef59b883153ecaf8dc8081f83829706b4a"
         }
       ],
-      "published": "2026-10-28T03:35:07-04:00",
+      "published": "2026-10-29T00:07:02-04:00",
       "retired": false
     },
     {
       "id": "sounding-the-deep",
-      "revision": 2,
-      "runtime": 3,
+      "revision": 3,
+      "runtime": 4,
       "title": "Sounding the deep",
       "summary": "HMS Challenger exploring the deep ocean, 1873–76, station by station on the globe. Touch a station to lower the line to the recorded depth.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "9846195aaa40a7e9f0ef5989130c928731d990cc87e050c8fd756696b460568e",
-      "path": "packs/sounding-the-deep/r2/",
-      "bytes": 182235,
+      "hash": "c5224b4e6b96ac601b2a7d3c90c324da26cce5620b3070abde9ba75aabd5b3db",
+      "path": "packs/sounding-the-deep/r3/",
+      "bytes": 183574,
       "files": [
         {
           "path": "LICENSE-NATURAL-EARTH.md",
@@ -459,9 +474,14 @@
           "sha256": "4e9e61235ea5008dc4788e17229c8e9415a7ef0bc832447bf25672781188cafa"
         },
         {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
           "path": "prototype.json",
-          "bytes": 657,
-          "sha256": "cf5b3acb4c7d15cde17c01de6611f4168700edd67a802583b182c4c6bbf1ba78"
+          "bytes": 1165,
+          "sha256": "d92a500144a0d8f6123c2a3a01320c5bbdb26bee1283f5fb67dacdf82b5a1cb8"
         },
         {
           "path": "ship.png",
@@ -479,7 +499,7 @@
           "sha256": "29d326c2003eb18feecc38de6de2473dfe356200941522a07ef75a9e87f1430d"
         }
       ],
-      "published": "2026-10-28T03:35:07-04:00",
+      "published": "2026-10-29T00:07:02-04:00",
       "retired": false
     }
   ]
