@@ -104,13 +104,14 @@
     var m = nearestMap(year), y = Math.round(year), exact = y === m.year;
     var which = exact ? 'the ' + m.year + ' map' : 'the ' + m.year + ' map, the nearest to ' + yearLabel(y);
     var only = m.year < 1700 ? ' The maps this early show only the Ottoman Empire.' : '';
-    var c = chosen ? country(m, chosen) : null, title, text;
+    var c = chosen ? country(m, chosen) : null, title, text, wikipedia = '';
     if (notice) {
       // (a touch where the maps draw nothing leaves the chosen country chosen, and named)
       title = c ? c.name : notice.title; text = notice.text;
     } else if (c) {
       var prior = before(m, chosen);
       title = c.name;
+      wikipedia = c.name;   // (the state's article, by the name the map gives it: wikipedia.json)
       text = 'As drawn on ' + which + '.' + (!prior ? '' : alike(c, prior.country)
         ? ' The ' + prior.map.year + ' map draws it almost the same.'
         : ' The dashed line is ' + prior.country.name + ' on the ' + prior.map.year + ' map.') + only;
@@ -121,11 +122,12 @@
         '. Drag the date to another map.' + only;
     } else {
       title = 'Borders on old maps';
+      wikipedia = 'Europe';
       text = (exact ? 'Europe as drawn on a map of ' + m.year + '.' : 'There is no map for ' + yearLabel(y) + ' here: this is ' + which + '.') +
         ' Tap a country to follow it from map to map; borders change only where a map does.' + only;
     }
     var note = title + '|' + text;
-    if (note !== lastNote) { lastNote = note; terra.caption.set({ title: title, text: text }); }
+    if (note !== lastNote) { lastNote = note; terra.caption.set({ title: title, text: text, wikipedia: wikipedia }); }
   }
 
   function draw() {

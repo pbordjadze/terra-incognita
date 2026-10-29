@@ -45,7 +45,13 @@ final class CamelidStory {
         return ["", "North America", "North America", "Beringia", "The Americas", ""][scene]
     }
     var historical: Bool { followed && scene < 5 }
+    /// Wikipedia's article on each scene (the dromedary before the lineage is followed), for VoiceOver's
+    /// words with Wikipedia's words on.
+    static let articles = ["Camelidae", "Poebrotherium", "Camelidae", "Beringia", "Great American Interchange", "Llama"]
     var description: String {
+        if WikipediaWords.shared.on, let article = WikipediaIndex.shared[followed ? Self.articles[scene] : "Dromedary"] {
+            return article.line
+        }
         guard followed else { return "A living dromedary camel in Arabia. Follow its lineage or return to the atlas." }
         return [
             "We trace the camel's ancestry backward through time, toward North America. Different illustrations represent different periods; the modern camel does not turn into an ancient animal.",

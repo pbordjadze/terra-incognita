@@ -152,20 +152,33 @@ struct FilmScreen: View {
 struct CaptionView: View {
     let caption: Plate.Caption
     let style: CaptionStyle?
+    /// Wikipedia's article on what the caption names, linked under it (the globe's caption, with
+    /// Wikipedia's words on); the only part of the caption that takes a touch.
+    var link: URL? = nil
 
     var body: some View {
-        CaptionLines(caption: caption, style: style)
+        VStack(alignment: .leading, spacing: 2) {
+            CaptionLines(caption: caption, style: style)
+                .allowsHitTesting(false)
+                .accessibilityElement(children: .combine)
+            if let link {
+                WikipediaLink(url: link, color: Color(uiColor: style?.eyebrow?.color.flatMap { UIColor(hex: $0) } ?? .systemBlue))
+                    .padding(.top, -6)
+                    .padding(.bottom, -10)
+            }
+        }
             .frame(maxWidth: CaptionLines.widest, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
             .padding(.top, 70)
             .padding(.bottom, 36)
             // nearly full by the eyebrow's line (about a third of the way down), so the small type stays
-            // clear over a busy map
-            .background(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
-                                               .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom))
-            .allowsHitTesting(false)
-            .accessibilityElement(children: .combine)
+            // clear over a busy map; it takes no touches, so the globe under it does
+            .background {
+                LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: scrim.opacity(0.85), location: 0.3),
+                                       .init(color: scrim, location: 0.55)], startPoint: .top, endPoint: .bottom)
+                    .allowsHitTesting(false)
+            }
     }
 
     private var scrim: Color { Color(uiColor: style?.scrim.flatMap { UIColor(hex: $0) } ?? UIColor(white: 0, alpha: 0.55)) }

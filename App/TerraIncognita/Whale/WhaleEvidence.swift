@@ -20,6 +20,8 @@ struct WhaleEvidence: View {
     private let ink = Color(red: 0.17, green: 0.20, blue: 0.21)
     private let stone = Color(red: 0.94, green: 0.92, blue: 0.87)
     private let sea = Color(red: 0.20, green: 0.36, blue: 0.40)
+    private var tone: WikipediaCard.Tone { WikipediaCard.Tone(ink: ink, faint: ink.opacity(0.7), accent: sea) }
+    private var wikipedia: Bool { WikipediaWords.shared.on }
 
     var body: some View {
         NavigationStack {
@@ -57,44 +59,46 @@ struct WhaleEvidence: View {
     }
 
     @ViewBuilder private var evidence: some View {
-        passage("A sea in today's desert", "Wadi Al-Hitan is a whale-fossil locality in Egypt's Western Desert. Its whale-bearing rocks preserve ancient marine environments. The living Dorudon in this experience represents a fully aquatic whale that inhabited this region in the late Eocene, about 37 million years ago.")
-        passage("A place, rather than one animal", "The illustrated fossil and the living whale connect the same kind of ancient animal with a real fossil-bearing place. They do not identify one individual, its death, or its exact excavation. The fossil's articulation, completeness and setting are illustrative reconstructions.")
-        passage("The globe is a geographic reference", "Present-day coastlines and relief help locate inland Egypt. They are not an Eocene paleogeographic reconstruction. Modern political boundaries and settlements are hidden in the ancient scene. The local marine illustration's edge is a composition boundary, not a measured Tethys shoreline.")
-        passage("Millions of years are omitted", "The cut from about 37 million years ago to today jumps across a long geological history. It does not show a single tide retreating, a whale becoming stranded, or an exact date when the modern desert formed.")
+        passage("A sea in today's desert", wikipedia: "Wadi El Hitan", "Wadi Al-Hitan is a whale-fossil locality in Egypt's Western Desert. Its whale-bearing rocks preserve ancient marine environments. The living Dorudon in this experience represents a fully aquatic whale that inhabited this region in the late Eocene, about 37 million years ago.")
+        passage("A place, rather than one animal", wikipedia: "Dorudon", "The illustrated fossil and the living whale connect the same kind of ancient animal with a real fossil-bearing place. They do not identify one individual, its death, or its exact excavation. The fossil's articulation, completeness and setting are illustrative reconstructions.")
+        passage("The globe is a geographic reference", wikipedia: "Tethys Ocean", "Present-day coastlines and relief help locate inland Egypt. They are not an Eocene paleogeographic reconstruction. Modern political boundaries and settlements are hidden in the ancient scene. The local marine illustration's edge is a composition boundary, not a measured Tethys shoreline.")
+        passage("Millions of years are omitted", wikipedia: "Eocene", "The cut from about 37 million years ago to today jumps across a long geological history. It does not show a single tide retreating, a whale becoming stranded, or an exact date when the modern desert formed.")
         ForEach(Self.sources) { source in sourceView(source) }
         passage("What the art reconstructs", "The illustrations were generated for this experiment. No museum artwork or fossil photograph is reproduced. Skin, color, soft-tissue outlines, pose, light, seabed, sand and movement are artistic reconstructions. A modest horizontal fluke is an anatomical inference; its exact outline is not preserved by the cited skeletons. These notes are a source-based implementation review, not professional paleontological approval of every rendered scene.", identifier: "whaleEvidenceReconstruction")
         passage("Available offline", "These summaries and the visual story in words are bundled with the atlas. The original papers and institutional pages are additional reading, opened only when you choose a source link.")
     }
 
     @ViewBuilder private var limbs: some View {
-        passage("Fully aquatic, with small rear limbs", "Dorudon retained tiny hind limbs and feet, even though it lived fully in the sea. They could not support walking or provide swimming propulsion. Their exact function is not assigned here.", identifier: "whaleLimbClaim")
+        passage("Fully aquatic, with small rear limbs", wikipedia: "Dorudon", "Dorudon retained tiny hind limbs and feet, even though it lived fully in the sea. They could not support walking or provide swimming propulsion. Their exact function is not assigned here.", identifier: "whaleLimbClaim")
         VStack(alignment: .leading, spacing: 12) {
             heading("Where they belonged")
                 .accessibilityIdentifier("whaleLimbsWholeBody")
             illustration(WhaleArt.image(.living), label: "Illustrated whole Dorudon: a long body and tail, front flippers, and very small hind limbs toward the rear.", height: 200)
-            Text("The whole-body illustration puts the small limbs in context. The long torso and tail carried most of the animal's length; the rear limbs were much reduced.")
+            Words(text: "The whole-body illustration puts the small limbs in context. The long torso and tail carried most of the animal's length; the rear limbs were much reduced.",
+                  wikipedia: "Basilosauridae", tone: tone) { Text($0) }
         }
         VStack(alignment: .leading, spacing: 12) {
             heading("Hind limb · enlarged illustration")
                 .accessibilityIdentifier("whaleLimbsDetail")
             illustration(WhaleArt.image(.limb), label: "Enlarged illustrative detail of the rear flank and tiny hind limbs; displayed at a different scale from the whole animal.", height: 260)
                 .accessibilityIdentifier("whaleLimbDetail")
-            Text("This detail is enlarged independently of the whole animal. Bone shapes inform the reconstruction, while its skin covering and pose are inferred. It is an anatomical illustration, not a scan of a particular specimen.")
+            Words(text: "This detail is enlarged independently of the whole animal. Bone shapes inform the reconstruction, while its skin covering and pose are inferred. It is an anatomical illustration, not a scan of a particular specimen.",
+                  wikipedia: "Vestigiality", tone: tone) { Text($0) }
         }
-        passage("How did it swim?", "Vertebral anatomy supports movement involving the body and tail. A 2019 study discusses mid-body-through-tail undulation in Dorudon and questions how much thrust its small inferred flukes supplied. The gentle animation is one restrained interpretation, not a measured gait or proof of an exclusively modern, tail-fluke-powered stroke. The tiny hind limbs remain passive.")
+        passage("How did it swim?", wikipedia: "Evolution of cetaceans", "Vertebral anatomy supports movement involving the body and tail. A 2019 study discusses mid-body-through-tail undulation in Dorudon and questions how much thrust its small inferred flukes supplied. The gentle animation is one restrained interpretation, not a measured gait or proof of an exclusively modern, tail-fluke-powered stroke. The tiny hind limbs remain passive.")
         sourceView(Self.sources[4])
         sourceView(Self.sources[5])
         sourceView(Self.sources[2])
     }
 
     @ViewBuilder private var story: some View {
-        passage("Today · Wadi Al-Hitan, Egypt", "A small illustrated whale fossil lies in the atlas at Wadi Al-Hitan, in Egypt's Western Desert. It represents fossils found in this region, rather than one recorded skeleton at an exact position. Touching it offers a closer look and a voluntary visit to its past.")
-        passage("Back to about 37 million years ago", "The camera widens to locate inland Egypt relative to the Mediterranean and Red Sea, then approaches the fossil region. The present-day fossil recedes. The date changes to about 37 million years ago.", identifier: "whaleStoryAncient")
-        passage("A shallow sea", "An illustrated marine setting opens around the same geographic anchor. The surrounding globe remains a modern geographic reference. The marine illustration represents the ancient environment recorded by local rocks; its edge does not claim an exact ancient shoreline.")
-        passage("Dorudon", "A living Dorudon reconstruction appears: a long, streamlined whale with a narrow snout, front flippers, a long tail and tiny hind limbs. Gentle movement passes through its body and tail. Its small rear limbs do not paddle. This whale was already fully aquatic, and is not portrayed as the first whale or a uniquely identified ancestor of every living whale.")
-        passage("Tiny hind limbs", "The composition draws attention to the small limbs near the rear of the animal. They could not bear its weight on land or propel it through the water. You can inspect their place in the whole body and an enlarged illustrative detail, then return whenever you wish.")
-        passage("Much later · Today", "A deliberate cut skips the intervening millions of years. The marine setting yields to the atlas and the present-day desert. This is a large jump through time, not one sea draining into dunes, a sudden desertification event, or the death of the illustrated whale.")
-        passage("Whales swam here", "The camera settles again on Wadi Al-Hitan. The fossil remains in today's desert. The place now means something different: whales once swam here. You can inspect the evidence, revisit a moment, move away, or leave and continue exploring the atlas. There is no required ending.")
+        passage("Today · Wadi Al-Hitan, Egypt", wikipedia: "Wadi El Hitan", "A small illustrated whale fossil lies in the atlas at Wadi Al-Hitan, in Egypt's Western Desert. It represents fossils found in this region, rather than one recorded skeleton at an exact position. Touching it offers a closer look and a voluntary visit to its past.")
+        passage("Back to about 37 million years ago", wikipedia: "Eocene", "The camera widens to locate inland Egypt relative to the Mediterranean and Red Sea, then approaches the fossil region. The present-day fossil recedes. The date changes to about 37 million years ago.", identifier: "whaleStoryAncient")
+        passage("A shallow sea", wikipedia: "Tethys Ocean", "An illustrated marine setting opens around the same geographic anchor. The surrounding globe remains a modern geographic reference. The marine illustration represents the ancient environment recorded by local rocks; its edge does not claim an exact ancient shoreline.")
+        passage("Dorudon", wikipedia: "Dorudon", "A living Dorudon reconstruction appears: a long, streamlined whale with a narrow snout, front flippers, a long tail and tiny hind limbs. Gentle movement passes through its body and tail. Its small rear limbs do not paddle. This whale was already fully aquatic, and is not portrayed as the first whale or a uniquely identified ancestor of every living whale.")
+        passage("Tiny hind limbs", wikipedia: "Vestigiality", "The composition draws attention to the small limbs near the rear of the animal. They could not bear its weight on land or propel it through the water. You can inspect their place in the whole body and an enlarged illustrative detail, then return whenever you wish.")
+        passage("Much later · Today", wikipedia: "Sahara", "A deliberate cut skips the intervening millions of years. The marine setting yields to the atlas and the present-day desert. This is a large jump through time, not one sea draining into dunes, a sudden desertification event, or the death of the illustrated whale.")
+        passage("Whales swam here", wikipedia: "Evolution of cetaceans", "The camera settles again on Wadi Al-Hitan. The fossil remains in today's desert. The place now means something different: whales once swam here. You can inspect the evidence, revisit a moment, move away, or leave and continue exploring the atlas. There is no required ending.")
         passage("Reading and controlling the images", "The animals and habitats are illustrative reconstructions, and the ancient date is approximate. You can pause the sequence, choose its documented moments, or use the low-motion presentation. Moving the globe pauses the guide and yields the camera; resuming brings the authored view back from your current position.")
     }
 
@@ -120,20 +124,26 @@ struct WhaleEvidence: View {
             .accessibilityAddTraits(.isHeader)
     }
 
-    private func passage(_ title: String, _ body: String, identifier: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            heading(title)
-            Text(body).fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier(identifier ?? title)
+    /// A heading and its paragraph; with Wikipedia's words on, the article's card instead (and nothing,
+    /// for a passage with no article: the heading is the atlas's phrase too).
+    private func passage(_ title: String, wikipedia: String? = nil, _ body: String, identifier: String? = nil) -> some View {
+        Words(text: body, wikipedia: wikipedia, tone: tone) { text in
+            VStack(alignment: .leading, spacing: 9) {
+                heading(title)
+                Text(text).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier(identifier ?? title)
+            }
         }
     }
 
+    /// A source keeps its title, its bibliographic line and its link under Wikipedia's words; what it
+    /// supports (the atlas's reading of it) is shown only with the atlas's own words.
     private func sourceView(_ source: Source) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             heading(source.title)
             Text(source.detail)
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
-            Text(source.support).fixedSize(horizontal: false, vertical: true)
+            if !wikipedia { Text(source.support).fixedSize(horizontal: false, vertical: true) }
             if let url = URL(string: source.url) {
                 Link("Open source ↗", destination: url)
                     .padding(.vertical, 10)

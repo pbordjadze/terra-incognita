@@ -19,6 +19,8 @@ struct CamelidEvidence: View {
     private let ink = Color(red: 0.23, green: 0.17, blue: 0.09)
     private let paper = Color(red: 0.95, green: 0.89, blue: 0.78)
     private let blue = Color(red: 0.31, green: 0.30, blue: 0.47)
+    private var tone: WikipediaCard.Tone { WikipediaCard.Tone(ink: ink, faint: ink.opacity(0.7), accent: blue) }
+    private var wikipedia: Bool { WikipediaWords.shared.on }
 
     var body: some View {
         NavigationStack {
@@ -54,10 +56,10 @@ struct CamelidEvidence: View {
     }
 
     @ViewBuilder private var evidence: some View {
-        passage("A family, across deep time", "Camels and llamas share ancestry. Their family originated in North America. The lineages leading to living Old World and South American camelids separated there long before their ancestors dispersed to other continents.")
-        passage("Dates are approximate", "The scene dates summarize broad evolutionary events. About 17 million years ago is a published estimate of lineage divergence, not a fossil-observed moment when one animal became two species. Dispersal washes represent populations spreading over generations; their edges are illustrative, not measured routes.")
-        passage("The map is a reference", "The globe retains present-day coastlines and relief to help you recognize the regions. It is not a paleogeographic reconstruction. Modern countries and settlements are hidden in prehistoric scenes. Beringia is identified as a regional connection, without claiming its exact shoreline at a particular year.")
-        passage("An ancient animal is an illustration", "The early camelid is a representative, humpless form informed by the middle-Eocene genus Poebrodon. Its fragmentary jaw and tooth fossils do not establish a complete life appearance. Body proportions, coat, color, pose and scenery are artistic reconstructions. The later animals represent a Paracamelus-like northern lineage and a Hemiauchenia-like southern lineage; neither is a uniquely identified migrant or a proven direct ancestor.")
+        passage("A family, across deep time", wikipedia: "Camelidae", "Camels and llamas share ancestry. Their family originated in North America. The lineages leading to living Old World and South American camelids separated there long before their ancestors dispersed to other continents.")
+        passage("Dates are approximate", wikipedia: "Paracamelus", "The scene dates summarize broad evolutionary events. About 17 million years ago is a published estimate of lineage divergence, not a fossil-observed moment when one animal became two species. Dispersal washes represent populations spreading over generations; their edges are illustrative, not measured routes.")
+        passage("The map is a reference", wikipedia: "Beringia", "The globe retains present-day coastlines and relief to help you recognize the regions. It is not a paleogeographic reconstruction. Modern countries and settlements are hidden in prehistoric scenes. Beringia is identified as a regional connection, without claiming its exact shoreline at a particular year.")
+        passage("An ancient animal is an illustration", wikipedia: "Poebrotherium", "The early camelid is a representative, humpless form informed by the middle-Eocene genus Poebrodon. Its fragmentary jaw and tooth fossils do not establish a complete life appearance. Body proportions, coat, color, pose and scenery are artistic reconstructions. The later animals represent a Paracamelus-like northern lineage and a Hemiauchenia-like southern lineage; neither is a uniquely identified migrant or a proven direct ancestor.")
         ForEach(Self.sources) { source in
             sourceView(source)
         }
@@ -65,7 +67,7 @@ struct CamelidEvidence: View {
     }
 
     @ViewBuilder private var family: some View {
-        passage("Two domestic Andean relatives", "Llamas and alpacas belong to the South American camelid branch. Both are domesticated animals, so they appear only after the sequence returns to today.")
+        passage("Two domestic Andean relatives", wikipedia: "Lamini", "Llamas and alpacas belong to the South American camelid branch. Both are domesticated animals, so they appear only after the sequence returns to today.")
         VStack(alignment: .leading, spacing: 12) {
             CamelidAnimalView(kind: .llama)
                 .frame(height: 220)
@@ -73,7 +75,8 @@ struct CamelidEvidence: View {
                 .accessibilityHidden(true)
             heading("Llama")
                 .accessibilityIdentifier("camelidFamilyLlama")
-            Text("The larger, longer-faced animal. Its longer neck and more open body silhouette distinguish it from the compact, fleece-covered alpaca.")
+            Words(text: "The larger, longer-faced animal. Its longer neck and more open body silhouette distinguish it from the compact, fleece-covered alpaca.",
+                  wikipedia: "Llama", tone: tone) { Text($0) }
         }
         VStack(alignment: .leading, spacing: 12) {
             CamelidAnimalView(kind: .alpaca)
@@ -82,21 +85,22 @@ struct CamelidEvidence: View {
                 .accessibilityHidden(true)
             heading("Alpaca")
                 .accessibilityIdentifier("camelidFamilyAlpaca")
-            Text("Smaller and more compact, with a dense fleece. Andean people domesticated alpacas for their wool. Modern coats vary; the illustrated animal represents one appearance, not every breed.")
+            Words(text: "Smaller and more compact, with a dense fleece. Andean people domesticated alpacas for their wool. Modern coats vary; the illustrated animal represents one appearance, not every breed.",
+                  wikipedia: "Alpaca", tone: tone) { Text($0) }
         }
-        passage("Their wild relatives", "Genetic research links llama domestication chiefly with guanacos, and alpaca domestication chiefly with vicuñas. Domestication and later interbreeding make this history more complex than four unchanging types. Living wild animals are relatives, not unchanged snapshots of prehistoric ancestors.")
+        passage("Their wild relatives", wikipedia: "Guanaco", "Genetic research links llama domestication chiefly with guanacos, and alpaca domestication chiefly with vicuñas. Domestication and later interbreeding make this history more complex than four unchanging types. Living wild animals are relatives, not unchanged snapshots of prehistoric ancestors.")
         sourceView(Self.sources[4])
         sourceView(Self.sources[5])
         sourceView(Self.sources[6])
     }
 
     @ViewBuilder private var story: some View {
-        passage("Today · Arabia", "A one-humped dromedary stands in Arabia. You can inspect it, follow its family history, or continue exploring the atlas.")
-        passage("About 44 million years ago · North America", "The atlas moves backward through time and turns toward North America. The modern camel fades away. A much smaller, humpless early camelid is shown as an illustrative reconstruction. This is the continent where the camelid family began.")
-        passage("About 17 million years ago · North America", "A branching family tree appears. Separate lineages lead toward Old World camels and South American camelids. Their separation predates both intercontinental dispersals. No single animal splits into two, and modern camels do not evolve directly into modern llamas.")
-        passage("About 7 million years ago · Beringia", "The globe turns toward Alaska and northeast Asia. A broad wash shows a camelid lineage spreading from North America into Eurasia through the Beringian region. This represents populations over many generations, not one animal's journey or an exact fossil route.")
-        passage("About 3 million years ago · The Americas", "The globe returns to the Americas. A second broad wash spreads south through Central America into South America. The animal represents an ancient lineage, not a domestic llama or alpaca. The wider Great American Biotic Interchange unfolded in stages.")
-        passage("Today · The cousins", "The atlas returns to the present. A camel and a llama face one another, linked through their shared North American ancestry. Camels and llamas are cousins. Their family began in North America, and their ancestors spread in different directions. You can pause, revisit a moment, inspect the relatives, or leave and wander.")
+        passage("Today · Arabia", wikipedia: "Dromedary", "A one-humped dromedary stands in Arabia. You can inspect it, follow its family history, or continue exploring the atlas.")
+        passage("About 44 million years ago · North America", wikipedia: "Poebrotherium", "The atlas moves backward through time and turns toward North America. The modern camel fades away. A much smaller, humpless early camelid is shown as an illustrative reconstruction. This is the continent where the camelid family began.")
+        passage("About 17 million years ago · North America", wikipedia: "Camelidae", "A branching family tree appears. Separate lineages lead toward Old World camels and South American camelids. Their separation predates both intercontinental dispersals. No single animal splits into two, and modern camels do not evolve directly into modern llamas.")
+        passage("About 7 million years ago · Beringia", wikipedia: "Beringia", "The globe turns toward Alaska and northeast Asia. A broad wash shows a camelid lineage spreading from North America into Eurasia through the Beringian region. This represents populations over many generations, not one animal's journey or an exact fossil route.")
+        passage("About 3 million years ago · The Americas", wikipedia: "Great American Interchange", "The globe returns to the Americas. A second broad wash spreads south through Central America into South America. The animal represents an ancient lineage, not a domestic llama or alpaca. The wider Great American Biotic Interchange unfolded in stages.")
+        passage("Today · The cousins", wikipedia: "Camel", "The atlas returns to the present. A camel and a llama face one another, linked through their shared North American ancestry. Camels and llamas are cousins. Their family began in North America, and their ancestors spread in different directions. You can pause, revisit a moment, inspect the relatives, or leave and wander.")
         passage("Reading the images", "Present-day geography is retained as a familiar reference in ancient scenes; it does not claim to reconstruct ancient shorelines. The tree means evolutionary relationship. The broad colored washes mean approximate population dispersal. The animals are representative illustrations rather than observed individuals.")
     }
 
@@ -106,19 +110,25 @@ struct CamelidEvidence: View {
             .accessibilityAddTraits(.isHeader)
     }
 
-    private func passage(_ title: String, _ body: String) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            heading(title)
-            Text(body).fixedSize(horizontal: false, vertical: true)
+    /// A heading and its paragraph; with Wikipedia's words on, the article's card instead (and nothing,
+    /// for a passage with no article: the heading is the atlas's phrase too).
+    private func passage(_ title: String, wikipedia: String? = nil, _ body: String) -> some View {
+        Words(text: body, wikipedia: wikipedia, tone: tone) { text in
+            VStack(alignment: .leading, spacing: 9) {
+                heading(title)
+                Text(text).fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
+    /// A source keeps its title, its bibliographic line and its link under Wikipedia's words; what it
+    /// supports (the atlas's reading of it) is shown only with the atlas's own words.
     private func sourceView(_ source: Source) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             heading(source.title)
             Text(source.detail)
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
-            Text(source.support).fixedSize(horizontal: false, vertical: true)
+            if !wikipedia { Text(source.support).fixedSize(horizontal: false, vertical: true) }
             if let url = URL(string: source.url) {
                 Link("Open source ↗", destination: url)
                     .padding(.vertical, 9)

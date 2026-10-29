@@ -5,6 +5,7 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'Sounding the deep',
+      wikipedia: 'Challenger expedition',
       text: 'HMS Challenger was a British ship sent out from 1872 to 1876 to explore the deep ocean. At its stations the crew stopped, let a weighted line down to measure the depth, and brought up samples of the sea floor.',
       sections: [
         { title: 'Reading the globe',
@@ -13,9 +14,9 @@
                 'Across a longer gap the record has no position, so the ship is not shown.\n\n' +
                 'The hanging line goes down to the depth recorded at that station, drawn to a fixed scale on the screen.\n\n' +
                 'Today\'s borders and names are hidden; the coasts are today\'s, as a reference.' },
-        { title: 'What this record is',
+        { title: 'What this record is', wikipedia: 'John Murray (oceanographer)',
           text: '94 dated stations, from 2 February 1873 to 6 May 1876, with their positions and recorded depths: the stations whose seabed deposits were examined for manganese by Murray and Renard. It is a selection, not the expedition\'s complete log, and its positions are nineteenth-century measurements, not modern ones.' },
-        { title: 'How a sounding worked',
+        { title: 'How a sounding worked', wikipedia: 'Depth sounding',
           text: 'A hemp line, marked every 25 fathoms, was paid out with iron weights on the end until it stopped running; sinking to 3,000 fathoms took about three-quarters of an hour from the 500-fathom mark. A depth is the length of line that ran out, read to the nearest mark: a fathom is six feet, 1.8288 m.' }
       ],
       sources: [

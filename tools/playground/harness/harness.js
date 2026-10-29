@@ -11,7 +11,8 @@
 // JavaScriptCore gives them; this page is their host: a worker posts what `__terraSend` is given, and this
 // page answers with `terra._receive` messages.
 // Close to the app, not pixel-identical: the globe is drawn from vectors on a canvas, not by Globe.metal.
-// Query: device=iphone|ipad, start=1 (past the doorway), bare=1 (the screen alone), textScale, reduceMotion=1,
+// Query: device=iphone|ipad, start=1 (past the doorway), bare=1 (the screen alone), textScale, reduceMotion=1, wikipedia=1
+// (Wikipedia's words: the pack's wikipedia.json in place of its paragraphs, as the app's switch does),
 // idleAfter=<seconds> (the idle turn's wait, 8 by default), timers=host (terra.js's own timers, as in JavaScriptCore).
 (function () {
   'use strict';
@@ -72,7 +73,40 @@
     reduceMotion: Q.reduceMotion === '1' || Q.reduceMotion === 'true',
     textScale: clamp(parseFloat(Q.textScale) || 1, 1, 3.2),
     active: true,
+    wikipedia: Q.wikipedia === '1' || Q.wikipedia === 'true',
   };
+
+  // ---- Wikipedia's words (the app's WikipediaWords): a pack's wikipedia.json, by key; what stays of its own
+  // words (a tip: one sentence under 120 characters); an article's first sentence, or two for a card
+  function sentences(text, limit) {
+    const parts = String(text || '').replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”’)]?(?=\s|$)|[^.!?…]+$/g) || [];
+    let out = '';
+    for (const raw of parts) {
+      const s = raw.trim();
+      if (!s) continue;
+      if (!out) { out = s; continue; }
+      if (out.length + 1 + s.length <= limit) out += ' ' + s; else break;
+    }
+    return out || String(text || '').trim();
+  }
+  const isTip = (text) => { const t = String(text || '').trim(); return !!t && t.length <= 120 && !/\n/.test(t) && sentences(t, 0) === t; };
+  const article = (s, key) => (key && s && s.articles && s.articles[key]) || null;
+  function wikiLine(text, art) { return art ? sentences(art.extract, 0) : isTip(text) ? text : ''; }
+  function wikiCard(art) {
+    const card = document.createElement('div');
+    card.className = 'wiki';
+    const mark = document.createElement('p'); mark.className = 'mark'; mark.innerHTML = '<b>W</b>From Wikipedia';
+    const h = document.createElement('h3'); h.textContent = art.title;
+    card.append(mark, h);
+    if (art.description) { const d = document.createElement('p'); d.className = 'desc'; d.textContent = art.description.charAt(0).toUpperCase() + art.description.slice(1); card.appendChild(d); }
+    const p = document.createElement('p'); p.textContent = sentences(art.extract, 300); card.appendChild(p);
+    const line = document.createElement('div'); line.className = 'foot-line';
+    const a = document.createElement('a'); a.href = art.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Read on Wikipedia ↗';
+    const lic = document.createElement('span'); lic.className = 'licence'; lic.textContent = 'CC BY-SA 4.0' + (art.timestamp ? ' · ' + String(art.timestamp).slice(0, 4) : '');
+    line.append(a, lic);
+    card.appendChild(line);
+    return card;
+  }
   const idleAfter = clamp(Q.idleAfter === undefined ? 8 : parseFloat(Q.idleAfter) || 0, 0, 1e6);
 
   // ---- for checks (tools/playground/check.cjs, harness_check.cjs) and the curious
@@ -1277,9 +1311,12 @@
     foot.hidden = !(t || cap.title || cap.text);
     if (foot.hidden) return;
     const set = (id, text) => { const el = $(id); el.textContent = text; el.hidden = !text; };
+    const art = settings.wikipedia ? article(f, cap.wikipedia) : null;
     set('foot-eyebrow', cap.title);
     set('foot-title', t ? timeLabel(t) : '');
-    set('foot-text', cap.text);
+    set('foot-text', settings.wikipedia ? wikiLine(cap.text, art) : cap.text);
+    $('foot-link').hidden = !art;
+    if (art) $('foot-link').href = art.url;
     $('foot-date').hidden = !t;
     if (!t) return;
     playBtn.hidden = !t.playable;
@@ -1435,6 +1472,7 @@
       parent.appendChild(p);
     }
   }
+  let panelContent = null;
   function showPanel(s, content) {
     if (s !== front()) return noteOnce(s.id + ':panel-back', s.id + ': its panel is not shown while the reader is with another experience');
     const o = content && typeof content === 'object' ? content : {};
@@ -1444,12 +1482,22 @@
     h.textContent = typeof o.title === 'string' ? o.title : '';
     panelBody.appendChild(h);
     if (!o.title) hostWarn('terra.panel.show: give it a title (what this is)');
-    paragraphs(panelBody, o.text);
+    // Wikipedia's words: each text's article's card where its paragraphs were (a tip stays; a text with no
+    // article goes, its heading with it), the sources' notes gone
+    const W = settings.wikipedia;
+    const words = (text, key, heading) => {
+      const art = W ? article(s, key) : null;
+      if (art) { panelBody.appendChild(wikiCard(art)); return; }
+      if (W && !isTip(text)) return;
+      if (heading) { const h3 = document.createElement('h3'); h3.textContent = String(heading); panelBody.appendChild(h3); }
+      paragraphs(panelBody, text);
+    };
+    if (W && o.wikipedia && !article(s, o.wikipedia)) hostWarn('terra.panel.show: no article "' + o.wikipedia + '" in wikipedia.json (python3 tools/wikipedia/build.py --pack ' + s.id + ')');
+    words(o.text, o.wikipedia, '');
     const sections = Array.isArray(o.sections) ? o.sections : [];
     for (const sec of sections) {
       if (!sec || typeof sec !== 'object') continue;
-      if (sec.title) { const h3 = document.createElement('h3'); h3.textContent = String(sec.title); panelBody.appendChild(h3); }
-      paragraphs(panelBody, sec.text);
+      words(sec.text, sec.wikipedia, sec.title);
     }
     const sources = Array.isArray(o.sources) ? o.sources : [];
     if (sources.length) {
@@ -1464,13 +1512,14 @@
         a.textContent = String(src.title || src.url || 'Source');
         if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         li.appendChild(a);
-        if (src.note) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(src.note); li.appendChild(n); }
+        if (src.note && !W) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(src.note); li.appendChild(n); }
         ul.appendChild(li);
       }
       panelBody.appendChild(h3);
       panelBody.appendChild(ul);
     }
     panelOwner = s;
+    panelContent = o;
     panelInfo = { title: h.textContent, sections: sections.length, sources: sources.length };
     panel.hidden = false;
     panel.classList.remove('tall');
@@ -1516,7 +1565,10 @@
         return updateReadout();
       case 'time': return onTime(s, msg);
       case 'caption':
-        s.caption = { title: String(msg.title || ''), text: String(msg.text || '') };
+        s.caption = { title: String(msg.title || ''), text: String(msg.text || ''), wikipedia: String(msg.wikipedia || '') };
+        if (settings.wikipedia && s.caption.wikipedia && !article(s, s.caption.wikipedia)) {
+          noteOnce(s.id + ':wiki:' + s.caption.wikipedia, s.id + ': no article "' + s.caption.wikipedia + '" in wikipedia.json (python3 tools/wikipedia/build.py --pack ' + s.id + ')');
+        }
         updateFoot();
         dirty();
         return;
@@ -1603,6 +1655,12 @@
     }
     resetHost(s);
     s.running = true; s.started = false; s.ended = false; s.early = []; s.entry = entry || 'workbench'; s.t0 = now();
+    // its articles (wikipedia.json), for Wikipedia's words
+    s.articles = {};
+    if ([...pack.FILES].includes('wikipedia.json')) {
+      fetch(packUrl(s, 'wikipedia.json')).then((r) => r.json()).then((j) => { s.articles = (j && j.articles) || {}; updateFoot(); })
+        .catch(() => hostWarn(where + ': wikipedia.json could not be read'));
+    }
     const was = front();
     if (was) { was.front = false; stopPlayback(was, false); deliver(was, { type: 'focus', front: false, by: 'host' }); }
     s.front = true;
@@ -1710,7 +1768,9 @@
     $('scale').value = settings.textScale;
     $('scale-out').textContent = settings.textScale.toFixed(1);
     $('motion').checked = !!settings.reduceMotion;
+    $('wikipedia').checked = !!settings.wikipedia;
     document.documentElement.style.setProperty('--ts', String(settings.textScale));
+    if (panelOwner && panelContent && !panel.hidden) showPanel(panelOwner, panelContent);
     if (settings.reduceMotion) for (const s of stages) if (s.time && s.time.playing) { s.time.playing = false; sendTime(s, 'host'); }
     updateFoot();
     dirty();
@@ -1718,6 +1778,7 @@
   }
   $('scale').addEventListener('input', (e) => applySettings({ textScale: +e.target.value }));
   $('motion').addEventListener('change', (e) => applySettings({ reduceMotion: e.target.checked }));
+  $('wikipedia').addEventListener('change', (e) => applySettings({ wikipedia: e.target.checked }));
   document.addEventListener('visibilitychange', () => applySettings({ active: !document.hidden }));
   const startPrimary = () => { if (primaryPack) startStage(primaryPack, 'workbench'); };
   $('start-button').addEventListener('click', startPrimary);

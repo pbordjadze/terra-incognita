@@ -102,8 +102,9 @@
     runtime: 4,
     /** { id, revision, origin: 'bundled' | 'downloaded' | 'preview' } */
     pack: boot.pack || { id: 'preview', revision: 0, origin: 'preview' },
-    /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded) } */
-    settings: Object.assign({ reduceMotion: false, textScale: 1, active: true }, boot.settings || {}),
+    /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded),
+        wikipedia (the reader wants Wikipedia's words in place of the atlas's: keep your own lines to data) } */
+    settings: Object.assign({ reduceMotion: false, textScale: 1, active: true, wikipedia: false }, boot.settings || {}),
     /** True while this is the experience in front, the one the reader is with (runtime 4: several run at
         once; the front one's date, caption, scheme and flights are the globe's). */
     focus: boot.focus !== false,
@@ -181,7 +182,7 @@
     },
     /** The words at the foot: what this is (title), then a line or two (text). */
     caption: {
-      set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '' }); }
+      set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '', wikipedia: (c && c.wikipedia) || '' }); }
     },
     /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32) } */
     globe: {

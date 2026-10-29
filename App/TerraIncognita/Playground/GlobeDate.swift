@@ -81,6 +81,9 @@ struct GlobeTime: Equatable {
 struct StageCaption: Equatable {
     let title: String
     let text: String
+    /// The Wikipedia article on its subject, when the prototype names one: with Wikipedia's words on, its
+    /// first sentence is the text, and a link to it follows.
+    var article: WikipediaArticle? = nil
 }
 
 /// The foot of the screen while a prototype gives it words or a date: the globe's caption type, and
@@ -91,12 +94,19 @@ struct GlobeFoot: View {
     let onTime: (Double) -> Void
     let onPlay: (Bool) -> Void
 
+    private var wikipedia: Bool { WikipediaWords.shared.on }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            CaptionLines(caption: Plate.Caption(eyebrow: caption?.title ?? "", title: time?.label ?? "", text: caption?.text ?? ""),
+            CaptionLines(caption: Plate.Caption(eyebrow: caption?.title ?? "", title: time?.label ?? "",
+                                                text: WordsRule.line(caption?.text ?? "", article: caption?.article)),
                          style: GlobeScreen.style)
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("globeFootCaption")
+            if wikipedia, let article = caption?.article {
+                WikipediaLink(url: article.url, color: Color(uiColor: GlobeScreen.style?.eyebrow?.color.flatMap { UIColor(hex: $0) } ?? .systemBlue))
+                    .padding(.top, -8)
+            }
             if let time {
                 DateStrip(time: time, onTime: onTime, onPlay: onPlay)
             }

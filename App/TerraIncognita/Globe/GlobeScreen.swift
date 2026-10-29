@@ -74,7 +74,7 @@ struct GlobeScreen: View {
                 } else if style == .persian {
                     PersianCaption(caption: caption)
                 } else {
-                    CaptionView(caption: caption, style: Self.style)
+                    CaptionView(caption: caption, style: Self.style, link: wikipedia ? article?.url : nil)
                 }
             }
             .unseen(quiet)
@@ -83,9 +83,14 @@ struct GlobeScreen: View {
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
         }
         .animation(.easeInOut(duration: 0.35), value: caption.title)
+        .animation(.easeInOut(duration: 0.35), value: wikipedia)
         .animation(.easeInOut(duration: 0.35), value: style)
         .animation(.easeInOut(duration: 0.35), value: invitation)
     }
+
+    private var wikipedia: Bool { WikipediaWords.shared.on }
+    /// Wikipedia's article on the chosen country (the app's index holds every country's, by its long name).
+    private var article: WikipediaArticle? { country.flatMap { WikipediaIndex.shared[$0.long ?? $0.n] } }
 
     private var caption: Plate.Caption {
         guard let c = country else {
@@ -97,7 +102,9 @@ struct GlobeScreen: View {
         if let cap = c.cap { facts.append(String(localized: "Capital \(cap)")) }
         if let pop = c.pop, pop > 0 { facts.append(Self.people(pop)) }
         let title = style == .persian ? Self.cartouche(c.n) : (c.long ?? c.n)
-        return Plate.Caption(eyebrow: region, title: title, text: facts.joined(separator: " · "))
+        // (with Wikipedia's words on, Wikipedia's first sentence on the country, in place of the atlas's facts)
+        let text = wikipedia && style != .persian ? (article?.line ?? facts.joined(separator: " · ")) : facts.joined(separator: " · ")
+        return Plate.Caption(eyebrow: region, title: title, text: text)
     }
 
     /// The name the Persian letters in the headpiece's cartouche: the short name, "&" for "and" (as
