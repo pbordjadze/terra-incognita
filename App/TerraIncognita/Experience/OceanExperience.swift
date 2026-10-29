@@ -303,16 +303,21 @@ private struct OceanEvidenceView: View {
                     if !wikipedia {
                         Text("These notes are bundled for offline reading. The cited works are not bundled. URLs are selectable references; this encounter makes no network requests. Source check: 26 October 2026 (ET), by an AI research agent, not a human specialist.")
                     }
-                    // (the sources keep their titles, bibliographic lines and links under Wikipedia's words; the
-                    // atlas's reading of them, what each supports and its limits, is shown only with its own words)
-                    ForEach(OceanEvidence.sources) { source in
+                    // (under Wikipedia's words the sources go too, leaving only Wikipedia's words to read; what each
+                    // supports and its limits are the atlas's reading of them)
+                    if wikipedia {
+                        ForEach(["Madagascar", "Malagasy language", "Austronesian peoples", "Comoros"], id: \.self) { key in
+                            if let article = WikipediaIndex.shared[key] {
+                                WikipediaCard(article: article, tone: OceanExperience.tone)
+                            }
+                        }
+                    }
+                    ForEach(wikipedia ? [] : OceanEvidence.sources) { source in
                         VStack(alignment: .leading, spacing: 10) {
                             Text(source.title).font(.custom("LibertinusSerif-Semibold", size: 23, relativeTo: .title2))
                             Text(source.detail).foregroundStyle(OceanExperience.blue)
-                            if !wikipedia {
-                                Text(source.support)
-                                Text("Limits · " + source.limitation).italic()
-                            }
+                            Text(source.support)
+                            Text("Limits · " + source.limitation).italic()
                             Text(source.url).font(.system(.footnote)).textSelection(.enabled)
                         }
                         Divider()

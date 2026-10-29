@@ -50,7 +50,7 @@ struct PackPanel: Identifiable, Equatable {
 
 /// The panel's sheet: half height (the globe stays live above it), pulled up for more. With Wikipedia's
 /// words on, each paragraph gives way to its article's card (a tip stays; a paragraph with no article
-/// goes, its heading with it), and the sources keep their links and lose their notes.
+/// goes, its heading with it), and the sources go too: only Wikipedia's words are left to read.
 struct PackPanelView: View {
     let panel: PackPanel
     @Environment(\.dismiss) private var dismiss
@@ -84,7 +84,7 @@ struct PackPanelView: View {
                         }
                     }
                 }
-                if !panel.sources.isEmpty {
+                if !panel.sources.isEmpty && !wikipedia {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Sources")
                             .font(.system(.subheadline, design: .serif).weight(.semibold))
@@ -98,7 +98,7 @@ struct PackPanelView: View {
                                 } else {
                                     Text(source.title).font(.system(.footnote, design: .serif))
                                 }
-                                if !source.note.isEmpty && !wikipedia {
+                                if !source.note.isEmpty {
                                     Text(source.note).font(.caption).foregroundStyle(Self.faint)
                                 }
                             }

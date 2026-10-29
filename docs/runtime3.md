@@ -218,7 +218,7 @@ key on `terra.caption.set`, on `terra.panel.show` and on each of its `sections`,
 title. With the switch on, the host shows the article's first sentence at the foot (and "Wikipedia ↗"
 under it) and the article's card where the panel's paragraphs were; a text with no key stays only when
 it is a tip (one sentence under 120 characters), and a section with neither goes, its heading with
-it; the sources keep their titles and links and lose their notes.
+it; the sources go too, so only Wikipedia's words are left to read.
 
 The words are bundled, never fetched by the app: `python3 tools/wikipedia/build.py --pack <id>` reads
 the keys a pack names (and any listed for it in `tools/wikipedia/articles.txt`, as "Toward the Amazon

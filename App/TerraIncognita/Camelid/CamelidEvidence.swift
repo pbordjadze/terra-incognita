@@ -121,19 +121,21 @@ struct CamelidEvidence: View {
         }
     }
 
-    /// A source keeps its title, its bibliographic line and its link under Wikipedia's words; what it
-    /// supports (the atlas's reading of it) is shown only with the atlas's own words.
-    private func sourceView(_ source: Source) -> some View {
+    /// A source: its title, its bibliographic line, what it supports and its link. Not shown under
+    /// Wikipedia's words, which leave only Wikipedia's to read.
+    @ViewBuilder private func sourceView(_ source: Source) -> some View {
+        if !wikipedia {
         VStack(alignment: .leading, spacing: 8) {
             heading(source.title)
             Text(source.detail)
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body))
-            if !wikipedia { Text(source.support).fixedSize(horizontal: false, vertical: true) }
+            Text(source.support).fixedSize(horizontal: false, vertical: true)
             if let url = URL(string: source.url) {
                 Link("Open source ↗", destination: url)
                     .padding(.vertical, 9)
                     .accessibilityLabel("Open source: \(source.title)")
             }
+        }
         }
     }
 

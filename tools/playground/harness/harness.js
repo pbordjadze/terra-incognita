@@ -1483,7 +1483,7 @@
     panelBody.appendChild(h);
     if (!o.title) hostWarn('terra.panel.show: give it a title (what this is)');
     // Wikipedia's words: each text's article's card where its paragraphs were (a tip stays; a text with no
-    // article goes, its heading with it), the sources' notes gone
+    // article goes, its heading with it), and the sources gone too
     const W = settings.wikipedia;
     const words = (text, key, heading) => {
       const art = W ? article(s, key) : null;
@@ -1500,7 +1500,7 @@
       words(sec.text, sec.wikipedia, sec.title);
     }
     const sources = Array.isArray(o.sources) ? o.sources : [];
-    if (sources.length) {
+    if (sources.length && !W) {
       const h3 = document.createElement('h3'), ul = document.createElement('ul');
       h3.textContent = 'Sources';
       for (const src of sources) {
@@ -1512,7 +1512,7 @@
         a.textContent = String(src.title || src.url || 'Source');
         if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         li.appendChild(a);
-        if (src.note && !W) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(src.note); li.appendChild(n); }
+        if (src.note) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(src.note); li.appendChild(n); }
         ul.appendChild(li);
       }
       panelBody.appendChild(h3);
