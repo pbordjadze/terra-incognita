@@ -15,26 +15,29 @@
   'use strict';
   var V = window.VINE, D = Math.PI / 180;
   var FIRST = V.origin.year, LAST = V.today;
-  var STEM = '#5A3A1C', VOYAGE = '#3B5B73', TRACE = '#D9962BCC', LIGHT = '#FFF6D6';
+  var STEM = '#55402C', VOYAGE = '#7A5A33', TRACE = '#E0A232', LIGHT = '#FFFBEA';
 
   // ---- scale: what shows depends on how many points a degree is on this screen, not the zoom alone ----
   var R1 = 489;                               // the globe's radius at zoom 1 (about 176 on a phone, 489 on the 13" iPad)
   function zoomFor(ppd) { return Math.round(ppd / (R1 * D) * 100) / 100; }
-  var NEAR = 3.5, MID = 1.1;
+  var NEAR = 0, MID = 0;
   function measure(c) {
     var r1 = c && c.radius > 0 && c.zoom > 0 ? c.radius / c.zoom : R1;
-    if (Math.abs(r1 - R1) / R1 < 0.08 && NEAR !== 3.5) return false;
-    R1 = r1; NEAR = zoomFor(30); MID = zoomFor(9);
+    if (Math.abs(r1 - R1) / R1 < 0.08 && NEAR) return false;
+    R1 = r1; NEAR = zoomFor(34); MID = zoomFor(11);
     return true;
   }
 
-  // ---- the season each hemisphere is in, from the reader's own month ----
+  // ---- the season each hemisphere is in, from the reader's own month: leaves in spring, green clusters
+  // in summer, the vintage in autumn, bare stems and a few dry leaves in winter ----
   var month = new Date().getMonth();
   function season(south) {
     var m = south ? (month + 6) % 12 : month;
-    return m >= 3 && m <= 7 ? 'green' : m >= 8 && m <= 10 ? 'autumn' : 'winter';
+    return m >= 2 && m <= 4 ? 'spring' : m >= 5 && m <= 7 ? 'summer' : m >= 8 && m <= 10 ? 'autumn' : 'winter';
   }
-  function grapesFor(south) { var s = season(south); return s === 'green' ? 'grapes-green.png' : 'grapes-ripe.png'; }
+  var LEAVES = { spring: 'leaf-green', summer: 'leaf-green', autumn: 'leaf-autumn', winter: 'leaf-winter' };
+  var FAR_LEAF = { spring: 'leaf-green-1.png', summer: 'leaf-green-1.png', autumn: 'leaf-autumn-1.png', winter: 'leaf-winter-1.png' };
+  function grapesFor(south) { var s = season(south); return s === 'summer' ? 'grapes-green.png' : s === 'autumn' ? 'grapes-ripe.png' : null; }
 
   function unit(p) { var la = p[1] * D, lo = p[0] * D; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
   function arc(a, b) { var u = unit(a), v = unit(b); return Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))); }
@@ -45,46 +48,55 @@
 
   // ---- everything the globe grows, set once and dated ----
   function plant() {
-    // the voyages first, under the stems: the fine dashed line of the vine carried over the sea
+    // the voyages first, under the stems: the fine dashed line of the vine carried over the sea, in the
+    // stem's own brown so it is the vine's and not one of the map's lines
     terra.geo.set('voyages', V.voyages.map(function (f) { return line(f.coordinates); }),
-                  { style: 'track', color: VOYAGE, lineWidth: 1.3, dated: true });
-    // the stems: one layer, every trunk's and twig's land runs, thickening with age; touchable
-    terra.geo.set('stems', V.stems.map(function (f) { return line(f.coordinates, { label: V.branches[f.branch].name }); }),
-                  { style: 'border', color: STEM, lineWidth: 0.9, dated: true, thickens: { to: 3.4, over: 2500 }, touchable: true });
+                  { style: 'track', color: VOYAGE, lineWidth: 1.5, dated: true });
+    // the stems: every trunk's and twig's land runs, thickening with age; touchable. Three layers by zoom,
+    // so the trunk is a slender line at the whole Earth and a thick old stem close in (a constant width
+    // would be a root system from afar and a thread up close)
+    var stems = V.stems.map(function (f) { return line(f.coordinates, { label: V.branches[f.branch].name }); });
+    terra.geo.set('stems-far', stems, { style: 'border', color: STEM, lineWidth: 0.55, dated: true, thickens: { to: 1.9, over: 1800 }, touchable: true, maxZoom: MID });
+    terra.geo.set('stems', stems, { style: 'border', color: STEM, lineWidth: 0.8, dated: true, thickens: { to: 2.9, over: 1800 }, touchable: true, minZoom: MID, maxZoom: NEAR });
+    terra.geo.set('stems-near', stems, { style: 'border', color: STEM, lineWidth: 1.2, dated: true, thickens: { to: 5.5, over: 1800 }, touchable: true, minZoom: NEAR });
     // the leaves: by kind and hemisphere (each keeps its own season), large close in, small from the middle
     // distance, a tint from afar
+    // (a winter hemisphere keeps one leaf in three, dry)
     for (var hemi = 0; hemi < 2; hemi++) {
-      var s = season(hemi === 1);
+      var s = season(hemi === 1), sparse = s === 'winter' ? 3 : 1;
       for (var k = 0; k < 3; k++) {
-        var kind = V.leaves.filter(function (l) { return l[3] === k && l[4] === hemi; }).map(function (l) { return point(l[0], l[1], l[2]); });
-        var image = 'leaf-' + s + '-' + (k + 1) + '.png';
-        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 26, height: 26, minZoom: NEAR, offset: [0, -5], dated: true, bloom: 0.9 });
-        terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 12, height: 12, minZoom: MID, maxZoom: NEAR, offset: [0, -2], dated: true, bloom: 0.7 });
+        var kind = V.leaves.filter(function (l, i) { return l[3] === k && l[4] === hemi && i % sparse === 0; }).map(function (l) { return point(l[0], l[1], l[2]); });
+        var image = LEAVES[s] + '-' + (k + 1) + '.png';
+        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22, height: 22, minZoom: NEAR, offset: [0, -7], dated: true, bloom: 0.9 });
+        terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 9.5, height: 9.5, minZoom: MID, maxZoom: NEAR, offset: [0, -3], dated: true, bloom: 0.7 });
       }
-      var all = V.leaves.filter(function (l) { return l[4] === hemi && l[3] !== 1; }).map(function (l) { return point(l[0], l[1], l[2]); });
-      var far = { green: 'leaf-green-1.png', autumn: 'leaf-autumn-1.png', winter: 'leaf-winter-1.png' }[s];
-      terra.geo.set('leaves-far-' + hemi, all, { style: 'symbol', image: far, width: 6.5, height: 6.5, maxZoom: MID, offset: [0, -1], dated: true, bloom: 0.6 });
+      // from afar the vine is a thread with a tint of leaf: one leaf in two, tiny
+      var far = V.leaves.filter(function (l, i) { return l[4] === hemi && i % (2 * sparse) === 0; }).map(function (l) { return point(l[0], l[1], l[2]); });
+      terra.geo.set('leaves-far-' + hemi, far, { style: 'symbol', image: FAR_LEAF[s], width: 5.5, height: 5.5, maxZoom: MID, offset: [0, -1.5], dated: true, bloom: 0.6 });
     }
-    // the clusters, hanging where the vine arrives; touchable: light runs to them
+    // the clusters, hanging where the vine arrives, in the hemisphere's summer and autumn; touchable:
+    // light runs to them. None from afar: the whole Earth sees the vine as one thread
     for (hemi = 0; hemi < 2; hemi++) {
-      var clusters = V.clusters.filter(function (c) { return (c.lat < 0 ? 1 : 0) === hemi; }).map(function (c) {
+      var grapes = grapesFor(hemi === 1);
+      var clusters = grapes ? V.clusters.filter(function (c) { return (c.lat < 0 ? 1 : 0) === hemi; }).map(function (c) {
         return point(c.lon, c.lat, c.year, { label: c.name + ', ' + said(c.year) });
-      });
-      terra.geo.set('clusters-near-' + hemi, clusters, { style: 'symbol', image: grapesFor(hemi === 1), width: 18, height: 27, minZoom: NEAR, offset: [0, 11], dated: true, bloom: 1.2, touchable: true });
-      terra.geo.set('clusters-mid-' + hemi, clusters, { style: 'symbol', image: grapesFor(hemi === 1), width: 9, height: 13.5, minZoom: MID, maxZoom: NEAR, offset: [0, 5], dated: true, bloom: 0.9, touchable: true });
+      }) : [];
+      terra.geo.set('clusters-near-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 15, height: 22.5, minZoom: NEAR, offset: [0, 10], dated: true, bloom: 1.2, touchable: true });
+      terra.geo.set('clusters-mid-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 7, height: 10.5, minZoom: MID, maxZoom: NEAR, offset: [0, 4.5], dated: true, bloom: 0.9, touchable: true });
     }
     // the qvevri, where it all begins; touch it to begin again
     var label = 'The qvevri at ' + V.origin.name + ': touch to begin the walk again';
-    terra.geo.set('qvevri-near', [point(V.origin.lon, V.origin.lat, FIRST, { label: label })], { style: 'symbol', image: 'qvevri.png', width: 60, height: 68, minZoom: NEAR, offset: [0, 22], touchable: true });
-    terra.geo.set('qvevri-mid', [point(V.origin.lon, V.origin.lat, FIRST, { label: label })], { style: 'symbol', image: 'qvevri.png', width: 26, height: 30, minZoom: MID, maxZoom: NEAR, offset: [0, 10], touchable: true });
+    terra.geo.set('qvevri-near', [point(V.origin.lon, V.origin.lat, FIRST, { label: label })], { style: 'symbol', image: 'qvevri.png', width: 64, height: 64, minZoom: NEAR, touchable: true });
+    terra.geo.set('qvevri-mid', [point(V.origin.lon, V.origin.lat, FIRST, { label: label })], { style: 'symbol', image: 'qvevri.png', width: 24, height: 24, minZoom: MID, maxZoom: NEAR, touchable: true });
+    terra.geo.set('qvevri-far', [point(V.origin.lon, V.origin.lat, FIRST, { label: label })], { style: 'symbol', image: 'qvevri.png', width: 10, height: 10, maxZoom: MID, touchable: true });
     // the tendrils at the growing tips: sprites on dated ways, there while their trunk grows
     V.tips.forEach(function (t) {
       terra.sprites.set('tip-' + t.branch, {
         path: { coordinates: t.coordinates, dates: t.dates },
         looks: [
-          { frames: frames('tendril', 8), fps: 5, size: [30, 26], minZoom: NEAR, face: true },
+          { frames: frames('tendril', 8), fps: 5, size: [34, 30], minZoom: NEAR, face: true },
           { frames: frames('tendril', 8), fps: 5, size: [15, 13], minZoom: MID, maxZoom: NEAR, face: true },
-          { frames: frames('tendril', 8), fps: 4, size: [8, 7], maxZoom: MID, face: true }
+          { frames: frames('tendril', 8), fps: 4, size: [7, 6], maxZoom: MID, face: true }
         ],
         label: t.name + ': the vine growing'
       });
@@ -113,11 +125,18 @@
     }
     return best;
   }
+  /** The way lit: the line in gold with its light running outward, and a spark that leaves the qvevri and
+      runs the whole way to the place touched, arriving in a breath or two. */
+  var sparks = 0;
   function light(branch, index, name) {
     var coords = wayBack(branch, index);
     if (coords.length < 2) return;
     terra.geo.set('trace', [line(coords)], { style: 'border', color: TRACE, lineWidth: 3.6,
-                  flow: { speed: 80, dash: 6, gap: 14, color: LIGHT, width: 2.2 } });
+                  flow: { speed: 90, dash: 6, gap: 14, color: LIGHT, width: 2.4 } });
+    var seconds = Math.min(3.2, 0.9 + coords.length / 60), id = 'spark-' + (++sparks);
+    terra.sprites.set(id, { path: { coordinates: coords, seconds: seconds, loop: false },
+                            looks: [{ image: 'spark.png', size: [22, 22] }], label: 'The light running along the vine' });
+    setTimeout(function () { terra.sprites.remove(id); }, seconds * 1000 + 600);
     terra.caption.set({ title: 'The vine\'s long walk', text: name, wikipedia: 'Georgian wine' });
     if (traceTimer) clearTimeout(traceTimer);
     traceTimer = setTimeout(function () { terra.geo.remove('trace'); traceTimer = null; }, 14000);
@@ -125,7 +144,7 @@
   terra.on('touch', function (t) {
     if (t.phase !== 'tap' || !t.target || !t.target.layer) return;
     var id = t.target.layer, i = t.target.index;
-    if (id === 'stems') {
+    if (id.indexOf('stems') === 0) {
       var f = V.stems[i];
       if (!f || t.lon == null) return;
       var index = nearestOn(f.branch, t.lon, t.lat, year);
@@ -151,10 +170,11 @@
     if (e.by === 'reader') readerPaused = !e.playing;
   });
   terra.on('focus', function (f) { if (f.front && !readerPaused && year < LAST) terra.time.play(true); });
-  var lastSpeed = 0;
+  var lastSpeed = 0, opening = true;
   terra.on('camera', function (c) {
     if (measure(c)) plant();
-    var ppd = R1 * c.zoom * D, speed = Math.min(1, Math.max(0.2, 10 / ppd));
+    // (while the opening pulls back from the qvevri, the years run as written)
+    var ppd = R1 * c.zoom * D, speed = opening ? 1 : Math.min(1, Math.max(0.2, 10 / ppd));
     speed = Math.round(speed * 20) / 20;
     if (speed !== lastSpeed) { lastSpeed = speed; terra.time.speed(speed); }
   });
@@ -180,10 +200,25 @@
     });
   });
 
-  // ---- start: the first spring in the valley ----
+  // ---- start: close on the qvevri's mouth in the valley, a breath, then the first shoot and the slow
+  // pull-back as the vine runs; the reader's own touch ends the pull-back at once ----
   terra.globe.set({ still: true, maxZoom: 16 });
   measure(terra.camera);
   terra.caption.set({ title: 'The vine\'s long walk', text: '', wikipedia: 'Georgian wine' });
   plant();
-  terra.time.show({ unit: 'year', pace: V.pace, value: FIRST, ticks: V.ticks, playable: true, playing: true, carry: false });
+  var still = terra.settings.reduceMotion;
+  // close: a degree is 120 points, the qvevri's mouth and the valley round it (an anchor stops at 8)
+  var closeZoom = Math.min(16, zoomFor(120));
+  terra.time.show({ unit: 'year', pace: V.pace, value: FIRST, ticks: V.ticks, playable: true, playing: false, carry: false });
+  // (a flight within a second of the reader's touch is dropped: the dive to the qvevri waits a beat after
+  // the doorway's tap, which is also the right pause)
+  if (!still) setTimeout(function () { terra.flyTo(V.origin.lon, V.origin.lat, closeZoom, 1.8); }, 1100);
+  setTimeout(function () {
+    terra.time.play(true);
+    // the pull-back ends with about fifty-five degrees across the screen (the Caucasus to the Nile), and
+    // on a phone no farther than a degree to twelve points, so the vine stays a vine
+    var width = terra.camera && terra.camera.width > 0 ? terra.camera.width : 1032;
+    if (!still) terra.flyTo(43, 38.5, zoomFor(Math.max(12, width / 55)), 28);
+  }, still ? 400 : 3600);
+  setTimeout(function () { opening = false; lastSpeed = 0; }, 31000);
 })();

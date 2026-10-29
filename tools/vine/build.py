@@ -44,12 +44,12 @@ ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the
 TRUNKS = [
     ('The first vine', [ORIGIN, (44.2, 41.7, -5900, 'Shulaveris Gora'), (43.9, 42.0, -5800, None), (42.9, 42.15, -5600, None),
                         (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
-    ('Along the Kura to the Caspian', [ORIGIN, (45.4, 41.6, -5900, None), (46.0, 41.7, -5800, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
+    ('Along the Kura to the Caspian', [(ORIGIN[0], ORIGIN[1], -5920, None), (45.4, 41.6, -5880, None), (46.0, 41.7, -5800, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
                                        (49.0, 40.3, -5000, None)]),
-    ('Down the Zagros', [ORIGIN, (45.0, 40.6, -5700, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
+    ('Down the Zagros', [(ORIGIN[0], ORIGIN[1], -5850, None), (45.0, 40.6, -5700, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
                          (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
                          (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
-    ('Into Anatolia', [ORIGIN, (43.9, 41.1, -5900, None), (42.7, 40.5, -5600, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
+    ('Into Anatolia', [(ORIGIN[0], ORIGIN[1], -5780, None), (43.9, 41.1, -5700, None), (42.7, 40.5, -5600, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
                        (37.5, 39.3, -4600, None), (35.5, 39.2, -4300, None), (33.5, 39.0, -3900, None), (31.0, 39.0, -3600, None), (29.5, 39.2, -3400, None),
                        (28.0, 39.4, -3200, None), (27.0, 39.8, -3100, None), (26.24, 39.96, -3000, 'Troy')]),
     ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (38.3, 38.4, -4800, None), (37.0, 37.2, -4600, None), (36.6, 36.3, -4400, None), (36.0, 35.2, -4200, None),
@@ -101,12 +101,12 @@ TRUNKS = [
     ('Out to Madeira and the Canaries', [(-9.1, 38.7, -400, None), (-10.5, 37.0, 1300, None), (-13.0, 35.0, 1400, None), (-16.9, 32.65, 1425, 'Madeira'),
                                          (-16.5, 30.0, 1460, None), (-16.5, 28.3, 1480, 'The Canaries')]),
     ('Across the ocean to Mexico', [(-16.5, 28.3, 1480, None), (-25.0, 24.0, 1493, None), (-40.0, 21.0, 1495, None), (-55.0, 19.0, 1497, None), (-65.0, 18.6, 1499, None),
-                                    (-70.0, 18.5, 1500, 'Hispaniola'), (-74.0, 19.5, 1510, None), (-78.0, 21.0, 1514, 'Cuba'), (-85.0, 20.5, 1519, None),
+                                    (-70.0, 18.5, 1500, 'Hispaniola'), (-74.0, 19.5, 1510, None), (-78.0, 21.0, 1514, None), (-85.0, 20.5, 1519, None),
                                     (-96.1, 19.2, 1522, 'Veracruz'), (-97.5, 19.3, 1523, None), (-99.1, 19.4, 1524, 'Mexico')]),
     ('North by the Rio Grande', [(-99.1, 19.4, 1524, None), (-101.0, 21.0, 1550, None), (-102.6, 22.8, 1570, 'Zacatecas'), (-102.2, 25.4, 1597, 'Parras'),
                                  (-104.5, 28.5, 1615, None), (-106.3, 30.2, 1625, None), (-106.9, 33.4, 1629, 'Senecú, on the Rio Grande'),
                                  (-106.5, 31.75, 1659, 'El Paso del Norte')]),
-    ('South along the Andes', [(-70.0, 18.5, 1500, None), (-74.0, 15.0, 1510, None), (-79.5, 9.0, 1520, 'Panama'), (-80.0, 4.0, 1530, None), (-81.0, -2.0, 1535, None),
+    ('South along the Andes', [(-70.0, 18.5, 1500, None), (-74.0, 15.0, 1510, None), (-79.5, 9.0, 1520, None), (-80.0, 4.0, 1530, None), (-81.0, -2.0, 1535, None),
                                (-80.5, -7.0, 1538, None), (-77.0, -12.05, 1540, 'Lima'), (-75.7, -14.07, 1551, 'Ica'), (-72.0, -18.0, 1553, None),
                                (-70.4, -23.6, 1554, None), (-70.67, -33.45, 1555, 'Santiago'), (-70.0, -32.8, 1558, None), (-68.84, -32.89, 1561, 'Mendoza'),
                                (-66.0, -32.0, 1600, None), (-64.5, -31.4, 1620, 'Córdoba'), (-60.0, -32.9, 1700, None), (-58.4, -34.6, 1750, 'Buenos Aires'),
@@ -182,10 +182,36 @@ def along(a, b, t):
     return (math.atan2(p[0], p[2]) / D, math.asin(max(-1, min(1, p[1]))) / D)
 
 
+def curved(verts):
+    """The vertices with a few more between each pair, on a smooth curve through them all (Catmull-Rom
+    in longitude and latitude), so the way bends at a place rather than kinking; the years follow the
+    curve's parameter. A vertex's name stays on it."""
+    n = len(verts)
+    if n < 3:
+        return list(verts)
+    out = []
+    for i in range(n - 1):
+        p0, p1, p2, p3 = verts[max(0, i - 1)], verts[i], verts[i + 1], verts[min(n - 1, i + 2)]
+        out.append(verts[i])
+        km = arc((p1[0], p1[1]), (p2[0], p2[1])) * KM
+        k = max(1, min(6, int(km // 150)))
+        for j in range(1, k):
+            t = j / k
+            t2, t3 = t * t, t * t * t
+            def cr(a, b, c, d):
+                return 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
+            lon = cr(p0[0], p1[0], p2[0], p3[0])
+            lat = cr(p0[1], p1[1], p2[1], p3[1])
+            out.append((lon, lat, p1[2] + (p2[2] - p1[2]) * t))
+    out.append(verts[-1])
+    return out
+
+
 def densify(verts, step_km=60.0, sway=0.16, seed=0):
     """[lon, lat, year] every ~step_km along the great circles between the vertices, the years
     interpolated, the way swaying a little either side of the straight line between places (a vine
     wanders; nothing at the places themselves)."""
+    verts = curved(verts)
     pts = [[round(verts[0][0], 3), round(verts[0][1], 3), verts[0][2]]]
     walked = 0.0
     for i in range(1, len(verts)):
@@ -313,6 +339,11 @@ def main():
 
     # stems and voyages: the runs over land and sea, as dated line features
     stems, voyages, leaves, clusters, tips = [], [], [], [], []
+    # where the vine grew, not only passed: the named places; a leaf opens only within reach of one, so
+    # the way through a desert or along a coast it was carried past is a bare stem
+    grew = [(p[0], p[1]) for b in branches for p in b['way'] if len(p) > 3 and p[3]]
+    def near_vines(lon, lat, km=260):
+        return any(arc((lon, lat), g) * KM <= km for g in grew)
     leaf_seed = 0
     for bi, br in enumerate(branches):
         way = br['way']
@@ -326,13 +357,15 @@ def main():
                 for i in range(s + 1, e):
                     a, b = way[i - 1], way[i]
                     dist += arc((a[0], a[1]), (b[0], b[1])) * KM
-                    if dist >= (72 if not br["twig"] else 60):
+                    if dist >= (85 if not br['twig'] else 70):
                         dist = 0
+                        if not near_vines(b[0], b[1]):
+                            continue
                         leaf_seed += 1
                         side = 1 if leaf_seed % 2 else -1
                         dx, dy = b[0] - a[0], b[1] - a[1]
                         L = math.hypot(dx, dy) or 1
-                        off = 0.3
+                        off = 0.12
                         lon = b[0] + (-dy / L) * off * side / max(0.2, math.cos(b[1] * D))
                         lat = b[1] + (dx / L) * off * side
                         if on_land(lon, lat):
@@ -345,7 +378,7 @@ def main():
             tips.append({'branch': bi, 'name': br['name'], 'coordinates': [[p[0], p[1]] for p in way], 'dates': [p[2] for p in way]})
 
     # the strip's marks: the record's landmarks, not every place (a tick within a fingertip is landed on)
-    ticks = [-6000, -5000, -4000, -3500, -3000, -2500, -1100, -800, -600, -120, 100, 718, 1425, 1500, 1561, 1655, 1769, 1788, 1819, 1973]
+    ticks = [-6000, -5000, -4000, -3000, -2000, -1000, -600, -120, 100, 718, 1425, 1500, 1655, 1788, 1973]
     # the years' pace: deep time quickly, the last five centuries slowly; about three minutes in all
     pace = [[-6000, 0], [-3000, 32], [-1000, 62], [-100, 86], [800, 104], [1400, 116], [1600, 138], [1800, 158], [1900, 172], [2026, 190]]
     data = {

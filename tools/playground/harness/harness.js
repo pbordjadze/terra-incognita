@@ -1328,8 +1328,12 @@
     if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
     const c = camera(), m = rotation(c), clear = keepClear(), hist = merged().historical;
     cameraMoving = !!flight || pointers.size > 0 || t - lastCamMove < 180;
+    // (dated geography is drawn as far as its stage's date: the date is part of what the drawing is for, and
+    // while a point blooms the drawing changes with the clock)
+    const dated = stages.map((s) => ([...s.geo.values()].some((L) => L.dated && zoomHolds(L, c.zoom)) ? (s.time ? s.time.value : 'none')
+      + ([...s.geo.values()].some((L) => L.dated && L.bloomingUntil > t) ? ':' + Math.floor(t / 40) : '') : '')).join(',');
     const key = [c.lon, c.lat, c.zoom, c.radius, rs, dpr, layerVersion, imagesVersion, cameraMoving, hist, stages.map((s) => s.id).join(','),
-                 clear.map((r) => r.map(Math.round).join(',')).join(';')].join('|');
+                 clear.map((r) => r.map(Math.round).join(',')).join(';'), dated].join('|');
     if (layer.key !== key) {
       layer.key = key;
       if (layer.canvas.width !== pw || layer.canvas.height !== ph) { layer.canvas.width = pw; layer.canvas.height = ph; }

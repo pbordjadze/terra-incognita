@@ -9,9 +9,9 @@
     "main.js"
   ],
   "anchor": {
-    "lon": 42,
-    "lat": 39,
-    "zoom": 2.4
+    "lon": 44.75,
+    "lat": 41.45,
+    "zoom": 6.5
   },
   "doorway": {
     "lon": 44.75,
@@ -21,8 +21,8 @@
       {
         "image": "doorway.png",
         "size": [
-          30,
-          34
+          32,
+          32
         ],
         "minZoom": 1.4
       },
