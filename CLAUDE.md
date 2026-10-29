@@ -198,8 +198,9 @@ Keep design discussions and plans in that private repository.
   (`metal.py twin clouds`). Check a shader here before any macOS run; `layers.py` mirrors the Metal
   layers' Swift (their bindings and uniforms): change them together.
 - **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[shots]`, `[test Class]`,
-  `[playground-check]`, `[ipa]`; put them in the commit's first line). The quick ones on a free runner: `[build-only]` compiles in about
-  3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places
+  `[playground-check]`, `[ipa]`; put them in the commit's first line). The quick ones on a free runner: `[build-only]` compiles the app
+  and its UI tests (`build-for-testing`, so a slip in a test's code fails here, not in the run that
+  tests it) in about 3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places
   on the iPad in about 8, no Release build and no UI tests; `[test OceanEncounterTests]` runs only
   that class (or `Class/testMethod`) on the iPad (that one: 13 minutes) (`ci/fast.py`; a run started by hand takes `places`
   and `tests`). An untagged branch push runs every UI test on both devices: an hour and more. Main
