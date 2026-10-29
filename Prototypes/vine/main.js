@@ -15,7 +15,7 @@
   'use strict';
   var V = window.VINE, D = Math.PI / 180;
   var FIRST = V.origin.year, LAST = V.today;
-  var STEM = '#55402C', VOYAGE = '#7A5A33', TRACE = '#EFAE2E', LIGHT = '#FFFFFF';
+  var STEM = '#55402C', VOYAGE = '#7A5A33', TRACE = '#D9952ECC', LIGHT = '#FFF1C2';
   var QVEVRI_DEG = 1.3;                      // the picture of the qvevri's mouth, in degrees of latitude
 
   // ---- scale: what shows depends on how many points a degree is on this screen, not the zoom alone ----
@@ -53,6 +53,10 @@
     // stem's own brown so it is the vine's and not one of the map's lines
     terra.geo.set('voyages', V.voyages.map(function (f) { return line(f.coordinates); }),
                   { style: 'ghost', color: VOYAGE, lineWidth: 1.4, dated: true });
+    // from afar, a tint of leaf along the stems: a soft wide band under the thread, so the vine at the whole
+    // Earth is a living colour and not a road
+    var haze = season(false) === 'winter' ? '#8A6A3A2E' : season(false) === 'autumn' ? '#C8922E44' : '#6E9A4A44';
+    terra.geo.set('stems-haze', stems, { style: 'border', color: haze, lineWidth: 6.5, dated: true, maxZoom: MID });
     // the stems: every trunk's and twig's land runs, thickening with age; touchable. Three layers by zoom,
     // so the trunk is a slender line at the whole Earth and a thick old stem close in (a constant width
     // would be a root system from afar and a thread up close)
@@ -135,8 +139,11 @@
   function light(branch, index, name) {
     var coords = wayBack(branch, index);
     if (coords.length < 2) return;
-    terra.geo.set('trace', [line(coords)], { style: 'border', color: TRACE, lineWidth: 5,
-                  flow: { speed: 110, dash: 7, gap: 13, color: LIGHT, width: 3 } });
+    // the stem itself lit from within: a warm band the stem's width and a little more, with soft gold
+    // light running outward along it, narrower than the band
+    var ppd = R1 * terra.camera.zoom * D, band = ppd >= 34 ? 8 : ppd >= 11 ? 4.6 : 2.8;
+    terra.geo.set('trace', [line(coords)], { style: 'border', color: TRACE, lineWidth: band,
+                  flow: { speed: 120, dash: 9, gap: 15, color: LIGHT, width: band * 0.55 } });
     var seconds = Math.min(3.2, 0.9 + coords.length / 60), id = 'spark-' + (++sparks), end = coords[coords.length - 1];
     terra.sprites.set(id, { path: { coordinates: coords, seconds: seconds, loop: false },
                             looks: [{ image: 'spark.png', size: [34, 34] }], label: 'The light running along the vine' });
@@ -145,7 +152,10 @@
     terra.sprites.set('touched', { at: end, looks: [{ image: 'spark.png', size: [44, 44], every: 1.6, for: 1.1 }], label: 'The place touched' });
     terra.caption.set({ title: 'The vine\'s long walk', text: name, wikipedia: 'Georgian wine' });
     if (traceTimer) clearTimeout(traceTimer);
-    traceTimer = setTimeout(function () { terra.geo.remove('trace'); terra.sprites.remove('touched'); traceTimer = null; }, 14000);
+    traceTimer = setTimeout(function () {
+      terra.geo.remove('trace'); terra.sprites.remove('touched'); traceTimer = null;
+      terra.caption.set({ title: 'The vine\'s long walk', text: '', wikipedia: 'Georgian wine' });
+    }, 11000);
   }
   function restart() {
     terra.geo.remove('trace');
@@ -216,7 +226,7 @@
 
   // ---- start: close on the qvevri's mouth in the valley, a breath, then the first shoot and the slow
   // pull-back as the vine runs; the reader's own touch ends the pull-back at once ----
-  terra.globe.set({ still: true, maxZoom: 16 });
+  terra.globe.set({ still: true, historical: true, maxZoom: 16 });
   measure(terra.camera);
   terra.caption.set({ title: 'The vine\'s long walk', text: '', wikipedia: 'Georgian wine' });
   plant();
@@ -227,12 +237,13 @@
   // (a flight within a second of the reader's touch is dropped: the dive to the qvevri waits a beat after
   // the doorway's tap, which is also the right pause)
   if (!still) setTimeout(function () { terra.flyTo(V.origin.lon, V.origin.lat, closeZoom, 1.8); }, 1100);
+  setTimeout(function () { terra.time.play(true); }, still ? 400 : 3600);
+  // the camera stays close while the first shoot leaves the mouth, curls and leafs (about ten seconds);
+  // then it pulls back over twenty-five, as the vine fills the frame, to about fifty-five degrees across
+  // the screen (the Caucasus to the Nile), and on a phone no farther than a degree to twelve points
   setTimeout(function () {
-    terra.time.play(true);
-    // the pull-back ends with about fifty-five degrees across the screen (the Caucasus to the Nile), and
-    // on a phone no farther than a degree to twelve points, so the vine stays a vine
     var width = terra.camera && terra.camera.width > 0 ? terra.camera.width : 1032;
-    if (!still) terra.flyTo(43, 38.5, zoomFor(Math.max(12, width / 55)), 28);
-  }, still ? 400 : 3600);
-  setTimeout(function () { opening = false; lastSpeed = 0; }, 31000);
+    if (!still) terra.flyTo(43.5, 39, zoomFor(Math.max(12, width / 55)), 25);
+  }, still ? 400 : 13500);
+  setTimeout(function () { opening = false; lastSpeed = 0; }, 39000);
 })();

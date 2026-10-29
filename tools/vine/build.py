@@ -26,7 +26,7 @@ the date has come and the script sets each layer once:
 Rebuild, never hand-edit. The years are the record's earliest evidence at or near each place, rounded;
 between places they are interpolated and mean nothing exact.
 """
-import json, math
+import json, math, random
 from pathlib import Path
 
 import numpy as np
@@ -42,14 +42,14 @@ ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the
 # ---- the trunks: name, then vertices (lon, lat, year, name or None). A trunk's first vertex lies on an
 # earlier trunk (the place it grows from); the years rise along it. -------------------------------------
 TRUNKS = [
-    ('The first vine', [ORIGIN, (44.2, 41.7, -5900, 'Shulaveris Gora'), (43.9, 42.0, -5800, None), (42.9, 42.15, -5600, None),
-                        (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
-    ('Along the Kura to the Caspian', [(ORIGIN[0], ORIGIN[1], -5850, None), (45.4, 41.6, -5800, None), (46.0, 41.7, -5700, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
-                                       (49.0, 40.3, -5000, None)]),
-    ('Down the Zagros', [(ORIGIN[0], ORIGIN[1], -5700, None), (45.0, 40.6, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
+    ('The first vine', [ORIGIN, (44.95, 41.58, -5960, None), (45.4, 41.62, -5850, None), (46.0, 41.7, -5700, 'Kakheti'), (46.9, 41.3, -5600, None),
+                        (47.8, 40.5, -5300, None), (49.0, 40.3, -5000, None)]),
+    ('West to Colchis', [(44.95, 41.58, -5900, None), (44.6, 41.85, -5870, None), (44.2, 41.7, -5820, 'Shulaveris Gora'), (43.9, 42.0, -5750, None),
+                         (42.9, 42.15, -5600, None), (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
+    ('Down the Zagros', [(45.4, 41.62, -5720, None), (45.1, 41.1, -5650, None), (45.0, 40.6, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
                          (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
                          (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
-    ('Into Anatolia', [(ORIGIN[0], ORIGIN[1], -5550, None), (43.9, 41.1, -5480, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
+    ('Into Anatolia', [(44.2, 41.7, -5550, None), (43.9, 41.1, -5480, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
                        (37.5, 39.3, -4600, None), (35.5, 39.2, -4300, None), (33.5, 39.0, -3900, None), (31.0, 39.0, -3600, None), (29.5, 39.2, -3400, None),
                        (28.0, 39.4, -3200, None), (27.0, 39.8, -3100, None), (26.24, 39.96, -3000, 'Troy')]),
     ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (38.3, 38.4, -4800, None), (37.0, 37.2, -4600, None), (36.6, 36.3, -4400, None), (36.0, 35.2, -4200, None),
@@ -347,22 +347,25 @@ def main():
     leaf_seed = 0
     for bi, br in enumerate(branches):
         way = br['way']
+        rnd = random.Random(bi * 7919 + 13)
+        gap = rnd.uniform(55, 125)
         for kind, s, e in runs(way):
             feature = {'branch': bi, 'start': s, 'coordinates': [[p[0], p[1], p[2]] for p in way[s:e]]}
             (stems if kind == 'land' else voyages).append(feature)
             if kind == 'land':
-                # leaves every ~110 km along the land, alternating sides, a little off the stem, dated a
-                # little after the stem passed (they open as the tip moves on)
+                # leaves along the land at uneven gaps (55 to 125 km), either side, a little off the stem,
+                # dated a little after the stem passed (they open as the tip moves on)
                 dist = 0.0
                 for i in range(s + 1, e):
                     a, b = way[i - 1], way[i]
                     dist += arc((a[0], a[1]), (b[0], b[1])) * KM
-                    if dist >= (85 if not br['twig'] else 70):
+                    if dist >= gap * (1 if not br['twig'] else 0.8):
                         dist = 0
+                        gap = rnd.uniform(55, 125)
                         if not near_vines(b[0], b[1]):
                             continue
                         leaf_seed += 1
-                        side = 1 if leaf_seed % 2 else -1
+                        side = 1 if rnd.random() < 0.5 else -1
                         dx, dy = b[0] - a[0], b[1] - a[1]
                         L = math.hypot(dx, dy) or 1
                         off = 0.12
@@ -370,7 +373,12 @@ def main():
                         lat = b[1] + (dx / L) * off * side
                         if on_land(lon, lat):
                             lag = max(3, abs(b[2] - a[2]) * 0.5)
-                            leaves.append([round(lon, 3), round(lat, 3), round(b[2] + lag, 1), leaf_seed % 3, 1 if lat < 0 else 0])
+                            leaves.append([round(lon, 3), round(lat, 3), round(b[2] + lag, 1), rnd.randrange(3), 1 if lat < 0 else 0])
+        # a leaf at every trunk's end, where its tendril stops: a finished stem ends in a leaf, not a cut
+        if not br['twig']:
+            last = way[-1]
+            if on_land(last[0], last[1]):
+                leaves.append([round(last[0], 3), round(last[1], 3), round(last[2] + 2, 1), rnd.randrange(3), 1 if last[1] < 0 else 0])
         for p in way:
             if len(p) > 3 and p[3] and not (bi == 0 and p[3] == ORIGIN[3]):
                 clusters.append({'name': p[3], 'lon': p[0], 'lat': p[1], 'year': p[2], 'branch': bi})

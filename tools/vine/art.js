@@ -149,14 +149,32 @@
     }
     // the rim: a ring of clay, lit from the upper left
     const rim = R * 0.6, mouth = R * 0.45;
+    // the earth itself: mottled, a few pebbles
+    for (let i = 0; i < 70; i++) {
+      const a = r() * 6.2832, d = R * (0.62 + r() * 0.3), pr = R * (0.006 + r() * 0.014);
+      ctx.fillStyle = B.rgba(r() < 0.5 ? CLAY_DARK : '#4A3620', 0.18 + r() * 0.2);
+      ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, pr * (1 + r()), pr, r() * 3, 0, 6.2832); ctx.fill();
+    }
     const cg = ctx.createRadialGradient(cx - rim * 0.3, cy - rim * 0.3, mouth * 0.5, cx, cy, rim);
-    cg.addColorStop(0, B.mix(CLAY, '#FFFFFF', 0.25)); cg.addColorStop(0.7, CLAY); cg.addColorStop(1, CLAY_DARK);
+    cg.addColorStop(0, B.mix(CLAY, '#FFFFFF', 0.18)); cg.addColorStop(0.7, CLAY); cg.addColorStop(1, CLAY_DARK);
     B.inked(ctx, (c) => { c.arc(cx, cy, rim, 0, 6.2832); }, cg, INK, R * 0.05);
+    // the rim worn: chips and wine stains along it, and the coil lines of the potter's clay
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, rim, 0, 6.2832); ctx.arc(cx, cy, mouth, 0, 6.2832, true); ctx.clip();
+    for (let i = 0; i < 40; i++) {
+      const a = r() * 6.2832, d = mouth + (rim - mouth) * r(), pr = R * (0.008 + r() * 0.02);
+      ctx.fillStyle = B.rgba(r() < 0.6 ? CLAY_DARK : WINE, 0.15 + r() * 0.25);
+      ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, pr * 1.6, pr, a, 0, 6.2832); ctx.fill();
+    }
+    ctx.strokeStyle = B.rgba(CLAY_DARK, 0.3); ctx.lineWidth = Math.max(0.3, R * 0.008);
+    for (const f of [0.3, 0.55, 0.8]) { ctx.beginPath(); ctx.arc(cx, cy, mouth + (rim - mouth) * f, 0, 6.2832); ctx.stroke(); }
+    ctx.restore();
     // the mouth: the wine deep within, darkest at the far side, one light near the rim
     const wg = ctx.createRadialGradient(cx + mouth * 0.25, cy + mouth * 0.25, 0, cx, cy, mouth);
-    wg.addColorStop(0, '#120409'); wg.addColorStop(0.7, WINE); wg.addColorStop(1, B.mix(WINE, '#000000', 0.5));
+    wg.addColorStop(0, '#0C0306'); wg.addColorStop(0.75, B.mix(WINE, '#000000', 0.3)); wg.addColorStop(1, B.mix(WINE, '#000000', 0.6));
     B.inked(ctx, (c) => { c.arc(cx, cy, mouth, 0, 6.2832); }, wg, INK, R * 0.04);
-    ctx.fillStyle = 'rgba(255, 230, 220, 0.35)'; ctx.beginPath(); ctx.ellipse(cx - mouth * 0.45, cy - mouth * 0.45, mouth * 0.22, mouth * 0.1, -0.7, 0, 6.2832); ctx.fill();
+    // the inside of the rim catches the light on the far side, a thin crescent; no glass
+    ctx.strokeStyle = 'rgba(255, 220, 190, 0.18)'; ctx.lineWidth = R * 0.02;
+    ctx.beginPath(); ctx.arc(cx, cy, mouth * 0.93, -2.6, -0.9); ctx.stroke();
     // the lid: a flat flagstone, its edges straight and uneven as a split stone's, drawn a third off the
     // mouth, its sliver of shadow on the rim
     const lx = cx + rim * 0.72, ly = cy + rim * 0.74, ls = mouth * 0.82;
@@ -166,8 +184,15 @@
     const lg = ctx.createLinearGradient(lx - ls, ly - ls, lx + ls, ly + ls);
     lg.addColorStop(0, '#D3CCBC'); lg.addColorStop(1, '#8E887C');
     B.inked(ctx, (c) => { poly(c, stone); }, lg, INK, R * 0.03);
-    ctx.strokeStyle = B.rgba(INK, 0.2); ctx.lineWidth = Math.max(0.3, R * 0.01);
-    ctx.beginPath(); ctx.moveTo(lx - ls * 0.5, ly - ls * 0.2); ctx.quadraticCurveTo(lx, ly + ls * 0.05, lx + ls * 0.55, ly - ls * 0.1); ctx.stroke();
+    // the stone's grain: fine lines across it, and a few flecks
+    ctx.save(); ctx.beginPath(); poly(ctx, stone); ctx.clip();
+    ctx.strokeStyle = B.rgba(INK, 0.14); ctx.lineWidth = Math.max(0.3, R * 0.007);
+    for (let i = -5; i <= 5; i++) {
+      const y = ly + i * ls * 0.17 + (r() - 0.5) * ls * 0.06;
+      ctx.beginPath(); ctx.moveTo(lx - ls, y); ctx.quadraticCurveTo(lx, y + (r() - 0.5) * ls * 0.12, lx + ls, y + (r() - 0.5) * ls * 0.1); ctx.stroke();
+    }
+    for (let i = 0; i < 25; i++) { ctx.fillStyle = B.rgba(i % 2 ? '#FFFFFF' : INK, 0.12); ctx.beginPath(); ctx.arc(lx + (r() - 0.5) * 2 * ls, ly + (r() - 0.5) * 2 * ls, R * (0.004 + r() * 0.008), 0, 6.2832); ctx.fill(); }
+    ctx.restore();
     if (options.leaf) {
       ctx.save(); ctx.translate(cx - R * 0.95, cy - R * 0.98); leaf(ctx, R * 0.95, R * 0.95, GREENS[0], -0.5, 4); ctx.restore();
     }

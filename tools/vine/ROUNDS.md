@@ -85,3 +85,38 @@ beads, a bigger spark, and a slow pulse of light where the finger was while the 
 foot says "since 100 CE"; a lake crossed is a stem, not a voyage (runs under four points join).
 
 Plan (iPad): `[{"wait":3.4},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":8},{"shot":"03"},{"wait":18},{"shot":"04"},{"wait":30},{"shot":"05"},{"at":[25,35,1.0]},{"date":0.999},{"wait":3},{"shot":"06"},{"at":[-30,20,1.0]},{"wait":2},{"shot":"06b"},{"at":[8,45,3.2]},{"wait":2},{"shot":"07"},{"touch":[4.85,47.0]},{"wait":1.0},{"shot":"08"},{"wait":2.5},{"shot":"09"},{"at":[-70,-25,2.0]},{"wait":2},{"shot":"10"},{"at":[44.75,41.45,6.5]},{"wait":2},{"shot":"11"},{"at":[-3,40,5.5]},{"wait":2},{"shot":"12"},{"at":[44.75,41.45,14]},{"wait":2},{"shot":"13"}]`
+
+Critic 3 (the hater, as the owner asked): worst first, (1) the first minute dead air: the camera pulled
+back before the growth could be watched, so the first thirty seconds were a year counter over an empty
+map; (2) stamps at equal intervals, clusters hanging over the sea at island regions, a qvevri that was a
+marble with an octagon; (3) the lit way a motorway (a flat yellow band with white dashes), the caption
+stale after the camera left; (4) corners at joints, trunks crossing the mouth like spokes, finished stems
+cut flat; (5) modern borders and names in 5300 BCE; (6) the whole Earth a thin road network; (7) the
+strip's dots unlabelled, a dark rectangle round the scrubber. Kept: the one-line caption, the thick old
+trunks, the honest spine.
+
+## Round 4 · the growth is the show (October 30)
+
+Changed: the camera holds close for ten seconds while the first shoot leaves the mouth, curls and leafs,
+then pulls back over twenty-five as the vine fills the frame; one stem leaves the mouth, east along the
+Kura into Kakheti, and the others fork from it at nodes (Colchis, the Zagros, Anatolia from Shulaveri),
+so the mouth is a mouth and not a roundabout; today's borders and names are hidden while the vine runs
+(`historical`, as the herds do); a soft leaf-tinted band under the thread from afar; leaves at uneven
+gaps with their kinds mixed, and a leaf at every finished trunk's end; the lit way a warm band the stem's
+width with soft gold light running along it, the caption cleared with it after eleven seconds; the
+qvevri's earth mottled, its rim worn and wine-stained with the potter's coil lines, the mouth truly dark,
+the flagstone grained; the voyages dashed in the vine's own brown.
+
+Overruled, and why: sprites scaling continuously with the camera is a runtime tool that doesn't exist
+(a symbol's size in degrees); the three zoom bands stand in for it here, and it is noted below as the
+next tool the vine would use. Clusters at Ibiza, Corsica, Carthage and Algiers hang at coasts and
+islands because wine was made there; the voyage line reaches them. The strip's dots and the rectangle
+round the scrubber are the host's and the preview's.
+
+Plan (iPad): `[{"wait":5},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":5},{"shot":"03"},{"wait":10},{"shot":"04"},{"wait":16},{"shot":"05"},{"wait":25},{"shot":"06"},{"at":[-30,20,1.0]},{"date":0.999},{"wait":3},{"shot":"07"},{"at":[25,35,1.0]},{"wait":2},{"shot":"08"},{"at":[8,45,3.2]},{"wait":2},{"shot":"09"},{"touch":[4.85,47.0]},{"wait":1.0},{"shot":"10"},{"wait":2.5},{"shot":"11"},{"at":[44.75,41.45,14]},{"wait":2},{"shot":"12"},{"at":[-3,40,5.5]},{"wait":2},{"shot":"13"}]`
+
+## Tools the vine would use next
+
+- A symbol's size in degrees (a leaf the size of a valley, scaling with the camera) instead of zoom bands.
+- A line revealed over seconds (the lit way running from the root to the finger as a line, not only as a
+  spark); dated geography reveals by the stage's date, not by the clock.
