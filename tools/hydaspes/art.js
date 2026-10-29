@@ -721,17 +721,11 @@
     g.addColorStop(0, 'rgba(255,190,120,0.45)'); g.addColorStop(0.5, 'rgba(255,170,110,0.18)'); g.addColorStop(1, 'rgba(255,160,110,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, TAU); ctx.fill();
   } });
-  // the doorway: a river bend at night with a camp's fires on each bank
-  pictures.push({ name: 'doorway', width: 34, height: 30, draw(ctx, w, h) {
-    B.haloed(ctx, w, h, (c) => {
-      c.fillStyle = NIGHT.plain; c.beginPath(); c.ellipse(w / 2, h / 2, w * 0.46, h * 0.44, 0, 0, TAU); c.fill();
-      c.strokeStyle = NIGHT.sheen; c.lineWidth = 3.2; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(w * 0.1, h * 0.28); c.quadraticCurveTo(w * 0.5, h * 0.3, w * 0.62, h * 0.55); c.quadraticCurveTo(w * 0.75, h * 0.8, w * 0.95, h * 0.78); c.stroke();
-      const r = B.rand(9);
-      for (let k = 0; k < 5; k++) B.glow(c, w * (0.15 + r() * 0.35), h * (0.45 + r() * 0.4), 2.6, FIRE, 1, 0);
-      for (let k = 0; k < 4; k++) B.glow(c, w * (0.6 + r() * 0.3), h * (0.15 + r() * 0.3), 2.4, FIRE, 1, 0);
-    }, '#F4ECD8', 1.1);
+  // the doorway: no badge, no glow, nothing that says "tap here": an elephant standing at the water on
+  // the Jhelum's bank, ordinary life that doesn't quite belong on this bank today (it faces east as
+  // drawn; the stage mirrors it as it stirs along the bank)
+  pictures.push({ name: 'doorway', width: 30, height: 20, frames: 2, draw(ctx, w, h, i, n) {
+    B.haloed(ctx, w, h, (c) => { c.lineCap = 'round'; c.lineJoin = 'round'; elephant(c, w * 0.5, h * 0.96, h * 0.86, i / n * 0.5, 1, false); }, '#F4ECD8', 0.9);
   } });
-
   window.SHEET = { pictures };
 })();

@@ -16,17 +16,22 @@
     "zoom": 4
   },
   "doorway": {
-    "lon": 73.54,
-    "lat": 32.76,
-    "label": "The night crossing: the Hydaspes, 326 BCE",
+    "lon": 73.66,
+    "lat": 32.845,
+    "label": "An elephant at the water on the Jhelum: the night crossing of the Hydaspes, 326 BCE",
     "looks": [
       {
-        "image": "doorway.png",
-        "size": [
-          34,
-          30
+        "frames": [
+          "doorway-1.png",
+          "doorway-2.png"
         ],
-        "minZoom": 1.5
+        "fps": 0.6,
+        "size": [
+          30,
+          20
+        ],
+        "minZoom": 1.5,
+        "face": true
       },
       {
         "image": "doorway-glint.png",
@@ -39,6 +44,20 @@
         "for": 1.2
       }
     ],
+    "path": {
+      "coordinates": [
+        [
+          73.655,
+          32.843
+        ],
+        [
+          73.668,
+          32.848
+        ]
+      ],
+      "seconds": 150,
+      "loop": "back"
+    },
     "breathes": true
   },
   "taps": false,

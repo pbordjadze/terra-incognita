@@ -109,4 +109,12 @@ dry on the island's shore, so the depth is told by comparison; the globe comes c
 when the night reaches the second channel (after a drag ends, or as play reaches it). The pebble mottle
 is near-invisible. Seen in the preview: the camps at dusk are now a night with a river in it.
 
-### Round 5 — on the real app
+Two notes from the Interviewer, read late (they were queued): the critic is to be a hater (a famously
+hard-to-impress reviewer who thinks most of the globe is slop, ranking complaints by how much a player
+would notice; the loop ends when its worst complaint is a quibble; a complaint may be overruled here,
+with the reason), and the globe's first sign of an experience should read as ordinary life slightly
+off, not an attraction: no glow, badge or label. So the doorway is no longer a disc of night with
+fires on it; it is an elephant standing at the water on the Jhelum's bank, stirring a little way along
+it and back, which doesn't quite belong on that bank today.
+
+### Round 5 — the hater, and the real app
