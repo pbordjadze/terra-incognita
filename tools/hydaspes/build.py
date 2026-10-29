@@ -290,7 +290,12 @@ def ways(T):
     coenus = [at(-2.0, 0.6), at(-1.6, 1.8), at(-0.6, 2.6), at(0.8, 2.5), at(1.8, 1.6)]
     phalanx = [at(-2.2, 0), at(-1.6, 0), at(-1.3, 0)]            # (it closes to a pike's length, not into the elephants)
     craterus = resample([camp_a, bank_a, water_p, camp_p], 0.4)
+    # AUTHORED: the dark over the second channel until the column finds it: a small box round the island and
+    # the landing, with a margin, for the picture that hides the channel under the night
+    xs = [q[0] for q in island] + [landing[0]]; ys = [q[1] for q in island] + [landing[1]]
+    veil = [round(min(xs) - 0.004, 5), round(min(ys) - 0.003, 5), round(max(xs) + 0.004, 5), round(max(ys) + 0.003, 5)]
     return {
+        'veil': veil,
         'campA': camp_a, 'campP': camp_p, 'waterP': water_p, 'bankA': bank_a, 'glowA': glow_a, 'glowP': glow_p,
         'march': march, 'crossing': crossing, 'islandWay': island_way, 'ford': ford, 'advance': advance,
         'headTip': head_tip, 'islandNear': island_near, 'islandFar': island_far, 'landing': landing, 'headland': headland,
@@ -318,7 +323,7 @@ def main(argv):
     # the art sheet's data: everything in lon/lat; the sheet projects into each picture's pixels
     authored = {'headland': list(W['headland']), 'headTip': list(W['headTip']), 'islandNear': list(W['islandNear']),
                 'islandFar': list(W['islandFar']), 'landing': list(W['landing']), 'field': list(FIELD), 'jalalpur': list(JALALPUR),
-                'island': [list(q) for q in W['islandPoly']], 'headPoly': [list(q) for q in W['headPoly']], 'bend': list(W['bend']),
+                'island': [list(q) for q in W['islandPoly']], 'headPoly': [list(q) for q in W['headPoly']], 'bend': list(W['bend']), 'veil': W['veil'],
                 'haranpur': list(HARANPUR), 'campA': list(W['campA']), 'campP': list(W['campP']),
                 'march': [list(p) for p in W['march']], 'lineL': list(W['lineL']), 'lineR': list(W['lineR']),
                 'axis': W['axis']}
@@ -332,7 +337,7 @@ def main(argv):
              + timed(W['islandWay'], H['formed'], H['bank']) + timed(W['ford'], H['bank'], H['ford'])
              + timed(W['advance'], H['ford'], H['field']) + timed(W['phalanx'], H['battle'], H['rout']))
     data = {
-        'y0': Y0, 'hours': H, 'wide': WIDE, 'close': CLOSE,
+        'y0': Y0, 'hours': H, 'wide': WIDE, 'close': CLOSE, 'veil': W['veil'],
         'places': {'haranpur': list(HARANPUR), 'jalalpur': list(JALALPUR), 'mong': list(MONG), 'headland': list(W['headland']),
                    'island': [round((W['islandNear'][0] + W['islandFar'][0]) / 2, 5), round((W['islandNear'][1] + W['islandFar'][1]) / 2, 5)],
                    'landing': list(W['landing']), 'field': list(FIELD), 'campA': list(W['campA']), 'campP': list(W['campP']),

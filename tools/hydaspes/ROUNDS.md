@@ -212,3 +212,27 @@ Overruled: the elephants never move (they sway and one raises its trunk; a still
 phone's halo badges; the chariots at the zoom the reader chose (the globe leans in only twice, for the
 crossing and the wade, and the reader's zoom is theirs). Still mine to see: the battle is formations
 on a field; its motion (the sweep, the turn) is in time, not in a still.
+
+### Round 9 — the fifth hater
+
+It gave the dusk camp the best still on the globe tonight and the phalanx and the elephant line real
+counters; worst first: the river is not a river (a road on a road map by night, scratches by day) and
+the island shows from the start, so the mistake has no surprise; the night march a void with pawns;
+hard polygon seams across the ground; the day dead; cheap sprites where it matters (the reflections a
+barcode across a diagonal river); the rain stamped patches; the first sight inviting nothing; the
+column's leaving easy to miss. Worst: the river, and the island shown before the column finds it. Real.
+
+Taken, and the best of the night's ideas came from it: the dark over the second channel. A small
+picture in the ground's own night tone joins the island to the far bank, laid over the close picture
+until the column reaches the island's far shore, then thinning over a quarter of an hour as the river
+opens in front of them; it is only as dark as the night is. Before, the island reads as a headland of
+the far bank; after, as an island in the river with the file wading the channel beyond. The river is
+brown water again, dark by night with a faint sheen, mud-brown by day, the threads fewer; the night's
+woods can just be seen; the hills' foot is a wide soft skirt wavering on every segment; the morning's
+ground is the Punjab's grey-green; the fires' streaks lie along the river's own run at the camps; the
+rain is six wider, fainter fields along the plain's edges; the opening is the two camps at the centre
+with the river between them, the bend a drag away.
+
+Overruled: a peel of torches leaving the camp (the march was dark on purpose; the thread of grey is the
+reward, and the drag finds it); the elephants as masses until close (they are grains until the close
+zoom already).

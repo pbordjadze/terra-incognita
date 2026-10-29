@@ -11,10 +11,10 @@
 
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
   const NIGHT = { plain: '#141827', plain2: '#181D2E', plain3: '#111526', hill: '#0C0F1B', hillRim: '#1E2237',
-                  water: '#2A2A34', water2: '#343440', sheen: '#9AA3BE', bank: '#0A0A12', foam: '#A6AEC8', wood: '#0A0E16', wood2: '#121A1E',
+                  water: '#2C2826', water2: '#363030', sheen: '#8E8C96', bank: '#0A0A12', foam: '#A6A4AE', wood: '#0E1620', wood2: '#172430',
                   kas: '#1F2436', sand: '#4C4A50', sand2: '#3A383E', edge: '#141827', moon: '#8E99B8' };
-  const DAY = { plain: '#6E7684', plain2: '#7A8290', plain3: '#616974', hill: '#525A68', hillRim: '#9AA4B4',
-                water: '#5A4838', water2: '#6A5644', sheen: '#DCC6A6', bank: '#302C2A', foam: '#F0E6D4', wood: '#36463A', wood2: '#425446',
+  const DAY = { plain: '#7A7E6E', plain2: '#878B78', plain3: '#6B6F60', hill: '#5A6058', hillRim: '#A8AB98',
+                water: '#6A5038', water2: '#7A5E44', sheen: '#D8BC98', bank: '#3A3430', foam: '#F0E4D0', wood: '#3C4E3A', wood2: '#4A5E46',
                 kas: '#66707E', sand: '#A69C88', sand2: '#8A8070', edge: '#6E7684', moon: '#F0C890' };
   const INK = '#15110C', FIRE = '#FFB347', FLAME = '#FFE08A', EMBER = '#E2552B', TENT = '#E8DCC2', TENT_SHADE = '#B9AC90';
   const SKIN = '#D9B48C', BRONZE = '#C9A24B', IRON = '#8A8D92', RED = '#9E2B25', HORSE = '#5A3D28', HORSE2 = '#8C6A48';
@@ -58,7 +58,7 @@
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i], b = pts[i + 1], n = 10;
       for (let k = 0; k < n; k++) {
-        const f = k / n, jitter = (r() - 0.5) * (i < 10 ? 0.012 : 0.006);
+        const f = k / n, jitter = (r() - 0.5) * 0.012;
         out.push([a[0] + (b[0] - a[0]) * f + jitter, a[1] + (b[1] - a[1]) * f + jitter * 0.7]);
       }
     }
@@ -125,7 +125,7 @@
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = B.rgba(m[5] < 0.5 ? pal.plain2 : pal.plain3, (night ? 0.08 : 0.12) * (1 - bd / 9)); ctx.fillRect(-L / 2, -W2 / 2, L, W2); ctx.restore();
     }
     // the hills' skirt: a mass with a soft foot, and the ridges as short strokes
-    for (const [alpha, width] of [[0.12, px(2.2)], [0.18, px(1.4)], [0.3, px(0.7)]]) {
+    for (const [alpha, width] of [[0.06, px(4.5)], [0.1, px(3)], [0.14, px(2)], [0.2, px(1.2)], [0.3, px(0.6)]]) {
       poly(ctx, HILLS, P); ctx.strokeStyle = B.rgba(pal.hill, alpha); ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.stroke();
     }
     poly(ctx, HILLS, P); ctx.fillStyle = pal.hill; ctx.fill();
@@ -189,7 +189,7 @@
       let best = 0, bd = Infinity;
       for (let i = 0; i < C.length; i += 3) { const d = Math.hypot((C[i][0] - m[0]) * KM_LON, (C[i][1] - m[1]) * KM_LAT); if (d < bd) { bd = d; best = i; } }
       if (bd > 2.5 || !within(C[best], 0.15)) continue;
-      streak(best, 6 + Math.floor(m[2] * 24), (m[3] - 0.5) * flood * 1.3, Math.max(0.8, px(0.01 + m[4] * 0.016)), (night ? 0.15 : 0.12) + m[5] * 0.14, pal.sheen);
+      streak(best, 6 + Math.floor(m[2] * 24), (m[3] - 0.5) * flood * 1.3, Math.max(0.8, px(0.01 + m[4] * 0.016)), (night ? 0.1 : 0.12) + m[5] * 0.1, pal.sheen);
       if (m[5] < 0.35) streak(best + 2, 4 + Math.floor(m[2] * 10), (m[4] < 0.5 ? -1 : 1) * flood * (0.72 + m[3] * 0.12), Math.max(0.8, px(0.01)), 0.35 + m[2] * 0.3, pal.foam);
     }
     ctx.restore();
@@ -463,6 +463,27 @@
     pictures.push({ name: name + '-day', width: w, height: h, scale: 1, shrink: 'posterize', draw(ctx) { terrain(ctx, w, h, box, DAY, false); } });
   }
 
+  // the dark over the second channel: a patch in the ground's own night tone joining the island to the far
+  // bank, laid over the close picture until the column reaches the island's far shore; then it thins and
+  // the river opens in front of them. Its bounds are the island's and the landing's, with a margin.
+  {
+    const A = T.authored, isl = A.island, box = A.veil;      // (the builder's box: the pack lays the picture in the same)
+    const w = 1024, h = pictureHeight(box, 1024);
+    pictures.push({ name: 'channel-veil', width: w, height: h, scale: 1, draw(ctx) {
+      const P = projector(box, w, h), kpp = kmPerPx(box, w);
+      // the far bank's side of the island, pulled out to the landing and beyond: one shape of ground
+      const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
+      const dx = A.landing[0] - mid[0], dy = A.landing[1] - mid[1];
+      const shape = isl.map((c) => [c[0] + dx * 1.6, c[1] + dy * 1.6]).concat(isl.slice().reverse().map((c) => [c[0] + dx * 0.2, c[1] + dy * 0.2]));
+      ctx.save(); ctx.shadowColor = NIGHT.plain; ctx.shadowBlur = 0.12 / kpp;
+      poly(ctx, shape, P); ctx.fillStyle = NIGHT.plain; ctx.fill(); ctx.fill(); ctx.restore();
+      // a few of the island's trees over it, so the join reads as the same ground
+      ctx.save(); poly(ctx, shape, P); ctx.clip();
+      for (const m of SCATTER.trees) if (insidePoly(m, shape) && m[5] < 0.2) { const [x, y] = P(m), rr = Math.max(1.2, 0.03 / kpp); ctx.fillStyle = B.rgba(NIGHT.wood2, 0.7); ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    } });
+  }
+
   // ---- the sprites ------------------------------------------------------------------------------------
   const frames = (n) => n;
   function pinpricks(ctx, w, h, t, seed, n, size) {
@@ -720,7 +741,7 @@
     for (let k = 0; k < 20; k++) { ctx.fillStyle = '#C77B3E'; ctx.fillRect(2 + k * 2.9, 2 + (k % 2), 1.4, 2); }
   } });
   // the rain, drifting over the plain's edges; the lightning over the hills
-  pictures.push({ name: 'rain', width: 200, height: 240, frames: 8, scale: 2, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'rain', width: 200, height: 240, frames: 8, scale: 1.5, draw(ctx, w, h, i, n) {
     const t = i / n, r = B.rand(41);
     // curtains of rain drifting over the plain: soft slanting bands with no edge of their own, and a few
     // longer threads in them
@@ -741,7 +762,7 @@
     ctx.strokeStyle = 'rgba(205,215,240,0.5)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
     for (let k = 0; k < 150; k++) {
       const x = r() * w, y0 = (r() * h + t * h * 1.3) % h, len = 12 + r() * 20;
-      ctx.globalAlpha = falloff(x, y0) * (0.35 + r() * 0.5);
+      ctx.globalAlpha = falloff(x, y0) * (0.25 + r() * 0.4);
       ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - len * 0.32, y0 + len); ctx.stroke();
     }
     ctx.globalAlpha = 1;
@@ -773,12 +794,16 @@
     const r = B.rand(3), t = i / n;
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
     B.glow(ctx, 0, 0, w / 2, FIRE, 0.16, 0); ctx.restore();
+    // (the streaks lie along the river's run at the camps: its angle on the screen, from the middle's line there)
+    const A = T.authored, C = T.centre, i0 = C.reduce((b, c, i) => (Math.hypot(c[0] - A.campA[0], c[1] - A.campA[1]) < Math.hypot(C[b][0] - A.campA[0], C[b][1] - A.campA[1]) ? i : b), 0);
+    const d = [(C[Math.min(C.length - 1, i0 + 3)][0] - C[Math.max(0, i0 - 3)][0]) * KM_LON, -(C[Math.min(C.length - 1, i0 + 3)][1] - C[Math.max(0, i0 - 3)][1]) * KM_LAT];
+    const ang = Math.atan2(d[1], d[0]);
     ctx.lineCap = 'round';
     for (let k = 0; k < 16; k++) {
       const x = w * (0.08 + r() * 0.84), y = h * (0.15 + r() * 0.7), len = 6 + r() * 16, a = 0.3 + r() * 0.4, ph = r();
       const f = 0.7 + 0.3 * Math.sin((t + ph) * TAU);
       ctx.strokeStyle = B.rgba(k % 3 ? FIRE : FLAME, a * f * 0.7); ctx.lineWidth = 1 + r() * 1.4;
-      ctx.beginPath(); ctx.moveTo(x - len / 2, y); ctx.lineTo(x + len / 2, y + (r() - 0.5) * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - Math.cos(ang) * len / 2, y - Math.sin(ang) * len / 2); ctx.lineTo(x + Math.cos(ang) * len / 2, y + Math.sin(ang) * len / 2); ctx.stroke();
     }
   } });
   // the doorway: no badge, no glow, nothing that says "tap here": an elephant standing at the water on

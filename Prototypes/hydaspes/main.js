@@ -55,7 +55,13 @@
   function fromValley(ls) { ls[0].minZoom = Z.valley; return ls; }
 
   // ----- the pictures on the ground: the day under the night, the night thinning at dawn --------------
-  var nightShown = -1;
+  var nightShown = -1, veilShown = -1;
+  /** The dark over the second channel: there until the column reaches the island's far shore and the
+      river opens in front of it; and only as dark as the night is. */
+  function veil(h) {
+    var gate = h < HR.bank ? 1 : Math.max(0, 1 - (h - HR.bank) / 0.25);
+    return gate * night(h);
+  }
   function night(h) {
     // the wind and rain fall with the daylight (Arrian); the night thins over the next two hours
     if (h < HR.calm) return 1;
@@ -63,17 +69,24 @@
     return 1 - (h - HR.calm) / 2.2;
   }
   function ground(h) {
-    var o = Math.round(night(h) * 50) / 50;
-    if (o === nightShown) return;
-    var first = nightShown < 0;
-    nightShown = o;
-    // (the first set of each fixes the order: the morning under the night, the close pair over the wide,
-    // so the night thins the same inside the close picture as outside it)
-    if (first) terra.images.set('wide-day', { image: 'ground-wide-day.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool });
-    terra.images.set('wide-night', { image: 'ground-wide-night.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
-    // (the close pair shows wherever the wide does: the wide picture has a hole where the close one lies)
-    if (first) terra.images.set('close-day', { image: 'ground-close-day.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool });
-    terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
+    var o = Math.round(night(h) * 50) / 50, first = nightShown < 0;
+    if (o !== nightShown) {
+      nightShown = o;
+      // (the first set of each fixes the order: the morning under the night, the close pair over the wide,
+      // so the night thins the same inside the close picture as outside it; the close pair shows wherever
+      // the wide does, the wide picture having a hole where the close one lies)
+      if (first) terra.images.set('wide-day', { image: 'ground-wide-day.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool });
+      terra.images.set('wide-night', { image: 'ground-wide-night.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
+      if (first) terra.images.set('close-day', { image: 'ground-close-day.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool });
+      terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
+    }
+    // the dark over the second channel lies over all of them (its first set comes last)
+    var v = Math.round(veil(h) * 50) / 50;
+    if (v !== veilShown) {
+      veilShown = v;
+      if (v > 0) terra.images.set('channel-veil', { image: 'channel-veil.png', bounds: H.veil, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: v });
+      else terra.images.remove('channel-veil');
+    }
   }
 
   // ----- everything that lives on the ground, each on its dated way: set once, moved by the date ----
@@ -162,7 +175,7 @@
   }
   function rainAt() {
     var c = [(H.wide[0] + H.wide[2]) / 2, (H.wide[1] + H.wide[3]) / 2], dx = (H.wide[2] - H.wide[0]) * 0.3, dy = (H.wide[3] - H.wide[1]) * 0.3;
-    return [[c[0] - dx, c[1] + dy * 0.6], [c[0] + dx * 0.9, c[1] + dy], [c[0] - dx * 0.2, c[1] - dy], [c[0] + dx, c[1] - dy * 0.5], [c[0] - dx * 0.9, c[1] - dy * 0.3]];
+    return [[c[0] - dx, c[1] + dy * 0.6], [c[0] + dx * 0.9, c[1] + dy], [c[0] - dx * 0.2, c[1] - dy], [c[0] + dx, c[1] - dy * 0.5], [c[0] - dx * 0.9, c[1] - dy * 0.3], [c[0] + dx * 0.3, c[1] + dy * 0.9]];
   }
   function lightningAt() { return [[73.36, 32.86], [73.50, 32.79], [73.30, 32.72]]; }
 
@@ -270,8 +283,9 @@
   ground(hour);
   place();
   // the first sight: the valley, both camps and the bend in view (by a doorway the reader is near already)
-  // (the camps and the bend, 28 km apart, across two thirds of the screen's width)
-  var mid = [(P.campA[0] + P.headland[0]) / 2 + 0.01, (P.campA[1] + P.headland[1]) / 2 + 0.02], c0 = terra.camera;
+  // the first sight: the two camps at the centre with the river between them, their fires, the elephants
+  // at the water (the bend is a drag away, down the river)
+  var mid = [(P.campA[0] + P.campP[0]) / 2 - 0.012, (P.campA[1] + P.campP[1]) / 2 - 0.012], c0 = terra.camera;
   var span = Math.min(c0 ? c0.width : 800, c0 ? c0.height * 0.6 : 800);
-  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, span * 0.72 / 28)), terra.settings.reduceMotion ? 0 : 2.2);
+  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, span * 0.9 / 12)), terra.settings.reduceMotion ? 0 : 2.2);
 })();
