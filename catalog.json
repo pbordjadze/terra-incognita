@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated": "2026-10-29T06:48:23-04:00",
+  "generated": "2026-10-29T06:58:20-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
@@ -140,6 +140,217 @@
       "retired": false
     },
     {
+      "id": "gathering-of-water-alive",
+      "revision": 1,
+      "runtime": 4,
+      "title": "A gathering of water, alive",
+      "summary": "South America's rivers with the water running: touch one, or rest a finger and draw across many, and the light runs to the sea together.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "e77b5ae96635243eb6788263ddbf1632be2b547af7958e42636a82aff351caae",
+      "path": "packs/gathering-of-water-alive/r1/",
+      "bytes": 3212195,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 5297,
+          "sha256": "c5d7f9654591c7a4864f8d06b28be2d7f8e6b11c881681c128884179de2fda26"
+        },
+        {
+          "path": "about.json",
+          "bytes": 7601,
+          "sha256": "e4940e36532bb519c494878154d055ca12aff4337c2465f89024f82ed3330255"
+        },
+        {
+          "path": "boto-01.png",
+          "bytes": 3991,
+          "sha256": "9e2550965e6a33d520e73762eeff9e39507a79cb717ce1ceb4432683da9c142a"
+        },
+        {
+          "path": "boto-02.png",
+          "bytes": 4099,
+          "sha256": "244125688fa14541ace7fc5c6984647ed6c63bebc3a415c555b1199bf0eef12b"
+        },
+        {
+          "path": "boto-03.png",
+          "bytes": 4389,
+          "sha256": "1a939bf6d4e4b9f74b2c018493357974f26ce65e35bf12f07058e8270f63a55c"
+        },
+        {
+          "path": "boto-04.png",
+          "bytes": 3215,
+          "sha256": "9bfe9310583845332fc5d6490f9757c20caecb20d812eaf226ee0fdd7babc4f1"
+        },
+        {
+          "path": "boto-05.png",
+          "bytes": 3458,
+          "sha256": "f0f37a395e0b97dab66bcc9e7ee7287256bda83acc3dd2436fd30d749292c05d"
+        },
+        {
+          "path": "boto-06.png",
+          "bytes": 4443,
+          "sha256": "14e4be5c70d9347f228abd766233efa3d746da763ed20b939d8c55b2a6072b64"
+        },
+        {
+          "path": "boto-07.png",
+          "bytes": 4780,
+          "sha256": "ba8733ac9c80a8ee112a807fe89e75ff917d5d4b46d9ec6067a55278b965b72e"
+        },
+        {
+          "path": "boto-08.png",
+          "bytes": 5123,
+          "sha256": "0791d141b676f37cd33a1b9212c1414db8af665b832d8720f62043851d88dee9"
+        },
+        {
+          "path": "boto-09.png",
+          "bytes": 5372,
+          "sha256": "15c2ff8c95e7132d416fabd6aff482d57aa490323cd2529471ddeb4e4e80cf8c"
+        },
+        {
+          "path": "boto-10.png",
+          "bytes": 4359,
+          "sha256": "8e5507a38e7fbf5234b2fb0c4143d075f292c48788d6e97c594b632fae21ea96"
+        },
+        {
+          "path": "boto-11.png",
+          "bytes": 3537,
+          "sha256": "3ffa32fbcabf9ea7a862e256cb0c06b0fe24ddaca4e603a871bee54e39fd7dd2"
+        },
+        {
+          "path": "boto-12.png",
+          "bytes": 4436,
+          "sha256": "f89fb21519775fb5d9c6fed173c86a4b974df28d3dd007113e1d2ffa3bfd26bb"
+        },
+        {
+          "path": "boto-13.png",
+          "bytes": 3677,
+          "sha256": "45652f78006bf7c21fd37ee6d5d1c958aa7a6949229a4e7a03cd34bb9c8b8cfa"
+        },
+        {
+          "path": "boto-14.png",
+          "bytes": 3638,
+          "sha256": "56002f05eb9d09e4dc5d71a80a412ead837179521b661446841876788917ad2a"
+        },
+        {
+          "path": "boto-quiet.png",
+          "bytes": 235,
+          "sha256": "fef4c98ceb0fe37a3ed6aaf176961c00b2e95299d070341bf3081aa6f822f065"
+        },
+        {
+          "path": "boto.json",
+          "bytes": 638,
+          "sha256": "3a0070ef18f715334a6ea0be7e75d867a26ccda87b7a518d138931aefc956afe"
+        },
+        {
+          "path": "core.js",
+          "bytes": 7479,
+          "sha256": "6058f28428cb142efcf511a2da5759a9499e1376e3b56b7678fd1fffe2f3d0b7"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 15549,
+          "sha256": "bc9ef75aff76a6816ecfccfb84933c4b23028ad2a6a0d8a598bb9adbc515a7ac"
+        },
+        {
+          "path": "glint.png",
+          "bytes": 1552,
+          "sha256": "6f46a3ee53b99f964b6deafb176a27bd114fde32b6e3f7ae3aaa9415807f16e7"
+        },
+        {
+          "path": "main.js",
+          "bytes": 31353,
+          "sha256": "17c8c9090843dab5f3614c2e149ce24f31e9b308493bf41123690bcd0f233e3c"
+        },
+        {
+          "path": "network.json",
+          "bytes": 2422325,
+          "sha256": "cf9515ad08b57adced901ed8576b1272169e07fee8d0c20b2f58315d96f131bd"
+        },
+        {
+          "path": "places.json",
+          "bytes": 3258,
+          "sha256": "6bf608ff612f301e073b50f21e43e3eb9ab246ee63c250e0bf3fd2a7c1baae7b"
+        },
+        {
+          "path": "plume-01.png",
+          "bytes": 26951,
+          "sha256": "b1d15b3ac7e296ad482ca2397a08022f722c7564ef800f909275c604c4cbab96"
+        },
+        {
+          "path": "plume-02.png",
+          "bytes": 27267,
+          "sha256": "9aea4b0b1e7ab33c093e010f658ec33f1a89d3f976d3898a1fdd9014bea6377e"
+        },
+        {
+          "path": "plume-03.png",
+          "bytes": 25078,
+          "sha256": "dc3fd6b2e9a8a70c47da02f168a398e20f5a5604a8420664211c844a65ed068b"
+        },
+        {
+          "path": "plume-04.png",
+          "bytes": 22554,
+          "sha256": "19d8eb83302719c3273b5febe2874a75e4db4dd8d42be9745d70c0ec832a270d"
+        },
+        {
+          "path": "plume-05.png",
+          "bytes": 23287,
+          "sha256": "53bff3d68b42f6f17c90ff56ca144e09e581484962561bfba73bb24c51aa3fbc"
+        },
+        {
+          "path": "plume-06.png",
+          "bytes": 27321,
+          "sha256": "369619199f59847a9405f0e5cc50f2807b316694d5b798733bcd6f91fa7c25fa"
+        },
+        {
+          "path": "plume-07.png",
+          "bytes": 29212,
+          "sha256": "e26529d945a07519c4a251fc91ea926fde867753597f5a17422d57fe08141f82"
+        },
+        {
+          "path": "plume-08.png",
+          "bytes": 30067,
+          "sha256": "1addefec3474e4bae7278075ba981df48699b2c21a0c5d6b463e60a89c9ae486"
+        },
+        {
+          "path": "plume-09.png",
+          "bytes": 27162,
+          "sha256": "940bb200492236659f8d3fc175450f23ad017b8e81c2ce3d20069bba7464b8a9"
+        },
+        {
+          "path": "plume-10.png",
+          "bytes": 26944,
+          "sha256": "dc21d83f718a2bf36bbb6575cf97eea94bf8bc309d02134b55206715639b0166"
+        },
+        {
+          "path": "plume-11.png",
+          "bytes": 26555,
+          "sha256": "6127ffb64b5b9dd8f4cce9703ef6dd701a4b9a643f5747b33e150751688af5fa"
+        },
+        {
+          "path": "plume-12.png",
+          "bytes": 28974,
+          "sha256": "97bc72156db15c1e9fb435b0c1f25afe1c6e089a4c31b6286082a378eef5d46f"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 889,
+          "sha256": "6baaeaf508c0633d281c15aeec133de9d7b0906a74d14962d134f662628d4ecd"
+        },
+        {
+          "path": "sea.json",
+          "bytes": 335299,
+          "sha256": "423e242144c5e747edf54be5c3b89a6a12199ac0770da9deb5454246a8a1e55c"
+        }
+      ],
+      "published": "2026-10-29T06:58:20-04:00",
+      "retired": false
+    },
+    {
       "id": "hello-pack",
       "revision": 1,
       "runtime": 3,
@@ -168,6 +379,2312 @@
         }
       ],
       "published": "2026-10-28T03:16:23-04:00",
+      "retired": false
+    },
+    {
+      "id": "herds",
+      "revision": 1,
+      "runtime": 5,
+      "title": "The herds",
+      "summary": "The camel family's history as small herds you follow across the globe: from North America, camels north to Asia, llamas south to the Andes.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "4b9b3a0c61c156760997a9ec1fd4daeceb6eaff517c0f5403342da0a61e63e03",
+      "path": "packs/herds/r1/",
+      "bytes": 9895663,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 8634,
+          "sha256": "fbe055923acdc3ebfcc9c3d0783bf83a61b79c0b51458e61a3a4db2f3bbae548"
+        },
+        {
+          "path": "art.js",
+          "bytes": 24945,
+          "sha256": "c1c31b3da150e436d18d30cdf4224f809eb415499b64111a92d8131eaceeb507"
+        },
+        {
+          "path": "art/alpaca-close-graze-1.png",
+          "bytes": 29481,
+          "sha256": "07a3e91aaae47863c994ebd045d2b6b249f2ad281d0b7cc63fda9236de1f81ac"
+        },
+        {
+          "path": "art/alpaca-close-graze-2.png",
+          "bytes": 29712,
+          "sha256": "c6ba5d934a4cc99796e13f803a87ce2939e53d29da7c483c4fc15aa9ad872ce1"
+        },
+        {
+          "path": "art/alpaca-close-graze-3.png",
+          "bytes": 29168,
+          "sha256": "3a2a5d49a061a3da44cd9069f389d1343bd48ab03f09290a7a5a38f257591c87"
+        },
+        {
+          "path": "art/alpaca-close-graze-4.png",
+          "bytes": 29645,
+          "sha256": "10ba8166ed0d420f36e02327a3d1777bcca2582328d5603a4c63feae2c34bf98"
+        },
+        {
+          "path": "art/alpaca-close-walk-1.png",
+          "bytes": 32489,
+          "sha256": "27cfa214bccadd43bbc037233c0497fff05afc4e4e783e9fb41b401fb2fad1db"
+        },
+        {
+          "path": "art/alpaca-close-walk-2.png",
+          "bytes": 32192,
+          "sha256": "8f0d426422460064de11ccb7fad7c2a3599dfe7164ada0ec326df84b1dbd4851"
+        },
+        {
+          "path": "art/alpaca-close-walk-3.png",
+          "bytes": 30867,
+          "sha256": "32331108f20d1618a2b847947642a58bb89c265f268b43286786b9d3c14726e8"
+        },
+        {
+          "path": "art/alpaca-close-walk-4.png",
+          "bytes": 32316,
+          "sha256": "5f366b817b5f93a92f54d87bbf3c3a0698e739b211de1b912541a88aa3ae0235"
+        },
+        {
+          "path": "art/alpaca-close-walk-5.png",
+          "bytes": 32268,
+          "sha256": "ebcae9636dd5cecd9a4ac74a4910a9ab7e427b09768c6bdf254d789796b44ff1"
+        },
+        {
+          "path": "art/alpaca-close-walk-6.png",
+          "bytes": 32600,
+          "sha256": "9d2cf8752143960bd3b37b894317cdb7ed459e6689aee8419b6a1d08091fec68"
+        },
+        {
+          "path": "art/alpaca-close-walk-7.png",
+          "bytes": 31771,
+          "sha256": "16b7fb0bde22e44df77a27cb9964d2d8da822033c7e3fed146b7468afe36a9f5"
+        },
+        {
+          "path": "art/alpaca-close-walk-8.png",
+          "bytes": 32822,
+          "sha256": "fad835e0ac6e5227ec5b593b846bafdc15e9606c73b9c254c6441a6faf7b9058"
+        },
+        {
+          "path": "art/alpaca-herd-graze-1.png",
+          "bytes": 4169,
+          "sha256": "6496a9c0d19362c9b69569d9b4aeefdc83648c2c027cf4a28a90c3346a3cb41d"
+        },
+        {
+          "path": "art/alpaca-herd-walk-1.png",
+          "bytes": 4515,
+          "sha256": "bb904f8f6013edd8b562da54d3f899e4849a7bdb9f06295c563af47cdb7dff04"
+        },
+        {
+          "path": "art/alpaca-herd-walk-2.png",
+          "bytes": 4420,
+          "sha256": "b09f4ab3673ad30df0769cc9d5460aa782df2a01543ef64f7b819c4c8fce86ac"
+        },
+        {
+          "path": "art/alpaca-herd-walk-3.png",
+          "bytes": 4510,
+          "sha256": "e863372d0f19182b039517fad4fa65bba7399dbe81c5aa9713cb16a02265d7dd"
+        },
+        {
+          "path": "art/alpaca-herd-walk-4.png",
+          "bytes": 4411,
+          "sha256": "ac9defb405e13d9088b3425a8a3af2fef286d73c2c8afd20c143cbaa949b34e1"
+        },
+        {
+          "path": "art/alpaca-small-graze-1.png",
+          "bytes": 3980,
+          "sha256": "d5dfd2beb2644f7abc5a7109c67280b7d4aa8911bd0d52d3f773960b1279c0ba"
+        },
+        {
+          "path": "art/alpaca-small-graze-2.png",
+          "bytes": 4015,
+          "sha256": "71a35320a1f472f9ddc025fdf40e6cc39d41af1afd2db59d591ca4af85eff421"
+        },
+        {
+          "path": "art/alpaca-small-graze-3.png",
+          "bytes": 3899,
+          "sha256": "3cea6b59997c83ab8ecb873ddfdcfac0c39d17f2add6a9305d5ebffc13f03cf9"
+        },
+        {
+          "path": "art/alpaca-small-graze-4.png",
+          "bytes": 4052,
+          "sha256": "0ce01379f5cd35b9e72cddc5086a312a6ad0f75e88d075975652547ae715f8a7"
+        },
+        {
+          "path": "art/alpaca-small-walk-1.png",
+          "bytes": 4507,
+          "sha256": "0a9bd01982b4d8b5d01671e5623bba30a4e9b495d53230572deee47152e1fe26"
+        },
+        {
+          "path": "art/alpaca-small-walk-2.png",
+          "bytes": 4200,
+          "sha256": "be5c89d565395207ed8a588fe91c68f12b8b5836eca07fbc03b24f48b12d02e7"
+        },
+        {
+          "path": "art/alpaca-small-walk-3.png",
+          "bytes": 4509,
+          "sha256": "273f110e1c5ed4e36a21e550eb898d44261e3083cd2dd86686f046e298703ccd"
+        },
+        {
+          "path": "art/alpaca-small-walk-4.png",
+          "bytes": 4237,
+          "sha256": "b3e8ab08470a4eb4a348fd934beabfead0ae8548e233a5d9e4ad251bc1c8809d"
+        },
+        {
+          "path": "art/alpaca-tiny-graze-1.png",
+          "bytes": 1744,
+          "sha256": "d6e64ea6a62f9ae83f07e421b3421b8ba32704cd1f61923d13bfbb3501bbe367"
+        },
+        {
+          "path": "art/alpaca-tiny-walk-1.png",
+          "bytes": 1938,
+          "sha256": "018f4dabdf8708dc9d4b7a0e97cf8e4cfaabf45cd23eb18e6712174e92e2286d"
+        },
+        {
+          "path": "art/alpaca-tiny-walk-2.png",
+          "bytes": 1854,
+          "sha256": "c9bba10f5b4543e7f1b994eb3e50ada4aca28ace2e209547d3cbad6e89505b0d"
+        },
+        {
+          "path": "art/alpaca-tiny-walk-3.png",
+          "bytes": 1936,
+          "sha256": "190e078dcff23a8905a05af5d54dee0f45b767e67476e2a915db831bfb01ba4b"
+        },
+        {
+          "path": "art/alpaca-tiny-walk-4.png",
+          "bytes": 1867,
+          "sha256": "8d710b9489900f83f0f295300e84ba08cd922289f71a4307a2f3fcb87f658d5c"
+        },
+        {
+          "path": "art/arctic-close-graze-1.png",
+          "bytes": 56311,
+          "sha256": "b415ccae6e8c39a1fae8b9e556bbee76215c407ba56482ade69afc5bb682e07d"
+        },
+        {
+          "path": "art/arctic-close-graze-2.png",
+          "bytes": 56460,
+          "sha256": "00de4d5c677a9bf812806bc473e9e180f31ddfac17d6f69f8094bb6a4565fb0a"
+        },
+        {
+          "path": "art/arctic-close-graze-3.png",
+          "bytes": 56085,
+          "sha256": "7239bbb0d9bb1873e18f7820c2e81fede4607f52da0f2bbef72cbc05bd42959f"
+        },
+        {
+          "path": "art/arctic-close-graze-4.png",
+          "bytes": 56593,
+          "sha256": "d36dfa5c959fd89cab3233c0a3edf344980a0acd6bd53cc00391c769806996e0"
+        },
+        {
+          "path": "art/arctic-close-walk-1.png",
+          "bytes": 62264,
+          "sha256": "8f735d1d7add0c84c63d2ec88d1f6183896ec1b8c567cff52f6d06195f33b90d"
+        },
+        {
+          "path": "art/arctic-close-walk-2.png",
+          "bytes": 60485,
+          "sha256": "83af6a96cf236256e063d6ba08876c8742e317c3861024ad72b9d7b818a7eb4b"
+        },
+        {
+          "path": "art/arctic-close-walk-3.png",
+          "bytes": 58210,
+          "sha256": "64cf6873ac09720ddd51f318290c98a57d7e45187801942217031f68406920f5"
+        },
+        {
+          "path": "art/arctic-close-walk-4.png",
+          "bytes": 63032,
+          "sha256": "f3d78eba3b7d7908e58fb7e00d8cfc16c261e835a0a362583d1eb913071be760"
+        },
+        {
+          "path": "art/arctic-close-walk-5.png",
+          "bytes": 61481,
+          "sha256": "e1a21d93acea0106ac0f84ec6c3b62f69abbf2bdf50366d1b3c69654529a445c"
+        },
+        {
+          "path": "art/arctic-close-walk-6.png",
+          "bytes": 62048,
+          "sha256": "1667753730165547ff84153496fb0a9ebc4656797aeb7faf32942e85fd42fa03"
+        },
+        {
+          "path": "art/arctic-close-walk-7.png",
+          "bytes": 60199,
+          "sha256": "ec73e28fc4c7a2052e4cde240b94234b859872576b1ec3e38d1599a7a2a5b173"
+        },
+        {
+          "path": "art/arctic-close-walk-8.png",
+          "bytes": 64136,
+          "sha256": "a8fe47d0cb42740e61624c8d14f8a32ec4b278d7814513cb12ae0a9971833c75"
+        },
+        {
+          "path": "art/arctic-herd-graze-1.png",
+          "bytes": 8765,
+          "sha256": "3f650d15b26392187c05c2fc87c4cba494d993a4a545f6f93d66e64b255a913e"
+        },
+        {
+          "path": "art/arctic-herd-walk-1.png",
+          "bytes": 9682,
+          "sha256": "8e788c9d73deba7f578d0844adce3cae96756c73042d2c310339a8b2de9a1c17"
+        },
+        {
+          "path": "art/arctic-herd-walk-2.png",
+          "bytes": 9483,
+          "sha256": "1124257e519470ba9d0c9fe5a9c26512c84f7e9bd148b6e1c9817e03597c52d2"
+        },
+        {
+          "path": "art/arctic-herd-walk-3.png",
+          "bytes": 9674,
+          "sha256": "3b397c495a98b32c7597b73f1435a549be185531c80dc955618a87dc0fd9d8c1"
+        },
+        {
+          "path": "art/arctic-herd-walk-4.png",
+          "bytes": 9569,
+          "sha256": "98dd206dfbabaaf83fb96df325508d236024533d9fac14cb7a1dc148da028f7a"
+        },
+        {
+          "path": "art/arctic-small-graze-1.png",
+          "bytes": 7883,
+          "sha256": "073b48ab85d35bde132fbf3384ecb5e89c509c41168d88984959ce29de6b4e4f"
+        },
+        {
+          "path": "art/arctic-small-graze-2.png",
+          "bytes": 7880,
+          "sha256": "5292dea5cb165fa6055921a15fb43c3535ec2ec6c2fa444ec2dfb7b17ccdc2e2"
+        },
+        {
+          "path": "art/arctic-small-graze-3.png",
+          "bytes": 7634,
+          "sha256": "176c11e1ed50d642145bea1745a064a5df26d422b8f5066c768ab5737370650e"
+        },
+        {
+          "path": "art/arctic-small-graze-4.png",
+          "bytes": 7801,
+          "sha256": "b0a1c8ac67bcaec1a7169815725404d04b5bb947edf0e18fc60130530a24b632"
+        },
+        {
+          "path": "art/arctic-small-walk-1.png",
+          "bytes": 8789,
+          "sha256": "3627dfd9b24263e3599c9f171632aef80d91062605202683f0353bc2ca4e4a89"
+        },
+        {
+          "path": "art/arctic-small-walk-2.png",
+          "bytes": 8089,
+          "sha256": "e4d501c21522f8c94024ca5aba2bbb4d91a7d9a43cf5256cf260f510146c79bd"
+        },
+        {
+          "path": "art/arctic-small-walk-3.png",
+          "bytes": 8698,
+          "sha256": "5e9b0fc20ca82c43e001feaabf05bbb767643bfb224ac5c34e665ac0fec61b25"
+        },
+        {
+          "path": "art/arctic-small-walk-4.png",
+          "bytes": 8351,
+          "sha256": "b7f0ccc86633c3913a5e24bb4b268c8315b2a16c83d830927a464d331efb33f8"
+        },
+        {
+          "path": "art/arctic-tiny-graze-1.png",
+          "bytes": 3884,
+          "sha256": "49ab84ac87410d2e590af8469cb46dd8b2b5049133e4bd53999bb64f6c51a049"
+        },
+        {
+          "path": "art/arctic-tiny-walk-1.png",
+          "bytes": 4397,
+          "sha256": "d4f406902314f4c74e427441a87bf43a3de45067f4c343bdda6fd12fa99b8b26"
+        },
+        {
+          "path": "art/arctic-tiny-walk-2.png",
+          "bytes": 4000,
+          "sha256": "209a617b8bdc69384538d4023701550132876464ce8c8b452de61539ff515609"
+        },
+        {
+          "path": "art/arctic-tiny-walk-3.png",
+          "bytes": 4386,
+          "sha256": "c97857a038961295821dafd27056b3dd06ec214810d47c9a6dd6e6e30df7344f"
+        },
+        {
+          "path": "art/arctic-tiny-walk-4.png",
+          "bytes": 3980,
+          "sha256": "04ee19f1610e7cbe946974ef71fa017993eaea61a822978874325b1dad38b3af"
+        },
+        {
+          "path": "art/bactrian-close-graze-1.png",
+          "bytes": 47325,
+          "sha256": "b94d383f69ad7ebe785c3f9e6445825d83e18f877b529bdc6065d43f2033e572"
+        },
+        {
+          "path": "art/bactrian-close-graze-2.png",
+          "bytes": 47479,
+          "sha256": "a2dc9758df7bc22cee7900b42b1df48c5c0018ecc396e3873fdf83cba528ffc5"
+        },
+        {
+          "path": "art/bactrian-close-graze-3.png",
+          "bytes": 47434,
+          "sha256": "955c14b92f28b2881fdce2433ea7ff6a8c810fb33dba991efb52b0ca2c089a68"
+        },
+        {
+          "path": "art/bactrian-close-graze-4.png",
+          "bytes": 48108,
+          "sha256": "bb8efa0164beada4d385c0a2840d2134189eeb5f0530d7e85de06273d4edac42"
+        },
+        {
+          "path": "art/bactrian-close-walk-1.png",
+          "bytes": 52454,
+          "sha256": "5a324926779cc23e42421908a42b89e49b5c58ab3f8b2be5033a624de65a11f0"
+        },
+        {
+          "path": "art/bactrian-close-walk-2.png",
+          "bytes": 51060,
+          "sha256": "6231b33a0141f584e54b837cc0243ac096c99b10ab823c8f0788e3ab010cec37"
+        },
+        {
+          "path": "art/bactrian-close-walk-3.png",
+          "bytes": 49168,
+          "sha256": "22ca7e1391f1e07b755011540b6f7be61bfac9a2fa5f87948be44fa64aa4ebc5"
+        },
+        {
+          "path": "art/bactrian-close-walk-4.png",
+          "bytes": 52915,
+          "sha256": "05fb8326e0414f2331528beda3a84a4b0cf505caee83d59da87ca6b36f11bc90"
+        },
+        {
+          "path": "art/bactrian-close-walk-5.png",
+          "bytes": 51986,
+          "sha256": "05c94ce9f187ae29b9ed6a9473bd3871e14afdac45efd48da919e294a4dbfa4b"
+        },
+        {
+          "path": "art/bactrian-close-walk-6.png",
+          "bytes": 51796,
+          "sha256": "96d2c0d209c6419ada575e3396c8d4cf2cc628875e65636a1a876f8dcb119958"
+        },
+        {
+          "path": "art/bactrian-close-walk-7.png",
+          "bytes": 51096,
+          "sha256": "b58818af71798ca55b87e9abf4e2451cd4d4b88d732af18f4616a2f0581c73fe"
+        },
+        {
+          "path": "art/bactrian-close-walk-8.png",
+          "bytes": 53447,
+          "sha256": "cef0456aab1ddd39cc29b46947de33abe5632da6c3e17665625188a046d1512e"
+        },
+        {
+          "path": "art/bactrian-domestic-close-graze-1.png",
+          "bytes": 50362,
+          "sha256": "1cf243ae010c809f12eb572c5a74e6a710447f0944f55f12154f16952ba94fcb"
+        },
+        {
+          "path": "art/bactrian-domestic-close-graze-2.png",
+          "bytes": 50525,
+          "sha256": "b1d5003c2d2ac82516124d3625e6f0158f02e413d64f7162983f7caa552c4e8b"
+        },
+        {
+          "path": "art/bactrian-domestic-close-graze-3.png",
+          "bytes": 50673,
+          "sha256": "8e370b733509b5e59c9136ce9030f305b05a3142f48e74f8d65d8467301c53da"
+        },
+        {
+          "path": "art/bactrian-domestic-close-graze-4.png",
+          "bytes": 51000,
+          "sha256": "236fc4c7f4164e60e97093d9690ec59750632b87fe0553c225e4bb30b94f7bb3"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-1.png",
+          "bytes": 55426,
+          "sha256": "847e3032c34d8172f9efd0085adb9aad23e70b30ca0a064b7fd783e46f84b535"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-2.png",
+          "bytes": 53924,
+          "sha256": "14d7e76dbb584e18110052282286a992852ccfc63eb765a97fe59c790ec993c0"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-3.png",
+          "bytes": 51972,
+          "sha256": "42404c95e5d65ae4212ccb1ccff068488b468e23098eb267d5ba43f6e0c370a2"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-4.png",
+          "bytes": 55797,
+          "sha256": "9205c2eda64765a9cd656e6abd8424009295f244b672ff3eb322bb98705a9568"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-5.png",
+          "bytes": 54945,
+          "sha256": "91f802630da950877c609c0a4b8945e06a840a8058f26a70f6a547e634384921"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-6.png",
+          "bytes": 54719,
+          "sha256": "c0400af35ef816cbb7c8735fbed93b3220e8b2b3373b947d8cf457b9fbaee5ca"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-7.png",
+          "bytes": 53984,
+          "sha256": "81efb52e4c7a2dfdf7f9c4d18dde3400f63dac690dda3505435d1aadb36126b4"
+        },
+        {
+          "path": "art/bactrian-domestic-close-walk-8.png",
+          "bytes": 56360,
+          "sha256": "8fdfddc689cb0b7c171ae349ddc3f77a4807794806f9fec7b5c9847c41d0468a"
+        },
+        {
+          "path": "art/bactrian-domestic-herd-graze-1.png",
+          "bytes": 7428,
+          "sha256": "fc8e8d6680abea31e1e20f357273798b4793cb7ee3c4b7bb2232074880b91db2"
+        },
+        {
+          "path": "art/bactrian-domestic-herd-walk-1.png",
+          "bytes": 8036,
+          "sha256": "0959f068c05ae4432310c36fae163e3db4a59815d69ca7ea99cc0e3a44cb0750"
+        },
+        {
+          "path": "art/bactrian-domestic-herd-walk-2.png",
+          "bytes": 8017,
+          "sha256": "c92df57f41edb44658e7754c58ef71dc77615b741d533ebd4d460736738a7379"
+        },
+        {
+          "path": "art/bactrian-domestic-herd-walk-3.png",
+          "bytes": 8074,
+          "sha256": "f3ed0cab028e49a375d5fc90ac5923a470cde9b6563bce8520f423878b5c3ad6"
+        },
+        {
+          "path": "art/bactrian-domestic-herd-walk-4.png",
+          "bytes": 8011,
+          "sha256": "cad8f2f79127216a16b1fb6285382fb2b2ea2c22630f8e25087b06660f7ce63e"
+        },
+        {
+          "path": "art/bactrian-domestic-small-graze-1.png",
+          "bytes": 7675,
+          "sha256": "70d11ccb2ed3c3cda379cf1925ec40f65e1c0a1e3838ebf74864239283809468"
+        },
+        {
+          "path": "art/bactrian-domestic-small-graze-2.png",
+          "bytes": 7717,
+          "sha256": "5c585ea99244a8d5b64690906167099ff4ab74aef63398bcc3f620d1634ac3e9"
+        },
+        {
+          "path": "art/bactrian-domestic-small-graze-3.png",
+          "bytes": 7509,
+          "sha256": "1ad4f2a5667b660f1e6e7fed84eb23e2235a586f828b72519d7b951a3606d0a9"
+        },
+        {
+          "path": "art/bactrian-domestic-small-graze-4.png",
+          "bytes": 7599,
+          "sha256": "5b9baec6aeada7c60ae94b15954c33fef765a6159906ce0f2b6075a20825e7ff"
+        },
+        {
+          "path": "art/bactrian-domestic-small-walk-1.png",
+          "bytes": 8320,
+          "sha256": "3b581688e0c7f37661072d548421bf52cdd7e3203e5ba281fecfde30f0efd6d1"
+        },
+        {
+          "path": "art/bactrian-domestic-small-walk-2.png",
+          "bytes": 7586,
+          "sha256": "98df764c21b9763fc835b1fd8d0a973c50fc2c8fed5f7a6ee0c1f0c5f7a928ff"
+        },
+        {
+          "path": "art/bactrian-domestic-small-walk-3.png",
+          "bytes": 8224,
+          "sha256": "8bf49bbe253e6851c1adfc1615e123522aff3a032bb1ce624cd0994bd63e9f36"
+        },
+        {
+          "path": "art/bactrian-domestic-small-walk-4.png",
+          "bytes": 7739,
+          "sha256": "29b27213e7977049ed27f083b71da9990a98526223245c868f51bf8e69edfef4"
+        },
+        {
+          "path": "art/bactrian-domestic-tiny-graze-1.png",
+          "bytes": 3360,
+          "sha256": "b34c1eff36c4ee83d97b092d5373bfcb41284b5b8eec746548492f7a6c842aea"
+        },
+        {
+          "path": "art/bactrian-domestic-tiny-walk-1.png",
+          "bytes": 3718,
+          "sha256": "cdac0ea59d41f65c10df74febef0120624fb7a4339e9a8605ab02be01d928884"
+        },
+        {
+          "path": "art/bactrian-domestic-tiny-walk-2.png",
+          "bytes": 3453,
+          "sha256": "62d1cbe282d6ad6d41c14e7392c9c16cbe3e45792f86b3963ebbef6549ecf50b"
+        },
+        {
+          "path": "art/bactrian-domestic-tiny-walk-3.png",
+          "bytes": 3724,
+          "sha256": "20b543160aad2dcf364a6f63555f5d48c4e1f7c11fc3b72a73e79c5b2dd5889b"
+        },
+        {
+          "path": "art/bactrian-domestic-tiny-walk-4.png",
+          "bytes": 3481,
+          "sha256": "fb25f0f0a2d3e76c87b09ace2d978b96f99ae3014d8dce58dd5ac0a1cd21fe91"
+        },
+        {
+          "path": "art/bactrian-herd-graze-1.png",
+          "bytes": 7428,
+          "sha256": "fc8e8d6680abea31e1e20f357273798b4793cb7ee3c4b7bb2232074880b91db2"
+        },
+        {
+          "path": "art/bactrian-herd-walk-1.png",
+          "bytes": 8036,
+          "sha256": "0959f068c05ae4432310c36fae163e3db4a59815d69ca7ea99cc0e3a44cb0750"
+        },
+        {
+          "path": "art/bactrian-herd-walk-2.png",
+          "bytes": 8017,
+          "sha256": "c92df57f41edb44658e7754c58ef71dc77615b741d533ebd4d460736738a7379"
+        },
+        {
+          "path": "art/bactrian-herd-walk-3.png",
+          "bytes": 8074,
+          "sha256": "f3ed0cab028e49a375d5fc90ac5923a470cde9b6563bce8520f423878b5c3ad6"
+        },
+        {
+          "path": "art/bactrian-herd-walk-4.png",
+          "bytes": 8011,
+          "sha256": "cad8f2f79127216a16b1fb6285382fb2b2ea2c22630f8e25087b06660f7ce63e"
+        },
+        {
+          "path": "art/bactrian-small-graze-1.png",
+          "bytes": 6902,
+          "sha256": "4f396bdc7c8d7f05c39de2447c5035e2c0e177392a4f75c78371822052e33a2a"
+        },
+        {
+          "path": "art/bactrian-small-graze-2.png",
+          "bytes": 6944,
+          "sha256": "508914b8c6a8ed62de8dcbfd92922f7469a5773f8dff478b99985cffec884657"
+        },
+        {
+          "path": "art/bactrian-small-graze-3.png",
+          "bytes": 6763,
+          "sha256": "b3222353ead5725b17d5d9e4a7348682b2e8538b68132dc3f4481b1121689c39"
+        },
+        {
+          "path": "art/bactrian-small-graze-4.png",
+          "bytes": 6881,
+          "sha256": "8b7aad59b64f12e7262ffe35de66a74f32aa48d3a26c583e76a9aad338f6bbd5"
+        },
+        {
+          "path": "art/bactrian-small-walk-1.png",
+          "bytes": 7541,
+          "sha256": "05f730b89f457a0e08e0f24b65795d5f0226689418d172ed5a5884502f2082f9"
+        },
+        {
+          "path": "art/bactrian-small-walk-2.png",
+          "bytes": 6860,
+          "sha256": "bfe5723e4e04f7a40392d7844ebae79c466f0a2c895e91dce9828be51a3d29e9"
+        },
+        {
+          "path": "art/bactrian-small-walk-3.png",
+          "bytes": 7464,
+          "sha256": "4b4076548c87175e0d561f69e1f5ff8b76442545b383a4929b4dfb0006a6cc1c"
+        },
+        {
+          "path": "art/bactrian-small-walk-4.png",
+          "bytes": 6998,
+          "sha256": "99516fec18ebdbd233cc754a08a3cc8b8466492cc3a8ba293cc0a783a21d1517"
+        },
+        {
+          "path": "art/bactrian-tiny-graze-1.png",
+          "bytes": 3360,
+          "sha256": "b34c1eff36c4ee83d97b092d5373bfcb41284b5b8eec746548492f7a6c842aea"
+        },
+        {
+          "path": "art/bactrian-tiny-walk-1.png",
+          "bytes": 3718,
+          "sha256": "cdac0ea59d41f65c10df74febef0120624fb7a4339e9a8605ab02be01d928884"
+        },
+        {
+          "path": "art/bactrian-tiny-walk-2.png",
+          "bytes": 3453,
+          "sha256": "62d1cbe282d6ad6d41c14e7392c9c16cbe3e45792f86b3963ebbef6549ecf50b"
+        },
+        {
+          "path": "art/bactrian-tiny-walk-3.png",
+          "bytes": 3724,
+          "sha256": "20b543160aad2dcf364a6f63555f5d48c4e1f7c11fc3b72a73e79c5b2dd5889b"
+        },
+        {
+          "path": "art/bactrian-tiny-walk-4.png",
+          "bytes": 3481,
+          "sha256": "fb25f0f0a2d3e76c87b09ace2d978b96f99ae3014d8dce58dd5ac0a1cd21fe91"
+        },
+        {
+          "path": "art/camelops-close-graze-1.png",
+          "bytes": 46823,
+          "sha256": "9ee6cf8e0f3e46baa4af1d3b2d36a692af906182f667054f8ce7e23b5feed779"
+        },
+        {
+          "path": "art/camelops-close-graze-2.png",
+          "bytes": 46718,
+          "sha256": "e46bb59c0527d1f795c3c0db446431f9f4c219eb729bdfef41ac5a3ded9deb55"
+        },
+        {
+          "path": "art/camelops-close-graze-3.png",
+          "bytes": 45287,
+          "sha256": "0913749df0a0b86eee61b83e0037e8e89befb3be2afcb9a59f3320c7163e56cc"
+        },
+        {
+          "path": "art/camelops-close-graze-4.png",
+          "bytes": 47421,
+          "sha256": "654a8aef5660d9ed9ca98e1644744dd0b45c16c5fe0a8e2dd9bc91a798db18a6"
+        },
+        {
+          "path": "art/camelops-close-walk-1.png",
+          "bytes": 52446,
+          "sha256": "c4df2c07510651595cf8ee987e1e8106e6c8533c234c703e04b072e2c7123811"
+        },
+        {
+          "path": "art/camelops-close-walk-2.png",
+          "bytes": 50579,
+          "sha256": "c70c01f2cb1746921dd403e9f320caa9764109350f5bddbdb45553e0a07415c7"
+        },
+        {
+          "path": "art/camelops-close-walk-3.png",
+          "bytes": 48029,
+          "sha256": "c1ac92714cb72a1b8458e90e87d3aadf3d4642a829667eaf8ce7fcecbc507480"
+        },
+        {
+          "path": "art/camelops-close-walk-4.png",
+          "bytes": 53481,
+          "sha256": "71f7c93a841bedf1b0688ba3c033bfda95cb1508801dffff5e92c4a16267dfba"
+        },
+        {
+          "path": "art/camelops-close-walk-5.png",
+          "bytes": 51930,
+          "sha256": "575fcc19e16c12ed1b0811f490a09a3843145d383311624e8d64c832e0296118"
+        },
+        {
+          "path": "art/camelops-close-walk-6.png",
+          "bytes": 52414,
+          "sha256": "cb2c1bbdc46d794096cb14cc19b2aaa08c3021573c7e22d86b05f0a826599851"
+        },
+        {
+          "path": "art/camelops-close-walk-7.png",
+          "bytes": 49503,
+          "sha256": "4aa95c0a5fa64056de397a6c70161ebc24740ce2862e8d08e1b48dead6e4e3e9"
+        },
+        {
+          "path": "art/camelops-close-walk-8.png",
+          "bytes": 54228,
+          "sha256": "0896c713e7fab643ed66d1966b23f7aff1baccd1666a3e6cfb8fd0839d368658"
+        },
+        {
+          "path": "art/camelops-herd-graze-1.png",
+          "bytes": 7795,
+          "sha256": "f8e22dbd2e0654788e59f7191a84e67899051baaa5c7dd0572c09008016ee667"
+        },
+        {
+          "path": "art/camelops-herd-walk-1.png",
+          "bytes": 8714,
+          "sha256": "73856cd9d053183619d7c14664fa4cbf72aa6c53f47d75777a6087de4a680e66"
+        },
+        {
+          "path": "art/camelops-herd-walk-2.png",
+          "bytes": 8475,
+          "sha256": "70e2279836ef2f54bdf69d1daed0d27eabd4bdf5f437dc00c87863c992e08de6"
+        },
+        {
+          "path": "art/camelops-herd-walk-3.png",
+          "bytes": 8662,
+          "sha256": "7ef18615ac76119d9f541820827151b483b6fbd253f9ed262e06196c610ea4aa"
+        },
+        {
+          "path": "art/camelops-herd-walk-4.png",
+          "bytes": 8504,
+          "sha256": "e0f8dcf9888c29b1b3aa48fc6cf3b7bc7177d1a4c84fd50f6bed8b5a79edbaee"
+        },
+        {
+          "path": "art/camelops-small-graze-1.png",
+          "bytes": 6655,
+          "sha256": "9c5025410be780c63bcf6f695234ab4fa79a10b2f4d6b8ac668942fc41a74aac"
+        },
+        {
+          "path": "art/camelops-small-graze-2.png",
+          "bytes": 6684,
+          "sha256": "d6170eead7ce6b3e165b58af3b8bd2b029211c5aeebdaca61adb02edc740e4a9"
+        },
+        {
+          "path": "art/camelops-small-graze-3.png",
+          "bytes": 6341,
+          "sha256": "29e4d660c0d891b3eb06c5612220e094bc68591c901d3839335331eb559bfd12"
+        },
+        {
+          "path": "art/camelops-small-graze-4.png",
+          "bytes": 6711,
+          "sha256": "2836caeb63b71a133356e1fee4d6a121158f82e2932e4062710e6f3a88d9cfdf"
+        },
+        {
+          "path": "art/camelops-small-walk-1.png",
+          "bytes": 7571,
+          "sha256": "3aeb506ee821ee1afea4daccc98bf4ae986a33d7a603830a05742b018e2f03a8"
+        },
+        {
+          "path": "art/camelops-small-walk-2.png",
+          "bytes": 6895,
+          "sha256": "3b0009167939d83646ea9f106bf93b6a563028651c15c5184291a2e2a787931c"
+        },
+        {
+          "path": "art/camelops-small-walk-3.png",
+          "bytes": 7587,
+          "sha256": "62c44ad7c6ce720d4baefbb30468e6af6541996c74a3dd23da3de9fbea69cae1"
+        },
+        {
+          "path": "art/camelops-small-walk-4.png",
+          "bytes": 7028,
+          "sha256": "40b65b4ca5755d19090071224a5ff58ba2468ca244d2c7fcecb893153592db65"
+        },
+        {
+          "path": "art/camelops-tiny-graze-1.png",
+          "bytes": 3372,
+          "sha256": "67ce07344eb55d6620ffd27729d1f1332d8115a8aeef90b497556a3b31bb8411"
+        },
+        {
+          "path": "art/camelops-tiny-walk-1.png",
+          "bytes": 3843,
+          "sha256": "074d6a0ae8314174f4d11ef89675f5e4a3536c2e7cf2631560c9b97d3b2b6e21"
+        },
+        {
+          "path": "art/camelops-tiny-walk-2.png",
+          "bytes": 3483,
+          "sha256": "d450d0972e0ddbf8f5d609f9fbf4d8c2d7b9de4d051414eb0d885b0407dd0ea9"
+        },
+        {
+          "path": "art/camelops-tiny-walk-3.png",
+          "bytes": 3851,
+          "sha256": "6d1729e3fc183f83bf05438b5023eae1e02938373e99247d7eb90483d353c5ac"
+        },
+        {
+          "path": "art/camelops-tiny-walk-4.png",
+          "bytes": 3516,
+          "sha256": "e6177990a6cf00699592f23f7fbcb5197cede084184c33e71f1b1360de0474d0"
+        },
+        {
+          "path": "art/camelus-close-graze-1.png",
+          "bytes": 46467,
+          "sha256": "47a514f2bfc1dbdaece309952e125e0595fc722f2368479e7b3e851f4c325ec7"
+        },
+        {
+          "path": "art/camelus-close-graze-2.png",
+          "bytes": 46572,
+          "sha256": "5e9569901a107dcc851096a8eefce817e61011ae2cddc3b0075991d033c2c002"
+        },
+        {
+          "path": "art/camelus-close-graze-3.png",
+          "bytes": 45087,
+          "sha256": "0897767b1fc97e3124d4df95190c89900082973a952278feabe9859b2db8b4ec"
+        },
+        {
+          "path": "art/camelus-close-graze-4.png",
+          "bytes": 46884,
+          "sha256": "551e15e08c2880eae1eae3a2ee344ebc27ed7c7dd4be8ac62f0d5d1037742954"
+        },
+        {
+          "path": "art/camelus-close-walk-1.png",
+          "bytes": 51967,
+          "sha256": "09c098b9fa8eec6040a3bfe01c36e2607ec538e1786dd9b34814c1abb6211fc6"
+        },
+        {
+          "path": "art/camelus-close-walk-2.png",
+          "bytes": 50338,
+          "sha256": "1275b42368295400c400b2ae4e1eb4fb30651b34a6dd20b6d1579968c0ffd8e8"
+        },
+        {
+          "path": "art/camelus-close-walk-3.png",
+          "bytes": 48214,
+          "sha256": "41244470ca2b230b647592ee95820ef4512a5129631a4909322201c58ad4eb9e"
+        },
+        {
+          "path": "art/camelus-close-walk-4.png",
+          "bytes": 52498,
+          "sha256": "506cdeabed774d2fa79016439d8fc90fc74e397e0e7dfb08736d683b4685b400"
+        },
+        {
+          "path": "art/camelus-close-walk-5.png",
+          "bytes": 51383,
+          "sha256": "7076fc7ff198a91e5110d442aad808b3896ca540b7e5cdcb7f1cf23952f42aba"
+        },
+        {
+          "path": "art/camelus-close-walk-6.png",
+          "bytes": 51655,
+          "sha256": "215f7a3131029fcbedcc8c040f38cbbe711608bc00dabe03b99873ef8be292d3"
+        },
+        {
+          "path": "art/camelus-close-walk-7.png",
+          "bytes": 50423,
+          "sha256": "a7425685297daf5faf51228fda94fd5eaa9dd261f757a5191b82554b7c20d283"
+        },
+        {
+          "path": "art/camelus-close-walk-8.png",
+          "bytes": 53558,
+          "sha256": "244fb26d823a86637e7f8b65181c7c66b4fbbc19d01252a1f0dcfa9550cc5af7"
+        },
+        {
+          "path": "art/camelus-herd-graze-1.png",
+          "bytes": 7714,
+          "sha256": "11fb96fc340c585bb1c783ee966d306e306babb42ab7d1075442503fe3ac4d8d"
+        },
+        {
+          "path": "art/camelus-herd-walk-1.png",
+          "bytes": 8447,
+          "sha256": "7dd8341a3be0073c17c8ad5340bdf01027d7defa375192ca7b0954de962a2300"
+        },
+        {
+          "path": "art/camelus-herd-walk-2.png",
+          "bytes": 8210,
+          "sha256": "8f66d0f5364034e918be87abe4e78d3d403bdd2b6677d247f4af1c7ce0957a0f"
+        },
+        {
+          "path": "art/camelus-herd-walk-3.png",
+          "bytes": 8397,
+          "sha256": "622f783c588a8cd44972a2a58973f91c75bec4a5fbc53b06df6430d353260f42"
+        },
+        {
+          "path": "art/camelus-herd-walk-4.png",
+          "bytes": 8264,
+          "sha256": "3722eaf2dafffb6efd202a928c3b2654bdf022df193b08dd6522da05b1c75a96"
+        },
+        {
+          "path": "art/camelus-small-graze-1.png",
+          "bytes": 6675,
+          "sha256": "544b90b1be0192695b4e7d226d9e8aad8cb6e2af13aba2c059bae5cbdff92730"
+        },
+        {
+          "path": "art/camelus-small-graze-2.png",
+          "bytes": 6759,
+          "sha256": "71651b7cb5d65477f82a158218e5b6a974ce7d8193d914552e89748372720365"
+        },
+        {
+          "path": "art/camelus-small-graze-3.png",
+          "bytes": 6334,
+          "sha256": "1cfebca948ff6f0d0d04de9ff8253a7079f0f5078395f26532e931cc2b0dee7b"
+        },
+        {
+          "path": "art/camelus-small-graze-4.png",
+          "bytes": 6584,
+          "sha256": "e96d898eda1cd5eb0f6a3f83449b046ff4b46ee9998bd1d24f7f5ad200c1142a"
+        },
+        {
+          "path": "art/camelus-small-walk-1.png",
+          "bytes": 7468,
+          "sha256": "2dec16175fb3ea9e43a87d9ba0ce31d2a79e70af90437cb18ccbfb01a932d96f"
+        },
+        {
+          "path": "art/camelus-small-walk-2.png",
+          "bytes": 6884,
+          "sha256": "0c64928d5770e37f456b99f80670dc6e0250b3d24cece70d8ee1c4e2849fc751"
+        },
+        {
+          "path": "art/camelus-small-walk-3.png",
+          "bytes": 7460,
+          "sha256": "9f19aeee0c6b9490374590ed59ab67e4963ec3c9c31e3e7fd6fa64a9eabbde53"
+        },
+        {
+          "path": "art/camelus-small-walk-4.png",
+          "bytes": 6979,
+          "sha256": "2906946ba88314a92754a7baf09c1e824a17755a7924c7720adf4821a28da315"
+        },
+        {
+          "path": "art/camelus-tiny-graze-1.png",
+          "bytes": 3272,
+          "sha256": "984381390898a916b92c53e685f1ed21c8effaa74590179bf484989b34f2a4c2"
+        },
+        {
+          "path": "art/camelus-tiny-walk-1.png",
+          "bytes": 3743,
+          "sha256": "91848418e06810720f9cdd2355782ce796c35043653ce307d3ea0945df3e45d9"
+        },
+        {
+          "path": "art/camelus-tiny-walk-2.png",
+          "bytes": 3425,
+          "sha256": "dde7661430f18160260558f5f5078b98f76428ad9605d572d0cb3862bdbcf974"
+        },
+        {
+          "path": "art/camelus-tiny-walk-3.png",
+          "bytes": 3743,
+          "sha256": "56a47a1418b3e1aa09c24ec2bcb8678957199f036db88512efdac5c3130dbeff"
+        },
+        {
+          "path": "art/camelus-tiny-walk-4.png",
+          "bytes": 3465,
+          "sha256": "ab116ddfe5a4518a6354b9c18fc6cdbed1655e9b183dfcb02cdfc55c77fbd5d1"
+        },
+        {
+          "path": "art/dromedary-close-graze-1.png",
+          "bytes": 49466,
+          "sha256": "18b54e5da8847eca4cc70a77336dc837f129535a0e3d9689e2eefe7e78521e2c"
+        },
+        {
+          "path": "art/dromedary-close-graze-2.png",
+          "bytes": 49510,
+          "sha256": "df335a5786803b6c8340ed63bee23f7f27844d957d44137f48cfefe4b26a41cd"
+        },
+        {
+          "path": "art/dromedary-close-graze-3.png",
+          "bytes": 48172,
+          "sha256": "13518e12e46990db70d8890f65af09d7dddc0298d9092e5b116f713440561a0f"
+        },
+        {
+          "path": "art/dromedary-close-graze-4.png",
+          "bytes": 49403,
+          "sha256": "df796e6371d7d28a6befdd88961031c1223ff3b6e616d59f7a719ef93ee29146"
+        },
+        {
+          "path": "art/dromedary-close-walk-1.png",
+          "bytes": 54045,
+          "sha256": "c01784597c869a2d6b4607a3bfd555cf4f67ab81760a83515b23c21854d07904"
+        },
+        {
+          "path": "art/dromedary-close-walk-2.png",
+          "bytes": 52422,
+          "sha256": "0cccd9fb470303b009c397d5d42cdf3b4678b08eddc72a19e4f22361e87ce994"
+        },
+        {
+          "path": "art/dromedary-close-walk-3.png",
+          "bytes": 50529,
+          "sha256": "96ecfb1305cf17f27a5731a489f277460f6f7abec5b03d0a9bbf9d2f4cd18682"
+        },
+        {
+          "path": "art/dromedary-close-walk-4.png",
+          "bytes": 54943,
+          "sha256": "ecae0f183a8be59f33bbec1ba4d0ffa2ef846241c6288ebc8d0fae2dced5fa2e"
+        },
+        {
+          "path": "art/dromedary-close-walk-5.png",
+          "bytes": 53362,
+          "sha256": "718f7d177320ef2c83a633144913648d7b09dbbd08949df4701a44c94f1d7a21"
+        },
+        {
+          "path": "art/dromedary-close-walk-6.png",
+          "bytes": 53585,
+          "sha256": "fe094c3fef51c90dbe659110a0be2d3d332f7c7bd6afe9b20f8d5413cd5c90e6"
+        },
+        {
+          "path": "art/dromedary-close-walk-7.png",
+          "bytes": 52775,
+          "sha256": "f9165795dd241a3cfabb51f82458e5b9329d6406b14fb10527c633c84fa9cea4"
+        },
+        {
+          "path": "art/dromedary-close-walk-8.png",
+          "bytes": 55701,
+          "sha256": "959c8866a823b534ff7dcb7bbcc8b7485c5b2d33e15de6f06f425961d87b7b39"
+        },
+        {
+          "path": "art/dromedary-domestic-close-graze-1.png",
+          "bytes": 51983,
+          "sha256": "d01dbe5acdd02235ebfbba0709d7958eb648a5807a0098a556692ed51b319f2b"
+        },
+        {
+          "path": "art/dromedary-domestic-close-graze-2.png",
+          "bytes": 52017,
+          "sha256": "1292f0f2f325c7923dcfd35627fbd9b455345a2f1d6bc159cab24512e34fdb34"
+        },
+        {
+          "path": "art/dromedary-domestic-close-graze-3.png",
+          "bytes": 51298,
+          "sha256": "e19411eaa01713341c337efbaeab47aeb02cfd07363fec5c2b3809e6b97cedc1"
+        },
+        {
+          "path": "art/dromedary-domestic-close-graze-4.png",
+          "bytes": 52266,
+          "sha256": "3dd48e2203b16b88bcd8596419eee16a474453545baf57f2af000a39543d96ec"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-1.png",
+          "bytes": 56943,
+          "sha256": "c0b5fc72192a5fd07593b1d059b5d24ead3360750b267679279c1a39fc6753bf"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-2.png",
+          "bytes": 55266,
+          "sha256": "85ed92863f9e32edcaf66bae866135092807ce649fd1f5779355d677f7838042"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-3.png",
+          "bytes": 53248,
+          "sha256": "88eebac12b32919410ef95b42858eb344aa3f23696e4539a98e0ae98feae2563"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-4.png",
+          "bytes": 57753,
+          "sha256": "ac535b6357e0255712c09a81d4273c40f26a2d1feb56f874761a8168b9301cd7"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-5.png",
+          "bytes": 56272,
+          "sha256": "1b81f1d061fe0f45d7d877bbd09f0408a69c9a54dbfea00167fd6ab22c41e731"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-6.png",
+          "bytes": 56486,
+          "sha256": "dcba6b3080d1884a17ccc7d2a0a20623c4f4d1ca6a18e07fdf7f754d65431bb5"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-7.png",
+          "bytes": 55577,
+          "sha256": "c2f787f0caa9acba9667dce6b4c4b0b586a149c093fa8555fe613eb4708803da"
+        },
+        {
+          "path": "art/dromedary-domestic-close-walk-8.png",
+          "bytes": 58608,
+          "sha256": "3a0e89f2d0c020bd0e6fde1e28c220d0dded16082b5bd9492932f87a76a0a57c"
+        },
+        {
+          "path": "art/dromedary-domestic-herd-graze-1.png",
+          "bytes": 7870,
+          "sha256": "e5834312885f122dec58e93cb68505407906ad6fcd61c62bf1b25c16d07a47aa"
+        },
+        {
+          "path": "art/dromedary-domestic-herd-walk-1.png",
+          "bytes": 8639,
+          "sha256": "4a175c2e329cf64826bce2e2505cee60e1d5b6e737165d175f27978507d61054"
+        },
+        {
+          "path": "art/dromedary-domestic-herd-walk-2.png",
+          "bytes": 8452,
+          "sha256": "fdc268ecc067fbca5db1e32df64eb0fea7b8c33375fe317950659780223ad0c0"
+        },
+        {
+          "path": "art/dromedary-domestic-herd-walk-3.png",
+          "bytes": 8579,
+          "sha256": "65245f07c78afcb66cf81f2e8e7ac7d5291bfa503baaaa741f8d369f106a83cd"
+        },
+        {
+          "path": "art/dromedary-domestic-herd-walk-4.png",
+          "bytes": 8494,
+          "sha256": "a792e32c686afad0a2c706999aa9c546480ff48db9dc2675e9cb25a02456d6f7"
+        },
+        {
+          "path": "art/dromedary-domestic-small-graze-1.png",
+          "bytes": 7992,
+          "sha256": "3fac065732244567794fa323ef35d5f980e395b2d0d5e1ba6aab9301307735b6"
+        },
+        {
+          "path": "art/dromedary-domestic-small-graze-2.png",
+          "bytes": 7985,
+          "sha256": "3f04517809448ee8a053289fb23db84c302a823b403982d9edb4e60c02f597cf"
+        },
+        {
+          "path": "art/dromedary-domestic-small-graze-3.png",
+          "bytes": 7691,
+          "sha256": "b96b1d936d85d9b263f5f4b8011fe77c2d86939e90512ba4009885c71a852aba"
+        },
+        {
+          "path": "art/dromedary-domestic-small-graze-4.png",
+          "bytes": 7837,
+          "sha256": "dacb5623661b3ad9915bb41f4c448e8e1cc46d5b3b8980299eb4a29004aca12d"
+        },
+        {
+          "path": "art/dromedary-domestic-small-walk-1.png",
+          "bytes": 8574,
+          "sha256": "b8b921d481ecdf88bd77d58cccc774bf7bd50281a94088f76e0930786ca074d8"
+        },
+        {
+          "path": "art/dromedary-domestic-small-walk-2.png",
+          "bytes": 8026,
+          "sha256": "a545fce596bed380b118e5cbdb6b3e81e85289abf4c1bd4f5da755464a3579be"
+        },
+        {
+          "path": "art/dromedary-domestic-small-walk-3.png",
+          "bytes": 8557,
+          "sha256": "4715a7b8a8377afb27461ea67dd0256c17b32838caccacd5caf9e5a8c6fa0b10"
+        },
+        {
+          "path": "art/dromedary-domestic-small-walk-4.png",
+          "bytes": 8135,
+          "sha256": "4d52db9bf2e5820634ec5ef1e5dcda2fde1be423898c56a1a960d9ae775836b2"
+        },
+        {
+          "path": "art/dromedary-domestic-tiny-graze-1.png",
+          "bytes": 3387,
+          "sha256": "5b8ba6af15696f42ab9b03b4e8dbde514c9460217c63ecfb527362f81defec91"
+        },
+        {
+          "path": "art/dromedary-domestic-tiny-walk-1.png",
+          "bytes": 3842,
+          "sha256": "afac8c2637b668e8a346618b359d4fc1bb1bf931f25e3224e4c955b3e993023c"
+        },
+        {
+          "path": "art/dromedary-domestic-tiny-walk-2.png",
+          "bytes": 3460,
+          "sha256": "f9e4c5641c0add98ef92520f86505e44bd8cacbfabc2ed2faf26fdbd77de4f11"
+        },
+        {
+          "path": "art/dromedary-domestic-tiny-walk-3.png",
+          "bytes": 3832,
+          "sha256": "a5d3a85d47739636563a585d0d3e4ef68dad91d0b3a61b7b98c2c23265244486"
+        },
+        {
+          "path": "art/dromedary-domestic-tiny-walk-4.png",
+          "bytes": 3519,
+          "sha256": "526f26c10401b9cd17f427cd4a91ef4d030f6469dce8459a602148af19810207"
+        },
+        {
+          "path": "art/dromedary-herd-graze-1.png",
+          "bytes": 7870,
+          "sha256": "e5834312885f122dec58e93cb68505407906ad6fcd61c62bf1b25c16d07a47aa"
+        },
+        {
+          "path": "art/dromedary-herd-walk-1.png",
+          "bytes": 8639,
+          "sha256": "4a175c2e329cf64826bce2e2505cee60e1d5b6e737165d175f27978507d61054"
+        },
+        {
+          "path": "art/dromedary-herd-walk-2.png",
+          "bytes": 8452,
+          "sha256": "fdc268ecc067fbca5db1e32df64eb0fea7b8c33375fe317950659780223ad0c0"
+        },
+        {
+          "path": "art/dromedary-herd-walk-3.png",
+          "bytes": 8579,
+          "sha256": "65245f07c78afcb66cf81f2e8e7ac7d5291bfa503baaaa741f8d369f106a83cd"
+        },
+        {
+          "path": "art/dromedary-herd-walk-4.png",
+          "bytes": 8494,
+          "sha256": "a792e32c686afad0a2c706999aa9c546480ff48db9dc2675e9cb25a02456d6f7"
+        },
+        {
+          "path": "art/dromedary-small-graze-1.png",
+          "bytes": 7113,
+          "sha256": "9a07907478ecc84d4cb38884c1e8035aa62bbf6658749658f5717c04ec0a6e76"
+        },
+        {
+          "path": "art/dromedary-small-graze-2.png",
+          "bytes": 7106,
+          "sha256": "8946ec26c71c95f5699c1657f088ffe79a966309f93bd0497eb7a3839083eed5"
+        },
+        {
+          "path": "art/dromedary-small-graze-3.png",
+          "bytes": 6774,
+          "sha256": "2cf50e3a3d9836c1e8eb336995325bd1168e1110dc05681ddf1407df1d50c2c8"
+        },
+        {
+          "path": "art/dromedary-small-graze-4.png",
+          "bytes": 6991,
+          "sha256": "e56d2d29e679c76f2df3e7284146a418b3582bbbba8e5e3bccc412ab6f8b88d4"
+        },
+        {
+          "path": "art/dromedary-small-walk-1.png",
+          "bytes": 7745,
+          "sha256": "ab80d1131124f4fb7da4bf452eaa3fce3a333d70a0ac2cbc15efcb55ccd05079"
+        },
+        {
+          "path": "art/dromedary-small-walk-2.png",
+          "bytes": 7238,
+          "sha256": "3cf13ec6f0229bbefbc6c5cb69a3d94237a5e0f4aa84807b3953727f216a69dc"
+        },
+        {
+          "path": "art/dromedary-small-walk-3.png",
+          "bytes": 7729,
+          "sha256": "d04972bd898eca2c333976263ca79e4a637328c3b736eec3b2bf366781efe465"
+        },
+        {
+          "path": "art/dromedary-small-walk-4.png",
+          "bytes": 7357,
+          "sha256": "304ed845260a30b2975e1f3f672f321b1f48134a08208a2fcd11024f458bfca6"
+        },
+        {
+          "path": "art/dromedary-tiny-graze-1.png",
+          "bytes": 3387,
+          "sha256": "5b8ba6af15696f42ab9b03b4e8dbde514c9460217c63ecfb527362f81defec91"
+        },
+        {
+          "path": "art/dromedary-tiny-walk-1.png",
+          "bytes": 3842,
+          "sha256": "afac8c2637b668e8a346618b359d4fc1bb1bf931f25e3224e4c955b3e993023c"
+        },
+        {
+          "path": "art/dromedary-tiny-walk-2.png",
+          "bytes": 3460,
+          "sha256": "f9e4c5641c0add98ef92520f86505e44bd8cacbfabc2ed2faf26fdbd77de4f11"
+        },
+        {
+          "path": "art/dromedary-tiny-walk-3.png",
+          "bytes": 3832,
+          "sha256": "a5d3a85d47739636563a585d0d3e4ef68dad91d0b3a61b7b98c2c23265244486"
+        },
+        {
+          "path": "art/dromedary-tiny-walk-4.png",
+          "bytes": 3519,
+          "sha256": "526f26c10401b9cd17f427cd4a91ef4d030f6469dce8459a602148af19810207"
+        },
+        {
+          "path": "art/early-close-graze-1.png",
+          "bytes": 24686,
+          "sha256": "2f0af4499d9c98adab805e15bb55f73d30516461826d700a1e8037a029d2fa97"
+        },
+        {
+          "path": "art/early-close-graze-2.png",
+          "bytes": 24846,
+          "sha256": "142b63d5a4293064a0e6e222f6bf6bc9210a4c4a4720d7931a53e91b19746b30"
+        },
+        {
+          "path": "art/early-close-graze-3.png",
+          "bytes": 24989,
+          "sha256": "37f1fbe1630e72c183469c4d3d50ab1ee9e58f1df144e978e650eaba4a1d5a6e"
+        },
+        {
+          "path": "art/early-close-graze-4.png",
+          "bytes": 25902,
+          "sha256": "252f41d5613f13d762a1850d0ce436e30aeeff170a958e445cbd5d46545a23fc"
+        },
+        {
+          "path": "art/early-close-walk-1.png",
+          "bytes": 28959,
+          "sha256": "8562a8efb63c1adabd283adec918a487a250defcad4fcfc22114f5af156d1c17"
+        },
+        {
+          "path": "art/early-close-walk-2.png",
+          "bytes": 28222,
+          "sha256": "badf8e677b761f2f1cb3e49ec9b9459d978dec0bf13e842d2da5fcd126ce4fba"
+        },
+        {
+          "path": "art/early-close-walk-3.png",
+          "bytes": 26728,
+          "sha256": "e31f2dab6f79009813137b2e02bfacc659d35e71fde28d55468ad22394f7279b"
+        },
+        {
+          "path": "art/early-close-walk-4.png",
+          "bytes": 29022,
+          "sha256": "d154c7b829d1738b30453c4fd678808fdbf1a9956e9d040dc2b698678884f2e4"
+        },
+        {
+          "path": "art/early-close-walk-5.png",
+          "bytes": 28711,
+          "sha256": "4d992b74cd1d98da92e9d29b0a6c52a73ce4727bd6e12d35700c597d88dd96ad"
+        },
+        {
+          "path": "art/early-close-walk-6.png",
+          "bytes": 29167,
+          "sha256": "2859601f3f6a067d1106ce52cf8fd590c90af8eb87910affef86524656c71cb9"
+        },
+        {
+          "path": "art/early-close-walk-7.png",
+          "bytes": 27671,
+          "sha256": "995deb33d7a3b764c40424c66a47dec8a6f8fd3e6029a7ebe6f7a3d82c4a7c76"
+        },
+        {
+          "path": "art/early-close-walk-8.png",
+          "bytes": 29579,
+          "sha256": "b7580edb5bbce119d839188b6500906f0de2b60b0d27fb3a771ebb2eddfaa401"
+        },
+        {
+          "path": "art/early-herd-graze-1.png",
+          "bytes": 3875,
+          "sha256": "9c61a3d741e031753d7186cd66542ea6c6da10fc35d40a579a55a80ca984286b"
+        },
+        {
+          "path": "art/early-herd-walk-1.png",
+          "bytes": 4306,
+          "sha256": "8184dede8f2ebeaf0a0c71c593dc8264cf1d282f059787442f5526298422cb31"
+        },
+        {
+          "path": "art/early-herd-walk-2.png",
+          "bytes": 4304,
+          "sha256": "98d5ead68f7a6fe3c9bcc71d4ebb3e5a89ae252188766ada6e99f9ebbc09ac20"
+        },
+        {
+          "path": "art/early-herd-walk-3.png",
+          "bytes": 4310,
+          "sha256": "12be7f725432373f5e8bab9a150c324486d1dbad05f09fc4e2d692a8b81b5785"
+        },
+        {
+          "path": "art/early-herd-walk-4.png",
+          "bytes": 4306,
+          "sha256": "d14033f236b45e7b7e464eab93e556c249dbfbb3b55842f295a00f6cf2c195de"
+        },
+        {
+          "path": "art/early-small-graze-1.png",
+          "bytes": 3587,
+          "sha256": "54a28d5703296fcaed57ec0d89748cd12af51bceaf91fe1eaffb0d8ed1ae0ca2"
+        },
+        {
+          "path": "art/early-small-graze-2.png",
+          "bytes": 3625,
+          "sha256": "d109d446057d272527a94ba672d2d656dcbd8ca74026ae97526c0c5fefd0987b"
+        },
+        {
+          "path": "art/early-small-graze-3.png",
+          "bytes": 3645,
+          "sha256": "2d0ff4e1973db4ba7621d115ce817d66655dba18449e5751f3b384f948832d87"
+        },
+        {
+          "path": "art/early-small-graze-4.png",
+          "bytes": 3868,
+          "sha256": "307e631278b48b3479a3ffb543eb3b19d5a765b8eaa30fac8673c48ca33e669d"
+        },
+        {
+          "path": "art/early-small-walk-1.png",
+          "bytes": 4236,
+          "sha256": "6b7d432db0e49ba8e24eafdc10ab02443234b49b92d215600d86c909d884624b"
+        },
+        {
+          "path": "art/early-small-walk-2.png",
+          "bytes": 3969,
+          "sha256": "919408a162f667503c0c0720edfa141b6e8fc62e1ca6d5e5e72633b174fce582"
+        },
+        {
+          "path": "art/early-small-walk-3.png",
+          "bytes": 4233,
+          "sha256": "be46e8fcfb65f8cdb0dad501f1d3567d5e8a60a28267618ea615c50ca649eec3"
+        },
+        {
+          "path": "art/early-small-walk-4.png",
+          "bytes": 4018,
+          "sha256": "2c50b5f68a56232905228cba57d9663d4bb5192f2941b2f24b4e42d0d1cb5927"
+        },
+        {
+          "path": "art/early-tiny-graze-1.png",
+          "bytes": 1669,
+          "sha256": "150f73dbabb145e4c5d35619537772917b1416956c662e90555b6ab65f06c2d7"
+        },
+        {
+          "path": "art/early-tiny-walk-1.png",
+          "bytes": 1880,
+          "sha256": "e7757eaeb793a5364595e17883f78b3827ead73b830c9e45e85c5b7f1c1fcdbf"
+        },
+        {
+          "path": "art/early-tiny-walk-2.png",
+          "bytes": 1859,
+          "sha256": "01b5d3b3c2e74557ac8dcebc9335ddece8ca0cd7fdcc54b4856ef4ca5e868836"
+        },
+        {
+          "path": "art/early-tiny-walk-3.png",
+          "bytes": 1887,
+          "sha256": "12357cc5986b511ced6c49abe1bc274932fe69ee73b3730f0f48e28c1502d045"
+        },
+        {
+          "path": "art/early-tiny-walk-4.png",
+          "bytes": 1853,
+          "sha256": "aa59216a38cc241cda5daa984b8758c08b4869c5918cf52001a087e708f1ec5d"
+        },
+        {
+          "path": "art/giraffe-close-graze-1.png",
+          "bytes": 53036,
+          "sha256": "7f566ce4f816f11eff1605fdb2ada41835931002ad3d0439113cbfebc9b3dae5"
+        },
+        {
+          "path": "art/giraffe-close-graze-2.png",
+          "bytes": 52919,
+          "sha256": "ef2997d401c832437412177b0403ca2961610aecf27c102545b7b4fb4826e6dc"
+        },
+        {
+          "path": "art/giraffe-close-graze-3.png",
+          "bytes": 50707,
+          "sha256": "30c4b7a14379bf090f040a1d6f757033b4f5f4282e1d911ccfc697e887f8e659"
+        },
+        {
+          "path": "art/giraffe-close-graze-4.png",
+          "bytes": 51819,
+          "sha256": "f2637757c673cde8f0fe86d2f01c52aa33f594df220b9280f7502e5a27c64ee7"
+        },
+        {
+          "path": "art/giraffe-close-walk-1.png",
+          "bytes": 56996,
+          "sha256": "2b13c9ae3fe1beea1f2e26d61cfc1f6ecf52147746e7a3e97f945d721e03699a"
+        },
+        {
+          "path": "art/giraffe-close-walk-2.png",
+          "bytes": 55639,
+          "sha256": "9c2f04619d0501c95c0c7e64dd75b9363d0eaf64ff342061eb9b299853ac1d6e"
+        },
+        {
+          "path": "art/giraffe-close-walk-3.png",
+          "bytes": 52973,
+          "sha256": "5a5c68e32cb4d16de5d96853afaa1f982740f920a558e41a263ff37fce6e7fe9"
+        },
+        {
+          "path": "art/giraffe-close-walk-4.png",
+          "bytes": 57339,
+          "sha256": "5c5f2d55e75a11410ecc3e8f6070655d3025f29b68c69aa8ef137b81b7b25031"
+        },
+        {
+          "path": "art/giraffe-close-walk-5.png",
+          "bytes": 56446,
+          "sha256": "1fba296d43eefd7cafe46c3093d5fe1579303fce10c31175d53c5ece97584680"
+        },
+        {
+          "path": "art/giraffe-close-walk-6.png",
+          "bytes": 56952,
+          "sha256": "8962f3ffa8937f1461332cb53fe024d7691771241d9738545d5f32cd60b829cc"
+        },
+        {
+          "path": "art/giraffe-close-walk-7.png",
+          "bytes": 55101,
+          "sha256": "09cde492fbf27948adacdbb9acd169e12c57f7080dd3d7c2bcc6649bcc2ec142"
+        },
+        {
+          "path": "art/giraffe-close-walk-8.png",
+          "bytes": 58164,
+          "sha256": "84d1425af54e51e32babff72ed5bf3087e1fd4bbe1b3f684c7b7d91eacc6512a"
+        },
+        {
+          "path": "art/giraffe-herd-graze-1.png",
+          "bytes": 9024,
+          "sha256": "dc08921618c64b3b90deed71322e4f5f186d5ba9a1107feb7c597689820b1f2f"
+        },
+        {
+          "path": "art/giraffe-herd-walk-1.png",
+          "bytes": 9711,
+          "sha256": "b22b6f12e116a31d3d2d842def44ded31c42a01b3034c1a2a0ea5b8018c14f9f"
+        },
+        {
+          "path": "art/giraffe-herd-walk-2.png",
+          "bytes": 9552,
+          "sha256": "191924885d540d3f1728a33fe25d54c4bd75c4e5d8facd03428d33239ac2c5a3"
+        },
+        {
+          "path": "art/giraffe-herd-walk-3.png",
+          "bytes": 9715,
+          "sha256": "be10bf1aced4497c15739d1a92f45f473ec4638e9765f07aa5c44df469fa45a2"
+        },
+        {
+          "path": "art/giraffe-herd-walk-4.png",
+          "bytes": 9572,
+          "sha256": "62ac33cdc01cd5546d3ccc30461ccd40d7daa52df575e9ba4f75850dce0a4d3f"
+        },
+        {
+          "path": "art/giraffe-small-graze-1.png",
+          "bytes": 7590,
+          "sha256": "796fea8d72c50d297da3b867103982ad2ad8176e2264628907370488337fd17a"
+        },
+        {
+          "path": "art/giraffe-small-graze-2.png",
+          "bytes": 7578,
+          "sha256": "e8ec7a9616d22df5e02da04edaaeede4eef914da32b81d4e34f2962b30d10425"
+        },
+        {
+          "path": "art/giraffe-small-graze-3.png",
+          "bytes": 7206,
+          "sha256": "25ea2f7cb29fb476f032e8fb858afe9fd0799a98e9273949a6bd57af7bce4864"
+        },
+        {
+          "path": "art/giraffe-small-graze-4.png",
+          "bytes": 7388,
+          "sha256": "7b60308f96d476c15c71a387637b7fb8b4255d16110ec4417174ad3aeabe9402"
+        },
+        {
+          "path": "art/giraffe-small-walk-1.png",
+          "bytes": 8038,
+          "sha256": "0a857e22b743b1c7f136760a5b455e01126cab5f58c0a4cde040a9aa64617b37"
+        },
+        {
+          "path": "art/giraffe-small-walk-2.png",
+          "bytes": 7574,
+          "sha256": "0f743fc7f5ccef77a83fbb249b4762571a8bbd0fd5605c2b5785b24a74af3a53"
+        },
+        {
+          "path": "art/giraffe-small-walk-3.png",
+          "bytes": 8041,
+          "sha256": "f3ce83abdb31ba92a80395fc75defddd1b0aed93d02b06c5b5dabd275ea4e0d8"
+        },
+        {
+          "path": "art/giraffe-small-walk-4.png",
+          "bytes": 7709,
+          "sha256": "1546adadb1ae5817239dd1f54a5ba6ea34dd20f01d435a331a4999a426181785"
+        },
+        {
+          "path": "art/giraffe-tiny-graze-1.png",
+          "bytes": 3748,
+          "sha256": "a590a7587ac8dc5f41550dfbe2cdce136057f2c878951a692c80aba9060bd519"
+        },
+        {
+          "path": "art/giraffe-tiny-walk-1.png",
+          "bytes": 4251,
+          "sha256": "2464ba9ad0a9ccdd4e31660547aad01029fffd322623e726d7a48aa0f45bf7e3"
+        },
+        {
+          "path": "art/giraffe-tiny-walk-2.png",
+          "bytes": 4051,
+          "sha256": "2fbf964456ad3ace3108cd1fe1ae46e09e089ac3c74dc4cd817a3f79869342ba"
+        },
+        {
+          "path": "art/giraffe-tiny-walk-3.png",
+          "bytes": 4270,
+          "sha256": "e44e29ee53b75f967ad522c12229a62e724315245a541a298ead92c2932e2b1e"
+        },
+        {
+          "path": "art/giraffe-tiny-walk-4.png",
+          "bytes": 4048,
+          "sha256": "e4e36f63eb4dbbf68986291d40e8990b98955ff4db7469f47946e15c675cad89"
+        },
+        {
+          "path": "art/guanaco-close-graze-1.png",
+          "bytes": 34174,
+          "sha256": "798d9acfdc303c79a33bbf8c2498716a218fd0dd99b7a5ef8191a1ed56e98978"
+        },
+        {
+          "path": "art/guanaco-close-graze-2.png",
+          "bytes": 34264,
+          "sha256": "a70cb2005bf07b2010ab5550a97aa8da853d068ccffd7db91b6862e966593f9c"
+        },
+        {
+          "path": "art/guanaco-close-graze-3.png",
+          "bytes": 33076,
+          "sha256": "295e323305a64ac0b90def46ca34c1390ee608d17b0688bf2905754ad0a75e0a"
+        },
+        {
+          "path": "art/guanaco-close-graze-4.png",
+          "bytes": 34012,
+          "sha256": "782bc8d35eee2a3ec296a9f7420a9248cbb55a9c369a34bd0e49f1971983f65e"
+        },
+        {
+          "path": "art/guanaco-close-walk-1.png",
+          "bytes": 37613,
+          "sha256": "9baed87f69dfeeeeeb2522fba94d9e46d28ab3dbc4c028e1a3ebd1a94a2bd6a2"
+        },
+        {
+          "path": "art/guanaco-close-walk-2.png",
+          "bytes": 36682,
+          "sha256": "ed435c258ea69517045af79c23752c30b84d847acafc7d98a7b9916066fcc30b"
+        },
+        {
+          "path": "art/guanaco-close-walk-3.png",
+          "bytes": 34930,
+          "sha256": "14f2349d6014b93f32eefda249a28c78ea00dd454677191d4f9df4ae1d1bfaea"
+        },
+        {
+          "path": "art/guanaco-close-walk-4.png",
+          "bytes": 37437,
+          "sha256": "1d3e82585c5d116dbf977d8c72ee79815212650ff0ce3d0902ddc45d777dca96"
+        },
+        {
+          "path": "art/guanaco-close-walk-5.png",
+          "bytes": 37424,
+          "sha256": "9edc5b757eafc0d0f0856f1faaa2fa6aa8fd538bc02ca2fce2affcda13efc9ab"
+        },
+        {
+          "path": "art/guanaco-close-walk-6.png",
+          "bytes": 37768,
+          "sha256": "852271d9e8413f89ec1bcb08ec7f074d652263fc6da38681476d3259150660bb"
+        },
+        {
+          "path": "art/guanaco-close-walk-7.png",
+          "bytes": 36359,
+          "sha256": "909c13bacb6f81d64217d84d9b0e5e77a124f70ecbb2095532f21b336ed6cbf1"
+        },
+        {
+          "path": "art/guanaco-close-walk-8.png",
+          "bytes": 38427,
+          "sha256": "bda7dd92240c8de7e0194b76cbf4bab6831f5f8f0f9a3d32c8224efb0cea331f"
+        },
+        {
+          "path": "art/guanaco-herd-graze-1.png",
+          "bytes": 5503,
+          "sha256": "b586cbad0b7c82d3c138b3cfb47d552e660e4fa79dd75df390de03d7d576ddd4"
+        },
+        {
+          "path": "art/guanaco-herd-walk-1.png",
+          "bytes": 5917,
+          "sha256": "c7dbf1fbe5cdf1d8eddfa38d1bb61233591c8c76d9c1a3a9a7b5f7b44c4225e4"
+        },
+        {
+          "path": "art/guanaco-herd-walk-2.png",
+          "bytes": 5775,
+          "sha256": "02a7f62d8eab94e12d804382fb906db381d6b061422450446a78736f938683c6"
+        },
+        {
+          "path": "art/guanaco-herd-walk-3.png",
+          "bytes": 5961,
+          "sha256": "f9abaab90e1fee63bd48cd943cef6dbdeed0995346795ecd8f24b1597a5bebda"
+        },
+        {
+          "path": "art/guanaco-herd-walk-4.png",
+          "bytes": 5766,
+          "sha256": "766366c76d0fbbd001a99e2cf3762559f7639185ec80334e32006b4c801cdc14"
+        },
+        {
+          "path": "art/guanaco-small-graze-1.png",
+          "bytes": 5011,
+          "sha256": "5474665dbf57d654baa64e87ef3b4698c789a293fc848fc97c14685e3d5b9149"
+        },
+        {
+          "path": "art/guanaco-small-graze-2.png",
+          "bytes": 4985,
+          "sha256": "0e4bf0015e2fe4d60351e54f89034847571cec78290b3e3af11ddecba8be8442"
+        },
+        {
+          "path": "art/guanaco-small-graze-3.png",
+          "bytes": 4683,
+          "sha256": "8458ab3699c9b13d329dc448f28a1591556c0bec1917661d4b4aa0570bcb41e9"
+        },
+        {
+          "path": "art/guanaco-small-graze-4.png",
+          "bytes": 4984,
+          "sha256": "8969a738bab7b516cf6382f7a2593c4b22dbe1d52b5ca45b81d7bcffe66b4f02"
+        },
+        {
+          "path": "art/guanaco-small-walk-1.png",
+          "bytes": 5487,
+          "sha256": "f561db4d92182db77547112c603ce296dc50454815c9172dce28f86de44eabf2"
+        },
+        {
+          "path": "art/guanaco-small-walk-2.png",
+          "bytes": 5161,
+          "sha256": "abe83733da84bb27843263266b657609cbd02852e73dd99d58e27f90cc24e950"
+        },
+        {
+          "path": "art/guanaco-small-walk-3.png",
+          "bytes": 5517,
+          "sha256": "80c9e2f97ff12f2c44ab9cc52cfe54387e0818167128341e2e66067a5f608305"
+        },
+        {
+          "path": "art/guanaco-small-walk-4.png",
+          "bytes": 5185,
+          "sha256": "1620573a53134d271ee8c8e716cb90e958d0e17a11d2d4d41cfa42ea35965387"
+        },
+        {
+          "path": "art/guanaco-tiny-graze-1.png",
+          "bytes": 2319,
+          "sha256": "0b4b6ccc335aea679dc71fd16ba34f7827dfa385e6007136aa4367c9a513752b"
+        },
+        {
+          "path": "art/guanaco-tiny-walk-1.png",
+          "bytes": 2595,
+          "sha256": "10806c0528174e8eeaf050acf5972c81d5b08337c7421fa896fcc6046aa46b6e"
+        },
+        {
+          "path": "art/guanaco-tiny-walk-2.png",
+          "bytes": 2445,
+          "sha256": "d6941ffe56ff57201a39322b9940588f35c8761a30142bf9d63a17a4c51ba69a"
+        },
+        {
+          "path": "art/guanaco-tiny-walk-3.png",
+          "bytes": 2590,
+          "sha256": "5938dcd1f4ff5b91bd1dd5d20499c73a19b31304497a1e2905c5246fc47272c0"
+        },
+        {
+          "path": "art/guanaco-tiny-walk-4.png",
+          "bytes": 2473,
+          "sha256": "5bde168ad6178e821a5df14896ae2cc43e1bb4c894909b50f172a85b4577cde9"
+        },
+        {
+          "path": "art/hemiauchenia-close-graze-1.png",
+          "bytes": 37612,
+          "sha256": "84e441769a56a61e7858f8a8ae3909f2b0317e17a8edc012428e1c0ec344664e"
+        },
+        {
+          "path": "art/hemiauchenia-close-graze-2.png",
+          "bytes": 37589,
+          "sha256": "ed3bafaa405a2d77067bcf8a79950fe541619a5ee0d4dc7d72074e5647091b46"
+        },
+        {
+          "path": "art/hemiauchenia-close-graze-3.png",
+          "bytes": 36972,
+          "sha256": "fdf7fb68396dfbd058820776aa318a535cfc2574f2c096013e6e82cc5c663aed"
+        },
+        {
+          "path": "art/hemiauchenia-close-graze-4.png",
+          "bytes": 38053,
+          "sha256": "2dbf10cfe6a394ded8cc20f8733bf7d2af13d05a4439c6728e1481ddfd781c65"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-1.png",
+          "bytes": 42706,
+          "sha256": "54e98c75d7622a844123eb52bfe8851cbbb02c0a8ed8d9b28fe75d98487a72de"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-2.png",
+          "bytes": 41794,
+          "sha256": "80a9ae499916156d197f1ca8cbd4e5e0c8ff027281991a283cea91a914ac45ce"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-3.png",
+          "bytes": 39341,
+          "sha256": "9ecda63584e56dfb49d5d4042ec2041fca0bb0216e9828198f22abd29a2959b9"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-4.png",
+          "bytes": 43195,
+          "sha256": "d51d955ffc35b3d13cae9f66b0d0769cdb85be883da25af85f0ece85a4644419"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-5.png",
+          "bytes": 42373,
+          "sha256": "0016b0f635374061f1f07bd9fa584691eabeff96eb9d68eba4b0794819164c7d"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-6.png",
+          "bytes": 42810,
+          "sha256": "118f6b97b7ba4509097c3c55339eab026bfea392a08ba336af090fa909ab8b22"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-7.png",
+          "bytes": 41426,
+          "sha256": "c24f36c2364e8a9dda0291c903ccee5b6b05c0f645801954c8596d0398e141c7"
+        },
+        {
+          "path": "art/hemiauchenia-close-walk-8.png",
+          "bytes": 44211,
+          "sha256": "7448b2364ec7413b98e66ffcea226f053c4f56c1d32275d6c5ddd5e9e5629e23"
+        },
+        {
+          "path": "art/hemiauchenia-herd-graze-1.png",
+          "bytes": 6491,
+          "sha256": "07aef0c6fd208c3b197be33fc92261d640a89ad7e2268c0f26c2c0494dec3fcf"
+        },
+        {
+          "path": "art/hemiauchenia-herd-walk-1.png",
+          "bytes": 7041,
+          "sha256": "1d52063a071f2e9ec703c54c589186beaf9caf47db0521c552efeeed75596fb3"
+        },
+        {
+          "path": "art/hemiauchenia-herd-walk-2.png",
+          "bytes": 6936,
+          "sha256": "12d939f38f63d20ff99bf215c54eff7cf0dcba7ad4011bb1712eb587b4c1f207"
+        },
+        {
+          "path": "art/hemiauchenia-herd-walk-3.png",
+          "bytes": 7054,
+          "sha256": "883a2819153268a8f9a28fa506694d70fd51ee02d9379f0a5f30c08011d78f02"
+        },
+        {
+          "path": "art/hemiauchenia-herd-walk-4.png",
+          "bytes": 6906,
+          "sha256": "fe6fc9e664fbec819f0587a078a4e2c9cd09764b59cb8236ce51ec7131819fc3"
+        },
+        {
+          "path": "art/hemiauchenia-small-graze-1.png",
+          "bytes": 5557,
+          "sha256": "f9075c72296a75373084a351d7f64ccdc9333881e3158931ff42ec49fcf4a9b5"
+        },
+        {
+          "path": "art/hemiauchenia-small-graze-2.png",
+          "bytes": 5576,
+          "sha256": "1579a0b41af7c78ff78e716a8996021952776fa1ba3596574e86adba5d53eafe"
+        },
+        {
+          "path": "art/hemiauchenia-small-graze-3.png",
+          "bytes": 5364,
+          "sha256": "6b2a24390719e0b9ee2ec5eb9fe147eb3635cb42f8f74668f37a8a0d6acc257c"
+        },
+        {
+          "path": "art/hemiauchenia-small-graze-4.png",
+          "bytes": 5580,
+          "sha256": "8040ba1d406d39da9fd5defa771cf6b79061e3587eec1d330542fb2eb35e8cde"
+        },
+        {
+          "path": "art/hemiauchenia-small-walk-1.png",
+          "bytes": 6171,
+          "sha256": "2beff88c8815419219e3b2170324c69429a36ac07c5fc6a62ba26572249f453f"
+        },
+        {
+          "path": "art/hemiauchenia-small-walk-2.png",
+          "bytes": 5708,
+          "sha256": "a1cd19f16880a1b314c59a536789aa2256e4314d4cbae7b0dbadb98562afdd2b"
+        },
+        {
+          "path": "art/hemiauchenia-small-walk-3.png",
+          "bytes": 6201,
+          "sha256": "053662dc7bc35d17d4dbbbdfa4b39d2114980f3438aaacb45ecff21ca1e84d15"
+        },
+        {
+          "path": "art/hemiauchenia-small-walk-4.png",
+          "bytes": 5834,
+          "sha256": "b1ea5b39a4f59176bf45066daaa452ff6d2cb8a1980d8815c28a77e87e09e2b8"
+        },
+        {
+          "path": "art/hemiauchenia-tiny-graze-1.png",
+          "bytes": 2670,
+          "sha256": "4db7d5fd34fc4d9603630f4d60c51c5f15f131b17a17ee6e3351cb37f1cb6a1f"
+        },
+        {
+          "path": "art/hemiauchenia-tiny-walk-1.png",
+          "bytes": 3122,
+          "sha256": "42c4f292b11633a41d77b2c2dc95a054455442c4858f242960ffe0f8f339cb29"
+        },
+        {
+          "path": "art/hemiauchenia-tiny-walk-2.png",
+          "bytes": 2892,
+          "sha256": "d074390fb8dea53e3c1371290ddb541f816b352a2680edc04615b557e6230fac"
+        },
+        {
+          "path": "art/hemiauchenia-tiny-walk-3.png",
+          "bytes": 3119,
+          "sha256": "5a51bcacf793363398e1f35087976d837045208b7c3cc6098b7b30a9a430e2c5"
+        },
+        {
+          "path": "art/hemiauchenia-tiny-walk-4.png",
+          "bytes": 2897,
+          "sha256": "677d73010f0e5c489780c9d7fd2e0009c4b772d737ee8001a3b6128555ad8d1e"
+        },
+        {
+          "path": "art/llama-close-graze-1.png",
+          "bytes": 40769,
+          "sha256": "3a9a90dbdbb03b6149e8d62699623fe1b352cf36093c75224abb0f6304fbdc72"
+        },
+        {
+          "path": "art/llama-close-graze-2.png",
+          "bytes": 40844,
+          "sha256": "936404dec0739bf9133535d2462766568fb5e569eb82014cddba4cd68ce17711"
+        },
+        {
+          "path": "art/llama-close-graze-3.png",
+          "bytes": 40011,
+          "sha256": "21285f60156319e537c5934e48c7244bcb62a91243cda4a941abfa1426c1d993"
+        },
+        {
+          "path": "art/llama-close-graze-4.png",
+          "bytes": 40981,
+          "sha256": "a16225f1b3df44310f8309661689fe0a79c8d8fa134dd55198bc0cd7d6be766a"
+        },
+        {
+          "path": "art/llama-close-walk-1.png",
+          "bytes": 44713,
+          "sha256": "48a3bb00c345b2e3ac1cf20dfdeee7def0fdff7ddba07c5d5f4ac13e5cd2327b"
+        },
+        {
+          "path": "art/llama-close-walk-2.png",
+          "bytes": 43806,
+          "sha256": "bd998cab5f5c44f28c3df3375acd76d35ad3e2c1b8ca2881da143e36053e2f82"
+        },
+        {
+          "path": "art/llama-close-walk-3.png",
+          "bytes": 42019,
+          "sha256": "80b4a6bc566667936eca361f7dff577337b1b03035e6a809df855d0b40e37a3e"
+        },
+        {
+          "path": "art/llama-close-walk-4.png",
+          "bytes": 44913,
+          "sha256": "3f9c3d35868b58ca09d313c47c57cd5183e5a2e86fba339c7f8b96c6842b2eec"
+        },
+        {
+          "path": "art/llama-close-walk-5.png",
+          "bytes": 44158,
+          "sha256": "9b69ba283c5cf4fb3d19df05324d9d95125493ff8b8a799305fbcaf918068e43"
+        },
+        {
+          "path": "art/llama-close-walk-6.png",
+          "bytes": 44970,
+          "sha256": "022dd6b186d4f7b9fe7b0c479829f2c22e149ffc91bd5410da248f471bb4027c"
+        },
+        {
+          "path": "art/llama-close-walk-7.png",
+          "bytes": 43420,
+          "sha256": "9ef72ce6b129f85e2fd35ba279496ec20a047a51715877102f13c618bf5b779b"
+        },
+        {
+          "path": "art/llama-close-walk-8.png",
+          "bytes": 45763,
+          "sha256": "dd8d894abe16744fe29ae49e1a1d5d2dd39df93a28c933003a044361d4da2666"
+        },
+        {
+          "path": "art/llama-herd-graze-1.png",
+          "bytes": 5748,
+          "sha256": "28619c73626fdc3e3490d1ae7559b1736e27c48ecb6be343e25f23cb9de82934"
+        },
+        {
+          "path": "art/llama-herd-walk-1.png",
+          "bytes": 6269,
+          "sha256": "4d3592d13d5def9d2f9367f69fad0d345d751024181af133ec55c608933d85d0"
+        },
+        {
+          "path": "art/llama-herd-walk-2.png",
+          "bytes": 6131,
+          "sha256": "091db9bc68a1bbc12449fc4564f86c99d2bae347ebe0ee40004edcf6a53bb7b2"
+        },
+        {
+          "path": "art/llama-herd-walk-3.png",
+          "bytes": 6289,
+          "sha256": "23fc147e8babd7f5fe3174327f115d53254a9ee9a06e7923df4cd435be34d102"
+        },
+        {
+          "path": "art/llama-herd-walk-4.png",
+          "bytes": 6183,
+          "sha256": "9f843e04eb3a8d4e301440f946af16a6d8780708542c47b6670bcf88b1147393"
+        },
+        {
+          "path": "art/llama-small-graze-1.png",
+          "bytes": 5801,
+          "sha256": "b40133663c6ae252cfe60ccae6113322780e664b4baa1812a581522ad2225f10"
+        },
+        {
+          "path": "art/llama-small-graze-2.png",
+          "bytes": 5823,
+          "sha256": "1d57106fdb227f5c8a2be251a4f606e58955d64759f945a4677b1be9aa5bc99f"
+        },
+        {
+          "path": "art/llama-small-graze-3.png",
+          "bytes": 5809,
+          "sha256": "76e65032932ed1574c1f7ff941978b00ab5f3187bc7e84a19c7efd33792e4172"
+        },
+        {
+          "path": "art/llama-small-graze-4.png",
+          "bytes": 6051,
+          "sha256": "a7712343c10c55b34625b0b70b4d0aa60e9763f37a1204e7aa415ac8bead8cd9"
+        },
+        {
+          "path": "art/llama-small-walk-1.png",
+          "bytes": 6483,
+          "sha256": "379e1891dc29e86d58af38b3119ef068297ad13fda8b305b131b96e98bc76109"
+        },
+        {
+          "path": "art/llama-small-walk-2.png",
+          "bytes": 6186,
+          "sha256": "18ee75fa43e6bc45bfaf3a8577e0f39da4976fffc72c91bb923f0eaa3dbc832c"
+        },
+        {
+          "path": "art/llama-small-walk-3.png",
+          "bytes": 6446,
+          "sha256": "5f4be9ea7dd6ff134bbaf937a5798f3d53032587295ca53ed68e476808ca1fb0"
+        },
+        {
+          "path": "art/llama-small-walk-4.png",
+          "bytes": 6232,
+          "sha256": "4a925f8b7c5ecd670bdf3c6686c68857ab105156b40a9ec01a277d55b3b37d38"
+        },
+        {
+          "path": "art/llama-tiny-graze-1.png",
+          "bytes": 2344,
+          "sha256": "68664b5232d6443cefc057282494b86d3ae6384e130ffdadff0545fb133a4bc5"
+        },
+        {
+          "path": "art/llama-tiny-walk-1.png",
+          "bytes": 2662,
+          "sha256": "71c647a26a9313203f8c184422689d78dc047a93de740546c5caddaa60c0cf79"
+        },
+        {
+          "path": "art/llama-tiny-walk-2.png",
+          "bytes": 2495,
+          "sha256": "b8a40bfbff6cc3b4b8f178e875fd1586049907ee4f24aefef182b1d39b362a6d"
+        },
+        {
+          "path": "art/llama-tiny-walk-3.png",
+          "bytes": 2648,
+          "sha256": "7a51112f5b1a79a96d16ed3e34cea4a182c7445b3b51b8a8635d53330aff51f3"
+        },
+        {
+          "path": "art/llama-tiny-walk-4.png",
+          "bytes": 2518,
+          "sha256": "ac83f08a03e2ace8a5486a2a0942fec87dedb2a22d01319aaa873aa3d7d9f5e6"
+        },
+        {
+          "path": "art/paracamelus-close-graze-1.png",
+          "bytes": 46730,
+          "sha256": "80c6b84edc1073c3c47e97b030a8a10819c07030bb12a9c334b4c3066e721262"
+        },
+        {
+          "path": "art/paracamelus-close-graze-2.png",
+          "bytes": 46847,
+          "sha256": "9fb6237504777571b7f8052c68297eb8433f28fa17297042763cc2ce52c8d2c1"
+        },
+        {
+          "path": "art/paracamelus-close-graze-3.png",
+          "bytes": 45407,
+          "sha256": "a9a1164c43a6c95d02c14aa11a580e30d0cffcdcd799b2a3fb25ef574c6dbcb6"
+        },
+        {
+          "path": "art/paracamelus-close-graze-4.png",
+          "bytes": 46963,
+          "sha256": "6d4b96a8ac445108349f0f1086058a8c2c890b9e9ab4894bb83fe19fe432aab4"
+        },
+        {
+          "path": "art/paracamelus-close-walk-1.png",
+          "bytes": 51904,
+          "sha256": "92c72c7f25b66066730232d37801eacdfe94d3d81df9b170c7c6e4a6f5e0ae64"
+        },
+        {
+          "path": "art/paracamelus-close-walk-2.png",
+          "bytes": 50349,
+          "sha256": "e8e190303c9c5e005706209c7af867b17383611008c121e437cc84217c52297c"
+        },
+        {
+          "path": "art/paracamelus-close-walk-3.png",
+          "bytes": 47811,
+          "sha256": "28785aea4d3f92651a0cc025829d632184a76660da12145303b6a5240fd2f8b9"
+        },
+        {
+          "path": "art/paracamelus-close-walk-4.png",
+          "bytes": 52272,
+          "sha256": "4369f6b06ee4b64b42e0a955d49a92557885d50bae7609a78c7ee11472d1d80d"
+        },
+        {
+          "path": "art/paracamelus-close-walk-5.png",
+          "bytes": 51336,
+          "sha256": "d156e53bb762f804004da8a827f3f2354fc7bbd94165ede7bed703ec549cfca0"
+        },
+        {
+          "path": "art/paracamelus-close-walk-6.png",
+          "bytes": 51956,
+          "sha256": "2e4f0a2ebea51208d65b6dbc3e3cfeb671c1542ec5a5aba94924bb9c0fe59a01"
+        },
+        {
+          "path": "art/paracamelus-close-walk-7.png",
+          "bytes": 50087,
+          "sha256": "a82a4cfa9fc876a70d3bc70efb9b4ab97d2b3e1a597aa76c16120f1342ac85a2"
+        },
+        {
+          "path": "art/paracamelus-close-walk-8.png",
+          "bytes": 53086,
+          "sha256": "422dee955155258ae70f5ad0ec517b16d1c9e3596643482f19b72e06e1e9ed5a"
+        },
+        {
+          "path": "art/paracamelus-herd-graze-1.png",
+          "bytes": 7693,
+          "sha256": "bb75a3098f15cac0b27e29ed30fffe25a1149c9633acc0877681a1361742bbf3"
+        },
+        {
+          "path": "art/paracamelus-herd-walk-1.png",
+          "bytes": 8400,
+          "sha256": "5f8b3cf310e4d3696c3d58cd918308c59a011475624ed46fd305a255f2bcb36f"
+        },
+        {
+          "path": "art/paracamelus-herd-walk-2.png",
+          "bytes": 8211,
+          "sha256": "8e8872b63affe4a89c93ec9bbc5b3cc5db256058905ade05f41c19793163e5bc"
+        },
+        {
+          "path": "art/paracamelus-herd-walk-3.png",
+          "bytes": 8390,
+          "sha256": "6ce869b717f982f2fdfb883e10a81233053a75e5c17f65120e9c790a4d9881b2"
+        },
+        {
+          "path": "art/paracamelus-herd-walk-4.png",
+          "bytes": 8251,
+          "sha256": "0fe2696dc7db1aa7137bd21a43ba5feb5766663c60996aecd1a035bbbfd4dca0"
+        },
+        {
+          "path": "art/paracamelus-small-graze-1.png",
+          "bytes": 6597,
+          "sha256": "5800ad26a07ee9c6f334d979d34511576d2d7143cc3bc193f9a6fd6f70801adc"
+        },
+        {
+          "path": "art/paracamelus-small-graze-2.png",
+          "bytes": 6593,
+          "sha256": "9a137062b3cce4cba6b18b81b5b1ae721a00d4558b8d8e2e24bd99d8533d706d"
+        },
+        {
+          "path": "art/paracamelus-small-graze-3.png",
+          "bytes": 6264,
+          "sha256": "e277974593ded7b65975f7975377787cbf6c95729ffde749898e8f8f3d1ead1c"
+        },
+        {
+          "path": "art/paracamelus-small-graze-4.png",
+          "bytes": 6517,
+          "sha256": "fb0b05b5066ccfd4b4d51c7d72ef3a6681a7acb93fcfd71e0dc3a798845d9e99"
+        },
+        {
+          "path": "art/paracamelus-small-walk-1.png",
+          "bytes": 7290,
+          "sha256": "f3f56a7039e0aa173fe047685a56b4960f2937eb02821151c4168b10efd83fc3"
+        },
+        {
+          "path": "art/paracamelus-small-walk-2.png",
+          "bytes": 6675,
+          "sha256": "99bad8379bb3df1ef8d91f4c6380d68286fdc9c7d44f4ee47d1e0df4572e6a6f"
+        },
+        {
+          "path": "art/paracamelus-small-walk-3.png",
+          "bytes": 7255,
+          "sha256": "2ca770ea4792e516769b1f348a203efbdba7b56c7b2b66d53b3ee3ee534685fd"
+        },
+        {
+          "path": "art/paracamelus-small-walk-4.png",
+          "bytes": 6807,
+          "sha256": "fa17313349ce821bedbd117481087761813f3bab3bab5880bea83b9e9bd8ccde"
+        },
+        {
+          "path": "art/paracamelus-tiny-graze-1.png",
+          "bytes": 3248,
+          "sha256": "8e28690313cfef4cdcf91f93df1d5456dfb6d2d7a6c62c7243a17b7d750ecbbd"
+        },
+        {
+          "path": "art/paracamelus-tiny-walk-1.png",
+          "bytes": 3757,
+          "sha256": "aab0f04e73b2d30df19354c87648f1c642798eeb2b99b0c57e9060c4a460752a"
+        },
+        {
+          "path": "art/paracamelus-tiny-walk-2.png",
+          "bytes": 3401,
+          "sha256": "b56d18196d111bf82caf636bd64058fab575f40036262d1a21808982e21550a6"
+        },
+        {
+          "path": "art/paracamelus-tiny-walk-3.png",
+          "bytes": 3750,
+          "sha256": "da0a47359cb24e9859bfc9bd6a42de3eac2062b81558c11037594c7dbb4004f0"
+        },
+        {
+          "path": "art/paracamelus-tiny-walk-4.png",
+          "bytes": 3412,
+          "sha256": "a440d25a0641fac68af26e4216018ea8ec9bc249a6e4d003590c0b3d0c5aaff6"
+        },
+        {
+          "path": "art/vicuna-close-graze-1.png",
+          "bytes": 29132,
+          "sha256": "2f056ca6b6fa86067e1d601c7de95d7f8f8082a7791c773a9508111f2433fffc"
+        },
+        {
+          "path": "art/vicuna-close-graze-2.png",
+          "bytes": 29315,
+          "sha256": "e72651e56ef78c988333170607a9a312717b8c148a299b7928c9952e93ea564b"
+        },
+        {
+          "path": "art/vicuna-close-graze-3.png",
+          "bytes": 28287,
+          "sha256": "60067e059a24b5636ca1129b3e4d897f9f8ca74e627b329a96cab89b92811866"
+        },
+        {
+          "path": "art/vicuna-close-graze-4.png",
+          "bytes": 29286,
+          "sha256": "21a3995eac1ba5393ae9625f462ac2a8ba4a4f13007a3f82ce85013d341b5c73"
+        },
+        {
+          "path": "art/vicuna-close-walk-1.png",
+          "bytes": 32216,
+          "sha256": "c644d67b9741b68980458e8131f94bffd303c3765cca491320a22360836aea08"
+        },
+        {
+          "path": "art/vicuna-close-walk-2.png",
+          "bytes": 32108,
+          "sha256": "4711af1dbe90197a8fe81b3d2f8acad6625fd3f5deb4249cb8b77cf7d4bd0839"
+        },
+        {
+          "path": "art/vicuna-close-walk-3.png",
+          "bytes": 30439,
+          "sha256": "47995b0e949f770c6bc44fbc9217eb99fd40f853f93952c7e6d469249e5eda5e"
+        },
+        {
+          "path": "art/vicuna-close-walk-4.png",
+          "bytes": 32317,
+          "sha256": "b653d3847d6c0d807b4f780fb4826325e78e89456fa6aed308c5f39dc7dec4e2"
+        },
+        {
+          "path": "art/vicuna-close-walk-5.png",
+          "bytes": 32178,
+          "sha256": "c46e6226b1362d479ebf2c883ace7f917255071e9b868833016dac96de91c0ab"
+        },
+        {
+          "path": "art/vicuna-close-walk-6.png",
+          "bytes": 32357,
+          "sha256": "20a46f74c326e6e385baf344e4f2c74086996e9370d79cc1918d71331bb9cde6"
+        },
+        {
+          "path": "art/vicuna-close-walk-7.png",
+          "bytes": 31347,
+          "sha256": "97b8725ca4e5c0682f24017ac10889887b10ae095d62bba935df309d14494415"
+        },
+        {
+          "path": "art/vicuna-close-walk-8.png",
+          "bytes": 33040,
+          "sha256": "cff858f09cfb98660fa60b3557d3554cfd1d6584218b556321bbd95924fa4547"
+        },
+        {
+          "path": "art/vicuna-herd-graze-1.png",
+          "bytes": 4525,
+          "sha256": "bacf69db0c4432240102209072bd399b5a4e8b732545cf08ccccd5bd8aabc33a"
+        },
+        {
+          "path": "art/vicuna-herd-walk-1.png",
+          "bytes": 4805,
+          "sha256": "be6380c1fcda63d784901188f39e026b399b3ce8ce9832fa3f31487ee6071c46"
+        },
+        {
+          "path": "art/vicuna-herd-walk-2.png",
+          "bytes": 4786,
+          "sha256": "440f9bea562a416f9f3de751677128c90a2375db5a201cb32512d5c35eed552f"
+        },
+        {
+          "path": "art/vicuna-herd-walk-3.png",
+          "bytes": 4794,
+          "sha256": "18e2e96e6445d391574fe3c3d0dff6747ca5c4a12144b3e2448efa6382b01f1a"
+        },
+        {
+          "path": "art/vicuna-herd-walk-4.png",
+          "bytes": 4768,
+          "sha256": "579176ea18bf35f1f54a4944a03fa84917876578260a8b5e9d81d55b374896fa"
+        },
+        {
+          "path": "art/vicuna-small-graze-1.png",
+          "bytes": 4420,
+          "sha256": "9cf0bd01bfac14a8127aa9466992654cf1445a9cfaa79351bc3f2ba298df1e06"
+        },
+        {
+          "path": "art/vicuna-small-graze-2.png",
+          "bytes": 4428,
+          "sha256": "bacee1468993359869e18ec9059c1a386ab66bcda57a0b44aeb42cac638549ce"
+        },
+        {
+          "path": "art/vicuna-small-graze-3.png",
+          "bytes": 4156,
+          "sha256": "c6855ff8a211d25e67481ac238f64e6eea5fed3f9a070027cf1c511469510144"
+        },
+        {
+          "path": "art/vicuna-small-graze-4.png",
+          "bytes": 4429,
+          "sha256": "30ddce9215c383b1fc5b256ea26fe0f86ebd6486ba9dbaf2cbbef8dc96791228"
+        },
+        {
+          "path": "art/vicuna-small-walk-1.png",
+          "bytes": 4802,
+          "sha256": "94b2d4daa2bb7719f4a65940b67032753b4d7bbc99c517e5f06ce74171969704"
+        },
+        {
+          "path": "art/vicuna-small-walk-2.png",
+          "bytes": 4489,
+          "sha256": "4c4f0e0eb0c8239318a9af8f9dc2b89f2ae1028d240f22e13b53b45481551c7f"
+        },
+        {
+          "path": "art/vicuna-small-walk-3.png",
+          "bytes": 4802,
+          "sha256": "bb272cecdc29e21390d27d09867d353fc6e97e79517db3e1763abf203485b18e"
+        },
+        {
+          "path": "art/vicuna-small-walk-4.png",
+          "bytes": 4554,
+          "sha256": "520c12afe1778dfdb173107b0e6f112aa7a4ebb15434d8a3eb60633aeea588a1"
+        },
+        {
+          "path": "art/vicuna-tiny-graze-1.png",
+          "bytes": 1875,
+          "sha256": "689833c139176b411dc56b50101fbc0628f91f5ad8b6d30f3483a6cd28aa7589"
+        },
+        {
+          "path": "art/vicuna-tiny-walk-1.png",
+          "bytes": 2062,
+          "sha256": "4ccd0819433a8c574b58d6009a210dc97c95fbbc3baf0dbe5fdba907c2c50072"
+        },
+        {
+          "path": "art/vicuna-tiny-walk-2.png",
+          "bytes": 2039,
+          "sha256": "4a34441bed2f111dc3c288a716121d3fe8cd7fd40bbf079c9a21451b4b451af7"
+        },
+        {
+          "path": "art/vicuna-tiny-walk-3.png",
+          "bytes": 2069,
+          "sha256": "1712c2ed5d7d1cd4f0f91a01c26e0709e6388a30d2f2bfa8cf1182af22999f2f"
+        },
+        {
+          "path": "art/vicuna-tiny-walk-4.png",
+          "bytes": 2066,
+          "sha256": "cb099d1b64185d612d9a6f90476beb43c8c1886a2ed92e25ecc1235f06e53edc"
+        },
+        {
+          "path": "beringia.png",
+          "bytes": 36047,
+          "sha256": "25b5c2680c51886dda8e2aca1a8bb44530b5be1e11cb293d8223f78f3ea4cd83"
+        },
+        {
+          "path": "data.js",
+          "bytes": 47911,
+          "sha256": "13ea16914bd336f41f5c67bfea1a9cc62b352609ee25d73e7354b0c56f660fa8"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "main.js",
+          "bytes": 13438,
+          "sha256": "9e4e162ae59e26104de9e169d9ae26a7d53de4fee8b58b72e19503de3ea5ebb1"
+        },
+        {
+          "path": "notes.js",
+          "bytes": 14826,
+          "sha256": "3c675225d51b1a44447aa6f395e6cc1029e3e38524e5d7b4251055fe17c8425f"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 936,
+          "sha256": "b6cb566668b2ef62dfa1e69acde2862582a0aa456ccc764a65cdadb2a2c2dc67"
+        }
+      ],
+      "published": "2026-10-29T06:58:20-04:00",
       "retired": false
     },
     {
