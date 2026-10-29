@@ -115,7 +115,7 @@ jobs:
   apple:
     name: Simulator builds and encounter interactions
     runs-on: macos-26
-    timeout-minutes: 200
+    timeout-minutes: 260
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
@@ -185,8 +185,9 @@ jobs:
         id: encounter
         # `[build-only]` in a branch commit's message: compile and check the bundle, no simulator time
         if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) && steps.fast.outputs.fast != 'shots' }}
-        # both devices in turn, each about an hour on a busy runner, and a crashed test's one rerun
-        timeout-minutes: 170
+        # both devices in turn, each an hour and a half on a busy runner (main's full run on both took
+        # 165 of the 170 minutes this had), and a crashed test's one rerun
+        timeout-minutes: 230
         run: |
           # Focused branch checks support iteration; main's publication gate is always full.
           if [ "$GITHUB_REF_NAME" != main ]; then
