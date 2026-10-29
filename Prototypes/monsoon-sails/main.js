@@ -1,4 +1,4 @@
-/* The monsoon's sails (runtime 4). A year at the foot of the screen; the globe's own season follows it
+/* The monsoon's sails (runtime 5). A year at the foot of the screen; the globe's own season follows it
    (the land greens, the clouds gather). Over the Indian Ocean the wind is drawn as streaks of air:
    from the south-west in summer, from the north-east in winter. Dhows wait in their ports with sails
    furled and go out when the wind blows their way: up the ocean to Arabia and India with the summer
@@ -17,20 +17,21 @@
   var KMPD = 160;                            // a dhow's day's run, in kilometres (a round figure)
   var MIRROR = Math.SQRT1_2;
 
-  // ---- geometry: the host moves a sprite along its way at a steady pace; this is the same reckoning ----
+  // ---- geometry: a way's length, and the fraction of it each of its places lies at ----
   function lengthOf(c) { var s = 0; for (var i = 0; i < c.length - 1; i++) s += arc(c[i], c[i + 1]); return s; }
-  /** The place `f` (0–1) of the way along `c`, and the rest of the way from there. */
-  function split(c, f) {
-    var total = lengthOf(c), d = Math.max(0, Math.min(1, f)) * total;
+  function fractions(c) {
+    var total = lengthOf(c), out = [0], d = 0;
+    for (var i = 0; i < c.length - 1; i++) { d += arc(c[i], c[i + 1]); out.push(total ? d / total : 1); }
+    return out;
+  }
+  /** The place `f` (0–1) of the way along `c`. */
+  function placeAt(c, f) {
+    var fs = fractions(c);
+    f = Math.max(0, Math.min(1, f));
     for (var i = 0; i < c.length - 1; i++) {
-      var L = arc(c[i], c[i + 1]);
-      if (d <= L || i === c.length - 2) {
-        var p = along(c[i], c[i + 1], L ? Math.min(1, d / L) : 0);
-        return { at: p, rest: [p].concat(c.slice(i + 1)) };
-      }
-      d -= L;
+      if (f <= fs[i + 1] || i === c.length - 2) return along(c[i], c[i + 1], fs[i + 1] > fs[i] ? Math.min(1, (f - fs[i]) / (fs[i + 1] - fs[i])) : 0);
     }
-    return { at: c[c.length - 1], rest: [c[c.length - 1]] };
+    return c[c.length - 1];
   }
 
   // ---- the year ----
@@ -110,31 +111,43 @@
     var at = M.ports[portId].at, n = M.ways.indexOf(dhow.way);
     return [at[0] + 0.22 * (dhow.berth ? 1 : -1) + 0.06 * (n % 3), at[1] - 0.12 * (n % 2) + 0.07 * dhow.berth];
   }
-  var date = null, playing = false;
-  /** Puts every dhow where the year has it. While the year plays, a dhow already under way on its path
-      is left to the host, which moves it at the year's pace; otherwise it is placed, or set on the
-      rest of its way with the seconds the year will take. */
-  function place(by) {
+  /** A dhow's year as a dated way (runtime 5), from the same reckoning: lying at its berth while in port,
+      and along its route while sailing, at its steady pace; a voyage that runs over the year's end is
+      sailed on at the year's start. The globe moves it by the date: smoothly as the year plays, and to
+      where the reader drags the year. */
+  function wayOf(dhow) {
+    var list = dhow.voyages.concat(dhow.extra ? [dhow.extra] : []), cuts = [0, DAYS];
+    list.forEach(function (v) { cuts.push(yday(FIRST + v.dep), yday(FIRST + v.dep + v.dur)); });
+    if (dhow.extra) cuts.push(yday(FIRST + dhow.extra.dep + dhow.extra.dur + DAYS / 2));
+    cuts = cuts.filter(function (x) { return x >= 0 && x <= DAYS; }).sort(function (a, b) { return a - b; })
+               .filter(function (x, i, all) { return i === 0 || x > all[i - 1]; });
+    var coordinates = [], dates = [];
+    function put(p, t) { coordinates.push([p[0], p[1]]); dates.push(FIRST + t); }
+    for (var k = 0; k < cuts.length - 1; k++) {
+      var x = cuts[k], y = cuts[k + 1], r = reckon(dhow, (x + y) / 2);
+      if (!r.sailing) { var b = berth(dhow, r.port); put(b, x); put(b, y); continue; }
+      var route = r.voyage.dir === 1 ? dhow.up : dhow.down, fs = fractions(route), dur = r.voyage.dur;
+      var f0 = r.f - ((x + y) / 2 - x) / dur, f1 = r.f + (y - (x + y) / 2) / dur;
+      put(placeAt(route, f0), x);
+      for (var i = 1; i < route.length - 1; i++) if (fs[i] > f0 && fs[i] < f1) put(route[i], x + (fs[i] - f0) * dur);
+      put(placeAt(route, f1), y);
+    }
+    return { coordinates: coordinates, dates: dates };
+  }
+
+  var date = null;
+  /** Gives every dhow the looks and words of where the year has it (under sail, or in which port); the
+      globe moves it along its dated way. Set again only when that changes (the same way keeps its place). */
+  function place() {
     if (date == null) return;
     var t = yday(date);
     dhows.forEach(function (dhow) {
-      var r = reckon(dhow, t);
-      if (r.sailing) {
-        var route = r.voyage.dir === 1 ? dhow.up : dhow.down, here = split(route, r.f);
-        if (playing) {
-          if (by === 'play' && dhow.shown === r.key + ':path') return;
-          var seconds = Math.max(0.5, r.voyage.dur * (1 - r.f) / RATE);
-          terra.sprites.set(dhow.id, { path: { coordinates: here.rest, seconds: seconds, loop: false }, looks: looks(true), label: dhow.label + ', under sail', touchable: true });
-          dhow.shown = r.key + ':path';
-        } else {
-          terra.sprites.set(dhow.id, { at: here.at, looks: looks(true), label: dhow.label + ', under sail', touchable: true });
-          dhow.shown = r.key + ':at';
-        }
-      } else {
-        if (dhow.shown === r.key) return;
-        terra.sprites.set(dhow.id, { at: berth(dhow, r.port), looks: looks(false), label: dhow.label + ', in ' + M.ports[r.port].name, touchable: true });
-        dhow.shown = r.key;
-      }
+      if (!dhow.path) dhow.path = wayOf(dhow);
+      var r = reckon(dhow, t), key = r.sailing ? 'sailing' : r.key;
+      if (dhow.shown === key) return;
+      dhow.shown = key;
+      terra.sprites.set(dhow.id, { path: dhow.path, looks: looks(r.sailing), touchable: true,
+                                   label: r.sailing ? dhow.label + ', under sail' : dhow.label + ', in ' + M.ports[r.port].name });
     });
   }
 
@@ -172,19 +185,21 @@
       var dir = portId === dhow.way.from ? 1 : -1;
       if (w.dir === dir) {
         dhow.extra = { dir: dir, dep: t, dur: dhow.days };
+        dhow.path = null;
         dhow.shown = null;
         went++;
       } else {
         // not this wind: a shake of the furled sail
-        terra.sprites.set(dhow.id, { at: berth(dhow, portId), looks: [
+        if (!dhow.path) dhow.path = wayOf(dhow);
+        terra.sprites.set(dhow.id, { path: dhow.path, looks: [
           { frames: frames('dhow-furled', 4), fps: 9, size: [44, 36], minZoom: NEAR },
           { frames: frames('dhow-furled-mid', 4), fps: 9, size: [22, 18], minZoom: MID, maxZoom: NEAR },
           { image: 'speck.png', size: [7, 7], maxZoom: MID }], label: dhow.label + ', held in port by the wind', touchable: true });
         dhow.shown = null;
-        setTimeout(function () { place('touch'); }, 1300);
+        setTimeout(function () { place(); }, 1300);
       }
     });
-    if (went) place('touch');
+    if (went) place();
   }
 
   terra.on('touch', function (t) {
@@ -198,8 +213,8 @@
   });
 
   terra.on('time', function (e) {
-    date = e.value; playing = e.playing;
-    place(e.by);
+    date = e.value;
+    place();
     blow();
   });
   /** The screen's size sets the zooms at which the ships are drawn large; a change redraws them. */
@@ -213,7 +228,7 @@
     if (!measure(c)) return;
     dhows.forEach(function (d) { d.shown = null; });
     windShown = null;
-    place('camera'); blow();
+    place(); blow();
   });
   terra.on('focus', function (f) { if (f.front) terra.time.play(true); });
 

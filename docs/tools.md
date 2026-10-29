@@ -51,7 +51,7 @@ preview's mirror `tools/playground/harness/`.
 | Sprites | things that live and move: `at`, or a timed `path` (`seconds`, `loop`) | `terra.sprites.set(id, { at \| path, looks, label, touchable })` | every current pack | 64 sprites, 24 frames a look, 400 pt a side (200 before runtime 5) |
 | ↳ sprite sheets | many frames in one picture: a frame named `'sheet.png#x,y,w,h'` (pixels), in a sprite's or a doorway's look; decoded once, cut without copying (`Globe/SpriteSheet.swift`, which a native prototype may use too) | `frames: ['art/early.png#0,0,376,335', …]`, written by the art drawer | herds | runtime 6; not for `terra.images` or a `symbol` (one file each); 4096 px a side |
 | ↳ looks by zoom | one thing a trace from afar and itself close in; `every`/`for` a glint now and then; `face` mirrors heading west | `looks: [{ image \| frames, fps, size, minZoom, maxZoom, every, for, face }]` | every current pack (`every`: monsoon, whales; `face`: alive, lead line, low sea, monsoon, whales, herds) | |
-| ↳ dated way | the globe's date puts the sprite on its way; it walks as the date plays, stands where the reader drags | `path: { coordinates, dates }` | herds | runtime 5; not drawn outside its dates |
+| ↳ dated way | the globe's date puts the sprite on its way; it walks as the date plays, stands where the reader drags | `path: { coordinates, dates }` | herds, lead line (the ship), monsoon (the dhows) | runtime 5; not drawn outside its dates |
 | Doorway | a pack's life on the globe while it isn't running; a touch starts it | `prototype.json` › `doorway` (`look` or `looks`, `path`, `breathes`) | every current pack (`path`: herds, lead line, low sea, monsoon; `breathes`: fires, vine) | the same budgets as a sprite's look |
 | Glint | the one mark every doorway shows from afar | `doorway-glint.png`, from `tools/playground/glint_png.py` | every current pack | the natives draw theirs in Swift (`Catalog.swift`'s `Glint`) from the same recipe |
 | Touch | taps and drags on the pack's things, or every tap with `"taps": true` | `terra.on('touch' \| 'tap', fn)` | every current pack (`tap`: hello) | no long press; a drag's `moved` keeps the target it began on |
@@ -173,6 +173,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Pack validator | the contract, sizes (500 files, 50 MB a pack, 25 MB a file, 24 frames), a doorway's sheet frames inside their sheet, the offline boundary | `python3 tools/playground/playground.py validate [ids]` | CI `plates`, `packs.yml` |
 | Playground tool tests | `playground.py` itself | `python3 tools/playground/test_playground.py` | CI `plates`, `packs.yml` |
 | Shared script | `Shared` against the helpers it replaced, bit for bit | `node tools/playground/shared_check.cjs` | `packs.yml` |
+| Dated ways | a pack's sprites on dated ways against where an older revision's script placed them, headless, at every step of its strip | `node tools/playground/dated_check.cjs <id> [rev] [--step d] [--offset d]` | by hand (lead line, monsoon) |
 | Preview's own check | a fixture pack using every tool once, held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand |
 | Shader check | every `.metal` compiled and its bindings, in seconds | `python3 tools/metal/metal.py check` | CI `plates` |
 | Stand-in tests | the CPU Metal's builtins; whether `twin` notices drift | `tools/metal/tests/test_metal.py`; `twin_drift.py` (slow) | CI `plates`; by hand |
@@ -216,13 +217,13 @@ Found October 29, 2026 (painting-company row 178). Each says what differs and wh
   a screen point, `--root`, play set rather than toggled, and fails on page errors. Their `wait`s
   differ (milliseconds against seconds). They should be one (`moments.cjs`, taking `explore`'s
   steps, with `wait` in seconds), its users' plans converted in the same commit.
-- **Things moved by the date by hand.** The lead line's ship and the monsoon's dhows are set on a
-  timed `path` again on every `time` event, the seconds computed from the date's rate; runtime 5's
-  dated ways (`path: { coordinates, dates }`, the herds) do exactly that in the globe, smoothly and
-  under scrubbing. The lead line's way is already dated (`way.js`) and could move onto it as it
-  stands; the monsoon's dhows sail a yearly round, which a dated way can carry as one year's dates.
-  The vine's stems, regrown by `terra.geo.set` on every `time` event, are the same idea for lines:
-  dated geography, built on claude/georgia with the vine's remaking.
+- **Things moved by the date by hand** (merged). The lead line's ship and the monsoon's dhows were set on a
+  timed `path` again at every `time` event, the seconds worked out from the date's rate; they are on
+  runtime 5's dated ways now (the ship's whole voyage; each dhow's year, its berths held and its voyages
+  dated along their routes, the reader's sendings included), which the globe moves smoothly and under
+  scrubbing; `tools/playground/dated_check.cjs` found them where they were to a metre. The vine's stems,
+  regrown by `terra.geo.set` on every `time` event, are the same idea for lines: dated geography, built on
+  claude/georgia with the vine's remaking.
 - **Script helpers repeated in packs** (merged). The great-circle `along` (the lead line, the monsoon,
   the whales; the herds' `slerp`) and `frames` (five packs, and the vine's own until it moves onto it with
   its remaking) are `Shared.along` and `Shared.frames` in the packs' shared script, bit for bit what they
