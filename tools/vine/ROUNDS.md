@@ -140,3 +140,23 @@ and bends to its region; a branch is attached to the trunk point it grows from; 
 stem (their stalk at the foot of the picture); the far view's leaf tint is a band under the thread (it
 had been set before the stems existed and drew nothing); the second shoot leaves later and from along
 the first, not from the mouth; the mouth smaller; the lid an uneven stone, the cracks fewer and fainter.
+
+Critic 5 (the hater): (1) still a route map at the hemisphere and in Iberia (straight strokes, one width
+west of Anatolia); (2) the opening a thumbnail: the mouth a fifteenth of the screen; (3) leaves and
+clusters confetti, an "eternal October"; (4) the lit way a highway with ticks; (5) no ship on the
+Hispaniola line at 1500 (it had arrived: the date was the arrival's); (6) a vinyl-record mouth and a
+manhole lid; (7) only the vine answers a finger. Kept: the restrained words, the true way lit.
+
+## Round 6 · bark, the mouth a quarter of the screen (October 30)
+
+Changed: a darker edge under every stem band (the bark), so the stem has a body; the way's corners cut
+twice before the curve and the sway wider; the opening's close zoom set from the screen so the mouth is a
+quarter of its width (the globe's zoom limit raised to 32 for it), and a closest band of big leaves,
+clusters and tendrils where the mouth fills the screen; the light's beads fewer and softer; the mouth's
+inner wall in shadow instead of a highlight arc; the lid mottled stone with one hairline crack, no ruled
+lines.
+
+Overruled, and why: the reader's own season on the leaves is the design (the panel says so), not an
+error; the sea, the empty land and the leaves answering a finger would be another experience's rules
+(the vine answers where the vine is); a wobbling, noise-textured stem would need a tool the runtime
+doesn't have (a textured stroke), noted under the tools the vine would use next.

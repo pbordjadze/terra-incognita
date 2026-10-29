@@ -172,9 +172,11 @@
     const wg = ctx.createRadialGradient(cx + mouth * 0.25, cy + mouth * 0.25, 0, cx, cy, mouth);
     wg.addColorStop(0, '#0C0306'); wg.addColorStop(0.75, B.mix(WINE, '#000000', 0.3)); wg.addColorStop(1, B.mix(WINE, '#000000', 0.6));
     B.inked(ctx, (c) => { c.arc(cx, cy, mouth, 0, 6.2832); }, wg, INK, R * 0.04);
-    // the inside of the rim catches the light on the far side, a thin crescent; no glass
-    ctx.strokeStyle = 'rgba(255, 220, 190, 0.18)'; ctx.lineWidth = R * 0.02;
-    ctx.beginPath(); ctx.arc(cx, cy, mouth * 0.93, -2.6, -0.9); ctx.stroke();
+    // the inside of the rim, in shadow on the near side: the wall of the vessel seen going down
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, mouth, 0, 6.2832); ctx.clip();
+    const sh = ctx.createRadialGradient(cx - mouth * 0.25, cy - mouth * 0.3, mouth * 0.55, cx, cy, mouth);
+    sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = sh; ctx.fillRect(cx - mouth, cy - mouth, 2 * mouth, 2 * mouth); ctx.restore();
     // the lid: a flat flagstone, its edges straight and uneven as a split stone's, drawn a third off the
     // mouth, its sliver of shadow on the rim
     const lx = cx + rim * 0.72, ly = cy + rim * 0.74, ls = mouth * 0.82;
@@ -183,16 +185,14 @@
     const poly = (c, pts) => { c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
     ctx.fillStyle = 'rgba(20, 10, 5, 0.3)'; ctx.beginPath(); poly(ctx, stone.map(([x, y]) => [x + ls * 0.09, y + ls * 0.11])); ctx.fill();
     const lg = ctx.createLinearGradient(lx - ls, ly - ls, lx + ls, ly + ls);
-    lg.addColorStop(0, '#D3CCBC'); lg.addColorStop(1, '#8E887C');
+    lg.addColorStop(0, '#CFC6B2'); lg.addColorStop(0.5, '#B3AA97'); lg.addColorStop(1, '#8A8275');
     B.inked(ctx, (c) => { poly(c, stone); }, lg, INK, R * 0.03);
     // the stone's grain: fine lines across it, and a few flecks
     ctx.save(); ctx.beginPath(); poly(ctx, stone); ctx.clip();
-    ctx.strokeStyle = B.rgba(INK, 0.14); ctx.lineWidth = Math.max(0.3, R * 0.007);
-    for (let i = -5; i <= 5; i++) {
-      const y = ly + i * ls * 0.17 + (r() - 0.5) * ls * 0.06;
-      ctx.beginPath(); ctx.moveTo(lx - ls, y); ctx.quadraticCurveTo(lx, y + (r() - 0.5) * ls * 0.12, lx + ls, y + (r() - 0.5) * ls * 0.1); ctx.stroke();
-    }
-    for (let i = 0; i < 25; i++) { ctx.fillStyle = B.rgba(i % 2 ? '#FFFFFF' : INK, 0.12); ctx.beginPath(); ctx.arc(lx + (r() - 0.5) * 2 * ls, ly + (r() - 0.5) * 2 * ls, R * (0.004 + r() * 0.008), 0, 6.2832); ctx.fill(); }
+    // the stone's surface: mottled, a few flecks and one hairline crack; no ruled lines
+    for (let i = 0; i < 90; i++) { ctx.fillStyle = B.rgba(i % 3 ? '#FFFFFF' : INK, 0.05 + r() * 0.08); ctx.beginPath(); ctx.ellipse(lx + (r() - 0.5) * 2 * ls, ly + (r() - 0.5) * 2 * ls, R * (0.006 + r() * 0.02), R * (0.004 + r() * 0.012), r() * 3, 0, 6.2832); ctx.fill(); }
+    ctx.strokeStyle = B.rgba(INK, 0.22); ctx.lineWidth = Math.max(0.3, R * 0.006);
+    ctx.beginPath(); ctx.moveTo(lx - ls * 0.6, ly + ls * 0.5); ctx.lineTo(lx - ls * 0.2, ly + ls * 0.1); ctx.lineTo(lx + ls * 0.1, ly - ls * 0.05); ctx.stroke();
     ctx.restore();
     if (options.leaf) {
       ctx.save(); ctx.translate(cx - R * 0.95, cy - R * 0.98); leaf(ctx, R * 0.95, R * 0.95, GREENS[0], -0.5, 4); ctx.restore();

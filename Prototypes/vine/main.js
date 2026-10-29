@@ -15,17 +15,17 @@
   'use strict';
   var V = window.VINE, D = Math.PI / 180;
   var FIRST = V.origin.year, LAST = V.today;
-  var STEM = '#55402C', VOYAGE = '#7A5A33', TRACE = '#E2A94BB8', GLOW = '#F2C86A3C', LIGHT = '#FFF6DCCC';
+  var STEM = '#5C4530', EDGE = '#2E2014', VOYAGE = '#7A5A33', TRACE = '#E2A94BA8', GLOW = '#F2C86A38', LIGHT = '#FFF0C8A0';
   var QVEVRI_DEG = 0.95;                      // the picture of the qvevri's mouth, in degrees of latitude
 
   // ---- scale: what shows depends on how many points a degree is on this screen, not the zoom alone ----
   var R1 = 489;                               // the globe's radius at zoom 1 (about 176 on a phone, 489 on the 13" iPad)
   function zoomFor(ppd) { return Math.round(ppd / (R1 * D) * 100) / 100; }
-  var NEAR = 0, MID = 0;
+  var NEAR = 0, MID = 0, CLOSE = 0;
   function measure(c) {
     var r1 = c && c.radius > 0 && c.zoom > 0 ? c.radius / c.zoom : R1;
     if (Math.abs(r1 - R1) / R1 < 0.08 && NEAR) return false;
-    R1 = r1; NEAR = zoomFor(34); MID = zoomFor(11);
+    R1 = r1; NEAR = zoomFor(34); MID = zoomFor(11); CLOSE = zoomFor(120);
     return true;
   }
 
@@ -61,6 +61,10 @@
     // Earth is a living colour and not a road
     var haze = season(false) === 'winter' ? '#8A6A3A3A' : season(false) === 'autumn' ? '#C8922E60' : '#6E9A4A60';
     terra.geo.set('stems-haze', stems, { style: 'border', color: haze, lineWidth: 7, dated: true, maxZoom: MID });
+    // the stem's bark: a darker edge under each band, a little wider, so the stem has a body and not a line
+    terra.geo.set('stems-edge-far', stems, { style: 'border', color: EDGE, lineWidth: 1.3, dated: true, thickens: { to: 3.6, over: 5000 }, maxZoom: MID });
+    terra.geo.set('stems-edge', stems, { style: 'border', color: EDGE, lineWidth: 1.6, dated: true, thickens: { to: 4.8, over: 5000 }, minZoom: MID, maxZoom: NEAR });
+    terra.geo.set('stems-edge-near', stems, { style: 'border', color: EDGE, lineWidth: 2.9, dated: true, thickens: { to: 8.6, over: 5000 }, minZoom: NEAR });
     // (a stem is full-grown after five thousand years: the first trunks are the thick ones, Rome's half
     // their width, the colonies' shoots thin)
     terra.geo.set('stems-far', stems, { style: 'border', color: STEM, lineWidth: 0.7, dated: true, thickens: { to: 2.6, over: 5000 }, touchable: true, maxZoom: MID });
@@ -75,7 +79,8 @@
         var kind = V.leaves.filter(function (l, i) { return l[3] === k && l[4] === hemi && i % sparse === 0; }).map(function (l) { return point(l[0], l[1], l[2]); });
         var image = LEAVES[s] + '-' + (k + 1) + '.png';
         // (the leaf's stalk is at its foot: the picture sits just above its place on the stem)
-        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22, height: 22, minZoom: NEAR, offset: [1, -7], dated: true, bloom: 0.9 });
+        terra.geo.set('leaves-close-' + hemi + k, kind, { style: 'symbol', image: image, width: 46, height: 46, minZoom: CLOSE, offset: [2, -15], dated: true, bloom: 1.2 });
+        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22, height: 22, minZoom: NEAR, maxZoom: CLOSE, offset: [1, -7], dated: true, bloom: 0.9 });
         terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 9.5, height: 9.5, minZoom: MID, maxZoom: NEAR, offset: [0.5, -3], dated: true, bloom: 0.7 });
       }
     }
@@ -87,7 +92,8 @@
       var clusters = grapes ? V.clusters.filter(function (c) { return (c.lat < 0 ? 1 : 0) === hemi; }).map(function (c) {
         return point(c.lon, c.lat, c.year, { label: c.name + ', ' + said(c.year) });
       }) : [];
-      terra.geo.set('clusters-near-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 15, height: 22.5, minZoom: NEAR, offset: [0, 10], dated: true, bloom: 1.2, touchable: true });
+      terra.geo.set('clusters-close-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 30, height: 45, minZoom: CLOSE, offset: [0, 21], dated: true, bloom: 1.6, touchable: true });
+      terra.geo.set('clusters-near-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 15, height: 22.5, minZoom: NEAR, maxZoom: CLOSE, offset: [0, 10], dated: true, bloom: 1.2, touchable: true });
       terra.geo.set('clusters-mid-' + hemi, clusters, { style: 'symbol', image: grapes || 'grapes-ripe.png', width: 7, height: 10.5, minZoom: MID, maxZoom: NEAR, offset: [0, 4.5], dated: true, bloom: 0.9, touchable: true });
     }
     // the qvevri, where it all begins: a picture lying on the globe, so it grows as the reader comes close
@@ -113,7 +119,8 @@
       terra.sprites.set('tip-' + t.branch, {
         path: { coordinates: t.coordinates, dates: t.dates },
         looks: [
-          { frames: frames('tendril', 8), fps: 5, size: [34, 30], minZoom: NEAR, face: true },
+          { frames: frames('tendril', 8), fps: 5, size: [68, 60], minZoom: CLOSE, face: true },
+          { frames: frames('tendril', 8), fps: 5, size: [34, 30], minZoom: NEAR, maxZoom: CLOSE, face: true },
           { frames: frames('tendril', 8), fps: 5, size: [15, 13], minZoom: MID, maxZoom: NEAR, face: true },
           { frames: frames('tendril', 8), fps: 4, size: [7, 6], maxZoom: MID, face: true }
         ],
@@ -152,10 +159,10 @@
     if (coords.length < 2) return;
     // the stem itself lit from within: a warm band the stem's width and a little more, with soft gold
     // light running outward along it, narrower than the band
-    var ppd = R1 * terra.camera.zoom * D, band = ppd >= 34 ? 7 : ppd >= 11 ? 4 : 2.6;
+    var ppd = R1 * terra.camera.zoom * D, band = ppd >= 120 ? 10 : ppd >= 34 ? 7 : ppd >= 11 ? 4 : 2.6;
     terra.geo.set('trace-glow', [line(coords)], { style: 'border', color: GLOW, lineWidth: band * 2.6 });
     terra.geo.set('trace', [line(coords)], { style: 'border', color: TRACE, lineWidth: band,
-                  flow: { speed: 90, dash: 4, gap: 26, color: LIGHT, width: band * 0.4 } });
+                  flow: { speed: 70, dash: 3, gap: 44, color: LIGHT, width: band * 0.35 } });
     // the spark leaves the qvevri and is under the finger within a breath
     var seconds = Math.min(1.3, 0.5 + coords.length / 240), id = 'spark-' + (++sparks), end = coords[coords.length - 1];
     terra.sprites.set(id, { path: { coordinates: coords, seconds: seconds, loop: false },
@@ -239,13 +246,14 @@
 
   // ---- start: close on the qvevri's mouth in the valley, a breath, then the first shoot and the slow
   // pull-back as the vine runs; the reader's own touch ends the pull-back at once ----
-  terra.globe.set({ still: true, historical: true, maxZoom: 16 });
+  terra.globe.set({ still: true, historical: true, maxZoom: 32 });
   measure(terra.camera);
   terra.caption.set({ title: 'The vine\'s long walk', text: '', wikipedia: 'Georgian wine' });
   plant();
   var still = terra.settings.reduceMotion;
-  // close: a degree is 120 points, the qvevri's mouth and the valley round it (an anchor stops at 8)
-  var closeZoom = Math.min(16, zoomFor(120));
+  // close: the qvevri's mouth a quarter of the screen's width (an anchor stops at 8, so the script flies)
+  var width0 = terra.camera && terra.camera.width > 0 ? terra.camera.width : 1032;
+  var closeZoom = Math.min(32, zoomFor(width0 * 0.25 / QVEVRI_DEG));
   terra.time.show({ unit: 'year', pace: V.pace, value: FIRST, ticks: V.ticks, playable: true, playing: false, carry: false });
   // (a flight within a second of the reader's touch is dropped: the dive to the qvevri waits a beat after
   // the doorway's tap, which is also the right pause)
@@ -256,7 +264,7 @@
   // the screen (the Caucasus to the Nile), and on a phone no farther than a degree to twelve points
   setTimeout(function () {
     var width = terra.camera && terra.camera.width > 0 ? terra.camera.width : 1032;
-    if (!still) terra.flyTo(43.5, 39, zoomFor(Math.max(12, width / 55)), 25);
-  }, still ? 400 : 13500);
-  setTimeout(function () { opening = false; lastSpeed = 0; }, 39000);
+    if (!still) terra.flyTo(43.5, 39, zoomFor(Math.max(12, width / 55)), 28);
+  }, still ? 400 : 14500);
+  setTimeout(function () { opening = false; lastSpeed = 0; }, 43000);
 })();

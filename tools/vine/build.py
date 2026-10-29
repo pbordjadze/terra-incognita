@@ -79,7 +79,7 @@ TRUNKS = [
                                                   (7.6, 48.6, 150, 'Alsace'), (6.9, 49.3, 190, None), (6.64, 49.75, 250, 'Trier, on the Mosel'),
                                                   (7.4, 50.1, 290, None), (8.27, 50.0, 330, 'Mainz, on the Rhine'), (8.0, 50.05, 800, 'The Rheingau'),
                                                   (9.9, 49.8, 850, 'Franconia')]),
-    ('Up the Danube', [(10.9, 45.3, -150, None), (12.5, 45.7, -100, None), (13.7, 46.1, -40, None), (15.0, 46.4, 10, None), (15.5, 48.3, 90, 'The Wachau'),
+    ('Up the Danube', [(10.9, 45.3, -90, None), (12.5, 45.7, -100, None), (13.7, 46.1, -40, None), (15.0, 46.4, 10, None), (15.5, 48.3, 90, 'The Wachau'),
                        (17.1, 48.1, 110, None), (18.0, 47.5, 130, 'Pannonia'), (17.8, 46.9, 200, 'Balaton'), (19.0, 47.0, 400, None), (20.4, 47.9, 900, 'Eger'),
                        (21.4, 48.1, 1100, 'Tokaj')]),
     ('Inland in Iberia', [(-6.3, 36.5, -600, None), (-6.0, 37.4, -300, 'Seville'), (-5.5, 38.5, -150, None), (-4.5, 39.4, -50, None), (-3.5, 40.5, 1, None),
@@ -203,7 +203,7 @@ def curved(verts):
     """The vertices with a few more between each pair, on a smooth curve through them all (Catmull-Rom
     in longitude and latitude), so the way bends at a place rather than kinking; the years follow the
     curve's parameter. A vertex's name stays on it."""
-    verts = cut_corners(verts)
+    verts = cut_corners(cut_corners(verts))
     n = len(verts)
     if n < 3:
         return list(verts)
@@ -225,7 +225,7 @@ def curved(verts):
     return out
 
 
-def densify(verts, step_km=60.0, sway=0.16, seed=0):
+def densify(verts, step_km=60.0, sway=0.22, seed=0):
     """[lon, lat, year] every ~step_km along the great circles between the vertices, the years
     interpolated, the way swaying a little either side of the straight line between places (a vine
     wanders; nothing at the places themselves)."""
@@ -319,7 +319,7 @@ def main():
                 raise SystemExit(f'{name} starts {d:.0f} km from any earlier trunk')
             frm = [b, i]
             way[0] = [branches[b]['way'][i][0], branches[b]['way'][i][1], way[0][2]] + way[0][3:]
-            if branches[b]['way'][i][2] > verts[0][2] + 1:
+            if branches[b]['way'][i][2] > verts[0][2] + 60:
                 raise SystemExit(f'{name} starts in {verts[0][2]} where {branches[b]["name"]} arrives only in {branches[b]["way"][i][2]}')
         branches.append({'name': name, 'way': way, 'from': frm, 'twig': False})
     trunks = len(branches)
