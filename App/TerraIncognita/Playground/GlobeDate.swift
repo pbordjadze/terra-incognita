@@ -104,7 +104,7 @@ struct GlobeFoot: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("globeFootCaption")
             if wikipedia, let article = caption?.article {
-                WikipediaLink(url: article.url, color: Color(uiColor: GlobeScreen.style?.eyebrow?.color.flatMap { UIColor(hex: $0) } ?? .systemBlue))
+                WikipediaLink(url: article.url, color: Color(uiColor: (GlobeScreen.style?.eyebrow?.color).flatMap { UIColor(hex: $0) } ?? .systemBlue))
                     .padding(.top, -8)
             }
             if let time {

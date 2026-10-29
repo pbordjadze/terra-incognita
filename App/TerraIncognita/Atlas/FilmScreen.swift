@@ -162,7 +162,7 @@ struct CaptionView: View {
                 .allowsHitTesting(false)
                 .accessibilityElement(children: .combine)
             if let link {
-                WikipediaLink(url: link, color: Color(uiColor: style?.eyebrow?.color.flatMap { UIColor(hex: $0) } ?? .systemBlue))
+                WikipediaLink(url: link, color: Color(uiColor: (style?.eyebrow?.color).flatMap { UIColor(hex: $0) } ?? .systemBlue))
                     .padding(.top, -6)
                     .padding(.bottom, -10)
             }
