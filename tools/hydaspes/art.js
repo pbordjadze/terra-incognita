@@ -690,13 +690,12 @@
     const falloff = (x, y) => Math.pow(Math.max(0, 1 - Math.hypot((x - w / 2) / (w / 2), (y - h / 2) / (h / 2))), 2);
     for (let k = 0; k < 7; k++) {
       // a band: a slanting strip of faint light, drifting with the frames
-      const x0 = ((k / 7 + t * 0.35) % 1) * w * 1.4 - w * 0.2, width = 10 + r() * 16;
-      ctx.lineCap = 'butt'; ctx.lineWidth = width;
-      for (let y = 0; y < h; y += 6) {
-        const x = x0 - y * 0.32, a = falloff(x, y + 3) * 0.16;
-        if (a <= 0.005) continue;
-        ctx.strokeStyle = B.rgba('#C8D0E6', a); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6 * 0.32, y + 6.5); ctx.stroke();
-      }
+      // one slanting stroke, its light following the field's fall-off along it
+      const x0 = ((k / 7 + t * 0.35) % 1) * w * 1.4 - w * 0.2, width = 10 + r() * 16, x1 = x0 - h * 0.32;
+      const g2 = ctx.createLinearGradient(x0, 0, x1, h);
+      for (let j = 0; j <= 10; j++) { const y = h * j / 10; g2.addColorStop(j / 10, B.rgba('#C8D0E6', falloff(x0 - y * 0.32, y) * 0.16)); }
+      ctx.lineCap = 'butt'; ctx.lineWidth = width; ctx.strokeStyle = g2;
+      ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x1, h); ctx.stroke();
     }
     ctx.strokeStyle = 'rgba(205,215,240,0.5)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
     for (let k = 0; k < 90; k++) {
@@ -705,6 +704,11 @@
       ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - len * 0.32, y0 + len); ctx.stroke();
     }
     ctx.globalAlpha = 1;
+    // (and the whole field ends softly, whatever a band's width carried to the picture's edge)
+    ctx.save(); ctx.globalCompositeOperation = 'destination-in';
+    ctx.translate(w / 2, h / 2); ctx.scale(w / 2, h / 2);
+    const m = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); m.addColorStop(0.55, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = m; ctx.fillRect(-1, -1, 2, 2); ctx.restore();
   } });
   pictures.push({ name: 'lightning', width: 400, height: 400, frames: 3, scale: 1.5, draw(ctx, w, h, i, n) {
     // a wash of light over the whole field, then the bolt's after-image
