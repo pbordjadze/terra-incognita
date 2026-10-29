@@ -118,3 +118,31 @@ fires on it; it is an elephant standing at the water on the Jhelum's bank, stirr
 it and back, which doesn't quite belong on that bank today.
 
 ### Round 5 — the hater, and the real app
+
+**The hater** (a fresh eye told it is a famously hard-to-impress reviewer, ranking by what a player
+would notice), worst first: the scale lies at every zoom (ten elephants spanning the river at the camp
+zoom, camps the size of cities), the sprites are flat identical stamps with no three-quarter view and
+the two camps told apart only by the elephants, the wade doesn't wade (discs on legs on a lavender
+decal, two scales on one line), the column is a straight bar that ignores the river and the headland
+is a grey outline with no trees, the night is navy with a tar river and dawn a palette swap, words
+do the picture's job, the battle is a counter diagram, the opening screen is empty, the rain's bands
+are stepped, the doorway gives the elephant away, the boats are too small to push. Worst complaint:
+the stamps at a lying scale. A real failing.
+
+Taken: the drawn pictures now show only from the close zoom (a kilometre at 48 points); between the
+valley and that the camps are fires and the elephants grains at the water, as the pitch has it. Tents
+are in a high three-quarter view, no two the same size, their faces lit on the fire's side, and Porus'
+camp is told apart: ochre pavilions with pennants, chariots parked. The elephants vary in size and
+pose. Close up the column is a thread of nine clusters a few minutes apart along the same way, so it
+bends with the way and the headland as a file does, the horse at its head. The wade has a drawn
+current the length of the channel, every figure cut by the water (the leftmost at the knee, wading
+in from the island's shore), shields up with a highlight on the rim. The island is a warm grey, not
+lavender; the grove's trees are big enough to be a mass. The rain's bands are strokes. The boats are
+larger and leave wakes, and the globe comes close on its own for the crossing as it does for the
+wade. The words at the foot are gone: the title alone; what is touched still says its one line.
+
+Overruled: the doorway stays an elephant at the water (the owner's rule, read tonight: the first sign
+of an experience is ordinary life slightly off, not an attraction; that it gives the elephant away is
+the point); no moon (Arrian's night was a furious storm); the dark plain at the opening is the night,
+and Play moves it; the camps' fires are not gone at dawn, they are off the screen when the shots look
+at the field.

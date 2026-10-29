@@ -12,10 +12,10 @@
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
   const NIGHT = { plain: '#141827', plain2: '#181D2E', plain3: '#111526', hill: '#0C0F1B', hillRim: '#1E2237',
                   water: '#1C1B22', water2: '#232127', sheen: '#8A93AE', bank: '#0E0E16', foam: '#9AA2BC', wood: '#0A0E16', wood2: '#121A1E',
-                  kas: '#1F2436', sand: '#52526A', sand2: '#3E3E52', edge: '#141827', moon: '#8E99B8' };
+                  kas: '#1F2436', sand: '#4C4A50', sand2: '#3A383E', edge: '#141827', moon: '#8E99B8' };
   const DAY = { plain: '#8C8E86', plain2: '#9A9B90', plain3: '#7C7E78', hill: '#6E7069', hillRim: '#B0AB98',
                 water: '#5E4A3A', water2: '#6E5844', sheen: '#E6B98A', bank: '#5C5248', foam: '#F0DCC0', wood: '#44523C', wood2: '#505F46',
-                kas: '#7E8078', sand: '#BBAF95', sand2: '#A89C84', edge: '#8C8E86', moon: '#F0C890' };
+                kas: '#7E8078', sand: '#B4A88E', sand2: '#9C9078', edge: '#8C8E86', moon: '#F0C890' };
   const INK = '#15110C', FIRE = '#FFB347', FLAME = '#FFE08A', EMBER = '#E2552B', TENT = '#E8DCC2', TENT_SHADE = '#B9AC90';
   const SKIN = '#D9B48C', BRONZE = '#C9A24B', IRON = '#8A8D92', RED = '#9E2B25', HORSE = '#5A3D28', HORSE2 = '#8C6A48';
   const GREY = '#7E7F84', GREY2 = '#5E5F64', WATER_NIGHT = '#2E2C35', FOAM = '#8A8793';
@@ -85,7 +85,7 @@
     mottle: scatter(102, 0.9, T.wide),       // fields and scrub
     fine: scatter(103, 6, T.wide),           // the finer mottle, seen close
     ridges: scatter(104, 1.6, T.wide),       // the hills' ridge strokes (kept where the hills are)
-    trees: scatter(105, 80, T.wide),         // trees (kept where the woods are)
+    trees: scatter(105, 120, T.wide),        // trees (kept where the woods are)
     water: scatter(106, 0.5, T.wide),        // streaks of light on the water: which stretch, which offset
   };
   function insidePoly(pt, poly) {
@@ -192,7 +192,7 @@
       poly(ctx, pts, P); ctx.fillStyle = B.rgba(pal.wood, dense ? 0.75 : 0.4); ctx.fill();
       for (const m of SCATTER.trees) {
         if (!within(m, 0.01) || !insidePoly(m, pts) || (!dense && m[5] > 0.45)) continue;
-        const [x, y] = P(m), rr = Math.max(1.2, px(0.012 + m[2] * 0.025));
+        const [x, y] = P(m), rr = Math.max(1.2, px((dense ? 0.03 : 0.012) + m[2] * (dense ? 0.05 : 0.025)));
         ctx.fillStyle = B.rgba(m[3] < 0.6 ? pal.wood2 : pal.wood, 0.75);
         ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
         ctx.fillStyle = B.rgba(INK, 0.5); ctx.beginPath(); ctx.arc(x + rr * 0.3, y + rr * 0.35, rr * 0.5, 0, TAU); ctx.fill();
@@ -281,12 +281,23 @@
       ctx.beginPath(); ctx.moveTo(x + s * 0.1, y - s * 0.85); ctx.lineTo(x + s * 0.45, y - s * 1.3); ctx.stroke();
     }
   }
-  /** A tent `s` wide at (x, y) its foot: a wedge of cloth in the lamplight. */
-  function tent(ctx, x, y, s, lit) {
-    B.inked(ctx, (c) => { c.moveTo(x - s * 0.5, y); c.lineTo(x + s * 0.5, y); c.lineTo(x + s * 0.1, y - s * 0.62); c.lineTo(x - s * 0.25, y - s * 0.62); c.closePath(); },
-            lit ? TENT : TENT_SHADE, INK, s * 0.07);
-    ctx.fillStyle = B.rgba(INK, 0.35);
-    ctx.beginPath(); ctx.moveTo(x + s * 0.5, y); ctx.lineTo(x + s * 0.1, y - s * 0.62); ctx.lineTo(x + s * 0.25, y - s * 0.3); ctx.closePath(); ctx.fill();
+  /** A tent `s` wide at (x, y) its foot, in a high three-quarter view: a ridge, two faces (the one towards
+      the fire lit), its shadow on the ground. `kind` 'ridge' (Macedonian) or 'pavilion' (a domed Indian tent). */
+  function tent(ctx, x, y, s, lit, side, kind, cloth) {
+    cloth = cloth || TENT;
+    ctx.fillStyle = B.rgba(INK, 0.35); ctx.beginPath(); ctx.ellipse(x + s * 0.1, y + s * 0.08, s * 0.6, s * 0.16, 0, 0, TAU); ctx.fill();
+    const lightFace = B.mix('#6E6558', cloth, 0.3 + lit * 0.7), darkFace = B.mix('#3A3530', cloth, 0.15 + lit * 0.35);
+    if (kind === 'pavilion') {
+      B.inked(ctx, (c) => { c.moveTo(x - s * 0.5, y); c.quadraticCurveTo(x - s * 0.5, y - s * 0.75, x, y - s * 0.8); c.quadraticCurveTo(x + s * 0.5, y - s * 0.75, x + s * 0.5, y); c.closePath(); }, side > 0 ? lightFace : darkFace, INK, s * 0.07);
+      ctx.fillStyle = B.rgba(side > 0 ? darkFace : lightFace, 0.9); ctx.beginPath(); ctx.moveTo(x, y - s * 0.8); ctx.quadraticCurveTo(x + (side > 0 ? -1 : 1) * s * 0.5, y - s * 0.75, x + (side > 0 ? -1 : 1) * s * 0.5, y); ctx.lineTo(x, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = INK; ctx.lineWidth = s * 0.05; ctx.beginPath(); ctx.moveTo(x, y - s * 0.8); ctx.lineTo(x, y - s * 1.05); ctx.stroke();   // the pole and its pennant
+      ctx.fillStyle = RED; ctx.beginPath(); ctx.moveTo(x, y - s * 1.05); ctx.lineTo(x + s * 0.18, y - s * 1.0); ctx.lineTo(x, y - s * 0.94); ctx.closePath(); ctx.fill();
+      return;
+    }
+    // the ridge tent: the near face a long slope, the end face a triangle, the ridge line above
+    B.inked(ctx, (c) => { c.moveTo(x - s * 0.55, y); c.lineTo(x + s * 0.35, y + s * 0.06); c.lineTo(x + s * 0.2, y - s * 0.62); c.lineTo(x - s * 0.4, y - s * 0.56); c.closePath(); }, side > 0 ? lightFace : darkFace, INK, s * 0.07);
+    B.inked(ctx, (c) => { c.moveTo(x + s * 0.35, y + s * 0.06); c.lineTo(x + s * 0.62, y - s * 0.12); c.lineTo(x + s * 0.2, y - s * 0.62); c.closePath(); }, side > 0 ? darkFace : lightFace, INK, s * 0.06);
+    ctx.strokeStyle = B.rgba('#FFF4DA', 0.5 + lit * 0.4); ctx.lineWidth = s * 0.05; ctx.beginPath(); ctx.moveTo(x - s * 0.4, y - s * 0.56); ctx.lineTo(x + s * 0.2, y - s * 0.62); ctx.stroke();
   }
   /** A camp fire `s` across at (x, y), flickering by `t` (0–1), with its glow on the ground. */
   function fire(ctx, x, y, s, t, glow) {
@@ -380,27 +391,21 @@
     const fires = [];
     for (let i = 0; i < (opts.fires || 14); i++) fires.push([w * (0.12 + r() * 0.76), h * (0.22 + r() * 0.68), 0.6 + r() * 0.6]);
     for (const f of fires) B.glow(ctx, f[0], f[1], s * 1.3 * f[2], FIRE, 0.5, 0);
-    // tents in staggered rows, dimmed to the night, their fire-side faces lit
+    // tents in staggered rows, no two the same size or angle, dimmed to the night, their fire-side faces lit
     const rows = opts.rows || 4, cols = opts.cols || 7, tents = [];
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       if (r() < 0.15) continue;
-      const x = w * (0.12 + (i + (j % 2) * 0.5) * 0.76 / cols) + (r() - 0.5) * s * 0.8, y = h * (0.3 + j * 0.62 / rows) + (r() - 0.5) * s * 0.5;
-      tents.push([x, y]);
+      const x = w * (0.12 + (i + (j % 2) * 0.5) * 0.76 / cols) + (r() - 0.5) * s * 0.9, y = h * (0.3 + j * 0.62 / rows) + (r() - 0.5) * s * 0.6;
+      tents.push([x, y, 1.1 + r() * 0.5, opts.kind === 'pavilion' && r() < 0.6 ? 'pavilion' : 'ridge']);
     }
     tents.sort((a, b) => a[1] - b[1]);
-    for (const [x, y] of tents) {
+    for (const [x, y, size, kind] of tents) {
       let near = Infinity, side = 1;
       for (const f of fires) { const d = Math.hypot(f[0] - x, f[1] - y); if (d < near) { near = d; side = f[0] < x ? -1 : 1; } }
       const lit = Math.max(0, 1 - near / (s * 3.2));
-      B.inked(ctx, (c) => { c.moveTo(x - s * 0.65, y); c.lineTo(x + s * 0.65, y); c.lineTo(x + s * 0.13, y - s * 0.8); c.lineTo(x - s * 0.32, y - s * 0.8); c.closePath(); },
-              B.mix('#6E6558', TENT, 0.25 + lit * 0.75), INK, s * 0.07);
-      // the shaded face away from the fire
-      ctx.fillStyle = B.rgba(INK, 0.3 + (1 - lit) * 0.2);
-      ctx.beginPath();
-      if (side > 0) { ctx.moveTo(x - s * 0.65, y); ctx.lineTo(x - s * 0.32, y - s * 0.8); ctx.lineTo(x - s * 0.1, y - s * 0.4); ctx.closePath(); }
-      else { ctx.moveTo(x + s * 0.65, y); ctx.lineTo(x + s * 0.13, y - s * 0.8); ctx.lineTo(x + s * 0.32, y - s * 0.4); ctx.closePath(); }
-      ctx.fill();
+      tent(ctx, x, y, s * size, lit, side, kind, opts.cloth);
     }
+    if (opts.chariots) for (let i = 0; i < opts.chariots; i++) chariot(ctx, w * 0.72 + i * s * 1.3, h * 0.93, s * 0.75, 0.5);
     // horse lines along one side
     for (let i = 0; i < (opts.horses || 6); i++) horse(ctx, w * 0.1 + i * s * 0.9, h * 0.9, s * 0.8, (i * 0.17 + t) % 1, false, i % 2 ? HORSE : HORSE2);
     // pickets: stakes round the edge
@@ -438,19 +443,20 @@
     const t = i / n, r = B.rand(5);
     ctx.fillStyle = B.rgba('#2A2420', 0.5); ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w * 0.45, h * 0.42, 0, 0, TAU); ctx.fill();
     for (let k = 0; k < 16; k++) { const x = w * (0.12 + r() * 0.76), y = h * (0.15 + r() * 0.7); B.glow(ctx, x, y, 2.2 + Math.sin(t * TAU * 2 + k) * 0.5, FIRE, 0.95, 0); }
-    for (let k = 0; k < 10; k++) tent(ctx, w * (0.15 + r() * 0.7), h * (0.2 + r() * 0.65), 4, true);
+    for (let k = 0; k < 10; k++) tent(ctx, w * (0.15 + r() * 0.7), h * (0.2 + r() * 0.65), 4 + r() * 1.5, 0.8, r() < 0.5 ? 1 : -1, 'ridge');
   } });
   pictures.push({ name: 'camp-a', scale: 2, width: 230, height: 160, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 11, { fires: 16, rows: 4, cols: 8, horses: 7, walkers: 10 }); } });
   // the camp left behind: its fires kept burning, a few figures still walking among them
   pictures.push({ name: 'camp-decoy', scale: 2, width: 230, height: 160, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 11, { fires: 16, rows: 4, cols: 8, horses: 2, walkers: 4 }); } });
-  pictures.push({ name: 'camp-p', scale: 2, width: 250, height: 170, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 23, { fires: 18, rows: 4, cols: 9, horses: 5, walkers: 8 }); } });
+  pictures.push({ name: 'camp-p', scale: 2, width: 250, height: 170, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 23, { fires: 18, rows: 4, cols: 9, horses: 4, walkers: 8, kind: 'pavilion', cloth: '#D9B57A', chariots: 3 }); } });
   // the elephants at the water, watching the far bank (toward the viewer's left, the river); by day they turn
   pictures.push({ name: 'elephants-watch', width: 190, height: 44, frames: 8, draw(ctx, w, h, i, n) {
     const t = i / n;
+    const r = B.rand(17);
     for (let k = 0; k < 7; k++) {
-      const x = w * (0.1 + k * 0.133), raise = k === 3 && i >= 2 && i <= 5 ? 1 : 0;
+      const x = w * (0.1 + k * 0.133) + (r() - 0.5) * 6, raise = k === 3 && i >= 2 && i <= 5 ? 1 : 0, size = h * (0.58 + r() * 0.16);
       ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0);      // they face west, towards the far camp
-      elephant(ctx, x, h * 0.95 + Math.sin(t * TAU + k) * 0.4, h * 0.66, t + k * 0.17, 1, false);
+      elephant(ctx, x, h * 0.95 + Math.sin(t * TAU + k) * 0.4, size, t + k * 0.17 + r(), 1, false);
       if (raise) { ctx.strokeStyle = GREY; ctx.lineWidth = h * 0.06; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + h * 0.34, h * 0.55); ctx.quadraticCurveTo(x + h * 0.5, h * 0.25, x + h * 0.42, h * 0.08); ctx.stroke(); }
       ctx.restore();
     }
@@ -476,13 +482,25 @@
     for (let row = 0; row < 2; row++) for (let k = 0; k < 12; k++) soldier(ctx, 4 + k * 4.4 + row * 1.5, h * 0.62 + row * 5, 5.2, (t + k * 0.1 + row * 0.3) % 1, { shield: 'none', tunic: (k + row) % 2 ? RED : '#E6DCC4' });
     horse(ctx, w * 0.92, h * 0.7, 5, t, true);
   } });
-  // the boats and the hides pushed across
-  pictures.push({ name: 'boats', width: 90, height: 40, frames: 6, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'cluster', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
+    // a few men of the file, so a thread of these bends with the way
+    const t = i / n, s = 10, r = B.rand(31);
+    for (let k = 0; k < 5; k++) soldier(ctx, 5 + k * 5 + (r() - 0.5) * 2, h * 0.55 + (k % 2) * 8 + (r() - 0.5) * 3, s, (t + k * 0.17) % 1, { tunic: k % 2 ? RED : TENT_SHADE, shield: k % 3 ? 'side' : 'none' });
+  } });
+  pictures.push({ name: 'cluster-horse', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
     const t = i / n;
-    galley(ctx, w * 0.35, h * 0.45, 52, t);
-    raft(ctx, w * 0.75, h * 0.62, 26, t);
-    raft(ctx, w * 0.18, h * 0.8, 22, t + 0.4);
-    galley(ctx, w * 0.62, h * 0.88, 40, t + 0.5);
+    for (let k = 0; k < 2; k++) horse(ctx, 8 + k * 11, h * 0.6 + k * 7, 9, (t + k * 0.3) % 1, true);
+  } });
+  // the boats and the hides pushed across
+  pictures.push({ name: 'boats', width: 120, height: 54, frames: 6, draw(ctx, w, h, i, n) {
+    const t = i / n;
+    for (const [x, y, len] of [[w * 0.35, h * 0.42, 70], [w * 0.62, h * 0.86, 54], [w * 0.75, h * 0.6, 34], [w * 0.18, h * 0.8, 30]]) {   // their wakes
+      ctx.strokeStyle = B.rgba(FOAM, 0.4); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - len * 0.55, y + 2); ctx.lineTo(x - len * 0.9, y + 5 + Math.sin(t * TAU) * 1.5); ctx.stroke();
+    }
+    galley(ctx, w * 0.35, h * 0.42, 70, t);
+    raft(ctx, w * 0.75, h * 0.6, 34, t);
+    raft(ctx, w * 0.18, h * 0.8, 30, t + 0.4);
+    galley(ctx, w * 0.62, h * 0.86, 54, t + 0.5);
   } });
   pictures.push({ name: 'boats-mid', width: 24, height: 10, frames: 4, draw(ctx, w, h, i, n) {
     const t = i / n;
@@ -534,42 +552,44 @@
     }
     ctx.restore();
   }
-  pictures.push({ name: 'waders', width: 230, height: 96, frames: 8, draw(ctx, w, h, i, n) {
-    const t = i / n, s = 12, r = B.rand(29);
-    // the water each body stands in: the river's own tone, laid over the figure's lower half with a soft
-    // edge, so what shows is what rises out of the flood; the current drags a pale streak from each
+  pictures.push({ name: 'waders', width: 240, height: 100, frames: 8, draw(ctx, w, h, i, n) {
+    const t = i / n, s = 15, r = B.rand(29);
+    // the current, drawn: threads of pale water running the length of the channel, moving with the frames
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 28; k++) {
+      const y = 12 + r() * (h - 24), x0 = ((r() + t * 0.6) % 1) * w, len = 20 + r() * 40;
+      ctx.strokeStyle = B.rgba(FOAM, 0.12 + r() * 0.2); ctx.lineWidth = 0.8 + r() * 1.2;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.quadraticCurveTo(x0 + len / 2, y + 1.5, x0 + len, y); ctx.stroke();
+    }
     const dip = (x, y, wide) => {
       const g = ctx.createRadialGradient(x, y, 0, x, y, wide);
       g.addColorStop(0, B.rgba('#363034', 0.95)); g.addColorStop(0.7, B.rgba('#363034', 0.9)); g.addColorStop(1, B.rgba('#363034', 0));
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y + wide * 0.35, wide, wide * 0.55, 0, 0, TAU); ctx.fill();
     };
     const items = [];
-    // the ones not yet in: dry on the island's shore (the picture's left end lies on the island)
-    for (let k = 0; k < 5; k++) {
-      const x = 6 + k * 9 + (r() - 0.5) * 4, y = 40 + k * 12 + (r() - 0.5) * 6;
-      items.push({ y, draw: () => soldier(ctx, x, y, s, (t + k * 0.2) % 1, { tunic: k % 2 ? RED : TENT_SHADE }) });
-    }
-    for (let row = 0; row < 3; row++) for (let k = 2; k < 13; k++) {
+    for (let row = 0; row < 3; row++) for (let k = 0; k < 12; k++) {
       if (r() < 0.12) continue;
-      const x = 8 + k * 17.5 + row * 5 + (r() - 0.5) * 6, y = 34 + row * 22 + (r() - 0.5) * 7 + Math.sin(t * TAU + k * 1.7 + row) * 1.2;
-      const depth = row === 2 ? 0.52 + r() * 0.1 : row === 1 ? 0.6 + r() * 0.15 : 0.7 + r() * 0.22;   // the far rank deeper
+      const x = 8 + k * 19 + row * 6 + (r() - 0.5) * 7, y = 36 + row * 23 + (r() - 0.5) * 8 + Math.sin(t * TAU + k * 1.7 + row) * 1.3;
+      // the leftmost few are still wading in from the island's shore, the water at the knee; then to the
+      // chest; the far rank deeper
+      const depth = k < 2 ? 0.3 + r() * 0.1 : row === 2 ? 0.52 + r() * 0.1 : row === 1 ? 0.6 + r() * 0.15 : 0.7 + r() * 0.2;
       items.push({ y, draw: () => {
         const top = y - s * 1.4, water = y - s * depth, tilt = (r() - 0.5) * 0.3;
         ctx.save(); ctx.beginPath(); ctx.rect(x - s, top, s * 2, water - top + s * 0.3); ctx.clip();
         ctx.translate(x, y); ctx.rotate(tilt); ctx.translate(-x, -y);
-        soldier(ctx, x, y, s, 0, { shield: r() < 0.9 ? 'up' : 'none', tunic: (k + row) % 2 ? RED : TENT_SHADE });
+        soldier(ctx, x, y, s, 0, { shield: r() < 0.92 ? 'up' : 'none', tunic: (k + row) % 2 ? RED : TENT_SHADE });
         ctx.restore();
         dip(x, water + s * 0.05, s * 0.75);
-        ctx.strokeStyle = B.rgba(FOAM, 0.5); ctx.lineWidth = 0.7; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x + s * 0.2, water + 1); ctx.quadraticCurveTo(x + s * 0.9, water + 1.5, x + s * 1.5, water + 0.5); ctx.stroke();
+        ctx.strokeStyle = B.rgba(FOAM, 0.6); ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x + s * 0.2, water + 1); ctx.quadraticCurveTo(x + s * 1.0, water + 1.8, x + s * 1.8, water + 0.6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - s * 0.3, water + 2.5); ctx.quadraticCurveTo(x + s * 0.6, water + 3.2, x + s * 1.3, water + 2.2); ctx.stroke();
       } });
     }
     for (let k = 0; k < 4; k++) {
-      const x = 30 + k * 55 + (r() - 0.5) * 10, y = 60 + (r() - 0.5) * 20 + Math.sin(t * TAU + k * 2) * 1.5;
+      const x = 40 + k * 55 + (r() - 0.5) * 10, y = 62 + (r() - 0.5) * 20 + Math.sin(t * TAU + k * 2) * 1.5;
       items.push({ y, draw: () => { horseHead(ctx, x, y, s * 1.15, k % 2 === 0, k % 2 ? HORSE2 : HORSE); dip(x + s * 0.55, y + s * 0.1, s * 0.8); } });
     }
     items.sort((a, b) => a.y - b.y).forEach((o) => o.draw());
-    // a shield gone, turning in the current
     ctx.save(); ctx.translate(w - 14, 50 + Math.sin(t * TAU) * 1.5); ctx.rotate(0.7 + t * 0.6); B.inked(ctx, (c) => c.ellipse(0, 0, s * 0.3, s * 0.11, 0, 0, TAU), BRONZE, INK, 0.8); ctx.restore();
   } });
   pictures.push({ name: 'waders-mid', width: 40, height: 14, frames: 6, draw(ctx, w, h, i, n) {
@@ -671,10 +691,11 @@
     for (let k = 0; k < 7; k++) {
       // a band: a slanting strip of faint light, drifting with the frames
       const x0 = ((k / 7 + t * 0.35) % 1) * w * 1.4 - w * 0.2, width = 10 + r() * 16;
-      for (let y = 0; y < h; y += 4) {
-        const x = x0 - y * 0.32, a = falloff(x, y) * 0.16;
+      ctx.lineCap = 'butt'; ctx.lineWidth = width;
+      for (let y = 0; y < h; y += 6) {
+        const x = x0 - y * 0.32, a = falloff(x, y + 3) * 0.16;
         if (a <= 0.005) continue;
-        ctx.fillStyle = B.rgba('#C8D0E6', a); ctx.fillRect(x - width / 2, y, width, 4);
+        ctx.strokeStyle = B.rgba('#C8D0E6', a); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6 * 0.32, y + 6.5); ctx.stroke();
       }
     }
     ctx.strokeStyle = 'rgba(205,215,240,0.5)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
