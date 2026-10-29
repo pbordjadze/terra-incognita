@@ -24,6 +24,7 @@ struct PlaygroundRoot: View {
         // (paused under the workbench too: nothing turns behind a menu, and its list has the main thread)
         GlobeScreen(active: !covered && !playground.workbenchShown && scenePhase == .active, style: style,
                     keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot, quiet: lens != nil,
+                    quietFrame: playground.quietFrame,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { playground.globeDrawn($0) })
             .accessibilityHidden(covered)
@@ -32,7 +33,7 @@ struct PlaygroundRoot: View {
                 VStack(alignment: .trailing, spacing: 8) {
                     HStack(alignment: .top, spacing: 10) {
                         if let stage = playground.stage, !covered { chip(stage) }
-                        CloudsButton(style: style, experience: playground.stage != nil)
+                        CloudsButton(style: style, experience: playground.veiled)
                         // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
                         #if WORKBENCH
                         workbenchButton

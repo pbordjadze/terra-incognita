@@ -8,8 +8,8 @@ missing one leaves the globe blank), the three maps are the sizes and kinds the 
 lookup read (geo and terrain RGBA, ids grey, 4096 x 2048), and so are the Persian style's ornaments
 (RGBA: the band 1152 x 256, the braid 1024 x 256, the finial 256 x 256, the rosette 96 x 96, the
 caption's headpiece 2048 x 256), the ground style's maps are all there (tools/globe/ground.py: twelve
-months' land as JPEG 4096 x 2048, their sea ice and the sea floor as RGB PNGs 1440 x 720) and its
-names (regions.json) have what the decoder requires, no country index in globe.json exceeds what a grey byte holds, the fonts are there
+months' land as JPEG 4096 x 2048, their sea ice and the sea floor as RGB PNGs 1440 x 720, the night's
+lights a grey JPEG 4096 x 2048: tools/globe/night.py) and its names (regions.json) have what the decoder requires, no country index in globe.json exceeds what a grey byte holds, the fonts are there
 with their licences, and the type (type.json) keeps the design rules: bundled fonts, no name under
 the smallest size, every ink at least the set contrast against its halo or ground. Reads PNG
 headers itself (no image library on the runner).
@@ -73,6 +73,10 @@ for m in range(1, 13):
     j = jpeg(p) if os.path.isfile(p) else None
     if j != (4096, 2048, 3):
         err(f'ground/{m:02d}.jpg: {"missing or not a JPEG" if j is None else j}; expected 4096 x 2048, RGB')
+p = os.path.join(root, 'ground', 'night.jpg')
+j = jpeg(p) if os.path.isfile(p) else None
+if j != (4096, 2048, 1):
+    err(f'ground/night.jpg: {"missing or not a JPEG" if j is None else j}; expected 4096 x 2048, grey')
 for name in [f'ice-{m:02d}.png' for m in range(1, 13)] + ['floor.png']:
     p = os.path.join(root, 'ground', name)
     h = png(p) if os.path.isfile(p) else None
@@ -193,14 +197,14 @@ def typed(where, obj, fields):
 
 NAMES = ('ocean', 'sea', 'country1', 'country2', 'country3', 'capital', 'selected')
 styles = t.get('styles') or {}
-for sname in ('wikipedia', 'persian', 'ground'):             # (GlobeStyle's cases)
+for sname in ('wikipedia', 'persian', 'ground', 'night'):    # (GlobeStyle's cases)
     if sname not in styles:
         err(f'type.json: no style {sname}')
 for sname, st in styles.items():
     if not typed(f'type.json {sname}', st, {'names': dict, 'caption': dict, 'captionGround': str}):
         continue
     names = st['names']
-    for n in NAMES + (('region',) if sname == 'ground' else ()):
+    for n in NAMES + (('region',) if sname in ('ground', 'night') else ()):
         f = names.get(n)
         if not typed(f'type.json {sname} {n}', f, {'font': str, 'size': NUM, 'tracking': NUM, 'ink': str, 'halo': str}):
             continue

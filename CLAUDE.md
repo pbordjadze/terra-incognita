@@ -49,6 +49,19 @@ Keep design discussions and plans in that private repository.
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
     `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint).
+- **The quiet globe** (`App/TerraIncognita/Quiet/`, four native prototypes, each a rule the plain globe
+  takes while it runs and gives back when it ends; they run together; painting-company row 174):
+  `quiet-names`, names on demand (`GlobeView.quietNames`: the one or two greatest features in view by
+  kind, rank and nearness to the screen's centre, and the names near a tap for eight seconds, countries
+  last); `quiet-clouds` (`CloudsLayer`, `Clouds.metal`'s `tone.z`: the clouds clear where the reader
+  looks, gathered toward the globe's rim zoomed out and the screen's edges close in, and close in the
+  noise's coarse octaves worked out rather than read from the tile, so their edges aren't faceted);
+  `night`, the Earth at night (`GlobeStyle.night`, drawn on the ground's maps with `Globe.metal`'s `N_`
+  palette and the lights of `Globe/ground/night.jpg`, built by `tools/globe/night.py` from NASA's Black
+  Marble, coming on a beat after dusk and shimmering slowly by the night's clock, `-night-time <s>` holds it;
+  the clouds a thin grey veil, the sea off); `quiet-frame` (`QuietCaption`: nothing at the foot
+  until a country is chosen, then one line). None veils the clouds or the sea (`Prototype.veils`).
+  The stand-in draws them: `metal.py shot ... --quiet 1`, `--style night`; `preview.py --style night`.
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
@@ -128,7 +141,7 @@ Keep design discussions and plans in that private repository.
   times a second while the camera rests), so `Globe.metal` is untouched. It draws at a fraction of
   the screen's pixels and follows the GPU's timings (the workbench's log says what a frame costs).
   `CloudsLook.on(style)` says how they sit on each globe style: near-black shadows that darken any
-  ground, and none on the Persian page. The reader's switch is the cloud button beside the
+  ground, none on the Persian page, and a thin grey veil without shadows by night. The reader's switch is the cloud button beside the
   workbench's (`CloudsSwitch`, remembered); while an experience runs they thin to a veil (`veiled`),
   and they fade out for the authored films. `Clouds.metal` and its web twin
   `tools/clouds/web/shader.js` are the same line for line: change both together (the twin is the

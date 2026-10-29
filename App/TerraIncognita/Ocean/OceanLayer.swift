@@ -333,5 +333,6 @@ final class OceanLayer {
 /// Where the sea belongs: on the ground and on the Wikipedia map, not on the Persian page (a
 /// manuscript's water lies still).
 enum OceanLook {
-    static func on(_ style: GlobeStyle) -> Bool { style != .persian }
+    /// (not on the Persian page, nor by night, where its light lines would outshine the lights)
+    static func on(_ style: GlobeStyle) -> Bool { style != .persian && style != .night }
 }

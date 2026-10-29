@@ -25,7 +25,9 @@ struct CloudsUniforms {
     float4 sun;         // xyz the sun (world, towards it); w 1 to light by it, 0 the map's north-west
     float4 seaShadow;   // rgb, and how strong on the sea
     float4 landShadow;  // rgb, and how strong on land
-    float4 tone;        // x the clouds' opacity, y how far the night side darkens them
+    float4 tone;        // x the clouds' opacity, y how far the night side darkens them, z the quiet
+                        // rule (clear where the reader looks, the coarse noise worked out, not read),
+                        // w how bright they are (1 by day; less by moonlight)
 };
 
 constant float PI = 3.14159265;
@@ -70,17 +72,43 @@ constexpr sampler eastWest(filter::linear, s_address::repeat, t_address::clamp_t
 
 static float gnoise(texture3d<float> tile, float3 p) { return tile.sample(wrapping, p * (1.0 / 16.0)).r * 2.0 - 1.0; }
 
+// the same noise worked out at p (the tile holds it sampled, six a cell): for an octave whose cells
+// are wide on screen (close in, or a layer grown as it passes by), where the tile's linear reading
+// between its samples would show as facets, the clouds' edges blocky and their light flat
+static float gnoiseExact(float3 p) {
+    float3 i = floor(p), f = p - i;
+    float3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    float v = 0.0;
+    for (int c = 0; c < 8; c++) {
+        float3 d = float3(float(c & 1), float((c >> 1) & 1), float(c >> 2));
+        float3 cell = i + d;
+        cell -= 16.0 * floor(cell / 16.0);
+        float3 g = hash3(int3(cell)) * 2.0 - 1.0;
+        float w = (d.x == 1.0 ? u.x : 1.0 - u.x) * (d.y == 1.0 ? u.y : 1.0 - u.y) * (d.z == 1.0 ? u.z : 1.0 - u.z);
+        v += w * dot(g, f - d);
+    }
+    return clamp(v, -1.0, 1.0);
+}
+
+// the noise at p: read from the tile, or, under the quiet rule ('exact'), worked out where its cells
+// span more than about 20 pixels ('foot': a pixel in its cells), blended over the band between
+static float noiseAt(texture3d<float> tile, float3 p, float foot, float exact) {
+    float n = gnoise(tile, p);
+    if (exact > 0.0 && foot < 0.05) n = mix(gnoiseExact(p), n, smoothstep(0.035, 0.05, foot));
+    return n;
+}
+
 constant float3x3 OCT = float3x3(float3(0.00, -0.80, -0.60), float3(0.80, 0.36, -0.48), float3(0.60, -0.48, 0.64));
 
 // fbm as a standard score (x) and how much of its variation is resolved (y): an octave finer than
 // about three pixels ('foot': a pixel, in the first octave's lattice cells) is left at its mean, so
 // the limb doesn't shimmer, and what it would have added becomes an even haze
-static float2 fbm(texture3d<float> tile, float3 p, int octaves, float foot) {
+static float2 fbm(texture3d<float> tile, float3 p, int octaves, float foot, float exact) {
     float s = 0.0, a = 1.0, kept = 0.0, all = 0.0;
     for (int k = 0; k < 7; k++) {
         if (k >= octaves) break;
         float keep = 1.0 - smoothstep(0.3, 0.6, foot);
-        if (keep > 0.0) s += a * keep * gnoise(tile, p + 17.13 * float(k));
+        if (keep > 0.0) s += a * keep * noiseAt(tile, p + 17.13 * float(k), foot, exact);
         kept += a * a * keep * keep; all += a * a;
         a *= 0.5; foot *= 2.03;
         p = OCT * p * 2.03;
@@ -137,23 +165,25 @@ struct Layer {
 
 // a layer's noise where its wind has carried it to p: warped by a slower, wider noise (so its shapes
 // flow rather than blob), the warp itself changing slowly as the days pass
-static float2 shape(texture3d<float> tile, thread const Layer &l, float3 p, int octaves, float foot, float days) {
-    if (l.warp <= 0.0) return fbm(tile, p * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot);
+static float2 shape(texture3d<float> tile, thread const Layer &l, float3 p, int octaves, float foot, float days, float exact) {
+    if (l.warp <= 0.0) return fbm(tile, p * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot, exact);
     float3 slow = float3(l.seed, days * 0.15, 0.0);
-    float wf = l.freq * 0.35;
-    float3 w = float3(gnoise(tile, p * wf + slow), gnoise(tile, p * wf + slow + 31.7), gnoise(tile, p * wf + slow + 57.1));
-    return fbm(tile, (p + (l.warp / l.freq) * w / 0.195) * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot);
+    float wf = l.freq * 0.35, wfoot = foot * 0.35;
+    float3 w = float3(noiseAt(tile, p * wf + slow, wfoot, exact), noiseAt(tile, p * wf + slow + 31.7, wfoot, exact),
+                      noiseAt(tile, p * wf + slow + 57.1, wfoot, exact));
+    return fbm(tile, (p + (l.warp / l.freq) * w / 0.195) * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot, exact);
 }
 
 // a layer's noise at q, carried by its belts' winds (the easterly trades; the westerlies, which
 // carry the polar caps too, where the record is least sure: radians a day), each belt turning as
 // one and blended where they meet, over the subtropical highs, so no shear piles up
-static float2 field(texture3d<float> tile, thread const Layer &l, float3 q, int octaves, float foot, float days, constant float4 *cyclone) {
+static float2 field(texture3d<float> tile, thread const Layer &l, float3 q, int octaves, float foot, float days, constant float4 *cyclone,
+                    float exact) {
     float lat = abs(asin(clamp(q.y, -1.0, 1.0))) * 180.0 / PI;
     float wt = 1.0 - smoothstep(22.0, 34.0, lat), wm = 1.0 - wt;
     float2 s = float2(0.0); float n = 0.0;
-    if (wt > 0.001) { s += wt * shape(tile, l, turn(q, -l.belts.x * days), octaves, foot, days); n += wt * wt; }
-    if (wm > 0.001) { s += wm * shape(tile, l, cyclones(turn(q, -l.belts.y * days), l.spin, cyclone), octaves, foot, days); n += wm * wm; }
+    if (wt > 0.001) { s += wt * shape(tile, l, turn(q, -l.belts.x * days), octaves, foot, days, exact); n += wt * wt; }
+    if (wm > 0.001) { s += wm * shape(tile, l, cyclones(turn(q, -l.belts.y * days), l.spin, cyclone), octaves, foot, days, exact); n += wm * wm; }
     return float2(s.x / sqrt(n), s.y);
 }
 
@@ -211,6 +241,14 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
     if (r2 > 1.08) return float4(0.0);
     float px = 1.0 / (U.frame.z * R);                         // a pixel, in radians, at the centre
     float3x3 rot = float3x3(U.rot0.xyz, U.rot1.xyz, U.rot2.xyz);
+    // the quiet rule (U.tone.z): clear where the reader looks, the clouds gathered toward the globe's
+    // rim zoomed out and the screen's edges close in, whichever is nearer: one rule at every scale
+    float2 half_ = U.frame.xy / U.frame.z * 0.5;
+    float2 sc = abs(pt - half_) / half_;
+    float toEdge = pow(pow(sc.x, 3.0) + pow(sc.y, 3.0), 1.0 / 3.0);
+    float clearing = mix(1.0, smoothstep(0.30, 0.92, max(sqrt(r2), toEdge)), U.tone.z);
+    if (clearing < 0.004) return float4(0.0);
+    float exact = U.tone.z;
 
     // the measured sky over the ground here
     float3 g = normalize(rot * float3(v, sqrt(max(1.0 - r2, 0.0))));
@@ -250,7 +288,7 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
             float on = present(zoom, l.a, l.b) * (l.from == 0.0 ? 1.0 : smoothstep(l.from, l.from + 1.0, zoom));
             if (l.cover < 0.01 || l.shadow <= 0.0 || on < 0.01) continue;
             float3 s = normalize(g + l.lift * reading * sqrt(zoom) / R * toL);
-            float2 f = field(tile, l, s, 4, px * l.freq * 1.5, days, cyclone);
+            float2 f = field(tile, l, s, 4, px * l.freq * 1.5, days, cyclone, exact);
             float edge = 1.0 - l.cover;
             float d = mix(l.cover, smoothstep(edge - 0.06, edge + 0.12, cdf(f.x)), f.y);
             lit *= 1.0 - on * l.shadow * d * (1.0 - 0.6 * l.cover);
@@ -258,7 +296,7 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
         // a near-black over the ground, darkening it as a multiply would (CloudsLook), on sea or land
         float2 uv = float2(atan2(g.x, g.z) / PI + 1.0, 1.0 - asin(clamp(g.y, -1.0, 1.0)) * 2.0 / PI) * 0.5;
         float land = landMask.sample(eastWest, uv).r;
-        float strength = U.tone.x * mix(U.seaShadow.w, U.landShadow.w, land);
+        float strength = U.tone.x * clearing * mix(U.seaShadow.w, U.landShadow.w, land);
         over(acc, mix(U.seaShadow.rgb, U.landShadow.rgb, land), (1.0 - lit) * strength);
     }
 
@@ -272,7 +310,7 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
         float3 q; float facing;
         if (!shell(rot, v, m, l.h, q, facing)) continue;
         float foot = px * l.freq / (m * max(facing, 0.08));
-        float2 f = field(tile, l, q, 6, foot, days, cyclone);
+        float2 f = field(tile, l, q, 6, foot, days, cyclone, exact);
         float u = cdf(f.x), edge = 1.0 - l.cover, t = u - edge;  // t > 0 inside
         // (the view's y runs up, the pixels' down)
         float2 grad = float2(dfdx(u), -dfdy(u));
@@ -284,7 +322,8 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
             // thin cloud aloft: where it is, fine filaments along the wind, soft
             float covered = mix(l.cover, smoothstep(-0.18, 0.18, t), f.y);
             float3 qs = turn(q, -l.belts.y * days) * float3(1.0, 4.0, 1.0) * 26.0 + l.seed;
-            float thread_ = 1.0 - abs(gnoise(tile, qs) + 0.5 * gnoise(tile, OCT * qs * 2.03)) * 2.6;
+            float wfoot = px * 26.0 / (m * max(facing, 0.08));
+            float thread_ = 1.0 - abs(noiseAt(tile, qs, wfoot, exact) + 0.5 * noiseAt(tile, OCT * qs * 2.03, wfoot * 2.03, exact)) * 2.6;
             d = covered * smoothstep(0.15, 0.85, thread_) * (1.0 - smoothstep(0.35, 0.6, px * 104.0 / (m * max(facing, 0.08))));
             col = l.lit;
         } else {
@@ -301,7 +340,8 @@ fragment float4 cloudsFragment(CloudsVertex in [[stage_in]],
         }
         // by a sun, the night side's clouds darken (a globe without one has no night)
         if (U.sun.w > 0.5) col *= mix(1.0 - U.tone.y, 1.0, smoothstep(-0.12, 0.08, dot(q, U.sun.xyz)));
-        float a = U.tone.x * l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
+        col *= U.tone.w;
+        float a = U.tone.x * clearing * l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
         over(acc, col, a);
     }
     return acc;

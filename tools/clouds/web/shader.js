@@ -29,7 +29,9 @@ uniform highp sampler3D uNoise;
 uniform vec4 uSun;         // xyz the sun (world, towards it); w 1 to light by it, 0 the map's north-west
 uniform vec4 uSeaShadow;   // rgb, and how strong on the sea
 uniform vec4 uLandShadow;  // rgb, and how strong on land
-uniform vec4 uTone;        // x the clouds' opacity, y how far the night side darkens them
+uniform vec4 uTone;        // x the clouds' opacity, y how far the night side darkens them, z the quiet
+                           // rule (clear where the reader looks, the coarse noise worked out, not read),
+                           // w how bright they are (1 by day; less by moonlight)
 uniform vec4 uCyclone[20];  // the cyclones (cyclones(), below)
 out vec4 outColor;
 
@@ -53,17 +55,43 @@ vec3 hash3(ivec3 c) { return vec3(pcg3d(uvec3(c))) * (1.0 / 4294967295.0); }
 // a cell; the hardware's trilinear filter between them): a lookup an octave, not eight hashes
 float gnoise(vec3 p) { return texture(uNoise, p * (1.0 / 16.0)).r * 2.0 - 1.0; }
 
+// the same noise worked out at p (the tile holds it sampled, six a cell): for an octave whose cells
+// are wide on screen (close in, or a layer grown as it passes by), where the tile's linear reading
+// between its samples would show as facets, the clouds' edges blocky and their light flat
+float gnoiseExact(vec3 p) {
+  vec3 i = floor(p), f = p - i;
+  vec3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+  float v = 0.0;
+  for (int c = 0; c < 8; c++) {
+    vec3 d = vec3(float(c & 1), float((c >> 1) & 1), float(c >> 2));
+    vec3 cell = i + d;
+    cell -= 16.0 * floor(cell / 16.0);
+    vec3 g = hash3(ivec3(cell)) * 2.0 - 1.0;
+    float w = (d.x == 1.0 ? u.x : 1.0 - u.x) * (d.y == 1.0 ? u.y : 1.0 - u.y) * (d.z == 1.0 ? u.z : 1.0 - u.z);
+    v += w * dot(g, f - d);
+  }
+  return clamp(v, -1.0, 1.0);
+}
+
+// the noise at p: read from the tile, or, under the quiet rule ('exact'), worked out where its cells
+// span more than about 20 pixels ('foot': a pixel in its cells), blended over the band between
+float noiseAt(vec3 p, float foot, float exact) {
+  float n = gnoise(p);
+  if (exact > 0.0 && foot < 0.05) n = mix(gnoiseExact(p), n, smoothstep(0.035, 0.05, foot));
+  return n;
+}
+
 const mat3 OCT = mat3(0.00, -0.80, -0.60, 0.80, 0.36, -0.48, 0.60, -0.48, 0.64);
 
 // fbm as a standard score (x) and how much of its variation is resolved (y): an octave finer than
 // about three pixels ('foot': a pixel, in the first octave's lattice cells) is left at its mean, so
 // the limb doesn't shimmer, and what it would have added becomes an even haze
-vec2 fbm(vec3 p, int octaves, float foot) {
+vec2 fbm(vec3 p, int octaves, float foot, float exact) {
   float s = 0.0, a = 1.0, kept = 0.0, all = 0.0;
   for (int k = 0; k < 7; k++) {
     if (k >= octaves) break;
     float keep = 1.0 - smoothstep(0.3, 0.6, foot);
-    if (keep > 0.0) s += a * keep * gnoise(p + 17.13 * float(k));
+    if (keep > 0.0) s += a * keep * noiseAt(p + 17.13 * float(k), foot, exact);
     kept += a * a * keep * keep; all += a * a;
     a *= 0.5; foot *= 2.03;
     p = OCT * p * 2.03;
@@ -120,23 +148,24 @@ struct Layer {
 
 // a layer's noise where its wind has carried it to p: warped by a slower, wider noise (so its shapes
 // flow rather than blob), the warp itself changing slowly as the days pass
-vec2 shape(Layer l, vec3 p, int octaves, float foot) {
-  if (l.warp <= 0.0) return fbm(p * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot);
+vec2 shape(Layer l, vec3 p, int octaves, float foot, float exact) {
+  if (l.warp <= 0.0) return fbm(p * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot, exact);
   vec3 slow = vec3(l.seed, uDays * 0.15, 0.0);
-  float wf = l.freq * 0.35;
-  vec3 w = vec3(gnoise(p * wf + slow), gnoise(p * wf + slow + 31.7), gnoise(p * wf + slow + 57.1));
-  return fbm((p + (l.warp / l.freq) * w / 0.195) * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot);
+  float wf = l.freq * 0.35, wfoot = foot * 0.35;
+  vec3 w = vec3(noiseAt(p * wf + slow, wfoot, exact), noiseAt(p * wf + slow + 31.7, wfoot, exact),
+                noiseAt(p * wf + slow + 57.1, wfoot, exact));
+  return fbm((p + (l.warp / l.freq) * w / 0.195) * l.stretch * l.freq + l.seed, min(octaves, l.octaves), foot, exact);
 }
 
 // a layer's noise at q, carried by its belts' winds (the easterly trades; the westerlies, which
 // carry the polar caps too, where the record is least sure: radians a day), each belt turning as
 // one and blended where they meet, over the subtropical highs, so no shear piles up
-vec2 field(Layer l, vec3 q, int octaves, float foot) {
+vec2 field(Layer l, vec3 q, int octaves, float foot, float exact) {
   float lat = abs(asin(clamp(q.y, -1.0, 1.0))) * 180.0 / PI;
   float wt = 1.0 - smoothstep(22.0, 34.0, lat), wm = 1.0 - wt;
   vec2 s = vec2(0.0); float n = 0.0;
-  if (wt > 0.001) { s += wt * shape(l, turn(q, -l.belts.x * uDays), octaves, foot); n += wt * wt; }
-  if (wm > 0.001) { s += wm * shape(l, cyclones(turn(q, -l.belts.y * uDays), l.spin), octaves, foot); n += wm * wm; }
+  if (wt > 0.001) { s += wt * shape(l, turn(q, -l.belts.x * uDays), octaves, foot, exact); n += wt * wt; }
+  if (wm > 0.001) { s += wm * shape(l, cyclones(turn(q, -l.belts.y * uDays), l.spin), octaves, foot, exact); n += wm * wm; }
   return vec2(s.x / sqrt(n), s.y);
 }
 
@@ -176,6 +205,14 @@ void main() {
   float r2 = dot(v, v);
   if (r2 > 1.08) { outColor = vec4(0.0); return; }
   float px = 1.0 / (uPx * R);                               // a pixel, in radians, at the centre
+  // the quiet rule (uTone.z): clear where the reader looks, the clouds gathered toward the globe's
+  // rim zoomed out and the screen's edges close in, whichever is nearer: one rule at every scale
+  vec2 half_ = uSize / uPx * 0.5;
+  vec2 sc = abs(pt - half_) / half_;
+  float toEdge = pow(pow(sc.x, 3.0) + pow(sc.y, 3.0), 1.0 / 3.0);
+  float clearing = mix(1.0, smoothstep(0.30, 0.92, max(sqrt(r2), toEdge)), uTone.z);
+  if (clearing < 0.004) { outColor = vec4(0.0); return; }
+  float exact = uTone.z;
 
   // the measured sky over the ground here
   vec3 g = normalize(uRot * vec3(v, sqrt(max(1.0 - r2, 0.0))));
@@ -216,7 +253,7 @@ void main() {
       float on = present(l.a, l.b) * (l.from == 0.0 ? 1.0 : smoothstep(l.from, l.from + 1.0, uZoom));
       if (l.cover < 0.01 || l.shadow <= 0.0 || on < 0.01) continue;
       vec3 s = normalize(g + l.lift * uReading * sqrt(uZoom) / R * toL);
-      vec2 f = field(l, s, 4, px * l.freq * 1.5);
+      vec2 f = field(l, s, 4, px * l.freq * 1.5, exact);
       float edge = 1.0 - l.cover;
       float d = mix(l.cover, smoothstep(edge - 0.06, edge + 0.12, cdf(f.x)), f.y);
       lit *= 1.0 - on * l.shadow * d * (1.0 - 0.6 * l.cover);
@@ -224,7 +261,7 @@ void main() {
     // a near-black over the ground, darkening it as a multiply would (CloudsLook), on sea or land
     vec2 uv = vec2(atan(g.x, g.z) / PI + 1.0, 1.0 - asin(clamp(g.y, -1.0, 1.0)) * 2.0 / PI) * 0.5;
     float land = texture(uLand, uv).r;
-    float strength = uTone.x * mix(uSeaShadow.w, uLandShadow.w, land);
+    float strength = uTone.x * clearing * mix(uSeaShadow.w, uLandShadow.w, land);
     over(acc, mix(uSeaShadow.rgb, uLandShadow.rgb, land), (1.0 - lit) * strength);
   }
 
@@ -238,7 +275,7 @@ void main() {
     vec3 q; float facing;
     if (!shell(v, m, l.h, q, facing)) continue;
     float foot = px * l.freq / (m * max(facing, 0.08));
-    vec2 f = field(l, q, 6, foot);
+    vec2 f = field(l, q, 6, foot, exact);
     float u = cdf(f.x), edge = 1.0 - l.cover, t = u - edge;  // t > 0 inside
     vec2 grad = vec2(dFdx(u), dFdy(u));
     float slope = max(length(grad), 1e-5);
@@ -249,7 +286,8 @@ void main() {
       // thin cloud aloft: where it is, fine filaments along the wind, soft
       float covered = mix(l.cover, smoothstep(-0.18, 0.18, t), f.y);
       vec3 qs = turn(q, -l.belts.y * uDays) * vec3(1.0, 4.0, 1.0) * 26.0 + l.seed;
-      float thread = 1.0 - abs(gnoise(qs) + 0.5 * gnoise(OCT * qs * 2.03)) * 2.6;
+      float wfoot = px * 26.0 / (m * max(facing, 0.08));
+      float thread = 1.0 - abs(noiseAt(qs, wfoot, exact) + 0.5 * noiseAt(OCT * qs * 2.03, wfoot * 2.03, exact)) * 2.6;
       d = covered * smoothstep(0.15, 0.85, thread) * (1.0 - smoothstep(0.35, 0.6, px * 104.0 / (m * max(facing, 0.08))));
       col = l.lit;
     } else {
@@ -266,7 +304,8 @@ void main() {
     }
     // by a sun, the night side's clouds darken (a globe without one has no night)
     if (uSun.w > 0.5) col *= mix(1.0 - uTone.y, 1.0, smoothstep(-0.12, 0.08, dot(q, uSun.xyz)));
-    float a = uTone.x * l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
+    col *= uTone.w;
+    float a = uTone.x * clearing * l.alpha * d * shown * smoothstep(0.0, 0.12, facing);
     over(acc, col, a);
   }
   outColor = acc;

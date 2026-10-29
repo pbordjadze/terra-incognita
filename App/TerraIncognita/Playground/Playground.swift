@@ -33,6 +33,10 @@ final class Playground {
     var proposedSource: URL?
     /// A pack's longer words and sources, over the globe (runtime 3, `terra.panel`).
     var panel: PackPanel?
+    /// The quiet frame (a running prototype asked): the caption gone at rest.
+    private(set) var quietFrame = false
+    /// An experience is running on the globe: the clouds and the sea give way to it.
+    var veiled: Bool { stages.contains { $0.prototype.veils } }
     @ObservationIgnored private var panelClosed: (() -> Void)?
     /// Every prototype's doorway on the globe while it isn't running, by prototype id.
     @ObservationIgnored private var doorways: [String: GlobeMarker] = [:]
@@ -195,13 +199,17 @@ final class Playground {
     /// A stage asked something of the globe, or its date moved: the globe takes the merged state.
     func globeRequestsChanged() { applyGlobeState() }
 
-    /// What the globe does for all of them: still and the sea hidden while any stage asks, the deepest
-    /// zoom any asks for, and the front stage's scheme, historical reference and month.
+    /// What the globe does for all of them: still, the sea hidden and the quiet rules while any stage
+    /// asks, the deepest zoom any asks for, and the front stage's scheme, historical reference and month.
     private func applyGlobeState() {
         guard let globe else { return }
         let front = stages.last
         globe.holdsStill = stages.contains { $0.requests.still }
         globe.seaHidden = stages.contains { $0.requests.seaHidden }
+        globe.quietNames = stages.contains { $0.requests.quietNames }
+        globe.cloudsQuiet = stages.contains { $0.requests.quietClouds }
+        let frame = stages.contains { $0.requests.quietFrame }
+        if quietFrame != frame { quietFrame = frame }
         globe.historicalReference = front?.requests.historical ?? false
         globe.dragScheme = front?.requests.scheme ?? .touchables
         globe.zoomLimit = stages.compactMap { $0.requests.maxZoom }.max() ?? 8

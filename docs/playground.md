@@ -93,7 +93,9 @@ something the system has):
 
 A native prototype: its code in its own folder `App/TerraIncognita/<Name>/`, one entry in
 `Playground/Catalog.swift` (an id, a title, a one-line summary, an anchor, a doorway, and what
-`start` does with the stage), its timers stopped when its views go away. An experience on the globe
+`start` does with the stage), its timers stopped when its views go away. A prototype of the globe's own
+look (the quiet globe's rules: no doorway, nothing placed, a rule asked of the stage) sets `veils: false`,
+so the clouds and the sea stay full while it runs and the comparison with today's look is fair. An experience on the globe
 opens as a lens (`stage.openLens`, as the camelid and whale sequences do): its canvas, a view the
 stage lays over the one globe, sets its hooks in `attach` and drives the globe's authored camera;
 its chrome lies over the playground and closes it through the `close` it is given; the stage puts
