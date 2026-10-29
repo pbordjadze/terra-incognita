@@ -10,11 +10,11 @@
   const TAU = Math.PI * 2;
 
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
-  const NIGHT = { plain: '#141827', plain2: '#1A1F31', plain3: '#101422', hill: '#0C0F1B', hillRim: '#1E2237',
-                  water: '#26242A', water2: '#2E2A2D', sheen: '#6E7382', bank: '#302E38', foam: '#8A8EA0', wood: '#0A0E16', wood2: '#121A1E',
-                  kas: '#1F2436', sand: '#4A4A58', sand2: '#3A3A48', edge: '#141827', moon: '#8E99B8' };
+  const NIGHT = { plain: '#141827', plain2: '#181D2E', plain3: '#111526', hill: '#0C0F1B', hillRim: '#1E2237',
+                  water: '#1C1B22', water2: '#232127', sheen: '#8A93AE', bank: '#0E0E16', foam: '#9AA2BC', wood: '#0A0E16', wood2: '#121A1E',
+                  kas: '#1F2436', sand: '#52526A', sand2: '#3E3E52', edge: '#141827', moon: '#8E99B8' };
   const DAY = { plain: '#8C8E86', plain2: '#9A9B90', plain3: '#7C7E78', hill: '#6E7069', hillRim: '#B0AB98',
-                water: '#6E5A48', water2: '#7D6854', sheen: '#D8B48C', bank: '#7A6E5E', foam: '#E4D6BE', wood: '#44523C', wood2: '#505F46',
+                water: '#5E4A3A', water2: '#6E5844', sheen: '#E6B98A', bank: '#5C5248', foam: '#F0DCC0', wood: '#44523C', wood2: '#505F46',
                 kas: '#7E8078', sand: '#BBAF95', sand2: '#A89C84', edge: '#8C8E86', moon: '#F0C890' };
   const INK = '#15110C', FIRE = '#FFB347', FLAME = '#FFE08A', EMBER = '#E2552B', TENT = '#E8DCC2', TENT_SHADE = '#B9AC90';
   const SKIN = '#D9B48C', BRONZE = '#C9A24B', IRON = '#8A8D92', RED = '#9E2B25', HORSE = '#5A3D28', HORSE2 = '#8C6A48';
@@ -86,7 +86,7 @@
     fine: scatter(103, 6, T.wide),           // the finer mottle, seen close
     ridges: scatter(104, 1.6, T.wide),       // the hills' ridge strokes (kept where the hills are)
     trees: scatter(105, 80, T.wide),         // trees (kept where the woods are)
-    water: scatter(106, 0.4, T.wide),        // streaks of light on the water: which stretch, which offset
+    water: scatter(106, 0.5, T.wide),        // streaks of light on the water: which stretch, which offset
   };
   function insidePoly(pt, poly) {
     let inside = false;
@@ -107,12 +107,12 @@
     for (const m of SCATTER.lie) if (within(m, 0.3)) { const [x, y] = P(m); B.glow(ctx, x, y, px(14 + m[2] * 18), m[3] < 0.5 ? pal.plain2 : pal.plain3, 0.35, 0); }
     for (const m of SCATTER.mottle) if (within(m, 0.02)) {
       const [x, y] = P(m), rx = px(0.12 + m[2] * 0.5), ry = rx * (0.35 + m[3] * 0.5);
-      ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.2 + m[5] * 0.22);
+      ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.1 + m[5] * 0.12);
       ctx.beginPath(); ctx.ellipse(x, y, rx, ry, m[4] * TAU, 0, TAU); ctx.fill();
     }
     for (const m of SCATTER.fine) if (within(m, 0.01)) {
       const [x, y] = P(m), rx = Math.max(1, px(0.03 + m[2] * 0.12)), ry = rx * (0.4 + m[3] * 0.5);
-      ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.08 + m[5] * 0.14);
+      ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.04 + m[5] * 0.08);
       ctx.beginPath(); ctx.ellipse(x, y, rx, ry, m[5] * TAU, 0, TAU); ctx.fill();
     }
     // the hills' skirt: a mass with a soft foot, and the ridges as short strokes
@@ -180,7 +180,7 @@
       let best = 0, bd = Infinity;
       for (let i = 0; i < C.length; i += 3) { const d = Math.hypot((C[i][0] - m[0]) * KM_LON, (C[i][1] - m[1]) * KM_LAT); if (d < bd) { bd = d; best = i; } }
       if (bd > 2.5 || !within(C[best], 0.15)) continue;
-      streak(best, 6 + Math.floor(m[2] * 24), (m[3] - 0.5) * flood * 1.3, Math.max(0.8, px(0.012 + m[4] * 0.02)), (night ? 0.16 : 0.22) + m[5] * 0.14, pal.sheen);
+      streak(best, 6 + Math.floor(m[2] * 24), (m[3] - 0.5) * flood * 1.3, Math.max(0.8, px(0.01 + m[4] * 0.016)), (night ? 0.15 : 0.12) + m[5] * 0.14, pal.sheen);
       if (m[5] < 0.35) streak(best + 2, 4 + Math.floor(m[2] * 10), (m[4] < 0.5 ? -1 : 1) * flood * (0.72 + m[3] * 0.12), Math.max(0.8, px(0.01)), 0.35 + m[2] * 0.3, pal.foam);
     }
     ctx.restore();
@@ -196,6 +196,7 @@
         ctx.fillStyle = B.rgba(m[3] < 0.6 ? pal.wood2 : pal.wood, 0.75);
         ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
         ctx.fillStyle = B.rgba(INK, 0.5); ctx.beginPath(); ctx.arc(x + rr * 0.3, y + rr * 0.35, rr * 0.5, 0, TAU); ctx.fill();
+        if (dense) { ctx.fillStyle = B.rgba(pal.hillRim, night ? 0.35 : 0.5); ctx.beginPath(); ctx.arc(x - rr * 0.3, y - rr * 0.35, rr * 0.35, 0, TAU); ctx.fill(); }
       }
       ctx.restore();
     };
@@ -203,9 +204,9 @@
     poly(ctx, head, P); ctx.fillStyle = pal.plain2; ctx.fill();
     ctx.strokeStyle = B.rgba(pal.sand, 0.8); ctx.lineWidth = Math.max(1, px(0.04)); ctx.stroke();
     trees(head, true);
+    poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.9); ctx.lineWidth = Math.max(1, px(0.09)); ctx.stroke();   // the water's edge, dark
     poly(ctx, isl, P); ctx.fillStyle = pal.sand; ctx.fill();
-    ctx.strokeStyle = B.rgba(pal.foam, 0.55); ctx.lineWidth = Math.max(1, px(0.03)); ctx.stroke();
-    ctx.strokeStyle = B.rgba(pal.sand2, 0.9); ctx.lineWidth = Math.max(1, px(0.06)); ctx.stroke();
+    ctx.strokeStyle = B.rgba(pal.sand2, 0.9); ctx.lineWidth = Math.max(1, px(0.04)); ctx.stroke();
     const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
     trees(isl.map((c) => [mid[0] + (c[0] - mid[0]) * 0.62, mid[1] + (c[1] - mid[1]) * 0.62]), true);
     // the picture's edge: the wide one a pool of night (or of morning) that ends softly on the globe, with
@@ -301,27 +302,34 @@
     const sway = Math.sin(t * TAU + x * 0.1) * s * 0.03;
     ctx.save(); ctx.translate(x, y); if (dir < 0) ctx.scale(-1, 1);
     ctx.lineCap = 'round';
-    ctx.strokeStyle = INK; ctx.lineWidth = s * 0.08;
-    for (const dx of [-0.3, -0.12, 0.14, 0.3]) { ctx.beginPath(); ctx.moveTo(dx * s, -s * 0.35); ctx.lineTo(dx * s + (dx < 0 ? -sway : sway) * 0.5, 0); ctx.stroke(); }
-    ctx.strokeStyle = GREY2; ctx.lineWidth = s * 0.065;
-    for (const dx of [-0.3, -0.12, 0.14, 0.3]) { ctx.beginPath(); ctx.moveTo(dx * s, -s * 0.35); ctx.lineTo(dx * s + (dx < 0 ? -sway : sway) * 0.5, 0); ctx.stroke(); }
+    const leg = (dx, k) => { ctx.beginPath(); ctx.moveTo(dx * s, -s * 0.38); ctx.lineTo(dx * s + k, 0); ctx.stroke(); };
+    ctx.strokeStyle = INK; ctx.lineWidth = s * 0.17;
+    for (const [dx, ph] of [[-0.3, 0], [-0.13, 0.5], [0.12, 0.5], [0.28, 0]]) leg(dx, Math.sin(t * TAU + ph * TAU) * sway * 6);
+    ctx.strokeStyle = GREY2; ctx.lineWidth = s * 0.12;
+    for (const [dx, ph] of [[-0.3, 0], [-0.13, 0.5], [0.12, 0.5], [0.28, 0]]) leg(dx, Math.sin(t * TAU + ph * TAU) * sway * 6);
     if (dir === 0) {
       B.inked(ctx, (c) => c.ellipse(0, -s * 0.55, s * 0.3, s * 0.36, 0, 0, TAU), GREY, INK, s * 0.07);
       B.inked(ctx, (c) => c.ellipse(0, -s * 0.72, s * 0.24, s * 0.2, 0, 0, TAU), GREY, INK, s * 0.06);
       B.inked(ctx, (c) => c.ellipse(-s * 0.26, -s * 0.74, s * 0.12, s * 0.16, 0, 0, TAU), GREY2, INK, s * 0.05);
       B.inked(ctx, (c) => c.ellipse(s * 0.26, -s * 0.74, s * 0.12, s * 0.16, 0, 0, TAU), GREY2, INK, s * 0.05);
       ctx.strokeStyle = GREY; ctx.lineWidth = s * 0.1; ctx.beginPath(); ctx.moveTo(0, -s * 0.6); ctx.quadraticCurveTo(sway * 3, -s * 0.3, sway * 4, -s * 0.05); ctx.stroke();
-      ctx.strokeStyle = INK; ctx.lineWidth = s * 0.02; ctx.beginPath(); ctx.moveTo(0, -s * 0.6); ctx.quadraticCurveTo(sway * 3, -s * 0.3, sway * 4, -s * 0.05); ctx.stroke();
     } else {
-      B.inked(ctx, (c) => c.ellipse(-s * 0.05, -s * 0.58, s * 0.46, s * 0.3, 0, 0, TAU), GREY, INK, s * 0.07);
-      B.inked(ctx, (c) => c.ellipse(s * 0.38, -s * 0.66, s * 0.2, s * 0.2, 0, 0, TAU), GREY, INK, s * 0.06);
-      B.inked(ctx, (c) => c.ellipse(s * 0.3, -s * 0.72, s * 0.11, s * 0.15, 0.3, 0, TAU), GREY2, INK, s * 0.05);
-      ctx.strokeStyle = GREY; ctx.lineWidth = s * 0.09; ctx.beginPath(); ctx.moveTo(s * 0.52, -s * 0.6); ctx.quadraticCurveTo(s * 0.7 + sway * 2, -s * 0.35, s * 0.66 + sway * 3, -s * 0.05); ctx.stroke();
-      ctx.strokeStyle = B.rgba('#F4EDE0', 0.9); ctx.lineWidth = s * 0.04; ctx.beginPath(); ctx.moveTo(s * 0.5, -s * 0.52); ctx.lineTo(s * 0.68, -s * 0.44); ctx.stroke();   // a tusk
+      // the body: a high domed back sloping to the rump, the head lower, the ear a flap, the trunk down
+      B.inked(ctx, (c) => {
+        c.moveTo(-s * 0.48, -s * 0.5); c.quadraticCurveTo(-s * 0.5, -s * 0.95, -s * 0.05, -s * 0.98); c.quadraticCurveTo(s * 0.3, -s * 0.98, s * 0.42, -s * 0.75);
+        c.lineTo(s * 0.42, -s * 0.4); c.quadraticCurveTo(0, -s * 0.3, -s * 0.46, -s * 0.36); c.closePath();
+      }, GREY, INK, s * 0.07);
+      B.inked(ctx, (c) => { c.moveTo(s * 0.3, -s * 0.9); c.quadraticCurveTo(s * 0.62, -s * 0.98, s * 0.66, -s * 0.7); c.quadraticCurveTo(s * 0.66, -s * 0.5, s * 0.5, -s * 0.44); c.quadraticCurveTo(s * 0.34, -s * 0.5, s * 0.3, -s * 0.7); c.closePath(); }, GREY, INK, s * 0.06);
+      B.inked(ctx, (c) => c.ellipse(s * 0.3, -s * 0.72, s * 0.12, s * 0.17, 0.2, 0, TAU), GREY2, INK, s * 0.05);   // the ear
+      ctx.strokeStyle = INK; ctx.lineWidth = s * 0.12; ctx.beginPath(); ctx.moveTo(s * 0.6, -s * 0.55); ctx.quadraticCurveTo(s * 0.74 + sway * 2, -s * 0.3, s * 0.68 + sway * 3, -s * 0.04); ctx.stroke();
+      ctx.strokeStyle = GREY; ctx.lineWidth = s * 0.08; ctx.beginPath(); ctx.moveTo(s * 0.6, -s * 0.55); ctx.quadraticCurveTo(s * 0.74 + sway * 2, -s * 0.3, s * 0.68 + sway * 3, -s * 0.04); ctx.stroke();
+      ctx.strokeStyle = '#F4EDE0'; ctx.lineWidth = s * 0.045; ctx.beginPath(); ctx.moveTo(s * 0.56, -s * 0.5); ctx.quadraticCurveTo(s * 0.7, -s * 0.46, s * 0.76, -s * 0.36); ctx.stroke();   // the tusk
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(s * 0.52, -s * 0.76, s * 0.035, 0, TAU); ctx.fill();   // the eye
+      ctx.strokeStyle = GREY2; ctx.lineWidth = s * 0.05; ctx.beginPath(); ctx.moveTo(-s * 0.48, -s * 0.6); ctx.lineTo(-s * 0.56, -s * 0.3); ctx.stroke();   // the tail
     }
     if (mahout) {
-      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(dir === 0 ? 0 : s * 0.25, -s * 0.98, s * 0.07, 0, TAU); ctx.fill();
-      B.inked(ctx, (c) => { c.rect(-s * 0.16, -s * 1.02, s * 0.32, s * 0.16); }, RED, INK, s * 0.04);
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(dir === 0 ? 0 : s * 0.1, -s * 1.08, s * 0.07, 0, TAU); ctx.fill();
+      B.inked(ctx, (c) => { c.rect(-s * 0.2, -s * 1.08, s * 0.4, s * 0.14); }, RED, INK, s * 0.04);
     }
     ctx.restore();
   }
@@ -429,7 +437,7 @@
   pictures.push({ name: 'camp-mid', width: 40, height: 30, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n, r = B.rand(5);
     ctx.fillStyle = B.rgba('#2A2420', 0.5); ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w * 0.45, h * 0.42, 0, 0, TAU); ctx.fill();
-    for (let k = 0; k < 16; k++) { const x = w * (0.12 + r() * 0.76), y = h * (0.15 + r() * 0.7); B.glow(ctx, x, y, 3.2 + Math.sin(t * TAU * 2 + k) * 0.7, FIRE, 0.95, 0); }
+    for (let k = 0; k < 16; k++) { const x = w * (0.12 + r() * 0.76), y = h * (0.15 + r() * 0.7); B.glow(ctx, x, y, 2.2 + Math.sin(t * TAU * 2 + k) * 0.5, FIRE, 0.95, 0); }
     for (let k = 0; k < 10; k++) tent(ctx, w * (0.15 + r() * 0.7), h * (0.2 + r() * 0.65), 4, true);
   } });
   pictures.push({ name: 'camp-a', scale: 2, width: 230, height: 160, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 11, { fires: 16, rows: 4, cols: 8, horses: 7, walkers: 10 }); } });
@@ -455,11 +463,12 @@
     // what you would see of a column in the dark from across the river: a thin line of pale points, creeping
     for (let k = 0; k < 11; k++) { const x = 1.5 + k * 2.1 + ((i + k) % 4) * 0.12; ctx.fillStyle = B.rgba('#D8CFB8', 0.55 + ((k + i) % 3) * 0.15); ctx.beginPath(); ctx.arc(x, h / 2 + Math.sin(k * 1.3) * 0.7, 0.75, 0, TAU); ctx.fill(); }
   } });
-  pictures.push({ name: 'column', width: 150, height: 48, frames: 8, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'column', width: 190, height: 34, frames: 8, draw(ctx, w, h, i, n) {
+    // a file, not a block: two ranks, the horse at its head
     const t = i / n, s = 11;
-    for (let k = 0; k < 3; k++) horse(ctx, w * 0.86 + k * 11 - k * 2, h * 0.5 + k * 8, s * 0.9, (t + k * 0.3) % 1, true);
-    for (let row = 0; row < 3; row++) for (let k = 0; k < 11; k++) {
-      soldier(ctx, w * 0.06 + k * 9.4 + row * 2.6, h * 0.42 + row * 10, s, (t + k * 0.09 + row * 0.2) % 1, { tunic: (k + row) % 2 ? RED : TENT_SHADE });
+    for (let k = 0; k < 3; k++) horse(ctx, w * 0.88 + k * 7 - k * 2, h * 0.62 + k * 5, s * 0.9, (t + k * 0.3) % 1, true);
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 17; k++) {
+      soldier(ctx, w * 0.04 + k * 9.2 + row * 3, h * 0.6 + row * 9, s, (t + k * 0.09 + row * 0.2) % 1, { tunic: (k + row) % 2 ? RED : TENT_SHADE });
     }
   } });
   pictures.push({ name: 'column-mid', width: 60, height: 16, frames: 6, draw(ctx, w, h, i, n) {
@@ -535,7 +544,12 @@
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y + wide * 0.35, wide, wide * 0.55, 0, 0, TAU); ctx.fill();
     };
     const items = [];
-    for (let row = 0; row < 3; row++) for (let k = 0; k < 13; k++) {
+    // the ones not yet in: dry on the island's shore (the picture's left end lies on the island)
+    for (let k = 0; k < 5; k++) {
+      const x = 6 + k * 9 + (r() - 0.5) * 4, y = 40 + k * 12 + (r() - 0.5) * 6;
+      items.push({ y, draw: () => soldier(ctx, x, y, s, (t + k * 0.2) % 1, { tunic: k % 2 ? RED : TENT_SHADE }) });
+    }
+    for (let row = 0; row < 3; row++) for (let k = 2; k < 13; k++) {
       if (r() < 0.12) continue;
       const x = 8 + k * 17.5 + row * 5 + (r() - 0.5) * 6, y = 34 + row * 22 + (r() - 0.5) * 7 + Math.sin(t * TAU + k * 1.7 + row) * 1.2;
       const depth = row === 2 ? 0.52 + r() * 0.1 : row === 1 ? 0.6 + r() * 0.15 : 0.7 + r() * 0.22;   // the far rank deeper
@@ -564,16 +578,26 @@
     for (let k = 0; k < 9; k++) { const x = 3 + k * 4.2, y = 4 + Math.sin(t * TAU + k) * 0.6; ctx.fillStyle = BRONZE; ctx.beginPath(); ctx.ellipse(x, y, 1.8, 0.7, 0, 0, TAU); ctx.fill(); ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, y + 1.6, 0.9, 0, TAU); ctx.fill(); }
   } });
   // the horse at the gallop, the Companions (Alexander's) and Coenus' regiments
-  pictures.push({ name: 'cavalry', width: 110, height: 44, frames: 6, draw(ctx, w, h, i, n) {
+  /** The dust a body of horse raises: a plume trailing behind (to the left, the picture facing east). */
+  function dust(ctx, x, y, w, h, t, seed) {
+    const r = B.rand(seed);
+    for (let k = 0; k < 7; k++) {
+      const u = (t + k / 7) % 1, px = x - u * w, py = y - u * h * 0.5 + (r() - 0.5) * h * 0.3;
+      B.glow(ctx, px, py, h * (0.25 + u * 0.5), '#B8A98C', 0.28 * (1 - u), 0);
+    }
+  }
+  pictures.push({ name: 'cavalry', width: 130, height: 44, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let row = 0; row < 3; row++) for (let k = 0; k < 6; k++) horse(ctx, w * 0.1 + k * 16 + row * 5, h * 0.5 + row * 9, 9, (t + k * 0.15 + row * 0.3) % 1, true, (k + row) % 2 ? HORSE : HORSE2);
+    for (let row = 0; row < 3; row++) dust(ctx, w * 0.3, h * 0.62 + row * 9, w * 0.3, h * 0.6, t + row * 0.3, 5 + row);
+    for (let row = 0; row < 3; row++) for (let k = 0; k < 6; k++) horse(ctx, w * 0.25 + k * 16 + row * 5, h * 0.5 + row * 9, 9, (t + k * 0.15 + row * 0.3) % 1, true, (k + row) % 2 ? HORSE : HORSE2);
   } });
   pictures.push({ name: 'cavalry-mid', width: 30, height: 10, frames: 4, draw(ctx, w, h, i, n) {
     for (let k = 0; k < 7; k++) { ctx.fillStyle = (k + i) % 2 ? HORSE : RED; ctx.beginPath(); ctx.ellipse(3 + k * 4, 5 + Math.sin(i / n * TAU + k) * 1.2, 2, 1.3, 0, 0, TAU); ctx.fill(); }
   } });
-  pictures.push({ name: 'archers', width: 70, height: 36, frames: 6, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'archers', width: 86, height: 36, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let row = 0; row < 2; row++) for (let k = 0; k < 5; k++) horse(ctx, w * 0.1 + k * 13 + row * 6, h * 0.55 + row * 11, 8, (t + k * 0.2) % 1, true, HORSE2);
+    for (let row = 0; row < 2; row++) dust(ctx, w * 0.3, h * 0.65 + row * 11, w * 0.3, h * 0.6, t + row * 0.4, 9 + row);
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 5; k++) horse(ctx, w * 0.27 + k * 13 + row * 6, h * 0.55 + row * 11, 8, (t + k * 0.2) % 1, true, HORSE2);
   } });
   // the phalanx: a block of pikes, advancing
   pictures.push({ name: 'phalanx', width: 130, height: 50, frames: 6, draw(ctx, w, h, i, n) {
@@ -588,9 +612,10 @@
     for (let row = 0; row < 2; row++) for (let k = 0; k < 10; k++) { ctx.fillStyle = TENT_SHADE; ctx.fillRect(2 + k * 3.2 + row, 3 + row * 4 + ((i + k) % 2) * 0.4, 1.8, 2.4); }
   } });
   // Porus' son's chariots, and the same bogged in the clay
-  pictures.push({ name: 'chariots', width: 110, height: 40, frames: 6, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'chariots', width: 130, height: 40, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) chariot(ctx, w * 0.12 + k * 26 + row * 8, h * 0.55 + row * 12, 11, (t + k * 0.25) % 1);
+    for (let row = 0; row < 2; row++) dust(ctx, w * 0.3, h * 0.7 + row * 12, w * 0.3, h * 0.6, t + row * 0.5, 13 + row);
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) chariot(ctx, w * 0.26 + k * 26 + row * 8, h * 0.55 + row * 12, 11, (t + k * 0.25) % 1);
   } });
   pictures.push({ name: 'chariots-bogged', width: 110, height: 40, frames: 4, draw(ctx, w, h, i, n) {
     const t = i / n;
@@ -652,7 +677,7 @@
         ctx.fillStyle = B.rgba('#C8D0E6', a); ctx.fillRect(x - width / 2, y, width, 4);
       }
     }
-    ctx.strokeStyle = 'rgba(205,215,240,0.55)'; ctx.lineWidth = 0.7; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(205,215,240,0.5)'; ctx.lineWidth = 1.1; ctx.lineCap = 'round';
     for (let k = 0; k < 90; k++) {
       const x = r() * w, y0 = (r() * h + t * h * 1.3) % h, len = 10 + r() * 16;
       ctx.globalAlpha = falloff(x, y0) * (0.35 + r() * 0.5);
@@ -678,12 +703,17 @@
   } });
   // the camps' fires on the water: a warm light laid at the bank, flickering
   pictures.push({ name: 'fireglow', width: 160, height: 70, frames: 4, scale: 1, draw(ctx, w, h, i, n) {
-    const f = 0.9 + 0.1 * Math.sin(i / n * TAU);
+    // the fires on the water: long broken streaks of their light, running with the current, flickering
+    const r = B.rand(3), t = i / n;
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
-    B.glow(ctx, 0, 0, w / 2 * f, FIRE, 0.5, 0); ctx.restore();
-    ctx.strokeStyle = B.rgba(FIRE, 0.35); ctx.lineWidth = 1; ctx.lineCap = 'round';
-    const r = B.rand(3 + i);
-    for (let k = 0; k < 14; k++) { const x = w * (0.2 + r() * 0.6), y = h * (0.3 + r() * 0.4), len = 6 + r() * 14; ctx.beginPath(); ctx.moveTo(x - len / 2, y); ctx.lineTo(x + len / 2, y); ctx.stroke(); }
+    B.glow(ctx, 0, 0, w / 2, FIRE, 0.16, 0); ctx.restore();
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 26; k++) {
+      const x = w * (0.08 + r() * 0.84), y = h * (0.15 + r() * 0.7), len = 8 + r() * 22, a = 0.5 + r() * 0.5, ph = r();
+      const f = 0.7 + 0.3 * Math.sin((t + ph) * TAU);
+      ctx.strokeStyle = B.rgba(k % 3 ? FIRE : FLAME, a * f * 0.7); ctx.lineWidth = 1 + r() * 1.4;
+      ctx.beginPath(); ctx.moveTo(x - len / 2, y); ctx.lineTo(x + len / 2, y + (r() - 0.5) * 2); ctx.stroke();
+    }
   } });
   // dawn's light: a warm wash from the east, laid over the ground as the night thins
   pictures.push({ name: 'dawn', width: 400, height: 400, scale: 1, draw(ctx, w, h) {

@@ -98,7 +98,7 @@
     terra.sprites.set('elephants', { path: stand(P.waterP, HR.dusk - 1, HR.porus), label: 'The elephants at the water, watching the far bank', touchable: true,
                                      looks: fromValley(looks(null, { n: 'elephants-mid', f: 4, size: [40, 10] }, { n: 'elephants-watch', f: 8, size: [190, 44], fps: 3, near: 0.62 })) });
     // the column: out of the camp in the dark, inland, to the grove on the headland
-    var col = { far: { n: 'column-far', f: 4, size: [20, 6] }, mid: { n: 'column-mid', f: 6, size: [40, 12], face: true }, close: { n: 'column', f: 8, size: [150, 48], fps: 8, face: true, near: 0.6 } };
+    var col = { far: { n: 'column-far', f: 4, size: [20, 6] }, mid: { n: 'column-mid', f: 6, size: [40, 12], face: true }, close: { n: 'column', f: 8, size: [190, 34], fps: 8, face: true, near: 0.6 } };
     terra.sprites.set('column', { path: way(W.column), label: 'The column on its night march', touchable: true, looks: looks(col.far, col.mid, col.close) });
     terra.sprites.set('in-the-grove', { path: stand(P.headland, HR.headland, HR.boats), label: 'The column in the grove, the boats put together', touchable: true,
                                         looks: looks(col.far, { n: 'column-mid', f: 6, size: [40, 12], fps: 1 }, { n: 'formed', f: 4, size: [110, 44], fps: 1.5, near: 0.6 }) });
@@ -112,12 +112,12 @@
                                   looks: looks(col.far, { n: 'waders-mid', f: 6, size: [40, 14], face: true }, { n: 'waders', f: 8, size: [230, 96], fps: 6, face: true, near: 0.6 }) });
     // on the far bank: the horse ahead, the foot following
     terra.sprites.set('advance-horse', { path: way(shift(W.advance, HR.ford, HR.field - 1.0)), label: "Alexander's horse, ahead", touchable: true,
-                                         looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [110, 44], fps: 8, face: true, near: 0.6 }) });
+                                         looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [130, 44], fps: 8, face: true, near: 0.6 }) });
     terra.sprites.set('advance-foot', { path: way(shift(W.advance, HR.ford + 0.3, HR.field)), label: 'The foot, following at a steady pace', touchable: true,
                                         looks: looks(col.far, { n: 'phalanx-mid', f: 4, size: [36, 12], face: true }, { n: 'phalanx', f: 6, size: [130, 50], fps: 5, face: true, near: 0.6 }) });
     // Porus' son's chariots, down the bank and into the clay
     terra.sprites.set('chariots', { path: way(W.chariots), label: "Porus' son's chariots, riding for the landing", touchable: true,
-                                    looks: looks({ n: 'chariots-mid', f: 4, size: [15, 5] }, { n: 'chariots-mid', f: 4, size: [30, 10], face: true }, { n: 'chariots', f: 6, size: [110, 40], fps: 8, face: true, near: 0.6 }) });
+                                    looks: looks({ n: 'chariots-mid', f: 4, size: [15, 5] }, { n: 'chariots-mid', f: 4, size: [30, 10], face: true }, { n: 'chariots', f: 6, size: [130, 40], fps: 8, face: true, near: 0.6 }) });
     var bog = W.chariots[W.chariots.length - 1];
     terra.sprites.set('chariots-bogged', { path: stand(bog, HR.routed, HR.end + 1), label: 'The chariots, bogged in the clay', touchable: true,
                                            looks: looks(null, { n: 'chariots-mid', f: 4, size: [30, 10], fps: 0.5 }, { n: 'chariots-bogged', f: 4, size: [110, 40], fps: 2, near: 0.6 }) });
@@ -130,9 +130,9 @@
     terra.sprites.set('porus-turning', { path: stand(P.field, HR.turn, HR.end + 1), label: 'The line turning on the horse that came round it', touchable: true,
                                          looks: looks(line.far, line.mid, { n: 'line-turning', f: 6, size: [320, 320], fps: 4, near: 0.6 }) });
     terra.sprites.set('alexander', { path: way(W.alexander), label: "Alexander's Companions, round the left of the line", touchable: true,
-                                     looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [110, 44], fps: 8, face: true, near: 0.6 }) });
+                                     looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [130, 44], fps: 8, face: true, near: 0.6 }) });
     terra.sprites.set('coenus', { path: way(W.coenus), label: "Coenus' horse, round the right and behind", touchable: true,
-                                  looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'archers', f: 6, size: [70, 36], fps: 8, face: true, near: 0.6 }) });
+                                  looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'archers', f: 6, size: [86, 36], fps: 8, face: true, near: 0.6 }) });
     terra.sprites.set('phalanx', { path: way(W.phalanx), label: 'The phalanx, coming on', touchable: true,
                                    looks: looks(col.far, { n: 'phalanx-mid', f: 4, size: [36, 12], face: true }, { n: 'phalanx', f: 6, size: [130, 50], fps: 5, face: true, near: 0.6 }) });
     terra.sprites.set('craterus', { path: way(W.craterus), label: 'Craterus crossing from the great camp at last', touchable: true,
@@ -162,10 +162,21 @@
 
   // ----- the night, dragged along the way ------------------------------------------------------------
   var hour = HR.dusk, playing = false, chain = H.chain, at = 0, dragging = false, dragged = false;
+  var leaned = false;
   function setHour(h, byHost) {
+    var was = hour;
     hour = Math.max(HR.dusk, Math.min(HR.end, h));
     if (byHost) terra.time.set(yr(hour));
     ground(hour);
+    // the second channel: the globe comes close on its own, once, as the night reaches it (not while a
+    // finger is on the globe: the host drops a flight then; the drag's end asks again)
+    if (was < HR.bank && hour >= HR.bank && hour < HR.ford) lean();
+  }
+  function lean() {
+    if (leaned || dragging) return;
+    leaned = true;
+    var p = P.island, c = terra.camera, at = zoomAtKm(Math.min(PPK.deepest, (c ? Math.min(c.width, c.height) : 800) * 0.9 / 5));
+    terra.flyTo((p[0] + P.landing[0]) / 2, (p[1] + P.landing[1]) / 2, Math.min(Z.max, at), terra.settings.reduceMotion ? 0 : 1.6);
   }
   /** The chain's index whose hour is nearest the hour now (the finger's search starts there). */
   function indexAt(h) {
@@ -218,7 +229,7 @@
     if (!dragging || t.lon == null) return;
     var u = under(t.x, t.y, c);
     if (u) { at = u.index; setHour(u.hour, true); }
-    if (t.phase === 'ended') dragging = false;
+    if (t.phase === 'ended') { dragging = false; if (hour >= HR.bank && hour < HR.ford) lean(); }
   });
 
   terra.on('time', function (t) {
