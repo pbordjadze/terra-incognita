@@ -28,14 +28,14 @@ struct PackPanel: Identifiable, Equatable {
     /// the texts' `wikipedia` keys (the pack's own articles over the app's).
     init(_ pack: String, _ content: [String: Any], index: WikipediaIndex = .shared) {
         func text(_ x: Any?, _ limit: Int) -> String { String(((x as? String) ?? "").prefix(limit)) }
-        func article(_ x: Any?) -> WikipediaArticle? { index[(x as? String).map { String($0.prefix(200)) }] }
+        func lookup(_ x: Any?) -> WikipediaArticle? { index[(x as? String).map { String($0.prefix(200)) }] }
         self.pack = pack
         title = text(content["title"], 120)
         self.text = text(content["text"], 4000)
-        article = article(content["wikipedia"])
+        self.article = lookup(content["wikipedia"])
         sections = ((content["sections"] as? [Any]) ?? []).prefix(12).compactMap { item in
             guard let s = item as? [String: Any] else { return nil }
-            return Section(title: text(s["title"], 120), text: text(s["text"], 4000), article: article(s["wikipedia"]))
+            return Section(title: text(s["title"], 120), text: text(s["text"], 4000), article: lookup(s["wikipedia"]))
         }
         sources = ((content["sources"] as? [Any]) ?? []).prefix(24).compactMap { item in
             guard let s = item as? [String: Any] else { return nil }
