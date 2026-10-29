@@ -38,7 +38,7 @@
     Z.max = Math.min(2048, zoomAtKm(PPK.deepest));
   }
 
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
+  var frames = Shared.frames;      // the packs' shared script (shared.js, first in the scripts)
   /** Looks by zoom: a glint of fires from afar, the small picture, the drawn one close. */
   function looks(far, mid, close) {
     var out = [];
@@ -51,6 +51,9 @@
     if (close) out.push({ frames: frames(close.n, close.f), fps: close.fps || 6, size: close.size, minZoom: close.near ? Z.close : (mid ? Z.mid : (far ? Z.valley : 0)), face: !!close.face });
     return out;
   }
+
+  /** Looks that show only from the valley zoom in (a row of elephants from the whole Punjab would bridge the river). */
+  function fromValley(ls) { ls[0].minZoom = Z.valley; return ls; }
 
   // ----- the pictures on the ground: the day under the night, the night thinning at dawn --------------
   var nightShown = -1;
@@ -88,10 +91,12 @@
     terra.sprites.set('camp-p-left', { path: stand(P.campP, HR.porus, HR.end + 1), label: 'The few left in Porus’ camp', touchable: true,
                                        looks: looks(camp.far, { n: 'camp-mid', f: 6, size: [24, 18] }, { n: 'camp-mid', f: 6, size: [70, 52] }) });
     // the camps' fires on the water nearest them
-    terra.sprites.set('glow-a', { path: stand(P.glowA, HR.dusk - 1, HR.craterus), label: '', looks: [{ frames: frames('fireglow', 4), fps: 2, size: [110, 48], minZoom: Z.valley }] });
-    terra.sprites.set('glow-p', { path: stand(P.glowP, HR.dusk - 1, HR.porus), label: '', looks: [{ frames: frames('fireglow', 4), fps: 2, size: [120, 52], minZoom: Z.valley }] });
+    var glow = function (w) { return [{ frames: frames('fireglow', 4), fps: 2, size: [Math.round(w * 0.45), Math.round(w * 0.2)], minZoom: Z.valley, maxZoom: Z.mid },
+                                     { frames: frames('fireglow', 4), fps: 2, size: [w, Math.round(w * 0.44)], minZoom: Z.mid }]; };
+    terra.sprites.set('glow-a', { path: stand(P.glowA, HR.dusk - 1, HR.craterus), label: '', looks: glow(110) });
+    terra.sprites.set('glow-p', { path: stand(P.glowP, HR.dusk - 1, HR.porus), label: '', looks: glow(120) });
     terra.sprites.set('elephants', { path: stand(P.waterP, HR.dusk - 1, HR.porus), label: 'The elephants at the water, watching the far bank', touchable: true,
-                                     looks: looks(null, { n: 'elephants-mid', f: 4, size: [40, 10] }, { n: 'elephants-watch', f: 8, size: [190, 44], fps: 3, near: 0.62 }).slice(1) });
+                                     looks: fromValley(looks(null, { n: 'elephants-mid', f: 4, size: [40, 10] }, { n: 'elephants-watch', f: 8, size: [190, 44], fps: 3, near: 0.62 })) });
     // the column: out of the camp in the dark, inland, to the grove on the headland
     var col = { far: { n: 'column-far', f: 4, size: [20, 6] }, mid: { n: 'column-mid', f: 6, size: [40, 12], face: true }, close: { n: 'column', f: 8, size: [150, 48], fps: 8, face: true, near: 0.6 } };
     terra.sprites.set('column', { path: way(W.column), label: 'The column on its night march', touchable: true, looks: looks(col.far, col.mid, col.close) });
