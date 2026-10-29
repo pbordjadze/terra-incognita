@@ -58,4 +58,31 @@ final class GlobePackTests: XCTestCase {
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Ending the old maps leaves only the plain globe")
     }
+
+    /// Lamplight (a pack asking for the globe's night, `terra.globe.set({ night: true })`): the evening
+    /// falls, the lamps climb the Himalaya band by band and the highest villages' lamps come on last;
+    /// one touched says its village at the foot; ending it gives back the day and nothing else.
+    @MainActor func testLamplightTurnsTheGlobeToNight() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-playground-reset"]
+        app.launch()
+        defer { app.terminate() }
+        startPrototype("lamplight", in: app)
+        // (the sequence takes about ten seconds: the highest lamps are its last)
+        let karzok = app.descendants(matching: .any)["Karzok, 4,570 metres: a lamp"].firstMatch
+        XCTAssertTrue(karzok.waitForExistence(timeout: 40), "The highest villages' lamps come on last")
+        Thread.sleep(forTimeInterval: 4)
+        attach("57-lamplight", in: app)
+        karzok.tap()
+        XCTAssertTrue(text(containing: "Tso Moriri", in: app).waitForExistence(timeout: 10), "A lamp touched says its village")
+        attach("58-lamplight-karzok", in: app)
+        openWorkbench(in: app)
+        assertLive(from: "stages 1", to: "globes 1 · films 0 · scripts 1", in: app, "Lamplight is one stage and one script on the one globe")
+        app.buttons["workbenchClose"].firstMatch.tap()
+        endPrototype(in: app)
+        Thread.sleep(forTimeInterval: 1.5)
+        attach("59-lamplight-ended", in: app)
+        openWorkbench(in: app)
+        assertLive(Self.plainGlobeLive, in: app, "Ending it leaves only the plain globe")
+    }
 }

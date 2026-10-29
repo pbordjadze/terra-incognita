@@ -58,7 +58,7 @@ Keep design discussions and plans in that private repository.
   `night`, the Earth at night (`GlobeStyle.night`, drawn on the ground's maps with `Globe.metal`'s `N_`
   palette and the lights of `Globe/ground/night.jpg`, built by `tools/globe/night.py` from NASA's Black
   Marble, coming on a beat after dusk and shimmering slowly by the night's clock, `-night-time <s>` holds it;
-  the clouds a thin grey veil, the sea off); `quiet-frame` (`QuietCaption`: nothing at the foot
+  the clouds a thin grey veil, the sea off; a pack asks for it with `terra.globe.set({ night: true })`); `quiet-frame` (`QuietCaption`: nothing at the foot
   until a country is chosen, then one line). None veils the clouds or the sea (`Prototype.veils`).
   The stand-in draws them: `metal.py shot ... --quiet 1`, `--style night`; `preview.py --style night`.
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
@@ -172,6 +172,14 @@ Keep design discussions and plans in that private repository.
   `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction
   suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
   are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
+- **Lamplight** (`Prototypes/lamplight/`, a runtime-4 pack; painting-company row 173): evening at the
+  Himalaya's edge. It asks for the globe's night and lays over the mountains and the plains below them
+  the same night drawn closer (`Globe.metal`'s `N_` palette): moonlit relief and snow, the plains'
+  lights at 500 m, the alpenglow fading, and lamps where people live in the hills (a dot for every 150
+  people, from GHSL), climbing band by band, the highest year-round villages last as sprites that
+  flicker and say their name when touched. `tools/lamplight/build.py <cache>` draws every picture
+  (its docstring is their layout and sources; never hand-edit them); an app without the night gets
+  `pool.png`, a pool of evening.
 - **The other studies**: the Indian Ocean encounter (`App/TerraIncognita/Experience/`, `ocean`: a seed
   off Madagascar and an invitation), the river study **A gathering of
   water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each

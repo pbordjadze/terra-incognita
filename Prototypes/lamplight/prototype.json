@@ -1,0 +1,40 @@
+{
+  "id": "lamplight",
+  "title": "Lamplight",
+  "summary": "Evening at the Himalaya's edge: the Earth at night, and the lamps of the people who live in the mountains, thinning as the land climbs to the snow.",
+  "runtime": 4,
+  "presentation": "globe",
+  "scripts": [
+    "bounds.js",
+    "villages.js",
+    "main.js"
+  ],
+  "anchor": {
+    "lon": 83.6,
+    "lat": 29.2,
+    "zoom": 3.4
+  },
+  "doorway": {
+    "lon": 83.94,
+    "lat": 28.24,
+    "label": "Lamplight: evening at the Himalaya's edge",
+    "looks": [
+      {
+        "frames": ["lamp-1.png", "lamp-2.png", "lamp-3.png", "lamp-4.png", "lamp-5.png", "lamp-6.png"],
+        "fps": 3,
+        "size": [14, 14],
+        "minZoom": 1.5
+      },
+      {
+        "image": "doorway-glint.png",
+        "size": [11, 11],
+        "maxZoom": 1.5,
+        "every": 9,
+        "for": 1.2
+      }
+    ],
+    "breathes": true
+  },
+  "taps": false,
+  "shelf": "current"
+}
