@@ -1,4 +1,4 @@
-// The desktop preview's host: a stand-in for the app around runtime-3 and runtime-4 packs (docs/runtime3.md),
+// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 5 (docs/runtime3.md),
 // so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
 // borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
 // camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as

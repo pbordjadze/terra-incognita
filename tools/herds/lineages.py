@@ -42,7 +42,7 @@ PACE = [
 ]
 
 # the strip's ticks: where the evidence is (SOURCES.md)
-TICKS = [START, -33e6, -21e6, -17e6, -6.23e6, -5.5e6, -3.7e6, -2.8e6, -2.6e6, -11350, -4500, -1000, 1856, 1866]
+TICKS = [START, -33e6, -21e6, -17e6, -6.23e6, -5.5e6, -3.7e6, -2.8e6, -2.6e6, -11350, -4499, -999, 1856, 1866]   # (-4499 is 4500 BCE)
 
 LINEAGES = [
     dict(id='first', name='The first camelids',
