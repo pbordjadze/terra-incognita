@@ -93,6 +93,12 @@ Keep design discussions and plans in that private repository.
   - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
     (the ground's month)
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
+- **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
+  move across the globe with its date, from North America north across Beringia to Asia, Europe and
+  Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
+  reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
+  `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
+  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters); never hand-edit their output.
 - **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
   on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass
   (`SOURCES.md` in the pack). `-leaf` starts it. It is built from the former web leaf in `Leaf/`, which

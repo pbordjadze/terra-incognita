@@ -12,7 +12,7 @@ import OSLog
 
 // MARK: - The contract's data
 
-/// `prototype.json` (runtime 3 and 4: docs/runtime3.md).
+/// `prototype.json` (runtimes 3 to 5: docs/runtime3.md).
 nonisolated struct PackManifest: Codable, Equatable, Sendable {
     nonisolated struct Anchor: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var zoom: Double? }
     /// How something shows on the globe at a range of zooms: a picture, or frames in turn; now and then
@@ -305,7 +305,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 4
+    nonisolated static let runtime = 5
     static let shared = PackStore()
 
     /// One per pack id, by title.
@@ -865,9 +865,9 @@ final class PackStore {
         guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        // (runtime 4 hosts runtime-3 packs unchanged: docs/runtime3.md)
+        // (runtime 5 hosts runtime-3 and runtime-4 packs unchanged: docs/runtime3.md)
         guard manifest.runtime >= 3, manifest.runtime <= runtime else {
-            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime 3 and \(runtime), drawn by the globe")
+            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtimes 3 to \(runtime), drawn by the globe")
         }
         guard manifest.presentation == "globe" else {
             throw PackError("presentation must be “globe”: every pack lives on the globe")

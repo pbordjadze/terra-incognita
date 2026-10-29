@@ -343,7 +343,7 @@ async function runDevice(browser, server, device) {
     const world = (await echoes('world'))[0];
     const w = world && world.v;
     t('script world: no DOM, no fetch, no XMLHttpRequest, no navigator', w && w.document === 'undefined' && w.fetch === 'undefined' && w.XMLHttpRequest === 'undefined' && w.navigator === 'undefined', w);
-    t('script world: window is the global, runtime 4, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 4 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
+    t('script world: window is the global, runtime 5, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 5 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
     const read = (await echoes('read'))[0];
     const r = read && read.v;
     t('terra.read / readJSON: the pack\'s files; null for a missing one and outside the pack', r && r.notes === 'Read by terra.read.\n' && r.facts && r.facts.n === 3 && r.missing === null && r.escape === null, r);

@@ -1,4 +1,4 @@
-# The pack runtime (3 and 4): packs drawn by the globe, scripted in JavaScriptCore
+# The pack runtime (3 to 5): packs drawn by the globe, scripted in JavaScriptCore
 
 A pack is data, pictures and a small script. The script runs in JavaScriptCore inside the app, in
 the app's own process, with no web page and no web view: it decides, and the globe draws, in
@@ -10,6 +10,13 @@ run on the one globe at once, each entered and left by touch, and every doorway 
 own while its experience sleeps ([Many at once](#many-at-once-runtime-4)). What it adds is marked
 *new in 4*; a pack that uses none of it keeps `"runtime": 3` and runs on either app. A pack that
 declares `"runtime": 4` needs an app that hosts it (an older one lists it as needing a new build).
+
+**Runtime 5** (October 29, 2026) lets the globe's date move things: a sprite on a **dated way** is where
+the date puts it, so it walks as the date plays and stands where the reader drags it
+([Sprites](#sprites-things-that-live-and-move-on-the-globe-new-in-3)); the date may pass at an uneven
+**pace** (deep time fast, the present slowly), run at a **speed** the pack sets (slower as the reader
+comes close), and reach back to the Earth's beginning, read as years ago
+([The date](#the-date-and-the-words-at-the-foot-since-runtime-2)). Marked *new in 5*.
 
 ## The pack
 
@@ -40,8 +47,8 @@ Prototypes/<id>/
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: 3, or 4 if the pack uses anything marked *new in 4* (an app with an older runtime
-  lists the pack as needing a new build).
+- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, or 5 for anything *new in 5* (an
+  app with an older runtime lists the pack as needing a new build).
 - `presentation`: always `"globe"`. Every pack lives on the globe; there are no pack screens.
 - `scripts`: run in order in one context, like script tags. The global object is also `window`
   and `globalThis`, so a data file may say `window.TIDE = {...}`.
@@ -74,7 +81,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 4 (3 on an app before October 28, 2026) |
+| `terra.runtime` | 5 (4 on an app before October 29, 2026; 3 before October 28) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
@@ -146,6 +153,24 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   on great circles between the points, the whole path in `seconds`; `loop` is `true` (starts again),
   `'back'` (to and fro) or `false` (stops at the end). Setting it again with the same path keeps its
   place along it.
+- *New in 5:* a **dated way**, `path: { coordinates, dates }`, one date for each place, rising (in the
+  unit of the pack's date, `terra.time`; two places may share a date, a jump). The sprite is where the
+  stage's date puts it, on the great circle between the two places whose dates the date lies between,
+  so it moves as the date plays and stands where the reader drags it; `seconds` and `loop` don't
+  apply. Outside its first and last dates it isn't drawn (a life begun or ended), fading over half a
+  second as the date crosses them, and with no date shown it isn't drawn at all. A `face: true` look
+  turns the way it moved. Under Reduce Motion nothing plays by itself, but it still follows the date
+  the reader sets. The globe reads the date every frame, so a sprite moves smoothly between
+  playback's steps; a script never moves it frame by frame. Setting it again with the same way (a
+  change of looks: walking while the date plays, grazing while it rests) keeps its place.
+
+  ```js
+  terra.sprites.set('camel-1', {
+    path: { coordinates: [[-152, 65], [-169, 65.9], [-176, 66]], dates: [-7.4e6, -7.0e6, -6.88e6] },
+    looks: [{ frames: ['walk-1.png', 'walk-2.png', 'walk-3.png', 'walk-4.png'], fps: 5, size: [22, 15], face: true }],
+    label: 'Paracamelus, crossing Beringia', touchable: true
+  })
+  ```
 - `looks`: the first look whose `minZoom`–`maxZoom` holds the zoom is drawn, so one thing can be a
   trace from afar and itself up close. A look is `image` (one picture) or `frames` (pictures shown in
   turn at `fps`), `size: [w, h]` in points at the reading scale, and optionally `every` and `for`
@@ -184,9 +209,10 @@ terra.touch.scheme('one-finger')
 
 | | |
 | --- | --- |
-| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left. A `day` date is also the globe's season: the ground's month and the clouds' follow it, and go back when it hides |
+| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry, pace })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is (a touch on the strip within a fingertip of one lands on it); `carry` starts from the date the last time-aware prototype left. A `day` date is also the globe's season: the ground's month and the clouds' follow it, and go back when it hides. *New in 5:* years reach back five billion either way, and before 10,000 BCE read as years ago, to two figures ("45 million years ago", "14,000 years ago"); `pace: [[date, seconds], …]` (dates and seconds both rising) makes the date pass unevenly: playback reaches each date that many seconds after the first, and the strip is laid out in those seconds, so an era given more of them has more of the strip; its first and last dates are the range (`min`, `max` and `rate` don't apply) |
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
+| `terra.time.speed(f)` | *new in 5:* how fast playback runs, 1 as written (0.001–100): slower as the reader comes close, say, so what moves with the date walks rather than races. Not echoed; the strip and its date are unchanged |
 | `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters |
 | `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
 

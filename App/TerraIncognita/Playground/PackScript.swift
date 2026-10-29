@@ -15,7 +15,7 @@ enum PackScriptEvent {
     case imageSet(GlobeImageLayer.Picture), imageRemove(String), imageClear
     case spriteSet(String, SpriteSpec), spriteRemove(String), spriteClear
     case touchScheme(GlobeView.DragScheme)
-    case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeHide
+    case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeSpeed(Double), timeHide
     case caption(StageCaption?)
     case globe(historical: Bool, still: Bool, maxZoom: Double?)
     case panelShow(PackPanel), panelHide
@@ -74,6 +74,8 @@ final class PackScript {
     private var cameraSettle: Timer?
     /// The pictures this pack has laid on the globe, decoded, by path.
     private var decoded: [String: CGImage] = [:]
+    /// Its sprites' pictures by path, read once: a herd's animals share their frames.
+    private var pictures: [String: UIImage] = [:]
 
     /// The most timers a pack may keep at once, and the shortest repeat.
     static let timerBudget = 256
@@ -149,6 +151,7 @@ final class PackScript {
         context?.setObject(nil, forKeyedSubscript: "__terraSend" as NSString)
         context = nil
         decoded = [:]
+        pictures = [:]
         onEvent = nil
     }
 
@@ -341,8 +344,11 @@ final class PackScript {
 
     /// A picture of the pack (for geography symbols, sprites and images).
     func picture(_ path: String) -> UIImage? {
-        guard PackRules.isSafePath(path) else { return nil }
-        return UIImage(contentsOfFile: pack.root.appending(path: path).path(percentEncoded: false))
+        if let known = pictures[path] { return known }
+        guard PackRules.isSafePath(path), let image = UIImage(contentsOfFile: pack.root.appending(path: path).path(percentEncoded: false)) else { return nil }
+        // (a pack's pictures are bounded by its size; they go when it stops)
+        pictures[path] = image
+        return image
     }
 
     private func timer(_ body: [String: Any]) {
@@ -423,7 +429,18 @@ final class PackScript {
                 case let b as Bool where b == false: loop = .once
                 default: loop = .repeat
                 }
-                spec.path = GlobeMarker.Path(points: points, seconds: max(0.1, Self.number(p["seconds"]) ?? 30), loop: loop)
+                // a dated way (runtime 5): one date for each place, rising; the stage's date moves it
+                var dates: [Double]?
+                if let given = p["dates"] as? [Any] {
+                    let d = given.compactMap(Self.number)
+                    guard d.count == given.count, d.count == points.count, (p["coordinates"] as? [Any])?.count == points.count,
+                          zip(d, d.dropFirst()).allSatisfy({ $1 >= $0 }) else {
+                        onEvent?(.log("error: sprite \(id): path.dates needs a number for each place, rising"))
+                        return
+                    }
+                    dates = d
+                }
+                spec.path = GlobeMarker.Path(points: points, seconds: max(0.1, Self.number(p["seconds"]) ?? 30), loop: loop, dates: dates)
             }
             for look in ((o["looks"] as? [Any]) ?? []).prefix(8) {
                 guard let l = look as? [String: Any] else { continue }
@@ -464,6 +481,7 @@ final class PackScript {
             onEvent?(.timeShow(time, carry: (options["carry"] as? Bool) ?? false))
         case "set": if let v = Self.number(body["value"]) { onEvent?(.timeSet(v)) }
         case "play": onEvent?(.timePlay((body["playing"] as? Bool) ?? true))
+        case "speed": if let f = Self.number(body["speed"]) { onEvent?(.timeSpeed(min(100, max(0.001, f)))) }
         case "hide": onEvent?(.timeHide)
         default: break
         }
