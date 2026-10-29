@@ -394,8 +394,8 @@ function summarize(r) {
   try {
     for (const p of packs) {
       if (p.error) { results.push({ id: p.id, device: args.device, passed: false, failures: [p.error], warnings: [], screenshots: [], seconds: 0 }); continue; }
-      if (![3, 4, 5].includes(p.manifest.runtime)) {
-        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a pack of runtimes 3 to 5 (docs/runtime3.md)`;
+      if (![3, 4, 5, 6].includes(p.manifest.runtime)) {
+        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a pack of runtimes 3 to 6 (docs/runtime3.md)`;
         if (args.all) { skipped.push(`${p.id} (${why})`); continue; }
         results.push({ id: p.id, device: args.device, passed: false, failures: [why], warnings: [], screenshots: [], seconds: 0 });
         continue;

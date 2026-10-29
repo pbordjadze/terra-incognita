@@ -1,17 +1,17 @@
 {
   "id": "vine",
   "title": "The vine's long walk",
-  "summary": "საქართველო. One vine, eight thousand years long: it rises from a qvevri in the Georgian valley where the oldest wine was made and grows across the world as the years play.",
-  "runtime": 4,
+  "summary": "საქართველო. One vine, eight thousand years long, grows from a qvevri in the Georgian valley of the oldest wine across the world as the years play; touch it and light runs back the way it came.",
+  "runtime": 6,
   "presentation": "globe",
   "scripts": [
     "data.js",
     "main.js"
   ],
   "anchor": {
-    "lon": 40,
-    "lat": 38,
-    "zoom": 1.9
+    "lon": 42,
+    "lat": 39,
+    "zoom": 2.4
   },
   "doorway": {
     "lon": 44.75,
@@ -21,8 +21,8 @@
       {
         "image": "doorway.png",
         "size": [
-          26,
-          28
+          30,
+          34
         ],
         "minZoom": 1.4
       },

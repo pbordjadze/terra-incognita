@@ -43,10 +43,10 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 5
+RUNTIME = 6
 # a pack declares the runtime it needs: 3, 4 for what docs/runtime3.md marks new in 4, 5 for what it
-# marks new in 5 (a sprite on a dated way, the date's pace)
-RUNTIMES = (3, 4, 5)
+# marks new in 5 (a sprite on a dated way, the date's pace), 6 for what it marks new in 6 (dated geography)
+RUNTIMES = (3, 4, 5, 6)
 # a doorway's life (looks by zoom, a path, a breath) came with runtime 4
 DOORWAY_LIFE_RUNTIME = 4
 OPEN_SCHEME = 'terraincognita'

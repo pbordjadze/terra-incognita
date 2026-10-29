@@ -1,70 +1,177 @@
 #!/usr/bin/env python3
 """The vine's long walk (Prototypes/vine/data.js): the grapevine's spread from the South Caucasus over
-eight thousand years as branches of one vine, each a way with a year at each vertex, generalised after
-the archaeological and historical record (SOURCES.md in the pack: McGovern 2003 and 2017, Unwin 1991,
-and the dates of the colonial plantings). Between vertices the way is densified along the great circle
-every ~70 km with the years interpolated and a vine's sway either side of the straight way, and leaves
-are placed along it every ~110 km, alternating sides. The named places are the nodes where a cluster hangs when the vine arrives.
+eight thousand years as one plant, built for the globe's dated geography (docs/runtime3.md, runtime 6).
 
     python3 tools/vine/build.py
 
-Rebuild, never hand-edit. The ways are drawn, not records of any one vine's travels; the years are
-the record's earliest evidence at or near the place, rounded.
+What it writes, all of it dated (a year at every place, negative BCE), so the globe draws it as far as
+the date has come and the script sets each layer once:
+
+- `branches`: the trunk ways, each a list of [lon, lat, year] densified along great circles every
+  ~60 km with the years interpolated, and `from`, the trunk and point it grows out of (null for the
+  first). The ways are generalised after the record (SOURCES.md): they follow the coasts, valleys and
+  roads the vine is known to have travelled, not the route of any one vine.
+- `twigs`: short ways from the nearest trunk to the world's wine regions, each dated to the earliest
+  planting the record gives for the region; they grow out in the years before it.
+- `stems` and `voyages`: every branch and twig cut into runs over land and over sea by the globe's own
+  land (Globe/geo.png's coast sign, as the app's shader reads it): on land the vine is a stem that
+  thickens with age; over the sea it is a voyage, a fine dashed line (the vine was carried), with the
+  same dates, so the two meet at every landfall.
+- `leaves`: [lon, lat, year, kind, south] every ~110 km along the land runs, alternating sides, dated
+  a little after the stem passes; `south` says which hemisphere's seasons it keeps.
+- `clusters`: the named places (the trunks' and the regions') with the year the vine arrives.
+- `tips`: for each trunk, its whole way as a dated way for the tendril sprite at the growing tip.
+- `ticks`, `pace`: the strip's marks (the trunks' named places) and the uneven pace of the years.
+
+Rebuild, never hand-edit. The years are the record's earliest evidence at or near each place, rounded;
+between places they are interpolated and mean nothing exact.
 """
 import json, math
 from pathlib import Path
 
+import numpy as np
+from PIL import Image
+
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'Prototypes' / 'vine' / 'data.js'
 D = math.pi / 180
+KM = 6371.0
 
-ORIGIN = (44.75, 41.45)   # Gadachrili Gora, Kvemo Kartli, Georgia: the earliest wine, about 6000 BCE
+ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the earliest wine, about 6000 BCE
 
-# Each branch: its name, where it starts from (a place on an earlier branch, by coordinates), and its
-# vertices (lon, lat, year, name or None). Years negative are BCE.
-BRANCHES = [
-    ('The first vine', [(44.75, 41.45, -6000, 'Gadachrili Gora'), (44.2, 41.7, -5900, 'Shulaveris Gora'), (43.5, 42.0, -5700, None), (42.0, 42.2, -5500, 'Colchis')]),
-    ('Down the Zagros', [(44.75, 41.45, -6000, None), (45.2, 40.3, -5600, None), (45.2, 39.73, -5400, 'Areni'), (45.47, 36.98, -5000, 'Hajji Firuz'),
-                         (47.0, 35.5, -4300, None), (48.07, 34.52, -3500, 'Godin Tepe'), (50.5, 31.5, -3000, None), (52.5, 29.6, -2500, 'Shiraz')]),
-    ('Into Anatolia', [(44.75, 41.45, -6000, None), (42.5, 40.4, -5500, None), (39.5, 39.6, -5000, 'Eastern Anatolia'), (35.5, 39.2, -4300, None),
-                       (31.0, 39.0, -3600, None), (28.0, 39.4, -3200, None), (26.24, 39.96, -3000, 'Troy')]),
-    ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (37.0, 37.2, -4600, None), (35.9, 34.5, -4000, 'Byblos'), (35.0, 32.0, -3600, None),
-                                 (34.3, 31.3, -3300, None), (31.4, 30.7, -3100, 'The Nile Delta'), (31.0, 29.0, -3000, None), (31.92, 26.18, -2900, 'Abydos')]),
-    ('Over the sea to Crete and Greece', [(35.9, 34.5, -4000, None), (33.2, 34.9, -3500, 'Cyprus'), (29.0, 35.5, -3000, None), (25.1, 35.3, -2500, 'Crete'),
-                                          (23.0, 36.6, -2000, None), (22.75, 37.7, -1800, 'Mycenae'), (23.7, 38.0, -1400, 'Athens')]),
-    ('The Phoenicians, west', [(35.9, 34.5, -4000, None), (35.2, 33.3, -1100, 'Tyre'), (31.0, 34.5, -1000, None), (22.0, 35.0, -900, None), (15.0, 36.5, -850, None),
-                               (10.33, 36.85, -800, 'Carthage'), (9.0, 39.5, -700, 'Sardinia'), (1.4, 38.9, -650, 'Ibiza'), (-6.3, 36.5, -600, 'Cádiz'), (-9.1, 38.7, -400, 'Lisbon')]),
-    ('The Greeks, west', [(23.7, 38.0, -1400, None), (22.9, 37.9, -800, 'Corinth'), (19.0, 37.0, -750, None), (15.3, 37.1, -730, 'Sicily'), (16.6, 39.3, -700, 'Oenotria'),
-                          (14.3, 40.8, -600, 'Campania'), (12.3, 42.4, -500, 'Etruria')]),
-    ('Massalia and the Rhône', [(15.3, 37.1, -730, None), (10.0, 41.0, -650, None), (5.37, 43.3, -600, 'Massalia'), (4.8, 44.5, -100, 'The Rhône'),
-                                (4.85, 45.75, 1, 'Lyon'), (4.85, 47.0, 100, 'Burgundy'), (4.0, 49.0, 300, 'Champagne'), (2.35, 48.85, 400, 'Paris'), (0.5, 50.9, 450, None), (-0.1, 51.5, 500, 'Britain')]),
-    ('To Bordeaux', [(5.37, 43.3, -600, None), (3.0, 43.2, -100, 'Narbonne'), (1.44, 43.6, 1, 'Toulouse'), (-0.58, 44.84, 50, 'Bordeaux'), (-1.0, 46.5, 300, None), (-1.5, 47.2, 500, 'The Loire')]),
-    ('Over the Alps to the Mosel and the Rhine', [(12.3, 42.4, -500, None), (11.5, 44.8, -200, 'The Po'), (9.0, 45.5, -100, None), (8.5, 47.5, 100, None),
-                                                 (6.64, 49.75, 200, 'Trier, on the Mosel'), (8.27, 50.0, 300, 'Mainz, on the Rhine'), (8.0, 50.05, 800, 'The Rheingau')]),
-    ('Up the Danube', [(11.5, 44.8, -200, None), (14.5, 46.0, -50, None), (18.0, 47.5, 100, 'Pannonia'), (21.4, 48.1, 1100, 'Tokaj')]),
-    ('Inland in Iberia', [(-6.3, 36.5, -600, None), (-6.0, 37.4, -200, 'Seville'), (-4.0, 39.5, 1, None), (-2.5, 42.4, 100, 'Rioja'), (-7.5, 41.2, 200, 'The Douro')]),
-    ('The Silk Road, east', [(52.5, 29.6, -2500, None), (56.0, 33.0, -1500, None), (59.0, 36.0, -1000, 'Khorasan'), (62.2, 37.65, -500, 'Merv'), (66.97, 39.65, -300, 'Samarkand'),
-                             (71.0, 40.4, -200, 'Ferghana'), (76.0, 39.5, -150, 'Kashgar'), (85.0, 41.5, -140, None), (94.7, 40.1, -130, 'Dunhuang'), (103.8, 36.0, -125, None), (108.9, 34.27, -120, "Chang'an")]),
-    ('On to Japan', [(108.9, 34.27, -120, None), (117.0, 36.5, 300, None), (126.0, 35.5, 500, None), (132.0, 34.5, 650, None), (138.7, 35.65, 718, 'Katsunuma')]),
-    ('Out to Madeira and the Canaries', [(-9.1, 38.7, -400, None), (-12.0, 36.0, 1400, None), (-16.9, 32.65, 1425, 'Madeira'), (-16.5, 28.3, 1480, 'The Canaries')]),
-    ('Across the ocean to Mexico', [(-6.3, 36.5, -600, None), (-15.0, 30.0, 1493, None), (-40.0, 22.0, 1496, None), (-60.0, 19.0, 1498, None), (-70.0, 18.5, 1500, 'Hispaniola'),
-                                    (-85.0, 20.5, 1520, None), (-96.1, 19.2, 1522, 'Veracruz'), (-99.1, 19.4, 1524, 'Mexico')]),
-    ('South along the Andes', [(-70.0, 18.5, 1500, None), (-79.5, 9.0, 1520, 'Panama'), (-78.5, 0.0, 1535, None), (-77.0, -12.05, 1540, 'Lima'), (-75.7, -14.07, 1551, 'Ica'),
-                               (-71.5, -22.0, 1553, None), (-70.67, -33.45, 1555, 'Santiago'), (-68.84, -32.89, 1561, 'Mendoza')]),
-    ('To the Cape', [(-16.5, 28.3, 1480, None), (-20.0, 10.0, 1600, None), (-10.0, -10.0, 1640, None), (5.0, -25.0, 1650, None), (18.42, -33.93, 1655, 'The Cape')]),
-    ('North to California', [(-99.1, 19.4, 1524, None), (-105.0, 23.0, 1600, None), (-110.5, 27.5, 1700, None), (-114.7, 30.7, 1750, 'Baja California'), (-117.16, 32.72, 1769, 'San Diego'),
-                             (-121.9, 36.6, 1800, 'Monterey'), (-122.5, 38.3, 1823, 'Sonoma'), (-122.3, 38.4, 1838, 'Napa')]),
-    ('Across the Indian Ocean to Australia', [(18.42, -33.93, 1655, None), (60.0, -40.0, 1750, None), (110.0, -42.0, 1780, None), (140.0, -40.0, 1786, None), (151.2, -33.87, 1788, 'Sydney'),
-                                              (151.3, -32.7, 1825, 'The Hunter'), (145.0, -35.0, 1835, None), (138.9, -34.5, 1842, 'The Barossa')]),
-    ('And to New Zealand', [(151.2, -33.87, 1788, None), (165.0, -35.0, 1810, None), (173.95, -35.22, 1819, 'Kerikeri'), (175.5, -39.5, 1900, None), (173.7, -41.5, 1973, 'Marlborough')]),
+# ---- the trunks: name, then vertices (lon, lat, year, name or None). A trunk's first vertex lies on an
+# earlier trunk (the place it grows from); the years rise along it. -------------------------------------
+TRUNKS = [
+    ('The first vine', [ORIGIN, (44.2, 41.7, -5900, 'Shulaveris Gora'), (43.9, 42.0, -5800, None), (42.9, 42.15, -5600, None),
+                        (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
+    ('Along the Kura to the Caspian', [ORIGIN, (45.4, 41.6, -5900, None), (46.0, 41.7, -5800, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
+                                       (49.0, 40.3, -5000, None)]),
+    ('Down the Zagros', [ORIGIN, (45.0, 40.6, -5700, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
+                         (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
+                         (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
+    ('Into Anatolia', [ORIGIN, (43.9, 41.1, -5900, None), (42.7, 40.5, -5600, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
+                       (37.5, 39.3, -4600, None), (35.5, 39.2, -4300, None), (33.5, 39.0, -3900, None), (31.0, 39.0, -3600, None), (29.5, 39.2, -3400, None),
+                       (28.0, 39.4, -3200, None), (27.0, 39.8, -3100, None), (26.24, 39.96, -3000, 'Troy')]),
+    ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (38.3, 38.4, -4800, None), (37.0, 37.2, -4600, None), (36.6, 36.3, -4400, None), (36.0, 35.2, -4200, None),
+                                 (35.9, 34.5, -4000, 'Byblos'), (35.5, 33.9, -3900, None), (35.4, 33.0, -3800, None), (35.0, 32.0, -3600, None), (34.7, 31.6, -3450, None),
+                                 (34.3, 31.3, -3300, None), (33.5, 31.1, -3200, None), (32.3, 30.9, -3150, None), (31.4, 30.7, -3100, 'The Nile Delta'),
+                                 (31.2, 29.9, -3050, None), (31.0, 29.0, -3000, None), (31.2, 27.8, -2950, None), (31.92, 26.18, -2900, 'Abydos')]),
+    ('Over the sea to Crete and Greece', [(35.9, 34.5, -4000, None), (34.6, 34.7, -3800, None), (33.2, 34.9, -3500, 'Cyprus'), (32.4, 34.7, -3400, None),
+                                          (30.5, 34.9, -3200, None), (28.5, 35.3, -2900, None), (26.3, 35.3, -2600, None), (25.1, 35.3, -2500, 'Crete'),
+                                          (24.0, 35.9, -2300, None), (23.0, 36.6, -2000, None), (22.9, 37.2, -1900, None), (22.75, 37.7, -1800, 'Mycenae'),
+                                          (23.3, 37.9, -1600, None), (23.7, 38.0, -1400, 'Athens')]),
+    ('The Phoenicians, west', [(35.9, 34.5, -4000, None), (35.6, 33.9, -2500, None), (35.2, 33.3, -1100, 'Tyre'), (34.0, 33.6, -1000, None), (31.0, 34.5, -980, None),
+                               (27.0, 34.6, -950, None), (22.0, 35.0, -920, None), (18.0, 35.6, -890, None), (15.0, 36.5, -860, None), (12.5, 37.0, -830, None),
+                               (10.33, 36.85, -800, 'Carthage'), (9.5, 38.5, -750, None), (9.0, 39.5, -700, 'Sardinia'), (5.0, 39.3, -680, None),
+                               (1.4, 38.9, -650, 'Ibiza'), (-1.5, 37.6, -630, None), (-4.5, 36.3, -610, None), (-6.3, 36.5, -600, 'Cádiz'), (-7.5, 37.0, -500, None),
+                               (-8.8, 37.9, -450, None), (-9.1, 38.7, -400, 'Lisbon')]),
+    ('The Greeks, west', [(23.7, 38.0, -1400, None), (22.9, 37.9, -800, 'Corinth'), (21.5, 38.2, -780, None), (20.0, 37.8, -760, None), (17.5, 37.3, -745, None),
+                          (15.3, 37.1, -730, 'Sicily'), (15.8, 38.3, -715, None), (16.6, 39.3, -700, 'Oenotria'), (15.8, 40.2, -650, None), (14.3, 40.8, -600, 'Campania'),
+                          (13.5, 41.6, -550, None), (12.3, 42.4, -500, 'Etruria'), (11.3, 43.6, -400, None), (11.0, 44.5, -250, None), (10.9, 45.3, -150, None),
+                          (8.9, 45.5, -100, 'Piedmont'), (7.5, 46.3, 50, 'Valais')]),
+    ('Massalia and the Rhône', [(15.3, 37.1, -730, None), (13.5, 39.5, -680, None), (11.0, 41.5, -640, None), (8.0, 43.0, -620, None), (5.37, 43.3, -600, 'Massalia'),
+                                (4.8, 43.9, -400, None), (4.8, 44.5, -100, 'The Rhône'), (4.85, 45.75, 1, 'Lyon'), (4.8, 46.5, 60, None), (4.85, 47.0, 100, 'Burgundy'),
+                                (4.5, 48.0, 200, None), (4.0, 49.0, 300, 'Champagne'), (2.35, 48.85, 400, 'Paris'), (0.8, 49.5, 500, None), (-0.1, 51.5, 700, 'Britain')]),
+    ('To Bordeaux and the Loire', [(5.37, 43.3, -600, None), (3.0, 43.2, -120, 'Narbonne'), (1.44, 43.6, -30, 'Toulouse'), (0.2, 44.2, 20, None),
+                                   (-0.58, 44.84, 50, 'Bordeaux'), (-0.7, 45.8, 200, None), (-0.9, 46.6, 300, None), (-1.5, 47.2, 450, 'The Loire'),
+                                   (0.7, 47.4, 500, None), (2.8, 47.5, 580, 'Sancerre')]),
+    ('Over the Alps to the Mosel and the Rhine', [(10.9, 45.3, -150, None), (10.5, 46.2, -50, None), (9.4, 46.9, 20, None), (8.5, 47.5, 100, None),
+                                                  (7.6, 48.6, 150, 'Alsace'), (6.9, 49.3, 190, None), (6.64, 49.75, 250, 'Trier, on the Mosel'),
+                                                  (7.4, 50.1, 290, None), (8.27, 50.0, 330, 'Mainz, on the Rhine'), (8.0, 50.05, 800, 'The Rheingau'),
+                                                  (9.9, 49.8, 850, 'Franconia')]),
+    ('Up the Danube', [(10.9, 45.3, -150, None), (12.5, 45.7, -100, None), (13.7, 46.1, -40, None), (15.0, 46.4, 10, None), (15.5, 48.3, 90, 'The Wachau'),
+                       (17.1, 48.1, 110, None), (18.0, 47.5, 130, 'Pannonia'), (17.8, 46.9, 200, 'Balaton'), (19.0, 47.0, 400, None), (20.4, 47.9, 900, 'Eger'),
+                       (21.4, 48.1, 1100, 'Tokaj')]),
+    ('Inland in Iberia', [(-6.3, 36.5, -600, None), (-6.0, 37.4, -300, 'Seville'), (-5.5, 38.5, -150, None), (-4.5, 39.4, -50, None), (-3.5, 40.5, 1, None),
+                          (-2.5, 42.4, 100, 'Rioja'), (-4.0, 42.2, 150, None), (-5.8, 41.5, 200, None), (-7.5, 41.2, 250, 'The Douro'), (-8.4, 41.7, 300, None),
+                          (-8.7, 42.4, 400, 'Rías Baixas')]),
+    ('Thrace and the Black Sea', [(26.24, 39.96, -3000, None), (26.6, 40.6, -2600, None), (26.0, 41.3, -2200, None), (25.6, 41.9, -1800, None), (25.0, 42.3, -1400, None),
+                                  (25.9, 42.4, -1000, 'Thrace'), (27.5, 42.5, -700, None), (28.9, 43.4, -600, 'Dionysopolis'), (29.5, 44.8, -550, None),
+                                  (30.4, 46.1, -500, 'Olbia'), (30.5, 46.5, -450, None), (29.0, 46.9, -300, 'Moldova')]),
+    ('The Greeks to Crimea', [(28.9, 43.4, -600, None), (30.2, 44.2, -560, None), (32.0, 44.8, -500, None), (33.5, 44.6, -422, 'Chersonesus')]),
+    ('The Silk Road, east', [(52.5, 29.6, -2500, None), (54.5, 31.5, -2000, None), (56.0, 33.0, -1500, None), (57.5, 34.5, -1200, None), (59.0, 36.0, -1000, 'Khorasan'),
+                             (61.0, 36.9, -700, None), (62.2, 37.65, -500, 'Merv'), (64.4, 39.8, -400, 'Bukhara'), (66.97, 39.65, -300, 'Samarkand'),
+                             (69.0, 40.6, -250, None), (71.0, 40.4, -200, 'Ferghana'), (73.5, 39.9, -180, None), (76.0, 39.5, -150, 'Kashgar'),
+                             (80.0, 41.5, -140, None), (84.0, 42.3, -135, None), (89.2, 42.95, -130, 'Turpan'), (93.0, 41.8, -128, None), (94.7, 40.1, -125, 'Dunhuang'),
+                             (98.5, 39.7, -124, None), (103.8, 36.0, -122, None), (106.0, 35.5, -121, None), (108.9, 34.27, -120, "Chang'an")]),
+    ('Into India', [(62.2, 37.65, -500, None), (65.7, 34.7, -400, None), (69.2, 34.5, -300, 'Kapisa'), (71.5, 33.6, -250, None), (73.0, 33.0, -200, 'Taxila')]),
+    ('On to Korea and Japan', [(108.9, 34.27, -120, None), (113.0, 34.8, 100, None), (117.0, 36.5, 300, None), (121.0, 37.5, 400, None), (124.5, 38.0, 450, None),
+                               (126.0, 37.3, 500, None), (127.5, 35.8, 550, None), (129.1, 35.2, 600, None), (131.0, 34.2, 650, None), (134.0, 34.7, 690, None),
+                               (136.0, 35.2, 705, None), (138.7, 35.65, 718, 'Katsunuma')]),
+    ('Out to Madeira and the Canaries', [(-9.1, 38.7, -400, None), (-10.5, 37.0, 1300, None), (-13.0, 35.0, 1400, None), (-16.9, 32.65, 1425, 'Madeira'),
+                                         (-16.5, 30.0, 1460, None), (-16.5, 28.3, 1480, 'The Canaries')]),
+    ('Across the ocean to Mexico', [(-16.5, 28.3, 1480, None), (-25.0, 24.0, 1493, None), (-40.0, 21.0, 1495, None), (-55.0, 19.0, 1497, None), (-65.0, 18.6, 1499, None),
+                                    (-70.0, 18.5, 1500, 'Hispaniola'), (-74.0, 19.5, 1510, None), (-78.0, 21.0, 1514, 'Cuba'), (-85.0, 20.5, 1519, None),
+                                    (-96.1, 19.2, 1522, 'Veracruz'), (-97.5, 19.3, 1523, None), (-99.1, 19.4, 1524, 'Mexico')]),
+    ('North by the Rio Grande', [(-99.1, 19.4, 1524, None), (-101.0, 21.0, 1550, None), (-102.6, 22.8, 1570, 'Zacatecas'), (-102.2, 25.4, 1597, 'Parras'),
+                                 (-104.5, 28.5, 1615, None), (-106.3, 30.2, 1625, None), (-106.9, 33.4, 1629, 'Senecú, on the Rio Grande'),
+                                 (-106.5, 31.75, 1659, 'El Paso del Norte')]),
+    ('South along the Andes', [(-70.0, 18.5, 1500, None), (-74.0, 15.0, 1510, None), (-79.5, 9.0, 1520, 'Panama'), (-80.0, 4.0, 1530, None), (-81.0, -2.0, 1535, None),
+                               (-80.5, -7.0, 1538, None), (-77.0, -12.05, 1540, 'Lima'), (-75.7, -14.07, 1551, 'Ica'), (-72.0, -18.0, 1553, None),
+                               (-70.4, -23.6, 1554, None), (-70.67, -33.45, 1555, 'Santiago'), (-70.0, -32.8, 1558, None), (-68.84, -32.89, 1561, 'Mendoza'),
+                               (-66.0, -32.0, 1600, None), (-64.5, -31.4, 1620, 'Córdoba'), (-60.0, -32.9, 1700, None), (-58.4, -34.6, 1750, 'Buenos Aires'),
+                               (-56.2, -34.9, 1870, 'Montevideo')]),
+    ('To Brazil', [(-16.9, 32.65, 1425, None), (-20.0, 20.0, 1500, None), (-26.0, 10.0, 1510, None), (-33.0, 0.0, 1520, None), (-38.0, -8.0, 1525, None),
+                   (-40.0, -17.0, 1528, None), (-43.0, -22.5, 1530, None), (-46.4, -23.97, 1532, 'São Vicente'), (-47.0, -23.0, 1600, None), (-49.5, -25.5, 1750, None),
+                   (-51.5, -29.2, 1875, 'The Serra Gaúcha')]),
+    ('To the Cape', [(-16.5, 28.3, 1480, None), (-23.0, 15.0, 1500, None), (-26.0, 5.0, 1520, None), (-22.0, -8.0, 1560, None), (-12.0, -20.0, 1600, None),
+                     (0.0, -30.0, 1630, None), (10.0, -35.0, 1645, None), (18.42, -33.93, 1655, 'The Cape'), (18.86, -33.93, 1679, 'Stellenbosch'),
+                     (19.2, -33.7, 1700, 'Paarl')]),
+    ('North to California', [(-99.1, 19.4, 1524, None), (-101.5, 20.7, 1560, None), (-104.0, 22.0, 1600, None), (-105.5, 23.5, 1650, None), (-107.5, 25.5, 1700, None),
+                             (-110.5, 27.5, 1720, None), (-111.7, 28.8, 1735, None), (-114.7, 30.7, 1750, 'Baja California'), (-116.0, 31.9, 1760, None),
+                             (-117.16, 32.72, 1769, 'San Diego'), (-118.3, 34.1, 1771, 'San Gabriel'), (-120.5, 35.0, 1790, None), (-121.9, 36.6, 1800, 'Monterey'),
+                             (-122.0, 37.5, 1810, None), (-122.5, 38.3, 1823, 'Sonoma'), (-122.3, 38.4, 1838, 'Napa')]),
+    ('North to Oregon', [(-122.3, 38.4, 1838, None), (-122.8, 40.5, 1900, None), (-122.9, 42.5, 1950, None), (-123.1, 45.3, 1965, 'The Willamette')]),
+    ('Across the Indian Ocean to Australia', [(18.42, -33.93, 1655, None), (30.0, -40.0, 1700, None), (50.0, -42.0, 1740, None), (75.0, -43.0, 1770, None),
+                                              (100.0, -43.5, 1780, None), (125.0, -42.0, 1784, None), (140.0, -40.0, 1786, None), (148.0, -37.0, 1787, None),
+                                              (151.2, -33.87, 1788, 'Sydney'), (151.3, -32.7, 1828, 'The Hunter'), (149.0, -34.5, 1832, None), (145.0, -35.5, 1835, None),
+                                              (141.0, -34.5, 1838, None), (138.9, -34.5, 1842, 'The Barossa'), (138.6, -33.8, 1848, 'The Clare')]),
+    ('To Victoria and Tasmania', [(151.2, -33.87, 1788, None), (150.0, -36.0, 1810, None), (147.5, -38.5, 1820, None), (147.1, -41.4, 1823, 'Tasmania'),
+                                  (145.4, -37.7, 1838, 'The Yarra')]),
+    ('And to New Zealand', [(151.2, -33.87, 1788, None), (158.0, -34.5, 1800, None), (165.0, -35.0, 1810, None), (171.0, -34.8, 1816, None), (173.95, -35.22, 1819, 'Kerikeri'),
+                            (175.0, -37.5, 1840, None), (176.9, -39.5, 1851, "Hawke's Bay"), (175.5, -41.0, 1900, None), (173.95, -41.5, 1973, 'Marlborough')]),
 ]
 
+# ---- the world's wine regions the trunks don't reach, each a twig from the nearest trunk the vine had
+# reached by then: name, lon, lat, the earliest planting the record gives (SOURCES.md). ----------------
+REGIONS = [
+    ('The Alazani valley', 45.7, 41.95, -5000), ('Commandaria', 33.0, 34.8, -2000), ('The Bekaa', 36.0, 33.8, -3000), ('Santorini', 25.43, 36.4, -1600),
+    ('Nemea', 22.65, 37.8, -1000), ('Chios', 26.1, 38.4, -700), ('Naxos', 25.4, 37.1, -1000), ('Samos', 26.8, 37.75, -800),
+    ('Corsica', 9.3, 42.0, -570), ('Issa', 16.2, 43.05, -400), ('Chianti', 11.3, 43.5, -400), ('Valpolicella', 10.9, 45.5, -100),
+    ('Priorat', 0.8, 41.2, 1194), ('Penedès', 1.7, 41.4, -100), ('Jerez', -6.1, 36.7, -600), ('Vinho Verde', -8.4, 41.6, 300),
+    ('Languedoc', 3.5, 43.4, -550), ('Beaujolais', 4.7, 46.1, 50), ('The Jura', 5.7, 46.9, 100), ('Savoie', 6.0, 45.6, 100),
+    ('Eastern Sicily', 15.0, 37.75, -730), ('Carthage', 10.33, 36.85, -800), ('Dalmatia', 17.0, 43.3, -400), ('Pfalz', 8.2, 49.3, 300),
+    ('Württemberg', 9.2, 49.0, 750), ('Slovenia', 15.6, 46.5, -50), ('Eger', 20.4, 47.9, 900), ('Dealu Mare', 26.2, 45.0, -500),
+    ('Mavrud', 24.8, 42.1, -1000), ('Kakheti', 45.9, 41.8, -5500), ('Yerevan', 44.5, 40.2, -4100),
+    ('Turpan', 89.2, 42.95, -130), ('Ningxia', 106.0, 38.3, 1984), ('Yantai', 121.4, 37.5, 1892), ('Yamanashi', 138.6, 35.7, 1874),
+    ('Meknès', -5.55, 33.9, 1912), ('Algiers', 3.0, 36.75, 1830), ('Constantia', 18.42, -34.03, 1685), ('The Swartland', 18.7, -33.3, 1700),
+    ('Casa Madero', -102.2, 25.4, 1597), ('Tarija', -64.7, -21.5, 1600), ('Cafayate', -65.97, -26.07, 1850), ('Casablanca valley', -71.4, -33.3, 1982),
+    ('Colchagua', -71.3, -34.6, 1560), ('Canelones', -56.3, -34.5, 1870), ('Santa Barbara', -120.0, 34.6, 1782), ('Paso Robles', -120.7, 35.6, 1797),
+    ('Lodi', -121.3, 38.1, 1850), ('Coonawarra', 140.8, -37.3, 1890), ('Margaret River', 115.1, -33.95, 1967), ('The Swan valley', 116.0, -31.8, 1829),
+    ('Central Otago', 169.3, -45.0, 1864), ('Gisborne', 178.0, -38.65, 1850), ('Rutherglen', 146.5, -36.05, 1851),
+]
+
+# ---- the globe's land ---------------------------------------------------------------------------------
+_geo = np.array(Image.open(ROOT / 'Globe' / 'geo.png'))
+W, H = _geo.shape[1], _geo.shape[0]
+LAND = _geo[..., 1].astype(int) > 128          # the coarse coast distance's sign (land positive)
+
+
+def on_land(lon, lat):
+    x = int(((lon + 180) % 360) / 360 * W) % W
+    y = min(H - 1, max(0, int((90 - lat) / 180 * H)))
+    return bool(LAND[y, x])
+
+
+# ---- geometry -------------------------------------------------------------------------------------------
 def unit(lon, lat):
     return (math.cos(lat * D) * math.sin(lon * D), math.sin(lat * D), math.cos(lat * D) * math.cos(lon * D))
+
 
 def arc(a, b):
     u, v = unit(*a), unit(*b)
     return math.acos(max(-1, min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2])))
+
 
 def along(a, b, t):
     u, v, w = unit(*a), unit(*b), arc(a, b)
@@ -74,59 +181,189 @@ def along(a, b, t):
     p = tuple(u[i] * sa + v[i] * sb for i in range(3))
     return (math.atan2(p[0], p[2]) / D, math.asin(max(-1, min(1, p[1]))) / D)
 
+
+def densify(verts, step_km=60.0, sway=0.16, seed=0):
+    """[lon, lat, year] every ~step_km along the great circles between the vertices, the years
+    interpolated, the way swaying a little either side of the straight line between places (a vine
+    wanders; nothing at the places themselves)."""
+    pts = [[round(verts[0][0], 3), round(verts[0][1], 3), verts[0][2]]]
+    walked = 0.0
+    for i in range(1, len(verts)):
+        (plon, plat, pyear), (lon, lat, year) = verts[i - 1][:3], verts[i][:3]
+        km = arc((plon, plat), (lon, lat)) * KM
+        n = max(1, int(km // step_km))
+        for k in range(1, n + 1):
+            t = k / n
+            q = along((plon, plat), (lon, lat), t)
+            s = math.sin((walked + km * t) / 230.0 + seed * 1.7) * sway * math.sin(t * math.pi)
+            nxt = along((plon, plat), (lon, lat), min(1, t + 0.01))
+            dx, dy = nxt[0] - q[0], nxt[1] - q[1]
+            L = math.hypot(dx, dy) or 1
+            qlon = q[0] + (-dy / L) * s / max(0.2, math.cos(q[1] * D))
+            qlat = q[1] + (dx / L) * s
+            pts.append([round(qlon, 3), round(qlat, 3), round(pyear + (year - pyear) * t, 1)])
+        walked += km
+    return pts
+
+
+def nearest(way, lon, lat, by=None):
+    """The index of the way's nearest point (and its distance in km), among those `by` accepts."""
+    best, bd = None, 1e9
+    for i, p in enumerate(way):
+        if by and not by(p):
+            continue
+        d = arc((p[0], p[1]), (lon, lat)) * KM
+        if d < bd:
+            best, bd = i, d
+    return best, bd
+
+
+def runs(way):
+    """The way cut into runs over land and over sea by the globe's land, each a list of points sharing
+    its ends with the next (so stems and voyages meet at every landfall); a run shorter than three points
+    joins its neighbours, so a coast grazed doesn't flicker between the two."""
+    kinds = [on_land(p[0], p[1]) for p in way]
+    # the trunks' named places are on land whatever the coarse coast says of a small island or a delta
+    for i, p in enumerate(way):
+        if len(p) > 3 and p[3]:
+            kinds[i] = True
+    changed = True
+    while changed:
+        changed = False
+        i = 0
+        while i < len(kinds):
+            j = i
+            while j < len(kinds) and kinds[j] == kinds[i]:
+                j += 1
+            if j - i < 3 and (i > 0 or j < len(kinds)):
+                fill = kinds[i - 1] if i > 0 else kinds[j]
+                for k in range(i, j):
+                    kinds[k] = fill
+                changed = True
+            i = j
+    out, start = [], 0
+    for i in range(1, len(way) + 1):
+        if i == len(way) or kinds[i] != kinds[start]:
+            # (a run includes the first point of the next, so the line is unbroken)
+            end = min(len(way), i + 1)
+            if end - start >= 2:
+                out.append(('land' if kinds[start] else 'sea', start, end))
+            start = i
+    return out
+
+
 def main():
-    branches, leaves, nodes = [], [], []
-    leaf_seed = 0
-    for bi, (name, verts) in enumerate(BRANCHES):
-        pts = []   # [lon, lat, year]
-        walked = 0.0   # km along the branch, for the stem's wander
-        for i, (lon, lat, year, place) in enumerate(verts):
+    branches = []
+    for ti, (name, verts) in enumerate(TRUNKS):
+        way = densify(verts, seed=ti)
+        # the vertices' names, kept on the densified way for the land rule and the clusters
+        named = {}
+        for lon, lat, year, place in verts:
             if place:
-                nodes.append({'name': place, 'lon': lon, 'lat': lat, 'year': year, 'branch': bi})
-            if i == 0:
-                pts.append([round(lon, 3), round(lat, 3), year])
-                continue
-            plon, plat, pyear, _ = verts[i - 1]
-            km = arc((plon, plat), (lon, lat)) * 6371
-            n = max(1, int(km // 70))
-            for k in range(1, n + 1):
-                t = k / n
-                q = along((plon, plat), (lon, lat), t)
-                # a vine wanders: the stem sways a little either side of the straight way, most in the
-                # middle of a stretch and not at all at the places it reaches
-                walked_here = walked + km * t
-                sway = math.sin(walked_here / 260.0 + bi * 1.7) * 0.22 * math.sin(t * math.pi)
-                nxt = along((plon, plat), (lon, lat), min(1, t + 0.01))
-                dx, dy = nxt[0] - q[0], nxt[1] - q[1]
-                L = math.hypot(dx, dy) or 1
-                qlon = q[0] + (-dy / L) * sway / max(0.2, math.cos(q[1] * D))
-                qlat = q[1] + (dx / L) * sway
-                pts.append([round(qlon, 3), round(qlat, 3), round(pyear + (year - pyear) * t, 1)])
-            walked += km
-        # leaves every ~200 km along the densified way, alternating sides, a little off the stem
-        dist = 0.0
-        for i in range(1, len(pts)):
-            a, b = pts[i - 1], pts[i]
-            seg = arc((a[0], a[1]), (b[0], b[1])) * 6371
-            dist += seg
-            if dist >= 110:
-                dist = 0
-                leaf_seed += 1
-                side = 1 if leaf_seed % 2 else -1
-                # perpendicular to the way, about 60 km off it
-                dx, dy = b[0] - a[0], b[1] - a[1]
-                L = math.hypot(dx, dy) or 1
-                off = 0.42
-                lon = b[0] + (-dy / L) * off * side / max(0.2, math.cos(b[1] * D))
-                lat = b[1] + (dx / L) * off * side
-                leaves.append([round(lon, 3), round(lat, 3), b[2], leaf_seed % 3])
-        branches.append({'name': name, 'way': pts, 'start': verts[0][2], 'end': verts[-1][2]})
-    data = {'origin': {'lon': ORIGIN[0], 'lat': ORIGIN[1], 'year': -6000, 'name': 'Gadachrili Gora'}, 'branches': branches, 'leaves': leaves, 'nodes': nodes}
-    OUT.write_text('/* The vine\'s branches, each a way with a year at each point (negative BCE), densified along the great\n'
-                   '   circle; the leaves along them ([lon, lat, year, kind]); the named places where clusters hang. Built\n'
-                   '   by tools/vine/build.py, generalised after the record in SOURCES.md; the ways are drawn. */\n'
+                i, d = nearest(way, lon, lat)
+                named[i] = place
+        for i, place in named.items():
+            way[i] = way[i] + [place]
+        frm = None
+        if ti > 0:
+            lon, lat = verts[0][0], verts[0][1]
+            cands = [(nearest(branches[b]['way'], lon, lat), b) for b in range(ti)]
+            (i, d), b = min(cands, key=lambda c: c[0][1])
+            if d > 5:
+                raise SystemExit(f'{name} starts {d:.0f} km from any earlier trunk')
+            frm = [b, i]
+            if branches[b]['way'][i][2] > verts[0][2] + 1:
+                raise SystemExit(f'{name} starts in {verts[0][2]} where {branches[b]["name"]} arrives only in {branches[b]["way"][i][2]}')
+        branches.append({'name': name, 'way': way, 'from': frm, 'twig': False})
+    trunks = len(branches)
+
+    # the regions: a twig from the nearest trunk point the vine had reached by the region's year
+    for ri, (name, lon, lat, year) in enumerate(REGIONS):
+        cands = []
+        for b in range(trunks):
+            i, d = nearest(branches[b]['way'], lon, lat, by=lambda p: p[2] <= year)
+            if i is not None:
+                cands.append((d, b, i))
+        if not cands:
+            raise SystemExit(f'{name} ({year}): no trunk had arrived by then')
+        d, b, i = min(cands)
+        if d > 1400:
+            raise SystemExit(f'{name} ({year}) is {d:.0f} km from the nearest trunk by then ({branches[b]["name"]}): give it a trunk')
+        start = branches[b]['way'][i]
+        if d < 25:
+            # the region lies on the trunk itself: a cluster there, no twig
+            branches[b]['way'][i] = start[:3] + [name] if len(start) < 4 else start
+            continue
+        # it grows out over the years before its planting, never before the trunk arrived
+        span = max(15, min(400, d / 4))
+        y0 = max(start[2], year - span)
+        if y0 >= year:
+            y0 = year - 1
+        # a gentle curve: the straight way bent a little to one side
+        mid = along((start[0], start[1]), (lon, lat), 0.5)
+        dx, dy = lon - start[0], lat - start[1]
+        L = math.hypot(dx, dy) or 1
+        side = 1 if ri % 2 else -1
+        bend = min(0.9, d / 900)
+        mid = (mid[0] + (-dy / L) * bend * side, mid[1] + (dx / L) * bend * side)
+        verts = [(start[0], start[1], y0), (mid[0], mid[1], (y0 + year) / 2), (lon, lat, year, name)]
+        way = densify(verts, step_km=45, sway=0.04, seed=100 + ri)
+        way[-1] = way[-1] + [name]
+        branches.append({'name': name, 'way': way, 'from': [b, i], 'twig': True})
+
+    # stems and voyages: the runs over land and sea, as dated line features
+    stems, voyages, leaves, clusters, tips = [], [], [], [], []
+    leaf_seed = 0
+    for bi, br in enumerate(branches):
+        way = br['way']
+        for kind, s, e in runs(way):
+            feature = {'branch': bi, 'start': s, 'coordinates': [[p[0], p[1], p[2]] for p in way[s:e]]}
+            (stems if kind == 'land' else voyages).append(feature)
+            if kind == 'land':
+                # leaves every ~110 km along the land, alternating sides, a little off the stem, dated a
+                # little after the stem passed (they open as the tip moves on)
+                dist = 0.0
+                for i in range(s + 1, e):
+                    a, b = way[i - 1], way[i]
+                    dist += arc((a[0], a[1]), (b[0], b[1])) * KM
+                    if dist >= (72 if not br["twig"] else 60):
+                        dist = 0
+                        leaf_seed += 1
+                        side = 1 if leaf_seed % 2 else -1
+                        dx, dy = b[0] - a[0], b[1] - a[1]
+                        L = math.hypot(dx, dy) or 1
+                        off = 0.3
+                        lon = b[0] + (-dy / L) * off * side / max(0.2, math.cos(b[1] * D))
+                        lat = b[1] + (dx / L) * off * side
+                        if on_land(lon, lat):
+                            lag = max(3, abs(b[2] - a[2]) * 0.5)
+                            leaves.append([round(lon, 3), round(lat, 3), round(b[2] + lag, 1), leaf_seed % 3, 1 if lat < 0 else 0])
+        for p in way:
+            if len(p) > 3 and p[3] and not (bi == 0 and p[3] == ORIGIN[3]):
+                clusters.append({'name': p[3], 'lon': p[0], 'lat': p[1], 'year': p[2], 'branch': bi})
+        if not br['twig']:
+            tips.append({'branch': bi, 'name': br['name'], 'coordinates': [[p[0], p[1]] for p in way], 'dates': [p[2] for p in way]})
+
+    # the strip's marks: the record's landmarks, not every place (a tick within a fingertip is landed on)
+    ticks = [-6000, -5000, -4000, -3500, -3000, -2500, -1100, -800, -600, -120, 100, 718, 1425, 1500, 1561, 1655, 1769, 1788, 1819, 1973]
+    # the years' pace: deep time quickly, the last five centuries slowly; about three minutes in all
+    pace = [[-6000, 0], [-3000, 32], [-1000, 62], [-100, 86], [800, 104], [1400, 116], [1600, 138], [1800, 158], [1900, 172], [2026, 190]]
+    data = {
+        'origin': {'lon': ORIGIN[0], 'lat': ORIGIN[1], 'year': ORIGIN[2], 'name': ORIGIN[3]},
+        'branches': [{'name': b['name'], 'from': b['from'], 'twig': b['twig'], 'way': [p[:3] for p in b['way']]} for b in branches],
+        'stems': stems, 'voyages': voyages, 'leaves': leaves, 'clusters': clusters, 'tips': tips,
+        'ticks': ticks, 'pace': pace, 'today': 2026,
+    }
+    OUT.write_text('/* The vine, dated for the globe (runtime 6): its trunks and twigs as ways with a year at each point\n'
+                   '   (negative BCE), the stems over land and voyages over sea cut from them, the leaves along the stems,\n'
+                   '   the clusters at the named places, the tendrils\' ways. Built by tools/vine/build.py after the record\n'
+                   '   in SOURCES.md; the ways are drawn, not the route of any one vine. Never hand-edit. */\n'
                    'window.VINE = ' + json.dumps(data, separators=(',', ':')) + ';\n', encoding='utf-8')
-    print(f'{OUT}: {len(branches)} branches, {sum(len(b["way"]) for b in branches)} points, {len(leaves)} leaves, {len(nodes)} places, {OUT.stat().st_size // 1024} KB')
+    land_pts = sum(len(f['coordinates']) for f in stems)
+    sea_pts = sum(len(f['coordinates']) for f in voyages)
+    print(f'{OUT.relative_to(ROOT)}: {trunks} trunks, {len(branches) - trunks} twigs; {len(stems)} stems ({land_pts} points), '
+          f'{len(voyages)} voyages ({sea_pts} points), {len(leaves)} leaves, {len(clusters)} clusters, {len(tips)} tips, {OUT.stat().st_size // 1024} KB')
+
 
 if __name__ == '__main__':
     main()

@@ -1,4 +1,4 @@
-// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 5 (docs/runtime3.md),
+// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 6 (docs/runtime3.md),
 // so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
 // borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
 // camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
@@ -656,7 +656,18 @@
       minZoom: num(options.minZoom, 0), maxZoom: num(options.maxZoom, Infinity), touchable: options.touchable === true,
       font: ['regular', 'italic', 'caps'].includes(options.font) ? options.font : 'regular', size: clamp(num(options.size, 15), 10, 40),
       width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [],
-      lineWidth: Number.isFinite(options.lineWidth) ? clamp(options.lineWidth, 0.3, 12) : null, flow: parseFlow(options.flow, where) };
+      lineWidth: Number.isFinite(options.lineWidth) ? clamp(options.lineWidth, 0.3, 12) : null, flow: parseFlow(options.flow, where),
+      // dated geography (runtime 6): each place's third number is its date; a dated border may thicken with age, a dated point bloom
+      dated: options.dated === true, thickens: null, bloom: 0, seen: new Map(), fresh: true, bloomingUntil: 0 };
+    if (L.dated) {
+      if (s.M && s.M.runtime < 6) hostWarn(where + ': dated is new in runtime 6: declare "runtime": 6');
+      L.bloom = clamp(num(options.bloom, 0.6), 0, 3);
+      const th = options.thickens;
+      if (th != null) {
+        if (th && typeof th === 'object' && Number.isFinite(th.to) && Number.isFinite(th.over) && th.over > 0) L.thickens = { to: clamp(th.to, 0.3, 12), over: th.over };
+        else hostWarn(where + ': thickens is { to: <reading points>, over: <date units> }');
+      }
+    } else if (options.thickens != null || options.bloom != null) hostWarn(where + ': thickens and bloom belong to a dated layer (dated: true)');
     if (style === 'symbol') {
       if (typeof options.image !== 'string') hostError(where + ': a symbol layer needs options.image, a picture of the pack');
       else L.pic = picture(s, options.image, where);
@@ -666,6 +677,8 @@
       const pts = Array.isArray(list) ? list.map(coord) : [];
       return pts.length >= min && pts.every(Boolean) ? pts : null;
     };
+    // a place's date (a dated layer): its third number, or -Infinity (always there)
+    const when = (c) => (L.dated && Array.isArray(c) && c.length > 2 && Number.isFinite(c[2]) ? c[2] : -Infinity);
     const walk = (geom, props, index, depth) => {
       if (!geom || typeof geom !== 'object' || depth > 4) { L.skipped++; return; }
       const t = geom.type, c = geom.coordinates;
@@ -678,14 +691,14 @@
           const q = coord(p);
           if (!q) { L.skipped++; continue; }
           const v = unit(q[0], q[1]);
-          L.points.push({ index, props, lon: q[0], lat: q[1], wx: v[0], wy: v[1], wz: v[2] });
+          L.points.push({ index, props, lon: q[0], lat: q[1], wx: v[0], wy: v[1], wz: v[2], date: when(p) });
           L.vertices++;
         }
       } else if (t === 'LineString' || t === 'MultiLineString') {
         for (const part of t === 'LineString' ? [c] : Array.isArray(c) ? c : []) {
           const pts = coords(part, 2);
           if (!pts) { L.skipped++; continue; }
-          L.lines.push({ index, ring: ring(pts, false), closed: false });
+          L.lines.push({ index, ring: ring(pts, false), closed: false, pts, dates: L.dated ? part.map(when) : null });
           L.vertices += pts.length;
         }
       } else {
@@ -752,19 +765,99 @@
     g.fillStyle = ink; g.fillText(text, x, baseline);
   }
 
+  // ---- dated geography (runtime 6; GeoLayers.swift's grown, shown, bloom and ribbon)
+  const stageDate = (s) => (s && s.time ? s.time.value : null);
+  function betweenLL(a, b, t) {           // t of the way from a to b on the great circle, in lon/lat
+    const u = unit(a[0], a[1]), v = unit(b[0], b[1]), w = Math.acos(clamp(u[0] * v[0] + u[1] * v[1] + u[2] * v[2], -1, 1));
+    if (w < 1e-9) return a;
+    const sa = Math.sin((1 - t) * w) / Math.sin(w), sb = Math.sin(t * w) / Math.sin(w);
+    const x = u[0] * sa + v[0] * sb, y = u[1] * sa + v[1] * sb, z = u[2] * sa + v[2] * sb;
+    return [Math.atan2(x, z) / D, Math.asin(clamp(y, -1, 1)) / D];
+  }
+  // a dated line as far as the date has come along it, with its tip (a ring, cached by date); null before its first date
+  function grownRing(l, date) {
+    if (!l.dates) return l.ring;
+    if (l.grownFor === date) return l.grownRing;
+    l.grownFor = date;
+    const d = l.dates;
+    if (date == null || !(date >= d[0])) { l.grownRing = null; l.grownDates = null; return null; }
+    let n = 0;
+    while (n < d.length && d[n] <= date) n++;
+    const pts = l.pts.slice(0, n), ds = d.slice(0, n);
+    if (n < l.pts.length && n > 0) {
+      const span = d[n] - d[n - 1], f = span > 0 ? (date - d[n - 1]) / span : 1;
+      // (the tip, once the date has left the last place passed)
+      if (f > 0) { pts.push(betweenLL(l.pts[n - 1], l.pts[n], clamp(f, 0, 1))); ds.push(date); }
+    }
+    l.grownRing = pts.length ? ring(pts, false) : null; l.grownDates = ds;
+    return l.grownRing;
+  }
+  const pointShown = (L, p, date) => !L.dated || p.date === -Infinity || (date != null && p.date <= date);
+  // how far a dated point has bloomed (0 to 1), eased; a layer just set counts its points already past as long shown
+  function bloomOf(L, p, t) {
+    if (!L.dated || !(L.bloom > 0)) return 1;
+    let since = L.seen.get(p);
+    if (since == null) { since = L.fresh ? t - L.bloom * 1000 : t; L.seen.set(p, since); }
+    const f = clamp((t - since) / (L.bloom * 1000), 0, 1);
+    if (f < 1) L.bloomingUntil = Math.max(L.bloomingUntil, since + L.bloom * 1000);
+    return 1 - (1 - f) * (1 - f);
+  }
+  // a dated border that thickens: a ribbon round the grown line, each place's half-width from its age, round ends
+  function ribbonPath(L, m, c, k, date) {
+    const path = new Path2D(), young = L.lineWidth || 1.1, th = L.thickens;
+    const lay = (run) => {
+      if (run.length === 1) { const [x, y, w] = run[0]; path.moveTo(x + w, y); path.arc(x, y, w, 0, TAU); return; }
+      if (run.length < 2) return;
+      const left = [], right = [];
+      for (let i = 0; i < run.length; i++) {
+        const [x, y, w] = run[i], a = run[Math.max(0, i - 1)], b = run[Math.min(run.length - 1, i + 1)];
+        let dx = b[0] - a[0], dy = b[1] - a[1];
+        const d = Math.hypot(dx, dy);
+        if (d < 1e-6) { dx = 1; dy = 0; } else { dx /= d; dy /= d; }
+        left.push([x - dy * w, y + dx * w]); right.push([x + dy * w, y - dx * w]);
+      }
+      const cap = (cx, cy, r, start) => { for (let i = 1; i <= 8; i++) { const a = start - i / 8 * Math.PI; path.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } };
+      path.moveTo(left[0][0], left[0][1]);
+      for (let i = 1; i < left.length; i++) path.lineTo(left[i][0], left[i][1]);
+      const tip = run[run.length - 1], prev = run[run.length - 2];
+      cap(tip[0], tip[1], tip[2], Math.atan2(tip[1] - prev[1], tip[0] - prev[0]) + Math.PI / 2);
+      for (let i = right.length - 2; i >= 0; i--) path.lineTo(right[i][0], right[i][1]);
+      const root = run[0], next = run[1];
+      cap(root[0], root[1], root[2], Math.atan2(next[1] - root[1], next[0] - root[0]) - Math.PI / 2);
+      path.closePath();
+    };
+    for (const l of L.lines) {
+      const r = grownRing(l, date);
+      if (!r || l.closed) continue;
+      rotate(r, m);
+      const ds = l.grownDates || [];
+      let run = [];
+      for (let i = 0; i < r.n; i++) {
+        if (r.vz[i] > 0) {
+          const age = Number.isFinite(ds[i]) ? clamp((date - ds[i]) / th.over, 0, 1) : 1;
+          run.push([c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, (young + (th.to - young) * age) * k / 2]);
+        } else { lay(run); run = []; }
+      }
+      lay(run);
+    }
+    return path;
+  }
+
   // every running stage's geography, the stages in order (the front one's last, so its names win room last: as
   // the app draws each stage's overlay in the order it was made), earlier layers winning room within a stage
   function drawGeo(c, m, placed) {
     const o = { x: 0, y: 0, z: 0 }, screen = [0, 0, W, H];
+    const t = now();
     for (const s of stages) for (const L of s.geo.values()) {
       L.drawn = [];
       if (!zoomHolds(L, c.zoom)) continue;
+      const date = L.dated ? stageDate(s) : null;
       g.save();
       g.lineJoin = 'round'; g.lineCap = 'round';
       const k = rs, ink = L.color || INK;
       const strokePath = () => {
         const path = new Path2D();
-        for (const l of L.lines) traceLine(l.ring, m, c.cx, c.cy, c.radius, path, l.closed);
+        for (const l of L.lines) { const r = L.dated ? grownRing(l, date) : l.ring; if (r) traceLine(r, m, c.cx, c.cy, c.radius, path, l.closed); }
         return path;
       };
       switch (L.style) {
@@ -775,7 +868,8 @@
           if (L.style === 'border') { g.strokeStyle = rgba(L.color || [140, 132, 120]); g.lineWidth = (L.lineWidth || 1.1) * k; }
           else if (L.style === 'ghost') { g.setLineDash([5 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.8); g.lineWidth = (L.lineWidth || 1.6) * k; }
           else { g.setLineDash([3 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.47); g.lineWidth = (L.lineWidth || 1.2) * k; }
-          g.stroke(path);
+          if (L.style === 'border' && L.dated && L.thickens && date != null) { g.fillStyle = g.strokeStyle; g.fill(ribbonPath(L, m, c, k, date), 'nonzero'); }
+          else g.stroke(path);
           // its flow: beads moving the way the line's coordinates go (the dash phase falling, as Core Animation
           // moves it in the app); none under Reduce Motion
           if (L.flow && !settings.reduceMotion) {
@@ -799,10 +893,12 @@
         }
         case 'dot':
         case 'ring': {
-          const r = 3.4 * k, dots = new Path2D();
+          const dots = new Path2D();
           for (const p of L.points) {
+            if (!pointShown(L, p, date)) continue;
             projectUnit(p.wx, p.wy, p.wz, m, c, o);
             if (o.z <= 0.1) continue;
+            const r = 3.4 * k * bloomOf(L, p, t);
             dots.moveTo(o.x + r, o.y); dots.arc(o.x, o.y, r, 0, TAU);
             L.drawn.push({ index: p.index, x: o.x, y: o.y });
           }
@@ -814,7 +910,7 @@
           const size = L.size * k, reach = [-120, -60, W + 240, H + 120];
           for (const p of L.points) {
             let text = p.props.label == null ? '' : String(p.props.label).slice(0, 80);
-            if (!text) continue;
+            if (!text || !pointShown(L, p, date)) continue;
             projectUnit(p.wx, p.wy, p.wz, m, c, o);
             if (o.z <= 0.3 || !within(o.x, o.y, reach)) continue;
             if (L.font === 'caps') text = text.toUpperCase();
@@ -832,12 +928,15 @@
           if (!pic || !pic.ok) break;
           const w = L.width * k, h = L.height * k;
           for (const p of L.points) {
+            if (!pointShown(L, p, date)) continue;
             projectUnit(p.wx, p.wy, p.wz, m, c, o);
             if (o.z <= 0.2 || !within(o.x, o.y, [-w, -h, W + 2 * w, H + 2 * h])) continue;
             const x = o.x + L.offset[0] * k, y = o.y + L.offset[1] * k;
-            // (aspect-fit, as the layer's contentsGravity)
-            const sc = Math.min(w / pic.w, h / pic.h), dw = pic.w * sc, dh = pic.h * sc;
-            g.drawImage(pic.img, x - dw / 2, y - dh / 2, dw, dh);
+            // (aspect-fit, as the layer's contentsGravity; a blooming picture opens from its foot)
+            const b = bloomOf(L, p, t), full = Math.min(w / pic.w, h / pic.h), sc = full * b, dw = pic.w * sc, dh = pic.h * sc;
+            if (b < 1) g.globalAlpha = Math.min(1, 0.3 + 0.7 * b);
+            g.drawImage(pic.img, x - dw / 2, y + pic.h * full / 2 - dh, dw, dh);
+            if (b < 1) g.globalAlpha = 1;
             const rect = [x - w / 2, y - h / 2, w, h];
             placed.push(rect);
             L.drawn.push({ index: p.index, x, y, rect });
@@ -846,6 +945,7 @@
         }
         case 'sounding': {
           for (const p of L.points) {
+            if (!pointShown(L, p, date)) continue;
             projectUnit(p.wx, p.wy, p.wz, m, c, o);
             if (o.z <= 0.2 || !within(o.x, o.y, [-40, -40, W + 80, H + 80])) continue;
             const length = clamp(num(p.props.length, 0), 0, 2000) * k, y = o.y + length;
@@ -868,6 +968,7 @@
         }
       }
       g.restore();
+      L.fresh = false;
     }
   }
 
@@ -1179,6 +1280,7 @@
   function spritesAnimate() {
     for (const s of stages) for (const sp of s.sprites.values()) if (animates(sp)) return true;
     if (!settings.reduceMotion) for (const s of stages) for (const L of s.geo.values()) if (L.flow && zoomHolds(L, cam.zoom)) return true;
+    for (const s of stages) for (const L of s.geo.values()) if (L.dated && zoomHolds(L, cam.zoom) && ((s.time && s.time.playing) || L.bloomingUntil > now())) return true;
     for (const d of doorways) if (!stageById.get(d.pack.id).running && animates(d)) return true;
     return false;
   }
@@ -1276,6 +1378,7 @@
       for (const L of [...s.geo.values()].reverse()) {
         if (!L.touchable || !zoomHolds(L, c.zoom)) continue;
         let best = null, bestD = Infinity;
+        const date = L.dated ? stageDate(s) : null;
         if (L.kind === 'point') {
           for (const d of L.drawn) {
             let dist = Math.hypot(x - d.x, y - d.y);
@@ -1285,7 +1388,8 @@
           }
         } else if (L.kind === 'line') {
           for (const l of L.lines) {
-            const r = l.ring;
+            const r = L.dated ? grownRing(l, date) : l.ring;
+            if (!r) continue;
             rotate(r, m);
             for (let i = 0, edges = l.closed ? r.n : r.n - 1; i < edges; i++) {
               const j = (i + 1) % r.n;
@@ -1327,7 +1431,8 @@
         if (L.kind === 'point') for (const d of L.drawn) add(s, { layer: L.id, index: d.index }, d.x, d.y, what(d.index));
         else if (L.kind === 'line') {
           for (const l of L.lines) {
-            const r = l.ring;
+            const r = L.dated ? grownRing(l, stageDate(s)) : l.ring;
+            if (!r) continue;
             rotate(r, m);
             const mid = Math.floor(r.n / 2);
             for (let k = 0; k < r.n; k++) {
@@ -1769,7 +1874,7 @@
     const s = stageById.get(pack.id);
     if (s.running) { bringToFront(s, 'reader'); return; }
     const Mp = pack.M, where = 'prototype.json' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
-    if (![3, 4, 5].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 5'); return; }
+    if (![3, 4, 5, 6].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 6'); return; }
     if (Mp.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(Mp.presentation) + ')');
     const scripts = Array.isArray(Mp.scripts) ? Mp.scripts : [];
     if (!scripts.length) hostError(where + ': scripts must list the pack\'s scripts, in order');

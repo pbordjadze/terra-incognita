@@ -1,5 +1,5 @@
 'use strict';
-// The playground's desktop preview: every pack of runtimes 3 to 5 (docs/runtime3.md) run with the same
+// The playground's desktop preview: every pack of runtimes 3 to 6 (docs/runtime3.md) run with the same
 // terra.js the app runs, over a stand-in globe, so a pack can be seen without a Mac.
 //   node tools/playground/serve.cjs [--port 8790] [--root <dir>]... [--packs build/packs]
 //   /                              every pack in Prototypes/, then in each --root (a folder of pack folders)
@@ -100,7 +100,7 @@ function send(res, status, body, headers) {
 const sendText = (res, status, text) => send(res, status, text, { 'Content-Type': 'text/plain; charset=utf-8' });
 
 // the runtimes this preview hosts (terra.js's, PackStore.runtime: change them together)
-const RUNTIMES = [3, 4, 5];
+const RUNTIMES = [3, 4, 5, 6];
 
 function indexPage(packs, extraRoots, packsDir) {
   const rows = packs.map((p) => {
@@ -110,7 +110,7 @@ function indexPage(packs, extraRoots, packsDir) {
     const meta = `${esc(p.id)} &middot; runtime ${esc(m.runtime)} &middot; ${esc(m.shelf || 'current')}${where}`;
     const links = RUNTIMES.includes(m.runtime)
       ? `<a href="/preview/${esc(p.id)}?device=iphone">iPhone</a> <a href="/preview/${esc(p.id)}?device=ipad">iPad</a>`
-      : `<span class="note">A runtime-${esc(m.runtime)} web page: this preview runs packs of runtimes 3 to 5 (scripts drawn by the globe).</span>`;
+      : `<span class="note">A runtime-${esc(m.runtime)} web page: this preview runs packs of runtimes 3 to 6 (scripts drawn by the globe).</span>`;
     return `<li><strong>${esc(m.title || p.id)}</strong> <span class="meta">${meta}</span><p>${esc(m.summary || '')}</p>${links}</li>`;
   });
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">

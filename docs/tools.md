@@ -39,24 +39,26 @@ preview's mirror `tools/playground/harness/`.
 | --- | --- | --- | --- | --- |
 | Geography | GeoJSON drawn by the globe, constant width at any zoom | `terra.geo.set(id, features, { style })` | every current pack but the herds | 100,000 vertices, 64 layers, 400 places a layer |
 | ↳ `border` | lines; `lineWidth` in reading points | `style: 'border'` | fires, both gatherings, lead line, low sea, vine | |
+| ↳ dated | every place's third number is its date: a line drawn as far as the stage's date has come, every frame, with a tip; a point once the date has passed it; touch reaches only what is drawn | `dated: true` | vine | runtime 6; nothing drawn with no date shown |
+| ↳ `thickens`, `bloom` | a dated border's width grows with each place's age (a ribbon, round-ended, its `flow` down the middle); a dated point grows in from its foot when the date reaches it | `thickens: { to, over }`, `bloom: seconds` | vine | runtime 6; `thickens` on `border` only |
 | ↳ `area` | filled shapes | `style: 'area'` | lead line, low sea | |
 | ↳ `dot`, `ring` | points | `style: 'dot'` / `'ring'` | both gatherings, lead line (dot); both gatherings, hello, lead line, monsoon (ring) | |
 | ↳ `label` | names on a halo, earlier wins room | `style: 'label'` | both gatherings | |
 | ↳ `symbol` | a pack's picture at a point | `style: 'symbol'` | fires, whales, vine | |
 | ↳ `sounding` | a line hanging from a point, with a label | `style: 'sounding'` | lead line | made for one pack |
-| ↳ `ghost`, `track` | dashed outline, fine dashes | `style: 'ghost'` / `'track'` | none yet | |
+| ↳ `ghost`, `track` | dashed outline, fine dashes | `style: 'ghost'` / `'track'` | vine (`track`: the vine carried over the sea) | |
 | ↳ touchable | features take touches (points 22 pt, lines 14, areas inside); a named place is a VoiceOver button | `touchable: true` | every pack with geography | |
-| ↳ `flow` | light running along lines the way their coordinates go, moved by Core Animation | `flow: true` or `{ speed, dash, gap, color }` | gathering of water, alive | a few thousand vertices a flowing layer (drawn every frame); none under Reduce Motion |
+| ↳ `flow` | light running along lines the way their coordinates go, moved by Core Animation | `flow: true` or `{ speed, dash, gap, color }` | gathering of water, alive; vine (the way back to the qvevri, on touch) | a few thousand vertices a flowing layer (drawn every frame); none under Reduce Motion |
 | Pictures on the globe | a picture in lon/lat bounds, curving with the globe, faded by zoom | `terra.images.set(id, { image, bounds, opacity, minZoom, fade })` | gathering alive (the plume), herds, low sea (shelves), whales (the sea) | 8 pictures, 4096 px a side; equirectangular only |
 | Sprites | things that live and move: `at`, or a timed `path` (`seconds`, `loop`) | `terra.sprites.set(id, { at \| path, looks, label, touchable })` | every current pack | 64 sprites, 24 frames a look, 400 pt a side (200 before runtime 5); one file a frame (no sheets) |
 | ↳ looks by zoom | one thing a trace from afar and itself close in; `every`/`for` a glint now and then; `face` mirrors heading west | `looks: [{ image \| frames, fps, size, minZoom, maxZoom, every, for, face }]` | every current pack (`every`: monsoon, whales; `face`: alive, lead line, low sea, monsoon, whales, herds) | |
-| ↳ dated way | the globe's date puts the sprite on its way; it walks as the date plays, stands where the reader drags | `path: { coordinates, dates }` | herds | runtime 5; not drawn outside its dates |
+| ↳ dated way | the globe's date puts the sprite on its way; it walks as the date plays, stands where the reader drags | `path: { coordinates, dates }` | herds, vine (the tendrils at the growing tips) | runtime 5; not drawn outside its dates |
 | Doorway | a pack's life on the globe while it isn't running; a touch starts it | `prototype.json` › `doorway` (`look` or `looks`, `path`, `breathes`) | every current pack (`path`: herds, lead line, low sea, monsoon; `breathes`: fires, vine) | the same budgets as a sprite's look |
 | Glint | the one mark every doorway shows from afar | `doorway-glint.png`, from `tools/playground/glint_png.py` | every current pack | the natives draw theirs in Swift (`Catalog.swift`'s `Glint`) from the same recipe |
 | Touch | taps and drags on the pack's things, or every tap with `"taps": true` | `terra.on('touch' \| 'tap', fn)` | every current pack (`tap`: hello) | no long press; a drag's `moved` keeps the target it began on |
 | ↳ schemes | who gets a one-finger drag | `terra.touch.scheme('touchables' \| 'one-finger' \| 'hold')` | `touchables` (default): all; `hold`: gathering alive; `one-finger`: none yet | |
 | The date | the date at the foot: `year` or `day` (a day is the globe's season), ticks, play, `carry` | `terra.time.show({...})`, `.set`, `.play`, `.hide`, `terra.on('time')` | herds, lead line, monsoon, vine (`day`: lead line, monsoon) | |
-| ↳ pace, speed | an uneven pace (deep time fast); playback slower as the reader comes close | `pace: [[date, seconds], …]`, `terra.time.speed(f)` | pace: herds, lead line; speed: herds | runtime 5; 0.001–100× |
+| ↳ pace, speed | an uneven pace (deep time fast); playback slower as the reader comes close | `pace: [[date, seconds], …]`, `terra.time.speed(f)` | pace: herds, lead line, vine; speed: herds, vine | runtime 5; 0.001–100× |
 | Caption | the words at the foot | `terra.caption.set({ title, text, wikipedia })` | every pack | |
 | Panel | longer words and sources in a native sheet | `terra.panel.show({ title, text, sections, sources })`, `terra.on('panel')` | every pack | plain text only |
 | Wikipedia's words | names a subject's article, shown when the reader's switch is on | `wikipedia: 'Title'` on caption, panel, sections; `tools/wikipedia/build.py --pack <id>` | fires, gathering of water, lead line, low sea, monsoon, whales, vine | bundled, never fetched; nothing reads `terra.settings.wikipedia` yet |
@@ -69,9 +71,9 @@ preview's mirror `tools/playground/harness/`.
 | Open, close | the chip's Open; the end | `terra.on('open' \| 'close')`, `terra.close()` | open: every pack; close: fires, both gatherings, lead line, low sea, whales | |
 
 **Shared script: none yet.** Packs repeat small helpers instead: a great-circle `along(a, b, t)` is
-written six times (both gatherings, lead line, monsoon, whales, vine; the herds' `slerp` is a
-seventh) and a `frames(name, n)` file-name list six times (fires, lead line, low sea, monsoon,
-whales, vine). See [One job, two tools](#one-job-two-tools).
+written five times (both gatherings, lead line, monsoon, whales; the herds' `slerp` is a sixth) and a
+`frames(name, n)` file-name list six times (fires, lead line, low sea, monsoon, whales, vine). See
+[One job, two tools](#one-job-two-tools).
 
 ## What a native prototype calls: the stage
 
@@ -140,7 +142,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Challenger's way | `lead-line/way.js`: stations, ports and turns, dated | `python3 tools/leadline/build_way.py` | lead line |
 | Shelves | `low-sea/shelf-*.png`: shelves under 200 m as land | `python3 tools/lowsea/build_shelves.py <NE folder>` | low sea |
 | Tethys | `sea-of-whales/tethys-*.png`: the Eocene sea over Egypt | `python3 tools/whales/build_sea.py <NE folder>` | whales |
-| The vine | `vine/data.js`: branches with a year at each vertex, leaves along them | `python3 tools/vine/build.py` | vine |
+| The vine | `vine/data.js`: trunks and twigs with a year at every place, cut by the globe's land into stems and voyages; leaves, clusters, the tendrils' ways | `python3 tools/vine/build.py` | vine |
 | Rivers | `Water/` from RiverATLAS; the packs from it | `tools/water/build.py`, `build_pack.py`, `build_alive.py`, audit `audit_source.py` | both gatherings |
 
 ## Seeing it without a Mac: previews
@@ -151,7 +153,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Pack check | runs a pack headless, fails on errors, screenshots doorway, anchor, sprites, zooms, a touch | `node tools/playground/check.cjs <id> \| --all [--wikipedia] [--device]` | every pack | fixed screenshots; not run by CI |
 | Living check | two packs by touch side by side, front and back, one ended | `node tools/playground/check.cjs --living` | runtime 4 | not run by CI |
 | Pack moments (1) | a plan of waits (ms), flights, strip, play, tap by name, Open; prints the state at each shot | `node tools/playground/explore.cjs <id> <out> '<plan>'` | written with the herds | see [One job, two tools](#one-job-two-tools) |
-| Pack moments (2) | a plan of camera, waits (s), touches and drags at places, strip, play; exit 1 on page errors | `node tools/packart/moments.cjs <id> <out> '<plan>' [--root]` | written with the rebuilt experiences | see [One job, two tools](#one-job-two-tools) |
+| Pack moments (2) | a plan of camera, waits (s), touches and drags at places, strip, play; exit 1 on page errors | `node tools/packart/moments.cjs <id> <out> '<plan>' [--root]` | written with the rebuilt experiences; the vine's rounds (`tools/vine/ROUNDS.md`) | see [One job, two tools](#one-job-two-tools) |
 | River drive | the gathering alive driven as a reader would, with assertions | `node tools/water/alive_check.cjs` | gathering alive | one pack's |
 | Retired river study | the former web study's interactions | `node tools/water/interaction_check.cjs <url>` | `Water/` only (no longer in the app) | |
 | Globe preview | the globe as `Globe.metal` draws it, in numpy, with names | `python3 tools/globe/preview.py out.png [--style ground --month 7]` | every globe change | names placed roughly |
@@ -166,7 +168,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | --- | --- | --- | --- |
 | Pack validator | the contract, sizes (500 files, 50 MB a pack, 25 MB a file, 24 frames), the offline boundary | `python3 tools/playground/playground.py validate [ids]` | CI `plates`, `packs.yml` |
 | Playground tool tests | `playground.py` itself | `python3 tools/playground/test_playground.py` | CI `plates`, `packs.yml` |
-| Preview's own check | a fixture pack using every tool once, held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand |
+| Preview's own check | a fixture pack using every tool once (dated geography among them), held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand |
 | Shader check | every `.metal` compiled and its bindings, in seconds | `python3 tools/metal/metal.py check` | CI `plates` |
 | Stand-in tests | the CPU Metal's builtins; whether `twin` notices drift | `tools/metal/tests/test_metal.py`; `twin_drift.py` (slow) | CI `plates`; by hand |
 | Looks | every look's plates as the player reads them, no unused file | `python3 ci/check_atlas.py` | CI `plates` |
@@ -214,8 +216,8 @@ Found October 29, 2026 (painting-company row 178). Each says what differs and wh
   dated ways (`path: { coordinates, dates }`, the herds) do exactly that in the globe, smoothly and
   under scrubbing. The lead line's way is already dated (`way.js`) and could move onto it as it
   stands; the monsoon's dhows sail a yearly round, which a dated way can carry as one year's dates.
-  The vine's stems, regrown by `terra.geo.set` on every `time` event, are the same idea for lines:
-  no dated geography exists yet.
+  The vine's stems were the same idea for lines until dated geography (runtime 6, October 30): they
+  are set once now and the globe grows them.
 - **Script helpers repeated in packs.** `along` (six packs, and the herds' `slerp`) and `frames`
   (six) are the first candidates for a shared script module (CLAUDE.md › Reuse first).
 - **Three hand-written PNG encoders** (`glint_png.py`, `marker_png.py`, `harness_check.cjs`'s

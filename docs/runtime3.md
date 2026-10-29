@@ -1,4 +1,4 @@
-# The pack runtime (3 to 5): packs drawn by the globe, scripted in JavaScriptCore
+# The pack runtime (3 to 6): packs drawn by the globe, scripted in JavaScriptCore
 
 A pack is data, pictures and a small script. The script runs in JavaScriptCore inside the app, in
 the app's own process, with no web page and no web view: it decides, and the globe draws, in
@@ -18,6 +18,12 @@ the date puts it, so it walks as the date plays and stands where the reader drag
 **pace** (deep time fast, the present slowly), run at a **speed** the pack sets (slower as the reader
 comes close), and reach back to the Earth's beginning, read as years ago
 ([The date](#the-date-and-the-words-at-the-foot-since-runtime-2)). Marked *new in 5*.
+
+**Runtime 6** (October 30, 2026) lets the globe's date grow things: **dated geography**, lines and points
+with a date at each place, which the globe draws as far as the date has come, every frame (a vine
+growing, a road built, a frontier moved, a city founded), with a line that thickens with age and a
+point that blooms in ([Geography](#geography-drawn-by-the-globe-terrageo-since-runtime-2) › Dated).
+A pack sets such a layer once and the globe does the rest. Marked *new in 6*.
 
 ## The pack
 
@@ -48,8 +54,8 @@ Prototypes/<id>/
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, or 5 for anything *new in 5* (an
-  app with an older runtime lists the pack as needing a new build).
+- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, 5 for anything *new in 5*, 6 for
+  anything *new in 6* (an app with an older runtime lists the pack as needing a new build).
 - `presentation`: always `"globe"`. Every pack lives on the globe; there are no pack screens.
 - `scripts`: run in order in one context, like script tags. The global object is also `window`
   and `globalThis`, so a data file may say `window.TIDE = {...}`.
@@ -82,7 +88,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 5 (4 on an app before October 29, 2026; 3 before October 28; `flow` and the `hold` scheme since October 29) |
+| `terra.runtime` | 6 (5 on an app before October 30, 2026; 4 before October 29; 3 before October 28; `flow` and the `hold` scheme since October 29) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
@@ -134,6 +140,32 @@ terra.geo.set('way-down', [{ type: 'LineString', coordinates: [[-62, -3.2], [-60
 ``` Budgets: 100,000 vertices, 64
 layers, 400 named or pictured places a layer. A touchable place with a name (`properties.label`)
 is a VoiceOver button that touches it, so it can be reached without seeing or aiming at it.
+
+*New in 6 (October 30):* **dated geography**, `dated: true`: every position's third number is its date, in
+the unit of the pack's date (`terra.time`; a position without one is always there). The globe reads the
+stage's date every frame, as it does for sprites on dated ways, and draws the layer as far as the date
+has come: a line (`border`, `ghost`, `track`) to the places the date has passed and on to a tip on the
+great circle toward the next, so it grows smoothly as the date plays and shrinks back as the reader
+drags; a point (`dot`, `ring`, `symbol`, `label`, `sounding`) once the date has passed it. Touch and
+VoiceOver reach only what is drawn. With no date shown, nothing dated is drawn. A pack sets the whole
+history once and spends nothing a frame; it never regrows a layer on `time` events.
+
+Two things a dated layer may do besides: **`thickens: { to, over }`** on a `border` makes the line's
+width grow with each place's age, from `lineWidth` where the date has just passed to `to` reading points
+once a place is `over` date units old (a stem thickening behind its tip; the line is drawn as a ribbon
+round its way, round at both ends, and its `flow` runs along the middle); **`bloom`** (seconds, 0.6 by
+default, 0 for none) makes a point grow in from its foot when the date reaches it (a leaf opening). A
+layer set when the date is already past its points doesn't bloom them all at once. Ages and dates are
+in the date's unit, so a `day` pack thickens over days.
+
+```js
+// a vine: stems with a year at every place, thicker the longer they have grown; leaves that open as
+// the tip passes; both set once, grown by the globe as the years play (Prototypes/vine/)
+terra.geo.set('stems', [{ type: 'LineString', coordinates: [[44.75, 41.45, -6000], [44.2, 41.7, -5900], [43.5, 42.0, -5700]] }],
+              { style: 'border', color: '#5A3A1C', lineWidth: 0.9, dated: true, thickens: { to: 3.4, over: 2500 }, touchable: true })
+terra.geo.set('leaves', { type: 'MultiPoint', coordinates: [[44.4, 41.9, -5880], [43.8, 42.1, -5690]] },
+              { style: 'symbol', image: 'leaf.png', width: 12, height: 12, dated: true, bloom: 0.7 })
+```
 
 ## Pictures lying on the globe: `terra.images` (new in 3)
 
