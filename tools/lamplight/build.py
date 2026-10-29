@@ -11,14 +11,16 @@ couldn't. Every picture is drawn in Globe.metal's N_ palette, so it lies on the 
 of it, and on its own equirectangular grid (each column the same span of longitude, each row the same
 span of latitude), as terra.images draws it; the bounds go to Prototypes/lamplight/bounds.js.
 
-  land.jpg + land-alpha    72-98E, 25-37N, 1/150 degree (about 700 m): the land in N_LAND shaded by
+  land.png     70-97E, 23-37N, 1/150 degree (about 700 m): the land in N_LAND shaded by
                moonlight from the south-west (Copernicus GLO-90), snow above about 5100 m lit by it,
                lakes in N_SEA, and NASA's Black Marble 2016 lights (500 m) as the night style draws its
                own (Globe.metal: pow(light, 0.75) towards N_LIGHT, the brightest towards N_CORE). Its
-               edges fade over 4 degrees into the globe's own night (land.png carries the alpha).
+               edges fade into the globe's own night, over 2 degrees in the west and south, 3 in the
+               east and north, so the plains' crisp lights meet the globe's softer ones gradually.
   lamps-1.png  lamps where people live in the hills and mountains (GHSL's population, 2020) below 1500
-  lamps-2.png  m, 1500-3000 m, and above 3000 m: 1/120 degree over the same box. Drawn as an atlas draws
-  lamps-3.png  population, a dot for every 150 people where they live; these pictures from further off
+  lamps-2.png  m, 1500-3000 m, and above 3000 m: 1/120 degree over the Himalaya (72-98E, 26.5-37N, and
+  lamps-3.png  west of 77.5E north of 29.5N: not the Aravallis). Drawn as an atlas draws population, a
+               dot for every 150 people where they live; these pictures from further off
                hold a quarter of them, and the detail all of them, so coming closer lights more. The
                satellite sees the plains' lights and almost none of the hills': these are drawn. The
                plains are left to it (a
@@ -55,7 +57,9 @@ BM = 'https://eoimages.gsfc.nasa.gov/images/imagerecords/144000/'
 DEM = 'https://copernicus-dem-90m.s3.amazonaws.com/'
 GHSL = ('https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/'
         'GHS_POP_E2020_GLOBE_R2023A_4326_3ss/V1-0/tiles/')
-BOX = (72.0, 25.0, 98.0, 37.0)            # where the elevation model and the people are read
+LAND = (70.0, 23.0, 97.0, 37.0)           # where the night is drawn closer (the elevation model's reach)
+LAND_FADE = (2.0, 2.0, 3.0, 3.0)          # how far its edges fade into the globe's night: W, S, E, N
+BOX = (72.0, 26.5, 98.0, 37.0)            # the Himalaya: where the lamps and the alpenglow are
 DETAIL = (77.5, 26.3, 92.5, 31.5)
 CROWN = (74.0, 27.0, 89.0, 36.5)          # every peak above 7000 m in the box
 POOL = (60.0, 12.0, 109.0, 49.0)
@@ -209,13 +213,15 @@ def night_land(z, ppd, lat0, colour, grey):
     return with_lights(rgb, grey)
 
 
-def box_weight(shape, bounds, inner, feather):
-    """1 inside inner (west, south, east, north), falling to 0 over feather degrees, on bounds' grid."""
+def box_weight(shape, bounds, inner, fade):
+    """1 inside inner (west, south, east, north), falling to 0 at its edges over fade degrees (one
+    number, or west, south, east, north), on bounds' grid."""
     w, s, e, n = bounds
+    fw, fs, fe, fn = fade if np.ndim(fade) else (fade,) * 4
     lon = w + (np.arange(shape[1]) + .5) / shape[1] * (e - w)
     lat = n - (np.arange(shape[0]) + .5) / shape[0] * (n - s)
-    fx = np.minimum(smoothstep(inner[0], inner[0] + feather, lon), 1 - smoothstep(inner[2] - feather, inner[2], lon))
-    fy = np.minimum(smoothstep(inner[1], inner[1] + feather, lat), 1 - smoothstep(inner[3] - feather, inner[3], lat))
+    fx = np.minimum(smoothstep(inner[0], inner[0] + fw, lon), 1 - smoothstep(inner[2] - fe, inner[2], lon))
+    fy = np.minimum(smoothstep(inner[1], inner[1] + fs, lat), 1 - smoothstep(inner[3] - fn, inner[3], lat))
     return np.outer(fy, fx).astype(np.float32)
 
 
@@ -243,7 +249,7 @@ def lamps(cache):
     tiles = ghsl_tiles(cache)
     rng = np.random.default_rng(1983)
     out = []
-    w, s, e, n = [int(v) for v in BOX]
+    w, s, e, n = int(BOX[0]), int(math.floor(BOX[1])), int(BOX[2]), int(BOX[3])
     for lat in range(s, n):
         for lon in range(w, e):
             z = dem_tile(cache, lat, lon)
@@ -264,7 +270,10 @@ def lamps(cache):
             jx, jy = rng.random(len(r)), rng.random(len(r))
             out.append(np.column_stack([lon - 1 / 2400 + (c + jx) / 1200, lat + 1 + 1 / 2400 - (r + jy) / 1200,
                                         0.55 + 0.45 * rng.random(len(r)), z[r, c], rng.random(len(r)) < FAR]))
-    return np.concatenate(out)
+    L = np.concatenate(out)
+    # the Himalaya only (not the Aravallis, the Shillong plateau or the hills of central India), its
+    # foothills reaching about 29.5N west of 77.5E
+    return L[(L[:, 1] >= BOX[1]) & ((L[:, 0] >= 77.5) | (L[:, 1] >= 29.5))]
 
 
 def splat(L, bounds, ppd, gain=1.9, core_sigma=0.5, halo_sigma=1.5, halo_w=0.06):
@@ -303,10 +312,10 @@ def lamp_list(cache):
 
 def step_land(cache):
     ppd = 150
-    z = elevation(cache, BOX, ppd)
-    rgb = night_land(z, ppd, BOX[3], black_marble(cache, BOX, ppd), black_marble(cache, BOX, ppd, grey=True))
-    save_png(rgb, box_weight(z.shape, BOX, BOX, 4.0), OUT / 'land.png')
-    return {'land': list(BOX)}
+    z = elevation(cache, LAND, ppd)
+    rgb = night_land(z, ppd, LAND[3], black_marble(cache, LAND, ppd), black_marble(cache, LAND, ppd, grey=True))
+    save_png(rgb, box_weight(z.shape, LAND, LAND, LAND_FADE), OUT / 'land.png')
+    return {'land': list(LAND)}
 
 
 def step_lamps(cache):
@@ -323,7 +332,7 @@ def step_lamps(cache):
 
 def step_glow(cache):
     ppd = 120
-    z = elevation(cache, BOX, ppd)
+    z = elevation(cache, (72, 26, 98, 37), ppd)[round(0.5 * ppd):]
     sun = hillshade(z, ppd, BOX[3], SUN_AZ, SUN_ALT, 1.3)
     glow = smoothstep(4800, 6000, z) * smoothstep(0.12, 0.6, sun)
     glow = np.clip(glow + 0.7 * ndimage.gaussian_filter(glow, 1.5), 0, 1)     # and its bloom
@@ -357,12 +366,12 @@ def step_pool(cache):
     sea = ndimage.gaussian_filter((lum < 0.03).astype(np.float32), 1.0)
     rgb = mix(N_LAND, N_SEA, sea) * np.ones((H, W, 1), np.float32)
     # the land's relief where the elevation model reaches, as the land picture draws it
-    z40 = Image.fromarray(elevation(cache, BOX, 40)).resize((round((BOX[2] - BOX[0]) * ppd), round((BOX[3] - BOX[1]) * ppd)), Image.BILINEAR)
-    x0, y0 = round((BOX[0] - w) * ppd), round((n - BOX[3]) * ppd)
+    z40 = Image.fromarray(elevation(cache, LAND, 40)).resize((round((LAND[2] - LAND[0]) * ppd), round((LAND[3] - LAND[1]) * ppd)), Image.BILINEAR)
+    x0, y0 = round((LAND[0] - w) * ppd), round((n - LAND[3]) * ppd)
     za = np.asarray(z40)
     sub = (slice(y0, y0 + za.shape[0]), slice(x0, x0 + za.shape[1]))
-    land = night_land(za, ppd, BOX[3], colour[sub], np.zeros_like(za))
-    wgt = box_weight(za.shape, BOX, BOX, 0.8)
+    land = night_land(za, ppd, LAND[3], colour[sub], np.zeros_like(za))
+    wgt = box_weight(za.shape, LAND, LAND, 0.8)
     rgb[sub] = mix(rgb[sub], land, wgt)
     rgb = with_lights(rgb, grey)
     # the ring, by great-circle distance from the centre: twilight violet, then the sunset's apricot
