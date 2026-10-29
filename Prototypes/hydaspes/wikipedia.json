@@ -1,0 +1,40 @@
+{
+ "source": "English Wikipedia (en.wikipedia.org), the lead section of each article as plain text",
+ "license": "CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); each article links to its page and history",
+ "fetched": "2026-10-29",
+ "tool": "tools/wikipedia/build.py",
+ "articles": {
+  "Arrian": {
+   "title": "Arrian",
+   "description": "2nd-century Greek historian, official and philosopher",
+   "extract": "Arrian, also known as Arrian of Nicomedia, was a Greek historian, public servant, military commander, and philosopher of the Roman period. The Anabasis of Alexander by Arrian is considered the best source on the campaigns of Alexander the Great. Scholars have generally preferred Arrian to other extant primary sources, though this attitude has changed somewhat in light of modern studies into Arrian's method.",
+   "url": "https://en.wikipedia.org/wiki/Arrian",
+   "revision": 1370241536,
+   "timestamp": "2026-08-20T00:05:44Z"
+  },
+  "Battle of the Hydaspes": {
+   "title": "Battle of the Hydaspes",
+   "description": "Part of the Indian campaign of Alexander the Great",
+   "extract": "The Battle of the Hydaspes also known as Battle of Jhelum, or First Battle of Jhelum, was fought between the Macedonian Empire under Alexander the Great and the Pauravas under Porus in May of 326 BC. It took place on the banks of the Hydaspes River in what is now the Punjab province of Pakistan, as part of Alexander's Indian campaign. In what was possibly their most costly engagement, the Macedonian army secured a decisive victory over the Pauravas and captured Porus. Large areas of Punjab were subsequently absorbed into the Macedonian Empire; Alexander spared Porus and made him a satrap, effectively reinstating him as the region's ruler. Despite close surveillance by the Pauravas, Alexander's decision to cross the monsoon-swollen Hydaspes to catch Porus' army in the flank has been called one of his \"masterpieces\" in combat.",
+   "url": "https://en.wikipedia.org/wiki/Battle_of_the_Hydaspes",
+   "revision": 1370600276,
+   "timestamp": "2026-08-22T01:44:25Z"
+  },
+  "Jhelum River": {
+   "title": "Jhelum River",
+   "description": "River in India and Pakistan",
+   "extract": "The Jhelum River is a major river in South Asia, flowing through India and Pakistan, and is the westernmost of the five major rivers of the Punjab region. It originates at Verinag in India-administered Jammu and Kashmir in the disputed Kashmir region, flows into Pakistan-administered Azad Kashmir, and then flows through the Punjab province of Pakistan. It is a tributary of the Chenab River and has a total length of about 725 kilometres (450 mi).",
+   "url": "https://en.wikipedia.org/wiki/Jhelum_River",
+   "revision": 1377037663,
+   "timestamp": "2026-09-27T16:14:48Z"
+  },
+  "Porus": {
+   "title": "Porus",
+   "description": "4th-century BC Indian ruler",
+   "extract": "Porus or Poros was an ancient Indian king whose territory spanned the region between the Hydaspes (Jhelum/Vitasta) and Acesines (Chenab/Asikani) rivers. He is only mentioned in Greek sources. Said to be a warrior with exceptional skills, Porus fought against Alexander the Great in the Battle of the Hydaspes (326 BC). Following the conflict, Porus retained his kingship. Alexander not only reinstated him as his satrap but also expanded his jurisdiction to include dominion over lands to the south-east extending as far as the Hyphasis (Beas River/Vipasha). Porus reportedly died sometime between 321 and 315 BC.",
+   "url": "https://en.wikipedia.org/wiki/Porus",
+   "revision": 1380506943,
+   "timestamp": "2026-10-16T04:01:58Z"
+  }
+ }
+}

@@ -239,7 +239,7 @@ terra.touch.scheme('hold')         // new in 4 (October 29)
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
 | `terra.time.speed(f)` | *new in 5:* how fast playback runs, 1 as written (0.001–100): slower as the reader comes close, say, so what moves with the date walks rather than races. Not echoed; the strip and its date are unchanged |
 | `terra.caption.set({ title, text, wikipedia })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters; `wikipedia` (optional) names the article on it ([Wikipedia's words](#wikipedias-words)) |
-| `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
+| `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 2048 since October 30, 2026, 32 before: at 2048 a screen is about ten kilometres across, and the globe's own maps a blur, so a pack going that deep lays its own pictures on the ground) for the pack's close views, put back when it ends |
 
 ## The panel: longer words and sources (new in 3)
 

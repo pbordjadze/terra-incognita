@@ -74,8 +74,9 @@ async function main(argv) {
         await page.mouse.click(step.touchScreen[0], step.touchScreen[1]);
         await sleep(300);
       } else if (step.shot) {
-        await page.evaluate(() => window.__playground.redraw());
-        await sleep(150);
+        // (a few frames first: a sprite leaving its dates fades out over half a second of drawn frames, and
+        // the preview draws none while nothing moves, so without them a ghost of it would be in the shot)
+        for (let i = 0; i < 8; i++) { await page.evaluate(() => window.__playground.redraw()); await sleep(80); }
         await page.screenshot({ path: path.join(out, step.shot + '.png') });
         console.log(`${step.shot}.png at ${(await page.evaluate(() => window.__playground.clock())).toFixed(1)} s`);
       }

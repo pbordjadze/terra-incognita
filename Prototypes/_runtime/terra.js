@@ -189,7 +189,7 @@
     caption: {
       set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '', wikipedia: (c && c.wikipedia) || '' }); }
     },
-    /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32) } */
+    /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–2048) } */
     globe: {
       set: function (o) {
         var m = { type: 'globe', historical: !!(o && o.historical), still: !!(o && o.still) };

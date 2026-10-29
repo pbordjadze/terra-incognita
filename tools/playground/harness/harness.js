@@ -1706,8 +1706,8 @@
       case 'globe':
         s.globe.historical = !!msg.historical;
         s.globe.still = !!msg.still;
-        // (a pack may let the reader zoom deeper than 8, to 32, for its close views: as the app does)
-        if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) s.globe.maxZoom = clamp(+msg.maxZoom, 8, 32);
+        // (a pack may let the reader zoom deeper than 8, to 2048, for its close views: as the app does)
+        if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) s.globe.maxZoom = clamp(+msg.maxZoom, 8, 2048);
         dirty();
         return;
       case 'panel':

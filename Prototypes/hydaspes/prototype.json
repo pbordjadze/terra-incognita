@@ -1,0 +1,20 @@
+{
+  "id": "hydaspes",
+  "title": "The night crossing",
+  "summary": "The Hydaspes, 326 BCE: Alexander steals a crossing against Porus in a night of storm, and lands on an island. Drag the column and the night moves under your finger.",
+  "runtime": 5,
+  "presentation": "globe",
+  "scripts": ["data.js", "notes.js", "main.js"],
+  "anchor": { "lon": 73.54, "lat": 32.76, "zoom": 4 },
+  "doorway": {
+    "lon": 73.54, "lat": 32.76,
+    "label": "The night crossing: the Hydaspes, 326 BCE",
+    "looks": [
+      { "image": "doorway.png", "size": [34, 30], "minZoom": 1.5 },
+      { "image": "doorway-glint.png", "size": [11, 11], "maxZoom": 1.5, "every": 11, "for": 1.2 }
+    ],
+    "breathes": true
+  },
+  "taps": false,
+  "shelf": "current"
+}

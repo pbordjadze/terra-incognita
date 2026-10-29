@@ -451,11 +451,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var lat0 = 22.0
     private var zoom = 1.0
     private static let zooms = 0.8...8.0
+    /// The deepest any pack may ask to zoom (a screen about ten kilometres across): the drawing is exact
+    /// at any zoom, but the globe's own maps are a blur there, so a pack that goes this deep lays its own
+    /// pictures on the ground.
+    static let deepest = 2048.0
     /// The deepest the reader may zoom: 8, unless the active pack asks for more for its own close
-    /// views (`terra.globe.set({ maxZoom })`, up to 32); the stage puts it back when it ends.
+    /// views (`terra.globe.set({ maxZoom })`, up to 2048: a valley a few kilometres across); the stage
+    /// puts it back when it ends.
     var zoomLimit = GlobeView.zooms.upperBound {
         didSet {
-            zoomLimit = min(max(zoomLimit, Self.zooms.upperBound), 32)
+            zoomLimit = min(max(zoomLimit, Self.zooms.upperBound), Self.deepest)
             if zoom > zoomLimit { zoom = zoomLimit; needsDraw = true }
         }
     }

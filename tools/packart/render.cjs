@@ -5,7 +5,7 @@
 // three device pixels a point by default, so a sprite drawn for size [w, h] is crisp on a phone. The one
 // art drawer: every pack's art goes through it (docs/tools.md › Art).
 //
-//   node tools/packart/render.cjs <sheet> <pack dir> [--only name,name] [--scale 3] [--contact out.png]
+//   node tools/packart/render.cjs <sheet> <pack dir> [--only name,name] [--scale 3] [--contact out.png] [--with data.js]
 //
 // A sheet is one of two kinds.
 //
@@ -14,8 +14,9 @@
 //     frames: 8,                                    optional: whale-1.png … whale-8.png
 //     scale: 3,                                     optional: device pixels a point (default --scale)
 //     draw(ctx, w, h, frame, frames) { ... } }      a 2D canvas, already scaled to points
-// `tools/packart/brush.js` is loaded first: small helpers every sheet may use (window.Brush).
-// --only draws the pictures of those names.
+// `tools/packart/brush.js` is loaded first: small helpers every sheet may use (window.Brush). --with loads a
+// data script before the sheet (a builder's `window.X = {...}`: the night crossing's terrain), so a sheet
+// drawn from built data stays code, not a file with the data pasted in. --only draws the pictures of those names.
 //
 // An SVG sheet (`.cjs`) is a Node module, for art built from parameters in Node (the herds' animals, the
 // boto), that exports `sheet({ only, scale, out })` returning (or resolving to)
@@ -34,18 +35,19 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
 
 function usage(message) {
-  console.error((message ? message + '\n' : '') + 'usage: node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png]');
+  console.error((message ? message + '\n' : '') + 'usage: node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png] [--with data.js]');
   process.exit(2);
 }
 
 /** A canvas sheet's pictures, drawn in the sheet's own page. Returns the files written. */
-async function canvasSheet(browser, sheet, out, only, scale) {
+async function canvasSheet(browser, sheet, out, only, scale, withs) {
   const brush = fs.readFileSync(path.join(__dirname, 'brush.js'), 'utf8');
   const source = fs.readFileSync(sheet, 'utf8');
   const page = await browser.newPage();
   page.on('pageerror', (e) => { console.error('sheet error: ' + e.message); process.exitCode = 1; });
   await page.setContent('<!doctype html><html><body></body></html>');
   await page.addScriptTag({ content: brush });
+  for (const w of withs) await page.addScriptTag({ content: fs.readFileSync(w, 'utf8') });
   await page.addScriptTag({ content: source });
   const names = await page.evaluate(() => (window.SHEET.pictures || []).map((p) => p.name));
   const written = [];
@@ -113,12 +115,13 @@ async function contactSheet(browser, out, written, file) {
 }
 
 async function main(argv) {
-  let sheet, out, only = null, scale = 3, contact = null;
+  let sheet, out, only = null, scale = 3, contact = null; const withs = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--only') only = new Set(argv[++i].split(','));
     else if (a === '--scale') scale = +argv[++i];
     else if (a === '--contact') contact = argv[++i];
+    else if (a === '--with') withs.push(argv[++i]);
     else if (!sheet) sheet = a;
     else if (!out) out = a;
     else usage('unexpected ' + a);
@@ -128,7 +131,7 @@ async function main(argv) {
   const browser = await chromium.launch({ args: ['--no-sandbox'] });
   try {
     const written = sheet.endsWith('.cjs') ? await svgSheet(browser, sheet, out, only, scale)
-                                           : await canvasSheet(browser, sheet, out, only, scale);
+                                           : await canvasSheet(browser, sheet, out, only, scale, withs);
     if (contact) await contactSheet(browser, out, written, contact);
   } finally {
     await browser.close();

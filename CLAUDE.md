@@ -143,6 +143,16 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   thousand years long, from a qvevri in Georgia across the world as the years play; `tools/vine/`).
   They replaced Whale and Desert, the Indian Ocean encounter, The sea between, Sounding the deep and
   Borders on old maps, which are in `main`'s history before 4531d6c.
+- **The night crossing** (`Prototypes/hydaspes/`, a runtime-5 pack; painting-company row 183): the Hydaspes,
+  326 BCE, as Arrian tells it (Anabasis 5.9–18): coming in over the Punjab the valley of the Jhelum darkens to
+  the night of the crossing (pictures lying on the globe, the night's thinning at dawn by the date), two camps of
+  fires, the elephants at the water; a touch on the near camp and the column peels away, and a drag along its way
+  (or the strip) moves the night under the finger: every thing on the ground is a sprite on a dated way. The
+  boats and hides to the island, the column marching, the second channel waded to the chest, the chariots in the
+  clay, Porus' line and the horse round it. The panel has the sources and the two sites still argued over. The
+  ground is built from today's river by `tools/hydaspes/build.py` (its docstring marks what is authored), the art
+  by `tools/hydaspes/art.js` (the one art drawer, `--with` the terrain), the rounds in `tools/hydaspes/ROUNDS.md`.
+  It zooms deeper than any pack before it (`maxZoom` up to 2048 since October 30, 2026).
 - **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
   move across the globe with its date, from North America north across Beringia to Asia, Europe and
   Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
