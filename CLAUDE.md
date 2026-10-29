@@ -49,14 +49,14 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
-    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
     `tools/packart/render.cjs <sheet> <pack dir>` (the one art drawer) draws a sheet of canvas drawings
     (`.js`) or of SVG built in Node (`.cjs`: the herds' animals, the boto) into sprite frames, doorways and
     pictures for the globe, with headless Chromium at three pixels a point, and
-    `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
-    plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
-    its first minute can be seen without a Mac.
+    `tools/packart/moments.cjs <id> <out> '<plan>'`, the one pack photographer, photographs a pack in the
+    preview over time (a plan of the camera put or flown, waits, touches, drags, a tap by name, the date's
+    strip, Open, screenshots with the pack's state), so what a script does in its first minute can be seen
+    without a Mac.
 - **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
   clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
   itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or

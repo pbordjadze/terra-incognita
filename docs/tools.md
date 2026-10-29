@@ -153,11 +153,10 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 
 | Tool | What it does | Run | Used by | Limits |
 | --- | --- | --- | --- | --- |
-| Desktop preview | every pack over a stand-in globe with the app's own `terra.js`; `/atlas` the living globe, `?with=` several at once | `node tools/playground/serve.cjs`, `harness/` | every pack session; `check.cjs`, `explore.cjs`, `moments.cjs`, `RemotePackTests` | close to the app, not pixel-identical: the globe is vectors on a canvas, not `Globe.metal`; no clouds or ocean |
+| Desktop preview | every pack over a stand-in globe with the app's own `terra.js`; `/atlas` the living globe, `?with=` several at once | `node tools/playground/serve.cjs`, `harness/` | every pack session; `check.cjs`, `moments.cjs`, `RemotePackTests` | close to the app, not pixel-identical: the globe is vectors on a canvas, not `Globe.metal`; no clouds or ocean |
 | Pack check | runs a pack headless, fails on errors, screenshots doorway, anchor, sprites, zooms, a touch | `node tools/playground/check.cjs <id> \| --all [--wikipedia] [--device]` | every pack | fixed screenshots; not run by CI |
 | Living check | two packs by touch side by side, front and back, one ended | `node tools/playground/check.cjs --living` | runtime 4 | not run by CI |
-| Pack moments (1) | a plan of waits (ms), flights, strip, play, tap by name, Open; prints the state at each shot | `node tools/playground/explore.cjs <id> <out> '<plan>'` | written with the herds | see [One job, two tools](#one-job-two-tools) |
-| Pack moments (2) | a plan of camera, waits (s), touches and drags at places, strip, play; exit 1 on page errors | `node tools/packart/moments.cjs <id> <out> '<plan>' [--root]` | written with the rebuilt experiences | see [One job, two tools](#one-job-two-tools) |
+| Pack moments | the one pack photographer: a plan of the camera put or flown, waits (seconds), touches and drags at places, a tap on a thing by name, the date's strip, play, Open; screenshots with the date, speed, sprites, camera and caption printed; exit 1 on a page error or an error logged | `node tools/packart/moments.cjs <id> <out> '<plan>' [--device] [--root] [--no-idle]` | the rebuilt experiences, the herds | the preview's time is the wall clock: two runs differ by what moved meanwhile |
 | River drive | the gathering alive driven as a reader would, with assertions | `node tools/water/alive_check.cjs` | gathering alive | one pack's |
 | Retired river study | the former web study's interactions | `node tools/water/interaction_check.cjs <url>` | `Water/` only (no longer in the app) | |
 | Globe preview | the globe as `Globe.metal` draws it, in numpy, with names | `python3 tools/globe/preview.py out.png [--style ground --month 7]` | every globe change | names placed roughly |
@@ -210,13 +209,11 @@ Found October 29, 2026 (painting-company row 178). Each says what differs and wh
   index the pack reads. What differed was the drawing language and the index, not the rendering, so
   `render.cjs` now draws both kinds of sheet and the other two are SVG sheets for it; every pack's
   art came out the same to the byte.
-- **Pack moments: `tools/playground/explore.cjs` and `tools/packart/moments.cjs`.** Both play a pack
-  in the preview from a JSON plan and screenshot it; they were written the same night. `explore`
-  has flights with a duration, a tap on a touchable thing by name, the chip's Open, and prints the
-  date, speed, sprites and camera at each shot; `moments` has touches and drags at places, a tap at
-  a screen point, `--root`, play set rather than toggled, and fails on page errors. Their `wait`s
-  differ (milliseconds against seconds). They should be one (`moments.cjs`, taking `explore`'s
-  steps, with `wait` in seconds), its users' plans converted in the same commit.
+- **Pack moments: `tools/playground/explore.cjs` and `tools/packart/moments.cjs`** (merged). Both played a pack
+  in the preview from a JSON plan and screenshotted it, written the same night. `moments.cjs` is the one
+  now: it took `explore`'s timed flight (`fly`), tap on a thing by name (`tap`), Open and the state printed
+  at each shot, its `wait` in seconds; `explore.cjs` is gone. The same plans give the same states and
+  pictures (but for what moved with the wall clock).
 - **Things moved by the date by hand** (merged). The lead line's ship and the monsoon's dhows were set on a
   timed `path` again at every `time` event, the seconds worked out from the date's rate; they are on
   runtime 5's dated ways now (the ship's whole voyage; each dhow's year, its berths held and its voyages
