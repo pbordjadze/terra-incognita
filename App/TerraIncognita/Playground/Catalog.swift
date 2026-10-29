@@ -26,7 +26,7 @@ enum Catalog {
                                  path: path, breathes: breathes)
     }
 
-    static let native: [Prototype] = [camelid, whale, ocean, QuietGlobe.names, QuietGlobe.clouds, QuietGlobe.night, QuietGlobe.frame,
+    static let native: [Prototype] = [camelid, QuietGlobe.names, QuietGlobe.clouds, QuietGlobe.night, QuietGlobe.frame,
                                       persian, wikipedia, stillSea, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`), on the globe itself. Its
@@ -46,38 +46,6 @@ enum Catalog {
                                 label: "Dromedary camel", hint: "Inspect this animal", breathes: true) { [weak stage] in
             stage?.openLens { CamelidExperience.lens(on: $0, close: $1) }
         })
-    }
-
-    /// A fossil at Wadi Al-Hitan opens the visit to its ancient sea (`Whale/`), on the globe itself. The
-    /// point is UNESCO's property reference, locating the fossil-bearing region, not an excavation; it
-    /// shows from 2×.
-    static let whale = Prototype(
-        id: "whale", title: "Whale and Desert",
-        summary: "A whale fossil in Egypt's Western Desert opens a visit to the shallow sea it swam in. Tap the fossil.",
-        anchor: GlobeCamera(lon: 30.18333, lat: 29.33333, zoom: 3.2),
-        doorway: doorway(WhaleArt.image(.fossil), lon: 30.18333, lat: 29.33333, label: "Whale fossil, Wadi Al-Hitan",
-                         size: CGSize(width: 34, height: 27), minZoom: 2, every: 13)
-    ) { stage in
-        guard let image = WhaleArt.image(.fossil) else { return }
-        stage.place(GlobeMarker(id: "whaleFossil", lon: 30.18333, lat: 29.33333, look: .picture(image), size: CGSize(width: 56, height: 44),
-                                label: "Whale fossil, Wadi Al-Hitan", hint: "Inspect this illustrated fossil", minZoom: 2) { [weak stage] in
-            stage?.openLens { WhaleExperience.lens(on: $0, close: $1) }
-        })
-    }
-
-    /// The Indian Ocean encounter (`Experience/`): its seed off Madagascar, and its invitation.
-    static let ocean = Prototype(
-        id: "ocean", title: "A small thing, far from home",
-        summary: "The Indian Ocean encounter: a seed off Madagascar opens crops, words and lives that crossed the sea.",
-        anchor: GlobeCamera(lon: 68, lat: -9, zoom: 1),
-        doorway: doorway(UIImage(systemName: "leaf.circle")?.withTintColor(UIColor(red: 0.231, green: 0.173, blue: 0.086, alpha: 1),
-                                                                         renderingMode: .alwaysOriginal),
-                         lon: 46.3, lat: -19.0, label: "A small thing, far from home", size: CGSize(width: 26, height: 26), minZoom: 1.35, every: 9)
-    ) { stage in
-        let open: () -> Void = { [weak stage] in stage?.present("ocean") { OceanExperience() } }
-        stage.place(GlobeMarker(id: "oceanSeed", lon: 46.3, lat: -19.0, look: .seal(symbol: "leaf"), size: CGSize(width: 44, height: 44),
-                                label: "A small thing, far from home", actionName: "Look closer at the island's seed", onOpen: open))
-        stage.invite(Invitation(id: "oceanInvitation", title: "A small thing, far from home", action: "Look closer  ↗"), action: open)
     }
 
     /// The globe's second style, parked: the ground is the base (`Globe.metal`'s P_).

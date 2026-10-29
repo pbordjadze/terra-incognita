@@ -1,3 +1,0 @@
-'use strict';
-const {chromium}=require('playwright');
-(async()=>{const b=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox']});const p=await b.newPage({viewport:{width:1366,height:1024},deviceScaleFactor:1});p.on('pageerror',e=>console.error('PAGE',e));await p.goto('http://127.0.0.1:8787');await p.waitForFunction(()=>window.leafReady);await p.waitForTimeout(1000);await p.screenshot({path:'out/leaf-ipad-first.png'});console.log('Saved initial tablet and phone views.');await p.setViewportSize({width:402,height:874});await p.waitForTimeout(300);await p.screenshot({path:'out/leaf-iphone-first.png'});await b.close();})();
