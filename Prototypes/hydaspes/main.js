@@ -69,8 +69,9 @@
     // so the night thins the same inside the close picture as outside it)
     if (first) terra.images.set('wide-day', { image: 'ground-wide-day.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool });
     terra.images.set('wide-night', { image: 'ground-wide-night.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
-    if (first) terra.images.set('close-day', { image: 'ground-close-day.png', bounds: H.close, minZoom: Z.mid * 0.6, fade: Z.mid * 0.5 });
-    terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.mid * 0.6, fade: Z.mid * 0.5, opacity: o });
+    // (the close pair shows wherever the wide does: the wide picture has a hole where the close one lies)
+    if (first) terra.images.set('close-day', { image: 'ground-close-day.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool });
+    terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
   }
 
   // ----- everything that lives on the ground, each on its dated way: set once, moved by the date ----
@@ -90,9 +91,9 @@
     terra.sprites.set('glow-a', { path: stand(P.glowA, HR.dusk - 1, HR.craterus), label: '', looks: [{ frames: frames('fireglow', 4), fps: 2, size: [110, 48], minZoom: Z.valley }] });
     terra.sprites.set('glow-p', { path: stand(P.glowP, HR.dusk - 1, HR.porus), label: '', looks: [{ frames: frames('fireglow', 4), fps: 2, size: [120, 52], minZoom: Z.valley }] });
     terra.sprites.set('elephants', { path: stand(P.waterP, HR.dusk - 1, HR.porus), label: 'The elephants at the water, watching the far bank', touchable: true,
-                                     looks: looks(null, { n: 'elephants-mid', f: 4, size: [40, 10] }, { n: 'elephants-watch', f: 6, size: [180, 46], fps: 3, near: 0.62 }) });
+                                     looks: looks(null, { n: 'elephants-mid', f: 4, size: [40, 10] }, { n: 'elephants-watch', f: 8, size: [190, 44], fps: 3, near: 0.62 }).slice(1) });
     // the column: out of the camp in the dark, inland, to the grove on the headland
-    var col = { far: { n: 'column-far', f: 4, size: [20, 6] }, mid: { n: 'column-mid', f: 6, size: [40, 12], face: true }, close: { n: 'column', f: 8, size: [120, 40], fps: 8, face: true, near: 0.6 } };
+    var col = { far: { n: 'column-far', f: 4, size: [20, 6] }, mid: { n: 'column-mid', f: 6, size: [40, 12], face: true }, close: { n: 'column', f: 8, size: [150, 48], fps: 8, face: true, near: 0.6 } };
     terra.sprites.set('column', { path: way(W.column), label: 'The column on its night march', touchable: true, looks: looks(col.far, col.mid, col.close) });
     terra.sprites.set('in-the-grove', { path: stand(P.headland, HR.headland, HR.boats), label: 'The column in the grove, the boats put together', touchable: true,
                                         looks: looks(col.far, { n: 'column-mid', f: 6, size: [40, 12], fps: 1 }, { n: 'formed', f: 4, size: [110, 44], fps: 1.5, near: 0.6 }) });
@@ -103,7 +104,7 @@
     terra.sprites.set('on-island', { path: way(W.onIsland), label: 'Marching across the island', touchable: true, looks: looks(col.far, col.mid, col.close) });
     // THE MOMENT: the second channel, swollen by the storm, to the chest
     terra.sprites.set('waders', { path: way(W.waders), label: 'Wading the second channel, the water to their chests, shields over their heads', touchable: true,
-                                  looks: looks(col.far, { n: 'waders-mid', f: 6, size: [40, 14], face: true }, { n: 'waders', f: 8, size: [250, 120], fps: 6, face: true, near: 0.55 }) });
+                                  looks: looks(col.far, { n: 'waders-mid', f: 6, size: [40, 14], face: true }, { n: 'waders', f: 8, size: [230, 96], fps: 6, face: true, near: 0.6 }) });
     // on the far bank: the horse ahead, the foot following
     terra.sprites.set('advance-horse', { path: way(shift(W.advance, HR.ford, HR.field - 1.0)), label: "Alexander's horse, ahead", touchable: true,
                                          looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [110, 44], fps: 8, face: true, near: 0.6 }) });
@@ -219,6 +220,8 @@
     playing = t.playing;
     var h = hr(t.value);
     if (Math.abs(h - hour) > 1e-4) { setHour(h, false); }
+    // the night moved by the strip or by play: the tip has done its work
+    if (!dragged && h > HR.leave + 0.5) { dragged = true; say(''); }
     // the night done: it waits at the end rather than ending the experience
   });
 
@@ -245,6 +248,7 @@
   place();
   // the first sight: the valley, both camps and the bend in view (by a doorway the reader is near already)
   // (the camps and the bend, 28 km apart, across two thirds of the screen's width)
-  var mid = [(P.campA[0] + P.headland[0]) / 2, (P.campA[1] + P.headland[1]) / 2 + 0.01], c0 = terra.camera;
-  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, (c0 ? c0.width : 800) * 0.66 / 28)), terra.settings.reduceMotion ? 0 : 2.2);
+  var mid = [(P.campA[0] + P.headland[0]) / 2 + 0.01, (P.campA[1] + P.headland[1]) / 2 + 0.02], c0 = terra.camera;
+  var span = Math.min(c0 ? c0.width : 800, c0 ? c0.height * 0.6 : 800);
+  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, span * 0.72 / 28)), terra.settings.reduceMotion ? 0 : 2.2);
 })();

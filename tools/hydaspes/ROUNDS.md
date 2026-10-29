@@ -70,3 +70,32 @@ the battle. Still mine to see: the dawn's half-light shows the close picture's s
 halo while the night thins (narrowed; not gone); the battle is rows meeting rows.
 
 ### Round 3 — the second fresh eye
+The second fresh eye (new shots, no memory of the first): the bones read without a word and the
+firelight on the water between the camps is the atlas-child feeling; but the mistake can't be seen (the
+island is a dark smudge in one brown ribbon, no second channel, no far bank), the waders break the
+world's scale (seven large discs on sticks beside six-pixel marchers, no water over them), the night is
+dark rather than night (fires are blurs, tents white icons in a grid, no moon on the current), the dawn
+goes to khaki mud with hard-edged woods, the frontal elephants read as owls; a grey ring sat in every
+shot from the storm on (the lightning's wash), a straight edge crossed the close picture (the hills'
+foot), the elephants bridged the river from afar, the column stood on the water at the bend, the end of
+the battle was a tangle, the tip went stale after a strip move. Verdict: 40 % of the way; the one change
+that moves it most is the bend as two channels round a readable island with the wading staged in the
+far channel as a chest-deep crowd at the column's own scale.
+
+### Round 3 — the island, the crowd in the channel, the night's light
+The bend is two channels round a pale island now: sand above the flood with a strand of foam and a
+grove in its middle, water drawn either side; the column waits in the grove on land, not at the water.
+The waders are a crowd at the column's own scale (thirty-odd, three staggered ranks, the far rank
+deeper, four horses' heads), the river's own tone laid over each body's lower half so what shows is
+what rises out of the flood, a shield adrift. Fires are hot points with a small halo; tents are dimmed to
+the night and lit on the fire's side, staggered. The elephants stand on the bank in side view facing
+the far camp, one raising its trunk now and then, and show from the valley zoom in. The rain is
+curtains. The dawn is grey-blue. The lightning is a faint wash with a bolt, not a disc. The sweeps end
+wide of the line. The tip goes when the strip moves the night on. Every mark on the ground is placed
+in longitude and latitude from one seeded scatter, so the wide and the close picture are one scene at
+two resolutions: the close one is a disc with a short rim, the wide one has the matching hole, and the
+night is never laid twice over one place (the halo while the night thinned is gone; a faint seam
+remains if you look for it). The wide picture is 3780 across (its rows just under the globe's 4096).
+Pushed with the UI test (a drag on the column moves it; the strip at the channel shows the waders).
+
+### Round 4 — on the real app

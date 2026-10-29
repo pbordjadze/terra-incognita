@@ -220,7 +220,8 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
   offline, the packs with a date drawn by the globe (the lead line and the vine: their date moved,
-  nothing left after), the herds' animals moving with the date (runtime 5), and the
+  nothing left after), the herds' animals moving with the date (runtime 5), the night crossing's
+  column dragged along its way, and the
   `hold` scheme (`RiverPackTests.swift`: a drag turns, a rest then a draw lights the rivers).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.

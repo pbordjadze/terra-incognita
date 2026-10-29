@@ -100,4 +100,49 @@ final class GlobePackTests: XCTestCase {
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Ending the herds leaves only the plain globe")
     }
+
+    /// The night crossing (runtime 5, zoomed deeper than any pack before it): the night of 326 BCE at the
+    /// foot; a touch on the near camp and the column peels away; a drag on the column along its way moves
+    /// the night under the finger, so the column is elsewhere; the strip moved to the second channel, where
+    /// the soldiers wade; then the plain globe again.
+    @MainActor func testTheNightCrossingMovesUnderTheFinger() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-playground-reset"]
+        app.launch()
+        defer { app.terminate() }
+        startPrototype("hydaspes", in: app)
+        let date = app.descendants(matching: .any)["globeDate"].firstMatch
+        XCTAssertTrue(date.waitForExistence(timeout: 30), "The night crossing shows its date")
+        XCTAssertEqual(date.value as? String, "326 BCE", "The date reads the year of the crossing")
+        let camp = app.buttons["hydaspes.camp-a"].firstMatch
+        XCTAssertTrue(camp.waitForExistence(timeout: 20), "The near camp is on the globe, touchable")
+        Thread.sleep(forTimeInterval: 2.5)
+        attach("60-night-camps", in: app)
+        camp.tap()
+        let column = app.buttons["hydaspes.column"].firstMatch
+        XCTAssertTrue(column.waitForExistence(timeout: 10), "Touching the camp: the column peels away from it")
+        let before = column.frame
+        // a drag on the column, down the valley the way it marches (south-west on the screen): the night
+        // moves under the finger and the column with it
+        column.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.2, thenDragTo: column.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                .withOffset(CGVector(dx: -140, dy: 110)))
+        Thread.sleep(forTimeInterval: 1)
+        attach("61-night-march", in: app)
+        if column.exists {
+            let after = column.frame
+            XCTAssertGreaterThan(hypot(after.midX - before.midX, after.midY - before.midY), 20, "The column moved with the drag")
+        }
+        XCTAssertEqual(date.value as? String, "326 BCE", "The year is the same all night")
+        // the strip moved to the second channel: the soldiers wade it to the chest
+        date.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5)).tap()
+        let waders = app.buttons["hydaspes.waders"].firstMatch
+        XCTAssertTrue(waders.waitForExistence(timeout: 10), "At the second channel the soldiers are wading")
+        Thread.sleep(forTimeInterval: 1.5)
+        attach("62-night-waders", in: app)
+        endPrototype(in: app)
+        XCTAssertFalse(app.descendants(matching: .any)["globeDate"].firstMatch.exists, "The date goes with the night")
+        openWorkbench(in: app)
+        assertLive(Self.plainGlobeLive, in: app, "Ending the night crossing leaves only the plain globe")
+    }
 }
