@@ -33,8 +33,9 @@ final class GlobePackTests: XCTestCase {
         assertLive(Self.plainGlobeLive, in: app, "Ending the voyage leaves only the plain globe")
     }
 
-    /// The vine: eight thousand years at the foot, from 6000 BCE; the years moved near the strip's end,
-    /// where the vine has reached the whole world; then the plain globe.
+    /// The vine (runtime 6, dated geography): it opens close on the qvevri and the first shoots grow as the
+    /// years play; the years moved near the strip's end, where the vine has reached the whole world; a touch
+    /// on the vine lights the way back and names the place at the foot; then the plain globe.
     @MainActor func testTheVineGrowsWithTheYears() {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset"]
@@ -44,14 +45,26 @@ final class GlobePackTests: XCTestCase {
         let date = app.descendants(matching: .any)["globeDate"].firstMatch
         XCTAssertTrue(date.waitForExistence(timeout: 30), "The globe shows the vine's year")
         XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("vine"), "The vine is in front")
+        // the opening: a beat on the qvevri, then the first shoots and the slow pull-back
+        Thread.sleep(forTimeInterval: 9)
+        attach("55-vine-opens", in: app)
         let play = app.buttons["globeDatePlay"].firstMatch
         if play.exists && play.label == "Pause" { play.tap() }
-        attach("55-vine-begins", in: app)
         date.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap()
         let late = XCTNSPredicateExpectation(predicate: NSPredicate(format: "NOT (value CONTAINS %@)", "BCE"), object: date)
         XCTAssertEqual(XCTWaiter().wait(for: [late], timeout: 10), .completed, "Near the strip's end the year is in our era")
-        Thread.sleep(forTimeInterval: 1.5)
+        Thread.sleep(forTimeInterval: 2)
         attach("56-vine-today", in: app)
+        // a touch on the vine where the pull-back left the camera (eastern Anatolia, on the way to Troy):
+        // the way back to the qvevri lights and the foot names the place
+        let globe = app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch
+        let foot = app.descendants(matching: .any)["globeFootCaption"].firstMatch
+        let before = foot.exists ? foot.label : ""
+        globe.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let named = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", before), object: foot)
+        _ = XCTWaiter().wait(for: [named], timeout: 4)
+        Thread.sleep(forTimeInterval: 1.2)
+        attach("57-vine-touched", in: app)
         endPrototype(in: app)
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Ending the vine leaves only the plain globe")

@@ -16,27 +16,15 @@
   "doorway": {
     "lon": 44.75,
     "lat": 41.45,
-    "label": "The vine's long walk: the first vine, in Georgia",
-    "looks": [
-      {
-        "image": "doorway.png",
-        "size": [
-          32,
-          32
-        ],
-        "minZoom": 1.4
-      },
-      {
-        "image": "doorway-glint.png",
-        "size": [
-          11,
-          11
-        ],
-        "maxZoom": 1.4,
-        "every": 8,
-        "for": 1.2
-      }
-    ],
+    "label": "The vine's long walk: a vine leaf in the Georgian valley where the oldest wine was made",
+    "look": {
+      "image": "doorway.png",
+      "size": [
+        30,
+        32
+      ],
+      "minZoom": 1.2
+    },
     "breathes": true
   },
   "taps": false,

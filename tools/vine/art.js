@@ -157,8 +157,13 @@
     }
   }
 
-  /** The doorway: the qvevri's mouth in the ground with a first leaf at its rim, the whole idea in a thumb's width. */
-  function doorway(ctx, w, h) { qvevri(ctx, w, h, { leaf: true }); }
+  /** The doorway: ordinary vine life, slightly off. A vine leaf with a cluster under it lying on a Georgian
+      valley, the size of a village: nothing says "touch here"; whoever is paying attention sees a leaf
+      where no leaf should be seen from so high, and touches it. */
+  function doorway(ctx, w, h) {
+    ctx.save(); ctx.translate(-w * 0.04, -h * 0.06); leaf(ctx, w * 0.8, h * 0.8, GREENS[1], -0.35, 7); ctx.restore();
+    ctx.save(); ctx.translate(w * 0.5, h * 0.4); grapes(ctx, w * 0.42, h * 0.6, GRAPE_RIPE, 8); ctx.restore();
+  }
 
   /** The spark that runs along the vine to the place touched: a white core in a warm glow. */
   function spark(ctx, w, h) {
@@ -176,7 +181,7 @@
   P.push({ name: 'grapes-green', width: 20, height: 30, draw(ctx, w, h) { grapes(ctx, w, h, GRAPE_GREEN, 32); } });
   P.push({ name: 'tendril', width: 34, height: 30, frames: 8, draw(ctx, w, h, i, n) { tendril(ctx, w, h, i / n); } });
   P.push({ name: 'qvevri', width: 64, height: 64, draw(ctx, w, h) { qvevri(ctx, w, h); } });
-  P.push({ name: 'doorway', width: 32, height: 32, draw: doorway });
+  P.push({ name: 'doorway', width: 30, height: 32, draw: doorway });
   P.push({ name: 'spark', width: 24, height: 24, draw: spark });
   window.SHEET = { pictures: P };
 })();
