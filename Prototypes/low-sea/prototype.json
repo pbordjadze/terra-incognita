@@ -1,0 +1,20 @@
+{
+  "id": "low-sea",
+  "title": "When the sea was low",
+  "summary": "Touch the sea and it goes out: the shelves come up as the dry land they were when the ice was greatest, Britain joined to Europe, Asia to America, with rivers across them and mammoths walking.",
+  "runtime": 4,
+  "presentation": "globe",
+  "scripts": ["data.js", "main.js"],
+  "anchor": { "lon": 2, "lat": 54, "zoom": 2.4 },
+  "doorway": {
+    "lon": 3.0, "lat": 55.0,
+    "label": "When the sea was low: a mammoth on Doggerland",
+    "looks": [
+      { "image": "doorway.png", "size": [24, 20], "minZoom": 1.6 },
+      { "image": "doorway-glint.png", "size": [11, 11], "maxZoom": 1.6, "every": 12, "for": 1.2 }
+    ],
+    "path": { "coordinates": [[2.6, 54.9], [3.6, 55.2]], "seconds": 150, "loop": "back" }
+  },
+  "taps": true,
+  "shelf": "current"
+}

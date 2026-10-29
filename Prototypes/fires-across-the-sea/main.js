@@ -54,27 +54,27 @@
     terra.geo.set('fires-still', still.map(function (p) { return point(p, { label: p.name + ', burning' }); }),
                   { style: 'symbol', image: 'fire-still.png', width: 30, height: 38, minZoom: NEAR, offset: [0, -14], touchable: true });
     terra.geo.set('fires-still-mid', still.map(function (p) { return point(p); }),
-                  { style: 'symbol', image: 'fire-still-mid.png', width: 16, height: 20, minZoom: MID, maxZoom: NEAR, offset: [0, -7] });
+                  { style: 'symbol', image: 'fire-still-mid.png', width: 12, height: 15, minZoom: MID, maxZoom: NEAR, offset: [0, -5] });
     terra.geo.set('fires-still-far', still.map(function (p) { return point(p); }),
                   { style: 'symbol', image: 'ember-2.png', width: 10, height: 10, maxZoom: MID });
   }
   function drawSight() {
     terra.geo.set('sight', sight.length ? [{ type: 'MultiLineString', coordinates: sight }] : [],
-                  { style: 'border', color: '#F2A33A88', lineWidth: 0.9, minZoom: 1.2 });
+                  { style: 'border', color: '#F2A33A55', lineWidth: 0.6, minZoom: 1.2 });
   }
   // (a sprite's place is its picture's middle: the fire's foot is 33 points below the middle of the
   // tall picture, so the picture is set with the foot on the peak)
   function fireSprite(p) {
     terra.sprites.set('fire-' + p.id, { at: [p.lon, p.lat], label: p.name + ', burning', touchable: true, looks: [
       { frames: frames('fire', 12), fps: 10, size: [30, 66], minZoom: NEAR },
-      { frames: frames('fire-mid', 12), fps: 10, size: [16, 35], minZoom: MID, maxZoom: NEAR },
+      { frames: frames('fire-mid', 12), fps: 10, size: [12, 26], minZoom: MID, maxZoom: NEAR },
       { frames: frames('ember', 6), fps: 4, size: [12, 12], maxZoom: MID }
     ] });
   }
   function smokeOnly(p) {
     terra.sprites.set('fire-' + p.id, { at: [p.lon, p.lat], label: p.name + ', smoking', looks: [
       { frames: frames('smoke', 12), fps: 6, size: [30, 44], minZoom: NEAR },
-      { frames: frames('smoke', 12), fps: 6, size: [15, 22], minZoom: MID, maxZoom: NEAR }
+      { frames: frames('smoke', 12), fps: 6, size: [11, 16], minZoom: MID, maxZoom: NEAR }
     ] });
   }
   function out(p) {
@@ -136,7 +136,7 @@
     var r1 = c && c.radius > 0 && c.zoom > 0 ? c.radius / c.zoom : R1;
     if (Math.abs(r1 - R1) / R1 < 0.08 && NEAR !== 7) return false;
     R1 = r1;
-    NEAR = zoomFor(90); MID = zoomFor(40);
+    NEAR = zoomFor(120); MID = zoomFor(48);
     return true;
   }
   terra.on('camera', function (c) {
@@ -152,6 +152,6 @@
   drawPyres(); drawStill(); drawSight();
   // from the workbench or a link, the whole Aegean at a size the fires can be seen at (by a doorway, the
   // reader is already here)
-  if (terra.entry.by !== 'doorway') terra.flyTo(25.2, 38.4, Math.min(28, Math.max(3, zoomFor(52))), 1.4);
+  if (terra.entry.by !== 'doorway') terra.flyTo(25.2, 38.4, Math.min(28, Math.max(3, zoomFor(60))), 1.4);
   quiet = later(function () { light(IDA, null); }, 2200);
 })();

@@ -8,6 +8,7 @@
 //     { "at": [lon, lat, zoom] }        put the camera there (no flight)
 //     { "wait": seconds }               let time pass
 //     { "touch": [lon, lat] }           a tap at that place on the globe
+//     { "drag": [[lon, lat], [lon, lat]] }  a one-finger drag from one place to another
 //     { "touchScreen": [x, y] }         a tap at that point of the screen
 //     { "date": 0.3 }                   a touch on the date's strip, 0 its start to 1 its end
 //     { "play": false }                 pause (or play) the date
@@ -62,6 +63,13 @@ async function main(argv) {
         const label = await page.evaluate(() => document.getElementById('date-play').getAttribute('aria-label'));
         if ((label === 'Pause') !== step.play) await page.click('#date-play');
         await sleep(200);
+      } else if (step.drag) {
+        // a one-finger drag from one place on the globe to another, in a few steps
+        const a = await project(step.drag[0][0], step.drag[0][1]), b = await project(step.drag[1][0], step.drag[1][1]);
+        await page.mouse.move(a.x, a.y); await page.mouse.down();
+        for (let i = 1; i <= 12; i++) { await page.mouse.move(a.x + (b.x - a.x) * i / 12, a.y + (b.y - a.y) * i / 12); await sleep(40); }
+        await page.mouse.up();
+        await sleep(300);
       } else if (step.touchScreen) {
         await page.mouse.click(step.touchScreen[0], step.touchScreen[1]);
         await sleep(300);
