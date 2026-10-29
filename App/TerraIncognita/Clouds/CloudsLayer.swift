@@ -374,9 +374,9 @@ struct CloudsLook {
     /// lights show through them.
     static func on(_ style: GlobeStyle) -> CloudsLook? {
         switch style {
-        case .persian: nil
-        case .night: CloudsLook(opacity: 0.5, seaShadow: SIMD4(0, 0, 0, 0), landShadow: SIMD4(0, 0, 0, 0), brightness: 0.36)
-        default: CloudsLook()
+        case .persian: return nil
+        case .night: return CloudsLook(opacity: 0.5, seaShadow: SIMD4(0, 0, 0, 0), landShadow: SIMD4(0, 0, 0, 0), brightness: 0.36)
+        default: return CloudsLook()
         }
     }
 }
