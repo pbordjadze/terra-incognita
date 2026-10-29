@@ -21,7 +21,8 @@ What is fetched, and for whom:
   and `WikipediaIndex.shared["Title"]`), every country of Globe/globe.json (its long name, for the
   caption of a chosen country), and the keys listed under [app] in articles.txt.
 - A pack's wikipedia.json: every key its scripts and data name (`wikipedia: 'Title'` in a script,
-  `"wikipedia": "Title"` in JSON) and the keys under [pack:<id>] in articles.txt. A pack carries its
+  `"wikipedia": "Title"` in JSON, every value of an object named `WIKIPEDIA`) and the keys under
+  [pack:<id>] in articles.txt. A pack carries its
   own words, as it carries everything else, so a downloaded revision can name articles the app never
   heard of.
 
@@ -71,6 +72,9 @@ CACHE = ROOT / 'build' / 'wikipedia-cache.json'
 # field in a script or JSON)
 SWIFT_KEY = re.compile(r'wikipedia:\s*"((?:[^"\\]|\\.)+)"|WikipediaIndex\.shared\["((?:[^"\\]|\\.)+)"\]')
 PACK_KEY = re.compile(r'''\bwikipedia\s*:\s*(?:'((?:[^'\\]|\\.)+)'|"((?:[^"\\]|\\.)+)")|"wikipedia"\s*:\s*"((?:[^"\\]|\\.)+)"''')
+# a pack that keeps its subjects in one object (`var WIKIPEDIA = { leaf: 'Aegean Sea', ... }`): every string value in it
+PACK_OBJECT = re.compile(r'\bWIKIPEDIA\s*=\s*\{([^}]*)\}')
+PACK_OBJECT_VALUE = re.compile(r''':\s*(?:'((?:[^'\\]|\\.)+)'|"((?:[^"\\]|\\.)+)")''')
 
 
 def unescape(s: str) -> str:
@@ -130,7 +134,14 @@ def pack_keys(pack: Path) -> dict[str, str]:
     """A pack's keys → titles: what its scripts and data name, and articles.txt's [pack:<id>]."""
     listed = read_articles_txt().get('pack:' + pack.name, {})
     files = [p for p in pack.iterdir() if p.suffix in ('.js', '.mjs', '.json') and p.name != 'wikipedia.json']
-    keys = {k: listed.get(k, k) for k in scan(files, PACK_KEY)}
+    found = scan(files, PACK_KEY)
+    for f in files:
+        try:
+            for m in PACK_OBJECT.finditer(f.read_text(encoding='utf-8')):
+                found |= {unescape(next(g for g in v.groups() if g is not None)) for v in PACK_OBJECT_VALUE.finditer(m.group(1))}
+        except (OSError, UnicodeDecodeError):
+            continue
+    keys = {k: listed.get(k, k) for k in found}
     keys.update(listed)
     return keys
 

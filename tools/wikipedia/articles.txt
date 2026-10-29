@@ -19,14 +19,6 @@ Heard I. and McDonald Islands => Heard Island and McDonald Islands
 Indian Ocean Territories => Australian Indian Ocean Territories
 South Georgia and the Islands => South Georgia and the South Sandwich Islands
 
-[pack:sea-between]
-# main.js keeps its subjects in one object (WIKIPEDIA), which the tool's scan can't read through
-Aegean Sea
-Etesian
-Santorini caldera
-Phoenix theophrasti
-Hellenic Trench
-
 [pack:borders-on-old-maps]
 # The states the eight maps draw (data.js's NAME), so a chosen country's caption can say what Wikipedia
 # says of it; the old names under the articles about the states of their time.
