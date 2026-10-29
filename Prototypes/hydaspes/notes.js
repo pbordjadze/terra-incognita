@@ -3,7 +3,8 @@
 // Plain text; the panel's sections may name their Wikipedia article (docs/runtime3.md).
 window.HYDASPES_NOTES = {
   title: 'The night crossing: the Hydaspes',
-  tip: 'Touch the camp on the near bank, then drag the column along its way.',
+  tip: 'Touch the camp on the near bank.',
+  tipDrag: 'Now drag the column along its way, or the strip below.',
   wikipedia: 'Battle of the Hydaspes',
   touched: {
     'camp-a': 'The great camp: most of the army stays here with Craterus, and every night its fires burn.',

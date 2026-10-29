@@ -32,3 +32,41 @@ and how uncertain every number is.
 ## Rounds
 
 ### Round 1 — build
+Built the ground from today's river (OpenStreetMap through the API's map call; the camps, headland,
+island, field and the hours authored, marked so), the art sheet (the valley by night and by day,
+the camps, column, boats, waders, horse, phalanx, chariots, elephants, rain, lightning, doorway), the
+script (everything a sprite on a dated way; a drag on any of them scrubs the night along the chain of
+ways). Raised the runtime's zoom limit to 2048 (a valley a few kilometres across), gave the art
+drawer `--with` for built data, made the moments tool settle frames before a shot. Looked in the
+preview at eleven moments on the iPad and three on the phone.
+
+**The fresh eye** (a critic with only the shots and the pitch): the bones are right and the dusk camps
+are close; the rest is halfway. The night is flat (one navy, one brown, the river a smudge with no
+surface, no light from the fires on the water, no relief); the storm is a tile of strokes with
+visible edges, no flash; the waders, the hero moment, are fourteen identical busts on a grid with
+dinner-plate shields and grey arcs for water, and the ant-sized column stands beside them; the column
+is indistinct dots at the march scale and a muddle with the boats at the bend; the battle is stiff
+rows; the dawn is a desaturation; the tip never changes. Verdict: halfway to the bar.
+
+### Round 2 — the night and the waders
+The river got a surface (fine streaks running with the current in the moon's light, foam fretting at
+the banks, a wet margin of mud instead of a blurred halo; the flood spreading round the island over a
+long tapered stretch rather than a pool), the hills a wavering foot and brighter ridges, the camps' fires
+a glow on the water nearest them. The rain became a round curtain with no edge of its own, the
+lightning a wash over a bigger field. The waders were drawn by hand: no two alike, the near rank to
+the chest, some to the shoulder, one or two with only a shield and the crown of the head above the
+water, a horse's head thrown up, a man stumbling with his shield going over, a shield gone floating;
+the current drags pale streaks downstream from every body. The column from afar is a thin line of pale
+points, nearer a readable file with a horse at its head. Porus' line lies across the line of advance
+with every figure upright and facing the landing, drawn in the high view's order; the phalanx closes
+to a pike's length. The morning is warmer, with a wash of light from the east. The tip changes after
+the touch and goes after the first drag. A near band of looks between the mid and the close zooms
+keeps a camp from swallowing its bank. The ground pictures are held to 64 levels a channel by the
+drawer's new `shrink` (`tools/packart/shrink.py`): 31 MB became 10. Pictures reordered so the night
+thins the same inside the close picture as outside it.
+
+Looked again at the camps at dusk, the march in the storm, the bend, the waders, the half-light and
+the battle. Still mine to see: the dawn's half-light shows the close picture's soft rim as a lighter
+halo while the night thins (narrowed; not gone); the battle is rows meeting rows.
+
+### Round 3 — the second fresh eye

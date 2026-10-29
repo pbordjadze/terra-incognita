@@ -13,6 +13,8 @@
 //   { name: 'whale', width: 46, height: 20,         points, as the pack will show it
 //     frames: 8,                                    optional: whale-1.png … whale-8.png
 //     scale: 3,                                     optional: device pixels a point (default --scale)
+//     shrink: 'posterize',                          optional: a big ground picture rewritten with its colours held
+//                                                   to 64 levels a channel by tools/packart/shrink.py (a quarter of the bytes)
 //     draw(ctx, w, h, frame, frames) { ... } }      a 2D canvas, already scaled to points
 // `tools/packart/brush.js` is loaded first: small helpers every sheet may use (window.Brush). --with loads a
 // data script before the sheet (a builder's `window.X = {...}`: the night crossing's terrain), so a sheet
@@ -68,9 +70,14 @@ async function canvasSheet(browser, sheet, out, only, scale, withs) {
       }
       return out;
     }, [name, scale]);
+    const shrink = await page.evaluate((name) => window.SHEET.pictures.find((q) => q.name === name).shrink || null, name);
     for (const f of files) {
       fs.writeFileSync(path.join(out, f.file), Buffer.from(f.data, 'base64'));
       written.push({ file: f.file });
+    }
+    if (shrink === 'posterize') {
+      const r = require('child_process').spawnSync('python3', [path.join(__dirname, 'shrink.py'), ...files.map((f) => path.join(out, f.file))], { stdio: 'inherit' });
+      if (r.status !== 0) { console.error(`shrink.py failed for ${name}`); process.exitCode = 1; }
     }
     console.log(`${name}: ${files.length} picture${files.length === 1 ? '' : 's'}`);
   }

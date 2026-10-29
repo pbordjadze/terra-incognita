@@ -240,6 +240,8 @@ def ways(T):
     camp_a = offset(near, -2.3)[1]
     camp_p = offset(near, 2.4)[1]
     water_p = offset(near, 0.95)[1]    # the elephants at the water's edge
+    glow_a = offset(near, -0.55)[1]    # the fires' light on the water, each side
+    glow_p = offset(near, 0.55)[1]
     # AUTHORED: the march inland, behind the hills' skirt: the reach moved 3.5 km onto the right bank's
     # side, smoothed and cut straighter than the river (a column marches, it doesn't meander), from the
     # camp to the grove on the headland
@@ -261,7 +263,9 @@ def ways(T):
              + [across(k + j, 0.48) for j in range(18, 0, -3)]
     head_poly = [across(k, -0.52), across(k - 3, -0.6), across(k - 8, -0.75), across(k - 10, -1.3), across(k - 6, -1.7),
                  across(k + 1, -1.6), across(k + 5, -1.1), across(k + 4, -0.6)]
+    # (the column's way begins at the camp's edge, a kilometre and a half out, not under its tents)
     march = resample([camp_a] + inland[2:-3] + [headland], 0.6)
+    march = march[2:]
     crossing = [head_tip, island_near]
     island_way = [island_near, island_far]
     ford = [island_far, landing]
@@ -283,10 +287,10 @@ def ways(T):
     line_l, line_r = at(0, -1.4), at(0, 1.4)   # the ends of Porus' line
     alexander = [front, at(-1.7, -1.1), at(-0.9, -2.0), at(0.1, -1.9), at(0.5, -1.0), at(0.4, -0.2)]
     coenus = [at(-2.0, 0.5), at(-1.6, 1.6), at(-0.6, 2.4), at(0.7, 2.3), at(1.5, 1.3), at(1.3, 0.1)]
-    phalanx = [at(-2.2, 0), at(-0.9, 0), at(-0.3, 0)]
+    phalanx = [at(-2.2, 0), at(-1.4, 0), at(-1.0, 0)]            # (it closes to a pike's length, not into the elephants)
     craterus = resample([camp_a, bank_a, water_p, camp_p], 0.4)
     return {
-        'campA': camp_a, 'campP': camp_p, 'waterP': water_p, 'bankA': bank_a,
+        'campA': camp_a, 'campP': camp_p, 'waterP': water_p, 'bankA': bank_a, 'glowA': glow_a, 'glowP': glow_p,
         'march': march, 'crossing': crossing, 'islandWay': island_way, 'ford': ford, 'advance': advance,
         'headTip': head_tip, 'islandNear': island_near, 'islandFar': island_far, 'landing': landing, 'headland': headland,
         'islandPoly': island, 'headPoly': head_poly, 'bend': fine[k], 'bendDir': [fine[k + 1][0] - fine[k - 1][0], fine[k + 1][1] - fine[k - 1][1]],
@@ -331,7 +335,8 @@ def main(argv):
         'places': {'haranpur': list(HARANPUR), 'jalalpur': list(JALALPUR), 'mong': list(MONG), 'headland': list(W['headland']),
                    'island': [round((W['islandNear'][0] + W['islandFar'][0]) / 2, 5), round((W['islandNear'][1] + W['islandFar'][1]) / 2, 5)],
                    'landing': list(W['landing']), 'field': list(FIELD), 'campA': list(W['campA']), 'campP': list(W['campP']),
-                   'waterP': list(W['waterP']), 'bankA': list(W['bankA']), 'front': list(W['front'])},
+                   'waterP': list(W['waterP']), 'bankA': list(W['bankA']), 'front': list(W['front']),
+                   'glowA': list(W['glowA']), 'glowP': list(W['glowP'])},
         'chain': chain,
         'ways': {
             'column': timed(W['march'], H['leave'], H['headland']),

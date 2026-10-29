@@ -11,11 +11,11 @@
 
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
   const NIGHT = { plain: '#141827', plain2: '#1A1F31', plain3: '#101422', hill: '#0C0F1B', hillRim: '#1E2237',
-                  water: '#26242A', water2: '#302C2F', sheen: '#4E4945', wood: '#0A0E16', wood2: '#121A1E',
-                  kas: '#1F2436', sand: '#1C1D2A', edge: '#141827' };
-  const DAY = { plain: '#8F8A72', plain2: '#9A957C', plain3: '#817C66', hill: '#726B55', hillRim: '#A39B7C',
-                water: '#6B5137', water2: '#7A5E42', sheen: '#95775A', wood: '#3C4F30', wood2: '#485E3A',
-                kas: '#7E7760', sand: '#A8997A', edge: '#8F8A72' };
+                  water: '#26242A', water2: '#2E2A2D', sheen: '#6E7382', bank: '#302E38', foam: '#8A8EA0', wood: '#0A0E16', wood2: '#121A1E',
+                  kas: '#1F2436', sand: '#262636', edge: '#141827', moon: '#8E99B8' };
+  const DAY = { plain: '#99917A', plain2: '#A89F86', plain3: '#89816B', hill: '#766E57', hillRim: '#B3A684',
+                water: '#6B5137', water2: '#7A5E42', sheen: '#C9A070', bank: '#7E6A4E', foam: '#D9C9A8', wood: '#3C4F30', wood2: '#485E3A',
+                kas: '#7E7760', sand: '#A8997A', edge: '#8F8A72', moon: '#F0C890' };
   const INK = '#15110C', FIRE = '#FFB347', FLAME = '#FFE08A', EMBER = '#E2552B', TENT = '#E8DCC2', TENT_SHADE = '#B9AC90';
   const SKIN = '#D9B48C', BRONZE = '#C9A24B', IRON = '#8A8D92', RED = '#9E2B25', HORSE = '#5A3D28', HORSE2 = '#8C6A48';
   const GREY = '#7E7F84', GREY2 = '#5E5F64', WATER_NIGHT = '#2E2C35', FOAM = '#8A8793';
@@ -96,7 +96,7 @@
     ctx.lineCap = 'round';
     for (let i = 0; i < (kpp > 0.006 ? 1400 : 700); i++) {
       const x = r() * w, y = r() * h, len = px(0.3 + r() * 1.2), a = -0.55 + (r() - 0.5) * 0.5;
-      ctx.strokeStyle = B.rgba(pal.hillRim, night ? 0.1 + r() * 0.2 : 0.12 + r() * 0.2); ctx.lineWidth = Math.max(1, px(0.025));
+      ctx.strokeStyle = B.rgba(pal.hillRim, night ? 0.18 + r() * 0.28 : 0.07 + r() * 0.12); ctx.lineWidth = Math.max(1, px(0.025));
       ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a) * len * 0.5, y + Math.sin(a) * len * 0.5 - len * 0.12, x + Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
     }
     ctx.restore();
@@ -114,35 +114,43 @@
       for (const wtr of T.water) for (const o of wtr.outer) { poly(ctx, o, P); ctx.fill(); ctx.stroke(); }
       line(ctx, T.centre, P); ctx.lineWidth = width * 1.5; ctx.stroke();
     };
-    bed(flood * 2.6, B.rgba(pal.water, 0.35));
-    bed(flood * 2.0, B.rgba(pal.water, 0.7));
-    bed(flood * 1.5, pal.water);
+    bed(flood * 2.2, B.rgba(pal.water, 0.25));
+    bed(flood * 1.78, B.rgba(pal.bank, 0.85));        // the wet margin: mud the flood has just left
+    bed(flood * 1.6, pal.water);
     bed(flood * 0.7, pal.water2);
     // at the bend the flood spreads wide, round the island: a wider stretch of the middle
-    const bendPx = P(T.authored.bend), near = T.centre.map((c, i) => [i, P(c)]).filter(([, q]) => Math.hypot(q[0] - bendPx[0], q[1] - bendPx[1]) < px(2.8)).map(([i]) => i);
-    if (near.length > 1) {
-      const seg = T.centre.slice(near[0], near[near.length - 1] + 1);
-      for (const [width, style] of [[px(2.1), B.rgba(pal.water, 0.5)], [px(1.75), pal.water], [px(1.0), pal.water2]]) {
-        line(ctx, seg, P); ctx.strokeStyle = style; ctx.lineWidth = width; ctx.stroke();
+    // (a long stretch, the widening tapered, so it reads as the river spreading, not a pool)
+    const bendPx = P(T.authored.bend), near = T.centre.map((c, i) => [i, P(c)]).filter(([, q]) => Math.hypot(q[0] - bendPx[0], q[1] - bendPx[1]) < px(5)).map(([i]) => i);
+    if (near.length > 3) {
+      const i0 = near[0], i1 = near[near.length - 1];
+      ctx.lineCap = 'round';
+      for (const [width, style] of [[2.0, B.rgba(pal.water, 0.3)], [1.75, B.rgba(pal.bank, 0.85)], [1.6, pal.water], [0.9, pal.water2]]) {
+        for (let i = i0; i < i1; i++) {
+          const t = (i - i0) / (i1 - i0), taper = Math.pow(Math.sin(t * Math.PI), 0.6);
+          const [x, y] = P(T.centre[i]), [x2, y2] = P(T.centre[i + 1]);
+          ctx.strokeStyle = style; ctx.lineWidth = Math.max(flood * 0.7, px(width) * taper);
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+        }
       }
     }
+    // the water's surface: fine streaks running with the current, the moon's light on them, and foam
+    // where the flood frets at its banks
     ctx.save();
-    ctx.globalAlpha = night ? 0.3 : 0.4;
     const C = T.centre;
-    for (let k = 0; k < 16; k++) {
-      // a streak of light: a stretch of the middle, at an offset, soft
-      const i0 = Math.floor(r() * (C.length - 70)), len = 20 + Math.floor(r() * 50), off = (r() - 0.5) * flood * 0.9;
-      ctx.strokeStyle = pal.sheen; ctx.lineWidth = px(0.04 + r() * 0.08);
+    const streak = (i0, len, off, width, alpha, style) => {
+      ctx.strokeStyle = style; ctx.lineWidth = width; ctx.globalAlpha = alpha; ctx.lineCap = 'round';
       ctx.beginPath();
-      for (let i = i0; i < i0 + len; i++) {
+      for (let i = i0; i < Math.min(C.length - 1, i0 + len); i++) {
         const [x, y] = P(C[i]); const [x2, y2] = P(C[i + 1]);
         const dx = x2 - x, dy = y2 - y, L = Math.hypot(dx, dy) || 1;
-        const t = (i - i0) / len, taper = Math.sin(t * Math.PI);
-        const o = off * (0.8 + 0.4 * taper);
+        const t = (i - i0) / len, taper = Math.sin(t * Math.PI), o = off * (0.85 + 0.3 * taper) + Math.sin(i * 0.9 + off) * flood * 0.06;
         i === i0 ? ctx.moveTo(x - dy / L * o, y + dx / L * o) : ctx.lineTo(x - dy / L * o, y + dx / L * o);
       }
       ctx.stroke();
-    }
+    };
+    const many = kpp > 0.006 ? 90 : 160;
+    for (let k = 0; k < many; k++) streak(Math.floor(r() * (C.length - 30)), 6 + Math.floor(r() * 24), (r() - 0.5) * flood * 1.3, Math.max(0.8, px(0.012 + r() * 0.02)), (night ? 0.16 : 0.22) + r() * 0.14, pal.sheen);
+    for (let k = 0; k < many / 3; k++) streak(Math.floor(r() * (C.length - 30)), 4 + Math.floor(r() * 10), (r() < 0.5 ? -1 : 1) * flood * (0.72 + r() * 0.12), Math.max(0.8, px(0.01)), 0.35 + r() * 0.3, pal.foam);
     ctx.restore();
     // the riverine woods as mapped; the headland, its ground above the flood with the grove on it;
     // the island full of trees, a strand round it
@@ -171,7 +179,7 @@
     const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
     const mg = mask.getContext('2d');
     const g = mg.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, 1);
-    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.68, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(kpp > 0.006 ? 0.68 : 0.8, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     mg.save(); mg.translate(w / 2, h / 2); mg.scale(w / 2, h / 2); mg.translate(-w / 2, -h / 2);
     mg.fillStyle = g; mg.fillRect(0, 0, w, h); mg.restore();
     ctx.save();
@@ -351,8 +359,8 @@
     // (3072 pixels across: a kilometre is about 60 pixels in the wide picture and 230 in the close one,
     // more than the deepest zoom shows; 4096 cost twice the bytes for nothing seen)
     const w = 3072, h = pictureHeight(box, 3072);
-    pictures.push({ name: name + '-night', width: w, height: h, scale: 1, draw(ctx) { terrain(ctx, w, h, box, NIGHT, true); } });
-    pictures.push({ name: name + '-day', width: w, height: h, scale: 1, draw(ctx) { terrain(ctx, w, h, box, DAY, false); } });
+    pictures.push({ name: name + '-night', width: w, height: h, scale: 1, shrink: 'posterize', draw(ctx) { terrain(ctx, w, h, box, NIGHT, true); } });
+    pictures.push({ name: name + '-day', width: w, height: h, scale: 1, shrink: 'posterize', draw(ctx) { terrain(ctx, w, h, box, DAY, false); } });
   }
 
   // ---- the sprites ------------------------------------------------------------------------------------
@@ -379,9 +387,9 @@
     for (let k = 0; k < 7; k++) { ctx.fillStyle = GREY; ctx.beginPath(); ctx.ellipse(w * (0.08 + k * 0.14), h * 0.5 + Math.sin(i / n * TAU + k) * 0.4, 2.4, 2, 0, 0, TAU); ctx.fill(); }
   } });
   // the column on the march: ranks of foot with their spears, horse at its head, no fires
-  pictures.push({ name: 'column-far', width: 20, height: 6, frames: 4, draw(ctx, w, h, i, n) {
-    ctx.fillStyle = B.rgba(INK, 0.8);
-    for (let k = 0; k < 9; k++) { const x = 2 + k * 2 + ((i + k) % 2) * 0.4; ctx.beginPath(); ctx.arc(x, h / 2 + Math.sin(k) * 0.8, 0.9, 0, TAU); ctx.fill(); }
+  pictures.push({ name: 'column-far', width: 24, height: 6, frames: 4, draw(ctx, w, h, i, n) {
+    // what you would see of a column in the dark from across the river: a thin line of pale points, creeping
+    for (let k = 0; k < 11; k++) { const x = 1.5 + k * 2.1 + ((i + k) % 4) * 0.12; ctx.fillStyle = B.rgba('#D8CFB8', 0.55 + ((k + i) % 3) * 0.15); ctx.beginPath(); ctx.arc(x, h / 2 + Math.sin(k * 1.3) * 0.7, 0.75, 0, TAU); ctx.fill(); }
   } });
   pictures.push({ name: 'column', width: 120, height: 40, frames: 8, draw(ctx, w, h, i, n) {
     const t = i / n, s = 9;
@@ -390,9 +398,10 @@
       soldier(ctx, w * 0.06 + k * 7.6 + row * 2.2, h * 0.42 + row * 8.5, s, (t + k * 0.09 + row * 0.2) % 1, { tunic: (k + row) % 2 ? RED : TENT_SHADE });
     }
   } });
-  pictures.push({ name: 'column-mid', width: 40, height: 12, frames: 6, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'column-mid', width: 60, height: 16, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let k = 0; k < 10; k++) soldier(ctx, 3 + k * 3.6, h * 0.95, 4.2, (t + k * 0.1) % 1, { shield: 'none', tunic: k % 2 ? RED : TENT_SHADE });
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 12; k++) soldier(ctx, 4 + k * 4.4 + row * 1.5, h * 0.62 + row * 5, 5.2, (t + k * 0.1 + row * 0.3) % 1, { shield: 'none', tunic: (k + row) % 2 ? RED : '#E6DCC4' });
+    horse(ctx, w * 0.92, h * 0.7, 5, t, true);
   } });
   // the boats and the hides pushed across
   pictures.push({ name: 'boats', width: 90, height: 40, frames: 6, draw(ctx, w, h, i, n) {
@@ -412,40 +421,64 @@
     for (let k = 0; k < 6; k++) horse(ctx, w * 0.14 + k * 14, h * 0.5, s * 0.9, (t * 0.3 + k * 0.1) % 1, true);
     for (let row = 0; row < 2; row++) for (let k = 0; k < 12; k++) soldier(ctx, w * 0.06 + k * 7.6 + row * 3, h * 0.72 + row * 9, s, 0, { tunic: (k + row) % 2 ? RED : TENT_SHADE });
   } });
-  // THE MOMENT: the second channel, wading to the chest, the shields over their heads; of the horses
-  // only the heads above the water
+  // THE MOMENT: the second channel, swollen by the storm. Hand-placed, no two alike: the near rank to
+  // the chest, some to the shoulder, one or two with only the shield and the crown of the head above
+  // the water, a horse with just its head up, a shield gone floating; the current drags pale streaks
+  // downstream from every body. The river itself is the ground picture's: only what rises out of it is here.
+  function wader(ctx, x, y, s, depth, tilt, shieldTilt, shield, tunic) {
+    // depth: how much of the man the water covers (0.55 chest, 0.75 shoulder, 0.92 crown); y his feet
+    const top = y - s * 1.35, water = y - s * depth;
+    // the current round him: streaks dragging away downstream (to the right)
+    ctx.strokeStyle = B.rgba(FOAM, 0.55); ctx.lineWidth = 0.9; ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      const yy = water + 1 + k * 2.2, len = s * (0.5 + k * 0.25);
+      ctx.beginPath(); ctx.moveTo(x - s * 0.1 + k * 2, yy); ctx.quadraticCurveTo(x + len * 0.5, yy + 0.8, x + len, yy + (k - 1) * 0.6); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.ellipse(x, water + 0.5, s * 0.32, s * 0.07, 0, Math.PI, TAU); ctx.strokeStyle = B.rgba(FOAM, 0.7); ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x - s, top, s * 2, water - top); ctx.clip();
+    ctx.translate(x, y); ctx.rotate(tilt); ctx.translate(-x, -y);
+    soldier(ctx, x, y, s, 0, { shield: 'none', tunic });
+    ctx.restore();
+    if (shield) {
+      ctx.save(); ctx.translate(x, y - s * 1.03); ctx.rotate(shieldTilt);
+      B.inked(ctx, (c) => c.ellipse(0, 0, s * 0.3, s * 0.1 + Math.abs(shieldTilt) * s * 0.18, 0, 0, TAU), BRONZE, INK, s * 0.06);
+      ctx.restore();
+    }
+  }
+  function horseHead(ctx, x, y, s, rider, color) {
+    ctx.strokeStyle = B.rgba(FOAM, 0.55); ctx.lineWidth = 0.9;
+    for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x + s * 0.2 + k * 3, y + 1 + k * 2.4); ctx.lineTo(x + s * 0.9 + k * 4, y + 2 + k * 2.4); ctx.stroke(); }
+    ctx.beginPath(); ctx.ellipse(x + s * 0.45, y + 0.5, s * 0.5, s * 0.08, 0, Math.PI, TAU); ctx.strokeStyle = B.rgba(FOAM, 0.7); ctx.lineWidth = 1.1; ctx.stroke();
+    ctx.save(); ctx.beginPath(); ctx.rect(x - s, y - s * 1.6, s * 2.4, s * 1.6); ctx.clip();
+    // the neck rising from the water, the head thrown up
+    B.inked(ctx, (c) => { c.moveTo(x + s * 0.2, y + s * 0.1); c.lineTo(x + s * 0.5, y - s * 0.6); c.lineTo(x + s * 0.66, y - s * 0.55); c.lineTo(x + s * 0.55, y + s * 0.1); c.closePath(); }, color, INK, s * 0.07);
+    B.inked(ctx, (c) => { c.moveTo(x + s * 0.45, y - s * 0.62); c.lineTo(x + s * 0.9, y - s * 0.5); c.lineTo(x + s * 0.92, y - s * 0.38); c.lineTo(x + s * 0.62, y - s * 0.36); c.closePath(); }, color, INK, s * 0.06);
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x + s * 0.58, y - s * 0.64, s * 0.05, 0, TAU); ctx.fill();   // an eye
+    if (rider) {
+      B.inked(ctx, (c) => { c.moveTo(x + s * 0.15, y - s * 0.2); c.lineTo(x + s * 0.4, y - s * 0.2); c.lineTo(x + s * 0.38, y - s * 0.62); c.lineTo(x + s * 0.17, y - s * 0.62); c.closePath(); }, RED, INK, s * 0.06);
+      ctx.fillStyle = BRONZE; ctx.beginPath(); ctx.arc(x + s * 0.27, y - s * 0.7, s * 0.1, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
   pictures.push({ name: 'waders', width: 250, height: 120, frames: 8, draw(ctx, w, h, i, n) {
-    const t = i / n, s = 29;
-    // (the river is the ground picture's: here only what rises out of it, and the water it stirs)
-    const ripple = (x, y, rx) => {
-      ctx.strokeStyle = B.rgba(FOAM, 0.45); ctx.lineWidth = 0.7;
-      ctx.beginPath(); ctx.ellipse(x, y + 1, rx * 0.8, rx * 0.22, 0, 0.15, Math.PI - 0.15); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(x - rx * 0.2, y + 2.4, rx * 1.1, rx * 0.26, 0, 0.3, Math.PI - 0.5); ctx.stroke();
-    };
-    // the far ranks, deeper: heads and shields only
-    for (let k = 0; k < 7; k++) {
-      const x = w * 0.08 + k * 35 + Math.sin(t * TAU + k) * 0.8, y = h * 0.42 + Math.sin(t * TAU * 2 + k * 1.3) * 1.2;
-      ripple(x, y, s * 0.4);
-      ctx.save(); ctx.beginPath(); ctx.rect(x - s, y - s * 1.4, s * 2, s * 1.4 - s * 0.72); ctx.clip();
-      soldier(ctx, x, y, s * 0.9, 0, { shield: 'up', tunic: k % 2 ? RED : TENT_SHADE });
-      ctx.restore();
-    }
-    // the horses: only the heads above the river
-    for (let k = 0; k < 4; k++) {
-      const x = w * 0.12 + k * 60, y = h * 0.62 + Math.sin(t * TAU + k * 2) * 1.5;
-      ripple(x + s * 0.5, y, s * 0.5);
-      ctx.save(); ctx.beginPath(); ctx.rect(x - s, y - s * 1.6, s * 2.2, s * 1.6 - s * 0.78); ctx.clip();
-      horse(ctx, x, y, s * 1.1, t, k % 2 === 0, k % 2 ? HORSE2 : HORSE);
-      ctx.restore();
-    }
-    // the near rank, the water to their chests, the shields held over their heads
-    for (let k = 0; k < 7; k++) {
-      const x = w * 0.06 + k * 36 + Math.sin(t * TAU + k * 0.7) * 1.1, y = h * 0.86 + Math.sin(t * TAU * 2 + k) * 1.4;
-      ripple(x, y - s * 0.55, s * 0.45);
-      ctx.save(); ctx.beginPath(); ctx.rect(x - s, y - s * 1.4, s * 2, s * 1.4 - s * 0.58); ctx.clip();
-      soldier(ctx, x, y, s * 1.05, 0, { shield: 'up', tunic: k % 3 ? RED : TENT_SHADE });
-      ctx.restore();
-    }
+    const t = i / n, s = 30, bob = (k) => Math.sin(t * TAU + k * 1.7) * 1.3;
+    // the far ones first, deeper: a crown and a shield, a shoulder
+    wader(ctx, 36, 52 + bob(1), s * 0.85, 0.92, 0.0, 0.3, true, RED);
+    wader(ctx, 92, 46 + bob(2), s * 0.85, 0.8, -0.1, -0.2, true, TENT_SHADE);
+    horseHead(ctx, 128, 50 + bob(3), s * 0.95, true, HORSE);
+    wader(ctx, 176, 48 + bob(4), s * 0.85, 0.75, 0.12, 0.05, true, RED);
+    wader(ctx, 214, 56 + bob(5), s * 0.85, 0.88, 0.0, 0.5, false, TENT_SHADE);
+    // a shield gone, turning in the current
+    ctx.save(); ctx.translate(232, 70 + bob(6)); ctx.rotate(0.9 + t * 0.4); B.inked(ctx, (c) => c.ellipse(0, 0, s * 0.28, s * 0.09, 0, 0, TAU), BRONZE, INK, 1.5); ctx.restore();
+    // the near rank, the water to the chest, the shields over their heads
+    wader(ctx, 20, 100 + bob(7), s, 0.55, -0.08, 0.15, true, RED);
+    wader(ctx, 58, 104 + bob(8), s, 0.6, 0.05, -0.3, true, TENT_SHADE);
+    wader(ctx, 98, 98 + bob(9), s, 0.55, 0.0, 0.0, true, RED);
+    horseHead(ctx, 118, 96 + bob(10), s * 1.05, false, HORSE2);
+    wader(ctx, 168, 102 + bob(11), s, 0.68, 0.22, 0.6, true, RED);      // stumbling, the shield going over
+    wader(ctx, 206, 100 + bob(12), s, 0.56, -0.05, 0.1, true, TENT_SHADE);
+    wader(ctx, 240, 106 + bob(13), s, 0.62, 0.0, -0.15, true, RED);
   } });
   pictures.push({ name: 'waders-mid', width: 40, height: 14, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
@@ -495,60 +528,77 @@
   // Porus' line: the elephants a plethron apart in front, the foot behind, the chariots on the wings;
   // facing the enemy (west, the viewer's left: drawn facing east and mirrored by the script's `face`),
   // then turning on the horse that came round
-  // (drawn turned to face the landing: the builder's axis of advance, east as drawn, mirrored by nothing)
-  const AX = T.authored.axis, LINE_TURN = Math.atan2(AX[1], -AX[0]);
-  function turned(ctx, w, h, draw) {
-    ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(LINE_TURN); ctx.translate(-w / 2, -h / 2); draw(); ctx.restore();
+  // Porus' line lies across the line of advance (the builder's axis), every figure upright and facing the
+  // landing: the elephants a plethron apart along the perpendicular, the foot a little behind them
+  const AX = T.authored.axis;
+  const A = [AX[0], -AX[1]];                       // the axis on the screen (y down)
+  const PP = [-A[1], A[0]];                        // across it
+  const FACE = A[0] > 0 ? -1 : 1;                  // the enemy is back along the axis
+  function lineOf(ctx, w, h, t, turning) {
+    const cx = w / 2, cy = h / 2;
+    const at = (along, across) => [cx + A[0] * along + PP[0] * across, cy + A[1] * along + PP[1] * across];
+    const order = [];
+    for (let k = 0; k < 9; k++) order.push({ y: at(0, (k - 4) * 30)[1], draw: () => {
+      const p = at(turning ? Math.sin(k + t * TAU) * 4 : 0, (k - 4) * 30);
+      elephant(ctx, p[0], p[1] + 12, 24, t + k * 0.13, turning ? (k % 3 === 0 ? 0 : (k % 3 === 1 ? -FACE : FACE)) : FACE, true);
+    } });
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 22; k++) {
+      const p = at(22 + row * 9 + (turning ? Math.cos(k + t * TAU) * 3 : 0), (k - 10.5) * 12 + row * 4);
+      order.push({ y: p[1], draw: () => soldier(ctx, p[0], p[1], 8, turning ? (t + k * 0.1) % 1 : 0, { shield: 'none', tunic: (k + row) % 2 ? '#C77B3E' : TENT_SHADE }) });
+    }
+    for (const sgn of [-1, 1]) { const p = at(6, sgn * 150); order.push({ y: p[1], draw: () => { ctx.save(); if (FACE < 0) { ctx.translate(p[0], 0); ctx.scale(-1, 1); ctx.translate(-p[0], 0); } chariot(ctx, p[0], p[1], 11, t); ctx.restore(); } }); }
+    order.sort((a, b) => a.y - b.y).forEach((o) => o.draw());   // the nearer drawn last, as in a high view
   }
-  pictures.push({ name: 'line', width: 310, height: 310, frames: 6, draw(ctx, w, h, i, n) {
-    const t = i / n;
-    turned(ctx, w, h, () => {
-      const y0 = h / 2 - 45;
-      for (let row = 0; row < 2; row++) for (let k = 0; k < 24; k++) soldier(ctx, w * 0.1 + k * 10 + row * 3, y0 + 38 + row * 10, 8, 0, { shield: 'none', tunic: (k + row) % 2 ? '#C77B3E' : TENT_SHADE });
-      for (let k = 0; k < 9; k++) elephant(ctx, w * 0.08 + k * 32, y0 + 88, 24, t + k * 0.13, 1, true);
-      chariot(ctx, w * 0.03, y0 + 45, 11, t); chariot(ctx, w * 0.95, y0 + 45, 11, t + 0.5);
-    });
-  } });
-  pictures.push({ name: 'line-turning', width: 310, height: 310, frames: 6, draw(ctx, w, h, i, n) {
-    const t = i / n;
-    turned(ctx, w, h, () => {
-      const y0 = h / 2 - 45;
-      for (let row = 0; row < 2; row++) for (let k = 0; k < 24; k++) soldier(ctx, w * 0.1 + k * 10 + row * 3 + Math.sin(k + t * TAU) * 3, y0 + 38 + row * 10 + Math.cos(k) * 4, 8, (t + k * 0.1) % 1, { shield: 'none', tunic: (k + row) % 2 ? '#C77B3E' : TENT_SHADE });
-      for (let k = 0; k < 9; k++) elephant(ctx, w * 0.08 + k * 32, y0 + 88, 24, t + k * 0.13, k % 3 === 0 ? 0 : (k % 3 === 1 ? -1 : 1), true);
-    });
-  } });
+  pictures.push({ name: 'line', width: 320, height: 320, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, false); } });
+  pictures.push({ name: 'line-turning', width: 320, height: 320, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, true); } });
   pictures.push({ name: 'line-mid', width: 60, height: 16, frames: 4, draw(ctx, w, h, i, n) {
     for (let k = 0; k < 9; k++) { ctx.fillStyle = GREY; ctx.beginPath(); ctx.ellipse(4 + k * 6.4, 10 + Math.sin(i / n * TAU + k) * 0.5, 2.6, 2.2, 0, 0, TAU); ctx.fill(); }
     for (let k = 0; k < 20; k++) { ctx.fillStyle = '#C77B3E'; ctx.fillRect(2 + k * 2.9, 2 + (k % 2), 1.4, 2); }
   } });
   // the rain, drifting over the plain's edges; the lightning over the hills
-  pictures.push({ name: 'rain', width: 160, height: 200, frames: 8, scale: 2, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'rain', width: 200, height: 240, frames: 8, scale: 2, draw(ctx, w, h, i, n) {
     const t = i / n, r = B.rand(41);
-    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.55);
-    g.addColorStop(0, 'rgba(120,130,160,0.22)'); g.addColorStop(1, 'rgba(120,130,160,0)');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(190,200,225,0.55)'; ctx.lineWidth = 0.9; ctx.lineCap = 'round';
-    for (let k = 0; k < 140; k++) {
-      const x = r() * w, y0 = (r() * h + t * h * 1.3) % h, len = 7 + r() * 9, a = 0.25;
+    // a curtain of rain: strokes that thin to nothing towards the field's round edge, so it drifts
+    // over the plain with no edge of its own
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(w / 2, h / 2);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    g.addColorStop(0, 'rgba(120,130,160,0.16)'); g.addColorStop(0.6, 'rgba(120,130,160,0.08)'); g.addColorStop(1, 'rgba(120,130,160,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = 'rgba(200,210,235,0.6)'; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
+    for (let k = 0; k < 220; k++) {
+      const x = r() * w, y0 = (r() * h + t * h * 1.3) % h, len = 6 + r() * 10, a = 0.3;
       const d = Math.hypot((x - w / 2) / (w / 2), (y0 - h / 2) / (h / 2));
-      ctx.globalAlpha = Math.pow(Math.max(0, 1 - d), 1.5);
+      ctx.globalAlpha = Math.pow(Math.max(0, 1 - d), 2) * (0.5 + r() * 0.5);
       ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x - Math.sin(a) * len, y0 + Math.cos(a) * len); ctx.stroke();
     }
     ctx.globalAlpha = 1;
   } });
-  pictures.push({ name: 'lightning', width: 320, height: 320, frames: 3, scale: 1.5, draw(ctx, w, h, i, n) {
-    B.glow(ctx, w / 2, h / 2, w * 0.5, '#DCE6FF', 0.55 - i * 0.12, 0);
+  pictures.push({ name: 'lightning', width: 400, height: 400, frames: 3, scale: 1.5, draw(ctx, w, h, i, n) {
+    // a wash of light over the whole field, then the bolt's after-image
+    B.glow(ctx, w / 2, h / 2, w * 0.5, '#DCE6FF', 0.5 - i * 0.14, 0);
     if (i < 2) {
-      ctx.strokeStyle = 'rgba(245,248,255,0.95)'; ctx.lineWidth = 2.2 - i; ctx.lineCap = 'round';
-      const r = B.rand(7 + i); let x = w * 0.5, y = h * 0.2;
+      ctx.strokeStyle = 'rgba(245,248,255,0.95)'; ctx.lineWidth = 2.4 - i; ctx.lineCap = 'round';
+      const r = B.rand(7 + i); let x = w * 0.5, y = h * 0.15;
       ctx.beginPath(); ctx.moveTo(x, y);
-      for (let k = 0; k < 9; k++) { x += (r() - 0.5) * 30; y += 18 + r() * 14; ctx.lineTo(x, y); }
+      for (let k = 0; k < 10; k++) { x += (r() - 0.5) * 34; y += 20 + r() * 16; ctx.lineTo(x, y); }
       ctx.stroke();
+      B.glow(ctx, x, y, 40, '#DCE6FF', 0.5, 0);
     }
   } });
-  // dawn's light: a warm glow that rises with the day (laid over the ground as the night thins)
+  // the camps' fires on the water: a warm light laid at the bank, flickering
+  pictures.push({ name: 'fireglow', width: 160, height: 70, frames: 4, scale: 1, draw(ctx, w, h, i, n) {
+    const f = 0.9 + 0.1 * Math.sin(i / n * TAU);
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
+    B.glow(ctx, 0, 0, w / 2 * f, FIRE, 0.5, 0); ctx.restore();
+    ctx.strokeStyle = B.rgba(FIRE, 0.35); ctx.lineWidth = 1; ctx.lineCap = 'round';
+    const r = B.rand(3 + i);
+    for (let k = 0; k < 14; k++) { const x = w * (0.2 + r() * 0.6), y = h * (0.3 + r() * 0.4), len = 6 + r() * 14; ctx.beginPath(); ctx.moveTo(x - len / 2, y); ctx.lineTo(x + len / 2, y); ctx.stroke(); }
+  } });
+  // dawn's light: a warm wash from the east, laid over the ground as the night thins
   pictures.push({ name: 'dawn', width: 400, height: 400, scale: 1, draw(ctx, w, h) {
-    B.glow(ctx, w / 2, h / 2, w * 0.5, '#F0B070', 0.4, 0);
+    const g = ctx.createRadialGradient(w * 0.9, h * 0.5, 0, w * 0.9, h * 0.5, w * 0.9);
+    g.addColorStop(0, 'rgba(255,190,120,0.45)'); g.addColorStop(0.5, 'rgba(255,170,110,0.18)'); g.addColorStop(1, 'rgba(255,160,110,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, TAU); ctx.fill();
   } });
   // the doorway: a river bend at night with a camp's fires on each bank
   pictures.push({ name: 'doorway', width: 34, height: 30, draw(ctx, w, h) {
