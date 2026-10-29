@@ -111,7 +111,7 @@
       ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.1 + m[5] * 0.12);
       ctx.beginPath(); ctx.ellipse(x, y, rx, ry, m[4] * TAU, 0, TAU); ctx.fill();
     }
-    for (const m of SCATTER.fine) if (within(m, 0.01)) {
+    if (close) for (const m of SCATTER.fine) if (within(m, 0.01)) {
       const [x, y] = P(m), rx = Math.max(1, px(0.03 + m[2] * 0.12)), ry = rx * (0.4 + m[3] * 0.5);
       ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.plain2 : pal.plain3, 0.03 + m[5] * 0.05);
       ctx.beginPath(); ctx.ellipse(x, y, rx, ry, m[5] * TAU, 0, TAU); ctx.fill();
@@ -218,7 +218,7 @@
     for (const m of SCATTER.fine) if (insidePoly(m, isl)) { const [x, y] = P(m); ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.sand2 : pal.plain2, 0.25 + m[5] * 0.3); ctx.beginPath(); ctx.ellipse(x, y, Math.max(1, px(0.02 + m[2] * 0.05)), Math.max(1, px(0.012 + m[3] * 0.03)), m[5] * TAU, 0, TAU); ctx.fill(); }
     ctx.restore();
     const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
-    trees(isl.map((c) => [mid[0] + (c[0] - mid[0]) * 0.62, mid[1] + (c[1] - mid[1]) * 0.62]), true);
+    trees(isl.map((c) => [mid[0] + (c[0] - mid[0]) * 0.84, mid[1] + (c[1] - mid[1]) * 0.84]), true);
     // the second channel: its own light, threads of foam between the island and the far bank
     {
       const A2 = T.authored, r2 = B.rand(61);
@@ -275,7 +275,7 @@
     // body (a tunic), the head
     B.inked(ctx, (c) => { c.moveTo(x - s * 0.18, y - s * 0.4); c.lineTo(x + s * 0.18, y - s * 0.4); c.lineTo(x + s * 0.14, y - s * 0.78); c.lineTo(x - s * 0.14, y - s * 0.78); c.closePath(); },
             opts.tunic || RED, INK, s * 0.08);
-    ctx.fillStyle = BRONZE; ctx.beginPath(); ctx.arc(x, y - s * 0.86, s * 0.11, 0, TAU); ctx.fill();
+    ctx.fillStyle = opts.dim ? '#6E6A74' : BRONZE; ctx.beginPath(); ctx.arc(x, y - s * 0.86, s * 0.11, 0, TAU); ctx.fill();
     // the spear, and the shield
     ctx.strokeStyle = INK; ctx.lineWidth = s * 0.05;
     ctx.beginPath(); ctx.moveTo(x + s * 0.2, y - s * 0.1); ctx.lineTo(x + s * 0.28, y - s * 1.25); ctx.stroke();
@@ -465,16 +465,16 @@
 
   // ---- the sprites ------------------------------------------------------------------------------------
   const frames = (n) => n;
-  pictures.push({ name: 'camp-far', width: 12, height: 12, frames: 4, draw(ctx, w, h, i, n) {
-    const t = i / n, r = B.rand(3);
-    for (let k = 0; k < 5; k++) { const x = w * (0.2 + r() * 0.6), y = h * (0.2 + r() * 0.6); B.glow(ctx, x, y, 3 + Math.sin(t * TAU + k) * 0.6, FIRE, 0.9, 0); }
-  } });
-  pictures.push({ name: 'camp-mid', width: 40, height: 30, frames: 6, draw(ctx, w, h, i, n) {
-    const t = i / n, r = B.rand(5);
-    ctx.fillStyle = B.rgba('#2A2420', 0.5); ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w * 0.45, h * 0.42, 0, 0, TAU); ctx.fill();
-    for (let k = 0; k < 16; k++) { const x = w * (0.12 + r() * 0.76), y = h * (0.15 + r() * 0.7); B.glow(ctx, x, y, 2.2 + Math.sin(t * TAU * 2 + k) * 0.5, FIRE, 0.95, 0); }
-    for (let k = 0; k < 10; k++) tent(ctx, w * (0.15 + r() * 0.7), h * (0.2 + r() * 0.65), 4 + r() * 1.5, 0.8, r() < 0.5 ? 1 : -1, 'ridge');
-  } });
+  function pinpricks(ctx, w, h, t, seed, n, size) {
+    const r = B.rand(seed);
+    for (let k = 0; k < n; k++) {
+      const x = w * (0.1 + r() * 0.8), y = h * (0.12 + r() * 0.76), ph = r(), b = 0.7 + 0.3 * Math.sin((t + ph) * TAU);
+      B.glow(ctx, x, y, size * (1.6 + r()) * b, FIRE, 0.5 * b, 0);
+      ctx.fillStyle = B.rgba('#FFF1C4', 0.95 * b); ctx.beginPath(); ctx.arc(x, y, size * 0.32, 0, TAU); ctx.fill();
+    }
+  }
+  pictures.push({ name: 'camp-far', width: 14, height: 12, frames: 4, draw(ctx, w, h, i, n) { pinpricks(ctx, w, h, i / n, 3, 9, 0.9); } });
+  pictures.push({ name: 'camp-mid', width: 40, height: 30, frames: 6, draw(ctx, w, h, i, n) { pinpricks(ctx, w, h, i / n, 5, 34, 1.2); } });
   pictures.push({ name: 'camp-a', scale: 2, width: 230, height: 160, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 11, { fires: 16, rows: 4, cols: 8, horses: 7, walkers: 10 }); } });
   // the camp left behind: its fires kept burning, a few figures still walking among them
   pictures.push({ name: 'camp-decoy', scale: 2, width: 230, height: 160, frames: 8, draw(ctx, w, h, i, n) { camp(ctx, w, h, i / n, 11, { fires: 16, rows: 4, cols: 8, horses: 2, walkers: 4 }); } });
@@ -495,7 +495,7 @@
   // the column on the march: ranks of foot with their spears, horse at its head, no fires
   pictures.push({ name: 'column-far', width: 24, height: 6, frames: 4, draw(ctx, w, h, i, n) {
     // what you would see of a column in the dark from across the river: a thin line of pale points, creeping
-    for (let k = 0; k < 11; k++) { const x = 1.5 + k * 2.1 + ((i + k) % 4) * 0.12; ctx.fillStyle = B.rgba('#D8CFB8', 0.55 + ((k + i) % 3) * 0.15); ctx.beginPath(); ctx.arc(x, h / 2 + Math.sin(k * 1.3) * 0.7, 0.75, 0, TAU); ctx.fill(); }
+    for (let k = 0; k < 11; k++) { const x = 1.5 + k * 2.1 + ((i + k) % 4) * 0.12; ctx.fillStyle = B.rgba('#8E8AA0', 0.5 + ((k + i) % 3) * 0.15); ctx.beginPath(); ctx.arc(x, h / 2 + Math.sin(k * 1.3) * 0.7, 0.75, 0, TAU); ctx.fill(); }
   } });
   pictures.push({ name: 'column', width: 190, height: 34, frames: 8, draw(ctx, w, h, i, n) {
     // a file, not a block: two ranks, the horse at its head
@@ -507,17 +507,23 @@
   } });
   pictures.push({ name: 'column-mid', width: 60, height: 16, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let row = 0; row < 2; row++) for (let k = 0; k < 12; k++) soldier(ctx, 4 + k * 4.4 + row * 1.5, h * 0.62 + row * 5, 5.2, (t + k * 0.1 + row * 0.3) % 1, { shield: 'none', tunic: (k + row) % 2 ? RED : '#E6DCC4' });
-    horse(ctx, w * 0.92, h * 0.7, 5, t, true);
+    ctx.globalAlpha = 0.8;
+    for (let row = 0; row < 2; row++) for (let k = 0; k < 12; k++) soldier(ctx, 4 + k * 4.4 + row * 1.5, h * 0.62 + row * 5, 5.2, (t + k * 0.1 + row * 0.3) % 1, { shield: 'none', tunic: (k + row) % 2 ? '#4A4650' : '#6A6670', dim: true });
+    horse(ctx, w * 0.92, h * 0.7, 5, t, true, '#3E3A42');
+    ctx.globalAlpha = 1;
   } });
+  // (the night march is a dim grey thread: cloaks over everything, no gold, barely more than the ground)
   pictures.push({ name: 'cluster', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
-    // a few men of the file, so a thread of these bends with the way
     const t = i / n, s = 10, r = B.rand(31);
-    for (let k = 0; k < 5; k++) soldier(ctx, 5 + k * 5 + (r() - 0.5) * 2, h * 0.55 + (k % 2) * 8 + (r() - 0.5) * 3, s, (t + k * 0.17) % 1, { tunic: k % 2 ? RED : TENT_SHADE, shield: k % 3 ? 'side' : 'none' });
+    ctx.globalAlpha = 0.75;
+    for (let k = 0; k < 5; k++) soldier(ctx, 5 + k * 5 + (r() - 0.5) * 2, h * 0.55 + (k % 2) * 8 + (r() - 0.5) * 3, s, (t + k * 0.17) % 1, { tunic: k % 2 ? '#4A4650' : '#5A5660', shield: 'none', dim: true });
+    ctx.globalAlpha = 1;
   } });
   pictures.push({ name: 'cluster-horse', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
     const t = i / n;
-    for (let k = 0; k < 2; k++) horse(ctx, 8 + k * 11, h * 0.6 + k * 7, 9, (t + k * 0.3) % 1, true);
+    ctx.globalAlpha = 0.75;
+    for (let k = 0; k < 2; k++) horse(ctx, 8 + k * 11, h * 0.6 + k * 7, 9, (t + k * 0.3) % 1, true, '#3E3A42');
+    ctx.globalAlpha = 1;
   } });
   // the boats and the hides pushed across
   pictures.push({ name: 'boats', width: 120, height: 54, frames: 6, draw(ctx, w, h, i, n) {
@@ -637,6 +643,7 @@
   }
   pictures.push({ name: 'cavalry', width: 130, height: 44, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
+    sunShadow(ctx, w * 0.6, h * 0.8, w * 0.35, h * 0.3);
     for (let row = 0; row < 3; row++) dust(ctx, w * 0.3, h * 0.62 + row * 9, w * 0.3, h * 0.6, t + row * 0.3, 5 + row);
     for (let row = 0; row < 3; row++) for (let k = 0; k < 6; k++) horse(ctx, w * 0.25 + k * 16 + row * 5, h * 0.5 + row * 9, 9, (t + k * 0.15 + row * 0.3) % 1, true, (k + row) % 2 ? HORSE : HORSE2);
   } });
@@ -651,6 +658,7 @@
   // the phalanx: a block of pikes, advancing
   pictures.push({ name: 'phalanx', width: 96, height: 40, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n, s = 8;
+    sunShadow(ctx, w / 2, h * 0.75, w * 0.5, h * 0.3);
     for (let row = 0; row < 4; row++) for (let k = 0; k < 10; k++) {
       const x = w * 0.06 + k * 7.5 + row * 2.2, y = h * 0.42 + row * 8;
       soldier(ctx, x, y, s, (t + k * 0.05) % 1, { tunic: TENT_SHADE });
@@ -663,6 +671,7 @@
   // Porus' son's chariots, and the same bogged in the clay
   pictures.push({ name: 'chariots', width: 130, height: 40, frames: 6, draw(ctx, w, h, i, n) {
     const t = i / n;
+    sunShadow(ctx, w * 0.6, h * 0.8, w * 0.35, h * 0.3);
     for (let row = 0; row < 2; row++) dust(ctx, w * 0.3, h * 0.7 + row * 12, w * 0.3, h * 0.6, t + row * 0.5, 13 + row);
     for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) chariot(ctx, w * 0.26 + k * 26 + row * 8, h * 0.55 + row * 12, 11, (t + k * 0.25) % 1);
   } });
@@ -702,8 +711,10 @@
     for (const sgn of [-1, 1]) { const p = at(4, sgn * 110); order.push({ y: p[1], draw: () => { ctx.save(); if (FACE < 0) { ctx.translate(p[0], 0); ctx.scale(-1, 1); ctx.translate(-p[0], 0); } chariot(ctx, p[0], p[1], 11, t); ctx.restore(); } }); }
     order.sort((a, b) => a.y - b.y).forEach((o) => o.draw());   // the nearer drawn last, as in a high view
   }
-  pictures.push({ name: 'line', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, false); } });
-  pictures.push({ name: 'line-turning', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, true); } });
+  /** The morning's low sun from the east: a soft shadow laid a little to the west of a formation. */
+  function sunShadow(ctx, x, y, rx, ry) { ctx.save(); ctx.translate(x - rx * 0.25, y); ctx.scale(rx, ry); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,18,30,0.35)'); g.addColorStop(1, 'rgba(20,18,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore(); }
+  pictures.push({ name: 'line', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { sunShadow(ctx, w / 2, h / 2 + 10, 70, 110); lineOf(ctx, w, h, i / n, false); } });
+  pictures.push({ name: 'line-turning', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { sunShadow(ctx, w / 2, h / 2 + 10, 70, 110); lineOf(ctx, w, h, i / n, true); } });
   pictures.push({ name: 'line-mid', width: 60, height: 16, frames: 4, draw(ctx, w, h, i, n) {
     for (let k = 0; k < 9; k++) { ctx.fillStyle = GREY; ctx.beginPath(); ctx.ellipse(4 + k * 6.4, 10 + Math.sin(i / n * TAU + k) * 0.5, 2.6, 2.2, 0, 0, TAU); ctx.fill(); }
     for (let k = 0; k < 20; k++) { ctx.fillStyle = '#C77B3E'; ctx.fillRect(2 + k * 2.9, 2 + (k % 2), 1.4, 2); }
@@ -757,7 +768,7 @@
     }
   } });
   // the camps' fires on the water: a warm light laid at the bank, flickering
-  pictures.push({ name: 'fireglow', width: 160, height: 70, frames: 4, scale: 1, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'fireglow', width: 100, height: 60, frames: 4, scale: 1, draw(ctx, w, h, i, n) {
     // the fires on the water: long broken streaks of their light, running with the current, flickering
     const r = B.rand(3), t = i / n;
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);

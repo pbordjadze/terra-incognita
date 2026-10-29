@@ -79,7 +79,7 @@
   // ----- everything that lives on the ground, each on its dated way: set once, moved by the date ----
   var P = H.places, W = H.ways;
   function place() {
-    var camp = { far: { n: 'camp-far', f: 4, size: [12, 12] }, mid: { n: 'camp-mid', f: 6, size: [40, 30] } };
+    var camp = { far: { n: 'camp-far', f: 4, size: [14, 12] }, mid: { n: 'camp-mid', f: 6, size: [52, 39] } };
     // the great camp, then the camp left burning with a few figures among the fires, until Craterus goes
     terra.sprites.set('camp-a', { path: stand(P.campA, HR.dusk - 1, HR.leave), label: "Alexander's camp at the river", touchable: true,
                                   looks: looks(camp.far, camp.mid, { n: 'camp-a', f: 8, size: [150, 104], fps: 5 }) });
@@ -90,10 +90,10 @@
     terra.sprites.set('camp-p-left', { path: stand(P.campP, HR.porus, HR.end + 1), label: 'The few left in Porus’ camp', touchable: true,
                                        looks: looks(camp.far, { n: 'camp-mid', f: 6, size: [24, 18] }, { n: 'camp-mid', f: 6, size: [70, 52] }) });
     // the camps' fires on the water nearest them
-    var glow = function (w) { return [{ frames: frames('fireglow', 4), fps: 2, size: [Math.round(w * 0.45), Math.round(w * 0.2)], minZoom: Z.valley, maxZoom: Z.mid },
-                                     { frames: frames('fireglow', 4), fps: 2, size: [w, Math.round(w * 0.44)], minZoom: Z.mid }]; };
-    terra.sprites.set('glow-a', { path: stand(P.glowA, HR.dusk - 1, HR.craterus), label: '', looks: glow(110) });
-    terra.sprites.set('glow-p', { path: stand(P.glowP, HR.dusk - 1, HR.porus), label: '', looks: glow(120) });
+    var glow = function (w) { return [{ frames: frames('fireglow', 4), fps: 2, size: [Math.round(w * 0.45), Math.round(w * 0.27)], minZoom: Z.valley, maxZoom: Z.mid },
+                                     { frames: frames('fireglow', 4), fps: 2, size: [w, Math.round(w * 0.6)], minZoom: Z.mid }]; };
+    terra.sprites.set('glow-a', { path: stand(P.glowA, HR.dusk - 1, HR.craterus), label: '', looks: glow(64) });
+    terra.sprites.set('glow-p', { path: stand(P.glowP, HR.dusk - 1, HR.porus), label: '', looks: glow(70) });
     terra.sprites.set('elephants', { path: stand(P.waterP, HR.dusk - 1, HR.porus), label: 'The elephants at the water, watching the far bank', touchable: true,
                                      looks: fromValley(looks(null, { n: 'elephants-mid', f: 4, size: [30, 8] }, { n: 'elephants-watch', f: 8, size: [112, 27], fps: 3 })) });
     // the column: out of the camp in the dark, inland, to the grove on the headland

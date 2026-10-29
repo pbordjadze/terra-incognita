@@ -191,3 +191,24 @@ faintest bands. The chariots from the middle distance are chariots.
 
 Overruled: the phone's chip over the pool (the app's chrome, every pack's); the unlabelled strip (the
 atlas's date strip, every dated pack's).
+
+### Round 8 — the fourth hater
+
+It called the close camps the best frame on the globe and the boats and the wakes drawn by someone
+who looked; then, worst first: the first sight is a map legend (tent icons at a counter's size where
+the pitch promises two camps of tiny fires), the dawn and the battle a deployment diagram with no sun
+and no shadow, the night hides nothing (the column as bright as the camp it left), the storm's blocks
+and a dot screen on the eastern bank, the headland and island pasted on, orange dashes on both banks,
+the wade too small and too dry, the chariots five dots from the middle distance, the elephants never
+moving in a still, the phone's halo badges (a quibble). Worst: icons instead of fires from afar.
+
+Taken: from afar a camp is only its fires, pinpricks of warm light breathing, no tents until the
+close zoom; the night march is a dim grey thread, cloaks over everything, no gold, the column from
+afar grey points; the fires' light lies narrower on the water, river side only; the island is mostly
+trees with a thin strand; the fine mottle is only in the close picture; the morning's low sun lays a
+soft shadow west of every formation. The camps' fires from the valley are a little larger.
+
+Overruled: the elephants never move (they sway and one raises its trunk; a still can't show it); the
+phone's halo badges; the chariots at the zoom the reader chose (the globe leans in only twice, for the
+crossing and the wade, and the reader's zoom is theirs). Still mine to see: the battle is formations
+on a field; its motion (the sweep, the turn) is in time, not in a still.
