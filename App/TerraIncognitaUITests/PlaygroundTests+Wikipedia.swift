@@ -58,6 +58,7 @@ extension PlaygroundTests {
         XCTAssertFalse(app.descendants(matching: .any)["wikipediaCard"].firstMatch.exists)
         app.buttons["packPanelClose"].firstMatch.tap()
         endPrototype(in: app)
+        openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "The switch belongs to the reader, not the stage: nothing more live")
     }
 }
