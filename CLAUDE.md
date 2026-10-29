@@ -336,5 +336,8 @@ the caption's headpiece, and the one chosen country, gilded as the cartouche. Th
   delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
+- A tool you write to check or measure your own work (a harness, a preview, a shim) is committed
+  before you finish, in `tools/` (or painting-company's when it holds anything private), its
+  header saying how to run it: a scratch directory dies with its session (painting-company row 159).
 - Name, icon and listing are the owner's to decide (the icon is a placeholder).
 - Times given to the owner are Eastern (ET).
