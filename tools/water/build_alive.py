@@ -12,7 +12,7 @@ Global Drifter Program's monthly climatology; its docstring is the sheet's layou
   unchanged (the river network, its anchors, the glint), so the two packs show the same rivers.
 - sea.json: for the mouths of the Amazon, the Tocantins and the Orinoco, where their water goes in
   the sea, month by month: a drawn way out of the estuary (a few hand-placed points along the
-  channel, not measured), then streamlines of that month's mean surface current from seeds across
+  channel, not measured, and a curve from its end out to each seed), then streamlines of that month's mean surface current from seeds across
   the mouth, traced (fourth-order Runge-Kutta, three-hour steps) for at most MAX_DAYS days or until
   they leave the measured sea. They are the month's mean currents, not a day's: the paths a drop
   would take if the month's average held. Each path is thinned to a vertex every 0.12 degrees.
@@ -154,6 +154,27 @@ def length(points):
     return sum(span(a, b) for a, b in zip(points, points[1:]))
 
 
+def joined(field, estuary, seed):
+    """From the estuary's end out to a seed, a curve leaving the way the estuary runs and arriving the
+    way the current at the seed runs (a cubic Bezier: no corner where the drawn way meets the traced)."""
+    m, before = estuary[-1], estuary[-2]
+    u, v, _ = sample(field, seed[0], seed[1])
+    out = (m[0] - before[0], m[1] - before[1])
+    n = math.hypot(*out) or 1
+    out = (out[0] / n, out[1] / n)
+    k = math.hypot(u, v) or 1
+    flow = (u / k, v / k)
+    d = math.hypot(seed[0] - m[0], seed[1] - m[1])
+    p1 = (m[0] + out[0] * 0.45 * d, m[1] + out[1] * 0.45 * d)
+    p2 = (seed[0] - flow[0] * 0.45 * d, seed[1] - flow[1] * 0.45 * d)
+    pts = []
+    for i in range(1, 12):
+        t = i / 12
+        a, b, c, e = (1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t * t, t ** 3
+        pts.append((a * m[0] + b * p1[0] + c * p2[0] + e * seed[0], a * m[1] + b * p1[1] + c * p2[1] + e * seed[1]))
+    return pts
+
+
 def sea(months):
     outlets = {}
     for id, mouth in MOUTHS.items():
@@ -165,7 +186,7 @@ def sea(months):
                 stream = trace(field, seed[0], seed[1], MAX_DAYS)
                 if len(stream) < 4:
                     continue
-                way = thin(estuary + stream)
+                way = thin(estuary + joined(field, estuary, seed) + stream)
                 longest = max(longest, length(way))
                 paths.append([[round(x, 3), round(y, 3)] for x, y in way])
             per_month.append(paths)

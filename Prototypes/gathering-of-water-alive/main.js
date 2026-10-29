@@ -455,7 +455,7 @@
         var e = edges[s.legs[k].id];
         if (!inRange(e) || botos.some(function (b) { return b.edge === e.i; })) continue;
         for (var j = 0; j < e.c.length; j += 2) {
-          var p = terra.project(e.c[j][0], e.c[j][1]);
+          var p = terra.project(e.c[j][0], e.c[j][1], cam);
           if (!p || p.facing < 0.2) continue;
           var d = Math.hypot(p.x - cx, p.y - cy);
           if (d < limit && (!best || d < best.d)) best = { d: d, edge: e.i, j: j, source: s };

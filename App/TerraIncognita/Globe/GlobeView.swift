@@ -914,7 +914,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             touched()
             holdFeel.impactOccurred()
             onWorldDrag?("began", p, unproject(p))
-        case .changed: onWorldDrag?("moved", p, unproject(p))
+        case .changed:
+            // a second finger: the drag ends, and two fingers turn and zoom the globe as always
+            if g.numberOfTouches > 1 {
+                g.isEnabled = false
+                g.isEnabled = true
+                return
+            }
+            onWorldDrag?("moved", p, unproject(p))
         case .ended, .cancelled, .failed:
             onWorldDrag?("ended", p, unproject(p))
             lastTouch = CACurrentMediaTime()
