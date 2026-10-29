@@ -5,6 +5,7 @@
   "runtime": 4,
   "presentation": "globe",
   "scripts": [
+    "shared.js",
     "data.js",
     "sight.js",
     "main.js"

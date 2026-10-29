@@ -69,10 +69,14 @@ preview's mirror `tools/playground/harness/`.
 | Timers, frames | browser timers; `requestAnimationFrame` for a short eased change | `setTimeout`, `requestAnimationFrame` | every pack; rAF: lead line (the lead let down) | never to animate the globe; JavaScriptCore runs without a JIT: prepare data at build time |
 | Open, close | the chip's Open; the end | `terra.on('open' \| 'close')`, `terra.close()` | open: every pack; close: fires, both gatherings, lead line, low sea, whales | |
 
-**Shared script: none yet.** Packs repeat small helpers instead: a great-circle `along(a, b, t)` is
-written six times (both gatherings, lead line, monsoon, whales, vine; the herds' `slerp` is a
-seventh) and a `frames(name, n)` file-name list six times (fires, lead line, low sea, monsoon,
-whales, vine). See [One job, two tools](#one-job-two-tools).
+**Shared script** (`Prototypes/_shared/shared.js`, the global `Shared`; [`runtime3.md`](runtime3.md) › Shared script):
+helpers a pack would otherwise write again. A pack carries a copy, `shared.js`, first in its `scripts`.
+
+| Tool | What it does | Call | Used by | Limits |
+| --- | --- | --- | --- | --- |
+| Great circles | the place `t` of the way between two places; the angle between them; a place's unit vector | `Shared.along(a, b, t)`, `Shared.arc(a, b)`, `Shared.unit(p)` | herds (along, arc), lead line (along, unit), monsoon, whales (along, arc) | |
+| Frame names | `name-1.png … name-n.png`, the art drawer's canvas frames | `Shared.frames(name, n)` | fires, lead line, low sea, monsoon, whales | |
+| Copies | writes each pack's copy; `validate` fails one that differs; held to the helpers it replaced | `playground.py share`, `node tools/playground/shared_check.cjs` | every pack listing `shared.js` | change it compatibly |
 
 ## What a native prototype calls: the stage
 
@@ -168,6 +172,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | --- | --- | --- | --- |
 | Pack validator | the contract, sizes (500 files, 50 MB a pack, 25 MB a file, 24 frames), a doorway's sheet frames inside their sheet, the offline boundary | `python3 tools/playground/playground.py validate [ids]` | CI `plates`, `packs.yml` |
 | Playground tool tests | `playground.py` itself | `python3 tools/playground/test_playground.py` | CI `plates`, `packs.yml` |
+| Shared script | `Shared` against the helpers it replaced, bit for bit | `node tools/playground/shared_check.cjs` | `packs.yml` |
 | Preview's own check | a fixture pack using every tool once, held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand |
 | Shader check | every `.metal` compiled and its bindings, in seconds | `python3 tools/metal/metal.py check` | CI `plates` |
 | Stand-in tests | the CPU Metal's builtins; whether `twin` notices drift | `tools/metal/tests/test_metal.py`; `twin_drift.py` (slow) | CI `plates`; by hand |
@@ -217,9 +222,11 @@ Found October 29, 2026 (painting-company row 178). Each says what differs and wh
   under scrubbing. The lead line's way is already dated (`way.js`) and could move onto it as it
   stands; the monsoon's dhows sail a yearly round, which a dated way can carry as one year's dates.
   The vine's stems, regrown by `terra.geo.set` on every `time` event, are the same idea for lines:
-  no dated geography exists yet.
-- **Script helpers repeated in packs.** `along` (six packs, and the herds' `slerp`) and `frames`
-  (six) are the first candidates for a shared script module (CLAUDE.md › Reuse first).
+  dated geography, built on claude/georgia with the vine's remaking.
+- **Script helpers repeated in packs** (merged). The great-circle `along` (the lead line, the monsoon,
+  the whales; the herds' `slerp`) and `frames` (five packs, and the vine's own until it moves onto it with
+  its remaking) are `Shared.along` and `Shared.frames` in the packs' shared script, bit for bit what they
+  replaced. (The gatherings' `along` is another thing: how far along a river a touch lies.)
 - **Three hand-written PNG encoders** (`glint_png.py`, `marker_png.py`, `harness_check.cjs`'s
   fixture pictures): small and standard-library by design; worth one shared helper only when a
   fourth appears.

@@ -9,6 +9,8 @@
    record's. Nothing is written on the screen but the name and a depth at the foot of each line. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var unit = Shared.unit, along = Shared.along, frames = Shared.frames;
   var WAY = window.WAY.points, G = window.DEPTHS, D = Math.PI / 180, DAY = 86400000;
   var R1 = 489;
   function zoomFor(ppd) { return ppd / (R1 * D); }
@@ -39,15 +41,6 @@
   function cell(x, y) { x = ((x % G.width) + G.width) % G.width; y = Math.max(0, Math.min(G.height - 1, y)); return depths[y * G.width + x] * G.metresPerStep; }
 
   // ---- geometry ----
-  function unit(p) { var la = p[1] * D, lo = p[0] * D; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
-  function arc(a, b) { var u = unit(a), v = unit(b); return Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))); }
-  function along(a, b, t) {
-    var u = unit(a), v = unit(b), w = arc(a, b);
-    if (w < 1e-9) return a.slice();
-    var sa = Math.sin((1 - t) * w) / Math.sin(w), sb = Math.sin(t * w) / Math.sin(w);
-    var p = [u[0] * sa + v[0] * sb, u[1] * sa + v[1] * sb, u[2] * sa + v[2] * sb];
-    return [Math.atan2(p[0], p[2]) / D, Math.asin(Math.max(-1, Math.min(1, p[1]))) / D];
-  }
   function point(lon, lat, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props || {} }; }
   function r3(v) { return Math.round(v * 1000) / 1000; }
 
@@ -66,7 +59,6 @@
             { frames: frames('ship-mid', 8), fps: 6, size: [32, 25], minZoom: MID, maxZoom: NEAR, face: true },
             { image: 'ship-far.png', size: [14, 11], maxZoom: MID, face: true }];
   }
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
 
   var date = WAY.filter(function (p) { return p.kind === 'station'; })[0].d, playing = true, shownLeg = -1, following = false;
   /** Sets the ship on the leg the date is in, so the host sails her at the date's pace; placed still

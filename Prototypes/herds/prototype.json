@@ -4,7 +4,7 @@
   "summary": "The camel family's history as small herds you follow across the globe: from North America, camels north to Asia, llamas south to the Andes.",
   "runtime": 6,
   "presentation": "globe",
-  "scripts": ["data.js", "art.js", "notes.js", "main.js"],
+  "scripts": ["shared.js", "data.js", "art.js", "notes.js", "main.js"],
   "anchor": { "lon": -104, "lat": 41.5, "zoom": 2.2 },
   "doorway": {
     "lon": -103.7, "lat": 42.4,

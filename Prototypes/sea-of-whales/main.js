@@ -7,6 +7,8 @@
    What is true and what is drawn: SOURCES.md, and the panel the chip's Open shows. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var arc = Shared.arc, along = Shared.along, frames = Shared.frames;
   var W = window.WHALES, D = Math.PI / 180;
   var FLOOD = 5.5, EBB = 10, SEA = 70, DESERT = 28;      // seconds: the sea coming, going, staying, gone
   var BANDS = 4, TICK = 50;                              // the pictures, and the fade's step (ms)
@@ -21,19 +23,9 @@
   function zoomFor(ppd) { return ppd / (R1 * D); }       // the zoom at which a degree is so many points across
   var NEAR = 6.5, MID = 3;                               // zooms (set from the screen): the whale itself; its small self; a blow from afar
 
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
   function point(lon, lat, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props || {} }; }
 
   // ---- where a whale is: the host moves a sprite along its way at a steady pace; this is the same reckoning ----
-  function unit(p) { var la = p[1] * D, lo = p[0] * D; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
-  function arc(a, b) { var u = unit(a), v = unit(b); return Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))); }
-  function along(a, b, t) {
-    var u = unit(a), v = unit(b), w = arc(a, b);
-    if (w < 1e-9) return a.slice();
-    var sa = Math.sin((1 - t) * w) / Math.sin(w), sb = Math.sin(t * w) / Math.sin(w);
-    var p = [u[0] * sa + v[0] * sb, u[1] * sa + v[1] * sb, u[2] * sa + v[2] * sb];
-    return [Math.atan2(p[0], p[2]) / D, Math.asin(Math.max(-1, Math.min(1, p[1]))) / D];
-  }
   /** The place along a way (coordinates, seconds, loop 'back') `elapsed` seconds after it was set. */
   function placeOn(way, elapsed) {
     var c = way.coordinates, lengths = [], total = 0, i;

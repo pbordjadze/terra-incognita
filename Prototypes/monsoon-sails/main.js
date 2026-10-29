@@ -7,6 +7,8 @@
    is true and what is drawn is in SOURCES.md and in the panel the chip's Open shows. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var arc = Shared.arc, along = Shared.along, frames = Shared.frames;
   var M = window.MONSOON, D = Math.PI / 180, DAY = 86400000;
   var RATE = 5;                              // days a second while the year plays
   var R1 = 489;                              // the globe's radius at zoom 1 on this screen (the 13-inch iPad's to start)
@@ -16,15 +18,6 @@
   var MIRROR = Math.SQRT1_2;
 
   // ---- geometry: the host moves a sprite along its way at a steady pace; this is the same reckoning ----
-  function unit(p) { var la = p[1] * D, lo = p[0] * D; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
-  function arc(a, b) { var u = unit(a), v = unit(b); return Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))); }
-  function along(a, b, t) {
-    var u = unit(a), v = unit(b), w = arc(a, b);
-    if (w < 1e-9) return a.slice();
-    var sa = Math.sin((1 - t) * w) / Math.sin(w), sb = Math.sin(t * w) / Math.sin(w);
-    var p = [u[0] * sa + v[0] * sb, u[1] * sa + v[1] * sb, u[2] * sa + v[2] * sb];
-    return [Math.atan2(p[0], p[2]) / D, Math.asin(Math.max(-1, Math.min(1, p[1]))) / D];
-  }
   function lengthOf(c) { var s = 0; for (var i = 0; i < c.length - 1; i++) s += arc(c[i], c[i + 1]); return s; }
   /** The place `f` (0–1) of the way along `c`, and the rest of the way from there. */
   function split(c, f) {
@@ -110,7 +103,6 @@
             { frames: frames('dhow-furled-mid', 4), fps: 2, size: [22, 18], minZoom: MID, maxZoom: NEAR },
             { image: 'speck.png', size: [7, 7], maxZoom: MID }];
   }
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
 
   /** Where a dhow lies in a port: the ships of a way at their own berths, a little apart, so a port
       with several reads as a small fleet. */

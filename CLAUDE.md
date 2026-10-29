@@ -277,7 +277,7 @@ instead: the stage itself (the globe, camera, date, caption, touch routing, work
 and what every experience relies on and none owns. When in doubt, it's runtime.
 
 - **Reuse first.** Read what the runtime offers (`docs/playground.md` › The contract, and the
-  shared script modules once there are any) before building.
+  packs' shared script, `Prototypes/_shared/shared.js`: `docs/runtime3.md` › Shared script) before building.
 - **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
   never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
   experience that needs it.

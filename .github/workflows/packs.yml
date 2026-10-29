@@ -47,6 +47,7 @@ jobs:
             node --check "$f" || rc=1
           done
           python3 -m unittest tools/playground/test_playground.py || rc=1
+          node tools/playground/shared_check.cjs || rc=1
           exit $rc
       - name: Pack
         run: python3 tools/playground/playground.py pack --out build/packs

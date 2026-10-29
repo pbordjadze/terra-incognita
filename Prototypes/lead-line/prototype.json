@@ -4,7 +4,7 @@
   "summary": "HMS Challenger sails her whole way round the world, 1872–76, as the date plays. Touch the sea anywhere: a lead runs out until it finds the floor. Drag the glass to see the floor under it.",
   "runtime": 4,
   "presentation": "globe",
-  "scripts": ["depths.js", "stations.js", "way.js", "main.js"],
+  "scripts": ["shared.js", "depths.js", "stations.js", "way.js", "main.js"],
   "anchor": { "lon": -30, "lat": 20, "zoom": 1.2 },
   "doorway": {
     "lon": -38, "lat": 22,

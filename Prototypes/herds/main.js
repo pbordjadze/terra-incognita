@@ -75,21 +75,11 @@
     for (var i = 1; i < n; i++) {
       if (p[i][2] >= date) {
         var f = p[i][2] > p[i - 1][2] ? (date - p[i - 1][2]) / (p[i][2] - p[i - 1][2]) : 1;
-        return slerp(p[i - 1], p[i], f);
+        return Shared.along(p[i - 1], p[i], f);
       }
     }
     return [p[n - 1][0], p[n - 1][1]];
   }
-  function unit(lon, lat) { return [Math.cos(lat * D) * Math.sin(lon * D), Math.sin(lat * D), Math.cos(lat * D) * Math.cos(lon * D)]; }
-  function slerp(p, q, f) {
-    var a = unit(p[0], p[1]), b = unit(q[0], q[1]), d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
-    var om = Math.acos(d);
-    if (om < 1e-9) return [p[0], p[1]];
-    var ka = Math.sin((1 - f) * om) / Math.sin(om), kb = Math.sin(f * om) / Math.sin(om);
-    var v = [a[0] * ka + b[0] * kb, a[1] * ka + b[1] * kb, a[2] * ka + b[2] * kb];
-    return [Math.atan2(v[0], v[2]) / D, Math.asin(Math.max(-1, Math.min(1, v[1]))) / D];
-  }
-
   // ----- how an animal shows ------------------------------------------------------------------------
   function look(set, more, scale) {
     var l = set.frames.length > 1 ? { frames: set.frames } : { image: set.frames[0] };
@@ -171,10 +161,7 @@
     }
     return PACE[PACE.length - 1][0];
   }
-  function degrees(p, q) {
-    var a = unit(p[0], p[1]), b = unit(q[0], q[1]);
-    return Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]))) / D;
-  }
+  function degrees(p, q) { return Shared.arc(p, q) / D; }
   function pace(c) {
     if (!c || !(c.radius > 0)) return;
     lastPaced = Date.now();

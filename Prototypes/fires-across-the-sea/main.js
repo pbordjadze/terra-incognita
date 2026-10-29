@@ -8,6 +8,8 @@
    the screen but the name; SOURCES.md and the panel the chip's Open shows say the rest. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var frames = Shared.frames;
   var P = window.PEAKS, D = Math.PI / 180, R = 6371;
   // How large things are depends on the screen: a degree is radius × π/180 points at zoom 1 (about
   // 489 on the 13-inch iPad, 176 on a phone), so the fire's looks change at a density of points a
@@ -46,7 +48,6 @@
   // ---- the pyres, and the fires ----
   var lit = {}, order = [], timers = [], sight = [], quiet = 0;
   function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
 
   function drawPyres() {
     var cold = peaks.filter(function (p) { return !lit[p.id]; }).map(function (p) { return point(p, { label: p.name + ', ' + p.h + ' m' }); });

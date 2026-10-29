@@ -4,7 +4,7 @@
   "summary": "Touch the sea and it goes out: the shelves come up as the dry land they were when the ice was greatest, Britain joined to Europe, Asia to America, with rivers across them and mammoths walking.",
   "runtime": 4,
   "presentation": "globe",
-  "scripts": ["data.js", "main.js"],
+  "scripts": ["shared.js", "data.js", "main.js"],
   "anchor": { "lon": 2, "lat": 54, "zoom": 2.4 },
   "doorway": {
     "lon": 3.0, "lat": 55.0,

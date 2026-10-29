@@ -4,7 +4,7 @@
   "summary": "Wadi Al-Hitan, Egypt: bones in the sand. Touch the sand and the sea that was here comes back, with the whales that swam in it.",
   "runtime": 4,
   "presentation": "globe",
-  "scripts": ["data.js", "main.js"],
+  "scripts": ["shared.js", "data.js", "main.js"],
   "anchor": { "lon": 30.6, "lat": 29.2, "zoom": 3.4 },
   "doorway": {
     "lon": 30.18333, "lat": 29.33333,

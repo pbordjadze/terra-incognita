@@ -65,6 +65,7 @@ node tools/playground/check.cjs tide-pool --wikipedia         # the same with Wi
 python3 tools/wikipedia/build.py --pack tide-pool             # its wikipedia.json: the articles its words name (docs/runtime3.md)
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
 node tools/playground/explore.cjs tide-pool out/ '[{"wait":3000,"shot":"a"}]'   # its moments from a plan: fly, scrub, touch, screenshot
+python3 tools/playground/playground.py share                  # the shared script's copy (Shared.along, Shared.frames…) into packs listing shared.js
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
 
