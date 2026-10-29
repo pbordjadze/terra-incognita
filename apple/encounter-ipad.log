@@ -1,0 +1,22 @@
+Retrying tests on failure. Running tests repeatedly up to 2 times.
+
+Writing result bundle at path:
+	/Users/runner/work/terra-incognita/terra-incognita/build/encounter-ipad.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:99DEE653-946C-406D-8E9E-238D1FCE93C9, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:99DEE653-946C-406D-8E9E-238D1FCE93C9, OS:26.5, name:iPad Pro 13-inch (M5) }
+2026-10-29 21:39:48.817 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 21:39:48.818 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 21:41:13.278 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 21:41:13.279 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 21:43:15.092 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 21:43:15.092 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 21:44:28.840 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 21:44:28.840 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 21:47:35.790 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 21:47:35.790 xcodebuild[4371:17516] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 21:48:14.059 xcodebuild[4371:17516] [MT] IDETestOperationsObserverDebug: 587.746 elapsed -- Testing started completed.
+2026-10-29 21:48:14.059 xcodebuild[4371:17516] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-29 21:48:14.059 xcodebuild[4371:17516] [MT] IDETestOperationsObserverDebug: 587.746 sec, +587.746 sec -- end
+Testing started

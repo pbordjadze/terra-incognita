@@ -1,0 +1,5 @@
+    3m 5s  Passed   CamelidEncounterTests/testLargestAccessibleReading()
+    2m 1s  Passed   CamelidEncounterTests/testEvidenceAndLivingFamily()
+   1m 28s  Passed   CamelidEncounterTests/testCamelWaitsForTheReaderAndCanBeLeft()
+   1m 13s  Passed   CamelidEncounterTests/testGlobeGesturesYieldAndMilestonesRemainCoherent()
+      37s  Passed   CamelidEncounterTests/testReducedMotionCanVisitAndReadEveryMoment()
