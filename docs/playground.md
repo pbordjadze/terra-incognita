@@ -73,7 +73,8 @@ the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
 the sea is tapped); `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/` use the
-globe's date and geography. A pack is a script, its data and pictures, with everything inside its
+globe's date and geography; `Prototypes/herds/` (runtime 5) moves things with the date: sprites on
+dated ways, a date with an uneven pace, slowed as the reader comes close. A pack is a script, its data and pictures, with everything inside its
 folder; it cannot reach the network. Keep the first-reader test in mind: someone who touches this
 first, knowing nothing, should be able to tell what they are looking at.
 
