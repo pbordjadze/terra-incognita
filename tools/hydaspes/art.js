@@ -11,7 +11,7 @@
 
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
   const NIGHT = { plain: '#141827', plain2: '#181D2E', plain3: '#111526', hill: '#0C0F1B', hillRim: '#1E2237',
-                  water: '#1C1B22', water2: '#232127', sheen: '#8A93AE', bank: '#0E0E16', foam: '#9AA2BC', wood: '#0A0E16', wood2: '#121A1E',
+                  water: '#262A38', water2: '#2E3242', sheen: '#9AA3BE', bank: '#0A0A12', foam: '#A6AEC8', wood: '#0A0E16', wood2: '#121A1E',
                   kas: '#1F2436', sand: '#4C4A50', sand2: '#3A383E', edge: '#141827', moon: '#8E99B8' };
   const DAY = { plain: '#8C8E86', plain2: '#9A9B90', plain3: '#7C7E78', hill: '#6E7069', hillRim: '#B0AB98',
                 water: '#5E4A3A', water2: '#6E5844', sheen: '#E6B98A', bank: '#5C5248', foam: '#F0DCC0', wood: '#44523C', wood2: '#505F46',
@@ -85,7 +85,7 @@
     mottle: scatter(102, 0.9, T.wide),       // fields and scrub
     fine: scatter(103, 6, T.wide),           // the finer mottle, seen close
     ridges: scatter(104, 1.6, T.wide),       // the hills' ridge strokes (kept where the hills are)
-    trees: scatter(105, 120, T.wide),        // trees (kept where the woods are)
+    trees: scatter(105, 260, T.wide),        // trees (kept where the woods are)
     water: scatter(106, 0.5, T.wide),        // streaks of light on the water: which stretch, which offset
   };
   function insidePoly(pt, poly) {
@@ -189,10 +189,10 @@
     // its middle (so both channels read as water and the island as ground to be stranded on)
     const trees = (pts, dense) => {
       ctx.save(); poly(ctx, pts, P); ctx.clip();
-      poly(ctx, pts, P); ctx.fillStyle = B.rgba(pal.wood, dense ? 0.75 : 0.4); ctx.fill();
+      poly(ctx, pts, P); ctx.fillStyle = B.rgba(pal.wood, dense ? 0.9 : 0.4); ctx.fill();
       for (const m of SCATTER.trees) {
         if (!within(m, 0.01) || !insidePoly(m, pts) || (!dense && m[5] > 0.45)) continue;
-        const [x, y] = P(m), rr = Math.max(1.2, px((dense ? 0.03 : 0.012) + m[2] * (dense ? 0.05 : 0.025)));
+        const [x, y] = P(m), rr = Math.max(1.2, px((dense ? 0.035 : 0.012) + m[2] * (dense ? 0.06 : 0.025)));
         ctx.fillStyle = B.rgba(m[3] < 0.6 ? pal.wood2 : pal.wood, 0.75);
         ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill();
         ctx.fillStyle = B.rgba(INK, 0.5); ctx.beginPath(); ctx.arc(x + rr * 0.3, y + rr * 0.35, rr * 0.5, 0, TAU); ctx.fill();
@@ -202,13 +202,20 @@
     };
     for (const wd of T.woods) trees(wavy(wd.c, 11), false);
     poly(ctx, head, P); ctx.fillStyle = pal.plain2; ctx.fill();
-    ctx.strokeStyle = B.rgba(pal.sand, 0.8); ctx.lineWidth = Math.max(1, px(0.04)); ctx.stroke();
     trees(head, true);
     poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.9); ctx.lineWidth = Math.max(1, px(0.09)); ctx.stroke();   // the water's edge, dark
     poly(ctx, isl, P); ctx.fillStyle = pal.sand; ctx.fill();
-    ctx.strokeStyle = B.rgba(pal.sand2, 0.9); ctx.lineWidth = Math.max(1, px(0.04)); ctx.stroke();
+    ctx.save(); poly(ctx, isl, P); ctx.clip();                                                                        // a sandbar: mottled, scrub in patches
+    for (const m of SCATTER.fine) if (insidePoly(m, isl)) { const [x, y] = P(m); ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.sand2 : pal.plain2, 0.25 + m[5] * 0.3); ctx.beginPath(); ctx.ellipse(x, y, Math.max(1, px(0.02 + m[2] * 0.05)), Math.max(1, px(0.012 + m[3] * 0.03)), m[5] * TAU, 0, TAU); ctx.fill(); }
+    ctx.restore();
     const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
     trees(isl.map((c) => [mid[0] + (c[0] - mid[0]) * 0.62, mid[1] + (c[1] - mid[1]) * 0.62]), true);
+    if (!night) {
+      // (from the wide box's eastern edge to its western, whichever picture: so the two agree)
+      const g = ctx.createLinearGradient(P([T.wide[2], 0])[0], 0, P([T.wide[0], 0])[0], 0);
+      g.addColorStop(0, 'rgba(255,196,130,0.28)'); g.addColorStop(0.45, 'rgba(255,190,130,0.1)'); g.addColorStop(1, 'rgba(200,210,235,0.08)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    }
     // the picture's edge: the wide one a pool of night (or of morning) that ends softly on the globe, with
     // a hole where the close one lies; the close one a disc with a short rim that just fills that hole
     const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
@@ -386,7 +393,9 @@
     const r = B.rand(seed), s = h * 0.075;
     opts = opts || {};
     // the ground it stands on, trodden
-    ctx.fillStyle = B.rgba('#2A2420', 0.55); ctx.beginPath(); ctx.ellipse(w / 2, h * 0.55, w * 0.47, h * 0.4, 0, 0, TAU); ctx.fill();
+    ctx.save(); ctx.translate(w / 2, h * 0.55); ctx.scale(w * 0.47, h * 0.4);
+    const ground = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); ground.addColorStop(0.5, B.rgba('#2A2420', 0.4)); ground.addColorStop(1, B.rgba('#2A2420', 0));
+    ctx.fillStyle = ground; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore();
     // the fires: hot points, each with a small halo on the ground (not a blur over the camp)
     const fires = [];
     for (let i = 0; i < (opts.fires || 14); i++) fires.push([w * (0.12 + r() * 0.76), h * (0.22 + r() * 0.68), 0.6 + r() * 0.6]);
@@ -563,7 +572,7 @@
     }
     const dip = (x, y, wide) => {
       const g = ctx.createRadialGradient(x, y, 0, x, y, wide);
-      g.addColorStop(0, B.rgba('#363034', 0.95)); g.addColorStop(0.7, B.rgba('#363034', 0.9)); g.addColorStop(1, B.rgba('#363034', 0));
+      g.addColorStop(0, B.rgba('#4A3E38', 0.8)); g.addColorStop(0.6, B.rgba('#4A3E38', 0.6)); g.addColorStop(1, B.rgba('#4A3E38', 0));
       ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y + wide * 0.35, wide, wide * 0.55, 0, 0, TAU); ctx.fill();
     };
     const items = [];
@@ -575,11 +584,11 @@
       const depth = k < 2 ? 0.3 + r() * 0.1 : row === 2 ? 0.52 + r() * 0.1 : row === 1 ? 0.6 + r() * 0.15 : 0.7 + r() * 0.2;
       items.push({ y, draw: () => {
         const top = y - s * 1.4, water = y - s * depth, tilt = (r() - 0.5) * 0.3;
-        ctx.save(); ctx.beginPath(); ctx.rect(x - s, top, s * 2, water - top + s * 0.3); ctx.clip();
+        ctx.save(); ctx.beginPath(); ctx.rect(x - s, top, s * 2, water - top); ctx.clip();
         ctx.translate(x, y); ctx.rotate(tilt); ctx.translate(-x, -y);
         soldier(ctx, x, y, s, 0, { shield: r() < 0.92 ? 'up' : 'none', tunic: (k + row) % 2 ? RED : TENT_SHADE });
         ctx.restore();
-        dip(x, water + s * 0.05, s * 0.75);
+        dip(x, water + s * 0.05, s * 0.5);
         ctx.strokeStyle = B.rgba(FOAM, 0.6); ctx.lineWidth = 0.9; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(x + s * 0.2, water + 1); ctx.quadraticCurveTo(x + s * 1.0, water + 1.8, x + s * 1.8, water + 0.6); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x - s * 0.3, water + 2.5); ctx.quadraticCurveTo(x + s * 0.6, water + 3.2, x + s * 1.3, water + 2.2); ctx.stroke();
@@ -661,19 +670,19 @@
     const cx = w / 2, cy = h / 2;
     const at = (along, across) => [cx + A[0] * along + PP[0] * across, cy + A[1] * along + PP[1] * across];
     const order = [];
-    for (let k = 0; k < 9; k++) order.push({ y: at(0, (k - 4) * 30)[1], draw: () => {
-      const p = at(turning ? Math.sin(k + t * TAU) * 4 : 0, (k - 4) * 30);
-      elephant(ctx, p[0], p[1] + 12, 24, t + k * 0.13, turning ? (k % 3 === 0 ? 0 : (k % 3 === 1 ? -FACE : FACE)) : FACE, true);
+    for (let k = 0; k < 9; k++) order.push({ y: at(0, (k - 4) * 22)[1], draw: () => {
+      const p = at(turning ? Math.sin(k + t * TAU) * 4 : 0, (k - 4) * 22);
+      elephant(ctx, p[0], p[1] + 9, 18, t + k * 0.13, turning ? (k % 3 === 0 ? 0 : (k % 3 === 1 ? -FACE : FACE)) : FACE, true);
     } });
     for (let row = 0; row < 2; row++) for (let k = 0; k < 22; k++) {
-      const p = at(22 + row * 9 + (turning ? Math.cos(k + t * TAU) * 3 : 0), (k - 10.5) * 12 + row * 4);
-      order.push({ y: p[1], draw: () => soldier(ctx, p[0], p[1], 8, turning ? (t + k * 0.1) % 1 : 0, { shield: 'none', tunic: (k + row) % 2 ? '#C77B3E' : TENT_SHADE }) });
+      const p = at(16 + row * 7 + (turning ? Math.cos(k + t * TAU) * 3 : 0), (k - 10.5) * 9 + row * 3);
+      order.push({ y: p[1], draw: () => soldier(ctx, p[0], p[1], 6.5, turning ? (t + k * 0.1) % 1 : 0, { shield: 'none', tunic: (k + row) % 2 ? '#C77B3E' : TENT_SHADE }) });
     }
-    for (const sgn of [-1, 1]) { const p = at(6, sgn * 150); order.push({ y: p[1], draw: () => { ctx.save(); if (FACE < 0) { ctx.translate(p[0], 0); ctx.scale(-1, 1); ctx.translate(-p[0], 0); } chariot(ctx, p[0], p[1], 11, t); ctx.restore(); } }); }
+    for (const sgn of [-1, 1]) { const p = at(4, sgn * 110); order.push({ y: p[1], draw: () => { ctx.save(); if (FACE < 0) { ctx.translate(p[0], 0); ctx.scale(-1, 1); ctx.translate(-p[0], 0); } chariot(ctx, p[0], p[1], 11, t); ctx.restore(); } }); }
     order.sort((a, b) => a.y - b.y).forEach((o) => o.draw());   // the nearer drawn last, as in a high view
   }
-  pictures.push({ name: 'line', width: 320, height: 320, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, false); } });
-  pictures.push({ name: 'line-turning', width: 320, height: 320, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, true); } });
+  pictures.push({ name: 'line', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, false); } });
+  pictures.push({ name: 'line-turning', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { lineOf(ctx, w, h, i / n, true); } });
   pictures.push({ name: 'line-mid', width: 60, height: 16, frames: 4, draw(ctx, w, h, i, n) {
     for (let k = 0; k < 9; k++) { ctx.fillStyle = GREY; ctx.beginPath(); ctx.ellipse(4 + k * 6.4, 10 + Math.sin(i / n * TAU + k) * 0.5, 2.6, 2.2, 0, 0, TAU); ctx.fill(); }
     for (let k = 0; k < 20; k++) { ctx.fillStyle = '#C77B3E'; ctx.fillRect(2 + k * 2.9, 2 + (k % 2), 1.4, 2); }
@@ -733,18 +742,12 @@
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
     B.glow(ctx, 0, 0, w / 2, FIRE, 0.16, 0); ctx.restore();
     ctx.lineCap = 'round';
-    for (let k = 0; k < 26; k++) {
-      const x = w * (0.08 + r() * 0.84), y = h * (0.15 + r() * 0.7), len = 8 + r() * 22, a = 0.5 + r() * 0.5, ph = r();
+    for (let k = 0; k < 16; k++) {
+      const x = w * (0.08 + r() * 0.84), y = h * (0.15 + r() * 0.7), len = 6 + r() * 16, a = 0.3 + r() * 0.4, ph = r();
       const f = 0.7 + 0.3 * Math.sin((t + ph) * TAU);
       ctx.strokeStyle = B.rgba(k % 3 ? FIRE : FLAME, a * f * 0.7); ctx.lineWidth = 1 + r() * 1.4;
       ctx.beginPath(); ctx.moveTo(x - len / 2, y); ctx.lineTo(x + len / 2, y + (r() - 0.5) * 2); ctx.stroke();
     }
-  } });
-  // dawn's light: a warm wash from the east, laid over the ground as the night thins
-  pictures.push({ name: 'dawn', width: 400, height: 400, scale: 1, draw(ctx, w, h) {
-    const g = ctx.createRadialGradient(w * 0.9, h * 0.5, 0, w * 0.9, h * 0.5, w * 0.9);
-    g.addColorStop(0, 'rgba(255,190,120,0.45)'); g.addColorStop(0.5, 'rgba(255,170,110,0.18)'); g.addColorStop(1, 'rgba(255,160,110,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, TAU); ctx.fill();
   } });
   // the doorway: no badge, no glow, nothing that says "tap here": an elephant standing at the water on
   // the Jhelum's bank, ordinary life that doesn't quite belong on this bank today (it faces east as

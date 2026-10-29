@@ -129,11 +129,11 @@
     // Porus' army to the field, its line facing the landing, then turning on the horse that came round
     var line = { far: { n: 'line-mid', f: 4, size: [30, 8] }, mid: { n: 'line-mid', f: 4, size: [60, 16], face: true } };
     terra.sprites.set('porus', { path: way(W.porus), label: "Porus' army marching to meet him: elephants, foot, horse, chariots", touchable: true,
-                                 looks: looks(line.far, line.mid, { n: 'line', f: 6, size: [320, 320], fps: 4 }) });
+                                 looks: looks(line.far, line.mid, { n: 'line', f: 6, size: [240, 240], fps: 4 }) });
     terra.sprites.set('porus-line', { path: stand(P.field, HR.field, HR.turn), label: "Porus' line: the elephants a plethron apart, the foot behind", touchable: true,
-                                      looks: looks(line.far, line.mid, { n: 'line', f: 6, size: [320, 320], fps: 2 }) });
+                                      looks: looks(line.far, line.mid, { n: 'line', f: 6, size: [240, 240], fps: 2 }) });
     terra.sprites.set('porus-turning', { path: stand(P.field, HR.turn, HR.end + 1), label: 'The line turning on the horse that came round it', touchable: true,
-                                         looks: looks(line.far, line.mid, { n: 'line-turning', f: 6, size: [320, 320], fps: 4 }) });
+                                         looks: looks(line.far, line.mid, { n: 'line-turning', f: 6, size: [240, 240], fps: 4 }) });
     terra.sprites.set('alexander', { path: way(W.alexander), label: "Alexander's Companions, round the left of the line", touchable: true,
                                      looks: looks({ n: 'cavalry-mid', f: 4, size: [15, 5] }, { n: 'cavalry-mid', f: 4, size: [30, 10], face: true }, { n: 'cavalry', f: 6, size: [130, 44], fps: 8, face: true }) });
     terra.sprites.set('coenus', { path: way(W.coenus), label: "Coenus' horse, round the right and behind", touchable: true,
@@ -146,9 +146,6 @@
     var rainLooks = [{ frames: frames('rain', 8), fps: 9, size: [80, 100], maxZoom: Z.valley }, { frames: frames('rain', 8), fps: 9, size: [160, 200], minZoom: Z.valley, maxZoom: Z.mid },
                      { frames: frames('rain', 8), fps: 9, size: [400, 400], minZoom: Z.mid }];
     rainAt().forEach(function (p, i) { terra.sprites.set('rain-' + i, { path: stand(p, HR.storm, HR.calm), label: '', looks: rainLooks }); });
-    // the morning's light from the east, while the night thins
-    terra.sprites.set('dawn', { path: stand([P.field[0] + 0.04, P.field[1] + 0.01], HR.calm, HR.calm + 4), label: '',
-                                looks: [{ image: 'dawn.png', size: [400, 400] }] });
     lightningAt().forEach(function (p, i) {
       terra.sprites.set('lightning-' + i, { path: stand(p, HR.storm, HR.calm), label: '',
                                             looks: [{ frames: frames('lightning', 3), fps: 8, size: [400, 400], every: 6 + i * 3.5, for: 0.45 }] });
