@@ -74,10 +74,12 @@ reader's first sight of it: give it a glint from afar (`python3 tools/playground
 the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
-the sea is tapped); `Prototypes/lead-line/` and `Prototypes/vine/` use the globe's date and geography,
+the sea is tapped); `Prototypes/lead-line/` uses the globe's date and geography,
 `Prototypes/sea-of-whales/` pictures on the globe faded in and out, `Prototypes/monsoon-sails/` sprites
 placed by the date; `Prototypes/herds/` (runtime 5) moves things with the date: sprites on dated ways, a
-date with an uneven pace, slowed as the reader comes close. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built
+date with an uneven pace, slowed as the reader comes close; `Prototypes/vine/` (runtime 6) grows with
+it: dated geography set once (stems that thicken with age, leaves that open as the tip passes), ships
+and tendrils on dated ways, an opening the script flies, and a touch that lights the way back. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built
 in Node, a `.cjs` module, as the herds' and the boto's are), rendered by
 `node tools/packart/render.cjs <sheet> Prototypes/<id>` (headless Chromium, three pixels a point); and `node tools/packart/moments.cjs <id> <out dir> '<plan>'` photographs a pack
 over time in the preview (camera, waits, touches, drags, the date's strip), for what `check.cjs`'s fixed
