@@ -1,13 +1,18 @@
 import XCTest
 
-/// The two studies that were web pages in their own screens, now packs on the globe (runtime 3): each
-/// starts from the workbench, says at the foot what the reader is looking at, shows its panel from
-/// the chip's Open, answers a touch on the world, and leaves nothing behind when it ends.
+/// Packs on the globe (runtime 3 and 4): each starts from the workbench, says at the foot what the
+/// reader is looking at, shows its panel from the chip's Open, answers a touch on the world, and leaves
+/// nothing behind when it ends. The river study came from a web page; the monsoon's sails and the
+/// whales were rebuilt from scratch as packs (painting-company row 176).
 final class MovedPackTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
-    @MainActor func testTheSeaBetweenLiesOnTheGlobe() {
-        checkPack("sea-between", about: "The sea between", shots: "60")
+    @MainActor func testTheMonsoonsSailsLieOnTheGlobe() {
+        checkPack("monsoon-sails", about: "The monsoon's sails", shots: "60")
+    }
+
+    @MainActor func testTheWhalesLieOnTheGlobe() {
+        checkPack("sea-of-whales", about: "Whales in the desert", shots: "62")
     }
 
     @MainActor func testAGatheringOfWaterLiesOnTheGlobe() {

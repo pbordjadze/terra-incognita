@@ -71,8 +71,13 @@ reader's first sight of it: give it a glint from afar (`python3 tools/playground
 the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
-the sea is tapped); `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/` use the
-globe's date and geography. A pack is a script, its data and pictures, with everything inside its
+the sea is tapped); `Prototypes/lead-line/` and `Prototypes/vine/` use the globe's date and geography,
+`Prototypes/sea-of-whales/` pictures on the globe faded in and out, `Prototypes/monsoon-sails/` sprites
+placed by the date. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js`,
+rendered by `node tools/packart/render.cjs tools/<pack>/art.js Prototypes/<id>` (headless Chromium,
+three pixels a point); and `node tools/packart/moments.cjs <id> <out dir> '<plan>'` photographs a pack
+over time in the preview (camera, waits, touches, drags, the date's strip), for what `check.cjs`'s fixed
+screenshots can't show. A pack is a script, its data and pictures, with everything inside its
 folder; it cannot reach the network. Keep the first-reader test in mind: someone who touches this
 first, knowing nothing, should be able to tell what they are looking at.
 
