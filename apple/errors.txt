@@ -1,0 +1,1 @@
+/Users/runner/work/terra-incognita/terra-incognita/App/TerraIncognitaUITests/PlaygroundSupport.swift:167:39: error: cannot convert value of type 'String' to specified type 'Int'
