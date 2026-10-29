@@ -171,7 +171,8 @@
     /** Things that live and move on the globe: set(id, { at | path, looks, label, touchable }); a path with
         dates (runtime 5) is moved by the globe's date. */
     sprites: layerAPI('sprite'),
-    /** 'touchables' (drags that begin on a touchable thing are the pack's) or 'one-finger' (all one-finger drags). */
+    /** 'touchables' (drags that begin on a touchable thing are the pack's), 'one-finger' (all one-finger drags), or
+        'hold' (a drag turns the globe; a finger that rests a moment first, then moves, is the pack's). */
     touch: {
       scheme: function (scheme) { send({ type: 'touch', op: 'scheme', scheme: String(scheme || 'touchables') }); }
     },
