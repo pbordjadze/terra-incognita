@@ -79,9 +79,11 @@
         var kind = V.leaves.filter(function (l, i) { return l[3] === k && l[4] === hemi && i % sparse === 0; }).map(function (l) { return point(l[0], l[1], l[2]); });
         var image = LEAVES[s] + '-' + (k + 1) + '.png';
         // (the leaf's stalk is at its foot: the picture sits just above its place on the stem)
-        terra.geo.set('leaves-close-' + hemi + k, kind, { style: 'symbol', image: image, width: 46, height: 46, minZoom: CLOSE, offset: [2, -15], dated: true, bloom: 1.2 });
-        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22, height: 22, minZoom: NEAR, maxZoom: CLOSE, offset: [1, -7], dated: true, bloom: 0.9 });
-        terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 9.5, height: 9.5, minZoom: MID, maxZoom: NEAR, offset: [0.5, -3], dated: true, bloom: 0.7 });
+        // (each kind its own size and turn, so the leaves along a stem are not one stamp)
+        var sz = [0.8, 1, 1.22][k];
+        terra.geo.set('leaves-close-' + hemi + k, kind, { style: 'symbol', image: image, width: 46 * sz, height: 46 * sz, minZoom: CLOSE, offset: [2, -15 * sz], dated: true, bloom: 1.2 });
+        terra.geo.set('leaves-near-' + hemi + k, kind, { style: 'symbol', image: image, width: 22 * sz, height: 22 * sz, minZoom: NEAR, maxZoom: CLOSE, offset: [1, -7 * sz], dated: true, bloom: 0.9 });
+        terra.geo.set('leaves-mid-' + hemi + k, kind, { style: 'symbol', image: image, width: 9.5 * sz, height: 9.5 * sz, minZoom: MID, maxZoom: NEAR, offset: [0.5, -3 * sz], dated: true, bloom: 0.7 });
       }
     }
     // (from afar the leaf is the tinted band under the thread, not specks)

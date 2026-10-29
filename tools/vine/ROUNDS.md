@@ -115,12 +115,6 @@ round the scrubber are the host's and the preview's.
 
 Plan (iPad): `[{"wait":5},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":5},{"shot":"03"},{"wait":10},{"shot":"04"},{"wait":16},{"shot":"05"},{"wait":25},{"shot":"06"},{"at":[-30,20,1.0]},{"date":0.999},{"wait":3},{"shot":"07"},{"at":[25,35,1.0]},{"wait":2},{"shot":"08"},{"at":[8,45,3.2]},{"wait":2},{"shot":"09"},{"touch":[4.85,47.0]},{"wait":1.0},{"shot":"10"},{"wait":2.5},{"shot":"11"},{"at":[44.75,41.45,14]},{"wait":2},{"shot":"12"},{"at":[-3,40,5.5]},{"wait":2},{"shot":"13"}]`
 
-## Tools the vine would use next
-
-- A symbol's size in degrees (a leaf the size of a valley, scaling with the camera) instead of zoom bands.
-- A line revealed over seconds (the lit way running from the root to the finger as a line, not only as a
-  spark); dated geography reveals by the stage's date, not by the clock.
-
 Critic 4 (the hater): worst first, (1) the spark sat in Greece for the seconds a player looks (the
 sprite's path began where the camera happened to be, and the pulse was a glint, off between showings)
 and the lit way was still a tape; (2) the whole Earth a smudge; (3) stamps beside the stem, not on it;
@@ -160,3 +154,36 @@ Overruled, and why: the reader's own season on the leaves is the design (the pan
 error; the sea, the empty land and the leaves answering a finger would be another experience's rules
 (the vine answers where the vine is); a wobbling, noise-textured stem would need a tool the runtime
 doesn't have (a textured stroke), noted under the tools the vine would use next.
+
+Critic 6 (the hater): the worst complaint unchanged in kind: the ways are chords between the record's
+places (a Z across Iberia, a ruler run across Central Asia), the leaves one stamp at even gaps, the
+opening a flat icon on cream, the Atlantic a ferry route, nothing but the lit way answering a finger.
+Kept: the lit way and the spark, the mouth as the opening image, the clean strip and caption.
+
+## Round 7 · the wander, the leaves' sizes; and where the rounds stop (October 30)
+
+Changed: the stem wanders on two wavelengths, wider, so it meanders rather than sines between places;
+Iberia follows the Guadalquivir and the Meseta to the Ebro instead of a Z; each leaf kind has its own
+size and turn, so a stem's leaves are three leaves and not one stamp.
+
+Where the rounds stop, and why. The hater's worst complaint is now the premise's drawing: a way drawn
+between the places the record names is a chord, and a stroke drawn by the globe is a stroke. Making the
+vine "a plant" in the sense asked for needs two things the runtime does not have and this session did
+not build: ways routed along valleys and coasts from a terrain or river dataset (the water study has
+rivers for South America only), and a textured, noise-varied stroke (a symbol's size in degrees would
+let leaves scale with the camera too). Both are listed under the tools the vine would use next. What
+is here is set once and drawn by the globe at every zoom, grows as the years play, is true to the record
+underneath, answers a touch at once with light running back to the qvevri, and opens on the mouth with
+one shoot leaving it. Six fresh critics in a row found the first-minute problems of each round and
+those are fixed; what remains is a tool's reach, not a round's.
+
+## Tools the vine would use next
+
+- A symbol's size in degrees (a leaf the size of a valley, scaling with the camera) instead of zoom bands.
+- A line revealed over seconds (the lit way running from the root to the finger as a line, not only as a
+  spark); dated geography reveals by the stage's date, not by the clock.
+- A textured stroke for `border` (a noise-varied width, a bark or water texture along it), so a vine, a
+  river or a road drawn by the globe is not a flat line close in.
+- Ways routed over terrain: a builder that lays a way between two places along valleys, coasts or rivers
+  from the globe's own terrain (as the beacons' sight lines read it), so a vine's or a road's way is the
+  land's and not a chord.

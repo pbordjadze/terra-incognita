@@ -82,9 +82,9 @@ TRUNKS = [
     ('Up the Danube', [(10.9, 45.3, -90, None), (12.5, 45.7, -100, None), (13.7, 46.1, -40, None), (15.0, 46.4, 10, None), (15.5, 48.3, 90, 'The Wachau'),
                        (17.1, 48.1, 110, None), (18.0, 47.5, 130, 'Pannonia'), (17.8, 46.9, 200, 'Balaton'), (19.0, 47.0, 400, None), (20.4, 47.9, 900, 'Eger'),
                        (21.4, 48.1, 1100, 'Tokaj')]),
-    ('Inland in Iberia', [(-6.3, 36.5, -600, None), (-6.0, 37.4, -300, 'Seville'), (-5.5, 38.5, -150, None), (-4.5, 39.4, -50, None), (-3.5, 40.5, 1, None),
-                          (-2.5, 42.4, 100, 'Rioja'), (-4.0, 42.2, 150, None), (-5.8, 41.5, 200, None), (-7.5, 41.2, 250, 'The Douro'), (-8.4, 41.7, 300, None),
-                          (-8.7, 42.4, 400, 'Rías Baixas')]),
+    ('Inland in Iberia', [(-6.3, 36.5, -600, None), (-6.0, 37.4, -300, 'Seville'), (-5.0, 37.9, -200, None), (-4.2, 38.3, -120, None), (-3.6, 39.3, -40, None),
+                          (-3.2, 40.4, 1, None), (-2.9, 41.5, 60, None), (-2.5, 42.4, 100, 'Rioja'), (-4.0, 42.3, 150, None), (-5.8, 41.6, 200, None),
+                          (-7.5, 41.2, 250, 'The Douro'), (-8.4, 41.7, 300, None), (-8.7, 42.4, 400, 'Rías Baixas')]),
     ('Thrace and the Black Sea', [(26.24, 39.96, -3000, None), (26.6, 40.6, -2600, None), (26.0, 41.3, -2200, None), (25.6, 41.9, -1800, None), (25.0, 42.3, -1400, None),
                                   (25.9, 42.4, -1000, 'Thrace'), (27.5, 42.5, -700, None), (28.9, 43.4, -600, 'Dionysopolis'), (29.5, 44.8, -550, None),
                                   (30.4, 46.1, -500, 'Olbia'), (30.5, 46.5, -450, None), (29.0, 46.9, -300, 'Moldova')]),
@@ -225,7 +225,7 @@ def curved(verts):
     return out
 
 
-def densify(verts, step_km=60.0, sway=0.22, seed=0):
+def densify(verts, step_km=45.0, sway=0.3, seed=0):
     """[lon, lat, year] every ~step_km along the great circles between the vertices, the years
     interpolated, the way swaying a little either side of the straight line between places (a vine
     wanders; nothing at the places themselves)."""
@@ -239,7 +239,9 @@ def densify(verts, step_km=60.0, sway=0.22, seed=0):
         for k in range(1, n + 1):
             t = k / n
             q = along((plon, plat), (lon, lat), t)
-            s = math.sin((walked + km * t) / 230.0 + seed * 1.7) * sway * math.sin(t * math.pi)
+            # (two wavelengths, so the wander is a vine's and not a sine)
+            d_here = walked + km * t
+            s = (math.sin(d_here / 230.0 + seed * 1.7) + 0.45 * math.sin(d_here / 97.0 + seed * 0.9)) * sway * math.sin(t * math.pi)
             nxt = along((plon, plat), (lon, lat), min(1, t + 0.01))
             dx, dy = nxt[0] - q[0], nxt[1] - q[1]
             L = math.hypot(dx, dy) or 1
