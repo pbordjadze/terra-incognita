@@ -6,9 +6,12 @@ name: Packs
 # macOS runner is used.
 #   validate  every pack against the runtime-3 contract, the size limits and the offline boundary
 #   check     node --check on the packs' and tools' JavaScript, and the tool's unit tests
+#   preview   every pack run in the desktop preview, headless (tools/playground/check.cjs --all: no script
+#             error, the doorway, sprites, zooms, a touch reaching the pack) and two at once on the living
+#             globe (--living); the screenshots kept as the `preview` artifact
 #   pack      catalog.json, packs/<id>/r<rev>/ and open/<id>.html, kept as the `packs` artifact. Packed from
 #             scratch (every pack revision 1): it shows what a pack looks like, not what is live
-#   publish   main only, after the checks: the `packs` branch (an orphan, made the first time) is checked
+#   publish   main only, after the checks and the preview: the `packs` branch (an orphan, made the first time) is checked
 #             out beside the repository; only packs whose contents changed get the next revision there,
 #             and the result is committed and pushed with the workflow's own token (no secret is used).
 #             `[no-publish]` in the commit message holds it back. Other branches validate and pack only.
@@ -54,9 +57,29 @@ jobs:
       - uses: actions/upload-artifact@v5
         with: { name: packs, path: build/packs, if-no-files-found: error }
 
+  preview:
+    name: The packs in the preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Chromium for the preview (Playwright, pinned)
+        run: |
+          npm install --no-save --no-package-lock --no-fund --no-audit playwright@1.63.0
+          npx playwright install --with-deps chromium
+      - name: Every pack (check.cjs --all)
+        run: node tools/playground/check.cjs --all
+      - name: Two at once on the living globe (check.cjs --living)
+        if: ${{ !cancelled() }}
+        run: node tools/playground/check.cjs --living
+      - uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() }}
+        with: { name: preview, path: build/playground, if-no-files-found: warn }
+
   publish:
     name: Publish to the packs branch
-    needs: packs
+    needs: [packs, preview]
     if: ${{ github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[no-publish]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
