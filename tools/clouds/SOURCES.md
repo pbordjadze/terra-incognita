@@ -36,6 +36,13 @@ are drawn so that their cover matches the record, and they are not today's weath
   then the middle and the low, each growing about the screen's centre (nearer the eye than the
   ground) and parting as it passes, its shadow going with it. Below them, cumulus float over the
   ground. The heights at which each passes are a drawing convention, not altitudes.
+- **The quiet rule** (a prototype in the app's workbench, `Clouds clear where you look`; the
+  preview's `?quiet=1`): the clouds clear where the reader looks and gather toward the globe's rim
+  zoomed out and the screen's edges close in, whichever is nearer, one rule at every scale; their
+  shadows go with them. Under it, an octave of the noise whose cells span more than about twenty
+  pixels is worked out exactly rather than read from the tile, whose linear reading between six
+  samples a cell shows as facets close in (edges blocky, light flat). The brightness (`?bright=`)
+  dims them by moonlight, on the Earth at night.
 - **Reduce Motion** holds the clouds still (no drift). The descent follows the reader's own pinch.
 - **The native one** draws at a fraction of the screen's pixels (about 1.25 a point to start) and
   follows the GPU's own timings, finer while a frame is cheap, coarser when it isn't; the

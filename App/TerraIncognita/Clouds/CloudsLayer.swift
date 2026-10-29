@@ -193,7 +193,8 @@ final class CloudsLayer {
             sun: look.sun.map { SIMD4($0, 1) } ?? .zero,
             seaShadow: look.seaShadow,
             landShadow: look.landShadow,
-            tone: SIMD4(look.opacity * Float(shown), look.night, 0, 0))
+            // (the quiet rule is the globe's to ask for: a prototype, painting-company row 174)
+            tone: SIMD4(look.opacity * Float(shown), look.night, globe.cloudsQuiet ? 1 : 0, look.brightness))
     }
 
     /// The cyclones (`cyclones` in Clouds.metal): where each is and how hard it turns are the same for
@@ -352,7 +353,7 @@ final class CloudsLayer {
 }
 
 /// How the clouds sit on a globe: their opacity, their shadows on sea and land (a colour laid over
-/// the ground, and how strongly), and the light. The shadows are near black, so they darken whatever
+/// the ground, and how strongly), their brightness, and the light. The shadows are near black, so they darken whatever
 /// ground is under them, keeping its hue, as a multiply would: on the Wikipedia map's pale sea and
 /// cream land they come out as its cool blue-grey and its drop shadow's warm grey, and they suit a
 /// greener, darker ground as well. Lit from the north-west, as the globe's relief is; a globe with
@@ -365,11 +366,18 @@ struct CloudsLook {
     /// from the map's north-west, everywhere.
     var sun: SIMD3<Float>?
     var night: Float = 0.75
+    /// How bright they are: white by day; by moonlight, a dim grey.
+    var brightness: Float = 1
 
     /// The look on a globe style, or nil where clouds don't belong (the Persian page: a manuscript
-    /// has no weather).
+    /// has no weather). On the Earth at night they are a thin grey veil without shadows, so the
+    /// lights show through them.
     static func on(_ style: GlobeStyle) -> CloudsLook? {
-        style == .persian ? nil : CloudsLook()
+        switch style {
+        case .persian: return nil
+        case .night: return CloudsLook(opacity: 0.5, seaShadow: SIMD4(0, 0, 0, 0), landShadow: SIMD4(0, 0, 0, 0), brightness: 0.36)
+        default: return CloudsLook()
+        }
     }
 }
 
