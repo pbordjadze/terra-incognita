@@ -14,7 +14,8 @@ name: CI
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
 #          reads at https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/source.json
-# Commit-message tags on branches: `[build-only]` compiles without simulator time (about 3 minutes);
+# Commit-message tags on branches: `[build-only]` compiles the app and its UI tests without
+# simulator time (about 3 minutes);
 # `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places on the iPad,
 # with no Release build and no UI tests (about 8 minutes); `[test Class ...]` runs only those UI test
 # classes (or Class/testMethod) on the iPad; `[playground-check]` runs only the playground's checks;
@@ -151,6 +152,16 @@ jobs:
           xcodebuild build -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd -quiet \
             ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/app-build.log | tail -80
+      - name: Build the UI tests
+        # `[build-only]` on a branch runs no tests, so it compiles them here: a slip in the UI tests'
+        # code fails in minutes, not in the run that tests (which builds them itself).
+        id: tests_build
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]') }}
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath build/dd -quiet \
+            ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO 2>&1 | tee out/tests-build.log | tail -80
       - name: Release build
         id: release
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.fast.outputs.fast == '' }}
@@ -253,7 +264,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }

@@ -76,7 +76,7 @@ def main(ne_dir):
     # the picture's west, east and north edges are not the sea's: it thins out over the last degree or so
     xx_deg = WEST + xx * PX
     yy_deg = NORTH - yy * PX
-    feather = np.clip((xx_deg - WEST) / 1.5, 0, 1) * np.clip((EAST - xx_deg) / 1.5, 0, 1) * np.clip((NORTH - yy_deg) / 1.2, 0, 1)
+    feather = np.clip((xx_deg - WEST) / 3.0, 0, 1) * np.clip((EAST - xx_deg) / 3.0, 0, 1) * np.clip((NORTH - yy_deg) / 1.5, 0, 1)
     alpha *= feather
     rgb *= (alpha > 0.01)[..., None]    # (nothing drawn where nothing shows: smaller files)
     below = np.zeros_like(alpha)
