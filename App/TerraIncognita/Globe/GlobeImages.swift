@@ -44,7 +44,7 @@ final class GlobeImageLayer: UIView {
     static let pictureBudget = 8
 
     private struct Placed {
-        let picture: Picture
+        var picture: Picture
         let host: CALayer
         let tiles: [CALayer]
         let columns: Int
@@ -73,10 +73,25 @@ final class GlobeImageLayer: UIView {
 
     // MARK: what the script asks
 
-    /// Adds or replaces a picture (false: over the budget, nothing changed).
+    /// Adds or replaces a picture (false: over the budget, nothing changed). The same picture set again
+    /// with only its opacity or zoom range changed is changed in place, its tiles where they are, so a
+    /// script can fade it without its vanishing for a frame (a new picture's tiles wait for the next).
     @discardableResult
     func set(_ picture: Picture) -> Bool {
         if let i = placed.firstIndex(where: { $0.picture.id == picture.id }) {
+            let old = placed[i].picture
+            if old.image === picture.image, old.west == picture.west, old.south == picture.south,
+               old.east == picture.east, old.north == picture.north {
+                placed[i].picture = picture
+                if let zoom = drawn?.camera.zoom {
+                    CATransaction.begin()
+                    CATransaction.setDisableActions(true)
+                    placed[i].host.opacity = Float(picture.opacity * Self.rise(picture, zoom: zoom))
+                    CATransaction.commit()
+                }
+                version += 1
+                return true
+            }
             placed[i].host.removeFromSuperlayer()
             placed[i] = make(picture, order: i)
         } else {
@@ -152,7 +167,7 @@ final class GlobeImageLayer: UIView {
         for p in placed {
             let pic = p.picture
             let shown = zoom >= pic.minZoom && zoom <= pic.maxZoom
-            let rise = pic.fade > 0 ? min(1, max(0, (zoom - pic.minZoom) / pic.fade)) : 1
+            let rise = Self.rise(pic, zoom: zoom)
             p.host.isHidden = !shown || rise <= 0
             p.host.opacity = Float(pic.opacity * rise)
             guard !p.host.isHidden else { continue }
@@ -181,6 +196,11 @@ final class GlobeImageLayer: UIView {
             }
         }
         CATransaction.commit()
+    }
+
+    /// How far a picture has faded in at this zoom (its `fade` above `minZoom`).
+    static func rise(_ pic: Picture, zoom: Double) -> Double {
+        pic.fade > 0 ? min(1, max(0, (zoom - pic.minZoom) / pic.fade)) : 1
     }
 
     /// The transform taking a width × height rectangle at the origin to the quadrilateral from the

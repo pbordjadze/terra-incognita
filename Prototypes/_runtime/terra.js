@@ -164,8 +164,10 @@
 
     /** Geography drawn by the globe: set(id, features, options), remove(id), clear(). */
     geo: layerAPI('geo'),
-    /** Pictures lying on the globe: set(id, { image, bounds: [w, s, e, n], opacity, minZoom, maxZoom, fade }). */
-    images: layerAPI('image'),
+    /** Pictures lying on the globe: set(id, { image, bounds: [w, s, e, n], opacity, minZoom, maxZoom, fade }).
+        `can.fade`: setting the same picture again with only its opacity (or zoom range) changed changes it
+        in place, so a short eased fade doesn't blink (an app before it rebuilds the picture each time). */
+    images: (function () { var api = layerAPI('image'); api.can = { fade: true }; return api; })(),
     /** Things that live and move on the globe: set(id, { at | path, looks, label, touchable }). */
     sprites: layerAPI('sprite'),
     /** 'touchables' (drags that begin on a touchable thing are the pack's) or 'one-finger' (all one-finger drags). */
@@ -183,11 +185,16 @@
     caption: {
       set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '' }); }
     },
-    /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32) } */
+    /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32),
+        night: the Earth at night, the globe's own night style, while the pack runs } */
     globe: {
+      /** What this app's globe can do beyond runtime 4's set: { night: true }. An app before it has none,
+          so a pack asks `terra.globe.can && terra.globe.can.night` before counting on the night. */
+      can: { night: true },
       set: function (o) {
         var m = { type: 'globe', historical: !!(o && o.historical), still: !!(o && o.still) };
         if (o && o.maxZoom != null) m.maxZoom = +o.maxZoom;
+        if (o && o.night) m.night = true;
         send(m);
       }
     },

@@ -126,6 +126,22 @@ span of longitude and each row the same span of latitude) drawn on the globe, cu
 step with the camera, under the geography and sprites. `fade` is the zoom range over which it fades
 in above `minZoom`. At most 8 pictures, each at most 4096 pixels a side.
 
+Setting the same picture again with only its `opacity` (or zoom range) changed changes it in place, so
+a short eased fade from the script doesn't blink (`terra.images.can.fade` is true where the app does
+this; an older one rebuilds the picture each time, hidden until the globe's next frame):
+
+```js
+var o = { image: 'lamps.png', bounds: [72, 25, 98, 37], opacity: 0 };
+terra.images.set('lamps', o);
+var t0 = performance.now();
+(function step() {
+  var t = Math.min(1, (performance.now() - t0) / 1500);
+  o.opacity = t * t * (3 - 2 * t);
+  terra.images.set('lamps', o);
+  if (t < 1) setTimeout(step, 70);
+})();
+```
+
 ## Sprites: things that live and move on the globe (new in 3)
 
 ```js
@@ -188,7 +204,8 @@ terra.touch.scheme('one-finger')
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
 | `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters |
-| `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
+| `terra.globe.set({ historical, still, maxZoom, night })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views; turn the globe to its own night (the Earth at night, `GlobeStyle.night`: the front-most stage asking sets it); all put back when it ends |
+| `terra.globe.can` | what this app's globe can do beyond runtime 4: `{ night: true }` (an app before it has no `can`): ask before counting on it, and draw something of your own on an older app (`Prototypes/lamplight/` draws a pool of evening) |
 
 ## The panel: longer words and sources (new in 3)
 

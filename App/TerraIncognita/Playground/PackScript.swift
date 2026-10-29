@@ -17,7 +17,7 @@ enum PackScriptEvent {
     case touchScheme(GlobeView.DragScheme)
     case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeHide
     case caption(StageCaption?)
-    case globe(historical: Bool, still: Bool, maxZoom: Double?)
+    case globe(historical: Bool, still: Bool, maxZoom: Double?, night: Bool)
     case panelShow(PackPanel), panelHide
 }
 
@@ -319,7 +319,7 @@ final class PackScript {
             onEvent?(.caption(title.isEmpty && text.isEmpty ? nil : StageCaption(title: title, text: text)))
         case "globe":
             onEvent?(.globe(historical: (body["historical"] as? Bool) ?? false, still: (body["still"] as? Bool) ?? false,
-                            maxZoom: Self.number(body["maxZoom"])))
+                            maxZoom: Self.number(body["maxZoom"]), night: (body["night"] as? Bool) ?? false))
         case "panel":
             if (body["op"] as? String) == "show" {
                 onEvent?(.panelShow(PackPanel(pack.id, (body["content"] as? [String: Any]) ?? [:])))

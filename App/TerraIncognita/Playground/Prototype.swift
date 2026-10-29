@@ -367,12 +367,15 @@ final class PrototypeStage {
             time = nil
             dateMoved()
         case .caption(let caption): self.caption = caption
-        case .globe(let historical, let still, let maxZoom):
+        case .globe(let historical, let still, let maxZoom, let night):
             request {
                 $0.historical = historical
                 $0.still = still
                 if let maxZoom { $0.maxZoom = maxZoom }
             }
+            // the Earth at night (the quiet globe's style) while it runs: the front-most stage with a
+            // style sets the globe's (Playground.style), and it goes with the stage
+            style = night ? .night : .base
         case .panelShow(let panel): playground?.show(panel, from: self) { [weak self] in self?.script?.panelClosed() }
         case .panelHide: playground?.hidePanel(from: pack.id)
         }

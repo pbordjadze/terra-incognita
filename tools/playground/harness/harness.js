@@ -45,6 +45,8 @@
   const INK = [59, 74, 84], LABEL_TONE = 'rgba(246, 242, 231, 0.92)', DOT_PAPER = '#F6F2E7';
   const AREA = [193, 120, 70], SOUNDING_LINE = 'rgba(28, 122, 176, 0.85)', SOUNDING_FOOT = '#1C7AB0', SOUNDING_INK = '#1C5C8C';
   const FACE = '"Libertinus Serif", Georgia, serif';
+  // and its night (Globe.metal's N_ palette), while a running pack asks for it (terra.globe.set({ night: true }))
+  const N_SEA = '#101828', N_LAND = '#1E2430', N_COAST = '#3C5874';
 
   // ---- the page
   const device = $('device'), stage = $('stage'), canvas = $('globe'), screenCtx = canvas.getContext('2d');
@@ -122,7 +124,7 @@
   function makeStage(pack) {
     return { id: pack.id, M: pack.M, FILES: pack.FILES, pack,
       geo: new Map(), images: new Map(), sprites: new Map(), time: null, caption: { title: '', text: '' },
-      globe: { historical: false, still: false, maxZoom: null }, scheme: 'touchables', listensOpen: false,
+      globe: { historical: false, still: false, maxZoom: null, night: false }, scheme: 'touchables', listensOpen: false,
       worker: null, closing: null, early: [], timers: new Map(), pictures: new Map(), delivered: {},
       running: false, started: false, ended: false, front: false, entry: null, postedCam: -1, t0: now() };
   }
@@ -133,7 +135,8 @@
   const stages = [];
   const front = () => (stages.length ? stages[stages.length - 1] : null);
   /** What the globe does for all of them: the front one's historical reference, still while any asks. */
-  const merged = () => ({ historical: !!(front() && front().globe.historical), still: stages.some((s) => s.globe.still) });
+  const merged = () => ({ historical: !!(front() && front().globe.historical), still: stages.some((s) => s.globe.still),
+                          night: stages.some((s) => s.globe.night) });
   function zoomLimit() {   // the deepest zoom: 8, or the deepest any running pack asked for (terra.globe.set({ maxZoom }))
     let z = 8;
     for (const s of stages) if (s.globe.maxZoom) z = Math.max(z, s.globe.maxZoom);
@@ -482,20 +485,22 @@
   }
   function drawGlobe(c, m) {
     g.save();
-    g.beginPath(); g.arc(c.cx, c.cy, c.radius, 0, TAU); g.fillStyle = SEA; g.fill(); g.clip();
+    const night = merged().night;
+    g.beginPath(); g.arc(c.cx, c.cy, c.radius, 0, TAU); g.fillStyle = night ? N_SEA : SEA; g.fill(); g.clip();
     const fill = new Path2D(), coast = new Path2D();
     for (const r of land) trace(r, m, c.cx, c.cy, c.radius, fill, coast);
-    g.fillStyle = LAND; g.fill(fill, 'evenodd');
+    g.fillStyle = night ? N_LAND : LAND; g.fill(fill, 'evenodd');
     const grat = new Path2D();
     for (const r of graticule) traceLine(r, m, c.cx, c.cy, c.radius, grat, false);
     g.lineJoin = 'round'; g.lineCap = 'round';
     g.globalAlpha = 0.13; g.strokeStyle = COAST; g.lineWidth = 0.6 * rs; g.stroke(grat);
-    if (politics && !merged().historical) {
+    if (politics && !merged().historical && !night) {
       const borders = new Path2D();
       for (const r of politics.borders) traceLine(r, m, c.cx, c.cy, c.radius, borders, false);
       g.globalAlpha = 0.8; g.strokeStyle = BORDER; g.lineWidth = 0.7 * rs; g.stroke(borders);
     }
-    g.globalAlpha = 1; g.strokeStyle = COAST; g.lineWidth = 0.9 * rs * Math.min(Math.pow(clamp(c.zoom, 1, 8), 0.25), 1.4); g.stroke(coast);
+    g.globalAlpha = night ? 0.5 : 1; g.strokeStyle = night ? N_COAST : COAST; g.lineWidth = 0.9 * rs * Math.min(Math.pow(clamp(c.zoom, 1, 8), 0.25), 1.4); g.stroke(coast);
+    g.globalAlpha = 1;
     // roundness: the limb a little shaded (Globe.metal: 7% at the edge)
     const shade = g.createRadialGradient(c.cx, c.cy, c.radius * 0.6, c.cx, c.cy, c.radius);
     shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(0.75, 'rgba(0,0,0,0.012)'); shade.addColorStop(1, 'rgba(0,0,0,0.07)');
@@ -1523,6 +1528,7 @@
       case 'globe':
         s.globe.historical = !!msg.historical;
         s.globe.still = !!msg.still;
+        s.globe.night = !!msg.night;
         // (a pack may let the reader zoom deeper than 8, to 32, for its close views: as the app does)
         if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) s.globe.maxZoom = clamp(+msg.maxZoom, 8, 32);
         dirty();
@@ -1552,7 +1558,7 @@
     s.geo.clear(); s.images.clear(); s.sprites.clear();
     s.time = null;
     s.caption = { title: '', text: '' };
-    s.globe = { historical: false, still: false, maxZoom: null };
+    s.globe = { historical: false, still: false, maxZoom: null, night: false };
     s.scheme = 'touchables';
     s.listensOpen = false;
     imagesVersion++;
@@ -1700,7 +1706,7 @@
     if (!stages.length) lines.push(doorways.length ? 'Nothing running: ' + doorways.length + ' doorway' + (doorways.length === 1 ? ' is' : 's are') + ' on the globe.' : 'Nothing running.');
     for (const s of stages.slice().reverse()) {
       lines.push((s === front() ? '▸ ' : '  ') + s.id + ': ' + s.geo.size + ' geo layer' + (s.geo.size === 1 ? '' : 's') + ', ' + s.images.size + ' picture' + (s.images.size === 1 ? '' : 's') + ', ' + s.sprites.size + ' sprite' + (s.sprites.size === 1 ? '' : 's')
-        + ' · touch: ' + s.scheme + (s.M.taps ? ', taps' : '') + (s.globe.still ? ' · still' : '') + (s.globe.historical ? ' · historical' : '') + (s === front() ? ' · in front' : ''));
+        + ' · touch: ' + s.scheme + (s.M.taps ? ', taps' : '') + (s.globe.still ? ' · still' : '') + (s.globe.historical ? ' · historical' : '') + (s.globe.night ? ' · night' : '') + (s === front() ? ' · in front' : ''));
     }
     $('state').textContent = lines.join('\n');
   }
