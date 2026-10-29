@@ -40,8 +40,8 @@ final class GlobePackTests: XCTestCase {
     }
 
     /// The herds (runtime 5): animals on dated ways, which the globe's date moves. It opens close on one
-    /// of the first camelids and pulls back; moving the date to its next mark moves that animal, and
-    /// the date reads as years ago; then the plain globe again.
+    /// of the first camelids and pulls back; moving the date to a mark on its strip moves that animal,
+    /// and the date reads as years ago; then the plain globe again.
     @MainActor func testTheHerdsMoveWithTheDate() {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset"]
@@ -62,10 +62,12 @@ final class GlobePackTests: XCTestCase {
         XCTAssertTrue(one.waitForExistence(timeout: 10), "Pulled back, the first camelid is still in view, with its herd")
         let before = one.frame
         let label = date.value as? String
-        // the next mark on the strip (where the evidence is): the herd has walked on
-        date.increment()
+        // the strip's mark at 21 million years ago (a touch within a fingertip of a mark lands on it): the
+        // herd has walked on, east across the plains
+        date.coordinate(withNormalizedOffset: CGVector(dx: 0.126, dy: 0.5)).tap()
         let moved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", label ?? ""), object: date)
-        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 10), .completed, "The date moves to its next mark")
+        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 10), .completed, "Touching the strip moves the date")
+        XCTAssertTrue((date.value as? String ?? "").contains("million years ago"), "Still in deep time, told as years ago")
         Thread.sleep(forTimeInterval: 1)
         attach("59-herds-later", in: app)
         if one.exists {
