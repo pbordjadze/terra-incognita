@@ -51,8 +51,9 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
     `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
-    `tools/packart/render.cjs <sheet.js> <pack dir>` draws a sheet of canvas drawings (sprite frames,
-    doorways, pictures for the globe) with headless Chromium at three pixels a point, and
+    `tools/packart/render.cjs <sheet> <pack dir>` (the one art drawer) draws a sheet of canvas drawings
+    (`.js`) or of SVG built in Node (`.cjs`: the herds' animals, the boto) into sprite frames, doorways and
+    pictures for the globe, with headless Chromium at three pixels a point, and
     `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
     plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
     its first minute can be seen without a Mac.
@@ -147,7 +148,7 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
   reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
   `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
-  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters); never hand-edit their output.
+  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters: an SVG sheet for `tools/packart/render.cjs`); never hand-edit their output.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the playground's one globe, as a lens, in the globe's own style; the
   globe answers to `camelidGlobe` while it is open. `CamelidStory` holds playback state;
@@ -200,7 +201,7 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   alive** (`Prototypes/gathering-of-water-alive/`) is the same network with the water running: the
   `hold` scheme (a rest, then a draw, lights many at once; a drag always turns), `flow` on what is lit,
   the ways into the sea from the month's currents, a drawn boto close in. Its data by
-  `tools/water/build_alive.py`, the boto by `tools/water/boto.cjs`; `tools/water/alive_check.cjs`
+  `tools/water/build_alive.py`, the boto by `tools/water/boto.cjs` (an SVG sheet for `tools/packart/render.cjs`); `tools/water/alive_check.cjs`
   drives it in the preview, `RiverPackTests` on the device.
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // Draws the herds' animals (Prototypes/herds/art/): one camelid, drawn from parameters, in each of the
-// family's forms, walking and grazing, at the sizes the pack shows them. Rebuild, never hand-edit:
+// family's forms, walking and grazing, at the sizes the pack shows them, and the index the pack reads
+// (Prototypes/herds/art.js). An SVG sheet for the one art drawer; rebuild, never hand-edit:
 //
-//   node tools/herds/draw.cjs [--sheet out.png] [--only kind,kind]
+//   node tools/packart/render.cjs tools/herds/draw.cjs Prototypes/herds [--only kind,kind] [--contact out.png]
+//
+// (--only draws those kinds and leaves the index alone; the contact sheet shows the close looks.)
 //
 // The animal is built from a few parts in its own frame (x forward, y up, the height at the withers 1):
 // a body whose back carries the humps, a tapered neck along a curve, a head, a tail, and four legs
@@ -18,10 +21,8 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const OUT = path.join(ROOT, 'Prototypes', 'herds', 'art');
 const INK = '#3B2C16';          // the atlas's text ink
 const HALO = '#F4ECD8';         // the paper's, round a tiny figure so it reads on any ground
 
@@ -514,15 +515,11 @@ function herdSvg(k, frame, frames, look, box, graze) {
            svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W * unit * look.scale}" height="${Hh * unit * look.scale}" viewBox="${vx} ${vy} ${W} ${Hh}">${body}</svg>` };
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  const only = args.includes('--only') ? args[args.indexOf('--only') + 1].split(',') : null;
-  const sheet = args.includes('--sheet') ? args[args.indexOf('--sheet') + 1] : null;
-  fs.mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch();
-  const page = await browser.newPage({ deviceScaleFactor: 1 });
+/** The sheet for tools/packart/render.cjs: every kind's frames in each look and pose, and the herds'
+    marks from afar, as SVG; `done` writes the index (not when only some kinds are drawn). */
+function sheet({ only, out = path.join(ROOT, 'Prototypes', 'herds') } = {}) {
+  const pictures = [];
   const art = {};
-  const sheetRows = [];
   for (const [id, k] of Object.entries(KINDS)) {
     if (only && !only.includes(id)) continue;
     const box = extent(k);
@@ -537,11 +534,8 @@ async function main() {
           const { w, h, svg } = svgFor(k, frames[i], look, box);
           size = [Math.round(w * 10) / 10, Math.round(h * 10) / 10];
           const name = `${id}-${lookId}-${poseId}-${i + 1}.png`;
-          await page.setViewportSize({ width: Math.ceil(w * look.scale), height: Math.ceil(h * look.scale) });
-          await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`);
-          await page.locator('svg').screenshot({ path: path.join(OUT, name), omitBackground: true });
+          pictures.push({ file: 'art/' + name, width: w, height: h, scale: look.scale, svg, contact: lookId === 'close' });
           names.push('art/' + name);
-          if (sheet && lookId === 'close') sheetRows.push({ id, poseId, i, svg, w: w * look.scale, h: h * look.scale });
         }
         art[id][lookId] = art[id][lookId] || {};
         // (the pack's file budget: a cycle shows its drawings again rather than drawing them twice)
@@ -557,31 +551,29 @@ async function main() {
         const { w, h, svg } = herdSvg(k, i, count, LOOKS.tiny, box, poseId === 'graze');
         size = [Math.round(w * 10) / 10, Math.round(h * 10) / 10];
         const name = `${id}-herd-${poseId}-${i + 1}.png`;
-        await page.setViewportSize({ width: Math.ceil(w * 3), height: Math.ceil(h * 3) });
-        await page.setContent(`<html><body style="margin:0;background:transparent">${svg}</body></html>`);
-        await page.locator('svg').screenshot({ path: path.join(OUT, name), omitBackground: true });
+        pictures.push({ file: 'art/' + name, width: w, height: h, scale: 3, svg, contact: false });
         names.push('art/' + name);
       }
       art[id].herd[poseId] = { frames: names, size };
     }
     console.log(id, JSON.stringify(art[id].close.walk.size), JSON.stringify(art[id].small.walk.size), JSON.stringify(art[id].tiny.walk.size));
   }
-  // the index the pack reads: each kind's looks, their frames and sizes in points
-  if (!only) {
-    fs.writeFileSync(path.join(ROOT, 'Prototypes', 'herds', 'art.js'),
-      '// Written by tools/herds/draw.cjs: the animals\' pictures and their sizes in points. Never hand-edit.\n'
-      + 'window.HERD_ART = ' + JSON.stringify(art) + ';\n');
-  }
-  if (sheet) {
-    // a contact sheet of the close illustrations, for looking at them together
-    const html = `<html><body style="margin:0;background:#E8DFC8;display:flex;flex-wrap:wrap;gap:6px;padding:8px;width:2400px">`
-      + sheetRows.map((r) => `<div style="width:${r.w / 2}px;height:${r.h / 2}px">${r.svg.replace(/width="[^"]+" height="[^"]+"/, `width="${r.w / 2}" height="${r.h / 2}"`)}</div>`).join('') + '</body></html>';
-    await page.setViewportSize({ width: 2416, height: 800 });
-    await page.setContent(html);
-    await page.screenshot({ path: sheet, fullPage: true });
-  }
-  await browser.close();
+  return {
+    pictures,
+    done() {
+      // the index the pack reads: each kind's looks, their frames and sizes in points
+      if (only) return;
+      fs.writeFileSync(path.join(out, 'art.js'),
+        '// Written by tools/herds/draw.cjs: the animals\' pictures and their sizes in points. Never hand-edit.\n'
+        + 'window.HERD_ART = ' + JSON.stringify(art) + ';\n');
+    }
+  };
 }
 
-if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });
-module.exports = { KINDS, build };
+module.exports = { KINDS, build, sheet };
+
+// run alone, it is the one art drawer's sheet: `node tools/herds/draw.cjs [--only ...] [--contact out.png]`
+if (require.main === module) {
+  require('../packart/render.cjs').main([__filename, path.join(ROOT, 'Prototypes', 'herds'), ...process.argv.slice(2)])
+    .catch((e) => { console.error(e); process.exit(1); });
+}

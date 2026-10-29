@@ -90,7 +90,7 @@ jobs:
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
           python3 ci/check_wikipedia.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the packs' art sheets and builders (tools/packart and each pack's tools/<name>/)
-          for f in tools/packart/*.cjs tools/packart/*.js tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
+          for f in tools/packart/*.cjs tools/packart/*.js tools/herds/*.cjs tools/water/boto.cjs tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           # the playground's bundled packs and tools (docs/playground.md)
