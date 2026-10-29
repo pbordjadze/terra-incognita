@@ -44,7 +44,7 @@ window.HERD_NOTES = {
       text: 'The guanaco, wild, lives from northern Peru to Tierra del Fuego, from sea level to 4,500 metres. The llama was herded from it. [19, 20]' },
     { lineage: 'vicunas', title: 'The vicuña',
       text: 'The vicuña lives only in the high puna, 3,000 to 5,000 metres up, from central Peru to northern Argentina; there are about half a million. The alpaca was herded from it. [19, 20]' },
-    { lineage: 'llama', title: 'The llama and the alpaca',
+    { lineage: 'llama', also: ['alpaca', 'andean-guanacos'], title: 'The llama and the alpaca',
       text: 'Andean people herded llamas from guanacos and alpacas from vicuñas, about 6,000 to 7,000 years ago, in the high Andes of Peru; the rock shelter of Telarmachay, in the puna of Junín, is one of the places where it can be followed. Herders still tie coloured yarn in their llamas\' ears. [20]' },
     { lineage: 'australia', title: 'Camels in Australia',
       text: 'The first camel landed in Australia in 1840. From the 1860s camels and their handlers from British India and Afghanistan carried loads across the interior: 124 came to Port Augusta in 1866 alone, and some 10,000 to 20,000 in all by 1907. Set free when trucks came, their herds went wild; about 300,000 live there now. [21]' },

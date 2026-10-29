@@ -253,7 +253,7 @@
     var sections = NOTES.sections.slice();
     if (first) {
       var i = -1;
-      sections.forEach(function (s, j) { if (s.lineage === first) i = j; });
+      sections.forEach(function (s, j) { if (s.lineage === first || (s.also || []).indexOf(first) >= 0) i = j; });
       if (i > 0) sections.unshift(sections.splice(i, 1)[0]);
     }
     terra.panel.show({ title: NOTES.title, text: NOTES.text,
