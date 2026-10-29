@@ -139,8 +139,8 @@
     const eg = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 0.92);
     eg.addColorStop(0, B.rgba(EARTH, 0.42)); eg.addColorStop(0.6, B.rgba(EARTH, 0.14)); eg.addColorStop(1, B.rgba(EARTH, 0));
     ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill();
-    ctx.strokeStyle = B.rgba(INK, 0.28); ctx.lineWidth = Math.max(0.4, R * 0.012); ctx.lineCap = 'round';
-    for (let i = 0; i < 9; i++) {
+    ctx.strokeStyle = B.rgba(INK, 0.16); ctx.lineWidth = Math.max(0.4, R * 0.01); ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
       const a = i / 9 * 6.2832 + r() * 0.5, r0 = R * (0.6 + r() * 0.08), r1 = R * (0.8 + r() * 0.15);
       ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
       const am = a + (r() - 0.5) * 0.25, rm = (r0 + r1) / 2;
@@ -178,7 +178,8 @@
     // the lid: a flat flagstone, its edges straight and uneven as a split stone's, drawn a third off the
     // mouth, its sliver of shadow on the rim
     const lx = cx + rim * 0.72, ly = cy + rim * 0.74, ls = mouth * 0.82;
-    const stone = [[-0.95, -0.5], [-0.35, -0.98], [0.55, -0.8], [1.0, -0.1], [0.7, 0.7], [-0.1, 1.0], [-0.8, 0.6]].map(([x, y]) => [lx + x * ls, ly + y * ls]);
+    const stone = [[-0.95, -0.42], [-0.55, -0.9], [0.1, -1.0], [0.62, -0.72], [1.0, -0.05], [0.78, 0.55], [0.2, 0.95], [-0.45, 0.82], [-0.88, 0.3]]
+      .map(([x, y]) => [lx + x * ls * (0.94 + r() * 0.12), ly + y * ls * (0.94 + r() * 0.12)]);
     const poly = (c, pts) => { c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
     ctx.fillStyle = 'rgba(20, 10, 5, 0.3)'; ctx.beginPath(); poly(ctx, stone.map(([x, y]) => [x + ls * 0.09, y + ls * 0.11])); ctx.fill();
     const lg = ctx.createLinearGradient(lx - ls, ly - ls, lx + ls, ly + ls);
@@ -211,6 +212,27 @@
     B.glow(ctx, w / 2, h / 2, w * 0.5, '#FFB83A', 0.75, 0);
     B.glow(ctx, w / 2, h / 2, w * 0.22, '#FFFFFF', 1, 0);
   }
+  /** The light breathing where the finger was: six frames of a glow swelling and settling. */
+  function pulse(ctx, w, h, t) {
+    const k = 0.72 + 0.28 * Math.sin(t * 6.2832);
+    B.glow(ctx, w / 2, h / 2, w * 0.5 * k, '#F2B23A', 0.5, 0);
+    B.glow(ctx, w / 2, h / 2, w * 0.16 * k, '#FFF6DC', 0.95, 0);
+  }
+  /** The ship that carried the vine over the sea: a small lateen-rigged hull seen from the side, facing east,
+      rocking a little between two frames; drawn small and plain, a mark on the sea, not a portrait. */
+  function ship(ctx, w, h, t) {
+    const rock = (t ? 1 : -1) * 0.05;
+    ctx.save(); ctx.translate(w / 2, h * 0.62); ctx.rotate(rock);
+    // the hull
+    B.inked(ctx, (c) => { c.moveTo(-w * 0.42, -h * 0.06); c.quadraticCurveTo(-w * 0.3, h * 0.26, 0, h * 0.28); c.quadraticCurveTo(w * 0.3, h * 0.26, w * 0.46, -h * 0.1);
+      c.lineTo(w * 0.36, -h * 0.06); c.closePath(); }, '#6B4A2E', INK, h * 0.05);
+    // the mast and the sail, bellied
+    ctx.strokeStyle = INK; ctx.lineWidth = h * 0.04; ctx.beginPath(); ctx.moveTo(-w * 0.02, -h * 0.06); ctx.lineTo(w * 0.02, -h * 0.6); ctx.stroke();
+    const sg = ctx.createLinearGradient(-w * 0.3, 0, w * 0.3, 0);
+    sg.addColorStop(0, '#F3E9D2'); sg.addColorStop(1, '#D9C9A6');
+    B.inked(ctx, (c) => { c.moveTo(w * 0.02, -h * 0.58); c.quadraticCurveTo(w * 0.34, -h * 0.36, w * 0.3, -h * 0.08); c.lineTo(-w * 0.26, -h * 0.08); c.quadraticCurveTo(-w * 0.1, -h * 0.34, w * 0.02, -h * 0.58); c.closePath(); }, sg, INK, h * 0.035);
+    ctx.restore();
+  }
 
   const P = [];
   for (let k = 0; k < 3; k++) {
@@ -225,5 +247,7 @@
   P.push({ name: 'qvevri', width: 256, height: 256, draw(ctx, w, h) { qvevri(ctx, w, h); } });
   P.push({ name: 'doorway', width: 30, height: 32, draw: doorway });
   P.push({ name: 'spark', width: 24, height: 24, draw: spark });
+  P.push({ name: 'pulse', width: 32, height: 32, frames: 6, draw(ctx, w, h, i, n) { pulse(ctx, w, h, i / n); } });
+  P.push({ name: 'ship', width: 30, height: 24, frames: 2, draw(ctx, w, h, i) { ship(ctx, w, h, i); } });
   window.SHEET = { pictures: P };
 })();

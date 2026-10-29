@@ -44,12 +44,12 @@ ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the
 TRUNKS = [
     ('The first vine', [ORIGIN, (44.95, 41.58, -5960, None), (45.4, 41.62, -5850, None), (46.0, 41.7, -5700, 'Kakheti'), (46.9, 41.3, -5600, None),
                         (47.8, 40.5, -5300, None), (49.0, 40.3, -5000, None)]),
-    ('West to Colchis', [(44.95, 41.58, -5900, None), (44.6, 41.85, -5870, None), (44.2, 41.7, -5820, 'Shulaveris Gora'), (43.9, 42.0, -5750, None),
-                         (42.9, 42.15, -5600, None), (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
+    ('West to Colchis', [(45.4, 41.62, -5760, None), (44.9, 41.95, -5730, None), (44.2, 41.7, -5690, 'Shulaveris Gora'), (43.9, 42.0, -5660, None),
+                         (42.9, 42.15, -5600, None), (42.0, 42.2, -5400, 'Colchis'), (41.95, 41.8, -5200, None)]),
     ('Down the Zagros', [(45.4, 41.62, -5720, None), (45.1, 41.1, -5650, None), (45.0, 40.6, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
                          (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
                          (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
-    ('Into Anatolia', [(44.2, 41.7, -5550, None), (43.9, 41.1, -5480, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
+    ('Into Anatolia', [(44.2, 41.7, -5520, None), (43.9, 41.1, -5460, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
                        (37.5, 39.3, -4600, None), (35.5, 39.2, -4300, None), (33.5, 39.0, -3900, None), (31.0, 39.0, -3600, None), (29.5, 39.2, -3400, None),
                        (28.0, 39.4, -3200, None), (27.0, 39.8, -3100, None), (26.24, 39.96, -3000, 'Troy')]),
     ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (38.3, 38.4, -4800, None), (37.0, 37.2, -4600, None), (36.6, 36.3, -4400, None), (36.0, 35.2, -4200, None),
@@ -182,10 +182,28 @@ def along(a, b, t):
     return (math.atan2(p[0], p[2]) / D, math.asin(max(-1, min(1, p[1]))) / D)
 
 
+def cut_corners(verts):
+    """One pass of corner cutting at the unnamed vertices (a named place stays exactly where it is): a
+    zigzag of waypoints becomes a bend, as a vine's way does."""
+    if len(verts) < 3:
+        return list(verts)
+    out = [verts[0]]
+    for i in range(1, len(verts) - 1):
+        v = verts[i]
+        if len(v) > 3 and v[3]:
+            out.append(v)
+            continue
+        a, b = verts[i - 1], verts[i + 1]
+        out.append((0.25 * a[0] + 0.5 * v[0] + 0.25 * b[0], 0.25 * a[1] + 0.5 * v[1] + 0.25 * b[1], v[2]) + tuple(v[3:]))
+    out.append(verts[-1])
+    return out
+
+
 def curved(verts):
     """The vertices with a few more between each pair, on a smooth curve through them all (Catmull-Rom
     in longitude and latitude), so the way bends at a place rather than kinking; the years follow the
     curve's parameter. A vertex's name stays on it."""
+    verts = cut_corners(verts)
     n = len(verts)
     if n < 3:
         return list(verts)
@@ -295,9 +313,12 @@ def main():
             lon, lat = verts[0][0], verts[0][1]
             cands = [(nearest(branches[b]['way'], lon, lat), b) for b in range(ti)]
             (i, d), b = min(cands, key=lambda c: c[0][1])
-            if d > 5:
+            # (corner cutting moves an unnamed waypoint a little: the branch is attached to the nearest trunk
+            # point, its own first place moved onto it)
+            if d > 80:
                 raise SystemExit(f'{name} starts {d:.0f} km from any earlier trunk')
             frm = [b, i]
+            way[0] = [branches[b]['way'][i][0], branches[b]['way'][i][1], way[0][2]] + way[0][3:]
             if branches[b]['way'][i][2] > verts[0][2] + 1:
                 raise SystemExit(f'{name} starts in {verts[0][2]} where {branches[b]["name"]} arrives only in {branches[b]["way"][i][2]}')
         branches.append({'name': name, 'way': way, 'from': frm, 'twig': False})
@@ -325,14 +346,23 @@ def main():
         y0 = max(start[2], year - span)
         if y0 >= year:
             y0 = year - 1
-        # a gentle curve: the straight way bent a little to one side
-        mid = along((start[0], start[1]), (lon, lat), 0.5)
+        # it leaves along the trunk's own direction for a little, then bends to the region: a branch, not a
+        # right angle
+        way_t = branches[b]['way']
+        nxt = way_t[min(len(way_t) - 1, i + 1)] if i + 1 < len(way_t) else way_t[i - 1]
+        tdx, tdy = nxt[0] - start[0], nxt[1] - start[1]
+        tl = math.hypot(tdx, tdy) or 1
         dx, dy = lon - start[0], lat - start[1]
         L = math.hypot(dx, dy) or 1
+        # (along the trunk the way the region lies, if it lies that way at all)
+        sign = 1 if tdx * dx + tdy * dy >= 0 else -1
+        lead = min(0.45, d / 2500)
+        knee = (start[0] + sign * tdx / tl * lead, start[1] + sign * tdy / tl * lead)
+        mid = along(knee, (lon, lat), 0.5)
         side = 1 if ri % 2 else -1
-        bend = min(0.9, d / 900)
+        bend = min(0.5, d / 1500)
         mid = (mid[0] + (-dy / L) * bend * side, mid[1] + (dx / L) * bend * side)
-        verts = [(start[0], start[1], y0), (mid[0], mid[1], (y0 + year) / 2), (lon, lat, year, name)]
+        verts = [(start[0], start[1], y0), (knee[0], knee[1], y0 + (year - y0) * 0.2), (mid[0], mid[1], y0 + (year - y0) * 0.6), (lon, lat, year, name)]
         way = densify(verts, step_km=45, sway=0.04, seed=100 + ri)
         way[-1] = way[-1] + [name]
         branches.append({'name': name, 'way': way, 'from': [b, i], 'twig': True})
@@ -386,13 +416,17 @@ def main():
             tips.append({'branch': bi, 'name': br['name'], 'coordinates': [[p[0], p[1]] for p in way], 'dates': [p[2] for p in way]})
 
     # the strip's marks: the record's landmarks, not every place (a tick within a fingertip is landed on)
+    # the ships: a sail on each long voyage (six points and more, about 240 km), the longest first, as many
+    # as the sprite budget leaves beside the tendrils (64 in all)
+    long = sorted([v for v in voyages if len(v['coordinates']) >= 6], key=lambda v: -len(v['coordinates']))[:64 - len(tips) - 4]
+    ships = [{'branch': v['branch'], 'coordinates': [[c[0], c[1]] for c in v['coordinates']], 'dates': [c[2] for c in v['coordinates']]} for v in long]
     ticks = [-6000, -5000, -4000, -3000, -2000, -1000, -600, -120, 100, 718, 1425, 1500, 1655, 1788, 1973]
     # the years' pace: deep time quickly, the last five centuries slowly; about three minutes in all
     pace = [[-6000, 0], [-5500, 13], [-3000, 40], [-1000, 68], [-100, 92], [800, 110], [1400, 122], [1600, 144], [1800, 164], [1900, 178], [2026, 196]]
     data = {
         'origin': {'lon': ORIGIN[0], 'lat': ORIGIN[1], 'year': ORIGIN[2], 'name': ORIGIN[3]},
         'branches': [{'name': b['name'], 'from': b['from'], 'twig': b['twig'], 'way': [p[:3] for p in b['way']]} for b in branches],
-        'stems': stems, 'voyages': voyages, 'leaves': leaves, 'clusters': clusters, 'tips': tips,
+        'stems': stems, 'voyages': voyages, 'leaves': leaves, 'clusters': clusters, 'tips': tips, 'ships': ships,
         'ticks': ticks, 'pace': pace, 'today': 2026,
     }
     OUT.write_text('/* The vine, dated for the globe (runtime 6): its trunks and twigs as ways with a year at each point\n'
@@ -403,7 +437,7 @@ def main():
     land_pts = sum(len(f['coordinates']) for f in stems)
     sea_pts = sum(len(f['coordinates']) for f in voyages)
     print(f'{OUT.relative_to(ROOT)}: {trunks} trunks, {len(branches) - trunks} twigs; {len(stems)} stems ({land_pts} points), '
-          f'{len(voyages)} voyages ({sea_pts} points), {len(leaves)} leaves, {len(clusters)} clusters, {len(tips)} tips, {OUT.stat().st_size // 1024} KB')
+          f'{len(voyages)} voyages ({sea_pts} points), {len(leaves)} leaves, {len(clusters)} clusters, {len(tips)} tips, {len(ships)} ships, {OUT.stat().st_size // 1024} KB')
 
 
 if __name__ == '__main__':

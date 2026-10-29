@@ -120,3 +120,23 @@ Plan (iPad): `[{"wait":5},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":5},{"sh
 - A symbol's size in degrees (a leaf the size of a valley, scaling with the camera) instead of zoom bands.
 - A line revealed over seconds (the lit way running from the root to the finger as a line, not only as a
   spark); dated geography reveals by the stage's date, not by the clock.
+
+Critic 4 (the hater): worst first, (1) the spark sat in Greece for the seconds a player looks (the
+sprite's path began where the camera happened to be, and the pulse was a glint, off between showings)
+and the lit way was still a tape; (2) the whole Earth a smudge; (3) stamps beside the stem, not on it;
+(4) corners and blunt ends; (5) the opening's two shoots leaving symmetrically, a bolt-head lid, cracks
+like a broken screen; (6) the preview's focus rectangle round the strip (the preview's, not the app's);
+(7) nothing moves but a line: no ship on the sea legs. Kept: the thickening, the seasons' split, the
+dark mouth, the foot out of the way.
+
+## Round 5 · the touch answers at once; ships on the sea (October 30)
+
+Changed: the spark is under the finger within a breath (half a second to 1.3), the pulse is a continuous
+breathing glow (six frames), the lit way a soft wide glow under a warm band with quiet light running
+along it; a sail on every long voyage, a sprite on the voyage's dated way, so the sea legs are crossed
+by ships as the years cross them (31 ships beside the 29 tendrils, within the sprite budget); corners
+cut at the unnamed waypoints before the curve; a twig leaves its trunk along the trunk's own direction
+and bends to its region; a branch is attached to the trunk point it grows from; leaves stand on the
+stem (their stalk at the foot of the picture); the far view's leaf tint is a band under the thread (it
+had been set before the stems existed and drew nothing); the second shoot leaves later and from along
+the first, not from the mouth; the mouth smaller; the lid an uneven stone, the cracks fewer and fainter.
