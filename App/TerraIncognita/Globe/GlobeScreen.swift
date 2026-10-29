@@ -22,12 +22,15 @@ struct GlobeScreen: View {
     /// A lens's chrome lies over the screen: the caption and the invitation keep their place (the
     /// globe's room is measured with them) but are neither shown nor read.
     let quiet: Bool
+    /// The quiet frame (a prototype, `QuietGlobe.frame`): no caption at rest, one line for a chosen country.
+    let quietFrame: Bool
 
     init(active: Bool, style: GlobeStyle, keepClear: [CGRect] = [], invitation: Invitation? = nil, foot: AnyView? = nil,
-         quiet: Bool = false, onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
+         quiet: Bool = false, quietFrame: Bool = false, onInvitation: @escaping () -> Void = {}, onDrawn: @escaping (GlobeView) -> Void = { _ in }) {
         self.active = active
         self.foot = foot
         self.quiet = quiet
+        self.quietFrame = quietFrame
         self.style = style
         self.keepClear = keepClear
         self.invitation = invitation
@@ -38,7 +41,7 @@ struct GlobeScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame], onDrawn: onDrawn, country: $country)
+            GlobeCanvasView(active: active, style: style, keepClear: keepClear + [captionFrame], quietFrame: quietFrame, onDrawn: onDrawn, country: $country)
                 .ignoresSafeArea()
             VStack(spacing: 0) {
                 if let invitation {
@@ -66,6 +69,8 @@ struct GlobeScreen: View {
                 } else if typeSize.isAccessibilitySize && country == nil && invitation != nil {
                     // The invitation already names this view; leave room for the globe at large type.
                     EmptyView()
+                } else if quietFrame {
+                    QuietCaption(country: country)
                 } else if style == .persian {
                     PersianCaption(caption: caption)
                 } else {
@@ -73,7 +78,7 @@ struct GlobeScreen: View {
                 }
             }
             .unseen(quiet)
-            .id(foot == nil ? caption.title + style.rawValue + (invitation?.id ?? "") : "foot")
+            .id(foot == nil ? caption.title + style.rawValue + (invitation?.id ?? "") + (quietFrame ? "quiet" : "") : "foot")
             .transition(.opacity.combined(with: .offset(y: 8)))
             .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { captionFrame = $0 }
         }
@@ -107,7 +112,7 @@ struct GlobeScreen: View {
     }
 
     /// "34 million people", to two figures.
-    private static func people(_ n: Double) -> String {
+    static func people(_ n: Double) -> String {
         func figures(_ x: Double) -> String { x >= 10 ? String(Int(x.rounded())) : x.formatted(.number.precision(.fractionLength(0...1))) }
         if n >= 1e9 { return String(localized: "\(figures(n / 1e9)) billion people") }
         if n >= 1e6 { return String(localized: "\(figures(n / 1e6)) million people") }
@@ -207,6 +212,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     let style: GlobeStyle
     /// In global (the window's) coordinates.
     let keepClear: [CGRect]
+    let quietFrame: Bool
     let onDrawn: (GlobeView) -> Void
     @Binding var country: GlobeData.Country?
 
@@ -227,6 +233,7 @@ private struct GlobeCanvasView: UIViewRepresentable {
     func updateUIView(_ view: GlobeView, context: Context) {
         if view.suspended == active { view.suspended = !active }
         if view.style != style { view.setStyle(style, animated: true) }
+        if view.quietFrame != quietFrame { view.quietFrame = quietFrame }
         view.keepClear = keepClear.filter { !$0.isEmpty }.map { view.convert($0, from: nil) }
     }
 }

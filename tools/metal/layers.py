@@ -91,7 +91,7 @@ class Globe:
     lean, apart = 1.0, 2.0
 
     def bind(self, o, cam, size, scale):
-        persian, ground = o.style == 'persian', o.style == 'ground'
+        persian, ground, night = o.style == 'persian', o.style in ('ground', 'night'), o.style == 'night'
         w, h = cam['width'], cam['height']
         R = cam['radius']
         reading = preview.reading(w, h)
@@ -104,7 +104,7 @@ class Globe:
                  (0, 0, 1 if persian else 0, preview.page_alpha(cam['zoom']) if persian else 0),
                  (*m[0], 0), (*m[1], 0), (*m[2], 0),
                  (top * scale, bottom * scale, left * scale, right * scale),
-                 (0, 1 if ground else 0, 0, 0))
+                 (0, 1 if ground else 0, 1 if night else 0, 0))
         tex = {0: geo(),
                1: cached('terrain', lambda: metal.Texture.from_png(GLOBE / 'terrain.png', 4, mipmapped=True)),
                2: cached('ids', lambda: metal.Texture.from_png(GLOBE / 'ids.png', 1)),
@@ -112,7 +112,8 @@ class Globe:
                4: cached('fleuron', lambda: metal.Texture.from_png(GLOBE / 'fleuron.png', 4, True, premultiply=True)),
                5: cached('braid', lambda: metal.Texture.from_png(GLOBE / 'braid.png', 4, mipmapped=True))}
         land, ice, floor = ground_maps(o.month) if ground else (blank(), blank(), blank())
-        tex.update({6: land, 7: ice, 8: floor})
+        tex.update({6: land, 7: ice, 8: floor,
+                    9: cached('night', lambda: metal.Texture.from_png(GLOBE / 'ground' / 'night.jpg', 4, mipmapped=True)) if night else blank()})
         return {0: u}, tex
 
 
@@ -157,9 +158,12 @@ class Clouds:
     def bind(self, o, cam, size, scale):
         reading = preview.reading(cam['width'], cam['height'])
         m0 = o.month - 1
+        # (CloudsLook.on: by night a thin grey veil without shadows)
+        night = o.style == 'night'
         u = pack((size[0], size[1], scale, reading), (cam['cx'], cam['cy'], cam['radius'], cam['zoom']),
                  *columns(cam['lon'], cam['lat']), (o.days, m0, (m0 + 1) % 12, 0), (0, 0, 0, 0),
-                 (0.05, 0.09, 0.18, 0.78), (0.06, 0.05, 0.04, 0.47), (1, 0.75, 0, 0))
+                 (0.05, 0.09, 0.18, 0 if night else 0.78), (0.06, 0.05, 0.04, 0 if night else 0.47),
+                 (0.5 if night else 1, 0.75, o.quiet, 0.36 if night else o.bright))
         return {0: u, 1: pack(*self.cyclones(o.days))}, self.textures()
 
     def from_twin(self, u, size):
@@ -173,7 +177,7 @@ class Clouds:
         return {0: self.from_twin(u, size), 1: pack(*u['uCyclone'])}
 
     def twin_query(self, o):
-        return f'month={o.month}&days={o.days}', None
+        return f'month={o.month}&days={o.days}&quiet={o.quiet}&bright={o.bright}', None
 
 
 class Ocean:
@@ -377,9 +381,11 @@ def commands(sub):
     def common(p):
         p.add_argument('--device', default='ipad', choices=SIZES)
         p.add_argument('--at', default='earth', help='lon,lat,zoom or a view: ' + ', '.join(VIEWS))
-        p.add_argument('--style', default='ground', choices=('ground', 'wikipedia', 'persian'))
+        p.add_argument('--style', default='ground', choices=('ground', 'night', 'wikipedia', 'persian'))
         p.add_argument('--month', type=int, default=10)
         p.add_argument('--days', type=float, default=0.4, help="the clouds' simulated days")
+        p.add_argument('--quiet', type=float, default=0, help="the clouds' quiet rule, 0 or 1 (clear where the reader looks)")
+        p.add_argument('--bright', type=float, default=1, help="how bright the clouds are (1 by day)")
         p.add_argument('--time', type=float, default=12.0, help="the sea's seconds")
         p.add_argument('--scale', type=float, default=None, help="pixels a point (default: each layer's own)")
     s = sub.add_parser('shot', help='draw layers as their Metal would on the device')

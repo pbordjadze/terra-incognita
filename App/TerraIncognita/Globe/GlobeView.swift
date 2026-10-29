@@ -9,10 +9,15 @@ import UIKit
 import simd
 
 /// The globe's styles: Wikipedia's location-map colours, a little prettier; the Persian, the same map
-/// in colours studied from a Persian manuscript, inside its frame (Globe.metal's P_ palette); and the
-/// ground, the land as satellites saw it that month, in the atlas's light key (Globe/ground/).
+/// in colours studied from a Persian manuscript, inside its frame (Globe.metal's P_ palette); the
+/// ground, the land as satellites saw it that month, in the atlas's light key (Globe/ground/); and
+/// the night, the ground's Earth dark with its lights as satellites see them (Globe.metal's N_
+/// palette, Globe/ground/night.jpg): a prototype on the ground, which keeps the ground's maps.
 enum GlobeStyle: String, CaseIterable, Identifiable {
-    case persian, wikipedia, ground
+    case persian, wikipedia, ground, night
+
+    /// Drawn on the ground's maps (the month's land, its ice, the sea floor).
+    var onGround: Bool { self == .ground || self == .night }
 
     /// The plain globe's style: the ground since October 28, 2026 (`.wikipedia` undoes it; the
     /// Wikipedia style is then a parked prototype, as the Persian is).
@@ -24,6 +29,7 @@ enum GlobeStyle: String, CaseIterable, Identifiable {
         case .persian: String(localized: "Persian")
         case .wikipedia: String(localized: "Wikipedia")
         case .ground: String(localized: "The ground")
+        case .night: String(localized: "The night")
         }
     }
 }
@@ -78,6 +84,28 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
     /// The parked still sea: the sea's layer fades out while it is set.
     var seaHidden = false
+    /// The quiet globe's rules (prototypes; painting-company row 174). The clouds clear where the
+    /// reader looks (`CloudsLayer` asks). Names on demand: almost none, the one or two greatest in view
+    /// and what the reader touched near, for a while; countries last. The quiet frame: the caption
+    /// gone at rest, so the globe takes its room.
+    var cloudsQuiet = false
+    var quietNames = false {
+        didSet {
+            guard quietNames != oldValue else { return }
+            touchedPlace = nil
+            labelsFading = true
+            needsDraw = true
+        }
+    }
+    var quietFrame = false {
+        didSet { if quietFrame != oldValue { unsettleRoom() } }
+    }
+    /// Where the reader last tapped, for the names near it (`quietNames`), and when.
+    private var touchedPlace: (lon: Double, lat: Double, at: CFTimeInterval)?
+    /// How long the names near a touch stay, in seconds, and how far from it they are looked for, in
+    /// reading points.
+    private static let touchedFor = 8.0
+    private static let touchedReach = 80.0
     /// The globe's own maps for the sea drawn over it (OceanLayer): the coast's distances and the
     /// month's ice (an empty map while the ground's isn't read).
     var seaMaps: (coast: MTLTexture, ice: MTLTexture)? {
@@ -372,11 +400,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var braid: MTLTexture?
     /// The Persian capitals' marker (Globe/rosette.png).
     private var rosette: CGImage?
-    /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian; and from
-    /// Wikipedia's to the ground's, 0 to 1.
+    /// The style, and how far the drawing has crossed to it: 0 Wikipedia's, 1 the Persian; from
+    /// Wikipedia's to the ground's, 0 to 1; and from the ground to the night, 0 to 1.
     private(set) var style = GlobeStyle.persian
     private var styleMix = 1.0
     private var groundMix = 0.0
+    private var nightMix = 0.0
     /// The ground style's month (1 to 12): its land and its sea ice. This month, unless told
     /// (`-globe-month n` in debug builds); a new month's maps are read when it is next drawn.
     var month = Calendar.current.component(.month, from: Date()) {
@@ -390,6 +419,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var ground: MTLTexture?
     private var ice: MTLTexture?
     private var seaFloor: MTLTexture?
+    /// The night's lights (Globe/ground/night.jpg), read the first time the night is chosen.
+    private var night: MTLTexture?
     private var groundMonth = 0
     private var groundSample: (bytes: [UInt8], width: Int, height: Int)?
     private var displayLink: CADisplayLink?
@@ -574,7 +605,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// Reads the ground style's maps for the month, if not read already (only once the style is
     /// chosen).
     private func loadGround() {
-        guard style == .ground || groundMix > 0, groundMonth != month, let device, let queue else { return }
+        guard style.onGround || groundMix > 0, groundMonth != month, let device, let queue else { return }
         let folder = GlobeData.root.appending(path: "ground", directoryHint: .isDirectory)
         let name = String(format: "%02d", month)
         let land = Self.colourTexture(folder.appending(path: "\(name).jpg"), device: device, queue: queue)
@@ -589,6 +620,17 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         groundMonth = month
         groundSample = Self.sample(folder.appending(path: "\(name).jpg"), size: 512)
         relabel()
+        needsDraw = true
+    }
+
+    /// Reads the night's lights, if not read already (only once the night is chosen).
+    private func loadNight() {
+        guard style == .night, night == nil, let device, let queue else { return }
+        let folder = GlobeData.root.appending(path: "ground", directoryHint: .isDirectory)
+        night = Self.colourTexture(folder.appending(path: "night.jpg"), device: device, queue: queue)
+        if night == nil {
+            Logger(subsystem: "com.pbordjadze.terraincognita", category: "globe").error("the night's map is missing or unreadable")
+        }
         needsDraw = true
     }
 
@@ -746,6 +788,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let m = rotation
         // (the ground's maps not read, or unreadable: Wikipedia's colours rather than a black land)
         let groundShown = ground != nil && ice != nil && seaFloor != nil ? groundMix : 0
+        let nightShown = night != nil ? nightMix : 0
         let ring = (1 - smoothstep(1.25, 1.7, zoom)) * (1 - groundShown)
         var u = Uniforms(
             u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
@@ -756,7 +799,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
             u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
                       Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)),
-            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), 0, 0))
+            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), Float(nightShown), 0))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
@@ -768,6 +811,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         encoder.setFragmentTexture(ground ?? blank, index: 6)
         encoder.setFragmentTexture(ice ?? blank, index: 7)
         encoder.setFragmentTexture(seaFloor ?? blank, index: 8)
+        encoder.setFragmentTexture(night ?? blank, index: 9)
         encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
         encoder.endEncoding()
         commands.present(drawable)
@@ -963,6 +1007,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     @objc private func tap(_ g: UITapGestureRecognizer) {
         touched()
         let p = g.location(in: self)
+        // under names on demand, the names near a touch come for a while
+        if quietNames, let w = unproject(p) {
+            touchedPlace = (w.lon, w.lat, CACurrentMediaTime())
+            labelsFading = true
+        }
         // the water rings where it is touched, whatever else the touch does
         if let w = unproject(p), data?.country(lon: w.lon, lat: w.lat) == nil { sea?.touch(lon: w.lon, lat: w.lat) }
         if let onWorldTap, onWorldTap(p, unproject(p)) { return }
@@ -1034,8 +1083,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         style = new
         if !animated || UIAccessibility.isReduceMotionEnabled {
             styleMix = new == .persian ? 1 : 0
-            groundMix = new == .ground ? 1 : 0
+            groundMix = new.onGround ? 1 : 0
+            nightMix = new == .night ? 1 : 0
         }
+        loadNight()
         loadGround()
         // (the other style's caption is another size: measured again once it has been laid out)
         unsettleRoom()
@@ -1158,14 +1209,22 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             needsDraw = true
         }
         let styleTarget = style == .persian ? 1.0 : 0.0
-        let groundTarget = style == .ground ? 1.0 : 0.0
-        let restyling = styleMix != styleTarget || groundMix != groundTarget
+        let groundTarget = style.onGround ? 1.0 : 0.0
+        let nightTarget = style == .night ? 1.0 : 0.0
+        let restyling = styleMix != styleTarget || groundMix != groundTarget || nightMix != nightTarget
         if restyling {
             styleMix = still ? styleTarget : styleMix + (styleTarget - styleMix) * min(1, dt * 6)
             if abs(styleMix - styleTarget) < 0.005 { styleMix = styleTarget }
             groundMix = still ? groundTarget : groundMix + (groundTarget - groundMix) * min(1, dt * 6)
             if abs(groundMix - groundTarget) < 0.005 { groundMix = groundTarget }
+            nightMix = still ? nightTarget : nightMix + (nightTarget - nightMix) * min(1, dt * 6)
+            if abs(nightMix - nightTarget) < 0.005 { nightMix = nightTarget }
             needsDraw = true
+        }
+        // the names near a touch go after a while
+        if let t = touchedPlace, now - t.at > Self.touchedFor {
+            touchedPlace = nil
+            labelsFading = true
         }
         var animating = false
         var shownChanged = false
@@ -1339,7 +1398,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         // features from x1.5, the countries from x3.2 and the capitals from x5 on any screen (a larger
         // screen's room would otherwise name every country at once), each on a halo of the ground
         // under it (`groundHalo`).
-        let onGround = style == .ground
+        let onGround = style.onGround
         let sea = onGround ? 1.5 : 0, country = onGround ? 3.2 : 0, capital = onGround ? 5.0 : 0
         var all: [Label?] = []
         for (i, s) in data.seas.enumerated() where s.ocean { all.append(label(s.n, "ocean", s.c, .sea, i, from: 0, minZoom: sea)) }
@@ -1365,6 +1424,63 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// Where on its picture a name is pinned to its place: the middle, or a capital's rosette.
     private func anchor(_ l: Label) -> CGPoint {
         l.mark ? CGPoint(x: (halo + 1 + l.markSize / 2) / l.size.width, y: 0.5) : CGPoint(x: 0.5, y: 0.5)
+    }
+
+    /// Names on demand (`quietNames`): which names may show this frame, and in what order they claim
+    /// room. The names near the reader's last touch (within `touchedReach` of it, for `touchedFor`
+    /// seconds; their web-map level reached, whatever the zoom), nearest first; then the one or two
+    /// greatest features in view (`budget`), by their kind and rank (oceans, then the land's great
+    /// features, seas, countries, capitals last) and their nearness to the screen's centre, a name
+    /// already shown keeping a little precedence so the slow turn doesn't swap them.
+    private struct OnDemand {
+        var order: [Int]
+        var touched: Set<Int>
+        var great: Set<Int>
+        var budget: Int
+    }
+
+    private func namesOnDemand(level: Double) -> OnDemand {
+        let reach = Self.touchedReach * Double(reading)
+        let mid = CGPoint(x: bounds.midX, y: bounds.midY)
+        let span = max(Double(min(bounds.width, bounds.height)) / 2, 1)
+        var touchedAt: CGPoint?
+        if let t = touchedPlace {
+            let (p, facing) = project(lon: t.lon, lat: t.lat)
+            if facing > 0.2 { touchedAt = p }
+        }
+        var touched: [(Int, Double)] = []
+        var great: [(Int, Double)] = []
+        for (i, l) in labels.enumerated() where level >= l.from {
+            let (p, facing) = project(lon: l.lon, lat: l.lat)
+            guard facing > 0.3 else { continue }
+            if let t = touchedAt {
+                let d = hypot(Double(p.x - t.x), Double(p.y - t.y))
+                if d < reach { touched.append((i, d)); continue }
+            }
+            guard zoom >= l.minZoom else { continue }
+            let kind: Double = switch l.kind {
+            case .sea: data?.seas[l.index].ocean == true ? 0 : 1.5
+            case .region: 0.5
+            case .country: 2.5
+            case .capital: 9
+            }
+            let rank: Double = switch l.kind {
+            case .sea: data?.seas[l.index].r ?? 3
+            case .region: data?.regions[l.index].r ?? 3
+            case .country: data?.countries[l.index].r ?? 6
+            case .capital: 0
+            }
+            let near = hypot(Double(p.x - mid.x), Double(p.y - mid.y)) / span
+            great.append((i, kind + rank + 2.5 * near - (l.alpha > 0.5 ? 1.0 : 0)))
+        }
+        touched.sort { $0.1 < $1.1 }
+        great.sort { $0.1 < $1.1 }
+        let touchedIds = touched.prefix(3).map(\.0)
+        let greatIds = great.map(\.0)
+        // (every other name is visited too, so one shown a moment ago fades out)
+        let chosen = Set(touchedIds).union(greatIds)
+        let rest = labels.indices.filter { !chosen.contains($0) }
+        return OnDemand(order: touchedIds + greatIds + rest, touched: Set(touchedIds), great: Set(greatIds), budget: 2)
     }
 
     /// Which names show (in their order of claim, where they face the viewer, the zoom has reached
@@ -1408,11 +1524,16 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if abs(selectedTarget - selectedAlpha) < 0.005 { selectedAlpha = selectedTarget } else { fading = true }
         selectedLabel.isHidden = selectedAlpha * highlight < 0.01
         selectedLabel.opacity = Float(selectedAlpha * highlight)
-        for i in labels.indices {
+        // names on demand: which names may show, and in what order they claim room
+        var wanted = quietNames ? namesOnDemand(level: level) : nil
+        for i in wanted?.order ?? Array(labels.indices) {
             var l = labels[i]
             var target = 0.0
             var point: CGPoint?
-            if level >= l.from, zoom >= l.minZoom, !(l.kind == .country && l.index == shown && highlight > 0.01) {
+            // (on demand: the touched names, and the greatest in view while the budget lasts)
+            let allowed = wanted.map { $0.touched.contains(i) || ($0.great.contains(i) && $0.budget > 0) }
+                ?? (level >= l.from && zoom >= l.minZoom)
+            if allowed, !(l.kind == .country && l.index == shown && highlight > 0.01) {
                 let (p, facing) = project(lon: l.lon, lat: l.lat)
                 point = facing > 0 ? p : nil
                 if facing > (l.alpha > 0.5 ? 0.3 : 0.4) {
@@ -1422,6 +1543,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                     if fits(g) {
                         placed.append(g)
                         target = 1
+                        if wanted != nil, !wanted!.touched.contains(i) { wanted!.budget -= 1 }
                     }
                 }
             }

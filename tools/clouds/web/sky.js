@@ -219,7 +219,8 @@
     gl.uniform4f(loc.uSun, 0, 0, 0, 0);
     gl.uniform4f(loc.uSeaShadow, 0.05, 0.09, 0.18, 0.78);
     gl.uniform4f(loc.uLandShadow, 0.06, 0.05, 0.04, 0.47);
-    gl.uniform4f(loc.uTone, 1, 0.75, 0, 0);
+    // (the quiet rule and the brightness are the preview's knobs: ?quiet=1, ?bright=0.35)
+    gl.uniform4f(loc.uTone, 1, 0.75, query.has('quiet') ? +query.get('quiet') : 0, query.has('bright') ? +query.get('bright') : 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 

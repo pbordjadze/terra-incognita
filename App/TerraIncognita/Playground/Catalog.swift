@@ -26,7 +26,8 @@ enum Catalog {
                                  path: path, breathes: breathes)
     }
 
-    static let native: [Prototype] = [camelid, whale, ocean, persian, wikipedia, stillSea, film]
+    static let native: [Prototype] = [camelid, whale, ocean, QuietGlobe.names, QuietGlobe.clouds, QuietGlobe.night, QuietGlobe.frame,
+                                      persian, wikipedia, stillSea, film]
 
     /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`), on the globe itself. Its
     /// doorway stirs: the camel walks a little way over the Nafud's sands and back, breathing, facing

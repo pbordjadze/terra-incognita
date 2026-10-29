@@ -14,7 +14,8 @@ struct GlobeUniforms {
     float4 r0, r1, r2;  // world from view, by rows
     float4 u3;          // the safe area's insets (px): top, bottom, left, right
     float4 u4;          // x: illustrative prehistoric view suppresses modern political boundaries;
-                        // y: how far the drawing has crossed to the ground style (0 Wikipedia's, 1 the ground)
+                        // y: how far the drawing has crossed to the ground style (0 Wikipedia's, 1 the ground);
+                        // z: how far the ground has crossed to the night (0 by day, 1 the Earth at night)
 };
 
 struct GlobeVertex { float4 position [[position]]; };
@@ -49,6 +50,20 @@ constant float3 G_RIVER = float3(0x6F, 0xAE, 0xD3) / 255;
 constant float3 G_ICE = float3(0xF1, 0xF5, 0xF8) / 255;
 constant float3 G_ATMOS = float3(0xDC, 0xEE, 0xFB) / 255;
 constant float3 G_CHOSEN = float3(0x9E, 0x1F, 0x2C) / 255;     // the chosen country's edge: the locator's red, deeper
+
+// The night (tools/globe/night.py: the lights are NASA's Black Marble; the land, the sea and the air
+// are drawn): the land a dark slate, the sea darker and the abyss darkest, the ice a pale grey-blue,
+// the coast a faint line, the lights in sodium gold whitening at a city's core, the air's glow at the
+// limb; no borders, no rivers (the night is the physical Earth).
+constant float3 N_LAND = float3(0x1E, 0x24, 0x30) / 255;
+constant float3 N_SEA = float3(0x10, 0x18, 0x28) / 255;
+constant float3 N_DEEP = float3(0x09, 0x10, 0x1E) / 255;
+constant float3 N_ICE = float3(0x44, 0x4E, 0x60) / 255;
+constant float3 N_COAST = float3(0x3C, 0x58, 0x74) / 255;
+constant float3 N_LIGHT = float3(0xFF, 0xD6, 0x86) / 255;
+constant float3 N_CORE = float3(0xFF, 0xF4, 0xDC) / 255;
+constant float3 N_ATMOS = float3(0x5C, 0x82, 0xB8) / 255;
+constant float3 N_CHOSEN = float3(0x7E, 0x30, 0x3A) / 255;    // the chosen country's land, lifted towards the locator's red
 
 // The Persian style, every colour traced (CLAUDE.md › The Persian style's sources). The manuscript's
 // colours are sampled from LACMA's scans of the Khamsa of Nizami (M.85.237.16, Tabriz, 1529),
@@ -183,7 +198,8 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
                                texture2d<float> braidTex [[texture(5)]],
                                texture2d<float> groundTex [[texture(6)]],
                                texture2d<float> iceTex [[texture(7)]],
-                               texture2d<float> floorTex [[texture(8)]]) {
+                               texture2d<float> floorTex [[texture(8)]],
+                               texture2d<float> nightTex [[texture(9)]]) {
     constexpr sampler linearS(s_address::repeat, t_address::clamp_to_edge, filter::linear, mip_filter::linear);
     constexpr sampler nearestS(s_address::repeat, t_address::clamp_to_edge, filter::nearest);
     constexpr sampler spriteS(address::clamp_to_zero, filter::linear, mip_filter::linear);
@@ -191,7 +207,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float2 size = U.u0.xy, centre = U.u0.zw;
     float R = U.u1.x, scale = U.u1.y, zoom = U.u1.z, ringOn = U.u1.w;
     float selected = U.u2.x, highlight = U.u2.y, style = U.u2.z, pageOn = U.u2.w;
-    float ground = U.u4.y;
+    float ground = U.u4.y, night = U.u4.z;
     float x = (pix.x - centre.x) / R, y = (centre.y - pix.y) / R;
     float rr = sqrt(x * x + y * y);
 
@@ -263,8 +279,10 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
         page = mix(page, GOLD, clamp(max(max(gold, tick * 0.8), dots), 0.0, 1.0) * ringOn);
     }
     if (ground > 0.001) {                               // (the same for every pixel)
-        // the ground style's air: a thin bright haze just outside the limb, as it is seen edge on
-        page = mix(page, G_ATMOS, 0.85 * ground * exp(-max(ringpx, 0.0) / 3.5) * (rr >= 1 ? 1.0 : 0.0));
+        // the ground style's air: a thin bright haze just outside the limb, as it is seen edge on (by
+        // night, the air's blue glow, a little wider)
+        page = mix(page, mix(G_ATMOS, N_ATMOS, night), mix(0.85, 0.7, night) * ground * exp(-max(ringpx, 0.0) / mix(3.5, 5.0, night))
+                   * (rr >= 1 ? 1.0 : 0.0));
     }
     page = mix(page, ppage, style);
     // the globe: the point of the sphere under this pixel, and where it is on the map (worked out for
@@ -368,6 +386,24 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
             // roundness, and the air at the limb
             g *= 1 - 0.05 * (1 - z) * (1 - z);
             g = mix(g, G_ATMOS, 0.55 * pow(1 - z, 4.0));
+            if (night > 0.001) {                        // (the same for every pixel)
+                // the Earth at night: the measured lights over the drawn land and sea (N_ palette)
+                // (lifted a little: a village's glow is faint in the record, and the plain between
+                // cities is what shows a population's scale)
+                float lights = pow(nightTex.sample(linearS, uv, gradient2d(dx, dy)).r, 0.75);
+                float3 nland = N_LAND * (1 + 0.25 * hill);
+                nland = mix(nland, N_CHOSEN, 0.6 * m);
+                nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
+                nland = mix(nland, N_CORE, 0.7 * smoothstep(0.7, 1.0, lights));
+                float3 nsea = mix(N_SEA, N_DEEP, smoothstep(2500.0, 6000.0, depthM)) * (1 + 0.06 * fl);
+                nsea = mix(nsea, N_ICE * (0.97 + 0.04 * jag), smoothstep(0.30, 0.55, ice + 0.25 * (jag - 0.5)));
+                float3 n = mix(nsea, nland, landa);
+                n = mix(n, N_COAST, 0.5 * stroke(d, 0.6 * scale * min(pow(k, 0.3), 1.5), fwD));
+                // roundness: the limb darker, a sphere by night; and the air's glow at it
+                n *= 1 - 0.3 * (1 - z) * (1 - z);
+                n = mix(n, N_ATMOS, 0.6 * pow(1 - z, 3.0));
+                g = mix(g, n, night);
+            }
             col = mix(col, g, ground);
         }
     }

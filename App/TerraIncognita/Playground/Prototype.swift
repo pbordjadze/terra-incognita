@@ -36,6 +36,9 @@ struct Prototype: Identifiable {
     /// How it shows on the globe while it isn't running (touching it starts it), so the atlas has its
     /// things on it; nil for none (a parked direction, a pack not on this device yet).
     var doorway: Doorway?
+    /// An experience on the globe: the clouds and the sea thin to a veil while it runs, so what it
+    /// shows comes first. A prototype of the globe's own look (the quiet globe's rules) leaves them full.
+    var veils = true
     /// What starting it does with the stage. Everything it adds there goes when it ends.
     let start: (PrototypeStage) -> Void
 }
@@ -60,6 +63,11 @@ struct GlobeRequests: Equatable {
     var scheme = GlobeView.DragScheme.touchables
     /// Deeper than 8 for its close views (the deepest any stage asks for).
     var maxZoom: Double?
+    /// The quiet globe's rules (painting-company row 174; any stage asking sets each): names on
+    /// demand, the clouds clear where the reader looks, the caption gone at rest.
+    var quietNames = false
+    var quietClouds = false
+    var quietFrame = false
 }
 
 /// A full-screen surface over the paused globe: a native experience with a map of its own (the ocean),
@@ -173,6 +181,11 @@ final class PrototypeStage {
 
     /// The parked still sea: the globe's sea hidden until the prototype ends.
     func stillSea() { request { $0.seaHidden = true } }
+
+    /// The quiet globe's rules, each until the prototype ends.
+    func quietNames() { request { $0.quietNames = true } }
+    func quietClouds() { request { $0.quietClouds = true } }
+    func quietFrame() { request { $0.quietFrame = true } }
 
     /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
     func describe(title: String, text: String) {
