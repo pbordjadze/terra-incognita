@@ -190,7 +190,8 @@ Keep design discussions and plans in that private repository.
   their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
-  offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
+  offline, the runtime-2 packs drawn by the globe (their date moved, nothing left after), and the
+  herds' animals moving with the date (runtime 5).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by
