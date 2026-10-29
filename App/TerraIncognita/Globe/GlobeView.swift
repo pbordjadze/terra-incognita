@@ -102,7 +102,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private weak var worldDragRecognizer: UIPanGestureRecognizer?
     /// Where the touch that may become a world drag began.
     private var worldDragStart: CGPoint?
-    /// The authored sequence shares this renderer without its idle spin or other encounter marks.
+    /// The authored sequence shares this renderer without its idle spin or other encounter marks: the
+    /// markers and what the globe draws for the other stages (`addOverlay`) are hidden meanwhile.
     var authoredMode = false {
         didSet {
             guard authoredMode != oldValue else { return }
@@ -113,9 +114,17 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 for m in markers { m.view.isHidden = true }
                 exposeAtlasObjects()
             }
+            for o in overlays { o.isHidden = authoredMode }
             needsDraw = true
         }
     }
+    /// What the stages have added above the globe's drawing (`addOverlay`), in order.
+    private var overlays: [UIView] = []
+    /// When the reader's own hands last turned, pinched or dragged the globe.
+    private var lastHands: CFTimeInterval = -100
+    /// The reader's fingers are on the globe, or were within the last second: a script's flight asked
+    /// for now is dropped (the reader's hands win).
+    var handsOn: Bool { touching > 0 || CACurrentMediaTime() - lastHands < 1.0 }
     /// A prototype asked the globe to stay where the reader leaves it: no idle turn.
     var holdsStill = false
     /// Modern coastlines remain an explicitly labelled geographic reference. Contemporary political
@@ -201,9 +210,17 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         overlay.isUserInteractionEnabled = false
         overlay.frame = bounds
         overlay.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlay.isHidden = authoredMode
         insertSubview(overlay, at: 0)
         // (a subview's index counts the sky's and the sea's layers too, so at 0 it would land under them)
         if let top = sky?.layer ?? sea?.layer { layer.insertSublayer(overlay.layer, above: top) }
+        overlays.append(overlay)
+    }
+
+    /// Takes an overlay away (the stage that added it has ended).
+    func removeOverlay(_ overlay: UIView) {
+        overlay.removeFromSuperview()
+        overlays.removeAll { $0 === overlay }
     }
 
     /// An authored experience's canvas (a lens, `PrototypeStage.openLens`): above everything on the
@@ -870,6 +887,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func worldDragged(_ g: UIPanGestureRecognizer) {
         let p = g.location(in: self)
+        lastHands = CACurrentMediaTime()
         switch g.state {
         case .began:
             touched()
@@ -894,6 +912,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func pan(_ g: UIPanGestureRecognizer) {
+        lastHands = CACurrentMediaTime()
         switch g.state {
         case .began: onUserNavigation?(); touching += 1; touched()
         case .changed:
@@ -911,6 +930,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func pinch(_ g: UIPinchGestureRecognizer) {
+        lastHands = CACurrentMediaTime()
         switch g.state {
         case .began: onUserNavigation?(); touching += 1; touched()
         case .changed:
@@ -933,6 +953,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func doubleTap(_ g: UITapGestureRecognizer) {
         onUserNavigation?()
+        lastHands = CACurrentMediaTime()
         touched()
         let target = unproject(g.location(in: self)) ?? (lon: lon0, lat: lat0)
         let z = zoom < zoomLimit / 2 ? min(zoom * 2, zoomLimit) : 1
@@ -1156,10 +1177,6 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
                 || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
             if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true; shownChanged = true }
             if !hidden, m.animates, !still { animating = true }
-            // A tiny weight/breath shift belongs to the marker's layer; it never requests a map draw.
-            if m.breathes, let image = m.view.imageView {
-                image.transform = CGAffineTransform(scaleX: 1, y: still ? 1 : 1 + 0.004 * sin(now * 1.2))
-            }
         }
         if shownChanged { exposeAtlasObjects() }
         sea?.frame(of: self)

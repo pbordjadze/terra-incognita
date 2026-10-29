@@ -2,12 +2,13 @@
   "id": "{{id}}",
   "title": "{{title}}",
   "summary": "One line for the workbench: what this shows.",
-  "runtime": 3,
+  "runtime": 4,
   "presentation": "globe",
   "scripts": ["main.js"],
   "anchor": { "lon": 10, "lat": 35, "zoom": 2 },
   "doorway": { "lon": 10, "lat": 35, "label": "{{title}}",
-               "look": { "image": "marker.png", "size": [28, 28], "minZoom": 1.5 } },
+               "looks": [ { "image": "marker.png", "size": [28, 28], "minZoom": 1.5 },
+                          { "image": "doorway-glint.png", "size": [11, 11], "maxZoom": 1.5, "every": 10, "for": 1.2 } ] },
   "taps": false,
   "shelf": "current"
 }

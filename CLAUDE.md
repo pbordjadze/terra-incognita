@@ -2,8 +2,9 @@
 
 A playground for a wandering atlas: the app opens on a live globe, the ground as satellites saw it
 this month in a light key (the Wikipedia style it opened on before is parked), with each prototype's
-doorway on it, and a developer workbench starts one prototype at a time. Earlier directions (the
-Persian style, the plate films) are parked prototypes, kept whole. This file is the map and the rules.
+doorway alive on it, and several prototypes run on it at once, entered and left by touch; a developer
+workbench lists them. Earlier directions (the Persian style, the plate films) are parked prototypes,
+kept whole. This file is the map and the rules.
 
 ## Documentation scope
 
@@ -17,12 +18,17 @@ Keep design discussions and plans in that private repository.
 
 - **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
   workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
-  prototype's doorway on it (hidden at the whole-Earth view; touching one starts it), the workbench
-  button (top right) and, while a prototype is active, its chip (Open, ✕) and its panel. `Playground`
-  holds the one active `PrototypeStage`, which owns everything its prototype adds (markers and
-  sprites, a pack's script, geography and pictures drawn by the globe, a date, words at the foot, a
-  panel, a style, a screen, a lens) and takes it all away when it ends: one at a time is the
-  workbench's isolation rule. A lens (`openLens`, `Prototype.swift`) is a native experience on the
+  prototype's doorway on it (each with a life of its own: a glint from afar, itself closer, stirring;
+  touching one starts it where the reader is), the workbench button (top right) and, while prototypes
+  run, the chip of the one in front (its name and how many others run, Open, ✕) and its panel.
+  `Playground` holds the running `PrototypeStage`s, the one in front last (runtime 4, `docs/runtime3.md`
+  › Many at once): a touch on a stage's things brings it to the front, whose date, caption, gesture
+  scheme, historical reference and flights are the globe's; the playground merges what the stages ask of
+  the globe (`applyGlobeState`) and routes the globe's touches to them. Each stage owns everything its
+  prototype adds (markers and sprites, a pack's script, geography and pictures drawn by the globe, a
+  date, words at the foot, a panel, a style, a screen, a lens) and takes it all away when it ends, so
+  the Live counts come back exactly: that is the workbench's isolation rule. At most six run at once.
+  A lens (`openLens`, `Prototype.swift`) is a native experience on the
   globe itself: its canvas lies over the one globe (`GlobeView.addLens`, above the names, taking no
   touches) and drives its authored camera, its chrome lies over the playground (whose buttons and
   caption keep their place unseen), and closing it puts back everything it set on the globe
@@ -32,15 +38,16 @@ Keep design discussions and plans in that private repository.
   JavaScriptCore in `PackScript.swift` (runtime 3, `Prototypes/_runtime/terra.js`; no web view). The
   globe draws for them: `GeoLayers.swift` (geography, touchable), `GlobeImages.swift` (pictures lying
   on the globe), `GlobeMarker` sprites (paths, frames, a look per zoom), `PackPanel.swift`. The
-  workbench's Live line counts stages, markers, globes, films and scripts: ending a prototype returns
-  them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
+  workbench's Live line counts stages, markers, globes, films and scripts: ending every prototype
+  returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
   - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
     `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf` (the sea between), `-look`/`-film`,
     `-globeStyle persian` start the matching prototype.
   - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
-    `serve.cjs` runs a pack over a stand-in globe in a browser, `check.cjs` checks one headless and
-    screenshots it).
+    `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
+    `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
+    `glint_png.py` draws the doorways' glint).
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
   - `AtlasCanvas`: draws at most three plates as Core Animation layers (the camera's, its parent
@@ -159,7 +166,8 @@ Keep design discussions and plans in that private repository.
   `Water/` (no longer in the app; `docs/water-engineering.md`).
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
-  prototypes in succession with the live counts back to the plain globe's, a lens given back
+  prototypes in succession with the live counts back to the plain globe's, three entered by touching
+  their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
   offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).

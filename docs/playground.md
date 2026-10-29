@@ -1,13 +1,16 @@
 # The playground
 
-The app opens on the Wikipedia globe. Every prototype has a **doorway** on it while it isn't running
-(hidden at the whole-Earth view, showing as you come closer): touch one and it starts. The
-**workbench** (the small grid button, top right) lists them all, parked ones too. One prototype runs
-at a time; its sprites, pictures, geography, script and screens are made when it starts and released
-when it ends. That is a workbench rule for comparing things cleanly, not a decision about the
-finished atlas.
+The app opens on the globe. Every prototype has a **doorway** on it while it isn't running, with a
+small life of its own (a glint now and then from afar, itself as you come closer, stirring): touch
+one and it starts, where you are, beside whatever else is running. The **workbench** (the small grid
+button, top right) lists them all, parked ones too. Several prototypes run at once on the one globe
+(runtime 4, [`docs/runtime3.md`](runtime3.md) › Many at once): the one in **front** is the one you are
+with (the last started or touched); its name is on the chip, with how many others run; its date and
+caption are at the foot; ✕ ends it and the next is in front; the workbench's **The plain globe** ends
+them all. Each one's sprites, pictures, geography, script and screens are made when it starts and
+released when it ends, and the Live counts come back exactly.
 
-Every new experience or map element is a **pack on runtime 3**: data, pictures and a small script
+Every new experience or map element is a **pack on the runtime** (3, or 4 for a doorway with a life): data, pictures and a small script
 that runs in JavaScriptCore inside the app, with no web view; the globe draws what it asks for.
 [`docs/runtime3.md`](runtime3.md) is the contract. Native code is for the stage itself and for new
 runtime tools (CLAUDE.md › The runtime).
@@ -37,10 +40,11 @@ For Claude Code or Codex, the whole loop for a pack (most new ideas):
 If a pack needs something the runtime can't do yet, add it to the runtime (Swift, the next IPA)
 rather than working around it; there are no web views to fall back on.
 
-In the app: a doorway or a workbench row starts a prototype; the chip at the top right names it,
-**Open** shows its panel (or its screen) and ✕ returns the atlas. The workbench's **Live** line counts
-stages, markers, globes, films and scripts: with nothing running it reads one globe and nothing else,
-and a prototype that leaves something behind shows up there (and fails `PlaygroundTests`).
+In the app: a doorway or a workbench row starts a prototype beside the ones running (a row of one
+running brings it to the front); the chip at the top right names the one in front, **Open** shows its
+panel (or its screen) and ✕ ends it. The workbench's **Live** line counts stages, markers, globes,
+films and scripts: with nothing running it reads one globe and nothing else, and a prototype that
+leaves something behind shows up there (and fails `PlaygroundTests`).
 
 ## Kinds of prototype
 
@@ -57,8 +61,14 @@ and a prototype that leaves something behind shows up there (and fails `Playgrou
 python3 tools/playground/playground.py new tide-pool          # scaffolds Prototypes/tide-pool/
 node tools/playground/serve.cjs                               # http://127.0.0.1:8790/ : every pack, over a stand-in globe
 node tools/playground/check.cjs tide-pool                     # headless Chromium: runs it, fails on errors, screenshots
+node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
+
+The preview's `/atlas` is the living globe: every current pack's doorway on the one stand-in globe,
+each alive; `/preview/<id>?with=<id>,<id>` runs a pack beside others. A pack's doorway is its first
+reader's first sight of it: give it a glint from afar (`python3 tools/playground/glint_png.py` draws
+the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
 the sea is tapped); `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/` use the
@@ -93,9 +103,11 @@ of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
 
 - **Update** a pack: change its files and push; the publisher gives it the next revision only
   if its contents changed. The workbench marks it *available*, downloads it on the next tap and
-  keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again.
-- **Compare**: the active prototype's chip has an ✕ back to the atlas and the workbench's first
-  row starts the last prototype again; two variants are two packs (`tide-pool`, `tide-pool-b`).
+  keeps the one before: **Previous** (under Packs) switches back, **Newest** forward again (a running
+  copy of the pack ends with the switch; the next start opens the chosen revision).
+- **Compare**: start both and touch one, then the other: each comes to the front with its own date
+  and caption; the chip's ✕ ends the one in front and the workbench's first row starts the last one
+  again; two variants are two packs (`tide-pool`, `tide-pool-b`).
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
   Parked shelf, still one tap away (and takes its doorway off the globe).
 - **Remove**: delete the folder or entry. A published pack is withdrawn with
@@ -151,4 +163,4 @@ files never change under the same revision (they are cached forever).
 
 Anything in Swift or Metal: a runtime tool, a native prototype, the globe, the host, the workbench,
 `terra.js` (the runtime ships in the app), new entitlements or permissions. A pack's scripts, data,
-pictures, doorway and anchor do not.
+pictures, doorway (its looks, path and breath included) and anchor do not.

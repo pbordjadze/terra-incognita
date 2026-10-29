@@ -1,11 +1,14 @@
 'use strict';
-// The playground's desktop preview: every runtime-3 pack (docs/runtime3.md) run with the same terra.js the
-// app runs, over a stand-in globe, so a pack can be seen without a Mac.
+// The playground's desktop preview: every runtime-3 and runtime-4 pack (docs/runtime3.md) run with the same
+// terra.js the app runs, over a stand-in globe, so a pack can be seen without a Mac.
 //   node tools/playground/serve.cjs [--port 8790] [--root <dir>]... [--packs build/packs]
 //   /                              every pack in Prototypes/, then in each --root (a folder of pack folders)
 //   /preview/<id>                  the preview: ?device=iphone|ipad, &start=1 (past the doorway), &bare=1 (the screen
 //                                  alone, for screenshots), &textScale=<1-3.2>, &reduceMotion=1, &idleAfter=<seconds>,
-//                                  &timers=host (terra.js's own timers, as in JavaScriptCore)
+//                                  &timers=host (terra.js's own timers, as in JavaScriptCore), &with=<id>,<id> (more
+//                                  packs on the same globe, their doorways alive: docs/runtime3.md › Many at once)
+//   /atlas                         the living globe: every current pack's doorway on the one globe, each alive; touch
+//                                  one to start its pack beside the others (the same query as /preview)
 //   /Prototypes/_runtime/terra.js  the runtime (also at /_runtime/terra.js)
 //   /pack/<id>/<path>              a pack's files
 //   /_harness/...                  the preview's own files (harness/), the stand-in globe's land and countries, the
@@ -102,9 +105,9 @@ function indexPage(packs, extraRoots, packsDir) {
     if (p.error) return `<li><strong>${esc(p.id)}</strong> <span class="bad">${esc(p.error)}</span></li>`;
     const where = p.root === path.join(ROOT, 'Prototypes') ? '' : ` &middot; ${esc(path.relative(ROOT, p.dir) || p.dir)}`;
     const meta = `${esc(p.id)} &middot; runtime ${esc(m.runtime)} &middot; ${esc(m.shelf || 'current')}${where}`;
-    const links = m.runtime === 3
+    const links = m.runtime === 3 || m.runtime === 4
       ? `<a href="/preview/${esc(p.id)}?device=iphone">iPhone</a> <a href="/preview/${esc(p.id)}?device=ipad">iPad</a>`
-      : `<span class="note">A runtime-${esc(m.runtime)} web page: this preview runs runtime-3 packs (scripts drawn by the globe).</span>`;
+      : `<span class="note">A runtime-${esc(m.runtime)} web page: this preview runs runtime-3 and runtime-4 packs (scripts drawn by the globe).</span>`;
     return `<li><strong>${esc(m.title || p.id)}</strong> <span class="meta">${meta}</span><p>${esc(m.summary || '')}</p>${links}</li>`;
   });
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -120,6 +123,8 @@ function indexPage(packs, extraRoots, packsDir) {
 </style></head><body><main>
 <h1>Playground preview</h1>
 <p class="meta">Each pack over a stand-in globe, run with the app's terra.js. Edit a file and reload.${extraRoots.length ? ' Also from: ' + extraRoots.map((r) => esc(path.relative(ROOT, r) || r)).join(', ') + '.' : ''}${packsDir ? ' Packed output is served at <a href="/packs/catalog.json">/packs/catalog.json</a>.' : ''}</p>
+<p><strong>The living globe</strong> <span class="meta">every current pack's doorway on the one globe, each alive; touch one to start it beside the others</span><br>
+<a href="/atlas?device=iphone">iPhone</a> <a href="/atlas?device=ipad">iPad</a></p>
 <ul>${rows.join('') || '<li>No packs yet.</li>'}</ul>
 </main></body></html>`;
 }
@@ -164,18 +169,37 @@ function start(options) {
       return font ? file(font) : sendText(res, 404, 'Not found');
     }
 
-    m = /^\/preview\/([^/]+)\/?$/.exec(p);
+    // the preview of one pack (with others beside it), or the living globe: every current pack at once
+    m = /^\/preview\/([^/]+)\/?$/.exec(p) || (/^\/atlas\/?$/.test(p) ? [p, null] : null);
     if (m) {
-      const pack = findPack(m[1]);
-      if (!pack) return sendText(res, 404, `${m[1]}: no such pack (no ${m[1]}/prototype.json in ${roots.map((r) => path.relative(ROOT, r) || r).join(', ')})`);
-      if (pack.error) return sendText(res, 404, `${m[1]}: ${pack.error}`);
       const asked = url.searchParams.get('device');
       const device = asked === 'phone' ? 'iphone' : DEVICES.includes(asked) ? asked : 'iphone';
       const query = Object.fromEntries(url.searchParams);
+      const entry = (pack) => ({ id: pack.id, manifest: pack.manifest, files: packFiles(pack.dir), where: path.relative(ROOT, pack.dir) || pack.dir });
+      const runs = (pack) => pack && !pack.error && (pack.manifest.runtime === 3 || pack.manifest.runtime === 4);
+      let packs, primary, title;
+      if (m[1]) {
+        const pack = findPack(m[1]);
+        if (!pack) return sendText(res, 404, `${m[1]}: no such pack (no ${m[1]}/prototype.json in ${roots.map((r) => path.relative(ROOT, r) || r).join(', ')})`);
+        if (pack.error) return sendText(res, 404, `${m[1]}: ${pack.error}`);
+        packs = [entry(pack)];
+        primary = pack.id;
+        title = pack.manifest.title || m[1];
+        // ?with=<id>,<id>: more packs on the same globe (unknown or unrunnable ones are left out, and said so)
+        for (const id of String(url.searchParams.get('with') || '').split(',').map((x) => x.trim()).filter(Boolean)) {
+          const other = findPack(id);
+          if (id !== pack.id && runs(other) && !packs.some((k) => k.id === id)) packs.push(entry(other));
+        }
+      } else {
+        packs = listPacks(roots).filter((k) => runs(k) && (k.manifest.shelf || 'current') !== 'parked').map(entry);
+        primary = null;
+        title = 'The living globe';
+      }
+      const first = packs[0] || {};
       const page = fs.readFileSync(path.join(HARNESS, 'harness.html'), 'utf8')
-        .replace('__TITLE__', () => esc(pack.manifest.title || m[1]))
-        .replace('__PROTO__', () => jsonForScript({ id: m[1], manifest: pack.manifest, device, query, files: packFiles(pack.dir),
-          runtime: '/Prototypes/_runtime/terra.js', where: path.relative(ROOT, pack.dir) || pack.dir }));
+        .replace('__TITLE__', () => esc(title))
+        .replace('__PROTO__', () => jsonForScript({ id: primary || first.id || null, manifest: primary ? first.manifest : null, files: primary ? first.files : [],
+          where: primary ? first.where : null, packs, primary, device, query, runtime: '/Prototypes/_runtime/terra.js' }));
       return send(res, 200, page, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': PAGE_CSP });
     }
 

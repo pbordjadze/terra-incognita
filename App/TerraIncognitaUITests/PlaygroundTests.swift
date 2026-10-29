@@ -35,7 +35,8 @@ final class PlaygroundTests: XCTestCase {
     }
 
     /// A native prototype on the globe and its sequence on the same globe, then a pack lying on the
-    /// globe, then the atlas again: each start ends the one before, and nothing they made outlives them.
+    /// globe beside it (runtime 4: starting another no longer ends the first), each ended from the chip
+    /// in turn, then the atlas again: nothing they made outlives them.
     @MainActor func testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind() {
         let app = XCUIApplication()
         app.launch()
@@ -56,11 +57,14 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch.exists, "and gives the globe back")
 
         startPrototype("sea-between", in: app)
-        XCTAssertFalse(app.buttons["camelidAnimal"].firstMatch.exists, "Starting another ends the first")
         XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45),
                       "The leaf, a pack now, lies on the globe and says what it is")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("sea between"), "The leaf is in front")
+        XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("1 more"), "The camel runs on behind it (several at once)")
         Thread.sleep(forTimeInterval: 1.5)
         attach("12-leaf", in: app)
+        endFront(leaving: "Camel", in: app)
+        XCTAssertFalse(app.staticTexts["otherPrototypes"].firstMatch.exists, "Ending the leaf leaves the camel alone in front")
         endPrototype(in: app)
 
         XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15))
@@ -69,6 +73,79 @@ final class PlaygroundTests: XCTestCase {
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Back on the plain globe, nothing from either prototype is alive")
         attach("13-live-after", in: app)
+    }
+
+    /// The living globe (runtime 4): the doorways alive on the globe at once, three dissimilar
+    /// experiences entered by touching them (a lens, another lens, a pack), the chip naming the one in
+    /// front and counting the others, and each ended from the chip in turn with the Live counts back
+    /// exactly to what they were before it.
+    @MainActor func testSeveralExperiencesLiveTogetherByTouch() {
+        let app = XCUIApplication()
+        // held where the camel's, the fossil's and the leaf's doorways are all in view on the 13-inch iPad
+        app.launchArguments = ["-playground-reset", "-globe-at", "33", "30", "2"]
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 45))
+        openWorkbench(in: app)
+        assertLive(Self.plainGlobeLive, in: app, "Before anything: the plain globe")
+        app.buttons["workbenchClose"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
+
+        // the camel, by its doorway: a native one opens straight away, on the one globe; closing its
+        // sequence leaves it running on the globe, and the camera where the reader had it
+        let camelDoor = app.buttons["doorway.camelid"].firstMatch
+        XCTAssertTrue(camelDoor.waitForExistence(timeout: 20), "The camel's doorway is alive on the globe")
+        attach("70-doorways-alive", in: app)
+        camelDoor.tap()
+        let camelClose = app.buttons["camelidClose"].firstMatch
+        XCTAssertTrue(camelClose.waitForExistence(timeout: 20), "Touching the camel's doorway opens its sequence")
+        camelClose.tap()
+        XCTAssertTrue(app.buttons["camelidAnimal"].firstMatch.waitForExistence(timeout: 15), "The camel stays on the globe")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Camel"))
+
+        // the whale, by its doorway, beside the camel
+        let fossilDoor = app.buttons["doorway.whale"].firstMatch
+        XCTAssertTrue(fossilDoor.waitForExistence(timeout: 15), "The fossil's doorway is still there, in view")
+        fossilDoor.tap()
+        let whaleClose = app.buttons["whaleClose"].firstMatch
+        XCTAssertTrue(whaleClose.waitForExistence(timeout: 20), "Touching the fossil opens the whale's visit")
+        whaleClose.tap()
+        XCTAssertTrue(app.buttons["whaleFossil"].firstMatch.waitForExistence(timeout: 15), "The fossil stays on the globe")
+        XCTAssertTrue(app.buttons["camelidAnimal"].firstMatch.exists, "and so does the camel: nothing was reset")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Whale"), "The whale is in front")
+        XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("1 more"), "The camel runs on behind")
+        attach("71-two-alive", in: app)
+
+        // the leaf, a pack, by its doorway: its script runs beside both
+        let leafDoor = app.buttons["doorway.sea-between"].firstMatch
+        XCTAssertTrue(leafDoor.waitForExistence(timeout: 15), "The leaf's doorway is in view")
+        leafDoor.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45), "The leaf starts and says what it is")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("sea between"), "The leaf is in front")
+        XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("2 more"), "The camel and the whale run on behind")
+        Thread.sleep(forTimeInterval: 1.5)
+        attach("72-three-alive", in: app)
+        openWorkbench(in: app)
+        assertLive(from: "stages 3 · markers ", to: " · globes 1 · films 0 · scripts 1", in: app,
+                   "Three stages, one script, the one globe (the leaf's own sprites are its own count)")
+        app.buttons["workbenchClose"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
+
+        // ending each from the chip, front first: the counts come back exactly
+        endFront(leaving: "Whale", in: app)
+        openWorkbench(in: app)
+        assertLive("stages 2 · markers 2 · globes 1 · films 0 · scripts 0", in: app, "Ending the leaf leaves the camel and the whale as they were")
+        app.buttons["workbenchClose"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
+        endFront(leaving: "Camel", in: app)
+        openWorkbench(in: app)
+        assertLive("stages 1 · markers 1 · globes 1 · films 0 · scripts 0", in: app, "Ending the whale leaves the camel as it was")
+        app.buttons["workbenchClose"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
+        endPrototype(in: app)
+        openWorkbench(in: app)
+        assertLive(Self.plainGlobeLive, in: app, "Ending the camel leaves the plain globe")
+        attach("73-plain-again", in: app)
     }
 
     /// The Persian and Wikipedia styles, the still sea and the films are parked, not gone.

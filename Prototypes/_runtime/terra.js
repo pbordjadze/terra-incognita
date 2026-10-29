@@ -1,5 +1,5 @@
-// The playground's runtime, version 3: the whole API a pack's script gets from its host
-// (docs/runtime3.md is the contract). The app runs it in JavaScriptCore before a pack's scripts
+// The playground's runtime, version 4 (3 with the stage shared: docs/runtime3.md › Many at once):
+// the whole API a pack's script gets from its host (docs/runtime3.md is the contract). The app runs it in JavaScriptCore before a pack's scripts
 // (App/TerraIncognita/Playground/PackScript.swift), and so does the desktop preview in a browser
 // (tools/playground/harness/): a pack never includes it itself.
 // The host provides `__terraSend(message)` (it may answer with a value) and `__terraBoot`, and calls
@@ -99,13 +99,19 @@
   }
 
   var terra = {
-    runtime: 3,
+    runtime: 4,
     /** { id, revision, origin: 'bundled' | 'downloaded' | 'preview' } */
     pack: boot.pack || { id: 'preview', revision: 0, origin: 'preview' },
     /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded) } */
     settings: Object.assign({ reduceMotion: false, textScale: 1, active: true }, boot.settings || {}),
+    /** True while this is the experience in front, the one the reader is with (runtime 4: several run at
+        once; the front one's date, caption, scheme and flights are the globe's). */
+    focus: boot.focus !== false,
+    /** How the reader came in: { by: 'doorway' | 'workbench' | 'link' | 'launch', lon, lat, zoom } (where
+        the reader was). By a doorway, the pack starts where the reader is: no flight to its anchor. */
+    entry: boot.entry || { by: 'workbench', lon: null, lat: null, zoom: null },
 
-    /** 'settings', 'camera', 'touch' (and 'tap', its taps alone), 'time', 'open', 'panel', 'close' */
+    /** 'settings', 'camera', 'touch' (and 'tap', its taps alone), 'time', 'open', 'panel', 'focus', 'close' */
     on: function (type, fn) {
       (listeners[type] = listeners[type] || []).push(fn);
       if (type === 'settings') { try { fn(terra.settings); } catch (e) { report(e); } }
@@ -191,13 +197,17 @@
       hide: function () { send({ type: 'panel', op: 'hide' }); }
     },
 
-    /** The host's side: settings, camera, touch, time, timers, open, panel, close. */
+    /** The host's side: settings, camera, touch, time, timers, open, panel, focus, close. */
     _receive: function (message) {
       if (!message || typeof message !== 'object') return;
       switch (message.type) {
         case 'settings':
           Object.assign(terra.settings, message.settings || {});
           emit('settings', terra.settings);
+          break;
+        case 'focus':
+          terra.focus = !!message.front;
+          emit('focus', { front: terra.focus, by: message.by || 'host' });
           break;
         case 'camera':
           emit('camera', terra.camera);

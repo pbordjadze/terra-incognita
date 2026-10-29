@@ -1,17 +1,28 @@
-// The desktop preview's host: a stand-in for the app around one runtime-3 pack (docs/runtime3.md), so a pack
-// can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and borders,
-// orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the camera with the
-// numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
+// The desktop preview's host: a stand-in for the app around runtime-3 and runtime-4 packs (docs/runtime3.md),
+// so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
+// borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
+// camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
 // App/TerraIncognita/Globe/GeoLayers.swift draws them: its inks, dashes, halos and reading scale), the foot (the
-// caption and the date's strip, as GlobeFoot), the panel, the chip (Open, ✕), the doorway, and touch.
-// The pack's scripts run in a worker (worker.js) with only what JavaScriptCore gives them; this page is their host:
-// the worker posts what `__terraSend` is given, and this page answers with `terra._receive` messages.
+// caption and the date's strip, as GlobeFoot), the panel, the chip (Open, ✕), the doorways, and touch.
+// Several packs share the stage, as in the app (docs/runtime3.md › Many at once): every pack on the page has
+// its doorway on the globe, alive; touching one starts that pack beside the others (no flight to its anchor);
+// a touch on a running pack's things brings it to the front, whose date, caption, scheme and flights are the
+// globe's; ✕ ends the front one. Each pack's scripts run in a worker of their own (worker.js) with only what
+// JavaScriptCore gives them; this page is their host: a worker posts what `__terraSend` is given, and this
+// page answers with `terra._receive` messages.
 // Close to the app, not pixel-identical: the globe is drawn from vectors on a canvas, not by Globe.metal.
 // Query: device=iphone|ipad, start=1 (past the doorway), bare=1 (the screen alone), textScale, reduceMotion=1,
 // idleAfter=<seconds> (the idle turn's wait, 8 by default), timers=host (terra.js's own timers, as in JavaScriptCore).
 (function () {
   'use strict';
-  const P = window.__proto, M = P.manifest || {}, ID = P.id, Q = P.query || {};
+  const P = window.__proto, Q = P.query || {};
+  // the packs on this page: /preview/<id> is one (and ?with=<id>,<id> more); /atlas is every current pack
+  const PACKS = (P.packs || [{ id: P.id, manifest: P.manifest, files: P.files, where: P.where }])
+    .map((k) => ({ id: k.id, M: k.manifest || {}, FILES: new Set(k.files || []), where: k.where }));
+  // the pack the page is about (its Start, its doorway and state for the checks); none on /atlas
+  const PRIMARY = P.primary === undefined ? (PACKS[0] ? PACKS[0].id : null) : P.primary;
+  const primaryPack = PACKS.find((k) => k.id === PRIMARY) || null;
+  const M = primaryPack ? primaryPack.M : {}, ID = PRIMARY || 'atlas';
   const DEVICES = {
     iphone: { size: [393, 852], safe: [59, 34], label: 'iPhone' },
     ipad: { size: [1032, 1376], safe: [24, 20], label: 'iPad' },
@@ -19,7 +30,6 @@
   const DEV = DEVICES[P.device] || DEVICES.iphone;
   const [W, H] = DEV.size, [SAFE_TOP, SAFE_BOTTOM] = DEV.safe;
   const BARE = Q.bare === '1';
-  const FILES = new Set(P.files || []);
   const D = Math.PI / 180, TAU = 2 * Math.PI;
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const num = (v, fallback) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
@@ -27,6 +37,8 @@
   const now = () => performance.now();
   const later = window.setTimeout.bind(window), cancel = window.clearTimeout.bind(window);
   const t0 = now();
+  // the most packs that run at once (the app's Playground.stageBudget): the next started ends the oldest
+  const STAGE_BUDGET = 6;
 
   // The palette: the app's Wikipedia style (tools/globe/preview.py, Globe.metal), and GeoLayers.swift's inks
   const PAPER = '#F6F2E7', SEA = '#DDF3FD', LAND = '#F5EED8', COAST = '#1C7AB0', BORDER = '#8C8478', GOLD = '#B08A3E';
@@ -42,8 +54,11 @@
   device.style.setProperty('--safe-bottom', SAFE_BOTTOM + 'px');
   if (BARE) document.body.classList.add('bare');
   $('frame').classList.add(P.device === 'ipad' ? 'ipad' : 'iphone');
-  $('title').textContent = M.title || ID;
-  $('meta').textContent = ID + ', runtime ' + M.runtime + ', ' + DEV.label + ' (' + W + ' × ' + H + ' pt)' + (P.where && !/^Prototypes\//.test(P.where) ? ', from ' + P.where : '');
+  $('title').textContent = primaryPack ? (M.title || ID) : 'The living globe';
+  $('meta').textContent = (primaryPack ? ID + ', runtime ' + M.runtime : PACKS.length + ' packs on the one globe')
+    + ', ' + DEV.label + ' (' + W + ' × ' + H + ' pt)'
+    + (primaryPack && primaryPack.where && !/^Prototypes\//.test(primaryPack.where) ? ', from ' + primaryPack.where : '')
+    + (PACKS.length > 1 && primaryPack ? ', with ' + PACKS.filter((k) => k !== primaryPack).map((k) => k.id).join(', ') : '');
   for (const d of ['iphone', 'ipad']) {
     const a = $('to-' + d), q = new URLSearchParams(Q);
     q.set('device', d);
@@ -51,7 +66,6 @@
     if (d === P.device) a.setAttribute('aria-current', 'page');
   }
   $('chip').style.top = $('start').style.top = (SAFE_TOP + 4) + 'px';
-  $('chip-name').textContent = M.title || ID;
   $('foot').style.paddingBottom = (14 + SAFE_BOTTOM) + 'px';
 
   const settings = {
@@ -62,6 +76,7 @@
   const idleAfter = clamp(Q.idleAfter === undefined ? 8 : parseFloat(Q.idleAfter) || 0, 0, 1e6);
 
   // ---- for checks (tools/playground/check.cjs, harness_check.cjs) and the curious
+  // (running, started and ended are the primary pack's; the stages' own are in state().stages)
   const api = window.__playground = {
     ready: false, running: false, started: false, ended: false, frame: 0,
     device: { name: P.device, width: W, height: H },
@@ -69,7 +84,7 @@
   };
 
   // ---- the log
-  const shorten = (s) => String(s).split(location.origin + '/pack/' + ID + '/').join('').split(location.origin).join('');
+  const shorten = (s) => { let out = String(s); for (const k of PACKS) out = out.split(location.origin + '/pack/' + k.id + '/').join(''); return out.split(location.origin).join(''); };
   function log(source, level, message) {
     const entry = { t: (now() - t0) / 1000, source, level, message: shorten(message) };
     api.log.push(entry);
@@ -86,6 +101,7 @@
   const hostWarn = (m) => log('host', 'warn', m);
   const warnedOnce = new Set();
   const warnOnce = (key, m) => { if (!warnedOnce.has(key)) { warnedOnce.add(key); hostWarn(m); } };
+  const noteOnce = (key, m) => { if (!warnedOnce.has(key)) { warnedOnce.add(key); log('host', 'info', m); } };
   window.addEventListener('error', (e) => log('harness', 'error', e.message + (e.filename ? ' (' + shorten(e.filename) + ':' + e.lineno + ')' : '')));
   window.addEventListener('unhandledrejection', (e) => log('harness', 'error', 'unhandled rejection: ' + (e.reason && e.reason.message || e.reason)));
 
@@ -102,10 +118,31 @@
   }
   measure();
 
+  // ---- the stages: one per pack on the page, running or not (its things, its script, its place in the order)
+  function makeStage(pack) {
+    return { id: pack.id, M: pack.M, FILES: pack.FILES, pack,
+      geo: new Map(), images: new Map(), sprites: new Map(), time: null, caption: { title: '', text: '' },
+      globe: { historical: false, still: false, maxZoom: null }, scheme: 'touchables', listensOpen: false,
+      worker: null, closing: null, early: [], timers: new Map(), pictures: new Map(), delivered: {},
+      running: false, started: false, ended: false, front: false, entry: null, postedCam: -1, t0: now() };
+  }
+  const stageById = new Map(PACKS.map((k) => [k.id, makeStage(k)]));
+  const primary = primaryPack ? stageById.get(PRIMARY) : null;
+  if (primary) api.delivered = primary.delivered;
+  /** The running stages, the one in front (the reader's) last. */
+  const stages = [];
+  const front = () => (stages.length ? stages[stages.length - 1] : null);
+  /** What the globe does for all of them: the front one's historical reference, still while any asks. */
+  const merged = () => ({ historical: !!(front() && front().globe.historical), still: stages.some((s) => s.globe.still) });
+  function zoomLimit() {   // the deepest zoom: 8, or the deepest any running pack asked for (terra.globe.set({ maxZoom }))
+    let z = 8;
+    for (const s of stages) if (s.globe.maxZoom) z = Math.max(z, s.globe.maxZoom);
+    return z;
+  }
+
   // ---- the camera (terra.camera: lon, lat, zoom 0.8-8; radius = the resting radius x zoom)
-  let zoomLimit = 8;   // the deepest zoom: 8, or what the pack asked for (terra.globe.set({ maxZoom }))
   const cam = { lon: -40, lat: 22, zoom: 1 };
-  let flight = null, lastTouch = -1e9, camVersion = 0, lastCamMove = -1e9, needsRender = true;
+  let flight = null, lastTouch = -1e9, lastHands = -1e9, camVersion = 0, lastCamMove = -1e9, needsRender = true;
   // something under the sprites changed: the cached layer is drawn again (camera moves are in its key)
   let layerVersion = 0;
   const dirty = () => { layerVersion++; needsRender = true; };
@@ -119,9 +156,15 @@
     dirty();
     cameraEvent();
   }
-  function flyTo(lon, lat, zoom, seconds) {
+  // the host's own flights (an anchor, a check), or a script's (`by`): a script's is honoured only while its
+  // stage is in front and the reader's hands are off the globe (no pack takes the stage from the reader)
+  function flyTo(lon, lat, zoom, seconds, by) {
     if (!Number.isFinite(+lon) || !Number.isFinite(+lat)) return hostError('terra.flyTo(' + lon + ', ' + lat + '): longitude and latitude must be numbers');
-    const to = { lon: wrapLon(+lon), lat: clamp(+lat, -80, 80), zoom: zoom == null || !Number.isFinite(+zoom) ? cam.zoom : clamp(+zoom, 0.8, zoomLimit) };
+    if (by) {
+      if (by !== front()) return noteOnce(by.id + ':fly-back', by.id + ': a flight asked for from the background is dropped (the reader is with another experience)');
+      if (pointers.size || now() - lastHands < 1000) return noteOnce(by.id + ':fly-hands', by.id + ': a flight asked for while the reader\'s hands are on the globe is dropped');
+    }
+    const to = { lon: wrapLon(+lon), lat: clamp(+lat, -80, 80), zoom: zoom == null || !Number.isFinite(+zoom) ? cam.zoom : clamp(+zoom, 0.8, zoomLimit()) };
     const ms = (seconds == null || !Number.isFinite(+seconds) ? 0.8 : Math.max(0, +seconds)) * 1000;
     if (settings.reduceMotion || ms <= 0) {           // Reduce Motion: arrive, don't travel
       flight = null;
@@ -148,14 +191,14 @@
     cameraMoved();
   }
   function zoomBy(k) {
-    cam.zoom = clamp(cam.zoom * k, 0.8, zoomLimit);
+    cam.zoom = clamp(cam.zoom * k, 0.8, zoomLimit());
     cameraMoved();
   }
 
-  // the camera told to the script: at most 20 times a second while it moves, and once when it stops
+  // the camera told to every running script: at most 20 times a second while it moves, and once when it stops
   let camSentAt = -1e9, camTimer = 0, camStopTimer = 0;
   function cameraEvent() {
-    if (!api.started) return;
+    if (!stages.some((s) => s.started)) return;
     const t = now();
     if (t - camSentAt >= 50) sendCameraEvent();
     else if (!camTimer) camTimer = later(() => { camTimer = 0; sendCameraEvent(); }, 50 - (t - camSentAt));
@@ -176,7 +219,7 @@
     camSentAt = now();
     api.cameraSends.push(+((camSentAt - t0) / 1000).toFixed(4));
     if (api.cameraSends.length > 400) api.cameraSends.shift();
-    deliver({ type: 'camera' });
+    for (const s of stages) if (s.started) deliver(s, { type: 'camera' });
   }
 
   // ---- the stand-in globe: land, borders and names from Natural Earth (tools/plates/data), a graticule
@@ -447,7 +490,7 @@
     for (const r of graticule) traceLine(r, m, c.cx, c.cy, c.radius, grat, false);
     g.lineJoin = 'round'; g.lineCap = 'round';
     g.globalAlpha = 0.13; g.strokeStyle = COAST; g.lineWidth = 0.6 * rs; g.stroke(grat);
-    if (politics && !host.globe.historical) {
+    if (politics && !merged().historical) {
       const borders = new Path2D();
       for (const r of politics.borders) traceLine(r, m, c.cx, c.cy, c.radius, borders, false);
       g.globalAlpha = 0.8; g.strokeStyle = BORDER; g.lineWidth = 0.7 * rs; g.stroke(borders);
@@ -486,31 +529,24 @@
   const grow = (a, d) => [a[0] - d, a[1] - d, a[2] + 2 * d, a[3] + 2 * d];
   const within = (x, y, r) => x >= r[0] && y >= r[1] && x <= r[0] + r[2] && y <= r[1] + r[3];
 
-  // ---- what the running pack has asked for (all of it ends with the pack)
-  const host = {
-    geo: new Map(), images: new Map(), sprites: new Map(),
-    time: null, caption: { title: '', text: '' }, globe: { historical: false, still: false },
-    panel: null, scheme: 'touchables', listensOpen: false,
-  };
   let imagesVersion = 0;
 
-  // ---- the pack's files and pictures
+  // ---- a pack's files and pictures (each stage keeps its own)
   function cleanPath(path) {
     if (typeof path !== 'string') return null;
     const p = path.replace(/^\.\//, '');
     if (!p || p.startsWith('/') || p.includes('\\') || /^[a-z][a-z0-9+.-]*:/i.test(p) || p.split('/').some((x) => x === '' || x === '.' || x === '..')) return null;
     return p;
   }
-  const packUrl = (p) => '/pack/' + ID + '/' + p.split('/').map(encodeURIComponent).join('/');
-  const pictures = new Map();
+  const packUrl = (s, p) => '/pack/' + s.id + '/' + p.split('/').map(encodeURIComponent).join('/');
   let pendingPictures = 0;
-  function picture(path, who) {
+  function picture(s, path, who) {
     const p = cleanPath(path);
-    if (!p || !FILES.has(p)) { hostError(who + ': "' + path + '" is not a file of the pack'); return null; }
-    let e = pictures.get(p);
+    if (!p || !s.FILES.has(p)) { hostError(who + ': "' + path + '" is not a file of the pack'); return null; }
+    let e = s.pictures.get(p);
     if (e) return e;
     e = { path: p, img: new Image(), ok: false, failed: false, data: null, w: 0, h: 0, tooBig: false };
-    pictures.set(p, e);
+    s.pictures.set(p, e);
     pendingPictures++;
     e.img.onload = () => {
       pendingPictures--;
@@ -518,7 +554,7 @@
       imagesVersion++; dirty();
     };
     e.img.onerror = () => { pendingPictures--; e.failed = true; hostError(who + ': the picture "' + p + '" could not be loaded or decoded'); };
-    e.img.src = packUrl(p);
+    e.img.src = packUrl(s, p);
     return e;
   }
   // a picture's pixels, for warping it onto the globe (once)
@@ -556,7 +592,7 @@
     return [r1, g1, b1].map((x) => Math.round((x + m0) * 255));
   }
 
-  function parseLayer(id, features, options) {
+  function parseLayer(s, id, features, options) {
     const style = options.style == null ? 'border' : options.style, kind = STYLE_KIND[style];
     const color = parseColor(options.color);
     const where = 'terra.geo.set("' + id + '")';
@@ -574,7 +610,7 @@
       width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [] };
     if (style === 'symbol') {
       if (typeof options.image !== 'string') hostError(where + ': a symbol layer needs options.image, a picture of the pack');
-      else L.pic = picture(options.image, where);
+      else L.pic = picture(s, options.image, where);
     }
     const coord = (c) => (Array.isArray(c) && c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]) && Math.abs(c[1]) <= 90 && Math.abs(c[0]) <= 540 ? [c[0], c[1]] : null);
     const coords = (list, min) => {
@@ -632,21 +668,21 @@
     return L;
   }
 
-  function onGeo(msg) {
-    if (msg.op === 'clear') { host.geo.clear(); dirty(); return; }
+  function onGeo(s, msg) {
+    if (msg.op === 'clear') { s.geo.clear(); dirty(); return; }
     const id = String(msg.id == null ? '' : msg.id);
-    if (msg.op === 'remove') { host.geo.delete(id); dirty(); return; }
+    if (msg.op === 'remove') { s.geo.delete(id); dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.geo: unknown op "' + msg.op + '"; ignored');
     const options = msg.options && typeof msg.options === 'object' && !Array.isArray(msg.options) ? msg.options : {};
     if (options.style != null && !STYLE_KIND[options.style]) {
       return hostError('terra.geo.set("' + id + '"): style must be one of ' + Object.keys(STYLE_KIND).join(', ') + ' (got ' + JSON.stringify(options.style) + '); not drawn');
     }
-    const L = parseLayer(id, msg.features, options);
+    const L = parseLayer(s, id, msg.features, options);
     let others = 0;
-    for (const [k, v] of host.geo) if (k !== id) others += v.vertices;
+    for (const [k, v] of s.geo) if (k !== id) others += v.vertices;
     if (others + L.vertices > VERTEX_BUDGET) return hostError('terra.geo.set("' + id + '"): ' + L.vertices + ' vertices with the others\' ' + others + ' is over the budget of ' + VERTEX_BUDGET + '; not drawn (nothing changed)');
-    if (!host.geo.has(id) && host.geo.size >= LAYER_BUDGET) return hostError('terra.geo.set("' + id + '"): over the budget of ' + LAYER_BUDGET + ' layers; not drawn');
-    host.geo.set(id, L);                // a known id keeps its place in the order
+    if (!s.geo.has(id) && s.geo.size >= LAYER_BUDGET) return hostError('terra.geo.set("' + id + '"): over the budget of ' + LAYER_BUDGET + ' layers; not drawn');
+    s.geo.set(id, L);                // a known id keeps its place in the order
     dirty();
   }
 
@@ -667,9 +703,11 @@
     g.fillStyle = ink; g.fillText(text, x, baseline);
   }
 
+  // every running stage's geography, the stages in order (the front one's last, so its names win room last: as
+  // the app draws each stage's overlay in the order it was made), earlier layers winning room within a stage
   function drawGeo(c, m, placed) {
     const o = { x: 0, y: 0, z: 0 }, screen = [0, 0, W, H];
-    for (const L of host.geo.values()) {
+    for (const s of stages) for (const L of s.geo.values()) {
       L.drawn = [];
       if (!zoomHolds(L, c.zoom)) continue;
       g.save();
@@ -738,7 +776,7 @@
             if (o.z <= 0.2 || !within(o.x, o.y, [-w, -h, W + 2 * w, H + 2 * h])) continue;
             const x = o.x + L.offset[0] * k, y = o.y + L.offset[1] * k;
             // (aspect-fit, as the layer's contentsGravity)
-            const s = Math.min(w / pic.w, h / pic.h), dw = pic.w * s, dh = pic.h * s;
+            const sc = Math.min(w / pic.w, h / pic.h), dw = pic.w * sc, dh = pic.h * sc;
             g.drawImage(pic.img, x - dw / 2, y - dh / 2, dw, dh);
             const rect = [x - w / 2, y - h / 2, w, h];
             placed.push(rect);
@@ -775,21 +813,21 @@
 
   // ---- terra.images: pictures in longitude and latitude, lying on the globe (warped pixel by pixel)
   const IMAGE_BUDGET = 8;
-  function onImage(msg) {
-    if (msg.op === 'clear') { host.images.clear(); imagesVersion++; dirty(); return; }
+  function onImage(s, msg) {
+    if (msg.op === 'clear') { s.images.clear(); imagesVersion++; dirty(); return; }
     const id = String(msg.id == null ? '' : msg.id), where = 'terra.images.set("' + id + '")';
-    if (msg.op === 'remove') { host.images.delete(id); imagesVersion++; dirty(); return; }
+    if (msg.op === 'remove') { s.images.delete(id); imagesVersion++; dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.images: unknown op "' + msg.op + '"; ignored');
     const o = msg.options || {}, b = o.bounds;
     if (typeof o.image !== 'string') return hostError(where + ': image must be a picture of the pack; not drawn');
     if (!Array.isArray(b) || b.length !== 4 || !b.every(Number.isFinite) || !(b[3] > b[1]) || Math.abs(b[1]) > 90 || Math.abs(b[3]) > 90 || b[0] === b[2]) {
       return hostError(where + ': bounds must be [west, south, east, north] in degrees, north above south (got ' + JSON.stringify(b) + '); not drawn');
     }
-    if (!host.images.has(id) && host.images.size >= IMAGE_BUDGET) return hostError(where + ': at most ' + IMAGE_BUDGET + ' pictures; not drawn');
-    const pic = picture(o.image, where);
+    if (!s.images.has(id) && s.images.size >= IMAGE_BUDGET) return hostError(where + ': at most ' + IMAGE_BUDGET + ' pictures; not drawn');
+    const pic = picture(s, o.image, where);
     if (!pic) return;
-    host.images.set(id, { id, path: pic.path, pic, bounds: b.slice(), opacity: clamp(num(o.opacity, 1), 0, 1),
-                          minZoom: num(o.minZoom, 0), maxZoom: num(o.maxZoom, Infinity), fade: Math.max(0, num(o.fade, 0)) });
+    s.images.set(id, { id, path: pic.path, pic, bounds: b.slice(), opacity: clamp(num(o.opacity, 1), 0, 1),
+                       minZoom: num(o.minZoom, 0), maxZoom: num(o.maxZoom, Infinity), fade: Math.max(0, num(o.fade, 0)) });
     imagesVersion++;
     dirty();
   }
@@ -823,11 +861,11 @@
   const warp = { canvas: document.createElement('canvas'), key: '', img: null };
   function drawImages(c, m, dpr, moving) {
     const list = [];
-    for (const im of host.images.values()) if (im.pic.ok && imageAlpha(im, c.zoom) > 0.001 && pixels(im.pic)) list.push(im);
+    for (const s of stages) for (const im of s.images.values()) if (im.pic.ok && imageAlpha(im, c.zoom) > 0.001 && pixels(im.pic)) list.push(im);
     if (!list.length) return;
-    const s = moving ? 1 : dpr;          // half the pixels while the camera moves; sharp again when it stops
-    const key = [c.lon, c.lat, c.zoom, c.radius, s, imagesVersion].join('|');
-    if (warp.key !== key) { renderWarp(list, c, m, s); warp.key = key; }
+    const sc = moving ? 1 : dpr;          // half the pixels while the camera moves; sharp again when it stops
+    const key = [c.lon, c.lat, c.zoom, c.radius, sc, imagesVersion, list.map((im) => im.id).join(',')].join('|');
+    if (warp.key !== key) { renderWarp(list, c, m, sc); warp.key = key; }
     g.drawImage(warp.canvas, 0, 0, W, H);
   }
   function renderWarp(list, c, m, s) {
@@ -884,9 +922,9 @@
     wctx.putImageData(warp.img, 0, 0);
   }
 
-  // ---- terra.sprites (and the doorway's look): things on the globe, moving on great circles, their look chosen by the zoom
+  // ---- terra.sprites (and the doorways' looks): things on the globe, moving on great circles, their look chosen by the zoom
   const SPRITE_BUDGET = 64, FRAME_BUDGET = 24;
-  function parseLook(look, where) {
+  function parseLook(s, look, where) {
     if (!look || typeof look !== 'object') { hostError(where + ': a look must be an object'); return null; }
     let names = null;
     if (Array.isArray(look.frames)) {
@@ -895,7 +933,7 @@
       if (names.length > FRAME_BUDGET) { hostError(where + ': ' + names.length + ' frames; at most ' + FRAME_BUDGET + ' (the rest are dropped)'); names = names.slice(0, FRAME_BUDGET); }
     } else if (typeof look.image === 'string') names = [look.image];
     else { hostError(where + ': a look needs image (a picture) or frames (pictures)'); return null; }
-    const pics = names.map((n) => picture(n, where));
+    const pics = names.map((n) => picture(s, n, where));
     if (pics.some((p) => !p)) return null;
     let size = look.size;
     if (!Array.isArray(size) || size.length !== 2 || !(size[0] > 0) || !(size[1] > 0)) {
@@ -926,55 +964,63 @@
     const s = Math.sin(len), ka = Math.sin((1 - t) * len) / s, kb = Math.sin(t * len) / s;
     return [a[0] * ka + b[0] * kb, a[1] * ka + b[1] * kb, a[2] * ka + b[2] * kb];
   }
-  function onSprite(msg) {
-    if (msg.op === 'clear') { host.sprites.clear(); dirty(); return; }
-    const id = String(msg.id == null ? '' : msg.id), where = 'terra.sprites.set("' + id + '")';
-    if (msg.op === 'remove') { host.sprites.delete(id); dirty(); return; }
-    if (msg.op !== 'set') return hostWarn('terra.sprites: unknown op "' + msg.op + '"; ignored');
-    const o = msg.options || {};
-    const s = { id, at: null, path: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '', touchable: o.touchable === true, t0: now(), flip: false, drawn: null };
+  // a sprite's or a doorway's way along: at: [lon, lat], or path: { coordinates, seconds, loop }; false if neither
+  function readWay(s, o, where, into) {
     if (o.path != null) {
       const p = o.path, coords = p && Array.isArray(p.coordinates) ? p.coordinates : null;
-      if (!coords || !coords.length || !coords.every(validPos)) return hostError(where + ': path.coordinates must be [[lon, lat], …]; not drawn');
-      if (coords.length === 1) s.at = unit(coords[0][0], coords[0][1]);
+      if (!coords || !coords.length || !coords.every(validPos)) { hostError(where + ': path.coordinates must be [[lon, lat], …]; not drawn'); return false; }
+      if (coords.length === 1) into.at = unit(coords[0][0], coords[0][1]);
       else {
-        s.path = buildPath(coords);
+        into.path = buildPath(coords);
         if (p.seconds != null && !(p.seconds > 0)) hostWarn(where + ': path.seconds must be above 0; 60 used');
-        s.seconds = p.seconds > 0 ? +p.seconds : 60;
+        into.seconds = p.seconds > 0 ? +p.seconds : 60;
         if (p.loop != null && ![true, false, 'back'].includes(p.loop)) hostWarn(where + ': path.loop is true, "back" or false; true used');
-        s.loop = p.loop === false ? false : p.loop === 'back' ? 'back' : true;
-        s.key = JSON.stringify([coords, s.seconds, s.loop]);
+        into.loop = p.loop === false ? false : p.loop === 'back' ? 'back' : true;
+        into.key = JSON.stringify([coords, into.seconds, into.loop]);
       }
-    } else if (validPos(o.at)) s.at = unit(o.at[0], o.at[1]);
-    else return hostError(where + ': needs at: [lon, lat] or path: { coordinates, seconds, loop }; not drawn');
+      return true;
+    }
+    if (validPos(o.at)) { into.at = unit(o.at[0], o.at[1]); return true; }
+    hostError(where + ': needs at: [lon, lat] or path: { coordinates, seconds, loop }; not drawn');
+    return false;
+  }
+  function onSprite(s, msg) {
+    if (msg.op === 'clear') { s.sprites.clear(); dirty(); return; }
+    const id = String(msg.id == null ? '' : msg.id), where = 'terra.sprites.set("' + id + '")';
+    if (msg.op === 'remove') { s.sprites.delete(id); dirty(); return; }
+    if (msg.op !== 'set') return hostWarn('terra.sprites: unknown op "' + msg.op + '"; ignored');
+    const o = msg.options || {};
+    const sp = { id, at: null, path: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
+                 touchable: o.touchable === true, breathes: false, t0: now(), flip: false, drawn: null };
+    if (!readWay(s, o, where, sp)) return;
     const looks = Array.isArray(o.looks) ? o.looks : o.look ? [o.look] : [];
     if (!looks.length) return hostError(where + ': needs looks: [{ image | frames, size, … }]; not drawn');
     for (let i = 0; i < looks.length; i++) {
-      const l = parseLook(looks[i], where + ' look ' + i);
-      if (l) s.looks.push(l);
+      const l = parseLook(s, looks[i], where + ' look ' + i);
+      if (l) sp.looks.push(l);
     }
-    if (!s.looks.length) return;
-    if (s.touchable && !s.label) hostWarn(where + ': a touchable sprite needs a label (its VoiceOver name)');
-    const old = host.sprites.get(id);
-    if (!old && host.sprites.size >= SPRITE_BUDGET) return hostError(where + ': at most ' + SPRITE_BUDGET + ' sprites; not drawn');
-    if (old && s.key && old.key === s.key) { s.t0 = old.t0; s.flip = old.flip; }      // the same path keeps its place along it
-    host.sprites.set(id, s);
+    if (!sp.looks.length) return;
+    if (sp.touchable && !sp.label) hostWarn(where + ': a touchable sprite needs a label (its VoiceOver name)');
+    const old = s.sprites.get(id);
+    if (!old && s.sprites.size >= SPRITE_BUDGET) return hostError(where + ': at most ' + SPRITE_BUDGET + ' sprites; not drawn');
+    if (old && sp.key && old.key === sp.key) { sp.t0 = old.t0; sp.flip = old.flip; }      // the same path keeps its place along it
+    s.sprites.set(id, sp);
     dirty();
   }
   // where a sprite is now, and whether it is heading west on screen
-  function spritePlace(s, t, c, m) {
-    if (s.at) return { v: s.at, moving: false };
-    if (settings.reduceMotion) return { v: s.path.pts[0], moving: false };
-    const T = (t - s.t0) / 1000 / s.seconds;
+  function spritePlace(sp, t, c, m) {
+    if (sp.at && !sp.path) return { v: sp.at, moving: false };
+    if (settings.reduceMotion) return { v: sp.path.pts[0], moving: false };
+    const T = (t - sp.t0) / 1000 / sp.seconds;
     let f, dir = 1;
-    if (s.loop === true) f = T - Math.floor(T);
-    else if (s.loop === 'back') { const k = T % 2; f = k <= 1 ? k : 2 - k; dir = k <= 1 ? 1 : -1; }
+    if (sp.loop === true) f = T - Math.floor(T);
+    else if (sp.loop === 'back') { const k = T % 2; f = k <= 1 ? k : 2 - k; dir = k <= 1 ? 1 : -1; }
     else { f = Math.min(T, 1); if (f >= 1) dir = 0; }
-    const v = along(s.path, f);
+    const v = along(sp.path, f);
     if (dir) {
-      const ahead = along(s.path, clamp(f + dir * 0.002, 0, 1)), o1 = projectUnit(v[0], v[1], v[2], m, c, {}), o2 = projectUnit(ahead[0], ahead[1], ahead[2], m, c, {});
+      const ahead = along(sp.path, clamp(f + dir * 0.002, 0, 1)), o1 = projectUnit(v[0], v[1], v[2], m, c, {}), o2 = projectUnit(ahead[0], ahead[1], ahead[2], m, c, {});
       const dx = o2.x - o1.x;
-      if (Math.abs(dx) > 1e-4 * c.radius) s.flip = dx < 0;
+      if (Math.abs(dx) > 1e-4 * c.radius) sp.flip = dx < 0;
     }
     return { v, moving: dir !== 0 };
   }
@@ -982,9 +1028,21 @@
     for (let i = 0; i < looks.length; i++) if (zoomHolds(looks[i], z)) return i;
     return -1;
   }
-  // draws a look at a place; returns what was drawn, or null (hidden: behind, off screen, under what the app keeps clear)
-  function drawLook(look, v, flip, T, c, m, clear) {
-    if (look.every && !settings.reduceMotion && (T % look.every) >= look.for) return null;
+  // each thing keeps its own phase, so traces don't all blink together (GlobeMarker: the label's hash)
+  function phaseOf(label) {
+    let h = 0;
+    for (let i = 0; i < label.length; i++) h = (h * 31 + label.charCodeAt(i)) | 0;
+    return Math.abs(h % 997) / 997;
+  }
+  // draws a look at a place; returns what was drawn, or null (hidden: behind, off screen, under what the app keeps
+  // clear, or resting between its showings). A showing fades up and down over its first and last 0.3 s.
+  function drawLook(look, v, flip, T, c, m, clear, breath) {
+    let alpha = 1;
+    if (look.every && !settings.reduceMotion) {
+      const ph = T % look.every;
+      if (ph >= look.for) return null;
+      alpha = clamp(Math.min(ph, look.for - ph) / Math.min(0.3, look.for / 3), 0, 1);
+    }
     const o = projectUnit(v[0], v[1], v[2], m, c, {});
     if (o.z < 0.2) return null;
     const w = look.w * rs, h = look.h * rs, rect = [o.x - w / 2, o.y - h / 2, w, h];
@@ -992,42 +1050,55 @@
     const pic = look.pics[settings.reduceMotion ? 0 : Math.floor(Math.max(0, T) * look.fps) % look.pics.length];
     if (!pic || !pic.ok) return null;
     g.save();
+    g.globalAlpha = alpha;
     g.translate(o.x, o.y);
-    if (flip) g.scale(-1, 1);
+    g.scale(flip ? -1 : 1, breath || 1);
     g.drawImage(pic.img, -w / 2, -h / 2, w, h);
     g.restore();
     return { x: o.x, y: o.y, rect };
   }
-  function drawSprites(t, c, m, clear) {
-    for (const s of host.sprites.values()) {
-      s.drawn = null;
-      const li = chooseLook(s.looks, c.zoom);
-      if (li < 0) continue;
-      const look = s.looks[li], place = spritePlace(s, t, c, m), T = (t - s.t0) / 1000;
-      const d = drawLook(look, place.v, look.face && s.flip, T, c, m, clear);
-      if (d) s.drawn = Object.assign(d, { look: li });
-    }
+  // one sprite (or a doorway) this frame: its look by zoom, its place along its way, its breath
+  function drawSprite(sp, t, c, m, clear) {
+    sp.drawn = null;
+    const li = chooseLook(sp.looks, c.zoom);
+    if (li < 0) return;
+    const look = sp.looks[li], place = spritePlace(sp, t, c, m), T = (t - sp.t0) / 1000 + phaseOf(sp.label || sp.id) * (look.every || 0);
+    const breath = sp.breathes && !settings.reduceMotion ? 1 + 0.004 * Math.sin(t / 1000 * 1.2) : 1;
+    const d = drawLook(look, place.v, look.face && sp.flip, T, c, m, clear, breath);
+    if (d) sp.drawn = Object.assign(d, { look: li });
   }
+  function drawSprites(t, c, m, clear) {
+    for (const s of stages) for (const sp of s.sprites.values()) drawSprite(sp, t, c, m, clear);
+  }
+  const animates = (sp) => !settings.reduceMotion && ((sp.path && (sp.loop !== false || (now() - sp.t0) / 1000 < sp.seconds))
+    || sp.looks.some((l) => l.pics.length > 1 || l.every) || sp.breathes);
   function spritesAnimate() {
-    for (const s of host.sprites.values()) {
-      if (settings.reduceMotion) continue;
-      if (s.path && (s.loop !== false || (now() - s.t0) / 1000 < s.seconds)) return true;
-      if (s.looks.some((l) => l.pics.length > 1 || l.every)) return true;
-    }
+    for (const s of stages) for (const sp of s.sprites.values()) if (animates(sp)) return true;
+    for (const d of doorways) if (!stageById.get(d.pack.id).running && animates(d)) return true;
     return false;
   }
 
-  // ---- the doorway: the pack on the globe while it isn't running; touching it starts the pack
-  let doorway = null;
-  function readDoorway() {
-    const d = M.doorway;
-    if (!d || M.shelf === 'parked') return null;
-    if (!validPos([d.lon, d.lat])) { hostWarn('prototype.json doorway: lon and lat must be numbers; no doorway'); return null; }
-    if (!d.label) hostWarn('prototype.json doorway: needs a label (its VoiceOver name)');
-    const look = parseLook(d.look, 'prototype.json doorway look');
-    if (!look) return null;
-    return { lon: d.lon, lat: d.lat, v: unit(d.lon, d.lat), label: String(d.label || M.title || ID), look, t0: now(), drawn: null };
+  // ---- the doorways: every pack on the globe while it isn't running, each with its life (looks by zoom, a
+  // way it stirs along, a breath); touching one starts the pack where the reader is
+  function readDoorway(pack) {
+    const d = pack.M.doorway, s = stageById.get(pack.id);
+    if (!d || pack.M.shelf === 'parked') return null;
+    const where = 'prototype.json doorway' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
+    if (!validPos([d.lon, d.lat])) { hostWarn(where + ': lon and lat must be numbers; no doorway'); return null; }
+    if (!d.label) hostWarn(where + ': needs a label (its VoiceOver name)');
+    const life = ['looks', 'path', 'breathes'].filter((k) => k in d);
+    if (life.length && pack.M.runtime === 3) hostWarn(where + '.' + life[0] + ' is new in runtime 4: declare "runtime": 4');
+    const specs = Array.isArray(d.looks) ? d.looks : d.look ? [d.look] : [];
+    if (!specs.length) { hostError(where + ': needs a look (or looks by zoom)'); return null; }
+    const looks = specs.map((l, i) => parseLook(s, l, where + (Array.isArray(d.looks) ? ' look ' + i : ' look'))).filter(Boolean);
+    if (!looks.length) return null;
+    const door = { id: 'doorway.' + pack.id, pack, lon: d.lon, lat: d.lat, at: unit(d.lon, d.lat), path: null, seconds: 60, loop: true, key: '',
+                   label: String(d.label || pack.M.title || pack.id), looks, touchable: true, breathes: d.breathes === true, t0: now(), flip: false, drawn: null };
+    if (d.path != null) readWay(s, { path: d.path }, where + ' path', door);
+    return door;
   }
+  let doorways = [];
+  const doorwayAt = (x, y) => doorways.find((d) => !stageById.get(d.pack.id).running && d.drawn && within(x, y, grow(d.drawn.rect, Math.max(0, (44 - d.drawn.rect[2]) / 2)))) || null;
 
   // ---- what the app keeps clear: the chip (or Start), the foot, the panel
   function keepClear() {
@@ -1041,16 +1112,16 @@
   }
 
   // ---- drawing, each frame something changed or moves: the globe, its pictures and geography are kept in a layer
-  // drawn again only when the camera or they change; sprites (and the doorway) go over it every frame
+  // drawn again only when the camera or they change; sprites (and the doorways) go over it every frame
   let cameraMoving = false;
   const layer = { canvas: document.createElement('canvas'), key: '' };
   api.layerDraws = 0;
   function render(t) {
     const began = now(), dpr = window.devicePixelRatio || 1, pw = Math.round(W * dpr), ph = Math.round(H * dpr);
     if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
-    const c = camera(), m = rotation(c), clear = keepClear();
+    const c = camera(), m = rotation(c), clear = keepClear(), hist = merged().historical;
     cameraMoving = !!flight || pointers.size > 0 || t - lastCamMove < 180;
-    const key = [c.lon, c.lat, c.zoom, c.radius, rs, dpr, layerVersion, imagesVersion, cameraMoving,
+    const key = [c.lon, c.lat, c.zoom, c.radius, rs, dpr, layerVersion, imagesVersion, cameraMoving, hist, stages.map((s) => s.id).join(','),
                  clear.map((r) => r.map(Math.round).join(',')).join(';')].join('|');
     if (layer.key !== key) {
       layer.key = key;
@@ -1062,7 +1133,7 @@
       drawRing(c);
       drawGlobe(c, m);
       drawImages(c, m, dpr, cameraMoving);
-      if (politics && !host.globe.historical) drawCountryNames(c, m, clear.slice());
+      if (politics && !hist) drawCountryNames(c, m, clear.slice());
       drawGeo(c, m, clear.slice());
       g = screenCtx;
       api.layerDraws++;
@@ -1071,106 +1142,110 @@
     g.drawImage(layer.canvas, 0, 0);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawSprites(t, c, m, clear);
-    if (doorway) {
-      doorway.drawn = null;
-      if (!api.running) {
-        const look = doorway.look;
-        if (zoomHolds(look, c.zoom)) doorway.drawn = drawLook(look, doorway.v, false, (t - doorway.t0) / 1000, c, m, clear);
-      }
+    for (const d of doorways) {
+      if (stageById.get(d.pack.id).running) { d.drawn = null; continue; }
+      drawSprite(d, t, c, m, clear);
     }
     api.frame++;
     api.renderMs = +((api.renderMs || 0) * 0.9 + (now() - began) * 0.1).toFixed(2);
   }
 
-  // ---- touch: what is under a point (sprites first, then touchable geography, topmost first)
+  // ---- touch: what is under a point (sprites first, then touchable geography, the front stage first, topmost first)
   const hitCtx = document.createElement('canvas').getContext('2d');
   function segDist(px, py, ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
     const t = l2 ? clamp(((px - ax) * dx + (py - ay) * dy) / l2, 0, 1) : 0;
     return Math.hypot(px - ax - t * dx, py - ay - t * dy);
   }
-  function hitTest(x, y) {
-    const sprites = [...host.sprites.values()].reverse();
-    for (const s of sprites) {
-      if (!s.touchable || !s.drawn) continue;
-      const r = s.drawn.rect, w = Math.max(r[2], 44), h = Math.max(r[3], 44);
-      if (within(x, y, [s.drawn.x - w / 2, s.drawn.y - h / 2, w, h])) return { sprite: s.id };
+  function hitStage(x, y) {
+    const order = stages.slice().reverse();
+    for (const s of order) {
+      for (const sp of [...s.sprites.values()].reverse()) {
+        if (!sp.touchable || !sp.drawn) continue;
+        const r = sp.drawn.rect, w = Math.max(r[2], 44), h = Math.max(r[3], 44);
+        if (within(x, y, [sp.drawn.x - w / 2, sp.drawn.y - h / 2, w, h])) return { stage: s, target: { sprite: sp.id } };
+      }
     }
     const c = camera(), m = rotation(c);
-    for (const L of [...host.geo.values()].reverse()) {
-      if (!L.touchable || !zoomHolds(L, c.zoom)) continue;
-      let best = null, bestD = Infinity;
-      if (L.kind === 'point') {
-        for (const d of L.drawn) {
-          let dist = Math.hypot(x - d.x, y - d.y);
-          if (d.foot) dist = Math.min(dist, Math.hypot(x - d.foot[0], y - d.foot[1]));
-          if (d.rect && within(x, y, d.rect)) dist = 0;
-          if (dist <= 22 && dist < bestD) { bestD = dist; best = d.index; }
-        }
-      } else if (L.kind === 'line') {
-        for (const l of L.lines) {
-          const r = l.ring;
-          rotate(r, m);
-          for (let i = 0, edges = l.closed ? r.n : r.n - 1; i < edges; i++) {
-            const j = (i + 1) % r.n;
-            if (r.vz[i] <= 0 || r.vz[j] <= 0) continue;
-            const dist = segDist(x, y, c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, c.cx + r.vx[j] * c.radius, c.cy - r.vy[j] * c.radius);
-            if (dist <= 14 && dist < bestD) { bestD = dist; best = l.index; }
+    for (const s of order) {
+      for (const L of [...s.geo.values()].reverse()) {
+        if (!L.touchable || !zoomHolds(L, c.zoom)) continue;
+        let best = null, bestD = Infinity;
+        if (L.kind === 'point') {
+          for (const d of L.drawn) {
+            let dist = Math.hypot(x - d.x, y - d.y);
+            if (d.foot) dist = Math.min(dist, Math.hypot(x - d.foot[0], y - d.foot[1]));
+            if (d.rect && within(x, y, d.rect)) dist = 0;
+            if (dist <= 22 && dist < bestD) { bestD = dist; best = d.index; }
+          }
+        } else if (L.kind === 'line') {
+          for (const l of L.lines) {
+            const r = l.ring;
+            rotate(r, m);
+            for (let i = 0, edges = l.closed ? r.n : r.n - 1; i < edges; i++) {
+              const j = (i + 1) % r.n;
+              if (r.vz[i] <= 0 || r.vz[j] <= 0) continue;
+              const dist = segDist(x, y, c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, c.cx + r.vx[j] * c.radius, c.cy - r.vy[j] * c.radius);
+              if (dist <= 14 && dist < bestD) { bestD = dist; best = l.index; }
+            }
+          }
+        } else {
+          if (Math.hypot(x - c.cx, y - c.cy) >= c.radius) continue;
+          for (const poly of L.polys) {
+            const path = new Path2D();
+            let any = false;
+            for (const r of poly.rings) any = trace(r, m, c.cx, c.cy, c.radius, path, null) || any;
+            if (any && hitCtx.isPointInPath(path, x, y, 'evenodd')) { best = poly.index; bestD = 0; }
           }
         }
-      } else {
-        if (Math.hypot(x - c.cx, y - c.cy) >= c.radius) continue;
-        for (const poly of L.polys) {
-          const path = new Path2D();
-          let any = false;
-          for (const r of poly.rings) any = trace(r, m, c.cx, c.cy, c.radius, path, null) || any;
-          if (any && hitCtx.isPointInPath(path, x, y, 'evenodd')) { best = poly.index; bestD = 0; }
-        }
+        if (best != null) return { stage: s, target: { layer: L.id, index: best } };
       }
-      if (best != null) return { layer: L.id, index: best };
     }
     return null;
   }
+  const hitTest = (x, y) => { const h = hitStage(x, y); return h ? h.target : null; };
   const sameTarget = (a, b) => !!a && !!b && a.sprite === b.sprite && a.layer === b.layer && a.index === b.index;
   // every touchable thing on screen now, and a point that touches it (for checks)
   function touchables() {
-    const c = camera(), m = rotation(c), clear = keepClear(), out = [], o = {};
+    const c = camera(), m = rotation(c), clear = keepClear(), out = [];
     const ok = (x, y) => x > 6 && y > 6 && x < W - 6 && y < H - 6 && !clear.some((r) => within(x, y, r));
-    const add = (target, x, y, what) => { if (ok(x, y) && sameTarget(hitTest(x, y), target)) out.push({ target, x, y, what }); };
-    for (const s of host.sprites.values()) if (s.touchable && s.drawn) add({ sprite: s.id }, s.drawn.x, s.drawn.y, 'sprite "' + s.id + '"' + (s.label ? ' (' + s.label + ')' : ''));
-    for (const L of host.geo.values()) {
-      if (!L.touchable || !zoomHolds(L, c.zoom)) continue;
-      const what = (i) => L.style + ' layer "' + L.id + '" feature ' + i;
-      if (L.kind === 'point') for (const d of L.drawn) add({ layer: L.id, index: d.index }, d.x, d.y, what(d.index));
-      else if (L.kind === 'line') {
-        for (const l of L.lines) {
-          const r = l.ring;
-          rotate(r, m);
-          const mid = Math.floor(r.n / 2);
-          for (let k = 0; k < r.n; k++) {
-            const i = (mid + (k % 2 ? -1 : 1) * Math.ceil(k / 2) + r.n) % r.n;
-            if (r.vz[i] > 0.05) { add({ layer: L.id, index: l.index }, c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, what(l.index)); break; }
+    const add = (s, target, x, y, what) => { if (ok(x, y) && sameTarget(hitTest(x, y), target)) out.push({ stage: s.id, target, x, y, what }); };
+    for (const s of stages) {
+      for (const sp of s.sprites.values()) if (sp.touchable && sp.drawn) add(s, { sprite: sp.id }, sp.drawn.x, sp.drawn.y, 'sprite "' + sp.id + '"' + (sp.label ? ' (' + sp.label + ')' : ''));
+      for (const L of s.geo.values()) {
+        if (!L.touchable || !zoomHolds(L, c.zoom)) continue;
+        const what = (i) => L.style + ' layer "' + L.id + '" feature ' + i;
+        if (L.kind === 'point') for (const d of L.drawn) add(s, { layer: L.id, index: d.index }, d.x, d.y, what(d.index));
+        else if (L.kind === 'line') {
+          for (const l of L.lines) {
+            const r = l.ring;
+            rotate(r, m);
+            const mid = Math.floor(r.n / 2);
+            for (let k = 0; k < r.n; k++) {
+              const i = (mid + (k % 2 ? -1 : 1) * Math.ceil(k / 2) + r.n) % r.n;
+              if (r.vz[i] > 0.05) { add(s, { layer: L.id, index: l.index }, c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, what(l.index)); break; }
+            }
           }
-        }
-      } else {
-        for (const poly of L.polys) {
-          const r = poly.rings[0];
-          rotate(r, m);
-          let sx = 0, sy = 0, n = 0;
-          const pts = [];
-          for (let i = 0; i < r.n; i++) if (r.vz[i] > 0) { const x = c.cx + r.vx[i] * c.radius, y = c.cy - r.vy[i] * c.radius; sx += x; sy += y; n++; pts.push([x, y]); }
-          if (!n) continue;
-          const cands = [[sx / n, sy / n]];
-          for (let k = 0; k < Math.min(pts.length, 12); k++) { const p = pts[Math.floor(k * pts.length / 12)]; cands.push([(p[0] + sx / n) / 2, (p[1] + sy / n) / 2]); }
-          const before = out.length;
-          for (const [x, y] of cands) { add({ layer: L.id, index: poly.index }, x, y, what(poly.index)); if (out.length > before) break; }
+        } else {
+          for (const poly of L.polys) {
+            const r = poly.rings[0];
+            rotate(r, m);
+            let sx = 0, sy = 0, n = 0;
+            const pts = [];
+            for (let i = 0; i < r.n; i++) if (r.vz[i] > 0) { const x = c.cx + r.vx[i] * c.radius, y = c.cy - r.vy[i] * c.radius; sx += x; sy += y; n++; pts.push([x, y]); }
+            if (!n) continue;
+            const cands = [[sx / n, sy / n]];
+            for (let k = 0; k < Math.min(pts.length, 12); k++) { const p = pts[Math.floor(k * pts.length / 12)]; cands.push([(p[0] + sx / n) / 2, (p[1] + sy / n) / 2]); }
+            const before = out.length;
+            for (const [x, y] of cands) { add(s, { layer: L.id, index: poly.index }, x, y, what(poly.index)); if (out.length > before) break; }
+          }
         }
       }
     }
     return out;
   }
 
-  // ---- the foot: the caption and the date (GlobeFoot), in Globe/type.json's caption type
+  // ---- the foot: the front stage's caption and date (GlobeFoot), in Globe/type.json's caption type
   const foot = $('foot'), strip = $('date-strip'), playBtn = $('date-play');
   const PLAY = '<svg viewBox="0 0 44 44" aria-hidden="true"><path d="M17 14.5 L30 22 L17 29.5 Z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
   const PAUSE = '<svg viewBox="0 0 44 44" aria-hidden="true"><rect x="16" y="14.5" width="4.2" height="15" rx="1" fill="currentColor"/><rect x="23.8" y="14.5" width="4.2" height="15" rx="1" fill="currentColor"/></svg>';
@@ -1186,7 +1261,7 @@
   function applyCaptionType() {
     const cap = TYPE.styles && TYPE.styles.wikipedia && TYPE.styles.wikipedia.caption;
     if (!cap) return;
-    const set = (el, s, base) => {
+    const set = (el, s) => {
       if (!s) return;
       if (s.size) el.style.fontSize = 'calc(' + s.size + 'px * var(--ts))';
       if (s.color) el.style.color = s.color;
@@ -1196,8 +1271,9 @@
     set($('foot-title'), cap.title);
     set($('foot-text'), cap.text);
   }
+  const frontTime = () => (front() ? front().time : null);
   function updateFoot() {
-    const t = host.time, cap = host.caption;
+    const f = front(), t = f ? f.time : null, cap = f ? f.caption : { title: '', text: '' };
     foot.hidden = !(t || cap.title || cap.text);
     if (foot.hidden) return;
     const set = (id, text) => { const el = $(id); el.textContent = text; el.hidden = !text; };
@@ -1214,7 +1290,7 @@
     drawStrip();
   }
   function drawStrip() {
-    const t = host.time;
+    const t = frontTime();
     if (!t || $('foot-date').hidden) return;
     const dpr = window.devicePixelRatio || 1, cw = Math.max(1, strip.clientWidth), ch = 44;
     if (strip.width !== Math.round(cw * dpr) || strip.height !== Math.round(ch * dpr)) { strip.width = Math.round(cw * dpr); strip.height = Math.round(ch * dpr); }
@@ -1239,11 +1315,11 @@
     s.strokeStyle = '#B04234'; s.lineWidth = 2; s.lineCap = 'round';
     s.beginPath(); s.moveTo(x, y - 12); s.lineTo(x, y + 8); s.stroke();
   }
-  function showTime(o) {
+  function showTime(s, o) {
     if (!o || typeof o !== 'object') o = {};
-    const unit = o.unit === 'day' ? 'day' : 'year';
+    const unit_ = o.unit === 'day' ? 'day' : 'year';
     if (o.unit != null && o.unit !== 'year' && o.unit !== 'day') hostWarn('terra.time.show: unit is "year" or "day" (got ' + JSON.stringify(o.unit) + '); years used');
-    const limit = unit === 'year' ? 1e7 : 3.66e9;
+    const limit = unit_ === 'year' ? 1e7 : 3.66e9;
     if (!Number.isFinite(o.min) || !Number.isFinite(o.max)) return hostError('terra.time.show: min and max must be numbers (got ' + JSON.stringify([o.min, o.max]) + '); not shown');
     const lo = Math.max(o.min, -limit), hi = Math.min(o.max, limit);
     if (!(hi > lo)) return hostError('terra.time.show: max must be above min; not shown');
@@ -1253,51 +1329,52 @@
       const at = typeof tk === 'number' ? tk : tk && typeof tk === 'object' ? tk.at : NaN;
       if (Number.isFinite(at) && at >= lo && at <= hi) ticks.push({ at, hollow: !!(tk && typeof tk === 'object' && tk.hollow) });
     }
-    stopPlayback(false);
-    host.time = { unit, min: lo, max: hi, value: clamp(num(o.value, lo), lo, hi), ticks, playable: !!o.playable,
-                  rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false };
-    if (o.playing && host.time.playable && !settings.reduceMotion) host.time.playing = true;
+    stopPlayback(s, false);
+    s.time = { unit: unit_, min: lo, max: hi, value: clamp(num(o.value, lo), lo, hi), ticks, playable: !!o.playable,
+               rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false };
+    // (a stage in the background does not play: it may when it hears it is in front)
+    if (o.playing && s.time.playable && !settings.reduceMotion && s === front()) s.time.playing = true;
     updateFoot();
-    sendTime('host');                       // the first value
+    sendTime(s, 'host');                       // the first value
   }
-  function sendTime(by) {
-    const t = host.time;
-    if (t) deliver({ type: 'time', value: t.value, playing: t.playing, by });
+  function sendTime(s, by) {
+    const t = s.time;
+    if (t) deliver(s, { type: 'time', value: t.value, playing: t.playing, by });
   }
   let lastPlaySent = -1e9;
   function stepPlayback(t, dt) {
-    const tm = host.time;
+    const f = front(), tm = f ? f.time : null;
     if (!tm || !tm.playing) return;
-    if (settings.reduceMotion) { tm.playing = false; updateFoot(); sendTime('host'); return; }
+    if (settings.reduceMotion) { tm.playing = false; updateFoot(); sendTime(f, 'host'); return; }
     tm.value = Math.min(tm.value + tm.rate * dt, tm.max);
     const done = tm.value >= tm.max;
     if (done) tm.playing = false;
     updateFoot();
-    if (done || t - lastPlaySent >= 1000 / 30) { lastPlaySent = t; sendTime('play'); }      // at most 30 a second, and always the last
+    if (done || t - lastPlaySent >= 1000 / 30) { lastPlaySent = t; sendTime(f, 'play'); }      // at most 30 a second, and always the last
   }
-  function stopPlayback(update) {
-    if (host.time) host.time.playing = false;
+  function stopPlayback(s, update) {
+    if (s && s.time) s.time.playing = false;
     if (update) updateFoot();
   }
   function setByReader(v) {
-    const tm = host.time;
+    const f = front(), tm = f ? f.time : null;
     if (!tm) return;
     const was = tm.playing;
     tm.playing = false;                      // a hand on the date takes it from the clock
     const value = clamp(v, tm.min, tm.max), changed = value !== tm.value || was;
     tm.value = value;
     updateFoot();
-    if (changed) sendTime('reader');
+    if (changed) sendTime(f, 'reader');
   }
   function stepTime(dir) {                   // GlobeTime.step: the next tick, or a hundredth of the span
-    const tm = host.time, ats = tm.ticks.map((x) => x.at);
+    const tm = frontTime(), ats = tm.ticks.map((x) => x.at);
     const ahead = dir > 0 ? Math.min(...ats.filter((a) => a > tm.value + 1e-6)) : Math.max(...ats.filter((a) => a < tm.value - 1e-6));
     return Number.isFinite(ahead) ? ahead : tm.value + dir * Math.max(1, (tm.max - tm.min) / 100);
   }
   let scrubbing = false;
-  const scrub = (e) => { const r = strip.getBoundingClientRect(), tm = host.time; if (tm) setByReader(tm.min + clamp((e.clientX - r.left) / Math.max(r.width, 1), 0, 1) * (tm.max - tm.min)); };
+  const scrub = (e) => { const r = strip.getBoundingClientRect(), tm = frontTime(); if (tm) setByReader(tm.min + clamp((e.clientX - r.left) / Math.max(r.width, 1), 0, 1) * (tm.max - tm.min)); };
   strip.addEventListener('pointerdown', (e) => {
-    if (!host.time || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (!frontTime() || (e.pointerType === 'mouse' && e.button !== 0)) return;
     scrubbing = true;
     strip.setPointerCapture(e.pointerId);
     strip.focus({ preventScroll: true });
@@ -1308,7 +1385,7 @@
   strip.addEventListener('pointerup', () => { scrubbing = false; });
   strip.addEventListener('pointercancel', () => { scrubbing = false; });
   strip.addEventListener('keydown', (e) => {
-    const tm = host.time;
+    const tm = frontTime();
     if (!tm) return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') setByReader(stepTime(-1));
     else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') setByReader(stepTime(1));
@@ -1318,35 +1395,37 @@
     e.preventDefault();
   });
   playBtn.addEventListener('click', () => {
-    const tm = host.time;
+    const f = front(), tm = f ? f.time : null;
     if (!tm || settings.reduceMotion) return;
     if (tm.playing) tm.playing = false;
     else { if (tm.value >= tm.max) tm.value = tm.min; tm.playing = true; lastPlaySent = -1e9; }
     updateFoot();
-    sendTime('reader');
+    sendTime(f, 'reader');
   });
-  function onTime(msg) {
+  function onTime(s, msg) {
     switch (msg.op) {
-      case 'show': return showTime(msg.options);
-      case 'hide': host.time = null; return updateFoot();
+      case 'show': return showTime(s, msg.options);
+      case 'hide': s.time = null; return updateFoot();
       case 'set':
-        if (!host.time) return hostWarn('terra.time.set before terra.time.show; ignored');
+        if (!s.time) return hostWarn('terra.time.set before terra.time.show; ignored');
         if (!Number.isFinite(msg.value)) return hostWarn('terra.time.set: the value must be a number; ignored');
-        host.time.value = clamp(msg.value, host.time.min, host.time.max);       // not echoed: the script knows
+        s.time.value = clamp(msg.value, s.time.min, s.time.max);       // not echoed: the script knows
         return updateFoot();
       case 'play':
-        if (!host.time) return hostWarn('terra.time.play before terra.time.show; ignored');
-        if (msg.playing && host.time.playable && !settings.reduceMotion) {
-          if (host.time.value >= host.time.max) host.time.value = host.time.min;
-          host.time.playing = true; lastPlaySent = -1e9;
-        } else host.time.playing = false;
+        if (!s.time) return hostWarn('terra.time.play before terra.time.show; ignored');
+        if (msg.playing && s.time.playable && !settings.reduceMotion && s === front()) {
+          if (s.time.value >= s.time.max) s.time.value = s.time.min;
+          s.time.playing = true; lastPlaySent = -1e9;
+        } else s.time.playing = false;
         return updateFoot();
       default: hostWarn('terra.time: unknown op "' + msg.op + '"; ignored');
     }
   }
 
-  // ---- the panel: longer words and their sources, a sheet over the live globe
+  // ---- the panel: longer words and their sources, a sheet over the live globe (the front stage's; a background
+  // stage's would take the screen from the reader, and is dropped)
   const panel = $('panel'), panelBody = $('panel-body');
+  let panelOwner = null, panelInfo = null;
   function paragraphs(parent, text) {
     for (const para of String(text || '').split(/\n\s*\n/)) {
       const t = para.replace(/\s+/g, ' ').trim();
@@ -1356,7 +1435,8 @@
       parent.appendChild(p);
     }
   }
-  function showPanel(content) {
+  function showPanel(s, content) {
+    if (s !== front()) return noteOnce(s.id + ':panel-back', s.id + ': its panel is not shown while the reader is with another experience');
     const o = content && typeof content === 'object' ? content : {};
     panelBody.textContent = '';
     const h = document.createElement('h2');
@@ -1366,196 +1446,246 @@
     if (!o.title) hostWarn('terra.panel.show: give it a title (what this is)');
     paragraphs(panelBody, o.text);
     const sections = Array.isArray(o.sections) ? o.sections : [];
-    for (const s of sections) {
-      if (!s || typeof s !== 'object') continue;
-      if (s.title) { const h3 = document.createElement('h3'); h3.textContent = String(s.title); panelBody.appendChild(h3); }
-      paragraphs(panelBody, s.text);
+    for (const sec of sections) {
+      if (!sec || typeof sec !== 'object') continue;
+      if (sec.title) { const h3 = document.createElement('h3'); h3.textContent = String(sec.title); panelBody.appendChild(h3); }
+      paragraphs(panelBody, sec.text);
     }
     const sources = Array.isArray(o.sources) ? o.sources : [];
     if (sources.length) {
       const h3 = document.createElement('h3'), ul = document.createElement('ul');
       h3.textContent = 'Sources';
-      for (const s of sources) {
-        if (!s || typeof s !== 'object') continue;
+      for (const src of sources) {
+        if (!src || typeof src !== 'object') continue;
         const li = document.createElement('li');
-        const url = typeof s.url === 'string' && /^https?:\/\//i.test(s.url) ? s.url : null;
-        if (s.url && !url) hostWarn('terra.panel.show: a source\'s url must be http(s) (got ' + JSON.stringify(s.url) + ')');
+        const url = typeof src.url === 'string' && /^https?:\/\//i.test(src.url) ? src.url : null;
+        if (src.url && !url) hostWarn('terra.panel.show: a source\'s url must be http(s) (got ' + JSON.stringify(src.url) + ')');
         const a = document.createElement(url ? 'a' : 'span');
-        a.textContent = String(s.title || s.url || 'Source');
+        a.textContent = String(src.title || src.url || 'Source');
         if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
         li.appendChild(a);
-        if (s.note) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(s.note); li.appendChild(n); }
+        if (src.note) { const n = document.createElement('div'); n.className = 'note'; n.textContent = String(src.note); li.appendChild(n); }
         ul.appendChild(li);
       }
       panelBody.appendChild(h3);
       panelBody.appendChild(ul);
     }
-    host.panel = { title: h.textContent, sections: sections.length, sources: sources.length };
+    panelOwner = s;
+    panelInfo = { title: h.textContent, sections: sections.length, sources: sources.length };
     panel.hidden = false;
     panel.classList.remove('tall');
     panelBody.scrollTop = 0;
     dirty();
   }
-  function hidePanel(byReader) {
-    if (panel.hidden) return;
+  function hidePanel(byReader, s) {
+    if (panel.hidden || (s && panelOwner !== s)) return;
     panel.hidden = true;
-    host.panel = null;
+    const owner = panelOwner;
+    panelOwner = null; panelInfo = null;
     dirty();
-    if (byReader) deliver({ type: 'panel', open: false });
+    if (byReader && owner) deliver(owner, { type: 'panel', open: false });
   }
   $('panel-close').addEventListener('click', () => hidePanel(true));
   $('panel-grab').addEventListener('click', () => { panel.classList.toggle('tall'); $('panel-grab').setAttribute('aria-label', panel.classList.contains('tall') ? 'Pull down' : 'Pull up'); });
 
-  // ---- the pack's script context (worker.js) and the host's side of the messages
-  let worker = null, closing = null, timers = new Map();
-  api.delivered = { settings: 0, camera: 0, touch: 0, time: 0, timer: 0, open: 0, panel: 0, close: 0 };
-  // (what the host says while the scripts are still loading, as the date's first value, waits for them to finish)
-  let early = [];
-  function deliver(message) {
-    if (!worker) return;
-    if (!api.started) { early.push(message); return; }
-    api.delivered[message.type] = (api.delivered[message.type] || 0) + 1;
-    worker.postMessage({ kind: 'receive', message, camera: camera() });
-    postedCam = camVersion;
+  // ---- each pack's script context (worker.js) and the host's side of the messages
+  function deliver(s, message) {
+    if (!s.worker) return;
+    if (!s.started) { s.early.push(message); return; }
+    s.delivered[message.type] = (s.delivered[message.type] || 0) + 1;
+    s.worker.postMessage({ kind: 'receive', message, camera: camera() });
+    s.postedCam = camVersion;
   }
-  let postedCam = -1;
   function postCamera() {
-    if (worker && postedCam !== camVersion) { postedCam = camVersion; worker.postMessage({ kind: 'camera', camera: camera() }); }
+    for (const s of stages) if (s.worker && s.postedCam !== camVersion) { s.postedCam = camVersion; s.worker.postMessage({ kind: 'camera', camera: camera() }); }
   }
 
-  function handle(msg) {
+  function handle(s, msg) {
     if (!msg || typeof msg !== 'object') return;
     switch (msg.type) {
-      case 'log': return log('script', msg.level === 'error' ? 'error' : msg.level === 'warn' ? 'warn' : 'info', msg.message);
-      case 'close': return endPack('script');
-      case 'flyTo': return flyTo(msg.lon, msg.lat, msg.zoom, msg.duration);
-      case 'geo': return onGeo(msg);
-      case 'image': return onImage(msg);
-      case 'sprite': return onSprite(msg);
+      case 'log': return log('script', msg.level === 'error' ? 'error' : msg.level === 'warn' ? 'warn' : 'info', (PACKS.length > 1 ? s.id + ': ' : '') + msg.message);
+      case 'close': return endStage(s, 'script');
+      case 'flyTo': return flyTo(msg.lon, msg.lat, msg.zoom, msg.duration, s);
+      case 'geo': return onGeo(s, msg);
+      case 'image': return onImage(s, msg);
+      case 'sprite': return onSprite(s, msg);
       case 'touch':
         if (msg.op !== 'scheme') return hostWarn('terra.touch: unknown op "' + msg.op + '"');
         if (msg.scheme !== 'touchables' && msg.scheme !== 'one-finger') return hostWarn('terra.touch.scheme: "touchables" or "one-finger" (got ' + JSON.stringify(msg.scheme) + '); unchanged');
-        host.scheme = msg.scheme;
+        s.scheme = msg.scheme;
         return updateReadout();
-      case 'time': return onTime(msg);
+      case 'time': return onTime(s, msg);
       case 'caption':
-        host.caption = { title: String(msg.title || ''), text: String(msg.text || '') };
+        s.caption = { title: String(msg.title || ''), text: String(msg.text || '') };
         updateFoot();
         dirty();
         return;
       case 'globe':
-        host.globe = { historical: !!msg.historical, still: !!msg.still };
+        s.globe.historical = !!msg.historical;
+        s.globe.still = !!msg.still;
         // (a pack may let the reader zoom deeper than 8, to 32, for its close views: as the app does)
-        if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) zoomLimit = clamp(+msg.maxZoom, 8, 32);
+        if (msg.maxZoom != null && Number.isFinite(+msg.maxZoom)) s.globe.maxZoom = clamp(+msg.maxZoom, 8, 32);
         dirty();
         return;
       case 'panel':
-        if (msg.op === 'show') return showPanel(msg.content);
-        if (msg.op === 'hide') return hidePanel(false);
+        if (msg.op === 'show') return showPanel(s, msg.content);
+        if (msg.op === 'hide') return hidePanel(false, s);
         return hostWarn('terra.panel: unknown op "' + msg.op + '"');
       case 'listen':
-        if (msg.event === 'open') { host.listensOpen = true; updateChrome(); }
+        if (msg.event === 'open') { s.listensOpen = true; updateChrome(); }
         return;
       case 'timer': {
         // terra.js's own timers, where the context has none (?timers=host, as in JavaScriptCore)
         const id = msg.id;
-        if (msg.op === 'clear') { const t = timers.get(id); if (t) { (t.repeat ? clearInterval : cancel)(t.handle); timers.delete(id); } return; }
+        if (msg.op === 'clear') { const t = s.timers.get(id); if (t) { (t.repeat ? clearInterval : cancel)(t.handle); s.timers.delete(id); } return; }
         if (msg.op !== 'set') return;
-        const fire = () => { if (!msg.repeat) timers.delete(id); deliver({ type: 'timer', id }); };
-        timers.set(id, { repeat: !!msg.repeat, handle: msg.repeat ? setInterval(fire, Math.max(1, msg.ms)) : later(fire, msg.ms) });
+        const fire = () => { if (!msg.repeat) s.timers.delete(id); deliver(s, { type: 'timer', id }); };
+        s.timers.set(id, { repeat: !!msg.repeat, handle: msg.repeat ? setInterval(fire, Math.max(1, msg.ms)) : later(fire, msg.ms) });
         return;
       }
       default: hostWarn('a message the host does not know: ' + JSON.stringify(msg).slice(0, 200));
     }
   }
 
-  function resetHost() {
-    host.geo.clear(); host.images.clear(); host.sprites.clear();
-    host.time = null;
-    host.caption = { title: '', text: '' };
-    host.globe = { historical: false, still: false };
-    zoomLimit = 8;
-    host.scheme = 'touchables';
-    host.listensOpen = false;
+  // everything a stage asked for, taken away (its pictures stay decoded for the next start)
+  function resetHost(s) {
+    s.geo.clear(); s.images.clear(); s.sprites.clear();
+    s.time = null;
+    s.caption = { title: '', text: '' };
+    s.globe = { historical: false, still: false, maxZoom: null };
+    s.scheme = 'touchables';
+    s.listensOpen = false;
     imagesVersion++;
-    hidePanel(false);
-    for (const t of timers.values()) (t.repeat ? clearInterval : cancel)(t.handle);
-    timers.clear();
+    hidePanel(false, s);
+    for (const t of s.timers.values()) (t.repeat ? clearInterval : cancel)(t.handle);
+    s.timers.clear();
     updateFoot();
     dirty();
   }
 
-  function startPack() {
-    if (api.running) return;
-    const where = 'prototype.json';
-    if (M.runtime !== 3) { hostError(where + ': runtime is ' + JSON.stringify(M.runtime) + '; this preview runs runtime-3 packs'); return; }
-    if (M.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(M.presentation) + ')');
-    const scripts = Array.isArray(M.scripts) ? M.scripts : [];
+  /** The reader is with this stage now: it comes to the front; the one that was there hears it is behind. */
+  function bringToFront(s, by) {
+    const i = stages.indexOf(s);
+    if (i < 0 || i === stages.length - 1) return;
+    const was = front();
+    stages.splice(i, 1);
+    stages.push(s);
+    was.front = false;
+    stopPlayback(was, false);
+    deliver(was, { type: 'focus', front: false, by: by || 'reader' });
+    s.front = true;
+    deliver(s, { type: 'focus', front: true, by: by || 'reader' });
+    updateFoot();
+    dirty();
+    updateChrome();
+  }
+
+  /** Starts a pack beside the ones running (one running comes to the front instead). `entry` is how the reader
+      came in: by its doorway it starts where the reader is; from the workbench (Start, a check) it flies to its anchor. */
+  function startStage(pack, entry) {
+    const s = stageById.get(pack.id);
+    if (s.running) { bringToFront(s, 'reader'); return; }
+    const Mp = pack.M, where = 'prototype.json' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
+    if (Mp.runtime !== 3 && Mp.runtime !== 4) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs runtime-3 and runtime-4 packs'); return; }
+    if (Mp.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(Mp.presentation) + ')');
+    const scripts = Array.isArray(Mp.scripts) ? Mp.scripts : [];
     if (!scripts.length) hostError(where + ': scripts must list the pack\'s scripts, in order');
     const urls = [];
-    for (const s of scripts) {
-      const p = cleanPath(s);
-      if (!p || !FILES.has(p)) hostError(where + ': scripts lists "' + s + '", which is not a file of the pack');
-      else urls.push(packUrl(p));
+    for (const sc of scripts) {
+      const p = cleanPath(sc);
+      if (!p || !pack.FILES.has(p)) hostError(where + ': scripts lists "' + sc + '", which is not a file of the pack');
+      else urls.push(packUrl(s, p));
     }
-    resetHost();
-    api.running = true; api.started = false; api.ended = false;
-    early = [];
-    log('harness', 'info', 'starting ' + ID + ': ' + urls.length + ' script' + (urls.length === 1 ? '' : 's') + (Q.timers === 'host' ? ' (timers through the host)' : ''));
-    const a = M.anchor;
-    if (a && validPos([a.lon, a.lat])) flyTo(a.lon, a.lat, a.zoom == null ? cam.zoom : a.zoom, 1.0);
+    // room for it: the one the reader left longest ago goes, never the one in front
+    while (stages.length >= STAGE_BUDGET) {
+      log('harness', 'info', stages[0].id + ': ended to make room (at most ' + STAGE_BUDGET + ' experiences run at once)');
+      endStage(stages[0], 'room');
+    }
+    resetHost(s);
+    s.running = true; s.started = false; s.ended = false; s.early = []; s.entry = entry || 'workbench'; s.t0 = now();
+    const was = front();
+    if (was) { was.front = false; stopPlayback(was, false); deliver(was, { type: 'focus', front: false, by: 'host' }); }
+    s.front = true;
+    stages.push(s);
+    log('harness', 'info', 'starting ' + pack.id + ' (by ' + s.entry + '): ' + urls.length + ' script' + (urls.length === 1 ? '' : 's') + (Q.timers === 'host' ? ' (timers through the host)' : ''));
+    const here = camera();
+    const a = Mp.anchor;
+    if (s.entry === 'doorway') { /* where the reader is */ }
+    else if (a && validPos([a.lon, a.lat])) flyTo(a.lon, a.lat, a.zoom == null ? cam.zoom : a.zoom, 1.0);
     else if (a) hostWarn(where + ': anchor needs lon and lat (and zoom 0.8–8)');
-    const w = worker = new Worker('/_harness/worker.js');
+    const w = s.worker = new Worker('/_harness/worker.js');
     w.onmessage = (e) => {
       const m = e.data || {};
-      if (w !== worker) {                       // ending: only what the close listeners say is heard
-        if (w === closing && m.kind === 'send' && m.message && m.message.type === 'log') handle(m.message);
+      if (w !== s.worker) {                       // ending: only what the close listeners say is heard
+        if (w === s.closing && m.kind === 'send' && m.message && m.message.type === 'log') handle(s, m.message);
         return;
       }
-      if (m.kind === 'send') handle(m.message);
+      if (m.kind === 'send') handle(s, m.message);
       else if (m.kind === 'loaded') {
-        api.started = true;
-        log('harness', 'info', 'started: ' + m.ok + ' of ' + m.scripts + ' script' + (m.scripts === 1 ? '' : 's') + ' ran without an error');
-        deliver({ type: 'settings', settings: Object.assign({}, settings) });
-        const waiting = early;
-        early = [];
-        waiting.forEach(deliver);
+        s.started = true;
+        log('harness', 'info', (PACKS.length > 1 ? pack.id + ' ' : '') + 'started: ' + m.ok + ' of ' + m.scripts + ' script' + (m.scripts === 1 ? '' : 's') + ' ran without an error');
+        deliver(s, { type: 'settings', settings: Object.assign({}, settings) });
+        const waiting = s.early;
+        s.early = [];
+        waiting.forEach((msg) => deliver(s, msg));
         updateChrome();
       }
     };
-    w.onerror = (e) => { e.preventDefault(); log('script', 'error', e.message || 'the script context failed'); };
-    w.postMessage({ kind: 'boot', runtime: P.runtime, scripts: urls, files: [...FILES], base: '/pack/' + ID + '/',
+    w.onerror = (e) => { e.preventDefault(); log('script', 'error', (PACKS.length > 1 ? pack.id + ': ' : '') + (e.message || 'the script context failed')); };
+    w.postMessage({ kind: 'boot', runtime: P.runtime, scripts: urls, files: [...pack.FILES], base: '/pack/' + pack.id + '/',
                     timers: Q.timers === 'host' ? 'host' : 'native',
-                    boot: { pack: { id: ID, revision: 0, origin: 'preview' }, settings: Object.assign({}, settings), camera: camera() } });
+                    boot: { pack: { id: pack.id, revision: 0, origin: 'preview' }, settings: Object.assign({}, settings), camera: camera(),
+                            focus: true, entry: { by: s.entry, lon: here.lon, lat: here.lat, zoom: here.zoom } } });
     updateChrome();
   }
-  function endPack(by) {
-    if (!api.running) return;
-    deliver({ type: 'close' });
-    const w = worker;
-    closing = w;
-    worker = null;
-    early = [];
-    later(() => { w.terminate(); if (closing === w) closing = null; }, 150);
-    api.running = false; api.started = false; api.ended = true;
-    cancel(camTimer); cancel(camStopTimer); camTimer = camStopTimer = 0;
-    resetHost();
-    log('harness', 'info', 'ended' + (by === 'script' ? ' by terra.close()' : '') + '; the globe is as it was');
+  function endStage(s, by) {
+    if (!s.running) return;
+    deliver(s, { type: 'close' });
+    const w = s.worker;
+    s.closing = w;
+    s.worker = null;
+    s.early = [];
+    later(() => { w.terminate(); if (s.closing === w) s.closing = null; }, 150);
+    const wasFront = s === front();
+    stages.splice(stages.indexOf(s), 1);
+    s.running = false; s.started = false; s.ended = true; s.front = false;
+    if (!stages.length) { cancel(camTimer); cancel(camStopTimer); camTimer = camStopTimer = 0; }
+    resetHost(s);
+    const next = front();
+    if (wasFront && next) { next.front = true; deliver(next, { type: 'focus', front: true, by: 'host' }); }
+    log('harness', 'info', (PACKS.length > 1 ? s.id + ' ' : '') + 'ended' + (by === 'script' ? ' by terra.close()' : by === 'room' ? ' to make room' : '')
+      + (stages.length ? '; ' + (next ? next.id + ' is in front' : '') : '; the globe is as it was'));
+    updateFoot();
     updateChrome();
   }
+  function endAll(by) { while (stages.length) endStage(front(), by); }
   function pressOpen() {
-    if (api.started && host.listensOpen) deliver({ type: 'open', params: {} });
+    const f = front();
+    if (f && f.started && f.listensOpen) deliver(f, { type: 'open', params: {} });
   }
 
-  // ---- the chip, the controls, the readout
+  // ---- the chip (the front stage's name, how many more run, Open, ✕), the controls, the readout
+  function syncApi() {
+    const s = primary || front();
+    api.running = s ? s.running : stages.length > 0;
+    api.started = s ? s.started : stages.some((x) => x.started);
+    api.ended = s ? s.ended : false;
+  }
   function updateChrome() {
-    $('chip').hidden = !api.running;
-    $('chip-open').hidden = !host.listensOpen;
-    $('start').hidden = api.running;
-    $('start-button').textContent = api.ended ? 'Start again' : 'Start';
-    $('start-button').setAttribute('aria-label', (api.ended ? 'Start again: ' : 'Start: ') + (M.title || ID));
-    $('ctl-start').disabled = api.running;
-    $('ctl-end').disabled = !api.running;
+    syncApi();
+    const f = front();
+    $('chip').hidden = !f;
+    if (f) $('chip-name').textContent = (f.M.title || f.id) + (stages.length > 1 ? '  +' + (stages.length - 1) : '');
+    $('chip-open').hidden = !(f && f.listensOpen);
+    $('chip-close').setAttribute('aria-label', f && stages.length > 1 ? 'End ' + (f.M.title || f.id) : 'End the prototype');
+    // Start is the primary pack's (the page is about it); on /atlas the doorways are the way in
+    $('start').hidden = !primary || primary.running;
+    $('start-button').textContent = primary && primary.ended ? 'Start again' : 'Start';
+    $('start-button').setAttribute('aria-label', (primary && primary.ended ? 'Start again: ' : 'Start: ') + (M.title || ID));
+    $('ctl-start').disabled = !primary || primary.running;
+    $('ctl-end').disabled = !f;
+    $('ctl-restart').disabled = !primary;
+    if ($('ctl-end-all')) $('ctl-end-all').disabled = stages.length < 2;
     dirty();
     updateReadout();
   }
@@ -1566,9 +1696,13 @@
     if (t - readoutAt < 150) return;
     readoutAt = t;
     $('readout').textContent = 'lon ' + cam.lon.toFixed(2) + ', lat ' + cam.lat.toFixed(2) + ', zoom ' + cam.zoom.toFixed(2) + ' · reading ' + rs.toFixed(2);
-    $('state').textContent = !api.running ? (doorway ? 'Not running: its doorway is on the globe.' : 'Not running.')
-      : [host.geo.size + ' geo layer' + (host.geo.size === 1 ? '' : 's') + ', ' + host.images.size + ' picture' + (host.images.size === 1 ? '' : 's') + ', ' + host.sprites.size + ' sprite' + (host.sprites.size === 1 ? '' : 's'),
-         'touch: ' + host.scheme + (M.taps ? ', taps' : '') + (host.globe.still ? ' · still' : '') + (host.globe.historical ? ' · historical' : '')].join('\n');
+    const lines = [];
+    if (!stages.length) lines.push(doorways.length ? 'Nothing running: ' + doorways.length + ' doorway' + (doorways.length === 1 ? ' is' : 's are') + ' on the globe.' : 'Nothing running.');
+    for (const s of stages.slice().reverse()) {
+      lines.push((s === front() ? '▸ ' : '  ') + s.id + ': ' + s.geo.size + ' geo layer' + (s.geo.size === 1 ? '' : 's') + ', ' + s.images.size + ' picture' + (s.images.size === 1 ? '' : 's') + ', ' + s.sprites.size + ' sprite' + (s.sprites.size === 1 ? '' : 's')
+        + ' · touch: ' + s.scheme + (s.M.taps ? ', taps' : '') + (s.globe.still ? ' · still' : '') + (s.globe.historical ? ' · historical' : '') + (s === front() ? ' · in front' : ''));
+    }
+    $('state').textContent = lines.join('\n');
   }
   function applySettings(patch) {
     Object.assign(settings, patch || {});
@@ -1577,36 +1711,41 @@
     $('scale-out').textContent = settings.textScale.toFixed(1);
     $('motion').checked = !!settings.reduceMotion;
     document.documentElement.style.setProperty('--ts', String(settings.textScale));
-    if (settings.reduceMotion && host.time && host.time.playing) { host.time.playing = false; sendTime('host'); }
+    if (settings.reduceMotion) for (const s of stages) if (s.time && s.time.playing) { s.time.playing = false; sendTime(s, 'host'); }
     updateFoot();
     dirty();
-    if (api.started) deliver({ type: 'settings', settings: Object.assign({}, settings) });
+    for (const s of stages) if (s.started) deliver(s, { type: 'settings', settings: Object.assign({}, settings) });
   }
   $('scale').addEventListener('input', (e) => applySettings({ textScale: +e.target.value }));
   $('motion').addEventListener('change', (e) => applySettings({ reduceMotion: e.target.checked }));
   document.addEventListener('visibilitychange', () => applySettings({ active: !document.hidden }));
-  $('start-button').addEventListener('click', startPack);
-  $('ctl-start').addEventListener('click', startPack);
-  $('ctl-end').addEventListener('click', () => endPack('reader'));
-  $('ctl-restart').addEventListener('click', () => { endPack('reader'); later(startPack, 200); });
-  $('chip-close').addEventListener('click', () => endPack('reader'));
+  const startPrimary = () => { if (primaryPack) startStage(primaryPack, 'workbench'); };
+  $('start-button').addEventListener('click', startPrimary);
+  $('ctl-start').addEventListener('click', startPrimary);
+  $('ctl-end').addEventListener('click', () => { if (front()) endStage(front(), 'reader'); });
+  $('ctl-restart').addEventListener('click', () => { if (primary && primary.running) endStage(primary, 'reader'); later(startPrimary, 200); });
+  if ($('ctl-end-all')) $('ctl-end-all').addEventListener('click', () => endAll('reader'));
+  $('chip-close').addEventListener('click', () => { if (front()) endStage(front(), 'reader'); });
   $('chip-open').addEventListener('click', pressOpen);
 
-  // ---- the hands: drags turn the globe or are the pack's, wheel and pinch zoom, clicks are taps
+  // ---- the hands: drags turn the globe or are a stage's, wheel and pinch zoom, clicks are taps
   const pointers = new Map();
   let gesture = null;
   const local = (e) => { const r = stage.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  function touchOut(phase, at, target) {
+  function touchOut(s, phase, at, target) {
     const ll = unproject(at[0], at[1], camera());
     const t = { type: 'touch', phase, target: target || null, x: +at[0].toFixed(2), y: +at[1].toFixed(2), lon: ll ? ll.lon : null, lat: ll ? ll.lat : null };
-    api.touches.push({ phase, target: t.target, x: t.x, y: t.y, lon: t.lon, lat: t.lat });
+    api.touches.push({ stage: s.id, phase, target: t.target, x: t.x, y: t.y, lon: t.lon, lat: t.lat });
     if (api.touches.length > 500) api.touches.shift();
-    deliver(t);
+    deliver(s, t);
   }
+  // a tap: on something touchable, that stage's (it comes to the front); else the front stage's, if it takes
+  // every tap; else, in the app, a country is chosen
   function tapAt(x, y, hit) {
-    if (hit) return touchOut('tap', [x, y], hit);
-    if (M.taps === true) return touchOut('tap', [x, y], null);
-    log('harness', 'info', 'a tap on the globe: in the app it chooses a country ("taps" is not true and nothing touchable is here)');
+    if (hit) { bringToFront(hit.stage, 'reader'); return touchOut(hit.stage, 'tap', [x, y], hit.target); }
+    const f = front();
+    if (f && f.started && f.M.taps === true) return touchOut(f, 'tap', [x, y], null);
+    log('harness', 'info', 'a tap on the globe: in the app it chooses a country ("taps" is not true' + (f ? ' for ' + f.id : '') + ' and nothing touchable is here)');
   }
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.addEventListener('pointerdown', (e) => {
@@ -1618,16 +1757,19 @@
     lastTouch = now();
     flight = null;
     if (pointers.size === 2) {
-      if (gesture && gesture.kind === 'pack' && gesture.began) touchOut('ended', gesture.last, gesture.target);
+      if (gesture && gesture.kind === 'pack' && gesture.began) touchOut(gesture.stage, 'ended', gesture.last, gesture.target);
       gesture = { kind: 'pinch' };
+      lastHands = now();
       return;
     }
     if (pointers.size > 2) return;
     const turnKey = e.shiftKey || e.altKey || e.button === 2;
-    const hit = api.started ? hitTest(at[0], at[1]) : null;
-    const door = !api.running && doorway && doorway.drawn && within(at[0], at[1], grow(doorway.drawn.rect, Math.max(0, (44 - doorway.drawn.rect[2]) / 2)));
-    const pack = api.started && !turnKey && (host.scheme === 'one-finger' || !!hit);
-    gesture = { kind: pack ? 'pack' : 'globe', target: hit, door, x0: at[0], y0: at[1], last: at, start: now(), moved: false, began: false };
+    const hit = hitStage(at[0], at[1]);
+    const door = doorwayAt(at[0], at[1]);
+    const f = front();
+    const pack = !turnKey && (!!hit || (f && f.started && f.scheme === 'one-finger'));
+    gesture = { kind: pack ? 'pack' : 'globe', stage: hit ? hit.stage : f, target: hit ? hit.target : null, hit, door,
+                x0: at[0], y0: at[1], last: at, start: now(), moved: false, began: false };
     stage.classList.add('dragging');
   });
   stage.addEventListener('pointermove', (e) => {
@@ -1639,6 +1781,7 @@
     if (!gesture) return;
     if (gesture.kind === 'pinch') {
       if (pointers.size !== 2) return;
+      lastHands = now();
       const [a, b] = [...pointers.values()], other = [...pointers.entries()].find(([id]) => id !== e.pointerId)[1];
       const before = Math.hypot(prev[0] - other[0], prev[1] - other[1]), after = Math.hypot(a[0] - b[0], a[1] - b[1]);
       if (before > 0) zoomBy(after / before);
@@ -1646,13 +1789,17 @@
     }
     const far = Math.hypot(at[0] - gesture.x0, at[1] - gesture.y0) > 6;
     if (gesture.kind === 'pack') {
-      if (!gesture.began && far) { gesture.began = true; touchOut('began', [gesture.x0, gesture.y0], gesture.target); }
-      if (gesture.began) touchOut('moved', at, gesture.target);
+      if (!gesture.began && far) {
+        gesture.began = true;
+        bringToFront(gesture.stage, 'reader');
+        touchOut(gesture.stage, 'began', [gesture.x0, gesture.y0], gesture.target);
+      }
+      if (gesture.began) touchOut(gesture.stage, 'moved', at, gesture.target);
       gesture.last = at;
       return;
     }
     if (far) gesture.moved = true;
-    if (gesture.moved) turn(at[0] - prev[0], at[1] - prev[1]);
+    if (gesture.moved) { lastHands = now(); turn(at[0] - prev[0], at[1] - prev[1]); }
   });
   const release = (e) => {
     if (!pointers.has(e.pointerId)) return;
@@ -1663,14 +1810,14 @@
     if (!gs) return;
     if (gs.kind === 'pinch') { if (!pointers.size) gesture = null; return; }
     gesture = null;
-    if (e.type === 'pointercancel') { if (gs.kind === 'pack' && gs.began) touchOut('ended', gs.last, gs.target); return; }
+    if (e.type === 'pointercancel') { if (gs.kind === 'pack' && gs.began) touchOut(gs.stage, 'ended', gs.last, gs.target); return; }
     const tap = !gs.moved && !gs.began && now() - gs.start < 700;
     if (gs.kind === 'pack') {
-      if (gs.began) touchOut('ended', at, gs.target);
-      else if (tap) tapAt(at[0], at[1], gs.target);
+      if (gs.began) touchOut(gs.stage, 'ended', at, gs.target);
+      else if (tap) tapAt(at[0], at[1], gs.hit);
     } else if (tap) {
-      if (!api.running) { if (gs.door) startPack(); }
-      else if (api.started) tapAt(at[0], at[1], gs.target);
+      if (gs.door) startStage(gs.door.pack, 'doorway');
+      else tapAt(at[0], at[1], null);
     }
   };
   stage.addEventListener('pointerup', release);
@@ -1678,16 +1825,17 @@
   stage.addEventListener('wheel', (e) => {
     e.preventDefault();
     lastTouch = now();
+    lastHands = now();
     flight = null;
     zoomBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)));
   }, { passive: false });
   stage.addEventListener('keydown', (e) => {
     const step = 10 / cam.zoom, keys = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] };
     lastTouch = now();
-    if (keys[e.key]) { flight = null; cam.lon = wrapLon(cam.lon + keys[e.key][0]); cam.lat = clamp(cam.lat + keys[e.key][1], -80, 80); cameraMoved(); }
-    else if (e.key === '+' || e.key === '=') zoomBy(1.25);
-    else if (e.key === '-') zoomBy(1 / 1.25);
-    else if ((e.key === 'Enter' || e.key === ' ') && !api.running) startPack();
+    if (keys[e.key]) { flight = null; lastHands = now(); cam.lon = wrapLon(cam.lon + keys[e.key][0]); cam.lat = clamp(cam.lat + keys[e.key][1], -80, 80); cameraMoved(); }
+    else if (e.key === '+' || e.key === '=') { lastHands = now(); zoomBy(1.25); }
+    else if (e.key === '-') { lastHands = now(); zoomBy(1 / 1.25); }
+    else if ((e.key === 'Enter' || e.key === ' ') && primary && !primary.running) startPrimary();
     else return;
     e.preventDefault();
   });
@@ -1696,10 +1844,11 @@
     const t = now();
     if (t - hoverAt < 60) return;
     hoverAt = t;
-    const hit = api.started ? hitTest(at[0], at[1]) : null;
-    const door = !api.running && doorway && doorway.drawn && within(at[0], at[1], grow(doorway.drawn.rect, 8));
+    const hit = hitStage(at[0], at[1]);
+    const door = doorwayAt(at[0], at[1]);
+    const f = front();
     stage.classList.toggle('pointing', !!(hit || door));
-    stage.classList.toggle('reach', !hit && !door && api.started && host.scheme === 'one-finger');
+    stage.classList.toggle('reach', !hit && !door && !!f && f.started && f.scheme === 'one-finger');
   }
 
   // ---- the frame loop: the flight, the idle turn, the date playing, sprites moving; drawn when something changed
@@ -1709,7 +1858,7 @@
     const dt = clamp((t - lastFrame) / 1000, 0, 0.1);
     lastFrame = t;
     if (flight) stepFlight(t);
-    else if (!host.globe.still && !settings.reduceMotion && !pointers.size && t - lastTouch > idleAfter * 1000) {
+    else if (!merged().still && !settings.reduceMotion && !pointers.size && t - lastTouch > idleAfter * 1000) {
       // left alone, it turns as the Earth does, west to east (GlobeView: 4 degrees a second)
       cam.lon = wrapLon(cam.lon - 4 * dt);
       cameraMoved();
@@ -1718,7 +1867,7 @@
     postCamera();
     // (the last drawing was a quick one while the camera moved: drawn again, finely, once it is at rest)
     const sharpen = cameraMoving && !(flight || pointers.size || t - lastCamMove < 180);
-    if (needsRender || sharpen || spritesAnimate() || (doorway && !api.running && (doorway.look.pics.length > 1 || doorway.look.every))) {
+    if (needsRender || sharpen || spritesAnimate()) {
       needsRender = false;
       render(t);
       updateReadout();
@@ -1726,6 +1875,27 @@
   }
 
   // ---- checks' handles
+  const stageOf = (id) => (id ? stageById.get(id) : null) || primary || front() || makeStage({ id: 'none', M: {}, FILES: new Set() });
+  const doorwayOf = (d) => ({ pack: d.pack.id, label: d.label, lon: d.lon, lat: d.lat, visible: !!d.drawn, x: d.drawn && d.drawn.x, y: d.drawn && d.drawn.y,
+                             looks: d.looks.map((l) => ({ minZoom: l.minZoom, maxZoom: l.maxZoom, frames: l.pics.length, every: l.every, for: l.for })),
+                             moving: !!d.path, running: stageById.get(d.pack.id).running });
+  const summary = (s) => ({ id: s.id, running: s.running, started: s.started, front: s === front(), entry: s.entry,
+                            geo: s.geo.size, images: s.images.size, sprites: s.sprites.size, scheme: s.scheme, historical: s.globe.historical, still: s.globe.still,
+                            time: s.time ? timeLabel(s.time) : null, caption: Object.assign({}, s.caption) });
+  function stateOf(s) {
+    return {
+      id: s.id, running: s.running, started: s.started, ended: s.ended, front: s === front(), entry: s.entry, scheme: s.scheme, listensOpen: s.listensOpen,
+      globe: Object.assign({}, s.globe), caption: Object.assign({}, s.caption),
+      time: s.time && Object.assign({}, s.time, { ticks: s.time.ticks.length, label: timeLabel(s.time) }),
+      panel: panelOwner === s && panelInfo ? Object.assign({}, panelInfo) : null, camera: camera(), reading: rs,
+      geo: [...s.geo.values()].map((L) => ({ id: L.id, style: L.style, touchable: L.touchable, features: L.features, vertices: L.vertices, minZoom: L.minZoom, maxZoom: L.maxZoom, drawn: L.drawn.length })),
+      images: [...s.images.values()].map((im) => ({ id: im.id, image: im.path, bounds: im.bounds, ok: im.pic.ok, minZoom: im.minZoom, maxZoom: im.maxZoom, alpha: imageAlpha(im, cam.zoom) })),
+      sprites: [...s.sprites.values()].map((sp) => ({ id: sp.id, label: sp.label, touchable: sp.touchable, moving: !!sp.path, looks: sp.looks.map((l) => ({ minZoom: l.minZoom, maxZoom: l.maxZoom, frames: l.pics.length })),
+        drawn: sp.drawn && { x: sp.drawn.x, y: sp.drawn.y, look: sp.drawn.look, flipped: sp.flip } })),
+      stages: stages.map(summary),
+      doorways: doorways.map(doorwayOf),
+    };
+  }
   Object.assign(api, {
     camera,
     flyTo: (lon, lat, zoom, seconds) => { lastTouch = now(); flyTo(lon, lat, zoom, seconds == null ? 0 : seconds); },
@@ -1733,30 +1903,28 @@
     redraw: () => { dirty(); },
     clock: () => (now() - t0) / 1000,          // the log's clock
     lastMove: () => (lastCamMove - t0) / 1000,
-    start: startPack,
-    end: () => endPack('reader'),
+    start: (id) => { const k = id ? PACKS.find((p) => p.id === id) : primaryPack; if (k) startStage(k, id ? 'workbench' : 'workbench'); else hostError('no pack "' + id + '" on this page'); },
+    enter: (id) => { const k = PACKS.find((p) => p.id === id); if (k) startStage(k, 'doorway'); else hostError('no pack "' + id + '" on this page'); },
+    end: (id) => { const s = id ? stageById.get(id) : (primary && primary.running ? primary : front()); if (s) endStage(s, 'reader'); },
+    endAll: () => endAll('reader'),
+    bringToFront: (id) => { const s = stageById.get(id); if (s && s.running) bringToFront(s, 'reader'); },
     open: pressOpen,
     setSettings: applySettings,
     reading: () => rs,
     touchables,
     hitTest,
+    hitStage: (x, y) => { const h = hitStage(x, y); return h ? { stage: h.stage.id, target: h.target } : null; },
     project: (lon, lat) => { const c = camera(), v = unit(lon, lat), o = projectUnit(v[0], v[1], v[2], rotation(c), c, {}); return { x: o.x, y: o.y, facing: o.z }; },
     unproject: (x, y) => unproject(x, y, camera()),
-    settled: () => api.ready && !flight && pendingPictures === 0 && (!api.running || api.started),
-    doorway: () => (doorway ? { label: doorway.label, lon: doorway.lon, lat: doorway.lat, visible: !!doorway.drawn, x: doorway.drawn && doorway.drawn.x, y: doorway.drawn && doorway.drawn.y } : null),
-    state: () => ({
-      running: api.running, started: api.started, ended: api.ended, scheme: host.scheme, listensOpen: host.listensOpen,
-      globe: Object.assign({}, host.globe), caption: Object.assign({}, host.caption),
-      time: host.time && Object.assign({}, host.time, { ticks: host.time.ticks.length, label: timeLabel(host.time) }),
-      panel: host.panel && Object.assign({}, host.panel), camera: camera(), reading: rs,
-      geo: [...host.geo.values()].map((L) => ({ id: L.id, style: L.style, touchable: L.touchable, features: L.features, vertices: L.vertices, minZoom: L.minZoom, maxZoom: L.maxZoom, drawn: L.drawn.length })),
-      images: [...host.images.values()].map((im) => ({ id: im.id, image: im.path, bounds: im.bounds, ok: im.pic.ok, minZoom: im.minZoom, maxZoom: im.maxZoom, alpha: imageAlpha(im, cam.zoom) })),
-      sprites: [...host.sprites.values()].map((s) => ({ id: s.id, label: s.label, touchable: s.touchable, moving: !!s.path, looks: s.looks.map((l) => ({ minZoom: l.minZoom, maxZoom: l.maxZoom, frames: l.pics.length })),
-        drawn: s.drawn && { x: s.drawn.x, y: s.drawn.y, look: s.drawn.look, flipped: s.flip } })),
-    }),
+    settled: () => api.ready && !flight && pendingPictures === 0 && stages.every((s) => s.started),
+    doorway: (id) => { const d = doorways.find((x) => x.pack.id === (id || PRIMARY)); return d ? doorwayOf(d) : null; },
+    doorways: () => doorways.map(doorwayOf),
+    stages: () => stages.map(summary),
+    front: () => (front() ? front().id : null),
+    state: (id) => stateOf(stageOf(id)),
   });
 
-  // ---- off we go: the globe's data, type and fonts, then the doorway or the pack
+  // ---- off we go: the globe's data, type and fonts, then the doorways, or the pack
   const loads = [
     fetch('/_harness/land-50m.json').then((r) => r.json()).then((topo) => {
       const arcs = decodeArcs(topo);
@@ -1773,19 +1941,23 @@
   ];
   Promise.allSettled(loads).then((results) => {
     results.forEach((r, i) => { if (r.status === 'rejected') log('harness', 'warn', ['land', 'countries', 'type spec', 'fonts'][i] + ' not loaded: ' + (r.reason && r.reason.message)); });
-    doorway = readDoorway();
-    const autostart = Q.start === '1' || !doorway;
-    if (doorway && !autostart) {
-      // the atlas round the doorway, close enough for its look to show
-      Object.assign(cam, { lon: wrapLon(doorway.lon), lat: clamp(doorway.lat, -80, 80), zoom: clamp(Math.max(1, doorway.look.minZoom + 0.25), 0.8, 8) });
-      if (!zoomHolds(doorway.look, cam.zoom)) cam.zoom = clamp(doorway.look.maxZoom, 0.8, 8);
+    doorways = PACKS.map(readDoorway).filter(Boolean);
+    const own = primaryPack ? doorways.find((d) => d.pack === primaryPack) : null;
+    const autostart = !!primaryPack && (Q.start === '1' || !own);
+    if (own && !autostart) {
+      // the atlas round the doorway, close enough for its picture itself (the look that needs the most zoom) to show
+      const close = own.looks.reduce((a, b) => (b.minZoom > a.minZoom ? b : a), own.looks[0]);
+      Object.assign(cam, { lon: wrapLon(own.lon), lat: clamp(own.lat, -80, 80), zoom: clamp(Math.max(1, close.minZoom + 0.25), 0.8, 8) });
+      if (!zoomHolds(close, cam.zoom)) cam.zoom = clamp(close.maxZoom, 0.8, 8);
       cameraMoved();
-      log('harness', 'info', 'the doorway "' + doorway.label + '" is on the globe: touch it, or Start');
+      log('harness', 'info', 'the doorway "' + own.label + '" is on the globe: touch it, or Start');
+    } else if (!primaryPack && doorways.length) {
+      log('harness', 'info', doorways.length + ' doorways are on the globe, each alive: touch one to start its pack beside the others');
     }
     api.ready = true;
     applySettings({});
     updateChrome();
-    if (autostart) startPack();
+    if (autostart) startPrimary();
     requestAnimationFrame(frame);
   });
 })();

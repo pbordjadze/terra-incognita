@@ -46,10 +46,20 @@ final class PackScript {
         }
     }
 
+    /// How the reader came in (`terra.entry`): by a doorway, the workbench, a link or a debug launch,
+    /// and where the reader was.
+    struct Entry {
+        var by: String
+        var lon, lat, zoom: Double
+    }
+
     let pack: PlaygroundPack
     var onEvent: ((PackScriptEvent) -> Void)?
     /// The script registered `terra.on('open')`: the chip offers Open.
     private(set) var listensForOpen = false
+    private let entry: Entry
+    /// In front (`terra.focus`): the stage says.
+    private var front: Bool
 
     private var context: JSContext?
     private let live = LiveCount.Token(.scripts)
@@ -69,9 +79,11 @@ final class PackScript {
     static let timerBudget = 256
     static let shortestRepeat = 1.0 / 60
 
-    init(pack: PlaygroundPack, active: Bool) {
+    init(pack: PlaygroundPack, active: Bool, entry: Entry, front: Bool = true) {
         self.pack = pack
         self.settings = Self.systemSettings(active: active)
+        self.entry = entry
+        self.front = front
     }
 
     // MARK: starting and stopping
@@ -149,6 +161,8 @@ final class PackScript {
         var b: [String: Any] = [
             "pack": ["id": pack.id, "revision": pack.revision, "origin": pack.origin.rawValue] as [String: Any],
             "settings": settingsPayload(settings),
+            "focus": front,
+            "entry": ["by": entry.by, "lon": entry.lon, "lat": entry.lat, "zoom": entry.zoom] as [String: Any],
         ]
         if let camera { b["camera"] = camera.payload }
         return b
@@ -220,6 +234,13 @@ final class PackScript {
 
     /// The chip's Open (or the doorway's).
     func open() { emit(["type": "open", "params": [String: Any]()]) }
+
+    /// It came to the front, or left it (runtime 4: `terra.focus`, `terra.on('focus')`).
+    func focus(_ isFront: Bool, by: String) {
+        guard isFront != front else { return }
+        front = isFront
+        emit(["type": "focus", "front": isFront, "by": by])
+    }
 
     /// The reader closed the panel.
     func panelClosed() { emit(["type": "panel", "open": false]) }

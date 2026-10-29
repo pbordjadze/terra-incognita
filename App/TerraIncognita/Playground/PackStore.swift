@@ -12,7 +12,7 @@ import OSLog
 
 // MARK: - The contract's data
 
-/// `prototype.json` (runtime 3: docs/runtime3.md).
+/// `prototype.json` (runtime 3 and 4: docs/runtime3.md).
 nonisolated struct PackManifest: Codable, Equatable, Sendable {
     nonisolated struct Anchor: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var zoom: Double? }
     /// How something shows on the globe at a range of zooms: a picture, or frames in turn; now and then
@@ -22,8 +22,39 @@ nonisolated struct PackManifest: Codable, Equatable, Sendable {
         var minZoom: Double?; var maxZoom: Double?; var every: Double?; var `for`: Double?; var face: Bool?
         var pictures: [String] { frames ?? image.map { [$0] } ?? [] }
     }
-    /// How the pack shows on the globe while it is not running; touching it starts the pack.
-    nonisolated struct Doorway: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var label: String; var look: Look }
+    /// A sprite's path's loop in JSON: `true` (again), `false` (once) or `"back"` (to and fro).
+    nonisolated enum Loop: Codable, Equatable, Sendable {
+        case again, back, once
+        init(from decoder: Decoder) throws {
+            let c = try decoder.singleValueContainer()
+            if let b = try? c.decode(Bool.self) { self = b ? .again : .once }
+            else if let s = try? c.decode(String.self), s == "back" { self = .back }
+            else { self = .again }
+        }
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.singleValueContainer()
+            switch self {
+            case .again: try c.encode(true)
+            case .once: try c.encode(false)
+            case .back: try c.encode("back")
+            }
+        }
+        var marker: GlobeMarker.Path.Loop {
+            switch self {
+            case .again: .repeat
+            case .back: .back
+            case .once: .once
+            }
+        }
+    }
+    /// A way along great circles, the whole of it in `seconds` (a doorway's stirring, runtime 4).
+    nonisolated struct Path: Codable, Equatable, Sendable { var coordinates: [[Double]]; var seconds: Double?; var loop: Loop? }
+    /// How the pack shows on the globe while it is not running; touching it starts the pack. One
+    /// `look`, or (runtime 4) `looks` by zoom, a `path` it stirs along, a slow breath.
+    nonisolated struct Doorway: Codable, Equatable, Sendable {
+        var lon: Double; var lat: Double; var label: String
+        var look: Look?; var looks: [Look]?; var path: Path?; var breathes: Bool?
+    }
     var id: String; var title: String; var summary: String; var runtime: Int; var presentation: String
     var scripts: [String]?; var anchor: Anchor?; var doorway: Doorway?; var taps: Bool?; var shelf: String?
 }
@@ -274,7 +305,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 3
+    nonisolated static let runtime = 4
     static let shared = PackStore()
 
     /// One per pack id, by title.
@@ -834,15 +865,16 @@ final class PackStore {
         guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        guard manifest.runtime == runtime else {
-            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime \(runtime), drawn by the globe")
+        // (runtime 4 hosts runtime-3 packs unchanged: docs/runtime3.md)
+        guard manifest.runtime >= 3, manifest.runtime <= runtime else {
+            throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtime 3 and \(runtime), drawn by the globe")
         }
         guard manifest.presentation == "globe" else {
             throw PackError("presentation must be “globe”: every pack lives on the globe")
         }
         guard let scripts = manifest.scripts, !scripts.isEmpty else { throw PackError("it lists no scripts") }
         var named = scripts
-        named += manifest.doorway?.look.pictures ?? []
+        if let door = manifest.doorway { named += (door.looks ?? door.look.map { [$0] } ?? []).flatMap(\.pictures) }
         for path in named where !PackRules.isSafePath(path) {
             throw PackError("“\(path)” is not a path inside the pack")
         }

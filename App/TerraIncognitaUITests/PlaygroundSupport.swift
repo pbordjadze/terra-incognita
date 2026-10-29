@@ -112,6 +112,27 @@ extension XCTestCase {
         }
     }
 
+    /// ✕ on the chip while others still run (runtime 4): the one in front ends and `title`'s comes to the front.
+    @MainActor func endFront(leaving title: String, in app: XCUIApplication) {
+        let end = app.buttons["endActivePrototype"].firstMatch
+        XCTAssertTrue(end.waitForExistence(timeout: 10), "A prototype in front can always be ended from its chip")
+        end.tap()
+        let chip = app.staticTexts["activePrototype"].firstMatch
+        let next = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", title), object: chip)
+        XCTAssertEqual(XCTWaiter().wait(for: [next], timeout: 10), .completed,
+                       "Ending the one in front leaves \(title) in front: \(chip.exists ? chip.label : "no chip")")
+    }
+
+    /// The workbench's live counts match a beginning and an end (the middle, a pack's own sprites, varies).
+    @MainActor func assertLive(from head: String, to tail: String, in app: XCUIApplication, _ message: String,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        let live = app.staticTexts["playgroundLive"].firstMatch
+        revealInWorkbench(live, in: app)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@ AND label ENDSWITH %@", head, tail), object: live)
+        let result = XCTWaiter().wait(for: [settled], timeout: 15)
+        XCTAssertEqual(result, .completed, "\(message): \(live.exists ? live.label : "no live counts")", file: file, line: line)
+    }
+
     /// Back to the plain globe from an active prototype on the globe.
     @MainActor func endPrototype(in app: XCUIApplication) {
         let end = app.buttons["endActivePrototype"].firstMatch
