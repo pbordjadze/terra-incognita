@@ -96,7 +96,7 @@ const KINDS = {
     name: 'A vicuña', size: 0.45, leg: 0.62, body: 0.82, depth: 0.31, slope: 0.03,
     neck: { len: 0.72, lean: 20, dip: 0.0, base: 0.15, top: 0.085 }, head: { len: 0.25, depth: 0.1, tilt: -22, snout: 0.48 },
     ears: 'llama', humps: [], tail: { len: 0.15, tuft: 0.04 },
-    coat: { base: '#C8915A', light: '#E0AF7B', shade: '#91653B', belly: '#F7F0E2', far: '#A57447' }, wool: 0.006, twoTone: true, bib: true, calluses: false
+    coat: { base: '#C8915A', light: '#E0AF7B', shade: '#91653B', belly: '#F7F0E2', far: '#A57447' }, wool: 0.006, twoTone: true, calluses: false
   },
   llama: {
     name: 'A llama', size: 0.6, leg: 0.58, body: 0.9, depth: 0.36, slope: 0.03,
@@ -343,14 +343,6 @@ function draw(a, detail, ink) {
     under.push([2, -1]);
     parts.push(`<clipPath id="under"><path d="${poly(under)}"/></clipPath>`);
     parts.push(`<path d="${poly(a.body)}" fill="${c.belly}" clip-path="url(#under)"/>`);
-  }
-  if (k.bib) {
-    // the vicuña's long white bib, hanging from the base of the throat over the chest
-    const b0 = a.neckPts[3], d = norm(sub(a.neckPts[4], a.neckPts[2])), front = mul(perp(d), -1);
-    const w0 = lerp(k.neck.base, k.neck.top, smooth(3 / 14)) / 2;
-    const root = add(b0, mul(front, w0 * 0.6));
-    const bib = tapered([root, add(root, [0.03, -0.08]), add(root, [0.035, -0.16]), add(root, [0.02, -0.22])], [0.07, 0.075, 0.06, 0.03]);
-    parts.push(`<path d="${poly(curl(bib, 0.006, 7))}" fill="${c.belly}" stroke="${INK}" stroke-width="${fine}" opacity="0.97"/>`);
   }
   if (k.patches) {
     // a llama's patches: brown over its pale coat
