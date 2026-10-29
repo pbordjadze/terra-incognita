@@ -1,0 +1,32 @@
+{
+ "source": "English Wikipedia (en.wikipedia.org), the lead section of each article as plain text",
+ "license": "CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); each article links to its page and history",
+ "fetched": "2026-10-29",
+ "tool": "tools/wikipedia/build.py",
+ "articles": {
+  "Bathymetry": {
+   "title": "Bathymetry",
+   "description": "Study of underwater depth of lake or ocean floors",
+   "extract": "Bathymetry is the study of underwater depth of ocean floors (seabed topography), river floors, or lake floors; the underwater equivalent to hypsometry or topography. The first recorded evidence of water depth measurements are from Ancient Egypt over 3000 years ago. Bathymetry has various uses including the production of bathymetric charts to guide vessels and identify underwater hazards, the study of marine life near the floor of water bodies, coastline analysis and ocean dynamics, including predicting currents and tides. Bathymetric charts (not to be confused with hydrographic charts), are typically produced to support safety of surface or sub-surface navigation, and usually show seafloor relief or terrain as contour lines (called depth contours or isobaths) and selected depths (soundings), and typically also provide surface navigational information.",
+   "url": "https://en.wikipedia.org/wiki/Bathymetry",
+   "revision": 1371785589,
+   "timestamp": "2026-08-28T12:34:55Z"
+  },
+  "Challenger expedition": {
+   "title": "Challenger expedition",
+   "description": "Oceanographic research expedition (1872–1876)",
+   "extract": "The Challenger expedition of 1872–1876 was a scientific programme that made many discoveries to lay the foundation of oceanography. The expedition was named after the naval vessel that undertook the trip, HMS Challenger. The expedition, initiated by William Benjamin Carpenter, was placed under the scientific supervision of Sir Charles Wyville Thomson—of the University of Edinburgh and Merchiston Castle School—assisted by five other scientists, including Sir John Murray, a secretary-artist and a photographer. The Royal Society of London obtained the use of Challenger from the Royal Navy and in 1872 modified the ship for scientific tasks at Sheerness, equipping it with separate laboratories for natural history and chemistry. The expedition, led by Captain George Nares, sailed from Portsmouth, England, on 21 December 1872. Other naval officers included Commander John Maclear.",
+   "url": "https://en.wikipedia.org/wiki/Challenger_expedition",
+   "revision": 1359696489,
+   "timestamp": "2026-06-16T17:57:13Z"
+  },
+  "Depth sounding": {
+   "title": "Depth sounding",
+   "description": "Measuring the depths of a body of water",
+   "extract": "Depth sounding, often simply called sounding, is measuring the depth of a body of water. Data taken from soundings are used in bathymetry to make maps of the floor of a body of water, such as the seabed topography. Soundings were traditionally shown on nautical charts in fathoms and feet. The National Oceanic and Atmospheric Administration (NOAA), the agency responsible for bathymetric data in the United States, still uses fathoms and feet on nautical charts. In other countries, the International System of Units (metres) has become the standard for measuring depth.",
+   "url": "https://en.wikipedia.org/wiki/Depth_sounding",
+   "revision": 1362919092,
+   "timestamp": "2026-07-07T00:22:55Z"
+  }
+ }
+}

@@ -150,10 +150,11 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'The vine\'s long walk · ვაზის გრძელი გზა',
+      wikipedia: 'History of wine',
       text: 'The oldest wine we know of was made in the South Caucasus, in the valleys south of Tbilisi, about eight thousand years ago: jars from the villages of Gadachrili Gora and Shulaveris Gora hold the chemical traces of grape wine from around 6000 BCE, and the vine was being grown there, not gathered. From that valley the grapevine went everywhere it grows today. The vine here is that walk drawn as one plant: it rises from a qvevri, the clay vessel buried to its mouth in which Georgian wine was made then and is made still, and grows along the ways the vine really went, in the years the record gives.',
       sections: [
-        { title: 'The way it went', text: 'Down the Zagros to Iran by 5400 BCE and into Anatolia; to the Levant and, by 3000 BCE, Egypt; over the sea to Crete and Greece; west with the Phoenicians to Carthage and Spain and with the Greeks to Sicily, Italy and Marseille (600 BCE); up the Rhône with Rome to Burgundy, Bordeaux, the Mosel and the Rhine, and up the Danube; east along the Silk Road to China by the second century BCE, and on to Japan. Then, from 1493, across the oceans: Hispaniola and Mexico, Peru and Chile, the Cape in 1655, California with the missions, Sydney with the First Fleet in 1788, New Zealand in 1819.' },
-        { title: 'What is drawn', text: 'The ways are drawn, not records of any one vine\'s travels: the vine went by many hands, cuttings and seeds, often by sea, and the lines take the straightest way between the places the record names. The years are the earliest evidence at or near each place, rounded. The leaves and clusters are the globe\'s own seasons: green in spring and summer, gold and red at the vintage, bare in winter but for the last leaves. The qvevri and the first vine are an illustration.' },
+        { title: 'The way it went', wikipedia: 'Vitis vinifera', text: 'Down the Zagros to Iran by 5400 BCE and into Anatolia; to the Levant and, by 3000 BCE, Egypt; over the sea to Crete and Greece; west with the Phoenicians to Carthage and Spain and with the Greeks to Sicily, Italy and Marseille (600 BCE); up the Rhône with Rome to Burgundy, Bordeaux, the Mosel and the Rhine, and up the Danube; east along the Silk Road to China by the second century BCE, and on to Japan. Then, from 1493, across the oceans: Hispaniola and Mexico, Peru and Chile, the Cape in 1655, California with the missions, Sydney with the First Fleet in 1788, New Zealand in 1819.' },
+        { title: 'What is drawn', wikipedia: 'Qvevri', text: 'The ways are drawn, not records of any one vine\'s travels: the vine went by many hands, cuttings and seeds, often by sea, and the lines take the straightest way between the places the record names. The years are the earliest evidence at or near each place, rounded. The leaves and clusters are the globe\'s own seasons: green in spring and summer, gold and red at the vintage, bare in winter but for the last leaves. The qvevri and the first vine are an illustration.' },
         { title: 'Touching', text: 'Touch a cluster to pick it; the vine bears again. Touch the qvevri to begin the walk again. Drag the years.' }
       ],
       sources: [
@@ -169,7 +170,7 @@
   // ---- start: the first spring in the valley ----
   terra.globe.set({ still: true, maxZoom: 16 });
   measure(terra.camera);
-  terra.caption.set({ title: 'The vine\'s long walk', text: '' });
+  terra.caption.set({ title: 'The vine\'s long walk', text: '', wikipedia: 'Georgian wine' });
   origin();
   terra.time.show({ unit: 'year', min: FIRST, max: LAST, value: FIRST, ticks: V.nodes.map(function (n) { return n.year; }),
                     playable: true, rate: RATE, playing: true, carry: false });

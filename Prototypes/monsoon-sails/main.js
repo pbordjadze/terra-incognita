@@ -228,9 +228,10 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'The monsoon\'s sails',
+      wikipedia: 'Indian Ocean trade',
       text: 'For two thousand years and more, ships crossed the Indian Ocean on the monsoon: the wind blows from the south-west through the summer and from the north-east through the winter, so a dhow could run before it one way and, after waiting for the wind to turn, before it the other way home. The dhows here wait in port with their sails furled and leave when the wind is theirs: up the ocean to Arabia and India from April and again from August, home to Africa from November. The year at the foot of the screen is also the globe\'s: the land greens and the clouds gather as the summer monsoon comes.',
       sections: [
-        { title: 'What is drawn', text: 'The ports are old ones of the trade: Kilwa, Zanzibar, Mombasa and Mogadishu on the African coast; Aden, Muscat and Sur in Arabia; Siraf in the Gulf; Mandvi in Gujarat and Calicut on the Malabar coast. The ways between them are drawn, as are the ships, their sailing dates (within the seasons) and their day\'s run of about 160 kilometres. The wind is drawn as streaks of air where the seasonal winds blow, not from a weather record.' },
+        { title: 'What is drawn', wikipedia: 'Dhow', text: 'The ports are old ones of the trade: Kilwa, Zanzibar, Mombasa and Mogadishu on the African coast; Aden, Muscat and Sur in Arabia; Siraf in the Gulf; Mandvi in Gujarat and Calicut on the Malabar coast. The ways between them are drawn, as are the ships, their sailing dates (within the seasons) and their day\'s run of about 160 kilometres. The wind is drawn as streaks of air where the seasonal winds blow, not from a weather record.' },
         { title: 'Touching', text: 'Touch a port and its ships set sail, if the wind blows their way; if it does not, they shake their furled sails and stay. Touch a ship to come closer to it.' }
       ],
       sources: [
@@ -244,7 +245,7 @@
   // ---- start ----
   terra.globe.set({ still: true, maxZoom: 12 });
   measure(terra.camera);
-  terra.caption.set({ title: 'The monsoon\'s sails', text: '' });
+  terra.caption.set({ title: 'The monsoon\'s sails', text: '', wikipedia: 'Monsoon' });
   var today = Math.floor(Date.now() / DAY);
   terra.time.show({ unit: 'day', min: FIRST, max: LAST, value: Math.max(FIRST, Math.min(LAST, today)),
                     ticks: [day(4, 8), day(6, 1), day(8, 16), day(10, 20), day(11, 12)], playable: true, rate: RATE, playing: true, carry: false });

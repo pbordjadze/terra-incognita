@@ -93,9 +93,10 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'When the sea was low',
+      wikipedia: 'Last Glacial Maximum',
       text: 'At the height of the last ice age, about 20,000 years ago, so much water was held in the ice sheets that the sea stood about 120 metres lower than today. The shallow seas round the continents were dry land: Britain was joined to Europe across what is now the North Sea (Doggerland), the islands of Indonesia were one land (Sundaland), Australia and New Guinea were one (Sahul), Asia and America were joined across the Bering Strait (Beringia), the Persian Gulf was a river valley. People and animals lived on all of it.',
       sections: [
-        { title: 'What is drawn', text: 'The land that comes up is the sea floor shallower than 200 metres, the nearest contour Natural Earth draws: the ice age\'s shore lay a little inside it. The rivers are the main ones known from the sea floor\'s valleys, drawn in outline: the Channel River that gathered the Thames, Rhine and Seine; the Elbe running north across the dry North Sea; the great river of the Sunda shelf; the Tigris and Euphrates running on down the Gulf. Lake Carpentaria filled the Gulf of Carpentaria. The mammoths walk where their bones are dredged up, on Doggerland and Beringia; their number and their ways are drawn.' },
+        { title: 'What is drawn', wikipedia: 'Sundaland', text: 'The land that comes up is the sea floor shallower than 200 metres, the nearest contour Natural Earth draws: the ice age\'s shore lay a little inside it. The rivers are the main ones known from the sea floor\'s valleys, drawn in outline: the Channel River that gathered the Thames, Rhine and Seine; the Elbe running north across the dry North Sea; the great river of the Sunda shelf; the Tigris and Euphrates running on down the Gulf. Lake Carpentaria filled the Gulf of Carpentaria. The mammoths walk where their bones are dredged up, on Doggerland and Beringia; their number and their ways are drawn.' },
         { title: 'Touching', text: 'Touch the sea and it goes out; touch it again and it comes back. Left alone, it comes and goes.' }
       ],
       sources: [
@@ -113,7 +114,7 @@
   // ---- start: the sea as it is; a moment later it goes out ----
   terra.globe.set({ still: true, maxZoom: 12 });
   measure(terra.camera);
-  terra.caption.set({ title: 'When the sea was low', text: '' });
+  terra.caption.set({ title: 'When the sea was low', text: '', wikipedia: 'Doggerland' });
   paint(); rivers(false);
   again = setTimeout(drain, 1800);
 })();

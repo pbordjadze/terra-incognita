@@ -208,10 +208,11 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'Whales in the desert',
+      wikipedia: 'Wadi El Hitan',
       text: 'Wadi Al-Hitan, the Valley of the Whales, in Egypt\'s Western Desert, holds hundreds of skeletons of the earliest whales, from about 37 million years ago, when this was the floor of a shallow bay of the Tethys Sea. The long one is Basilosaurus, up to eighteen metres; the smaller one Dorudon, about five. Both still had small hind legs.',
       sections: [
-        { title: 'What is drawn', text: 'The sea that comes and goes is an illustration: a generalised late Eocene shore across northern Egypt and Sinai, drawn only over today\'s land, so the Mediterranean and the Red Sea stay as they are. The whales are drawings after the skeletons\' proportions, not reconstructions of colour or skin; their ways through the water are invented. The bones at the valley lie where the record places them; where a whale strands is where it happened to be.' },
-        { title: 'Why the whales are in the desert', text: 'The whales did not strand: the sea withdrew over millions of years as the Tethys closed and the land rose, and the bay\'s floor, with its dead, became desert. The withdrawal here is a picture of that, in seconds.' }
+        { title: 'What is drawn', wikipedia: 'Tethys Ocean', text: 'The sea that comes and goes is an illustration: a generalised late Eocene shore across northern Egypt and Sinai, drawn only over today\'s land, so the Mediterranean and the Red Sea stay as they are. The whales are drawings after the skeletons\' proportions, not reconstructions of colour or skin; their ways through the water are invented. The bones at the valley lie where the record places them; where a whale strands is where it happened to be.' },
+        { title: 'Why the whales are in the desert', wikipedia: 'Basilosaurus', text: 'The whales did not strand: the sea withdrew over millions of years as the Tethys closed and the land rose, and the bay\'s floor, with its dead, became desert. The withdrawal here is a picture of that, in seconds.' }
       ],
       sources: [
         { title: 'UNESCO World Heritage Centre: Wadi Al-Hitan (Whale Valley), inscribed 2005', url: 'https://whc.unesco.org/en/list/1186/', note: 'The valley, its age (late Eocene), the whales named, and the point this pack places the bones at.' },
@@ -240,7 +241,7 @@
   // ---- start: the desert, with its bones; then the sea comes ----
   terra.globe.set({ historical: true, still: true, maxZoom: 24 });
   measure(terra.camera);
-  terra.caption.set({ title: 'Whales in the desert', text: '' });
+  terra.caption.set({ title: 'Whales in the desert', text: '', wikipedia: 'Wadi El Hitan' });
   paint();
   drawBones();
   later(flood, 1500);

@@ -249,10 +249,11 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'The lead line',
+      wikipedia: 'Challenger expedition',
       text: 'HMS Challenger left Portsmouth in December 1872 and came home in May 1876, having sailed round the world to find out what the deep sea was: how deep, how cold, what lived there and what lay on its floor. At each of her stations the crew stopped, let a weighted line down until it stopped running, and brought up what the bottom was made of. Here she sails her whole way as the date plays, and the lead is yours: touch the sea anywhere and a line runs out until it finds the floor, slowly where the water is deep.',
       sections: [
-        { title: 'What is drawn', text: 'The dots are 94 of her stations with their recorded depths (touch one to lower the line to the depth they found). Between stations she keeps to the ports and turns of her published itinerary, dated to the month, at a steady pace: a drawn way, not her logged course. The depths everywhere else are today\'s (GEBCO, through the globe\'s own maps, about a third of a degree a cell), and a line runs out at about two seconds a mile of depth, far faster than a hemp line did.' },
-        { title: 'The glass', text: 'Touch the land to set down the sounding glass, then drag it over the sea: the floor under it is drawn in contours (200 m, then every thousand), and the line under its middle reads the depth there.' }
+        { title: 'What is drawn', wikipedia: 'Depth sounding', text: 'The dots are 94 of her stations with their recorded depths (touch one to lower the line to the depth they found). Between stations she keeps to the ports and turns of her published itinerary, dated to the month, at a steady pace: a drawn way, not her logged course. The depths everywhere else are today\'s (GEBCO, through the globe\'s own maps, about a third of a degree a cell), and a line runs out at about two seconds a mile of depth, far faster than a hemp line did.' },
+        { title: 'The glass', wikipedia: 'Bathymetry', text: 'Touch the land to set down the sounding glass, then drag it over the sea: the floor under it is drawn in contours (200 m, then every thousand), and the line under its middle reads the depth there.' }
       ],
       sources: [
         { title: 'Murray, John; Renard, A. F. (1891). Annotated record of the detailed examination of Mn deposits from the HMS Challenger stations. PANGAEA.',
@@ -268,7 +269,7 @@
   // ---- start ----
   terra.globe.set({ historical: true, still: true, maxZoom: 14 });
   measure(terra.camera);
-  terra.caption.set({ title: 'The lead line', text: '' });
+  terra.caption.set({ title: 'The lead line', text: '', wikipedia: 'Challenger expedition' });
   terra.geo.set('ahead', [], { style: 'ring' }); terra.geo.set('reached', [], { style: 'dot' });
   terra.geo.set('leads', [], { style: 'sounding' });
   drawGlass();

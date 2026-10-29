@@ -121,9 +121,10 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'Fires across the sea',
+      wikipedia: 'Agamemnon (play)',
       text: 'In Aeschylus\'s Agamemnon, the news that Troy has fallen reaches Argos the same night by a chain of fires: from Mount Ida above Troy to Lemnos, to Athos, across to Euboea, Messapion, Kithairon, the Megarid, Arachnaion and the palace. Each watchman, seeing a fire on the horizon, lights his own. Here every peak has its pyre, and which can see which is worked out from their heights, the curve of the Earth and the ground between: two fires see each other within the sum of their horizons (3.86 kilometres times the square root of each height in metres) when no mountain rises into the line between them.',
       sections: [
-        { title: 'What is drawn', text: 'The peaks are the highest points of the Aegean\'s islands and of the mountains round it, with their heights; a fire can be seen as far as its horizon allows and the ground between permits (checked over the globe\'s own terrain, about ten kilometres a cell, so a thin ridge may be missed), and no further, so the chain runs only where it could. The seconds a watchman takes to light his pyre are drawn. The fires go out after a while; left alone, Ida lights itself and the relay runs again.' },
+        { title: 'What is drawn', wikipedia: 'Horizon', text: 'The peaks are the highest points of the Aegean\'s islands and of the mountains round it, with their heights; a fire can be seen as far as its horizon allows and the ground between permits (checked over the globe\'s own terrain, about ten kilometres a cell, so a thin ridge may be missed), and no further, so the chain runs only where it could. The seconds a watchman takes to light his pyre are drawn. The fires go out after a while; left alone, Ida lights itself and the relay runs again.' },
         { title: 'Touching', text: 'Touch any pyre to light it. The fire runs from there to every peak that can see it, and on.' }
       ],
       sources: [
@@ -152,7 +153,7 @@
 
   // ---- start: every pyre cold; a moment later, Troy's ----
   terra.globe.set({ still: true, maxZoom: 28 });
-  terra.caption.set({ title: 'Fires across the sea', text: '' });
+  terra.caption.set({ title: 'Fires across the sea', text: '', wikipedia: 'Phryctoria' });
   measure(terra.camera);
   drawPyres(); drawStill(); drawSight();
   // from the workbench or a link, the whole Aegean at a size the fires can be seen at (by a doorway, the
