@@ -52,7 +52,7 @@
     // the voyages first, under the stems: the fine dashed line of the vine carried over the sea, in the
     // stem's own brown so it is the vine's and not one of the map's lines
     terra.geo.set('voyages', V.voyages.map(function (f) { return line(f.coordinates); }),
-                  { style: 'track', color: VOYAGE, lineWidth: 1.5, dated: true });
+                  { style: 'ghost', color: VOYAGE, lineWidth: 1.4, dated: true });
     // the stems: every trunk's and twig's land runs, thickening with age; touchable. Three layers by zoom,
     // so the trunk is a slender line at the whole Earth and a thick old stem close in (a constant width
     // would be a root system from afar and a thread up close)
