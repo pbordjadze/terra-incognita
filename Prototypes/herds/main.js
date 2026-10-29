@@ -91,9 +91,9 @@
   }
 
   // ----- how an animal shows ------------------------------------------------------------------------
-  function look(set, more) {
+  function look(set, more, scale) {
     var l = set.frames.length > 1 ? { frames: set.frames } : { image: set.frames[0] };
-    l.size = set.size;
+    l.size = scale ? [Math.round(set.size[0] * scale), Math.round(set.size[1] * scale)] : set.size;
     l.face = true;
     for (var k in more) l[k] = more[k];
     return l;
@@ -107,7 +107,8 @@
     if (leader) looks.push(look(art.herd[pose], { maxZoom: zHerd, fps: fps }));
     looks.push(look(art.tiny[pose], { minZoom: zHerd, maxZoom: zSmall, fps: fps }));
     looks.push(look(art.small[pose], { minZoom: zSmall, maxZoom: zClose, fps: fps }));
-    if (leader) looks.push(look(art.close[pose], { minZoom: zClose, fps: grazing ? 1.4 : 8 }));
+    // (drawn for the iPad; a phone's narrower screen takes it smaller)
+    if (leader) looks.push(look(art.close[pose], { minZoom: zClose, fps: grazing ? 1.4 : 8 }, R1 < 300 ? 0.66 : 1));
     return looks;
   }
 

@@ -173,7 +173,7 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   ```
 - `looks`: the first look whose `minZoom`–`maxZoom` holds the zoom is drawn, so one thing can be a
   trace from afar and itself up close. A look is `image` (one picture) or `frames` (pictures shown in
-  turn at `fps`), `size: [w, h]` in points at the reading scale, and optionally `every` and `for`
+  turn at `fps`), `size: [w, h]` in points at the reading scale (at most 400 a side; 200 before runtime 5), and optionally `every` and `for`
   (seconds: it shows for `for` seconds every `every`, a splash now and then; *new in 4:* a showing
   fades up and down over its first and last 0.3 s, so a glint is a glint and not a blink) and
   `face: true` (the picture, drawn facing east, is mirrored when it moves west).

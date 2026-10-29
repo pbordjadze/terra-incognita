@@ -453,7 +453,8 @@ final class PackScript {
                 let size = (l["size"] as? [Any])?.compactMap(Self.number)
                 spec.looks.append(GlobeMarker.SpriteLook(
                     frames: images, fps: min(30, max(0.2, Self.number(l["fps"]) ?? 6)),
-                    size: CGSize(width: min(200, max(4, size?.first ?? 28)), height: min(200, max(4, size?.dropFirst().first ?? size?.first ?? 28))),
+                    // (up to 400 points a side, runtime 5: an animal drawn close)
+                    size: CGSize(width: min(400, max(4, size?.first ?? 28)), height: min(400, max(4, size?.dropFirst().first ?? size?.first ?? 28))),
                     minZoom: Self.number(l["minZoom"]) ?? 0, maxZoom: Self.number(l["maxZoom"]) ?? .infinity,
                     every: Self.number(l["every"]).map { max(0.2, $0) }, duration: Self.number(l["for"]).map { max(0.05, $0) },
                     face: (l["face"] as? Bool) ?? false))

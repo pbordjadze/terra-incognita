@@ -462,14 +462,15 @@ function extent(k) {
 
 // how each look is drawn: points per unit of withers height (the dromedary's), the outline in points
 const LOOKS = {
-  close: { ptPerH: 80, ink: 1.4, detail: 'close', scale: 3 },
+  close: { ptPerH: 110, ink: 1.7, detail: 'close', scale: 3, most: 300 },
   small: { ptPerH: 21, ink: 1.15, detail: 'small', scale: 3 },
   tiny: { ptPerH: 10.5, ink: 0.8, detail: 'tiny', scale: 3 }
 };
 
 function svgFor(k, pose, look, box) {
   const a = build(k, pose), [x0, y0, x1, y1] = box;
-  const unit = look.ptPerH * Math.sqrt(k.size);       // smaller kinds drawn a little larger than true, to stay legible
+  // smaller kinds drawn a little larger than true, to stay legible; none larger than `most` points
+  const unit = Math.min(look.ptPerH * Math.sqrt(k.size), (look.most || Infinity) / Math.max(x1 - x0, y1 - y0));
   const w = (x1 - x0) * unit, h = (y1 - y0) * unit;
   const ink = look.ink / unit;
   const c = k.coat;

@@ -46,7 +46,8 @@ TICKS = [START, -33e6, -21e6, -17e6, -6.23e6, -5.5e6, -3.7e6, -2.8e6, -2.6e6, -1
 
 LINEAGES = [
     dict(id='first', name='The first camelids',
-         kinds=[[START, 'early', 'Poebrodon, one of the first camelids, the size of a goat']],
+         kinds=[[START, 'early', 'Poebrodon, one of the first camelids, known from its jaws and teeth'],
+                [-37e6, 'early', 'Poebrotherium, an early camelid of the plains, humpless']],
          members=3, grow=[[-36e6, 1], [-27e6, 2], [-21e6, 2]], spread=90,
          # the Uinta Basin, Utah [1, 4]; the White River Badlands [1, 4]; Agate, Nebraska [5]
          way=[[-109.9, 40.2, START], [-108.4, 42.3, -40e6], [-102.0, 43.8, -33e6], [-101.2, 42.6, -29e6],
@@ -84,7 +85,7 @@ LINEAGES = [
          ends=-6.88e6),
     dict(id='arctic', name='The giant camels of the High Arctic', parent='north', take=2, members=3, spread=90, sea_ok=True,
          kinds=[[-7.6e6, 'paracamelus', 'A camel heading north, into the Arctic forests'],
-                [-5.5e6, 'arctic', 'The giant camel of the High Arctic: a third larger than a camel today, in a boreal forest']],
+                [-5.5e6, 'arctic', 'The giant camel of the High Arctic, which lived in a boreal forest']],
          # the Fyles Leaf Bed, Ellesmere Island, older than 3.4 million years [3]. Its way across today's
          # channels of the Arctic islands is drawn, not known
          way=[[0, 0, -7.6e6], [-134.0, 68.4, -6.6e6], [-123.0, 71.6, -5.6e6], [-110.5, 75.2, -4.8e6],
@@ -108,8 +109,7 @@ LINEAGES = [
               [24.0, 22.0, -5.6e6], [18.0, 16.0, -5.2e6], [30.0, 13.0, -4.0e6], [40.7, 11.5, -2.9e6]],
          ends=-2.9e6),
     dict(id='asia', name='The true camels, out of Africa to Asia', parent='africa', take=1, members=3,
-         kinds=[[-2.9e6, 'camelus', 'Camelus, the true camels, on their way to Asia'],
-                [-1.6e6, 'bactrian', 'A wild two-humped camel of Central Asia']],
+         kinds=[[-2.9e6, 'camelus', 'Camelus, the true camels, on their way to Asia']],
          # the Siwaliks, at least 2.6 million years ago [13]
          way=[[0, 0, -2.9e6], [36.5, 19.0, -2.86e6], [32.0, 23.0, -2.83e6], [31.5, 28.0, -2.8e6], [34.0, 29.8, -2.78e6], [39.5, 30.5, -2.76e6],
               [50.0, 31.0, -2.7e6], [64.0, 30.5, -2.64e6], [76.9, 30.8, -2.6e6], [69.0, 38.5, -2.2e6],
