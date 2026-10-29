@@ -146,3 +146,25 @@ of an experience is ordinary life slightly off, not an attraction; that it gives
 the point); no moon (Arrian's night was a furious storm); the dark plain at the opening is the night,
 and Play moves it; the camps' fires are not gone at dawn, they are off the screen when the shots look
 at the field.
+
+### Round 6 — the second hater
+
+Worst first: the dawn a pink disc lying on the ground (the morning's light as a sprite: read as a
+fault), the night dim rather than dark with a river carrying no light, the elephants identical stamps
+and the phalanx walking into a line the size of a county, the rain tiles (fixed between its shots and
+its report), the waders floating, the island a bandage and the headland four dots, the river on fire
+with sparks, the finger finding nothing to say touch me, the battle a shrug, the dawn mud. Worst: the
+night. A real failing.
+
+Taken: the dawn sprite is gone; the morning is a warm wash from the east drawn into the day pictures,
+over the wide box so both pictures agree. The night's river is a dark blue-grey sheen between black
+banks (the sky's light on the flood), the threads sparse and bright, the camps' fires on it in fewer,
+softer streaks; the camps' ground is feathered. The island is a mottled sandbar with scrub and a dark
+water's edge, no rim; the grove is a mass of bigger trees with no outline. Porus' line is smaller, so
+the phalanx and the horse have room to meet it. The waders' bodies stop at the water exactly, the
+water over them the river's own morning tone.
+
+Overruled: the column marches away from the river, inland (Arrian: the picked troops kept far from
+the bank so as not to be seen; the drag still follows it, and the way is what the finger traces); a
+trace under the finger (the column is the trace); sentries pacing to say touch me (the figures walk
+among the fires already; the owner's rule is no sign that says tap here).
