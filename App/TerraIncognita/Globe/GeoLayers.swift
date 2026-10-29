@@ -76,14 +76,10 @@ final class GeoLayerView: UIView {
         backgroundColor = .clear
         isUserInteractionEnabled = false
         isAccessibilityElement = false
-        // (a flow stands still under Reduce Motion: drawn again when it changes)
-        motionObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
-                                                                object: nil, queue: .main) { [weak self] _ in self?.version += 1 }
     }
 
-    deinit { if let motionObserver { NotificationCenter.default.removeObserver(motionObserver) } }
-
-    private var motionObserver: (any NSObjectProtocol)?
+    /// Reduce Motion as the layers were last drawn (a flow shows no light under it: drawn again when it changes).
+    private var stillDrawn = UIAccessibility.isReduceMotionEnabled
     /// The layers whose light runs, by id (their animation is put back if the system took it away).
     private var flowing: [String: CAShapeLayer] = [:]
 
@@ -146,6 +142,10 @@ final class GeoLayerView: UIView {
         let clear = globe.keepClear
         // (the system may take a layer's animations away, as when the app was in the background)
         for (_, light) in flowing where light.animation(forKey: "flow") == nil { Self.run(light) }
+        if UIAccessibility.isReduceMotionEnabled != stillDrawn {
+            stillDrawn.toggle()
+            version += 1
+        }
         if let d = drawn, d.version == version, d.camera == stage.camera, d.centre == stage.centre, d.radius == stage.radius,
            d.size == size, d.clear == clear { return }
         drawn = (version, stage.camera, stage.centre, stage.radius, size, clear)
