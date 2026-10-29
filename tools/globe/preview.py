@@ -2,7 +2,7 @@
 for line), so its look can be judged without a phone.
 
     python3 tools/globe/preview.py out.png [--lon -83 --lat 40 --zoom 1 --select Italy --scale 2]
-    python3 tools/globe/preview.py out.png --style ground [--month 7]
+    python3 tools/globe/preview.py out.png --style ground [--month 7]     (--style night: the Earth at night)
 
 Coordinates: the screen in points, y down; the globe's centre and radius come from `layout`, as in
 GlobeView's `place`. --select names a country (globe.json); its locator red is drawn at full strength.
