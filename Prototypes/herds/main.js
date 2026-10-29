@@ -108,7 +108,7 @@
     looks.push(look(art.tiny[pose], { minZoom: zHerd, maxZoom: zSmall, fps: fps }));
     looks.push(look(art.small[pose], { minZoom: zSmall, maxZoom: zClose, fps: fps }));
     // (drawn for the iPad; a phone's narrower screen takes it smaller)
-    if (leader) looks.push(look(art.close[pose], { minZoom: zClose, fps: grazing ? 1.4 : 8 }, R1 < 300 ? 0.66 : 1));
+    if (leader) looks.push(look(art.close[pose], { minZoom: zClose, fps: grazing ? 1.4 : 6 }, R1 < 300 ? 0.66 : 1));
     return looks;
   }
 
@@ -157,14 +157,48 @@
   }
 
   // ----- the globe ---------------------------------------------------------------------------------
-  /** The date slows as the reader comes close: a herd crossing a continent in seconds from afar walks
-      past close up. */
-  var speed = 1;
+  /** The date slows as the reader comes close, so the herd nearest the middle of the view walks at the
+      pace of its own legs: close up, its leader's stride (about 22 points a second as drawn); further
+      out, faster (a herd crossing a continent in seconds from afar); from the whole Earth, as written. */
+  var speed = 1, lastPaced = 0;
+  function dateAt(sec) {
+    if (sec <= PACE[0][1]) return PACE[0][0];
+    for (var i = 1; i < PACE.length; i++) {
+      if (sec <= PACE[i][1]) {
+        var a = PACE[i - 1], b = PACE[i];
+        return a[0] + (sec - a[1]) / (b[1] - a[1]) * (b[0] - a[0]);
+      }
+    }
+    return PACE[PACE.length - 1][0];
+  }
+  function degrees(p, q) {
+    var a = unit(p[0], p[1]), b = unit(q[0], q[1]);
+    return Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]))) / D;
+  }
   function pace(c) {
-    var ppd = c.radius * D, s = Math.max(0.03, Math.min(1, Math.pow(PPD.slow / ppd, 1.5)));
-    if (Math.abs(s - speed) / speed < 0.06) return;
-    speed = s;
-    terra.time.speed(s);
+    if (!c || !(c.radius > 0)) return;
+    lastPaced = Date.now();
+    var ppd = c.radius * D, want = 1;
+    if (ppd > PPD.herd) {
+      // the herd nearest the middle of the view, and how many degrees it covers in a second of playback
+      var now = secondsAt(date), best = null, bestD = Infinity;
+      animals.forEach(function (a) {
+        if (now < a.from || now > a.until || date < a.first || date > a.last) return;
+        var p = placeAt(a, date), s = terra.project(p[0], p[1], c);
+        if (!s || !s.visible || s.x < 0 || s.y < 0 || s.x > c.width || s.y > c.height) return;
+        var d = Math.hypot(s.x - c.cx, s.y - c.cy);
+        if (d < bestD) { bestD = d; best = { a: a, p: p }; }
+      });
+      if (best) {
+        var ahead = placeAt(best.a, dateAt(now + 0.5)), perSecond = degrees(best.p, ahead) * 2 * ppd;   // points a second
+        var allowed = (R1 < 300 ? 15 : 22) * Math.sqrt(Math.max(1, PPD.close / ppd)) * Math.max(1, ppd < PPD.small ? PPD.small / ppd : 1);
+        if (perSecond > allowed) want = allowed / perSecond;
+      }
+    }
+    want = Math.max(0.01, Math.min(1, want));
+    if (Math.abs(want - speed) / speed < 0.08) return;
+    speed = want;
+    terra.time.speed(speed);
   }
 
   // ----- what the reader touches ------------------------------------------------------------------
@@ -204,6 +238,8 @@
     playing = t.playing;
     if (t.by === 'reader' && was !== playing) readerPaused = !playing;
     refresh();
+    // (the herd in view may change its pace with the date: looked at again twice a second)
+    if (playing && Date.now() - lastPaced > 500) pace(terra.camera);
   });
 
   var readerPaused = false;
