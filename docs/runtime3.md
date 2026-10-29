@@ -178,7 +178,9 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   fades up and down over its first and last 0.3 s, so a glint is a glint and not a blink) and
   `face: true` (the picture, drawn facing east, is mirrored when it moves west).
 - `label`: its VoiceOver name (needed when `touchable`). It is hidden behind the globe, off screen,
-  and where the app keeps clear (the chip, the foot).
+  and where the app keeps clear (the chip, the foot). *New in 5:* a sprite drawn larger than 60 points
+  (an animal seen close) shows while any of it is on screen and its middle is clear of the chip and
+  the foot, so it doesn't vanish as it walks to the edge.
 - `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`. A trace
   resting between its showings can't be touched. Sprites don't make room for names: place them.
 - Reduce Motion: sprites hold still at their first place and first frame; traces show steadily.

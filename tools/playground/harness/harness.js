@@ -1087,7 +1087,10 @@
     const o = projectUnit(v[0], v[1], v[2], m, c, {});
     if (o.z < 0.2) return null;
     const w = look.w * rs, h = look.h * rs, rect = [o.x - w / 2, o.y - h / 2, w, h];
-    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => overlaps(rect, q))) return null;
+    // (GlobeView: a large sprite, over 60 points, shows while its middle is clear of the chrome; a small one
+    // only when none of it is under the chrome)
+    const large = Math.max(look.w, look.h) * rs > 60;
+    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => (large ? within(o.x, o.y, q) : overlaps(rect, q)))) return null;
     const pic = look.pics[settings.reduceMotion ? 0 : Math.floor(Math.max(0, T) * look.fps) % look.pics.length];
     if (!pic || !pic.ok) return null;
     g.save();
