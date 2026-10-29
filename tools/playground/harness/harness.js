@@ -1236,7 +1236,11 @@
   function touchables() {
     const c = camera(), m = rotation(c), clear = keepClear(), out = [];
     const ok = (x, y) => x > 6 && y > 6 && x < W - 6 && y < H - 6 && !clear.some((r) => within(x, y, r));
-    const add = (s, target, x, y, what) => { if (ok(x, y) && sameTarget(hitTest(x, y), target)) out.push({ stage: s.id, target, x, y, what }); };
+    // (a point another stage's thing covers is not this one's: two packs may name their layers alike)
+    const add = (s, target, x, y, what) => {
+      const h = ok(x, y) && hitStage(x, y);
+      if (h && h.stage === s && sameTarget(h.target, target)) out.push({ stage: s.id, target, x, y, what });
+    };
     for (const s of stages) {
       for (const sp of s.sprites.values()) if (sp.touchable && sp.drawn) add(s, { sprite: sp.id }, sp.drawn.x, sp.drawn.y, 'sprite "' + sp.id + '"' + (sp.label ? ' (' + sp.label + ')' : ''));
       for (const L of s.geo.values()) {
