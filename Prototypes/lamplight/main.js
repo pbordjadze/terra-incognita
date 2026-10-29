@@ -13,7 +13,8 @@
   var night = !!(terra.globe.can && terra.globe.can.night);
   // fading a picture by setting it again, where the app changes it in place (else it blinks: steps)
   var fades = !!(terra.images.can && terra.images.can.fade);
-  terra.globe.set({ night: night, historical: true, maxZoom: 24 });
+  // (held still while it runs: the evening stays where the reader is looking; pan and pinch as ever)
+  terra.globe.set({ night: night, historical: true, still: true, maxZoom: 24 });
 
   // ---- pictures: the order they are first set is the order they are drawn in
   var pics = {};
