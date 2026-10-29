@@ -124,7 +124,8 @@ of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
   before the bundled one, and downloads `main`'s published revision whenever it differs from the
   bundled copy, so a branch's IPA shows `main`'s version of a pack it changed in place.
 - **CI and packs**: a push whose changes are all under `Prototypes/` (or `tools/playground/`) runs
-  only `packs.yml`; the macOS workflow ignores it, tags and all. A `[playground-check]` or `[ipa]`
+  only `packs.yml` (the validator, the tools' tests, and every pack in the preview: `check.cjs --all` and
+  `--living`, whose screenshots are its `preview` artifact); the macOS workflow ignores it, tags and all. A `[playground-check]` or `[ipa]`
   meant for such a change rides a commit that also touches something the macOS workflow watches.
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
   Parked shelf, still one tap away (and takes its doorway off the globe).

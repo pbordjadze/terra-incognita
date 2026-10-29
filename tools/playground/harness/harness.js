@@ -112,7 +112,7 @@
   // ---- for checks (tools/playground/check.cjs, harness_check.cjs) and the curious
   // (running, started and ended are the primary pack's; the stages' own are in state().stages)
   const api = window.__playground = {
-    ready: false, running: false, started: false, ended: false, frame: 0,
+    ready: false, running: false, started: false, ended: false, frame: 0, changes: 0,
     device: { name: P.device, width: W, height: H },
     log: [], touches: [], delivered: {},
   };
@@ -158,7 +158,8 @@
       geo: new Map(), images: new Map(), sprites: new Map(), time: null, caption: { title: '', text: '' },
       globe: { historical: false, still: false, maxZoom: null }, scheme: 'touchables', listensOpen: false,
       worker: null, closing: null, early: [], timers: new Map(), pictures: new Map(), delivered: {},
-      running: false, started: false, ended: false, front: false, entry: null, postedCam: -1, t0: now() };
+      running: false, started: false, ended: false, front: false, entry: null, postedCam: -1, t0: now(),
+      removed: [] };              // what its own script took away ('geo:id', 'sprite:*' for a clear), for the checks
   }
   const stageById = new Map(PACKS.map((k) => [k.id, makeStage(k)]));
   const primary = primaryPack ? stageById.get(PRIMARY) : null;
@@ -751,9 +752,10 @@
   }
 
   function onGeo(s, msg) {
-    if (msg.op === 'clear') { s.geo.clear(); dirty(); return; }
+    api.changes++;                   // (what a pack asks the globe to draw: the checks wait for it to be still)
+    if (msg.op === 'clear') { s.geo.clear(); s.removed.push('geo:*'); dirty(); return; }
     const id = String(msg.id == null ? '' : msg.id);
-    if (msg.op === 'remove') { s.geo.delete(id); dirty(); return; }
+    if (msg.op === 'remove') { s.geo.delete(id); s.removed.push('geo:' + id); dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.geo: unknown op "' + msg.op + '"; ignored');
     const options = msg.options && typeof msg.options === 'object' && !Array.isArray(msg.options) ? msg.options : {};
     if (options.style != null && !STYLE_KIND[options.style]) {
@@ -907,9 +909,10 @@
   // ---- terra.images: pictures in longitude and latitude, lying on the globe (warped pixel by pixel)
   const IMAGE_BUDGET = 8;
   function onImage(s, msg) {
-    if (msg.op === 'clear') { s.images.clear(); imagesVersion++; dirty(); return; }
+    api.changes++;
+    if (msg.op === 'clear') { s.images.clear(); s.removed.push('image:*'); imagesVersion++; dirty(); return; }
     const id = String(msg.id == null ? '' : msg.id), where = 'terra.images.set("' + id + '")';
-    if (msg.op === 'remove') { s.images.delete(id); imagesVersion++; dirty(); return; }
+    if (msg.op === 'remove') { s.images.delete(id); s.removed.push('image:' + id); imagesVersion++; dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.images: unknown op "' + msg.op + '"; ignored');
     const o = msg.options || {}, b = o.bounds;
     if (typeof o.image !== 'string') return hostError(where + ': image must be a picture of the pack; not drawn');
@@ -1088,9 +1091,10 @@
     return false;
   }
   function onSprite(s, msg) {
-    if (msg.op === 'clear') { s.sprites.clear(); dirty(); return; }
+    api.changes++;
+    if (msg.op === 'clear') { s.sprites.clear(); s.removed.push('sprite:*'); dirty(); return; }
     const id = String(msg.id == null ? '' : msg.id), where = 'terra.sprites.set("' + id + '")';
-    if (msg.op === 'remove') { s.sprites.delete(id); dirty(); return; }
+    if (msg.op === 'remove') { s.sprites.delete(id); s.removed.push('sprite:' + id); dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.sprites: unknown op "' + msg.op + '"; ignored');
     const o = msg.options || {};
     const sp = { id, at: null, path: null, dates: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
@@ -1362,10 +1366,19 @@
           for (const l of L.lines) {
             const r = l.ring;
             rotate(r, m);
+            // (the middle of a stretch, not a place on the line: where lines meet, as rivers at a confluence, a
+            // place is on both and a touch there could be either's)
             const mid = Math.floor(r.n / 2);
             for (let k = 0; k < r.n; k++) {
-              const i = (mid + (k % 2 ? -1 : 1) * Math.ceil(k / 2) + r.n) % r.n;
-              if (r.vz[i] > 0.05) { add(s, { layer: L.id, index: l.index }, c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, what(l.index)); break; }
+              const i = (mid + (k % 2 ? -1 : 1) * Math.ceil(k / 2) + r.n) % r.n, j = i + 1 < r.n ? i + 1 : l.closed ? 0 : -1;
+              if (j < 0 || r.vz[i] <= 0.05 || r.vz[j] <= 0.05) continue;
+              // (and only where a touch a little off, as a finger lands, would still be on this line, not one beside it)
+              const x = c.cx + (r.vx[i] + r.vx[j]) / 2 * c.radius, y = c.cy - (r.vy[i] + r.vy[j]) / 2 * c.radius, target = { layer: L.id, index: l.index };
+              const firm = [[2, 0], [-2, 0], [0, 2], [0, -2]].every(([dx, dy]) => { const h = hitStage(x + dx, y + dy); return h && h.stage === s && sameTarget(h.target, target); });
+              if (!firm) continue;
+              const before = out.length;
+              add(s, target, x, y, what(l.index));
+              if (out.length > before) break;
             }
           }
         } else {
@@ -2120,7 +2133,11 @@
                              moving: !!d.path, running: stageById.get(d.pack.id).running });
   const summary = (s) => ({ id: s.id, running: s.running, started: s.started, front: s === front(), entry: s.entry,
                             geo: s.geo.size, images: s.images.size, sprites: s.sprites.size, scheme: s.scheme, historical: s.globe.historical, still: s.globe.still,
-                            time: s.time ? timeLabel(s.time) : null, caption: Object.assign({}, s.caption) });
+                            time: s.time ? timeLabel(s.time) : null, caption: Object.assign({}, s.caption),
+                            things: [...[...s.geo.keys()].map((k) => 'geo:' + k), ...[...s.images.keys()].map((k) => 'image:' + k), ...[...s.sprites.keys()].map((k) => 'sprite:' + k)],
+                            removed: s.removed.length });
+  // what a stage's own script took away since `from` (its removed list's length then)
+  api.removedSince = (id, from) => { const s = stageById.get(id); return s ? s.removed.slice(from) : []; };
   function stateOf(s) {
     return {
       id: s.id, running: s.running, started: s.started, ended: s.ended, front: s === front(), entry: s.entry, scheme: s.scheme, listensOpen: s.listensOpen,

@@ -154,8 +154,8 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Tool | What it does | Run | Used by | Limits |
 | --- | --- | --- | --- | --- |
 | Desktop preview | every pack over a stand-in globe with the app's own `terra.js`; `/atlas` the living globe, `?with=` several at once | `node tools/playground/serve.cjs`, `harness/` | every pack session; `check.cjs`, `moments.cjs`, `RemotePackTests` | close to the app, not pixel-identical: the globe is vectors on a canvas, not `Globe.metal`; no clouds or ocean |
-| Pack check | runs a pack headless, fails on errors, screenshots doorway, anchor, sprites, zooms, a touch | `node tools/playground/check.cjs <id> \| --all [--wikipedia] [--device]` | every pack | fixed screenshots; not run by CI |
-| Living check | two packs by touch side by side, front and back, one ended | `node tools/playground/check.cjs --living` | runtime 4 | not run by CI |
+| Pack check | runs a pack headless, fails on errors, screenshots doorway, anchor, sprites, zooms, a touch; waits for the pack to stop re-drawing after the camera rests | `node tools/playground/check.cjs <id> \| --all [--wikipedia] [--device]` | every pack; CI `packs.yml` › preview (`--all`) | fixed screenshots; a touch on a line aims where no other line is within reach |
+| Living check | two packs by touch side by side, front and back, one ended; nothing either had is taken away but by its own script | `node tools/playground/check.cjs --living` | runtime 4; CI `packs.yml` › preview | the first two packs with doorways, or the two named |
 | Pack moments | the one pack photographer: a plan of the camera put or flown, waits (seconds), touches and drags at places, a tap on a thing by name, the date's strip, play, Open; screenshots with the date, speed, sprites, camera and caption printed; exit 1 on a page error or an error logged | `node tools/packart/moments.cjs <id> <out> '<plan>' [--device] [--root] [--no-idle]` | the rebuilt experiences, the herds | the preview's time is the wall clock: two runs differ by what moved meanwhile |
 | River drive | the gathering alive driven as a reader would, with assertions | `node tools/water/alive_check.cjs` | gathering alive | one pack's |
 | Retired river study | the former web study's interactions | `node tools/water/interaction_check.cjs <url>` | `Water/` only (no longer in the app) | |
@@ -173,7 +173,8 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Playground tool tests | `playground.py` itself | `python3 tools/playground/test_playground.py` | CI `plates`, `packs.yml` |
 | Shared script | `Shared` against the helpers it replaced, bit for bit | `node tools/playground/shared_check.cjs` | `packs.yml` |
 | Dated ways | a pack's sprites on dated ways against where an older revision's script placed them, headless, at every step of its strip | `node tools/playground/dated_check.cjs <id> [rev] [--step d] [--offset d]` | by hand (lead line, monsoon) |
-| Preview's own check | a fixture pack using every tool once, held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand |
+| Preview's own check | a fixture pack using every tool once, held to `runtime3.md` | `node tools/playground/harness_check.cjs` | by hand (one camera-timing check is sensitive to a loaded machine, so CI doesn't run it) |
+| Preview in CI | every pack's check and the living check on Linux, Playwright pinned (1.63.0), screenshots as the `preview` artifact; publishing waits for it | `packs.yml` › preview | every push that touches packs or `tools/playground/` |
 | Shader check | every `.metal` compiled and its bindings, in seconds | `python3 tools/metal/metal.py check` | CI `plates` |
 | Stand-in tests | the CPU Metal's builtins; whether `twin` notices drift | `tools/metal/tests/test_metal.py`; `twin_drift.py` (slow) | CI `plates`; by hand |
 | Looks | every look's plates as the player reads them, no unused file | `python3 ci/check_atlas.py` | CI `plates` |
