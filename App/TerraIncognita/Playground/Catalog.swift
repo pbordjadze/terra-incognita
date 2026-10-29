@@ -35,6 +35,7 @@ enum Catalog {
     static let camelid = Prototype(
         id: "camelid", title: "Camel and Llama",
         summary: "An illustrated lineage of the camels, from North America to Arabia and the Andes. Tap the dromedary.",
+        wikipedia: "Dromedary",
         anchor: GlobeCamera(lon: 46, lat: 24, zoom: 1.5),
         doorway: doorway(CamelidArt.image(.dromedary), lon: 46, lat: 24, label: "Dromedary camel",
                          size: CGSize(width: 40, height: 34), minZoom: 1.35, every: 11,
@@ -54,6 +55,7 @@ enum Catalog {
     static let whale = Prototype(
         id: "whale", title: "Whale and Desert",
         summary: "A whale fossil in Egypt's Western Desert opens a visit to the shallow sea it swam in. Tap the fossil.",
+        wikipedia: "Wadi El Hitan",
         anchor: GlobeCamera(lon: 30.18333, lat: 29.33333, zoom: 3.2),
         doorway: doorway(WhaleArt.image(.fossil), lon: 30.18333, lat: 29.33333, label: "Whale fossil, Wadi Al-Hitan",
                          size: CGSize(width: 34, height: 27), minZoom: 2, every: 13)
@@ -69,6 +71,7 @@ enum Catalog {
     static let ocean = Prototype(
         id: "ocean", title: "A small thing, far from home",
         summary: "The Indian Ocean encounter: a seed off Madagascar opens crops, words and lives that crossed the sea.",
+        wikipedia: "Madagascar",
         anchor: GlobeCamera(lon: 68, lat: -9, zoom: 1),
         doorway: doorway(UIImage(systemName: "leaf.circle")?.withTintColor(UIColor(red: 0.231, green: 0.173, blue: 0.086, alpha: 1),
                                                                          renderingMode: .alwaysOriginal),

@@ -58,11 +58,13 @@
 
   /** What the reader is looking at first, then why it matters, then where to go. */
   function say() {
-    var here = M.position(stations, day), title = 'HMS Challenger', text;
+    var here = M.position(stations, day), title = 'HMS Challenger', text, wikipedia = '';
     if (sounding) {
+      // (under Wikipedia's words, the record alone: the depth is Murray and Renard's, not the atlas's prose)
       text = 'Station ' + stationName(sounding) + ', ' + longDate(sounding.day) + ': the line ran out to ' +
-        recorded(sounding) + '. Touch another station, or drag the date.';
+        recorded(sounding) + (terra.settings.wikipedia ? '.' : '. Touch another station, or drag the date.');
     } else if (!near) {
+      wikipedia = 'Challenger expedition';   // (the voyage's article, in wikipedia.json)
       text = 'A British ship sent out in 1872 to explore the deep ocean. ' + (here.kind === 'recorded' || here.kind === 'interpolated'
         ? 'Zoom in on the little ship to follow it.' : 'This record has no position for it on ' + longDate(day) + '; drag the date.');
     } else if (here.kind === 'gap') {
@@ -75,8 +77,9 @@
         'Touch one to lower the line.';
     }
     var note = title + '|' + text;
-    if (note !== shownNote) { shownNote = note; terra.caption.set({ title: title, text: text }); }
+    if (note !== shownNote) { shownNote = note; terra.caption.set({ title: title, text: text, wikipedia: wikipedia }); }
   }
+  terra.on('settings', function () { shownNote = null; say(); });
 
   function draw() {
     var here = M.position(stations, day);

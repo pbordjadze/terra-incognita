@@ -61,6 +61,8 @@ leaves something behind shows up there (and fails `PlaygroundTests`).
 python3 tools/playground/playground.py new tide-pool          # scaffolds Prototypes/tide-pool/
 node tools/playground/serve.cjs                               # http://127.0.0.1:8790/ : every pack, over a stand-in globe
 node tools/playground/check.cjs tide-pool                     # headless Chromium: runs it, fails on errors, screenshots
+node tools/playground/check.cjs tide-pool --wikipedia         # the same with Wikipedia's words on (the reader's switch)
+python3 tools/wikipedia/build.py --pack tide-pool             # its wikipedia.json: the articles its words name (docs/runtime3.md)
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```

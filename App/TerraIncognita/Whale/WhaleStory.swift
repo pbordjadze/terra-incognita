@@ -45,7 +45,13 @@ final class WhaleStory {
         guard !exploring else { return "" }
         return scene == 4 && followed ? "" : "Wadi Al-Hitan · Egypt"
     }
+    /// Wikipedia's article on each scene (the place before the past is visited), for VoiceOver's words
+    /// with Wikipedia's words on.
+    static let articles = ["Wadi El Hitan", "Tethys Ocean", "Dorudon", "Vestigiality", "Sahara", "Evolution of cetaceans"]
     var description: String {
+        if WikipediaWords.shared.on, !exploring, let article = WikipediaIndex.shared[followed ? Self.articles[scene] : "Wadi El Hitan"] {
+            return article.line
+        }
         guard followed else { return "A whale fossil lies at Wadi Al-Hitan in Egypt's Western Desert. Inspect it, choose to visit its past, or continue exploring the atlas." }
         if exploring { return "Freely exploring the globe. The guided visit is paused at \(date). Resume to return to its composition." }
         return [

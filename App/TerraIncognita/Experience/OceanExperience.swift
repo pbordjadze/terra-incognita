@@ -15,6 +15,10 @@ struct OceanExperience: View {
     static let paper = Color(red: 0.949, green: 0.894, blue: 0.784)
     static let ink = Color(red: 0.231, green: 0.173, blue: 0.086)
     static let blue = Color(red: 0.29, green: 0.30, blue: 0.49)
+    static let tone = WikipediaCard.Tone(ink: ink, faint: ink.opacity(0.7), accent: blue)
+    /// The reader wants Wikipedia's words: the encounter's own paragraphs give way to the articles' cards,
+    /// its margins and asides go, and its tips (what to touch) stay.
+    private var wikipedia: Bool { WikipediaWords.shared.on }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -97,9 +101,11 @@ struct OceanExperience: View {
                 .font(.custom("LibertinusSerif-Regular", size: 37, relativeTo: .largeTitle))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text(lens == "words" ? "The nearest shore is not always the nearest relation." : lens == "people" ? "The people are larger than the pattern." : "A grain can outlast the meal it belonged to.")
-                .font(.custom("LibertinusSerif-Italic", size: 20, relativeTo: .title3))
-                .fixedSize(horizontal: false, vertical: true)
+            if !wikipedia {
+                Text(lens == "words" ? "The nearest shore is not always the nearest relation." : lens == "people" ? "The people are larger than the pattern." : "A grain can outlast the meal it belonged to.")
+                    .font(.custom("LibertinusSerif-Italic", size: 20, relativeTo: .title3))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -170,10 +176,10 @@ struct OceanExperience: View {
                     .font(.custom("LibertinusSerif-Regular", size: 16, relativeTo: .body))
                     .accessibilityIdentifier("evidenceEra")
             }
-            prose("Excavations in Madagascar and the Comoros recovered rice among their early crops. At several tested island sites, Asian crops dominated the preserved assemblages. On the sampled East African coast, the pattern was different.")
+            prose("Excavations in Madagascar and the Comoros recovered rice among their early crops. At several tested island sites, Asian crops dominated the preserved assemblages. On the sampled East African coast, the pattern was different.", wikipedia: "Madagascar")
                 .accessibilityIdentifier("encounterClaim")
             margin("A kitchen leaves a different kind of history from a king.")
-            prose("Crowther and colleagues read these crops alongside language and genetic evidence as traces of Southeast Asian settlers in the western Indian Ocean. The surprise is not just that food traveled. People made homes across an ocean, and traces of everyday meals help us recover their presence.")
+            prose("Crowther and colleagues read these crops alongside language and genetic evidence as traces of Southeast Asian settlers in the western Indian Ocean. The surprise is not just that food traveled. People made homes across an ocean, and traces of everyday meals help us recover their presence.", wikipedia: "Austronesian peoples")
             note("The layer reveals archaeological evidence, not a simulation of migration. These dates are not a first-arrival date. The grain is an original stylised illustration, not an excavated specimen. These finds do not establish an exact voyage.")
             Button { choose("words") } label: { Text("There is another trace, still spoken  →").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
@@ -197,7 +203,7 @@ struct OceanExperience: View {
             if borrowed {
                 note("This pair opens a separate history of contact. The map’s glass keeps the inherited zato / jatuh comparison; it does not locate an Old Malay departure port.")
             }
-            prose("Malagasy belongs to the South East Barito branch of the Austronesian language family. Its other members are spoken in southern Borneo, across the Indian Ocean. Madagascar is just off Africa; this part of its linguistic family is not.")
+            prose("Malagasy belongs to the South East Barito branch of the Austronesian language family. Its other members are spoken in southern Borneo, across the Indian Ocean. Madagascar is just off Africa; this part of its linguistic family is not.", wikipedia: "Malagasy language")
                 .accessibilityIdentifier("encounterClaim")
             Button {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { borrowed.toggle() }
@@ -206,10 +212,11 @@ struct OceanExperience: View {
                 .foregroundStyle(Self.blue).padding(.vertical, 10)
                 .accessibilityIdentifier("wordTangent")
             margin(borrowed ? "A family tree is not the whole story of a language." : "The ocean separates the places. The words preserve a relationship.")
-            prose(borrowed ? "Adelaar connects sambo with Old Malay sambaw in the history of maritime borrowing. That is a different relationship from inherited vocabulary: Malagasy did not descend from Malay. Contact left its own traces, including through Bantu languages in Africa." : "The paired forms are a linguist’s comparison, not a recorded conversation. They do not tell us which shore a particular speaker visited, or how many journeys were made. Nor did Malagasy remain unchanged: African and Asian contacts helped shape it.")
+            prose(borrowed ? "Adelaar connects sambo with Old Malay sambaw in the history of maritime borrowing. That is a different relationship from inherited vocabulary: Malagasy did not descend from Malay. Contact left its own traces, including through Bantu languages in Africa." : "The paired forms are a linguist’s comparison, not a recorded conversation. They do not tell us which shore a particular speaker visited, or how many journeys were made. Nor did Malagasy remain unchanged: African and Asian contacts helped shape it.",
+                  wikipedia: borrowed ? "Old Malay" : "Barito languages")
             if borrowed {
                 margin("sammaw · “celestial ship”")
-                prose("Adelaar’s comparison also records this Ma’anyan word. A ship can have a life beyond the sea. The gloss is tantalizing; it does not give us enough to reconstruct the practice behind it. That question remains open here.")
+                prose("Adelaar’s comparison also records this Ma’anyan word. A ship can have a life beyond the sea. The gloss is tantalizing; it does not give us enough to reconstruct the practice behind it. That question remains open here.", wikipedia: "Ma'anyan language")
             }
             note("The map marks present-day places as orientation, not ancient ethnic territories. Words are shown in scholarly or standard spelling; no reconstructed pronunciation is performed.")
         }
@@ -218,11 +225,11 @@ struct OceanExperience: View {
     private var lives: some View {
         VStack(alignment: .leading, spacing: 18) {
             margin("What if we look at the islands between?")
-            prose("The Comoros complicate a tidy two-island story. Sima, on Anjouan, yielded rice, mung bean and cotton. Crowther and colleagues interpret the pattern as evidence of a Southeast Asian presence beyond Madagascar. Comorian languages today are Bantu languages.")
+            prose("The Comoros complicate a tidy two-island story. Sima, on Anjouan, yielded rice, mung bean and cotton. Crowther and colleagues interpret the pattern as evidence of a Southeast Asian presence beyond Madagascar. Comorian languages today are Bantu languages.", wikipedia: "Comoros")
                 .accessibilityIdentifier("encounterClaim")
             prose("A seed cannot tell us a person’s name. A related word cannot tell us why they left. The early migrants’ status, motives and stages of travel remain uncertain. There is no passenger list hiding behind this map.")
             margin("Madagascar is not a misplaced piece of somewhere else.")
-            prose("African and Asian connections belong to Malagasy histories together. Bantu-language contact helped shape Malagasy. A large genetic study found both African and Asian ancestry across its sampled communities, with substantial variation. Neither result defines any person’s identity.")
+            prose("African and Asian connections belong to Malagasy histories together. Bantu-language contact helped shape Malagasy. A large genetic study found both African and Asian ancestry across its sampled communities, with substantial variation. Neither result defines any person’s identity.", wikipedia: "Malagasy people")
             note("The map offers places to inspect, not a single migration corridor or a claim that geography determined people’s choices.")
             Button { showPlace("comoros") } label: { Text("Look at the Comoros  ↗").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .title3))
@@ -242,7 +249,8 @@ struct OceanExperience: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(key == "borneo" ? "Southern Borneo" : key == "comoros" ? "The Comoros" : key == "africa" ? "The East African coast" : "Madagascar")
                 .font(.custom("LibertinusSerif-Regular", size: 25, relativeTo: .title2))
-            prose(key == "borneo" ? "Other South East Barito languages are spoken near the Barito River. The mark is a regional reference, not a known departure port." : key == "comoros" ? "An archipelago between Africa and Madagascar. Sima’s crop remains are one reason the story reaches beyond Madagascar. The mark is an island-group locator, not a precise excavation coordinate." : key == "africa" ? "The crop study compared island sites with coastal East African sites. Its sampled mainland sites were dominated by African crops; that is a local archaeological comparison, not a timeless cultural boundary." : "At Mahilaka in northwestern Madagascar, rice and cotton were recovered. The island mark locates Madagascar, not the excavation itself.")
+            prose(key == "borneo" ? "Other South East Barito languages are spoken near the Barito River. The mark is a regional reference, not a known departure port." : key == "comoros" ? "An archipelago between Africa and Madagascar. Sima’s crop remains are one reason the story reaches beyond Madagascar. The mark is an island-group locator, not a precise excavation coordinate." : key == "africa" ? "The crop study compared island sites with coastal East African sites. Its sampled mainland sites were dominated by African crops; that is a local archaeological comparison, not a timeless cultural boundary." : "At Mahilaka in northwestern Madagascar, rice and cotton were recovered. The island mark locates Madagascar, not the excavation itself.",
+                  wikipedia: key == "borneo" ? "Barito River" : key == "comoros" ? "Anjouan" : key == "africa" ? "Swahili coast" : "Mahilaka")
             Button(action: onDismiss) { Text("Put this note aside").frame(minHeight: 44).contentShape(Rectangle()) }
                 .font(.custom("LibertinusSerif-Regular", size: 17, relativeTo: .body)).foregroundStyle(Self.blue)
                 .frame(minHeight: 44)
@@ -252,18 +260,27 @@ struct OceanExperience: View {
         .overlay(alignment: .leading) { Rectangle().fill(Self.blue).frame(width: 2) }
     }
 
-    private func prose(_ text: String) -> some View {
-        Text(text).font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .body))
-            .lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+    /// A paragraph, or under Wikipedia's words its article's card (nothing, with no article).
+    private func prose(_ text: String, wikipedia: String? = nil) -> some View {
+        Words(text: text, wikipedia: wikipedia, tone: Self.tone) { text in
+            Text(text).font(.custom("LibertinusSerif-Regular", size: 20, relativeTo: .body))
+                .lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+        }
     }
-    private func margin(_ text: String) -> some View {
-        Text(text).font(.custom("LibertinusSerif-Italic", size: 26, relativeTo: .title2))
-            .foregroundStyle(Self.blue).fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 8)
+    /// A line in the margin, the encounter's own voice: not shown under Wikipedia's words.
+    @ViewBuilder private func margin(_ text: String) -> some View {
+        if !wikipedia {
+            Text(text).font(.custom("LibertinusSerif-Italic", size: 26, relativeTo: .title2))
+                .foregroundStyle(Self.blue).fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 8)
+        }
     }
-    private func note(_ text: String) -> some View {
-        Text(text).font(.custom("LibertinusSerif-Regular", size: 16, relativeTo: .footnote))
-            .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+    /// An aside on what the map does not claim: the atlas's own, so not shown under Wikipedia's words.
+    @ViewBuilder private func note(_ text: String) -> some View {
+        if !wikipedia {
+            Text(text).font(.custom("LibertinusSerif-Regular", size: 16, relativeTo: .footnote))
+                .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+        }
     }
     private func choose(_ key: String) {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { lens = key; place = nil }
@@ -276,14 +293,26 @@ struct OceanExperience: View {
 
 private struct OceanEvidenceView: View {
     @Environment(\.dismiss) private var dismiss
+    private var wikipedia: Bool { WikipediaWords.shared.on }
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     Text("What survives, and what it cannot tell us")
                         .font(.custom("LibertinusSerif-Regular", size: 30, relativeTo: .title))
-                    Text("These notes are bundled for offline reading. The cited works are not bundled. URLs are selectable references; this encounter makes no network requests. Source check: 26 October 2026 (ET), by an AI research agent, not a human specialist.")
-                    ForEach(OceanEvidence.sources) { source in
+                    if !wikipedia {
+                        Text("These notes are bundled for offline reading. The cited works are not bundled. URLs are selectable references; this encounter makes no network requests. Source check: 26 October 2026 (ET), by an AI research agent, not a human specialist.")
+                    }
+                    // (under Wikipedia's words the sources go too, leaving only Wikipedia's words to read; what each
+                    // supports and its limits are the atlas's reading of them)
+                    if wikipedia {
+                        ForEach(["Madagascar", "Malagasy language", "Austronesian peoples", "Comoros"], id: \.self) { key in
+                            if let article = WikipediaIndex.shared[key] {
+                                WikipediaCard(article: article, tone: OceanExperience.tone)
+                            }
+                        }
+                    }
+                    ForEach(wikipedia ? [] : OceanEvidence.sources) { source in
                         VStack(alignment: .leading, spacing: 10) {
                             Text(source.title).font(.custom("LibertinusSerif-Semibold", size: 23, relativeTo: .title2))
                             Text(source.detail).foregroundStyle(OceanExperience.blue)

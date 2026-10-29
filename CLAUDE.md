@@ -48,6 +48,18 @@ Keep design discussions and plans in that private repository.
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
     `glint_png.py` draws the doorways' glint).
+- **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
+  clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
+  itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or
+  its card (title, description, two sentences, "Read on Wikipedia ↗", CC BY-SA 4.0) where the
+  paragraph was; a tip (one sentence, what to touch) stays, a paragraph with no article goes, and the
+  sources go too: only Wikipedia's words, the names, the dates and the tips remain. `Words` is the one view every prose site goes through
+  (`WikipediaCard`, `WordsRule.isTip`); a chosen country's caption says what Wikipedia says of it. The
+  words are bundled, never fetched: `Wikipedia.json` (every country, the experiences' subjects) and
+  each pack's `wikipedia.json`, built by `tools/wikipedia/build.py` from the keys the code names
+  (`wikipedia: "Title"`; `tools/wikipedia/articles.txt` adds the rest) and checked complete by
+  `ci/check_wikipedia.py`. Packs: `docs/runtime3.md` › Wikipedia's words. Debug: `-wikipedia-words on|off`
+  holds the switch unremembered.
 - **The quiet globe** (`App/TerraIncognita/Quiet/`, four native prototypes, each a rule the plain globe
   takes while it runs and gives back when it ends; they run together; painting-company row 174):
   `quiet-names`, names on demand (`GlobeView.quietNames`: the one or two greatest features in view by

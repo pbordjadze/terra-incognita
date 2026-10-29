@@ -169,23 +169,30 @@
               'thousands of metres: tap the water to sound it, or touch a copper name for its note.';
   var QUALIFIED = 'from GEBCO 2008 imagery (NASA Visible Earth), generalised and rounded to 100 m: not survey data.';
   var near = false, seen = false, glass = null, flash = null, flashTimer = 0, shown = '';
+  // Wikipedia's articles on the leaf's subjects (wikipedia.json, built by tools/wikipedia/build.py): with the
+  // reader's switch on, the host puts their first sentences where these words are
+  var WIKIPEDIA = { leaf: 'Aegean Sea', wind: 'Etesian', santorini: 'Santorini caldera', vai: 'Phoenix theophrasti', deep: 'Hellenic Trench' };
 
   function say() {
-    var title = TITLE, text;
+    var title = TITLE, text, wikipedia = '';
     if (flash) {
       title = flash.title; text = flash.text;
     } else if (glass && glass.reading) {
       title = 'The sounding glass';
       var r = glass.reading;
+      // (under Wikipedia's words, the reading alone: the depth is the chart's, not the atlas's prose)
       text = r.land
-        ? 'Land, on the chart’s generalised coast: the glass sounds only the sea. Drag it onto the water, or tap its centre to put it away.'
-        : depthWords(r).charAt(0).toUpperCase() + depthWords(r).slice(1) + ' deep here, ' + QUALIFIED +
-          ' Drag the glass to sound along; tap its centre to put it away.';
+        ? (terra.settings.wikipedia ? 'Land, on the chart’s generalised coast.'
+           : 'Land, on the chart’s generalised coast: the glass sounds only the sea. Drag it onto the water, or tap its centre to put it away.')
+        : depthWords(r).charAt(0).toUpperCase() + depthWords(r).slice(1) + ' deep here' + (terra.settings.wikipedia ? '.' : ', ' + QUALIFIED +
+          ' Drag the glass to sound along; tap its centre to put it away.');
     } else {
       text = near ? CLOSE : seen ? MID : FAR;
+      wikipedia = WIKIPEDIA.leaf;
     }
-    if (title + '|' + text !== shown) { shown = title + '|' + text; terra.caption.set({ title: title, text: text }); }
+    if (title + '|' + text !== shown) { shown = title + '|' + text; terra.caption.set({ title: title, text: text, wikipedia: wikipedia }); }
   }
+  terra.on('settings', function () { shown = ''; say(); });
 
   function tell(title, text) {
     flash = { title: title, text: text };
@@ -270,6 +277,7 @@
     terra.panel.show({
       title: n.name,
       text: [n.title + ' ' + n.deck].concat(n.body).join('\n\n'),
+      wikipedia: WIKIPEDIA[n.id],
       sections: [{ title: 'The drawing and its limits', text: LIMITS[n.id] || n.limit }],
       sources: n.sources.map(function (s) { return { title: s.title, url: s.url, note: s.text }; })
     });
@@ -280,16 +288,17 @@
     text: 'An engraved chart of the Aegean, lying on the globe: present-day, generalised physical geography, with no political ' +
           'boundaries drawn. It is a small authored leaf, not a navigational chart or a complete atlas.\n\n' +
           'An atlas has room for an idle hand.',
+    wikipedia: WIKIPEDIA.leaf,
     sections: [
       { title: 'What you can do',
         text: 'Tap the water to set down the sounding glass: a line hangs to the generalised depth there, and the depth contours show ' +
               'inside the glass. Drag the glass to sound along the sea; tap its centre to put it away.\n\n' +
               'Touch a copper name, the wind strokes, the palm or the whale to read its note. Touch the paper skiff to fold or raise its sail.' },
-      { title: 'What is drawn',
+      { title: 'What is drawn', wikipedia: 'Natural Earth',
         text: 'The coasts are Natural Earth’s, at 1:10 million. The relief contours and short hachures on the land are derived from ' +
               'elevation in GEBCO 2008 imagery (NASA Visible Earth), not invented mountain symbols: they are an illustration of terrain, not survey ' +
               'contours. The engraving was prepainted from the chart by the leaf’s own drawing code.' },
-      { title: 'What is measured',
+      { title: 'What is measured', wikipedia: 'General Bathymetric Chart of the Oceans',
         text: 'The sounding glass reads a grid of roughly 5 km cells prepared from NASA Visible Earth’s grayscale imagery of GEBCO 2008 bathymetry, rounded to ' +
               '100 m, and its 250 to 4,000 m contours are generalised from the same source. These are legacy imagery derivatives, not ' +
               'current hydrographic survey data: they must not be used to infer local water depths or island-scale coast accuracy. ' +
