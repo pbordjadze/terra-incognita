@@ -119,7 +119,7 @@ Keep design discussions and plans in that private repository.
   (`monsoon-sails/`: a year at the foot that is also the globe's season, dhows that sail only when
   the wind blows their way, the wind as streaks; `tools/monsoon/`), **Fires across the sea**
   (`fires-across-the-sea/`: a pyre on every Aegean peak, lit from Ida above Troy, the relay running by
-  true horizons; `tools/beacons/`), **The lead line** (`lead-line/`: Challenger sailing her whole way
+  true horizons over the globe's own ground; `tools/beacons/`), **The lead line** (`lead-line/`: Challenger sailing her whole way
   from her stations and ports, a lead let down wherever the sea is touched to the globe's own depths,
   a sounding glass with the floor's contours under it; `tools/leadline/`), **When the sea was low**
   (`low-sea/`: the shelves come up as the land they were when the sea stood 120 m lower, with their
