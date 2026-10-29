@@ -16,7 +16,8 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
-Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one).
+Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one;
+`python3 ci/check_tools.py --write` writes its *Used by* from the code, and CI fails it when it falls behind).
 
 - **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
   workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
@@ -249,7 +250,8 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
   fast-forward brings the branch head's `[skip ci]` with it).
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
-    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, the tools' syntax, and
+    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, `docs/tools.md` by
+    `ci/check_tools.py`, the tools' syntax, and
     every Metal shader by `tools/metal/metal.py check` with the stand-in's tests.
   - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
     in the bundle. Simulator screenshots run only when the workflow is started by hand

@@ -4,7 +4,8 @@ name: Packs
 # them and, on main, published to this repository's `packs` branch, which the app reads through
 # https://raw.githubusercontent.com/pbordjadze/terra-incognita/packs/catalog.json. Linux only; no
 # macOS runner is used.
-#   validate  every pack against the runtime-3 contract, the size limits and the offline boundary
+#   validate  every pack against the runtime-3 contract, the size limits and the offline boundary, and
+#             docs/tools.md's used-by columns against the packs' code (ci/check_tools.py)
 #   check     node --check on the packs' and tools' JavaScript, and the tool's unit tests
 #   preview   every pack run in the desktop preview, headless (tools/playground/check.cjs --all: no script
 #             error, the doorway, sprites, zooms, a touch reaching the pack) and two at once on the living
@@ -43,6 +44,7 @@ jobs:
         run: |
           python3 tools/playground/playground.py validate
           python3 ci/check_wikipedia.py --packs
+          python3 ci/check_tools.py
       - name: Syntax and unit tests
         run: |
           rc=0
