@@ -308,7 +308,9 @@ async function checkPack(browser, server, pack, device) {
     }
     if (found.length) {
       const t = found[0], before = await pg(() => ({ state: window.__playground.state(), touches: window.__playground.touches.length }));
-      await page.mouse.click(t.x, t.y);
+      // (a sprite under way has moved since it was found: tap it where it is now)
+      const now = (await pg(() => window.__playground.touchables())).find((u) => JSON.stringify(u.target) === JSON.stringify(t.target)) || t;
+      await page.mouse.click(now.x, now.y);
       await sleep(700);
       await settle(3000, 'after the touch');
       await shot('touch');

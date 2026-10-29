@@ -1,0 +1,32 @@
+{
+ "source": "English Wikipedia (en.wikipedia.org), the lead section of each article as plain text",
+ "license": "CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); each article links to its page and history",
+ "fetched": "2026-10-29",
+ "tool": "tools/wikipedia/build.py",
+ "articles": {
+  "Dhow": {
+   "title": "Dhow",
+   "description": "Type of sailing vessel from the Indian Ocean",
+   "extract": "Dhow is the generic name of a number of traditional sailing vessels with one or more masts with settee or sometimes lateen sails, used in the Red Sea and Indian Ocean region. Typically sporting long thin hulls, dhows are trading vessels primarily used to carry heavy items, such as fruit, fresh water, or other heavy merchandise, along the coasts of Eastern Arabia, Iran, East Africa, Yemen and coastal South Asia. Larger dhows have crews of approximately thirty and smaller ones typically around twelve.",
+   "url": "https://en.wikipedia.org/wiki/Dhow",
+   "revision": 1354352688,
+   "timestamp": "2026-05-15T22:10:02Z"
+  },
+  "Indian Ocean trade": {
+   "title": "Indian Ocean trade",
+   "description": "Trade conducted through the Indian Ocean",
+   "extract": "Indian Ocean trade is vital for the global economy and has been described as the \"cradle\" for global trade. Traditionally connecting the western world to the eastern world since antiquity, long-distance maritime trade by South East Asian and South Asian, and Middle Eastern and later African ships has made it a dynamic zone of interaction between peoples, cultures, and civilizations stretching from Southeast Asia to East and Southeast Africa, and the East Mediterranean in the West, in prehistoric and early historic periods. Cities and states on the Indian Ocean rim focused on both the sea and the land. The ocean was historically called the \"Mahodadhi\", divided into the two seas Purvapayodhi (sunrise) and Apara (sunset). The Indian Ocean is critical for global trade and 50% of container traffic and 80% of global seaborne oil traverses the region.",
+   "url": "https://en.wikipedia.org/wiki/Indian_Ocean_trade",
+   "revision": 1378397211,
+   "timestamp": "2026-10-04T07:55:55Z"
+  },
+  "Monsoon": {
+   "title": "Monsoon",
+   "description": "Seasonal changes in atmospheric circulation and precipitation",
+   "extract": "A monsoon is traditionally a seasonal reversing wind accompanied by corresponding changes in precipitation, but now used to describe seasonal changes in atmospheric circulation and precipitation associated with annual latitudinal oscillation of the Intertropical Convergence Zone, specifically between its limits to the north and south of the equator. Usually, the term monsoon is used to refer to the rainy phase of a seasonally changing pattern, although technically there is a dry phase. The term is also used to describe locally heavy but short-term rains. The major monsoon systems of the world consist of the West African, South Asian–Australian, North American, and South American monsoons.",
+   "url": "https://en.wikipedia.org/wiki/Monsoon",
+   "revision": 1368846764,
+   "timestamp": "2026-08-11T11:46:46Z"
+  }
+ }
+}

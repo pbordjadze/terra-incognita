@@ -41,14 +41,19 @@ Keep design discussions and plans in that private repository.
   workbench's Live line counts stages, markers, globes, films and scripts: ending every prototype
   returns them to one globe and nothing else. `WORKBENCH` (build settings) compiles it in.
   - Debug builds take `-prototype <id>` (`-prototype-open` opens its screen), `-workbench`,
-    `-packs-url <catalog>`; the older `-camelid`, `-whale`, `-leaf` (the sea between), `-look`/`-film`,
-    `-globeStyle persian` start the matching prototype.
+    `-packs-url <catalog>`; the older `-camelid`, `-look`/`-film`, `-globeStyle persian` start the
+    matching prototype.
   - Links: `terraincognita://open/<id>`, `terraincognita://source?url=<catalog>` (asks first).
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
     `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
-    `glint_png.py` draws the doorways' glint).
+    `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
+    `tools/packart/render.cjs <sheet.js> <pack dir>` draws a sheet of canvas drawings (sprite frames,
+    doorways, pictures for the globe) with headless Chromium at three pixels a point, and
+    `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
+    plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
+    its first minute can be seen without a Mac.
 - **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
   clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
   itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or
@@ -119,18 +124,28 @@ Keep design discussions and plans in that private repository.
   - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
     (the ground's month)
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
+- **The rebuilt experiences** (October 29, 2026, painting-company row 176; each a runtime-4 pack
+  that writes nothing on the screen but its name, its truth one level down in `SOURCES.md` and the
+  panel): **Whales in the desert** (`Prototypes/sea-of-whales/`: the sea comes back over Wadi Al-Hitan
+  in four pictures from the deep, whales rise from their bones and swim, the water goes out from the
+  shore and each is left where it was to dry into bones; `tools/whales/`), **The monsoon's sails**
+  (`monsoon-sails/`: a year at the foot that is also the globe's season, dhows that sail only when
+  the wind blows their way, the wind as streaks; `tools/monsoon/`), **Fires across the sea**
+  (`fires-across-the-sea/`: a pyre on every Aegean peak, lit from Ida above Troy, the relay running by
+  true horizons over the globe's own ground; `tools/beacons/`), **The lead line** (`lead-line/`: Challenger sailing her whole way
+  from her stations and ports, a lead let down wherever the sea is touched to the globe's own depths,
+  a sounding glass with the floor's contours under it; `tools/leadline/`), **When the sea was low**
+  (`low-sea/`: the shelves come up as the land they were when the sea stood 120 m lower, with their
+  rivers and mammoths; `tools/lowsea/`), and **The vine's long walk** (`vine/`: one vine, eight
+  thousand years long, from a qvevri in Georgia across the world as the years play; `tools/vine/`).
+  They replaced Whale and Desert, the Indian Ocean encounter, The sea between, Sounding the deep and
+  Borders on old maps, which are in `main`'s history before 4531d6c.
 - **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
   move across the globe with its date, from North America north across Beringia to Asia, Europe and
   Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
   reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
   `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
   own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters); never hand-edit their output.
-- **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
-  on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass
-  (`SOURCES.md` in the pack). `-leaf` starts it. It is built from the former web leaf in `Leaf/`, which
-  is no longer in the app and stays as its source: `tools/aegean/build.py <cache>` prepares
-  `Leaf/data/chart.js` (never hand-edit), `tools/aegean/paint.cjs` its engravings, and
-  `tools/aegean/pack.cjs` with `pack_engraving.py` the pack from them.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the playground's one globe, as a lens, in the globe's own style; the
   globe answers to `camelidGlobe` while it is open. `CamelidStory` holds playback state;
@@ -176,23 +191,7 @@ Keep design discussions and plans in that private repository.
   makes `OceanCurrents.png` and `OceanStream.png` for both (its docstring is their layout); never
   hand-edit them; `tools/ocean/SOURCES.md` separates what is measured from what is drawn. Debug:
   `-ocean-time <s>` holds the drawn motion, `-ocean-month <1-12>` the month.
-- **The whale sequence** (`App/TerraIncognita/Whale/`, the `whale` prototype): a regional fossil illustration at Wadi
-  Al-Hitan opens an authored sequence on the playground's one globe, as a lens like the camelid's
-  (`WhaleCanvas` over the globe, which answers to `whaleGlobe` meanwhile, `WhaleExperience` the
-  chrome over the playground). The entry appears from 2× scale; the
-  map's accessibility action “Go to Whale fossil, Wadi Al-Hitan” moves there without starting playback.
-  Debug: `-whale <seconds>` holds a composition and `-whale-play` runs the native clock.
-  `ci/whale_capture.sh` captures selected simulator compositions and an optional full phone video
-  using unique first-frame and authored-clock-completion acknowledgements, rather than guessed
-  launch or ending delays. These are not frame-rate measurements. The quiet geographic view
-  during the large time jump is intentional.
-  Manual CI can select `interaction_suite=whale` on a branch for focused `WhaleEncounterTests`,
-  and `whale_capture=true` requests report-only capture after interactions. Pushes with
-  `[whale-capture]` request the same capture. Ordinary pushes and main always run all interaction
-  suites; focused branch checks omit duplicate film/globe/leaf screenshots. Branch `[ipa]` builds
-  are available in the `prototype-device-ipa` artifact without changing the shared SideStore source.
-- **The other studies**: the Indian Ocean encounter (`App/TerraIncognita/Experience/`, `ocean`: a seed
-  off Madagascar and an invitation), the river study **A gathering of
+- **The other studies**: the river study **A gathering of
   water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each
   traced to the sea), built by `tools/water/build_pack.py` from the former web study's data in
   `Water/` (no longer in the app; `docs/water-engineering.md`). Its sibling **A gathering of water,
@@ -207,8 +206,8 @@ Keep design discussions and plans in that private repository.
   their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
-  offline, the runtime-2 packs drawn by the globe (their date moved, nothing left after), and the
-  herds' animals moving with the date (runtime 5), and the
+  offline, the packs with a date drawn by the globe (the lead line and the vine: their date moved,
+  nothing left after), the herds' animals moving with the date (runtime 5), and the
   `hold` scheme (`RiverPackTests.swift`: a drag turns, a rest then a draw lights the rivers).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.

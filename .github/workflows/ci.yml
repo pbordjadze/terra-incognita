@@ -46,12 +46,8 @@ on:
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf, whale, playground]
+        options: [all, leaf, playground]
         default: all
-      whale_capture:
-        description: Capture the whale experience after interactions (report only)
-        type: boolean
-        default: false
       film:
         description: The films' moments too (off - the globe only)
         type: boolean
@@ -93,7 +89,8 @@ jobs:
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
           python3 ci/check_wikipedia.py 2>&1 | tee -a out/plates-check.log || rc=1
-          for f in tools/aegean/*.cjs; do
+          # the packs' art sheets and builders (tools/packart and each pack's tools/<name>/)
+          for f in tools/packart/*.cjs tools/packart/*.js tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           # the playground's bundled packs and tools (docs/playground.md)
@@ -104,7 +101,7 @@ jobs:
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           for f in tools/ocean/*.cjs tools/ocean/web/*.js tools/clouds/*.cjs tools/clouds/web/*.js tools/metal/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/aegean/*.py tools/playground/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py tools/wikipedia/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/playground/*.py tools/whales/*.py tools/beacons/*.py tools/leadline/*.py tools/lowsea/*.py tools/vine/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py tools/wikipedia/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the Metal shaders compiled as C++ by clang, in seconds (tools/metal/README.md), and the
           # stand-in's own tests (numpy for its textures)
           python3 tools/metal/metal.py check 2>&1 | tee -a out/plates-check.log || rc=1
@@ -195,7 +192,6 @@ jobs:
           if [ "$GITHUB_REF_NAME" != main ]; then
             case "${{ inputs.interaction_suite }}" in
               leaf) export UI_TEST_TARGET=TerraIncognitaUITests/MovedPackTests ;;
-              whale) export UI_TEST_TARGET=TerraIncognitaUITests/WhaleEncounterTests ;;
               playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests TerraIncognitaUITests/RiverPackTests" ;;
             esac
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
@@ -233,26 +229,6 @@ jobs:
           name: camelid-preview
           path: out/camelid
           if-no-files-found: warn
-      - name: Capture whale playback and compositions
-        id: whale_capture
-        continue-on-error: true
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
-        timeout-minutes: 20
-        run: |
-          # Phone first, with a complete recording; other selected devices supply held scenes.
-          sort -r out/sims.txt > out/whale-capture-sims.txt
-          while read -r KIND UDID _ <&3; do
-            if [ "$KIND" = iphone ]; then export WHALE_VIDEO=1; else export WHALE_VIDEO=0; fi
-            bash ci/whale_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/whale/$KIND" "$UDID"
-          done 3< out/whale-capture-sims.txt
-      - name: Preserve whale review capture separately
-        continue-on-error: true
-        uses: actions/upload-artifact@v5
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && (inputs.whale_capture == true || contains(github.event.head_commit.message, '[whale-capture]')) }}
-        with:
-          name: whale-preview
-          path: out/whale
-          if-no-files-found: warn
       - name: The stage at places
         # `[shots]`: the stage at rest (the ground's month, the clouds and the sea held) at each place,
         # as tools/metal/metal.py's `shot` draws it at the same names; a report, like the film's
@@ -271,7 +247,7 @@ jobs:
         # Focused branch checks attach opening/reading images through XCTest already.
         # Avoid booting both simulators again for duplicate pictures after those checks.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && steps.fast.outputs.fast == '' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'whale' || inputs.interaction_suite == 'playground')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && steps.fast.outputs.fast == '' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'playground')) }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
@@ -290,7 +266,7 @@ jobs:
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} whale_capture=${{ steps.whale_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }

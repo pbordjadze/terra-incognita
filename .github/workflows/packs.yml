@@ -123,5 +123,3 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - name: The station parser
-        run: node tools/playground/sounding-the-deep/fetch-stations.cjs --self-test

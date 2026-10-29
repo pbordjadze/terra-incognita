@@ -13,7 +13,7 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 45))
         XCTAssertTrue(app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch.exists, "The globe is the opening view")
         XCTAssertTrue(text(containing: "The whole world", in: app).exists, "The caption still says where the reader is")
-        for absent in ["activePrototype", "camelidAnimal", "whaleFossil", "oceanSeed", "oceanInvitation", "closeFilm", "filmLook"] {
+        for absent in ["activePrototype", "camelidAnimal", "closeFilm", "filmLook"] {
             XCTAssertFalse(app.descendants(matching: .any)[absent].firstMatch.exists, "The plain globe shows no \(absent)")
         }
         attach("00-plain-globe", in: app)
@@ -29,7 +29,7 @@ final class PlaygroundTests: XCTestCase {
         defer { app.terminate() }
         openWorkbench(in: app)
         let listed = listedPrototypes(in: app)
-        for id in ["plain", "camelid", "whale", "ocean", "gathering-of-water", "gathering-of-water-alive", "sea-between", "herds", "hello-pack", "sounding-the-deep", "borders-on-old-maps", "quiet-names", "quiet-clouds", "night", "quiet-frame", "persian", "wikipedia", "still-sea", "film"] {
+        for id in ["plain", "camelid", "gathering-of-water", "gathering-of-water-alive", "herds", "hello-pack", "sea-of-whales", "monsoon-sails", "fires-across-the-sea", "lead-line", "low-sea", "vine", "quiet-names", "quiet-clouds", "night", "quiet-frame", "persian", "wikipedia", "still-sea", "film"] {
             XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }
     }
@@ -56,15 +56,15 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertTrue(camel.waitForExistence(timeout: 15), "Closing the sequence leaves it on the globe until ended")
         XCTAssertTrue(app.descendants(matching: .any)["mainAtlasGlobe"].firstMatch.exists, "and gives the globe back")
 
-        startPrototype("sea-between", in: app)
+        startPrototype("lead-line", in: app)
         XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45),
-                      "The leaf, a pack now, lies on the globe and says what it is")
-        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("sea between"), "The leaf is in front")
+                      "The lead line, a pack, lies on the globe and says what it is")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("lead line"), "The lead line is in front")
         XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("1 more"), "The camel runs on behind it (several at once)")
         Thread.sleep(forTimeInterval: 1.5)
-        attach("12-leaf", in: app)
+        attach("12-lead-line", in: app)
         endFront(leaving: "Camel", in: app)
-        XCTAssertFalse(app.staticTexts["otherPrototypes"].firstMatch.exists, "Ending the leaf leaves the camel alone in front")
+        XCTAssertFalse(app.staticTexts["otherPrototypes"].firstMatch.exists, "Ending the lead line leaves the camel alone in front")
         endPrototype(in: app)
 
         XCTAssertTrue(app.buttons["workbenchButton"].waitForExistence(timeout: 15))
@@ -81,7 +81,7 @@ final class PlaygroundTests: XCTestCase {
     /// exactly to what they were before it.
     @MainActor func testSeveralExperiencesLiveTogetherByTouch() {
         let app = XCUIApplication()
-        // held where the camel's, the fossil's and the leaf's doorways are all in view on the 13-inch iPad
+        // held where the camel's, the whales' and the fires' doorways are all in view on the 13-inch iPad
         app.launchArguments = ["-playground-reset", "-globe-at", "33", "30", "2"]
         app.launch()
         defer { app.terminate() }
@@ -103,43 +103,39 @@ final class PlaygroundTests: XCTestCase {
         XCTAssertTrue(app.buttons["camelidAnimal"].firstMatch.waitForExistence(timeout: 15), "The camel stays on the globe")
         XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Camel"))
 
-        // the whale, by its doorway, beside the camel
-        let fossilDoor = app.buttons["doorway.whale"].firstMatch
-        XCTAssertTrue(fossilDoor.waitForExistence(timeout: 15), "The fossil's doorway is still there, in view")
-        fossilDoor.tap()
-        let whaleClose = app.buttons["whaleClose"].firstMatch
-        XCTAssertTrue(whaleClose.waitForExistence(timeout: 20), "Touching the fossil opens the whale's visit")
-        whaleClose.tap()
-        XCTAssertTrue(app.buttons["whaleFossil"].firstMatch.waitForExistence(timeout: 15), "The fossil stays on the globe")
-        XCTAssertTrue(app.buttons["camelidAnimal"].firstMatch.exists, "and so does the camel: nothing was reset")
-        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Whale"), "The whale is in front")
+        // the whales, a pack, by their doorway at Wadi Al-Hitan: the script runs beside the camel
+        let whalesDoor = app.buttons["doorway.sea-of-whales"].firstMatch
+        XCTAssertTrue(whalesDoor.waitForExistence(timeout: 15), "The whales' doorway is still there, in view")
+        whalesDoor.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45), "The whales start and say what they are")
+        XCTAssertTrue(app.buttons["camelidAnimal"].firstMatch.exists, "The camel is still there: nothing was reset")
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Whales"), "The whales are in front")
         XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("1 more"), "The camel runs on behind")
         attach("71-two-alive", in: app)
 
-        // the leaf, a pack, by its doorway: its script runs beside both
-        let leafDoor = app.buttons["doorway.sea-between"].firstMatch
-        XCTAssertTrue(leafDoor.waitForExistence(timeout: 15), "The leaf's doorway is in view")
-        leafDoor.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["globeFootCaption"].firstMatch.waitForExistence(timeout: 45), "The leaf starts and says what it is")
-        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("sea between"), "The leaf is in front")
-        XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("2 more"), "The camel and the whale run on behind")
+        // the fires, a pack, by their doorway in the Aegean: a second script runs beside both
+        let firesDoor = app.buttons["doorway.fires-across-the-sea"].firstMatch
+        XCTAssertTrue(firesDoor.waitForExistence(timeout: 15), "The fires' doorway is in view")
+        firesDoor.tap()
+        XCTAssertTrue(app.staticTexts["activePrototype"].firstMatch.label.contains("Fires"), "The fires are in front")
+        XCTAssertTrue(app.staticTexts["otherPrototypes"].firstMatch.label.contains("2 more"), "The camel and the whales run on behind")
         Thread.sleep(forTimeInterval: 1.5)
         attach("72-three-alive", in: app)
         openWorkbench(in: app)
-        assertLive(from: "stages 3 · markers ", to: " · globes 1 · films 0 · scripts 1", in: app,
-                   "Three stages, one script, the one globe (the leaf's own sprites are its own count)")
+        assertLive(from: "stages 3 · markers ", to: " · globes 1 · films 0 · scripts 2", in: app,
+                   "Three stages, two scripts, the one globe (the packs' own sprites are their own count)")
         app.buttons["workbenchClose"].firstMatch.tap()
         XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
 
         // ending each from the chip, front first: the counts come back exactly
-        endFront(leaving: "Whale", in: app)
+        endFront(leaving: "Whales", in: app)
         openWorkbench(in: app)
-        assertLive("stages 2 · markers 2 · globes 1 · films 0 · scripts 0", in: app, "Ending the leaf leaves the camel and the whale as they were")
+        assertLive(from: "stages 2 · markers ", to: " · globes 1 · films 0 · scripts 1", in: app, "Ending the fires leaves the camel and the whales as they were")
         app.buttons["workbenchClose"].firstMatch.tap()
         XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
         endFront(leaving: "Camel", in: app)
         openWorkbench(in: app)
-        assertLive("stages 1 · markers 1 · globes 1 · films 0 · scripts 0", in: app, "Ending the whale leaves the camel as it was")
+        assertLive("stages 1 · markers 1 · globes 1 · films 0 · scripts 0", in: app, "Ending the whales leaves the camel as it was")
         app.buttons["workbenchClose"].firstMatch.tap()
         XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForNonExistence(timeout: 10))
         endPrototype(in: app)

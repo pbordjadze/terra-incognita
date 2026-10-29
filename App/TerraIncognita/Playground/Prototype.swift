@@ -80,8 +80,8 @@ struct PlaygroundScreen: Identifiable {
     let content: () -> AnyView
 }
 
-/// A native experience on the globe itself (`PrototypeStage.openLens`; the camelid and whale
-/// sequences): a canvas lying on the one globe, composing in step with it and driving its authored
+/// A native experience on the globe itself (`PrototypeStage.openLens`; the camelid
+/// sequence): a canvas lying on the one globe, composing in step with it and driving its authored
 /// camera, and its chrome (date, scrubber, buttons, its reading) over the playground.
 struct PlaygroundLens: Identifiable {
     let id: String

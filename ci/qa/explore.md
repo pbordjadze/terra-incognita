@@ -103,10 +103,11 @@ screenshot a moment later, and in the report say which you trusted.
   Open shows its own page (its title is the pack's); touching one of its marks may open a note.
   Ending a prototype must return the plain globe and nothing else: the Live line's counts go
   back to the plain globe's.
-- Everything happens on the one globe: Camel and Llama and Whale and Desert are authored
-  sequences laid over it; A small thing, far from home is a seed off Madagascar with an
-  invitation; the packs (A gathering of water, The sea between: an engraved Aegean chart lying on
-  the globe, Sounding the deep, and others) draw on the globe and show a panel.
+- Everything happens on the one globe: Camel and Llama is an authored sequence laid over it;
+  the packs (A gathering of water; Whales in the desert, where the sea comes back over Egypt and
+  the whales strand as it goes; The monsoon's sails; Fires across the sea; The lead line; When the
+  sea was low; The vine's long walk; and others) draw on the globe, write nothing on the screen
+  but their name, and show a panel from Open.
 - The globe needs no network; only the workbench's pack sources do. Don't add a source.
 
 ## By design (not bugs)
@@ -120,8 +121,9 @@ Report these only if they look wrong in another way:
   different from the plain globe on purpose. The still sea (parked) hides the moving sea, to
   compare.
 - Pale white patches on the sea belong to the satellite ground, not the moving sea.
-- In the whale's sequence, the quiet geographic view during the large jump in time is intended;
-  prehistoric scenes hide modern borders.
+- In the camel's sequence, prehistoric scenes hide modern borders on purpose. In Whales in the
+  desert, the sea coming and going over the land, the whales left on the sand and drying into
+  bones, and the lack of any words are all intended.
 - A pan, pinch or double tap during an authored sequence pauses it and hides its composition
   until it is resumed.
 
@@ -133,8 +135,8 @@ Adapt the order to what you find; depth on a real problem beats covering every g
    and check the caption, the names and the choice agree with what you tapped.
 2. Open the workbench and read it; start a prototype that lives on the globe, use it, and end it
    with ✕: the plain globe comes back and the Live line's counts return.
-3. Start a pack (A gathering of water, The sea between), use it, open its page with Open, close
-   the page, and end it.
+3. Start a pack (A gathering of water, Whales in the desert), use it, open its page with Open,
+   close the page, and end it.
 4. Start two different prototypes one after the other: the second replaces the first cleanly.
 5. Quit and relaunch the app (with a prototype running, and without): note what it opens on, and
    that it is the same each time.

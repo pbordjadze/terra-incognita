@@ -54,7 +54,6 @@ if [ "${STAGE_ONLY:-}" != 1 ]; then
   shot camelid -prototype camelid
   shot hello-pack -prototype hello-pack
 fi
-if [ "${LEAF:-}" = 1 ]; then shot leaf -leaf; fi
 if [ "${GLOBE:-}" = 1 ]; then
   # each style (the defaults' `globeStyle`, set by the launch argument)
   shot globe-whole -globe -globeStyle wikipedia -globe-at -83 28 1

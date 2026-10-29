@@ -21,6 +21,8 @@ python3 tools/playground/playground.py new <id>              # scaffold Prototyp
 node tools/playground/serve.cjs                              # preview over a stand-in globe, http://127.0.0.1:8790/
 node tools/playground/check.cjs <id> [--device ipad]         # headless Chromium: errors fail, screenshots in build/playground/
 node tools/playground/check.cjs --living                     # two packs side by side on the preview's /atlas, by touch
+node tools/packart/render.cjs tools/<pack>/art.js Prototypes/<id>   # a pack's art, drawn from a sheet of canvas code
+node tools/packart/moments.cjs <id> <out dir> '<plan>'       # screenshots of a pack over time, with touches and the date
 python3 tools/playground/playground.py validate              # the contract, sizes and the offline boundary
 ```
 
