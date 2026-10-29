@@ -287,7 +287,7 @@ def build():
             lon1, lat1 = position_at(way, until)
             for lon, lat, date in [[lon0, lat0, since]] + seg + [[lon1, lat1, until]]:
                 # the animal's own place beside the way: a radius and a bearing that drift slowly with the date
-                spread = x.get('spread', 110) * a['radius']
+                spread = x.get('spread', 170) * a['radius']
                 k = (date - L.START) / (L.TODAY - L.START)
                 ang = a['angle'] + 0.8 * math.sin(a['drift'] + k * 40)
                 bridge = bridge_open(date)

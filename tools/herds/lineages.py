@@ -48,12 +48,12 @@ LINEAGES = [
     dict(id='first', name='The first camelids',
          kinds=[[START, 'early', 'Poebrodon, one of the first camelids, known from its jaws and teeth'],
                 [-37e6, 'early', 'Poebrotherium, an early camelid of the plains, humpless']],
-         members=3, grow=[[-36e6, 1], [-27e6, 2], [-21e6, 2]], spread=90,
+         members=3, grow=[[-36e6, 1], [-27e6, 2], [-21e6, 2]], spread=150,
          # the Uinta Basin, Utah [1, 4]; the White River Badlands [1, 4]; Agate, Nebraska [5]
          way=[[-109.9, 40.2, START], [-108.4, 42.3, -40e6], [-102.0, 43.8, -33e6], [-101.2, 42.6, -29e6],
               [-103.7, 42.4, -24e6], [-100.9, 40.6, -20e6], [-100.6, 42.0, -17e6]],
          ends=-17e6),
-    dict(id='panama', name='The camels of Panama', parent='first', take=1, members=3, spread=60,
+    dict(id='panama', name='The camels of Panama', parent='first', take=1, members=3, spread=100,
          kinds=[[-24e6, 'early', 'Aguascalientia, a small camel of Panama, then the tip of North America']],
          # Las Cascadas, the Panama Canal, about 21–20 million years ago [6]
          way=[[0, 0, -24e6], [-98.2, 30.0, -23.2e6], [-98.6, 21.0, -22.2e6], [-91.0, 15.3, -21.4e6],

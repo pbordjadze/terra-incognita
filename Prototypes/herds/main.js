@@ -277,7 +277,7 @@
       terra.flyTo(p[0], p[1], Math.min(MAX_ZOOM, zoomAt(PPD.close * 1.3)), 2.4);
       setTimeout(function () {
         var q = placeAt(one, date);
-        terra.flyTo(q[0], q[1] + 1.5, zoomAt(PPD.herd * 2.2), 4.5);
+        terra.flyTo(q[0], q[1] + 0.6, zoomAt(32), 4);
       }, 5200);
     }
   }
