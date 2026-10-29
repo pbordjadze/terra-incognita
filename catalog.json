@@ -1,18 +1,18 @@
 {
   "format": 1,
-  "generated": "2026-10-29T00:07:02-04:00",
+  "generated": "2026-10-29T06:48:23-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
-      "revision": 3,
+      "revision": 4,
       "runtime": 4,
       "title": "Borders on old maps",
       "summary": "Europe on eight dated maps, drawn on the globe. Tap a country and drag the date: the map changes, and the last map's outline stays, dashed.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "ab6117c0adfd1abaf8534b297657dff395cf410bfd45861682d611971da2eca2",
-      "path": "packs/borders-on-old-maps/r3/",
-      "bytes": 857703,
+      "hash": "f4c9cebf83253848b31d8af3c5b077f15e3e97cbbd47867d8a90e5f71df6dda1",
+      "path": "packs/borders-on-old-maps/r4/",
+      "bytes": 957397,
       "files": [
         {
           "path": "LICENSE-HISTORY.txt",
@@ -31,13 +31,13 @@
         },
         {
           "path": "about.js",
-          "bytes": 2326,
-          "sha256": "ae24850907af32641861f54e7b820d84aadcb5bce2baa67e9eff847294db1e67"
+          "bytes": 2422,
+          "sha256": "138100ff157f81730158db36ceaaf4e48eebcf2f6c5ca0d4bcd659c3b89cdd6a"
         },
         {
           "path": "borders.js",
-          "bytes": 9980,
-          "sha256": "0e2fae850ad6a469c6d5787b37462512ba17e4d5e23e505ef66f428c7994f02f"
+          "bytes": 10145,
+          "sha256": "6361c30c79e022ba164c2afa0260bd23c2ddcd03105b1ef88556ca2f74e5ad4c"
         },
         {
           "path": "data.js",
@@ -58,22 +58,27 @@
           "path": "prototype.json",
           "bytes": 843,
           "sha256": "44d1d8adf5c80a6e1232cb54b0c9c2881cb822b926a6d08728c79f5fb9ef673c"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 99433,
+          "sha256": "50d863eb9eda339ac290f20d522eb4bfa62c263597d278e60ee51612ea51c025"
         }
       ],
-      "published": "2026-10-29T00:07:02-04:00",
+      "published": "2026-10-29T06:48:23-04:00",
       "retired": false
     },
     {
       "id": "gathering-of-water",
-      "revision": 2,
+      "revision": 3,
       "runtime": 4,
       "title": "A gathering of water",
       "summary": "The rivers of South America on the globe: touch one to follow its water to the coast and see the tributaries that gather into it.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "aeb66ac71bcd52333c32520ed4d782e59dd6cb0b146d0a63cea52fa44a109c34",
-      "path": "packs/gathering-of-water/r2/",
-      "bytes": 2480227,
+      "hash": "332a0a2affb0f25156a8c83fa5fc09acc16e90ac352cd6a4c57e97296cec1faf",
+      "path": "packs/gathering-of-water/r3/",
+      "bytes": 2491842,
       "files": [
         {
           "path": "SOURCES.md",
@@ -82,8 +87,8 @@
         },
         {
           "path": "about.json",
-          "bytes": 4612,
-          "sha256": "c71313096e6a32c8e90eb893ed912bffbbc0e41fa1db1df4d0401448177ad952"
+          "bytes": 4730,
+          "sha256": "2a6497c11ec22446f3c15a5bc90a9e29f370f458ff34758e90f020b75787ff78"
         },
         {
           "path": "core.js",
@@ -107,8 +112,8 @@
         },
         {
           "path": "main.js",
-          "bytes": 22429,
-          "sha256": "b90ca67ca2c808f2d26bed41fc517dbe6869a768a96c368f607081cbcb3643a8"
+          "bytes": 22675,
+          "sha256": "0bdf41ebf9db0accd414820e2e1e9f7e1dd78fc58cb66a466532547ff9cc990f"
         },
         {
           "path": "network.json",
@@ -124,9 +129,14 @@
           "path": "prototype.json",
           "bytes": 853,
           "sha256": "982ae507d308b98b91824ecb69fe4ae2ea1231cc2a014f65f7f868fa97d03a09"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 11251,
+          "sha256": "c75243ce7d75845f8fa5836e0980ca284021b78c7ea8486dc7580181e434c66f"
         }
       ],
-      "published": "2026-10-29T00:07:02-04:00",
+      "published": "2026-10-29T06:48:23-04:00",
       "retired": false
     },
     {
@@ -162,15 +172,15 @@
     },
     {
       "id": "sea-between",
-      "revision": 3,
+      "revision": 4,
       "runtime": 4,
       "title": "The sea between",
       "summary": "An engraved chart of the Aegean lying on the globe: sound the sea between the islands, and read its notes on the wind, a caldera, a palm and the deep.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "25d590bbbebc92027f6c74bea29875b4d8031ab35a8b65754486a243be739179",
-      "path": "packs/sea-between/r3/",
-      "bytes": 1261623,
+      "hash": "c1b48e76bfb77b1400eed785b7ef308884d0eabfc7b60d015d5e805b14aec147",
+      "path": "packs/sea-between/r4/",
+      "bytes": 1268908,
       "files": [
         {
           "path": "SOURCES.md",
@@ -214,8 +224,8 @@
         },
         {
           "path": "main.js",
-          "bytes": 26062,
-          "sha256": "7bde6bd616d35667fb5782cb8be7702f7efa82e6b5b41355692acd1a81ed12d2"
+          "bytes": 26908,
+          "sha256": "4240c8cb240fece596df82fd43b904701bf5230da334d27d7b05721ed0ceecb8"
         },
         {
           "path": "notes.js",
@@ -433,25 +443,30 @@
           "sha256": "a14afef840202f4bc76b242f51e6882a4f4e7e631ed24a828099ab040985b327"
         },
         {
+          "path": "wikipedia.json",
+          "bytes": 6439,
+          "sha256": "0c7b7635afa18309b962d66813ce4d5f7672a2bde9b9fd498d584297289ec753"
+        },
+        {
           "path": "wind.png",
           "bytes": 7583,
           "sha256": "4275f9c1103d75478cbe19b70148ddef59b883153ecaf8dc8081f83829706b4a"
         }
       ],
-      "published": "2026-10-29T00:07:02-04:00",
+      "published": "2026-10-29T06:48:23-04:00",
       "retired": false
     },
     {
       "id": "sounding-the-deep",
-      "revision": 3,
+      "revision": 4,
       "runtime": 4,
       "title": "Sounding the deep",
       "summary": "HMS Challenger exploring the deep ocean, 1873–76, station by station on the globe. Touch a station to lower the line to the recorded depth.",
       "presentation": "globe",
       "shelf": "current",
-      "hash": "c5224b4e6b96ac601b2a7d3c90c324da26cce5620b3070abde9ba75aabd5b3db",
-      "path": "packs/sounding-the-deep/r3/",
-      "bytes": 183574,
+      "hash": "e14d9aeed2a16d33e6b4ab9a28e9e3d8ca8e304bbe2f194c679e5e5b64ca35cb",
+      "path": "packs/sounding-the-deep/r4/",
+      "bytes": 186865,
       "files": [
         {
           "path": "LICENSE-NATURAL-EARTH.md",
@@ -465,8 +480,8 @@
         },
         {
           "path": "about.js",
-          "bytes": 3023,
-          "sha256": "4c6cd8db54df5fd44c8e4aad2898815a6662c0f91d5540199bc0ec16810be770"
+          "bytes": 3136,
+          "sha256": "8c949aa898aea34c5999ce6afe1649da64bb5d99a15e619c9a074cac87f8ce20"
         },
         {
           "path": "data.js",
@@ -490,16 +505,21 @@
         },
         {
           "path": "sounding.js",
-          "bytes": 9393,
-          "sha256": "cf62c4dae1698b0a2873b77c107d93923afc167988bc5cd5fb19b319ed4a2344"
+          "bytes": 9732,
+          "sha256": "1ab02729bc4c574060dd7aee8d54ca6934c4ca9a09c51ecb1feacfeaff3dbea5"
         },
         {
           "path": "voyage.js",
           "bytes": 2453,
           "sha256": "29d326c2003eb18feecc38de6de2473dfe356200941522a07ef75a9e87f1430d"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 2839,
+          "sha256": "ea769896ffdc44bbd90b56f7eea400454e7d2a6149861401b08abfa4e716b40e"
         }
       ],
-      "published": "2026-10-29T00:07:02-04:00",
+      "published": "2026-10-29T06:48:23-04:00",
       "retired": false
     }
   ]
