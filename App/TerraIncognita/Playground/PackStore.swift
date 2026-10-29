@@ -305,7 +305,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 5
+    nonisolated static let runtime = 6
     static let shared = PackStore()
 
     /// One per pack id, by title.
@@ -865,7 +865,7 @@ final class PackStore {
         guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        // (runtime 5 hosts runtime-3 and runtime-4 packs unchanged: docs/runtime3.md)
+        // (runtime 6 hosts runtime-3 to runtime-5 packs unchanged: docs/runtime3.md)
         guard manifest.runtime >= 3, manifest.runtime <= runtime else {
             throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtimes 3 to \(runtime), drawn by the globe")
         }

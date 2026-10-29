@@ -22,16 +22,71 @@
 //   { pictures: [{ file: 'art/x-1.png',                 the PNG, relative to the pack dir
 //                  width, height, scale,                points, and device pixels a point
 //                  svg: '<svg width=… height=…>…</svg>', markup sized width × scale by height × scale px
-//                  contact: false }],                   optional: leave it off the contact sheet
-//     done() { ... } }                                  optional: after drawing (an index the pack reads, in `out`)
+//                  contact: false,                      optional: leave it off the contact sheet
+//                  sheet: 'art/early.png' }],           optional: a frame of that sprite sheet, not a file
+//     done(names) { ... } }                             optional: after drawing (an index the pack reads, in `out`)
 // Each SVG is drawn as Chromium draws a page's SVG and saved with its transparency; a file named twice
 // is drawn once. --only is passed to the sheet, which says what it means (the herds: kinds).
+//
+// Sprite sheets (runtime 6, docs/runtime3.md › Sprites): the pictures given one `sheet` are laid into
+// that one PNG, pixel for pixel (tools/packart/png.cjs, never through a canvas), two transparent pixels
+// apart, at most 4096 a side, and `done(names)` hears each one's name in the sheet,
+// `names['art/x-1.png'] === 'art/early.png#0,0,375,334'` (x, y, width, height in the sheet's pixels),
+// which is what the pack's looks name. A frame is the same pixels it would be as a file of its own.
 //
 // --contact out.png lays every picture drawn (at half its pixels) on one page, for looking at them
 // together.
 'use strict';
 const fs = require('fs'), path = require('path');
 const { chromium } = require('playwright');
+const png = require('./png.cjs');
+
+const SHEET_SIDE = 4096, SHEET_GAP = 2;
+
+/** Lays frames ({ file, width, height }, pixels) on shelves in the narrowest sheet no taller than it is
+    allowed, tallest first; returns { width, height, places: Map(file → [x, y]) }. */
+function packSheet(frames, name) {
+  const order = frames.slice().sort((a, b) => b.height - a.height || b.width - a.width || (a.file < b.file ? -1 : 1));
+  const area = frames.reduce((s, f) => s + (f.width + SHEET_GAP) * (f.height + SHEET_GAP), 0);
+  const widest = Math.max(...frames.map((f) => f.width));
+  let best = null;
+  for (let width = Math.max(widest, 64); width <= SHEET_SIDE; width += 64) {
+    if (width * width < area / 4) continue;
+    const places = new Map();
+    let x = 0, y = 0, shelf = 0;
+    for (const f of order) {
+      if (x + f.width > width) { x = 0; y += shelf + SHEET_GAP; shelf = 0; }
+      places.set(f.file, [x, y]);
+      x += f.width + SHEET_GAP;
+      shelf = Math.max(shelf, f.height);
+    }
+    const height = y + shelf;
+    if (height > SHEET_SIDE) continue;
+    if (!best || width * height < best.width * best.height) best = { width, height, places };
+  }
+  if (!best) throw new Error(`sheet ${name}: its frames don't fit in ${SHEET_SIDE} × ${SHEET_SIDE} pixels; give it two sheets`);
+  return best;
+}
+
+/** Writes each sprite sheet from its frames' PNGs; returns the frames' names in their sheets. */
+function writeSheets(out, sheets) {
+  const names = {};
+  for (const [sheet, frames] of sheets) {
+    const pictures = frames.map((f) => Object.assign(png.read(f.data), { file: f.file }));
+    const { width, height, places } = packSheet(pictures, sheet);
+    const data = Buffer.alloc(width * height * 4);
+    for (const p of pictures) {
+      const [x, y] = places.get(p.file);
+      for (let row = 0; row < p.height; row++) p.data.copy(data, ((y + row) * width + x) * 4, row * p.width * 4, (row + 1) * p.width * 4);
+      names[p.file] = `${sheet}#${x},${y},${p.width},${p.height}`;
+    }
+    const target = path.join(out, sheet);
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, png.write({ width, height, data }));
+    console.log(`sheet ${sheet}: ${pictures.length} frames, ${width} × ${height}`);
+  }
+  return names;
+}
 
 function usage(message) {
   console.error((message ? message + '\n' : '') + 'usage: node tools/packart/render.cjs <sheet> <pack dir> [--only a,b] [--scale 3] [--contact out.png]');
@@ -80,19 +135,26 @@ async function canvasSheet(browser, sheet, out, only, scale) {
 async function svgSheet(browser, sheet, out, only, scale) {
   const made = await require(path.resolve(sheet)).sheet({ only: only && [...only], scale, out });
   const page = await browser.newPage({ deviceScaleFactor: 1 });
-  const written = [], seen = new Set();
+  const written = [], seen = new Set(), sheets = new Map();
   for (const p of made.pictures) {
     if (seen.has(p.file)) continue;
     seen.add(p.file);
     const s = p.scale || scale, target = path.join(out, p.file);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
     await page.setViewportSize({ width: Math.ceil(p.width * s), height: Math.ceil(p.height * s) });
     await page.setContent(`<html><body style="margin:0;background:transparent">${p.svg}</body></html>`);
-    await page.locator('svg').screenshot({ path: target, omitBackground: true });
-    written.push({ file: p.file, contact: p.contact });
+    const data = await page.locator('svg').screenshot({ omitBackground: true });
+    if (p.sheet) {
+      if (!sheets.has(p.sheet)) sheets.set(p.sheet, []);
+      sheets.get(p.sheet).push({ file: p.file, data });
+    } else {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, data);
+    }
+    written.push({ file: p.file, data, contact: p.contact });
   }
   await page.close();
-  if (made.done) await made.done();
+  const names = writeSheets(out, sheets);
+  if (made.done) await made.done(names);
   console.log(`${written.length} picture${written.length === 1 ? '' : 's'} in ${path.relative(process.cwd(), out) || '.'}/`);
   return written;
 }
@@ -101,7 +163,7 @@ async function svgSheet(browser, sheet, out, only, scale) {
 async function contactSheet(browser, out, written, file) {
   const page = await browser.newPage({ deviceScaleFactor: 1 });
   const cells = written.filter((w) => w.contact !== false).map((w) => {
-    const data = fs.readFileSync(path.join(out, w.file));
+    const data = w.data || fs.readFileSync(path.join(out, w.file));
     const width = data.readUInt32BE(16), height = data.readUInt32BE(20);   // the PNG's header
     return `<img src="data:image/png;base64,${data.toString('base64')}" style="width:${width / 2}px;height:${height / 2}px">`;
   });
@@ -136,4 +198,4 @@ async function main(argv) {
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch((e) => { console.error(e); process.exit(1); });
-module.exports = { main };
+module.exports = { main, packSheet };

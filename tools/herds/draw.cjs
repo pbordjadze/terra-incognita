@@ -5,7 +5,10 @@
 //
 //   node tools/packart/render.cjs tools/herds/draw.cjs Prototypes/herds [--only kind,kind] [--contact out.png]
 //
-// (--only draws those kinds and leaves the index alone; the contact sheet shows the close looks.)
+// Each kind's frames are one sprite sheet, art/<kind>.png (docs/runtime3.md › Sprites, runtime 6), and the
+// index names each frame by its place in it, as does the doorway in prototype.json (written here too).
+// (--only redraws those kinds' sheets and leaves the index alone: draw them all when a size changes; the
+// contact sheet shows the close looks.)
 //
 // The animal is built from a few parts in its own frame (x forward, y up, the height at the withers 1):
 // a body whose back carries the humps, a tapered neck along a curve, a head, a tail, and four legs
@@ -534,7 +537,7 @@ function sheet({ only, out = path.join(ROOT, 'Prototypes', 'herds') } = {}) {
           const { w, h, svg } = svgFor(k, frames[i], look, box);
           size = [Math.round(w * 10) / 10, Math.round(h * 10) / 10];
           const name = `${id}-${lookId}-${poseId}-${i + 1}.png`;
-          pictures.push({ file: 'art/' + name, width: w, height: h, scale: look.scale, svg, contact: lookId === 'close' });
+          pictures.push({ file: 'art/' + name, width: w, height: h, scale: look.scale, svg, contact: lookId === 'close', sheet: `art/${id}.png` });
           names.push('art/' + name);
         }
         art[id][lookId] = art[id][lookId] || {};
@@ -551,7 +554,7 @@ function sheet({ only, out = path.join(ROOT, 'Prototypes', 'herds') } = {}) {
         const { w, h, svg } = herdSvg(k, i, count, LOOKS.tiny, box, poseId === 'graze');
         size = [Math.round(w * 10) / 10, Math.round(h * 10) / 10];
         const name = `${id}-herd-${poseId}-${i + 1}.png`;
-        pictures.push({ file: 'art/' + name, width: w, height: h, scale: 3, svg, contact: false });
+        pictures.push({ file: 'art/' + name, width: w, height: h, scale: 3, svg, contact: false, sheet: `art/${id}.png` });
         names.push('art/' + name);
       }
       art[id].herd[poseId] = { frames: names, size };
@@ -560,11 +563,24 @@ function sheet({ only, out = path.join(ROOT, 'Prototypes', 'herds') } = {}) {
   }
   return {
     pictures,
-    done() {
-      // the index the pack reads: each kind's looks, their frames and sizes in points
+    done(names) {
+      // the index the pack reads: each kind's looks, their frames (in the kind's sprite sheet) and sizes in points
       if (only) return;
+      for (const kind of Object.values(art)) {
+        for (const look of Object.values(kind)) {
+          if (typeof look !== 'object') continue;
+          for (const pose of Object.values(look)) pose.frames = pose.frames.map((f) => names[f]);
+        }
+      }
+      // the doorway's walking herd, from afar, in prototype.json
+      const manifest = path.join(out, 'prototype.json'), text = fs.readFileSync(manifest, 'utf8');
+      const door = '"frames": [' + art.early.herd.walk.frames.map((f) => JSON.stringify(f)).join(', ') + ']';
+      const next = text.replace(/"frames": \[[^\]]*"art\/early[^\]]*\]/, door);
+      if (next === text && !text.includes(door)) throw new Error('prototype.json: the doorway\'s herd (art/early…) was not found');
+      fs.writeFileSync(manifest, next);
       fs.writeFileSync(path.join(out, 'art.js'),
-        '// Written by tools/herds/draw.cjs: the animals\' pictures and their sizes in points. Never hand-edit.\n'
+        '// Written by tools/herds/draw.cjs: the animals\' pictures (one sprite sheet a kind, a frame named by its\n'
+        + '// place in it: docs/runtime3.md › Sprites) and their sizes in points. Never hand-edit.\n'
         + 'window.HERD_ART = ' + JSON.stringify(art) + ';\n');
     }
   };

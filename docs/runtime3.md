@@ -19,6 +19,10 @@ the date puts it, so it walks as the date plays and stands where the reader drag
 comes close), and reach back to the Earth's beginning, read as years ago
 ([The date](#the-date-and-the-words-at-the-foot-since-runtime-2)). Marked *new in 5*.
 
+**Runtime 6** (October 29, 2026; painting-company row 183) adds **sprite sheets**: a look's frames may be
+rectangles of one picture, so a pack's many frames don't each cost a file
+([Sprites](#sprites-things-that-live-and-move-on-the-globe-new-in-3)). Marked *new in 6*.
+
 ## The pack
 
 ```
@@ -48,8 +52,8 @@ Prototypes/<id>/
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, or 5 for anything *new in 5* (an
-  app with an older runtime lists the pack as needing a new build).
+- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, 5 for anything *new in 5*, 6 for
+  anything *new in 6* (an app with an older runtime lists the pack as needing a new build).
 - `presentation`: always `"globe"`. Every pack lives on the globe; there are no pack screens.
 - `scripts`: run in order in one context, like script tags. The global object is also `window`
   and `globalThis`, so a data file may say `window.TIDE = {...}`.
@@ -82,7 +86,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 5 (4 on an app before October 29, 2026; 3 before October 28; `flow` and the `hold` scheme since October 29) |
+| `terra.runtime` | 6 (5 on an app before sprite sheets; 4 before October 29, 2026; 3 before October 28; `flow` and the `hold` scheme since October 29) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
@@ -198,8 +202,21 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   the foot, so it doesn't vanish as it walks to the edge.
 - `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`. A trace
   resting between its showings can't be touched. Sprites don't make room for names: place them.
+- *New in 6:* a **sprite sheet**: a frame (or a look's `image`, or a doorway's) may be a rectangle of a
+  bigger picture, named `'<sheet>.png#x,y,width,height'` in the sheet's pixels, so a pack with many
+  frames (the herds' fifteen animals, each in four looks and two poses) spends one file a sheet rather
+  than one a frame. The app decodes a sheet once and cuts its frames without copying them; the preview
+  and `playground.py validate` read them too (the rectangle must lie inside the sheet). Sheets are
+  written by the one art drawer, never by hand: a picture of an SVG sheet given `sheet: 'art/x.png'`
+  goes into that sheet, pixel for pixel, and the sheet's `done(names)` hears each frame's name to write
+  into the pack's index (`tools/packart/render.cjs`; `tools/herds/draw.cjs` is the example).
+
+  ```js
+  // art.js, written by the drawer: the frames of one animal's walk, in its kind's sheet
+  looks: [{ frames: ['art/early.png#0,0,376,335', 'art/early.png#378,0,376,335'], fps: 6, size: [125.2, 111.4], face: true }]
+  ```
 - Reduce Motion: sprites hold still at their first place and first frame; traces show steadily.
-- Budget: 64 sprites, each look at most 24 frames.
+- Budget: 64 sprites, each look at most 24 frames; a sheet at most 4096 pixels a side (the drawer's limit).
 
 ## Touch in the world (new in 3)
 

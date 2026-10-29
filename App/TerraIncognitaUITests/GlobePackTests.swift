@@ -57,8 +57,9 @@ final class GlobePackTests: XCTestCase {
         assertLive(Self.plainGlobeLive, in: app, "Ending the vine leaves only the plain globe")
     }
 
-    /// The herds (runtime 5): animals on dated ways, which the globe's date moves. It opens close on one
-    /// of the first camelids and pulls back; moving the date to a mark on its strip moves that animal,
+    /// The herds (runtime 6): animals on dated ways, which the globe's date moves, their frames cut from
+    /// sprite sheets (a sprite with no frame the app could read is never set, so the first camelid being on
+    /// the globe says its kind's sheet was read and cut). It opens close on one of the first camelids and pulls back; moving the date to a mark on its strip moves that animal,
     /// and the date reads as years ago; then the plain globe again.
     @MainActor func testTheHerdsMoveWithTheDate() {
         let app = XCUIApplication()

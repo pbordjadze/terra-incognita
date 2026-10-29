@@ -143,12 +143,13 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   thousand years long, from a qvevri in Georgia across the world as the years play; `tools/vine/`).
   They replaced Whale and Desert, the Indian Ocean encounter, The sea between, Sounding the deep and
   Borders on old maps, which are in `main`'s history before 4531d6c.
-- **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
+- **The herds** (`Prototypes/herds/`, a runtime-6 pack): the camel family's history as small herds that
   move across the globe with its date, from North America north across Beringia to Asia, Europe and
   Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
   reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
   `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
-  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters: an SVG sheet for `tools/packart/render.cjs`); never hand-edit their output.
+  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters: an SVG sheet for `tools/packart/render.cjs`,
+  each kind's frames one sprite sheet, runtime 6); never hand-edit their output.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the playground's one globe, as a lens, in the globe's own style; the
   globe answers to `camelidGlobe` while it is open. `CamelidStory` holds playback state;

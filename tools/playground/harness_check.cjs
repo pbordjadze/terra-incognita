@@ -1,5 +1,5 @@
 'use strict';
-// The desktop preview's own check: it writes a runtime-3 pack that uses every tool once (build/harness-fixture/
+// The desktop preview's own check: it writes a runtime-6 pack that uses every tool once (build/harness-fixture/
 // preview-fixture/, never in Prototypes/), runs it in headless Chromium at iPhone and iPad sizes, and holds the
 // preview to docs/runtime3.md: the doorway starts it, the anchor flight lands, the script's world has no DOM and
 // reads its files, geography, the picture and sprites are drawn where terra.project puts them (read off the
@@ -80,11 +80,12 @@ const chartColour = (x, y) => [214 - (y / CHART.h) * 40, 168 + (x / CHART.w) * 5
 const BOAT_HULL = [92, 52, 30], DOT = [24, 44, 96], DOOR = [178, 74, 46], MARK = [46, 139, 87], SPLASH = [30, 110, 190];
 
 function pictures() {
-  const boat = (sail) => paint(88, 44, [
-    [polygon([[6, 26], [70, 26], [86, 18], [80, 34], [14, 36]]), BOAT_HULL],          // the bow to the east (right)
-    [polygon([[40, 4], [40, 24], [66, 24]]), sail],
-    [polygon([[38, 2], [42, 2], [42, 26], [38, 26]]), [60, 40, 24]],
-  ]);
+  const boat = (sail, dx = 0) => {
+    const at = (pts) => polygon(pts.map(([x, y]) => [x + dx, y]));
+    return [[at([[6, 26], [70, 26], [86, 18], [80, 34], [14, 36]]), BOAT_HULL],      // the bow to the east (right)
+            [at([[40, 4], [40, 24], [66, 24]]), sail],
+            [at([[38, 2], [42, 2], [42, 26], [38, 26]]), [60, 40, 24]]];
+  };
   return {
     'chart.png': paint(CHART.w, CHART.h, [
       [all, chartColour],
@@ -93,8 +94,8 @@ function pictures() {
       [(x, y) => x < 5 || y < 5 || x > CHART.w - 5 || y > CHART.h - 5, [150, 52, 36]],
     ]),
     'dot.png': paint(24, 24, [[disc(12, 12, 11), [255, 255, 255]], [disc(12, 12, 8.5), DOT]]),
-    'boat-1.png': boat([250, 248, 240]),
-    'boat-2.png': boat([236, 214, 170]),
+    // a sprite sheet (runtime 6): the boat's two frames side by side, two pixels apart (BOAT_FRAMES)
+    'boats.png': paint(178, 44, [...boat([250, 248, 240]), ...boat([236, 214, 170], 90)]),
     'splash.png': paint(40, 40, [[annulus(20, 20, 9, 14), SPLASH.concat(0.9)], [disc(20, 20, 4), SPLASH]]),
     'door.png': paint(52, 52, [[disc(26, 26, 25), [255, 250, 240]], [disc(26, 26, 22), DOOR], [polygon([[17, 40], [17, 22], [26, 13], [35, 22], [35, 40]]), [246, 236, 214]]]),
     'mark.png': paint(36, 36, [[polygon([[18, 2], [34, 18], [18, 34], [2, 18]]), MARK]]),
@@ -119,7 +120,7 @@ const FIX = {
 };
 
 function mainJs() {
-  return `/* The preview's fixture: every runtime-3 tool once, and each event echoed to the log for the check. */
+  return `/* The preview's fixture: every tool once (its boat's frames a sprite sheet: runtime 6), and each event echoed to the log for the check. */
 (function () {
   'use strict';
   var F = window.FIXTURE, scheme = 'touchables';
@@ -143,7 +144,7 @@ function mainJs() {
   terra.sprites.set('boat', {
     path: F.voyage,
     looks: [{ image: 'dot.png', size: [12, 12], maxZoom: F.boatClose },
-            { frames: ['boat-1.png', 'boat-2.png'], fps: 3, size: [44, 22], minZoom: F.boatClose, face: true }],
+            { frames: ['boats.png#0,0,88,44', 'boats.png#90,0,88,44'], fps: 3, size: [44, 22], minZoom: F.boatClose, face: true }],
     label: 'A boat (the fixture\\'s)', touchable: true
   });
   terra.sprites.set('splash', { at: F.splash, looks: [{ image: 'splash.png', size: [20, 20], every: 2, for: 1.4 }] });
@@ -194,7 +195,7 @@ function writeFixture(base) {
   fs.mkdirSync(path.join(dir, 'data'), { recursive: true });
   const manifest = {
     id: PACK, title: 'Preview fixture', summary: 'The desktop preview\'s own test pack: every runtime-3 tool once.',
-    runtime: 3, presentation: 'globe', scripts: ['data.js', 'main.js'], anchor: FIX.anchor,
+    runtime: 6, presentation: 'globe', scripts: ['data.js', 'main.js'], anchor: FIX.anchor,
     doorway: { lon: FIX.doorway.lon, lat: FIX.doorway.lat, label: 'Preview fixture', look: { image: 'door.png', size: [26, 26], minZoom: FIX.doorway.minZoom } },
     taps: true, shelf: 'current',
   };
@@ -343,7 +344,7 @@ async function runDevice(browser, server, device) {
     const world = (await echoes('world'))[0];
     const w = world && world.v;
     t('script world: no DOM, no fetch, no XMLHttpRequest, no navigator', w && w.document === 'undefined' && w.fetch === 'undefined' && w.XMLHttpRequest === 'undefined' && w.navigator === 'undefined', w);
-    t('script world: window is the global, runtime 5, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 5 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
+    t('script world: window is the global, runtime 6, pack origin "preview", timers, terra.camera', w && w.windowIsGlobal && w.runtime === 6 && w.pack.origin === 'preview' && w.pack.id === PACK && w.setTimeout === 'function' && w.camera, w);
     const read = (await echoes('read'))[0];
     const r = read && read.v;
     t('terra.read / readJSON: the pack\'s files; null for a missing one and outside the pack', r && r.notes === 'Read by terra.read.\n' && r.facts && r.facts.n === 3 && r.missing === null && r.escape === null, r);

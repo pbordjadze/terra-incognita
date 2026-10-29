@@ -76,8 +76,10 @@ final class PackScript {
     private var cameraSettle: Timer?
     /// The pictures this pack has laid on the globe, decoded, by path.
     private var decoded: [String: CGImage] = [:]
-    /// Its sprites' pictures by path, read once: a herd's animals share their frames.
+    /// Its sprites' pictures by name, read once: a herd's animals share their frames.
     private var pictures: [String: UIImage] = [:]
+    /// Its sprite sheets, decoded once (runtime 6: `SpriteSheet`).
+    private var sheets: [String: UIImage] = [:]
     /// The pack's own articles (its wikipedia.json, built by tools/wikipedia/build.py) over the app's, for
     /// the `wikipedia` keys its caption and panel name.
     private lazy var wikipedia: WikipediaIndex = {
@@ -161,6 +163,7 @@ final class PackScript {
         context = nil
         decoded = [:]
         pictures = [:]
+        sheets = [:]
         onEvent = nil
     }
 
@@ -359,12 +362,12 @@ final class PackScript {
         return try? String(contentsOf: file, encoding: .utf8)
     }
 
-    /// A picture of the pack (for geography symbols, sprites and images).
-    func picture(_ path: String) -> UIImage? {
-        if let known = pictures[path] { return known }
-        guard PackRules.isSafePath(path), let image = UIImage(contentsOfFile: pack.root.appending(path: path).path(percentEncoded: false)) else { return nil }
+    /// A picture of the pack for a sprite's look: a file, or a frame of a sprite sheet (runtime 6).
+    func picture(_ name: String) -> UIImage? {
+        if let known = pictures[name] { return known }
+        guard let image = SpriteSheet.picture(name, in: pack.root, sheets: &sheets, safe: PackRules.isSafePath) else { return nil }
         // (a pack's pictures are bounded by its size; they go when it stops)
-        pictures[path] = image
+        pictures[name] = image
         return image
     }
 

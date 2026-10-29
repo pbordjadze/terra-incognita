@@ -1,4 +1,4 @@
-// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 5 (docs/runtime3.md),
+// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 6 (docs/runtime3.md),
 // so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
 // borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
 // camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
@@ -574,7 +574,40 @@
   }
   const packUrl = (s, p) => '/pack/' + s.id + '/' + p.split('/').map(encodeURIComponent).join('/');
   let pendingPictures = 0;
+  // a frame of a sprite sheet (runtime 6): 'art/early.png#x,y,w,h', the sheet's pixels in that rectangle
+  function sheetFrame(s, path, who) {
+    const hash = path.indexOf('#'), r = path.slice(hash + 1).split(',').map(Number);
+    if (r.length !== 4 || !r.every((v) => Number.isInteger(v) && v >= 0) || !(r[2] > 0 && r[3] > 0)) {
+      hostError(who + ': "' + path + '" names a frame of a sheet as sheet.png#x,y,width,height (whole pixels)'); return null;
+    }
+    if (s.M && s.M.runtime < 6) hostWarn(who + ': a frame of a sprite sheet is new in runtime 6: declare "runtime": 6');
+    const sheet = picture(s, path.slice(0, hash), who);
+    if (!sheet) return null;
+    let checked = false;
+    return { path, rect: r, w: r[2], h: r[3], tooBig: false,
+             get img() { return sheet.img; }, get failed() { return sheet.failed; },
+             get ok() {
+               if (!sheet.ok) return false;
+               if (!checked) {
+                 checked = true;
+                 if (r[0] + r[2] > sheet.w || r[1] + r[3] > sheet.h) hostError(who + ': "' + path + '" lies outside its sheet (' + sheet.w + ' × ' + sheet.h + ')');
+               }
+               return r[0] + r[2] <= sheet.w && r[1] + r[3] <= sheet.h;
+             } };
+  }
+  // a picture, or a frame of a sheet, drawn into a rectangle
+  function blit(g, pic, x, y, w, h) {
+    if (pic.rect) g.drawImage(pic.img, pic.rect[0], pic.rect[1], pic.rect[2], pic.rect[3], x, y, w, h);
+    else g.drawImage(pic.img, x, y, w, h);
+  }
   function picture(s, path, who) {
+    if (typeof path === 'string' && path.includes('#')) {
+      const known = s.pictures.get(path);
+      if (known) return known;
+      const f = sheetFrame(s, path, who);
+      if (f) s.pictures.set(path, f);
+      return f;
+    }
     const p = cleanPath(path);
     if (!p || !s.FILES.has(p)) { hostError(who + ': "' + path + '" is not a file of the pack'); return null; }
     let e = s.pictures.get(p);
@@ -598,7 +631,7 @@
     const cv = document.createElement('canvas');
     cv.width = e.w; cv.height = e.h;
     const cx = cv.getContext('2d', { willReadFrequently: true });
-    cx.drawImage(e.img, 0, 0);
+    if (e.rect) cx.drawImage(e.img, -e.rect[0], -e.rect[1]); else cx.drawImage(e.img, 0, 0);
     e.data = cx.getImageData(0, 0, e.w, e.h).data;
     return e.data;
   }
@@ -837,7 +870,7 @@
             const x = o.x + L.offset[0] * k, y = o.y + L.offset[1] * k;
             // (aspect-fit, as the layer's contentsGravity)
             const sc = Math.min(w / pic.w, h / pic.h), dw = pic.w * sc, dh = pic.h * sc;
-            g.drawImage(pic.img, x - dw / 2, y - dh / 2, dw, dh);
+            blit(g, pic, x - dw / 2, y - dh / 2, dw, dh);
             const rect = [x - w / 2, y - h / 2, w, h];
             placed.push(rect);
             L.drawn.push({ index: p.index, x, y, rect });
@@ -1157,7 +1190,7 @@
     g.globalAlpha = alpha;
     g.translate(o.x, o.y);
     g.scale(flip ? -1 : 1, breath || 1);
-    g.drawImage(pic.img, -w / 2, -h / 2, w, h);
+    blit(g, pic, -w / 2, -h / 2, w, h);
     g.restore();
     return { x: o.x, y: o.y, rect };
   }
@@ -1769,7 +1802,7 @@
     const s = stageById.get(pack.id);
     if (s.running) { bringToFront(s, 'reader'); return; }
     const Mp = pack.M, where = 'prototype.json' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
-    if (![3, 4, 5].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 5'); return; }
+    if (![3, 4, 5, 6].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 6'); return; }
     if (Mp.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(Mp.presentation) + ')');
     const scripts = Array.isArray(Mp.scripts) ? Mp.scripts : [];
     if (!scripts.length) hostError(where + ': scripts must list the pack\'s scripts, in order');
