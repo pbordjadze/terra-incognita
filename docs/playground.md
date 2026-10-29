@@ -62,6 +62,7 @@ python3 tools/playground/playground.py new tide-pool          # scaffolds Protot
 node tools/playground/serve.cjs                               # http://127.0.0.1:8790/ : every pack, over a stand-in globe
 node tools/playground/check.cjs tide-pool                     # headless Chromium: runs it, fails on errors, screenshots
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
+node tools/playground/explore.cjs tide-pool out/ '[{"wait":3000,"shot":"a"}]'   # its moments from a plan: fly, scrub, touch, screenshot
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
 

@@ -47,6 +47,7 @@ Keep design discussions and plans in that private repository.
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
+    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint).
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,
   each sitting inside the one before at its `child` rectangle.
