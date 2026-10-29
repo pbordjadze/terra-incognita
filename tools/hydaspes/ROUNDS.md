@@ -98,4 +98,15 @@ night is never laid twice over one place (the halo while the night thinned is go
 remains if you look for it). The wide picture is 3780 across (its rows just under the globe's 4096).
 Pushed with the UI test (a drag on the column moves it; the strip at the channel shows the waders).
 
-### Round 4 — on the real app
+The third fresh eye (new shots): the night flat (a navy pool, a tan road for a river, fires glowing
+in a vacuum), the wade the smallest thing on screen, the column a block in the plain, the dawn a wash,
+the elephants loaves on sticks; the one change that moves it most: make the water an actor. So: the
+river near-black with sparse silver threads and a dark edge to the land; the fires lie on the water
+in long broken streaks that flicker; the island is sand with a dark water's edge and no rim; the
+elephants have a domed back, an ear, a trunk, a tusk and an eye; the column is a file of two long
+ranks with the horse at its head; the horse and the chariots raise dust; the waders' back rank stands
+dry on the island's shore, so the depth is told by comparison; the globe comes close on its own, once,
+when the night reaches the second channel (after a drag ends, or as play reaches it). The pebble mottle
+is near-invisible. Seen in the preview: the camps at dusk are now a night with a river in it.
+
+### Round 5 — on the real app
