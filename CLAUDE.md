@@ -163,14 +163,20 @@ Keep design discussions and plans in that private repository.
   off Madagascar and an invitation), the river study **A gathering of
   water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each
   traced to the sea), built by `tools/water/build_pack.py` from the former web study's data in
-  `Water/` (no longer in the app; `docs/water-engineering.md`).
+  `Water/` (no longer in the app; `docs/water-engineering.md`). Its sibling **A gathering of water,
+  alive** (`Prototypes/gathering-of-water-alive/`) is the same network with the water running: the
+  `hold` scheme (a rest, then a draw, lights many at once; a drag always turns), `flow` on what is lit,
+  the ways into the sea from the month's currents, a drawn boto close in. Its data by
+  `tools/water/build_alive.py`, the boto by `tools/water/boto.cjs`; `tools/water/alive_check.cjs`
+  drives it in the preview, `RiverPackTests` on the device.
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
   prototypes in succession with the live counts back to the plain globe's, three entered by touching
   their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
-  offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
+  offline, the runtime-2 packs drawn by the globe (their date moved, nothing left after), and the
+  `hold` scheme (`RiverPackTests.swift`: a drag turns, a rest then a draw lights the rivers).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by

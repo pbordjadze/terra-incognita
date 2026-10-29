@@ -16,7 +16,7 @@
     },
     {
       "title": "What is measured",
-      "text": "Distances are rounded sums of mapped channel lengths along the network, not straight lines. The first, partial stretch is estimated along its simplified line. Areas are RiverATLAS's land upstream of a stretch's lower end, and at its outlet for a whole system. They are here, in What is lit, rather than at the foot: the lit lines show the rest.\n\nThe light shows only which way the water goes. Its speed is invented (it runs about 150 points a second on the screen, and no way down takes more than about eight seconds), and the lines grow heavier only where more of what you lit runs together, not with the water's flow. This is not a simulation of rainfall, travel time, present flow, flood risk or navigability."
+      "text": "Distances are rounded sums of mapped channel lengths along the network, not straight lines. The first, partial stretch is estimated along its simplified line. Areas are RiverATLAS's land upstream of a stretch's lower end, and at its outlet for a whole system. They are here, in What is lit, rather than at the foot: the lit lines show the rest.\n\nThe light shows only which way the water goes. Its speed is invented (it runs about 70 points a second on the screen, and no way down takes more than about eight seconds), and the lines grow heavier only where more of what you lit runs together, not with the water's flow. This is not a simulation of rainfall, travel time, present flow, flood risk or navigability."
     },
     {
       "title": "The limits of a line",

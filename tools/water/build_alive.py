@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Prepare the data of the pack Prototypes/gathering-of-water-alive/ (A gathering of water, alive).
 
-Usage: python3 tools/water/build_alive.py
-       (then node tools/water/boto.cjs for the boto's frames)
+Usage: node tools/water/boto.cjs            (the boto's frames, which the doorway uses)
+       python3 tools/water/build_alive.py
 
 Reads Prototypes/gathering-of-water/ (built by tools/water/build_pack.py) and the ocean layer's
 currents, App/TerraIncognita/Ocean/OceanCurrents.png (built by tools/ocean/build.py from the NOAA
@@ -23,7 +23,7 @@ Global Drifter Program's monthly climatology; its docstring is the sheet's layou
   mouth to green offshore. Drawn from the currents, not observed: the real plume's extent and
   colour vary year to year (SOURCES.md).
 - doorway.png: the doorway up close, drawn from the network as A gathering of water's is, with
-  the main stem lit and a boto's back in the mouth.
+  the main stem lit and the boto (boto-02.png, from boto.cjs) surfacing in it.
 
 Never hand-edit those files; change this script and run it again. No network is used.
 """
@@ -193,7 +193,7 @@ def sea(months):
         entry = {'name': mouth['name'], 'length': round(longest, 2), 'months': per_month}
         if mouth.get('plume'):
             entry['picture'] = {'images': ['plume-%02d.png' % (m + 1) for m in range(12)],
-                                'bounds': PLUME_BOUNDS, 'opacity': 0.85}
+                                'bounds': PLUME_BOUNDS, 'opacity': 0.95}
         outlets[id] = entry
     out = {'about': 'Where the lit water goes in the sea: a drawn way out of each estuary, then streamlines of '
                     "the month's mean surface current (NOAA Global Drifter Program climatology, CC BY 4.0), "
@@ -247,7 +247,7 @@ def plume(months):
         t = np.clip(mean_age / 25, 0, 1)[..., None]
         rgb = silt * (1 - t) + green * t
         # (the silt is thickest near the mouth; the green thins out to sea)
-        image = np.dstack([rgb, alpha * (190 - 70 * t[..., 0])]).clip(0, 255).astype(np.uint8)
+        image = np.dstack([rgb, alpha * (235 - 90 * t[..., 0])]).clip(0, 255).astype(np.uint8)
         Image.fromarray(image, 'RGBA').save(OUT / ('plume-%02d.png' % (m + 1)), optimize=True)
 
 
@@ -268,7 +268,7 @@ def doorway():
         return o
     for i in range(n):
         find(i)
-    amazon = [i for i in range(n) if outlet[i] == 3407 and order[i] >= 5]
+    amazon = [i for i in range(n) if outlet[i] == 3407 and order[i] >= 6]
     # the main stem: from the Ucayali's anchor down
     stem, i = set(), 7076
     while i >= 0:
@@ -280,7 +280,7 @@ def doorway():
     d = ImageDraw.Draw(im)
     cx, cy, r = big / 2, big / 2, big / 2 - 3 * k
     d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(245, 241, 230, 245), outline=(58, 134, 186, 255), width=int(2.2 * k))
-    west, east, south, north = -79.0, -49.0, -16.0, 5.0
+    west, east, south, north = -79.5, -48.5, -17.0, 4.0
     scale = 0.86 * 2 * r / (east - west)
     def at(lon, lat):
         return (cx + (lon - (west + east) / 2) * scale, cy - (lat - (south + north) / 2) * scale)
@@ -289,11 +289,15 @@ def doorway():
         if i in stem:
             d.line(pts, fill=(11, 61, 102, 255), width=int(2.6 * k), joint='curve')
         else:
-            d.line(pts, fill=(78, 156, 203, 230), width=max(1, int((0.35 * order[i] - 1.2) * k)), joint='curve')
-    # a boto's back breaking the water at the mouth (pink, as A gathering of water, alive draws it)
-    mx, my = at(-51.5, -0.9)
-    d.chord([mx - 7 * k, my - 6 * k, mx + 7 * k, my + 6 * k], 180, 360, fill=(226, 138, 154, 255), outline=(142, 78, 92, 255), width=k)
-    d.arc([mx - 11 * k, my - 2 * k, mx + 11 * k, my + 3 * k], 0, 180, fill=(245, 241, 230, 255), width=k)
+            d.line(pts, fill=(78, 156, 203, 220), width=max(1, int((0.32 * order[i] - 1.3) * k)), joint='curve')
+    # the boto surfacing in the main stem below Manaus, as the pack draws it
+    boto = OUT / 'boto-02.png'
+    if boto.exists():
+        b = Image.open(boto).convert('RGBA')
+        bw = int(0.58 * big)
+        b = b.resize((bw, bw * b.height // b.width), Image.Resampling.LANCZOS)
+        mx, my = at(-61.5, -3.4)
+        im.alpha_composite(b, (int(mx - bw * 0.55), int(my - b.height * 0.62)))
     im.resize((size, size), Image.Resampling.LANCZOS).save(OUT / 'doorway.png', optimize=True)
 
 
