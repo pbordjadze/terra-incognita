@@ -401,9 +401,15 @@ function draw(a, detail, ink) {
       }
     }
     // the face
-    parts.push(`<circle cx="${a.eye[0].toFixed(4)}" cy="${a.eye[1].toFixed(4)}" r="${(k.head.depth * 0.13).toFixed(4)}" fill="${INK}"/>`);
-    parts.push(`<path d="${line([add(a.eye, [-0.02, 0.022]), add(a.eye, [0.025, 0.026])])}" stroke="${INK}" stroke-width="${fine}" fill="none" stroke-linecap="round"/>`);
+    const er = k.head.depth * 0.13;
+    parts.push(`<circle cx="${a.eye[0].toFixed(4)}" cy="${a.eye[1].toFixed(4)}" r="${er.toFixed(4)}" fill="${INK}"/>`);
+    // a catch-light, and the heavy lid camels have
+    parts.push(`<circle cx="${(a.eye[0] + er * 0.35).toFixed(4)}" cy="${(a.eye[1] + er * 0.35).toFixed(4)}" r="${(er * 0.32).toFixed(4)}" fill="#FFF8EC"/>`);
+    parts.push(`<path d="${line([add(a.eye, [-er * 1.6, er * 1.5]), add(a.eye, [0, er * 1.9]), add(a.eye, [er * 1.8, er * 1.4])])}" stroke="${INK}" stroke-width="${fine * (k.calluses ? 1.5 : 1)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
     parts.push(`<path d="${line(a.mouth)}" stroke="${INK}" stroke-width="${fine}" fill="none" stroke-linecap="round"/>`);
+    // the family's split upper lip: a short notch at the muzzle's tip
+    const lip = a.at(1.02, 0.02);
+    parts.push(`<path d="${line([lip, a.at(0.95, -0.18)])}" stroke="${INK}" stroke-width="${fine * 0.9}" fill="none" stroke-linecap="round" opacity="0.8"/>`);
     parts.push(`<circle cx="${a.nostril[0].toFixed(4)}" cy="${a.nostril[1].toFixed(4)}" r="${(k.head.depth * 0.07).toFixed(4)}" fill="${INK}" opacity="0.8"/>`);
     for (const e of a.ears) parts.push(`<path d="${line([e.base, add(e.base, mul(sub(e.tip, e.base), 0.7))])}" stroke="${INK}" stroke-width="${fine}" opacity="0.6" fill="none" stroke-linecap="round"/>`);
     // a few hatchings along the flank's shadow, as an engraver shades (above a pale underside)
