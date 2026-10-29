@@ -1,0 +1,39 @@
+  new      hello-pack  r1  (3 files, 2.0 KB)
+Packed 1 prototype into build/remote-packs (1 changed). Catalog: build/remote-packs/catalog.json
+{
+  "format": 1,
+  "generated": "2026-10-29T02:04:26-04:00",
+  "packs": [
+    {
+      "id": "hello-pack",
+      "revision": 1,
+      "runtime": 3,
+      "title": "Delivery check",
+      "summary": "A test pack: which revision arrived, and from where. Tap the sea for a ring.",
+      "presentation": "globe",
+      "shelf": "parked",
+      "hash": "98f6ac4dfbfbe2121b033d28430654c9d615277815c1d41ff4cafb5f75a5fa46",
+      "path": "packs/hello-pack/r1/",
+      "bytes": 2001,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 333,
+          "sha256": "6e1334bd85839d234dd37b159c73e157ac8a5ebea48eea5c895844739097a622"
+        },
+        {
+          "path": "main.js",
+          "bytes": 1341,
+          "sha256": "cffaa7603b1cadf870e175a7da0e179a0b09484b2d5aa568596b37e8dc06c97e"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 327,
+          "sha256": "55be9df7df1e3be6e43884c4ac0d04f18c4b41ec9840244601d6fda1676bf7f5"
+        }
+      ],
+      "published": "2026-10-29T02:04:26-04:00",
+      "retired": false
+    }
+  ]
+}
