@@ -6,8 +6,9 @@ edit the PNGs.
 
     python3 tools/playground/glint_png.py [Prototypes/<id>/doorway-glint.png ...]
 
-With no paths, writes doorway-glint.png into every bundled pack that has a doorway. Standard library
-only (a PNG written by hand): 44 px for an 11 pt mark.
+With no paths, writes doorway-glint.png into every bundled pack that has a doorway, and into the
+scaffold's template (tools/playground/template/globe/), so a new pack's doorway glints from afar
+from its first day. Standard library only (a PNG written by hand): 44 px for an 11 pt mark.
 """
 import json
 import math
@@ -102,6 +103,7 @@ def targets():
             continue
         if m.get('doorway') and m.get('shelf', 'current') != 'parked':
             out.append(folder / 'doorway-glint.png')
+    out.append(ROOT / 'tools/playground/template/globe/doorway-glint.png')
     return out
 
 

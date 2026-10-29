@@ -736,10 +736,10 @@ class New(TempCase):
         self.assertEqual(code, 0, err + out)
         folder = self.tmp / 'tide-pool'
         self.assertEqual(findings(folder).items, [], findings(folder).lines())
-        self.assertEqual(sorted(tree(folder)), ['SOURCES.md', 'main.js', 'marker.png', 'prototype.json'])
+        self.assertEqual(sorted(tree(folder)), ['SOURCES.md', 'doorway-glint.png', 'main.js', 'marker.png', 'prototype.json'])
         manifest = json.loads((folder / 'prototype.json').read_text())
         self.assertEqual((manifest['id'], manifest['title'], manifest['runtime'], manifest['presentation'], manifest['scripts']),
-                         ('tide-pool', 'Tide pool', 3, 'globe', ['main.js']))
+                         ('tide-pool', 'Tide pool', 4, 'globe', ['main.js']))
         self.assertEqual(manifest['doorway']['label'], 'Tide pool')
         self.assertTrue((folder / 'marker.png').read_bytes().startswith(b'\x89PNG'))
         main = (folder / 'main.js').read_text()
@@ -788,7 +788,7 @@ class New(TempCase):
 
     def test_the_template_has_no_pages(self):
         files = [p.relative_to(HERE / 'template').as_posix() for p in (HERE / 'template').rglob('*') if p.is_file()]
-        self.assertEqual(sorted(files), ['globe/SOURCES.md', 'globe/main.js', 'globe/marker.png', 'globe/prototype.json'])
+        self.assertEqual(sorted(files), ['globe/SOURCES.md', 'globe/doorway-glint.png', 'globe/main.js', 'globe/marker.png', 'globe/prototype.json'])
         self.assertFalse([f for f in files if f.endswith(pg.PAGE_EXTS)])
 
 
