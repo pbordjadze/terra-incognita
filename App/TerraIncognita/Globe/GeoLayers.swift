@@ -38,7 +38,20 @@ final class GeoLayerView: UIView {
         var touchable = false
         /// A line's width in reading points, for border, area, ghost and track (nil: the style's own).
         var lineWidth: Double?
+        /// Light running along its lines the way their coordinates go (border, ghost and track).
+        var flow: Flow?
         var vertices: Int { shapes.reduce(0) { $0 + $1.parts.reduce(0) { $0 + $1.count } } }
+    }
+
+    /// Light running along a layer's lines (terra.js runtime 4, `flow`): beads `dash` reading points
+    /// long every `dash + gap`, moving `speed` reading points a second. Core Animation moves them (the
+    /// dash phase), so no script and no frame of the globe's is spent on it; Reduce Motion shows none.
+    struct Flow: Equatable {
+        var speed = 24.0
+        var dash = 2.0
+        var gap = 22.0
+        var color: UIColor?
+        var width: Double?
     }
 
     /// The most vertices all layers together may hold (a continent of simplified borders is about
@@ -63,7 +76,16 @@ final class GeoLayerView: UIView {
         backgroundColor = .clear
         isUserInteractionEnabled = false
         isAccessibilityElement = false
+        // (a flow stands still under Reduce Motion: drawn again when it changes)
+        motionObserver = NotificationCenter.default.addObserver(forName: UIAccessibility.reduceMotionStatusDidChangeNotification,
+                                                                object: nil, queue: .main) { [weak self] _ in self?.version += 1 }
     }
+
+    deinit { if let motionObserver { NotificationCenter.default.removeObserver(motionObserver) } }
+
+    private var motionObserver: (any NSObjectProtocol)?
+    /// The layers whose light runs, by id (their animation is put back if the system took it away).
+    private var flowing: [String: CAShapeLayer] = [:]
 
     required init?(coder: NSCoder) { fatalError("GeoLayerView is made in code") }
 
@@ -88,7 +110,10 @@ final class GeoLayerView: UIView {
               others.count < layers.count || layers.count < Self.layerBudget else { return false }
         if let i = layers.firstIndex(where: { $0.id == layer.id }) {
             // (another style draws with other sublayers: start its host afresh)
-            if layers[i].style != layer.style { sublayers.removeValue(forKey: layer.id)?.removeFromSuperlayer() }
+            if layers[i].style != layer.style {
+                sublayers.removeValue(forKey: layer.id)?.removeFromSuperlayer()
+                flowing.removeValue(forKey: layer.id)
+            }
             layers[i] = layer
         } else {
             layers.append(layer)
@@ -100,6 +125,7 @@ final class GeoLayerView: UIView {
     func remove(_ id: String) {
         layers.removeAll { $0.id == id }
         sublayers.removeValue(forKey: id)?.removeFromSuperlayer()
+        flowing.removeValue(forKey: id)
         version += 1
     }
 
@@ -107,6 +133,7 @@ final class GeoLayerView: UIView {
         layers = []
         for (_, l) in sublayers { l.removeFromSuperlayer() }
         sublayers = [:]
+        flowing = [:]
         version += 1
     }
 
@@ -117,6 +144,8 @@ final class GeoLayerView: UIView {
         let stage = globe.stageCamera
         let size = bounds.size
         let clear = globe.keepClear
+        // (the system may take a layer's animations away, as when the app was in the background)
+        for (_, light) in flowing where light.animation(forKey: "flow") == nil { Self.run(light) }
         if let d = drawn, d.version == version, d.camera == stage.camera, d.centre == stage.centre, d.radius == stage.radius,
            d.size == size, d.clear == clear { return }
         drawn = (version, stage.camera, stage.centre, stage.radius, size, clear)
@@ -205,6 +234,7 @@ final class GeoLayerView: UIView {
                 shape.lineWidth = CGFloat(layer.lineWidth ?? 1.2) * k
                 shape.lineDashPattern = [NSNumber(value: Double(3 * k)), NSNumber(value: Double(4 * k))]
             }
+            flow(layer, over: shape, in: host, reading: k)
         case .dot, .ring:
             let shape = host.sublayers?.first as? CAShapeLayer ?? {
                 let s = CAShapeLayer()
@@ -308,6 +338,52 @@ final class GeoLayerView: UIView {
                 }
             }
         }
+    }
+
+    /// The light running along a line layer, over its line (a second shape with the same path, dashed,
+    /// its dash phase moved by Core Animation), or none: no `flow`, an area, or Reduce Motion.
+    private func flow(_ layer: Layer, over shape: CAShapeLayer, in host: CALayer, reading k: CGFloat) {
+        let existing = host.sublayers?.dropFirst().first as? CAShapeLayer
+        guard let flow = layer.flow, layer.style != .area, !UIAccessibility.isReduceMotionEnabled else {
+            existing?.removeFromSuperlayer()
+            flowing.removeValue(forKey: layer.id)
+            return
+        }
+        let light = existing ?? {
+            let l = CAShapeLayer()
+            l.fillColor = nil
+            l.lineCap = .round
+            l.lineJoin = .round
+            host.addSublayer(l)
+            return l
+        }()
+        light.frame = host.bounds
+        light.path = shape.path
+        light.strokeColor = (flow.color ?? UIColor(white: 1, alpha: 0.9)).cgColor
+        light.lineWidth = CGFloat(flow.width ?? layer.lineWidth ?? 1.1) * k
+        let dash = CGFloat(flow.dash) * k, period = CGFloat(flow.dash + flow.gap) * k
+        let seconds = Double(period) / max(1, flow.speed * Double(k))
+        light.lineDashPattern = [NSNumber(value: Double(dash)), NSNumber(value: Double(period - dash))]
+        flowing[layer.id] = light
+        // (started again only when its measure changes, so the beads don't jump as the camera moves)
+        if (light.value(forKey: "flowPeriod") as? CGFloat) != period || (light.value(forKey: "flowSeconds") as? Double) != seconds
+            || light.animation(forKey: "flow") == nil {
+            light.setValue(period, forKey: "flowPeriod")
+            light.setValue(seconds, forKey: "flowSeconds")
+            Self.run(light)
+        }
+    }
+
+    /// The beads moving the way a line's coordinates go: the dash phase falling through one period, again and again.
+    private static func run(_ light: CAShapeLayer) {
+        guard let period = light.value(forKey: "flowPeriod") as? CGFloat, let seconds = light.value(forKey: "flowSeconds") as? Double else { return }
+        let a = CABasicAnimation(keyPath: "lineDashPhase")
+        a.fromValue = period
+        a.toValue = 0
+        a.duration = seconds
+        a.repeatCount = .infinity
+        a.isRemovedOnCompletion = false
+        light.add(a, forKey: "flow")
     }
 
     /// Lines break where they go behind the globe; an area's corners behind it are drawn on its edge.
@@ -577,6 +653,20 @@ final class GeoLayerView: UIView {
                      font: (options["font"] as? String) ?? "regular", size: min(40, max(10, number(options["size"]) ?? 15)),
                      image: image, imageSize: CGSize(width: width, height: height), offset: shift,
                      touchable: (options["touchable"] as? Bool) ?? false,
-                     lineWidth: number(options["lineWidth"]).map { min(12, max(0.3, $0)) })
+                     lineWidth: number(options["lineWidth"]).map { min(12, max(0.3, $0)) },
+                     flow: flowOption(options["flow"]))
+    }
+
+    /// A layer's `flow`: true (the defaults) or { speed, dash, gap, color, width }; nil without one.
+    private static func flowOption(_ value: Any?) -> Flow? {
+        func number(_ x: Any?) -> Double? { (x as? NSNumber).map(\.doubleValue).flatMap { $0.isFinite ? $0 : nil } }
+        guard let o = value as? [String: Any] else { return (value as? Bool) == true ? Flow() : nil }
+        var f = Flow()
+        if let v = number(o["speed"]) { f.speed = min(400, max(1, v)) }
+        if let v = number(o["dash"]) { f.dash = min(60, max(0, v)) }
+        if let v = number(o["gap"]) { f.gap = min(400, max(2, v)) }
+        f.color = (o["color"] as? String).flatMap { UIColor(hex: $0) }
+        f.width = number(o["width"]).map { min(12, max(0.3, $0)) }
+        return f
     }
 }

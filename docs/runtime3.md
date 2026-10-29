@@ -74,7 +74,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 4 (3 on an app before October 28, 2026) |
+| `terra.runtime` | 4 (3 on an app before October 28, 2026; `flow` and the `hold` scheme since October 29) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
@@ -109,7 +109,21 @@ Also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`,
 `width`/`height` (a symbol's picture), `offset: [dx, dy]`, and, new in 3, `lineWidth` (reading points,
 for `border`, `area`, `ghost` and `track`: a river's order, a traced way) and **`touchable: true`**: its features take touches
 (points and labels within 22 points, lines within 14, areas inside). Setting an id again replaces
-it; the first set of an id fixes its place in the drawing order. Budgets: 100,000 vertices, 64
+it; the first set of an id fixes its place in the drawing order.
+
+*New in 4 (October 29):* **`flow`**, light running along a `border`, `ghost` or `track` layer's
+lines the way their coordinates go (water to the sea, a ship's way): beads `dash` reading points
+long every `dash + gap`, moving `speed` reading points a second, in `color` (white by default) and
+`width` (the line's by default). `flow: true` takes the defaults (`{ speed: 24, dash: 2, gap: 22 }`).
+The globe moves the beads itself (Core Animation), so the script sets the layer once and spends
+nothing a frame; Reduce Motion shows the line without them. The light is drawn again every frame, so
+keep a flowing layer to a few thousand vertices. An app before October 29 draws the line alone.
+
+```js
+terra.geo.set('way-down', [{ type: 'LineString', coordinates: [[-62, -3.2], [-60, -3.1], [-58.5, -3.3]] }],
+              { style: 'border', color: '#0B3D66', lineWidth: 2.6,
+                flow: { speed: 30, dash: 2, gap: 20, color: '#E8F6FFE6' } })
+``` Budgets: 100,000 vertices, 64
 layers, 400 named or pictured places a layer. A touchable place with a name (`properties.label`)
 is a VoiceOver button that touches it, so it can be reached without seeing or aiming at it.
 
@@ -170,6 +184,7 @@ terra.on('touch', function (t) {
 terra.on('tap', fn)                // the same, taps alone
 terra.touch.scheme('touchables')   // the default
 terra.touch.scheme('one-finger')
+terra.touch.scheme('hold')         // new in 4 (October 29)
 ```
 
 - `touchables` (default): a one-finger drag that *begins on* a touchable feature is the pack's
@@ -177,6 +192,13 @@ terra.touch.scheme('one-finger')
   pack's; other taps choose countries (or are the pack's with `"taps": true`).
 - `one-finger`: every one-finger drag on the globe is the pack's, and two fingers turn and zoom the
   globe. For close-up worlds you reach into. The scheme goes back to `touchables` when the pack ends.
+- `hold` (*new in 4, October 29*): every one-finger drag turns the globe, wherever it begins, and a
+  finger that rests a moment first (0.3 s, straying less than 8 points) is the pack's: `began` when
+  the rest is felt (a light tap of the phone; the finger has not moved yet), then `moved`…, `ended`
+  when it lifts, with `target: null` (find what is under the finger yourself). Taps are as in
+  `touchables`. For a pack whose things lie everywhere (a river network): a pan is never taken for
+  the pack's drag, nor a drag for a pan. The preview holds a pointer the same 0.3 s. An app before
+  October 29 treats it as `touchables`.
 - A drag's `moved` and `ended` carry the `target` it began on; find what is under the finger now
   yourself if it matters. No long press yet.
 

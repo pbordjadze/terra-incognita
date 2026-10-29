@@ -89,17 +89,26 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     var onWorldTap: ((_ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Bool)?
     /// How one-finger drags are shared between the globe and the active pack (terra.js runtime 3):
     /// `touchables`, a drag that begins on something touchable is the pack's (`worldDragBegins` says);
-    /// `oneFinger`, every one-finger drag is the pack's and two fingers turn and zoom the globe.
-    enum DragScheme { case touchables, oneFinger }
+    /// `oneFinger`, every one-finger drag is the pack's and two fingers turn and zoom the globe;
+    /// `hold`, every one-finger drag turns the globe, and a finger that rests a moment first, then
+    /// moves, is the pack's (`holdRecognizer`): a pan is never taken for the pack's drag.
+    enum DragScheme { case touchables, oneFinger, hold }
     var dragScheme = DragScheme.touchables {
         didSet { panRecognizer?.minimumNumberOfTouches = dragScheme == .oneFinger ? 2 : 1 }
     }
+    /// How long a finger rests before a drag is the pack's, in the `hold` scheme, and how far it may
+    /// stray meanwhile (points): about a third of a second, as iOS lifts an icon to move it.
+    static let holdSeconds = 0.3
+    static let holdSlack: CGFloat = 8
     /// Whether a one-finger drag starting at this point is the pack's (the `touchables` scheme).
     var worldDragBegins: ((CGPoint) -> Bool)?
     /// A drag that is the pack's: "began", "moved", "ended", with the place under the finger.
     var onWorldDrag: ((_ phase: String, _ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Void)?
     private weak var panRecognizer: UIPanGestureRecognizer?
     private weak var worldDragRecognizer: UIPanGestureRecognizer?
+    private weak var holdRecognizer: UILongPressGestureRecognizer?
+    /// The tap felt when a held finger becomes the pack's.
+    private lazy var holdFeel = UIImpactFeedbackGenerator(style: .light)
     /// Where the touch that may become a world drag began.
     private var worldDragStart: CGPoint?
     /// The authored sequence shares this renderer without its idle spin or other encounter marks: the
@@ -493,9 +502,14 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let world = UIPanGestureRecognizer(target: self, action: #selector(worldDragged(_:)))
         world.maximumNumberOfTouches = 1
         pan.require(toFail: world)
-        for g in [pan, pinch, double, tap, world] as [UIGestureRecognizer] { g.delegate = self; addGestureRecognizer(g) }
+        // the `hold` scheme's drag: a finger that rests, then moves (neither the turn nor a tap meanwhile)
+        let hold = UILongPressGestureRecognizer(target: self, action: #selector(held(_:)))
+        hold.minimumPressDuration = Self.holdSeconds
+        hold.allowableMovement = Self.holdSlack
+        for g in [pan, pinch, double, tap, world, hold] as [UIGestureRecognizer] { g.delegate = self; addGestureRecognizer(g) }
         panRecognizer = pan
         worldDragRecognizer = world
+        holdRecognizer = hold
         isAccessibilityElement = true
         accessibilityLabel = String(localized: "The globe")
         accessibilityHint = String(localized: "Drag to spin it, pinch to zoom, tap a country to name it")
@@ -879,10 +893,33 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     override func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+        if g === holdRecognizer {
+            // (only in its scheme, and never once the globe is already turning)
+            return dragScheme == .hold && onWorldDrag != nil && !authoredMode
+                && ![.began, .changed].contains(panRecognizer?.state ?? .possible)
+        }
         guard g === worldDragRecognizer else { return super.gestureRecognizerShouldBegin(g) }
-        guard onWorldDrag != nil, !authoredMode else { return false }
+        guard onWorldDrag != nil, !authoredMode, dragScheme != .hold else { return false }
         if dragScheme == .oneFinger { return true }
         return worldDragBegins?(worldDragStart ?? g.location(in: self)) ?? false
+    }
+
+    /// The `hold` scheme: the finger rested, so what it does now is the pack's (a light tap is felt);
+    /// it lifts as an ended drag.
+    @objc private func held(_ g: UILongPressGestureRecognizer) {
+        let p = g.location(in: self)
+        lastHands = CACurrentMediaTime()
+        switch g.state {
+        case .began:
+            touched()
+            holdFeel.impactOccurred()
+            onWorldDrag?("began", p, unproject(p))
+        case .changed: onWorldDrag?("moved", p, unproject(p))
+        case .ended, .cancelled, .failed:
+            onWorldDrag?("ended", p, unproject(p))
+            lastTouch = CACurrentMediaTime()
+        default: break
+        }
     }
 
     @objc private func worldDragged(_ g: UIPanGestureRecognizer) {
@@ -995,7 +1032,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        !(g is UITapGestureRecognizer) && !(other is UITapGestureRecognizer)
+        // (a held drag is the pack's alone: the globe neither turns nor zooms under it)
+        if g === holdRecognizer || other === holdRecognizer { return false }
+        return !(g is UITapGestureRecognizer) && !(other is UITapGestureRecognizer)
     }
 
     private func fly(to target: (lon: Double, lat: Double, zoom: Double)) {

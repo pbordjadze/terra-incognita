@@ -310,7 +310,13 @@ final class PackScript {
         case "sprite": sprite(body)
         case "touch":
             if (body["op"] as? String) == "scheme" {
-                onEvent?(.touchScheme((body["scheme"] as? String) == "one-finger" ? .oneFinger : .touchables))
+                let scheme: GlobeView.DragScheme
+                switch body["scheme"] as? String {
+                case "one-finger": scheme = .oneFinger
+                case "hold": scheme = .hold
+                default: scheme = .touchables
+                }
+                onEvent?(.touchScheme(scheme))
             }
         case "time": dates(body)
         case "caption":

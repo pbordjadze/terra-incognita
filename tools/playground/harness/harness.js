@@ -592,6 +592,20 @@
     return [r1, g1, b1].map((x) => Math.round((x + m0) * 255));
   }
 
+  // a layer's light running along its lines (GeoLayers.swift's Flow): true, or { speed, dash, gap, color, width }
+  function parseFlow(v, where) {
+    if (v == null || v === false) return null;
+    const f = { speed: 24, dash: 2, gap: 22, color: null, width: null };
+    if (v === true) return f;
+    if (typeof v !== 'object' || Array.isArray(v)) { hostWarn(where + ': flow is true or { speed, dash, gap, color, width }'); return null; }
+    if (Number.isFinite(v.speed)) f.speed = clamp(v.speed, 1, 400);
+    if (Number.isFinite(v.dash)) f.dash = clamp(v.dash, 0, 60);
+    if (Number.isFinite(v.gap)) f.gap = clamp(v.gap, 2, 400);
+    if (v.color != null) { f.color = parseColor(v.color); if (!f.color) hostWarn(where + ': flow.color must be "#rrggbb" or "#rrggbbaa"'); }
+    if (Number.isFinite(v.width)) f.width = clamp(v.width, 0.3, 12);
+    return f;
+  }
+
   function parseLayer(s, id, features, options) {
     const style = options.style == null ? 'border' : options.style, kind = STYLE_KIND[style];
     const color = parseColor(options.color);
@@ -607,7 +621,8 @@
     const L = { id, style, kind, options, color, lines: [], polys: [], points: [], vertices: 0, features: 0, skipped: 0,
       minZoom: num(options.minZoom, 0), maxZoom: num(options.maxZoom, Infinity), touchable: options.touchable === true,
       font: ['regular', 'italic', 'caps'].includes(options.font) ? options.font : 'regular', size: clamp(num(options.size, 15), 10, 40),
-      width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [] };
+      width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [],
+      lineWidth: Number.isFinite(options.lineWidth) ? clamp(options.lineWidth, 0.3, 12) : null, flow: parseFlow(options.flow, where) };
     if (style === 'symbol') {
       if (typeof options.image !== 'string') hostError(where + ': a symbol layer needs options.image, a picture of the pack');
       else L.pic = picture(s, options.image, where);
@@ -720,14 +735,25 @@
       };
       switch (L.style) {
         case 'border':
-          g.strokeStyle = rgba(L.color || [140, 132, 120]); g.lineWidth = 1.1 * k; g.stroke(strokePath());
-          break;
         case 'ghost':
-          g.setLineDash([5 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.8); g.lineWidth = 1.6 * k; g.stroke(strokePath());
+        case 'track': {
+          const path = strokePath();
+          if (L.style === 'border') { g.strokeStyle = rgba(L.color || [140, 132, 120]); g.lineWidth = (L.lineWidth || 1.1) * k; }
+          else if (L.style === 'ghost') { g.setLineDash([5 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.8); g.lineWidth = (L.lineWidth || 1.6) * k; }
+          else { g.setLineDash([3 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.47); g.lineWidth = (L.lineWidth || 1.2) * k; }
+          g.stroke(path);
+          // its flow: beads moving the way the line's coordinates go (the dash phase falling, as Core Animation
+          // moves it in the app); none under Reduce Motion
+          if (L.flow && !settings.reduceMotion) {
+            const f = L.flow, period = (f.dash + f.gap) * k;
+            g.setLineDash([f.dash * k, period - f.dash * k]);
+            g.lineDashOffset = period - ((now() / 1000 * f.speed * k) % period);
+            g.strokeStyle = f.color ? rgba(f.color) : 'rgba(255,255,255,0.9)';
+            g.lineWidth = (f.width || L.lineWidth || 1.1) * k;
+            g.stroke(path);
+          }
           break;
-        case 'track':
-          g.setLineDash([3 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.47); g.lineWidth = 1.2 * k; g.stroke(strokePath());
-          break;
+        }
         case 'area': {
           const base = L.color || AREA, fill = new Path2D(), edge = new Path2D();
           g.save(); g.beginPath(); g.arc(c.cx, c.cy, c.radius, 0, TAU); g.clip();
@@ -1074,6 +1100,7 @@
     || sp.looks.some((l) => l.pics.length > 1 || l.every) || sp.breathes);
   function spritesAnimate() {
     for (const s of stages) for (const sp of s.sprites.values()) if (animates(sp)) return true;
+    if (!settings.reduceMotion) for (const s of stages) for (const L of s.geo.values()) if (L.flow && zoomHolds(L, cam.zoom)) return true;
     for (const d of doorways) if (!stageById.get(d.pack.id).running && animates(d)) return true;
     return false;
   }
@@ -1511,7 +1538,7 @@
       case 'sprite': return onSprite(s, msg);
       case 'touch':
         if (msg.op !== 'scheme') return hostWarn('terra.touch: unknown op "' + msg.op + '"');
-        if (msg.scheme !== 'touchables' && msg.scheme !== 'one-finger') return hostWarn('terra.touch.scheme: "touchables" or "one-finger" (got ' + JSON.stringify(msg.scheme) + '); unchanged');
+        if (!['touchables', 'one-finger', 'hold'].includes(msg.scheme)) return hostWarn('terra.touch.scheme: "touchables", "one-finger" or "hold" (got ' + JSON.stringify(msg.scheme) + '); unchanged');
         s.scheme = msg.scheme;
         return updateReadout();
       case 'time': return onTime(s, msg);
@@ -1747,6 +1774,7 @@
     if (f && f.started && f.M.taps === true) return touchOut(f, 'tap', [x, y], null);
     log('harness', 'info', 'a tap on the globe: in the app it chooses a country ("taps" is not true' + (f ? ' for ' + f.id : '') + ' and nothing touchable is here)');
   }
+  const HOLD_MS = 300, HOLD_SLACK = 8;     // GlobeView.holdSeconds, holdSlack
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
@@ -1767,9 +1795,21 @@
     const hit = hitStage(at[0], at[1]);
     const door = doorwayAt(at[0], at[1]);
     const f = front();
-    const pack = !turnKey && (!!hit || (f && f.started && f.scheme === 'one-finger'));
+    // (the hold scheme: a drag turns the globe, and a pointer that rests HOLD_MS first is the front pack's, as
+    // GlobeView's hold recognizer; a tap on a touchable thing is still its stage's)
+    const holding = !turnKey && f && f.started && f.scheme === 'hold';
+    const pack = !turnKey && !holding && (!!hit || (f && f.started && f.scheme === 'one-finger'));
     gesture = { kind: pack ? 'pack' : 'globe', stage: hit ? hit.stage : f, target: hit ? hit.target : null, hit, door,
                 x0: at[0], y0: at[1], last: at, start: now(), moved: false, began: false };
+    if (holding) {
+      const gs = gesture;
+      gs.hold = setTimeout(() => {
+        if (gesture !== gs || gs.moved) return;
+        gs.kind = 'pack'; gs.stage = f; gs.target = hit && hit.stage === f ? hit.target : null; gs.began = true;
+        bringToFront(f, 'reader');
+        touchOut(f, 'began', gs.last, gs.target);
+      }, HOLD_MS);
+    }
     stage.classList.add('dragging');
   });
   stage.addEventListener('pointermove', (e) => {
@@ -1787,7 +1827,7 @@
       if (before > 0) zoomBy(after / before);
       return;
     }
-    const far = Math.hypot(at[0] - gesture.x0, at[1] - gesture.y0) > 6;
+    const far = Math.hypot(at[0] - gesture.x0, at[1] - gesture.y0) > (gesture.hold && !gesture.began ? HOLD_SLACK : 6);
     if (gesture.kind === 'pack') {
       if (!gesture.began && far) {
         gesture.began = true;
@@ -1808,6 +1848,7 @@
     if (!pointers.size) stage.classList.remove('dragging');
     const gs = gesture;
     if (!gs) return;
+    if (gs.hold) clearTimeout(gs.hold);
     if (gs.kind === 'pinch') { if (!pointers.size) gesture = null; return; }
     gesture = null;
     if (e.type === 'pointercancel') { if (gs.kind === 'pack' && gs.began) touchOut(gs.stage, 'ended', gs.last, gs.target); return; }
@@ -1817,7 +1858,7 @@
       else if (tap) tapAt(at[0], at[1], gs.hit);
     } else if (tap) {
       if (gs.door) startStage(gs.door.pack, 'doorway');
-      else tapAt(at[0], at[1], null);
+      else tapAt(at[0], at[1], gs.hold ? gs.hit : null);
     }
   };
   stage.addEventListener('pointerup', release);
