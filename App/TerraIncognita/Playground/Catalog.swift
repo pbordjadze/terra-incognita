@@ -35,6 +35,7 @@ enum Catalog {
     static let camelid = Prototype(
         id: "camelid", title: "Camel and Llama",
         summary: "An illustrated lineage of the camels, from North America to Arabia and the Andes. Tap the dromedary.",
+        wikipedia: "Dromedary",
         anchor: GlobeCamera(lon: 46, lat: 24, zoom: 1.5),
         doorway: doorway(CamelidArt.image(.dromedary), lon: 46, lat: 24, label: "Dromedary camel",
                          size: CGSize(width: 40, height: 34), minZoom: 1.35, every: 11,

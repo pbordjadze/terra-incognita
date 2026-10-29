@@ -1,7 +1,8 @@
 import XCTest
 
-/// Packs whose date the globe keeps at the foot (runtime 2 and after): each starts from the workbench,
-/// shows its date, has it moved along its strip, and ends, after which nothing it asked for is left.
+/// Packs whose date the globe keeps at the foot (runtime 2 and after; runtime 5 moves things with it): each
+/// starts from the workbench, shows its date, has it moved along its strip, and ends, after which nothing it
+/// asked for is left.
 final class GlobePackTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
@@ -54,5 +55,49 @@ final class GlobePackTests: XCTestCase {
         endPrototype(in: app)
         openWorkbench(in: app)
         assertLive(Self.plainGlobeLive, in: app, "Ending the vine leaves only the plain globe")
+    }
+
+    /// The herds (runtime 5): animals on dated ways, which the globe's date moves. It opens close on one
+    /// of the first camelids and pulls back; moving the date to a mark on its strip moves that animal,
+    /// and the date reads as years ago; then the plain globe again.
+    @MainActor func testTheHerdsMoveWithTheDate() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-playground-reset"]
+        app.launch()
+        defer { app.terminate() }
+        startPrototype("herds", in: app)
+        let date = app.descendants(matching: .any)["globeDate"].firstMatch
+        XCTAssertTrue(date.waitForExistence(timeout: 30), "The herds show the globe's date")
+        XCTAssertTrue((date.value as? String ?? "").contains("million years ago"), "It starts in deep time, told as years ago")
+        // the opening: close on the first camelid (drawn large), then out to see its herd
+        let one = app.buttons["herds.first-1"].firstMatch
+        XCTAssertTrue(one.waitForExistence(timeout: 20), "The first camelid is on the globe, touchable")
+        attach("57-herds-close", in: app)
+        Thread.sleep(forTimeInterval: 9)
+        attach("58-herds-herd", in: app)
+        let play = app.buttons["globeDatePlay"].firstMatch
+        if play.exists, play.label == "Pause" { play.tap() }
+        XCTAssertTrue(one.waitForExistence(timeout: 10), "Pulled back, the first camelid is still in view, with its herd")
+        let before = one.frame
+        let label = date.value as? String
+        // the strip's mark at 21 million years ago (a touch within a fingertip of a mark lands on it): the
+        // herd has walked on, east across the plains
+        date.coordinate(withNormalizedOffset: CGVector(dx: 0.126, dy: 0.5)).tap()
+        let moved = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value != %@", label ?? ""), object: date)
+        XCTAssertEqual(XCTWaiter().wait(for: [moved], timeout: 10), .completed, "Touching the strip moves the date")
+        XCTAssertTrue((date.value as? String ?? "").contains("million years ago"), "Still in deep time, told as years ago")
+        Thread.sleep(forTimeInterval: 1)
+        attach("59-herds-later", in: app)
+        if one.exists {
+            let after = one.frame
+            XCTAssertGreaterThan(hypot(after.midX - before.midX, after.midY - before.midY), 8, "The animal moved with the date")
+        } else {
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'herds.'")).firstMatch.exists,
+                          "The herds are still on the globe after the date moved")
+        }
+        endPrototype(in: app)
+        XCTAssertFalse(app.descendants(matching: .any)["globeDate"].firstMatch.exists, "The date goes with the herds")
+        openWorkbench(in: app)
+        assertLive(Self.plainGlobeLive, in: app, "Ending the herds leaves only the plain globe")
     }
 }

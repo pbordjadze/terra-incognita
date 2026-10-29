@@ -1,4 +1,4 @@
-# The pack runtime (3 and 4): packs drawn by the globe, scripted in JavaScriptCore
+# The pack runtime (3 to 5): packs drawn by the globe, scripted in JavaScriptCore
 
 A pack is data, pictures and a small script. The script runs in JavaScriptCore inside the app, in
 the app's own process, with no web page and no web view: it decides, and the globe draws, in
@@ -10,6 +10,13 @@ run on the one globe at once, each entered and left by touch, and every doorway 
 own while its experience sleeps ([Many at once](#many-at-once-runtime-4)). What it adds is marked
 *new in 4*; a pack that uses none of it keeps `"runtime": 3` and runs on either app. A pack that
 declares `"runtime": 4` needs an app that hosts it (an older one lists it as needing a new build).
+
+**Runtime 5** (October 29, 2026) lets the globe's date move things: a sprite on a **dated way** is where
+the date puts it, so it walks as the date plays and stands where the reader drags it
+([Sprites](#sprites-things-that-live-and-move-on-the-globe-new-in-3)); the date may pass at an uneven
+**pace** (deep time fast, the present slowly), run at a **speed** the pack sets (slower as the reader
+comes close), and reach back to the Earth's beginning, read as years ago
+([The date](#the-date-and-the-words-at-the-foot-since-runtime-2)). Marked *new in 5*.
 
 ## The pack
 
@@ -40,8 +47,8 @@ Prototypes/<id>/
 ```
 
 - `id`: lower-case letters, digits and hyphens, 2–40 characters, the folder's name; never reused.
-- `runtime`: 3, or 4 if the pack uses anything marked *new in 4* (an app with an older runtime
-  lists the pack as needing a new build).
+- `runtime`: 3, or 4 if the pack uses anything marked *new in 4*, or 5 for anything *new in 5* (an
+  app with an older runtime lists the pack as needing a new build).
 - `presentation`: always `"globe"`. Every pack lives on the globe; there are no pack screens.
 - `scripts`: run in order in one context, like script tags. The global object is also `window`
   and `globalThis`, so a data file may say `window.TIDE = {...}`.
@@ -74,11 +81,11 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 
 | | |
 | --- | --- |
-| `terra.runtime` | 4 (3 on an app before October 28, 2026) |
+| `terra.runtime` | 5 (4 on an app before October 29, 2026; 3 before October 28; `flow` and the `hold` scheme since October 29) |
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
-| `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active }` |
+| `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active, wikipedia }` (`wikipedia`, since October 29, 2026: the reader wants [Wikipedia's words](#wikipedias-words)) |
 | `terra.camera` | `{ lon, lat, zoom, cx, cy, radius, width, height }` now (points) |
 | `terra.on('camera', fn)` | the camera, at most 20 times a second while it moves and once when it stops |
 | `terra.project(lon, lat)` | `{ x, y, facing, visible }` on screen (facing 1 at the centre, < 0 behind) |
@@ -109,7 +116,21 @@ Also `color`, `minZoom`/`maxZoom`, `font` (`regular`, `italic`, `caps`), `size`,
 `width`/`height` (a symbol's picture), `offset: [dx, dy]`, and, new in 3, `lineWidth` (reading points,
 for `border`, `area`, `ghost` and `track`: a river's order, a traced way) and **`touchable: true`**: its features take touches
 (points and labels within 22 points, lines within 14, areas inside). Setting an id again replaces
-it; the first set of an id fixes its place in the drawing order. Budgets: 100,000 vertices, 64
+it; the first set of an id fixes its place in the drawing order.
+
+*New in 4 (October 29):* **`flow`**, light running along a `border`, `ghost` or `track` layer's
+lines the way their coordinates go (water to the sea, a ship's way): beads `dash` reading points
+long every `dash + gap`, moving `speed` reading points a second, in `color` (white by default) and
+`width` (the line's by default). `flow: true` takes the defaults (`{ speed: 24, dash: 2, gap: 22 }`).
+The globe moves the beads itself (Core Animation), so the script sets the layer once and spends
+nothing a frame; Reduce Motion shows the line without them. The light is drawn again every frame, so
+keep a flowing layer to a few thousand vertices. An app before October 29 draws the line alone.
+
+```js
+terra.geo.set('way-down', [{ type: 'LineString', coordinates: [[-62, -3.2], [-60, -3.1], [-58.5, -3.3]] }],
+              { style: 'border', color: '#0B3D66', lineWidth: 2.6,
+                flow: { speed: 30, dash: 2, gap: 20, color: '#E8F6FFE6' } })
+``` Budgets: 100,000 vertices, 64
 layers, 400 named or pictured places a layer. A touchable place with a name (`properties.label`)
 is a VoiceOver button that touches it, so it can be reached without seeing or aiming at it.
 
@@ -146,14 +167,34 @@ terra.sprites.remove('whale'); terra.sprites.clear()
   on great circles between the points, the whole path in `seconds`; `loop` is `true` (starts again),
   `'back'` (to and fro) or `false` (stops at the end). Setting it again with the same path keeps its
   place along it.
+- *New in 5:* a **dated way**, `path: { coordinates, dates }`, one date for each place, rising (in the
+  unit of the pack's date, `terra.time`; two places may share a date, a jump). The sprite is where the
+  stage's date puts it, on the great circle between the two places whose dates the date lies between,
+  so it moves as the date plays and stands where the reader drags it; `seconds` and `loop` don't
+  apply. Outside its first and last dates it isn't drawn (a life begun or ended), fading over half a
+  second as the date crosses them, and with no date shown it isn't drawn at all. A `face: true` look
+  turns the way it moved. Under Reduce Motion nothing plays by itself, but it still follows the date
+  the reader sets. The globe reads the date every frame, so a sprite moves smoothly between
+  playback's steps; a script never moves it frame by frame. Setting it again with the same way (a
+  change of looks: walking while the date plays, grazing while it rests) keeps its place.
+
+  ```js
+  terra.sprites.set('camel-1', {
+    path: { coordinates: [[-152, 65], [-169, 65.9], [-176, 66]], dates: [-7.4e6, -7.0e6, -6.88e6] },
+    looks: [{ frames: ['walk-1.png', 'walk-2.png', 'walk-3.png', 'walk-4.png'], fps: 5, size: [22, 15], face: true }],
+    label: 'Paracamelus, crossing Beringia', touchable: true
+  })
+  ```
 - `looks`: the first look whose `minZoom`–`maxZoom` holds the zoom is drawn, so one thing can be a
   trace from afar and itself up close. A look is `image` (one picture) or `frames` (pictures shown in
-  turn at `fps`), `size: [w, h]` in points at the reading scale, and optionally `every` and `for`
+  turn at `fps`), `size: [w, h]` in points at the reading scale (at most 400 a side; 200 before runtime 5), and optionally `every` and `for`
   (seconds: it shows for `for` seconds every `every`, a splash now and then; *new in 4:* a showing
   fades up and down over its first and last 0.3 s, so a glint is a glint and not a blink) and
   `face: true` (the picture, drawn facing east, is mirrored when it moves west).
 - `label`: its VoiceOver name (needed when `touchable`). It is hidden behind the globe, off screen,
-  and where the app keeps clear (the chip, the foot).
+  and where the app keeps clear (the chip, the foot). *New in 5:* a sprite drawn larger than 60 points
+  (an animal seen close) shows while any of it is on screen and its middle is clear of the chip and
+  the foot, so it doesn't vanish as it walks to the edge.
 - `touchable: true`: a tap on it reaches `terra.on('touch')` with `target: { sprite: id }`. A trace
   resting between its showings can't be touched. Sprites don't make room for names: place them.
 - Reduce Motion: sprites hold still at their first place and first frame; traces show steadily.
@@ -170,6 +211,7 @@ terra.on('touch', function (t) {
 terra.on('tap', fn)                // the same, taps alone
 terra.touch.scheme('touchables')   // the default
 terra.touch.scheme('one-finger')
+terra.touch.scheme('hold')         // new in 4 (October 29)
 ```
 
 - `touchables` (default): a one-finger drag that *begins on* a touchable feature is the pack's
@@ -177,6 +219,13 @@ terra.touch.scheme('one-finger')
   pack's; other taps choose countries (or are the pack's with `"taps": true`).
 - `one-finger`: every one-finger drag on the globe is the pack's, and two fingers turn and zoom the
   globe. For close-up worlds you reach into. The scheme goes back to `touchables` when the pack ends.
+- `hold` (*new in 4, October 29*): every one-finger drag turns the globe, wherever it begins, and a
+  finger that rests a moment first (0.3 s, straying less than 8 points) is the pack's: `began` when
+  the rest is felt (a light tap of the phone; the finger has not moved yet), then `moved`…, `ended`
+  when it lifts, with `target: null` (find what is under the finger yourself). Taps are as in
+  `touchables`. For a pack whose things lie everywhere (a river network): a pan is never taken for
+  the pack's drag, nor a drag for a pan. The preview holds a pointer the same 0.3 s. An app before
+  October 29 treats it as `touchables`.
 - A drag's `moved` and `ended` carry the `target` it began on; find what is under the finger now
   yourself if it matters. No long press yet.
 
@@ -184,10 +233,11 @@ terra.touch.scheme('one-finger')
 
 | | |
 | --- | --- |
-| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is; `carry` starts from the date the last time-aware prototype left. A `day` date is also the globe's season: the ground's month and the clouds' follow it, and go back when it hides |
+| `terra.time.show({ unit, min, max, value, ticks, playable, rate, playing, carry, pace })` | the globe's date at the foot: `unit` `year` or `day` (days since 1970-01-01 UTC); `ticks` where the evidence is (a touch on the strip within a fingertip of one lands on it); `carry` starts from the date the last time-aware prototype left. A `day` date is also the globe's season: the ground's month and the clouds' follow it, and go back when it hides. *New in 5:* years reach back five billion either way, and before 10,000 BCE read as years ago, to two figures ("45 million years ago", "14,000 years ago"); `pace: [[date, seconds], …]` (dates and seconds both rising) makes the date pass unevenly: playback reaches each date that many seconds after the first, and the strip is laid out in those seconds, so an era given more of them has more of the strip; its first and last dates are the range (`min`, `max` and `rate` don't apply) |
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
-| `terra.caption.set({ title, text })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters |
+| `terra.time.speed(f)` | *new in 5:* how fast playback runs, 1 as written (0.001–100): slower as the reader comes close, say, so what moves with the date walks rather than races. Not echoed; the strip and its date are unchanged |
+| `terra.caption.set({ title, text, wikipedia })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters; `wikipedia` (optional) names the article on it ([Wikipedia's words](#wikipedias-words)) |
 | `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
 
 ## The panel: longer words and sources (new in 3)
@@ -206,7 +256,32 @@ terra.on('panel', function (p) { /* { open: false } when the reader closes it */
 
 A native sheet over the globe (half height, can be pulled up), in the app's type, with the globe
 still visible and live above it. Plain text only (paragraphs split on blank lines). Source links
-open in Safari only when the reader taps them.
+open in Safari only when the reader taps them. The panel, and each section, may name the Wikipedia
+article on its subject (`wikipedia: 'Santorini caldera'`): see below.
+
+## Wikipedia's words
+
+The app has a switch beside the clouds' (a W): on, every paragraph the atlas wrote itself gives way to
+Wikipedia's own words on the same subject, the article's first sentences as they stand with a link to
+it, so what is left to read is Wikipedia's. A pack takes part by naming its subjects: a `wikipedia`
+key on `terra.caption.set`, on `terra.panel.show` and on each of its `sections`, with the article's
+title. With the switch on, the host shows the article's first sentence at the foot (and "Wikipedia ↗"
+under it) and the article's card where the panel's paragraphs were; a text with no key stays only when
+it is a tip (one sentence under 120 characters), and a section with neither goes, its heading with
+it; the sources go too, so only Wikipedia's words are left to read.
+
+The words are bundled, never fetched by the app: `python3 tools/wikipedia/build.py --pack <id>` reads
+the keys a pack names (and any listed for it in `tools/wikipedia/articles.txt`, as "Toward the Amazon
+system" lists the systems' rivers) and writes the pack's `wikipedia.json`, the articles' first
+paragraphs with their URLs and revisions, under Wikipedia's licence (CC BY-SA 4.0, shown on every
+card). A pack's own articles are laid over the app's index (every country, the native experiences'
+subjects), so a downloaded revision can name what the app never heard of; a key with no article is a
+build failure (`ci/check_wikipedia.py`), not a quiet gap.
+
+`terra.settings.wikipedia` says the switch is on, and `terra.on('settings')` hears it change: a line
+that is data (a depth sounded, a station's reading) should then be sent without the atlas's
+instruction after it, so it stays within a tip's length and is kept. The preview mirrors all of it
+(the checkbox under Reader settings, `?wikipedia=1`, `check.cjs --wikipedia`).
 
 ## Many at once (runtime 4)
 

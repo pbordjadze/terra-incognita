@@ -31,7 +31,8 @@ final class GlobeMarker {
         var face: Bool
     }
 
-    /// A way along great circles between places, the whole of it in `seconds`.
+    /// A way along great circles between places, the whole of it in `seconds`; or, dated (runtime 5),
+    /// each place reached at its date, so the sprite is where the stage's date puts it.
     struct Path {
         enum Loop { case `repeat`, back, once }
         let points: [SIMD3<Double>]
@@ -40,8 +41,10 @@ final class GlobeMarker {
         let seconds: Double
         let loop: Loop
         let places: [(lon: Double, lat: Double)]
+        /// One date for each place, rising (in the unit of the stage's date), or nil for a way in seconds.
+        let dates: [Double]?
 
-        init(points places: [(lon: Double, lat: Double)], seconds: Double, loop: Loop) {
+        init(points places: [(lon: Double, lat: Double)], seconds: Double, loop: Loop, dates: [Double]? = nil) {
             self.places = places
             points = places.map { GeoLayerView.Projection.world(lon: $0.lon, lat: $0.lat) }
             var a = [0.0]
@@ -51,11 +54,27 @@ final class GlobeMarker {
             along = a
             self.seconds = seconds
             self.loop = loop
+            self.dates = dates
         }
 
         func isSame(as other: Path) -> Bool {
             other.seconds == seconds && other.loop == loop && other.places.count == places.count
-                && zip(other.places, places).allSatisfy { $0.lon == $1.lon && $0.lat == $1.lat }
+                && zip(other.places, places).allSatisfy { $0.lon == $1.lon && $0.lat == $1.lat } && other.dates == dates
+        }
+
+        /// Where a dated way is at a date: between the two places whose dates it lies between, and
+        /// `within` its first and last dates (outside them it rests at its nearer end, not shown).
+        func position(atDate d: Double) -> (lon: Double, lat: Double, within: Bool) {
+            guard let dates, let first = dates.first, let last = dates.last, points.count > 1 else {
+                let p = places.first ?? (0, 0)
+                return (p.lon, p.lat, dates?.first == d)
+            }
+            if d <= first { return (places[0].lon, places[0].lat, d == first) }
+            if d >= last { return (places[places.count - 1].lon, places[places.count - 1].lat, d == last) }
+            let i = dates.firstIndex { $0 >= d } ?? dates.count - 1
+            let span = dates[i] - dates[i - 1]
+            let p = place(between: i, span > 0 ? (d - dates[i - 1]) / span : 1)
+            return (p.lon, p.lat, true)
         }
 
         /// Where it is `t` seconds after it set out: lon, lat.
@@ -73,10 +92,14 @@ final class GlobeMarker {
             var i = 1
             while i < along.count - 1, along[i] < s { i += 1 }
             let seg = along[i] - along[i - 1]
-            let f = seg > 0 ? (s - along[i - 1]) / seg : 0
+            return place(between: i, seg > 0 ? (s - along[i - 1]) / seg : 0)
+        }
+
+        /// The place a fraction `f` of the way from point `i - 1` to point `i`, on the great circle.
+        private func place(between i: Int, _ f: Double) -> (lon: Double, lat: Double) {
             let a = points[i - 1], b = points[i]
             // slerp between the two
-            let omega = seg
+            let omega = along[i] - along[i - 1]
             let v: SIMD3<Double>
             if omega < 1e-9 { v = a } else { v = (sin((1 - f) * omega) * a + sin(f * omega) * b) / sin(omega) }
             let lat = asin(min(1, max(-1, v.y))) * 180 / .pi
@@ -106,8 +129,15 @@ final class GlobeMarker {
     private var shownLook: Int?
     /// Heading west: a `face` look is mirrored (kept while it pauses, so it doesn't flip back).
     private var mirrored = false
-    /// Hidden now by its look: out of every look's zoom range, or between its showings.
+    /// Hidden now by its look: out of every look's zoom range, or between its showings; or, on a dated
+    /// way, outside its dates.
     private(set) var resting = false
+    /// The stage's date, for a sprite on a dated way (runtime 5); nil while no date is shown.
+    var clock: DateClock?
+    /// How far a sprite on a dated way has come in (0 to 1): it fades over half a second as the date
+    /// crosses its first or last date.
+    private var presence: CGFloat = 0
+    private var lastAdvance: CFTimeInterval?
     /// It moves or animates, so the globe draws a little more often while it shows.
     var animates: Bool { path != nil || looks.contains { $0.frames.count > 1 || $0.every != nil } }
 
@@ -188,7 +218,21 @@ final class GlobeMarker {
             return
         }
         var heading: CGFloat = 0
-        if let path {
+        let dt = min(0.1, max(0, now - (lastAdvance ?? now)))
+        lastAdvance = now
+        if let path, path.dates != nil {
+            // where the date puts it; it turns the way it moved since the last frame
+            let p = clock.map { path.position(atDate: $0.value(at: now)) }
+            if let p {
+                let before = project(lon, lat).x
+                lon = p.lon
+                lat = p.lat
+                heading = project(lon, lat).x - before
+                if abs(heading) < 0.01 { heading = 0 }
+            }
+            let target: CGFloat = p?.within == true ? 1 : 0
+            presence = still ? target : target > presence ? min(target, presence + CGFloat(dt) * 2) : max(target, presence - CGFloat(dt) * 2)
+        } else if let path {
             let t = still ? 0 : now - setOut
             let p = path.position(at: t)
             lon = p.lon
@@ -221,16 +265,17 @@ final class GlobeMarker {
         }
         if look.face, heading != 0 { mirrored = heading < 0 }
         frameView?.transform = CGAffineTransform(scaleX: look.face && mirrored ? -1 : 1, y: breath)
+        let dated = path?.dates != nil
         if let every = look.every, let duration = look.duration, !still {
             // each sprite keeps its own phase, so traces don't all blink together
             let phase = (now - setOut + Double(abs(label.hashValue % 997)) / 997 * every).truncatingRemainder(dividingBy: every)
-            resting = phase > duration
+            resting = phase > duration || (dated && presence == 0)
             // a showing fades up over its first 0.3 s and down over its last (a glint, not a blink)
             let edge = min(0.3, duration / 3)
-            frameView?.alpha = resting ? 1 : CGFloat(max(0, min(1, min(phase, duration - phase) / edge)))
+            frameView?.alpha = (resting ? 1 : CGFloat(max(0, min(1, min(phase, duration - phase) / edge)))) * (dated ? presence : 1)
         } else {
-            resting = false
-            frameView?.alpha = 1
+            resting = dated && presence == 0
+            frameView?.alpha = dated ? presence : 1
         }
     }
 }

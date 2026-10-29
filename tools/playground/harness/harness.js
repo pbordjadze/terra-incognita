@@ -1,4 +1,4 @@
-// The desktop preview's host: a stand-in for the app around runtime-3 and runtime-4 packs (docs/runtime3.md),
+// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 5 (docs/runtime3.md),
 // so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
 // borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
 // camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
@@ -11,7 +11,8 @@
 // JavaScriptCore gives them; this page is their host: a worker posts what `__terraSend` is given, and this
 // page answers with `terra._receive` messages.
 // Close to the app, not pixel-identical: the globe is drawn from vectors on a canvas, not by Globe.metal.
-// Query: device=iphone|ipad, start=1 (past the doorway), bare=1 (the screen alone), textScale, reduceMotion=1,
+// Query: device=iphone|ipad, start=1 (past the doorway), bare=1 (the screen alone), textScale, reduceMotion=1, wikipedia=1
+// (Wikipedia's words: the pack's wikipedia.json in place of its paragraphs, as the app's switch does),
 // idleAfter=<seconds> (the idle turn's wait, 8 by default), timers=host (terra.js's own timers, as in JavaScriptCore).
 (function () {
   'use strict';
@@ -72,7 +73,40 @@
     reduceMotion: Q.reduceMotion === '1' || Q.reduceMotion === 'true',
     textScale: clamp(parseFloat(Q.textScale) || 1, 1, 3.2),
     active: true,
+    wikipedia: Q.wikipedia === '1' || Q.wikipedia === 'true',
   };
+
+  // ---- Wikipedia's words (the app's WikipediaWords): a pack's wikipedia.json, by key; what stays of its own
+  // words (a tip: one sentence under 120 characters); an article's first sentence, or two for a card
+  function sentences(text, limit) {
+    const parts = String(text || '').replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”’)]?(?=\s|$)|[^.!?…]+$/g) || [];
+    let out = '';
+    for (const raw of parts) {
+      const s = raw.trim();
+      if (!s) continue;
+      if (!out) { out = s; continue; }
+      if (out.length + 1 + s.length <= limit) out += ' ' + s; else break;
+    }
+    return out || String(text || '').trim();
+  }
+  const isTip = (text) => { const t = String(text || '').trim(); return !!t && t.length <= 120 && !/\n/.test(t) && sentences(t, 0) === t; };
+  const article = (s, key) => (key && s && s.articles && s.articles[key]) || null;
+  function wikiLine(text, art) { return art ? sentences(art.extract, 0) : isTip(text) ? text : ''; }
+  function wikiCard(art) {
+    const card = document.createElement('div');
+    card.className = 'wiki';
+    const mark = document.createElement('p'); mark.className = 'mark'; mark.innerHTML = '<b>W</b>From Wikipedia';
+    const h = document.createElement('h3'); h.textContent = art.title;
+    card.append(mark, h);
+    if (art.description) { const d = document.createElement('p'); d.className = 'desc'; d.textContent = art.description.charAt(0).toUpperCase() + art.description.slice(1); card.appendChild(d); }
+    const p = document.createElement('p'); p.textContent = sentences(art.extract, 300); card.appendChild(p);
+    const line = document.createElement('div'); line.className = 'foot-line';
+    const a = document.createElement('a'); a.href = art.url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Read on Wikipedia ↗';
+    const lic = document.createElement('span'); lic.className = 'licence'; lic.textContent = 'CC BY-SA 4.0' + (art.timestamp ? ' · ' + String(art.timestamp).slice(0, 4) : '');
+    line.append(a, lic);
+    card.appendChild(line);
+    return card;
+  }
   const idleAfter = clamp(Q.idleAfter === undefined ? 8 : parseFloat(Q.idleAfter) || 0, 0, 1e6);
 
   // ---- for checks (tools/playground/check.cjs, harness_check.cjs) and the curious
@@ -592,6 +626,20 @@
     return [r1, g1, b1].map((x) => Math.round((x + m0) * 255));
   }
 
+  // a layer's light running along its lines (GeoLayers.swift's Flow): true, or { speed, dash, gap, color, width }
+  function parseFlow(v, where) {
+    if (v == null || v === false) return null;
+    const f = { speed: 24, dash: 2, gap: 22, color: null, width: null };
+    if (v === true) return f;
+    if (typeof v !== 'object' || Array.isArray(v)) { hostWarn(where + ': flow is true or { speed, dash, gap, color, width }'); return null; }
+    if (Number.isFinite(v.speed)) f.speed = clamp(v.speed, 1, 400);
+    if (Number.isFinite(v.dash)) f.dash = clamp(v.dash, 0, 60);
+    if (Number.isFinite(v.gap)) f.gap = clamp(v.gap, 2, 400);
+    if (v.color != null) { f.color = parseColor(v.color); if (!f.color) hostWarn(where + ': flow.color must be "#rrggbb" or "#rrggbbaa"'); }
+    if (Number.isFinite(v.width)) f.width = clamp(v.width, 0.3, 12);
+    return f;
+  }
+
   function parseLayer(s, id, features, options) {
     const style = options.style == null ? 'border' : options.style, kind = STYLE_KIND[style];
     const color = parseColor(options.color);
@@ -607,7 +655,8 @@
     const L = { id, style, kind, options, color, lines: [], polys: [], points: [], vertices: 0, features: 0, skipped: 0,
       minZoom: num(options.minZoom, 0), maxZoom: num(options.maxZoom, Infinity), touchable: options.touchable === true,
       font: ['regular', 'italic', 'caps'].includes(options.font) ? options.font : 'regular', size: clamp(num(options.size, 15), 10, 40),
-      width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [] };
+      width: clamp(num(options.width, 28), 4, 200), height: clamp(num(options.height, 28), 4, 200), offset, pic: null, drawn: [],
+      lineWidth: Number.isFinite(options.lineWidth) ? clamp(options.lineWidth, 0.3, 12) : null, flow: parseFlow(options.flow, where) };
     if (style === 'symbol') {
       if (typeof options.image !== 'string') hostError(where + ': a symbol layer needs options.image, a picture of the pack');
       else L.pic = picture(s, options.image, where);
@@ -720,14 +769,25 @@
       };
       switch (L.style) {
         case 'border':
-          g.strokeStyle = rgba(L.color || [140, 132, 120]); g.lineWidth = 1.1 * k; g.stroke(strokePath());
-          break;
         case 'ghost':
-          g.setLineDash([5 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.8); g.lineWidth = 1.6 * k; g.stroke(strokePath());
+        case 'track': {
+          const path = strokePath();
+          if (L.style === 'border') { g.strokeStyle = rgba(L.color || [140, 132, 120]); g.lineWidth = (L.lineWidth || 1.1) * k; }
+          else if (L.style === 'ghost') { g.setLineDash([5 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.8); g.lineWidth = (L.lineWidth || 1.6) * k; }
+          else { g.setLineDash([3 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.47); g.lineWidth = (L.lineWidth || 1.2) * k; }
+          g.stroke(path);
+          // its flow: beads moving the way the line's coordinates go (the dash phase falling, as Core Animation
+          // moves it in the app); none under Reduce Motion
+          if (L.flow && !settings.reduceMotion) {
+            const f = L.flow, period = (f.dash + f.gap) * k;
+            g.setLineDash([f.dash * k, period - f.dash * k]);
+            g.lineDashOffset = period - ((now() / 1000 * f.speed * k) % period);
+            g.strokeStyle = f.color ? rgba(f.color) : 'rgba(255,255,255,0.9)';
+            g.lineWidth = (f.width || L.lineWidth || 1.1) * k;
+            g.stroke(path);
+          }
           break;
-        case 'track':
-          g.setLineDash([3 * k, 4 * k]); g.strokeStyle = rgba(ink, 0.47); g.lineWidth = 1.2 * k; g.stroke(strokePath());
-          break;
+        }
         case 'area': {
           const base = L.color || AREA, fill = new Path2D(), edge = new Path2D();
           g.save(); g.beginPath(); g.arc(c.cx, c.cy, c.radius, 0, TAU); g.clip();
@@ -969,6 +1029,16 @@
     if (o.path != null) {
       const p = o.path, coords = p && Array.isArray(p.coordinates) ? p.coordinates : null;
       if (!coords || !coords.length || !coords.every(validPos)) { hostError(where + ': path.coordinates must be [[lon, lat], …]; not drawn'); return false; }
+      if (p.dates != null) {                 // a dated way (runtime 5): the stage's date moves it
+        const d = p.dates;
+        if (!Array.isArray(d) || d.length !== coords.length || !d.every(Number.isFinite) || d.some((x, i) => i && x < d[i - 1])) {
+          hostError(where + ': path.dates needs a number for each place, rising; not drawn'); return false;
+        }
+        into.path = buildPath(coords.length === 1 ? [coords[0], coords[0]] : coords);
+        into.dates = coords.length === 1 ? [d[0], d[0]] : d.slice();
+        into.key = JSON.stringify([coords, d]);
+        return true;
+      }
       if (coords.length === 1) into.at = unit(coords[0][0], coords[0][1]);
       else {
         into.path = buildPath(coords);
@@ -990,8 +1060,8 @@
     if (msg.op === 'remove') { s.sprites.delete(id); dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.sprites: unknown op "' + msg.op + '"; ignored');
     const o = msg.options || {};
-    const sp = { id, at: null, path: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
-                 touchable: o.touchable === true, breathes: false, t0: now(), flip: false, drawn: null };
+    const sp = { id, at: null, path: null, dates: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
+                 touchable: o.touchable === true, breathes: false, t0: now(), flip: false, drawn: null, presence: 0, lastT: null, stage: s };
     if (!readWay(s, o, where, sp)) return;
     const looks = Array.isArray(o.looks) ? o.looks : o.look ? [o.look] : [];
     if (!looks.length) return hostError(where + ': needs looks: [{ image | frames, size, … }]; not drawn');
@@ -1003,12 +1073,14 @@
     if (sp.touchable && !sp.label) hostWarn(where + ': a touchable sprite needs a label (its VoiceOver name)');
     const old = s.sprites.get(id);
     if (!old && s.sprites.size >= SPRITE_BUDGET) return hostError(where + ': at most ' + SPRITE_BUDGET + ' sprites; not drawn');
-    if (old && sp.key && old.key === sp.key) { sp.t0 = old.t0; sp.flip = old.flip; }      // the same path keeps its place along it
+    if (old && sp.key && old.key === sp.key) { sp.t0 = old.t0; sp.flip = old.flip; sp.presence = old.presence; sp.lastT = old.lastT; sp.last = old.last; }      // the same path keeps its place along it
+    if (sp.dates && s.M && s.M.runtime < 5) hostWarn(where + ': path.dates is new in runtime 5: declare "runtime": 5');
     s.sprites.set(id, sp);
     dirty();
   }
   // where a sprite is now, and whether it is heading west on screen
   function spritePlace(sp, t, c, m) {
+    if (sp.dates) return datedPlace(sp, t, c, m);
     if (sp.at && !sp.path) return { v: sp.at, moving: false };
     if (settings.reduceMotion) return { v: sp.path.pts[0], moving: false };
     const T = (t - sp.t0) / 1000 / sp.seconds;
@@ -1024,6 +1096,34 @@
     }
     return { v, moving: dir !== 0 };
   }
+  // a sprite on a dated way (runtime 5): where its stage's date puts it, between the two places whose dates the date
+  // lies between; outside its first and last dates it rests at its nearer end, fading out over half a second
+  // (GlobeMarker.Path.position(atDate:)); with no date shown, nowhere
+  function datedPlace(sp, t, c, m) {
+    const tm = sp.stage && sp.stage.time, d = sp.dates, dt = sp.lastT == null ? 0 : clamp((t - sp.lastT) / 1000, 0, 0.1);
+    sp.lastT = t;
+    if (!tm) { sp.presence = 0; return { v: sp.path.pts[0], moving: false, presence: 0 }; }
+    const date = tm.value, n = d.length;
+    let v, within = true;
+    if (date <= d[0]) { v = sp.path.pts[0]; within = date === d[0]; }
+    else if (date >= d[n - 1]) { v = sp.path.pts[n - 1]; within = date === d[n - 1]; }
+    else {
+      let i = 1;
+      while (i < n - 1 && d[i] < date) i++;
+      const span = d[i] - d[i - 1], f = span > 0 ? (date - d[i - 1]) / span : 1;
+      const { pts, cum } = sp.path, total = sp.path.total;
+      v = total > 0 ? along(sp.path, (cum[i - 1] + f * (cum[i] - cum[i - 1])) / total) : pts[0];
+    }
+    const target = within ? 1 : 0;
+    sp.presence = settings.reduceMotion ? target : target > sp.presence ? Math.min(target, sp.presence + dt * 2) : Math.max(target, sp.presence - dt * 2);
+    // it turns the way it moved since the last frame
+    if (sp.last) {
+      const o1 = projectUnit(sp.last[0], sp.last[1], sp.last[2], m, c, {}), o2 = projectUnit(v[0], v[1], v[2], m, c, {});
+      if (Math.abs(o2.x - o1.x) > 0.01) sp.flip = o2.x < o1.x;
+    }
+    sp.last = v;
+    return { v, moving: false, presence: sp.presence };
+  }
   function chooseLook(looks, z) {
     for (let i = 0; i < looks.length; i++) if (zoomHolds(looks[i], z)) return i;
     return -1;
@@ -1036,17 +1136,21 @@
   }
   // draws a look at a place; returns what was drawn, or null (hidden: behind, off screen, under what the app keeps
   // clear, or resting between its showings). A showing fades up and down over its first and last 0.3 s.
-  function drawLook(look, v, flip, T, c, m, clear, breath) {
-    let alpha = 1;
+  function drawLook(look, v, flip, T, c, m, clear, breath, presence) {
+    let alpha = presence == null ? 1 : presence;
+    if (!(alpha > 0)) return null;
     if (look.every && !settings.reduceMotion) {
       const ph = T % look.every;
       if (ph >= look.for) return null;
-      alpha = clamp(Math.min(ph, look.for - ph) / Math.min(0.3, look.for / 3), 0, 1);
+      alpha *= clamp(Math.min(ph, look.for - ph) / Math.min(0.3, look.for / 3), 0, 1);
     }
     const o = projectUnit(v[0], v[1], v[2], m, c, {});
     if (o.z < 0.2) return null;
     const w = look.w * rs, h = look.h * rs, rect = [o.x - w / 2, o.y - h / 2, w, h];
-    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => overlaps(rect, q))) return null;
+    // (GlobeView: a large sprite, over 60 points, shows while its middle is clear of the chrome; a small one
+    // only when none of it is under the chrome)
+    const large = Math.max(look.w, look.h) * rs > 60;
+    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => (large ? within(o.x, o.y, q) : overlaps(rect, q)))) return null;
     const pic = look.pics[settings.reduceMotion ? 0 : Math.floor(Math.max(0, T) * look.fps) % look.pics.length];
     if (!pic || !pic.ok) return null;
     g.save();
@@ -1064,16 +1168,17 @@
     if (li < 0) return;
     const look = sp.looks[li], place = spritePlace(sp, t, c, m), T = (t - sp.t0) / 1000 + phaseOf(sp.label || sp.id) * (look.every || 0);
     const breath = sp.breathes && !settings.reduceMotion ? 1 + 0.004 * Math.sin(t / 1000 * 1.2) : 1;
-    const d = drawLook(look, place.v, look.face && sp.flip, T, c, m, clear, breath);
+    const d = drawLook(look, place.v, look.face && sp.flip, T, c, m, clear, breath, place.presence);
     if (d) sp.drawn = Object.assign(d, { look: li });
   }
   function drawSprites(t, c, m, clear) {
     for (const s of stages) for (const sp of s.sprites.values()) drawSprite(sp, t, c, m, clear);
   }
-  const animates = (sp) => !settings.reduceMotion && ((sp.path && (sp.loop !== false || (now() - sp.t0) / 1000 < sp.seconds))
+  const animates = (sp) => !settings.reduceMotion && ((sp.path && (sp.dates || sp.loop !== false || (now() - sp.t0) / 1000 < sp.seconds))
     || sp.looks.some((l) => l.pics.length > 1 || l.every) || sp.breathes);
   function spritesAnimate() {
     for (const s of stages) for (const sp of s.sprites.values()) if (animates(sp)) return true;
+    if (!settings.reduceMotion) for (const s of stages) for (const L of s.geo.values()) if (L.flow && zoomHolds(L, cam.zoom)) return true;
     for (const d of doorways) if (!stageById.get(d.pack.id).running && animates(d)) return true;
     return false;
   }
@@ -1209,7 +1314,11 @@
   function touchables() {
     const c = camera(), m = rotation(c), clear = keepClear(), out = [];
     const ok = (x, y) => x > 6 && y > 6 && x < W - 6 && y < H - 6 && !clear.some((r) => within(x, y, r));
-    const add = (s, target, x, y, what) => { if (ok(x, y) && sameTarget(hitTest(x, y), target)) out.push({ stage: s.id, target, x, y, what }); };
+    // (a point another stage's thing covers is not this one's: two packs may name their layers alike)
+    const add = (s, target, x, y, what) => {
+      const h = ok(x, y) && hitStage(x, y);
+      if (h && h.stage === s && sameTarget(h.target, target)) out.push({ stage: s.id, target, x, y, what });
+    };
     for (const s of stages) {
       for (const sp of s.sprites.values()) if (sp.touchable && sp.drawn) add(s, { sprite: sp.id }, sp.drawn.x, sp.drawn.y, 'sprite "' + sp.id + '"' + (sp.label ? ' (' + sp.label + ')' : ''));
       for (const L of s.geo.values()) {
@@ -1256,8 +1365,38 @@
       return isNaN(d.getTime()) ? '' : DAYS.format(d);
     }
     const y = Math.round(t.value);
+    if (y <= -10000) return yearsAgo(THIS_YEAR - y);
     return y < 1 ? (1 - y) + ' BCE' : String(y);
   }
+  // before 10,000 BCE, years ago, to two significant figures, as deep time is told (GlobeTime.yearsAgo)
+  const THIS_YEAR = new Date().getUTCFullYear(), GROUPED = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+  function yearsAgo(ago) {
+    if (ago >= 9.95e8) return GROUPED.format(Math.round(ago / 1e8) / 10) + ' billion years ago';
+    if (ago >= 9.95e5) return GROUPED.format(ago >= 9.95e6 ? Math.round(ago / 1e6) : Math.round(ago / 1e5) / 10) + ' million years ago';
+    const mag = Math.pow(10, Math.floor(Math.log10(Math.max(ago, 1))) - 1);
+    return GROUPED.format(Math.round(ago / mag) * mag) + ' years ago';
+  }
+  // the date along the strip (GlobeTime.fraction, value(atFraction:), advanced): evenly, or by its pace (runtime 5),
+  // which says how many seconds of playback each date is reached at and lays the strip out in those seconds
+  function paceSeconds(tm, v) {
+    const p = tm.pace;
+    if (v <= p[0][0]) return p[0][1];
+    if (v >= p[p.length - 1][0]) return p[p.length - 1][1];
+    let i = 1;
+    while (p[i][0] < v) i++;
+    return p[i - 1][1] + (v - p[i - 1][0]) / (p[i][0] - p[i - 1][0]) * (p[i][1] - p[i - 1][1]);
+  }
+  function paceDate(tm, sec) {
+    const p = tm.pace;
+    if (sec <= p[0][1]) return p[0][0];
+    if (sec >= p[p.length - 1][1]) return p[p.length - 1][0];
+    let i = 1;
+    while (p[i][1] < sec) i++;
+    return p[i - 1][0] + (sec - p[i - 1][1]) / (p[i][1] - p[i - 1][1]) * (p[i][0] - p[i - 1][0]);
+  }
+  const fractionOf = (tm, v) => (tm.pace ? paceSeconds(tm, v) / tm.pace[tm.pace.length - 1][1] : (clamp(v, tm.min, tm.max) - tm.min) / (tm.max - tm.min));
+  const valueAt = (tm, f) => (tm.pace ? paceDate(tm, clamp(f, 0, 1) * tm.pace[tm.pace.length - 1][1]) : tm.min + clamp(f, 0, 1) * (tm.max - tm.min));
+  const advanced = (tm, v, dt) => (tm.pace ? paceDate(tm, paceSeconds(tm, v) + dt * tm.speed) : Math.min(v + tm.rate * tm.speed * dt, tm.max));
   function applyCaptionType() {
     const cap = TYPE.styles && TYPE.styles.wikipedia && TYPE.styles.wikipedia.caption;
     if (!cap) return;
@@ -1277,9 +1416,12 @@
     foot.hidden = !(t || cap.title || cap.text);
     if (foot.hidden) return;
     const set = (id, text) => { const el = $(id); el.textContent = text; el.hidden = !text; };
+    const art = settings.wikipedia ? article(f, cap.wikipedia) : null;
     set('foot-eyebrow', cap.title);
     set('foot-title', t ? timeLabel(t) : '');
-    set('foot-text', cap.text);
+    set('foot-text', settings.wikipedia ? wikiLine(cap.text, art) : cap.text);
+    $('foot-link').hidden = !art;
+    if (art) $('foot-link').href = art.url;
     $('foot-date').hidden = !t;
     if (!t) return;
     playBtn.hidden = !t.playable;
@@ -1294,7 +1436,7 @@
     if (!t || $('foot-date').hidden) return;
     const dpr = window.devicePixelRatio || 1, cw = Math.max(1, strip.clientWidth), ch = 44;
     if (strip.width !== Math.round(cw * dpr) || strip.height !== Math.round(ch * dpr)) { strip.width = Math.round(cw * dpr); strip.height = Math.round(ch * dpr); }
-    const s = strip.getContext('2d'), y = ch / 2, at = (v) => ((v - t.min) / (t.max - t.min)) * cw;
+    const s = strip.getContext('2d'), y = ch / 2, at = (v) => fractionOf(t, v) * cw;
     s.setTransform(dpr, 0, 0, dpr, 0, 0);
     s.clearRect(0, 0, cw, ch);
     s.strokeStyle = 'rgba(37, 52, 64, 0.35)'; s.lineWidth = 1;
@@ -1319,9 +1461,21 @@
     if (!o || typeof o !== 'object') o = {};
     const unit_ = o.unit === 'day' ? 'day' : 'year';
     if (o.unit != null && o.unit !== 'year' && o.unit !== 'day') hostWarn('terra.time.show: unit is "year" or "day" (got ' + JSON.stringify(o.unit) + '); years used');
-    const limit = unit_ === 'year' ? 1e7 : 3.66e9;
-    if (!Number.isFinite(o.min) || !Number.isFinite(o.max)) return hostError('terra.time.show: min and max must be numbers (got ' + JSON.stringify([o.min, o.max]) + '); not shown');
-    const lo = Math.max(o.min, -limit), hi = Math.min(o.max, limit);
+    const limit = unit_ === 'year' ? 5e9 : 3.66e9;
+    // a pace (runtime 5): [[date, seconds], …], both rising; its first and last dates are the range, and min, max and rate go
+    let pace = null;
+    if (o.pace != null) {
+      const p = Array.isArray(o.pace) ? o.pace.slice(0, 200) : [];
+      const ok = p.length >= 2 && p.every((x) => Array.isArray(x) && x.length === 2 && Number.isFinite(x[0]) && Number.isFinite(x[1]) && Math.abs(x[0]) <= limit && x[1] >= 0)
+        && p.every((x, i) => !i || (x[0] > p[i - 1][0] && x[1] > p[i - 1][1]));
+      if (!ok) hostError('terra.time.show: pace must be [[date, seconds], …], at least two, dates and seconds both rising; min and max used');
+      else {
+        pace = p.map((x) => [x[0], x[1] - p[0][1]]);
+        if (s.M && s.M.runtime < 5) hostWarn('terra.time.show: pace is new in runtime 5: declare "runtime": 5');
+      }
+    }
+    if (!pace && (!Number.isFinite(o.min) || !Number.isFinite(o.max))) return hostError('terra.time.show: min and max must be numbers (got ' + JSON.stringify([o.min, o.max]) + '); not shown');
+    const lo = pace ? pace[0][0] : Math.max(o.min, -limit), hi = pace ? pace[pace.length - 1][0] : Math.min(o.max, limit);
     if (!(hi > lo)) return hostError('terra.time.show: max must be above min; not shown');
     if (o.carry) warnOnce('carry', 'terra.time.show: carry has no earlier prototype\'s date in the preview; value used');
     const ticks = [];
@@ -1331,7 +1485,7 @@
     }
     stopPlayback(s, false);
     s.time = { unit: unit_, min: lo, max: hi, value: clamp(num(o.value, lo), lo, hi), ticks, playable: !!o.playable,
-               rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false };
+               rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false, pace, speed: 1 };
     // (a stage in the background does not play: it may when it hears it is in front)
     if (o.playing && s.time.playable && !settings.reduceMotion && s === front()) s.time.playing = true;
     updateFoot();
@@ -1346,7 +1500,7 @@
     const f = front(), tm = f ? f.time : null;
     if (!tm || !tm.playing) return;
     if (settings.reduceMotion) { tm.playing = false; updateFoot(); sendTime(f, 'host'); return; }
-    tm.value = Math.min(tm.value + tm.rate * dt, tm.max);
+    tm.value = advanced(tm, tm.value, dt);
     const done = tm.value >= tm.max;
     if (done) tm.playing = false;
     updateFoot();
@@ -1369,10 +1523,18 @@
   function stepTime(dir) {                   // GlobeTime.step: the next tick, or a hundredth of the span
     const tm = frontTime(), ats = tm.ticks.map((x) => x.at);
     const ahead = dir > 0 ? Math.min(...ats.filter((a) => a > tm.value + 1e-6)) : Math.max(...ats.filter((a) => a < tm.value - 1e-6));
-    return Number.isFinite(ahead) ? ahead : tm.value + dir * Math.max(1, (tm.max - tm.min) / 100);
+    if (Number.isFinite(ahead)) return ahead;
+    const next = valueAt(tm, fractionOf(tm, tm.value) + dir / 100);
+    return Math.abs(next - tm.value) >= 1 ? next : tm.value + dir;
   }
   let scrubbing = false;
-  const scrub = (e) => { const r = strip.getBoundingClientRect(), tm = frontTime(); if (tm) setByReader(tm.min + clamp((e.clientX - r.left) / Math.max(r.width, 1), 0, 1) * (tm.max - tm.min)); };
+  const scrub = (e) => {
+    const r = strip.getBoundingClientRect(), tm = frontTime();
+    if (!tm) return;
+    // a touch within a fingertip of a tick lands on it (GlobeFoot's strip)
+    const x = e.clientX - r.left, near = tm.ticks.reduce((b, k) => { const d = Math.abs(fractionOf(tm, k.at) * r.width - x); return d < b.d ? { d, at: k.at } : b; }, { d: Infinity, at: null });
+    setByReader(near.d <= 10 ? near.at : valueAt(tm, x / Math.max(r.width, 1)));
+  };
   strip.addEventListener('pointerdown', (e) => {
     if (!frontTime() || (e.pointerType === 'mouse' && e.button !== 0)) return;
     scrubbing = true;
@@ -1418,6 +1580,12 @@
           s.time.playing = true; lastPlaySent = -1e9;
         } else s.time.playing = false;
         return updateFoot();
+      case 'speed':
+        if (!s.time) return hostWarn('terra.time.speed before terra.time.show; ignored');
+        if (!Number.isFinite(msg.speed)) return hostWarn('terra.time.speed: the factor must be a number; ignored');
+        if (s.M && s.M.runtime < 5) warnOnce('speed', 'terra.time.speed is new in runtime 5: declare "runtime": 5');
+        s.time.speed = clamp(msg.speed, 0.001, 100);
+        return;
       default: hostWarn('terra.time: unknown op "' + msg.op + '"; ignored');
     }
   }
@@ -1435,6 +1603,7 @@
       parent.appendChild(p);
     }
   }
+  let panelContent = null;
   function showPanel(s, content) {
     if (s !== front()) return noteOnce(s.id + ':panel-back', s.id + ': its panel is not shown while the reader is with another experience');
     const o = content && typeof content === 'object' ? content : {};
@@ -1444,15 +1613,25 @@
     h.textContent = typeof o.title === 'string' ? o.title : '';
     panelBody.appendChild(h);
     if (!o.title) hostWarn('terra.panel.show: give it a title (what this is)');
-    paragraphs(panelBody, o.text);
+    // Wikipedia's words: each text's article's card where its paragraphs were (a tip stays; a text with no
+    // article goes, its heading with it), and the sources gone too
+    const W = settings.wikipedia;
+    const words = (text, key, heading) => {
+      const art = W ? article(s, key) : null;
+      if (art) { panelBody.appendChild(wikiCard(art)); return; }
+      if (W && !isTip(text)) return;
+      if (heading) { const h3 = document.createElement('h3'); h3.textContent = String(heading); panelBody.appendChild(h3); }
+      paragraphs(panelBody, text);
+    };
+    if (W && o.wikipedia && !article(s, o.wikipedia)) hostWarn('terra.panel.show: no article "' + o.wikipedia + '" in wikipedia.json (python3 tools/wikipedia/build.py --pack ' + s.id + ')');
+    words(o.text, o.wikipedia, '');
     const sections = Array.isArray(o.sections) ? o.sections : [];
     for (const sec of sections) {
       if (!sec || typeof sec !== 'object') continue;
-      if (sec.title) { const h3 = document.createElement('h3'); h3.textContent = String(sec.title); panelBody.appendChild(h3); }
-      paragraphs(panelBody, sec.text);
+      words(sec.text, sec.wikipedia, sec.title);
     }
     const sources = Array.isArray(o.sources) ? o.sources : [];
-    if (sources.length) {
+    if (sources.length && !W) {
       const h3 = document.createElement('h3'), ul = document.createElement('ul');
       h3.textContent = 'Sources';
       for (const src of sources) {
@@ -1471,6 +1650,7 @@
       panelBody.appendChild(ul);
     }
     panelOwner = s;
+    panelContent = o;
     panelInfo = { title: h.textContent, sections: sections.length, sources: sources.length };
     panel.hidden = false;
     panel.classList.remove('tall');
@@ -1511,12 +1691,15 @@
       case 'sprite': return onSprite(s, msg);
       case 'touch':
         if (msg.op !== 'scheme') return hostWarn('terra.touch: unknown op "' + msg.op + '"');
-        if (msg.scheme !== 'touchables' && msg.scheme !== 'one-finger') return hostWarn('terra.touch.scheme: "touchables" or "one-finger" (got ' + JSON.stringify(msg.scheme) + '); unchanged');
+        if (!['touchables', 'one-finger', 'hold'].includes(msg.scheme)) return hostWarn('terra.touch.scheme: "touchables", "one-finger" or "hold" (got ' + JSON.stringify(msg.scheme) + '); unchanged');
         s.scheme = msg.scheme;
         return updateReadout();
       case 'time': return onTime(s, msg);
       case 'caption':
-        s.caption = { title: String(msg.title || ''), text: String(msg.text || '') };
+        s.caption = { title: String(msg.title || ''), text: String(msg.text || ''), wikipedia: String(msg.wikipedia || '') };
+        if (settings.wikipedia && s.caption.wikipedia && !article(s, s.caption.wikipedia)) {
+          noteOnce(s.id + ':wiki:' + s.caption.wikipedia, s.id + ': no article "' + s.caption.wikipedia + '" in wikipedia.json (python3 tools/wikipedia/build.py --pack ' + s.id + ')');
+        }
         updateFoot();
         dirty();
         return;
@@ -1586,7 +1769,7 @@
     const s = stageById.get(pack.id);
     if (s.running) { bringToFront(s, 'reader'); return; }
     const Mp = pack.M, where = 'prototype.json' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
-    if (Mp.runtime !== 3 && Mp.runtime !== 4) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs runtime-3 and runtime-4 packs'); return; }
+    if (![3, 4, 5].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 5'); return; }
     if (Mp.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(Mp.presentation) + ')');
     const scripts = Array.isArray(Mp.scripts) ? Mp.scripts : [];
     if (!scripts.length) hostError(where + ': scripts must list the pack\'s scripts, in order');
@@ -1603,6 +1786,12 @@
     }
     resetHost(s);
     s.running = true; s.started = false; s.ended = false; s.early = []; s.entry = entry || 'workbench'; s.t0 = now();
+    // its articles (wikipedia.json), for Wikipedia's words
+    s.articles = {};
+    if ([...pack.FILES].includes('wikipedia.json')) {
+      fetch(packUrl(s, 'wikipedia.json')).then((r) => r.json()).then((j) => { s.articles = (j && j.articles) || {}; updateFoot(); })
+        .catch(() => hostWarn(where + ': wikipedia.json could not be read'));
+    }
     const was = front();
     if (was) { was.front = false; stopPlayback(was, false); deliver(was, { type: 'focus', front: false, by: 'host' }); }
     s.front = true;
@@ -1710,7 +1899,9 @@
     $('scale').value = settings.textScale;
     $('scale-out').textContent = settings.textScale.toFixed(1);
     $('motion').checked = !!settings.reduceMotion;
+    $('wikipedia').checked = !!settings.wikipedia;
     document.documentElement.style.setProperty('--ts', String(settings.textScale));
+    if (panelOwner && panelContent && !panel.hidden) showPanel(panelOwner, panelContent);
     if (settings.reduceMotion) for (const s of stages) if (s.time && s.time.playing) { s.time.playing = false; sendTime(s, 'host'); }
     updateFoot();
     dirty();
@@ -1718,6 +1909,7 @@
   }
   $('scale').addEventListener('input', (e) => applySettings({ textScale: +e.target.value }));
   $('motion').addEventListener('change', (e) => applySettings({ reduceMotion: e.target.checked }));
+  $('wikipedia').addEventListener('change', (e) => applySettings({ wikipedia: e.target.checked }));
   document.addEventListener('visibilitychange', () => applySettings({ active: !document.hidden }));
   const startPrimary = () => { if (primaryPack) startStage(primaryPack, 'workbench'); };
   $('start-button').addEventListener('click', startPrimary);
@@ -1747,6 +1939,7 @@
     if (f && f.started && f.M.taps === true) return touchOut(f, 'tap', [x, y], null);
     log('harness', 'info', 'a tap on the globe: in the app it chooses a country ("taps" is not true' + (f ? ' for ' + f.id : '') + ' and nothing touchable is here)');
   }
+  const HOLD_MS = 300, HOLD_SLACK = 8;     // GlobeView.holdSeconds, holdSlack
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
   stage.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 2) return;
@@ -1767,9 +1960,21 @@
     const hit = hitStage(at[0], at[1]);
     const door = doorwayAt(at[0], at[1]);
     const f = front();
-    const pack = !turnKey && (!!hit || (f && f.started && f.scheme === 'one-finger'));
+    // (the hold scheme: a drag turns the globe, and a pointer that rests HOLD_MS first is the front pack's, as
+    // GlobeView's hold recognizer; a tap on a touchable thing is still its stage's)
+    const holding = !turnKey && f && f.started && f.scheme === 'hold';
+    const pack = !turnKey && !holding && (!!hit || (f && f.started && f.scheme === 'one-finger'));
     gesture = { kind: pack ? 'pack' : 'globe', stage: hit ? hit.stage : f, target: hit ? hit.target : null, hit, door,
                 x0: at[0], y0: at[1], last: at, start: now(), moved: false, began: false };
+    if (holding) {
+      const gs = gesture;
+      gs.hold = setTimeout(() => {
+        if (gesture !== gs || gs.moved) return;
+        gs.kind = 'pack'; gs.stage = f; gs.target = hit && hit.stage === f ? hit.target : null; gs.began = true;
+        bringToFront(f, 'reader');
+        touchOut(f, 'began', gs.last, gs.target);
+      }, HOLD_MS);
+    }
     stage.classList.add('dragging');
   });
   stage.addEventListener('pointermove', (e) => {
@@ -1787,7 +1992,7 @@
       if (before > 0) zoomBy(after / before);
       return;
     }
-    const far = Math.hypot(at[0] - gesture.x0, at[1] - gesture.y0) > 6;
+    const far = Math.hypot(at[0] - gesture.x0, at[1] - gesture.y0) > (gesture.hold && !gesture.began ? HOLD_SLACK : 6);
     if (gesture.kind === 'pack') {
       if (!gesture.began && far) {
         gesture.began = true;
@@ -1808,6 +2013,7 @@
     if (!pointers.size) stage.classList.remove('dragging');
     const gs = gesture;
     if (!gs) return;
+    if (gs.hold) clearTimeout(gs.hold);
     if (gs.kind === 'pinch') { if (!pointers.size) gesture = null; return; }
     gesture = null;
     if (e.type === 'pointercancel') { if (gs.kind === 'pack' && gs.began) touchOut(gs.stage, 'ended', gs.last, gs.target); return; }
@@ -1817,7 +2023,7 @@
       else if (tap) tapAt(at[0], at[1], gs.hit);
     } else if (tap) {
       if (gs.door) startStage(gs.door.pack, 'doorway');
-      else tapAt(at[0], at[1], null);
+      else tapAt(at[0], at[1], gs.hold ? gs.hit : null);
     }
   };
   stage.addEventListener('pointerup', release);

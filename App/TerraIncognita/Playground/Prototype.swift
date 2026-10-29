@@ -27,6 +27,9 @@ struct Prototype: Identifiable {
     let id: String
     let title: String
     let summary: String
+    /// The Wikipedia article on its subject: with Wikipedia's words on, the words at its foot are that
+    /// article's first sentence, and the summary (the atlas's own) is not shown.
+    var wikipedia: String? = nil
     var shelf: Shelf = .current
     /// Where the globe goes when it starts; nil leaves the camera where the reader had it.
     var anchor: GlobeCamera?
@@ -187,10 +190,11 @@ final class PrototypeStage {
     func quietClouds() { request { $0.quietClouds = true } }
     func quietFrame() { request { $0.quietFrame = true } }
 
-    /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
-    func describe(title: String, text: String) {
+    /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch
+    /// (and Wikipedia's article on it, for when its words are wanted instead).
+    func describe(title: String, text: String, wikipedia: String? = nil) {
         guard !ended, caption == nil else { return }
-        caption = StageCaption(title: title, text: text)
+        caption = StageCaption(title: title, text: text, article: WikipediaIndex.shared[wikipedia])
     }
 
     /// Moves the globe (Reduce Motion: at once). A script's flight (`byScript`) is honoured only while
@@ -362,6 +366,8 @@ final class PrototypeStage {
         case .timeShow(let time, let carry): show(time, carry: carry)
         case .timeSet(let value): setTime(value, by: nil)
         case .timePlay(let playing): play(playing, by: .host)
+        case .timeSpeed(let speed):
+            if var t = time, t.speed != speed { t.speed = speed; time = t; dateMoved() }
         case .timeHide:
             stopPlayback()
             time = nil
@@ -396,6 +402,7 @@ final class PrototypeStage {
         } : nil
         let marker = GlobeMarker(sprite: "\(pack.id).\(id)", at: spec.at, path: spec.path, looks: spec.looks,
                                  label: spec.label, onTap: tap)
+        marker.clock = clock
         sprites[id] = marker
         markers.append(marker)
         globe?.add(marker)
@@ -490,7 +497,7 @@ final class PrototypeStage {
                 last = now
                 guard self.playground?.screen == nil, self.playground?.workbenchShown != true,
                       UIApplication.shared.applicationState == .active else { continue }
-                let next = min(t.max, t.value + t.rate * dt)
+                let next = t.advanced(t.value, by: dt)
                 if next >= t.max { t.playing = false }
                 t.value = next
                 self.time = t
@@ -504,14 +511,24 @@ final class PrototypeStage {
 
     /// The globe's month follows the front stage's date to the day (`GlobeTime.month`: the ground's and
     /// the clouds' season); the playground applies it, and the month it had comes back when no date is shown.
+    /// Sprites on dated ways (runtime 5) read the date from here every frame.
     private func dateMoved() {
+        syncClocks()
         playground?.globeRequestsChanged()
+    }
+
+    /// The date as this stage's sprites read it, from now.
+    private var clock: DateClock? { time.map { DateClock(time: $0, stamp: CACurrentMediaTime()) } }
+
+    private func syncClocks() {
+        let clock = self.clock
+        for marker in sprites.values { marker.clock = clock }
     }
 
     private func stopPlayback() {
         playback?.cancel()
         playback = nil
-        if var t = time, t.playing { t.playing = false; time = t }
+        if var t = time, t.playing { t.playing = false; time = t; syncClocks() }
     }
 
     /// It could not start: say why, and give the reader back the globe without it.

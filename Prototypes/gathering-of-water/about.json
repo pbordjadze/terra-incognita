@@ -1,9 +1,11 @@
 {
   "title": "A gathering of water",
+  "wikipedia": "Drainage basin",
   "text": "The rivers of South America as one connected network. Each line is a stretch of river, and each stretch passes its water on to exactly one next stretch, until it reaches the coast or an inland ending. Touch a river to follow its water down (the dark line) and to light the tributaries that gather into it. Brush a finger along the lines to follow many in turn.\n\nThere is no route to finish. Every line has somewhere to go.",
   "sections": [
     {
       "title": "What the lines are",
+      "wikipedia": "Digital elevation model",
       "text": "The connections come from RiverATLAS v1.0, a river network derived from elevation data. Only larger channels are drawn: reaches with at least 500 km² of land upstream, plus their downstream connections. That keeps 218,146 of the 1,620,963 South American reaches, merged here into 18,159 stretches between junctions. The great rivers show from far away, the smaller ones as you come closer. A touch snaps to the nearest line drawn.\n\nThe tributaries lit above a touch are the ones retained here, not every stream, and not a surveyed catchment boundary."
     },
     {
@@ -12,6 +14,7 @@
     },
     {
       "title": "The limits of a line",
+      "wikipedia": "Casiquiare canal",
       "text": "A branching dataset gives each reach one downstream connection. Real rivers can divide, shift, flood, flow through wetlands, and be changed by people. The Casiquiare, for example, links the Orinoco and Amazon systems; this simplified tree cannot express that connection. An inland ending does not mean an empty landscape."
     },
     {

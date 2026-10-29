@@ -4,10 +4,12 @@
 // request that is not local, a pack that never starts. Screenshots go to build/playground/<id>/<device>-*.png:
 // the doorway (if any), the anchor, sprites after a few seconds, closer zooms where something shows only up close,
 // and what touching the first touchable thing does.
-//   node tools/playground/check.cjs <id> [--device iphone|ipad] [--root <dir>]...
+//   node tools/playground/check.cjs <id> [--device iphone|ipad] [--wikipedia] [--root <dir>]...
 //   node tools/playground/check.cjs --all [--device iphone|ipad] [--root <dir>]...
 //   node tools/playground/check.cjs --living [<id> <id>] [--device iphone|ipad] [--root <dir>]...
-// --root adds a folder of pack folders (a pack being made outside Prototypes/). Exit code 1 if any check failed.
+// --root adds a folder of pack folders (a pack being made outside Prototypes/). --wikipedia runs it with Wikipedia's
+// words on (the reader's switch: the pack's wikipedia.json where its paragraphs were), its screenshots named so.
+// Exit code 1 if any check failed.
 // --living checks the living globe (docs/runtime3.md › Many at once): every current pack's doorway on the one
 // globe, two packs (the first two with doorways, or the two named) started by touching their doorways, run
 // side by side, the second in front; a touch on the first's things brings it back to the front; ending the one
@@ -26,6 +28,10 @@ function usage(message) {
   process.exit(2);
 }
 
+// Wikipedia's words on (--wikipedia): the screenshots are named apart, so both sets of a pack's can stand side by side
+let WIKIPEDIA = false;
+const shotPrefix = (device) => device + '-' + (WIKIPEDIA ? 'wikipedia-' : '');
+
 function parseArgs(argv) {
   const out = { ids: [], all: false, living: false, device: 'iphone', roots: [] };
   for (let i = 0; i < argv.length; i++) {
@@ -33,6 +39,7 @@ function parseArgs(argv) {
     if (a === '--all') out.all = true;
     else if (a === '--living') out.living = true;
     else if (a === '--device') out.device = argv[++i];
+    else if (a === '--wikipedia') out.wikipedia = true;
     else if (a === '--root') out.roots.push(argv[++i]);
     else if (a === '-h' || a === '--help') usage();
     else if (a.startsWith('--')) usage('unknown option ' + a);
@@ -50,7 +57,7 @@ function parseArgs(argv) {
 async function checkLiving(browser, server, ids, device) {
   const size = SIZES[device], outDir = path.join(ROOT, 'build', 'playground', '_living');
   fs.mkdirSync(outDir, { recursive: true });
-  for (const f of fs.readdirSync(outDir)) if (f.startsWith(device + '-') && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
+  for (const f of fs.readdirSync(outDir)) if (f.startsWith(shotPrefix(device)) && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
   const failures = [], warnings = [], shots = [], steps = [], nonLocal = [];
   const fail = (m) => { if (!failures.includes(m)) failures.push(m); };
   const warn = (m) => { if (!warnings.includes(m)) warnings.push(m); };
@@ -67,7 +74,7 @@ async function checkLiving(browser, server, ids, device) {
   page.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/favicon.ico')) fail(`${r.status()} for ${r.url().replace(server.url, '')}`); });
   const pg = (fn, arg) => page.evaluate(fn, arg);
   const shot = async (name) => {
-    const file = `${device}-${name}.png`;
+    const file = `${shotPrefix(device)}${name}.png`;
     await page.screenshot({ path: path.join(outDir, file) });
     shots.push(path.relative(ROOT, path.join(outDir, file)));
     steps.push(`+${((Date.now() - started) / 1000).toFixed(1)}s screenshot ${file}`);
@@ -101,7 +108,7 @@ async function checkLiving(browser, server, ids, device) {
   const stagesNow = () => pg(() => window.__playground.stages());
   const counts = (s) => s && `${s.geo} geo, ${s.images} pictures, ${s.sprites} sprites`;
   try {
-    await page.goto(`${server.url}/atlas?device=${device}&bare=1&idleAfter=100000`);
+    await page.goto(`${server.url}/atlas?device=${device}&bare=1&idleAfter=100000${WIKIPEDIA ? '&wikipedia=1' : ''}`);
     await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
     const doors = await pg(() => window.__playground.doorways());
     steps.push(`${doors.length} doorways on the globe: ${doors.map((d) => d.pack).join(', ')}`);
@@ -184,7 +191,7 @@ async function checkPack(browser, server, pack, device) {
   const id = pack.id, size = SIZES[device];
   const outDir = path.join(ROOT, 'build', 'playground', id);
   fs.mkdirSync(outDir, { recursive: true });
-  for (const f of fs.readdirSync(outDir)) if (f.startsWith(device + '-') && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
+  for (const f of fs.readdirSync(outDir)) if (f.startsWith(shotPrefix(device)) && f.endsWith('.png')) fs.rmSync(path.join(outDir, f));
   const failures = [], warnings = [], shots = [], steps = [], nonLocal = [];
   const fail = (m) => { if (!failures.includes(m)) failures.push(m); };
   const warn = (m) => { if (!warnings.includes(m)) warnings.push(m); };
@@ -203,7 +210,7 @@ async function checkPack(browser, server, pack, device) {
   page.on('response', (r) => { if (r.status() >= 400 && !r.url().endsWith('/favicon.ico')) fail(`${r.status()} for ${r.url().replace(server.url, '')}`); });
   const pg = (fn, arg) => page.evaluate(fn, arg);
   const shot = async (name) => {
-    const file = `${device}-${name}.png`;
+    const file = `${shotPrefix(device)}${name}.png`;
     await page.screenshot({ path: path.join(outDir, file) });
     shots.push(path.relative(ROOT, path.join(outDir, file)));
     steps.push(`+${((Date.now() - started) / 1000).toFixed(1)}s screenshot ${file}`);
@@ -218,7 +225,7 @@ async function checkPack(browser, server, pack, device) {
   };
 
   try {
-    await page.goto(`${server.url}/preview/${id}?device=${device}&bare=1&idleAfter=100000`);
+    await page.goto(`${server.url}/preview/${id}?device=${device}&bare=1&idleAfter=100000${WIKIPEDIA ? '&wikipedia=1' : ''}`);
     await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
     steps.push('preview ready');
 
@@ -359,6 +366,7 @@ function summarize(r) {
 
 (async () => {
   const args = parseArgs(process.argv.slice(2));
+  WIKIPEDIA = !!args.wikipedia;
   const server = await start({ port: 0, roots: args.roots });
   const all = listPacks(server.roots);
   let packs;
@@ -384,8 +392,8 @@ function summarize(r) {
   try {
     for (const p of packs) {
       if (p.error) { results.push({ id: p.id, device: args.device, passed: false, failures: [p.error], warnings: [], screenshots: [], seconds: 0 }); continue; }
-      if (p.manifest.runtime !== 3 && p.manifest.runtime !== 4) {
-        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a runtime-3 or runtime-4 pack (docs/runtime3.md)`;
+      if (![3, 4, 5].includes(p.manifest.runtime)) {
+        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a pack of runtimes 3 to 5 (docs/runtime3.md)`;
         if (args.all) { skipped.push(`${p.id} (${why})`); continue; }
         results.push({ id: p.id, device: args.device, passed: false, failures: [why], warnings: [], screenshots: [], seconds: 0 });
         continue;

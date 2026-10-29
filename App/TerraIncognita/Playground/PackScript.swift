@@ -15,7 +15,7 @@ enum PackScriptEvent {
     case imageSet(GlobeImageLayer.Picture), imageRemove(String), imageClear
     case spriteSet(String, SpriteSpec), spriteRemove(String), spriteClear
     case touchScheme(GlobeView.DragScheme)
-    case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeHide
+    case timeShow(GlobeTime, carry: Bool), timeSet(Double), timePlay(Bool), timeSpeed(Double), timeHide
     case caption(StageCaption?)
     case globe(historical: Bool, still: Bool, maxZoom: Double?)
     case panelShow(PackPanel), panelHide
@@ -36,6 +36,8 @@ final class PackScript {
         var reduceMotion: Bool
         var textScale: Double
         var active: Bool
+        /// The reader wants Wikipedia's words (`WikipediaWords`): a pack's own data lines may shorten.
+        var wikipedia: Bool
     }
 
     struct CameraState: Equatable {
@@ -74,6 +76,15 @@ final class PackScript {
     private var cameraSettle: Timer?
     /// The pictures this pack has laid on the globe, decoded, by path.
     private var decoded: [String: CGImage] = [:]
+    /// Its sprites' pictures by path, read once: a herd's animals share their frames.
+    private var pictures: [String: UIImage] = [:]
+    /// The pack's own articles (its wikipedia.json, built by tools/wikipedia/build.py) over the app's, for
+    /// the `wikipedia` keys its caption and panel name.
+    private lazy var wikipedia: WikipediaIndex = {
+        let file = pack.root.appending(path: "wikipedia.json")
+        guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return WikipediaIndex.shared }
+        return WikipediaIndex.shared.overlaid(with: WikipediaIndex(url: file))
+    }()
 
     /// The most timers a pack may keep at once, and the shortest repeat.
     static let timerBudget = 256
@@ -149,6 +160,7 @@ final class PackScript {
         context?.setObject(nil, forKeyedSubscript: "__terraSend" as NSString)
         context = nil
         decoded = [:]
+        pictures = [:]
         onEvent = nil
     }
 
@@ -249,17 +261,18 @@ final class PackScript {
 
     private static func systemSettings(active: Bool) -> Settings {
         let body = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-        return Settings(reduceMotion: UIAccessibility.isReduceMotionEnabled, textScale: min(3.2, max(1, body / 17)), active: active)
+        return Settings(reduceMotion: UIAccessibility.isReduceMotionEnabled, textScale: min(3.2, max(1, body / 17)), active: active,
+                        wikipedia: WikipediaWords.shared.on)
     }
 
     private func settingsPayload(_ s: Settings) -> [String: Any] {
-        ["reduceMotion": s.reduceMotion, "textScale": s.textScale, "active": s.active]
+        ["reduceMotion": s.reduceMotion, "textScale": s.textScale, "active": s.active, "wikipedia": s.wikipedia]
     }
 
     private func observe() {
         let center = NotificationCenter.default
         let system: [Notification.Name] = [UIAccessibility.reduceMotionStatusDidChangeNotification,
-                                           UIContentSizeCategory.didChangeNotification]
+                                           UIContentSizeCategory.didChangeNotification, WikipediaWords.changed]
         for name in system {
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.settingsChanged(active: nil) }
@@ -310,19 +323,26 @@ final class PackScript {
         case "sprite": sprite(body)
         case "touch":
             if (body["op"] as? String) == "scheme" {
-                onEvent?(.touchScheme((body["scheme"] as? String) == "one-finger" ? .oneFinger : .touchables))
+                let scheme: GlobeView.DragScheme
+                switch body["scheme"] as? String {
+                case "one-finger": scheme = .oneFinger
+                case "hold": scheme = .hold
+                default: scheme = .touchables
+                }
+                onEvent?(.touchScheme(scheme))
             }
         case "time": dates(body)
         case "caption":
             // (the foot is a caption, not a page: a line or two)
             let title = String(((body["title"] as? String) ?? "").prefix(120)), text = String(((body["text"] as? String) ?? "").prefix(280))
-            onEvent?(.caption(title.isEmpty && text.isEmpty ? nil : StageCaption(title: title, text: text)))
+            let article = wikipedia[(body["wikipedia"] as? String).map { String($0.prefix(200)) }]
+            onEvent?(.caption(title.isEmpty && text.isEmpty ? nil : StageCaption(title: title, text: text, article: article)))
         case "globe":
             onEvent?(.globe(historical: (body["historical"] as? Bool) ?? false, still: (body["still"] as? Bool) ?? false,
                             maxZoom: Self.number(body["maxZoom"])))
         case "panel":
             if (body["op"] as? String) == "show" {
-                onEvent?(.panelShow(PackPanel(pack.id, (body["content"] as? [String: Any]) ?? [:])))
+                onEvent?(.panelShow(PackPanel(pack.id, (body["content"] as? [String: Any]) ?? [:], index: wikipedia)))
             } else {
                 onEvent?(.panelHide)
             }
@@ -341,8 +361,11 @@ final class PackScript {
 
     /// A picture of the pack (for geography symbols, sprites and images).
     func picture(_ path: String) -> UIImage? {
-        guard PackRules.isSafePath(path) else { return nil }
-        return UIImage(contentsOfFile: pack.root.appending(path: path).path(percentEncoded: false))
+        if let known = pictures[path] { return known }
+        guard PackRules.isSafePath(path), let image = UIImage(contentsOfFile: pack.root.appending(path: path).path(percentEncoded: false)) else { return nil }
+        // (a pack's pictures are bounded by its size; they go when it stops)
+        pictures[path] = image
+        return image
     }
 
     private func timer(_ body: [String: Any]) {
@@ -423,7 +446,18 @@ final class PackScript {
                 case let b as Bool where b == false: loop = .once
                 default: loop = .repeat
                 }
-                spec.path = GlobeMarker.Path(points: points, seconds: max(0.1, Self.number(p["seconds"]) ?? 30), loop: loop)
+                // a dated way (runtime 5): one date for each place, rising; the stage's date moves it
+                var dates: [Double]?
+                if let given = p["dates"] as? [Any] {
+                    let d = given.compactMap(Self.number)
+                    guard d.count == given.count, d.count == points.count, (p["coordinates"] as? [Any])?.count == points.count,
+                          zip(d, d.dropFirst()).allSatisfy({ $1 >= $0 }) else {
+                        onEvent?(.log("error: sprite \(id): path.dates needs a number for each place, rising"))
+                        return
+                    }
+                    dates = d
+                }
+                spec.path = GlobeMarker.Path(points: points, seconds: max(0.1, Self.number(p["seconds"]) ?? 30), loop: loop, dates: dates)
             }
             for look in ((o["looks"] as? [Any]) ?? []).prefix(8) {
                 guard let l = look as? [String: Any] else { continue }
@@ -436,7 +470,8 @@ final class PackScript {
                 let size = (l["size"] as? [Any])?.compactMap(Self.number)
                 spec.looks.append(GlobeMarker.SpriteLook(
                     frames: images, fps: min(30, max(0.2, Self.number(l["fps"]) ?? 6)),
-                    size: CGSize(width: min(200, max(4, size?.first ?? 28)), height: min(200, max(4, size?.dropFirst().first ?? size?.first ?? 28))),
+                    // (up to 400 points a side, runtime 5: an animal drawn close)
+                    size: CGSize(width: min(400, max(4, size?.first ?? 28)), height: min(400, max(4, size?.dropFirst().first ?? size?.first ?? 28))),
                     minZoom: Self.number(l["minZoom"]) ?? 0, maxZoom: Self.number(l["maxZoom"]) ?? .infinity,
                     every: Self.number(l["every"]).map { max(0.2, $0) }, duration: Self.number(l["for"]).map { max(0.05, $0) },
                     face: (l["face"] as? Bool) ?? false))
@@ -464,6 +499,7 @@ final class PackScript {
             onEvent?(.timeShow(time, carry: (options["carry"] as? Bool) ?? false))
         case "set": if let v = Self.number(body["value"]) { onEvent?(.timeSet(v)) }
         case "play": onEvent?(.timePlay((body["playing"] as? Bool) ?? true))
+        case "speed": if let f = Self.number(body["speed"]) { onEvent?(.timeSpeed(min(100, max(0.001, f)))) }
         case "hide": onEvent?(.timeHide)
         default: break
         }

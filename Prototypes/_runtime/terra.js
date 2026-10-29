@@ -1,4 +1,5 @@
-// The playground's runtime, version 4 (3 with the stage shared: docs/runtime3.md › Many at once):
+// The playground's runtime, version 5 (4 with sprites on dated ways and the date's pace; 4 is 3 with
+// the stage shared: docs/runtime3.md › Many at once):
 // the whole API a pack's script gets from its host (docs/runtime3.md is the contract). The app runs it in JavaScriptCore before a pack's scripts
 // (App/TerraIncognita/Playground/PackScript.swift), and so does the desktop preview in a browser
 // (tools/playground/harness/): a pack never includes it itself.
@@ -99,11 +100,12 @@
   }
 
   var terra = {
-    runtime: 4,
+    runtime: 5,
     /** { id, revision, origin: 'bundled' | 'downloaded' | 'preview' } */
     pack: boot.pack || { id: 'preview', revision: 0, origin: 'preview' },
-    /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded) } */
-    settings: Object.assign({ reduceMotion: false, textScale: 1, active: true }, boot.settings || {}),
+    /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded),
+        wikipedia (the reader wants Wikipedia's words in place of the atlas's: keep your own lines to data) } */
+    settings: Object.assign({ reduceMotion: false, textScale: 1, active: true, wikipedia: false }, boot.settings || {}),
     /** True while this is the experience in front, the one the reader is with (runtime 4: several run at
         once; the front one's date, caption, scheme and flights are the globe's). */
     focus: boot.focus !== false,
@@ -166,22 +168,26 @@
     geo: layerAPI('geo'),
     /** Pictures lying on the globe: set(id, { image, bounds: [w, s, e, n], opacity, minZoom, maxZoom, fade }). */
     images: layerAPI('image'),
-    /** Things that live and move on the globe: set(id, { at | path, looks, label, touchable }). */
+    /** Things that live and move on the globe: set(id, { at | path, looks, label, touchable }); a path with
+        dates (runtime 5) is moved by the globe's date. */
     sprites: layerAPI('sprite'),
-    /** 'touchables' (drags that begin on a touchable thing are the pack's) or 'one-finger' (all one-finger drags). */
+    /** 'touchables' (drags that begin on a touchable thing are the pack's), 'one-finger' (all one-finger drags), or
+        'hold' (a drag turns the globe; a finger that rests a moment first, then moves, is the pack's). */
     touch: {
       scheme: function (scheme) { send({ type: 'touch', op: 'scheme', scheme: String(scheme || 'touchables') }); }
     },
-    /** The globe's date at the foot of the screen. */
+    /** The globe's date at the foot of the screen (show: unit, min, max or a pace (runtime 5), value, ticks, playable). */
     time: {
       show: function (options) { send({ type: 'time', op: 'show', options: options || {} }); },
       set: function (value) { send({ type: 'time', op: 'set', value: +value }); },
       play: function (playing) { send({ type: 'time', op: 'play', playing: playing !== false }); },
+      /** How fast playback runs, 1 as written (runtime 5): slower as the reader comes close, say. */
+      speed: function (factor) { send({ type: 'time', op: 'speed', speed: +factor }); },
       hide: function () { send({ type: 'time', op: 'hide' }); }
     },
     /** The words at the foot: what this is (title), then a line or two (text). */
     caption: {
-      set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '' }); }
+      set: function (c) { send({ type: 'caption', title: (c && c.title) || '', text: (c && c.text) || '', wikipedia: (c && c.wikipedia) || '' }); }
     },
     /** { historical: hide today's borders and names, still: no idle turn, maxZoom: deeper close views (8–32) } */
     globe: {

@@ -47,12 +47,25 @@ Keep design discussions and plans in that private repository.
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
+    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
     `tools/packart/render.cjs <sheet.js> <pack dir>` draws a sheet of canvas drawings (sprite frames,
     doorways, pictures for the globe) with headless Chromium at three pixels a point, and
     `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
     plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
     its first minute can be seen without a Mac.
+- **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
+  clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
+  itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or
+  its card (title, description, two sentences, "Read on Wikipedia ↗", CC BY-SA 4.0) where the
+  paragraph was; a tip (one sentence, what to touch) stays, a paragraph with no article goes, and the
+  sources go too: only Wikipedia's words, the names, the dates and the tips remain. `Words` is the one view every prose site goes through
+  (`WikipediaCard`, `WordsRule.isTip`); a chosen country's caption says what Wikipedia says of it. The
+  words are bundled, never fetched: `Wikipedia.json` (every country, the experiences' subjects) and
+  each pack's `wikipedia.json`, built by `tools/wikipedia/build.py` from the keys the code names
+  (`wikipedia: "Title"`; `tools/wikipedia/articles.txt` adds the rest) and checked complete by
+  `ci/check_wikipedia.py`. Packs: `docs/runtime3.md` › Wikipedia's words. Debug: `-wikipedia-words on|off`
+  holds the switch unremembered.
 - **The quiet globe** (`App/TerraIncognita/Quiet/`, four native prototypes, each a rule the plain globe
   takes while it runs and gives back when it ends; they run together; painting-company row 174):
   `quiet-names`, names on demand (`GlobeView.quietNames`: the one or two greatest features in view by
@@ -127,6 +140,12 @@ Keep design discussions and plans in that private repository.
   thousand years long, from a qvevri in Georgia across the world as the years play; `tools/vine/`).
   They replaced Whale and Desert, the Indian Ocean encounter, The sea between, Sounding the deep and
   Borders on old maps, which are in `main`'s history before 4531d6c.
+- **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
+  move across the globe with its date, from North America north across Beringia to Asia, Europe and
+  Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
+  reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
+  `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
+  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters); never hand-edit their output.
 - **The camelid sequence** (`App/TerraIncognita/Camelid/`, the `camelid` prototype): the illustrated camel in Arabia opens
   an authored camera sequence on the playground's one globe, as a lens, in the globe's own style; the
   globe answers to `camelidGlobe` while it is open. `CamelidStory` holds playback state;
@@ -175,15 +194,21 @@ Keep design discussions and plans in that private repository.
 - **The other studies**: the river study **A gathering of
   water** (`Prototypes/gathering-of-water/`, a runtime-3 pack: South America's rivers, touchable, each
   traced to the sea), built by `tools/water/build_pack.py` from the former web study's data in
-  `Water/` (no longer in the app; `docs/water-engineering.md`).
+  `Water/` (no longer in the app; `docs/water-engineering.md`). Its sibling **A gathering of water,
+  alive** (`Prototypes/gathering-of-water-alive/`) is the same network with the water running: the
+  `hold` scheme (a rest, then a draw, lights many at once; a drag always turns), `flow` on what is lit,
+  the ways into the sea from the month's currents, a drawn boto close in. Its data by
+  `tools/water/build_alive.py`, the boto by `tools/water/boto.cjs`; `tools/water/alive_check.cjs`
+  drives it in the preview, `RiverPackTests` on the device.
 - **Playground checks** (`App/TerraIncognitaUITests/PlaygroundTests.swift`, `RemotePackTests.swift`,
   `GlobePackTests.swift`, helpers in `PlaygroundSupport.swift`): the plain launch, two dissimilar
   prototypes in succession with the live counts back to the plain globe's, three entered by touching
   their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
-  offline, and the packs with a date drawn by the globe (the lead line and the vine: their date moved,
-  nothing left after).
+  offline, the packs with a date drawn by the globe (the lead line and the vine: their date moved,
+  nothing left after), the herds' animals moving with the date (runtime 5), and the
+  `hold` scheme (`RiverPackTests.swift`: a drag turns, a rest then a draw lights the rivers).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by

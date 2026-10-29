@@ -3,7 +3,8 @@ name: CI
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
-#          ci/check_globe.py), the tools' syntax, and every Metal shader compiled as C++
+#          ci/check_globe.py), Wikipedia's words all bundled (ci/check_wikipedia.py), the tools' syntax,
+#          and every Metal shader compiled as C++
 #          (tools/metal/metal.py check: seconds, where a macOS build waits on a runner)
 #   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
 #          and the plates checked byte for byte
@@ -87,6 +88,7 @@ jobs:
           rc=0
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 ci/check_wikipedia.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the packs' art sheets and builders (tools/packart and each pack's tools/<name>/)
           for f in tools/packart/*.cjs tools/packart/*.js tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
@@ -99,7 +101,7 @@ jobs:
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           for f in tools/ocean/*.cjs tools/ocean/web/*.js tools/clouds/*.cjs tools/clouds/web/*.js tools/metal/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/playground/*.py tools/whales/*.py tools/beacons/*.py tools/leadline/*.py tools/lowsea/*.py tools/vine/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/playground/*.py tools/whales/*.py tools/beacons/*.py tools/leadline/*.py tools/lowsea/*.py tools/vine/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py tools/wikipedia/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the Metal shaders compiled as C++ by clang, in seconds (tools/metal/README.md), and the
           # stand-in's own tests (numpy for its textures)
           python3 tools/metal/metal.py check 2>&1 | tee -a out/plates-check.log || rc=1
@@ -190,10 +192,10 @@ jobs:
           if [ "$GITHUB_REF_NAME" != main ]; then
             case "${{ inputs.interaction_suite }}" in
               leaf) export UI_TEST_TARGET=TerraIncognitaUITests/MovedPackTests ;;
-              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests" ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests TerraIncognitaUITests/RiverPackTests" ;;
             esac
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
-              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests"
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests TerraIncognitaUITests/RiverPackTests"
             fi
             if [ -n "${{ steps.fast.outputs.tests }}" ]; then export UI_TEST_TARGET="${{ steps.fast.outputs.tests }}"; fi
           fi

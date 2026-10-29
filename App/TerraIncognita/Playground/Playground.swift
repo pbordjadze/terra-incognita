@@ -137,7 +137,9 @@ final class Playground {
             if entry != .doorway, let anchor = prototype.anchor { stage.fly(to: anchor) }
             prototype.start(stage)
             // a native prototype on the globe says at the foot what it is and what to touch
-            if prototype.made == .native, prototype.doorway != nil { stage.describe(title: prototype.title, text: prototype.summary) }
+            if prototype.made == .native, prototype.doorway != nil {
+                stage.describe(title: prototype.title, text: prototype.summary, wikipedia: prototype.wikipedia)
+            }
             refreshDoorways()
             applyGlobeState()
         }

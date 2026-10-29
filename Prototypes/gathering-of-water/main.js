@@ -12,7 +12,8 @@
   var IDLE = {
     title: 'A gathering of water',
     text: 'The rivers of South America, each line running on to the coast or to an inland ending. ' +
-          'Touch one to follow where its water goes, and to see what gathers there.'
+          'Touch one to follow where its water goes, and to see what gathers there.',
+    wikipedia: 'Drainage basin'   // (the article behind the words, for the reader who wants Wikipedia's; wikipedia.json)
   };
 
   var data = terra.readJSON('network.json'), places = terra.readJSON('places.json'), about = terra.readJSON('about.json');
@@ -326,7 +327,8 @@
       text += system ? ' The whole ' + system + ' system, as mapped, drains ' + area(out.area) + '.'
                      : ' Its whole basin, as mapped, covers ' + area(out.area) + '.';
     }
-    return { title: title, text: text };
+    // (a system's name is also its article's key in wikipedia.json: Amazon, Orinoco, Paraná…)
+    return { title: title, text: text, wikipedia: system || '' };
   }
 
   var said = '';

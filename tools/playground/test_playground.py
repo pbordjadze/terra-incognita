@@ -216,7 +216,7 @@ class Validate(TempCase):
             (drop('title'), '"title"'), (put('title', ''), '"title"'), (put('title', 'x' * 61), '"title"'),
             (put('title', '   '), '"title"'), (put('title', 3), '"title"'),
             (drop('summary'), '"summary"'), (put('summary', 'x' * 201), '"summary"'), (put('summary', ''), '"summary"'),
-            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 5), '"runtime" must be 3 or 4'),
+            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 6), '"runtime" must be 3 to 5'),
             (put('runtime', 0), '"runtime" must be 3'), (put('runtime', '3'), '"runtime" must be 3'),
             (put('runtime', True), '"runtime" must be 3'), (put('runtime', 3.0), '"runtime" must be 3'),
             (drop('presentation'), '"presentation" must be "globe"'), (put('presentation', 'both'), '"presentation" must be "globe"'),
