@@ -145,7 +145,7 @@ final class CamelidEncounterTests: XCTestCase {
         XCTAssertTrue(app.buttons["camelidClose"].waitForExistence(timeout: 10))
         app.buttons["camelidClose"].tap()
         openWorkbench(in: app)
-        XCTAssertTrue(workbenchItem("ocean", in: app).exists, "The independent encounter must remain available")
+        XCTAssertTrue(workbenchItem("sea-of-whales", in: app).exists, "The other experiences remain available")
         app.buttons["workbenchClose"].firstMatch.tap()
         endPrototype(in: app)
     }
