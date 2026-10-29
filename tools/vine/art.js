@@ -133,8 +133,22 @@
       and the turned earth round it. (The vine's first stem grows out of this mouth.) */
   function qvevri(ctx, w, h, options) {
     options = options || {};
-    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.5;
+    const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.34;
     const r = B.rand(21);
+    // the valley's ground round it, wide and faint: trodden earth, a scatter of stones, tufts of grass
+    const gg = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, Math.min(w, h) * 0.5);
+    gg.addColorStop(0, B.rgba('#8E7650', 0.22)); gg.addColorStop(0.6, B.rgba('#8E7650', 0.1)); gg.addColorStop(1, B.rgba('#8E7650', 0));
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, Math.min(w, h) * 0.5, 0, 6.2832); ctx.fill();
+    for (let i = 0; i < 60; i++) {
+      const a = r() * 6.2832, d = R * (1.05 + r() * 0.42), sz = R * (0.012 + r() * 0.03);
+      ctx.fillStyle = B.rgba(r() < 0.5 ? '#A89878' : '#6E5E44', 0.35 + r() * 0.3);
+      ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * d, cy + Math.sin(a) * d, sz * 1.5, sz, r() * 3, 0, 6.2832); ctx.fill();
+    }
+    ctx.strokeStyle = B.rgba('#6E8A3A', 0.55); ctx.lineWidth = Math.max(0.4, R * 0.012); ctx.lineCap = 'round';
+    for (let i = 0; i < 40; i++) {
+      const a = r() * 6.2832, d = R * (1.1 + r() * 0.38), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d, len = R * (0.05 + r() * 0.06);
+      for (let b = -1; b <= 1; b++) { ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + b * len * 0.4, y - len * 0.6, x + b * len * 0.7, y - len); ctx.stroke(); }
+    }
     // the turned earth round the mouth, soft at its edge, and the cracks of dried clay
     const eg = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 0.92);
     eg.addColorStop(0, B.rgba(EARTH, 0.42)); eg.addColorStop(0.6, B.rgba(EARTH, 0.14)); eg.addColorStop(1, B.rgba(EARTH, 0));
@@ -244,7 +258,7 @@
   P.push({ name: 'grapes-green', width: 20, height: 30, draw(ctx, w, h) { grapes(ctx, w, h, GRAPE_GREEN, 32); } });
   P.push({ name: 'tendril', width: 34, height: 30, frames: 8, draw(ctx, w, h, i, n) { tendril(ctx, w, h, i / n); } });
   // (a picture lying on the globe, so it grows as the reader comes close: drawn large)
-  P.push({ name: 'qvevri', width: 256, height: 256, draw(ctx, w, h) { qvevri(ctx, w, h); } });
+  P.push({ name: 'qvevri', width: 384, height: 384, scale: 2, draw(ctx, w, h) { qvevri(ctx, w, h); } });
   P.push({ name: 'doorway', width: 30, height: 32, draw: doorway });
   P.push({ name: 'spark', width: 24, height: 24, draw: spark });
   P.push({ name: 'pulse', width: 32, height: 32, frames: 6, draw(ctx, w, h, i, n) { pulse(ctx, w, h, i / n); } });

@@ -664,7 +664,7 @@
       L.bloom = clamp(num(options.bloom, 0.6), 0, 3);
       const th = options.thickens;
       if (th != null) {
-        if (th && typeof th === 'object' && Number.isFinite(th.to) && Number.isFinite(th.over) && th.over > 0) L.thickens = { to: clamp(th.to, 0.3, 12), over: th.over };
+        if (th && typeof th === 'object' && Number.isFinite(th.to) && Number.isFinite(th.over) && th.over > 0) L.thickens = { to: clamp(th.to, 0.3, 12), over: th.over, grain: clamp(num(th.grain, 0), 0, 0.6) };
         else hostWarn(where + ': thickens is { to: <reading points>, over: <date units> }');
       }
     } else if (options.thickens != null || options.bloom != null) hostWarn(where + ': thickens and bloom belong to a dated layer (dated: true)');
@@ -835,7 +835,9 @@
       for (let i = 0; i < r.n; i++) {
         if (r.vz[i] > 0) {
           const age = Number.isFinite(ds[i]) ? clamp((date - ds[i]) / th.over, 0, 1) : 1;
-          run.push([c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, (young + (th.to - young) * age) * k / 2]);
+          // (the grain: a steady pseudo-random swell at each place, as GeoLayers.swift's)
+          const swell = th.grain > 0 ? 1 + th.grain * Math.sin(i * 2.399 + r.w[3 * i] * 37 + r.w[3 * i + 2] * 23) : 1;
+          run.push([c.cx + r.vx[i] * c.radius, c.cy - r.vy[i] * c.radius, (young + (th.to - young) * age * 1) * swell * k / 2]);
         } else { lay(run); run = []; }
       }
       lay(run);

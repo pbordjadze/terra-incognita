@@ -31,6 +31,9 @@ final class GeoLayerView: UIView {
     struct Thickens: Equatable {
         var to: Double
         var over: Double
+        /// How much the width varies along the way (0 to 0.6 of itself), place by place, like bark: a
+        /// hash of the place, so it is steady as the camera moves and the date plays.
+        var grain = 0.0
     }
 
     struct Layer {
@@ -571,11 +574,13 @@ final class GeoLayerView: UIView {
             for (pi, whole) in s.parts.enumerated() where whole.count > 1 {
                 guard let grown = Self.grown(whole, dates: s.dates?[pi], at: date) else { continue }
                 var run: [(CGPoint, CGFloat)] = []
-                for (v, when) in zip(grown.points, grown.dates) {
+                for (i, (v, when)) in zip(grown.points, grown.dates).enumerated() {
                     if let q = p.point(v, facing: 0) {
                         let age = when.isFinite ? min(1, max(0, (date - when) / max(1e-9, thickens.over))) : 1
+                        // (the grain: a steady pseudo-random swell at each place along the way)
+                        let swell = thickens.grain > 0 ? 1 + thickens.grain * sin(Double(i) * 2.399 + v.x * 37 + v.z * 23) : 1
                         // (the ribbon's edges are each half the width from the line)
-                        run.append((q, CGFloat(young + (thickens.to - young) * age) * k / 2))
+                        run.append((q, CGFloat((young + (thickens.to - young) * age) * swell) * k / 2))
                     } else {
                         lay(run)
                         run = []
@@ -847,7 +852,7 @@ final class GeoLayerView: UIView {
     private static func thickensOption(_ value: Any?) -> Thickens? {
         func number(_ x: Any?) -> Double? { (x as? NSNumber).map(\.doubleValue).flatMap { $0.isFinite ? $0 : nil } }
         guard let o = value as? [String: Any], let to = number(o["to"]), let over = number(o["over"]), over > 0 else { return nil }
-        return Thickens(to: min(12, max(0.3, to)), over: over)
+        return Thickens(to: min(12, max(0.3, to)), over: over, grain: min(0.6, max(0, number(o["grain"]) ?? 0)))
     }
 
     /// A layer's `flow`: true (the defaults) or { speed, dash, gap, color, width }; nil without one.

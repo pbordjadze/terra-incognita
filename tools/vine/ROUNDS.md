@@ -187,3 +187,15 @@ those are fixed; what remains is a tool's reach, not a round's.
 - Ways routed over terrain: a builder that lays a way between two places along valleys, coasts or rivers
   from the globe's own terrain (as the beacons' sight lines read it), so a vine's or a road's way is the
   land's and not a chord.
+
+## Round 8 · a plant after all: strands, grain, the ground round the mouth (October 30)
+
+The Interviewer, rightly: the worst complaint was half-answered, not overruled. So: two thinner stems
+twine round every trunk's land runs (built from the way, offset either side by a sine of the distance
+along it, crossing the trunk twice a wave, dated as the trunk is), so close in the vine is a braid of
+stems and not one line; `grain` on dated borders in the runtime (`thickens: { to, over, grain }`): the
+ribbon swells and narrows place by place along the way like bark, steadily under the camera and the
+date (Swift, the preview, the contract, the catalog); the qvevri's picture widened to the valley's
+ground round it (trodden earth, stones, tufts of grass) with the rim a fifth of the screen at the
+opening; the picture drawn at two pixels a point (it lies on the globe). Validated in the preview's own
+check (96 of 96).

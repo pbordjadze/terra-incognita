@@ -13,6 +13,8 @@ the date has come and the script sets each layer once:
   roads the vine is known to have travelled, not the route of any one vine.
 - `twigs`: short ways from the nearest trunk to the world's wine regions, each dated to the earliest
   planting the record gives for the region; they grow out in the years before it.
+- `strands`: two thinner stems that twine round each trunk's land runs, offset either side by a sine of
+  the distance along the way and crossing the trunk, dated as the trunk is.
 - `stems` and `voyages`: every branch and twig cut into runs over land and over sea by the globe's own
   land (Globe/geo.png's coast sign, as the app's shader reads it): on land the vine is a stem that
   thickens with age; over the sea it is a voyage, a fine dashed line (the vine was carried), with the
@@ -370,7 +372,7 @@ def main():
         branches.append({'name': name, 'way': way, 'from': [b, i], 'twig': True})
 
     # stems and voyages: the runs over land and sea, as dated line features
-    stems, voyages, leaves, clusters, tips = [], [], [], [], []
+    stems, voyages, leaves, clusters, tips, strands = [], [], [], [], [], []
     # where the vine grew, not only passed: the named places; a leaf opens only within reach of one, so
     # the way through a desert or along a coast it was carried past is a bare stem
     grew = [(p[0], p[1]) for b in branches for p in b['way'] if len(p) > 3 and p[3]]
@@ -384,6 +386,21 @@ def main():
         for kind, s, e in runs(way):
             feature = {'branch': bi, 'start': s, 'coordinates': [[p[0], p[1], p[2]] for p in way[s:e]]}
             (stems if kind == 'land' else voyages).append(feature)
+            if kind == 'land' and not br['twig'] and e - s >= 4:
+                # two thinner stems twine round the trunk: each offset to one side by a sine of the distance
+                # along the way (in degrees of latitude, a few tens of km), crossing the trunk twice a wave,
+                # dated as the trunk is, so they grow with it
+                for side in (1, -1):
+                    pts, dist = [], 0.0
+                    for i in range(s, e):
+                        if i > s:
+                            dist += arc((way[i - 1][0], way[i - 1][1]), (way[i][0], way[i][1])) * KM
+                        a, b = way[max(s, i - 1)], way[min(e - 1, i + 1)]
+                        dx, dy = b[0] - a[0], b[1] - a[1]
+                        L = math.hypot(dx, dy) or 1
+                        off = side * 0.16 * math.sin(dist / 140.0 + bi)
+                        pts.append([round(way[i][0] + (-dy / L) * off / max(0.2, math.cos(way[i][1] * D)), 3), round(way[i][1] + (dx / L) * off, 3), way[i][2]])
+                    strands.append({'branch': bi, 'coordinates': pts})
             if kind == 'land':
                 # leaves along the land at uneven gaps (55 to 125 km), either side, a little off the stem,
                 # dated a little after the stem passed (they open as the tip moves on)
@@ -428,7 +445,7 @@ def main():
     data = {
         'origin': {'lon': ORIGIN[0], 'lat': ORIGIN[1], 'year': ORIGIN[2], 'name': ORIGIN[3]},
         'branches': [{'name': b['name'], 'from': b['from'], 'twig': b['twig'], 'way': [p[:3] for p in b['way']]} for b in branches],
-        'stems': stems, 'voyages': voyages, 'leaves': leaves, 'clusters': clusters, 'tips': tips, 'ships': ships,
+        'stems': stems, 'voyages': voyages, 'strands': strands, 'leaves': leaves, 'clusters': clusters, 'tips': tips, 'ships': ships,
         'ticks': ticks, 'pace': pace, 'today': 2026,
     }
     OUT.write_text('/* The vine, dated for the globe (runtime 6): its trunks and twigs as ways with a year at each point\n'

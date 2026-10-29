@@ -40,7 +40,7 @@ preview's mirror `tools/playground/harness/`.
 | Geography | GeoJSON drawn by the globe, constant width at any zoom | `terra.geo.set(id, features, { style })` | every current pack but the herds | 100,000 vertices, 64 layers, 400 places a layer |
 | ↳ `border` | lines; `lineWidth` in reading points | `style: 'border'` | fires, both gatherings, lead line, low sea, vine | |
 | ↳ dated | every place's third number is its date: a line drawn as far as the stage's date has come, every frame, with a tip; a point once the date has passed it; touch reaches only what is drawn | `dated: true` | vine | runtime 6; nothing drawn with no date shown |
-| ↳ `thickens`, `bloom` | a dated border's width grows with each place's age (a ribbon, round-ended, its `flow` down the middle); a dated point grows in from its foot when the date reaches it | `thickens: { to, over }`, `bloom: seconds` | vine | runtime 6; `thickens` on `border` only |
+| ↳ `thickens`, `bloom` | a dated border's width grows with each place's age (a ribbon, round-ended, its `flow` down the middle; `grain` swells it place by place like bark); a dated point grows in from its foot when the date reaches it | `thickens: { to, over, grain }`, `bloom: seconds` | vine | runtime 6; `thickens` on `border` only |
 | ↳ `area` | filled shapes | `style: 'area'` | lead line, low sea | |
 | ↳ `dot`, `ring` | points | `style: 'dot'` / `'ring'` | both gatherings, lead line (dot); both gatherings, hello, lead line, monsoon (ring) | |
 | ↳ `label` | names on a halo, earlier wins room | `style: 'label'` | both gatherings | |

@@ -150,10 +150,11 @@ drags; a point (`dot`, `ring`, `symbol`, `label`, `sounding`) once the date has 
 VoiceOver reach only what is drawn. With no date shown, nothing dated is drawn. A pack sets the whole
 history once and spends nothing a frame; it never regrows a layer on `time` events.
 
-Two things a dated layer may do besides: **`thickens: { to, over }`** on a `border` makes the line's
+Two things a dated layer may do besides: **`thickens: { to, over, grain }`** on a `border` makes the line's
 width grow with each place's age, from `lineWidth` where the date has just passed to `to` reading points
 once a place is `over` date units old (a stem thickening behind its tip; the line is drawn as a ribbon
-round its way, round at both ends, and its `flow` runs along the middle); **`bloom`** (seconds, 0.6 by
+round its way, round at both ends, and its `flow` runs along the middle), and `grain` (0 to 0.6, none by
+default) swells and narrows the ribbon place by place along the way, steadily, like bark; **`bloom`** (seconds, 0.6 by
 default, 0 for none) makes a point grow in from its foot when the date reaches it (a leaf opening). A
 layer set when the date is already past its points doesn't bloom them all at once. Ages and dates are
 in the date's unit, so a `day` pack thickens over days.

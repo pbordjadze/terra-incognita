@@ -15,8 +15,8 @@
   'use strict';
   var V = window.VINE, D = Math.PI / 180;
   var FIRST = V.origin.year, LAST = V.today;
-  var STEM = '#5C4530', EDGE = '#2E2014', VOYAGE = '#7A5A33', TRACE = '#E2A94BA8', GLOW = '#F2C86A38', LIGHT = '#FFF0C8A0';
-  var QVEVRI_DEG = 0.95;                      // the picture of the qvevri's mouth, in degrees of latitude
+  var STEM = '#5C4530', EDGE = '#2E2014', STRAND = '#7A5E3F', VOYAGE = '#7A5A33', TRACE = '#E2A94BA8', GLOW = '#F2C86A38', LIGHT = '#FFF0C8A0';
+  var QVEVRI_DEG = 1.9;                      // the picture (the rim is two fifths of it, the valley's ground round it)                      // the picture of the qvevri's mouth, in degrees of latitude
 
   // ---- scale: what shows depends on how many points a degree is on this screen, not the zoom alone ----
   var R1 = 489;                               // the globe's radius at zoom 1 (about 176 on a phone, 489 on the 13" iPad)
@@ -67,9 +67,13 @@
     terra.geo.set('stems-edge-near', stems, { style: 'border', color: EDGE, lineWidth: 2.9, dated: true, thickens: { to: 8.6, over: 5000 }, minZoom: NEAR });
     // (a stem is full-grown after five thousand years: the first trunks are the thick ones, Rome's half
     // their width, the colonies' shoots thin)
-    terra.geo.set('stems-far', stems, { style: 'border', color: STEM, lineWidth: 0.7, dated: true, thickens: { to: 2.6, over: 5000 }, touchable: true, maxZoom: MID });
-    terra.geo.set('stems', stems, { style: 'border', color: STEM, lineWidth: 0.7, dated: true, thickens: { to: 3.4, over: 5000 }, touchable: true, minZoom: MID, maxZoom: NEAR });
-    terra.geo.set('stems-near', stems, { style: 'border', color: STEM, lineWidth: 1.7, dated: true, thickens: { to: 6.5, over: 5000 }, touchable: true, minZoom: NEAR });
+    terra.geo.set('stems-far', stems, { style: 'border', color: STEM, lineWidth: 0.7, dated: true, thickens: { to: 2.6, over: 5000, grain: 0.15 }, touchable: true, maxZoom: MID });
+    terra.geo.set('stems', stems, { style: 'border', color: STEM, lineWidth: 0.7, dated: true, thickens: { to: 3.4, over: 5000, grain: 0.3 }, touchable: true, minZoom: MID, maxZoom: NEAR });
+    terra.geo.set('stems-near', stems, { style: 'border', color: STEM, lineWidth: 1.7, dated: true, thickens: { to: 6.5, over: 5000, grain: 0.4 }, touchable: true, minZoom: NEAR });
+    // the strands: two thinner stems twining round each trunk, over the trunk, from the middle distance in
+    var strands = V.strands.map(function (f) { return line(f.coordinates); });
+    terra.geo.set('strands', strands, { style: 'border', color: STRAND, lineWidth: 0.5, dated: true, thickens: { to: 1.3, over: 5000, grain: 0.3 }, minZoom: MID, maxZoom: NEAR });
+    terra.geo.set('strands-near', strands, { style: 'border', color: STRAND, lineWidth: 0.9, dated: true, thickens: { to: 2.6, over: 5000, grain: 0.4 }, minZoom: NEAR });
     // the leaves: by kind and hemisphere (each keeps its own season), large close in, small from the middle
     // distance, a tint from afar
     // (a winter hemisphere keeps one leaf in three, dry)
@@ -190,7 +194,7 @@
     if (t.phase !== 'tap') return;
     if (!t.target) {
       // a tap on the qvevri's mouth begins again; any other tap on the globe is nothing
-      if (t.lon != null && arc([t.lon, t.lat], [V.origin.lon, V.origin.lat]) / D <= QVEVRI_DEG * 0.45) restart();
+      if (t.lon != null && arc([t.lon, t.lat], [V.origin.lon, V.origin.lat]) / D <= QVEVRI_DEG * 0.3) restart();
       return;
     }
     if (!t.target.layer) return;
@@ -255,7 +259,7 @@
   var still = terra.settings.reduceMotion;
   // close: the qvevri's mouth a quarter of the screen's width (an anchor stops at 8, so the script flies)
   var width0 = terra.camera && terra.camera.width > 0 ? terra.camera.width : 1032;
-  var closeZoom = Math.min(32, zoomFor(width0 * 0.25 / QVEVRI_DEG));
+  var closeZoom = Math.min(32, zoomFor(width0 * 0.25 / (QVEVRI_DEG * 0.41)));
   terra.time.show({ unit: 'year', pace: V.pace, value: FIRST, ticks: V.ticks, playable: true, playing: false, carry: false });
   // (a flight within a second of the reader's touch is dropped: the dive to the qvevri waits a beat after
   // the doorway's tap, which is also the right pause)
