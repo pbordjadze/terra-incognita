@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated": "2026-10-29T14:28:37-04:00",
+  "generated": "2026-10-29T14:30:03-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
@@ -67,6 +67,292 @@
       ],
       "published": "2026-10-29T06:48:23-04:00",
       "retired": true
+    },
+    {
+      "id": "fires-across-the-sea",
+      "revision": 1,
+      "runtime": 4,
+      "title": "Fires across the sea",
+      "summary": "A pyre on every peak of the Aegean. Touch one: every peak that can see it lights its own, and the fire runs from island to island, as the news of Troy reached Argos in a night.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "1c06dee3a979438f1fba9869181d292c12a5c3bf9d0100d0b8d389d9f3c08ed2",
+      "path": "packs/fires-across-the-sea/r1/",
+      "bytes": 715433,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 2310,
+          "sha256": "92b8acdb8f8412179188f22fbb7724fd1f13eec219b1e4317ba824c82a1ec63c"
+        },
+        {
+          "path": "data.js",
+          "bytes": 6300,
+          "sha256": "3c7d9834cdde2b5ddad27755df1cc9fc77196a3c70464045eb45d6441dd0c43d"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 10113,
+          "sha256": "b0aed95672a5ca239795a9e6dc4224fea3398ed510b52fe561439783975564f7"
+        },
+        {
+          "path": "ember-1.png",
+          "bytes": 2995,
+          "sha256": "81b6e220e901d2ffbc751fecf2bdfea01b6f6641d313a94524cf269643b9c1f9"
+        },
+        {
+          "path": "ember-2.png",
+          "bytes": 2953,
+          "sha256": "47eacfe9c6d14f7076addbe5fa01f9f3deb5754537d1ebdcd24b9d29fcb6141f"
+        },
+        {
+          "path": "ember-3.png",
+          "bytes": 2953,
+          "sha256": "47eacfe9c6d14f7076addbe5fa01f9f3deb5754537d1ebdcd24b9d29fcb6141f"
+        },
+        {
+          "path": "ember-4.png",
+          "bytes": 2995,
+          "sha256": "81b6e220e901d2ffbc751fecf2bdfea01b6f6641d313a94524cf269643b9c1f9"
+        },
+        {
+          "path": "ember-5.png",
+          "bytes": 3014,
+          "sha256": "1bb432700a33d27b5df27e1d53956dc1c5cc57c82950548046446dc8cb9265e8"
+        },
+        {
+          "path": "ember-6.png",
+          "bytes": 3014,
+          "sha256": "1bb432700a33d27b5df27e1d53956dc1c5cc57c82950548046446dc8cb9265e8"
+        },
+        {
+          "path": "fire-1.png",
+          "bytes": 26853,
+          "sha256": "6502704a6c2c56f73be7a68f0b7a76b16ca69b8f8ae934affb42fb26e0b915f9"
+        },
+        {
+          "path": "fire-10.png",
+          "bytes": 28686,
+          "sha256": "6fc98ba812bec5c04ca62d585985f9105054ed07de98f6f6162db2305c19fa96"
+        },
+        {
+          "path": "fire-11.png",
+          "bytes": 27954,
+          "sha256": "616146d33acd04f1b50ba5c04791a389a610ba611d1d5fbb6809aab91f8914df"
+        },
+        {
+          "path": "fire-12.png",
+          "bytes": 27473,
+          "sha256": "2d12f2dd0f2a7c6235304f9af759fa7a1c55d50f38107eb826cba66412c4f31b"
+        },
+        {
+          "path": "fire-2.png",
+          "bytes": 27130,
+          "sha256": "6b20a72d815ac3c029c5430a0eec5f8173796be0e1483be94e0248e3e335d9ae"
+        },
+        {
+          "path": "fire-3.png",
+          "bytes": 26987,
+          "sha256": "bceaa4df890b9fe286ef91876697f23f43ebe972db817d3f40e5ac6cb28c1396"
+        },
+        {
+          "path": "fire-4.png",
+          "bytes": 27298,
+          "sha256": "68806895975dd19838e49cb91ff7759888c25ead3183df4bd6b55d8a2967a027"
+        },
+        {
+          "path": "fire-5.png",
+          "bytes": 28135,
+          "sha256": "912ceed8a7a0ffcd308c3f46231a1a7f737a120f483ab373dc923bfcb708e15e"
+        },
+        {
+          "path": "fire-6.png",
+          "bytes": 27502,
+          "sha256": "cc601c4f99ce7d818197b25fba02140b318e3dfe60f84c41620ef686ce7b3005"
+        },
+        {
+          "path": "fire-7.png",
+          "bytes": 26907,
+          "sha256": "c70fb3a745582f9ccf3ccf35007f908ce641a02c9e67e598945cae01bb1f75bb"
+        },
+        {
+          "path": "fire-8.png",
+          "bytes": 26818,
+          "sha256": "d4a8814d1681b041f486748c855773af2d1e8c783825395995598a132af29974"
+        },
+        {
+          "path": "fire-9.png",
+          "bytes": 28574,
+          "sha256": "b58796ac5588e2a035e4b54d314ea16c609cadc96f9c3687b6eee4bc69761364"
+        },
+        {
+          "path": "fire-mid-1.png",
+          "bytes": 9320,
+          "sha256": "4880b5e8258142ecd06b3e7ac5d328118d279ecb22999337fa8b8f5f54c8de8c"
+        },
+        {
+          "path": "fire-mid-10.png",
+          "bytes": 9963,
+          "sha256": "93a80975d60e4bd762dd5d01bb6c6529ff181db34d5128a6c09e17c761668d48"
+        },
+        {
+          "path": "fire-mid-11.png",
+          "bytes": 9531,
+          "sha256": "8de72cb6fe39e5c6bd55a1c53826709dd06f5e4cef671006c0bb88c2c2c653ca"
+        },
+        {
+          "path": "fire-mid-12.png",
+          "bytes": 9570,
+          "sha256": "8d2e078c33b8f1f78d03b0389d923cb4a558b57ea2b2a2466bcf0758f183ccfa"
+        },
+        {
+          "path": "fire-mid-2.png",
+          "bytes": 9479,
+          "sha256": "94a617a21ce932695bc2b25e779392cd8d4bd0febc8ae79badac44c5b1956b35"
+        },
+        {
+          "path": "fire-mid-3.png",
+          "bytes": 9364,
+          "sha256": "45ae23d83b0a7b817a8ed880dcf786328c0d2713b7b4848a4c82c0a5bcf8b57f"
+        },
+        {
+          "path": "fire-mid-4.png",
+          "bytes": 9459,
+          "sha256": "d9b028466dde661efa6626d72fbce1319db134d42585aaad2ac985d3c5a4644d"
+        },
+        {
+          "path": "fire-mid-5.png",
+          "bytes": 9733,
+          "sha256": "b6097de92a5e42bd27891d39df5baee9f277f2de70c3385e3985fabe486d5813"
+        },
+        {
+          "path": "fire-mid-6.png",
+          "bytes": 9520,
+          "sha256": "2a8037cf130a447bfb140ab3940e7288d468ae23667477ebad0fb8f70aceb37d"
+        },
+        {
+          "path": "fire-mid-7.png",
+          "bytes": 9416,
+          "sha256": "64d991c34f1262c22933242ff7ab6168abcd9363160547a1f33616fb4e29b367"
+        },
+        {
+          "path": "fire-mid-8.png",
+          "bytes": 9353,
+          "sha256": "04d4f10559e3ad23df4023f303862b7bce5d9200da9988f8b4f0afba2395db2f"
+        },
+        {
+          "path": "fire-mid-9.png",
+          "bytes": 9674,
+          "sha256": "162f2f27cf2d09e665d5ffd7fd4272558012d4682d7737d9be8cf3aa1ccc252a"
+        },
+        {
+          "path": "fire-still-mid.png",
+          "bytes": 5949,
+          "sha256": "3001e8801df47fa20cf78f261ac99f5d5f9cc2c6423d5970a206d51bd51fa399"
+        },
+        {
+          "path": "fire-still.png",
+          "bytes": 16560,
+          "sha256": "8c7b63a3d8ca84e40fcd4b96c388811bda0cf3453d3b613843ce268288f4ff89"
+        },
+        {
+          "path": "main.js",
+          "bytes": 10691,
+          "sha256": "615cb4fdd383bbb96a63fabe8cb1c0c482937456a06190ddee6ce9e10f58e333"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 949,
+          "sha256": "debae27e13806b57ff2a8e162369eb162754282f7e051e6edf1f79de6288ce60"
+        },
+        {
+          "path": "pyre-mid.png",
+          "bytes": 1109,
+          "sha256": "3673c34cb04c65c14931a054c2567823e4ea714940a66a481b49bd1f7e93e4f9"
+        },
+        {
+          "path": "pyre.png",
+          "bytes": 2513,
+          "sha256": "601fdf46dd677e94f896018ff51ba2be8e124db0ebf038b95f724937b6b6a61d"
+        },
+        {
+          "path": "sight.js",
+          "bytes": 36361,
+          "sha256": "d39569a7700f26617cce8592bab6a0866c27a6b54e55d0e1b5b42d7d07f1b0b9"
+        },
+        {
+          "path": "smoke-1.png",
+          "bytes": 12477,
+          "sha256": "c8522ffa1989c8ba2b82c3bb19fdfcc808bcb0c01e977d2971cf0751c6f27a30"
+        },
+        {
+          "path": "smoke-10.png",
+          "bytes": 13405,
+          "sha256": "4857041d3a0f296f130b1e3a11f56fcbf1e81ee3b76d1ffabdb79d01bfac714e"
+        },
+        {
+          "path": "smoke-11.png",
+          "bytes": 13392,
+          "sha256": "c7ab6171adafac2816029091a1fe194b1d8ef2963b0f036ac44ea20b5459614b"
+        },
+        {
+          "path": "smoke-12.png",
+          "bytes": 13331,
+          "sha256": "09abade083cdb58870e49ff8311b0b584ea3120e15ab7c1d82a33f149664628c"
+        },
+        {
+          "path": "smoke-2.png",
+          "bytes": 13243,
+          "sha256": "eb368450f46960dc0f0143f1c1575e96bc9c93b8611dec33506dd2d4d094c56f"
+        },
+        {
+          "path": "smoke-3.png",
+          "bytes": 12631,
+          "sha256": "da196c3bf48c03bea8e675107da348e8814acfcc953ee45cdb6325c9cbd180d3"
+        },
+        {
+          "path": "smoke-4.png",
+          "bytes": 12615,
+          "sha256": "383139370ae26aa3d269c6d018ecf9f24bb11299f156dc3851c50276f8ae4c23"
+        },
+        {
+          "path": "smoke-5.png",
+          "bytes": 13007,
+          "sha256": "d76d0e3011ef1da902eff9434374da7d12323875652482be744a5f301e50eb5e"
+        },
+        {
+          "path": "smoke-6.png",
+          "bytes": 13253,
+          "sha256": "a51459feab51885ff18ed967d7b4d1d1761bc67589f59b1e1ac974e3488a2673"
+        },
+        {
+          "path": "smoke-7.png",
+          "bytes": 12815,
+          "sha256": "03da40f3e29e33048345e9b9368cbbe32d663417c9ee238743e709a344ee7f61"
+        },
+        {
+          "path": "smoke-8.png",
+          "bytes": 12206,
+          "sha256": "94864d0d5108ab3f971074f3ab7c37772821271a522494792093b296f18e41e9"
+        },
+        {
+          "path": "smoke-9.png",
+          "bytes": 13671,
+          "sha256": "b1e917b79406ccf2636d1538e7920da4baa3b7a178bc4e8159dc72ddbe60c291"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 3078,
+          "sha256": "79043b13a6b9c0e92d486a99649fcc4b6c64bed73891290ddcfaf4fb3dd2d91c"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
     },
     {
       "id": "gathering-of-water",
@@ -2688,6 +2974,729 @@
       "retired": false
     },
     {
+      "id": "lead-line",
+      "revision": 1,
+      "runtime": 4,
+      "title": "The lead line",
+      "summary": "HMS Challenger sails her whole way round the world, 1872–76, as the date plays. Touch the sea anywhere: a lead runs out until it finds the floor. Drag the glass to see the floor under it.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "46c5896e9ee7a32fa4bda8939b844e2703363a68c16f683ffdb61a7e9e484215",
+      "path": "packs/lead-line/r1/",
+      "bytes": 1116099,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 2288,
+          "sha256": "c90f0f4d4b539ff1b0431c274d4a463cdfb85758ea0cd56c4e6031bc7aee8b35"
+        },
+        {
+          "path": "depths.js",
+          "bytes": 699420,
+          "sha256": "45b1448ca26e2d941d18e685ad5bf0640eaf1efe01c688f2cf950877f6c71ea8"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 7508,
+          "sha256": "c5bdabe421ccc2bfe06fc9dfd2afe96657d8472ab56f2263378c32cea1274363"
+        },
+        {
+          "path": "main.js",
+          "bytes": 17903,
+          "sha256": "c0913d7e15515ddc3d42ef42fab6b57673b97f090bf83dfe8668588a8019d0f3"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 861,
+          "sha256": "c2e4232f2dfc7e50b1009765554438a55fa2161e8ef029f96986fc83eaefe721"
+        },
+        {
+          "path": "ship-1.png",
+          "bytes": 14874,
+          "sha256": "c5b66a455bba2303cfd7e32d66b1b79e507b75c8e927dfd04d4e5782ab067f37"
+        },
+        {
+          "path": "ship-2.png",
+          "bytes": 20710,
+          "sha256": "4632445184e0ab2eb0099884c568e9fe890214d1010808fb492d8af2ce243827"
+        },
+        {
+          "path": "ship-3.png",
+          "bytes": 20239,
+          "sha256": "64973646512f16c231e15ca8edb215f670ef33e55322fac6bace4438ceeee4d4"
+        },
+        {
+          "path": "ship-4.png",
+          "bytes": 20205,
+          "sha256": "01faf00d9a2a7c442c3601cc95b187ba5c7a5714530e506b272b74a5f331405d"
+        },
+        {
+          "path": "ship-5.png",
+          "bytes": 14948,
+          "sha256": "e4e6151305a0d5edbc0e05654f0666c1dc6698a99978428baf706241964da471"
+        },
+        {
+          "path": "ship-6.png",
+          "bytes": 19954,
+          "sha256": "1a89a2e31951cba882583639f072f075af66e84c45d9a70608143574649339f1"
+        },
+        {
+          "path": "ship-7.png",
+          "bytes": 20333,
+          "sha256": "b50cb33f9888a2cf2d17c6f1a542aff7728adbd0eb27a274d86ae4c57a8e41b7"
+        },
+        {
+          "path": "ship-8.png",
+          "bytes": 20020,
+          "sha256": "07767902a5b55e8fa258c922c2510cbd62a8ea047db658615fb6330f32134db0"
+        },
+        {
+          "path": "ship-far.png",
+          "bytes": 2479,
+          "sha256": "51faa37081128adc8e236de430e48dcc5bceb0e128755d4f04bdeeeee697f84e"
+        },
+        {
+          "path": "ship-mid-1.png",
+          "bytes": 6341,
+          "sha256": "1bb982191ee73305b56fb13ea7e3fba3a98c1a1db230c0b774bf1788e996a494"
+        },
+        {
+          "path": "ship-mid-2.png",
+          "bytes": 8358,
+          "sha256": "71f955571f94c53b933bccf856ad8394ea7ee4f6d3310c6c030d249e34dfe330"
+        },
+        {
+          "path": "ship-mid-3.png",
+          "bytes": 8258,
+          "sha256": "b185cac3a1f2fdfcfa2745c065fe41aae3733a18f68182ddd4b6491a46b02337"
+        },
+        {
+          "path": "ship-mid-4.png",
+          "bytes": 8104,
+          "sha256": "eb504612cce42da736148fa86298c58cdc2cd74158e1bcb535d337c61719047f"
+        },
+        {
+          "path": "ship-mid-5.png",
+          "bytes": 6306,
+          "sha256": "9ab365cf3592f2ac203a75a660fe058f98905312a7ca11e46f1561b4955f52a6"
+        },
+        {
+          "path": "ship-mid-6.png",
+          "bytes": 8200,
+          "sha256": "054aed06ce31fb69da893b692e924db101bcb21b37b4902af752052ee88f60a8"
+        },
+        {
+          "path": "ship-mid-7.png",
+          "bytes": 8188,
+          "sha256": "16c65a50e1b208056a9c5ab9d65e1bb4bd26013796a788695bc834e26cc9d557"
+        },
+        {
+          "path": "ship-mid-8.png",
+          "bytes": 8127,
+          "sha256": "54207297e610ab515beb41ddb1e0eb4ce5618272aaa1a671f4d557fed3845b80"
+        },
+        {
+          "path": "stations.js",
+          "bytes": 152820,
+          "sha256": "6dbfd971b54a824419ee079addfaeba81ee3ae7aab5114e34df2958301b29e3c"
+        },
+        {
+          "path": "way.js",
+          "bytes": 14751,
+          "sha256": "84fa0bf7909ba22ca7df972b375bd877217c30c6065983966b3265233ece7117"
+        },
+        {
+          "path": "weight.png",
+          "bytes": 636,
+          "sha256": "99c555332504c6840890c8222db074bf1b5c4bdaedf5942422f41174e2d75784"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 3437,
+          "sha256": "e803bb9d6f418afbe88298112c134324a03dd44690781ec3294bb5f8188396ae"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
+    },
+    {
+      "id": "low-sea",
+      "revision": 1,
+      "runtime": 4,
+      "title": "When the sea was low",
+      "summary": "Touch the sea and it goes out: the shelves come up as the dry land they were when the ice was greatest, Britain joined to Europe, Asia to America, with rivers across them and mammoths walking.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "3572fa4c0611202fbce0330d1b3e590d7d997dc4d02ea74095378c5da7692c0b",
+      "path": "packs/low-sea/r1/",
+      "bytes": 1889025,
+      "files": [
+        {
+          "path": "LICENSE-NATURAL-EARTH.md",
+          "bytes": 4636,
+          "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b"
+        },
+        {
+          "path": "SOURCES.md",
+          "bytes": 1827,
+          "sha256": "dd0df825cb37ece27cabcef2c51ebef03a3f297bbad4b3472779991a6d837b11"
+        },
+        {
+          "path": "data.js",
+          "bytes": 2791,
+          "sha256": "32c62d8804480d6b8cfecbd88c43f858e120b121112c8930c5605056d0ab6bb3"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 5545,
+          "sha256": "d0a03102650bf3dc7fabeba4479d48e9fbf1e57f006bab65fb2382ce0931a233"
+        },
+        {
+          "path": "main.js",
+          "bytes": 7966,
+          "sha256": "25321ae49bef8bf7bfa2eec7b2f0be12b439a7d7c204422bd1c904867384bf19"
+        },
+        {
+          "path": "mammoth-1.png",
+          "bytes": 10010,
+          "sha256": "e5f7eda246b1e2ebf0af320bca4669af25f2bdbc67823a41452c333ecc79401c"
+        },
+        {
+          "path": "mammoth-2.png",
+          "bytes": 10502,
+          "sha256": "f639345eb57366068be2512cefd80107c60cbbd2e22900564596a385892bd0b0"
+        },
+        {
+          "path": "mammoth-3.png",
+          "bytes": 10513,
+          "sha256": "aa16134410f3bd6279927fb913ba27d860ba7b581e285929806c479222ae7485"
+        },
+        {
+          "path": "mammoth-4.png",
+          "bytes": 10017,
+          "sha256": "87e8639bec56a4b2d82fa3af230b18976af8f870ec581d3a8c13fc5e8b016ad4"
+        },
+        {
+          "path": "mammoth-5.png",
+          "bytes": 10139,
+          "sha256": "8549f276c517386402a20c3ca8674d239ed90285605e72ca93a8d2e748d01c62"
+        },
+        {
+          "path": "mammoth-6.png",
+          "bytes": 10138,
+          "sha256": "11ab9469e7f2b5701520a4e57fc2458033c760f330ad93c00c2482ace89f3201"
+        },
+        {
+          "path": "mammoth-small-1.png",
+          "bytes": 4255,
+          "sha256": "41909a6fe51874a8ce80077a40d5746d1f3fe50c6524046cbdfca85c16357525"
+        },
+        {
+          "path": "mammoth-small-2.png",
+          "bytes": 4356,
+          "sha256": "ea80aa6535491baae075cbef52a3b71bf2d52da169b22621e95be560e2e63d36"
+        },
+        {
+          "path": "mammoth-small-3.png",
+          "bytes": 4336,
+          "sha256": "aa2296a3be3bd6dbd4a675b2c62823b402dee0278376f247f6f3bc35bbb6b83d"
+        },
+        {
+          "path": "mammoth-small-4.png",
+          "bytes": 4248,
+          "sha256": "f9195c009d5cee73e335494f5131f77ceb9155443dbe23a311aa546bb0c01897"
+        },
+        {
+          "path": "mammoth-small-5.png",
+          "bytes": 4354,
+          "sha256": "8b656b2a85244d77c29173875ea8543c66a952d64f4eaf833ce905c8fc444287"
+        },
+        {
+          "path": "mammoth-small-6.png",
+          "bytes": 4368,
+          "sha256": "1907874d405fe92e7fa9351d9a117bd82ccf00a542b34222bf149759df9e90e1"
+        },
+        {
+          "path": "mammoth-tiny-1.png",
+          "bytes": 1643,
+          "sha256": "3f7438d9d2e23101951727bb8c1c8778218daae70a4e838b359ac82d754c5388"
+        },
+        {
+          "path": "mammoth-tiny-2.png",
+          "bytes": 1668,
+          "sha256": "a079b33a34ac9892d6cc4ab4a907f6a3fd0948156bfe2ea9004eb8fcbdac38f0"
+        },
+        {
+          "path": "mammoth-tiny-3.png",
+          "bytes": 1639,
+          "sha256": "94ad002495cfc44fbeaf86d60d0f023339568ee67feea1bd28ffe3d09f0d32b7"
+        },
+        {
+          "path": "mammoth-tiny-4.png",
+          "bytes": 1660,
+          "sha256": "4169373ec56a901b794405133fd8e28b0a2bd95979df81c1acf893a32e229bbc"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 823,
+          "sha256": "6116b5d617b23d13bdee273b51196c98e886b73bf8faf52a4bc7d89d53d84810"
+        },
+        {
+          "path": "shelf-adriatic-black.png",
+          "bytes": 150199,
+          "sha256": "db1f537a8cf4a75006e598469391942996c53c010c396ebc7b22e5addd2c1d54"
+        },
+        {
+          "path": "shelf-beringia-east.png",
+          "bytes": 299223,
+          "sha256": "5619b17d5f3a86c8fbe5023e4c5115ba7e27125de47e56401ce858df5cb8cc5d"
+        },
+        {
+          "path": "shelf-beringia-west.png",
+          "bytes": 157517,
+          "sha256": "fa17f6ee78317b47df7b383e7ab5884a47d995524b5f79ebe870eef43277aa2a"
+        },
+        {
+          "path": "shelf-doggerland.png",
+          "bytes": 212819,
+          "sha256": "cd7ec553580688627aeb331722706c219de1ddccd9d2b474c05f9ed6fa0ae14d"
+        },
+        {
+          "path": "shelf-gulf.png",
+          "bytes": 50164,
+          "sha256": "e45bcc3b7691eace4161e29e6bbc48eede27ebf458f5131cf93768952f8728c5"
+        },
+        {
+          "path": "shelf-patagonia.png",
+          "bytes": 161656,
+          "sha256": "30fb7d68ed66b6005528bab6ce6d6841d536836c65abd3332d9618f17a2d31cf"
+        },
+        {
+          "path": "shelf-sahul.png",
+          "bytes": 374917,
+          "sha256": "7d21da5b412a41a86b083c29a0da82ce3061c9df20d91c3b75363982a6969a4e"
+        },
+        {
+          "path": "shelf-sunda.png",
+          "bytes": 361123,
+          "sha256": "de1cb9b2b18413e857bfedcc860dc4ae9febc408c70bdfd9ad276b1d57e4f272"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 3142,
+          "sha256": "c542f8ee4e8c5b6522afdc0bf8f6cec4b1d46188d2665aa379909860e0136f89"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
+    },
+    {
+      "id": "monsoon-sails",
+      "revision": 1,
+      "runtime": 4,
+      "title": "The monsoon's sails",
+      "summary": "Dhows cross the Indian Ocean the way they did for two thousand years: out with the summer wind, home with the winter's. Drag the year, or touch a port to send its ships out.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "3e5961e9c7d4679dbca54ce8656c5e96aa059cb9a4fd0ac84c09774d6ba05851",
+      "path": "packs/monsoon-sails/r1/",
+      "bytes": 604181,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 1899,
+          "sha256": "3c22c8395dcb0f1c92aff851286f8e7af9c50022be03f6d28d37828a1e9dffdb"
+        },
+        {
+          "path": "data.js",
+          "bytes": 2064,
+          "sha256": "30400175a7ab4638108fbcf73a508791c8362da6b115c1ddb38a5c1b2f40cd42"
+        },
+        {
+          "path": "dhow-1.png",
+          "bytes": 10018,
+          "sha256": "6da8ce91e873889628383edc823f0e444ff5de6339b613072dd446c751617b82"
+        },
+        {
+          "path": "dhow-2.png",
+          "bytes": 9868,
+          "sha256": "c0ee96ba8df9cd9e1f1c6bf802aba65e58e2a47bb8c62ad964a30c96c7500f9b"
+        },
+        {
+          "path": "dhow-3.png",
+          "bytes": 9915,
+          "sha256": "08292d166b2f2dfe545731982200a9c0feee85669bd5d8fa2bd2ce6a421b3579"
+        },
+        {
+          "path": "dhow-4.png",
+          "bytes": 10012,
+          "sha256": "90c63f3928f05059668d9030b451edd6b009c5eddfbae693707d6df6cdbca784"
+        },
+        {
+          "path": "dhow-5.png",
+          "bytes": 10187,
+          "sha256": "cdaee552f79275496a39299149195c6f25a1fdb36139c10cea5368a0b8fedcb0"
+        },
+        {
+          "path": "dhow-6.png",
+          "bytes": 10250,
+          "sha256": "bd5a956ba2fd7bb9c0e11715cbb06d7a665f30dcba948d3f5743e5918468baf1"
+        },
+        {
+          "path": "dhow-furled-1.png",
+          "bytes": 8489,
+          "sha256": "d563068ccdc2403be23f9330d2bfc91d66b7dae2ff6c9b4cab42fa9f77a638e2"
+        },
+        {
+          "path": "dhow-furled-2.png",
+          "bytes": 8691,
+          "sha256": "c417a739b5e4166d5aadfec8531904350d06f53e75c32876b9c8166818e5c3ca"
+        },
+        {
+          "path": "dhow-furled-3.png",
+          "bytes": 8512,
+          "sha256": "cb1a60d39cae69dce1882ee5d31fe9406443a55cd9e07b4af46f5ea699fb65d0"
+        },
+        {
+          "path": "dhow-furled-4.png",
+          "bytes": 8617,
+          "sha256": "d9ddb4791808a6c19e8d40ed98f86ce7584272c866443a1769d4490a37ca4e92"
+        },
+        {
+          "path": "dhow-furled-mid-1.png",
+          "bytes": 3731,
+          "sha256": "31988614dff0b857255af009d3deea54ab1e1f45eb7e6a3f0dc2d25eb253cba4"
+        },
+        {
+          "path": "dhow-furled-mid-2.png",
+          "bytes": 3716,
+          "sha256": "cba81a554a0e7fadc9fc57eaf1d8038f4e47b996c38bc5cf96d89846e14e3c63"
+        },
+        {
+          "path": "dhow-furled-mid-3.png",
+          "bytes": 3751,
+          "sha256": "c7c2b1c5b38c893d0370be34635b7eb7f4d560b84b9c57a182a186ecba9708ff"
+        },
+        {
+          "path": "dhow-furled-mid-4.png",
+          "bytes": 3770,
+          "sha256": "dea04c078a17097aa6a3c30c2955ee3ca395302b789276c490dd7385027fb0bd"
+        },
+        {
+          "path": "dhow-mid-1.png",
+          "bytes": 4337,
+          "sha256": "63fe3247e93f11e4fd116865d8bffb863fed067ae6c62fb30ebe728126034b46"
+        },
+        {
+          "path": "dhow-mid-2.png",
+          "bytes": 4295,
+          "sha256": "805644785c9d8689542676521aea7b9620f792b685d73f0890f43ac7446b45c6"
+        },
+        {
+          "path": "dhow-mid-3.png",
+          "bytes": 4313,
+          "sha256": "e1823e412fd546e139bc8b63b1efd9f8ca820c284c8016c8f94bf1c85176fff4"
+        },
+        {
+          "path": "dhow-mid-4.png",
+          "bytes": 4339,
+          "sha256": "e3af8b15a900afea2b0dd807bbab73e3604eedb04b492fc67935ce8efb86dd07"
+        },
+        {
+          "path": "dhow-mid-5.png",
+          "bytes": 4412,
+          "sha256": "b6279461b46b545f60d0a413df886e7b72c8c4b02b559e9f974cf2372aed341c"
+        },
+        {
+          "path": "dhow-mid-6.png",
+          "bytes": 4397,
+          "sha256": "7739971b74acf25b30fad8248d731c846af4fbcd8ad8140bc9e88a15de6d71f2"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 6235,
+          "sha256": "ab0388cd407becbac6acbe4262951ec3cc4cd60e9651d9fca5128090705a18d1"
+        },
+        {
+          "path": "main.js",
+          "bytes": 14488,
+          "sha256": "52efaab6b5d93fc68aa0a9f4f2cd2c32033aaadb068325e85b39afc512e6ee27"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 814,
+          "sha256": "7a7c90c349b77296a6b2ad4b5843abaed46f7b9e27b4c80be21bd0a45fed98c1"
+        },
+        {
+          "path": "speck.png",
+          "bytes": 1183,
+          "sha256": "821cf4648d6386bf33b01c737ab4e03ca2707e41f76900beaa6ad419f1bf1bdf"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 3137,
+          "sha256": "668c72e2b660ecb0f44728995399040941f2aed6b0354baa325510f3c726cb7c"
+        },
+        {
+          "path": "wind-ne-1.png",
+          "bytes": 9542,
+          "sha256": "c8deae69b16430052ee665d71b796d8124ca66e9e0d581ed69d68d813e4cd39b"
+        },
+        {
+          "path": "wind-ne-10.png",
+          "bytes": 9333,
+          "sha256": "c6bad86014007d5f9bb2c50bffe8a5df32ee9b3c9a110e88d446e8966a305490"
+        },
+        {
+          "path": "wind-ne-11.png",
+          "bytes": 9219,
+          "sha256": "1a9befd53c707f7a63bb37f828a20a47b87ad9257ac595cc2de12e99d34161e7"
+        },
+        {
+          "path": "wind-ne-12.png",
+          "bytes": 9189,
+          "sha256": "d35230c271dde40bb9e82f06bcd3e109bf67a7908396b5c6089dd25b814695bb"
+        },
+        {
+          "path": "wind-ne-13.png",
+          "bytes": 9478,
+          "sha256": "0bb0e2d24f1934f95b777c876edf2a5dfca8034a949fe6cd81d1b4ca5d170775"
+        },
+        {
+          "path": "wind-ne-14.png",
+          "bytes": 9341,
+          "sha256": "7686dbef6c710c8a875cc3f2dfc43a8b9f531260c018ec71c7b1b62da14ef7b7"
+        },
+        {
+          "path": "wind-ne-15.png",
+          "bytes": 8764,
+          "sha256": "c123af2dc54539008504132fd7974206ee7f5a81767b9031ecd4d616c39e9a9d"
+        },
+        {
+          "path": "wind-ne-16.png",
+          "bytes": 8668,
+          "sha256": "20697e45adfd2d277889272f18bdcdbafb4cf981f4259d25dcbb39d81e3cc31a"
+        },
+        {
+          "path": "wind-ne-17.png",
+          "bytes": 9051,
+          "sha256": "92ea24fe6053b7059ee1d3505c0ec136caea5bbd815597ce9d95f3e9253d3775"
+        },
+        {
+          "path": "wind-ne-18.png",
+          "bytes": 8977,
+          "sha256": "d4fe44233dabefa7f711470203acad47256a50d127418eeb00183ec5f7c8c495"
+        },
+        {
+          "path": "wind-ne-19.png",
+          "bytes": 8578,
+          "sha256": "d25c2da7914302658be0bdd282495469b946d5daa1851508b79d0586ec259a1c"
+        },
+        {
+          "path": "wind-ne-2.png",
+          "bytes": 9400,
+          "sha256": "af9e28dd3474b2c51982092fae3d14a45dcf552887dc7b7aa0d03b71211909a6"
+        },
+        {
+          "path": "wind-ne-20.png",
+          "bytes": 9029,
+          "sha256": "d12b9b10adbbaab155cdbeddaa6b58b366b93817f710e68d02cd212310312d21"
+        },
+        {
+          "path": "wind-ne-21.png",
+          "bytes": 8863,
+          "sha256": "9022729067536f0c5e96e86ae3d3175c2635ce51f8e9f81d937df7faa8bb5f30"
+        },
+        {
+          "path": "wind-ne-22.png",
+          "bytes": 9041,
+          "sha256": "fd01b0fd26711a982800388d23c680df186032e0a57b2cbba8a7735bca906539"
+        },
+        {
+          "path": "wind-ne-23.png",
+          "bytes": 9056,
+          "sha256": "dadad13a59299b6a98d228af572c9c32b0f14ad2f783e258976763f2399e9495"
+        },
+        {
+          "path": "wind-ne-24.png",
+          "bytes": 9436,
+          "sha256": "09a328eff30fe493eb77a8fd9ccac1b7145f3bb3acfab3a34a039504eebcda50"
+        },
+        {
+          "path": "wind-ne-3.png",
+          "bytes": 9655,
+          "sha256": "c026f08dd542170e2a832e2b1fafeb5c441442e261278454d0815f97fdfabeda"
+        },
+        {
+          "path": "wind-ne-4.png",
+          "bytes": 9739,
+          "sha256": "2837ce380b054e37c7fbccd99d6c30e8f1bfe4a72fb7ef4f78e75f458543ecff"
+        },
+        {
+          "path": "wind-ne-5.png",
+          "bytes": 8863,
+          "sha256": "08f19c18bfbd2eb0b8abdfed87d6d9ccedf352f4f6b4590235298edca59b8908"
+        },
+        {
+          "path": "wind-ne-6.png",
+          "bytes": 8817,
+          "sha256": "4e1f12c7e38a7ae8e18e92912463e6501373e4e81c6c7fc26a917ba4774f8c88"
+        },
+        {
+          "path": "wind-ne-7.png",
+          "bytes": 8698,
+          "sha256": "89a4f08515e57a18a4abf4ff1f6be54acee30d49cca2f11ae46056a34f2336bc"
+        },
+        {
+          "path": "wind-ne-8.png",
+          "bytes": 8833,
+          "sha256": "2d28a0dcf11f9f8e51dd5a608ac969672d44c862e2a1a6626aa3a25adf6e30f8"
+        },
+        {
+          "path": "wind-ne-9.png",
+          "bytes": 8960,
+          "sha256": "2215533e807030888320755531c1dd086686bf083f3f2cdcf9980dd6d90671d4"
+        },
+        {
+          "path": "wind-sw-1.png",
+          "bytes": 9563,
+          "sha256": "3e2f5e305352c0221e7af0d23ab719bef749134e195122ed4a2173e2160c9f5d"
+        },
+        {
+          "path": "wind-sw-10.png",
+          "bytes": 9170,
+          "sha256": "220252dd3cef10e8aea6b7a41d261c5166683ebe6f561b6e572f7b2f5966f46c"
+        },
+        {
+          "path": "wind-sw-11.png",
+          "bytes": 9176,
+          "sha256": "a7a41f6892a50167a1319287e09195e52f361dd6f59cf9f4c11c6cd0d9ff8f51"
+        },
+        {
+          "path": "wind-sw-12.png",
+          "bytes": 9099,
+          "sha256": "e96363780e1ce969de9f5ce3e1a2c40eff418c1c5fc47058b3d1b5631ea102bf"
+        },
+        {
+          "path": "wind-sw-13.png",
+          "bytes": 9420,
+          "sha256": "98a4d95aee50a00652353ce6db003817d85cfa5e2805a014f1c157e6b4cdd58f"
+        },
+        {
+          "path": "wind-sw-14.png",
+          "bytes": 9359,
+          "sha256": "5fb29897ba118a59019237b3a84606e6ed5dfd710d3458bae26e053d82b0ca9a"
+        },
+        {
+          "path": "wind-sw-15.png",
+          "bytes": 8894,
+          "sha256": "c26ed212f6a63902a8009643023d342a1a4eeeb5fb2bbec34cdae4c25bc394c1"
+        },
+        {
+          "path": "wind-sw-16.png",
+          "bytes": 8728,
+          "sha256": "5965992e173e9bec646c277786590623b017f47fbaa7799eaeb97643c2660054"
+        },
+        {
+          "path": "wind-sw-17.png",
+          "bytes": 9263,
+          "sha256": "4e7d04d4dccdbe58602a91ea061da58786cc9a21bd2a8c4761a34c6cbd39b5c8"
+        },
+        {
+          "path": "wind-sw-18.png",
+          "bytes": 9049,
+          "sha256": "5a0f4cac5d43a5c6ae3b6fc38caabe86c6dca6e189f72cb68ae06d9bd55f932a"
+        },
+        {
+          "path": "wind-sw-19.png",
+          "bytes": 8510,
+          "sha256": "ea735732c23e2043061ce95f36b7d5e2c4500be3190f48f86bb5bec4a0d28810"
+        },
+        {
+          "path": "wind-sw-2.png",
+          "bytes": 9438,
+          "sha256": "e8528cdae800b1f4a0b8baebf51b662ae705fd8f1533310c6cb4932bc6d7b502"
+        },
+        {
+          "path": "wind-sw-20.png",
+          "bytes": 9110,
+          "sha256": "b7c75a8674cec600086dff75a42a6a9ffb0bfddbd0bbb9299c869f06a8d11822"
+        },
+        {
+          "path": "wind-sw-21.png",
+          "bytes": 9018,
+          "sha256": "5ff6e85acd5f7e73e9ce86f812d5285c2b47d5233e5de273b5794f353b97bbbc"
+        },
+        {
+          "path": "wind-sw-22.png",
+          "bytes": 9331,
+          "sha256": "b7d2e6fc1500385ea686290afcd10b1373dabafcbd7b44dd08101c53c6bf477e"
+        },
+        {
+          "path": "wind-sw-23.png",
+          "bytes": 9201,
+          "sha256": "881b6b246e71049eca755b1916f1ea277f7f0cce2dd6d94a777b62eb00c1df9c"
+        },
+        {
+          "path": "wind-sw-24.png",
+          "bytes": 9658,
+          "sha256": "dc8a6289f154ab2cd2be94c6ecc33ca8d39b3c2431e5e8ba2c9bdc01f0ee0f5f"
+        },
+        {
+          "path": "wind-sw-3.png",
+          "bytes": 9636,
+          "sha256": "3ebc05771164fc76c68b5bbb648bac5b78b9711b3303a275fb4a7b5c2595c6c1"
+        },
+        {
+          "path": "wind-sw-4.png",
+          "bytes": 9810,
+          "sha256": "6f5f5403f8ad7bed5e2e6c4772d40360226f3ed209ce4dd5df8afccbbde5553b"
+        },
+        {
+          "path": "wind-sw-5.png",
+          "bytes": 8878,
+          "sha256": "ae3312c0c99dbbc81abec53e43db4f58af2ae0d7f6fdffd89cbbd2d7838d13dd"
+        },
+        {
+          "path": "wind-sw-6.png",
+          "bytes": 8909,
+          "sha256": "7a491d2e8f5b16eab7f8407993148fc63ce9d4ca47b82db2785d392ff65c903a"
+        },
+        {
+          "path": "wind-sw-7.png",
+          "bytes": 8706,
+          "sha256": "7c5fb08d23e29c68c120b974c09cd062d1453022736cb729445cbc8ddb5a88c6"
+        },
+        {
+          "path": "wind-sw-8.png",
+          "bytes": 8679,
+          "sha256": "68ea577106a09d1c41fc794189ade888a1630b04d95dfa403c1ac7c52f46c69b"
+        },
+        {
+          "path": "wind-sw-9.png",
+          "bytes": 8775,
+          "sha256": "e42f65567c5c83b3344f12597f99033884284e11144c48518c32b29e379b98ab"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
+    },
+    {
       "id": "sea-between",
       "revision": 4,
       "runtime": 4,
@@ -2974,6 +3983,367 @@
       "retired": true
     },
     {
+      "id": "sea-of-whales",
+      "revision": 1,
+      "runtime": 4,
+      "title": "Whales in the desert",
+      "summary": "Wadi Al-Hitan, Egypt: bones in the sand. Touch the sand and the sea that was here comes back, with the whales that swam in it.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "1eef0962091e977c1d7a6692fbfdc2f5dc1ed286dc83dbc40e56d6fc88daa758",
+      "path": "packs/sea-of-whales/r1/",
+      "bytes": 1008128,
+      "files": [
+        {
+          "path": "LICENSE-NATURAL-EARTH.md",
+          "bytes": 4636,
+          "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b"
+        },
+        {
+          "path": "SOURCES.md",
+          "bytes": 2107,
+          "sha256": "2ddb6e3be7e6ba373bd95b1c3107de7df237dc93d6ba2e7f5a6dc0851fce5901"
+        },
+        {
+          "path": "basilosaurus-1.png",
+          "bytes": 18823,
+          "sha256": "dfb83777f8b585b157001640a3a17ca44697c76f5020c27d418ad2104efdfbf9"
+        },
+        {
+          "path": "basilosaurus-2.png",
+          "bytes": 18658,
+          "sha256": "330099310cc5e65e811760dfcce28fad14db767818fe356e243d49d4a8e8fbe5"
+        },
+        {
+          "path": "basilosaurus-3.png",
+          "bytes": 18787,
+          "sha256": "1118f043b751c41f4b22c5180f0a0a2fd048a5cb6759c74eb3e5fb5f83b320e3"
+        },
+        {
+          "path": "basilosaurus-4.png",
+          "bytes": 19331,
+          "sha256": "ba778a67fe74b3b1d37d1e38215e3bfe09dc55b1b4186f9a2a44a9a10ca417b8"
+        },
+        {
+          "path": "basilosaurus-5.png",
+          "bytes": 18840,
+          "sha256": "5803e866b9741f2511e31be8805335bd2c1fe5927fa39d306d95418c8544e618"
+        },
+        {
+          "path": "basilosaurus-6.png",
+          "bytes": 18563,
+          "sha256": "266970e5f6c20a31766980f84e978a3230075f1a95f0c1f1bb13c3346bfbaeb5"
+        },
+        {
+          "path": "basilosaurus-7.png",
+          "bytes": 18983,
+          "sha256": "52ee97d2b1a7a9e2db51bb8c3d6628ddcea51e6699c3294e780fbc1b7d6e5283"
+        },
+        {
+          "path": "basilosaurus-8.png",
+          "bytes": 19303,
+          "sha256": "4c37c0542c676126166260c387ebc5d2f5d7742420386aec9ff737679b3cb21d"
+        },
+        {
+          "path": "basilosaurus-mid-1.png",
+          "bytes": 4761,
+          "sha256": "268d77c6a8660db7b8e5cd8d4decb1b8e20ada198e7c5c6077a162fcd27fa0c7"
+        },
+        {
+          "path": "basilosaurus-mid-2.png",
+          "bytes": 4726,
+          "sha256": "a9ec5d2869cbc2ddd97003e1e72ab260dfc37d3f08986d9be3170739f93da329"
+        },
+        {
+          "path": "basilosaurus-mid-3.png",
+          "bytes": 4768,
+          "sha256": "16f1258b03c9e774782e72db449b8c9cfc8f027bab4ca83d597ce32861a1654d"
+        },
+        {
+          "path": "basilosaurus-mid-4.png",
+          "bytes": 4892,
+          "sha256": "75c01d5456377828b6385c3340538155652fe21b41d55675708fb4f954383d3b"
+        },
+        {
+          "path": "basilosaurus-mid-5.png",
+          "bytes": 4788,
+          "sha256": "385bee51375585bc7e2c8c7ab86b7bc177884648a61a937dad0dc1f3f3f9a5ad"
+        },
+        {
+          "path": "basilosaurus-mid-6.png",
+          "bytes": 4730,
+          "sha256": "c1ab07e47f10af274a3ad920cef039c32151d458373feba8f81ed0d88523dc0c"
+        },
+        {
+          "path": "basilosaurus-mid-7.png",
+          "bytes": 4831,
+          "sha256": "60629fa0490cd8981a20feb3bcc227f490eba961c01d80c2a3b41da8335dab7f"
+        },
+        {
+          "path": "basilosaurus-mid-8.png",
+          "bytes": 4954,
+          "sha256": "e9c6f10968c0835a76049025fae5a65125c9ecb5e6424921327ebb7b2bde1141"
+        },
+        {
+          "path": "basilosaurus-stranded-1.png",
+          "bytes": 16215,
+          "sha256": "2190c3418f6927ae93c338f0da7951b234e6147fcd970ef408dfbda0fe281810"
+        },
+        {
+          "path": "basilosaurus-stranded-2.png",
+          "bytes": 15810,
+          "sha256": "6619682eb80e177842a2065fbfd2eac56e4502273f61d6886cf18fcad1da17e3"
+        },
+        {
+          "path": "basilosaurus-stranded-3.png",
+          "bytes": 14639,
+          "sha256": "247e3617496a54e172030c0e58c0a83e18976f6c432d134e120aebfdf8629b94"
+        },
+        {
+          "path": "blow-1.png",
+          "bytes": 1504,
+          "sha256": "f6f75bd7e238c9f43888b90106c5cf6220eb77891291249154b14eca25f28b71"
+        },
+        {
+          "path": "blow-2.png",
+          "bytes": 2252,
+          "sha256": "0ffcf1c5ddd170510ce1deda6938dbadfeb093eb4bff7d30e70f8263d2679ee8"
+        },
+        {
+          "path": "blow-3.png",
+          "bytes": 3198,
+          "sha256": "401a9349126d779415bfabb444da3fd78f6562eb413e136008a182cdd012375c"
+        },
+        {
+          "path": "blow-4.png",
+          "bytes": 4092,
+          "sha256": "5e86695c3ecfb917c47b87f2860822c679146ead3de986e86d5a6e16ebf30b02"
+        },
+        {
+          "path": "bones-2.png",
+          "bytes": 9426,
+          "sha256": "cedace447b7d485c237ba876c02a61034c3685cc891ac48626c61bd6725d7d68"
+        },
+        {
+          "path": "bones-3.png",
+          "bytes": 5734,
+          "sha256": "f2538b07d35851bcaeea8712ddfd3f38d55980615f9a7f37f3657dada0e8fa14"
+        },
+        {
+          "path": "bones.png",
+          "bytes": 15554,
+          "sha256": "5659c47e2613a7969bb5b5e78183bd8125a44311f503fec304bf4d63a18309ef"
+        },
+        {
+          "path": "data.js",
+          "bytes": 2681,
+          "sha256": "d03f59e0579eeb6f5a343808848635f7ccb370c59b19a2066fc6e0e432735122"
+        },
+        {
+          "path": "dive-1.png",
+          "bytes": 23598,
+          "sha256": "e9b92d6c04e57f7cc178649d8e4cacb900adeb7d7d34f50b3ac894eacd2a529f"
+        },
+        {
+          "path": "dive-2.png",
+          "bytes": 23227,
+          "sha256": "dbfe1ed05040617c66793f773e1c7664fe0ec0cfcd6d411866f38686f2d3e74e"
+        },
+        {
+          "path": "dive-3.png",
+          "bytes": 24061,
+          "sha256": "65a30f0dacc1d73964714e0ea45dd7427299ae5027f560e1dc41eb85e2f1e8d4"
+        },
+        {
+          "path": "dive-4.png",
+          "bytes": 23813,
+          "sha256": "617274427f641342f0a3d8bd69ba86e85fd85bc4b55448b44ca79776e536c6e0"
+        },
+        {
+          "path": "dive-5.png",
+          "bytes": 23718,
+          "sha256": "15d6d3ffdd95c2e13ee8155da32a17b4b39c4bbc56441c8aad87e044241c6b77"
+        },
+        {
+          "path": "dive-6.png",
+          "bytes": 23651,
+          "sha256": "6f6fd37410df9c969903c4322f0024f96c4ef788d01d24629a412ef0ec885914"
+        },
+        {
+          "path": "dive-small-1.png",
+          "bytes": 10477,
+          "sha256": "b204b42fbd417fb3a58405c65fbc4f81056ee55a8957850e7ea8b8d6877f575b"
+        },
+        {
+          "path": "dive-small-2.png",
+          "bytes": 10539,
+          "sha256": "ae7a0ab9e2411d221b0a0d0413d2382394e5838d828f1b16c65c87b6442517f1"
+        },
+        {
+          "path": "dive-small-3.png",
+          "bytes": 11344,
+          "sha256": "d9b5da292cb0a209a355a8dcbac51ecd7a4276858934f7d0854b516db8bd1de1"
+        },
+        {
+          "path": "dive-small-4.png",
+          "bytes": 11972,
+          "sha256": "e5fdcb69759357340a16d7a8e5d917c22938a0ce680655863fb45b40ea060262"
+        },
+        {
+          "path": "dive-small-5.png",
+          "bytes": 11801,
+          "sha256": "b311eb664218b80e1a152448111d87ce36e32186af8ba94fac066f3cd433ed4f"
+        },
+        {
+          "path": "dive-small-6.png",
+          "bytes": 11421,
+          "sha256": "3964e19cc3e0cebc4649cc3484c9f90b9bf067cacbf60839bf8968dc266e3d9c"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 6721,
+          "sha256": "b7599497a8a162950f219994836a45c9e62c547906ce5478791a8d450b046bd3"
+        },
+        {
+          "path": "dorudon-1.png",
+          "bytes": 8418,
+          "sha256": "00dfd2bd3a5cb5d854ff4727e4fd23d8cdaeee0cf506b27d13b55f1c688ece58"
+        },
+        {
+          "path": "dorudon-2.png",
+          "bytes": 8519,
+          "sha256": "6561975626f56f510485c99ba62d11c9ae125dd8baae56df78be7df2a88fe8a8"
+        },
+        {
+          "path": "dorudon-3.png",
+          "bytes": 8434,
+          "sha256": "b15c33da0f2a1b9d5c9846ef27a4d2da3435b02247401914b986ad086a921595"
+        },
+        {
+          "path": "dorudon-4.png",
+          "bytes": 8448,
+          "sha256": "06729fae92e909f59984b4f0f55e95e76a105f334afb4ffe63e10be6b96c23a3"
+        },
+        {
+          "path": "dorudon-5.png",
+          "bytes": 8236,
+          "sha256": "2b5cf035847e6c1cfe7a766c5280793a497c4949c9a8b45b29c2a2db95d0a2fb"
+        },
+        {
+          "path": "dorudon-6.png",
+          "bytes": 8297,
+          "sha256": "9b1608f198d745203c33e68f78521e62f2d97eca4f82c052c3df9d7b57a51210"
+        },
+        {
+          "path": "dorudon-7.png",
+          "bytes": 8311,
+          "sha256": "a1c6fac53fe7698514009ed3f98302b5c2690da359a120e19d12d8953ea2ae38"
+        },
+        {
+          "path": "dorudon-8.png",
+          "bytes": 8278,
+          "sha256": "73491a95dc6d57cd7f500c48ad5ee9f58e17fa2d48e211ba0d2578adb882240d"
+        },
+        {
+          "path": "dorudon-mid-1.png",
+          "bytes": 2470,
+          "sha256": "679eec7c8b2bff7ca5652dad7599d5ab898efeacc89c16ab2514a6a09ed7baac"
+        },
+        {
+          "path": "dorudon-mid-2.png",
+          "bytes": 2444,
+          "sha256": "005765643d9bd045e8b880594eff41de4c0d2bab1ce6c627f925d80e585e6f7c"
+        },
+        {
+          "path": "dorudon-mid-3.png",
+          "bytes": 2407,
+          "sha256": "1d1bab0800839baf760eb363fe8b543c6b11bc253a7b8211b17a8bd57a9a7d6d"
+        },
+        {
+          "path": "dorudon-mid-4.png",
+          "bytes": 2414,
+          "sha256": "f2e5a044c07feced6e137fb68d9f30eb068aab94978770fae1bab213b2051f12"
+        },
+        {
+          "path": "dorudon-mid-5.png",
+          "bytes": 2437,
+          "sha256": "45781678cc9e1a852e97f3693ceacc297cb0ff878538f1ef7187eaa53c2cea71"
+        },
+        {
+          "path": "dorudon-mid-6.png",
+          "bytes": 2392,
+          "sha256": "1a1c3b267df5990009accfb8f5dc87c6b723086fc75e1388f4f8c6cbb9e62a87"
+        },
+        {
+          "path": "dorudon-mid-7.png",
+          "bytes": 2428,
+          "sha256": "61856890b30ab034214fcb7673f23c39abb6d942207b86f9bda6d69959fd922e"
+        },
+        {
+          "path": "dorudon-mid-8.png",
+          "bytes": 2393,
+          "sha256": "acbc5f7a85f70d0191644e0eec498f8118d0ed7c6547d81ee39a0d09d64fd900"
+        },
+        {
+          "path": "dorudon-stranded-1.png",
+          "bytes": 7567,
+          "sha256": "1ac59463359cb13ea12f0c9cb9d450f9107f989bb3953596e5de15bb813e0be6"
+        },
+        {
+          "path": "dorudon-stranded-2.png",
+          "bytes": 7316,
+          "sha256": "072d998645cbe2786b92a1f6c3710e4cc49f516fe58ecc29cb26b8d8c535609e"
+        },
+        {
+          "path": "dorudon-stranded-3.png",
+          "bytes": 6869,
+          "sha256": "59e1d73cb83ea326c6b9262424cafd209e3e75297ae15c7c476c56b1664ceab0"
+        },
+        {
+          "path": "main.js",
+          "bytes": 14854,
+          "sha256": "bdb6660e2d83127460f32abf17edf0574318897debe6f3d6c788122f45779081"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 685,
+          "sha256": "99b0ee88c519186189fb9b37cdfffe8e9d167fa583330bc15d6685924a8b32ab"
+        },
+        {
+          "path": "tethys-1.png",
+          "bytes": 89180,
+          "sha256": "fb27ca7584b54d6c3fc3123e281845e1426eaf12e3eb46e0c51cc9384d9c66f4"
+        },
+        {
+          "path": "tethys-2.png",
+          "bytes": 92308,
+          "sha256": "aa5315a81858a25df6a820db7c6bd79034b94233a4ac1d54efae5facc8f6663d"
+        },
+        {
+          "path": "tethys-3.png",
+          "bytes": 94873,
+          "sha256": "3f94f9bada079dc5e8986f586005acabb16ea1a0a69ddee75b84868460ab9d81"
+        },
+        {
+          "path": "tethys-4.png",
+          "bytes": 99943,
+          "sha256": "2b39cf0e302b3494ab666fd5b107b01018f91cb422ef266cb43be804d9593102"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 3447,
+          "sha256": "f29c6c7a9be2773666f52ea59f85d93e3cadc596039cfca002385571d7d57bc1"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
+    },
+    {
       "id": "sounding-the-deep",
       "revision": 4,
       "runtime": 4,
@@ -3038,6 +4408,247 @@
       ],
       "published": "2026-10-29T06:48:23-04:00",
       "retired": true
+    },
+    {
+      "id": "vine",
+      "revision": 1,
+      "runtime": 4,
+      "title": "The vine's long walk",
+      "summary": "საქართველო. One vine, eight thousand years long: it rises from a qvevri in the Georgian valley where the oldest wine was made and grows across the world as the years play.",
+      "presentation": "globe",
+      "shelf": "current",
+      "hash": "a3514fd8601a563b58900deb33795a35069642b786eaab10fb41f35307767974",
+      "path": "packs/vine/r1/",
+      "bytes": 285123,
+      "files": [
+        {
+          "path": "SOURCES.md",
+          "bytes": 2526,
+          "sha256": "6a3d606fa4589b8c3e30046ace1816738f8ba6e6da0907654de5575b60a6ef57"
+        },
+        {
+          "path": "data.js",
+          "bytes": 42380,
+          "sha256": "5165bfb2e48c8e43b307bc1ccb2d88003da895daae61961eabc2cd45f36366a7"
+        },
+        {
+          "path": "doorway-glint.png",
+          "bytes": 831,
+          "sha256": "2aad4a47b0ca8fa0490a2369b2f1e135a129c00c0e9c1bada20e308b0af8b582"
+        },
+        {
+          "path": "doorway.png",
+          "bytes": 5813,
+          "sha256": "97e3d735752538d9263a52869db4bc641493fc97f58ae9e0cc8a85c8d3f7dada"
+        },
+        {
+          "path": "grapes-green-big.png",
+          "bytes": 8349,
+          "sha256": "3141c50ffd8be60b0c3139c8e37f63c262f4e28fa981d52fe0ea2f4a590fdeea"
+        },
+        {
+          "path": "grapes-green.png",
+          "bytes": 2933,
+          "sha256": "fe77faf996a1ce56a1d17dc52b16f31911d959b9687cb3b25c4de56007f59e6f"
+        },
+        {
+          "path": "grapes-ripe-big.png",
+          "bytes": 7820,
+          "sha256": "b78e925e1cb957f98fdbcb0988bc907235f2d94c5b880898a35dedb9705fabe7"
+        },
+        {
+          "path": "grapes-ripe.png",
+          "bytes": 2835,
+          "sha256": "b82712425f851f1bfa4095ab63d44aedb2bbaf1607091ee275e7217da1b26a7f"
+        },
+        {
+          "path": "leaf-autumn-1.png",
+          "bytes": 2534,
+          "sha256": "f85d4f50aa32b8895e8dacb870313cfc4a946907cdfe1f2d6126e6c38e961b7e"
+        },
+        {
+          "path": "leaf-autumn-2.png",
+          "bytes": 2370,
+          "sha256": "c196d50eb0a8a3c30d3416b3c9973f92c986ef5ebd8a2741011b14da0020dd09"
+        },
+        {
+          "path": "leaf-autumn-3.png",
+          "bytes": 2454,
+          "sha256": "2e59f5849b7a34fe692d26c43798e71d29076c59ddb7957b69a52aa112f8d427"
+        },
+        {
+          "path": "leaf-autumn-big-1.png",
+          "bytes": 6655,
+          "sha256": "1b8394cc003509d19aa0195ae6a40a8ad57413554fbf200e50ce7faa797f7754"
+        },
+        {
+          "path": "leaf-autumn-big-2.png",
+          "bytes": 6169,
+          "sha256": "e7a8a56dbca30520146d365d5a9295ceca14cd00fa0f02b21569ab0774fc9ffb"
+        },
+        {
+          "path": "leaf-autumn-big-3.png",
+          "bytes": 6421,
+          "sha256": "905d04c25ecb13787f7ed8c188ab80b2a499977a3f64aee93f7f3a12521d7426"
+        },
+        {
+          "path": "leaf-green-1.png",
+          "bytes": 2541,
+          "sha256": "c3dd27c0868f8ccfb9d9a1e9ded4c54cfdf3ff314a06b1fbbadf54165ff7a75f"
+        },
+        {
+          "path": "leaf-green-2.png",
+          "bytes": 2366,
+          "sha256": "6b0498f34e33858178a9a9041a723eacb080fd877ed571a9f18a2847ff43ba7f"
+        },
+        {
+          "path": "leaf-green-3.png",
+          "bytes": 2427,
+          "sha256": "c973586edcd2f6a78d01112fd24c52d69d20b2a3ba9ae13143a65a70cccdbaa8"
+        },
+        {
+          "path": "leaf-green-big-1.png",
+          "bytes": 6618,
+          "sha256": "64d9ef366c6ed2018225d09a6841e145ceb536bb998e0c588b77092364ce2921"
+        },
+        {
+          "path": "leaf-green-big-2.png",
+          "bytes": 6146,
+          "sha256": "e3e516cab8dff0eb85b91133ffd911af396410c2d75bb05e0bb1f681fe5af569"
+        },
+        {
+          "path": "leaf-green-big-3.png",
+          "bytes": 6531,
+          "sha256": "3e46b05f02fac64ec9de2d068f03350d0c054e50bee6081a414317d7bfda3201"
+        },
+        {
+          "path": "main.js",
+          "bytes": 12970,
+          "sha256": "f725166c856255c1b44a683cd3d9ff103ee360a1774eebbb56b358b436a5ecf1"
+        },
+        {
+          "path": "prototype.json",
+          "bytes": 923,
+          "sha256": "be9b37a2de7855db4f5ee47451ea5a674a39df55c3d016e1b4b93252cf5053f5"
+        },
+        {
+          "path": "qvevri-small.png",
+          "bytes": 7089,
+          "sha256": "07ad30163cddb8d1b5aae22f244f1dfa79f8b3edfad63848f8990dcca223b66e"
+        },
+        {
+          "path": "qvevri.png",
+          "bytes": 19815,
+          "sha256": "12de5f1fe1e0ab3a67da2e99d88bc2c52ea0079bb9038f2cd1b1ac3e88419844"
+        },
+        {
+          "path": "splash-1.png",
+          "bytes": 3489,
+          "sha256": "abc094d505cd59ee26480afbdfa312508486b54a67ac77766a7cbecfa39d4e4d"
+        },
+        {
+          "path": "splash-2.png",
+          "bytes": 2836,
+          "sha256": "70f669ed9b99cbf997192b783e8c071dcfc72ee8f011eaf7ad81f0801075ee4f"
+        },
+        {
+          "path": "splash-3.png",
+          "bytes": 2229,
+          "sha256": "bda083fc01721b9b61ac906230db902a4c422f9c8eeb58468c07b9722f143f4c"
+        },
+        {
+          "path": "splash-4.png",
+          "bytes": 1524,
+          "sha256": "66c8adfb77a296724e5da447ce49058018fbd788473600888ebf8e838513be9f"
+        },
+        {
+          "path": "tendril-1.png",
+          "bytes": 3182,
+          "sha256": "0e8b745388297b544657b627f995151b60a039576ce27d65734e8086afbb3088"
+        },
+        {
+          "path": "tendril-2.png",
+          "bytes": 3481,
+          "sha256": "63dac82519a7ec0c258dd0117353fc3954ac6db4502b826790eb2dc9192d351c"
+        },
+        {
+          "path": "tendril-3.png",
+          "bytes": 3614,
+          "sha256": "382f185b4b5b61e124b667d9491f4e8c33a8ff2c47882dafe9037dc70069cc4a"
+        },
+        {
+          "path": "tendril-4.png",
+          "bytes": 3412,
+          "sha256": "744792dbdfb697c2a694a7df7486d0ff6fb8d53abfb93a268e03fbc0d8b8fb67"
+        },
+        {
+          "path": "tendril-5.png",
+          "bytes": 3218,
+          "sha256": "63c02ae2ee1dd79bab28f389b110d4854d97b937b94e35b98450cc736299ca40"
+        },
+        {
+          "path": "tendril-6.png",
+          "bytes": 3025,
+          "sha256": "964eccc5a8cc0b57fc1e392a0c26633ecfef7155654409ee7e13e4d8c76d7e77"
+        },
+        {
+          "path": "tendril-7.png",
+          "bytes": 2929,
+          "sha256": "b8b513dabac2903f1be52f02c583d621856a557d10e47c0afd105898cfa83d31"
+        },
+        {
+          "path": "tendril-8.png",
+          "bytes": 3009,
+          "sha256": "bf2e05b6fa4586ba3999aaf7a57cc50fa72d25cc363a2cb8ddfdaf2fd382ae1d"
+        },
+        {
+          "path": "tendril-big-1.png",
+          "bytes": 9577,
+          "sha256": "240ba94a16a5e7fb733807b6b434542f4d1ea46c2413cb21af58bb95948d8e47"
+        },
+        {
+          "path": "tendril-big-2.png",
+          "bytes": 10540,
+          "sha256": "b2aafee11033b2950f31619a51c56f871dbbdf387100597b1465a40f66864667"
+        },
+        {
+          "path": "tendril-big-3.png",
+          "bytes": 10582,
+          "sha256": "e87c46ba7caae0952644d8704e7e0cc208cc5e8d3da14d759de370969d886ac6"
+        },
+        {
+          "path": "tendril-big-4.png",
+          "bytes": 10321,
+          "sha256": "e6a2d1df3b5d4ef70093143aaaec0b3bee14e525b4909152f36f89d3a86485f4"
+        },
+        {
+          "path": "tendril-big-5.png",
+          "bytes": 9507,
+          "sha256": "6e34044f30dce5c8012350bebf24d0529bba7f46b81a573a659dfa0b6a6f41c5"
+        },
+        {
+          "path": "tendril-big-6.png",
+          "bytes": 9254,
+          "sha256": "cccf2741362cf763f891d41487341caf5f8e1e6602166386957281390ed472ea"
+        },
+        {
+          "path": "tendril-big-7.png",
+          "bytes": 8575,
+          "sha256": "7a0dc0f6e66a07d7487e7c8e76fc5c1c0ae6e514b55e199f35164652069b70e7"
+        },
+        {
+          "path": "tendril-big-8.png",
+          "bytes": 9001,
+          "sha256": "7bf0407fd0ef6e83ed2b1221de7bbec031e02c1e91e0e56803abb60c5e801c94"
+        },
+        {
+          "path": "wikipedia.json",
+          "bytes": 4302,
+          "sha256": "531eabd2313e678e660422eb19064b1c5da059f35926572a38bfd2a55a83b409"
+        }
+      ],
+      "published": "2026-10-29T14:30:03-04:00",
+      "retired": false
     }
   ]
 }
