@@ -83,11 +83,13 @@
       terra.sprites.set('ship', { at: [h.lon, h.lat], looks: shipLooks(), label: 'HMS Challenger', touchable: true });
       shownLeg = -1;
     }
-    if (following) {
+    if (following && Date.now() - lastFly > 1400) {
+      // a flight now and then keeps her in view as she sails, not a flight a frame
       var c = terra.camera;
-      if (c) terra.flyTo(h.lon, h.lat, c.zoom, 0.9);
+      if (c) { lastFly = Date.now(); terra.flyTo(h.lon, h.lat, c.zoom, 1.3); }
     }
   }
+  var lastFly = 0;
 
   // ---- the stations: the record's dots, reached or ahead ----
   var stations = WAY.filter(function (p) { return p.kind === 'station'; }), drawnPast = -1;
