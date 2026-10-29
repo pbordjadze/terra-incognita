@@ -57,7 +57,8 @@ Keep design discussions and plans in that private repository.
   noise's coarse octaves worked out rather than read from the tile, so their edges aren't faceted);
   `night`, the Earth at night (`GlobeStyle.night`, drawn on the ground's maps with `Globe.metal`'s `N_`
   palette and the lights of `Globe/ground/night.jpg`, built by `tools/globe/night.py` from NASA's Black
-  Marble; the clouds a thin grey veil, the sea off); `quiet-frame` (`QuietCaption`: nothing at the foot
+  Marble, coming on a beat after dusk and shimmering slowly by the night's clock, `-night-time <s>` holds it;
+  the clouds a thin grey veil, the sea off); `quiet-frame` (`QuietCaption`: nothing at the foot
   until a country is chosen, then one line). None veils the clouds or the sea (`Prototype.veils`).
   The stand-in draws them: `metal.py shot ... --quiet 1`, `--style night`; `preview.py --style night`.
 - **The player** (`App/TerraIncognita/Atlas/`). A look is a ladder of *plates*, portrait pictures,

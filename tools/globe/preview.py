@@ -360,7 +360,8 @@ def ground_maps(month):
             np.asarray(Image.open(g / 'floor.png').convert('RGB')))
 
 
-def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_reference=False, ground=False, month=None, night=False):
+def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_reference=False, ground=False, month=None, night=False,
+           night_time=0.0):
     if historical_reference:
         selected = 0
     geo = np.asarray(Image.open(G / 'geo.png'))[..., :3]
@@ -503,6 +504,9 @@ def render(w, h, scale, lon0, lat0, zoom, selected, persian=False, historical_re
             if night:
                 # the Earth at night: the measured lights over the drawn land and sea (N_ palette)
                 lights = (sample(np.asarray(Image.open(G / 'ground' / 'night.jpg').convert('RGB')), u, v)[..., 0] / 255) ** 0.75
+                # (they come on a beat after dusk, fully by now, and each shimmers a little, slowly)
+                shimmer = vnoise3(wx * 1400 + np.float32(night_time * 0.45), wy * 1400 + np.float32(night_time * 0.31), wz * 1400 + np.float32(7.9))
+                lights = lights * (0.86 + 0.28 * shimmer)
                 nland = N_LAND * (1 + 0.25 * hill)[..., None]
                 nland = mix(nland, N_CHOSEN, 0.6 * m)
                 nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights))
@@ -749,6 +753,7 @@ def main():
     a.add_argument('--historical-reference', action='store_true', help='modern geographic reference with political boundaries and labels suppressed')
     a.add_argument('--style', default='wikipedia', choices=('wikipedia', 'persian', 'ground', 'night'))
     a.add_argument('--month', type=int, default=None, help='the ground style\'s month, 1-12 (default: this month)')
+    a.add_argument('--night-time', type=float, default=0.0, help="the night's seconds (its lights shimmer by them)")
     o = a.parse_args()
     w, h = map(int, o.size.split('x'))
     names = [c['n'] for c in json.loads((G / 'globe.json').read_text())['countries']]
@@ -757,7 +762,7 @@ def main():
     month = o.month or datetime.date.today().month
     ground, night = o.style in ('ground', 'night'), o.style == 'night'
     img, geom = render(w, h, o.scale, o.lon, o.lat, o.zoom, selected, o.style == 'persian', o.historical_reference,
-                       ground, month, night)
+                       ground, month, night, o.night_time)
     if not o.no_labels and not o.historical_reference:
         clear = [buttons_box(w, h)] + ([caption_box(w, h)] if o.style == 'persian' else [])
         if o.style == 'persian' and page_alpha(o.zoom) > 0:

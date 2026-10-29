@@ -104,7 +104,7 @@ class Globe:
                  (0, 0, 1 if persian else 0, preview.page_alpha(cam['zoom']) if persian else 0),
                  (*m[0], 0), (*m[1], 0), (*m[2], 0),
                  (top * scale, bottom * scale, left * scale, right * scale),
-                 (0, 1 if ground else 0, 1 if night else 0, 0))
+                 (0, 1 if ground else 0, 1 if night else 0, o.night_time if night else 0))
         tex = {0: geo(),
                1: cached('terrain', lambda: metal.Texture.from_png(GLOBE / 'terrain.png', 4, mipmapped=True)),
                2: cached('ids', lambda: metal.Texture.from_png(GLOBE / 'ids.png', 1)),
@@ -386,6 +386,7 @@ def commands(sub):
         p.add_argument('--days', type=float, default=0.4, help="the clouds' simulated days")
         p.add_argument('--quiet', type=float, default=0, help="the clouds' quiet rule, 0 or 1 (clear where the reader looks)")
         p.add_argument('--bright', type=float, default=1, help="how bright the clouds are (1 by day)")
+        p.add_argument('--night-time', type=float, default=0, help="the night's seconds (its lights shimmer by them)")
         p.add_argument('--time', type=float, default=12.0, help="the sea's seconds")
         p.add_argument('--scale', type=float, default=None, help="pixels a point (default: each layer's own)")
     s = sub.add_parser('shot', help='draw layers as their Metal would on the device')

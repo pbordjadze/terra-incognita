@@ -419,8 +419,13 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     private var ground: MTLTexture?
     private var ice: MTLTexture?
     private var seaFloor: MTLTexture?
-    /// The night's lights (Globe/ground/night.jpg), read the first time the night is chosen.
+    /// The night's lights (Globe/ground/night.jpg), read the first time the night is chosen; and the
+    /// night's own seconds, by which they shimmer (ten frames a second while the camera rests; held
+    /// under Reduce Motion, and by `-night-time <s>` in debug builds).
     private var night: MTLTexture?
+    private var nightSeconds = 0.0
+    private var heldNight: Double?
+    private var lastNightDraw: CFTimeInterval = 0
     private var groundMonth = 0
     private var groundSample: (bytes: [UInt8], width: Int, height: Int)?
     private var displayLink: CADisplayLink?
@@ -539,6 +544,10 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         }
         if let i = args.firstIndex(of: "-globe-month"), i + 1 < args.count, let m = Int(args[i + 1]) {
             month = min(max(m, 1), 12)
+        }
+        if let i = args.firstIndex(of: "-night-time"), i + 1 < args.count, let t = Double(args[i + 1]) {
+            heldNight = t
+            nightSeconds = t
         }
         if let i = args.firstIndex(of: "-globe-select"), i + 1 < args.count,
            let k = data?.countries.firstIndex(where: { $0.n == args[i + 1] }) {
@@ -799,7 +808,7 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             r2: SIMD4(Float(m[0][2]), Float(m[1][2]), Float(m[2][2]), 0),
             u3: SIMD4(Float(Double(safeAreaInsets.top) * scale), Float(Double(safeAreaInsets.bottom) * scale),
                       Float(Double(safeAreaInsets.left) * scale), Float(Double(safeAreaInsets.right) * scale)),
-            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), Float(nightShown), 0))
+            u4: SIMD4(historicalReference ? 1 : 0, Float(groundShown), Float(nightShown), Float(nightSeconds)))
         encoder.setRenderPipelineState(pipeline)
         encoder.setFragmentBytes(&u, length: MemoryLayout<Uniforms>.stride, index: 0)
         encoder.setFragmentTexture(geo, index: 0)
@@ -1220,6 +1229,11 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             nightMix = still ? nightTarget : nightMix + (nightTarget - nightMix) * min(1, dt * 6)
             if abs(nightMix - nightTarget) < 0.005 { nightMix = nightTarget }
             needsDraw = true
+        }
+        // by night the lights shimmer: the night's clock runs, and the globe draws ten times a second at rest
+        if nightMix > 0, heldNight == nil, !still {
+            nightSeconds += dt
+            if now - lastNightDraw > 0.1 { lastNightDraw = now; needsDraw = true }
         }
         // the names near a touch go after a while
         if let t = touchedPlace, now - t.at > Self.touchedFor {

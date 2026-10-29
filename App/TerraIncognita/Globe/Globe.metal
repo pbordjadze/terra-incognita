@@ -15,7 +15,8 @@ struct GlobeUniforms {
     float4 u3;          // the safe area's insets (px): top, bottom, left, right
     float4 u4;          // x: illustrative prehistoric view suppresses modern political boundaries;
                         // y: how far the drawing has crossed to the ground style (0 Wikipedia's, 1 the ground);
-                        // z: how far the ground has crossed to the night (0 by day, 1 the Earth at night)
+                        // z: how far the ground has crossed to the night (0 by day, 1 the Earth at night);
+                        // w: the night's seconds (its lights shimmer by them; held under Reduce Motion)
 };
 
 struct GlobeVertex { float4 position [[position]]; };
@@ -207,7 +208,7 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
     float2 size = U.u0.xy, centre = U.u0.zw;
     float R = U.u1.x, scale = U.u1.y, zoom = U.u1.z, ringOn = U.u1.w;
     float selected = U.u2.x, highlight = U.u2.y, style = U.u2.z, pageOn = U.u2.w;
-    float ground = U.u4.y, night = U.u4.z;
+    float ground = U.u4.y, night = U.u4.z, nightTime = U.u4.w;
     float x = (pix.x - centre.x) / R, y = (centre.y - pix.y) / R;
     float rr = sqrt(x * x + y * y);
 
@@ -389,8 +390,12 @@ fragment float4 globe_fragment(GlobeVertex in [[stage_in]],
             if (night > 0.001) {                        // (the same for every pixel)
                 // the Earth at night: the measured lights over the drawn land and sea (N_ palette)
                 // (lifted a little: a village's glow is faint in the record, and the plain between
-                // cities is what shows a population's scale)
+                // cities is what shows a population's scale). They come on a beat after the land has
+                // darkened (dusk first, then the cities), and each shimmers a little, slowly, as lights
+                // seen from far do: a noise in the world and in time, never a flicker.
                 float lights = pow(nightTex.sample(linearS, uv, gradient2d(dx, dy)).r, 0.75);
+                float shimmer = vnoise3(w * 1400 + float3(nightTime * 0.45, nightTime * 0.31, 7.9));
+                lights *= (0.86 + 0.28 * shimmer) * smoothstep(0.45, 1.0, night);
                 float3 nland = N_LAND * (1 + 0.25 * hill);
                 nland = mix(nland, N_CHOSEN, 0.6 * m);
                 nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
