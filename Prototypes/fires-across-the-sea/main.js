@@ -28,13 +28,18 @@
   function horizon(h) { return 3.86 * Math.sqrt(Math.max(1, h)); }
   function point(p, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: [p.lon, p.lat] }, properties: props || {} }; }
 
-  // ---- who sees whom ----
-  var peaks = P.peaks, byId = {};
+  // ---- who sees whom: worked out over the globe's own terrain at build time (sight.js), or, without
+  // it, by the horizons alone ----
+  var peaks = P.peaks, byId = {}, SIGHT = window.SIGHT;
   peaks.forEach(function (p) { byId[p.id] = p; p.sees = []; });
-  for (var i = 0; i < peaks.length; i++) {
-    for (var j = i + 1; j < peaks.length; j++) {
-      var a = peaks[i], b = peaks[j], d = dist(a, b);
-      if (d <= horizon(a.h) + horizon(b.h)) { a.sees.push({ id: b.id, km: d }); b.sees.push({ id: a.id, km: d }); }
+  if (SIGHT) {
+    peaks.forEach(function (p) { (SIGHT[p.id] || []).forEach(function (s) { if (byId[s[0]]) p.sees.push({ id: s[0], km: s[1] }); }); });
+  } else {
+    for (var i = 0; i < peaks.length; i++) {
+      for (var j = i + 1; j < peaks.length; j++) {
+        var a = peaks[i], b = peaks[j], d = dist(a, b);
+        if (d <= horizon(a.h) + horizon(b.h)) { a.sees.push({ id: b.id, km: d }); b.sees.push({ id: a.id, km: d }); }
+      }
     }
   }
 
@@ -116,9 +121,9 @@
   terra.on('open', function () {
     terra.panel.show({
       title: 'Fires across the sea',
-      text: 'In Aeschylus\'s Agamemnon, the news that Troy has fallen reaches Argos the same night by a chain of fires: from Mount Ida above Troy to Lemnos, to Athos, across to Euboea, Messapion, Kithairon, the Megarid, Arachnaion and the palace. Each watchman, seeing a fire on the horizon, lights his own. Here every peak has its pyre, and which can see which is worked out from their heights and the curve of the Earth: two fires see each other within the sum of their horizons, 3.86 kilometres times the square root of each height in metres.',
+      text: 'In Aeschylus\'s Agamemnon, the news that Troy has fallen reaches Argos the same night by a chain of fires: from Mount Ida above Troy to Lemnos, to Athos, across to Euboea, Messapion, Kithairon, the Megarid, Arachnaion and the palace. Each watchman, seeing a fire on the horizon, lights his own. Here every peak has its pyre, and which can see which is worked out from their heights, the curve of the Earth and the ground between: two fires see each other within the sum of their horizons (3.86 kilometres times the square root of each height in metres) when no mountain rises into the line between them.',
       sections: [
-        { title: 'What is drawn', text: 'The peaks are the highest points of the Aegean\'s islands and of the mountains round it, with their heights; a fire can be seen as far as its horizon allows, and no further, so the chain runs only where it could. The seconds a watchman takes to light his pyre are drawn. The fires go out after a while; left alone, Ida lights itself and the relay runs again.' },
+        { title: 'What is drawn', text: 'The peaks are the highest points of the Aegean\'s islands and of the mountains round it, with their heights; a fire can be seen as far as its horizon allows and the ground between permits (checked over the globe\'s own terrain, about ten kilometres a cell, so a thin ridge may be missed), and no further, so the chain runs only where it could. The seconds a watchman takes to light his pyre are drawn. The fires go out after a while; left alone, Ida lights itself and the relay runs again.' },
         { title: 'Touching', text: 'Touch any pyre to light it. The fire runs from there to every peak that can see it, and on.' }
       ],
       sources: [
