@@ -26,20 +26,21 @@
   // the smaller rivers; what gathers in its coast ink; the way down deeper still. Light runs along what
   // is lit, the way the water goes (the globe moves it: `flow`).
   var INK = { trace: '#0B3D66', gathered: '#1C7AB0', sea: '#2F7FA8', water: '#2A6A99' };
+  // (dimmed while water is lit, but kept readable on the satellite ground: there are a ton of rivers)
   var BANDS = [
-    { id: 'rivers-3', from: 1, to: 3, ppd: 34, width: 0.7, color: '#4E9CCBB3', quiet: '#86A6B859' },
-    { id: 'rivers-4', from: 4, to: 4, ppd: 22, width: 0.75, color: '#4E9CCBBF', quiet: '#86A6B866' },
-    { id: 'rivers-5', from: 5, to: 5, ppd: 14, width: 0.85, color: '#4E9CCBCC', quiet: '#86A6B873' },
-    { id: 'rivers-6', from: 6, to: 6, ppd: 9, width: 1.0, color: '#4E9CCBD9', quiet: '#86A6B880' },
-    { id: 'rivers-7', from: 7, to: 7, ppd: 6.3, width: 1.3, color: '#4E9CCBE6', quiet: '#86A6B88C' },
-    { id: 'rivers-8', from: 8, to: 8, ppd: 4.5, width: 1.7, color: '#4E9CCBF2', quiet: '#86A6B899' },
-    { id: 'rivers-9', from: 9, to: 99, ppd: 0, width: 2.2, color: '#4E9CCB', quiet: '#86A6B8A6' }
+    { id: 'rivers-3', from: 1, to: 3, ppd: 34, width: 0.7, color: '#4E9CCBB3', quiet: '#7FA0B48C' },
+    { id: 'rivers-4', from: 4, to: 4, ppd: 22, width: 0.75, color: '#4E9CCBBF', quiet: '#7FA0B499' },
+    { id: 'rivers-5', from: 5, to: 5, ppd: 14, width: 0.85, color: '#4E9CCBCC', quiet: '#7FA0B4A6' },
+    { id: 'rivers-6', from: 6, to: 6, ppd: 9, width: 1.0, color: '#4E9CCBD9', quiet: '#7FA0B4B3' },
+    { id: 'rivers-7', from: 7, to: 7, ppd: 6.3, width: 1.3, color: '#4E9CCBE6', quiet: '#7FA0B4BF' },
+    { id: 'rivers-8', from: 8, to: 8, ppd: 4.5, width: 1.7, color: '#4E9CCBF2', quiet: '#7FA0B4CC' },
+    { id: 'rivers-9', from: 9, to: 99, ppd: 0, width: 2.2, color: '#4E9CCB', quiet: '#7FA0B4D9' }
   ];
   // The way down, heavier where more lit water runs together (one, two or three, four or more).
   var TIERS = [{ id: 'trace-1', width: 2.3 }, { id: 'trace-2', width: 3.1 }, { id: 'trace-3', width: 4.0 }];
   var WIDTH = { gatheredGreat: 2.4, gathered: 1.6, sea: 1.2 };
   var FLOW = {
-    trace: { speed: 30, dash: 2, gap: 16, color: '#E6F5FFF2' },
+    trace: { speed: 30, dash: 2, gap: 22, color: '#CDEBFFD9' },
     gathered: { speed: 24, dash: 1.5, gap: 30, color: '#F4FBFFB3', width: 1.1 },
     sea: { speed: 22, dash: 2, gap: 18, color: '#F2FAFFD9' }
   };
