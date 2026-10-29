@@ -27,6 +27,6 @@
     },
     "breathes": true
   },
-  "taps": false,
+  "taps": true,
   "shelf": "current"
 }

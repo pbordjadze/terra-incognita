@@ -22,10 +22,11 @@
       in, and teeth along every edge. Returns points for a smooth closed curve. */
   function leafOutline(r, teeth) {
     // the lobe tips and the sinuses between, as (angle from straight up, radius), clockwise from the base
+    // (a vine leaf is rounder than a maple's: shallow sinuses, broad lobes)
     const spine = [
-      [-168, 0.30], [-150, 0.62], [-132, 0.42], [-110, 0.86], [-85, 0.48], [-60, 0.94], [-32, 0.56],
+      [-168, 0.34], [-148, 0.66], [-128, 0.56], [-108, 0.86], [-82, 0.66], [-58, 0.95], [-30, 0.74],
       [0, 1.0],
-      [32, 0.56], [60, 0.94], [85, 0.48], [110, 0.86], [132, 0.42], [150, 0.62], [168, 0.30],
+      [30, 0.74], [58, 0.95], [82, 0.66], [108, 0.86], [128, 0.56], [148, 0.66], [168, 0.34],
     ];
     const pts = [];
     for (let i = 0; i < spine.length; i++) {
@@ -38,7 +39,7 @@
         const [a1, r1] = spine[i + 1], n = 2;
         for (let k = 1; k <= n; k++) {
           const f = k / (n + 1), a = a0 + (a1 - a0) * f, base = r0 + (r1 - r0) * f;
-          push(a, base * (k % 2 ? 1.04 : 0.97));
+          push(a, base * (k % 2 ? 1.03 : 0.975));
         }
       }
     }
@@ -105,27 +106,26 @@
       coming in from the west that thins and curls into a spiral, the spiral writhing with the frame. A pale
       young leaf unfurls where the shoot begins. */
   function tendril(ctx, w, h, t) {
-    const sway = Math.sin(t * 6.2832), turns = 1.9 + 0.45 * sway;
-    const cx = w * 0.62, cy = h * 0.48 + sway * h * 0.04;
-    const pts = [[w * 0.04, h * 0.72], [w * 0.2, h * 0.66 + sway * h * 0.03], [w * 0.38, h * 0.5]];
-    // the spiral, from the shoot in to its centre
-    const n = 48;
+    const sway = Math.sin(t * 6.2832), turns = 1.35 + 0.3 * sway;
+    const cx = w * 0.7, cy = h * 0.5 + sway * h * 0.04;
+    const pts = [[w * 0.02, h * 0.74], [w * 0.22, h * 0.7 + sway * h * 0.03], [w * 0.46, h * 0.56]];
+    // the spiral, from the shoot in to its centre: a thin curl, the stem's own brown-green, not a shell
+    const n = 40;
     for (let i = 0; i <= n; i++) {
-      const a = i / n * turns * 6.2832 + Math.PI, rr = h * 0.26 * (1 - i / n) + h * 0.015;
+      const a = i / n * turns * 6.2832 + Math.PI, rr = h * 0.2 * (1 - i / n) + h * 0.012;
       pts.push([cx + Math.cos(a + t * 6.2832 * 0.5) * rr, cy + Math.sin(a + t * 6.2832 * 0.5) * rr]);
     }
-    // drawn in pieces that thin toward the tip, ink under green
-    for (const pass of [[INK, 1.0, 0.55], ['#6E9E3A', 0.62, 1]]) {
+    for (const pass of [[INK, 1.0, 0.45], ['#7B7A3A', 0.6, 1]]) {
       ctx.strokeStyle = pass[0]; ctx.globalAlpha = pass[2]; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       for (let i = 1; i < pts.length; i++) {
         const f = i / (pts.length - 1);
-        ctx.lineWidth = Math.max(0.5, h * 0.075 * (1 - f * 0.75)) * pass[1] + (pass[0] === INK ? h * 0.012 : 0);
+        ctx.lineWidth = Math.max(0.4, h * 0.06 * (1 - f * 0.8)) * pass[1] + (pass[0] === INK ? h * 0.01 : 0);
         ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
       }
     }
     ctx.globalAlpha = 1;
-    // the young leaf, bronze-green, small, at the shoot's second joint
-    ctx.save(); ctx.translate(w * 0.17, h * 0.44); leaf(ctx, w * 0.42, h * 0.42, ['#7E9A3A', '#B7CF6E'], -0.9 + sway * 0.1, 11, { vein: '#4A5A18' }); ctx.restore();
+    // the young leaf, bronze-green, at the shoot's second joint
+    ctx.save(); ctx.translate(w * 0.2, h * 0.42); leaf(ctx, w * 0.4, h * 0.4, ['#7E8A3A', '#B3C26A'], -0.9 + sway * 0.1, 11, { vein: '#4A5A18' }); ctx.restore();
   }
 
   /** The qvevri as the globe sees it, from above: a buried vessel is a dark round mouth in the earth, its
@@ -134,12 +134,21 @@
   function qvevri(ctx, w, h, options) {
     options = options || {};
     const cx = w / 2, cy = h / 2, R = Math.min(w, h) * 0.5;
-    // the turned earth round the mouth, soft at its edge
-    const eg = ctx.createRadialGradient(cx, cy, R * 0.45, cx, cy, R);
-    eg.addColorStop(0, B.rgba(EARTH, 0.55)); eg.addColorStop(0.75, B.rgba(EARTH, 0.22)); eg.addColorStop(1, B.rgba(EARTH, 0));
+    const r = B.rand(21);
+    // the turned earth round the mouth, soft at its edge, and the cracks of dried clay
+    const eg = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 0.92);
+    eg.addColorStop(0, B.rgba(EARTH, 0.42)); eg.addColorStop(0.6, B.rgba(EARTH, 0.14)); eg.addColorStop(1, B.rgba(EARTH, 0));
     ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = B.rgba(INK, 0.28); ctx.lineWidth = Math.max(0.4, R * 0.012); ctx.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const a = i / 9 * 6.2832 + r() * 0.5, r0 = R * (0.6 + r() * 0.08), r1 = R * (0.8 + r() * 0.15);
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      const am = a + (r() - 0.5) * 0.25, rm = (r0 + r1) / 2;
+      ctx.lineTo(cx + Math.cos(am) * rm, cy + Math.sin(am) * rm);
+      ctx.lineTo(cx + Math.cos(a + (r() - 0.5) * 0.3) * r1, cy + Math.sin(a + (r() - 0.5) * 0.3) * r1); ctx.stroke();
+    }
     // the rim: a ring of clay, lit from the upper left
-    const rim = R * 0.56, mouth = R * 0.4;
+    const rim = R * 0.6, mouth = R * 0.45;
     const cg = ctx.createRadialGradient(cx - rim * 0.3, cy - rim * 0.3, mouth * 0.5, cx, cy, rim);
     cg.addColorStop(0, B.mix(CLAY, '#FFFFFF', 0.25)); cg.addColorStop(0.7, CLAY); cg.addColorStop(1, CLAY_DARK);
     B.inked(ctx, (c) => { c.arc(cx, cy, rim, 0, 6.2832); }, cg, INK, R * 0.05);
@@ -148,10 +157,17 @@
     wg.addColorStop(0, '#120409'); wg.addColorStop(0.7, WINE); wg.addColorStop(1, B.mix(WINE, '#000000', 0.5));
     B.inked(ctx, (c) => { c.arc(cx, cy, mouth, 0, 6.2832); }, wg, INK, R * 0.04);
     ctx.fillStyle = 'rgba(255, 230, 220, 0.35)'; ctx.beginPath(); ctx.ellipse(cx - mouth * 0.45, cy - mouth * 0.45, mouth * 0.22, mouth * 0.1, -0.7, 0, 6.2832); ctx.fill();
-    // the stone lid, drawn half off the mouth
-    const lg = ctx.createRadialGradient(cx + rim * 0.5, cy + rim * 0.55, 0, cx + rim * 0.62, cy + rim * 0.66, mouth * 1.05);
-    lg.addColorStop(0, '#C4BDAE'); lg.addColorStop(1, '#8E887C');
-    B.inked(ctx, (c) => { c.arc(cx + rim * 0.62, cy + rim * 0.66, mouth * 0.95, 0, 6.2832); }, lg, INK, R * 0.04);
+    // the lid: a flat flagstone, its edges straight and uneven as a split stone's, drawn a third off the
+    // mouth, its sliver of shadow on the rim
+    const lx = cx + rim * 0.72, ly = cy + rim * 0.74, ls = mouth * 0.82;
+    const stone = [[-0.95, -0.5], [-0.35, -0.98], [0.55, -0.8], [1.0, -0.1], [0.7, 0.7], [-0.1, 1.0], [-0.8, 0.6]].map(([x, y]) => [lx + x * ls, ly + y * ls]);
+    const poly = (c, pts) => { c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
+    ctx.fillStyle = 'rgba(20, 10, 5, 0.3)'; ctx.beginPath(); poly(ctx, stone.map(([x, y]) => [x + ls * 0.09, y + ls * 0.11])); ctx.fill();
+    const lg = ctx.createLinearGradient(lx - ls, ly - ls, lx + ls, ly + ls);
+    lg.addColorStop(0, '#D3CCBC'); lg.addColorStop(1, '#8E887C');
+    B.inked(ctx, (c) => { poly(c, stone); }, lg, INK, R * 0.03);
+    ctx.strokeStyle = B.rgba(INK, 0.2); ctx.lineWidth = Math.max(0.3, R * 0.01);
+    ctx.beginPath(); ctx.moveTo(lx - ls * 0.5, ly - ls * 0.2); ctx.quadraticCurveTo(lx, ly + ls * 0.05, lx + ls * 0.55, ly - ls * 0.1); ctx.stroke();
     if (options.leaf) {
       ctx.save(); ctx.translate(cx - R * 0.95, cy - R * 0.98); leaf(ctx, R * 0.95, R * 0.95, GREENS[0], -0.5, 4); ctx.restore();
     }
@@ -180,7 +196,8 @@
   P.push({ name: 'grapes-ripe', width: 20, height: 30, draw(ctx, w, h) { grapes(ctx, w, h, GRAPE_RIPE, 31); } });
   P.push({ name: 'grapes-green', width: 20, height: 30, draw(ctx, w, h) { grapes(ctx, w, h, GRAPE_GREEN, 32); } });
   P.push({ name: 'tendril', width: 34, height: 30, frames: 8, draw(ctx, w, h, i, n) { tendril(ctx, w, h, i / n); } });
-  P.push({ name: 'qvevri', width: 64, height: 64, draw(ctx, w, h) { qvevri(ctx, w, h); } });
+  // (a picture lying on the globe, so it grows as the reader comes close: drawn large)
+  P.push({ name: 'qvevri', width: 256, height: 256, draw(ctx, w, h) { qvevri(ctx, w, h); } });
   P.push({ name: 'doorway', width: 30, height: 32, draw: doorway });
   P.push({ name: 'spark', width: 24, height: 24, draw: spark });
   window.SHEET = { pictures: P };

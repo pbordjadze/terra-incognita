@@ -44,12 +44,12 @@ ORIGIN = (44.75, 41.45, -6000, 'Gadachrili Gora')   # Kvemo Kartli, Georgia: the
 TRUNKS = [
     ('The first vine', [ORIGIN, (44.2, 41.7, -5900, 'Shulaveris Gora'), (43.9, 42.0, -5800, None), (42.9, 42.15, -5600, None),
                         (42.0, 42.2, -5400, 'Colchis'), (41.65, 41.65, -5200, None)]),
-    ('Along the Kura to the Caspian', [(ORIGIN[0], ORIGIN[1], -5920, None), (45.4, 41.6, -5880, None), (46.0, 41.7, -5800, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
+    ('Along the Kura to the Caspian', [(ORIGIN[0], ORIGIN[1], -5850, None), (45.4, 41.6, -5800, None), (46.0, 41.7, -5700, 'Kakheti'), (46.9, 41.3, -5600, None), (47.8, 40.5, -5300, None),
                                        (49.0, 40.3, -5000, None)]),
-    ('Down the Zagros', [(ORIGIN[0], ORIGIN[1], -5850, None), (45.0, 40.6, -5700, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
+    ('Down the Zagros', [(ORIGIN[0], ORIGIN[1], -5700, None), (45.0, 40.6, -5600, None), (45.2, 39.73, -5500, 'Areni'), (45.0, 39.0, -5400, None), (45.47, 36.98, -5000, 'Hajji Firuz'),
                          (46.2, 36.0, -4700, None), (47.0, 35.5, -4300, None), (47.6, 34.9, -3900, None), (48.07, 34.52, -3500, 'Godin Tepe'),
                          (48.8, 33.4, -3200, None), (49.7, 32.6, -3000, None), (51.0, 31.2, -2800, None), (52.0, 30.3, -2600, None), (52.5, 29.6, -2500, 'Shiraz')]),
-    ('Into Anatolia', [(ORIGIN[0], ORIGIN[1], -5780, None), (43.9, 41.1, -5700, None), (42.7, 40.5, -5600, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
+    ('Into Anatolia', [(ORIGIN[0], ORIGIN[1], -5550, None), (43.9, 41.1, -5480, None), (42.7, 40.5, -5400, None), (41.3, 40.0, -5300, None), (39.5, 39.6, -5000, 'Eastern Anatolia'),
                        (37.5, 39.3, -4600, None), (35.5, 39.2, -4300, None), (33.5, 39.0, -3900, None), (31.0, 39.0, -3600, None), (29.5, 39.2, -3400, None),
                        (28.0, 39.4, -3200, None), (27.0, 39.8, -3100, None), (26.24, 39.96, -3000, 'Troy')]),
     ('To the Levant and Egypt', [(39.5, 39.6, -5000, None), (38.3, 38.4, -4800, None), (37.0, 37.2, -4600, None), (36.6, 36.3, -4400, None), (36.0, 35.2, -4200, None),
@@ -194,7 +194,7 @@ def curved(verts):
         p0, p1, p2, p3 = verts[max(0, i - 1)], verts[i], verts[i + 1], verts[min(n - 1, i + 2)]
         out.append(verts[i])
         km = arc((p1[0], p1[1]), (p2[0], p2[1])) * KM
-        k = max(1, min(6, int(km // 150)))
+        k = max(2, min(24, int(km // 40)))
         for j in range(1, k):
             t = j / k
             t2, t3 = t * t, t * t * t
@@ -246,8 +246,8 @@ def nearest(way, lon, lat, by=None):
 
 def runs(way):
     """The way cut into runs over land and over sea by the globe's land, each a list of points sharing
-    its ends with the next (so stems and voyages meet at every landfall); a run shorter than three points
-    joins its neighbours, so a coast grazed doesn't flicker between the two."""
+    its ends with the next (so stems and voyages meet at every landfall); a run shorter than four points
+    (about 160 km) joins its neighbours, so a coast grazed or a lake crossed doesn't flicker between the two."""
     kinds = [on_land(p[0], p[1]) for p in way]
     # the trunks' named places are on land whatever the coarse coast says of a small island or a delta
     for i, p in enumerate(way):
@@ -261,7 +261,7 @@ def runs(way):
             j = i
             while j < len(kinds) and kinds[j] == kinds[i]:
                 j += 1
-            if j - i < 3 and (i > 0 or j < len(kinds)):
+            if j - i < 4 and (i > 0 or j < len(kinds)):
                 fill = kinds[i - 1] if i > 0 else kinds[j]
                 for k in range(i, j):
                     kinds[k] = fill
@@ -380,7 +380,7 @@ def main():
     # the strip's marks: the record's landmarks, not every place (a tick within a fingertip is landed on)
     ticks = [-6000, -5000, -4000, -3000, -2000, -1000, -600, -120, 100, 718, 1425, 1500, 1655, 1788, 1973]
     # the years' pace: deep time quickly, the last five centuries slowly; about three minutes in all
-    pace = [[-6000, 0], [-3000, 32], [-1000, 62], [-100, 86], [800, 104], [1400, 116], [1600, 138], [1800, 158], [1900, 172], [2026, 190]]
+    pace = [[-6000, 0], [-5500, 13], [-3000, 40], [-1000, 68], [-100, 92], [800, 110], [1400, 122], [1600, 144], [1800, 164], [1900, 178], [2026, 196]]
     data = {
         'origin': {'lon': ORIGIN[0], 'lat': ORIGIN[1], 'year': ORIGIN[2], 'name': ORIGIN[3]},
         'branches': [{'name': b['name'], 'from': b['from'], 'twig': b['twig'], 'way': [p[:3] for p in b['way']]} for b in branches],

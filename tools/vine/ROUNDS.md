@@ -57,3 +57,31 @@ screen (a phone no farther than twelve points a degree). The preview learned to 
 when the date moves (its cached layer had not).
 
 Plan (iPad): `[{"wait":3.2},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":10},{"shot":"03"},{"wait":16},{"shot":"04"},{"wait":30},{"shot":"05"},{"at":[25,35,1.0]},{"date":0.999},{"wait":3},{"shot":"06"},{"at":[8,45,3.2]},{"wait":2},{"shot":"07"},{"touch":[4.85,47.0]},{"wait":1.0},{"shot":"08"},{"wait":2.5},{"shot":"09"},{"at":[-70,-25,2.0]},{"wait":2},{"shot":"10"},{"at":[44.75,41.45,6.5]},{"wait":2},{"shot":"11"},{"at":[2,44,6]},{"wait":2},{"shot":"12"}]`
+
+Critic 2 (fresh): "a pipeline map with emoji on it". Ranked: (1) the stem still a route: elbows, the taper
+invisible (everything over 1,800 years old was full width, so Rome's branches matched the first trunk);
+(2) the opening still a star of shoots; the qvevri "a coin at country zoom"; (3) the art stamp-like
+(maple-ish leaves, snail tendrils, a bullseye qvevri with a ball-bearing lid); (4) the touch response
+too faint at the iPad's scale; (5) the foot's two dates ("2025" over "Burgundy · 100 CE") read as a
+contradiction; (6) the whole-Earth payoff without the Americas in frame; the iPhone's globe a small ball
+at zoom 1. Kept, with thanks: the palette, the voyage line, the strip, the pace.
+
+Overruled, and why: the whole-Earth framing is the reader's camera, not the pack's; the phone's globe at
+zoom 1 is Terra's globe; Sicily joined to Calabria by a land stem is the strait (3 km) and true; the
+China branch "to the Amur" is the Korea–Japan trunk foreshortened at the limb; blue land in the Andes
+shot is the preview stand-in's polygon bug at that camera, not the app's (noted, not fixed here).
+
+## Round 3 · a plant, not a route (October 30)
+
+Changed: the trunks curved through their places with a point every 40 km (the elbows are gone); a
+stem is full-grown after five thousand years, not 1,800, so the first trunks are the thick ones, Rome's
+half their width, the colonies' shoots thin; the first shoots leave the valley one at a time (the first
+vine alone for nearly four seconds at the slower opening pace, then the Kura, the Zagros, Anatolia);
+the qvevri is a picture lying on the globe (`terra.images`), so it grows as the reader comes close and
+the first shoot visibly leaves its mouth, with cracked earth round it and a flagstone lid a third off;
+every tap is the pack's and a tap on the mouth begins again; the leaf rounder (a vine's, not a
+maple's); the tendril thin and the stem's brown-green; the touch's light wider and brighter, white
+beads, a bigger spark, and a slow pulse of light where the finger was while the way stays lit; the
+foot says "since 100 CE"; a lake crossed is a stem, not a voyage (runs under four points join).
+
+Plan (iPad): `[{"wait":3.4},{"shot":"01"},{"wait":4},{"shot":"02"},{"wait":8},{"shot":"03"},{"wait":18},{"shot":"04"},{"wait":30},{"shot":"05"},{"at":[25,35,1.0]},{"date":0.999},{"wait":3},{"shot":"06"},{"at":[-30,20,1.0]},{"wait":2},{"shot":"06b"},{"at":[8,45,3.2]},{"wait":2},{"shot":"07"},{"touch":[4.85,47.0]},{"wait":1.0},{"shot":"08"},{"wait":2.5},{"shot":"09"},{"at":[-70,-25,2.0]},{"wait":2},{"shot":"10"},{"at":[44.75,41.45,6.5]},{"wait":2},{"shot":"11"},{"at":[-3,40,5.5]},{"wait":2},{"shot":"12"},{"at":[44.75,41.45,14]},{"wait":2},{"shot":"13"}]`
