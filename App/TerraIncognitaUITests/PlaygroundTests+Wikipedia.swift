@@ -20,38 +20,52 @@ extension PlaygroundTests {
             let said = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: words)
             return XCTWaiter().wait(for: [said], timeout: 5) == .completed
         }
+        func gone(_ element: XCUIElement) -> Bool {
+            let away = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: element)
+            return XCTWaiter().wait(for: [away], timeout: 10) == .completed
+        }
         XCTAssertTrue(says("Off"), "Off until the reader turns it on")
         XCTAssertTrue(text(containing: "The whole world", in: app).exists, "The plain globe's own caption")
 
-        // the sea between, in the atlas's own words
-        startPrototype("sea-between", in: app)
-        let own = text(containing: "engraved chart", in: app)
-        XCTAssertTrue(own.waitForExistence(timeout: 30), "The pack's own words at the foot")
+        // the whales in the desert: a pack that writes nothing at the foot but its name, and keeps
+        // its own paragraphs for its panel
+        startPrototype("sea-of-whales", in: app)
+        let foot = app.descendants(matching: .any)["globeFootCaption"].firstMatch
+        XCTAssertTrue(foot.waitForExistence(timeout: 30), "The pack names itself at the foot")
+        XCTAssertTrue(foot.label.lowercased().contains("whales in the desert"), "Its name at the foot (got “\(foot.label)”)")
+        // (Wikipedia's first sentence on Wadi Al-Hitan, from the pack's own wikipedia.json)
+        let sentence = text(containing: "paleontological site", in: app)
+        XCTAssertFalse(sentence.exists, "Nothing of Wikipedia's while the switch is off")
         XCTAssertFalse(app.descendants(matching: .any)["wikipediaLink"].firstMatch.exists, "No link while the switch is off")
-        attach("50-wikipedia-off-foot", in: app)
-
-        // on: Wikipedia's first sentence on the Aegean, and the link to the article
-        words.tap()
-        XCTAssertTrue(says("On"), "The switch turns Wikipedia's words on")
-        XCTAssertTrue(text(containing: "Aegean Sea is", in: app).waitForExistence(timeout: 10), "Wikipedia's sentence at the foot")
-        XCTAssertTrue(app.descendants(matching: .any)["wikipediaLink"].firstMatch.waitForExistence(timeout: 5), "A link to the article under it")
-        XCTAssertFalse(own.exists, "The atlas's paragraph is gone")
-        attach("51-wikipedia-on-foot", in: app)
-
-        // its panel: Wikipedia's cards where the paragraphs were, and none of the atlas's paragraphs
         let open = app.buttons["openActivePrototype"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 10))
         open.tap()
         XCTAssertTrue(app.descendants(matching: .any)["packPanelTitle"].firstMatch.waitForExistence(timeout: 15), "Open shows its panel")
+        XCTAssertTrue(app.descendants(matching: .any)["packPanelParagraph"].firstMatch.waitForExistence(timeout: 5), "The pack's own paragraphs")
+        XCTAssertFalse(app.descendants(matching: .any)["wikipediaCard"].firstMatch.exists, "And no card of Wikipedia's")
+        attach("50-wikipedia-off-panel", in: app)
+        app.buttons["packPanelClose"].firstMatch.tap()
+
+        // on: Wikipedia's first sentence on the valley at the foot, and the link to the article
+        words.tap()
+        XCTAssertTrue(says("On"), "The switch turns Wikipedia's words on")
+        XCTAssertTrue(sentence.waitForExistence(timeout: 10), "Wikipedia's sentence at the foot")
+        XCTAssertTrue(app.descendants(matching: .any)["wikipediaLink"].firstMatch.waitForExistence(timeout: 5), "A link to the article under it")
+        attach("51-wikipedia-on-foot", in: app)
+
+        // its panel: Wikipedia's cards where the paragraphs were, and none of the pack's own
+        open.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["packPanelTitle"].firstMatch.waitForExistence(timeout: 15), "Open shows its panel")
         XCTAssertTrue(app.descendants(matching: .any)["wikipediaCard"].firstMatch.waitForExistence(timeout: 5), "A card where the paragraph was")
-        XCTAssertFalse(app.descendants(matching: .any)["packPanelParagraph"].firstMatch.exists, "No paragraph of the atlas's own")
+        XCTAssertFalse(app.descendants(matching: .any)["packPanelParagraph"].firstMatch.exists, "No paragraph of the pack's own")
         attach("52-wikipedia-on-panel", in: app)
         app.buttons["packPanelClose"].firstMatch.tap()
 
-        // off again: the atlas's words back, nothing else changed
+        // off again: the pack's words back, nothing else changed
         words.tap()
         XCTAssertTrue(says("Off"), "The switch turns them off")
-        XCTAssertTrue(own.waitForExistence(timeout: 10), "The pack's own words are back")
+        XCTAssertTrue(gone(sentence), "Wikipedia's sentence leaves the foot")
+        XCTAssertTrue(foot.label.lowercased().contains("whales in the desert"), "The pack's name is still there")
         XCTAssertFalse(app.descendants(matching: .any)["wikipediaLink"].firstMatch.exists, "And the link is gone")
         open.tap()
         XCTAssertTrue(app.descendants(matching: .any)["packPanelParagraph"].firstMatch.waitForExistence(timeout: 15), "Its paragraphs are back")
