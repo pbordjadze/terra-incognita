@@ -168,3 +168,26 @@ Overruled: the column marches away from the river, inland (Arrian: the picked tr
 the bank so as not to be seen; the drag still follows it, and the way is what the finger traces); a
 trace under the finger (the column is the trace); sentries pacing to say touch me (the figures walk
 among the fires already; the owner's rule is no sign that says tap here).
+
+### Round 7 — the third hater
+
+It gave the dusk camps and the file snaking inland the best frame on the globe, then: the day kills it
+(a flat khaki wash, blurred hills, a sausage river, at the moment the story pays off), the battle a
+sprite sheet (identical elephants stacked, pikes through their bodies, nothing turning), the island
+mistake invisible (a ruler-straight block overrunning a parade-ground island), the waders peppered
+across the whole river and onto the sandbar, the rain smeared bands, the boats a clump, the camp's
+elephants a fence of ten, the night river lavender and the fires confetti, the chariots illegible from
+the middle distance, the opening a void, the phone's chip over the pool. Worst: the day. Real.
+
+Taken: the morning is a lighting change over the same ground, cold blue-grey with the river keeping
+its brown water and its sheen and the banks their shadow, the east warm; the night's river is muddy
+and dark with the sheen kept; the plain has faint fields near the river. The battle line has six
+elephants with room between them, varied, and the phalanx stops a pike's length short. Across the
+island the column is a thread of clusters too, so it halts at the water's edge; the second channel
+has its own foam. The waders are a bunched band across the one channel, the way the ford runs, the
+first few at the knee, the middle deepest, three horses nose-up. The boats are spaced, each with a
+wake. Five elephants stand at the water, one turned to the viewer. The rain is threads with the
+faintest bands. The chariots from the middle distance are chariots.
+
+Overruled: the phone's chip over the pool (the app's chrome, every pack's); the unlabelled strip (the
+atlas's date strip, every dated pack's).

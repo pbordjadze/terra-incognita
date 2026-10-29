@@ -288,7 +288,7 @@ def ways(T):
     # (the sweeps end wide of the line, not in it: at the symbols' size they would tangle with it)
     alexander = [front, at(-1.7, -1.3), at(-0.9, -2.3), at(0.1, -2.3), at(0.5, -1.9)]
     coenus = [at(-2.0, 0.6), at(-1.6, 1.8), at(-0.6, 2.6), at(0.8, 2.5), at(1.8, 1.6)]
-    phalanx = [at(-2.2, 0), at(-1.4, 0), at(-1.0, 0)]            # (it closes to a pike's length, not into the elephants)
+    phalanx = [at(-2.2, 0), at(-1.6, 0), at(-1.3, 0)]            # (it closes to a pike's length, not into the elephants)
     craterus = resample([camp_a, bank_a, water_p, camp_p], 0.4)
     return {
         'campA': camp_a, 'campP': camp_p, 'waterP': water_p, 'bankA': bank_a, 'glowA': glow_a, 'glowP': glow_p,
