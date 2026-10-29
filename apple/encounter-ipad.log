@@ -1,0 +1,14 @@
+Retrying tests on failure. Running tests repeatedly up to 2 times.
+
+Writing result bundle at path:
+	/Users/runner/work/terra-incognita/terra-incognita/build/encounter-ipad.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:99DEE653-946C-406D-8E9E-238D1FCE93C9, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:99DEE653-946C-406D-8E9E-238D1FCE93C9, OS:26.5, name:iPad Pro 13-inch (M5) }
+2026-10-29 10:13:24.395 xcodebuild[8051:30318] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-10-29 10:13:24.396 xcodebuild[8051:30318] [MT] IDELaunchParametersSnapshot: no debugger version
+2026-10-29 10:18:10.014 xcodebuild[8051:30318] [MT] IDETestOperationsObserverDebug: 332.911 elapsed -- Testing started completed.
+2026-10-29 10:18:10.015 xcodebuild[8051:30318] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-29 10:18:10.015 xcodebuild[8051:30318] [MT] IDETestOperationsObserverDebug: 332.911 sec, +332.911 sec -- end
+Testing started

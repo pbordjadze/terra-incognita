@@ -1,0 +1,38 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "0B26B283-2BAE-4DAB-A258-FC364B747F03.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "59-lamplight-ended_0_9FDED899-C542-411B-B772-4C4E2350B1EC.png",
+        "timestamp" : 1793269027.459
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "0820C0CB-7F09-4C96-88CF-8E187B61F583.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "58-lamplight-karzok_0_43C614D4-8307-4C58-97F2-5E3932234C6C.png",
+        "timestamp" : 1793268944.743
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "99DEE653-946C-406D-8E9E-238D1FCE93C9",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "EA77C76C-6D94-42DD-80B9-2FA2F50A83BD.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "57-lamplight_0_EE4D277E-B510-4A67-8D3B-8E0DB8D22FAA.png",
+        "timestamp" : 1793268941.463
+      }
+    ],
+    "testIdentifier" : "GlobePackTests/testLamplightTurnsTheGlobeToNight()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/GlobePackTests/testLamplightTurnsTheGlobeToNight"
+  }
+]

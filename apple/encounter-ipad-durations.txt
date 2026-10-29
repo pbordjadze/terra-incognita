@@ -1,0 +1,1 @@
+   4m 46s  Passed   GlobePackTests/testLamplightTurnsTheGlobeToNight()
