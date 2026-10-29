@@ -875,7 +875,8 @@ final class PackStore {
         guard let scripts = manifest.scripts, !scripts.isEmpty else { throw PackError("it lists no scripts") }
         var named = scripts
         if let door = manifest.doorway { named += (door.looks ?? door.look.map { [$0] } ?? []).flatMap(\.pictures) }
-        for path in named where !PackRules.isSafePath(path) {
+        // (a doorway's frame may be a frame of a sprite sheet, runtime 6: its sheet is the path)
+        for path in named where !PackRules.isSafePath(SpriteSheet.split(path)?.sheet ?? path) {
             throw PackError("“\(path)” is not a path inside the pack")
         }
         return manifest

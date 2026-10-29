@@ -9,7 +9,7 @@ import UIKit
 
 enum SpriteSheet {
     /// The sheet's path and the frame's rectangle, if the name is a frame of a sheet.
-    static func split(_ name: String) -> (sheet: String, rect: CGRect)? {
+    nonisolated static func split(_ name: String) -> (sheet: String, rect: CGRect)? {
         guard let hash = name.firstIndex(of: "#") else { return nil }
         let numbers = name[name.index(after: hash)...].split(separator: ",", omittingEmptySubsequences: false).compactMap { Int($0) }
         guard numbers.count == 4, numbers[0] >= 0, numbers[1] >= 0, numbers[2] > 0, numbers[3] > 0 else { return nil }
