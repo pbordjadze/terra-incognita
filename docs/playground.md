@@ -12,7 +12,7 @@ released when it ends, and the Live counts come back exactly.
 
 Every new experience or map element is a **pack on the runtime** (3, 4 for a doorway with a life, 5 for things the date moves): data, pictures and a small script
 that runs in JavaScriptCore inside the app, with no web view; the globe draws what it asks for.
-[`docs/runtime3.md`](runtime3.md) is the contract. Native code is for the stage itself and for new
+[`docs/runtime3.md`](runtime3.md) is the contract, [`docs/tools.md`](tools.md) the catalog of tools. Native code is for the stage itself and for new
 runtime tools (CLAUDE.md › The runtime).
 
 - [From "prototype this" to the phone](#from-prototype-this-to-the-phone) (the short version)

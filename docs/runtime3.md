@@ -4,6 +4,7 @@ A pack is data, pictures and a small script. The script runs in JavaScriptCore i
 the app's own process, with no web page and no web view: it decides, and the globe draws, in
 Swift, in step with the camera. Everything a pack asks for belongs to its stage and goes when the
 prototype ends. This page is the contract; `docs/playground.md` is the workflow.
+Every tool, here and in `tools/`, with the packs that use it and its limits: [`docs/tools.md`](tools.md).
 
 **Runtime 4** (October 28, 2026) is the same contract with the stage shared: several experiences
 run on the one globe at once, each entered and left by touch, and every doorway has a life of its

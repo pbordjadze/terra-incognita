@@ -16,6 +16,8 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
+Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one).
+
 - **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
   workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
   prototype's doorway on it (each with a life of its own: a glint from afar, itself closer, stirring;
