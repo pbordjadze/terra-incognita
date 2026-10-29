@@ -1,4 +1,4 @@
-// The desktop preview's host: a stand-in for the app around runtime-3 and runtime-4 packs (docs/runtime3.md),
+// The desktop preview's host: a stand-in for the app around packs of runtimes 3 to 5 (docs/runtime3.md),
 // so a pack can be seen and touched without a Mac. It plays the app's part: a globe (Natural Earth land and
 // borders, orthographic, in the app's Wikipedia colours: tools/globe/preview.py's palette and layout), the
 // camera with the numbers terra.js uses, the geography, pictures and sprites a pack asks the globe to draw (as
@@ -1003,6 +1003,16 @@
     if (o.path != null) {
       const p = o.path, coords = p && Array.isArray(p.coordinates) ? p.coordinates : null;
       if (!coords || !coords.length || !coords.every(validPos)) { hostError(where + ': path.coordinates must be [[lon, lat], …]; not drawn'); return false; }
+      if (p.dates != null) {                 // a dated way (runtime 5): the stage's date moves it
+        const d = p.dates;
+        if (!Array.isArray(d) || d.length !== coords.length || !d.every(Number.isFinite) || d.some((x, i) => i && x < d[i - 1])) {
+          hostError(where + ': path.dates needs a number for each place, rising; not drawn'); return false;
+        }
+        into.path = buildPath(coords.length === 1 ? [coords[0], coords[0]] : coords);
+        into.dates = coords.length === 1 ? [d[0], d[0]] : d.slice();
+        into.key = JSON.stringify([coords, d]);
+        return true;
+      }
       if (coords.length === 1) into.at = unit(coords[0][0], coords[0][1]);
       else {
         into.path = buildPath(coords);
@@ -1024,8 +1034,8 @@
     if (msg.op === 'remove') { s.sprites.delete(id); dirty(); return; }
     if (msg.op !== 'set') return hostWarn('terra.sprites: unknown op "' + msg.op + '"; ignored');
     const o = msg.options || {};
-    const sp = { id, at: null, path: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
-                 touchable: o.touchable === true, breathes: false, t0: now(), flip: false, drawn: null };
+    const sp = { id, at: null, path: null, dates: null, seconds: 60, loop: true, key: '', looks: [], label: typeof o.label === 'string' ? o.label : '',
+                 touchable: o.touchable === true, breathes: false, t0: now(), flip: false, drawn: null, presence: 0, lastT: null, stage: s };
     if (!readWay(s, o, where, sp)) return;
     const looks = Array.isArray(o.looks) ? o.looks : o.look ? [o.look] : [];
     if (!looks.length) return hostError(where + ': needs looks: [{ image | frames, size, … }]; not drawn');
@@ -1037,12 +1047,14 @@
     if (sp.touchable && !sp.label) hostWarn(where + ': a touchable sprite needs a label (its VoiceOver name)');
     const old = s.sprites.get(id);
     if (!old && s.sprites.size >= SPRITE_BUDGET) return hostError(where + ': at most ' + SPRITE_BUDGET + ' sprites; not drawn');
-    if (old && sp.key && old.key === sp.key) { sp.t0 = old.t0; sp.flip = old.flip; }      // the same path keeps its place along it
+    if (old && sp.key && old.key === sp.key) { sp.t0 = old.t0; sp.flip = old.flip; sp.presence = old.presence; sp.lastT = old.lastT; sp.last = old.last; }      // the same path keeps its place along it
+    if (sp.dates && s.M && s.M.runtime < 5) hostWarn(where + ': path.dates is new in runtime 5: declare "runtime": 5');
     s.sprites.set(id, sp);
     dirty();
   }
   // where a sprite is now, and whether it is heading west on screen
   function spritePlace(sp, t, c, m) {
+    if (sp.dates) return datedPlace(sp, t, c, m);
     if (sp.at && !sp.path) return { v: sp.at, moving: false };
     if (settings.reduceMotion) return { v: sp.path.pts[0], moving: false };
     const T = (t - sp.t0) / 1000 / sp.seconds;
@@ -1058,6 +1070,34 @@
     }
     return { v, moving: dir !== 0 };
   }
+  // a sprite on a dated way (runtime 5): where its stage's date puts it, between the two places whose dates the date
+  // lies between; outside its first and last dates it rests at its nearer end, fading out over half a second
+  // (GlobeMarker.Path.position(atDate:)); with no date shown, nowhere
+  function datedPlace(sp, t, c, m) {
+    const tm = sp.stage && sp.stage.time, d = sp.dates, dt = sp.lastT == null ? 0 : clamp((t - sp.lastT) / 1000, 0, 0.1);
+    sp.lastT = t;
+    if (!tm) { sp.presence = 0; return { v: sp.path.pts[0], moving: false, presence: 0 }; }
+    const date = tm.value, n = d.length;
+    let v, within = true;
+    if (date <= d[0]) { v = sp.path.pts[0]; within = date === d[0]; }
+    else if (date >= d[n - 1]) { v = sp.path.pts[n - 1]; within = date === d[n - 1]; }
+    else {
+      let i = 1;
+      while (i < n - 1 && d[i] < date) i++;
+      const span = d[i] - d[i - 1], f = span > 0 ? (date - d[i - 1]) / span : 1;
+      const { pts, cum } = sp.path, total = sp.path.total;
+      v = total > 0 ? along(sp.path, (cum[i - 1] + f * (cum[i] - cum[i - 1])) / total) : pts[0];
+    }
+    const target = within ? 1 : 0;
+    sp.presence = settings.reduceMotion ? target : target > sp.presence ? Math.min(target, sp.presence + dt * 2) : Math.max(target, sp.presence - dt * 2);
+    // it turns the way it moved since the last frame
+    if (sp.last) {
+      const o1 = projectUnit(sp.last[0], sp.last[1], sp.last[2], m, c, {}), o2 = projectUnit(v[0], v[1], v[2], m, c, {});
+      if (Math.abs(o2.x - o1.x) > 0.01) sp.flip = o2.x < o1.x;
+    }
+    sp.last = v;
+    return { v, moving: false, presence: sp.presence };
+  }
   function chooseLook(looks, z) {
     for (let i = 0; i < looks.length; i++) if (zoomHolds(looks[i], z)) return i;
     return -1;
@@ -1070,17 +1110,21 @@
   }
   // draws a look at a place; returns what was drawn, or null (hidden: behind, off screen, under what the app keeps
   // clear, or resting between its showings). A showing fades up and down over its first and last 0.3 s.
-  function drawLook(look, v, flip, T, c, m, clear, breath) {
-    let alpha = 1;
+  function drawLook(look, v, flip, T, c, m, clear, breath, presence) {
+    let alpha = presence == null ? 1 : presence;
+    if (!(alpha > 0)) return null;
     if (look.every && !settings.reduceMotion) {
       const ph = T % look.every;
       if (ph >= look.for) return null;
-      alpha = clamp(Math.min(ph, look.for - ph) / Math.min(0.3, look.for / 3), 0, 1);
+      alpha *= clamp(Math.min(ph, look.for - ph) / Math.min(0.3, look.for / 3), 0, 1);
     }
     const o = projectUnit(v[0], v[1], v[2], m, c, {});
     if (o.z < 0.2) return null;
     const w = look.w * rs, h = look.h * rs, rect = [o.x - w / 2, o.y - h / 2, w, h];
-    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => overlaps(rect, q))) return null;
+    // (GlobeView: a large sprite, over 60 points, shows while its middle is clear of the chrome; a small one
+    // only when none of it is under the chrome)
+    const large = Math.max(look.w, look.h) * rs > 60;
+    if (!overlaps(rect, [0, 0, W, H]) || clear.some((q) => (large ? within(o.x, o.y, q) : overlaps(rect, q)))) return null;
     const pic = look.pics[settings.reduceMotion ? 0 : Math.floor(Math.max(0, T) * look.fps) % look.pics.length];
     if (!pic || !pic.ok) return null;
     g.save();
@@ -1098,13 +1142,13 @@
     if (li < 0) return;
     const look = sp.looks[li], place = spritePlace(sp, t, c, m), T = (t - sp.t0) / 1000 + phaseOf(sp.label || sp.id) * (look.every || 0);
     const breath = sp.breathes && !settings.reduceMotion ? 1 + 0.004 * Math.sin(t / 1000 * 1.2) : 1;
-    const d = drawLook(look, place.v, look.face && sp.flip, T, c, m, clear, breath);
+    const d = drawLook(look, place.v, look.face && sp.flip, T, c, m, clear, breath, place.presence);
     if (d) sp.drawn = Object.assign(d, { look: li });
   }
   function drawSprites(t, c, m, clear) {
     for (const s of stages) for (const sp of s.sprites.values()) drawSprite(sp, t, c, m, clear);
   }
-  const animates = (sp) => !settings.reduceMotion && ((sp.path && (sp.loop !== false || (now() - sp.t0) / 1000 < sp.seconds))
+  const animates = (sp) => !settings.reduceMotion && ((sp.path && (sp.dates || sp.loop !== false || (now() - sp.t0) / 1000 < sp.seconds))
     || sp.looks.some((l) => l.pics.length > 1 || l.every) || sp.breathes);
   function spritesAnimate() {
     for (const s of stages) for (const sp of s.sprites.values()) if (animates(sp)) return true;
@@ -1290,8 +1334,38 @@
       return isNaN(d.getTime()) ? '' : DAYS.format(d);
     }
     const y = Math.round(t.value);
+    if (y <= -10000) return yearsAgo(THIS_YEAR - y);
     return y < 1 ? (1 - y) + ' BCE' : String(y);
   }
+  // before 10,000 BCE, years ago, to two significant figures, as deep time is told (GlobeTime.yearsAgo)
+  const THIS_YEAR = new Date().getUTCFullYear(), GROUPED = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+  function yearsAgo(ago) {
+    if (ago >= 9.95e8) return GROUPED.format(Math.round(ago / 1e8) / 10) + ' billion years ago';
+    if (ago >= 9.95e5) return GROUPED.format(ago >= 9.95e6 ? Math.round(ago / 1e6) : Math.round(ago / 1e5) / 10) + ' million years ago';
+    const mag = Math.pow(10, Math.floor(Math.log10(Math.max(ago, 1))) - 1);
+    return GROUPED.format(Math.round(ago / mag) * mag) + ' years ago';
+  }
+  // the date along the strip (GlobeTime.fraction, value(atFraction:), advanced): evenly, or by its pace (runtime 5),
+  // which says how many seconds of playback each date is reached at and lays the strip out in those seconds
+  function paceSeconds(tm, v) {
+    const p = tm.pace;
+    if (v <= p[0][0]) return p[0][1];
+    if (v >= p[p.length - 1][0]) return p[p.length - 1][1];
+    let i = 1;
+    while (p[i][0] < v) i++;
+    return p[i - 1][1] + (v - p[i - 1][0]) / (p[i][0] - p[i - 1][0]) * (p[i][1] - p[i - 1][1]);
+  }
+  function paceDate(tm, sec) {
+    const p = tm.pace;
+    if (sec <= p[0][1]) return p[0][0];
+    if (sec >= p[p.length - 1][1]) return p[p.length - 1][0];
+    let i = 1;
+    while (p[i][1] < sec) i++;
+    return p[i - 1][0] + (sec - p[i - 1][1]) / (p[i][1] - p[i - 1][1]) * (p[i][0] - p[i - 1][0]);
+  }
+  const fractionOf = (tm, v) => (tm.pace ? paceSeconds(tm, v) / tm.pace[tm.pace.length - 1][1] : (clamp(v, tm.min, tm.max) - tm.min) / (tm.max - tm.min));
+  const valueAt = (tm, f) => (tm.pace ? paceDate(tm, clamp(f, 0, 1) * tm.pace[tm.pace.length - 1][1]) : tm.min + clamp(f, 0, 1) * (tm.max - tm.min));
+  const advanced = (tm, v, dt) => (tm.pace ? paceDate(tm, paceSeconds(tm, v) + dt * tm.speed) : Math.min(v + tm.rate * tm.speed * dt, tm.max));
   function applyCaptionType() {
     const cap = TYPE.styles && TYPE.styles.wikipedia && TYPE.styles.wikipedia.caption;
     if (!cap) return;
@@ -1331,7 +1405,7 @@
     if (!t || $('foot-date').hidden) return;
     const dpr = window.devicePixelRatio || 1, cw = Math.max(1, strip.clientWidth), ch = 44;
     if (strip.width !== Math.round(cw * dpr) || strip.height !== Math.round(ch * dpr)) { strip.width = Math.round(cw * dpr); strip.height = Math.round(ch * dpr); }
-    const s = strip.getContext('2d'), y = ch / 2, at = (v) => ((v - t.min) / (t.max - t.min)) * cw;
+    const s = strip.getContext('2d'), y = ch / 2, at = (v) => fractionOf(t, v) * cw;
     s.setTransform(dpr, 0, 0, dpr, 0, 0);
     s.clearRect(0, 0, cw, ch);
     s.strokeStyle = 'rgba(37, 52, 64, 0.35)'; s.lineWidth = 1;
@@ -1356,9 +1430,21 @@
     if (!o || typeof o !== 'object') o = {};
     const unit_ = o.unit === 'day' ? 'day' : 'year';
     if (o.unit != null && o.unit !== 'year' && o.unit !== 'day') hostWarn('terra.time.show: unit is "year" or "day" (got ' + JSON.stringify(o.unit) + '); years used');
-    const limit = unit_ === 'year' ? 1e7 : 3.66e9;
-    if (!Number.isFinite(o.min) || !Number.isFinite(o.max)) return hostError('terra.time.show: min and max must be numbers (got ' + JSON.stringify([o.min, o.max]) + '); not shown');
-    const lo = Math.max(o.min, -limit), hi = Math.min(o.max, limit);
+    const limit = unit_ === 'year' ? 5e9 : 3.66e9;
+    // a pace (runtime 5): [[date, seconds], …], both rising; its first and last dates are the range, and min, max and rate go
+    let pace = null;
+    if (o.pace != null) {
+      const p = Array.isArray(o.pace) ? o.pace.slice(0, 200) : [];
+      const ok = p.length >= 2 && p.every((x) => Array.isArray(x) && x.length === 2 && Number.isFinite(x[0]) && Number.isFinite(x[1]) && Math.abs(x[0]) <= limit && x[1] >= 0)
+        && p.every((x, i) => !i || (x[0] > p[i - 1][0] && x[1] > p[i - 1][1]));
+      if (!ok) hostError('terra.time.show: pace must be [[date, seconds], …], at least two, dates and seconds both rising; min and max used');
+      else {
+        pace = p.map((x) => [x[0], x[1] - p[0][1]]);
+        if (s.M && s.M.runtime < 5) hostWarn('terra.time.show: pace is new in runtime 5: declare "runtime": 5');
+      }
+    }
+    if (!pace && (!Number.isFinite(o.min) || !Number.isFinite(o.max))) return hostError('terra.time.show: min and max must be numbers (got ' + JSON.stringify([o.min, o.max]) + '); not shown');
+    const lo = pace ? pace[0][0] : Math.max(o.min, -limit), hi = pace ? pace[pace.length - 1][0] : Math.min(o.max, limit);
     if (!(hi > lo)) return hostError('terra.time.show: max must be above min; not shown');
     if (o.carry) warnOnce('carry', 'terra.time.show: carry has no earlier prototype\'s date in the preview; value used');
     const ticks = [];
@@ -1368,7 +1454,7 @@
     }
     stopPlayback(s, false);
     s.time = { unit: unit_, min: lo, max: hi, value: clamp(num(o.value, lo), lo, hi), ticks, playable: !!o.playable,
-               rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false };
+               rate: clamp(num(o.rate, 1), 0.001, (hi - lo) / 2), playing: false, pace, speed: 1 };
     // (a stage in the background does not play: it may when it hears it is in front)
     if (o.playing && s.time.playable && !settings.reduceMotion && s === front()) s.time.playing = true;
     updateFoot();
@@ -1383,7 +1469,7 @@
     const f = front(), tm = f ? f.time : null;
     if (!tm || !tm.playing) return;
     if (settings.reduceMotion) { tm.playing = false; updateFoot(); sendTime(f, 'host'); return; }
-    tm.value = Math.min(tm.value + tm.rate * dt, tm.max);
+    tm.value = advanced(tm, tm.value, dt);
     const done = tm.value >= tm.max;
     if (done) tm.playing = false;
     updateFoot();
@@ -1406,10 +1492,18 @@
   function stepTime(dir) {                   // GlobeTime.step: the next tick, or a hundredth of the span
     const tm = frontTime(), ats = tm.ticks.map((x) => x.at);
     const ahead = dir > 0 ? Math.min(...ats.filter((a) => a > tm.value + 1e-6)) : Math.max(...ats.filter((a) => a < tm.value - 1e-6));
-    return Number.isFinite(ahead) ? ahead : tm.value + dir * Math.max(1, (tm.max - tm.min) / 100);
+    if (Number.isFinite(ahead)) return ahead;
+    const next = valueAt(tm, fractionOf(tm, tm.value) + dir / 100);
+    return Math.abs(next - tm.value) >= 1 ? next : tm.value + dir;
   }
   let scrubbing = false;
-  const scrub = (e) => { const r = strip.getBoundingClientRect(), tm = frontTime(); if (tm) setByReader(tm.min + clamp((e.clientX - r.left) / Math.max(r.width, 1), 0, 1) * (tm.max - tm.min)); };
+  const scrub = (e) => {
+    const r = strip.getBoundingClientRect(), tm = frontTime();
+    if (!tm) return;
+    // a touch within a fingertip of a tick lands on it (GlobeFoot's strip)
+    const x = e.clientX - r.left, near = tm.ticks.reduce((b, k) => { const d = Math.abs(fractionOf(tm, k.at) * r.width - x); return d < b.d ? { d, at: k.at } : b; }, { d: Infinity, at: null });
+    setByReader(near.d <= 10 ? near.at : valueAt(tm, x / Math.max(r.width, 1)));
+  };
   strip.addEventListener('pointerdown', (e) => {
     if (!frontTime() || (e.pointerType === 'mouse' && e.button !== 0)) return;
     scrubbing = true;
@@ -1455,6 +1549,12 @@
           s.time.playing = true; lastPlaySent = -1e9;
         } else s.time.playing = false;
         return updateFoot();
+      case 'speed':
+        if (!s.time) return hostWarn('terra.time.speed before terra.time.show; ignored');
+        if (!Number.isFinite(msg.speed)) return hostWarn('terra.time.speed: the factor must be a number; ignored');
+        if (s.M && s.M.runtime < 5) warnOnce('speed', 'terra.time.speed is new in runtime 5: declare "runtime": 5');
+        s.time.speed = clamp(msg.speed, 0.001, 100);
+        return;
       default: hostWarn('terra.time: unknown op "' + msg.op + '"; ignored');
     }
   }
@@ -1638,7 +1738,7 @@
     const s = stageById.get(pack.id);
     if (s.running) { bringToFront(s, 'reader'); return; }
     const Mp = pack.M, where = 'prototype.json' + (PACKS.length > 1 ? ' (' + pack.id + ')' : '');
-    if (Mp.runtime !== 3 && Mp.runtime !== 4) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs runtime-3 and runtime-4 packs'); return; }
+    if (![3, 4, 5].includes(Mp.runtime)) { hostError(where + ': runtime is ' + JSON.stringify(Mp.runtime) + '; this preview runs packs of runtimes 3 to 5'); return; }
     if (Mp.presentation !== 'globe') hostWarn(where + ': presentation is always "globe" (got ' + JSON.stringify(Mp.presentation) + ')');
     const scripts = Array.isArray(Mp.scripts) ? Mp.scripts : [];
     if (!scripts.length) hostError(where + ': scripts must list the pack\'s scripts, in order');

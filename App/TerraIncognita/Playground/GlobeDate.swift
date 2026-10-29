@@ -10,6 +10,11 @@ struct GlobeTime: Equatable {
         let at: Double
         let hollow: Bool
     }
+    /// A date and the seconds of playback at which it is reached (runtime 5, `pace`).
+    struct Stop: Equatable {
+        let date: Double
+        let seconds: Double
+    }
     /// Who moved it, as the page hears it.
     enum Mover: String { case reader, play, host }
 
@@ -22,18 +27,44 @@ struct GlobeTime: Equatable {
     /// Units a second while playing.
     var rate: Double
     var playing = false
+    /// The date passing unevenly (runtime 5): playback reaches each stop's date that many seconds after
+    /// the first, and the strip is laid out in those seconds, so an era given more of them has more of
+    /// the strip. Empty: evenly, at `rate`.
+    var pace: [Stop] = []
+    /// How fast playback runs, 1 as written (runtime 5, `terra.time.speed`): a pack may slow its date
+    /// as the reader comes close, so what moves with it walks rather than races.
+    var speed: Double = 1
 
-    /// "1945", "300 BCE", "26 February 1873".
+    /// "1945", "300 BCE", "26 February 1873"; before 10,000 BCE, years ago: "45 million years ago".
     var label: String {
         switch unit {
         case .year:
-            // (the range is clamped to ten million years either way, so this can't overflow)
+            // (the range is clamped to five billion years either way, so this can't overflow)
             let y = Int(value.rounded())
+            if y <= -10_000 { return Self.yearsAgo(Double(Self.thisYear - y)) }
             return y < 1 ? String(localized: "\(1 - y) BCE") : String(y)
         case .day:
             return Self.days.string(from: Date(timeIntervalSince1970: value.rounded(.down) * 86_400))
         }
     }
+
+    /// "45 million years ago", "3.4 million years ago", "850,000 years ago", "14,000 years ago": two
+    /// significant figures, as deep time is told.
+    static func yearsAgo(_ ago: Double) -> String {
+        if ago >= 9.95e8 {
+            let billions = (ago / 1e8).rounded() / 10
+            return String(localized: "\(billions.formatted(.number.precision(.fractionLength(0...1)))) billion years ago")
+        }
+        if ago >= 9.95e5 {
+            let millions = ago >= 9.95e6 ? (ago / 1e6).rounded() : (ago / 1e5).rounded() / 10
+            return String(localized: "\(millions.formatted(.number.precision(.fractionLength(0...1)))) million years ago")
+        }
+        let magnitude = pow(10, floor(log10(Swift.max(ago, 1))) - 1)
+        let rounded = Int((ago / magnitude).rounded() * magnitude)
+        return String(localized: "\(rounded.formatted(.number.grouping(.automatic))) years ago")
+    }
+
+    private static let thisYear = Calendar(identifier: .gregorian).component(.year, from: Date())
 
     /// As a year with its fraction, so a date can pass between prototypes counted in other units.
     var year: Double { unit == .year ? value : 1970 + value / 365.2425 }
@@ -43,11 +74,51 @@ struct GlobeTime: Equatable {
 
     func clamped(_ v: Double) -> Double { Swift.min(Swift.max(v, min), max) }
 
-    /// The next tick past the value (VoiceOver's increment), or a hundredth of the span, never less
+    /// Where a date lies along the strip, 0 at its start and 1 at its end: evenly, or by the pace.
+    func fraction(_ v: Double) -> Double {
+        guard let total = pace.last?.seconds, total > 0 else { return (clamped(v) - min) / (max - min) }
+        return seconds(at: v) / total
+    }
+
+    /// The date at a fraction of the strip.
+    func value(atFraction f: Double) -> Double {
+        let f = Swift.min(Swift.max(f, 0), 1)
+        guard let total = pace.last?.seconds, total > 0 else { return min + f * (max - min) }
+        return date(atSeconds: f * total)
+    }
+
+    /// The date `dt` seconds of playback after `v` (at its speed), at most the end.
+    func advanced(_ v: Double, by dt: Double) -> Double {
+        guard !pace.isEmpty else { return Swift.min(max, v + rate * speed * dt) }
+        return date(atSeconds: seconds(at: v) + dt * speed)
+    }
+
+    /// Seconds of playback at which the pace reaches a date.
+    private func seconds(at v: Double) -> Double {
+        guard let first = pace.first, let last = pace.last else { return 0 }
+        if v <= first.date { return first.seconds }
+        if v >= last.date { return last.seconds }
+        let i = pace.firstIndex { $0.date >= v } ?? pace.count - 1
+        let a = pace[i - 1], b = pace[i]
+        return a.seconds + (v - a.date) / (b.date - a.date) * (b.seconds - a.seconds)
+    }
+
+    private func date(atSeconds s: Double) -> Double {
+        guard let first = pace.first, let last = pace.last else { return min }
+        if s <= first.seconds { return first.date }
+        if s >= last.seconds { return last.date }
+        let i = pace.firstIndex { $0.seconds >= s } ?? pace.count - 1
+        let a = pace[i - 1], b = pace[i]
+        return a.date + (s - a.seconds) / (b.seconds - a.seconds) * (b.date - a.date)
+    }
+
+    /// The next tick past the value (VoiceOver's increment), or a hundredth of the strip, never less
     /// than the one year or day the label shows.
     func step(_ direction: Double) -> Double {
         let ahead = direction > 0 ? ticks.map(\.at).filter { $0 > value + 1e-6 }.min() : ticks.map(\.at).filter { $0 < value - 1e-6 }.max()
-        return clamped(ahead ?? value + direction * Swift.max(1, (max - min) / 100))
+        if let ahead { return clamped(ahead) }
+        let next = value(atFraction: fraction(value) + direction / 100)
+        return clamped(abs(next - value) >= 1 ? next : value + direction)
     }
 
     private static let days: DateFormatter = {
@@ -61,10 +132,18 @@ struct GlobeTime: Equatable {
     /// From `terra.time.show(options)`; nil if its range is not a range.
     static func from(_ o: [String: Any]) -> GlobeTime? {
         func number(_ x: Any?) -> Double? { (x as? NSNumber).map(\.doubleValue).flatMap { $0.isFinite ? $0 : nil } }
-        // ten million years either way (in days for a day unit) is room enough, and keeps every label finite
+        // five billion years either way (ten million in days for a day unit) is room enough for the
+        // Earth's age, and keeps every label finite
         let unit = Unit(rawValue: (o["unit"] as? String) ?? "year") ?? .year
-        let limit = unit == .year ? 1e7 : 3.66e9
-        guard let lo = number(o["min"]).map({ Swift.max($0, -limit) }), let hi = number(o["max"]).map({ Swift.min($0, limit) }), hi > lo else { return nil }
+        let limit = unit == .year ? 5e9 : 3.66e9
+        // a pace (runtime 5): dates and seconds both rising; its first and last dates are the range
+        let pace: [Stop] = ((o["pace"] as? [Any]) ?? []).prefix(200).compactMap { s in
+            guard let pair = (s as? [Any])?.compactMap(number), pair.count == 2, abs(pair[0]) <= limit, pair[1] >= 0 else { return nil }
+            return Stop(date: pair[0], seconds: pair[1])
+        }
+        let paced = pace.count >= 2 && zip(pace, pace.dropFirst()).allSatisfy { $1.date > $0.date && $1.seconds > $0.seconds }
+        guard let lo = paced ? pace.first?.date : number(o["min"]).map({ Swift.max($0, -limit) }),
+              let hi = paced ? pace.last?.date : number(o["max"]).map({ Swift.min($0, limit) }), hi > lo else { return nil }
         let ticks: [Tick] = ((o["ticks"] as? [Any]) ?? []).prefix(2000).compactMap { t in
             if let at = number(t) { return Tick(at: at, hollow: false) }
             if let d = t as? [String: Any], let at = number(d["at"]) { return Tick(at: at, hollow: (d["hollow"] as? Bool) ?? false) }
@@ -72,7 +151,21 @@ struct GlobeTime: Equatable {
         }.filter { $0.at >= lo && $0.at <= hi }
         return GlobeTime(unit: unit, min: lo, max: hi, value: Swift.min(Swift.max(number(o["value"]) ?? lo, lo), hi),
                          ticks: ticks, playable: (o["playable"] as? Bool) ?? false,
-                         rate: Swift.min(Swift.max(number(o["rate"]) ?? 1, 0.001), (hi - lo) / 2))
+                         rate: Swift.min(Swift.max(number(o["rate"]) ?? 1, 0.001), (hi - lo) / 2),
+                         pace: paced ? pace.map { Stop(date: $0.date, seconds: $0.seconds - pace[0].seconds) } : [])
+    }
+}
+
+/// The date a stage shows, as its dated sprites read it every frame (runtime 5): playing, it runs on
+/// from where playback last set it, so a sprite moves smoothly between playback's steps.
+struct DateClock {
+    let time: GlobeTime
+    let stamp: CFTimeInterval
+
+    func value(at now: CFTimeInterval) -> Double {
+        guard time.playing else { return time.value }
+        // (playback steps about thirty times a second; past a tenth of a second it is held, and so is this)
+        return time.advanced(time.value, by: Swift.min(0.1, Swift.max(0, now - stamp)))
     }
 }
 
@@ -189,8 +282,7 @@ private struct DateStrip: View {
                     if let near, abs(position(near.at, width: g.size.width) - x) <= 10 {
                         onTime(near.at)
                     } else {
-                        let f = Double(min(max(x / max(g.size.width, 1), 0), 1))
-                        onTime(time.min + f * (time.max - time.min))
+                        onTime(time.value(atFraction: Double(x / max(g.size.width, 1))))
                     }
                 })
             }
@@ -212,7 +304,7 @@ private struct DateStrip: View {
     }
 
     private func position(_ v: Double, width: CGFloat) -> CGFloat {
-        CGFloat((v - time.min) / (time.max - time.min)) * width
+        CGFloat(time.fraction(v)) * width
     }
 }
 

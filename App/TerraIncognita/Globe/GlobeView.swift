@@ -1246,8 +1246,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
             m.advance(now: now, zoom: zoom, reading: reading, still: still) { lon, lat in project(lon: lon, lat: lat).point }
             let p = project(lon: m.lon, lat: m.lat)
             m.view.center = p.point
+            // a large sprite (an animal drawn close, runtime 5) shows while any of it is on screen and its
+            // middle is clear of the chrome; a small one only wholly on screen and clear
+            let large = max(m.view.bounds.width, m.view.bounds.height) > 60
             let hidden = authoredMode || m.resting || zoom < m.minZoom || zoom > m.maxZoom || p.facing < 0.35
-                || !bounds.contains(m.view.frame) || keepClear.contains(where: { $0.intersects(m.view.frame) })
+                || !(large ? bounds.intersects(m.view.frame) : bounds.contains(m.view.frame))
+                || keepClear.contains(where: { large ? $0.contains(m.view.center) : $0.intersects(m.view.frame) })
             if m.view.isHidden != hidden { m.view.isHidden = hidden; labelsFading = true; shownChanged = true }
             if !hidden, m.animates, !still { animating = true }
         }

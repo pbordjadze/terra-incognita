@@ -43,9 +43,12 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 4
-# a pack declares the runtime it needs: 3, or 4 for what docs/runtime3.md marks new in 4
-RUNTIMES = (3, 4)
+RUNTIME = 5
+# a pack declares the runtime it needs: 3, 4 for what docs/runtime3.md marks new in 4, 5 for what it
+# marks new in 5 (a sprite on a dated way, the date's pace)
+RUNTIMES = (3, 4, 5)
+# a doorway's life (looks by zoom, a path, a breath) came with runtime 4
+DOORWAY_LIFE_RUNTIME = 4
 OPEN_SCHEME = 'terraincognita'
 R3_ONLY = 'runtime 3 only: a pack is scripts drawn by the globe'
 
@@ -507,8 +510,8 @@ def validate_manifest(m, name, files, rep, where):
     _check_str(rep, where, m, 'title', 1, 60)
     _check_str(rep, where, m, 'summary', 1, 200)
     if not is_int(runtime) or runtime not in RUNTIMES:
-        rep.error(where, f'"runtime" must be {RUNTIMES[0]} or {RUNTIME} (the newest this repository\'s app hosts; '
-                         f'{RUNTIME} for what docs/runtime3.md marks new in {RUNTIME})')
+        rep.error(where, f'"runtime" must be {RUNTIMES[0]} to {RUNTIME} (the newest this repository\'s app hosts; '
+                         f'4 or {RUNTIME} for what docs/runtime3.md marks new in them)')
     pres = m.get('presentation')
     if pres == 'screen':
         rep.error(where, f'"presentation" is "screen": {R3_ONLY}, and there are no pack screens ("globe")')
@@ -566,9 +569,9 @@ def validate_manifest(m, name, files, rep, where):
             if not isinstance(label, str) or not label.strip() or len(label) > 200:
                 rep.error(where, 'doorway.label is required: the words VoiceOver speaks (1-200 characters)')
             life = [k for k in DOORWAY_LIFE_KEYS if k in door]
-            if life and runtime == RUNTIMES[0]:
-                rep.error(where, f'doorway.{life[0]} is new in runtime {RUNTIME} (docs/runtime3.md › Many at once): '
-                                 f'declare "runtime": {RUNTIME}')
+            if life and is_int(runtime) and runtime < DOORWAY_LIFE_RUNTIME:
+                rep.error(where, f'doorway.{life[0]} is new in runtime {DOORWAY_LIFE_RUNTIME} (docs/runtime3.md › Many at once): '
+                                 f'declare "runtime": {DOORWAY_LIFE_RUNTIME} or later')
             if 'look' not in door and 'looks' not in door:
                 rep.error(where, 'doorway.look is required: how it shows on the globe (as a sprite\'s look), '
                                  'or doorway.looks, its looks by zoom')

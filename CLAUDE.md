@@ -47,6 +47,7 @@ Keep design discussions and plans in that private repository.
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
+    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint).
 - **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
   clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
@@ -118,6 +119,12 @@ Keep design discussions and plans in that private repository.
   - Debug builds take `-globe-at lon lat zoom` (held there), `-globe-select <name>`, `-globe-month n`
     (the ground's month)
     (`-globe` is accepted and changes nothing: the globe is always the opening view).
+- **The herds** (`Prototypes/herds/`, a runtime-5 pack): the camel family's history as small herds that
+  move across the globe with its date, from North America north across Beringia to Asia, Europe and
+  Africa and south to the Andes; one animal of each herd drawn large close up, the date slowing as the
+  reader comes close. Every animal is a sprite on a dated way (`docs/runtime3.md`, runtime 5). Built by
+  `tools/herds/build.py` from `tools/herds/lineages.py` (each turn's source beside it) and the globe's
+  own land, and `tools/herds/draw.cjs` (the animals, drawn from parameters); never hand-edit their output.
 - **The sea between** (`Prototypes/sea-between/`, a runtime-3 pack): the engraved Aegean leaf lying
   on the globe, its drawn life as sprites, its checked notes in the panel, and a sounding glass
   (`SOURCES.md` in the pack). `-leaf` starts it. It is built from the former web leaf in `Leaf/`, which
@@ -195,7 +202,8 @@ Keep design discussions and plans in that private repository.
   their doorways and ended from the chip in turn with the counts exact at each step, a lens given back
   (`PlaygroundTests+Lens.swift`: its name, words and camera, no second globe), parked work, the bundled
   pack, a remote revision served by `tools/playground/serve.cjs` arriving, rolling back and opening
-  offline, and the runtime-2 packs drawn by the globe (their date moved, nothing left after).
+  offline, the runtime-2 packs drawn by the globe (their date moved, nothing left after), and the
+  herds' animals moving with the date (runtime 5).
   `[playground-check]` (or `interaction_suite=playground`) runs only these on a branch; main always
   runs every interaction suite before publishing the ordinary SideStore update.
 - **The plates** (`Atlas/`). `looks.json` and `<look>/plates.json`, with layer images, written by

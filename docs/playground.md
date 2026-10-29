@@ -10,7 +10,7 @@ caption are at the foot; ✕ ends it and the next is in front; the workbench's *
 them all. Each one's sprites, pictures, geography, script and screens are made when it starts and
 released when it ends, and the Live counts come back exactly.
 
-Every new experience or map element is a **pack on the runtime** (3, or 4 for a doorway with a life): data, pictures and a small script
+Every new experience or map element is a **pack on the runtime** (3, 4 for a doorway with a life, 5 for things the date moves): data, pictures and a small script
 that runs in JavaScriptCore inside the app, with no web view; the globe draws what it asks for.
 [`docs/runtime3.md`](runtime3.md) is the contract. Native code is for the stage itself and for new
 runtime tools (CLAUDE.md › The runtime).
@@ -64,6 +64,7 @@ node tools/playground/check.cjs tide-pool                     # headless Chromiu
 node tools/playground/check.cjs tide-pool --wikipedia         # the same with Wikipedia's words on (the reader's switch)
 python3 tools/wikipedia/build.py --pack tide-pool             # its wikipedia.json: the articles its words name (docs/runtime3.md)
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
+node tools/playground/explore.cjs tide-pool out/ '[{"wait":3000,"shot":"a"}]'   # its moments from a plan: fly, scrub, touch, screenshot
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
 
@@ -74,7 +75,8 @@ the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
 the sea is tapped); `Prototypes/sounding-the-deep/` and `Prototypes/borders-on-old-maps/` use the
-globe's date and geography. A pack is a script, its data and pictures, with everything inside its
+globe's date and geography; `Prototypes/herds/` (runtime 5) moves things with the date: sprites on
+dated ways, a date with an uneven pace, slowed as the reader comes close. A pack is a script, its data and pictures, with everything inside its
 folder; it cannot reach the network. Keep the first-reader test in mind: someone who touches this
 first, knowing nothing, should be able to tell what they are looking at.
 
