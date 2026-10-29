@@ -162,3 +162,6 @@ extension XCTestCase {
         add(attachment)
     }
 }
+
+// A deliberate slip, to prove the build-only check compiles the UI tests (never merged).
+private let buildOnlySlipProof: Int = "not a number"
