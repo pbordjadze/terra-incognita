@@ -62,7 +62,11 @@ MAX_FILE_BYTES = 25_000_000
 MAX_FILES = 500
 MAX_FRAMES = 24   # a sprite's (or doorway's) look, docs/runtime3.md
 
-TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'scripts', 'anchor', 'doorway', 'taps', 'shelf'}
+TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'scripts', 'anchor', 'doorway', 'taps', 'shelf', 'whatsNew'}
+# a pack's piece for What's new (docs/whatsnew.md): what to look at, where to start, the one question
+WHATS_NEW_KEYS = {'id', 'title', 'what', 'ask', 'since', 'version', 'start', 'row'}
+WHATS_NEW_START_KEYS = {'run', 'camera', 'date', 'playing', 'wikipedia', 'clouds', 'select', 'open'}
+DAY_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
 # what runtimes 1 and 2 declared and runtime 3 has no place for
 WEB_KEYS = {'entry': 'a web page', 'overlay': 'a web page over the globe',
             'markers': 'pictures placed by the host; a "doorway" or terra.sprites does that now'}
@@ -390,6 +394,75 @@ def _check_str(rep, where, m, key, lo, hi):
         rep.error(where, f'"{key}" must be {lo}-{hi} characters (it has {len(v.strip())})')
 
 
+def check_whats_new(rep, where, piece, pack_id=None, prototype_ids=None):
+    """One What's new piece (docs/whatsnew.md): a pack's `whatsNew` (pack_id given: its id is the
+    pack's) or an entry of the app's WhatsNew.json. `prototype_ids`: every id `start.run` may name."""
+    tag = 'whatsNew' if pack_id else f'pieces[{piece.get("id", "?")}]'
+    if not isinstance(piece, dict):
+        rep.error(where, f'{tag} must be an object {{ what, ask, since, version, start }}')
+        return
+    for k in piece:
+        if k not in WHATS_NEW_KEYS:
+            rep.warn(where, f'unknown key "{tag}.{k}"')
+    if pack_id:
+        if 'id' in piece and piece['id'] != pack_id:
+            rep.error(where, f'{tag}.id is the pack\'s id ("{pack_id}"); leave it out')
+    else:
+        pid = piece.get('id')
+        if not isinstance(pid, str) or not ID_RE.fullmatch(pid):
+            rep.error(where, f'{tag}.id must match {ID_RE.pattern}')
+    if 'title' in piece or not pack_id:
+        _check_str(rep, where, piece, 'title', 1, 60) if not pack_id else None
+        if pack_id and (not isinstance(piece.get('title'), str) or not 1 <= len(piece['title']) <= 60):
+            rep.error(where, f'{tag}.title must be 1-60 characters (or left out: the pack\'s)')
+    for k, hi in (('what', 240), ('ask', 160)):
+        if k in piece and (not isinstance(piece[k], str) or not 1 <= len(piece[k].strip()) <= hi):
+            rep.error(where, f'{tag}.{k} must be 1-{hi} characters: one line the owner reads while it plays')
+    if 'what' not in piece:
+        rep.warn(where, f'{tag}.what is missing: one line saying what to look at')
+    since = piece.get('since')
+    if not isinstance(since, str) or not DAY_RE.fullmatch(since):
+        rep.error(where, f'{tag}.since is required: the day it landed, YYYY-MM-DD (the queue plays the newest first)')
+    if 'version' in piece and (not isinstance(piece['version'], str) or not 1 <= len(piece['version']) <= 20):
+        rep.error(where, f'{tag}.version must be a short string ("1", "2", a date): bump it to ask again')
+    if 'row' in piece and not is_int(piece['row']):
+        rep.error(where, f'{tag}.row must be a whole number (the painting-company row)')
+    start = piece.get('start')
+    if 'start' in piece:
+        if not isinstance(start, dict):
+            rep.error(where, f'{tag}.start must be an object {{ run, camera, date, playing, wikipedia, clouds, select, open }}')
+            return
+        for k in start:
+            if k not in WHATS_NEW_START_KEYS:
+                rep.warn(where, f'unknown key "{tag}.start.{k}"')
+        run = start.get('run', [])
+        if not isinstance(run, list) or not all(isinstance(r, str) for r in run) or len(run) > 6:
+            rep.error(where, f'{tag}.start.run must be a list of up to 6 prototype ids, the last in front')
+        elif prototype_ids is not None:
+            for r in run:
+                if r not in prototype_ids:
+                    rep.error(where, f'{tag}.start.run names "{r}", which is not a pack or a native prototype here')
+        if 'camera' in start:
+            cam = start['camera']
+            if not isinstance(cam, dict):
+                rep.error(where, f'{tag}.start.camera must be {{ lon, lat, zoom }}')
+            else:
+                for k, lo, hi in (('lon', -180, 180), ('lat', -90, 90), ('zoom', 0.8, 32)):
+                    if k not in cam:
+                        rep.error(where, f'{tag}.start.camera.{k} is required')
+                    else:
+                        _check_num(rep, where, f'{tag}.start.camera.{k}', cam[k], lo, hi)
+        if 'date' in start and not is_num(start['date']):
+            rep.error(where, f'{tag}.start.date must be a number in the front pack\'s unit (a year, or days since 1970)')
+        for k in ('playing', 'wikipedia', 'clouds', 'open'):
+            if k in start and not isinstance(start[k], bool):
+                rep.error(where, f'{tag}.start.{k} must be true or false')
+        if 'select' in start and (not isinstance(start['select'], str) or not start['select'].strip()):
+            rep.error(where, f'{tag}.start.select must be a country\'s name')
+        if pack_id and run and pack_id not in run:
+            rep.warn(where, f'{tag}.start.run does not run this pack ("{pack_id}"); a pack\'s own piece usually shows the pack')
+
+
 def _check_num(rep, where, name, v, lo, hi):
     if not is_num(v):
         rep.error(where, f'{name} must be a number')
@@ -596,6 +669,8 @@ def validate_manifest(m, name, files, rep, where):
                 rep.error(where, 'doorway.breathes must be true or false')
         if m.get('shelf') == 'parked':
             rep.warn(where, 'a parked pack shows no doorway')
+    if 'whatsNew' in m:
+        check_whats_new(rep, where, m['whatsNew'], pack_id=name)
     return False
 
 
@@ -1113,7 +1188,8 @@ def _substitute(name, data, pid, title):
         return data
     text = data.decode('utf-8')
     t = json.dumps(title)[1:-1] if ext in ('.json', '.js') else title
-    return text.replace('{{id}}', pid).replace('{{title}}', t).encode('utf-8')
+    today = datetime.datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d')
+    return text.replace('{{id}}', pid).replace('{{title}}', t).replace('{{today}}', today).encode('utf-8')
 
 
 def cmd_new(args):

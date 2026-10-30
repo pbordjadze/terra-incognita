@@ -96,12 +96,14 @@ jobs:
           # the playground's bundled packs and tools (docs/playground.md)
           python3 tools/playground/playground.py validate 2>&1 | tee -a out/plates-check.log || rc=1
           python3 tools/playground/test_playground.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
+          # What's new: every piece sound, its start naming prototypes that exist (docs/whatsnew.md)
+          python3 tools/whatsnew/whatsnew.py validate 2>&1 | tee -a out/plates-check.log || rc=1
           for f in $(find Prototypes -name '*.js') tools/playground/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
           for f in $(find tools/plates -name '*.js' -o -name '*.cjs' | grep -v -e /vendor/ -e /node_modules/); do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
           done
           for f in tools/ocean/*.cjs tools/ocean/web/*.js tools/clouds/*.cjs tools/clouds/web/*.js tools/metal/*.cjs; do node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1; done
-          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/playground/*.py tools/whales/*.py tools/beacons/*.py tools/leadline/*.py tools/lowsea/*.py tools/vine/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py tools/wikipedia/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 -m py_compile tools/plates/*.py tools/globe/*.py tools/playground/*.py tools/whatsnew/*.py tools/whales/*.py tools/beacons/*.py tools/leadline/*.py tools/lowsea/*.py tools/vine/*.py tools/ocean/*.py tools/clouds/*.py tools/metal/*.py tools/metal/tests/*.py tools/wikipedia/*.py ci/*.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the Metal shaders compiled as C++ by clang, in seconds (tools/metal/README.md), and the
           # stand-in's own tests (numpy for its textures)
           python3 tools/metal/metal.py check 2>&1 | tee -a out/plates-check.log || rc=1

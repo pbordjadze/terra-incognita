@@ -186,6 +186,4 @@ nonisolated enum WhatsNewQueue {
         for p in packs where seen.insert(p.id).inserted { all.append(p) }
         return all
     }
-        return all
-    }
 }

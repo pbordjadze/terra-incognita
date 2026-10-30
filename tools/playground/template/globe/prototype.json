@@ -10,5 +10,11 @@
                "looks": [ { "image": "marker.png", "size": [28, 28], "minZoom": 1.5 },
                           { "image": "doorway-glint.png", "size": [11, 11], "maxZoom": 1.5, "every": 10, "for": 1.2 } ] },
   "taps": false,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "what": "One line the owner reads while it plays: what to look at.",
+    "ask": "The one question you most want answered?",
+    "since": "{{today}}",
+    "version": "1"
+  }
 }
