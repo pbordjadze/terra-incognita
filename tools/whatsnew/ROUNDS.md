@@ -30,3 +30,18 @@ not be reasoned out off the Mac).
 scheme), with the atlas's gold as an ink dark enough to read; `what` is two lines at most; Skip and
 Didn't work are paper buttons, 36 points tall; the test asserts the count after each Skip and
 answers the microphone sheet from an inert touch (a touch on the globe had lit Turkey).
+
+## Round 2
+
+**Looked at.** `[test WhatsNewTests]` on the iPad again (run 214): both tests pass; twelve pieces;
+the pill, the first three pieces, the picture, the end card, the list, one piece played alone.
+
+**Found.** The paper chrome reads over clouds, sea and land, and the gold question with it; Skip and
+Didn't work are buttons now. The picture's thumbnail shows the globe. But seven of the twelve pieces
+showed the plain globe and its own caption: a pack's entry has no `start`, and only the tool
+(`whatsnew.py`) had the default of running the pack; the host ran nothing. The `what` lines, written
+for a reader with time, were cut with an ellipsis at two lines even on the iPad.
+
+**Changed.** The host gives a pack's piece the pack to run unless its `start` says otherwise. Every
+`what` is shortened to two lines of the iPad's bar. The third round runs on both devices (a
+hand-started run, `device: both`), and gets the first critic.
