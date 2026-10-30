@@ -192,7 +192,8 @@ struct PlaygroundRoot: View {
                     .accessibilityLabel(Text("and \(others) more running"))
             }
             if stage.canOpen {
-                Button { stage.open() } label: {
+                // (weak: the chip is hidden while What's new plays, and a hidden view's removal held the stage)
+                Button { [weak stage] in stage?.open() } label: {
                     Text("Open")
                         .font(.subheadline)
                         .padding(.horizontal, 6)
