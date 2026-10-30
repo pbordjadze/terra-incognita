@@ -73,13 +73,15 @@ final class WhatsNewTests: XCTestCase {
         app.buttons["react_nice"].firstMatch.tap()
         waitForProgress("2 of", in: app, "Answering again moves on")
 
-        // skip through to the end
-        for _ in 0..<(total + 1) {
+        // skip through to the end (the taps wait while the next piece is put in place)
+        for _ in 0..<(total + 2) {
             if app.otherElements["whatsNewFinish"].firstMatch.exists { break }
             let skip = app.buttons["react_skip"].firstMatch
             guard skip.waitForExistence(timeout: 15) else { break }
+            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: skip)
+            _ = XCTWaiter().wait(for: [ready], timeout: 15)
             skip.tap()
-            Thread.sleep(forTimeInterval: 1.2)
+            Thread.sleep(forTimeInterval: 1.0)
         }
         let finish = app.otherElements["whatsNewFinish"].firstMatch
         XCTAssertTrue(finish.waitForExistence(timeout: 20), "After the last piece, the card")
