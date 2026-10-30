@@ -1,0 +1,1212 @@
+2026-10-30 02:16:51.161 xcodebuild[35491:101209] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-10-30 02:16:51.360 xcodebuild[35491:101209] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+2026-10-30 02:16:51.491 xcodebuild[35491:101209] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+--- xcodebuild:2026-10-30 02:17:27.919053+0000 maestro-driver-iosUITests-Runner[37123:105409] [Default] Running tests...
+2026-10-30 02:17:28.229399+0000 maestro-driver-iosUITests-Runner[37123:105409] snapshotKeyHonorModalViews configured to value: (null)
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-10-30 02:17:36.737.
+Test Suite 'maestro-driver-iosUITests.xctest' started at 2026-10-30 02:17:36.755.
+Test Suite 'SwipeRouteHandlerV2ClassificationTests' started at 2026-10-30 02:17:36.773.
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testClassifiedTimeoutPreservesTheRealMessage]' started.
+    t =     0.09s Start Test at 2026-10-30 02:17:36.869
+    t =     0.10s Set Up
+    t =     0.12s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testClassifiedTimeoutPreservesTheRealMessage]' passed (0.034 seconds).
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testMainThreadBusyIsClassifiedAsTimeout]' started.
+    t =     0.00s Start Test at 2026-10-30 02:17:36.903
+    t =     0.01s Set Up
+    t =     0.01s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testMainThreadBusyIsClassifiedAsTimeout]' passed (0.007 seconds).
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testTimeoutMessageWithWrongDomainStaysInternal]' started.
+    t =     0.00s Start Test at 2026-10-30 02:17:36.939
+    t =     0.01s Set Up
+    t =     0.01s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testTimeoutMessageWithWrongDomainStaysInternal]' passed (0.011 seconds).
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testUIQueryTimeoutIsClassifiedAsTimeout]' started.
+    t =     0.01s Start Test at 2026-10-30 02:17:36.958
+    t =     0.01s Set Up
+    t =     0.03s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testUIQueryTimeoutIsClassifiedAsTimeout]' passed (0.025 seconds).
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testUnrelatedXCTFutureErrorStaysInternal]' started.
+objc[37123]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109e5c310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108a18398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.15s Start Test at 2026-10-30 02:17:39.133
+    t =     2.16s Set Up
+    t =     2.16s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testUnrelatedXCTFutureErrorStaysInternal]' passed (2.169 seconds).
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testXCTFutureCode1000WithUnrelatedMessageStaysInternal]' started.
+    t =     1.32s Start Test at 2026-10-30 02:17:40.472
+    t =     1.32s Set Up
+    t =     1.32s Tear Down
+Test Case '-[maestro_driver_iosUITests.SwipeRouteHandlerV2ClassificationTests testXCTFutureCode1000WithUnrelatedMessageStaysInternal]' passed (1.324 seconds).
+Test Suite 'SwipeRouteHandlerV2ClassificationTests' passed at 2026-10-30 02:17:40.480.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 3.569 (3.708) seconds
+Test Suite 'maestro_driver_iosUITests' started at 2026-10-30 02:17:40.482.
+    t =      nans Suite Set Up
+Test Case '-[maestro_driver_iosUITests.maestro_driver_iosUITests testHttpServer]' started.
+    t =     0.00s Start Test at 2026-10-30 02:17:40.486
+    t =     0.00s Set Up
+2026-10-30 02:17:40.490253+0000 maestro-driver-iosUITests-Runner[37123:105597] [maestro_driver_iosUITests] Will start HTTP server
+2026-10-30 02:17:41.980883+0000 maestro-driver-iosUITests-Runner[37123:105587] [FlyingFox] starting server 127.0.0.1:22087
+2026-10-30 02:17:42.012372+0000 maestro-driver-iosUITests-Runner[37123:105587] [FlyingFox] <127.0.0.1> open connection
+2026-10-30 02:17:42.144288+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /status
+2026-10-30 02:17:43.561670+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> open connection
+2026-10-30 02:17:43.571186+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:18:12.270823+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    31.79s Getting device orientation
+2026-10-30 02:18:12.373644+0000 maestro-driver-iosUITests-Runner[37123:105409] Using singleton test manager
+2026-10-30 02:18:12.421409+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    31.97s Getting device orientation
+    t =    31.97s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:12.619314+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:13.899455+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:13.911605+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:13.912646+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:13.913011+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    33.43s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:13.997006+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:13.997697+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    33.51s Checking existence of `StatusBar (First Match)`
+    t =    33.57s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    33.64s Find the StatusBar (Element at index 0)
+    t =    33.71s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:14.277643+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.27990007400512695
+2026-10-30 02:18:14.278077+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:14.300674+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.021709918975830078
+    t =    33.82s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:14.352413+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:29.586196+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    49.10s Getting device orientation
+2026-10-30 02:18:29.618876+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    49.14s Getting device orientation
+2026-10-30 02:18:29.626118+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:29.627450+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:32.826886+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:18:33.855254+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    53.37s Getting device orientation
+2026-10-30 02:18:33.882832+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    53.40s Getting device orientation
+2026-10-30 02:18:33.887308+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:33.887851+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:33.906901+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:33.916382+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:33.918866+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:33.919114+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    53.43s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:34.076723+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:34.077475+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    53.59s Checking existence of `StatusBar (First Match)`
+    t =    53.67s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    53.73s Find the StatusBar (Element at index 0)
+    t =    53.81s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:34.387344+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.30959010124206543
+2026-10-30 02:18:34.387615+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:34.388826+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.001157999038696289
+    t =    53.90s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:34.443756+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:34.657275+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:18:35.792112+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:18:37.199679+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:18:38.610016+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    58.13s Getting device orientation
+2026-10-30 02:18:38.670255+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    58.19s Getting device orientation
+2026-10-30 02:18:38.679246+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:38.681099+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:38.838677+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:38.846788+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:38.847602+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:38.847834+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    58.36s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:38.924839+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:38.925320+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    58.44s Checking existence of `StatusBar (First Match)`
+    t =    58.47s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    58.58s Find the StatusBar (Element at index 0)
+    t =    58.66s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:39.232487+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.30713093280792236
+2026-10-30 02:18:39.233150+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:39.240434+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.007006049156188965
+    t =    58.76s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:39.301931+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:39.528381+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:18:41.482118+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    61.00s Getting device orientation
+2026-10-30 02:18:41.494247+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    61.01s Getting device orientation
+2026-10-30 02:18:41.499209+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:41.499794+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:41.602965+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:18:41.669594+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    61.19s Getting device orientation
+2026-10-30 02:18:41.674911+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =    61.19s Getting device orientation
+2026-10-30 02:18:41.682742+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 46.0, 804.0
+    t =    61.20s Getting device orientation
+2026-10-30 02:18:43.610257+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 1.8907870054244995
+2026-10-30 02:18:45.003055+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:18:46.535967+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:18:48.056959+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    67.58s Getting device orientation
+2026-10-30 02:18:48.107288+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    67.63s Getting device orientation
+2026-10-30 02:18:48.112020+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:48.112217+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:48.116736+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:48.122829+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:48.123588+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:48.123696+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    67.64s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:48.214561+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:48.215194+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    67.73s Checking existence of `StatusBar (First Match)`
+    t =    67.78s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    67.87s Find the StatusBar (Element at index 0)
+    t =    67.96s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:48.614514+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.39924395084381104
+2026-10-30 02:18:48.614917+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:48.616860+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0018709897994995117
+    t =    68.13s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:48.676026+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:48.905962+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    68.42s Getting device orientation
+2026-10-30 02:18:48.914207+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    68.43s Getting device orientation
+2026-10-30 02:18:48.916456+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:48.917249+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:48.946081+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:48.949883+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:48.950541+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:48.950632+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    68.46s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:49.303106+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:49.305483+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    68.82s Checking existence of `StatusBar (First Match)`
+    t =    68.87s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    68.93s Find the StatusBar (Element at index 0)
+    t =    69.01s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:49.581443+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2758549451828003
+2026-10-30 02:18:49.581661+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:49.583866+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0018929243087768555
+    t =    69.10s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:49.652503+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:50.136719+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    69.65s Getting device orientation
+2026-10-30 02:18:50.147380+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    69.66s Getting device orientation
+2026-10-30 02:18:50.149179+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:50.149322+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:50.167584+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:50.170853+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:50.171481+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:50.171576+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    69.69s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:50.442126+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:50.442549+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    69.96s Checking existence of `StatusBar (First Match)`
+    t =    70.05s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    70.13s Find the StatusBar (Element at index 0)
+    t =    70.21s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:50.774927+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.3322709798812866
+2026-10-30 02:18:50.775446+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:50.777873+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002194046974182129
+    t =    70.29s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:50.839254+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:51.155225+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    70.67s Getting device orientation
+2026-10-30 02:18:51.164856+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    70.68s Getting device orientation
+2026-10-30 02:18:51.167906+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:51.169962+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:51.182206+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:51.191468+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:51.192332+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:51.192463+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    70.71s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:51.755495+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:51.758083+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    71.27s Checking existence of `StatusBar (First Match)`
+    t =    71.33s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    71.40s Find the StatusBar (Element at index 0)
+    t =    71.48s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:52.026135+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.26746106147766113
+2026-10-30 02:18:52.026607+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:52.028259+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0015790462493896484
+    t =    71.54s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:52.138270+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:52.587857+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    72.10s Getting device orientation
+2026-10-30 02:18:52.602104+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    72.12s Getting device orientation
+2026-10-30 02:18:52.610529+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:52.611012+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:52.634206+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:52.643026+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:52.645031+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:52.645276+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    72.16s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:52.696364+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:52.696540+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    72.21s Checking existence of `StatusBar (First Match)`
+    t =    72.24s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    72.29s Find the StatusBar (Element at index 0)
+    t =    72.37s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:52.921996+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.22534894943237305
+2026-10-30 02:18:52.922228+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:52.923318+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0010219812393188477
+    t =    72.44s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:52.981970+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:53.337196+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    72.85s Getting device orientation
+2026-10-30 02:18:53.344391+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    72.87s Getting device orientation
+2026-10-30 02:18:53.360938+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:53.361490+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:53.365881+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:53.371571+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:53.374232+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:53.374371+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    72.89s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:53.433066+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:53.433229+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    72.95s Checking existence of `StatusBar (First Match)`
+    t =    72.98s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    73.05s Find the StatusBar (Element at index 0)
+    t =    73.11s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:53.668952+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23528194427490234
+2026-10-30 02:18:53.669920+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:53.670979+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0013130903244018555
+    t =    73.19s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:53.713445+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:54.072247+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    73.59s Getting device orientation
+2026-10-30 02:18:54.086296+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    73.60s Getting device orientation
+2026-10-30 02:18:54.092391+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:54.092738+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:54.111333+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:54.122698+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:54.126290+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:54.126538+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    73.64s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:54.376119+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:54.376286+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    73.89s Checking existence of `StatusBar (First Match)`
+    t =    73.91s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    73.97s Find the StatusBar (Element at index 0)
+    t =    74.03s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:54.592864+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.21639597415924072
+2026-10-30 02:18:54.593091+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:54.594772+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0015970468521118164
+    t =    74.11s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:54.642398+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:54.995609+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    74.51s Getting device orientation
+2026-10-30 02:18:55.019603+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    74.53s Getting device orientation
+2026-10-30 02:18:55.024837+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:55.025274+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:55.036737+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:55.044210+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:55.047078+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:55.047393+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    74.56s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:55.202754+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:55.203362+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    74.72s Checking existence of `StatusBar (First Match)`
+    t =    74.76s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    74.84s Find the StatusBar (Element at index 0)
+    t =    74.90s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:55.442724+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23929202556610107
+2026-10-30 02:18:55.442837+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:55.443458+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0005849599838256836
+    t =    74.96s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:55.498655+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:55.904457+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    75.42s Getting device orientation
+2026-10-30 02:18:55.918997+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    75.43s Getting device orientation
+2026-10-30 02:18:55.920659+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:55.920808+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:55.932014+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:55.943212+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:55.946806+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:55.947223+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    75.48s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:56.129830+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:56.130306+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    75.64s Checking existence of `StatusBar (First Match)`
+    t =    75.67s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    75.90s Find the StatusBar (Element at index 0)
+    t =    76.00s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:56.538002+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.40736496448516846
+2026-10-30 02:18:56.539225+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:56.542851+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0033119916915893555
+    t =    76.06s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:56.615964+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:57.046722+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    76.56s Getting device orientation
+2026-10-30 02:18:57.060712+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    76.58s Getting device orientation
+2026-10-30 02:18:57.065706+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:57.066455+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:57.080656+0000 maestro-driver-iosUITests-Runner[37123:105597] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:57.087202+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:57.088307+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:57.088767+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    76.60s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:57.464537+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:57.471239+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    76.99s Checking existence of `StatusBar (First Match)`
+    t =    77.02s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    77.06s Find the StatusBar (Element at index 0)
+    t =    77.14s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:57.689213+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.21789097785949707
+2026-10-30 02:18:57.689627+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:57.691461+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0017240047454833984
+    t =    77.21s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:57.740660+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:58.245999+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =    77.76s Getting device orientation
+2026-10-30 02:18:58.257205+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =    77.77s Getting device orientation
+2026-10-30 02:18:58.263384+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:18:58.263945+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:18:58.270045+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:18:58.277734+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:18:58.279999+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:58.280388+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =    77.79s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:18:58.434043+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:18:58.434726+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =    77.95s Checking existence of `StatusBar (First Match)`
+    t =    77.99s Get all elements bound by index for: Descendants matching type StatusBar
+    t =    78.09s Find the StatusBar (Element at index 0)
+    t =    78.14s Find the StatusBar (Element at index 1)
+2026-10-30 02:18:58.691505+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.25659799575805664
+2026-10-30 02:18:58.692703+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:18:58.695713+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002825021743774414
+    t =    78.21s Find the Application 'com.apple.springboard'
+2026-10-30 02:18:58.745029+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:18:59.508682+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:19:08.013390+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:19:14.406378+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:19:28.258454+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   107.77s Getting device orientation
+2026-10-30 02:19:28.288965+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   107.81s Getting device orientation
+2026-10-30 02:19:28.295108+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:28.295407+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:28.304128+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:28.312248+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:28.314044+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:28.315422+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   107.83s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:28.482879+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:28.483458+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   108.00s Checking existence of `StatusBar (First Match)`
+    t =   108.06s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   108.18s Find the StatusBar (Element at index 0)
+    t =   108.26s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:28.838851+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.3551180362701416
+2026-10-30 02:19:28.839805+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:28.848946+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.003908991813659668
+    t =   108.36s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:29.063793+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:29.351762+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:19:32.921180+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:19:32.928446+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   112.44s Getting device orientation
+2026-10-30 02:19:32.937477+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =   112.45s Getting device orientation
+2026-10-30 02:19:32.942054+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 222.0, 361.0
+    t =   112.46s Getting device orientation
+2026-10-30 02:19:33.328803+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 0.38280391693115234
+2026-10-30 02:19:35.013752+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:19:37.268907+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:19:39.191446+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   118.71s Getting device orientation
+2026-10-30 02:19:39.307032+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   118.82s Getting device orientation
+2026-10-30 02:19:39.313792+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:39.455980+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:42.349309+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:42.388167+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:42.394368+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:42.396757+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   121.91s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:42.615226+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:42.615387+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   122.13s Checking existence of `StatusBar (First Match)`
+    t =   122.20s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   122.27s Find the StatusBar (Element at index 0)
+    t =   122.34s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:42.879215+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2636159658432007
+2026-10-30 02:19:42.879511+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:42.880720+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0010800361633300781
+    t =   122.40s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:42.987690+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:43.179349+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   122.69s Getting device orientation
+2026-10-30 02:19:43.199013+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   122.72s Getting device orientation
+2026-10-30 02:19:43.208966+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:43.209590+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:43.507802+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:43.513302+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:43.516829+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:43.517023+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   123.03s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:43.907713+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:43.910309+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   123.43s Checking existence of `StatusBar (First Match)`
+    t =   123.48s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   123.53s Find the StatusBar (Element at index 0)
+    t =   123.57s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:44.148596+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23762011528015137
+2026-10-30 02:19:44.152764+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:44.160431+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.007583022117614746
+    t =   123.68s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:44.205360+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:45.689245+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   125.20s Getting device orientation
+2026-10-30 02:19:45.708897+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   125.22s Getting device orientation
+2026-10-30 02:19:45.716199+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:45.717408+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:45.970919+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:45.977057+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:45.978043+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:45.978165+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   125.49s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:46.302464+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:46.302719+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   125.82s Checking existence of `StatusBar (First Match)`
+    t =   125.88s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   125.95s Find the StatusBar (Element at index 0)
+    t =   125.99s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:46.543907+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.24061405658721924
+2026-10-30 02:19:46.544278+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:46.548471+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.003998994827270508
+    t =   126.06s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:46.639316+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:47.096449+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   126.61s Getting device orientation
+2026-10-30 02:19:47.108782+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   126.63s Getting device orientation
+2026-10-30 02:19:47.119467+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:47.119761+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:47.171146+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:47.180918+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:47.183075+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:47.183250+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   126.70s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:47.362966+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:47.363411+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   126.88s Checking existence of `StatusBar (First Match)`
+    t =   126.94s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   127.00s Find the StatusBar (Element at index 0)
+    t =   127.04s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:47.601075+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23755598068237305
+2026-10-30 02:19:47.602695+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:47.607527+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0047310590744018555
+    t =   127.12s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:47.663928+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:48.495219+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   128.01s Getting device orientation
+2026-10-30 02:19:48.503496+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   128.02s Getting device orientation
+2026-10-30 02:19:48.505414+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:48.506009+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:48.547647+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:48.551246+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:48.551902+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:48.551998+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   128.07s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:48.872478+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:48.876115+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   128.39s Checking existence of `StatusBar (First Match)`
+    t =   128.43s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   128.54s Find the StatusBar (Element at index 0)
+    t =   128.70s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:49.259836+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.38356900215148926
+2026-10-30 02:19:49.260136+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:49.262121+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0018820762634277344
+    t =   128.78s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:49.456401+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:50.218351+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   129.73s Getting device orientation
+2026-10-30 02:19:50.225609+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   129.74s Getting device orientation
+2026-10-30 02:19:50.227985+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:50.228259+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:50.233980+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:50.240710+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:50.241463+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:50.241582+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   129.76s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:50.413066+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:50.413310+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   129.93s Checking existence of `StatusBar (First Match)`
+    t =   129.96s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   130.05s Find the StatusBar (Element at index 0)
+    t =   130.13s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:50.673792+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.260235071182251
+2026-10-30 02:19:50.674009+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:50.674839+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0007560253143310547
+    t =   130.19s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:50.716756+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:52.061793+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   131.58s Getting device orientation
+2026-10-30 02:19:52.110434+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   131.63s Getting device orientation
+2026-10-30 02:19:52.115026+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:52.115541+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:52.736786+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:52.741458+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:52.742116+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:52.742246+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   132.26s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:52.895739+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:52.895947+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   132.41s Checking existence of `StatusBar (First Match)`
+    t =   132.48s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   132.60s Find the StatusBar (Element at index 0)
+    t =   132.83s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:53.625988+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.6537250280380249
+2026-10-30 02:19:53.687464+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:53.691989+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.004022955894470215
+    t =   133.21s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:53.763841+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:55.164485+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   134.68s Getting device orientation
+2026-10-30 02:19:55.202463+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   134.72s Getting device orientation
+2026-10-30 02:19:55.210401+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:55.211562+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:55.559014+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:55.599429+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:55.601410+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:55.601762+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   135.12s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:55.720417+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:55.721249+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   135.24s Checking existence of `StatusBar (First Match)`
+    t =   135.28s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   136.18s Find the StatusBar (Element at index 0)
+    t =   136.31s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:56.955005+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 1.2336859703063965
+2026-10-30 02:19:56.957988+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:56.958930+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0008800029754638672
+    t =   136.47s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:56.990740+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:57.493634+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   137.01s Getting device orientation
+2026-10-30 02:19:57.513874+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   137.03s Getting device orientation
+2026-10-30 02:19:57.516778+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:57.517197+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:57.698185+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:57.723883+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:57.737693+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:57.755249+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   137.27s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:57.942659+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:57.947931+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   137.47s Checking existence of `StatusBar (First Match)`
+    t =   137.49s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   137.53s Find the StatusBar (Element at index 0)
+    t =   137.58s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:58.213185+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2649810314178467
+2026-10-30 02:19:58.214423+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:58.215870+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0011980533599853516
+    t =   137.73s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:58.266055+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:19:58.760088+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   138.28s Getting device orientation
+2026-10-30 02:19:58.819286+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   138.34s Getting device orientation
+2026-10-30 02:19:58.842914+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:19:58.843226+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:19:59.111741+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:19:59.120239+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:19:59.121580+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:59.121789+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   138.64s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:19:59.218764+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:19:59.218999+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   138.73s Checking existence of `StatusBar (First Match)`
+    t =   138.77s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   139.05s Find the StatusBar (Element at index 0)
+    t =   139.19s Find the StatusBar (Element at index 1)
+2026-10-30 02:19:59.811096+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.5891629457473755
+2026-10-30 02:19:59.811672+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:19:59.813496+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0017379522323608398
+    t =   139.33s Find the Application 'com.apple.springboard'
+2026-10-30 02:19:59.879160+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:20:00.305884+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   139.82s Getting device orientation
+2026-10-30 02:20:00.346131+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   139.86s Getting device orientation
+2026-10-30 02:20:00.349970+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:20:00.350913+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:20:00.531156+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:20:00.541933+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:20:00.544150+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:20:00.544503+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   140.06s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:20:00.716851+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:20:00.718512+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   140.24s Checking existence of `StatusBar (First Match)`
+    t =   140.28s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   140.60s Find the StatusBar (Element at index 0)
+    t =   140.70s Find the StatusBar (Element at index 1)
+2026-10-30 02:20:01.251654+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.5328830480575562
+2026-10-30 02:20:01.252689+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:20:01.255046+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002285003662109375
+    t =   140.77s Find the Application 'com.apple.springboard'
+2026-10-30 02:20:01.297975+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:20:02.228365+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:20:03.988445+0000 maestro-driver-iosUITests-Runner[37123:105595] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:21:03.093387+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   202.61s Getting device orientation
+2026-10-30 02:21:03.133125+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   202.65s Getting device orientation
+2026-10-30 02:21:03.136318+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:03.136600+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:03.141926+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:03.155962+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:03.156713+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:03.156805+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   202.67s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:03.315496+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:03.315737+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   202.84s Checking existence of `StatusBar (First Match)`
+    t =   202.93s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   203.11s Find the StatusBar (Element at index 0)
+    t =   203.26s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:03.839779+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.5232380628585815
+2026-10-30 02:21:03.850798+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:03.860184+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.009141087532043457
+    t =   203.38s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:03.986397+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:04.033876+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:05.690240+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:07.044718+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   206.56s Getting device orientation
+2026-10-30 02:21:07.074193+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   206.60s Getting device orientation
+2026-10-30 02:21:07.090085+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:07.090428+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:07.181766+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:07.214215+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:07.226356+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:07.227221+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   206.74s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:07.338766+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:07.341164+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   206.86s Checking existence of `StatusBar (First Match)`
+    t =   206.95s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   207.07s Find the StatusBar (Element at index 0)
+    t =   207.29s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:07.854625+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.5133359432220459
+2026-10-30 02:21:07.854805+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:07.855616+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0006910562515258789
+    t =   207.37s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:08.151791+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:08.902837+0000 maestro-driver-iosUITests-Runner[37123:114665] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   208.42s Getting device orientation
+2026-10-30 02:21:08.946472+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   208.47s Getting device orientation
+2026-10-30 02:21:08.964172+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:08.964886+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:08.999821+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:09.031598+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:09.033880+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:09.036580+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   208.55s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:09.183470+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:09.183850+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   208.70s Checking existence of `StatusBar (First Match)`
+    t =   208.77s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   208.80s Find the StatusBar (Element at index 0)
+    t =   208.94s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:09.518519+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.33454203605651855
+2026-10-30 02:21:09.530607+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:09.533301+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002440929412841797
+    t =   209.05s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:09.753375+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:11.152335+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   210.67s Getting device orientation
+2026-10-30 02:21:11.180116+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   210.71s Getting device orientation
+2026-10-30 02:21:11.193299+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:11.194634+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:11.249187+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:11.276139+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:11.278913+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:11.279653+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   210.79s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:11.438114+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:11.445508+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   210.96s Checking existence of `StatusBar (First Match)`
+    t =   211.00s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   211.11s Find the StatusBar (Element at index 0)
+    t =   211.25s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:11.839957+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.3943730592727661
+2026-10-30 02:21:11.847132+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:11.852151+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.004434943199157715
+    t =   211.37s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:12.026548+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:12.913561+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   212.43s Getting device orientation
+2026-10-30 02:21:12.932791+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   212.45s Getting device orientation
+2026-10-30 02:21:12.945074+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:12.945767+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:12.998417+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:13.039872+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:13.049676+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:13.049829+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   212.68s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:13.437513+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:13.443790+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   212.97s Checking existence of `StatusBar (First Match)`
+    t =   213.05s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   213.09s Find the StatusBar (Element at index 0)
+    t =   213.17s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:13.870359+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.4264810085296631
+2026-10-30 02:21:13.870618+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:13.873156+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0010040998458862305
+    t =   213.39s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:13.947759+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:14.702983+0000 maestro-driver-iosUITests-Runner[37123:114665] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   214.22s Getting device orientation
+2026-10-30 02:21:14.727382+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   214.24s Getting device orientation
+2026-10-30 02:21:14.732436+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:14.732960+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:14.843695+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:14.851624+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:14.853321+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:14.854383+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   214.37s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:15.028905+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:15.032431+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   214.56s Checking existence of `StatusBar (First Match)`
+    t =   214.62s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   214.68s Find the StatusBar (Element at index 0)
+    t =   214.76s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:15.337322+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.30487799644470215
+2026-10-30 02:21:15.337675+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:15.339135+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0012960433959960938
+    t =   214.85s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:15.441935+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:16.711182+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   216.23s Getting device orientation
+2026-10-30 02:21:16.719919+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   216.23s Getting device orientation
+2026-10-30 02:21:16.721394+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:16.721532+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:16.727830+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:16.732785+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:16.734418+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:16.736084+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   216.25s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:16.954166+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:16.955034+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   216.47s Checking existence of `StatusBar (First Match)`
+    t =   216.54s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   216.60s Find the StatusBar (Element at index 0)
+    t =   216.75s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:17.396223+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.44055306911468506
+2026-10-30 02:21:17.397068+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:17.405218+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.00802600383758545
+    t =   216.92s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:17.539457+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:18.770440+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   218.29s Getting device orientation
+2026-10-30 02:21:18.777345+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   218.29s Getting device orientation
+2026-10-30 02:21:18.781493+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:18.782616+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:18.794611+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:18.798607+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:18.799165+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:18.799246+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   218.31s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:18.961797+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:18.962958+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   218.48s Checking existence of `StatusBar (First Match)`
+    t =   218.58s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   218.70s Find the StatusBar (Element at index 0)
+    t =   218.81s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:19.505607+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.5417309999465942
+2026-10-30 02:21:19.508920+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:19.511581+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0024480819702148438
+    t =   219.03s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:19.757679+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:20.121167+0000 maestro-driver-iosUITests-Runner[37123:114665] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   219.64s Getting device orientation
+2026-10-30 02:21:20.127958+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   219.64s Getting device orientation
+2026-10-30 02:21:20.129729+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:20.129938+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:20.213036+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:20.222668+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:20.223373+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:20.225257+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   219.74s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:20.352441+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:20.352616+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   219.87s Checking existence of `StatusBar (First Match)`
+    t =   219.90s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   219.94s Find the StatusBar (Element at index 0)
+    t =   220.04s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:20.646222+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.29345500469207764
+2026-10-30 02:21:20.647899+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:20.656823+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.008571982383728027
+    t =   220.17s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:20.819038+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:21.212716+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   220.73s Getting device orientation
+2026-10-30 02:21:21.258409+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   220.77s Getting device orientation
+2026-10-30 02:21:21.266185+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:21.266561+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:21.291325+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:21.299664+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:21.303659+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:21.303942+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   220.82s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:21.502564+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:21.503920+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   221.02s Checking existence of `StatusBar (First Match)`
+    t =   221.09s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   221.27s Find the StatusBar (Element at index 0)
+    t =   221.42s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:22.000391+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.48536503314971924
+2026-10-30 02:21:22.029015+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:22.041375+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.012218952178955078
+    t =   221.56s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:22.135304+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:22.808283+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   222.32s Getting device orientation
+2026-10-30 02:21:22.821680+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   222.34s Getting device orientation
+2026-10-30 02:21:22.831654+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:22.832481+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:22.884158+0000 maestro-driver-iosUITests-Runner[37123:114665] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:22.890038+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:22.891079+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:22.891280+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   222.41s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:23.013914+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:23.016036+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   222.53s Checking existence of `StatusBar (First Match)`
+    t =   222.61s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   222.68s Find the StatusBar (Element at index 0)
+    t =   222.83s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:23.572831+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.55485999584198
+2026-10-30 02:21:23.574008+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:23.575896+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002308964729309082
+    t =   223.09s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:23.814524+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:24.528154+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:21:26.504156+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:21:26.515076+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   226.03s Getting device orientation
+2026-10-30 02:21:26.523640+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =   226.04s Getting device orientation
+2026-10-30 02:21:26.525298+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 46.0, 804.0
+    t =   226.04s Getting device orientation
+2026-10-30 02:21:26.920194+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 0.38929808139801025
+2026-10-30 02:21:26.927343+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:27.768950+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:28.791525+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:29.929848+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   229.44s Getting device orientation
+2026-10-30 02:21:29.941877+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   229.46s Getting device orientation
+2026-10-30 02:21:29.943947+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:29.944218+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:29.949934+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:29.955935+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:29.958006+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:29.958168+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   229.47s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:30.013547+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:30.013986+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   229.53s Checking existence of `StatusBar (First Match)`
+    t =   229.57s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   229.63s Find the StatusBar (Element at index 0)
+    t =   229.68s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:30.226688+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.21262800693511963
+2026-10-30 02:21:30.226867+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:30.227917+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0010039806365966797
+    t =   229.74s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:30.265322+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:30.277864+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   229.79s Getting device orientation
+2026-10-30 02:21:30.286216+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   229.80s Getting device orientation
+2026-10-30 02:21:30.288100+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:30.288350+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:30.294778+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:30.302152+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:30.303243+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:30.303408+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   229.82s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:30.329313+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:30.329526+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   229.84s Checking existence of `StatusBar (First Match)`
+    t =   229.87s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   229.95s Find the StatusBar (Element at index 0)
+    t =   230.00s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:30.537817+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.20814800262451172
+2026-10-30 02:21:30.539169+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:30.541402+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0024999380111694336
+    t =   230.06s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:30.591931+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:30.658607+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:21:31.355386+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   230.87s Getting device orientation
+2026-10-30 02:21:31.364597+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   230.88s Getting device orientation
+2026-10-30 02:21:31.366618+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:31.366786+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:31.372724+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:31.384631+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:31.387152+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:31.387429+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   230.90s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:31.442930+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:31.443272+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   230.96s Checking existence of `StatusBar (First Match)`
+    t =   230.99s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   231.05s Find the StatusBar (Element at index 0)
+    t =   231.15s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:31.739091+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2947729825973511
+2026-10-30 02:21:31.740693+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:31.745873+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.004999995231628418
+    t =   231.26s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:31.882934+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:31.997360+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:21:32.965496+0000 maestro-driver-iosUITests-Runner[37123:105596] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:21:32.973058+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   232.49s Getting device orientation
+2026-10-30 02:21:32.976894+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =   232.49s Getting device orientation
+2026-10-30 02:21:32.979953+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 294.0, 473.0
+    t =   232.49s Getting device orientation
+2026-10-30 02:21:33.329656+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 0.345209002494812
+2026-10-30 02:21:33.366725+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:34.203799+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:34.913612+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:35.746096+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:21:36.609871+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   236.12s Getting device orientation
+2026-10-30 02:21:36.628420+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   236.14s Getting device orientation
+2026-10-30 02:21:36.634822+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:36.635843+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:36.649655+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:36.661333+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:36.662842+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:36.663331+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   236.18s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:36.724832+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:36.724978+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   236.24s Checking existence of `StatusBar (First Match)`
+    t =   236.27s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   236.33s Find the StatusBar (Element at index 0)
+    t =   236.37s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:36.914141+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.18894696235656738
+2026-10-30 02:21:36.914641+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:36.919284+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.004492998123168945
+    t =   236.43s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:36.964997+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:36.990409+0000 maestro-driver-iosUITests-Runner[37123:105589] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   236.51s Getting device orientation
+2026-10-30 02:21:36.997507+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   236.51s Getting device orientation
+2026-10-30 02:21:37.003558+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:21:37.004013+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:21:37.106326+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:21:37.109368+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:21:37.111121+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:37.111402+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   236.63s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:21:37.156511+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:21:37.157410+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   236.67s Checking existence of `StatusBar (First Match)`
+    t =   236.69s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   236.75s Find the StatusBar (Element at index 0)
+    t =   236.83s Find the StatusBar (Element at index 1)
+2026-10-30 02:21:37.388329+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23070502281188965
+2026-10-30 02:21:37.388592+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:21:37.394030+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.005313992500305176
+    t =   236.91s Find the Application 'com.apple.springboard'
+2026-10-30 02:21:37.493313+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:21:37.555947+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:21:54.089247+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:22:21.907714+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   281.42s Getting device orientation
+2026-10-30 02:22:21.935391+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   281.45s Getting device orientation
+2026-10-30 02:22:21.937973+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:21.938179+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:21.943788+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:21.948821+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:21.950603+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:21.952921+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   281.47s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:22.035095+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:22.035278+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   281.55s Checking existence of `StatusBar (First Match)`
+    t =   281.58s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   281.65s Find the StatusBar (Element at index 0)
+    t =   281.70s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:22.222063+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.186661958694458
+2026-10-30 02:22:22.222243+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:22.223107+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0007740259170532227
+    t =   281.74s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:22.261786+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:22.269824+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:22:23.054662+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:22:23.063754+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   282.58s Getting device orientation
+2026-10-30 02:22:23.068665+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =   282.58s Getting device orientation
+2026-10-30 02:22:23.071704+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 294.0, 503.0
+    t =   282.59s Getting device orientation
+2026-10-30 02:22:23.417915+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 0.34082305431365967
+2026-10-30 02:22:23.430697+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:24.467766+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:25.649137+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:26.643383+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   286.16s Getting device orientation
+2026-10-30 02:22:26.662537+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   286.18s Getting device orientation
+2026-10-30 02:22:26.673389+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:26.676650+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:26.755525+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:26.764998+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:26.769383+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:26.769530+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   286.28s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:26.836295+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:26.836522+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   286.35s Checking existence of `StatusBar (First Match)`
+    t =   286.40s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   286.56s Find the StatusBar (Element at index 0)
+    t =   286.63s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:27.197704+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.3610999584197998
+2026-10-30 02:22:27.198041+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:27.201565+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0033980607986450195
+    t =   286.72s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:27.243796+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:27.274873+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   286.79s Getting device orientation
+2026-10-30 02:22:27.286136+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   286.80s Getting device orientation
+2026-10-30 02:22:27.289832+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:27.290324+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:27.300570+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:27.309221+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:27.311400+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:27.311790+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   286.83s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:27.373457+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:27.373661+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   286.89s Checking existence of `StatusBar (First Match)`
+    t =   286.92s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   286.98s Find the StatusBar (Element at index 0)
+    t =   287.10s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:27.665663+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2918649911880493
+2026-10-30 02:22:27.665815+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:27.670381+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.004431009292602539
+    t =   287.18s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:27.733706+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:27.860223+0000 maestro-driver-iosUITests-Runner[37123:112560] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:22:42.597419+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> close connection
+2026-10-30 02:22:42.982383+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   302.50s Getting device orientation
+2026-10-30 02:22:43.024718+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   302.55s Getting device orientation
+2026-10-30 02:22:43.036685+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:43.037844+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:43.126334+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:43.147143+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:43.150832+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:43.153795+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   302.67s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:43.231972+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:43.234414+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   302.75s Checking existence of `StatusBar (First Match)`
+    t =   302.82s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   302.94s Find the StatusBar (Element at index 0)
+    t =   302.99s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:43.521015+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.2864539623260498
+2026-10-30 02:22:43.521687+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:43.523447+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.0015701055526733398
+    t =   303.04s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:43.564457+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:43.606343+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:22:44.870182+0000 maestro-driver-iosUITests-Runner[37123:118285] [FlyingFox] <127.0.0.1> request: POST /touch
+2026-10-30 02:22:44.875541+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   304.39s Getting device orientation
+2026-10-30 02:22:44.881043+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+    t =   304.40s Getting device orientation
+2026-10-30 02:22:44.884692+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping 213.0, 360.0
+    t =   304.40s Getting device orientation
+2026-10-30 02:22:45.228038+0000 maestro-driver-iosUITests-Runner[37123:105409] Tapping took 0.33976995944976807
+2026-10-30 02:22:45.526108+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:46.551935+0000 maestro-driver-iosUITests-Runner[37123:118285] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:47.518736+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:48.356543+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> request: GET /isScreenStatic
+2026-10-30 02:22:49.158345+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   308.67s Getting device orientation
+2026-10-30 02:22:49.165444+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   308.68s Getting device orientation
+2026-10-30 02:22:49.168796+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:49.169311+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:49.177128+0000 maestro-driver-iosUITests-Runner[37123:118285] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:49.191506+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:49.192012+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:49.192070+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   308.71s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:49.229056+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:49.229208+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   308.74s Checking existence of `StatusBar (First Match)`
+    t =   308.77s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   308.90s Find the StatusBar (Element at index 0)
+    t =   308.97s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:49.546630+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.31725096702575684
+2026-10-30 02:22:49.547113+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:49.549294+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.002096891403198242
+    t =   309.06s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:49.640246+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:49.648571+0000 maestro-driver-iosUITests-Runner[37123:118285] [FlyingFox] <127.0.0.1> request: POST /deviceInfo
+    t =   309.16s Getting device orientation
+2026-10-30 02:22:49.659332+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+    t =   309.17s Getting device orientation
+2026-10-30 02:22:49.664558+0000 maestro-driver-iosUITests-Runner[37123:105409] Returning cached screen size
+2026-10-30 02:22:49.664917+0000 maestro-driver-iosUITests-Runner[37123:105409] Device orientation is 1
+2026-10-30 02:22:49.690978+0000 maestro-driver-iosUITests-Runner[37123:115286] [FlyingFox] <127.0.0.1> request: POST /viewHierarchy
+2026-10-30 02:22:49.698266+0000 maestro-driver-iosUITests-Runner[37123:105409] Detected running apps: ["com.pbordjadze.terraincognita"]
+2026-10-30 02:22:49.701401+0000 maestro-driver-iosUITests-Runner[37123:105409] [Start] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:49.701650+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Starting getHierarchyWithFallback for element.
+    t =   309.22s Find the Application 'com.pbordjadze.terraincognita'
+2026-10-30 02:22:49.760701+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Successfully retrieved element hierarchy.
+2026-10-30 02:22:49.761966+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch status bar hierarchy - start
+    t =   309.28s Checking existence of `StatusBar (First Match)`
+    t =   309.31s Get all elements bound by index for: Descendants matching type StatusBar
+    t =   309.37s Find the StatusBar (Element at index 0)
+    t =   309.44s Find the StatusBar (Element at index 1)
+2026-10-30 02:22:49.999145+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch status bar hierarchy - duration 0.23694002628326416
+2026-10-30 02:22:49.999626+0000 maestro-driver-iosUITests-Runner[37123:105409] [ViewHierarchyHandler] Fetch Safari WebView hierarchy - start
+2026-10-30 02:22:50.006229+0000 maestro-driver-iosUITests-Runner[37123:105409] Fetch Safari WebView hierarchy - duration 0.005504965782165527
+    t =   309.52s Find the Application 'com.apple.springboard'
+2026-10-30 02:22:50.047597+0000 maestro-driver-iosUITests-Runner[37123:105409] [Done] View hierarchy snapshot for Application 'com.pbordjadze.terraincognita' 
+2026-10-30 02:22:50.261942+0000 maestro-driver-iosUITests-Runner[37123:105588] [FlyingFox] <127.0.0.1> request: GET /screenshot
+2026-10-30 02:22:52.304199+0000 maestro-driver-iosUITests-Runner[37123:109210] [FlyingFox] <127.0.0.1> close connection

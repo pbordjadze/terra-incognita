@@ -1,0 +1,21 @@
+Timestamp               Ty Process[PID:TID]
+2026-10-30 02:21:44.784 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.1 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:21:48.568 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:21:54.784 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.1 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:21:58.651 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.2 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:22:04.819 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.1 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:22:08.685 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:22:14.851 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.2 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:22:18.701 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.8 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:22:24.883 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 1.0 ms of GPU a frame, at 2.55 pixels a point
+2026-10-30 02:22:28.702 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 2.2 ms of GPU a frame, at 1.80 pixels a point
+2026-10-30 02:22:34.884 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 5.2 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:22:38.767 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:22:44.899 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.2 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:22:48.817 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.2 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:22:54.902 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.1 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:22:58.868 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.1 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:23:04.918 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.2 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:23:08.868 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 0.2 ms of GPU a frame, at 2.00 pixels a point
+2026-10-30 02:23:14.999 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] ocean: 0.7 ms of GPU a frame, at 3.00 pixels a point
+2026-10-30 02:23:18.886 I  TerraIncognita[23154:10aad] [com.pbordjadze.terraincognita:playground] clouds: 5.5 ms of GPU a frame, at 1.23 pixels a point
