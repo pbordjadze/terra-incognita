@@ -3,7 +3,7 @@
     {
       "id": "living-globe",
       "title": "The living globe",
-      "what": "Every experience's doorway is on the one globe at once, each alive: a glint from afar, itself as you come closer. Touch one and it starts where you are; touch another's things and that one comes to the front.",
+      "what": "Every experience's doorway is on the one globe at once, alive: a glint from afar, itself closer. Touch one and it starts where you are.",
       "ask": "Can you tell what is here to touch, and what each will be?",
       "since": "2026-10-29",
       "version": "1",
@@ -19,7 +19,7 @@
     {
       "id": "wikipedia-words",
       "title": "Wikipedia's words",
-      "what": "The W switch, on: every paragraph the atlas wrote itself gives way to Wikipedia's own first sentence on the subject, with a link. Here, for a chosen country; it works in every experience too.",
+      "what": "The W switch, on: every paragraph the atlas wrote gives way to Wikipedia's own first sentence and a link. Here, for a chosen country.",
       "ask": "Wikipedia's words, or the atlas's own?",
       "since": "2026-10-29",
       "version": "1",
@@ -51,7 +51,7 @@
     {
       "id": "quiet-globe",
       "title": "The quiet globe",
-      "what": "Three rules at once: almost no names (the greatest in view, and what you touch near, for a while), clouds that clear where you look, and nothing at the foot until you choose a country.",
+      "what": "Three rules at once: almost no names, clouds that clear where you look, nothing at the foot until you choose a country.",
       "ask": "Quieter, or just emptier?",
       "since": "2026-10-29",
       "version": "1",
@@ -72,7 +72,7 @@
     {
       "id": "night",
       "title": "The Earth at night",
-      "what": "The ground dark, with the lights of its cities and roads as satellites see them; the clouds a thin veil, the sea still. It comes on a beat after dusk.",
+      "what": "The ground dark, with the lights of its cities and roads as satellites see them; the clouds a thin veil, the sea still.",
       "ask": "Would you keep this as a look you can switch to?",
       "since": "2026-10-29",
       "version": "1",

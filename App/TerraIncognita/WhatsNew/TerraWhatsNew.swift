@@ -75,6 +75,12 @@ final class TerraWhatsNew: WhatsNewHost {
             guard var p = listing.current?.manifest.whatsNew else { return nil }
             p.id = listing.id
             if p.title.isEmpty { p.title = listing.title }
+            // (a pack's piece shows the pack unless its start says what to run)
+            if p.start?["run"] == nil {
+                var start = p.start?.object ?? [:]
+                start["run"] = .array([.string(listing.id)])
+                p.start = .object(start)
+            }
             return p
         }
         return WhatsNewQueue.merged(central: central, packs: packs).filter { piece in
