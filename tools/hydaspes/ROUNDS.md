@@ -3,7 +3,7 @@
 The experience: `Prototypes/hydaspes/` (the Hydaspes, 326 BCE, Alexander's crossing against Porus,
 as Arrian tells it in Anabasis 5.9–18). This is the log of the rounds it was built in: what was
 pictured, what each round looked at, what the fresh eye said, what the next round took on.
-Painting-company row 183 holds the brief; nothing here quotes it.
+Painting-company row 184 holds the brief; nothing here quotes it.
 
 ## The picture (before any tool was read)
 
