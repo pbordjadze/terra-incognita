@@ -1,0 +1,10 @@
+{
+ "tool": "inspect_screen",
+ "arguments": {},
+ "seconds": 27.1,
+ "isError": false,
+ "text": [
+  "{\"ui_schema\":{\"platform\":\"ios\",\"abbreviations\":{\"b\":\"bounds\",\"txt\":\"text\",\"rid\":\"resource-id\",\"a11y\":\"accessibilityText\",\"hint\":\"hintText\",\"val\":\"value\",\"c\":\"children\"},\"defaults\":{\"enabled\":true,\"focused\":false,\"selected\":false,\"checked\":false,\"txt\":\"\",\"hint\":\"\",\"rid\":\"\",\"val\":\"\",\"a11y\":\"\"}},\"elements\":[{\"b\":\"[0,0][1032,1376]\",\"a11y\":\"Terra Incognita\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"c\":[{\"b\":\"[0,0][1032,1376]\",\"a11y\":\"The globe\",\"rid\":\"mainAtlasGlobe\",\"c\":[{\"b\":\"[697,585][733,612]\",\"a11y\":\"The lead line: HMS Challenger in the Atlantic\",\"rid\":\"doorway.lead-line\"},{\"b\":\"[0,0][1032,1376]\",\"a11y\":\"The globe\",\"rid\":\"mainAtlasGlobe\"}]},{\"b\":\"[24,1239][240,1320]\",\"a11y\":\"THE GLOBE, The whole world, Spin it, pinch it, tap a country.\",\"c\":[{\"b\":\"[24,1239][111,1254]\",\"a11y\":\"THE GLOBE\"},{\"b\":\"[24,1260][240,1294]\",\"a11y\":\"The whole world\"},{\"b\":\"[24,1300][228,1320]\",\"a11y\":\"Spin it, pinch it, tap a country.\"}]},{\"b\":\"[792,8][860,66]\",\"a11y\":\"Wikipedia's words\",\"txt\":\"Off\",\"val\":\"Off\",\"rid\":\"wikipediaButton\"},{\"b\":\"[870,8][938,66]\",\"a11y\":\"Clouds\",\"txt\":\"On\",\"val\":\"On\",\"rid\":\"cloudsButton\"},{\"b\":\"[948,8][1016,66]\",\"a11y\":\"Workbench\",\"rid\":\"workbenchButton\"},{\"b\":\"[407,60][625,104]\",\"a11y\":\"What's new: 12 new things. Show me\",\"rid\":\"whatsNewPill\",\"c\":[{\"b\":\"[423,74][436,90]\",\"a11y\":\"Sparkle\",\"rid\":\"sparkles\"},{\"b\":\"[443,73][541,91]\",\"a11y\":\"12 new things\"},{\"b\":\"[547,73][610,91]\",\"a11y\":\"Show me\"}]}]}]}]}]}]}]}]},{\"b\":\"[0,0][1032,32]\"},{\"b\":\"[0,0][1032,32]\"}]}"
+ ],
+ "images": []
+}
