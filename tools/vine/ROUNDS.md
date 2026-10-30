@@ -215,3 +215,16 @@ leaf is one of the three drawn leaves by name, so the validator sees it.
 The hater's remaining asks (a stem drawn as an organic stroke, ways that follow valleys, a ship that
 grows with the sea it crosses) are the tools listed at the end; the round's changes answer what a
 pack can answer. The rounds stop here: eight critics, the worst complaint now the premise's drawing.
+
+## QA pass · the vine on an iPhone simulator (October 30)
+
+An exploratory QA run (`qa-explore.yml`, agent mode, debug build, `-prototype vine`, 8 minutes) played
+it on the iPhone: the opening, play from the end (it begins again), taps on clusters and stems. The
+light ran to Shiraz ("Shiraz · since 2501 BCE") and the foot named it; nothing crashed. The app's log
+had one error of the vine's: the Danube's tendril was refused because its way's dates fell for three
+places (the trunk's start had been moved to 90 BCE in round 5 and its next place left at 100 BCE), so
+that growing tip had no tendril on the device; fixed in the data (`build.py`) and rebuilt. The agent
+ran out of its clock before writing a report (each screenshot took it two and a half minutes), so the
+findings are mine from its seven pictures and the log. Seen in them and left: the playground's chip
+wraps the pack's name and "Open" on the phone ("The vi… / Op en"), which is the stage's chrome shared by
+every prototype and not the vine's to change; noted for the stage.
