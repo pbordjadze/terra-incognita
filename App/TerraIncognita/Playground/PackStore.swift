@@ -305,7 +305,7 @@ nonisolated enum PackNet {
 @Observable
 final class PackStore {
     /// The terra.js version this app hosts (Prototypes/_runtime/terra.js; docs/playground.md).
-    nonisolated static let runtime = 5
+    nonisolated static let runtime = 6
     static let shared = PackStore()
 
     /// One per pack id, by title.
@@ -865,7 +865,7 @@ final class PackStore {
         guard manifest.runtime <= runtime else {
             throw PackError("it needs runtime \(manifest.runtime); this app has \(runtime)")
         }
-        // (runtime 5 hosts runtime-3 and runtime-4 packs unchanged: docs/runtime3.md)
+        // (runtime 6 hosts runtime-3 to runtime-5 packs unchanged: docs/runtime3.md)
         guard manifest.runtime >= 3, manifest.runtime <= runtime else {
             throw PackError("it is a runtime-\(manifest.runtime) pack: this app runs packs scripted for runtimes 3 to \(runtime), drawn by the globe")
         }
@@ -875,7 +875,8 @@ final class PackStore {
         guard let scripts = manifest.scripts, !scripts.isEmpty else { throw PackError("it lists no scripts") }
         var named = scripts
         if let door = manifest.doorway { named += (door.looks ?? door.look.map { [$0] } ?? []).flatMap(\.pictures) }
-        for path in named where !PackRules.isSafePath(path) {
+        // (a doorway's frame may be a frame of a sprite sheet, runtime 6: its sheet is the path)
+        for path in named where !PackRules.isSafePath(SpriteSheet.split(path)?.sheet ?? path) {
             throw PackError("“\(path)” is not a path inside the pack")
         }
         return manifest

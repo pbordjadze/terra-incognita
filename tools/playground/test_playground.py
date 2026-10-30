@@ -216,7 +216,7 @@ class Validate(TempCase):
             (drop('title'), '"title"'), (put('title', ''), '"title"'), (put('title', 'x' * 61), '"title"'),
             (put('title', '   '), '"title"'), (put('title', 3), '"title"'),
             (drop('summary'), '"summary"'), (put('summary', 'x' * 201), '"summary"'), (put('summary', ''), '"summary"'),
-            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 6), '"runtime" must be 3 to 5'),
+            (drop('runtime'), '"runtime" must be 3'), (put('runtime', 7), '"runtime" must be 3 to 6'),
             (put('runtime', 0), '"runtime" must be 3'), (put('runtime', '3'), '"runtime" must be 3'),
             (put('runtime', True), '"runtime" must be 3'), (put('runtime', 3.0), '"runtime" must be 3'),
             (drop('presentation'), '"presentation" must be "globe"'), (put('presentation', 'both'), '"presentation" must be "globe"'),
@@ -311,6 +311,27 @@ class Validate(TempCase):
         def frames(m):
             m['doorway']['look'] = {'frames': ['m.png', 'f/2.png', 'm.png'], 'fps': 5, 'size': [46, 20], 'minZoom': 3, 'face': True}
         self.assertEqual(self.mutate(frames, extra={'f/2.png': PNG}).items, [])
+
+    def test_a_doorway_may_be_frames_of_a_sprite_sheet(self):
+        """Frames of a sprite sheet (docs/runtime3.md › Sprites, runtime 6): 'sheet.png#x,y,w,h', a rectangle
+        of whole pixels inside the sheet."""
+        # (a PNG's header, 8 × 4 pixels: what the check reads)
+        sheet_png = b'\x89PNG\r\n\x1a\n' + b'\x00\x00\x00\x0dIHDR' + (8).to_bytes(4, 'big') + (4).to_bytes(4, 'big') + b'\x08\x06\x00\x00\x00' + b'\x00' * 4
+        side = (8, 4)
+        def sheet(frames, runtime=6):
+            def change(m):
+                m['runtime'] = runtime
+                m['doorway']['look'] = {'frames': frames, 'fps': 5, 'size': [46, 20], 'minZoom': 3}
+            return change
+        whole = f's.png#0,0,{side[0]},{side[1]}'
+        self.assertEqual(self.mutate(sheet([whole, 's.png#0,0,4,4', 'm.png']), extra={'s.png': sheet_png}).items, [])
+        for frames, runtime, needle in (([whole], 5, 'new in runtime 6'),
+                                        ([f's.png#1,0,{side[0]},{side[1]}'], 6, 'lies outside its sheet'),
+                                        (['s.png#0,0,2'], 6, 'sheet.png#x,y,width,height'),
+                                        (['s.png#0,0,0,2'], 6, 'sheet.png#x,y,width,height'),
+                                        (['gone.png#0,0,1,1'], 6, 'does not exist')):
+            shutil.rmtree(self.tmp / 'demo-pack')
+            self.assertError(self.mutate(sheet(frames, runtime), extra={'s.png': sheet_png}), needle)
 
     def test_a_doorway_with_a_life_is_runtime_4(self):
         """Looks by zoom, a path and a breath (docs/runtime3.md › Many at once) need "runtime": 4; a

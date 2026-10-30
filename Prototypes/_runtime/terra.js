@@ -1,5 +1,5 @@
-// The playground's runtime, version 5 (4 with sprites on dated ways and the date's pace; 4 is 3 with
-// the stage shared: docs/runtime3.md › Many at once):
+// The playground's runtime, version 6 (5 with sprite sheets; 5 is 4 with sprites on dated ways and the
+// date's pace; 4 is 3 with the stage shared: docs/runtime3.md › Many at once):
 // the whole API a pack's script gets from its host (docs/runtime3.md is the contract). The app runs it in JavaScriptCore before a pack's scripts
 // (App/TerraIncognita/Playground/PackScript.swift), and so does the desktop preview in a browser
 // (tools/playground/harness/): a pack never includes it itself.
@@ -100,7 +100,7 @@
   }
 
   var terra = {
-    runtime: 5,
+    runtime: 6,
     /** { id, revision, origin: 'bundled' | 'downloaded' | 'preview' } */
     pack: boot.pack || { id: 'preview', revision: 0, origin: 'preview' },
     /** { reduceMotion, textScale (1 = the default iOS size, up to 3.2), active (false while backgrounded),
@@ -169,7 +169,8 @@
     /** Pictures lying on the globe: set(id, { image, bounds: [w, s, e, n], opacity, minZoom, maxZoom, fade }). */
     images: layerAPI('image'),
     /** Things that live and move on the globe: set(id, { at | path, looks, label, touchable }); a path with
-        dates (runtime 5) is moved by the globe's date. */
+        dates (runtime 5) is moved by the globe's date; a look's frame may be a frame of a sprite sheet,
+        'sheet.png#x,y,w,h' (runtime 6). */
     sprites: layerAPI('sprite'),
     /** 'touchables' (drags that begin on a touchable thing are the pack's), 'one-finger' (all one-finger drags), or
         'hold' (a drag turns the globe; a finger that rests a moment first, then moves, is the pack's). */

@@ -16,7 +16,7 @@
 // in front leaves the other exactly as it was. Screenshots go to build/playground/_living/.
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
-const { start, listPacks } = require('./serve.cjs');
+const { start, listPacks, RUNTIMES } = require('./serve.cjs');
 
 const ROOT = path.resolve(__dirname, '../..');
 const LOCAL = new Set(['127.0.0.1', 'localhost']);
@@ -394,8 +394,8 @@ function summarize(r) {
   try {
     for (const p of packs) {
       if (p.error) { results.push({ id: p.id, device: args.device, passed: false, failures: [p.error], warnings: [], screenshots: [], seconds: 0 }); continue; }
-      if (![3, 4, 5].includes(p.manifest.runtime)) {
-        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a pack of runtimes 3 to 5 (docs/runtime3.md)`;
+      if (!RUNTIMES.includes(p.manifest.runtime)) {
+        const why = `runtime ${JSON.stringify(p.manifest.runtime)}: not a pack of runtimes ${RUNTIMES[0]} to ${RUNTIMES[RUNTIMES.length - 1]} (docs/runtime3.md)`;
         if (args.all) { skipped.push(`${p.id} (${why})`); continue; }
         results.push({ id: p.id, device: args.device, passed: false, failures: [why], warnings: [], screenshots: [], seconds: 0 });
         continue;

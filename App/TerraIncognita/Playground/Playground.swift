@@ -340,10 +340,11 @@ final class Playground {
     /// it stirs along, its breath (runtime 4).
     private static func doorway(of pack: PlaygroundPack) -> Prototype.Doorway? {
         guard let d = pack.manifest.doorway else { return nil }
+        // (a file, or a frame of a sprite sheet: runtime 6)
+        var sheets: [String: UIImage] = [:]
         let looks = (d.looks ?? d.look.map { [$0] } ?? []).prefix(8).compactMap { look -> GlobeMarker.SpriteLook? in
             let images = look.pictures.prefix(24).compactMap { name -> UIImage? in
-                guard PackRules.isSafePath(name) else { return nil }
-                return UIImage(contentsOfFile: pack.root.appending(path: name).path(percentEncoded: false))
+                SpriteSheet.picture(name, in: pack.root, sheets: &sheets, safe: PackRules.isSafePath)
             }
             guard !images.isEmpty else { return nil }
             let size = look.size ?? [28, 28]

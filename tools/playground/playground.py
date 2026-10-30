@@ -43,10 +43,13 @@ ROOT = Path(__file__).resolve().parents[2]
 PROTOTYPES = ROOT / 'Prototypes'
 TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
-RUNTIME = 5
+RUNTIME = 6
 # a pack declares the runtime it needs: 3, 4 for what docs/runtime3.md marks new in 4, 5 for what it
-# marks new in 5 (a sprite on a dated way, the date's pace)
-RUNTIMES = (3, 4, 5)
+# marks new in 5 (a sprite on a dated way, the date's pace), 6 for what it marks new in 6 (sprite sheets)
+RUNTIMES = (3, 4, 5, 6)
+# a frame of a sprite sheet, 'art/early.png#x,y,w,h' (pixels), came with runtime 6
+SHEET_RUNTIME = 6
+SHEET_FRAME = re.compile(r'(.+)#(\d+),(\d+),(\d+),(\d+)')
 # a doorway's life (looks by zoom, a path, a breath) came with runtime 4
 DOORWAY_LIFE_RUNTIME = 4
 OPEN_SCHEME = 'terraincognita'
@@ -436,12 +439,38 @@ def _check_zooms(rep, where, tag, obj):
         rep.error(where, f'{tag}.minZoom {lo_z} is above maxZoom {hi_z}')
 
 
-def _check_picture(rep, where, key, ref, files):
+def png_size(path):
+    """A PNG's width and height from its header, or None."""
+    head = Path(path).read_bytes()[:24]
+    if not head.startswith(b'\x89PNG\r\n\x1a\n'):
+        return None
+    return int.from_bytes(head[16:20], 'big'), int.from_bytes(head[20:24], 'big')
+
+
+def _check_picture(rep, where, key, ref, files, runtime=None):
+    """A picture of the pack, or (runtime 6) a frame of a sprite sheet: 'sheet.png#x,y,w,h', a
+    rectangle of whole pixels inside the sheet."""
+    if isinstance(ref, str) and '#' in ref:
+        m = SHEET_FRAME.fullmatch(ref)
+        if not m or int(m[4]) < 1 or int(m[5]) < 1:
+            rep.error(where, f'{key} "{ref}" names a frame of a sprite sheet as sheet.png#x,y,width,height (whole pixels)')
+            return
+        if is_int(runtime) and runtime < SHEET_RUNTIME:
+            rep.error(where, f'{key} is a frame of a sprite sheet, new in runtime {SHEET_RUNTIME} (docs/runtime3.md › Sprites): '
+                             f'declare "runtime": {SHEET_RUNTIME} or later')
+        if _check_file(rep, where, key, m[1], files, ('.png',)):
+            size = png_size(files[m[1]])
+            x, y, w, h = (int(m[i]) for i in range(2, 6))
+            if size is None:
+                rep.error(where, f'{key}: its sheet is not really a PNG file')
+            elif x + w > size[0] or y + h > size[1]:
+                rep.error(where, f'{key} "{ref}" lies outside its sheet ({size[0]} × {size[1]})')
+        return
     if _check_file(rep, where, key, ref, files, IMAGE_EXTS):
         _check_image_bytes(rep, where, key, files[ref])
 
 
-def check_look(rep, where, tag, look, files):
+def check_look(rep, where, tag, look, files, runtime=None):
     """A look, as a sprite's (docs/runtime3.md › Sprites): one picture or frames, a size in points, a
     zoom range, an occasional showing (`every`/`for`), `face`."""
     if not isinstance(look, dict):
@@ -453,14 +482,14 @@ def check_look(rep, where, tag, look, files):
     if ('image' in look) == ('frames' in look):
         rep.error(where, f'{tag} needs one picture ("image") or a list of them shown in turn ("frames"), not both')
     if 'image' in look:
-        _check_picture(rep, where, f'{tag}.image', look['image'], files)
+        _check_picture(rep, where, f'{tag}.image', look['image'], files, runtime)
     if 'frames' in look:
         frames = look['frames']
         if not isinstance(frames, list) or not 1 <= len(frames) <= MAX_FRAMES:
             rep.error(where, f'{tag}.frames must be a list of 1 to {MAX_FRAMES} pictures')
         else:
             for j, f in enumerate(frames):
-                _check_picture(rep, where, f'{tag}.frames[{j}]', f, files)
+                _check_picture(rep, where, f'{tag}.frames[{j}]', f, files, runtime)
         if 'fps' not in look:
             rep.error(where, f'{tag}.fps is required with "frames": how many are shown a second')
     if 'fps' in look:
@@ -583,7 +612,7 @@ def validate_manifest(m, name, files, rep, where):
                     rep.error(where, 'doorway.looks must be a list of 1 to 8 looks (as a sprite\'s: the first whose zoom range holds is drawn)')
                     looks = []
                 for i, look in enumerate(looks):
-                    check_look(rep, where, f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look', look, files)
+                    check_look(rep, where, f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look', look, files, runtime)
                 for i, look in enumerate(looks):
                     if isinstance(look, dict) and 'minZoom' not in look and 'every' not in look:
                         tag = f'doorway.looks[{i}]' if 'looks' in door else 'doorway.look'

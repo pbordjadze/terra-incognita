@@ -10,7 +10,7 @@ caption are at the foot; ✕ ends it and the next is in front; the workbench's *
 them all. Each one's sprites, pictures, geography, script and screens are made when it starts and
 released when it ends, and the Live counts come back exactly.
 
-Every new experience or map element is a **pack on the runtime** (3, 4 for a doorway with a life, 5 for things the date moves): data, pictures and a small script
+Every new experience or map element is a **pack on the runtime** (3, 4 for a doorway with a life, 5 for things the date moves, 6 for sprite sheets): data, pictures and a small script
 that runs in JavaScriptCore inside the app, with no web view; the globe draws what it asks for.
 [`docs/runtime3.md`](runtime3.md) is the contract, [`docs/tools.md`](tools.md) the catalog of tools. Native code is for the stage itself and for new
 runtime tools (CLAUDE.md › The runtime).
@@ -76,8 +76,8 @@ the mark every pack uses) and itself up close.
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
 the sea is tapped); `Prototypes/lead-line/` and `Prototypes/vine/` use the globe's date and geography,
 `Prototypes/sea-of-whales/` pictures on the globe faded in and out, `Prototypes/monsoon-sails/` sprites
-placed by the date; `Prototypes/herds/` (runtime 5) moves things with the date: sprites on dated ways, a
-date with an uneven pace, slowed as the reader comes close. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built
+placed by the date; `Prototypes/herds/` (runtime 6) moves things with the date: sprites on dated ways, a
+date with an uneven pace, slowed as the reader comes close, its animals' frames in one sprite sheet a kind. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built
 in Node, a `.cjs` module, as the herds' and the boto's are), rendered by
 `node tools/packart/render.cjs <sheet> Prototypes/<id>` (headless Chromium, three pixels a point); and `node tools/packart/moments.cjs <id> <out dir> '<plan>'` photographs a pack
 over time in the preview (camera, waits, touches, drags, the date's strip), for what `check.cjs`'s fixed
