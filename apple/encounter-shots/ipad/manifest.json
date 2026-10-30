@@ -1,0 +1,38 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "687AB7EE-DF9A-4A96-878E-7509AB01A80C",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "A0190D13-88C0-4225-9690-2F14B52BF4EA.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "62-night-waders_0_F87FBFA0-8175-45FA-BA09-6ADDA9BFF580.png",
+        "timestamp" : 1793329531.794
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "687AB7EE-DF9A-4A96-878E-7509AB01A80C",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "2D983B2D-80AD-4A1A-A44A-FD4CFB4F568F.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "61-night-march_0_EE35BF78-BA67-4083-A02A-C623CF24B349.png",
+        "timestamp" : 1793329521.014
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "687AB7EE-DF9A-4A96-878E-7509AB01A80C",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "exportedFileName" : "010A9762-2D7D-4B6B-A98A-8F987652E576.png",
+        "isAssociatedWithFailure" : false,
+        "repetitionNumber" : 1,
+        "suggestedHumanReadableName" : "60-night-camps_0_4C89EE39-F127-42AB-BBC2-7A4731C66143.png",
+        "timestamp" : 1793329508.226
+      }
+    ],
+    "testIdentifier" : "GlobePackTests/testTheNightCrossingMovesUnderTheFinger()",
+    "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/GlobePackTests/testTheNightCrossingMovesUnderTheFinger"
+  }
+]

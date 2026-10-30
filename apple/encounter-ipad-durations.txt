@@ -1,0 +1,1 @@
+   3m 39s  Passed   GlobePackTests/testTheNightCrossingMovesUnderTheFinger()
