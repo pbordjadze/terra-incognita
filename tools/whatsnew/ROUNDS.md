@@ -102,3 +102,33 @@ with its branches across Anatolia, the Levant and the Gulf at 2,358 BCE; Georgia
 clear of cloud, with its own first sentence; the band is three words on three tints and the globe's
 names stay out of it; the card leads with Done and offers Keep going (7); the list is a line a piece.
 The second critic reads these; a hand-started run photographs the phone too.
+
+## Round 5
+
+**The second critic** (round 4's nine iPad pictures), ranked: (1) the bar's "Judge…" lines are exam
+questions over an applause meter, two lines long, two things at once: homework; (2) the card reports
+"1 nice" for a round of five, offers Done as a tap that only dismisses, and admits the answers went
+nowhere; (3) Later, Skip and Panel are three unexplained words, and a piece alone shows "1 of 1" with
+a dead chevron; (4) Skip and Didn't work are small grey text with no shape; (5) some pieces open
+where the asked judgment can't be made (the vine asked far and close, the herds "come close" when
+the animal fills the screen); (6) piece one is the globe he already knows, its old caption under the
+new bar; (7) Say gives no recording state; (8) the foot's stack eats the bottom third; (9) the list is
+a settings form (a date column of identical dates, an unexplained dot, Sending second, Seen off the
+bottom); (10) the pill's "Show me" too faint; (11) the herds' ground blurred at the pack's zoom; (12)
+a second tap on the picture unexplained. Good: the three coloured pills, the finite round, the
+cleared globe. Verdict: a real gap.
+
+**Changed.** The line is a hint of where to look, five or six words, one line, never a question
+("One animal, close; the date slows"); the taps are the question, and the contract says so (the
+validator holds `ask` to 60 characters). The card shows the answers as words in order ("Nice · Skip
+· Skip · Skip · Skip"), one gold button sends them (with a token) or shares them (without), Keep
+going and Close beside; the "set up sending" line is gone (the workbench has it). One exit, ✕, with
+Skip for a piece; Panel is About; a piece alone says "Again" and has no chevron. Skip and Didn't
+work are small outlined pills. Say reads "Stop 0:04" in red while recording. The list leads with
+Seen (what was said, when), then New, Sending last, no date column. The living globe is last among
+the seeds (it landed first). The pill is one phrase in one weight.
+**Overruled, with reasons.** The pack's caption at the foot stays as it is while a piece plays: it is
+the piece's own words, and a pack's date strip is its instrument. The herds' zoom is the pack's
+choice (its makers open close on one animal); the ground's blur there is the ground's, noted for
+them. The microphone permission is the system's; it is asked on the first Say, not before the round
+(a sheet before anything has been shown would be the homework).

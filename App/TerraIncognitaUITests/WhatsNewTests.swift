@@ -94,9 +94,10 @@ final class WhatsNewTests: XCTestCase {
         let finish = app.otherElements["whatsNewFinish"].firstMatch
         XCTAssertTrue(finish.waitForExistence(timeout: 20), "After the last piece, the card")
         let tally = app.staticTexts["whatsNewTally"].firstMatch
-        XCTAssertTrue(tally.label.contains("nice") && tally.label.contains("waiting"), "The card says what was said and what waits: \(tally.label)")
+        XCTAssertTrue(tally.label.hasPrefix("Nice · Skip"), "The card lists the answers as words, in order: \(tally.label)")
+        XCTAssertTrue(app.staticTexts["whatsNewWaiting"].firstMatch.exists, "The card says more pieces wait")
         XCTAssertTrue(app.buttons["whatsNewKeepGoing"].firstMatch.exists, "More pieces wait: the card offers to keep going")
-        XCTAssertTrue(app.buttons["whatsNewSetUp"].firstMatch.exists || app.buttons["whatsNewSend"].firstMatch.exists, "The card offers the way to the company")
+        XCTAssertTrue(app.buttons["whatsNewShare"].firstMatch.exists || app.buttons["whatsNewSend"].firstMatch.exists, "The card's one gold button hands the answers on")
         attach("24-finish", in: app)
         app.buttons["whatsNewDone"].firstMatch.tap()
         XCTAssertTrue(finish.waitForNonExistence(timeout: 10))
@@ -116,7 +117,7 @@ final class WhatsNewTests: XCTestCase {
         XCTAssertTrue(herds.waitForExistence(timeout: 10), "The herds are a piece")
         herds.tap()
         XCTAssertTrue(bar.waitForExistence(timeout: 30), "A piece from the list plays alone")
-        XCTAssertEqual(progress(in: app), "1 of 1")
+        XCTAssertEqual(progress(in: app), "Again", "A piece alone has no count to climb")
         Thread.sleep(forTimeInterval: 4)
         attach("26-single-piece", in: app)
         app.buttons["whatsNewLeave"].firstMatch.tap()

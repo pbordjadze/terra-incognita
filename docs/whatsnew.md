@@ -22,16 +22,17 @@ tool is `tools/whatsnew/whatsnew.py`.
 2. A round is five pieces, the newest first. Each starts where its makers meant: the camera flies,
    the experience starts, the date is set, a country is lit; the other doorways step off the globe
    and the clouds thin, so nothing else is in the way. The bar above says *2 of 5* and the piece's
-   name, and under them, in gold, the one thing its makers ask to be judged. The globe is live:
-   touch it, drag, zoom, as always.
+   name, and under them, in gold, one line on where to look. The globe is live: touch it, drag,
+   zoom, as always.
 3. One tap on the band below: **Wow**, **Nice** or **Meh**. The next piece comes. **Skip** (not
-   now) and **Didn't work** are plain words under them. A voice note: tap **Say**, speak, tap again
-   (or just tap a verdict: the note stops and goes with it). A picture of the screen: **Picture**.
-   **‹** goes back a piece; **Panel** opens the piece's own words; **Later** leaves the round where
-   it is (what was answered stays answered).
-4. At the end, a card: what was said, **Done**, **Keep going** while pieces wait, **Share…** (the
-   files as a zip, by AirDrop, Files, Mail), and one quiet line about sending to the company (one
-   tap once a token is set up; see [Where the answers go](#where-the-answers-go)).
+   now) and **Didn't work** are small pills under them. A voice note: tap **Say**, speak, tap
+   **Stop** (or just tap a verdict: the note stops and goes with it). A picture of the screen:
+   **Picture**. **‹** goes back a piece; **About** opens the piece's own words; **✕** closes the
+   round where it is (what was answered stays answered, the rest waits).
+4. At the end, a card: the answers as words (*Nice · Skip · Wow · Meh · Nice*), one gold button
+   that sends them to the company (with a token; see [Where the answers go](#where-the-answers-go))
+   or hands them to the share sheet (without one, as a zip: AirDrop, Files, Mail), **Keep going**
+   while pieces wait, **Close**.
 
 Two minutes. Nothing is scored but the owner's time: a skipped piece stops asking until its makers
 change it, and the list keeps the way back.
@@ -68,7 +69,7 @@ entry in `App/TerraIncognita/WhatsNew/WhatsNew.json`, with an `id` of its own an
 | --- | --- | --- |
 | `id` | central entries only | lower-case letters, digits, hyphens; never reused (a pack's piece is the pack's id) |
 | `title` | 1–60 characters | on the bar; a pack's defaults to the pack's |
-| `ask` | up to 160 | the bar's line, in gold: the one thing you want judged, as an imperative the taps can answer ("Come close to one animal: judge the date slowing with you"), not a yes/no question. One. |
+| `ask` | up to 60 | the bar's one line, in gold: where to look, five or six words ("One animal, close; the date slows"), never a question: the three taps are the question, and a line that reads like an exam turns the game into homework. What you most want to know goes in `what` and in your row; the voice notes answer it. |
 | `what` | one line, up to 240 | what is on the screen, for the tool's `list` and for the bar when there is no `ask`; say what the owner sees, not what you built |
 | `since` | `YYYY-MM-DD` | the day it landed; the queue plays the newest first |
 | `version` | optional, `"1"` | bump it (`"2"`, a date) when the piece changed enough to ask again: the owner sees it as *changed since you saw it*. A fix that changes nothing they would notice leaves it alone |

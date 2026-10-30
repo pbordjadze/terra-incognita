@@ -4,8 +4,8 @@
       "id": "living-globe",
       "title": "The living globe",
       "what": "Every experience's doorway is on the one globe at once, alive: a glint from afar, itself closer. Touch one and it starts where you are.",
-      "ask": "Judge the doorways: can you tell what is here to touch, and what each will be?",
-      "since": "2026-10-29",
+      "ask": "The doorways, from afar",
+      "since": "2026-10-28",
       "version": "1",
       "start": {
         "camera": {
@@ -21,7 +21,7 @@
       "id": "wikipedia-words",
       "title": "Wikipedia's words",
       "what": "The W switch, on: every paragraph the atlas wrote gives way to Wikipedia's own first sentence and a link. Here, for a chosen country.",
-      "ask": "Judge Wikipedia's words against the atlas's own.",
+      "ask": "Georgia, in Wikipedia's words",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -40,7 +40,7 @@
       "id": "vine",
       "title": "The vine's long walk",
       "what": "One vine, eight thousand years long, from a qvevri in Georgia across the world as the years play.",
-      "ask": "Judge whether it reads as a plant from afar, and as a journey close in.",
+      "ask": "The vine, 3,500 years in",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -56,7 +56,7 @@
       "id": "quiet-globe",
       "title": "The quiet globe",
       "what": "Three rules at once: almost no names, clouds that clear where you look, nothing at the foot until you choose a country.",
-      "ask": "Judge it against today's look: quieter, or just emptier?",
+      "ask": "Almost no names; clouds that clear",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -77,7 +77,7 @@
       "id": "night",
       "title": "The Earth at night",
       "what": "The ground dark, with the lights of its cities and roads as satellites see them; the clouds a thin veil, the sea still.",
-      "ask": "Judge whether this is a look you would switch to.",
+      "ask": "The Earth at night",
       "since": "2026-10-29",
       "version": "1",
       "start": {

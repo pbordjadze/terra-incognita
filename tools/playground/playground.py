@@ -415,9 +415,10 @@ def check_whats_new(rep, where, piece, pack_id=None, prototype_ids=None):
         _check_str(rep, where, piece, 'title', 1, 60) if not pack_id else None
         if pack_id and (not isinstance(piece.get('title'), str) or not 1 <= len(piece['title']) <= 60):
             rep.error(where, f'{tag}.title must be 1-60 characters (or left out: the pack\'s)')
-    for k, hi in (('what', 240), ('ask', 160)):
+    for k, hi in (('what', 240), ('ask', 60)):
         if k in piece and (not isinstance(piece[k], str) or not 1 <= len(piece[k].strip()) <= hi):
-            rep.error(where, f'{tag}.{k} must be 1-{hi} characters: one line the owner reads while it plays')
+            rep.error(where, f'{tag}.{k} must be 1-{hi} characters: one line the owner reads while it plays'
+                             + (' (a hint of where to look, five or six words; the taps are the question)' if k == 'ask' else ''))
     if 'what' not in piece:
         rep.warn(where, f'{tag}.what is missing: one line saying what to look at')
     since = piece.get('since')
