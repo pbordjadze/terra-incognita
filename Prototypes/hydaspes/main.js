@@ -31,7 +31,7 @@
   }
   /** The zoom at which a kilometre is `ppk` points across. */
   function zoomAtKm(ppk) { return Math.round(ppk * KM_PER_DEG / (R1 * D) * 100) / 100; }
-  var PPK = { pool: 1.6, valley: 7, mid: 22, close: 48, deepest: 90 };
+  var PPK = { pool: 1.6, valley: 7, mid: 22, close: 48, deepest: 140 };
   var Z = {};
   function scales() {
     Z.pool = zoomAtKm(PPK.pool); Z.valley = zoomAtKm(PPK.valley); Z.mid = zoomAtKm(PPK.mid); Z.close = zoomAtKm(PPK.close);
@@ -116,7 +116,7 @@
     // the way and the headland as a file does; the horse at its head
     for (var k = 0; k < 9; k++) {
       terra.sprites.set('file-' + k, { path: way(shift(W.column, HR.leave + k * 0.07, HR.headland + k * 0.07)), label: k ? '' : 'The column on its night march, the horse at its head', touchable: true,
-                                       looks: [{ frames: frames(k ? 'cluster' : 'cluster-horse', 8), fps: 8, size: [30, 30], minZoom: Z.close, face: true }] });
+                                       looks: [{ frames: frames(k ? 'cluster' : 'cluster-horse', 8), fps: 8, size: [36, 36], minZoom: Z.close, face: true }] });
     }
     terra.sprites.set('in-the-grove', { path: stand(P.headland, HR.headland, HR.boats), label: 'The column in the grove, the boats put together', touchable: true,
                                         looks: looks(col.far, { n: 'column-mid', f: 6, size: [40, 12], fps: 1 }, { n: 'formed', f: 4, size: [110, 44], fps: 1.5 }) });
@@ -127,7 +127,7 @@
     terra.sprites.set('on-island', { path: way(W.onIsland), label: 'Marching across the island', touchable: true, looks: looks(col.far, col.mid, null) });
     for (var j = 0; j < 4; j++) {
       terra.sprites.set('island-file-' + j, { path: way(shift(W.onIsland, HR.formed + j * 0.05, HR.bank + j * 0.05)), label: '', touchable: true,
-                                              looks: [{ frames: frames(j ? 'cluster' : 'cluster-horse', 8), fps: 8, size: [30, 30], minZoom: Z.close, face: true }] });
+                                              looks: [{ frames: frames(j ? 'cluster' : 'cluster-horse', 8), fps: 8, size: [44, 44], minZoom: Z.close, face: true }] });
     }
     // THE MOMENT: the second channel, swollen by the storm, to the chest
     terra.sprites.set('waders', { path: way(W.waders), label: 'Wading the second channel, the water to their chests, shields over their heads', touchable: true,
@@ -189,7 +189,8 @@
     ground(hour);
     // the second channel: the globe comes close on its own, once, as the night reaches it (not while a
     // finger is on the globe: the host drops a flight then; the drag's end asks again)
-    if (was < HR.boats && hour >= HR.boats && hour < HR.island) lean('boats');
+    // (the strip's touch lands on a tick when near one: the island's tick counts as the crossing's end)
+    if (was < HR.island && hour >= HR.boats && hour <= HR.island + 1e-6) lean('boats');   // (a tick's hour comes back a hair over itself)
     if (was < HR.bank && hour >= HR.bank && hour < HR.ford) lean('wade');
   }
   function lean(beat) {
@@ -249,7 +250,7 @@
     if (!dragging || t.lon == null) return;
     var u = under(t.x, t.y, c);
     if (u) { at = u.index; setHour(u.hour, true); }
-    if (t.phase === 'ended') { dragging = false; if (hour >= HR.boats && hour < HR.island) lean('boats'); if (hour >= HR.bank && hour < HR.ford) lean('wade'); }
+    if (t.phase === 'ended') { dragging = false; if (hour >= HR.boats && hour <= HR.island + 1e-6) lean('boats'); if (hour >= HR.bank && hour < HR.ford) lean('wade'); }
   });
 
   terra.on('time', function (t) {

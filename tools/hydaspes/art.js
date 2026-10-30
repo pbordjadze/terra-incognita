@@ -134,7 +134,7 @@
     for (const m of SCATTER.ridges) {
       if (!within(m, 0.02) || !insidePoly(m, HILLS)) continue;
       const [x, y] = P(m), len = px(0.3 + m[2] * 1.2), a = -0.55 + (m[3] - 0.5) * 0.5;
-      ctx.strokeStyle = B.rgba(pal.hillRim, night ? 0.18 + m[4] * 0.28 : 0.07 + m[4] * 0.12); ctx.lineWidth = Math.max(1, px(0.025));
+      ctx.strokeStyle = night ? B.rgba(pal.hillRim, 0.18 + m[4] * 0.28) : B.rgba('#D8C09A', 0.12 + m[4] * 0.2); ctx.lineWidth = Math.max(1, px(0.025));
       ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a) * len * 0.5, y + Math.sin(a) * len * 0.5 - len * 0.12, x + Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
     }
     ctx.restore();
@@ -234,7 +234,7 @@
     if (!night) {
       // (from the wide box's eastern edge to its western, whichever picture: so the two agree)
       const g = ctx.createLinearGradient(P([T.wide[2], 0])[0], 0, P([T.wide[0], 0])[0], 0);
-      g.addColorStop(0, 'rgba(255,196,130,0.28)'); g.addColorStop(0.45, 'rgba(255,190,130,0.1)'); g.addColorStop(1, 'rgba(200,210,235,0.08)');
+      g.addColorStop(0, 'rgba(255,196,130,0.4)'); g.addColorStop(0.45, 'rgba(255,190,130,0.14)'); g.addColorStop(1, 'rgba(190,205,235,0.12)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     }
     // the picture's edge: the wide one a pool of night (or of morning) that ends softly on the globe, with
@@ -366,8 +366,11 @@
       ctx.strokeStyle = GREY2; ctx.lineWidth = s * 0.05; ctx.beginPath(); ctx.moveTo(-s * 0.48, -s * 0.6); ctx.lineTo(-s * 0.56, -s * 0.3); ctx.stroke();   // the tail
     }
     if (mahout) {
-      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(dir === 0 ? 0 : s * 0.1, -s * 1.08, s * 0.07, 0, TAU); ctx.fill();
-      B.inked(ctx, (c) => { c.rect(-s * 0.2, -s * 1.08, s * 0.4, s * 0.14); }, RED, INK, s * 0.04);
+      // a howdah, its rail and a man in it, and the mahout at the neck
+      B.inked(ctx, (c) => { c.rect(-s * 0.3, -s * 1.22, s * 0.46, s * 0.26); }, '#C9A24B', INK, s * 0.05);
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(-s * 0.08, -s * 1.3, s * 0.06, 0, TAU); ctx.fill();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(dir === 0 ? 0 : s * 0.32, -s * 1.04, s * 0.06, 0, TAU); ctx.fill();
+      ctx.fillStyle = RED; ctx.fillRect((dir === 0 ? 0 : s * 0.32) - s * 0.06, -s * 1.02, s * 0.12, s * 0.1);
     }
     ctx.restore();
   }
@@ -483,9 +486,12 @@
       const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
       const dx = A.landing[0] - mid[0], dy = A.landing[1] - mid[1];
       const shape = isl.map((c) => [c[0] + dx * 1.05, c[1] + dy * 1.05]).concat(isl.slice().reverse().map((c) => [c[0] + dx * 0.25, c[1] + dy * 0.25]));
-      const dusk = B.mix(NIGHT.plain, DAY.plain, 0.22);
-      ctx.save(); ctx.shadowColor = dusk; ctx.shadowBlur = 0.12 / kpp;
-      poly(ctx, shape, P); ctx.fillStyle = dusk; ctx.fill(); ctx.fill(); ctx.restore();
+      // the island's sand at the island, the plain's dark at the bank, the edges blurred: one ground
+      const p0 = P(mid), p1 = P(A.landing);
+      const g = ctx.createLinearGradient(p0[0], p0[1], p1[0], p1[1]);
+      g.addColorStop(0, B.mix(NIGHT.sand, NIGHT.plain, 0.3)); g.addColorStop(1, B.mix(NIGHT.plain, DAY.plain, 0.12));
+      ctx.save(); ctx.filter = 'blur(' + Math.round(0.06 / kpp) + 'px)';
+      poly(ctx, shape, P); ctx.fillStyle = g; ctx.fill(); ctx.restore();
       // a few of the island's trees over it, so the join reads as the same ground
       ctx.save(); poly(ctx, shape, P); ctx.clip();
       for (const m of SCATTER.trees) if (insidePoly(m, shape) && m[5] < 0.2) { const [x, y] = P(m), rr = Math.max(1.2, 0.03 / kpp); ctx.fillStyle = B.rgba(NIGHT.wood2, 0.7); ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill(); }
@@ -544,16 +550,16 @@
     ctx.globalAlpha = 1;
   } });
   // (the night march is a dim grey thread: cloaks over everything, no gold, barely more than the ground)
-  pictures.push({ name: 'cluster', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
-    const t = i / n, s = 10, r = B.rand(31);
+  pictures.push({ name: 'cluster', width: 36, height: 36, frames: 8, draw(ctx, w, h, i, n) {
+    const t = i / n, s = 12, r = B.rand(31);
     ctx.globalAlpha = 0.75;
-    for (let k = 0; k < 5; k++) { const x = 5 + k * 5 + (r() - 0.5) * 2, y = h * 0.55 + (k % 2) * 8 + (r() - 0.5) * 3; soldier(ctx, x, y, s, (t + k * 0.17) % 1, { tunic: k % 2 ? '#4A4650' : '#5A5660', shield: 'none', dim: true }); ctx.fillStyle = B.rgba('#C8CCE0', 0.7); ctx.beginPath(); ctx.arc(x - s * 0.03, y - s * 0.92, s * 0.035, 0, TAU); ctx.fill(); }
+    for (let k = 0; k < 5; k++) { const x = 6 + k * 6 + (r() - 0.5) * 2, y = h * 0.55 + (k % 2) * 9 + (r() - 0.5) * 3; soldier(ctx, x, y, s, (t + k * 0.17) % 1, { tunic: k % 2 ? '#4A4650' : '#5A5660', shield: 'none', dim: true }); ctx.fillStyle = B.rgba('#C8CCE0', 0.7); ctx.beginPath(); ctx.arc(x - s * 0.03, y - s * 0.92, s * 0.035, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(x + s * 0.28, y - s * 1.25, s * 0.03, 0, TAU); ctx.fill(); }
     ctx.globalAlpha = 1;
   } });
-  pictures.push({ name: 'cluster-horse', width: 30, height: 30, frames: 8, draw(ctx, w, h, i, n) {
+  pictures.push({ name: 'cluster-horse', width: 36, height: 36, frames: 8, draw(ctx, w, h, i, n) {
     const t = i / n;
     ctx.globalAlpha = 0.75;
-    for (let k = 0; k < 2; k++) horse(ctx, 8 + k * 11, h * 0.6 + k * 7, 9, (t + k * 0.3) % 1, true, '#3E3A42');
+    for (let k = 0; k < 2; k++) horse(ctx, 10 + k * 13, h * 0.6 + k * 8, 11, (t + k * 0.3) % 1, true, '#3E3A42');
     ctx.globalAlpha = 1;
   } });
   // the boats and the hides pushed across
@@ -733,7 +739,7 @@
     const rr = B.rand(43);
     for (let k = 0; k < 6; k++) order.push({ y: at(0, (k - 2.5) * 34)[1], draw: () => {
       const p = at(turning ? Math.sin(k + t * TAU) * 5 : (rr() - 0.5) * 6, (k - 2.5) * 34);
-      elephant(ctx, p[0], p[1] + 9, 16 + rr() * 5, t + k * 0.13, turning ? (k % 3 === 0 ? 0 : (k % 3 === 1 ? -FACE : FACE)) : FACE, true);
+      elephant(ctx, p[0], p[1] + 9, 16 + rr() * 5, t + k * 0.13, turning ? (k % 2 ? -FACE : FACE) : FACE, true);
     } });
     for (let row = 0; row < 2; row++) for (let k = 0; k < 22; k++) {
       const p = at(16 + row * 7 + (turning ? Math.cos(k + t * TAU) * 3 : 0), (k - 10.5) * 9 + row * 3);
@@ -743,7 +749,7 @@
     order.sort((a, b) => a.y - b.y).forEach((o) => o.draw());   // the nearer drawn last, as in a high view
   }
   /** The morning's low sun from the east: a soft shadow laid a little to the west of a formation. */
-  function sunShadow(ctx, x, y, rx, ry) { ctx.save(); ctx.translate(x - rx * 0.25, y); ctx.scale(rx, ry); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,18,30,0.35)'); g.addColorStop(1, 'rgba(20,18,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore(); }
+  function sunShadow(ctx, x, y, rx, ry) { ctx.save(); ctx.translate(x - rx * 0.4, y + ry * 0.1); ctx.scale(rx, ry); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(20,18,30,0.5)'); g.addColorStop(1, 'rgba(20,18,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore(); }
   pictures.push({ name: 'line', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { sunShadow(ctx, w / 2, h / 2 + 10, 70, 110); lineOf(ctx, w, h, i / n, false); } });
   pictures.push({ name: 'line-turning', width: 240, height: 240, frames: 6, draw(ctx, w, h, i, n) { sunShadow(ctx, w / 2, h / 2 + 10, 70, 110); lineOf(ctx, w, h, i / n, true); } });
   pictures.push({ name: 'line-mid', width: 60, height: 16, frames: 4, draw(ctx, w, h, i, n) {
@@ -800,21 +806,9 @@
   } });
   // the camps' fires on the water: a warm light laid at the bank, flickering
   pictures.push({ name: 'fireglow', width: 100, height: 60, frames: 4, scale: 1, draw(ctx, w, h, i, n) {
-    // the fires on the water: long broken streaks of their light, running with the current, flickering
-    const r = B.rand(3), t = i / n;
+    const f = 0.85 + 0.15 * Math.sin(i / n * TAU);
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
-    B.glow(ctx, 0, 0, w / 2, FIRE, 0.16, 0); ctx.restore();
-    // (the streaks lie along the river's run at the camps: its angle on the screen, from the middle's line there)
-    const A = T.authored, C = T.centre, i0 = C.reduce((b, c, i) => (Math.hypot(c[0] - A.campA[0], c[1] - A.campA[1]) < Math.hypot(C[b][0] - A.campA[0], C[b][1] - A.campA[1]) ? i : b), 0);
-    const d = [(C[Math.min(C.length - 1, i0 + 3)][0] - C[Math.max(0, i0 - 3)][0]) * KM_LON, -(C[Math.min(C.length - 1, i0 + 3)][1] - C[Math.max(0, i0 - 3)][1]) * KM_LAT];
-    const ang = Math.atan2(d[1], d[0]);
-    ctx.lineCap = 'round';
-    for (let k = 0; k < 16; k++) {
-      const x = w * (0.08 + r() * 0.84), y = h * (0.15 + r() * 0.7), len = 6 + r() * 16, a = 0.3 + r() * 0.4, ph = r();
-      const f = 0.7 + 0.3 * Math.sin((t + ph) * TAU);
-      ctx.strokeStyle = B.rgba(k % 3 ? FIRE : FLAME, a * f * 0.7); ctx.lineWidth = 1 + r() * 1.4;
-      ctx.beginPath(); ctx.moveTo(x - Math.cos(ang) * len / 2, y - Math.sin(ang) * len / 2); ctx.lineTo(x + Math.cos(ang) * len / 2, y + Math.sin(ang) * len / 2); ctx.stroke();
-    }
+    B.glow(ctx, 0, 0, w / 2 * f, FIRE, 0.3, 0); ctx.restore();
   } });
   // the doorway: no badge, no glow, nothing that says "tap here": an elephant standing at the water on
   // the Jhelum's bank, ordinary life that doesn't quite belong on this bank today (it faces east as
