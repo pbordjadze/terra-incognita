@@ -1,7 +1,7 @@
 {
  "source": "English Wikipedia (en.wikipedia.org), the lead section of each article as plain text",
  "license": "CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/); each article links to its page and history",
- "fetched": "2026-10-29",
+ "fetched": "2026-10-30",
  "tool": "tools/wikipedia/build.py",
  "articles": {
   "Afghanistan": {
@@ -9,24 +9,24 @@
    "description": "Country in Central and South Asia",
    "extract": "Afghanistan, officially the Islamic Emirate of Afghanistan, is a landlocked country located at the crossroads of Central and South Asia. It is bordered by Pakistan to the east and south, Iran to the west, Turkmenistan to the northwest, Uzbekistan to the north, Tajikistan to the northeast, and China to the northeast and east. Occupying 652,864 square kilometers (252,072 sq mi) of land, the country is predominantly mountainous with plains in the north and the southwest, which are separated by the Hindu Kush mountain range. Kabul is the country's capital and largest city. Afghanistan's population is estimated to be between 35 and 50 million. Human habitation in Afghanistan dates to the Middle Paleolithic era.",
    "url": "https://en.wikipedia.org/wiki/Afghanistan",
-   "revision": 1382310551,
-   "timestamp": "2026-10-27T23:42:11Z"
+   "revision": 1382690583,
+   "timestamp": "2026-10-29T20:33:15Z"
   },
   "Albania": {
    "title": "Albania",
    "description": "Country in Southeastern Europe",
    "extract": "Albania, officially the Republic of Albania, is a country in Southeastern Europe. It is located in the Balkans, on the Adriatic and Ionian Seas within the Mediterranean Sea, and shares land borders with Montenegro to the northwest, Kosovo to the northeast, North Macedonia to the east and Greece to the south. With an area of 28,748 km2 (11,100 sq mi), it has a varied range of climatic, geological, hydrological and morphological conditions. Landscapes range from rugged snow-capped mountains in the Albanian Alps and the Korab, Skanderbeg, Pindus and Ceraunian Mountains, to fertile lowland plains extending from the Adriatic and Ionian sea coasts. Tirana is the capital and largest city, followed by Durrës, Vlorë, and Shkodër. Albania was inhabited by several Illyrian tribes, among them the Ardiaei, Bylliones, Dassaretii, Enchele, and Taulantians, with the Chaonians settled in the southwest.",
    "url": "https://en.wikipedia.org/wiki/Albania",
-   "revision": 1381501860,
-   "timestamp": "2026-10-22T23:14:40Z"
+   "revision": 1382675398,
+   "timestamp": "2026-10-29T19:11:30Z"
   },
   "Algeria": {
    "title": "Algeria",
    "description": "Country in North Africa",
    "extract": "Algeria, officially the People's Democratic Republic of Algeria, is a country in North Africa. It is bordered to the northeast by Tunisia; to the east by Libya; to the southeast by Niger; to the southwest by Mali, Mauritania, and Western Sahara; to the west by Morocco; and to the north by the Mediterranean Sea. Its capital and largest city is Algiers. Shaped first by indigenous Amazigh societies, including the Numidians, whose kingdom became one of the earliest major states in the region, as well as by Phoenician, Roman, Vandal, and Byzantine influences. From the 7th century onward, the spread of Islam and arrival of Arab tribes gradually transformed the region, contributing to the development of a distinct Algerian identity rooted in both Arab, Islamic and Amazigh heritage. Between the 8th and 15th centuries, Algeria was ruled by a succession of local Islamic dynasties.",
    "url": "https://en.wikipedia.org/wiki/Algeria",
-   "revision": 1381704080,
-   "timestamp": "2026-10-24T07:04:46Z"
+   "revision": 1382691187,
+   "timestamp": "2026-10-29T20:36:14Z"
   },
   "Alpaca": {
    "title": "Alpaca",
@@ -57,8 +57,8 @@
    "description": "Country in Southern Africa",
    "extract": "Angola, officially the Republic of Angola, is a country on the western coast of Southern Africa. It is the second-largest Portuguese-speaking (Lusophone) country after Brazil in both total area and population and is the seventh-largest country in Africa. It is bordered by Namibia to the south, the Democratic Republic of the Congo to the north, Zambia to the east, and the Atlantic Ocean to the west. The Angolan province of Cabinda is an exclave on the Atlantic coast, bordering the Republic of the Congo and the Democratic Republic of the Congo. The capital and most populous city is Luanda. Angola has been inhabited since the Palaeolithic Age. After the Bantu expansion reached the region, states were formed by the 13th century and organised into confederations. The Kingdom of Kongo ascended to achieve hegemony among the other kingdoms from the 14th century.",
    "url": "https://en.wikipedia.org/wiki/Angola",
-   "revision": 1382478694,
-   "timestamp": "2026-10-28T22:26:12Z"
+   "revision": 1382691865,
+   "timestamp": "2026-10-29T20:39:39Z"
   },
   "Anguilla": {
    "title": "Anguilla",
@@ -105,8 +105,8 @@
    "description": "Country of the Kingdom of the Netherlands",
    "extract": "Aruba, officially the Country of Aruba, is an island constituent country within the Kingdom of the Netherlands, in the southern Caribbean Sea 29 kilometres (18 mi) north of the Venezuelan peninsula of Paraguaná and 80 kilometres (50 mi) north-west of Curaçao. In 1986, Aruba became a constituent country within the Kingdom of the Netherlands and acquired the official name. Aruba has an area of 179 square kilometres (69.1 sq mi), and measures 32 kilometres (20 mi) in length from its north-western to its south-eastern end and is 10 kilometres (6 mi) across at its widest point. Aruba is geologically located in South America, lying on the South American continental shelf. Alongside Bonaire and Curaçao, Aruba forms part of an island group referred to as the ABC islands. The Dutch Caribbean encompasses the ABC islands along with the other three substantial islands, the SSS islands.",
    "url": "https://en.wikipedia.org/wiki/Aruba",
-   "revision": 1382484273,
-   "timestamp": "2026-10-28T22:56:01Z"
+   "revision": 1382685177,
+   "timestamp": "2026-10-29T20:02:26Z"
   },
   "Ashmore and Cartier Islands": {
    "title": "Ashmore and Cartier Islands",
@@ -121,8 +121,8 @@
    "description": "Country in Oceania",
    "extract": "Australia, officially the Commonwealth of Australia, is a country comprising the mainland of the Australian continent, the island of Tasmania and numerous smaller islands. It has a land area of 7,688,287 km2 (2,968,464 sq mi), making it the sixth-largest country in the world, and is the world's flattest and driest inhabited continent. It is a megadiverse country, and its size gives it a wide variety of landscapes and climates, including large deserts centrally and tropical rainforests along the coast. The ancestors of Aboriginal Australians began arriving from Southeast Asia 50,000 to 65,000 years ago, during the Last Glacial Period. By the time of British settlement, Aboriginal Australians spoke more than 250 distinct languages and had one of the oldest living cultures in the world.",
    "url": "https://en.wikipedia.org/wiki/Australia",
-   "revision": 1382410968,
-   "timestamp": "2026-10-28T15:40:14Z"
+   "revision": 1382734645,
+   "timestamp": "2026-10-30T00:42:02Z"
   },
   "Austria": {
    "title": "Austria",
@@ -132,21 +132,13 @@
    "revision": 1381076281,
    "timestamp": "2026-10-19T21:30:18Z"
   },
-  "Austronesian peoples": {
-   "title": "Austronesian peoples",
-   "description": "Speakers of Austronesian languages",
-   "extract": "The Austronesian peoples, sometimes referred to as Austronesian-speaking peoples, are a large collection of peoples who speak Austronesian languages, having settled in Taiwan, maritime Southeast Asia, parts of mainland Southeast Asia, Micronesia, coastal New Guinea, Island Melanesia, Polynesia, and Madagascar. They also include indigenous ethnic minorities in Vietnam, Cambodia, Myanmar, Thailand and Hainan. The nations and territories predominantly populated by Austronesian-speaking peoples are sometimes known collectively as Austronesia. The group originated from a prehistoric seaborne migration, known as the Austronesian expansion, from Taiwan, circa 3000 to 1500 BCE. Austronesians reached the Batanes Islands in the northernmost Philippines by around 2200 BCE. They used sails some time before 2000 BCE.",
-   "url": "https://en.wikipedia.org/wiki/Austronesian_peoples",
-   "revision": 1381258148,
-   "timestamp": "2026-10-21T02:31:04Z"
-  },
   "Azerbaijan": {
    "title": "Azerbaijan",
    "description": "Country in Eastern Europe and West Asia",
    "extract": "Azerbaijan, officially the Republic of Azerbaijan, is a landlocked country at the boundary of Western Asia and Eastern Europe. It is a part of the South Caucasus region and is bounded by the Caspian Sea to the east, Russia's republic of Dagestan to the north, Georgia to the northwest, Turkey (via the exclave of Nakhchivan) and Armenia to the west, and Iran to the south. Baku is the capital and largest city. The territory of what is now Azerbaijan was ruled first by Caucasian Albania and later by various Persian empires. Until the 19th century, it remained part of Qajar Iran, but the Russo-Persian wars of 1804–1813 and 1826–1828 forced the Qajar Empire to cede its Caucasian territories to the Russian Empire; the treaties of Gulistan in 1813 and Turkmenchay in 1828 defined the border between Russia and Iran.",
    "url": "https://en.wikipedia.org/wiki/Azerbaijan",
-   "revision": 1382155430,
-   "timestamp": "2026-10-26T23:38:05Z"
+   "revision": 1382732197,
+   "timestamp": "2026-10-30T00:23:06Z"
   },
   "Bahamas": {
    "title": "The Bahamas",
@@ -161,8 +153,8 @@
    "description": "Country in West Asia",
    "extract": "Bahrain, officially the Kingdom of Bahrain, is an island country in the eastern part of Arabian Peninsula in West Asia. Situated near the western shore of the Persian Gulf, the country comprises a small archipelago of 33 natural islands and an additional 50 artificial islands, centred on Bahrain Island, which makes up around 80 percent of the country's landmass. Bahrain is situated between Qatar and the northeastern coast of Saudi Arabia, to which it is connected by the King Fahd Causeway. The population is 1,588,670 as of 2024, of whom 739,736 (46.6% of the population) are Bahraini nationals, and 848,934 are expatriates (53.4% of the population). Bahrain spans some 760 square kilometres (290 sq mi) and is the third-smallest nation in Asia after the Maldives and Singapore. The capital and largest city is Manama.",
    "url": "https://en.wikipedia.org/wiki/Bahrain",
-   "revision": 1381780969,
-   "timestamp": "2026-10-24T19:44:28Z"
+   "revision": 1382693210,
+   "timestamp": "2026-10-29T20:46:38Z"
   },
   "Bangladesh": {
    "title": "Bangladesh",
@@ -180,29 +172,21 @@
    "revision": 1381539314,
    "timestamp": "2026-10-23T04:39:32Z"
   },
-  "Basilosauridae": {
-   "title": "Basilosauridae",
-   "description": "Family of mammals",
-   "extract": "Basilosauridae is a family of extinct cetaceans that lived during the middle to late Eocene. Basilosaurids are known from all continents including Antarctica, and are probably the first fully aquatic cetaceans. The group is noted to be a paraphyletic assemblage of stem group whales from which the monophyletic Neoceti are derived.",
-   "url": "https://en.wikipedia.org/wiki/Basilosauridae",
-   "revision": 1381389697,
-   "timestamp": "2026-10-22T03:36:36Z"
-  },
   "Belarus": {
    "title": "Belarus",
    "description": "Country in Eastern Europe",
    "extract": "Belarus, officially the Republic of Belarus, is a landlocked country in Eastern Europe. It is bordered by Russia to the east and northeast, Ukraine to the south, Poland to the west, and Lithuania and Latvia to the northwest. Belarus spans an area of 207,600 square kilometres (80,200 sq mi) with a population of 9.1 million. The country has a hemiboreal climate and is administratively divided into six regions. Minsk is the capital and largest city; it is administered separately as a city with special status. For most of the medieval period, the lands of modern-day Belarus were ruled by independent city-states such as the Principality of Polotsk.",
    "url": "https://en.wikipedia.org/wiki/Belarus",
-   "revision": 1381729372,
-   "timestamp": "2026-10-24T11:50:13Z"
+   "revision": 1382694002,
+   "timestamp": "2026-10-29T20:50:57Z"
   },
   "Belgium": {
    "title": "Belgium",
    "description": "Country in Northwestern Europe",
    "extract": "Belgium, officially the Kingdom of Belgium, is a country in Northwestern Europe. Situated in a coastal lowland region known as the Low Countries, it is bordered by the Netherlands to the north, Germany to the east, Luxembourg to the southeast, France to the south, and the North Sea to the west. Belgium covers an area of 30,689 km2 (11,849 sq mi) and has a population of more than 11.8 million; its population density of 383/km2 (990/sq mi) ranks 22nd in the world and sixth in Europe. The capital and largest metropolitan region is Brussels; other major cities are Antwerp, Ghent, Charleroi, Liège, Bruges, Namur, and Leuven. Belgium is a parliamentary constitutional monarchy with a complex federal system structured on regional and linguistic grounds.",
    "url": "https://en.wikipedia.org/wiki/Belgium",
-   "revision": 1381625557,
-   "timestamp": "2026-10-23T19:18:28Z"
+   "revision": 1382621286,
+   "timestamp": "2026-10-29T14:24:10Z"
   },
   "Belize": {
    "title": "Belize",
@@ -233,24 +217,24 @@
    "description": "British Overseas Territory in the North Atlantic",
    "extract": "Bermuda is a British Overseas Territory in the North Atlantic Ocean. The closest land outside the territory is in the US state of North Carolina, about 1,035 km (643 mi) to the west-northwest. Bermuda is an archipelago consisting of 181 islands, although the most significant islands are connected by bridges and appear to form one landmass. It has a land area of 54 square kilometres (21 sq mi). Bermuda has a tropical climate, with warm winters and hot summers. Its climate also exhibits oceanic features similar to other coastal areas in the Northern Hemisphere with warm, moist air from the ocean ensuring relatively high humidity and stabilising temperatures.",
    "url": "https://en.wikipedia.org/wiki/Bermuda",
-   "revision": 1381783116,
-   "timestamp": "2026-10-24T20:02:12Z"
+   "revision": 1382623158,
+   "timestamp": "2026-10-29T14:34:47Z"
   },
   "Bhutan": {
    "title": "Bhutan",
    "description": "Country in South Asia",
    "extract": "Bhutan, officially the Kingdom of Bhutan, is a landlocked country in South Asia, located in the Eastern Himalayas, bordering China's Tibet Autonomous Region to the north and northwest and India to the south and southeast. With a population of over 800,000 (800,871) and a territory of 38,394 square kilometres (14,824 sq mi), Bhutan ranks 133rd in land area and 160th in population. It is a democratic constitutional monarchy with a king as the head of state and a prime minister as the head of government. The Je Khenpo is the head of the state religion, Vajrayana Buddhism. The Himalayan mountains in the north rise from the country's lush subtropical plains in the south. In the Bhutanese Himalayas, there are peaks higher than 7,000 metres (23,000 ft) above sea level. Gangkhar Puensum is Bhutan's highest peak and is the highest unclimbed mountain in the world.",
    "url": "https://en.wikipedia.org/wiki/Bhutan",
-   "revision": 1381076954,
-   "timestamp": "2026-10-19T21:36:37Z"
+   "revision": 1382694128,
+   "timestamp": "2026-10-29T20:51:46Z"
   },
   "Bolivia": {
    "title": "Bolivia",
    "description": "Country in South America",
    "extract": "Bolivia, officially the Plurinational State of Bolivia, is a landlocked country located in central South America. Its geography primarily consists of an Andean region to the west and tropical lowlands to the east and north. The country has a diverse environment, including the vast Amazonian plain, the Gran Chaco, temperate valleys, the high-altitude Altiplano plateau, snow-capped peaks, and mountains, encompassing a wide range of climates and biomes across its regions and cities. It includes part of the Pantanal, the largest tropical wetland in the world, along its eastern border. Bolivia is bordered by Brazil to the north and east, Paraguay to the southeast, Argentina to the south, Chile to the southwest, and Peru to the west.",
    "url": "https://en.wikipedia.org/wiki/Bolivia",
-   "revision": 1382427382,
-   "timestamp": "2026-10-28T17:16:10Z"
+   "revision": 1382694581,
+   "timestamp": "2026-10-29T20:54:16Z"
   },
   "Bosnia and Herzegovina": {
    "title": "Bosnia and Herzegovina",
@@ -273,8 +257,8 @@
    "description": "Country in South America",
    "extract": "Brazil, officially the Federative Republic of Brazil, is the largest country in South America. It is also the world's fifth-largest country by area and the seventh-largest by population, with over 214 million people. Brazil is a federation composed of 26 states and a Federal District, which hosts the capital, Brasília. Its most populous city is São Paulo, followed by Rio de Janeiro. Brazil has the largest Lusophone population in the world and is the only Portuguese-speaking country in the Americas, where it is the official language. Bounded by the Atlantic Ocean on the east, Brazil has a coastline of 7,491 kilometers (4,655 mi), among the longest in the world. Covering roughly half of South America's land area, it borders all other countries and territories on the continent except Ecuador and Chile.",
    "url": "https://en.wikipedia.org/wiki/Brazil",
-   "revision": 1382533800,
-   "timestamp": "2026-10-29T03:44:14Z"
+   "revision": 1382625359,
+   "timestamp": "2026-10-29T14:48:02Z"
   },
   "British Indian Ocean Territory": {
    "title": "British Indian Ocean Territory",
@@ -313,16 +297,16 @@
    "description": "Country in West Africa",
    "extract": "Burkina Faso is a landlocked country in West Africa. It is bordered by Mali to the northwest, Niger to the northeast, Benin to the southeast, Togo and Ghana to the south, and Ivory Coast to the southwest. It covers an area of 274,223 km2 (105,878 sq mi). In 2024, the country had an estimated population of approximately 23,286,000. Its citizens are known as Burkinabes, and its capital and largest city is Ouagadougou. The largest ethnic group in Burkina Faso is the Mossi people, who settled the area in the 11th and 13th centuries. They established kingdoms such as Ouagadougou, Tenkodogo, and Yatenga. In 1896, it was colonized by the French as part of French West Africa; in 1958, it became a self-governing colony within the French Community. In 1960, it gained full independence with the name of the Republic of Upper Volta, with Maurice Yaméogo as the president.",
    "url": "https://en.wikipedia.org/wiki/Burkina_Faso",
-   "revision": 1381701520,
-   "timestamp": "2026-10-24T06:30:38Z"
+   "revision": 1382694904,
+   "timestamp": "2026-10-29T20:56:06Z"
   },
   "Burundi": {
    "title": "Burundi",
    "description": "Country in East Africa",
    "extract": "Burundi, officially the Republic of Burundi, is a landlocked country in East Africa. It is located in the Great Rift Valley at the junction between the African Great Lakes region and southeastern Africa, with a population of over 14 million people. It is bordered by Rwanda to the north, Tanzania to the east and southeast, and the Democratic Republic of the Congo to the west; Lake Tanganyika lies along its southwestern border. The political capital city is Gitega and the economic capital and largest city is Bujumbura. The Twa, Hutu, and Tutsi peoples have lived in Burundi for at least 500 years. For more than 200 of those years, Burundi was an independent kingdom. In 1885, it became part of German East Africa. After the First World War and Germany's defeat, the League of Nations mandated the territories of Burundi and Rwanda to Belgium in a combined territory called Ruanda-Urundi.",
    "url": "https://en.wikipedia.org/wiki/Burundi",
-   "revision": 1382478938,
-   "timestamp": "2026-10-28T22:27:23Z"
+   "revision": 1382694940,
+   "timestamp": "2026-10-29T20:56:18Z"
   },
   "Cambodia": {
    "title": "Cambodia",
@@ -367,7 +351,7 @@
   "Cayman Islands": {
    "title": "Cayman Islands",
    "description": "British Overseas Territory in the Caribbean",
-   "extract": "The Cayman Islands is a self-governing British Overseas Territory in the western Caribbean. With a population of over 90,000, it is the most populated of all the British Overseas Territories. The 264-square-kilometre (102-square-mile) territory comprises the three islands of Grand Cayman, Cayman Brac and Little Cayman, which are located south of Cuba and north-east of Honduras, between Jamaica and Mexico's Yucatán Peninsula. The capital city is George Town on Grand Cayman, which is the most populous of the three islands. The Cayman Islands is considered to be part of the geographic Western Caribbean zone as well as the Greater Antilles. The territory is a major tax haven mainly due to the state charging no tax on income earned or stored.",
+   "extract": "The Cayman Islands is a self-governing British Overseas Territory in the western Caribbean. With a population of over 90,000, it is the most populated of all the British Overseas Territories. The 264-square-kilometre (102-square-mile) territory comprises the three islands of Grand Cayman, Cayman Brac and Little Cayman, which are located south of Cuba and north-east of Honduras, between Jamaica and Mexico's Yucatán Peninsula. The capital city is George Town on Grand Cayman, which is the most populous of the three islands. The Cayman Islands is considered to be part of the geographic Western Caribbean zone as well as the Greater Antilles. The territory is a major tax haven mainly due to the state charging no tax on income earned or stored. With a GDP per capita of $97,750 in 2023, the Cayman Islands has the highest standard of living in the Caribbean, and one of the highest in the world.",
    "url": "https://en.wikipedia.org/wiki/Cayman_Islands",
    "revision": 1382101738,
    "timestamp": "2026-10-26T16:37:08Z"
@@ -385,8 +369,8 @@
    "description": "Country in Central Africa",
    "extract": "Chad, officially the Republic of Chad, is a landlocked country in Central Africa. It is bordered by Libya to the north, Sudan to the east, the Central African Republic to the south, Cameroon to the southwest, Nigeria to the southwest (at Lake Chad), and Niger to the west. Chad has a population of 20 million, of which 1.6 million live in the capital and largest city of N'Djamena. With a total area of around 1,300,000 km2 (500,000 sq mi), Chad is the fifth-largest country in Africa and the twentieth largest nation by area. With over 200 ethnic and linguistic groups, the official languages are French and Arabic, with French being the lingua franca and language of government and education. Islam (55.1%) and Christianity (41.1%) are the main practiced religions. Beginning in the 7th millennium BC, humans moved into the Chadian basin in great numbers.",
    "url": "https://en.wikipedia.org/wiki/Chad",
-   "revision": 1382477893,
-   "timestamp": "2026-10-28T22:22:45Z"
+   "revision": 1382695704,
+   "timestamp": "2026-10-29T21:00:23Z"
   },
   "Chile": {
    "title": "Chile",
@@ -401,8 +385,8 @@
    "description": "Country in East Asia",
    "extract": "China, officially the People's Republic of China (PRC), is a country in East Asia. It is divided into 33 province-level divisions, including two special administrative regions. Beijing is the capital, while Shanghai is the most populous city by urban area. Its geography features the Central Plain, major rivers such as the Yangtze and Yellow River, deserts, subtropical and temperate forests, plateaus, and mountain ranges such as the Himalayas. It is the world's second-most populous country after India, with a population exceeding 1.4 billion (17% of the world's population). Covering 9.6 million square kilometers (3,700,000 sq mi), it is the third largest country by area. Humans first arrived in China during the Paleolithic. During the 2nd millennium BCE, dynastic states emerged.",
    "url": "https://en.wikipedia.org/wiki/China",
-   "revision": 1382526473,
-   "timestamp": "2026-10-29T03:00:18Z"
+   "revision": 1382685452,
+   "timestamp": "2026-10-29T20:03:35Z"
   },
   "Colombia": {
    "title": "Colombia",
@@ -449,8 +433,8 @@
    "description": "Country in the Caribbean",
    "extract": "Cuba, officially the Republic of Cuba, is an island country in the Caribbean. It comprises the eponymous main island as well as 4,195 islands, islets, and cays. Situated at the convergence of the Caribbean Sea, Gulf of Mexico, and Atlantic Ocean, Cuba is located east of the Yucatán Peninsula, south of both Florida and the Bahamas, west of Hispaniola, and north of Jamaica and the Cayman Islands. Cuba is the largest country in the Caribbean by area and the third-largest by population, after Haiti and the Dominican Republic. Culturally, Cuba is considered to be part of Latin America. Its capital and largest city is Havana. Cuba was inhabited as early as the 4th millennium BC, with the Guanahatabey and Taíno peoples present at the time of Spanish colonization in the 15th century.",
    "url": "https://en.wikipedia.org/wiki/Cuba",
-   "revision": 1382091208,
-   "timestamp": "2026-10-26T15:14:35Z"
+   "revision": 1382697689,
+   "timestamp": "2026-10-29T21:10:47Z"
   },
   "Curaçao": {
    "title": "Curaçao",
@@ -497,24 +481,24 @@
    "description": "Country in East Asia",
    "extract": "North Korea, officially the Democratic People's Republic of Korea (DPRK), is a country in East Asia. It constitutes the northern half of the Korean Peninsula and borders China and Russia to the north at the Yalu (Amnok) and Tumen rivers, and South Korea (officially the Republic of Korea) to the south at the Korean Demilitarized Zone (DMZ). The country's western border is formed by the Yellow Sea, while its eastern border is defined by the Sea of Japan. Pyongyang is the capital and largest city. The Korean Peninsula was first inhabited as early as the Lower Paleolithic period. Its first kingdom was noted in Chinese records in the early 7th century BCE. Following the unification of the Three Kingdoms of Korea into Silla and Balhae in the late 7th century, Korea was ruled by the Goryeo dynasty (918–1392) and the Joseon dynasty (1392–1897).",
    "url": "https://en.wikipedia.org/wiki/North_Korea",
-   "revision": 1381998075,
-   "timestamp": "2026-10-26T00:02:45Z"
+   "revision": 1382733057,
+   "timestamp": "2026-10-30T00:29:01Z"
   },
   "Democratic Republic of the Congo": {
    "title": "Democratic Republic of the Congo",
    "description": "Country in Central Africa",
    "extract": "The Democratic Republic of the Congo (DRC), also known as the DR Congo, Congo-Kinshasa, or simply the Congo, and formerly named Zaire, is a country in Central Africa. By land area, it is the second-largest country in Africa and the eleventh-largest in the world. With a population of about 124 million people, the Democratic Republic of the Congo is the fourth-most populous country in Africa and the most populous Francophone country in the world. French is the official and most widely spoken language. There are over 200 indigenous languages, of which Lingala is the most widely spoken. The capital, largest city, and economic center is Kinshasa.",
    "url": "https://en.wikipedia.org/wiki/Democratic_Republic_of_the_Congo",
-   "revision": 1381887360,
-   "timestamp": "2026-10-25T12:19:24Z"
+   "revision": 1382698614,
+   "timestamp": "2026-10-29T21:15:55Z"
   },
   "Denmark": {
    "title": "Denmark",
    "description": "Country in Northern Europe",
    "extract": "Denmark is a Nordic country in Northern Europe. It is the metropole and most populous constituent of the Kingdom of Denmark, also known as the Danish Realm, a constitutionally unitary state that includes the autonomous territories of the Faroe Islands and Greenland in the north Atlantic Ocean. Metropolitan Denmark, also called \"continental Denmark\" or \"Denmark proper\", consists of the northern Jutland peninsula and an archipelago of 406 islands. It is the southernmost of the Scandinavian countries, lying southwest of Sweden, south of Norway, and north of Germany, with which it shares a short border. Metropolitan Denmark is situated between the North Sea to the west and the Baltic Sea to the east. The Kingdom of Denmark, including the Faroe Islands and Greenland, has roughly 1,400 islands greater than 100 square metres (1,100 sq ft) in area; 443 have been named and 78 are inhabited.",
    "url": "https://en.wikipedia.org/wiki/Denmark",
-   "revision": 1382053619,
-   "timestamp": "2026-10-26T08:19:44Z"
+   "revision": 1382723324,
+   "timestamp": "2026-10-29T23:33:24Z"
   },
   "Djibouti": {
    "title": "Djibouti",
@@ -529,8 +513,8 @@
    "description": "Country in the Caribbean",
    "extract": "Dominica officially the Commonwealth of Dominica, is an island country in the Caribbean. It is part of the Windward Islands chain in the Lesser Antilles archipelago in the Caribbean Sea. The capital, Roseau, is located on the western side of the island. Dominica's closest neighbours are two constituent territories of the European Union, both overseas departments of France: Guadeloupe to the northwest and Martinique to the south-southeast. Dominica comprises a land area of 750 km2 (290 sq mi), and the highest point is Morne Diablotins, at 1,448 m (4,751 ft) in elevation. The population was 71,293 at the 2011 census. The island was settled by the Arawak arriving from South America in the fifth century. The Kalinago displaced the Arawak by the 15th century. Christopher Columbus is said to have passed the island on Sunday, 3rd November 1493.",
    "url": "https://en.wikipedia.org/wiki/Dominica",
-   "revision": 1381463555,
-   "timestamp": "2026-10-22T18:00:19Z"
+   "revision": 1382729265,
+   "timestamp": "2026-10-30T00:03:49Z"
   },
   "Dominican Republic": {
    "title": "Dominican Republic",
@@ -569,8 +553,8 @@
    "description": "Country in North Africa",
    "extract": "Egypt, officially the Arab Republic of Egypt, is a country spanning the northeast corner of Africa and southwest corner of Asia via the Sinai Peninsula. It is bordered by the Mediterranean Sea to the north, Palestine and Israel to the northeast, the Red Sea to the east, Sudan and the Sahara to the south, and Libya to the west. The Gulf of Aqaba in the northeast separates Egypt from Jordan and Saudi Arabia. Cairo is the capital, largest city, and leading cultural centre, while Alexandria is the second-largest city and an important hub of industry and tourism. With over 107 million inhabitants, Egypt is the most populous country in the Arab world, third-most populous country in Africa, and 15th-most populated in the world. Egypt has one of the longest histories of any country, tracing its heritage along the Nile Delta back to the 6th–4th millennia BCE.",
    "url": "https://en.wikipedia.org/wiki/Egypt",
-   "revision": 1382328099,
-   "timestamp": "2026-10-28T01:42:36Z"
+   "revision": 1382699671,
+   "timestamp": "2026-10-29T21:21:44Z"
   },
   "El Salvador": {
    "title": "El Salvador",
@@ -580,37 +564,29 @@
    "revision": 1375822836,
    "timestamp": "2026-09-20T07:55:21Z"
   },
-  "Eocene": {
-   "title": "Eocene",
-   "description": "Second epoch of the Paleogene Period",
-   "extract": "The Eocene is a geological epoch that began about 56 million years ago (Ma). It is the second epoch of the Paleogene Period in the modern Cenozoic Era. The end point of the Eocene is the Eocene-Oligocene transition (EOT), between 33.9 and 33.4 Ma. Precise boundaries between the epochs are sometimes given at 33.9 or 33.7 Ma. The Eocene spans the time from the end of the Paleocene Epoch to the beginning of the Oligocene Epoch. The start of the Eocene is marked by a brief period in which the concentration of the carbon isotope 13C in the atmosphere was exceptionally low in comparison with the more common isotope 12C. The average temperature of Earth at the beginning of the Eocene was about 27 degrees Celsius.",
-   "url": "https://en.wikipedia.org/wiki/Eocene",
-   "revision": 1379816878,
-   "timestamp": "2026-10-12T02:29:44Z"
-  },
   "Equatorial Guinea": {
    "title": "Equatorial Guinea",
    "description": "Country in Central Africa",
    "extract": "Equatorial Guinea, officially the Republic of Equatorial Guinea, is a country on the west coast of Central Africa and the only Spanish-speaking country in Africa. It has an area of 28,000 square kilometres (11,000 sq mi). Formerly the colony of Spanish Guinea, its post-independence name refers to its location both near the Equator and in the African region of Guinea. As of 2025, the country has a population of 1,853,559, over 85% of whom are members of the Fang people, the country's dominant ethnic group. The Bubi people, indigenous to Bioko Island, are the second largest group at approximately 6.5% of the population. The capital, since January 2026, is Ciudad de la Paz, and Bata is the largest city. Equatorial Guinea consists of two parts. The mainland region, Río Muni, is bordered by Cameroon to the north and Gabon to the south and east. It has the majority of the population.",
    "url": "https://en.wikipedia.org/wiki/Equatorial_Guinea",
-   "revision": 1382513720,
-   "timestamp": "2026-10-29T01:50:18Z"
+   "revision": 1382700083,
+   "timestamp": "2026-10-29T21:24:12Z"
   },
   "Eritrea": {
    "title": "Eritrea",
    "description": "Country in the Horn of Africa",
    "extract": "Eritrea, officially the State of Eritrea, is a country in the Horn of Africa region of East Africa. Its capital and largest city is Asmara. The country is bordered by Ethiopia to the south, Sudan to the west, and Djibouti to the southeast. The northeastern and eastern parts of Eritrea have an extensive coastline along the Red Sea. The country has a total area of approximately 117,600 km2 (45,406 sq mi), and includes the Dahlak Archipelago and several of the Hanish Islands. Hominid remains found in Eritrea have been dated to 1 million years old and anthropological research indicates that the area may contain significant records related to human evolution. The Kingdom of Aksum, centred in Eritrea and northern Ethiopia, was established during the first or second century AD and was considered one of the four great powers of the world by the Persian prophet Mani, the founder of Manichaeism.",
    "url": "https://en.wikipedia.org/wiki/Eritrea",
-   "revision": 1382039816,
-   "timestamp": "2026-10-26T05:09:41Z"
+   "revision": 1382700139,
+   "timestamp": "2026-10-29T21:24:27Z"
   },
   "Estonia": {
    "title": "Estonia",
    "description": "Country in Northern Europe",
    "extract": "Estonia, officially the Republic of Estonia, is a country in the Baltic region of Northern Europe. It is bordered to the north by the Gulf of Finland across from Finland, to the west by the Baltic Sea across from Sweden, to the south by Latvia, and to the east by Russia. The territory of Estonia consists of the mainland, the larger islands of Saaremaa and Hiiumaa, and over 2,300 other islands and islets on the east coast of the Baltic Sea. Its capital city of Tallinn, along with the city of Tartu, are the country's two largest urban areas. The Estonian language, of the Finnic family, is the official language and the first language of the majority of nearly 1.4 million people. Estonia is one of the least populous member states of the European Union. Present-day Estonia has been inhabited since at least 9,000 BC.",
    "url": "https://en.wikipedia.org/wiki/Estonia",
-   "revision": 1379884585,
-   "timestamp": "2026-10-12T12:52:01Z"
+   "revision": 1382647782,
+   "timestamp": "2026-10-29T16:49:54Z"
   },
   "Ethiopia": {
    "title": "Ethiopia",
@@ -620,26 +596,18 @@
    "revision": 1382145817,
    "timestamp": "2026-10-26T22:07:47Z"
   },
-  "Evolution of cetaceans": {
-   "title": "Evolution of cetaceans",
-   "description": "",
-   "extract": "The evolution of cetaceans is thought to have proceeded in modern day Pakistan during the Eocene epoch (56–34 mya), the second epoch of the Paleogene period of the present-extending Cenozoic Era. Specifically, cetaceans are thought to have transitioned from land to water at the tailend of the Paleocene–Eocene transition about 56 Mya, which was marked by increased global temperatures of 5.6°C, warming the earth’s oceans. Cetaceans are fully aquatic mammals belonging to the order Artiodactyla. Molecular and morphological analyses suggest that they share a relatively recent closest common ancestor with hippopotamuses – their sister group, diverging about 55.5 Mya. Cetacea completely branched off from other artiodactyls around 50 mya. Research conducted in the late 1970s in Pakistan revealed several stages in the transition of cetaceans from land to sea.",
-   "url": "https://en.wikipedia.org/wiki/Evolution_of_cetaceans",
-   "revision": 1369614179,
-   "timestamp": "2026-08-16T01:56:19Z"
-  },
   "Faeroe Islands": {
    "title": "Faroe Islands",
    "description": "Autonomous territory of Denmark",
    "extract": "The Faroe Islands, also known as the Faroes, are an archipelago in the North Atlantic Ocean and a rigsdel ('autonomous territory') of the Kingdom of Denmark. Located between Iceland, Norway, and the Hebrides and Shetland isles of Scotland, the islands have a population of 55,466 as of July 2026 and a land area of 1,393 km2 (538 sq mi). The official language is Faroese, which is partially mutually intelligible with Icelandic. The terrain is rugged, dominated by fjords and cliffs with sparse vegetation and few trees. As a result of their proximity to the Arctic Circle, the islands experience perpetual civil twilight during summer nights and very short winter days; nevertheless, they experience a subpolar oceanic climate and mild temperatures year-round due to the Gulf Stream.",
    "url": "https://en.wikipedia.org/wiki/Faroe_Islands",
-   "revision": 1382291528,
-   "timestamp": "2026-10-27T20:50:40Z"
+   "revision": 1382661462,
+   "timestamp": "2026-10-29T18:00:48Z"
   },
   "Falkland Islands / Malvinas": {
    "title": "Falkland Islands",
    "description": "Group of islands in the South Atlantic",
-   "extract": "The Falkland Islands, commonly referred to as the Falklands, is an archipelago in the South Atlantic Ocean on the Patagonian Shelf. The principal islands are about 300 mi (500 km) east of South America's southern Patagonian coast and 752 mi (1,210 km) from Cape Dubouzet at the northern tip of the Antarctic Peninsula, at a latitude of about 52°S. The archipelago, with an area of 4,700 sq mi (12,000 km2), comprises East Falkland, West Falkland, and 776 smaller islands. As a British Overseas Territory, the Falklands have internal self-governance, while the United Kingdom takes responsibility for their defence and foreign affairs. The capital and largest settlement is Stanley on East Falkland. The islands are believed to have been uninhabited prior to European discovery in the 17th century.",
+   "extract": "The Falkland Islands, commonly referred to as the Falklands, is an archipelago in the South Atlantic Ocean on the Patagonian Shelf. The principal islands are about 300 mi (500 km) east of South America's southern Patagonian coast and 752 mi (1,210 km) from Cape Dubouzet at the northern tip of the Antarctic Peninsula, at a latitude of about 52°S. The archipelago, with an area of 4,700 sq mi (12,000 km2), comprises East Falkland, West Falkland, and 776 smaller islands. As a British Overseas Territory, the Falklands have internal self-governance, while the United Kingdom takes responsibility for their defence and foreign affairs. The capital and largest settlement is Stanley on East Falkland. The islands are believed to have been uninhabited prior to European discovery in the 17th century. Controversy exists over the Falklands' discovery and subsequent colonisation by Europeans.",
    "url": "https://en.wikipedia.org/wiki/Falkland_Islands",
    "revision": 1375355019,
    "timestamp": "2026-09-17T08:40:47Z"
@@ -665,21 +633,21 @@
    "description": "Country in Northern Europe",
    "extract": "Finland, officially the Republic of Finland, is a Nordic country in Northern Europe. It borders Sweden to the northwest, Norway to the north, and Russia to the east, with the Gulf of Bothnia to the west and the Gulf of Finland to the south, opposite Estonia. Its capital and largest city is Helsinki. Finland has a population of 5.7 million. The official languages are Finnish and Swedish, the mother tongues of 83.5 percent and 5.0 percent of the population, respectively. Finland's climate varies from humid continental in the south to boreal in the north. Its land is predominantly covered by boreal forest, with over 180,000 recorded lakes. Finland was first settled around 9000 BC after the last Ice Age. During the Stone Age, various cultures emerged, distinguished by different styles of ceramics.",
    "url": "https://en.wikipedia.org/wiki/Finland",
-   "revision": 1382086488,
-   "timestamp": "2026-10-26T14:37:37Z"
+   "revision": 1382701229,
+   "timestamp": "2026-10-29T21:30:37Z"
   },
   "France": {
    "title": "France",
    "description": "Country primarily in Western Europe",
    "extract": "France, officially the French Republic, is a country primarily located in Western Europe. Its overseas regions and territories include French Guiana in South America, Saint Pierre and Miquelon in the North Atlantic, the French West Indies, and many islands in Oceania and the Indian Ocean. Metropolitan France shares borders with Belgium and Luxembourg to the north; Germany to the northeast; Switzerland to the east; Italy and Monaco to the southeast; Andorra and Spain to the south; and a maritime border with the United Kingdom to the northwest. Its metropolitan area extends from the Rhine to the Atlantic Ocean and from the Mediterranean Sea to the English Channel and the North Sea. Its 18 integral regions—five of which are overseas—span a combined area of 632,702 km2 (244,288 sq mi), with a total population estimated at over 69.1 million in 2026.",
    "url": "https://en.wikipedia.org/wiki/France",
-   "revision": 1382533870,
-   "timestamp": "2026-10-29T03:44:39Z"
+   "revision": 1382701178,
+   "timestamp": "2026-10-29T21:30:19Z"
   },
   "French Polynesia": {
    "title": "French Polynesia",
    "description": "French overseas collectivity in the Pacific",
-   "extract": "French Polynesia is an overseas collectivity of France and its sole overseas country; it is classified as a non-self-governing territory by the United Nations. It comprises 121 geographically dispersed islands and atolls stretching over more than 2,000 kilometres (1,200 mi) in the South Pacific Ocean. French Polynesia is associated with the European Union as an overseas country and territory (OCT). The total land area of French Polynesia is 3,521 square kilometres (1,359 sq mi), with a population of 282,596 as of September 2025 of which at least 205,000 live in the Society Islands and the remaining population lives in the rest of the archipelago.",
+   "extract": "French Polynesia is an overseas collectivity of France and its sole overseas country; it is classified as a non-self-governing territory by the United Nations. It comprises 121 geographically dispersed islands and atolls stretching over more than 2,000 kilometres (1,200 mi) in the South Pacific Ocean. French Polynesia is associated with the European Union as an overseas country and territory (OCT). The total land area of French Polynesia is 3,521 square kilometres (1,359 sq mi), with a population of 282,596 as of September 2025 of which at least 205,000 live in the Society Islands and the remaining population lives in the rest of the archipelago. French Polynesia is divided into five island groups: the Austral Islands; the Gambier Islands; the Marquesas Islands; the Society Islands (comprising the Leeward and Windward Islands); and the Tuamotus.",
    "url": "https://en.wikipedia.org/wiki/French_Polynesia",
    "revision": 1381879246,
    "timestamp": "2026-10-25T10:33:51Z"
@@ -687,7 +655,7 @@
   "French Southern and Antarctic Lands": {
    "title": "French Southern and Antarctic Lands",
    "description": "Overseas territory of France",
-   "extract": "The French Southern and Antarctic Lands is an overseas territory of France. It consists of: Adélie Land (Terre Adélie), the French claim on the continent of Antarctica. Crozet Islands (Îles Crozet), a group in the southern Indian Ocean, south of Madagascar. Kerguelen Islands (Archipel des Kerguelen), a group of volcanic islands in the southern Indian Ocean, southeast of Africa and southwest of Australia. Saint Paul and Amsterdam Islands (Îles Saint Paul et Amsterdam), a group to the north of the Kerguelen Islands. Scattered Islands (Îles Éparses), a dispersed group of islands around the coast of Madagascar.",
+   "extract": "The French Southern and Antarctic Lands is an overseas territory of France. It consists of: Adélie Land (Terre Adélie), the French claim on the continent of Antarctica. Crozet Islands (Îles Crozet), a group in the southern Indian Ocean, south of Madagascar. Kerguelen Islands (Archipel des Kerguelen), a group of volcanic islands in the southern Indian Ocean, southeast of Africa and southwest of Australia. Saint Paul and Amsterdam Islands (Îles Saint Paul et Amsterdam), a group to the north of the Kerguelen Islands. Scattered Islands (Îles Éparses), a dispersed group of islands around the coast of Madagascar. The territory is sometimes referred to as the French Southern Lands (French: Terres australes françaises) or the French Southern Territories, usually to emphasize non-recognition of French sovereignty over Adélie Land as part of the Antarctic Treaty System.",
    "url": "https://en.wikipedia.org/wiki/French_Southern_and_Antarctic_Lands",
    "revision": 1378780201,
    "timestamp": "2026-10-06T03:14:58Z"
@@ -701,12 +669,12 @@
    "timestamp": "2026-10-27T18:23:40Z"
   },
   "Georgia": {
-   "title": "Georgia",
-   "description": "Topics referred to by the same term",
-   "extract": "Georgia most commonly refers to: Georgia (country), in the South Caucasus Georgia (U.S. state), a state in the Southeastern US Georgia may also refer to:",
-   "url": "https://en.wikipedia.org/wiki/Georgia",
-   "revision": 1375599382,
-   "timestamp": "2026-09-18T20:00:25Z"
+   "title": "Georgia (country)",
+   "description": "Country in Eastern Europe and West Asia",
+   "extract": "Georgia is a country in the Caucasus region on the east coast of the Black Sea. It is located at the intersection of Eastern Europe and West Asia and is generally regarded as part of Europe. It is bordered to the north and northeast by Russia; to the west by the Black Sea, to the south by Turkey and Armenia, and to the southeast by Azerbaijan. It has a population of 3.9 million, of which over a third live in Tbilisi, the capital and largest city. Georgians, who are native to the region and constitute the majority of the population, are ethno-linguistically distinct from their neighboring nations and primarily speak Georgian, a member of the small Kartvelian language family that has no relation to any other language family in the world. Georgia has been inhabited since prehistory and is known for hosting the world's earliest known sites of winemaking.",
+   "url": "https://en.wikipedia.org/wiki/Georgia_(country)",
+   "revision": 1382732378,
+   "timestamp": "2026-10-30T00:24:15Z"
   },
   "Germany": {
    "title": "Germany",
@@ -783,7 +751,7 @@
   "Guernsey": {
    "title": "Guernsey",
    "description": "English Channel island near Normandy",
-   "extract": "Guernsey is the second-largest island in the Channel Islands, located 27 miles (43 km) west of the Cotentin Peninsula, Normandy. It is the largest island in the Bailiwick of Guernsey, which includes five other inhabited islands – Alderney, Herm, Jethou, Brecqhou and Sark – and many small islets and rocks. In 2023, the population of the island was 64,781. The land area of the island is 24 square miles (62 km2). Guernsey was part of the Duchy of Normandy until 1204, when the Channel Islands remained loyal to the English crown, splitting from mainland Normandy. In 1290, the Channel Islands were divided administratively and Guernsey became part of the Bailiwick of Guernsey. During the Second World War, Guernsey was invaded and occupied by Nazi Germany.",
+   "extract": "Guernsey is the second-largest island in the Channel Islands, located 27 miles (43 km) west of the Cotentin Peninsula, Normandy. It is the largest island in the Bailiwick of Guernsey, which includes five other inhabited islands – Alderney, Herm, Jethou, Brecqhou and Sark – and many small islets and rocks. In 2023, the population of the island was 64,781. The land area of the island is 24 square miles (62 km2). Guernsey was part of the Duchy of Normandy until 1204, when the Channel Islands remained loyal to the English crown, splitting from mainland Normandy. In 1290, the Channel Islands were divided administratively and Guernsey became part of the Bailiwick of Guernsey. During the Second World War, Guernsey was invaded and occupied by Nazi Germany. After five years of occupation, the island was liberated on 9 May 1945, that date being celebrated annually as Liberation Day.",
    "url": "https://en.wikipedia.org/wiki/Guernsey",
    "revision": 1381913627,
    "timestamp": "2026-10-25T16:02:06Z"
@@ -865,8 +833,8 @@
    "description": "Country in South Asia",
    "extract": "India, officially the Republic of India, is a country in South Asia. It is the world's seventh-largest country by area and its most populous. Bounded by the Indian Ocean on the south, the Arabian Sea on the southwest, and the Bay of Bengal on the southeast, it shares land borders with Pakistan to the west, China, Nepal, and Bhutan to the north, and Bangladesh and Myanmar to the east. In the Indian Ocean, India is near Sri Lanka and the Maldives. Modern humans arrived on the Indian subcontinent from Africa by 55,000 years ago. Settled life emerged in the western margins of the Indus river basin 9,000 years ago, evolving into the Indus Valley Civilisation of the third millennium BCE. By 1200 BCE, an archaic form of Sanskrit, an Indo-European language, diffused into India from the northwest, its earliest hymns containing elements of what would become Hinduism.",
    "url": "https://en.wikipedia.org/wiki/India",
-   "revision": 1382137125,
-   "timestamp": "2026-10-26T21:01:34Z"
+   "revision": 1382594487,
+   "timestamp": "2026-10-29T11:39:38Z"
   },
   "Indian Ocean Territories": {
    "title": "Australian Indian Ocean Territories",
@@ -881,16 +849,16 @@
    "description": "Country in Southeast Asia and Oceania",
    "extract": "Indonesia, officially the Republic of Indonesia, is a country in Southeast Asia and Oceania, between the Indian and Pacific oceans. Comprising between 13,000 and 17,000 islands—including Sumatra, Java, Sulawesi, and parts of Borneo and New Guinea—it is the world's largest archipelagic state and the 14th-largest country by area. Indonesia has extensive tropical forests and marine ecosystems that support some of the world's highest levels of biodiversity. The Indonesian archipelago has been inhabited since prehistoric times, with early human presence evidenced by fossils of Homo erectus and Homo sapiens, and megalithic sites. It became connected to regional and international maritime trade networks by the first millennium BCE. Hindu and Buddhist kingdoms developed by early centuries CE, followed by the spread of Islam and the growth of Islamic states from the late medieval period.",
    "url": "https://en.wikipedia.org/wiki/Indonesia",
-   "revision": 1382543358,
-   "timestamp": "2026-10-29T04:51:51Z"
+   "revision": 1382613857,
+   "timestamp": "2026-10-29T13:40:54Z"
   },
   "Iran": {
    "title": "Iran",
    "description": "Country in West Asia",
    "extract": "Iran, officially the Islamic Republic of Iran, and historically known as Persia, is a country in West Asia. It borders Iraq to the west; Turkey, Azerbaijan, and Armenia to the northwest; the Caspian Sea to the north, Turkmenistan to the northeast; Afghanistan to the east; Pakistan to the southeast; and the Gulf of Oman and the Persian Gulf to the south. With a population of over 92 million, Iran ranks 17th globally in both geographic size and population. It is divided into five regions with 31 provinces. Tehran is the nation's capital and largest city and serves as its primary economic center. Home to one of the world's oldest continuous major civilizations, the territory of present-day Iran was first unified under the Medes in the 7th century BC and reached its territorial height in the 6th century BC, when Cyrus the Great founded the Achaemenid Empire.",
    "url": "https://en.wikipedia.org/wiki/Iran",
-   "revision": 1382443128,
-   "timestamp": "2026-10-28T18:56:09Z"
+   "revision": 1382706475,
+   "timestamp": "2026-10-29T21:59:32Z"
   },
   "Iraq": {
    "title": "Iraq",
@@ -911,7 +879,7 @@
   "Isle of Man": {
    "title": "Isle of Man",
    "description": "British Crown Dependency in the Irish Sea",
-   "extract": "The Isle of Man, also known simply as Man or Mann ( man), is a self-governing British Crown Dependency in the Irish Sea, between Great Britain and Ireland. As head of state, Charles III holds the title Lord of Mann and is represented by a Lieutenant Governor. The government of the United Kingdom is responsible for the Isle of Man's military defence and represents it abroad, but the Isle of Man still has a separate international identity. Humans have lived on the island since before 6500 BC. There was Gaelic cultural influence and settlement by the 5th century AD, and the Manx language emerged as a branch of the Goidelic languages. Irish missionaries following the teaching of Saint Patrick spread Christianity on Man. In 627, King Edwin of Northumbria conquered the Isle of Man.",
+   "extract": "The Isle of Man, also known simply as Man or Mann ( man), is a self-governing British Crown Dependency in the Irish Sea, between Great Britain and Ireland. As head of state, Charles III holds the title Lord of Mann and is represented by a Lieutenant Governor. The government of the United Kingdom is responsible for the Isle of Man's military defence and represents it abroad, but the Isle of Man still has a separate international identity. Humans have lived on the island since before 6500 BC. There was Gaelic cultural influence and settlement by the 5th century AD, and the Manx language emerged as a branch of the Goidelic languages. Irish missionaries following the teaching of Saint Patrick spread Christianity on Man. In 627, King Edwin of Northumbria conquered the Isle of Man. In the 9th century, Norsemen founded the Kingdom of the Isles, which included Man and the Hebrides.",
    "url": "https://en.wikipedia.org/wiki/Isle_of_Man",
    "revision": 1381881154,
    "timestamp": "2026-10-25T11:01:32Z"
@@ -921,24 +889,24 @@
    "description": "Country in West Asia",
    "extract": "Israel, officially the State of Israel, is a country in the Southern Levant region of West Asia. It is bordered by Lebanon to the north, Syria to the northeast, Jordan to the east, and Egypt to the southwest. Israel's western coast lies on the Mediterranean Sea, its southern tip reaches the Red Sea, and to the east is Earth's lowest point near the Dead Sea. Jerusalem is the government seat and proclaimed capital, while Tel Aviv is Israel's largest urban area and economic centre. Israel is located in a region known in Jewish tradition as the Land of Israel, synonymous with Canaan, Palestine, and the Holy Land. In antiquity it was home to the Canaanite civilisation, followed by the kingdoms of Israel and Judah. Situated at a continental crossroad, the region experienced demographic changes under the rule of empires from the Romans to the Ottomans.",
    "url": "https://en.wikipedia.org/wiki/Israel",
-   "revision": 1382526325,
-   "timestamp": "2026-10-29T02:59:33Z"
+   "revision": 1382707653,
+   "timestamp": "2026-10-29T22:06:33Z"
   },
   "Italy": {
    "title": "Italy",
    "description": "Country in Southern and Western Europe",
    "extract": "Italy, officially the Italian Republic, is a country in Southern and Western Europe. It consists of a peninsula, which extends into the Mediterranean Sea, with the Alps on its northern land border, as well as nearly 800 islands, notably Sicily and Sardinia. Italy shares land borders with France to the west; Switzerland and Austria to the north; Slovenia to the east; and the two enclaves of Vatican City and San Marino. It is the tenth-largest country in Europe by area, covering 301,340 km2 (116,350 sq mi), and the third-most populous member state of the European Union, with nearly 59 million inhabitants. Rome is the capital of Italy; other major cities include Milan, Naples, Turin, Palermo, Bologna, Florence, Genoa, Bari, and Venice.",
    "url": "https://en.wikipedia.org/wiki/Italy",
-   "revision": 1382183875,
-   "timestamp": "2026-10-27T03:45:09Z"
+   "revision": 1382607190,
+   "timestamp": "2026-10-29T12:58:22Z"
   },
   "Jamaica": {
    "title": "Jamaica",
    "description": "Caribbean nation",
    "extract": "Jamaica is an island country in the Caribbean, covering 10,991 square kilometres (4,244 sq mi). It is the third-largest island in the Greater Antilles and the Caribbean, after Cuba and Hispaniola. Jamaica lies about 145 km (78 nmi) south of Cuba, 191 km (103 nmi) west of Hispaniola, and 215 km (116 nmi) southeast of the Cayman Islands. With 2.8 million people, Jamaica is the third-most populous Anglophone country in the Americas and the fourth-most populous country in the Caribbean. Kingston is the capital and largest city. The indigenous Ciboney people gradually came under Spanish rule after the arrival of Christopher Columbus in 1494. Many of the indigenous people either were killed or died of diseases, after which the Spanish brought large numbers of Africans to Jamaica as slaves.",
    "url": "https://en.wikipedia.org/wiki/Jamaica",
-   "revision": 1382291106,
-   "timestamp": "2026-10-27T20:47:28Z"
+   "revision": 1382708083,
+   "timestamp": "2026-10-29T22:08:54Z"
   },
   "Japan": {
    "title": "Japan",
@@ -969,8 +937,8 @@
    "description": "Country in Eastern Europe and Central Asia",
    "extract": "Kazakhstan, officially the Republic of Kazakhstan, is a landlocked country situated primarily in Central Asia, with a portion of its territory extending into Eastern Europe. It borders Russia to the north and west, China to the east, Kyrgyzstan to the southeast, Uzbekistan to the south, and Turkmenistan to the southwest, and it has a coastline along the Caspian Sea. The capital is Astana, and the country's largest city and principal cultural and economic center is Almaty, which served as the capital until 1997. Kazakhstan is the world's ninth-largest country by land area and the largest landlocked country. Hilly plateaus and plains account for nearly half its vast territory, with lowlands composing another third; its southern and eastern frontiers are composed of mountainous regions.",
    "url": "https://en.wikipedia.org/wiki/Kazakhstan",
-   "revision": 1381738875,
-   "timestamp": "2026-10-24T13:29:39Z"
+   "revision": 1382709077,
+   "timestamp": "2026-10-29T22:14:46Z"
   },
   "Kenya": {
    "title": "Kenya",
@@ -1001,16 +969,16 @@
    "description": "Country in Southeastern Europe",
    "extract": "Kosovo, officially the Republic of Kosovo, is a landlocked country in Southeastern Europe with partial diplomatic recognition. It is bordered by Albania to the southwest, Montenegro to the west, Serbia to the north and east, and North Macedonia to the southeast. It covers an area of 10,887 km2 (4,203 sq mi) and has a population of nearly 1.6 million, of whom the vast majority (approximately 92%) are ethnic Albanians. Kosovo has a varied terrain, with high plains along with rolling hills and mountains, some of which have an altitude over 2,500 m (8,200 ft). Its climate is mainly continental with some Mediterranean and Alpine influences. Kosovo's capital and most populous city is Pristina; other major cities and urban areas include Prizren, Ferizaj, Gjilan, and Peja. Kosovo formed the core territory of the Dardani, an Illyrian people, attested in classical sources from the 4th century BC.",
    "url": "https://en.wikipedia.org/wiki/Kosovo",
-   "revision": 1382449959,
-   "timestamp": "2026-10-28T19:37:35Z"
+   "revision": 1382709694,
+   "timestamp": "2026-10-29T22:18:18Z"
   },
   "Kuwait": {
    "title": "Kuwait",
    "description": "Country in West Asia",
    "extract": "Kuwait, officially the State of Kuwait, is a country in West Asia. With a coastline of approximately 500 km (311 mi), it is situated at the head of the Persian Gulf in the northeastern edge of the Arabian Peninsula, bordering Iraq to the north and Saudi Arabia to the south. Kuwait is geographically the second closest Gulf country to mainland Iran (separated only by a small Iraqi coastline) after Iraq. The country is a small city-state; most of the population reside in the urban agglomeration of Kuwait City, the capital and largest city. As of 2024, Kuwait has a population of 4.82 million, of which 1.53 million are Kuwaiti citizens while the remaining 3.29 million are foreign nationals from over 100 countries. In 2024, Kuwait had the world's seventh largest number of foreign nationals as a percentage of the population, where its citizens make up fewer than 30% of the overall population.",
    "url": "https://en.wikipedia.org/wiki/Kuwait",
-   "revision": 1380440172,
-   "timestamp": "2026-10-15T18:48:42Z"
+   "revision": 1382710138,
+   "timestamp": "2026-10-29T22:20:25Z"
   },
   "Kyrgyzstan": {
    "title": "Kyrgyzstan",
@@ -1041,16 +1009,16 @@
    "description": "Country in Northern Europe",
    "extract": "Latvia, officially the Republic of Latvia, is a country in the Baltic region of northern Europe. It is one of the three Baltic states, along with Estonia to the north and Lithuania to the south. It borders Russia to the east and Belarus to the southeast and shares a maritime border with Sweden to the west. Latvia covers an area of 64,573 km2 (24,932 sq mi), with a population of 1.83 million. The country has a temperate seasonal climate. Its capital and largest city is Riga. Latvians, who are the titular nation and comprise 65.5% of the country's population, belong to the ethnolinguistic group of the Balts and speak Latvian. Russians are the most prominent minority in the country, at almost a quarter of the population; 37.7% of the population speak Russian as their native tongue.",
    "url": "https://en.wikipedia.org/wiki/Latvia",
-   "revision": 1380867434,
-   "timestamp": "2026-10-18T12:50:32Z"
+   "revision": 1382710462,
+   "timestamp": "2026-10-29T22:21:59Z"
   },
   "Lebanon": {
    "title": "Lebanon",
    "description": "Country in West Asia",
    "extract": "Lebanon, officially the Lebanese Republic, is a country in the Levant region of West Asia. Situated at the crossroads of the Mediterranean Basin and the Arabian Peninsula, it is bordered by Syria to the north and east, Israel to the south, and the Mediterranean Sea to the west; Cyprus lies a short distance from the coastline. Lebanon has a population of more than five million and an area of 10,452 square kilometres (4,036 sq mi). Beirut is the country's capital and largest city. Human habitation in Lebanon dates to 5000 BC. From 3200 to 539 BC, it was part of Phoenicia, a maritime civilization that spanned the Mediterranean Basin. In 64 BC, the region became part of the Roman Empire and the subsequent Byzantine Empire. After the seventh century, it came under the rule of different Arab Islamic caliphates, including the Rashidun, Umayyad and Abbasid caliphates.",
    "url": "https://en.wikipedia.org/wiki/Lebanon",
-   "revision": 1381477025,
-   "timestamp": "2026-10-22T19:47:41Z"
+   "revision": 1382710621,
+   "timestamp": "2026-10-29T22:22:51Z"
   },
   "Lesotho": {
    "title": "Lesotho",
@@ -1065,8 +1033,8 @@
    "description": "Country in West Africa",
    "extract": "Liberia, officially the Republic of Liberia, is a country on the West African coast. It is bordered by Sierra Leone to its northwest, Guinea to its north, Ivory Coast to its east, and the Atlantic Ocean to its south and southwest. It has a population of around 5.5 million and covers an area of 43,000 square miles (111,369 km2). The official language is English, though over 20 indigenous languages are spoken, reflecting the country's ethnic and cultural diversity. The capital and largest city is Monrovia. Liberia began in the early 19th century as a project of the American Colonization Society (ACS), which fomented the emigration of Black Americans from the United States to Africa. Between 1822 and the outbreak of the American Civil War in 1861, more than 15,000 freed and free-born African Americans, along with 3,198 Afro-Caribbeans, relocated to Liberia.",
    "url": "https://en.wikipedia.org/wiki/Liberia",
-   "revision": 1382142377,
-   "timestamp": "2026-10-26T21:40:08Z"
+   "revision": 1382711607,
+   "timestamp": "2026-10-29T22:28:08Z"
   },
   "Libya": {
    "title": "Libya",
@@ -1079,23 +1047,23 @@
   "Liechtenstein": {
    "title": "Liechtenstein",
    "description": "Microstate in Central Europe",
-   "extract": "Liechtenstein, officially the Principality of Liechtenstein, is a doubly landlocked country in the Central European Alps. A microstate, it is located between Austria to the east and north-east and Switzerland to the north-west, west and south. Formed in 1719, Liechtenstein became fully independent upon the dissolution of the German Confederation in 1866. Liechtenstein is a monarchy headed by the prince of Liechtenstein. Hans-Adam II, Prince of Liechtenstein has reigned over Liechtenstein since 1989. Liechtenstein is Europe's fourth-smallest country, with an area of just over 160 square kilometres (62 square miles) and a population of 41,389. It is the world's smallest country to border two countries.",
+   "extract": "Liechtenstein, officially the Principality of Liechtenstein, is a doubly landlocked country in the Central European Alps. A microstate, it is located between Austria to the east and north-east and Switzerland to the north-west, west and south. Formed in 1719, Liechtenstein became fully independent upon the dissolution of the German Confederation in 1866. Liechtenstein is a monarchy headed by the prince of Liechtenstein. Hans-Adam II, Prince of Liechtenstein has reigned over Liechtenstein since 1989. Liechtenstein is Europe's fourth-smallest country, with an area of just over 160 square kilometres (62 square miles) and a population of 41,389. It is the world's smallest country to border two countries. The official language of Liechtenstein is German. Liechtenstein is divided into 11 municipalities. Its capital is Vaduz, and its largest municipality is Schaan.",
    "url": "https://en.wikipedia.org/wiki/Liechtenstein",
-   "revision": 1382369083,
-   "timestamp": "2026-10-28T10:02:59Z"
+   "revision": 1382683407,
+   "timestamp": "2026-10-29T19:53:28Z"
   },
   "Lithuania": {
    "title": "Lithuania",
    "description": "Country in Northern Europe",
    "extract": "Lithuania, officially the Republic of Lithuania, is a country in the Baltic region of Europe. It is one of three Baltic states and lies on the eastern shore of the Baltic Sea, bordered by Latvia to the north, Belarus to the east and south, Poland to the south, and the Russian semi-exclave of Kaliningrad Oblast to the southwest, with a maritime border with Sweden to the west. Lithuania covers an area of 65,300 km2 (25,200 sq mi), and has a population of 2.9 million. Its capital and largest city is Vilnius; other major cities include Kaunas, Klaipėda, Šiauliai and Panevėžys. Lithuanians are the titular nation, belong to the ethnolinguistic group of Balts, and speak Lithuanian. For millennia, the southeastern shores of the Baltic Sea were inhabited by various Baltic tribes.",
    "url": "https://en.wikipedia.org/wiki/Lithuania",
-   "revision": 1382250735,
-   "timestamp": "2026-10-27T15:37:35Z"
+   "revision": 1382623435,
+   "timestamp": "2026-10-29T14:36:17Z"
   },
   "Llama": {
    "title": "Llama",
    "description": "Species of woolly domesticated mammal",
-   "extract": "The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era. Llamas are social animals and live with others as a herd. Their wool is soft and contains only a small amount of lanolin. Llamas can learn simple tasks after a few repetitions. When using a pack, they can carry about 25 to 30% of their body weight for 8 to 13 km (5–8 miles). The name llama (also historically spelled \"lama\" or \"glama\") was adopted by European settlers from native Peruvian Quechua. The ancestors of llamas are thought to have originated on the Great Plains of North America about 40 million years ago and subsequently migrated to South America about three million years ago during the Great American Interchange.",
+   "extract": "The llama is a domesticated South American camelid, widely used as a meat and pack animal by Andean cultures since the pre-Columbian era. Llamas are social animals and live with others as a herd. Their wool is soft and contains only a small amount of lanolin. Llamas can learn simple tasks after a few repetitions. When using a pack, they can carry about 25 to 30% of their body weight for 8 to 13 km (5–8 miles). The name llama (also historically spelled \"lama\" or \"glama\") was adopted by European settlers from native Peruvian Quechua. The ancestors of llamas are thought to have originated on the Great Plains of North America about 40 million years ago and subsequently migrated to South America about three million years ago during the Great American Interchange. By the end of the last ice age (10,000–12,000 years ago), camelids were extinct in North America.",
    "url": "https://en.wikipedia.org/wiki/Llama",
    "revision": 1378337760,
    "timestamp": "2026-10-04T01:32:33Z"
@@ -1107,14 +1075,6 @@
    "url": "https://en.wikipedia.org/wiki/Luxembourg",
    "revision": 1382221234,
    "timestamp": "2026-10-27T11:13:08Z"
-  },
-  "Ma'anyan language": {
-   "title": "Maʼanyan language",
-   "description": "Austronesian (East Barito) language spoken in central Kalimantan, Indonesia",
-   "extract": "Maʼanyan, Maanyan, Maʼanyan Barito, Maanyan Barito, Maʼanyan Dayak, Maanyan Dayak is an Austronesian language belonging to the eastern branch of the Barito language family. According to the 2003 census, it is spoken by about 150,000 Maʼanyan Dayaks – a Dayak ethnic group native to the Central and South Kalimantan, Indonesia. It is closely related to Malagasy, an East Barito dialect continuum spoken in Madagascar, although these languages are not highly mutually intelligible due to centuries-long separation.",
-   "url": "https://en.wikipedia.org/wiki/Ma%CA%BCanyan_language",
-   "revision": 1378193039,
-   "timestamp": "2026-10-03T11:49:29Z"
   },
   "Macao": {
    "title": "Macau",
@@ -1140,22 +1100,6 @@
    "revision": 1382280279,
    "timestamp": "2026-10-27T19:26:40Z"
   },
-  "Malagasy language": {
-   "title": "Malagasy language",
-   "description": "Austronesian language of Madagascar",
-   "extract": "Malagasy is an Austronesian language and dialect continuum spoken in Madagascar. The standard variety, called Official Malagasy, is one of the official languages of Madagascar, alongside French. Malagasy is the westernmost Austronesian language, brought to Madagascar with the settlement of Austronesian speakers from the Sunda Islands (about 7,300 kilometres or 4,500 miles away) around the 5th century AD or perhaps between the 7th and 13th centuries. The Malagasy language is one of the Barito languages and is most closely related to the Maʼanyan language, still spoken on Borneo. Malagasy also includes numerous Malay loanwords from the time of the early Austronesian settlement and trading between Madagascar and the Sunda Islands. After c.",
-   "url": "https://en.wikipedia.org/wiki/Malagasy_language",
-   "revision": 1381336935,
-   "timestamp": "2026-10-21T18:43:07Z"
-  },
-  "Malagasy people": {
-   "title": "Malagasy peoples",
-   "description": "Austronesian ethnic group",
-   "extract": "The Malagasy are an Austronesian-speaking ethnic group and nation indigenous to the island country of Madagascar. They emerged over several centuries through interaction between Austronesians from Maritime Southeast Asia, who settled mainly in the island's interior, and Bantu migrants from Southeast Africa who arrived later and established communities along the coasts. Traditionally, the Malagasy have been divided into various sub-ethnic groups. The \"Highlanders,\" such as the Merina and Betsileo of the central highlands around Antananarivo, Alaotra (Ambatondrazaka) and Fianarantsoa, tend to have more Austronesian ancestry. In contrast, the \"coastal dwellers,\" including the Sakalava, Bara, Vezo, Betsimisaraka, and Mahafaly, generally have a higher proportion of Bantu ancestry. The Merina are broadly divided into two subgroups that differ in their ancestral composition.",
-   "url": "https://en.wikipedia.org/wiki/Malagasy_peoples",
-   "revision": 1382096995,
-   "timestamp": "2026-10-26T16:04:27Z"
-  },
   "Malawi": {
    "title": "Malawi",
    "description": "Country in Southeast Africa",
@@ -1177,8 +1121,8 @@
    "description": "Island country in South Asia",
    "extract": "The Maldives, officially the Republic of Maldives, and historically known as the Maldive Islands, is an archipelagic country in South Asia, located in the Indian Ocean, near the southeastern boundary of the Arabian Sea. The Maldives is located southwest of India and Sri Lanka, about 750 kilometres (470 miles; 400 nautical miles) from the Asian continent's mainland. The Maldives' chain of 26 atolls stretches across the equator from Ihavandhippolhu Atoll in the north to Addu Atoll in the south. Malé is the capital and the most populated city, traditionally called the \"King's Island\", where the ancient royal dynasties ruled from its central location. The Maldives has been inhabited for over 2,500 years. Documented contact with the outside world began around 947 CE when Arab travellers began visiting the islands.",
    "url": "https://en.wikipedia.org/wiki/Maldives",
-   "revision": 1382050914,
-   "timestamp": "2026-10-26T07:42:45Z"
+   "revision": 1382681967,
+   "timestamp": "2026-10-29T19:45:37Z"
   },
   "Mali": {
    "title": "Mali",
@@ -1217,8 +1161,8 @@
    "description": "Island country in the Indian Ocean",
    "extract": "Mauritius, officially the Republic of Mauritius, is an island country in the Indian Ocean, located about 1,100 nautical miles (2,000 km; 1,300 mi) off the southeastern coast of Africa, east of Madagascar. It includes the main island (also called Mauritius), as well as Rodrigues, Agaléga, and St. Brandon (Cargados Carajos shoals). The islands of Mauritius and Rodrigues, along with nearby Réunion, are part of the Mascarene Islands. The main island of Mauritius, where the population is concentrated, hosts the capital and largest city, Port Louis. The country spans 2,040 square kilometres (790 sq mi) and has an exclusive economic zone covering approximately 580,000 square nautical miles (2,000,000 km2; 770,000 sq mi).",
    "url": "https://en.wikipedia.org/wiki/Mauritius",
-   "revision": 1381813003,
-   "timestamp": "2026-10-24T23:30:22Z"
+   "revision": 1382716565,
+   "timestamp": "2026-10-29T22:57:19Z"
   },
   "Mexico": {
    "title": "Mexico",
@@ -1241,16 +1185,16 @@
    "description": "Country in Eastern Europe",
    "extract": "Moldova, officially the Republic of Moldova, is a landlocked country in Eastern Europe, with an area of 33,843 km2 (13,067 sq mi) and a population of 2.38 million. Moldova is bordered by Romania to the west and Ukraine to the north, east, and south. The unrecognised breakaway state of Transnistria lies across the Dniester river on the country's eastern border with Ukraine. Moldova is a parliamentary democratic republic with its capital in Chișinău, the country's largest city and main cultural and commercial centre. Most of Moldovan territory was a part of the Principality of Moldavia from the 14th century until 1812, when it was ceded to the Russian Empire by the Ottoman Empire (to which Moldavia was a vassal state) and became known as Bessarabia. In 1856, southern Bessarabia was returned to Moldavia, which three years later united with Wallachia to form Romania.",
    "url": "https://en.wikipedia.org/wiki/Moldova",
-   "revision": 1382006825,
-   "timestamp": "2026-10-26T00:50:06Z"
+   "revision": 1382616645,
+   "timestamp": "2026-10-29T13:57:27Z"
   },
   "Monaco": {
    "title": "Monaco",
    "description": "Microstate in Western Europe",
    "extract": "Monaco, officially the Principality of Monaco, is a sovereign city-state and microstate in Western Europe. Situated on the French Riviera, it is a semi-enclave bordered by France to the north, east, and west, with the Mediterranean Sea to the south; the Italian region of Liguria is about 15 km (9.3 mi) east. With a population of 38,423 living in an area of 2.08 km2 (0.80 sq mi), Monaco is the second smallest sovereign state in the world, after Vatican City, as well as the most densely populated. It also has the world's shortest national coastline of any non-landlocked nation, at 3.83 km (2.38 mi). Fewer than 10,000 of its residents are Monégasque nationals. Although French is the official language of Monaco, Italian and Monégasque are also widely spoken and understood.",
    "url": "https://en.wikipedia.org/wiki/Monaco",
-   "revision": 1382283267,
-   "timestamp": "2026-10-27T19:48:20Z"
+   "revision": 1382731039,
+   "timestamp": "2026-10-30T00:15:02Z"
   },
   "Mongolia": {
    "title": "Mongolia",
@@ -1281,8 +1225,8 @@
    "description": "Country in North Africa",
    "extract": "Morocco, officially the Kingdom of Morocco, is a country in North Africa. It has coastlines on the Mediterranean Sea to the north and the Atlantic Ocean to the west, and has land borders with Algeria to the east; the Spanish exclaves of Ceuta, Melilla and Peñón de Vélez de la Gomera along the north, which it claims together with several small Spanish-controlled islands; and the disputed territory of Western Sahara to the south, partly occupied by Morocco since 1975. Morocco also claims to share a border with Mauritania through the disputed territory of Western Sahara. It has a population of approximately 37 million. Its capital is Rabat, while its largest city is Casablanca. The region constituting Morocco has been inhabited since the Paleolithic era, more than 300,000 years ago.",
    "url": "https://en.wikipedia.org/wiki/Morocco",
-   "revision": 1382275429,
-   "timestamp": "2026-10-27T18:50:12Z"
+   "revision": 1382715225,
+   "timestamp": "2026-10-29T22:49:17Z"
   },
   "Mozambique": {
    "title": "Mozambique",
@@ -1297,8 +1241,8 @@
    "description": "Country in Southeast Asia",
    "extract": "Myanmar, officially the Republic of the Union of Myanmar and also referred to as Burma (the official English name until 1989), is a country in northwest Southeast Asia. It is the largest country by area in Mainland Southeast Asia and has a population of about 55 million. It is bordered by India and Bangladesh to the northwest, China to the northeast, Laos and Thailand to the east and southeast, and the Andaman Sea and the Bay of Bengal to the south and southwest. The country's capital city is Naypyidaw, while its largest city is Yangon (formerly Rangoon). Early civilisations in the area included the Tibeto-Burman-speaking Pyu city-states in Upper Myanmar and the Mon kingdoms in Lower Myanmar.",
    "url": "https://en.wikipedia.org/wiki/Myanmar",
-   "revision": 1381997485,
-   "timestamp": "2026-10-25T23:59:13Z"
+   "revision": 1382715641,
+   "timestamp": "2026-10-29T22:51:50Z"
   },
   "Namibia": {
    "title": "Namibia",
@@ -1321,8 +1265,8 @@
    "description": "Country in South Asia",
    "extract": "Nepal is a landlocked country in South Asia. It is mainly situated in the Himalayas, but also includes parts of the Indo-Gangetic Plain. It borders the Tibet Autonomous Region of China to the north, and India to the south, east, and west, while it is narrowly separated from Bangladesh by the Siliguri Corridor, and from Bhutan by the Indian state of Sikkim. Nepal has a diverse geography, including fertile plains, subalpine forested hills, and eight of the world's ten highest mountains, including Mount Everest, the highest point above mean sea level on Earth. Kathmandu is the nation's capital and its largest city. Nepal is a multi-ethnic, multi-lingual, multi-religious, and multi-cultural sovereign state, with Nepali as the official language.",
    "url": "https://en.wikipedia.org/wiki/Nepal",
-   "revision": 1382373998,
-   "timestamp": "2026-10-28T10:52:37Z"
+   "revision": 1382573009,
+   "timestamp": "2026-10-29T08:52:23Z"
   },
   "Netherlands": {
    "title": "Netherlands",
@@ -1377,8 +1321,8 @@
    "description": "Country in the South Pacific Ocean",
    "extract": "Niue is a self-governing island country in the South Pacific Ocean, in Polynesia, part of Oceania. Like the neighbouring Cook Islands, it is in free association with New Zealand. Its population is predominantly Polynesian. As one of the world's largest coral islands, Niue is nicknamed \"The Rock\", which comes from the traditional name \"Rock of Polynesia\". Niue's position is inside a triangle drawn between Tonga, Samoa, and the Cook Islands. It is 2,400 kilometres (1,500 mi) northeast of New Zealand, and 604 kilometres (375 mi) northeast of Tonga. Niue's land area is about 261.46 square kilometres (100.95 mi2) and its population was 1,689 at the Census in 2022. The terrain of the island has two noticeable levels. The higher level is made up of a limestone cliff running along the coast, with a plateau in the centre of the island reaching approximately 60 metres (200 ft) above sea level.",
    "url": "https://en.wikipedia.org/wiki/Niue",
-   "revision": 1382173918,
-   "timestamp": "2026-10-27T02:06:35Z"
+   "revision": 1382697837,
+   "timestamp": "2026-10-29T21:11:38Z"
   },
   "Norfolk Island": {
    "title": "Norfolk Island",
@@ -1433,8 +1377,8 @@
    "description": "Country in South Asia",
    "extract": "Pakistan, officially the Islamic Republic of Pakistan, is a country in South Asia. It is the fifth-most populous country, with a population of over 241.5 million, having the second-largest Muslim population in the world as of 2023. Islamabad is the nation's capital, while Karachi is its largest city and financial centre. Pakistan is the 33rd-largest country by area. Bounded by the Arabian Sea on the south, the Gulf of Oman on the southwest, and the Sir Creek on the southeast, it shares land borders with India to the east; Afghanistan to the west; Iran to the southwest; and China to the northeast. It shares a maritime border with Oman in the Gulf of Oman, and is separated from Tajikistan in the northwest by Afghanistan's narrow Wakhan Corridor.",
    "url": "https://en.wikipedia.org/wiki/Pakistan",
-   "revision": 1382415080,
-   "timestamp": "2026-10-28T16:05:36Z"
+   "revision": 1382700499,
+   "timestamp": "2026-10-29T21:26:27Z"
   },
   "Palau": {
    "title": "Palau",
@@ -1449,16 +1393,16 @@
    "description": "Country in West Asia",
    "extract": "Palestine, officially the State of Palestine, is a country in the Southern Levant region of West Asia. Situated between the Mediterranean Sea and Jordan River, it comprises the territories of the West Bank and the Gaza Strip, both of which are under occupation by Israel. Palestine shares the majority of its borders with Israel, while the West Bank borders Jordan to the east and the Gaza Strip borders Egypt to the southwest. The West Bank is divided between 165 Palestinian enclaves under partial civilian rule by the Palestinian Authority, and Area C, under full Israeli control. Palestine's population exceeds five million; its proclaimed capital is Jerusalem, while Ramallah serves as its de facto administrative center. Situated at a continental crossroad, the Palestine region was ruled by various empires and experienced various demographic changes from antiquity to the modern era.",
    "url": "https://en.wikipedia.org/wiki/Palestine",
-   "revision": 1382391670,
-   "timestamp": "2026-10-28T13:26:33Z"
+   "revision": 1382717243,
+   "timestamp": "2026-10-29T23:01:06Z"
   },
   "Panama": {
    "title": "Panama",
    "description": "Country in Central America",
    "extract": "Panama, officially the Republic of Panama, is a country located at the southern end of Central America in North America, bordering South America. It is bordered by Costa Rica to the west, Colombia to the southeast, the Caribbean Sea to the north, and the Pacific Ocean to the south. Its capital and largest city is Panama City, whose metropolitan area is home to nearly half of the country's over 4 million inhabitants. Before the arrival of Spanish colonists in the 16th century, Panama was inhabited by a number of different Indigenous peoples. It broke away from Spain in 1821 and joined the Republic of Gran Colombia, a union of Nueva Granada, Ecuador, and Venezuela. After Gran Colombia dissolved in 1831, Panama and Nueva Granada eventually became the Republic of Colombia.",
    "url": "https://en.wikipedia.org/wiki/Panama",
-   "revision": 1380750586,
-   "timestamp": "2026-10-17T16:59:53Z"
+   "revision": 1382717447,
+   "timestamp": "2026-10-29T23:02:11Z"
   },
   "Papua New Guinea": {
    "title": "Papua New Guinea",
@@ -1519,10 +1463,10 @@
   "Poland": {
    "title": "Poland",
    "description": "Country in Central Europe",
-   "extract": "Poland, officially the Republic of Poland, is a country in Central Europe. It extends from the Baltic Sea in the north to the Sudetes and Carpathian Mountains in the south, and borders Lithuania and Russia to the northeast; Belarus and Ukraine to the east; Slovakia and the Czech Republic to the south; and Germany to the west. The territory has a varied landscape, diverse ecosystems, and a temperate climate. Poland is composed of sixteen voivodeships and is the fifth most populous member state of the European Union (EU), with over 38 million people, and the fifth largest EU country by land area, covering 312,696 km2 (120,733 sq mi). The capital and largest city is Warsaw; other major cities include Kraków, Wrocław, Łódź, Poznań, and Gdańsk. Prehistoric human activity on Polish soil dates to the Lower Paleolithic, with continuous settlement since the end of the Last Glacial Period.",
+   "extract": "Poland, officially the Republic of Poland, is a country in Central Europe. It extends from the Baltic Sea in the north to the Sudetes and Carpathian Mountains in the south, and borders Lithuania and Russia to the northeast; Belarus and Ukraine to the east; Slovakia and the Czech Republic to the south; and Germany to the west. The territory has a varied landscape, diverse ecosystems, and a temperate climate. Poland is composed of sixteen voivodeships and is the fifth most populous member state of the European Union (EU), with over 37 million people, and the fifth largest EU country by land area, covering 312,696 km2 (120,733 sq mi). The capital and largest city is Warsaw; other major cities include Kraków, Wrocław, Łódź, Poznań, and Gdańsk. Prehistoric human activity on Polish soil dates to the Lower Paleolithic, with continuous settlement since the end of the Last Glacial Period.",
    "url": "https://en.wikipedia.org/wiki/Poland",
-   "revision": 1382447282,
-   "timestamp": "2026-10-28T19:22:47Z"
+   "revision": 1382719075,
+   "timestamp": "2026-10-29T23:10:50Z"
   },
   "Portugal": {
    "title": "Portugal",
@@ -1577,8 +1521,8 @@
    "description": "Country in Southeastern and Central Europe",
    "extract": "Romania is a country in Central and Southeastern Europe. It lies on the lower course of the Danube, north of the Balkan Peninsula, and on the northwestern shore of the Black Sea. It borders Ukraine to the north and east, Hungary to the west, Serbia to the southwest, Bulgaria to the south, Moldova to the east, and the Black Sea to the southeast. It is the twelfth-largest country in Europe by area, covering 238,397 km2 (92,046 mi2), and the sixth-most populous member state of the European Union, with 19 million inhabitants. The capital, largest city and economic centre is Bucharest. Other major cities include Cluj-Napoca, Iași, Constanța, Timișoara, Brașov and Craiova. Romania was settled during the Lower Paleolithic, later becoming Dacia before Trajan's Dacian Wars and Romanisation.",
    "url": "https://en.wikipedia.org/wiki/Romania",
-   "revision": 1381260106,
-   "timestamp": "2026-10-21T02:51:31Z"
+   "revision": 1382649070,
+   "timestamp": "2026-10-29T16:56:32Z"
   },
   "Russian Federation": {
    "title": "Russia",
@@ -1593,16 +1537,8 @@
    "description": "Country in East Africa",
    "extract": "Rwanda, officially the Republic of Rwanda, is a landlocked country in East Africa. Its geography is dominated by mountains in the west and savanna in the southeast. The largest and most notable lakes are mainly in the western and northern regions of the country, and several volcanoes that form part of the Virunga volcanic chain are primarily in the northwest. The climate is considered tropical highland, with two rainy seasons and two dry seasons each year. Its capital and largest city is Kigali, located at the centre of the country, at 1,567 metres above sea level. Rwanda lies a few degrees south of the Equator in the Great Rift Valley of East Africa. Rwanda is bordered by Uganda to the north, Tanzania to the east, Burundi to the south, and the Democratic Republic of the Congo to the west.",
    "url": "https://en.wikipedia.org/wiki/Rwanda",
-   "revision": 1381742556,
-   "timestamp": "2026-10-24T14:07:34Z"
-  },
-  "Sahara": {
-   "title": "Sahara",
-   "description": "Desert on the African continent",
-   "extract": "The Sahara is a desert spanning North Africa. With an area of 9,200,000 square kilometres (3,600,000 sq mi), it is the largest hot desert in the world and the third-largest desert overall, smaller only than the deserts of Antarctica and the northern Arctic. The desert covers much of North Africa, excluding the fertile region on the Mediterranean Sea coast, the Atlas Mountains of the Maghreb, and the Nile Valley in Egypt and the Sudan. It stretches from the Red Sea in the east and the Mediterranean in the north to the Atlantic Ocean in the west, where the landscape gradually changes from desert to coastal plains. To the south it is bounded by the Sahel, a belt of semi-arid tropical savanna around the Niger River valley and the Sudan region of sub-Saharan Africa.",
-   "url": "https://en.wikipedia.org/wiki/Sahara",
-   "revision": 1380508422,
-   "timestamp": "2026-10-16T04:18:26Z"
+   "revision": 1382721649,
+   "timestamp": "2026-10-29T23:24:31Z"
   },
   "Saint Helena": {
    "title": "Saint Helena, Ascension and Tristan da Cunha",
@@ -1631,10 +1567,10 @@
   "Saint Pierre and Miquelon": {
    "title": "Saint Pierre and Miquelon",
    "description": "Overseas collectivity of France",
-   "extract": "Saint Pierre and Miquelon, officially the Territorial Collectivity of Saint Pierre and Miquelon, is a self-governing territorial overseas collectivity of France in the northwestern Atlantic Ocean, located off the Canadian island of Newfoundland. Saint Pierre and Miquelon is an archipelago of eight islands, covering 242 km2 (93 sq mi) of land. It had an estimated population of 5,513 in 2026 and its residents are French citizens; they elect their own deputy to the National Assembly and participate in senatorial and presidential elections. Saint Pierre and Miquelon is an overseas country and territory (OCT) of the European Union, although not an integral part of it. It is neither part of the Schengen area, nor of the European customs territory.",
+   "extract": "Saint Pierre and Miquelon, officially the Territorial Collectivity of Saint Pierre and Miquelon, is a self-governing territorial overseas collectivity of France in the northwestern Atlantic Ocean, located off the Canadian island of Newfoundland. Saint Pierre and Miquelon is an archipelago of eight islands, covering 242 km2 (93 sq mi) of land. It had an estimated population of 5,513 in 2026 and its residents are French citizens; they elect their own deputy to the National Assembly and participate in senatorial and presidential elections. Saint Pierre and Miquelon is an overseas country and territory (OCT) of the European Union, although not an integral part of it. It is neither part of the Schengen area, nor of the European customs territory. On the other hand, the euro is the official currency in Saint Pierre and Miquelon, and its inhabitants have European Union citizenship.",
    "url": "https://en.wikipedia.org/wiki/Saint_Pierre_and_Miquelon",
-   "revision": 1381987644,
-   "timestamp": "2026-10-25T22:54:27Z"
+   "revision": 1382614755,
+   "timestamp": "2026-10-29T13:46:52Z"
   },
   "Saint Vincent and the Grenadines": {
    "title": "Saint Vincent and the Grenadines",
@@ -1653,12 +1589,12 @@
    "timestamp": "2026-10-05T01:33:38Z"
   },
   "Saint-Martin": {
-   "title": "Saint Martin",
-   "description": "Topics referred to by the same term",
-   "extract": "Saint Martin may refer to:",
-   "url": "https://en.wikipedia.org/wiki/Saint_Martin",
-   "revision": 1359338039,
-   "timestamp": "2026-06-14T18:06:22Z"
+   "title": "Collectivity of Saint Martin",
+   "description": "Overseas collectivity of France",
+   "extract": "The Collectivity of Saint Martin, commonly known as simply Saint Martin (Saint-Martin, [sɛ̃ maʁtɛ̃] ), is an overseas collectivity of France in the West Indies in the Caribbean, on the northern half of the island of Saint Martin, as well as some smaller adjacent islands. Saint Martin is separated from the island of Anguilla by the Anguilla Channel. Its capital is Marigot. With a population of 31,477 as of January 2021 on an area of 53.2 square kilometres (20.5 sq mi), it encompasses the northern 60% of the divided island of Saint Martin, and some neighbouring islets, the largest of which is Île Tintamarre. The southern 40% of the island of Saint Martin constitutes Sint Maarten, which has been a constituent country of the Kingdom of the Netherlands since 2010 following the dissolution of Netherlands Antilles. This marks the only place in the world where France borders the Netherlands.",
+   "url": "https://en.wikipedia.org/wiki/Collectivity_of_Saint_Martin",
+   "revision": 1382327331,
+   "timestamp": "2026-10-28T01:36:37Z"
   },
   "Samoa": {
    "title": "Samoa",
@@ -1689,8 +1625,8 @@
    "description": "Country in West Asia",
    "extract": "Saudi Arabia, officially the Kingdom of Saudi Arabia (KSA), is a country in West Asia that occupies the bulk of the Arabian Peninsula. Covering a land area of approximately 2,149,690 km2 (830,000 sq mi), it is the fifth-largest country in Asia and the twelfth-largest in the world. It is bordered by the Red Sea to the west, Jordan, Iraq, and Kuwait to the north, the Persian Gulf, Bahrain, Qatar, and the United Arab Emirates to the east, Oman to the southeast, and Yemen to the south. The Gulf of Aqaba in the northwest separates it from Egypt and Israel. Riyadh is the capital and largest city, while other major centers include Jeddah and the two holiest cities in Islam, Mecca and Medina.",
    "url": "https://en.wikipedia.org/wiki/Saudi_Arabia",
-   "revision": 1382390048,
-   "timestamp": "2026-10-28T13:12:58Z"
+   "revision": 1382722249,
+   "timestamp": "2026-10-29T23:27:48Z"
   },
   "Senegal": {
    "title": "Senegal",
@@ -1711,10 +1647,10 @@
   "Seychelles": {
    "title": "Seychelles",
    "description": "Island country in the Indian Ocean",
-   "extract": "Seychelles, officially the Republic of Seychelles, is an archipelagic country consisting of 115 islands in the Indian Ocean. Its capital and largest city, Victoria, is 1,500 kilometres (800 nautical miles) east of mainland Africa. Nearby island countries and territories include the Maldives, Comoros, Madagascar, Mauritius, and the French overseas departments of Mayotte and Réunion to the south; and the Chagos Archipelago to the east. Seychelles is the smallest country in Africa as well as the least populated sovereign African country, with an estimated population of 100,600 in 2022. The Seychelles archipelago was uninhabited prior to sustained external contact.",
+   "extract": "Seychelles, officially the Republic of Seychelles, is an archipelagic country consisting of 115 islands in the Indian Ocean. Its capital and largest city, Victoria, is 1,500 kilometres (800 nautical miles) east of mainland Africa. Nearby island countries and territories include the Maldives, Comoros, Madagascar, Mauritius, and the French overseas departments of Mayotte and Réunion to the south; and the Chagos Archipelago to the east. Seychelles is the smallest country in Africa as well as the least populated sovereign African country, with an estimated population of 100,600 in 2022. The Seychelles archipelago was uninhabited prior to sustained external contact. Although Arab and Swahili sailors likely knew of the islands earlier through Indian Ocean trade routes, there is no evidence of permanent settlement before European involvement.",
    "url": "https://en.wikipedia.org/wiki/Seychelles",
-   "revision": 1381423086,
-   "timestamp": "2026-10-22T10:59:13Z"
+   "revision": 1382732631,
+   "timestamp": "2026-10-30T00:26:04Z"
   },
   "Siachen Glacier": {
    "title": "Siachen Glacier",
@@ -1761,8 +1697,8 @@
    "description": "Country in Central Europe",
    "extract": "Slovenia, officially the Republic of Slovenia, is a country in Central Europe. It borders Italy to its west, Austria to its north, Hungary to its northeast, and Croatia to its south and southeast; its southwestern boundary consists of a 46.6-kilometre (29.0 mi) coastline on the Adriatic Sea. The country is mostly mountainous and forested, covering 20,271 square kilometres (7,827 sq mi). Its population is approximately 2.1 million people. Slovene is the official language. Slovenia has a predominantly temperate continental climate, with the exception of the Slovene Littoral and the Julian Alps. Ljubljana, the capital and largest city, is geographically situated near the centre of the country. Other urban centers include Maribor, Ptuj, Kranj, Celje, Koper, Novo Mesto, Velenje, Nova Gorica, Sežana, Murska Sobota, and Jesenice. The region has a long history of settlement.",
    "url": "https://en.wikipedia.org/wiki/Slovenia",
-   "revision": 1382525262,
-   "timestamp": "2026-10-29T02:52:49Z"
+   "revision": 1382587124,
+   "timestamp": "2026-10-29T10:44:04Z"
   },
   "Solomon Islands": {
    "title": "Solomon Islands",
@@ -1777,24 +1713,24 @@
    "description": "Country in East Africa",
    "extract": "Somalia, officially the Federal Republic of Somalia, is the easternmost country in continental Africa. Stretching across the Horn of Africa, it borders Ethiopia to the west, Djibouti to the northwest, Kenya to the southwest, the Gulf of Aden to the north, and the Indian Ocean to the east. Somalia has the longest coastline on Africa's mainland. Somalia has an estimated population over 19 million, of which 2.7 million live in the capital and largest city, Mogadishu. As one of Africa's most ethnically homogeneous countries, around 85% of its residents are ethnic Somalis. The official and national language of the country is Somali, and Arabic is recognised as a second language. The overwhelming majority of the population are Sunni Muslims. In ancient history, Somalia was an important commercial centre.",
    "url": "https://en.wikipedia.org/wiki/Somalia",
-   "revision": 1382323939,
-   "timestamp": "2026-10-28T01:14:21Z"
+   "revision": 1382694452,
+   "timestamp": "2026-10-29T20:53:37Z"
   },
   "Somaliland": {
    "title": "Somaliland",
    "description": "Partially recognised state in the Horn of Africa",
    "extract": "Somaliland, officially the Republic of Somaliland, is a partially recognised state in the Horn of Africa. It is located on the southern coast of the Gulf of Aden and bordered by Djibouti to the northwest, Ethiopia to the south and west, and Somalia to the east. Its claimed territory has an area of 176,120 square kilometres (68,000 sq mi), with approximately 6.2 million people as of 2024. The capital and largest city is Hargeisa. Various Somali Muslim kingdoms were established in the area during the early Islamic period, including in the 14th to 15th centuries the Zeila-based Adal Sultanate. In the early modern period, successor states to the Adal Sultanate emerged, including the Isaaq Sultanate, which was established in the middle of the 18th century.",
    "url": "https://en.wikipedia.org/wiki/Somaliland",
-   "revision": 1382341250,
-   "timestamp": "2026-10-28T04:56:44Z"
+   "revision": 1382701771,
+   "timestamp": "2026-10-29T21:33:48Z"
   },
   "South Africa": {
    "title": "South Africa",
    "description": "Country in Southern Africa",
    "extract": "South Africa, officially the Republic of South Africa (RSA), is the southernmost country in Africa. The country consists of nine provinces, and is bounded to the south by 2,798 kilometres (1,739 miles) of coastline that stretches along the South Atlantic and Indian Ocean; to the north by the neighbouring countries of Namibia, Botswana, and Zimbabwe; and to the east and northeast by Mozambique and Eswatini. South Africa also encloses Lesotho. Covering an area of 1,221,037 square kilometres (471,445 square miles), the country has a population of over 63 million people, making it the sixth-most populated country in Africa, and 24th-most in the world. Pretoria is the administrative capital, while Cape Town, as the seat of Parliament, is the legislative capital, and Bloemfontein is regarded as the judicial capital.",
    "url": "https://en.wikipedia.org/wiki/South_Africa",
-   "revision": 1380576339,
-   "timestamp": "2026-10-16T16:10:36Z"
+   "revision": 1382555449,
+   "timestamp": "2026-10-29T06:30:51Z"
   },
   "South Georgia and the Islands": {
    "title": "South Georgia and the South Sandwich Islands",
@@ -1841,8 +1777,8 @@
    "description": "Country in South America",
    "extract": "Suriname, officially the Republic of Suriname, is a country on the northern coast of South America, also considered part of the Caribbean region. Situated slightly north of the equator, over 90% of its territory is covered by rainforest, the second-highest proportion of forest cover in the world. Suriname is bordered by the Atlantic Ocean to the north, French Guiana to the east, Brazil to the south, and Guyana to the west. It is the smallest sovereign country in South America by both population and territory, with around 612,985 inhabitants in 2021 in an area of approximately 165,940 square kilometres (64,070 square miles). The capital and largest city is Paramaribo, which is home to roughly half the population. Suriname was inhabited as early as the fourth millennium BC by various Indigenous peoples, including the Lokono, Kalina, and Wayana.",
    "url": "https://en.wikipedia.org/wiki/Suriname",
-   "revision": 1381539345,
-   "timestamp": "2026-10-23T04:40:05Z"
+   "revision": 1382694048,
+   "timestamp": "2026-10-29T20:51:18Z"
   },
   "Sweden": {
    "title": "Sweden",
@@ -1865,8 +1801,8 @@
    "description": "Country in West Asia",
    "extract": "Syria, officially the Syrian Arab Republic, is a country in West Asia located in the Eastern Mediterranean and the Levant. It borders the Mediterranean Sea to the west, Turkey to the north and northwest, Iraq to the east and southeast, Jordan to the south, and Israel and Lebanon to the southwest. It is a republic under a provisional government and comprises 14 governorates. Damascus is Syria's capital and largest city. With a population of 26 million across an area of 185,180 square kilometres (71,500 sq mi), it is the 56th-most populous and 87th-largest country. The name \"Syria\" historically referred to the region of Syria, or known as Greater Syria and Syria-Palestine. The modern state encompasses the sites of several ancient kingdoms and empires, including the Eblan civilization.",
    "url": "https://en.wikipedia.org/wiki/Syria",
-   "revision": 1382528661,
-   "timestamp": "2026-10-29T03:13:41Z"
+   "revision": 1382724995,
+   "timestamp": "2026-10-29T23:41:30Z"
   },
   "São Tomé and Principe": {
    "title": "São Tomé and Príncipe",
@@ -1897,16 +1833,8 @@
    "description": "Country in East Africa",
    "extract": "Tanzania, officially the United Republic of Tanzania, is a country in East Africa within the African Great Lakes region. It is bordered by Uganda to the northwest, Kenya to the northeast, the Indian Ocean to the east, Mozambique and Malawi to the south, Zambia to the southwest, and Rwanda, Burundi, and the Democratic Republic of the Congo to the west. According to a 2024 estimate, Tanzania has a population of around 67.5 million, making it the most populous country located entirely south of the equator. Many important hominid fossils have been found in Tanzania.",
    "url": "https://en.wikipedia.org/wiki/Tanzania",
-   "revision": 1382414445,
-   "timestamp": "2026-10-28T16:02:12Z"
-  },
-  "Tethys Ocean": {
-   "title": "Tethys Ocean",
-   "description": "Prehistoric ocean between Gondwana and Laurasia",
-   "extract": "The Tethys Ocean, also called the Tethys Sea or the Neo-Tethys, was a prehistoric ocean during much of the Mesozoic Era and early-mid Cenozoic Era. It was the predecessor to the modern Indian Ocean, the Mediterranean Sea, and the Eurasian inland marine basins (primarily represented today by the Black Sea and Caspian Sea). During the early Mesozoic, as Pangaea broke up, the designation \"Tethys Ocean\" refers to the ocean located between the ancient continents of Gondwana and Laurasia. After the opening of the Indian and Atlantic oceans during the Cretaceous Period and the breakup of these continents over the same period, it refers to the ocean bordered by the continents of Africa, Eurasia, India, and Australasia.",
-   "url": "https://en.wikipedia.org/wiki/Tethys_Ocean",
-   "revision": 1381489326,
-   "timestamp": "2026-10-22T21:22:27Z"
+   "revision": 1382562620,
+   "timestamp": "2026-10-29T07:24:30Z"
   },
   "Thailand": {
    "title": "Thailand",
@@ -1929,8 +1857,8 @@
    "description": "Country in Southeast Asia",
    "extract": "Timor-Leste, also known as East Timor, officially the Democratic Republic of Timor-Leste, is a country in Southeast Asia. It comprises the eastern half of the island of Timor, the coastal exclave of Oecusse in the island's northwest, and the islands of Atauro and Jaco, for a total land area of 15,007 square kilometres (5,794 sq mi). Timor-Leste shares a land border with Indonesia to the west; Australia is the country's southern neighbour, across the Timor Sea. Dili, on the north coast of Timor, is its capital and largest city. Timor was settled over time by various Papuan and Austronesian peoples, which created a diverse mix of cultures and languages linked to Southeast Asia and Melanesia. East Timor came under Portuguese influence in the sixteenth century, remaining a Portuguese colony until 1975.",
    "url": "https://en.wikipedia.org/wiki/Timor-Leste",
-   "revision": 1380301528,
-   "timestamp": "2026-10-14T23:32:22Z"
+   "revision": 1382735213,
+   "timestamp": "2026-10-30T00:46:48Z"
   },
   "Togo": {
    "title": "Togo",
@@ -1969,16 +1897,16 @@
    "description": "Country in Southeastern Europe and West Asia",
    "extract": "Turkey, officially the Republic of Türkiye, is a country mainly located in Anatolia in West Asia, with a smaller part called East Thrace in Southeast Europe. It borders the Black Sea to the north; Georgia, Armenia, Azerbaijan, and Iran to the east; Iraq, Syria, and the Mediterranean Sea to the south; and the Aegean Sea, Greece, and Bulgaria to the west. Turkey is home to over 86 million people; most are ethnic Turks, while Kurds are the largest ethnic minority. Officially a secular state, Turkey has a Muslim-majority population. Ankara is Turkey's capital and second-largest city. Istanbul is its largest city and economic center. Other major cities include İzmir, Bursa, and Antalya. First inhabited by modern humans during the Late Paleolithic, present-day Turkey was home to various ancient peoples. The Hattians were assimilated by the Hittites and other Anatolian peoples.",
    "url": "https://en.wikipedia.org/wiki/Turkey",
-   "revision": 1382391129,
-   "timestamp": "2026-10-28T13:22:07Z"
+   "revision": 1382727364,
+   "timestamp": "2026-10-29T23:53:33Z"
   },
   "Turkmenistan": {
    "title": "Turkmenistan",
    "description": "Country in Central Asia",
    "extract": "Turkmenistan, formerly known as Turkmenia, is a landlocked country in Central Asia, bordered by Kazakhstan and Uzbekistan to the north, Afghanistan to the southeast, Iran to the south and southwest, and the Caspian Sea to the west. It is one of six independent Turkic states. Ashgabat is the capital and largest city. With over 7 million people, Turkmenistan is the 35th most-populous country in Asia and has the lowest population of the Central Asian republics while being one of the most sparsely populated nations located on the Asian continent. Turkmenistan has long served as a thoroughfare for several empires and cultures. Merv is one of the oldest oasis-cities in Central Asia, and was once among the biggest cities in the world. It was also one of the great cities of the Islamic world and an important stop on the Silk Road.",
    "url": "https://en.wikipedia.org/wiki/Turkmenistan",
-   "revision": 1381811209,
-   "timestamp": "2026-10-24T23:15:56Z"
+   "revision": 1382727439,
+   "timestamp": "2026-10-29T23:54:00Z"
   },
   "Turks and Caicos Islands": {
    "title": "Turks and Caicos Islands",
@@ -2001,8 +1929,8 @@
    "description": "Country in East Africa",
    "extract": "Uganda, officially the Republic of Uganda, is a landlocked country in East Africa. It is bordered to the east by Kenya, to the north by South Sudan, to the west by the Democratic Republic of the Congo, to the south-west by Rwanda, and to the south by Tanzania. The southern part includes a substantial portion of Lake Victoria, shared with Kenya and Tanzania. Uganda is in the African Great Lakes region, lies within the Nile basin, and has a varied equatorial climate. As of 2024, it had a population of 45.9 million, of whom 1.8 million live in the capital and largest city, Kampala. Uganda is named after the Buganda kingdom, which encompasses a large portion of the south, including Kampala, and whose language Luganda is widely spoken; the official language is English, while Swahili is the second official language.",
    "url": "https://en.wikipedia.org/wiki/Uganda",
-   "revision": 1381919320,
-   "timestamp": "2026-10-25T16:39:56Z"
+   "revision": 1382727514,
+   "timestamp": "2026-10-29T23:54:27Z"
   },
   "Ukraine": {
    "title": "Ukraine",
@@ -2017,24 +1945,24 @@
    "description": "Country in West Asia",
    "extract": "The United Arab Emirates (UAE), also known simply as the Emirates, is a country in West Asia, situated at the eastern end of the Arabian Peninsula. It is a federal semi-constitutional monarchy made up of seven emirates, with Abu Dhabi serving as its national capital. The UAE borders Oman to the east and northeast, and Saudi Arabia to the south and southwest. It shares maritime borders with Saudi Arabia, Qatar, and Iran in the Persian Gulf, and with Oman in the Gulf of Oman. In 2024, the UAE had an estimated population of over 11 million. Dubai is the country's largest city. Islam is the state religion. Arabic is the official language while English remains the most spoken language and the language of business. The present-day United Arab Emirates is located within the historical region of Eastern Arabia, which was oriented to maritime trade and seafaring.",
    "url": "https://en.wikipedia.org/wiki/United_Arab_Emirates",
-   "revision": 1380745114,
-   "timestamp": "2026-10-17T16:11:30Z"
+   "revision": 1382727678,
+   "timestamp": "2026-10-29T23:55:20Z"
   },
   "United Kingdom": {
    "title": "United Kingdom",
    "description": "Country in Northwestern Europe",
    "extract": "The United Kingdom of Great Britain and Northern Ireland, commonly known as the United Kingdom (UK) or Britain, is a country in Northwestern Europe, off the coast of the continental mainland. It comprises England, Scotland, Wales and Northern Ireland, with a population of over 69 million in 2025. The UK includes the island of Great Britain, the north-eastern part of the island of Ireland, and most of the smaller islands within the British Isles, covering 94,354 square miles (244,376 km2). It shares a land border with the Republic of Ireland and is surrounded by the Atlantic Ocean, the North Sea, the English Channel, the Celtic Sea and the Irish Sea, while maintaining sovereignty over the Crown Dependencies and the British Overseas Territories.",
    "url": "https://en.wikipedia.org/wiki/United_Kingdom",
-   "revision": 1382543957,
-   "timestamp": "2026-10-29T04:57:25Z"
+   "revision": 1382704842,
+   "timestamp": "2026-10-29T21:50:40Z"
   },
   "United States": {
    "title": "United States",
    "description": "Country primarily in North America",
-   "extract": "The United States of America (USA), also known as the United States (U.S.) or America, is a country primarily located in North America. It is a federal republic consisting of 50 states and a federal capital district, Washington, D.C. The 48 contiguous states border Canada to the north and Mexico to the south, with the semi-exclave of Alaska in the northwest and the archipelago of Hawaii in the Pacific Ocean. The United States also asserts sovereignty over five major island territories and various uninhabited islands in Oceania and the Caribbean. It is a megadiverse country, with the world's fourth-largest total area and third-largest population, exceeding 341 million. Paleo-Indians migrated from North Asia to North America at least 15,000 years ago and formed various civilizations. Beginning in 1607, British colonization established the Thirteen Colonies.",
+   "extract": "The United States of America (USA), also known as the United States (U.S.) or America, is a country primarily located in North America. It is a federal republic consisting of 50 states and a federal capital district, Washington, D.C. The 48 contiguous states border Canada to the north and Mexico to the south, with the semi-exclave of Alaska in the northwest and the archipelago of Hawaii in the Pacific Ocean. The United States also asserts sovereignty over five major island territories and various uninhabited islands in Oceania and the Caribbean. It has the world's fourth-largest total area and third-largest population, exceeding 341 million. Paleo-Indians migrated from North Asia to North America at least 15,000 years ago and formed various civilizations. Beginning in 1607, British colonization established the Thirteen Colonies.",
    "url": "https://en.wikipedia.org/wiki/United_States",
-   "revision": 1382544225,
-   "timestamp": "2026-10-29T04:59:32Z"
+   "revision": 1382645805,
+   "timestamp": "2026-10-29T16:40:06Z"
   },
   "United States Virgin Islands": {
    "title": "United States Virgin Islands",
@@ -2057,8 +1985,8 @@
    "description": "Country in Central Asia",
    "extract": "Uzbekistan, officially the Republic of Uzbekistan, formerly known as Uzbekia, is a sovereign, doubly landlocked country located in Central Asia. It is bordered by Kazakhstan to the north, Kyrgyzstan to the northeast, Tajikistan to the southeast, Afghanistan to the south, and Turkmenistan to the south-west. It is one of only two doubly landlocked countries in the world, the other being Liechtenstein. The country has a population of more than 39 million, making it the most populous country in Central Asia. Uzbekistan is a member of the Organisation of Turkic States. Uzbek (written in both Cyrillic and Latin scripts), spoken by the Uzbek people who form more than 89% of the population, is the official language of the country. Russian and Tajik are significant minority languages, with Russian serving as a lingua franca.",
    "url": "https://en.wikipedia.org/wiki/Uzbekistan",
-   "revision": 1382006975,
-   "timestamp": "2026-10-26T00:51:01Z"
+   "revision": 1382728189,
+   "timestamp": "2026-10-29T23:58:12Z"
   },
   "Vanuatu": {
    "title": "Vanuatu",
@@ -2069,28 +1997,20 @@
    "timestamp": "2026-10-26T08:56:47Z"
   },
   "Vatican": {
-   "title": "Vatican",
-   "description": "Topics referred to by the same term",
-   "extract": "Vatican may refer to:",
-   "url": "https://en.wikipedia.org/wiki/Vatican",
-   "revision": 1376387272,
-   "timestamp": "2026-09-23T21:55:51Z"
+   "title": "Vatican City",
+   "description": "Enclaved Holy See's independent city-state",
+   "extract": "Vatican City, officially the Vatican City State, is a landlocked sovereign city-state in Southern Europe. Ruled by the pope, it is an enclave within the city of Rome, Italy, and serves as the administrative center of the Catholic Church. Vatican City is governed by the Holy See, the episcopal see of the Diocese of Rome and central authority of the church worldwide, which is itself a sovereign entity under international law. Catholic theology holds that Saint Peter, an apostle of Jesus considered the first pope, was crucified on Vatican Hill in Rome during the 1st century AD. The Holy See first exercised temporal power over the Papal States, which formed on the Italian Peninsula with the donation of Frankish territory in 756. The pope returned to Rome at the end of the Avignon Papacy in 1377.",
+   "url": "https://en.wikipedia.org/wiki/Vatican_City",
+   "revision": 1382237772,
+   "timestamp": "2026-10-27T13:52:47Z"
   },
   "Venezuela": {
    "title": "Venezuela",
    "description": "Country in South America",
    "extract": "Venezuela, officially the Bolivarian Republic of Venezuela, is a country on the northern coast of South America, consisting of a continental landmass and various islands and islets in the Caribbean Sea. It comprises an area of 912,050 km2 (352,140 sq mi), with a population estimated at 31.8 million in 2025. The capital and largest urban agglomeration is Caracas. The continental territory is bordered on the north by the Caribbean Sea and the Atlantic Ocean, on the west by Colombia, on the south by Brazil, on the east by Guyana, and on the northeast by Trinidad and Tobago. Venezuela consists of 23 states, the Capital District, and the Federal Dependencies covering Venezuela's offshore islands. Venezuela is among the most urbanized countries in Latin America, with an estimated urbanization rate of 88.4% in 2022.",
    "url": "https://en.wikipedia.org/wiki/Venezuela",
-   "revision": 1380747414,
-   "timestamp": "2026-10-17T16:31:09Z"
-  },
-  "Vestigiality": {
-   "title": "Vestigiality",
-   "description": "Evolutionary retention of no longer needed structures in living organisms",
-   "extract": "Vestigiality is the retention, during the process of evolution, of genetically determined structures or attributes that have lost some or all of the ancestral function in a given species. Assessment of the vestigiality must generally rely on comparison with homologous features in related species. The emergence of vestigiality occurs by normal evolutionary processes, typically by loss of function of a feature that is no longer subject to positive selection pressures when it loses its value in a changing environment. The feature may be selected against more urgently when its function becomes definitively harmful, but if the lack of the feature provides no advantage, and its presence provides no disadvantage, the feature may not be phased out by natural selection and persist across species.",
-   "url": "https://en.wikipedia.org/wiki/Vestigiality",
-   "revision": 1372347803,
-   "timestamp": "2026-08-31T10:20:57Z"
+   "revision": 1382728314,
+   "timestamp": "2026-10-29T23:58:58Z"
   },
   "Vietnam": {
    "title": "Vietnam",
@@ -2099,14 +2019,6 @@
    "url": "https://en.wikipedia.org/wiki/Vietnam",
    "revision": 1382321714,
    "timestamp": "2026-10-28T00:59:20Z"
-  },
-  "Wadi El Hitan": {
-   "title": "Wadi al Hitan",
-   "description": "Paleontological site in the Faiyum Governorate of Egypt",
-   "extract": "Wādī al-Ḥītān is a paleontological site in the Faiyum Governorate of Egypt, some 150 kilometres (93 mi) south-west of Cairo. It was designated a UNESCO World Heritage Site in July 2005 for its hundreds of fossils of some of the earliest forms of whale, the archaeoceti (a now extinct sub-order of whales). The site reveals evidence for the explanation of one of the greatest mysteries of the evolution of whales: the emergence of the whale as an ocean-going mammal from a previous life as a land-based animal. No other place in the world yields the number, concentration and quality of such fossils, nor their accessibility and setting in an attractive and protected landscape. The valley was therefore inscribed on the UNESCO World Heritage List in 2005.",
-   "url": "https://en.wikipedia.org/wiki/Wadi_al_Hitan",
-   "revision": 1374694889,
-   "timestamp": "2026-09-13T15:35:39Z"
   },
   "Wallis and Futuna Islands": {
    "title": "Wallis and Futuna",
@@ -2121,16 +2033,16 @@
    "description": "Disputed territory in north-western Africa",
    "extract": "Western Sahara is a United Nations–designated non-self-governing territory in north-western Africa. It has a surface area of 272,000 square kilometres (105,000 sq mi). Western Sahara is the only African colonial state yet to achieve independence and has been dubbed \"Africa's last colony\". With an estimated 600,000 inhabitants, it is the most sparsely populated territory in Africa and the second most sparsely populated territory in the world after Greenland, consisting mainly of desert flatlands. Francoist Spain previously colonized the territory as the Spanish Sahara until 1975–1976.",
    "url": "https://en.wikipedia.org/wiki/Western_Sahara",
-   "revision": 1382319925,
-   "timestamp": "2026-10-28T00:46:59Z"
+   "revision": 1382729466,
+   "timestamp": "2026-10-30T00:04:48Z"
   },
   "Yemen": {
    "title": "Yemen",
    "description": "Country in West Asia",
    "extract": "Yemen, officially the Republic of Yemen, is a country in West Asia. Located in southern Arabia, the country includes the Socotra Archipelago and borders Saudi Arabia to the north, Oman to the northeast, the Arabian Sea to the east, the Gulf of Aden to the south, and the Red Sea to the west. It also shares maritime borders with Djibouti, Eritrea, and Somalia across the Horn of Africa. Covering 455,503 square kilometres (175,871 sq mi), with a coastline of approximately 2,000 kilometres (1,200 mi), Yemen is the second-largest country on the Arabian Peninsula by both area and population. Sanaa is its constitutional capital and largest city. Yemen's population is estimated at 34.7 million, predominantly Muslim Arabs. Owing to its geographic location, Yemen has been at the crossroads of many civilisations for over 7,000 years.",
    "url": "https://en.wikipedia.org/wiki/Yemen",
-   "revision": 1382389874,
-   "timestamp": "2026-10-28T13:11:35Z"
+   "revision": 1382730213,
+   "timestamp": "2026-10-30T00:09:10Z"
   },
   "Zambia": {
    "title": "Zambia",
@@ -2145,8 +2057,8 @@
    "description": "Country in Southeast Africa",
    "extract": "Zimbabwe, officially the Republic of Zimbabwe, is a landlocked country in Southeast Africa, between the Zambezi and Limpopo River, bordered by South Africa to the south, Botswana to the southwest, Zambia to the north, and Mozambique to the east. The capital and largest city is Harare, and the second largest is Bulawayo. A country of roughly 17.3 million people per 2026 estimates, Zimbabwe's largest ethnic groups are the Northern Ndebele and Shona, who make up 95% of the population, followed by the other smaller minorities. Zimbabwe has 16 official languages, with English, Shona, and Ndebele the most commonly employed. Zimbabwe is a member of the United Nations, the Southern African Development Community, the African Union, and the Common Market for Eastern and Southern Africa. The region was long inhabited by the San, and was settled by Bantu peoples around 2,000 years ago.",
    "url": "https://en.wikipedia.org/wiki/Zimbabwe",
-   "revision": 1382484098,
-   "timestamp": "2026-10-28T22:55:04Z"
+   "revision": 1382730449,
+   "timestamp": "2026-10-30T00:10:46Z"
   },
   "eSwatini": {
    "title": "Eswatini",
