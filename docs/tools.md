@@ -71,7 +71,10 @@ preview's mirror `tools/playground/harness/`.
 **Shared script: none yet.** Packs repeat small helpers instead: a great-circle `along(a, b, t)` is
 written six times (both gatherings, lead line, monsoon, whales, vine; the herds' `slerp` is a
 seventh) and a `frames(name, n)` file-name list six times (fires, lead line, low sea, monsoon,
-whales, vine). See [One job, two tools](#one-job-two-tools).
+whales, vine). The night crossing carries a byte copy of the shared script a sibling branch is
+introducing (`Prototypes/hydaspes/shared.js`, to be `Prototypes/_shared/shared.js`) and takes
+`frames` from it (`Shared.frames`), so the copy goes when that branch lands. See
+[One job, two tools](#one-job-two-tools).
 
 ## What a native prototype calls: the stage
 
