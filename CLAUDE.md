@@ -16,7 +16,8 @@ Keep design discussions and plans in that private repository.
 
 ## Map
 
-Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one).
+Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read it before building one;
+`python3 ci/check_tools.py --write` writes its *Used by* from the code, and CI fails it when it falls behind).
 
 - **The playground** (`App/TerraIncognita/Playground/`; the pack contract: `docs/runtime3.md`; the
   workflow: `docs/playground.md`). `PlaygroundRoot` is the app: the globe with every current
@@ -49,14 +50,14 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   - Tools: `tools/playground/` (`playground.py new|validate|pack|publish|retire|list`,
     `serve.cjs` runs a pack over a stand-in globe in a browser, its `/atlas` every current pack at once,
     `check.cjs` checks one headless and screenshots it, `check.cjs --living` two side by side,
-    `explore.cjs` plays one from a plan (fly, scrub the date, touch) and screenshots its moments,
     `glint_png.py` draws the doorways' glint). A pack's art is drawn from code, never hand-made:
     `tools/packart/render.cjs <sheet> <pack dir>` (the one art drawer) draws a sheet of canvas drawings
     (`.js`) or of SVG built in Node (`.cjs`: the herds' animals, the boto) into sprite frames, doorways and
     pictures for the globe, with headless Chromium at three pixels a point, and
-    `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
-    plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
-    its first minute can be seen without a Mac.
+    `tools/packart/moments.cjs <id> <out> '<plan>'`, the one pack photographer, photographs a pack in the
+    preview over time (a plan of the camera put or flown, waits, touches, drags, a tap by name, the date's
+    strip, Open, screenshots with the pack's state), so what a script does in its first minute can be seen
+    without a Mac.
 - **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
   clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
   itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or
@@ -253,7 +254,8 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
   fast-forward brings the branch head's `[skip ci]` with it).
   - `plates`: every look in `Atlas/` checked by `ci/check_atlas.py` (what the player would trap on,
-    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, the tools' syntax, and
+    and no unused file in the bundle), the globe's data by `ci/check_globe.py`, `docs/tools.md` by
+    `ci/check_tools.py`, the tools' syntax, and
     every Metal shader by `tools/metal/metal.py check` with the stand-in's tests.
   - `apple`: Debug and Release builds. The plates and the globe's maps are compared byte for byte
     in the bundle. Simulator screenshots run only when the workflow is started by hand
@@ -281,7 +283,7 @@ instead: the stage itself (the globe, camera, date, caption, touch routing, work
 and what every experience relies on and none owns. When in doubt, it's runtime.
 
 - **Reuse first.** Read what the runtime offers (`docs/playground.md` › The contract, and the
-  shared script modules once there are any) before building.
+  packs' shared script, `Prototypes/_shared/shared.js`: `docs/runtime3.md` › Shared script) before building.
 - **Missing? Build it into the runtime,** shaped so the next experience can use it. What exists
   never limits an experience: extend a tool or add one beside it. No tool is built ahead of an
   experience that needs it.

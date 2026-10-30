@@ -13,6 +13,8 @@ geography, pictures and sprites the globe draws; no pack has a web page. Standar
     playground.py publish [ids...] [--dry-run] [--summary FILE]
                                                                pack against the live R2 bucket, upload what changed
     playground.py retire <id> [--out DIR] [--undo]             mark a pack withdrawn (catalog only)
+    playground.py share [ids...]                               copy Prototypes/_shared/shared.js into each pack
+                                                               that lists shared.js in its scripts
     playground.py list [--remote URL]                          the bundled prototypes, and a remote catalog's
 
 publish --into needs no credentials (packs.yml publishes the `packs` branch with it). publish and
@@ -58,6 +60,9 @@ R3_ONLY = 'runtime 3 only: a pack is scripts drawn by the globe'
 ID_RE = re.compile(r'[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])')
 PATH_RE = re.compile(r'[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*')
 REVISION_DIR = re.compile(r'r([1-9][0-9]*)')
+# the packs' shared script (docs/runtime3.md › Shared script): a pack carries a copy, which must be this file
+SHARED = PROTOTYPES / '_shared' / 'shared.js'
+SHARED_NAME = 'shared.js'
 
 # decimal megabytes: if the app counts in binary ones, a pack that passes here passes there too
 MAX_PACK_BYTES = 50_000_000
@@ -673,6 +678,9 @@ def validate_pack(folder, rep):
         return None, files
     if 'terra.js' in {Path(f).name for f in files}:
         rep.error(where, 'a pack must not contain its own terra.js: the host provides the runtime')
+    if SHARED_NAME in files and SHARED.is_file() and files[SHARED_NAME].read_bytes() != SHARED.read_bytes():
+        rep.error(f'{where}/{SHARED_NAME}', f'differs from {display(SHARED)}, the packs\' shared script: '
+                                            f'run `playground.py share` (change the shared script there, never a copy)')
     if validate_manifest(manifest, folder.name, files, rep, f'{where}/prototype.json'):
         return manifest, files
     listed = manifest.get('scripts') if isinstance(manifest, dict) else None
@@ -1377,6 +1385,24 @@ def cmd_retire(args, env=None):
     return 0
 
 
+def cmd_share(args):
+    """Writes the shared script into every pack that lists it in its scripts (or the packs named)."""
+    source = SHARED.read_bytes()
+    folders = [PROTOTYPES / i for i in args.ids] if args.ids else prototype_dirs()
+    for folder in folders:
+        try:
+            scripts = load_json(folder / 'prototype.json').get('scripts') or []
+        except (OSError, ValueError):
+            continue
+        if SHARED_NAME not in scripts:
+            continue
+        target = folder / SHARED_NAME
+        if not target.is_file() or target.read_bytes() != source:
+            target.write_bytes(source)
+            print(f'{display(target)}: written')
+    return 0
+
+
 def cmd_list(args):
     rows = []
     for f in prototype_dirs():
@@ -1450,6 +1476,11 @@ def build_parser():
                    help='a published folder (a checkout of the packs branch, or pack\'s output) instead of the bucket')
     s.add_argument('--undo', action='store_true')
     s.set_defaults(run=cmd_retire)
+
+    s = sub.add_parser('share', help=f'copy the packs\' shared script ({display(SHARED)}) into each pack that lists '
+                                     f'"{SHARED_NAME}" in its scripts')
+    s.add_argument('ids', nargs='*')
+    s.set_defaults(run=cmd_share)
 
     s = sub.add_parser('list', help='bundled prototypes, and a remote catalog with --remote')
     s.add_argument('--remote', metavar='URL')

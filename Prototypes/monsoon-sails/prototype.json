@@ -2,9 +2,9 @@
   "id": "monsoon-sails",
   "title": "The monsoon's sails",
   "summary": "Dhows cross the Indian Ocean the way they did for two thousand years: out with the summer wind, home with the winter's. Drag the year, or touch a port to send its ships out.",
-  "runtime": 4,
+  "runtime": 5,
   "presentation": "globe",
-  "scripts": ["data.js", "main.js"],
+  "scripts": ["shared.js", "data.js", "main.js"],
   "anchor": { "lon": 58, "lat": 8, "zoom": 1.6 },
   "doorway": {
     "lon": 56.5, "lat": 11.5,

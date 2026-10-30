@@ -3,7 +3,8 @@ name: CI
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
 #   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
-#          ci/check_globe.py), Wikipedia's words all bundled (ci/check_wikipedia.py), the tools' syntax,
+#          ci/check_globe.py), Wikipedia's words all bundled (ci/check_wikipedia.py), docs/tools.md as the code
+#          has it (ci/check_tools.py), the tools' syntax,
 #          and every Metal shader compiled as C++
 #          (tools/metal/metal.py check: seconds, where a macOS build waits on a runner)
 #   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
@@ -89,6 +90,7 @@ jobs:
           python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
           python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
           python3 ci/check_wikipedia.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 ci/check_tools.py 2>&1 | tee -a out/plates-check.log || rc=1
           # the packs' art sheets and builders (tools/packart and each pack's tools/<name>/)
           for f in tools/packart/*.cjs tools/packart/*.js tools/herds/*.cjs tools/water/boto.cjs tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1

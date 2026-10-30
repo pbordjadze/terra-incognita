@@ -95,6 +95,32 @@ class TempCase(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
 
 
+class Shared(TempCase):
+    """The packs' shared script (docs/runtime3.md › Shared script): a pack's copy must be the source, and
+    `share` writes the copies into the packs that list it."""
+    def setUp(self):
+        super().setUp()
+        self.protos = self.tmp / 'Prototypes'
+        (self.protos / '_shared').mkdir(parents=True)
+        (self.protos / '_shared' / 'shared.js').write_text('window.Shared = {};\n', encoding='utf-8')
+        for name, value in (('PROTOTYPES', self.protos), ('SHARED', self.protos / '_shared' / 'shared.js')):
+            self.addCleanup(setattr, pg, name, getattr(pg, name))
+            setattr(pg, name, value)
+
+    def test_share_writes_the_copies_and_validate_holds_them_to_the_source(self):
+        manifest = good_manifest()
+        manifest['scripts'] = ['shared.js', 'main.js']
+        folder = write_pack(self.protos, manifest=manifest, extra={'shared.js': 'window.Shared = { old: 1 };\n'})
+        write_pack(self.protos, 'other-pack')
+        rep = findings(folder)
+        self.assertTrue(any('differs from' in m and 'playground.py share' in m for level, _, m in rep.items if level == 'ERROR'), rep.lines())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(pg.main(['share']), 0)
+        self.assertEqual((folder / 'shared.js').read_text(), 'window.Shared = {};\n')
+        self.assertFalse((self.protos / 'other-pack' / 'shared.js').exists())
+        self.assertEqual(findings(folder).items, [])
+
+
 class SigV4(unittest.TestCase):
     """AWS's published S3 examples (docs: "Signature Calculations for the Authorization Header:
     Transferring Payload in a Single Chunk"). Region us-east-1, 24 May 2013."""

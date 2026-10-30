@@ -64,7 +64,8 @@ node tools/playground/check.cjs tide-pool                     # headless Chromiu
 node tools/playground/check.cjs tide-pool --wikipedia         # the same with Wikipedia's words on (the reader's switch)
 python3 tools/wikipedia/build.py --pack tide-pool             # its wikipedia.json: the articles its words name (docs/runtime3.md)
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
-node tools/playground/explore.cjs tide-pool out/ '[{"wait":3000,"shot":"a"}]'   # its moments from a plan: fly, scrub, touch, screenshot
+node tools/packart/moments.cjs tide-pool out/ '[{"wait":3,"shot":"a"}]'          # its moments from a plan: fly, scrub, touch, screenshot
+python3 tools/playground/playground.py share                  # the shared script's copy (Shared.along, Shared.frames…) into packs listing shared.js
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
 ```
 
@@ -126,7 +127,8 @@ of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
   before the bundled one, and downloads `main`'s published revision whenever it differs from the
   bundled copy, so a branch's IPA shows `main`'s version of a pack it changed in place.
 - **CI and packs**: a push whose changes are all under `Prototypes/` (or `tools/playground/`) runs
-  only `packs.yml`; the macOS workflow ignores it, tags and all. A `[playground-check]` or `[ipa]`
+  only `packs.yml` (the validator, the tools' tests, and every pack in the preview: `check.cjs --all` and
+  `--living`, whose screenshots are its `preview` artifact); the macOS workflow ignores it, tags and all. A `[playground-check]` or `[ipa]`
   meant for such a change rides a commit that also touches something the macOS workflow watches.
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
   Parked shelf, still one tap away (and takes its doorway off the globe).

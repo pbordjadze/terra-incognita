@@ -7,13 +7,14 @@
    screen but the name; SOURCES.md and the panel the chip's Open shows say what is true and drawn. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var frames = Shared.frames;
   var L = window.LOWSEA, D = Math.PI / 180;
   var R1 = 489;
   function zoomFor(ppd) { return ppd / (R1 * D); }
   var NEAR = 5, MID = 2.2, FAR = 1.2;          // zooms (set from the screen) for the mammoths' three sizes
   var DRAIN = 7, RETURN = 6, TICK = 50;         // seconds the sea takes to go, and to come back
 
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
 
   // ---- the shelves: eight pictures, faded together ----
   var level = 0, fading = 0, state = 'sea';

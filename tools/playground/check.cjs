@@ -107,6 +107,13 @@ async function checkLiving(browser, server, ids, device) {
   };
   const stagesNow = () => pg(() => window.__playground.stages());
   const counts = (s) => s && `${s.geo} geo, ${s.images} pictures, ${s.sprites} sprites`;
+  // what a stage had that is gone since, but for what its own script took away (a living pack lights a fire,
+  // puts out a splash: its counts move by themselves; the other's start or end must take nothing of it)
+  const lost = async (before, after) => {
+    if (!before || !after) return [];
+    const own = await pg((a) => window.__playground.removedSince(a.id, a.removed), before), all = new Set(after.things);
+    return before.things.filter((t) => !all.has(t) && !own.includes(t) && !own.includes(t.split(':')[0] + ':*'));
+  };
   try {
     await page.goto(`${server.url}/atlas?device=${device}&bare=1&idleAfter=100000${WIKIPEDIA ? '&wikipedia=1' : ''}`);
     await page.waitForFunction(() => window.__playground && window.__playground.ready, null, { timeout: 15000 });
@@ -131,7 +138,8 @@ async function checkLiving(browser, server, ids, device) {
     if (!A2) fail(`starting ${b} ended ${a}: the stage is shared`);
     if (!B2 || !B2.front) fail(`${b}, just started, should be in front`);
     if (A2 && A2.front) fail(`${a} should be behind ${b}`);
-    if (A2 && counts(A2) !== counts(A1)) fail(`${a}'s things changed when ${b} started (${counts(A1)} → ${counts(A2)})`);
+    const gone = await lost(A1, A2);
+    if (gone.length) fail(`${a} lost ${gone.join(', ')} when ${b} started (${counts(A1)} → ${counts(A2)})`);
     steps.push(`${b} runs in front: ${counts(B2)}; ${a} behind: ${counts(A2)}`);
     await shot('two');
 
@@ -161,7 +169,10 @@ async function checkLiving(browser, server, ids, device) {
     if (st.find((s) => s.id === a)) fail(`✕ should end ${a}, the one in front`);
     const after = st.find((s) => s.id === b);
     if (!after) fail(`ending ${a} should leave ${b} running`);
-    else if (counts(after) !== counts(before) || !after.front) fail(`${b} should be as it was, in front (${counts(before)} → ${counts(after)}, front ${after.front})`);
+    else {
+      const gone = await lost(before, after);
+      if (gone.length || !after.front) fail(`${b} should be as it was, in front (${gone.length ? 'lost ' + gone.join(', ') : 'nothing lost'}; front ${after.front})`);
+    }
     steps.push(`ended ${a}: ${b} ${after ? 'in front, ' + counts(after) : 'gone'}`);
     const door = (await pg(() => window.__playground.doorways())).find((d) => d.pack === a);
     if (!door || door.running) fail(`${a}'s doorway should be back on the globe once it has ended`);
@@ -219,6 +230,13 @@ async function checkPack(browser, server, pack, device) {
     try {
       await page.waitForFunction(() => window.__playground.settled(), null, { timeout: ms || 8000 });
     } catch (e) { warn(`${what || 'the preview'} did not settle (a flight or a picture still loading)`); }
+    // and the pack has stopped asking the globe for things (a pack may draw again a moment after the camera
+    // rests, as the alive gathering does its rivers): a third of a second without a change, two at most
+    for (let last = -1, quietSince = Date.now(), until = Date.now() + 2000; Date.now() < until;) {
+      const n = await pg(() => window.__playground.changes);
+      if (n !== last) { last = n; quietSince = Date.now(); } else if (Date.now() - quietSince >= 330) break;
+      await sleep(60);
+    }
     // two frames drawn after it settled
     const f = await pg(() => { window.__playground.redraw(); return window.__playground.frame; });
     await page.waitForFunction((f0) => window.__playground.frame >= f0 + 2, f, { timeout: 2000 }).catch(() => {});
@@ -318,7 +336,8 @@ async function checkPack(browser, server, pack, device) {
       const sent = after.touches.slice(before.touches);
       const tap = sent.find((x) => x.phase === 'tap');
       const same = tap && JSON.stringify(tap.target) === JSON.stringify(t.target);
-      if (!same) fail(`touching ${t.what} at ${t.x.toFixed(0)}, ${t.y.toFixed(0)} did not reach the pack as a tap on it`);
+      if (!same) fail(`touching ${t.what} at ${t.x.toFixed(0)}, ${t.y.toFixed(0)} did not reach the pack as a tap on it`
+                      + ` (it heard ${tap ? 'a tap on ' + JSON.stringify(tap.target) : sent.length ? sent.map((x) => x.phase).join(', ') : 'nothing'}; now at ${now.x.toFixed(0)}, ${now.y.toFixed(0)})`);
       const changes = [];
       if (after.state.panel && JSON.stringify(after.state.panel) !== JSON.stringify(before.state.panel)) changes.push(`the panel "${after.state.panel.title}"`);
       if (JSON.stringify(after.state.caption) !== JSON.stringify(before.state.caption)) changes.push(`the caption "${after.state.caption.title}: ${after.state.caption.text}"`);

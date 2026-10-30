@@ -114,6 +114,23 @@ what they set up. An error is logged and the pack keeps running. JavaScriptCore 
 without a JIT, so do heavy preparation (parsing, indexing, simplifying) in the pack's build step,
 not at start-up.
 
+## Shared script
+
+Small helpers every pack would otherwise write again live in one file, `Prototypes/_shared/shared.js`,
+the global `Shared`. A pack that uses it carries a copy named `shared.js`, first in its `scripts` (a pack
+reaches nothing outside its folder, so the copy ships inside it and needs no new app or runtime):
+`python3 tools/playground/playground.py share` writes the copies, and `validate` fails a copy that differs
+from the source, so it is changed in one place. It changes only compatibly (each pack that carries it
+takes the change with its next revision); `node tools/playground/shared_check.cjs` holds it to the
+helpers it replaced, bit for bit.
+
+```js
+Shared.along([35.2, 31.8], [31.2, 30.0], 0.25)   // the place a quarter of the way along the great circle
+Shared.arc([35.2, 31.8], [31.2, 30.0])           // the angle between two places, radians
+Shared.unit([35.2, 31.8])                        // a place's unit vector, the runtime's axes
+Shared.frames('dhow', 4)                         // ['dhow-1.png', …, 'dhow-4.png'], the art drawer's names
+```
+
 ## Geography drawn by the globe: `terra.geo` (since runtime 2)
 
 `terra.geo.set(id, features, options)`, `terra.geo.remove(id)`, `terra.geo.clear()`. Features are

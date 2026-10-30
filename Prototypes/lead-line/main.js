@@ -1,4 +1,4 @@
-/* The lead line (runtime 4). HMS Challenger sails her whole way round the world, 1872 to 1876, as the
+/* The lead line (runtime 5). HMS Challenger sails her whole way round the world, 1872 to 1876, as the
    date plays, never out of sight: between the stations of her record she keeps to her itinerary's
    ports at a steady pace. Wherever the sea is touched, a lead is let down and runs out until it finds
    the floor: a long wait where the water is deep, a short one on the shelf, and the lines stay, a forest
@@ -9,6 +9,8 @@
    record's. Nothing is written on the screen but the name and a depth at the foot of each line. */
 (function () {
   'use strict';
+  // (the packs' shared script: Prototypes/_shared/shared.js, carried as shared.js)
+  var unit = Shared.unit, along = Shared.along, frames = Shared.frames;
   var WAY = window.WAY.points, G = window.DEPTHS, D = Math.PI / 180, DAY = 86400000;
   var R1 = 489;
   function zoomFor(ppd) { return ppd / (R1 * D); }
@@ -39,15 +41,6 @@
   function cell(x, y) { x = ((x % G.width) + G.width) % G.width; y = Math.max(0, Math.min(G.height - 1, y)); return depths[y * G.width + x] * G.metresPerStep; }
 
   // ---- geometry ----
-  function unit(p) { var la = p[1] * D, lo = p[0] * D; return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)]; }
-  function arc(a, b) { var u = unit(a), v = unit(b); return Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))); }
-  function along(a, b, t) {
-    var u = unit(a), v = unit(b), w = arc(a, b);
-    if (w < 1e-9) return a.slice();
-    var sa = Math.sin((1 - t) * w) / Math.sin(w), sb = Math.sin(t * w) / Math.sin(w);
-    var p = [u[0] * sa + v[0] * sb, u[1] * sa + v[1] * sb, u[2] * sa + v[2] * sb];
-    return [Math.atan2(p[0], p[2]) / D, Math.asin(Math.max(-1, Math.min(1, p[1]))) / D];
-  }
   function point(lon, lat, props) { return { type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] }, properties: props || {} }; }
   function r3(v) { return Math.round(v * 1000) / 1000; }
 
@@ -66,23 +59,18 @@
             { frames: frames('ship-mid', 8), fps: 6, size: [32, 25], minZoom: MID, maxZoom: NEAR, face: true },
             { image: 'ship-far.png', size: [14, 11], maxZoom: MID, face: true }];
   }
-  function frames(name, n) { var out = []; for (var i = 1; i <= n; i++) out.push(name + '-' + i + '.png'); return out; }
 
-  var date = WAY.filter(function (p) { return p.kind === 'station'; })[0].d, playing = true, shownLeg = -1, following = false;
-  /** Sets the ship on the leg the date is in, so the host sails her at the date's pace; placed still
-      when the date is still or scrubbed. */
-  function sail(by) {
+  var date = WAY.filter(function (p) { return p.kind === 'station'; })[0].d, playing = true, following = false;
+  /** The ship on her dated way (runtime 5): the globe puts her where the date is, sailing as it plays and
+      standing where the reader drags it. Her way is held at either end for the strip's two spare days. */
+  var SHIP_WAY = {
+    coordinates: [[WAY[0].lon, WAY[0].lat]].concat(WAY.map(function (p) { return [p.lon, p.lat]; }), [[WAY[WAY.length - 1].lon, WAY[WAY.length - 1].lat]]),
+    dates: [FIRST - 2].concat(WAY.map(function (p) { return p.d; }), [LAST + 2])
+  };
+  function setShip() { terra.sprites.set('ship', { path: SHIP_WAY, looks: shipLooks(), label: 'HMS Challenger', touchable: true }); }
+  /** Keeps her in view while she is followed. */
+  function sail() {
     var h = at(date);
-    if (playing && by === 'play' && shownLeg === h.i) return;
-    if (playing && h.i < WAY.length - 1) {
-      var b = WAY[h.i + 1], seconds = Math.max(0.3, (b.d - date) / RATE);
-      terra.sprites.set('ship', { path: { coordinates: [[r3(h.lon), r3(h.lat)], [b.lon, b.lat]], seconds: seconds, loop: false },
-                                  looks: shipLooks(), label: 'HMS Challenger', touchable: true });
-      shownLeg = h.i;
-    } else {
-      terra.sprites.set('ship', { at: [h.lon, h.lat], looks: shipLooks(), label: 'HMS Challenger', touchable: true });
-      shownLeg = -1;
-    }
     if (following && Date.now() - lastFly > 1400) {
       // a flight now and then keeps her in view as she sails, not a flight a frame
       var c = terra.camera;
@@ -224,12 +212,12 @@
 
   terra.on('time', function (e) {
     date = e.value; playing = e.playing;
-    sail(e.by);
+    sail();
     drawStations();
   });
   var lastCam = null;
   terra.on('camera', function (c) {
-    if (measure(c)) { shownLeg = -1; sail('camera'); drawStations(); }
+    if (measure(c)) { setShip(); drawStations(); }
     // the reader turned the globe: stop following
     if (following && lastCam && (Math.abs(c.lon - lastCam.lon) > 0.01 || Math.abs(c.lat - lastCam.lat) > 0.01) && !terra.__flying) {
       var h = at(date), p = terra.project(h.lon, h.lat);
@@ -273,6 +261,7 @@
   terra.geo.set('ahead', [], { style: 'ring' }); terra.geo.set('reached', [], { style: 'dot' });
   terra.geo.set('leads', [], { style: 'sounding' });
   drawGlass();
+  setShip();
   terra.time.show({ unit: 'day', min: FIRST - 2, max: LAST + 2, value: date, ticks: stations.map(function (s) { return s.d; }),
                     playable: true, rate: RATE, playing: true, carry: false });
 })();
