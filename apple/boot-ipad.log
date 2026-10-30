@@ -1,0 +1,74 @@
+Monitoring boot status for iPad Pro 13-inch (M5) (687AB7EE-DF9A-4A96-878E-7509AB01A80C).
+[2026-10-30 00:01:18 +0000] Status=2, isTerminal=NO, Elapsed=01:11.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:54 seconds
+
+[2026-10-30 00:01:19 +0000] Status=2, isTerminal=NO, Elapsed=01:12.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:55 seconds
+
+[2026-10-30 00:01:20 +0000] Status=2, isTerminal=NO, Elapsed=01:13.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:56 seconds
+
+[2026-10-30 00:01:21 +0000] Status=2, isTerminal=NO, Elapsed=01:14.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:57 seconds
+
+[2026-10-30 00:01:24 +0000] Status=2, isTerminal=NO, Elapsed=01:18.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.securityd.KeychainMigrator (KeychainMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:59 seconds
+
+[2026-10-30 00:01:26 +0000] Status=2, isTerminal=NO, Elapsed=01:20.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.managedconfiguration.migrator (MCProfile.migrator, user-agnostic)
+		Migration Elapsed:01:01 seconds
+
+[2026-10-30 00:01:28 +0000] Status=2, isTerminal=NO, Elapsed=01:21.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.managedconfiguration.migrator (MCProfile.migrator, user-agnostic)
+		Migration Elapsed:01:03 seconds
+
+[2026-10-30 00:01:37 +0000] Status=2, isTerminal=NO, Elapsed=01:30.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.managedconfiguration.migrator (MCProfile.migrator, user-agnostic)
+		Migration Elapsed:01:04 seconds
+
+[2026-10-30 00:01:37 +0000] Status=2, isTerminal=NO, Elapsed=01:31.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileSafari.migrator (MobileSafari.migrator)
+		Migration Elapsed:01:13 seconds
+
+[2026-10-30 00:01:38 +0000] Status=2, isTerminal=NO, Elapsed=01:32.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.CloudTabsMigrator.migrator (CloudTabsMigrator.migrator)
+		Migration Elapsed:01:14 seconds
+
+[2026-10-30 00:01:40 +0000] Status=2, isTerminal=NO, Elapsed=01:33.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.coreaudio.HAENDataMigrator (HAENDataMigrator.migrator)
+		Migration Elapsed:01:15 seconds
+
+[2026-10-30 00:01:40 +0000] Status=4, isTerminal=NO, Elapsed=01:34.
+	Waiting on System App
+
+[2026-10-30 00:01:41 +0000] Status=4, isTerminal=NO, Elapsed=01:34.
+	Waiting on System App
+
+[2026-10-30 00:01:42 +0000] Status=4, isTerminal=NO, Elapsed=01:35.
+	Waiting on System App
+
+[2026-10-30 00:01:42 +0000] Status=4, isTerminal=NO, Elapsed=01:36.
+	Waiting on System App
+
+[2026-10-30 00:01:44 +0000] Status=4, isTerminal=NO, Elapsed=01:37.
+	Waiting on System App
+
+[2026-10-30 00:01:48 +0000] Status=4294967295, isTerminal=YES, Elapsed=01:42.
+	Finished
+
