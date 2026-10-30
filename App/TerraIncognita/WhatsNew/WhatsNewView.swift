@@ -85,7 +85,7 @@ struct WhatsNewBar: View {
                         Text(line)
                             .font(.footnote)
                             .foregroundStyle(WhatsNewStyle.faint)
-                            .lineLimit(2)
+                            .lineLimit(sizeClass == .compact ? 3 : 2)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("whatsNewWhat")
                     }
@@ -331,8 +331,9 @@ struct WhatsNewListView: View {
         List {
             Section {
                 Button { play(due, false) } label: {
-                    rowLabel(due.isEmpty ? "Nothing new" : (due.count == 1 ? "Play the new one" : "Play all \(due.count) new"),
-                             detail: "Each from where its makers meant it to be seen; one tap after each.")
+                    rowLabel(due.isEmpty ? "Nothing new in this build" : (due.count == 1 ? "Play the new one" : "Play all \(due.count) new"),
+                             detail: due.isEmpty ? "Everything answered. Any piece below plays again on a tap."
+                                                 : "Each from where its makers meant it to be seen; one tap after each.")
                 }
                 .disabled(due.isEmpty)
                 .accessibilityIdentifier("whatsNewPlayAll")
@@ -392,10 +393,20 @@ struct WhatsNewListView: View {
     }
 
     private func detail(_ p: WhatsNewPiece, due: Bool) -> String {
-        var s = "Since \(p.since)"
+        var s = "Landed \(Self.day(p.since))"
         if due { s += ledger.isChanged(p) ? " · changed since you saw it" : " · new" }
-        else if let e = ledger.entries[p.id] { s += " · \(e.reaction.label.lowercased()) on \(String(e.at.prefix(10)))" }
+        else if let e = ledger.entries[p.id] { s += " · \(e.reaction.label.lowercased()) \(Self.day(String(e.at.prefix(10))))" }
         return s
+    }
+
+    /// "Oct 29" from "2026-10-29" (the year only when it isn't this one).
+    static func day(_ iso: String) -> String {
+        let parts = iso.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return iso }
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        guard (1...12).contains(parts[1]) else { return iso }
+        let thisYear = Calendar.current.component(.year, from: Date())
+        return parts[0] == thisYear ? "\(months[parts[1] - 1]) \(parts[2])" : "\(months[parts[1] - 1]) \(parts[2]), \(parts[0])"
     }
 
     private func rowLabel(_ title: String, detail: String) -> some View {

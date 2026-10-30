@@ -45,3 +45,18 @@ for a reader with time, were cut with an ellipsis at two lines even on the iPad.
 **Changed.** The host gives a pack's piece the pack to run unless its `start` says otherwise. Every
 `what` is shortened to two lines of the iPad's bar. The third round runs on both devices (a
 hand-started run, `device: both`), and gets the first critic.
+
+## Round 3
+
+**Looked at.** A hand-started run on both devices (run 216): every test passes on the 13-inch iPad and
+the iPhone 17 Pro; eighteen pictures.
+
+**Found.** The pack pieces start their packs (the herds open on the first camelid, 41 million years
+ago; the vine on its date). On the phone the bar's `what` is cut mid-sentence at two lines and the
+question takes two more: four lines over the globe. The list's dates read as ISO (`2026-10-29`) and
+its first row says *Nothing new* with a line meant for *Play all*. Wikipedia's words on Georgia gave
+the page that lists every Georgia: three countries' articles were disambiguation pages (fixed in
+`tools/wikipedia/articles.txt`, the index rebuilt). The first critic reads these pictures.
+
+**Changed.** The phone's bar shows three whole lines of `what` rather than two cut; the list says
+*Landed Oct 29 · nice Oct 29* and, with nothing due, *Nothing new in this build*.
