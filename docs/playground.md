@@ -30,15 +30,17 @@ For Claude Code or Codex, the whole loop for a pack (most new ideas):
 1. `python3 tools/playground/playground.py new <id>`, then write it against `docs/runtime3.md`.
 2. `node tools/playground/check.cjs <id>`: look at the screenshots in `build/playground/<id>/`
    (`node tools/playground/serve.cjs` to try it in a browser).
-3. `python3 tools/playground/playground.py validate`, then commit. A push that changes only packs
-   uses no macOS runner.
+3. Fill in the pack's `whatsNew` (what to look at, the one question, the day: [`docs/whatsnew.md`](whatsnew.md)),
+   so the owner's build plays it and asks; `python3 tools/playground/playground.py validate`, then
+   commit. A push that changes only packs uses no macOS runner.
 4. On `main`, `packs.yml` publishes changed packs to the `packs` branch, which the app reads
    (`Prototypes/_runtime/sources.json`). Open the workbench on the phone: the new revision is listed,
    or the pack's doorway is on the globe once it has been downloaded. A link
    `terraincognita://open/<id>` starts it.
 
 If a pack needs something the runtime can't do yet, add it to the runtime (Swift, the next IPA)
-rather than working around it; there are no web views to fall back on.
+rather than working around it; there are no web views to fall back on. Native work (a style, a rule, a
+switch) adds its piece to `App/TerraIncognita/WhatsNew/WhatsNew.json` the same way, with a `start`.
 
 In the app: a doorway or a workbench row starts a prototype beside the ones running (a row of one
 running brings it to the front); the chip at the top right names the one in front, **Open** shows its

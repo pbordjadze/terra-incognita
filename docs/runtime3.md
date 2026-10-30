@@ -75,6 +75,10 @@ Prototypes/<id>/
 - `taps`: true gives the pack every tap on the globe (its `touch` events with `target: null`)
   instead of choosing countries. Taps on its own touchable things reach it either way.
 - `shelf`: `current` or `parked` (the workbench's Parked shelf; no doorway).
+- `whatsNew` (optional, October 30, 2026): the pack's piece for the owner's What's new round: `what` (one
+  line on what to look at), `ask` (the one question), `since` (the day, YYYY-MM-DD), `version` (bump
+  to ask again), `start` (where to begin; the pack itself by default). The contract is
+  [`docs/whatsnew.md`](whatsnew.md); every pack ships one. Apps before it ignore the key.
 
 ## The script's world
 

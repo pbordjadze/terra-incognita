@@ -1,6 +1,6 @@
 # Terra's tools
 
-Every tool this repository has, as `main` has it (October 29, 2026; painting-company row 178): what
+Every tool this repository has, as `main` has it (October 30, 2026; painting-company rows 178, 187): what
 it does, where it lives, who uses it, and where it stops. Read it before you build; add to it when you do.
 
 **The rules**
@@ -102,6 +102,7 @@ Built in, owned by no experience; every experience sits on them.
 | Packs | finds bundled and remote packs, checks hashes, runs their scripts in JavaScriptCore | `PackStore.swift`, `PackScript.swift`, `PackPanel.swift`, `GlobeDate.swift` | every pack | HTTPS GETs only while the workbench is open or a pack opens |
 | Live counts | stages, markers, globes, films and scripts, to prove an ending leaves nothing | `LiveCount.swift`, the workbench | every UI test that ends a prototype | |
 | The player | plates in a ladder, drifts and dives at 120 Hz | `Atlas/` | film (parked) | never draw or lay out per frame |
+| What's new | the SideStore build's two minutes with what is new: each piece played from its makers' start, one tap after each (a voice note, a picture), the ledger of what was seen, the answers filed privately | `App/TerraIncognita/WhatsNew/` (the shared module), `TerraWhatsNew.swift` (Terra's host), `WhatsNew.json`; contract [`whatsnew.md`](whatsnew.md) | every session, as part of shipping: a `whatsNew` entry in its pack's manifest, or in `WhatsNew.json` for native work | `UNRELEASED` builds only; sends only when the owner taps Send, with their own token |
 
 ## Art: pictures drawn from code
 
@@ -159,6 +160,7 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Clouds look, film | the clouds' twin over the globe preview, stills or a film | `node tools/clouds/look.cjs`, `film.cjs` (via `compose.py`) | clouds | film needs ffmpeg |
 | Ocean look | the ocean's twin over the ground style | `node tools/ocean/look.cjs` (via `tools/clouds/compose.py`) | ocean | |
 | Plates preview | a look's film frames or video | `python3 tools/plates/preview.py <look> --times …` | film | |
+| What's new queue | the pieces as the app orders them (`list`), each pack piece's start photographed in the desktop preview (`preview`) | `python3 tools/whatsnew/whatsnew.py list \| preview <out>` | every session shipping a piece ([`whatsnew.md`](whatsnew.md)) | native pieces (a style, a switch) only on the simulator: `WhatsNewTests` |
 
 ## Checks and tests
 
@@ -172,8 +174,9 @@ Each reads public sources (named in its docstring) and writes a bundled file. Re
 | Looks | every look's plates as the player reads them, no unused file | `python3 ci/check_atlas.py` | CI `plates` |
 | Globe data | maps, ornaments, ground, fonts, `type.json`'s design rules (sizes, contrast) | `python3 ci/check_globe.py` | CI `plates` |
 | Wikipedia | every key the code names has a sound article | `python3 ci/check_wikipedia.py` | CI `plates` |
+| What's new pieces | every piece sound (the app's WhatsNew.json and each pack's `whatsNew`): ids unique, `start.run` naming prototypes that exist, a day in `since` | `python3 tools/whatsnew/whatsnew.py validate` (the pack validator checks a pack's entry too) | CI `plates`, `packs.yml` (packs) |
 | Syntax | `node --check`, `py_compile` on the tools | in `ci.yml` › `plates` | CI `plates` (not `tools/herds/*.cjs`, `tools/water/*.cjs`) |
-| UI tests | the playground (plain launch, succession, by touch, lens, parked, remote revisions, globe-drawn packs, herds, `hold`), clouds, ocean, quiet, Wikipedia, camelid | `App/TerraIncognitaUITests/`, helpers `PlaygroundSupport.swift`; `ci/encounter_tests.sh` | CI `apple` (`[test Class]`, `[playground-check]`) |
+| UI tests | the playground (plain launch, succession, by touch, lens, parked, remote revisions, globe-drawn packs, herds, `hold`), clouds, ocean, quiet, Wikipedia, camelid, What's new (a round walked: the pill, the taps, a picture with the globe in it, the end card, the way back, nothing left alive) | `App/TerraIncognitaUITests/`, helpers `PlaygroundSupport.swift`; `ci/encounter_tests.sh` | CI `apple` (`[test Class]`, `[playground-check]`) |
 | Simulator shots | films, the globe in each style, the stage at places | `ci/sim_shots.sh` | CI `apple` (by hand, `[shots]`) |
 | Camelid capture | the sequence as the simulator draws it | `ci/camelid_capture.sh` | CI `apple` (`[camelid-capture]`) |
 | Exploratory QA | an agent using the app through Maestro | `qa-explore.yml`, `ci/qa/` (synced from painting-company) | on request |

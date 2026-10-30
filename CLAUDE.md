@@ -57,6 +57,20 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
     `tools/packart/moments.cjs <id> <out> '<plan>'` photographs a pack in the preview over time (a
     plan of camera, waits, touches, drags, the date's strip, screenshots), so what a script does in
     its first minute can be seen without a Mac.
+- **What's new** (`App/TerraIncognita/WhatsNew/`; `docs/whatsnew.md`; painting-company row 187): the
+  SideStore build's two minutes with what is new. A gold pill on the globe when the build has pieces
+  the owner hasn't reacted to; a round plays each from where its makers meant it (`start`: what runs,
+  the camera, the date, the switches, a country lit), a bar above, one tap below (Wow, Nice, Meh; Skip,
+  Didn't work; a voice note, a picture), the next on the tap; the workbench's What's new row is the way
+  back to any piece. A piece is a `whatsNew` entry in a pack's `prototype.json` (it travels with the
+  pack) or an entry in `WhatsNew.json` for native work: every session adds one as part of shipping.
+  The ledger of what was seen stays on the device; answers are files (one JSON each, the note and the
+  picture beside it) sent to the private repository only when the owner taps Send, by the GitHub
+  contents API with a token kept in the Keychain, or shared as a zip. The module (five files) knows
+  nothing of the globe; `TerraWhatsNew.swift` is Terra's host, so Paint by Moonlight and Pigeon can
+  adopt it. `UNRELEASED` (build settings, beside `WORKBENCH`) compiles it in. Tools:
+  `tools/whatsnew/whatsnew.py list|validate|preview`; `WhatsNewTests` walks a round; Debug takes
+  `-whatsnew`, `-whatsnew-piece <id>`, `-whatsnew-reset`.
 - **Wikipedia's words** (`App/TerraIncognita/Wikipedia/`; painting-company row 177): a switch beside the
   clouds' (a W in Libertinus, the type Wikipedia's mark is cut in). On, every paragraph the atlas wrote
   itself gives way to Wikipedia's own words on its subject: the article's first sentence at the foot or
@@ -370,12 +384,17 @@ the caption's headpiece, and the one chosen country, gilded as the cartouche. Th
 
 - Public repository. Plans, briefs and the backlog live in the owner's private company repository;
   a commit message says what changed and why and quotes no one.
-- No network, with one deliberate exception: the workbench fetches prototype packs from its
+- No network, with two deliberate exceptions: the workbench fetches prototype packs from its
   configured sources while it is open, and when a pack is opened (HTTPS, plain GETs, an ephemeral
-  session, hashes checked). The globe and every bundled experience load from the bundle, and a
-  pack's script can reach nothing outside its pack. No analytics, no accounts.
+  session, hashes checked); and What's new (`UNRELEASED` builds) sends the owner's answers to the
+  private company repository only when the owner taps Send (HTTPS PUTs to the GitHub contents API,
+  with the owner's own token from the Keychain; `docs/whatsnew.md`). The globe and every bundled
+  experience load from the bundle, and a pack's script can reach nothing outside its pack. No
+  analytics, no accounts.
 - Prototypes are additive: a new one adds a folder and an entry, and changes no other. Park, don't
   delete; ending a prototype must leave the plain globe as it was (the Live counts say so).
+- Every piece of work the owner should see ships with its What's new entry (`docs/whatsnew.md`), in
+  the same commit, with the one question its makers most want answered.
 - The macOS runners are shared with paint-by-number and pigeon: look at their Actions runs before
   a push, one branch at a time while paint-by-number's `main` runs.
 - A tool you write to check or measure your own work (a harness, a preview, a shim) is committed
