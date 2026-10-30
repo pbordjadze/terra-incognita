@@ -113,7 +113,7 @@ final class GlobePackTests: XCTestCase {
         startPrototype("hydaspes", in: app)
         let date = app.descendants(matching: .any)["globeDate"].firstMatch
         XCTAssertTrue(date.waitForExistence(timeout: 30), "The night crossing shows its date")
-        XCTAssertEqual(date.value as? String, "326 BCE", "The date reads the year of the crossing")
+        XCTAssertTrue((date.value as? String ?? "").hasPrefix("326 BCE"), "The date reads the year of the crossing")
         let camp = app.buttons["hydaspes.camp-a"].firstMatch
         XCTAssertTrue(camp.waitForExistence(timeout: 20), "The near camp is on the globe, touchable")
         Thread.sleep(forTimeInterval: 2.5)
@@ -133,7 +133,7 @@ final class GlobePackTests: XCTestCase {
             let after = column.frame
             XCTAssertGreaterThan(hypot(after.midX - before.midX, after.midY - before.midY), 20, "The column moved with the drag")
         }
-        XCTAssertEqual(date.value as? String, "326 BCE", "The year is the same all night")
+        XCTAssertTrue((date.value as? String ?? "").hasPrefix("326 BCE"), "The year is the same all night")
         // the strip moved to the second channel: the soldiers wade it to the chest
         date.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.5)).tap()
         let waders = app.buttons["hydaspes.waders"].firstMatch

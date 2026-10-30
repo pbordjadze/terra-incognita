@@ -1063,7 +1063,9 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         lastHands = CACurrentMediaTime()
         touched()
         let target = unproject(g.location(in: self)) ?? (lon: lon0, lat: lat0)
-        let z = zoom < zoomLimit / 2 ? min(zoom * 2, zoomLimit) : 1
+        // twice as close each time; from the deepest, out eightfold (the whole Earth from the plain
+        // globe's depth, a step back from a pack's valley: a limit of 2048 made it a fall to space)
+        let z = zoom < zoomLimit / 2 ? min(zoom * 2, zoomLimit) : max(1, zoom / 8)
         fly(to: (lon: zoom < 4 ? target.lon : lon0, lat: zoom < 4 ? target.lat : lat0, zoom: z))
     }
 

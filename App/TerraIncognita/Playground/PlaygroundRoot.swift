@@ -31,14 +31,17 @@ struct PlaygroundRoot: View {
             // Top right, all of it: iPadOS keeps the window's top-left corner for its own controls.
             .overlay(alignment: .topTrailing) {
                 VStack(alignment: .trailing, spacing: 8) {
-                    HStack(alignment: .top, spacing: 10) {
-                        if let stage = playground.stage, !covered { chip(stage) }
-                        WikipediaButton()
-                        CloudsButton(style: style, experience: playground.veiled)
-                        // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
-                        #if WORKBENCH
-                        workbenchButton
-                        #endif
+                    // the chip beside the switches where its name fits whole (the iPad), else on a row of
+                    // its own under them (the iPhone, where the row broke its name and Open mid-word)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .top, spacing: 10) {
+                            if let stage = playground.stage, !covered { chip(stage) }
+                            switches
+                        }
+                        VStack(alignment: .trailing, spacing: 8) {
+                            switches
+                            if let stage = playground.stage, !covered { chip(stage) }
+                        }
                     }
                     if let problem = playground.problem { problemNote(problem) }
                 }
@@ -108,6 +111,18 @@ struct PlaygroundRoot: View {
         return AnyView(GlobeFoot(caption: stage.caption, time: stage.time,
                                  onTime: { [weak stage] in stage?.setTime($0, by: .reader) },
                                  onPlay: { [weak stage] in stage?.play($0) }))
+    }
+
+    /// The switches at the top right: Wikipedia's words, the clouds, the workbench.
+    private var switches: some View {
+        HStack(alignment: .top, spacing: 10) {
+            WikipediaButton()
+            CloudsButton(style: style, experience: playground.veiled)
+            // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
+            #if WORKBENCH
+            workbenchButton
+            #endif
+        }
     }
 
     private var workbenchButton: some View {

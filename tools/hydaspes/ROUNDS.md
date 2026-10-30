@@ -353,3 +353,16 @@ darker by a third where the night is thin, nothing where it is whole. The runtim
 every picture into at least four tiles that overlap by a hair against gaps, and where a picture is
 translucent the overlap composites it twice. A picture within two degrees is one tile now (the night's
 pool is 0.64° across); a wider one keeps its tiles and their seams, which the contract now says.
+
+## Round 15: the explorer (October 29, 2026, 22:55 ET)
+
+A QA explore on the iPhone (an agent using the app through the simulator for eight minutes, as a
+player): the camp answered, the column followed the drag, the strip moved the camera to the landing.
+Three things, all in the stage rather than the pack, all fixed in the stage. The chip at the top
+broke its name and Open mid-word beside the three switches (the row is too narrow on the phone): the
+chip now drops to a row of its own under them where its name does not fit whole. A double tap at the
+bend, zoomed deep, threw the camera out to the whole Earth (the globe's rule was "twice as close, or
+from past half the limit, the whole Earth", written for a limit of 8): from past half the limit it now
+steps out eightfold. And VoiceOver's date read "326 BCE" all night: where a step would leave the
+label as it is, the strip speaks its position too. Not taken: the explorer could not pinch (Maestro
+has no pinch), so the close looks were seen by the strip's leans only.

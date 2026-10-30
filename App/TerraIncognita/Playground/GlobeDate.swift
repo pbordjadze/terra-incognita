@@ -290,7 +290,7 @@ private struct DateStrip: View {
             .accessibilityElement()
             .accessibilityAddTraits(time.playing ? .updatesFrequently : [])
             .accessibilityLabel(Text("Date"))
-            .accessibilityValue(Text(time.label))
+            .accessibilityValue(Text(spoken))
             .accessibilityHint(Text("Swipe up or down to move through time"))
             .accessibilityAdjustableAction { direction in
                 switch direction {
@@ -305,6 +305,18 @@ private struct DateStrip: View {
 
     private func position(_ v: Double, width: CGFloat) -> CGFloat {
         CGFloat(time.fraction(v)) * width
+    }
+
+    /// What VoiceOver reads as the value: the label, and where along the strip when a step would leave
+    /// the label as it is (a night told in hours under one year's name: the position is the progress).
+    private var spoken: String {
+        var next = time
+        next.value = time.step(1)
+        var back = time
+        back.value = time.step(-1)
+        guard next.label == time.label, back.label == time.label, time.max > time.min else { return time.label }
+        let percent = Int((time.fraction(time.value) * 100).rounded())
+        return String(localized: "\(time.label), \(percent) per cent along")
     }
 }
 
