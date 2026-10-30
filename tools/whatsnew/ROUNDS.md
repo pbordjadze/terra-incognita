@@ -167,3 +167,18 @@ the names). Ending the same pack early or late from its chip leaves nothing (two
 hold was the round's: the playground's chip is hidden while a piece plays, its Open button captured
 the front stage, and the hidden chip's removal kept the view and with it the stage. The capture is
 weak now.
+
+**Round 6 closed** (run 228): the round test passes with the weak capture; a round of five, skipped
+fast, leaves the plain globe with nothing alive.
+
+## Where the rounds stop
+
+The third critic's verdict: "the core loop (pill, piece, three taps, next) works and nothing
+structural is wrong; the worst remaining complaint, the end card, is a real flaw in one screen rather
+than a gap in the feature, and the phone framing is the one thing that would make him doubt the
+pieces rather than the mode. Both are afternoon fixes." Round 6 made both fixes and the smaller ones
+it listed; what is left of its list is the microphone's system prompt (the system's), the pastel
+fills' contrast (a shade warmer now; the words on them are dark), and the pack's own foot while a
+piece plays (overruled above: the piece's words). The next complaint would be a quibble. The owner's
+own round is the judge from here: the seed hints are the session's, and each maker should rewrite
+their own; the voice note, the picture on a real GPU and the token path are untested off the simulator.
