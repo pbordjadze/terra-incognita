@@ -428,6 +428,7 @@ final class PrototypeStage {
     private func geoLayers() -> GeoLayerView {
         if let geo { return geo }
         let view = GeoLayerView()
+        view.clock = clock
         geo = view
         globe?.addOverlay(view)
         // its touchable named places are VoiceOver buttons that touch them
@@ -523,6 +524,7 @@ final class PrototypeStage {
     private func syncClocks() {
         let clock = self.clock
         for marker in sprites.values { marker.clock = clock }
+        geo?.clock = clock
     }
 
     private func stopPlayback() {

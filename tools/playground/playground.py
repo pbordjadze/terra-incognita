@@ -45,7 +45,7 @@ TEMPLATES = Path(__file__).resolve().parent / 'template'
 DEFAULT_OUT = ROOT / 'build' / 'packs'
 RUNTIME = 6
 # a pack declares the runtime it needs: 3, 4 for what docs/runtime3.md marks new in 4, 5 for what it
-# marks new in 5 (a sprite on a dated way, the date's pace), 6 for what it marks new in 6 (sprite sheets)
+# marks new in 5 (a sprite on a dated way, the date's pace), 6 for what it marks new in 6 (sprite sheets, dated geography)
 RUNTIMES = (3, 4, 5, 6)
 # a frame of a sprite sheet, 'art/early.png#x,y,w,h' (pixels), came with runtime 6
 SHEET_RUNTIME = 6

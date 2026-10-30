@@ -1,5 +1,6 @@
-// The playground's runtime, version 6 (5 with sprite sheets; 5 is 4 with sprites on dated ways and the
-// date's pace; 4 is 3 with the stage shared: docs/runtime3.md › Many at once):
+// The playground's runtime, version 6 (5 with sprite sheets, and dated geography: lines and points with a
+// date at each place, drawn as far as the stage's date; 5 is 4 with sprites on dated ways and the date's
+// pace; 4 is 3 with the stage shared: docs/runtime3.md › Many at once):
 // the whole API a pack's script gets from its host (docs/runtime3.md is the contract). The app runs it in JavaScriptCore before a pack's scripts
 // (App/TerraIncognita/Playground/PackScript.swift), and so does the desktop preview in a browser
 // (tools/playground/harness/): a pack never includes it itself.

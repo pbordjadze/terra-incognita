@@ -117,6 +117,9 @@ const FIX = {
   splash: [28.5, 33.2],
   boatClose: 4.5,
   voyage: { coordinates: [[14.51, 35.9], [20.0, 35.0], [25.13, 35.34], [29.92, 31.2]], seconds: 30, loop: 'back' },
+  // dated geography (runtime 6): a way grown as the date passes 1800 to 1900, and two marks that bloom at 1810 and 1890
+  grown: [[24.8, 40.0, 1800], [26.8, 40.3, 1850], [28.8, 40.0, 1900]],
+  blooms: [[25.8, 40.9, 1810], [27.8, 40.9, 1890]],
 };
 
 function mainJs() {
@@ -141,6 +144,8 @@ function mainJs() {
   terra.geo.set('names', ports, { style: 'label', font: 'italic', size: 14, offset: [0, -14] });
   terra.geo.set('marks', { type: 'MultiPoint', coordinates: F.marks }, { style: 'symbol', image: 'mark.png', width: 16, height: 16 });
   terra.geo.set('depth', [feature({ type: 'Point', coordinates: F.sounding }, { length: 48, label: '48 points down' })], { style: 'sounding' });
+  terra.geo.set('grown', [feature({ type: 'LineString', coordinates: F.grown }, { label: 'A dated way' })], { style: 'border', color: '#5A3A1C', lineWidth: 1, dated: true, thickens: { to: 5, over: 50 }, touchable: true });
+  terra.geo.set('blooms', { type: 'MultiPoint', coordinates: F.blooms }, { style: 'symbol', image: 'mark.png', width: 16, height: 16, dated: true, bloom: 0.5 });
   terra.sprites.set('boat', {
     path: F.voyage,
     looks: [{ image: 'dot.png', size: [12, 12], maxZoom: F.boatClose },
@@ -202,7 +207,7 @@ function writeFixture(base) {
   fs.writeFileSync(path.join(dir, 'prototype.json'), JSON.stringify(manifest, null, 2) + '\n');
   fs.writeFileSync(path.join(dir, 'data.js'), '/* the fixture\'s shapes (invented) */\nwindow.FIXTURE = ' + JSON.stringify({
     area: FIX.area, route: FIX.route, outline: FIX.outline, ports: FIX.ports, marks: FIX.marks, sounding: FIX.sounding,
-    chart: FIX.chart, splash: FIX.splash, voyage: FIX.voyage, boatClose: FIX.boatClose }) + ';\n');
+    chart: FIX.chart, splash: FIX.splash, voyage: FIX.voyage, boatClose: FIX.boatClose, grown: FIX.grown, blooms: FIX.blooms }) + ';\n');
   fs.writeFileSync(path.join(dir, 'main.js'), mainJs());
   fs.writeFileSync(path.join(dir, 'notes.txt'), 'Read by terra.read.\n');
   fs.writeFileSync(path.join(dir, 'data', 'facts.json'), JSON.stringify({ read: 'by terra.readJSON', n: 3 }) + '\n');
@@ -504,11 +509,21 @@ async function runDevice(browser, server, device) {
     await rest();
     const hist = await state();
     await shot('historical');
+    // dated geography (runtime 6): at the strip's end (1900) the whole way is there to touch and both marks have bloomed;
+    // at its start (1800) the way has not left its first place and no mark is there
+    const grownAt = (s) => s.geo.find((L) => L.id === 'grown'), bloomsAt = (s) => s.geo.find((L) => L.id === 'blooms');
+    const touchLate = await pg(() => window.__playground.touchables().filter((x) => x.target.layer === 'grown'));
     since = await clock();
     await page.keyboard.press('Home');
     await until('time', since);
     await quiet();
-    t('globe.set({ historical }): today\'s borders and names hidden, and back', hist.globe.historical === true && hist.time.value === 1900 && (await state()).globe.historical === false, hist.globe);
+    await rest();
+    const early = await state();
+    const touchEarly = await pg(() => window.__playground.touchables().filter((x) => x.target.layer === 'grown'));
+    t('dated geography: at 1900 the dated way is whole and touchable, its two marks drawn; at 1800 neither mark is drawn and the way (a point) cannot be touched',
+      bloomsAt(hist).drawn === 2 && touchLate.length === 1 && bloomsAt(early).drawn === 0 && touchEarly.length === 0,
+      { late: { blooms: bloomsAt(hist).drawn, touch: touchLate.length }, early: { blooms: bloomsAt(early).drawn, touch: touchEarly.length }, grown: grownAt(early) });
+    t('globe.set({ historical }): today\'s borders and names hidden, and back', hist.globe.historical === true && hist.time.value === 1900 && early.globe.historical === false, hist.globe);
 
     // ---- a script's own flight
     const piraeus = await project(23.64, 37.94);

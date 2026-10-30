@@ -139,8 +139,12 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   from her stations and ports, a lead let down wherever the sea is touched to the globe's own depths,
   a sounding glass with the floor's contours under it; `tools/leadline/`), **When the sea was low**
   (`low-sea/`: the shelves come up as the land they were when the sea stood 120 m lower, with their
-  rivers and mammoths; `tools/lowsea/`), and **The vine's long walk** (`vine/`: one vine, eight
-  thousand years long, from a qvevri in Georgia across the world as the years play; `tools/vine/`).
+  rivers and mammoths; `tools/lowsea/`), and **The vine's long walk** (`vine/`, a runtime-6 pack, remade October 30: one vine, eight
+  thousand years long, from a qvevri in Georgia across the world as the years play, set once as dated
+  geography and grown by the globe: stems that thicken with age over land, dashed voyages over sea,
+  leaves that open as the tip passes in each hemisphere's season, tendrils on dated ways at the growing
+  tips, twigs to the world's wine regions; touch any of it and light runs back along the vine to the
+  qvevri; `tools/vine/`, its rounds in `tools/vine/ROUNDS.md`).
   They replaced Whale and Desert, the Indian Ocean encounter, The sea between, Sounding the deep and
   Borders on old maps, which are in `main`'s history before 4531d6c.
 - **The herds** (`Prototypes/herds/`, a runtime-6 pack): the camel family's history as small herds that
@@ -296,8 +300,9 @@ and what every experience relies on and none owns. When in doubt, it's runtime.
   text size, Reduce Motion).
 - **Many at once.** A tool assumes other experiences may share the stage: it asks for the camera,
   date and touches rather than taking them, and leaves nothing behind when its experience ends.
-- **Runtime 3 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
-  them. There are no web views in the app: the Aegean leaf and the river study are packs now. The
+- **Runtime 6 is here** (`docs/runtime3.md`): packs run in JavaScriptCore and the globe draws for
+  them, moves them with its date (sprites on dated ways, 5) and grows them with it (dated geography:
+  lines drawn as far as the date has come, points once it passes them, 6). There are no web views in the app: the Aegean leaf and the river study are packs now. The
   native prototypes move onto the runtime's tools when they are next reworked.
 
 ## Design rules

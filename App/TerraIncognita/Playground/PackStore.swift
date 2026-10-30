@@ -12,7 +12,7 @@ import OSLog
 
 // MARK: - The contract's data
 
-/// `prototype.json` (runtimes 3 to 5: docs/runtime3.md).
+/// `prototype.json` (runtimes 3 to 6: docs/runtime3.md).
 nonisolated struct PackManifest: Codable, Equatable, Sendable {
     nonisolated struct Anchor: Codable, Equatable, Sendable { var lon: Double; var lat: Double; var zoom: Double? }
     /// How something shows on the globe at a range of zooms: a picture, or frames in turn; now and then

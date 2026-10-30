@@ -1,44 +1,51 @@
 {
   "id": "vine",
   "title": "The vine's long walk",
-  "summary": "საქართველო. One vine, eight thousand years long: it rises from a qvevri in the Georgian valley where the oldest wine was made and grows across the world as the years play.",
-  "runtime": 4,
+  "summary": "საქართველო. One vine, eight thousand years long, grows from a qvevri in the Georgian valley of the oldest wine across the world as the years play; touch it and light runs back the way it came.",
+  "runtime": 6,
   "presentation": "globe",
   "scripts": [
     "data.js",
     "main.js"
   ],
   "anchor": {
-    "lon": 40,
-    "lat": 38,
-    "zoom": 1.9
+    "lon": 44.75,
+    "lat": 41.45,
+    "zoom": 6.5
   },
   "doorway": {
     "lon": 44.75,
     "lat": 41.45,
-    "label": "The vine's long walk: the first vine, in Georgia",
-    "looks": [
-      {
-        "image": "doorway.png",
-        "size": [
-          26,
-          28
-        ],
-        "minZoom": 1.4
-      },
-      {
-        "image": "doorway-glint.png",
-        "size": [
-          11,
-          11
-        ],
-        "maxZoom": 1.4,
-        "every": 8,
-        "for": 1.2
-      }
-    ],
+    "label": "The vine's long walk: a vine leaf in the Georgian valley where the oldest wine was made",
+    "look": {
+      "image": "doorway.png",
+      "size": [
+        30,
+        32
+      ],
+      "minZoom": 1.2
+    },
     "breathes": true
   },
-  "taps": false,
-  "shelf": "current"
+  "taps": true,
+  "shelf": "current",
+  "whatsNew": {
+    "what": "One vine, eight thousand years long, grows out of a buried qvevri in Georgia as the years play; touch any stem and light runs back to where it began.",
+    "ask": "Did you want to touch it before you knew what it was?",
+    "since": "2026-10-30",
+    "version": "1",
+    "row": 176,
+    "start": {
+      "run": [
+        "vine"
+      ],
+      "camera": {
+        "lon": 44.75,
+        "lat": 41.45,
+        "zoom": 8
+      },
+      "date": -6000,
+      "playing": true
+    }
+  }
 }
