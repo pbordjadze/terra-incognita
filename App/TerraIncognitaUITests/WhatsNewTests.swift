@@ -51,10 +51,11 @@ final class WhatsNewTests: XCTestCase {
         attach("21-second-piece", in: app)
 
         // a picture of the screen is a picture of the globe, not of nothing
-        app.buttons["whatsNewCamera"].firstMatch.tap()
-        let picture = app.images["whatsNewPicture"].firstMatch
-        XCTAssertTrue(picture.waitForExistence(timeout: 10), "Taking a picture shows it a moment")
-        let label = picture.label
+        let camera = app.buttons["whatsNewCamera"].firstMatch
+        camera.tap()
+        let taken = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@", "Picture taken"), object: camera)
+        XCTAssertEqual(XCTWaiter().wait(for: [taken], timeout: 10), .completed, "Taking a picture shows it in the camera's place: \(camera.label)")
+        let label = camera.label
         let dark = Int(label.split(separator: " ").compactMap { Int($0) }.first ?? 100)
         XCTAssertLessThan(dark, 70, "The picture has the globe in it (\(label))")
         attach("22-picture-taken", in: app)

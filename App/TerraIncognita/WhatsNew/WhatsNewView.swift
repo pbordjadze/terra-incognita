@@ -215,8 +215,6 @@ struct WhatsNewReactionRow: View {
                         .frame(width: 44, height: compact ? 50 : 54)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(WhatsNewStyle.gold, lineWidth: 1.5))
-                        .accessibilityLabel(Text("Picture taken, \(Int((WhatsNewSnapshot.darkness(of: picture) * 100).rounded())) percent dark"))
-                        .accessibilityIdentifier("whatsNewPicture")
                 } else {
                     VStack(spacing: 2) {
                         Image(systemName: session.screenshot == nil ? "camera" : "camera.fill").font(.system(size: 20, weight: .medium))
@@ -230,7 +228,8 @@ struct WhatsNewReactionRow: View {
         .buttonStyle(.plain)
         .foregroundStyle(WhatsNewStyle.faint)
         .disabled(session.capturing)
-        .accessibilityLabel(session.screenshot == nil ? Text("Take a picture of the screen") : Text("Picture taken; take another"))
+        .accessibilityLabel(session.lastPicture.map { Text("Picture taken, \(Int((WhatsNewSnapshot.darkness(of: $0) * 100).rounded())) percent dark; take another") }
+                            ?? Text("Take a picture of the screen"))
         .accessibilityIdentifier("whatsNewCamera")
     }
 
