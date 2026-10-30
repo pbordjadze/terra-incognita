@@ -61,5 +61,21 @@
     "breathes": true
   },
   "taps": false,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "what": "Touch the camp on the near bank, then drag the column along its way: the night moves under your finger, and the river opens in front of them.",
+    "ask": "At the second channel, did you lean in, or did you need to be told what had happened?",
+    "since": "2026-10-30",
+    "version": "1",
+    "row": 183,
+    "start": {
+      "camera": {
+        "lon": 73.655,
+        "lat": 32.846,
+        "zoom": 420
+      },
+      "date": -325.37,
+      "playing": true
+    }
+  }
 }
