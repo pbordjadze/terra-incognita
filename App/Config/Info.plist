@@ -7,7 +7,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>What's new records a voice note about a piece only while you have tapped its microphone button; the note stays on this device until you send it.</string>
+	<string>What's new records a voice note only while you have tapped Say; it stays on this device until you send it.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

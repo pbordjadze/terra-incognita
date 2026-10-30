@@ -37,8 +37,12 @@ final class Playground {
     private(set) var quietFrame = false
     /// The host (What's new) holds the globe where it put it, no idle turn, while a piece plays.
     var heldStill = false { didSet { if heldStill != oldValue { applyGlobeState() } } }
-    /// An experience is running on the globe: the clouds and the sea give way to it.
-    var veiled: Bool { stages.contains { $0.prototype.veils } }
+    /// An experience is running on the globe (or the host asks): the clouds and the sea give way to it.
+    var veiled: Bool { hostVeils || stages.contains { $0.prototype.veils } }
+    /// The host (What's new) thins the clouds and the sea while a piece plays, and takes the other
+    /// experiences' doorways off the globe, so nothing else is in the way.
+    var hostVeils = false
+    var hostHidesDoorways = false { didSet { if hostHidesDoorways != oldValue { refreshDoorways() } } }
     @ObservationIgnored private var panelClosed: (() -> Void)?
     /// Every prototype's doorway on the globe while it isn't running, by prototype id.
     @ObservationIgnored private var doorways: [String: GlobeMarker] = [:]
@@ -318,6 +322,7 @@ final class Playground {
             if let pack = listing.current, let d = Self.doorway(of: pack) { wanted[listing.id] = d }
         }
         for stage in stages { wanted[stage.prototype.id] = nil }
+        if hostHidesDoorways { wanted = [:] }
         for (id, marker) in doorways where wanted[id] == nil {
             globe.remove(marker)
             doorways[id] = nil

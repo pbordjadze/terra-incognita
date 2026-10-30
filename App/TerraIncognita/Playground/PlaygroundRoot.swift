@@ -25,6 +25,8 @@ struct PlaygroundRoot: View {
     }
     /// Where the controls are, so the globe keeps its names clear of them.
     @State private var controlsFrame = CGRect.zero
+    /// Where What's new's bar and band are while a piece plays (the globe keeps its names clear of them too).
+    @State private var whatsNewFrames: [CGRect] = []
     /// The launch screen's slate: the globe fades up from it.
     @State private var veil = 1.0
     @Environment(\.scenePhase) private var scenePhase
@@ -38,7 +40,7 @@ struct PlaygroundRoot: View {
     var body: some View {
         // (paused under the workbench too: nothing turns behind a menu, and its list has the main thread)
         GlobeScreen(active: !covered && !playground.workbenchShown && scenePhase == .active, style: style,
-                    keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot, quiet: lens != nil,
+                    keepClear: [controlsFrame] + whatsNewFrames, invitation: playground.stage?.invitation, foot: foot, quiet: lens != nil,
                     quietFrame: playground.quietFrame,
                     onInvitation: { playground.stage?.acceptInvitation() },
                     onDrawn: { view in
@@ -129,7 +131,7 @@ struct PlaygroundRoot: View {
     /// What's new's chrome round the globe (nothing in a store build).
     private func whatsNewChrome(quiet: Bool) -> some ViewModifier {
         #if UNRELEASED
-        return WhatsNewChrome(mode: whatsNew, quiet: quiet)
+        return WhatsNewChrome(mode: whatsNew, quiet: quiet, frames: $whatsNewFrames)
         #else
         return EmptyModifier()
         #endif

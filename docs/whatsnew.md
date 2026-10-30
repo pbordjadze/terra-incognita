@@ -17,19 +17,21 @@ tool is `tools/whatsnew/whatsnew.py`.
 ## What the owner does
 
 1. Open the build. If it has pieces not yet reacted to, a gold pill under the buttons says
-   **3 new things · Show me**. Touch it. (The workbench's **What's new** row is the other way in,
+   **12 new things · Show me**. Touch it. (The workbench's **What's new** row is the other way in,
    and the way back to any piece, new or seen.)
-2. Each piece starts where its makers meant: the camera flies, the experience starts, the date is
-   set, a country is lit. The bar above says *2 of 6*, the piece's name, one line on what to look
-   at, and in gold the one question its makers most want answered. The globe is live: touch it,
-   drag, zoom, as always.
-3. One tap below: **Wow**, **Nice** or **Meh**. The next piece comes. **Skip** (not now) and
-   **Didn't work** are there too, small. A voice note: tap **Say**, speak, tap again (or just tap
-   a reaction: the note stops and goes with it). A picture of the screen: **Picture**. **‹** goes
-   back a piece; **✕** leaves the round where it is (what was answered stays answered).
-4. At the end, a card: the tally, **Send to the company** (one tap, once a token is set up; see
-   [Where the answers go](#where-the-answers-go)), **Share…** (the same files as a zip, by AirDrop,
-   Files, Mail), **Done**.
+2. A round is five pieces, the newest first. Each starts where its makers meant: the camera flies,
+   the experience starts, the date is set, a country is lit; the other doorways step off the globe
+   and the clouds thin, so nothing else is in the way. The bar above says *2 of 5* and the piece's
+   name, and under them, in gold, the one thing its makers ask to be judged. The globe is live:
+   touch it, drag, zoom, as always.
+3. One tap on the band below: **Wow**, **Nice** or **Meh**. The next piece comes. **Skip** (not
+   now) and **Didn't work** are plain words under them. A voice note: tap **Say**, speak, tap again
+   (or just tap a verdict: the note stops and goes with it). A picture of the screen: **Picture**.
+   **‹** goes back a piece; **Panel** opens the piece's own words; **Later** leaves the round where
+   it is (what was answered stays answered).
+4. At the end, a card: what was said, **Done**, **Keep going** while pieces wait, **Share…** (the
+   files as a zip, by AirDrop, Files, Mail), and one quiet line about sending to the company (one
+   tap once a token is set up; see [Where the answers go](#where-the-answers-go)).
 
 Two minutes. Nothing is scored but the owner's time: a skipped piece stops asking until its makers
 change it, and the list keeps the way back.
@@ -66,8 +68,8 @@ entry in `App/TerraIncognita/WhatsNew/WhatsNew.json`, with an `id` of its own an
 | --- | --- | --- |
 | `id` | central entries only | lower-case letters, digits, hyphens; never reused (a pack's piece is the pack's id) |
 | `title` | 1–60 characters | on the bar; a pack's defaults to the pack's |
-| `what` | one line, up to 240 | what to look at, read while it plays: say what is on the screen, not what you built |
-| `ask` | optional, up to 160 | the one question you most want answered; in gold under the title. One. |
+| `ask` | up to 160 | the bar's line, in gold: the one thing you want judged, as an imperative the taps can answer ("Come close to one animal: judge the date slowing with you"), not a yes/no question. One. |
+| `what` | one line, up to 240 | what is on the screen, for the tool's `list` and for the bar when there is no `ask`; say what the owner sees, not what you built |
 | `since` | `YYYY-MM-DD` | the day it landed; the queue plays the newest first |
 | `version` | optional, `"1"` | bump it (`"2"`, a date) when the piece changed enough to ask again: the owner sees it as *changed since you saw it*. A fix that changes nothing they would notice leaves it alone |
 | `start` | optional | where to begin ([below](#start-where-a-piece-begins)); a pack's defaults to running the pack |
@@ -78,9 +80,11 @@ IPA. A central entry needs the next build. A pack's entry wins over a central on
 `python3 tools/playground/playground.py validate` checks a pack's entry; `python3 tools/whatsnew/whatsnew.py validate`
 checks them all (CI's `plates` job runs both); `whatsnew.py list` prints the queue as the app orders it.
 
-What makes a good piece: the owner sees it cold, on a phone, for twenty seconds. Start it where its
-best moment is, not at its beginning (`camera`, `date`). Say in `what` what they are looking at in
-words they can check against the screen. Ask the one thing you would change the work for.
+What makes a good piece: the owner sees it cold, on a phone, for twenty seconds. Start it at its
+moment, not at its beginning (`camera`, `date`: the vine with centuries grown, the animal large in
+frame, the country centred and clear); a piece that arrives at zero is skipped. Ask the one thing
+you would change the work for, as something to judge. The first critic's reading of the first
+round, in `tools/whatsnew/ROUNDS.md`, is what a cold owner sees.
 
 ## `start`: where a piece begins
 
@@ -95,6 +99,7 @@ Every key is optional. With none, the pack's own opening (its anchor, its script
 | `wikipedia`, `clouds` | `true`/`false` | the switches, put back after the round |
 | `select` | `"Georgia"` | a country lit by name (its short or long name) |
 | `open` | `true` | the front piece's panel opens at once |
+| `doorways` | `true` | the other experiences' doorways stay on the globe (hidden while a piece plays, unless the piece is about them) |
 
 A piece runs what any reader can run: nothing starts that the build doesn't have (a piece naming a
 prototype the build lacks waits for the build that has it).

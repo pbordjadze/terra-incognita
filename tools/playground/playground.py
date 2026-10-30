@@ -65,7 +65,7 @@ MAX_FRAMES = 24   # a sprite's (or doorway's) look, docs/runtime3.md
 TOP_KEYS = {'id', 'title', 'summary', 'runtime', 'presentation', 'scripts', 'anchor', 'doorway', 'taps', 'shelf', 'whatsNew'}
 # a pack's piece for What's new (docs/whatsnew.md): what to look at, where to start, the one question
 WHATS_NEW_KEYS = {'id', 'title', 'what', 'ask', 'since', 'version', 'start', 'row'}
-WHATS_NEW_START_KEYS = {'run', 'camera', 'date', 'playing', 'wikipedia', 'clouds', 'select', 'open'}
+WHATS_NEW_START_KEYS = {'run', 'camera', 'date', 'playing', 'wikipedia', 'clouds', 'select', 'open', 'doorways'}
 DAY_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
 # what runtimes 1 and 2 declared and runtime 3 has no place for
 WEB_KEYS = {'entry': 'a web page', 'overlay': 'a web page over the globe',
@@ -454,7 +454,7 @@ def check_whats_new(rep, where, piece, pack_id=None, prototype_ids=None):
                         _check_num(rep, where, f'{tag}.start.camera.{k}', cam[k], lo, hi)
         if 'date' in start and not is_num(start['date']):
             rep.error(where, f'{tag}.start.date must be a number in the front pack\'s unit (a year, or days since 1970)')
-        for k in ('playing', 'wikipedia', 'clouds', 'open'):
+        for k in ('playing', 'wikipedia', 'clouds', 'open', 'doorways'):
             if k in start and not isinstance(start[k], bool):
                 rep.error(where, f'{tag}.start.{k} must be true or false')
         if 'select' in start and (not isinstance(start['select'], str) or not start['select'].strip()):

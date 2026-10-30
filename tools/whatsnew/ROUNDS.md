@@ -60,3 +60,31 @@ the page that lists every Georgia: three countries' articles were disambiguation
 
 **Changed.** The phone's bar shows three whole lines of `what` rather than two cut; the list says
 *Landed Oct 29 · nice Oct 29* and, with nothing due, *Nothing new in this build*.
+
+## Round 4
+
+**The first critic** (round 3's eighteen pictures, both devices), ranked: (1) the pieces arrive at
+zero, before they have anything to show (the vine a seed, the herd specks, the lit country under
+doorways and cloud), so every screen invites Skip; (2) the second piece shows a defect of its own
+(Georgia's disambiguation page); (3) the band is a toolbar of seven equal tiles, two faces alike,
+the globe's names leaking between them; (4) the bar is three lines of small text and the one line
+that matters, the question, is the least legible, and a yes/no question the taps can't answer; (5)
+the card's primary is configuration and its tally a reproach; (6) twelve pieces with no sense of
+time; (7) everything else on the globe clutters the piece; (8) the close, Open and Say unexplained;
+(9) the list written by an engineer (ISO dates, file counts, a riddle under "Nothing new"); (10) the
+phone's chrome eats the piece; (11) the microphone prompt's paragraph; (12) the pill jammed against
+the buttons. Good: the pill, Picture becoming Taken, the card's headline. Verdict: a real gap.
+
+**Changed, in that order.** Starts at their moments: the vine with 3,500 years grown, the country
+centred at zoom 5 with the clouds off, the other doorways taken off the globe and the clouds thinned
+while any piece plays (`doorways: true` keeps them: the living globe). Georgia's article (and
+Saint-Martin's, Vatican's) fixed in Wikipedia's words. The band: three big verdicts set as words on
+three tints (warm, green, grey), Say and Picture small at the ends, Skip and Didn't work plain
+words, the whole on a near-opaque strip of paper the globe keeps its names clear of. The bar: one
+title line and the question as its main line in roman gold; `what` only when there is no question;
+the questions rewritten as things to judge; the close is *Later*, Open is *Panel*. The card: *Done*
+first, *Keep going (7)* while pieces wait, the tally in words without the skips, sending a quiet
+line. A round is five pieces; the pill counts all that wait. The list: one line a piece, *Oct 29*, a
+glyph or a dot. The picture stays in the band's camera button. The microphone's reason is one
+sentence. Not taken: the microphone prompt itself (the system's); the question's yes/no form is met
+by rewriting the questions rather than the taps.

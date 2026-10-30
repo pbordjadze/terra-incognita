@@ -23,6 +23,9 @@ struct TerraStart: Equatable {
     var clouds: Bool?
     var select: String?
     var open = false
+    /// The other experiences' doorways stay on the globe (they are hidden while a piece plays, so
+    /// nothing else is in the way; the living globe is about them).
+    var doorways = false
 
     init(_ json: JSONValue?) {
         guard let json else { return }
@@ -36,6 +39,7 @@ struct TerraStart: Equatable {
         clouds = json["clouds"]?.bool
         select = json["select"]?.string
         open = json["open"]?.bool ?? false
+        doorways = json["doorways"]?.bool ?? false
     }
 }
 
@@ -43,6 +47,8 @@ struct TerraStart: Equatable {
 @Observable
 final class TerraWhatsNew: WhatsNewHost {
     static let destination = WhatsNewDestination(repository: "pbordjadze/painting-company", folder: "interviews/paul/terra")
+    /// A round is a few pieces, two minutes; the rest wait for the next (the card offers to keep going).
+    static let roundSize = 5
     let session: WhatsNewSession
     @ObservationIgnored private weak var playground: Playground?
     /// The pieces for native work, from WhatsNew.json in the bundle.
@@ -100,16 +106,25 @@ final class TerraWhatsNew: WhatsNewHost {
 
     // MARK: starting a round
 
-    /// Plays these pieces now (the pill, the launch).
+    /// Plays these pieces now (the pill, the launch, the list): a round of a few at a time, the rest
+    /// waiting (`single`: one chosen piece, alone).
     func play(_ pieces: [WhatsNewPiece], single: Bool = false) {
         guard !pieces.isEmpty else { return }
+        let round = single ? pieces : Array(pieces.prefix(Self.roundSize))
+        session.waiting = single ? 0 : pieces.count - round.count
         if playground?.workbenchShown == true {
-            pending = (pieces, single)
+            pending = (round, single)
             playground?.workbenchShown = false
         } else {
             playground?.screen = nil
-            session.start(pieces, single: single)
+            session.start(round, single: single)
         }
+    }
+
+    /// The card's Keep going: the next few due pieces.
+    func keepGoing() {
+        session.dismiss()
+        play(due)
     }
 
     /// The workbench closed: a choice made there starts.
@@ -147,6 +162,9 @@ final class TerraWhatsNew: WhatsNewHost {
         if let c = start.clouds, CloudsSwitch.shared.on != c { CloudsSwitch.shared.toggle() }
         playground.globe?.clearSelection()
         playground.heldStill = true
+        // nothing else in the way: the other doorways go, the clouds thin as they do under an experience
+        playground.hostHidesDoorways = !start.doorways
+        playground.hostVeils = start.clouds != true
         if start.run.isEmpty {
             if let camera = start.camera { playground.globe?.setAuthoredCamera(camera, duration: 0.9) }
         } else {
@@ -164,6 +182,8 @@ final class TerraWhatsNew: WhatsNewHost {
         playground.screen = nil
         playground.end()
         playground.heldStill = false
+        playground.hostHidesDoorways = false
+        playground.hostVeils = false
         playground.globe?.clearSelection()
     }
 
@@ -174,6 +194,8 @@ final class TerraWhatsNew: WhatsNewHost {
         }
         switches = nil
         playground?.heldStill = false
+        playground?.hostHidesDoorways = false
+        playground?.hostVeils = false
     }
 
     /// What the reader is looking at: the camera, what runs and which is in front, its date, the
@@ -219,23 +241,34 @@ struct WhatsNewChrome: ViewModifier {
     let mode: TerraWhatsNew
     /// Something else has the screen (a lens): the pill waits.
     let quiet: Bool
+    /// Where the bar and the band are (global), so the globe keeps its names clear of them.
+    @Binding var frames: [CGRect]
     @State private var sendingShown = false
+    @State private var barFrame = CGRect.zero
+    @State private var bandFrame = CGRect.zero
 
     private var session: WhatsNewSession { mode.session }
 
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .top, spacing: 0) {
-                if mode.playing { WhatsNewBar(session: session).opacity(session.capturing ? 0 : 1) }
+                if mode.playing {
+                    WhatsNewBar(session: session).opacity(session.capturing ? 0 : 1)
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { barFrame = $0; frames = [barFrame, bandFrame] }
+                }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if mode.playing { WhatsNewReactionRow(session: session).opacity(session.capturing ? 0 : 1) }
+                if mode.playing {
+                    WhatsNewReactionRow(session: session).opacity(session.capturing ? 0 : 1)
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { bandFrame = $0; frames = [barFrame, bandFrame] }
+                }
             }
+            .onChange(of: mode.playing) { _, playing in if !playing { barFrame = .zero; bandFrame = .zero; frames = [] } }
             .overlay {
                 if mode.finished {
                     ZStack {
                         Color.black.opacity(0.25).ignoresSafeArea().onTapGesture { session.dismiss() }
-                        WhatsNewFinishCard(session: session) { sendingShown = true }
+                        WhatsNewFinishCard(session: session, openSending: { sendingShown = true }, keepGoing: { mode.keepGoing() })
                     }
                     .transition(.opacity)
                 }
@@ -244,7 +277,7 @@ struct WhatsNewChrome: ViewModifier {
                 // the pill: under the controls' row, clear of the iPad's window controls at the top left
                 if !mode.playing, !mode.finished, !quiet, !mode.due.isEmpty {
                     WhatsNewPill(count: mode.due.count) { mode.play(mode.due) }
-                        .padding(.top, 60)
+                        .padding(.top, 68)
                         .transition(.opacity)
                 }
             }

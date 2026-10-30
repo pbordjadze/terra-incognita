@@ -56,8 +56,10 @@ final class WhatsNewSession {
     private(set) var roundID = ""
     @ObservationIgnored private var began = Date()
     @ObservationIgnored private var appeared = Date()
-    /// What this round is: every due piece, or one chosen from the list.
+    /// What this round is: a few of the due pieces, or one chosen from the list.
     private(set) var single = false
+    /// Due pieces not in this round (a round is a few at a time): the card offers to keep going.
+    var waiting = 0
 
     init(store: WhatsNewStore) {
         self.store = store
@@ -182,9 +184,6 @@ final class WhatsNewSession {
                 screenshot = url
                 lastPicture = image
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                let shown = lastPicture
-                try? await Task.sleep(for: .seconds(2.5))
-                if lastPicture == shown { lastPicture = nil }
             } else {
                 notice = "The picture could not be saved."
             }

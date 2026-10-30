@@ -38,7 +38,7 @@ final class WhatsNewTests: XCTestCase {
         XCTAssertTrue(bar.waitForExistence(timeout: 60), "Launched into the round, the first piece's bar is over the globe")
         XCTAssertTrue(progress(in: app).hasPrefix("1 of "), "The bar counts from one: \(progress(in: app))")
         let total = Int(progress(in: app).split(separator: " ").last ?? "") ?? 0
-        XCTAssertGreaterThanOrEqual(total, 5, "The seed queue has the living globe, the quiet globe and the rebuilt experiences")
+        XCTAssertEqual(total, 5, "A round is five pieces at a time (the twelve seeded wait their turn)")
         XCTAssertTrue(app.buttons["react_wow"].firstMatch.waitForExistence(timeout: 10), "The taps are under the piece")
         XCTAssertFalse(app.buttons["workbenchButton"].firstMatch.isHittable, "The playground's own controls stand back while a piece plays")
         Thread.sleep(forTimeInterval: 2.5)
@@ -93,12 +93,13 @@ final class WhatsNewTests: XCTestCase {
         let finish = app.otherElements["whatsNewFinish"].firstMatch
         XCTAssertTrue(finish.waitForExistence(timeout: 20), "After the last piece, the card")
         let tally = app.staticTexts["whatsNewTally"].firstMatch
-        XCTAssertTrue(tally.label.contains("skipped"), "The card counts the round: \(tally.label)")
+        XCTAssertTrue(tally.label.contains("nice") && tally.label.contains("waiting"), "The card says what was said and what waits: \(tally.label)")
+        XCTAssertTrue(app.buttons["whatsNewKeepGoing"].firstMatch.exists, "More pieces wait: the card offers to keep going")
         XCTAssertTrue(app.buttons["whatsNewSetUp"].firstMatch.exists || app.buttons["whatsNewSend"].firstMatch.exists, "The card offers the way to the company")
         attach("24-finish", in: app)
         app.buttons["whatsNewDone"].firstMatch.tap()
         XCTAssertTrue(finish.waitForNonExistence(timeout: 10))
-        XCTAssertFalse(app.buttons["whatsNewPill"].firstMatch.exists, "Everything answered: no pill")
+        XCTAssertTrue(app.buttons["whatsNewPill"].firstMatch.waitForExistence(timeout: 10), "Pieces still wait: the pill is back with their count")
 
         // the plain globe again, nothing alive, and the way back in the workbench
         openWorkbench(in: app)

@@ -4,7 +4,7 @@
       "id": "living-globe",
       "title": "The living globe",
       "what": "Every experience's doorway is on the one globe at once, alive: a glint from afar, itself closer. Touch one and it starts where you are.",
-      "ask": "Can you tell what is here to touch, and what each will be?",
+      "ask": "Judge the doorways: can you tell what is here to touch, and what each will be?",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -12,7 +12,8 @@
           "lon": 33,
           "lat": 30,
           "zoom": 2
-        }
+        },
+        "doorways": true
       },
       "row": 175
     },
@@ -20,7 +21,7 @@
       "id": "wikipedia-words",
       "title": "Wikipedia's words",
       "what": "The W switch, on: every paragraph the atlas wrote gives way to Wikipedia's own first sentence and a link. Here, for a chosen country.",
-      "ask": "Wikipedia's words, or the atlas's own?",
+      "ask": "Judge Wikipedia's words against the atlas's own.",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -29,8 +30,9 @@
         "camera": {
           "lon": 43.5,
           "lat": 42.2,
-          "zoom": 3.5
-        }
+          "zoom": 5
+        },
+        "clouds": false
       },
       "row": 177
     },
@@ -38,13 +40,15 @@
       "id": "vine",
       "title": "The vine's long walk",
       "what": "One vine, eight thousand years long, from a qvevri in Georgia across the world as the years play.",
-      "ask": "Does it read as a plant from afar, and as a journey close in?",
+      "ask": "Judge whether it reads as a plant from afar, and as a journey close in.",
       "since": "2026-10-29",
       "version": "1",
       "start": {
         "run": [
           "vine"
-        ]
+        ],
+        "date": -2500,
+        "playing": true
       },
       "row": 176
     },
@@ -52,7 +56,7 @@
       "id": "quiet-globe",
       "title": "The quiet globe",
       "what": "Three rules at once: almost no names, clouds that clear where you look, nothing at the foot until you choose a country.",
-      "ask": "Quieter, or just emptier?",
+      "ask": "Judge it against today's look: quieter, or just emptier?",
       "since": "2026-10-29",
       "version": "1",
       "start": {
@@ -73,7 +77,7 @@
       "id": "night",
       "title": "The Earth at night",
       "what": "The ground dark, with the lights of its cities and roads as satellites see them; the clouds a thin veil, the sea still.",
-      "ask": "Would you keep this as a look you can switch to?",
+      "ask": "Judge whether this is a look you would switch to.",
       "since": "2026-10-29",
       "version": "1",
       "start": {
