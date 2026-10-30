@@ -1,0 +1,28 @@
+kells-forest: 10 plates, 18.2 MB
+ffern: 10 plates, 10.0 MB
+kells-night: 9 plates, 15.6 MB
+kells-chalk: 10 plates, 11.3 MB
+sampler: 10 plates, 24.6 MB
+Atlas: 5 looks, 79.6 MB
+Globe: 242 countries, 74 seas, 215 capitals, 18.6 MB
+App/TerraIncognita/Wikipedia/Wikipedia.json: 270 articles, fetched 2026-10-29
+Prototypes/fires-across-the-sea/wikipedia.json: 3 articles, fetched 2026-10-29
+Prototypes/gathering-of-water/wikipedia.json: 12 articles, fetched 2026-10-29
+Prototypes/lead-line/wikipedia.json: 3 articles, fetched 2026-10-29
+Prototypes/low-sea/wikipedia.json: 3 articles, fetched 2026-10-29
+Prototypes/monsoon-sails/wikipedia.json: 3 articles, fetched 2026-10-29
+Prototypes/sea-of-whales/wikipedia.json: 3 articles, fetched 2026-10-29
+Prototypes/vine/wikipedia.json: 4 articles, fetched 2026-10-29
+wikipedia: ok
+WARN  Prototypes/lead-line/stations.js:2: mentions https://creativecommons.org/licenses/by/3.0/: cite a link in SOURCES.md or as a terra.panel source's url (it is never loaded)
+WARN  Prototypes/vine/main.js:99: refers to "-big.png", which is not in the pack
+Checked 10 prototypes and sources.json: 0 errors, 2 warnings.
+Ran 74 tests in 0.662s
+
+OK (skipped=1)
+ok   App/TerraIncognita/Clouds/Clouds.metal (cloudsNoiseTile, cloudsFragment)
+ok   App/TerraIncognita/Globe/Globe.metal (globe_fragment)
+ok   App/TerraIncognita/Ocean/Ocean.metal (oceanFragment)
+Ran 13 tests in 5.805s
+
+OK

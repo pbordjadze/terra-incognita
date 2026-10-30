@@ -1,0 +1,45 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "77AA4492-C787-4EEE-A772-05D4B3E9ECCD",
+        "deviceName" : "iPhone 17 Pro",
+        "modelName" : "iPhone 17 Pro",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 19,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "TerraIncognita · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1793326367.706,
+  "passedTests" : 19,
+  "result" : "Passed",
+  "skippedTests" : 0,
+  "startTime" : 1793323185.068,
+  "statistics" : [
+    {
+      "subtitle" : "20 test runs",
+      "title" : "1 configuration ran with test repetitions"
+    }
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - TerraIncognita",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 19
+}

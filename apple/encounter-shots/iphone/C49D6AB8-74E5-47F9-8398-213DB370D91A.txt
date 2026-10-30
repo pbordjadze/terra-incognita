@@ -1,0 +1,20 @@
+Application, 0x106761180, pid: 51242, label: 'Terra Incognita' <App element pid: 51242>
+  Window (Main), 0x1067608c0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 51242, elementOrHash.elementID: 4338960384.3>
+    Other, 0x106761400, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 51242, elementOrHash.elementID: 4388749824.4>
+      Other, 0x106762bc0, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 51242, elementOrHash.elementID: 4389486592.5>
+        Other, 0x106761b80, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 51242, elementOrHash.elementID: 4338959360.6>
+          Other, 0x106760a00, {{0.0, 0.0}, {402.0, 874.0}} <AX element pid: 51242, elementOrHash.elementID: 4340470592.7>
+            Image, 0x106762800, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 51242, elementOrHash.elementID: 4338892800.8>
+              Image, 0x106760b40, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 51242, elementOrHash.elementID: 4424696240.15>
+            StaticText, 0x1067612c0, {{24.0, 716.7}, {256.0, 55.3}}, identifier: 'globeFootCaption', label: 'THE CAMEL FAMILY, 31 million years ago' <AX element pid: 51242, elementOrHash.elementID: 4387676032.192>
+              StaticText, 0x106762a80, {{24.0, 716.7}, {152.0, 15.0}}, label: 'THE CAMEL FAMILY' <AX element pid: 51242, elementOrHash.elementID: 4387674688.197>
+              StaticText, 0x106760780, {{24.0, 737.7}, {256.0, 34.3}}, label: '31 million years ago' <AX element pid: 51242, elementOrHash.elementID: 4387675136.198>
+            Button, 0x106763480, {{24.0, 782.0}, {44.0, 44.0}}, identifier: 'globeDatePlay', label: 'Play' <AX element pid: 51242, elementOrHash.elementID: 4387676480.193>
+            Other, 0x106761040, {{74.0, 782.0}, {304.0, 44.0}}, identifier: 'globeDate', label: 'Date', value: 31 million years ago <AX element pid: 51242, elementOrHash.elementID: 4387677376.194>
+            Other, 0x106760f00, {{35.7, 70.0}, {116.3, 44.0}}, label: 'Active prototype: The herds' <AX element pid: 51242, elementOrHash.elementID: 4387670656.195>
+              StaticText, 0x106761f40, {{35.7, 73.0}, {28.0, 38.0}}, identifier: 'activePrototype', label: 'The herds' <AX element pid: 51242, elementOrHash.elementID: 4387669312.199>
+              Button, 0x106762940, {{69.7, 70.0}, {32.3, 44.0}}, identifier: 'openActivePrototype', label: 'Open' <AX element pid: 51242, elementOrHash.elementID: 4387677824.200>
+              Button, 0x106761cc0, {{108.0, 70.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'Back to the plain globe' <AX element pid: 51242, elementOrHash.elementID: 4387669760.201>
+            Switch, 0x106760dc0, {{162.0, 70.0}, {68.0, 58.0}}, identifier: 'wikipediaButton', label: 'Wikipedia's words', value: Off <AX element pid: 51242, elementOrHash.elementID: 4340126976.10>
+            Switch, 0x1067630c0, {{240.0, 70.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 51242, elementOrHash.elementID: 4340062784.11>
+            Button, 0x106762580, {{318.0, 70.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 51242, elementOrHash.elementID: 4339931264.12>

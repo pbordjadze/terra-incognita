@@ -1,0 +1,5 @@
+Query chain:
+ →Find: Target Application 'com.pbordjadze.terraincognita'
+  ↪︎Find: Descendants matching type Button
+    ↪︎Find: Elements matching predicate '"herds.first-1" IN identifiers'
+      ↪︎Find: First Match

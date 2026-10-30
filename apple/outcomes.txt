@@ -1,0 +1,1 @@
+build=success tests_build=skipped encounter=success camelid_capture=skipped stage=skipped shots=skipped release=success
