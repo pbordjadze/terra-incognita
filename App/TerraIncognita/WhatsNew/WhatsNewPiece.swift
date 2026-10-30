@@ -76,6 +76,27 @@ nonisolated struct WhatsNewPiece: Codable, Equatable, Identifiable, Sendable {
 
     var versionOrDefault: String { version ?? "1" }
 
+    init(id: String, title: String, what: String? = nil, ask: String? = nil, since: String, version: String? = nil,
+         start: JSONValue? = nil, row: Int? = nil) {
+        self.id = id; self.title = title; self.what = what; self.ask = ask; self.since = since
+        self.version = version; self.start = start; self.row = row
+    }
+
+    /// A pack's entry carries no id or title of its own (the pack's are filled in by the host), and a
+    /// half-written one must never make a pack unreadable: missing fields decode empty, and `isSound`
+    /// says whether it can play.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decodeIfPresent(String.self, forKey: .id)) ?? ""
+        title = (try? c.decodeIfPresent(String.self, forKey: .title)) ?? ""
+        what = try? c.decodeIfPresent(String.self, forKey: .what)
+        ask = try? c.decodeIfPresent(String.self, forKey: .ask)
+        since = (try? c.decodeIfPresent(String.self, forKey: .since)) ?? ""
+        version = try? c.decodeIfPresent(String.self, forKey: .version)
+        start = try? c.decodeIfPresent(JSONValue.self, forKey: .start)
+        row = try? c.decodeIfPresent(Int.self, forKey: .row)
+    }
+
     /// Valid enough to play: an id, a title and a day written YYYY-MM-DD.
     var isSound: Bool {
         !id.isEmpty && id.count <= 60 && !title.isEmpty && Self.isDay(since)

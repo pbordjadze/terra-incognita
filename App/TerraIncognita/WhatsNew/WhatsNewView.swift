@@ -18,7 +18,7 @@ struct WhatsNewPill: View {
                 Image(systemName: "sparkles").font(.system(size: 14, weight: .semibold))
                 Text(count == 1 ? "1 new thing" : "\(count) new things")
                     .font(.subheadline.weight(.semibold))
-                Text("Show me").font(.subheadline).foregroundStyle(.secondary)
+                Text("Show me").font(.subheadline).foregroundStyle(WhatsNewStyle.faint)
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 44)
@@ -26,16 +26,33 @@ struct WhatsNewPill: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(WhatsNewStyle.gold)
-        .glassEffect(.regular, in: Capsule())
+        .whatsNewPaper(22)
+        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
         .accessibilityLabel(count == 1 ? Text("What's new: 1 new thing. Show me") : Text("What's new: \(count) new things. Show me"))
         .accessibilityIdentifier("whatsNewPill")
     }
 }
 
 enum WhatsNewStyle {
-    /// The atlas's gold, deep enough to read on glass.
-    static let gold = Color(red: 0.62, green: 0.47, blue: 0.16)
+    /// The atlas's gold as an ink: deep enough to read on the paper (about 6:1).
+    static let gold = Color(red: 0.45, green: 0.33, blue: 0.08)
     static let recording = Color(red: 0.80, green: 0.18, blue: 0.14)
+    /// The ground the chrome sits on: the caption's paper, a little translucent, the same over clouds,
+    /// sea or night (glass takes the scheme and the ground behind it, and came out dark over the sky).
+    static let paper = Color(red: 0.97, green: 0.95, blue: 0.90).opacity(0.94)
+    static let ink = Color(red: 0.16, green: 0.13, blue: 0.09)
+    static let faint = Color(red: 0.16, green: 0.13, blue: 0.09).opacity(0.62)
+    static let rule = Color(red: 0.16, green: 0.13, blue: 0.09).opacity(0.14)
+}
+
+extension View {
+    /// The mode's ground: paper, rounded, a hairline.
+    func whatsNewPaper(_ radius: CGFloat) -> some View {
+        background(WhatsNewStyle.paper, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(WhatsNewStyle.rule, lineWidth: 0.5))
+            .foregroundStyle(WhatsNewStyle.ink)
+            .environment(\.colorScheme, .light)
+    }
 }
 
 /// Over a playing piece: where we are, what it is and what to look at, the way back, Open and Leave.
@@ -67,14 +84,14 @@ struct WhatsNewBar: View {
                     if let line = piece.what ?? piece.ask {
                         Text(line)
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(sizeClass == .compact ? 2 : 3)
+                            .foregroundStyle(WhatsNewStyle.faint)
+                            .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("whatsNewWhat")
                     }
                     if piece.what != nil, let ask = piece.ask {
                         Text(ask)
-                            .font(.footnote.italic())
+                            .font(.footnote.weight(.medium).italic())
                             .foregroundStyle(WhatsNewStyle.gold)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
@@ -97,8 +114,8 @@ struct WhatsNewBar: View {
             }
             .padding(.leading, 4)
             .padding(.trailing, 4)
-            .foregroundStyle(.primary)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22))
+            .whatsNewPaper(22)
+            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
             .frame(maxWidth: 640)
             .padding(.horizontal, 12)
             .padding(.top, 6)
@@ -129,24 +146,26 @@ struct WhatsNewReactionRow: View {
                         .contentShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .buttonStyle(.plain)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+                    .whatsNewPaper(20)
                     .accessibilityLabel(reaction.label)
                     .accessibilityIdentifier("react_\(reaction.rawValue)")
                 }
                 cameraButton
             }
-            HStack(spacing: 28) {
+            HStack(spacing: 14) {
                 Button { session.react(.skip) } label: {
-                    Text("Skip").font(.footnote.weight(.medium)).padding(.horizontal, 10).frame(minHeight: 32)
+                    Text("Skip").font(.footnote.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 36).contentShape(Capsule())
                 }
+                .whatsNewPaper(18)
                 .accessibilityIdentifier("react_skip")
                 Button { session.react(.broken) } label: {
-                    Text("Didn't work").font(.footnote.weight(.medium)).padding(.horizontal, 10).frame(minHeight: 32)
+                    Text("Didn't work").font(.footnote.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 36).contentShape(Capsule())
                 }
+                .whatsNewPaper(18)
                 .accessibilityIdentifier("react_broken")
             }
-            .foregroundStyle(.secondary)
             .buttonStyle(.plain)
+            .padding(.top, 2)
             if let notice = session.notice {
                 Text(notice).font(.footnote).foregroundStyle(WhatsNewStyle.recording).multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
@@ -155,7 +174,7 @@ struct WhatsNewReactionRow: View {
             }
         }
         .padding(.top, 8)
-        .padding(.bottom, 4)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity)
         .disabled(session.changing)
         .opacity(session.changing ? 0.5 : 1)
@@ -192,8 +211,8 @@ struct WhatsNewReactionRow: View {
             .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .foregroundStyle(session.recorder.recording ? WhatsNewStyle.recording : .primary)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .foregroundStyle(session.recorder.recording ? WhatsNewStyle.recording : WhatsNewStyle.ink)
+        .whatsNewPaper(20)
         .accessibilityLabel(session.recorder.recording ? Text("Stop recording") : Text("Record a voice note"))
         .accessibilityIdentifier("whatsNewMic")
     }
@@ -208,7 +227,7 @@ struct WhatsNewReactionRow: View {
             .contentShape(RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+        .whatsNewPaper(20)
         .disabled(session.capturing)
         .accessibilityLabel("Take a picture of the screen")
         .accessibilityIdentifier("whatsNewCamera")
@@ -270,7 +289,8 @@ struct WhatsNewFinishCard: View {
         }
         .padding(22)
         .frame(maxWidth: 380)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26))
+        .whatsNewPaper(26)
+        .shadow(color: .black.opacity(0.18), radius: 18, y: 6)
         .padding(24)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("whatsNewFinish")

@@ -61,7 +61,8 @@ final class WhatsNewTests: XCTestCase {
 
         // a voice note: tapped on, tapped off (the simulator may have no microphone; the round goes on either way)
         app.buttons["whatsNewMic"].firstMatch.tap()
-        app.tap()
+        // (an inert touch, so the system's microphone sheet, if it came, is answered by the monitor)
+        app.staticTexts["whatsNewTitle"].firstMatch.tap()
         Thread.sleep(forTimeInterval: 1.5)
         attach("23-recording", in: app)
         let mic = app.buttons["whatsNewMic"].firstMatch
@@ -74,15 +75,21 @@ final class WhatsNewTests: XCTestCase {
         waitForProgress("2 of", in: app, "Answering again moves on")
 
         // skip through to the end (the taps wait while the next piece is put in place)
-        for _ in 0..<(total + 2) {
-            if app.otherElements["whatsNewFinish"].firstMatch.exists { break }
+        var at = 2
+        while at < total {
             let skip = app.buttons["react_skip"].firstMatch
-            guard skip.waitForExistence(timeout: 15) else { break }
+            XCTAssertTrue(skip.waitForExistence(timeout: 15), "Skip is there under piece \(at)")
             let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: skip)
             _ = XCTWaiter().wait(for: [ready], timeout: 15)
             skip.tap()
-            Thread.sleep(forTimeInterval: 1.0)
+            at += 1
+            waitForProgress("\(at) of", in: app, "Skip moves on to piece \(at)")
+            if at == 3 { Thread.sleep(forTimeInterval: 2); attach("23b-third-piece", in: app) }
         }
+        let last = app.buttons["react_skip"].firstMatch
+        let lastReady = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: last)
+        _ = XCTWaiter().wait(for: [lastReady], timeout: 15)
+        last.tap()
         let finish = app.otherElements["whatsNewFinish"].firstMatch
         XCTAssertTrue(finish.waitForExistence(timeout: 20), "After the last piece, the card")
         let tally = app.staticTexts["whatsNewTally"].firstMatch
