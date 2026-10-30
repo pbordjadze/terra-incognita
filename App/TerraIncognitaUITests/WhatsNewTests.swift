@@ -135,6 +135,38 @@ final class WhatsNewTests: XCTestCase {
         assertLive(Self.plainGlobeLive, in: app, "Leaving a piece leaves nothing alive")
     }
 
+    /// A pack ended within a second of starting, as a fast skipper ends one: nothing of it stays alive.
+    /// (The round test found the Amazon's stage alive after such a skip, its script already gone.)
+    @MainActor func testEndingAPackAsItStartsLeavesNothing() {
+        endAmazon(after: 0.8)
+    }
+
+    /// The same pack ended once it has settled: the control.
+    @MainActor func testEndingAPackLaterLeavesNothing() {
+        endAmazon(after: 12)
+    }
+
+    @MainActor private func endAmazon(after seconds: Double) {
+        let app = XCUIApplication()
+        app.launchArguments = ["-playground-reset", "-whatsnew-reset", "-prototype", "gathering-of-water-alive"]
+        app.launch()
+        defer { app.terminate() }
+        let end = app.buttons["endActivePrototype"].firstMatch
+        XCTAssertTrue(end.waitForExistence(timeout: 60), "The Amazon starts from the launch argument")
+        Thread.sleep(forTimeInterval: seconds)
+        end.tap()
+        XCTAssertTrue(end.waitForNonExistence(timeout: 10))
+        openWorkbench(in: app)
+        let live = app.staticTexts["playgroundLive"].firstMatch
+        revealInWorkbench(live, in: app)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", Self.plainGlobeLive), object: live)
+        if XCTWaiter().wait(for: [settled], timeout: 45) != .completed {
+            let detail = app.staticTexts["playgroundLiveDetail"].firstMatch
+            attach("30-live-after-\(Int(seconds))s", in: app)
+            XCTFail("Ended after \(seconds) s, the plain globe keeps only itself alive: \(live.label) (\(detail.exists ? detail.label : "no detail"))")
+        }
+    }
+
     @MainActor func testThePillOnLaunch() {
         let app = XCUIApplication()
         app.launchArguments = ["-playground-reset", "-whatsnew-reset"]
