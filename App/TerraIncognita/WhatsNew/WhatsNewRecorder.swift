@@ -7,7 +7,7 @@ import UIKit
 /// A voice note: tap to talk, tap to stop; AAC in an .m4a beside the answer. The microphone is asked
 /// for the first time it is used, by the system's own sheet.
 @Observable
-final class WhatsNewRecorder: NSObject, AVAudioRecorderDelegate {
+final class WhatsNewRecorder {
     private(set) var recording = false
     private(set) var seconds = 0.0
     /// Why it couldn't record, for the reader (the microphone refused, say).
@@ -31,7 +31,6 @@ final class WhatsNewRecorder: NSObject, AVAudioRecorderDelegate {
             let settings: [String: Any] = [AVFormatIDKey: Int(kAudioFormatMPEG4AAC), AVSampleRateKey: 22_050,
                                            AVNumberOfChannelsKey: 1, AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue]
             let recorder = try AVAudioRecorder(url: url, settings: settings)
-            recorder.delegate = self
             guard recorder.record() else { throw NSError(domain: "WhatsNew", code: 1) }
             self.recorder = recorder
             file = url
@@ -76,12 +75,6 @@ final class WhatsNewRecorder: NSObject, AVAudioRecorderDelegate {
         if let url = stop() { try? FileManager.default.removeItem(at: url) }
     }
 
-    nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        Task { @MainActor in
-            self.problem = "Recording failed\(error.map { ": \($0.localizedDescription)" } ?? "")."
-            _ = self.stop()
-        }
-    }
 }
 
 /// A picture of the screen as the reader sees it, with the module's own chrome left out, written as
