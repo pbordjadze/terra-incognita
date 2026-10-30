@@ -302,3 +302,21 @@ line is fainter, so no black outline at the deepest zoom.
 
 Overruled: the night that fades to twilight across the whole view (the preview's paper is the
 stand-in; on the app the satellite ground lies outside the pool); the battle's grid (counters).
+
+## Where it stands (October 30, 2026, 20:40 ET)
+
+Twelve rounds: three fresh eyes, then eight haters. Every hater's worst complaint was real, none a
+quibble, and they moved: from "the sprites are stamps at a lying scale" (round 5) to "the first sight
+is a legend" (8) to "the island shows before the column finds it" (9) to "the action is a thumbnail
+and the dawn has no light" (12). Each of those is answered above. What the eighth still holds against
+it, and is right about, is the depth of the art at the climax beside the camps: the animals and the
+horse are profile counters while the camps are a three-quarter view; the battle is formations meeting
+on a field, its motion (the sweep, the turn) only in time; the dawn is a palette and a wash, not a
+raking light. That is the next round of art, a day's work with the sheet, not a night's. The loop
+stops here so the build can reach the owner's phone tonight; it is not stopped because the hater was
+satisfied.
+
+What the stills can't judge and the phone will: the drag (the column under the finger along its way,
+tested in the preview and by the UI test), the globe coming close on its own for the crossing and the
+wade, the night thinning as the date runs, the dark over the channel opening as the column reaches
+the island's far shore, the fires breathing, the elephants swaying, the rain drifting.
