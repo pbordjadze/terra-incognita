@@ -28,5 +28,24 @@
     "breathes": true
   },
   "taps": true,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "what": "One vine, eight thousand years long, grows out of a buried qvevri in Georgia as the years play; touch any stem and light runs back to where it began.",
+    "ask": "Did you want to touch it before you knew what it was?",
+    "since": "2026-10-30",
+    "version": "1",
+    "row": 176,
+    "start": {
+      "run": [
+        "vine"
+      ],
+      "camera": {
+        "lon": 44.75,
+        "lat": 41.45,
+        "zoom": 8
+      },
+      "date": -6000,
+      "playing": true
+    }
+  }
 }
