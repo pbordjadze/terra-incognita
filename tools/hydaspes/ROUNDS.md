@@ -344,3 +344,12 @@ night: the night's rim fades onto the wide night, which is whole beneath it; the
 is gone) and the close night going in the first quarter of the thinning, while the wide night is
 still nearly whole, so two half-thinned nights never stack into a dark disc. Measured flat at every
 stage of the dawn in the preview; the app's run will say the same or not.
+
+## Round 14: the hairline (October 29, 2026, 22:10 ET)
+
+A third thing in the simulator's pictures, on the iPhone plainest: a hairline a shade darker running up
+and down from the pool of night's middle, through its soft edge only. Measured in the shot: one pixel,
+darker by a third where the night is thin, nothing where it is whole. The runtime's picture layer cut
+every picture into at least four tiles that overlap by a hair against gaps, and where a picture is
+translucent the overlap composites it twice. A picture within two degrees is one tile now (the night's
+pool is 0.64° across); a wider one keeps its tiles and their seams, which the contract now says.
