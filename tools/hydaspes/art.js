@@ -11,7 +11,7 @@
 
   // ---- palettes: the night of the storm, and the morning after ---------------------------------------
   const NIGHT = { plain: '#141827', plain2: '#181D2E', plain3: '#111526', hill: '#101422', hillRim: '#242A42',
-                  water: '#262220', water2: '#2E2A28', sheen: '#8E8C96', bank: '#0A0A12', foam: '#A6A4AE', wood: '#0E1620', wood2: '#172430',
+                  water: '#262220', water2: '#2E2A28', sheen: '#8E8C96', bank: '#1A1A26', foam: '#A6A4AE', wood: '#0E1620', wood2: '#172430',
                   kas: '#1F2436', sand: '#4C4A50', sand2: '#3A383E', edge: '#141827', moon: '#8E99B8' };
   const DAY = { plain: '#7A7E6E', plain2: '#878B78', plain3: '#6B6F60', hill: '#6E7266', hillRim: '#A8AB98',
                 water: '#4E3A2C', water2: '#5C4634', sheen: '#C8AE8E', bank: '#40322A', foam: '#E8DCC8', wood: '#3C4E3A', wood2: '#4A5E46',
@@ -153,14 +153,14 @@
       line(ctx, T.centre, P); ctx.lineWidth = width * 1.5; ctx.stroke();
     };
     bed(flood * 2.2, B.rgba(pal.water, 0.25));
-    bed(flood * 1.78, B.rgba(pal.bank, 0.5));         // the wet margin: mud the flood has just left, a little darker than the water
+    bed(flood * 1.78, B.rgba(pal.bank, 0.35));        // the wet margin: mud the flood has just left, a little darker than the water
     bed(flood * 1.6, pal.water);
     bed(flood * 0.7, pal.water2);
     // at the bend the flood spreads wide, round the island: a long stretch of the middle, tapered
     const bendPx = P(T.authored.bend), near = T.centre.map((c, i) => [i, P(c)]).filter(([, q]) => Math.hypot(q[0] - bendPx[0], q[1] - bendPx[1]) < px(5)).map(([i]) => i);
     if (near.length > 3) {
       const i0 = near[0], i1 = near[near.length - 1];
-      for (const [width, style] of [[2.0, B.rgba(pal.water, 0.3)], [1.75, B.rgba(pal.bank, 0.85)], [1.6, pal.water], [0.9, pal.water2]]) {
+      for (const [width, style] of [[2.0, B.rgba(pal.water, 0.3)], [1.75, B.rgba(pal.bank, 0.35)], [1.6, pal.water], [0.9, pal.water2]]) {
         for (let i = i0; i < i1; i++) {
           const t = (i - i0) / (i1 - i0), taper = Math.pow(Math.sin(t * Math.PI), 0.6);
           const [x, y] = P(T.centre[i]), [x2, y2] = P(T.centre[i + 1]);
@@ -212,7 +212,7 @@
     for (const wd of T.woods) trees(wavy(wd.c, 11), false);
     poly(ctx, head, P); ctx.fillStyle = pal.plain2; ctx.fill();
     trees(head, true);
-    poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.45); ctx.lineWidth = Math.max(1, px(0.05)); ctx.stroke();   // the water's edge, a little darker
+    poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.35); ctx.lineWidth = Math.max(1, px(0.04)); ctx.stroke();   // the water's edge, a little darker
     poly(ctx, isl, P); ctx.fillStyle = pal.sand; ctx.fill();
     ctx.save(); poly(ctx, isl, P); ctx.clip();                                                                        // a sandbar: mottled, scrub in patches
     for (const m of SCATTER.fine) if (insidePoly(m, isl)) { const [x, y] = P(m); ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.sand2 : pal.plain2, 0.25 + m[5] * 0.3); ctx.beginPath(); ctx.ellipse(x, y, Math.max(1, px(0.02 + m[2] * 0.05)), Math.max(1, px(0.012 + m[3] * 0.03)), m[5] * TAU, 0, TAU); ctx.fill(); }

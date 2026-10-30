@@ -280,3 +280,25 @@ Overruled: one projection for every counter (the camps are the three-quarter vie
 the boats are seen from above because a boat on a map is; the elephants and horse in profile because
 that is how they are told apart at a counter's size; a redraw of every animal to the three-quarter
 view is the next round of art, not this night's).
+
+### Round 12 — the eighth hater
+
+It gave the opening honest atlas craft and the dusk camp the best still; worst first: the action a
+thumbnail in a void (the authored camera not close enough), the dawn grey mud without a sun, the water
+not reading as water and the hidden channel a slate puzzle-piece with a crisp jagged rim, the headland
+a triangle, the elephants toys with three viewpoints in one line and no howdahs, the fires' streaks on
+the water read as rain parked over the river, the night pool a spotlight on paper, the column nearly
+invisible, the battle a diagram. Worst: the thumbnail in a void and the dawn without light. Real.
+
+Taken: the globe leans deeper still for the crossing and the wade (a hundred and forty points a
+kilometre on the iPad), and the crossing's lean fires when the strip lands on the island's tick too (a
+tick's hour comes back a hair over itself: a floating-point edge, found by tracing). The island's
+clusters are larger. The dark over the channel is the island's own ground drawn out to the bank, a
+gradient from its sand to the plain's dark, its edges blurred: one ground, no puzzle-piece. The fires'
+light on the water is a soft glow, no streaks. The morning's ridges are warm-lit and the shadows
+under the counters stronger. The war elephants carry howdahs with a man in them and a mahout at the
+neck; no frontal elephant in the turning line. Spear tips glint in the night march. The river's bank
+line is fainter, so no black outline at the deepest zoom.
+
+Overruled: the night that fades to twilight across the whole view (the preview's paper is the
+stand-in; on the app the satellite ground lies outside the pool); the battle's grid (counters).
