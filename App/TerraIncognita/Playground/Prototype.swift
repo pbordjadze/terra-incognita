@@ -160,10 +160,11 @@ final class PrototypeStage {
     @ObservationIgnored private var playback: Task<Void, Never>?
     /// Flights dropped have been noted in the log (once each reason).
     @ObservationIgnored private var noted: Set<String> = []
-    private let live = LiveCount.Token(.stages)
+    private let live: LiveCount.Token
     static let spriteBudget = 64
 
     init(prototype: Prototype, playground: Playground, entry: StageEntry = .workbench, at camera: GlobeCamera? = nil) {
+        live = LiveCount.Token(.stages, label: prototype.id)
         self.prototype = prototype
         self.playground = playground
         self.entry = entry

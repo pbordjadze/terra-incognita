@@ -103,9 +103,17 @@ final class WhatsNewTests: XCTestCase {
         XCTAssertTrue(finish.waitForNonExistence(timeout: 10))
         XCTAssertTrue(app.buttons["whatsNewPill"].firstMatch.waitForExistence(timeout: 10), "Pieces still wait: the pill is back with their count")
 
-        // the plain globe again, nothing alive, and the way back in the workbench
+        // the plain globe again, nothing alive, and the way back in the workbench (a stage still alive is
+        // named by the Live line's detail; the picture shows it)
         openWorkbench(in: app)
-        assertLive(Self.plainGlobeLive, in: app, "After the round the plain globe keeps only itself alive")
+        let live = app.staticTexts["playgroundLive"].firstMatch
+        revealInWorkbench(live, in: app)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", Self.plainGlobeLive), object: live)
+        if XCTWaiter().wait(for: [settled], timeout: 60) != .completed {
+            let detail = app.staticTexts["playgroundLiveDetail"].firstMatch
+            attach("24b-live-after-round", in: app)
+            XCTFail("After the round the plain globe keeps only itself alive: \(live.label) (\(detail.exists ? detail.label : "no detail"))")
+        }
         let row = app.buttons["whatsNewRow"].firstMatch
         revealInWorkbench(row, in: app)
         XCTAssertTrue(row.exists, "The workbench has the way back")

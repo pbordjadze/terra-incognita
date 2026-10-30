@@ -57,6 +57,12 @@ struct WorkbenchView: View {
                     Text(LiveCount.shared.summary)
                         .font(.footnote.monospaced())
                         .accessibilityIdentifier("playgroundLive")
+                    if !LiveCount.shared.detail.isEmpty {
+                        Text(LiveCount.shared.detail)
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("playgroundLiveDetail")
+                    }
                     ForEach(Array(packs.log.suffix(8).enumerated()), id: \.offset) { _, line in
                         Text(line).font(.caption.monospaced()).foregroundStyle(.secondary)
                     }
