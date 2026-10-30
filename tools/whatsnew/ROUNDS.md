@@ -158,3 +158,12 @@ share of the globe's height the chrome takes, so the piece is the size its maker
 Say and Picture keep one width in every state; the picture's thumbnail says Retake; labels are 12
 points; the quiet pieces' hints say what to do ("Tap near a place: its name comes for a while").
 Meh's grey is a shade warmer.
+
+**Round 6 looked at** (both devices, run 224; then runs 225–227 on the leftover): the pictures are as
+meant: the card names each piece beside what was said, the phone frames the vine large, the band
+holds still. The round test's last check found a stage alive after the round, which the Live line
+now names (`alive: gathering-of-water-alive`; `LiveCount.Token` takes a label and the workbench shows
+the names). Ending the same pack early or late from its chip leaves nothing (two new checks), so the
+hold was the round's: the playground's chip is hidden while a piece plays, its Open button captured
+the front stage, and the hidden chip's removal kept the view and with it the stage. The capture is
+weak now.
