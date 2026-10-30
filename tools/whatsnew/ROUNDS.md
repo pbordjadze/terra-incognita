@@ -132,3 +132,11 @@ the piece's own words, and a pack's date strip is its instrument. The herds' zoo
 choice (its makers open close on one animal); the ground's blur there is the ground's, noted for
 them. The microphone permission is the system's; it is asked on the first Say, not before the round
 (a sheet before anything has been shown would be the homework).
+
+**Round 5 looked at** (both devices, run 222): the pictures are as meant on both (the hint one line,
+the band's words, the card "Nice · Skipped · Skipped · Skipped · Skipped / 7 more wait for next time /
+Share these 5"). The round test failed at its last check on both devices: a stage alive after the
+round. The last piece was a pack skipped within a second of starting; the task preparing its files
+held the stage until the preparing was done, seconds after the reader had left. The task holds it
+weakly now, so the Live counts are back the moment the round ends. Not a leak, but exactly what the
+Live rule is for: a fast skipper would have hit it.

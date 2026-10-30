@@ -434,13 +434,15 @@ final class Playground {
                          shelf: listing.shelf == "parked" ? .parked : .current,
                          made: .pack(listing.state, revision: revision, bundled: listing.bundled)) { stage in
             stage.loading = true
-            Task {
+            // (weak: a stage ended while its pack is still being prepared is released then, not when the
+            // preparing is done, so the Live counts are back the moment the reader leaves)
+            Task { [weak stage] in
                 do {
                     let pack = try await PackStore.shared.prepare(listing.id)
-                    stage.start(pack: pack)
+                    stage?.start(pack: pack)
                 } catch {
-                    stage.loading = false
-                    stage.fail(String(localized: "\(listing.title) could not open: \(error.localizedDescription)"))
+                    stage?.loading = false
+                    stage?.fail(String(localized: "\(listing.title) could not open: \(error.localizedDescription)"))
                 }
             }
         }
