@@ -251,19 +251,21 @@ struct WhatsNewChrome: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            // (under a lens, the experience on the globe has the screen: the bar and the band wait for it to close)
             .safeAreaInset(edge: .top, spacing: 0) {
-                if mode.playing {
+                if mode.playing, !quiet {
                     WhatsNewBar(session: session).opacity(session.capturing ? 0 : 1)
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { barFrame = $0; frames = [barFrame, bandFrame] }
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if mode.playing {
+                if mode.playing, !quiet {
                     WhatsNewReactionRow(session: session).opacity(session.capturing ? 0 : 1)
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { bandFrame = $0; frames = [barFrame, bandFrame] }
                 }
             }
             .onChange(of: mode.playing) { _, playing in if !playing { barFrame = .zero; bandFrame = .zero; frames = [] } }
+            .onChange(of: quiet) { _, quiet in if quiet { barFrame = .zero; bandFrame = .zero; frames = [] } }
             .overlay {
                 if mode.finished {
                     ZStack {

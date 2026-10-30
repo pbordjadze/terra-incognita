@@ -88,3 +88,11 @@ line. A round is five pieces; the pill counts all that wait. The list: one line 
 glyph or a dot. The picture stays in the band's camera button. The microphone's reason is one
 sentence. Not taken: the microphone prompt itself (the system's); the question's yes/no form is met
 by rewriting the questions rather than the taps.
+
+**The unbriefed QA pass** (qa-explore, release build, iPad, 8 minutes, told only that the build had
+something new to show; run 40987479322). It found the pill and the round on its own ("a guided
+tour"), read the bar and the band as meant, and reported two things: the first tap on the pill did
+nothing and the second opened the round (seen once, not reproduced here: the UI tests' first tap
+opens it every time; left as a watch item), and touching the camel's doorway from the living-globe
+piece opened the camel's lens over the bar and the band, each half hiding the other. The lens is an
+excursion: the bar and the band now step aside while one is open and come back when it closes.
