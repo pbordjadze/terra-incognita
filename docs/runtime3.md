@@ -146,7 +146,10 @@ terra.images.remove('leaf'); terra.images.clear()
 A picture in longitude and latitude (`bounds`: west, south, east, north; each pixel column the same
 span of longitude and each row the same span of latitude) drawn on the globe, curving with it, in
 step with the camera, under the geography and sprites. `fade` is the zoom range over which it fades
-in above `minZoom`. At most 8 pictures, each at most 4096 pixels a side.
+in above `minZoom`. At most 8 pictures, each at most 4096 pixels a side. The app draws a picture
+wider than two degrees in tiles that overlap by a hair, so where it is translucent a line a shade
+darker runs along each seam; a picture within two degrees is one tile and has none (since October 30,
+2026; before, every picture was at least four tiles, and a small translucent one showed a cross).
 
 ## Sprites: things that live and move on the globe (new in 3)
 

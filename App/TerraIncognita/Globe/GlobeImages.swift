@@ -99,14 +99,17 @@ final class GlobeImageLayer: UIView {
         version += 1
     }
 
-    /// A tile at most about two degrees across, so its straight edges stay on the curving globe.
+    /// A tile at most about two degrees across, so its straight edges stay on the curving globe; a
+    /// picture within two degrees is one tile (neighbouring tiles overlap by a hair against gaps, and
+    /// where a picture is translucent the overlap composites it twice: a line a shade darker, which a
+    /// small picture laid over the plain globe with a soft edge, as the night crossing's, showed).
     private func make(_ picture: Picture, order: Int) -> Placed {
         let host = CALayer()
         host.zPosition = CGFloat(order)
         layer.addSublayer(host)
         let span = (lon: picture.east - picture.west, lat: picture.north - picture.south)
-        let columns = min(48, max(2, Int((span.lon / 2).rounded(.up))))
-        let rows = min(48, max(2, Int((span.lat / 2).rounded(.up))))
+        let columns = min(48, max(1, Int((span.lon / 2).rounded(.up))))
+        let rows = min(48, max(1, Int((span.lat / 2).rounded(.up))))
         var corners: [SIMD3<Double>] = []
         for r in 0...rows {
             let lat = picture.north - span.lat * Double(r) / Double(rows)
