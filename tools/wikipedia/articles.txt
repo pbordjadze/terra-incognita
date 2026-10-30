@@ -18,6 +18,10 @@ Falkland Islands / Malvinas => Falkland Islands
 Heard I. and McDonald Islands => Heard Island and McDonald Islands
 Indian Ocean Territories => Australian Indian Ocean Territories
 South Georgia and the Islands => South Georgia and the South Sandwich Islands
+# Names Wikipedia keeps as disambiguation pages (What's new's first round found Georgia's)
+Georgia => Georgia (country)
+Saint-Martin => Collectivity of Saint Martin
+Vatican => Vatican City
 
 [pack:gathering-of-water]
 # The systems the foot names ("Toward the Amazon system"): main.js keys them by the system's name
