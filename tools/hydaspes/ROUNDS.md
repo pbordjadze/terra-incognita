@@ -366,3 +366,11 @@ from past half the limit, the whole Earth", written for a limit of 8): from past
 steps out eightfold. And VoiceOver's date read "326 BCE" all night: where a step would leave the
 label as it is, the strip speaks its position too. Not taken: the explorer could not pinch (Maestro
 has no pinch), so the close looks were seen by the strip's leans only.
+
+## Where it stands (October 29, 2026, 23:15 ET)
+
+Fifteen rounds. On the simulator the night crossing's test passes on the iPad (the camp, the column
+under the finger, the wade), the pack validates, and the branch's `[ipa]` build is up for the owner's
+phone (run 40994317828). What the phone will judge is above, under round 12's closing; what the next
+round of art owes is there too, with the headland's grove (a flat shape with a straight edge at the
+wade's zoom) added from the first real pictures.
