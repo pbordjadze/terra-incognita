@@ -31,7 +31,7 @@
   }
   /** The zoom at which a kilometre is `ppk` points across. */
   function zoomAtKm(ppk) { return Math.round(ppk * KM_PER_DEG / (R1 * D) * 100) / 100; }
-  var PPK = { pool: 1.6, valley: 7, mid: 22, close: 48, deepest: 60 };
+  var PPK = { pool: 1.6, valley: 7, mid: 22, close: 48, deepest: 90 };
   var Z = {};
   function scales() {
     Z.pool = zoomAtKm(PPK.pool); Z.valley = zoomAtKm(PPK.valley); Z.mid = zoomAtKm(PPK.mid); Z.close = zoomAtKm(PPK.close);
@@ -65,8 +65,8 @@
   function night(h) {
     // the wind and rain fall with the daylight (Arrian); the night thins over the next two hours
     if (h < HR.calm) return 1;
-    if (h > HR.calm + 2.2) return 0;
-    return 1 - (h - HR.calm) / 2.2;
+    if (h > HR.calm + 3.2) return 0;
+    return 1 - (h - HR.calm) / 3.2;
   }
   function ground(h) {
     var o = Math.round(night(h) * 50) / 50, first = nightShown < 0;

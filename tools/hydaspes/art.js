@@ -14,7 +14,7 @@
                   water: '#262220', water2: '#2E2A28', sheen: '#8E8C96', bank: '#0A0A12', foam: '#A6A4AE', wood: '#0E1620', wood2: '#172430',
                   kas: '#1F2436', sand: '#4C4A50', sand2: '#3A383E', edge: '#141827', moon: '#8E99B8' };
   const DAY = { plain: '#7A7E6E', plain2: '#878B78', plain3: '#6B6F60', hill: '#6E7266', hillRim: '#A8AB98',
-                water: '#4E3A2C', water2: '#5C4634', sheen: '#C8AE8E', bank: '#2E2824', foam: '#E8DCC8', wood: '#3C4E3A', wood2: '#4A5E46',
+                water: '#4E3A2C', water2: '#5C4634', sheen: '#C8AE8E', bank: '#40322A', foam: '#E8DCC8', wood: '#3C4E3A', wood2: '#4A5E46',
                 kas: '#66707E', sand: '#A69C88', sand2: '#8A8070', edge: '#6E7684', moon: '#F0C890' };
   const INK = '#15110C', FIRE = '#FFB347', FLAME = '#FFE08A', EMBER = '#E2552B', TENT = '#E8DCC2', TENT_SHADE = '#B9AC90';
   const SKIN = '#D9B48C', BRONZE = '#C9A24B', IRON = '#8A8D92', RED = '#9E2B25', HORSE = '#5A3D28', HORSE2 = '#8C6A48';
@@ -153,7 +153,7 @@
       line(ctx, T.centre, P); ctx.lineWidth = width * 1.5; ctx.stroke();
     };
     bed(flood * 2.2, B.rgba(pal.water, 0.25));
-    bed(flood * 1.78, B.rgba(pal.bank, 0.85));        // the wet margin: mud the flood has just left
+    bed(flood * 1.78, B.rgba(pal.bank, 0.5));         // the wet margin: mud the flood has just left, a little darker than the water
     bed(flood * 1.6, pal.water);
     bed(flood * 0.7, pal.water2);
     // at the bend the flood spreads wide, round the island: a long stretch of the middle, tapered
@@ -212,7 +212,7 @@
     for (const wd of T.woods) trees(wavy(wd.c, 11), false);
     poly(ctx, head, P); ctx.fillStyle = pal.plain2; ctx.fill();
     trees(head, true);
-    poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.9); ctx.lineWidth = Math.max(1, px(0.09)); ctx.stroke();   // the water's edge, dark
+    poly(ctx, isl, P); ctx.strokeStyle = B.rgba(pal.bank, 0.45); ctx.lineWidth = Math.max(1, px(0.05)); ctx.stroke();   // the water's edge, a little darker
     poly(ctx, isl, P); ctx.fillStyle = pal.sand; ctx.fill();
     ctx.save(); poly(ctx, isl, P); ctx.clip();                                                                        // a sandbar: mottled, scrub in patches
     for (const m of SCATTER.fine) if (insidePoly(m, isl)) { const [x, y] = P(m); ctx.fillStyle = B.rgba(m[4] < 0.5 ? pal.sand2 : pal.plain2, 0.25 + m[5] * 0.3); ctx.beginPath(); ctx.ellipse(x, y, Math.max(1, px(0.02 + m[2] * 0.05)), Math.max(1, px(0.012 + m[3] * 0.03)), m[5] * TAU, 0, TAU); ctx.fill(); }
@@ -250,7 +250,7 @@
       // (opaque almost to its edge: the wide picture's hole closes under its last few per cent, so nothing shows through between them)
       ellipse(box, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0.97, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; });
     } else {
-      ellipse(box, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.72, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; });
+      ellipse(box, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.62, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; });
       mg.globalCompositeOperation = 'destination-out';
       ellipse(T.close, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0.93, 'rgba(0,0,0,1)'); g.addColorStop(0.97, 'rgba(0,0,0,0)'); return g; });
     }
@@ -391,9 +391,18 @@
   }
   function raft(ctx, x, y, s, t) {
     const bob = Math.sin(t * TAU + x) * s * 0.03;
-    for (let i = 0; i < 4; i++) B.inked(ctx, (c) => c.ellipse(x - s * 0.3 + i * s * 0.2, y + bob, s * 0.12, s * 0.07, 0, 0, TAU), '#A88C5E', INK, s * 0.03);
-    horse(ctx, x - s * 0.1, y - s * 0.03 + bob, s * 0.32, 0, false, HORSE);
-    horse(ctx, x + s * 0.18, y - s * 0.01 + bob, s * 0.3, 0.2, false, HORSE2);
+    // the hides: rounded bags in a row, each stitched, lashed to two poles
+    for (let i = 0; i < 5; i++) {
+      B.inked(ctx, (c) => c.ellipse(x - s * 0.36 + i * s * 0.18, y + bob, s * 0.1, s * 0.075, 0, 0, TAU), '#B8976A', INK, s * 0.03);
+      ctx.strokeStyle = B.rgba(INK, 0.5); ctx.lineWidth = s * 0.012; ctx.beginPath(); ctx.moveTo(x - s * 0.4 + i * s * 0.18, y + bob - s * 0.02); ctx.lineTo(x - s * 0.32 + i * s * 0.18, y + bob + s * 0.03); ctx.stroke();
+    }
+    ctx.strokeStyle = '#5A4330'; ctx.lineWidth = s * 0.025;
+    for (const dy of [-0.06, 0.06]) { ctx.beginPath(); ctx.moveTo(x - s * 0.46, y + bob + s * dy); ctx.lineTo(x + s * 0.4, y + bob + s * dy); ctx.stroke(); }
+    // two paddlers at the ends, a horse standing between
+    soldier(ctx, x - s * 0.44, y + bob + s * 0.04, s * 0.22, 0, { shield: 'none', tunic: RED });
+    soldier(ctx, x + s * 0.42, y + bob + s * 0.04, s * 0.22, 0, { shield: 'none', tunic: TENT_SHADE });
+    horse(ctx, x, y - s * 0.02 + bob, s * 0.3, 0, false, HORSE);
+    ctx.strokeStyle = INK; ctx.lineWidth = s * 0.02; ctx.beginPath(); ctx.moveTo(x - s * 0.5, y + bob); ctx.lineTo(x - s * 0.6, y + bob + s * 0.14 + Math.sin(t * TAU) * s * 0.04); ctx.stroke();   // a paddle
   }
   /** Water with ripples, `w` by `h` at (x, y) its top left, by `t`. */
   function water(ctx, x, y, w, h, t, color) {
@@ -474,8 +483,9 @@
       const mid = isl.reduce((acc, c) => [acc[0] + c[0] / isl.length, acc[1] + c[1] / isl.length], [0, 0]);
       const dx = A.landing[0] - mid[0], dy = A.landing[1] - mid[1];
       const shape = isl.map((c) => [c[0] + dx * 1.05, c[1] + dy * 1.05]).concat(isl.slice().reverse().map((c) => [c[0] + dx * 0.25, c[1] + dy * 0.25]));
-      ctx.save(); ctx.shadowColor = NIGHT.plain; ctx.shadowBlur = 0.12 / kpp;
-      poly(ctx, shape, P); ctx.fillStyle = NIGHT.plain; ctx.fill(); ctx.fill(); ctx.restore();
+      const dusk = B.mix(NIGHT.plain, DAY.plain, 0.22);
+      ctx.save(); ctx.shadowColor = dusk; ctx.shadowBlur = 0.12 / kpp;
+      poly(ctx, shape, P); ctx.fillStyle = dusk; ctx.fill(); ctx.fill(); ctx.restore();
       // a few of the island's trees over it, so the join reads as the same ground
       ctx.save(); poly(ctx, shape, P); ctx.clip();
       for (const m of SCATTER.trees) if (insidePoly(m, shape) && m[5] < 0.2) { const [x, y] = P(m), rr = Math.max(1.2, 0.03 / kpp); ctx.fillStyle = B.rgba(NIGHT.wood2, 0.7); ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.fill(); }
@@ -505,7 +515,7 @@
     for (let k = 0; k < 5; k++) {
       const x = w * (0.1 + k * 0.2) + (r() - 0.5) * 8, raise = k === 2 && i >= 2 && i <= 5 ? 1 : 0, size = h * (0.6 + r() * 0.2);
       const facing = k === 3 ? 0 : -1;                          // one turned to the viewer; the rest west, towards the far camp
-      elephant(ctx, x, h * 0.95 + Math.sin(t * TAU + k) * 0.4, size, t + k * 0.17 + r(), facing, false);
+      elephant(ctx, x, h * 0.95 + Math.sin(t * TAU + k) * 0.4, size, t + k * 0.17 + r(), facing, k === 1 || k === 4);
       if (raise) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.translate(-x, 0); ctx.strokeStyle = GREY; ctx.lineWidth = h * 0.06; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + h * 0.34, h * 0.55); ctx.quadraticCurveTo(x + h * 0.5, h * 0.25, x + h * 0.42, h * 0.08); ctx.stroke(); ctx.restore(); }
     }
   } });
@@ -747,7 +757,7 @@
     // longer threads in them
     ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(w / 2, h / 2);
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-    g.addColorStop(0, 'rgba(130,140,170,0.14)'); g.addColorStop(0.7, 'rgba(130,140,170,0.06)'); g.addColorStop(1, 'rgba(130,140,170,0)');
+    g.addColorStop(0, 'rgba(130,140,170,0.07)'); g.addColorStop(0.7, 'rgba(130,140,170,0.03)'); g.addColorStop(1, 'rgba(130,140,170,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, TAU); ctx.fill(); ctx.restore();
     const falloff = (x, y) => Math.pow(Math.max(0, 1 - Math.hypot((x - w / 2 + (y - h / 2) * 0.3) / (w / 2), (y - h / 2) / (h / 2))), 1.6);
     for (let k = 0; k < 7; k++) {

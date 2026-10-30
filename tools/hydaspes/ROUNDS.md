@@ -257,3 +257,26 @@ are fires first.
 Overruled: the battle's scale (counters); the island surprise judged from a still at the landed
 moment, when the dark over the channel has just thinned (the surprise is in time: the column arrives
 on what reads as a headland, and the water opens as it does).
+
+### Round 11 — the seventh hater
+
+It gave the dusk camps the best frame on the globe and the shield drifting off downstream the one
+detail that shows somebody thought like a player; worst first: the island and the waders, the very
+moment, drawn worse than the camps (a teal polygon with a hard ragged edge, coins for men), the dawn
+mud, three projections in one army (three-quarter tents, plan boats, side elephants, top-down files),
+the day ground flat with a black-outlined river, the rain dashes in an oval, the rafts beige blobs,
+the pool's rim crisp in one shot and soft in another, the elephants five copies. Worst: the island and
+the waders. Real.
+
+Taken: the globe leans deeper on the iPad for the crossing and the wade (ninety points a kilometre;
+the phone was at the globe's limit already), so the men in the channel are bodies, not coins; the
+dawn thins more slowly, so the dark over the channel holds while the column is on the island, and
+that dark is a dusk tone between the two grounds, so it sits in the half-light; the island's edge
+and the day's banks are a little darker than the water, not black; the rafts are a row of stuffed
+hides lashed to poles with two paddlers and a horse; two of the elephants carry mahouts; the rain's
+smear under the threads is fainter; the pool's rim is one softness.
+
+Overruled: one projection for every counter (the camps are the three-quarter view the pitch names;
+the boats are seen from above because a boat on a map is; the elephants and horse in profile because
+that is how they are told apart at a counter's size; a redraw of every animal to the three-quarter
+view is the next round of art, not this night's).
