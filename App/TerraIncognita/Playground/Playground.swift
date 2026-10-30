@@ -35,6 +35,8 @@ final class Playground {
     var panel: PackPanel?
     /// The quiet frame (a running prototype asked): the caption gone at rest.
     private(set) var quietFrame = false
+    /// The host (What's new) holds the globe where it put it, no idle turn, while a piece plays.
+    var heldStill = false { didSet { if heldStill != oldValue { applyGlobeState() } } }
     /// An experience is running on the globe: the clouds and the sea give way to it.
     var veiled: Bool { stages.contains { $0.prototype.veils } }
     @ObservationIgnored private var panelClosed: (() -> Void)?
@@ -111,7 +113,8 @@ final class Playground {
     // MARK: starting and ending
 
     /// Starts a prototype beside the ones running (one already running comes to the front instead).
-    func start(_ id: String, entry: StageEntry = .workbench) {
+    /// `camera`: where to fly instead of its anchor (What's new starts a piece where its makers meant).
+    func start(_ id: String, entry: StageEntry = .workbench, camera: GlobeCamera? = nil) {
         guard let prototype = prototype(id) else {
             problem = String(localized: "There is no prototype called “\(id)” here.")
             return
@@ -128,13 +131,14 @@ final class Playground {
             }
             globe?.clearSelection()
             let stage = PrototypeStage(prototype: prototype, playground: self, entry: entry, at: globe?.restingCamera)
+            stage.cameraOverride = camera
             stages.last?.setFront(false, by: "host")
             stages.append(stage)
             recent = id
             problem = nil
             // held where it flew (or where the reader touched it), so its subject isn't carried off by the idle turn
-            if prototype.anchor != nil || entry == .doorway { stage.holdStill() }
-            if entry != .doorway, let anchor = prototype.anchor { stage.fly(to: anchor) }
+            if prototype.anchor != nil || camera != nil || entry == .doorway { stage.holdStill() }
+            if entry != .doorway, let anchor = camera ?? prototype.anchor { stage.fly(to: anchor) }
             prototype.start(stage)
             // a native prototype on the globe says at the foot what it is and what to touch
             if prototype.made == .native, prototype.doorway != nil {
@@ -206,7 +210,7 @@ final class Playground {
     private func applyGlobeState() {
         guard let globe else { return }
         let front = stages.last
-        globe.holdsStill = stages.contains { $0.requests.still }
+        globe.holdsStill = heldStill || stages.contains { $0.requests.still }
         globe.seaHidden = stages.contains { $0.requests.seaHidden }
         globe.quietNames = stages.contains { $0.requests.quietNames }
         globe.cloudsQuiet = stages.contains { $0.requests.quietClouds }

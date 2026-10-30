@@ -15,5 +15,13 @@
     ]
   },
   "taps": true,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "title": "Whales in the desert",
+    "what": "The sea comes back over Wadi Al-Hitan in pictures from the deep; whales rise from their bones and swim; the water goes out and each is left to dry into bones.",
+    "ask": "Did the sea's coming and going read on its own, before the words?",
+    "since": "2026-10-29",
+    "version": "1",
+    "row": 176
+  }
 }

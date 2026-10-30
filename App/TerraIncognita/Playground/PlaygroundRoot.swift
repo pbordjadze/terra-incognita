@@ -7,7 +7,22 @@ import UIKit
 /// added to the globe, its panel when it shows one, and a lens's chrome while one is open (the
 /// experience on the globe itself, which then has the screen to itself).
 struct PlaygroundRoot: View {
-    @State private var playground = Playground()
+    @State private var playground: Playground
+    #if UNRELEASED
+    /// What's new (painting-company row 187): the SideStore build's two minutes with what is new.
+    @State private var whatsNew: TerraWhatsNew
+    private var piecePlaying: Bool { whatsNew.playing }
+    #else
+    private var piecePlaying: Bool { false }
+    #endif
+
+    init() {
+        let playground = Playground()
+        _playground = State(initialValue: playground)
+        #if UNRELEASED
+        _whatsNew = State(initialValue: TerraWhatsNew(playground: playground))
+        #endif
+    }
     /// Where the controls are, so the globe keeps its names clear of them.
     @State private var controlsFrame = CGRect.zero
     /// The launch screen's slate: the globe fades up from it.
@@ -26,7 +41,12 @@ struct PlaygroundRoot: View {
                     keepClear: [controlsFrame], invitation: playground.stage?.invitation, foot: foot, quiet: lens != nil,
                     quietFrame: playground.quietFrame,
                     onInvitation: { playground.stage?.acceptInvitation() },
-                    onDrawn: { playground.globeDrawn($0) })
+                    onDrawn: { view in
+                        playground.globeDrawn(view)
+                        #if UNRELEASED && DEBUG
+                        whatsNew.globeDrawn()
+                        #endif
+                    })
             .accessibilityHidden(covered)
             // Top right, all of it: iPadOS keeps the window's top-left corner for its own controls.
             .overlay(alignment: .topTrailing) {
@@ -46,10 +66,14 @@ struct PlaygroundRoot: View {
                 .padding(.leading, 24)
                 .padding(.trailing, inset)
                 .padding(.top, style == .persian ? PersianCaption.pageRoom : 8)
-                // (under a lens's chrome they keep their place, so the globe's room stays as it was)
-                .unseen(lens != nil)
+                // (under a lens's chrome they keep their place, so the globe's room stays as it was;
+                // while a What's new piece plays, its bar has the top and the chip's ✕ would end the piece)
+                .unseen(lens != nil || piecePlaying)
             }
             .animation(.easeInOut(duration: 0.25), value: playground.stage?.prototype.id)
+            // What's new: its pill, and while a piece plays its bar above and its taps below (the globe
+            // keeps its room between them)
+            .modifier(whatsNewChrome(quiet: lens != nil || covered))
             // a lens: the experience on the globe itself, its chrome over the globe it drives
             .overlay {
                 if let lens {
@@ -63,8 +87,8 @@ struct PlaygroundRoot: View {
                 Color("LaunchBackground").opacity(veil).ignoresSafeArea().allowsHitTesting(false)
             }
             .onAppear { withAnimation(.easeOut(duration: 1.4).delay(0.2)) { veil = 0 } }
-            .sheet(isPresented: $playground.workbenchShown, onDismiss: playground.workbenchDismissed) {
-                WorkbenchView(playground: playground)
+            .sheet(isPresented: $playground.workbenchShown, onDismiss: workbenchDismissed) {
+                workbench
                     .presentationDetents([.large])
                     .presentationDragIndicator(.visible)
                     .preferredColorScheme(.light)
@@ -100,6 +124,30 @@ struct PlaygroundRoot: View {
             }
             .onOpenURL { playground.handle($0) }
             .background(Color("LaunchBackground"))
+    }
+
+    /// What's new's chrome round the globe (nothing in a store build).
+    private func whatsNewChrome(quiet: Bool) -> some ViewModifier {
+        #if UNRELEASED
+        return WhatsNewChrome(mode: whatsNew, quiet: quiet)
+        #else
+        return EmptyModifier()
+        #endif
+    }
+
+    private func workbenchDismissed() {
+        playground.workbenchDismissed()
+        #if UNRELEASED
+        whatsNew.workbenchDismissed()
+        #endif
+    }
+
+    private var workbench: some View {
+        #if UNRELEASED
+        WorkbenchView(playground: playground, whatsNew: whatsNew)
+        #else
+        WorkbenchView(playground: playground)
+        #endif
     }
 
     /// A prototype's words and date at the foot of the screen (runtime 2), in the caption's place.

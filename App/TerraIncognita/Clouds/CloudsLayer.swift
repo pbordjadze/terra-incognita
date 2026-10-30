@@ -36,6 +36,9 @@ final class CloudsLayer {
     private var land: MTLTexture?
     private var tile: MTLTexture?
     private var stopped = false
+    /// Readable for a picture of the screen (`GlobeView.capturable`): the layer is drawn to a texture a
+    /// snapshot can read while set.
+    var capturable = false { didSet { metal.framebufferOnly = !capturable } }
 
     /// Pixels a point it draws at, and the most it will (no more than the screen has, nor 2).
     private var scale = 1.25

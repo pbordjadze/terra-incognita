@@ -16,5 +16,13 @@
     "path": { "coordinates": [[2.6, 54.9], [3.6, 55.2]], "seconds": 150, "loop": "back" }
   },
   "taps": true,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "title": "When the sea was low",
+    "what": "The shelves come up as the land they were when the sea stood 120 m lower, with their rivers and mammoths.",
+    "ask": "Does the land rising read as a change of sea level?",
+    "since": "2026-10-29",
+    "version": "1",
+    "row": 176
+  }
 }

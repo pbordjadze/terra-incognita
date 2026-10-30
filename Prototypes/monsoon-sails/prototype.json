@@ -16,5 +16,13 @@
     "path": { "coordinates": [[55.8, 11.2], [57.4, 11.9]], "seconds": 160, "loop": "back" }
   },
   "taps": false,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "title": "The monsoon's sails",
+    "what": "A year at the foot that is also the globe's season. Dhows sail only when the wind blows their way; the wind as streaks.",
+    "ask": "Did you notice the ground's season change with the year?",
+    "since": "2026-10-29",
+    "version": "1",
+    "row": 176
+  }
 }

@@ -39,5 +39,13 @@
     ]
   },
   "taps": true,
-  "shelf": "current"
+  "shelf": "current",
+  "whatsNew": {
+    "title": "The Amazon, alive",
+    "what": "The Amazon's rivers with the water running to the sea. Rest a finger a moment, then draw, to light many at once; a boto surfaces close in.",
+    "ask": "Does resting a finger before drawing come naturally, or did you fight the globe?",
+    "since": "2026-10-29",
+    "version": "1",
+    "row": 172
+  }
 }

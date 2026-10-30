@@ -141,6 +141,10 @@ final class PrototypeStage {
     @ObservationIgnored private(set) var takesTaps = false
     /// Where the reader was when it started (for `terra.entry`).
     @ObservationIgnored private let entryCamera: GlobeCamera?
+    /// Where to fly instead of the pack's anchor (What's new: where the piece's makers meant).
+    @ObservationIgnored var cameraOverride: GlobeCamera?
+    /// A date to take the first time the pack shows its date (What's new), and whether to play it.
+    @ObservationIgnored private var presetDate: (value: Double, playing: Bool?)?
 
     @ObservationIgnored private weak var playground: Playground?
     /// What the open lens may change on the globe, as it was before: put back when it closes.
@@ -320,7 +324,8 @@ final class PrototypeStage {
         guard !ended, let globe else { return }
         let m = pack.manifest
         let was = entryCamera ?? globe.restingCamera
-        if entry != .doorway, let a = m.anchor { fly(to: GlobeCamera(lon: a.lon, lat: a.lat, zoom: a.zoom ?? 1)) }
+        if let camera = cameraOverride { fly(to: camera) }
+        else if entry != .doorway, let a = m.anchor { fly(to: GlobeCamera(lon: a.lon, lat: a.lat, zoom: a.zoom ?? 1)) }
         // a pack the globe draws for holds it where it flew, from the start: its scripts may take a
         // moment, and the globe turns again after it has been left alone a while
         holdStill()
@@ -445,14 +450,35 @@ final class PrototypeStage {
 
     // MARK: the globe's date (runtime 2)
 
+    /// The host's date for the pack's first `time.show` (What's new: the moment its makers meant), and
+    /// whether it plays from there (nil: as the pack asked).
+    func preset(date: Double, playing: Bool?) {
+        guard !ended else { return }
+        if var t = time {
+            // (already showing: moved now)
+            t.value = t.clamped(date)
+            time = t
+            dateMoved()
+            script?.time(t.value, playing: t.playing, by: .host)
+            if let playing { play(playing, by: .host) }
+        } else {
+            presetDate = (date, playing)
+        }
+    }
+
     private func show(_ shown: GlobeTime, carry: Bool) {
         guard !ended else { return }
         stopPlayback()
         var t = shown
-        let wanted = t.playing
+        var wanted = t.playing
         t.playing = false
         // from the date the last time-aware prototype left, or the nearest end of this one's range to it
         if carry, let year = playground?.lastYear { t.value = t.clamped(t.value(forYear: year)) }
+        if let preset = presetDate {
+            presetDate = nil
+            t.value = t.clamped(preset.value)
+            if let p = preset.playing { wanted = p }
+        }
         time = t
         dateMoved()
         playground?.lastYear = t.year

@@ -57,6 +57,9 @@ nonisolated struct PackManifest: Codable, Equatable, Sendable {
     }
     var id: String; var title: String; var summary: String; var runtime: Int; var presentation: String
     var scripts: [String]?; var anchor: Anchor?; var doorway: Doorway?; var taps: Bool?; var shelf: String?
+    /// The pack's piece for What's new (docs/whatsnew.md): what to look at, where to start, the one
+    /// question. Read by the SideStore build's mode; nothing else reads it.
+    var whatsNew: WhatsNewPiece?
 }
 
 /// `catalog.json`, as a source publishes it.

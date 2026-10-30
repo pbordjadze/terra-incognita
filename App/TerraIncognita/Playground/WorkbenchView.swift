@@ -6,6 +6,10 @@ import SwiftUI
 /// trying things, not part of the atlas.
 struct WorkbenchView: View {
     let playground: Playground
+    #if UNRELEASED
+    /// What's new (painting-company row 187): the way back to any piece, and the sending settings.
+    var whatsNew: TerraWhatsNew? = nil
+    #endif
     @State private var sourceText = ""
     @State private var sourceError: String?
 
@@ -15,6 +19,18 @@ struct WorkbenchView: View {
         NavigationStack {
             List {
                 Section {
+                    #if UNRELEASED
+                    if let whatsNew {
+                        NavigationLink {
+                            WhatsNewListView(session: whatsNew.session, pieces: whatsNew.pieces) { pieces, single in
+                                whatsNew.play(pieces, single: single)
+                            }
+                        } label: {
+                            rowLabel("What's new", detail: whatsNewDetail(whatsNew))
+                        }
+                        .accessibilityIdentifier("whatsNewRow")
+                    }
+                    #endif
                     Button { playground.choosePlainGlobe() } label: {
                         rowLabel("The plain globe", detail: plainDetail, active: playground.stages.isEmpty)
                     }
@@ -61,6 +77,17 @@ struct WorkbenchView: View {
         // the app's gold accent is too pale for controls on white: a deep blue (over 7:1)
         .tint(Color(red: 0.13, green: 0.33, blue: 0.55))
     }
+
+    #if UNRELEASED
+    private func whatsNewDetail(_ mode: TerraWhatsNew) -> String {
+        let due = mode.due.count
+        let all = mode.pieces.count
+        let waiting = mode.session.unsentCount
+        var s = due == 0 ? "Nothing new of \(all) pieces; the way back to any of them" : "\(due) new of \(all) pieces, one tap each"
+        if waiting > 0 { s += " · \(waiting) answer file\(waiting == 1 ? "" : "s") not yet sent" }
+        return s
+    }
+    #endif
 
     /// What choosing the plain globe does: nothing, or end what runs (several run at once).
     private var plainDetail: String {

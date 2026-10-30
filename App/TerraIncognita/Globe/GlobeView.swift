@@ -1114,6 +1114,26 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         if selected != nil { select(nil, animated: true) }
     }
 
+    /// Lights the country of that name (its short or long name), as a tap would; false if there is none.
+    @discardableResult
+    func select(countryNamed name: String) -> Bool {
+        guard let data, let k = data.countries.firstIndex(where: { $0.n == name || $0.long == name }) else { return false }
+        select(k, animated: true)
+        return true
+    }
+
+    /// Readable for a picture of the screen (What's new): the globe's, the sky's and the sea's layers
+    /// give up `framebufferOnly` while set, so a snapshot of the window draws what they drew.
+    var capturable = false {
+        didSet {
+            guard capturable != oldValue else { return }
+            metalLayer?.framebufferOnly = !capturable
+            sky?.capturable = capturable
+            sea?.capturable = capturable
+            needsDraw = true
+        }
+    }
+
     private func select(_ k: Int?, animated: Bool) {
         let still = !animated || UIAccessibility.isReduceMotionEnabled
         // straight from one country to another, the new one fades up from nothing too
