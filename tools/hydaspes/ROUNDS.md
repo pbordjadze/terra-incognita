@@ -236,3 +236,24 @@ with the river between them, the bend a drag away.
 Overruled: a peel of torches leaving the camp (the march was dark on purpose; the thread of grey is the
 reward, and the drag finds it); the elephants as masses until close (they are grains until the close
 zoom already).
+
+### Round 10 — the sixth hater
+
+It gave the camps the one thing that earns the pitch; worst first: the daylight a placeholder (khaki
+with blotches, the storm a grey half-plane with a dead-straight edge, the river a tan road), a
+hard-edged dark wedge out of the landing, the night's river the brightest thing in the night with a
+rapids icon of yellow hatching under no fire, the rain as spotlights, picture-book elephants, the first
+sight giving the armies away, the mid-zoom elephants a dotted rule, the battle scale-less, the night
+march too dim to be beautiful. Worst: the daylight ground where the battle plays. Real.
+
+Taken: the grey half-plane was the hills' fill; the hills are ridges and a faint slope now, no plate,
+by night and by day. The river is dark and wet below the land in both lights. The dark over the
+channel reaches the far bank and no further (the wedge was its overshoot). The elephants are darker
+masses without an eye; from the middle distance five masses of unequal size, not a rule. The fires'
+light lies at each camp's own bank. The rain is sheets, its fall-off stretched along the fall. The
+night march keeps its dimness but every helmet has a glint. The opening is a step wider, so the camps
+are fires first.
+
+Overruled: the battle's scale (counters); the island surprise judged from a still at the landed
+moment, when the dark over the channel has just thinned (the surprise is in time: the column arrives
+on what reads as a headland, and the water opens as it does).

@@ -240,8 +240,8 @@ def ways(T):
     camp_a = offset(near, -2.3)[1]
     camp_p = offset(near, 2.4)[1]
     water_p = offset(near, 0.95)[1]    # the elephants at the water's edge
-    glow_a = offset(near, -0.3)[1]     # the fires' light on the water, each side
-    glow_p = offset(near, 0.3)[1]
+    glow_a = offset(near, -0.5)[1]     # the fires' light on the water, at each camp's bank
+    glow_p = offset(near, 0.5)[1]
     # AUTHORED: the march inland, behind the hills' skirt: the reach moved 3.5 km onto the right bank's
     # side, smoothed and cut straighter than the river (a column marches, it doesn't meander), from the
     # camp to the grove on the headland

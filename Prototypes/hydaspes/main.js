@@ -160,8 +160,8 @@
     terra.sprites.set('craterus', { path: way(W.craterus), label: 'Craterus crossing from the great camp at last', touchable: true,
                                     looks: looks(col.far, col.mid, col.close) });
     // the storm: rain drifting over the plain's edges, lightning over the hills, from the storm to daybreak
-    var rainLooks = [{ frames: frames('rain', 8), fps: 9, size: [80, 100], maxZoom: Z.valley }, { frames: frames('rain', 8), fps: 9, size: [160, 200], minZoom: Z.valley, maxZoom: Z.mid },
-                     { frames: frames('rain', 8), fps: 9, size: [400, 400], minZoom: Z.mid }];
+    var rainLooks = [{ frames: frames('rain', 8), fps: 9, size: [70, 110], maxZoom: Z.valley }, { frames: frames('rain', 8), fps: 9, size: [150, 240], minZoom: Z.valley, maxZoom: Z.mid },
+                     { frames: frames('rain', 8), fps: 9, size: [250, 400], minZoom: Z.mid }];
     rainAt().forEach(function (p, i) { terra.sprites.set('rain-' + i, { path: stand(p, HR.storm, HR.calm), label: '', looks: rainLooks }); });
     lightningAt().forEach(function (p, i) {
       terra.sprites.set('lightning-' + i, { path: stand(p, HR.storm, HR.calm), label: '',
@@ -287,5 +287,5 @@
   // at the water (the bend is a drag away, down the river)
   var mid = [(P.campA[0] + P.campP[0]) / 2 - 0.012, (P.campA[1] + P.campP[1]) / 2 - 0.012], c0 = terra.camera;
   var span = Math.min(c0 ? c0.width : 800, c0 ? c0.height * 0.6 : 800);
-  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, span * 0.9 / 12)), terra.settings.reduceMotion ? 0 : 2.2);
+  terra.flyTo(mid[0], mid[1], zoomAtKm(Math.max(PPK.valley, Math.min(PPK.close * 0.8, span * 0.9 / 22))), terra.settings.reduceMotion ? 0 : 2.2);
 })();
