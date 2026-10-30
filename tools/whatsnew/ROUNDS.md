@@ -96,3 +96,9 @@ nothing and the second opened the round (seen once, not reproduced here: the UI 
 opens it every time; left as a watch item), and touching the camel's doorway from the living-globe
 piece opened the camel's lens over the bar and the band, each half hiding the other. The lens is an
 excursion: the bar and the band now step aside while one is open and come back when it closes.
+
+**Round 4 looked at** (`[test WhatsNewTests]`, the iPad, run 219): both tests pass. The vine arrives
+with its branches across Anatolia, the Levant and the Gulf at 2,358 BCE; Georgia is centred, lit,
+clear of cloud, with its own first sentence; the band is three words on three tints and the globe's
+names stay out of it; the card leads with Done and offers Keep going (7); the list is a line a piece.
+The second critic reads these; a hand-started run photographs the phone too.
