@@ -245,11 +245,19 @@ final class Playground {
         return false
     }
 
-    /// Whether a one-finger drag beginning here is a stage's (it began on something touchable of its).
+    /// Whether a one-finger drag beginning here is a stage's (it began on something touchable of its:
+    /// a sprite, else a feature of its geography; the front stage first, as the preview).
     private func dragBegins(_ point: CGPoint) -> Bool {
         dragStage = nil
         dragTarget = nil
         guard let globe else { return false }
+        for stage in stages.reversed() {
+            if let id = stage.spriteHit(point, globe: globe) {
+                dragStage = stage
+                dragTarget = ["sprite": id]
+                return true
+            }
+        }
         for stage in stages.reversed() {
             if let hit = stage.geoHit(point, globe: globe) {
                 dragStage = stage

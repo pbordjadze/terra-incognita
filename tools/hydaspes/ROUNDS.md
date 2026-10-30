@@ -320,3 +320,27 @@ What the stills can't judge and the phone will: the drag (the column under the f
 tested in the preview and by the UI test), the globe coming close on its own for the crossing and the
 wade, the night thinning as the date runs, the dark over the channel opening as the column reaches
 the island's far shore, the fires breathing, the elephants swaying, the rain drifting.
+
+## Round 13: the real app (October 29, 2026, 21:50 ET)
+
+The first pictures from the simulator (CI's `[playground-check]`, the iPad and the iPhone): the plain
+globe's light ground outside the pool of night, the camps' fires, the column peeling away at the touch,
+the strip, the tip. Two things the preview had hidden.
+
+The drag reached no one. The UI test's drag on the column moved nothing: not the column, not the
+globe. In the app a touch that begins on a sprite's button was refused to every gesture recognizer
+(the button's tap was all it could be), where the preview hit-tests sprites first and gives the pack
+the drag, as the contract says a `touchables` drag that begins on a touchable thing is. A runtime
+gap, fixed in the runtime: `GlobeView` lets the pack's drag recognizer take a touch on a marker, and
+the playground asks each stage for a touchable sprite under the point before its geography
+(`PrototypeStage.spriteHit`), the front stage and the topmost sprite first. The contract and the
+tools' map say so, with the date.
+
+The thin light ring round the close picture, seen in the preview since round 7 and put down to the
+preview, is in the app too, and its cause was found by measuring the pictures: the close night's
+fading rim lay over the close day's fading rim of the same shape, so the morning showed through
+where neither was whole. The fix is the order of the pictures (both of the morning, then both of the
+night: the night's rim fades onto the wide night, which is whole beneath it; the hole in the wide one
+is gone) and the close night going in the first quarter of the thinning, while the wide night is
+still nearly whole, so two half-thinned nights never stack into a dark disc. Measured flat at every
+stage of the dawn in the preview; the app's run will say the same or not.

@@ -72,8 +72,7 @@
   }
   // Every mark on the ground is placed in longitude and latitude from one seeded scatter over the wide
   // box, so the wide picture and the close one are the same scene at two resolutions and can meet at a
-  // near-hard edge: the close picture ends in a short rim and the wide one has a matching hole, so the
-  // night is never laid twice over one place (two soft rims stacked showed as a ring while the night thinned).
+  // near-hard edge: the close picture ends in a short rim on the wide one, which is whole beneath it.
   const KM_LON = 111.32 * Math.cos(32.75 * Math.PI / 180), KM_LAT = 110.57;
   function scatter(seed, perKm2, box) {
     const r = B.rand(seed), area = (box[2] - box[0]) * KM_LON * (box[3] - box[1]) * KM_LAT, out = [];
@@ -237,8 +236,9 @@
       g.addColorStop(0, 'rgba(255,196,130,0.4)'); g.addColorStop(0.45, 'rgba(255,190,130,0.14)'); g.addColorStop(1, 'rgba(190,205,235,0.12)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     }
-    // the picture's edge: the wide one a pool of night (or of morning) that ends softly on the globe, with
-    // a hole where the close one lies; the close one a disc with a short rim that just fills that hole
+    // the picture's edge: the wide one a pool of night (or of morning) that ends softly on the globe, whole
+    // under the close one; the close one a disc with a short rim fading onto it (the two are the same
+    // scene, so the rim is only a change of resolution)
     const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
     const mg = mask.getContext('2d');
     const ellipse = (bx, g) => {
@@ -247,12 +247,13 @@
       mg.save(); mg.translate(cx, cy); mg.scale(rx, ry); mg.fillStyle = g(mg); mg.beginPath(); mg.arc(0, 0, 1, 0, TAU); mg.fill(); mg.restore();
     };
     if (close) {
-      // (opaque almost to its edge: the wide picture's hole closes under its last few per cent, so nothing shows through between them)
+      // (opaque almost to its edge; the pack lays it over the wide night, and fades it out early as
+      // the night thins, so its rim never lies over anything lighter than night: a night rim over a
+      // morning rim of the same shape let the morning through as a thin light ring, and a hole in the
+      // wide night under it stacked two nights into a dark one while the night thinned)
       ellipse(box, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0.97, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; });
     } else {
       ellipse(box, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(0.62, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); return g; });
-      mg.globalCompositeOperation = 'destination-out';
-      ellipse(T.close, (c) => { const g = c.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0.93, 'rgba(0,0,0,1)'); g.addColorStop(0.97, 'rgba(0,0,0,0)'); return g; });
     }
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);

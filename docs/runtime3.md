@@ -215,9 +215,12 @@ terra.touch.scheme('one-finger')
 terra.touch.scheme('hold')         // new in 4 (October 29)
 ```
 
-- `touchables` (default): a one-finger drag that *begins on* a touchable feature is the pack's
-  (`began`, `moved`…, `ended`); any other drag turns the globe. Taps on touchable things are the
-  pack's; other taps choose countries (or are the pack's with `"taps": true`).
+- `touchables` (default): a one-finger drag that *begins on* a touchable thing of the pack's (a
+  sprite, else a feature of touchable geography; the front stage's first) is the pack's (`began`,
+  `moved`…, `ended`, with that `target`); any other drag turns the globe. Taps on touchable things
+  are the pack's; other taps choose countries (or are the pack's with `"taps": true`). (An app
+  before October 30, 2026 let a drag that began on a sprite do nothing at all, neither the pack's nor
+  a turn; the preview always gave it to the pack.)
 - `one-finger`: every one-finger drag on the globe is the pack's, and two fingers turn and zoom the
   globe. For close-up worlds you reach into. The scheme goes back to `touchables` when the pack ends.
 - `hold` (*new in 4, October 29*): every one-finger drag turns the globe, wherever it begins, and a

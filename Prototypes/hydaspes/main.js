@@ -72,13 +72,17 @@
     var o = Math.round(night(h) * 50) / 50, first = nightShown < 0;
     if (o !== nightShown) {
       nightShown = o;
-      // (the first set of each fixes the order: the morning under the night, the close pair over the wide,
-      // so the night thins the same inside the close picture as outside it; the close pair shows wherever
-      // the wide does, the wide picture having a hole where the close one lies)
+      // (the first set of each fixes the order: both of the morning under both of the night, the close
+      // one over the wide in each pair, the wide whole under the close. The wide night is whole under the
+      // close night's fading rim, so the rim fades onto night, not onto the morning beneath: a night rim
+      // over a morning rim of the same shape let the morning through as a thin light ring. And the close
+      // night goes in the first quarter of the thinning, while the wide one is still nearly whole: two
+      // nights half-thinned over one place would make a dark disc of it, so the finer one gives way to
+      // the coarser, which no eye tells under a night that is going.)
       if (first) terra.images.set('wide-day', { image: 'ground-wide-day.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool });
-      terra.images.set('wide-night', { image: 'ground-wide-night.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
       if (first) terra.images.set('close-day', { image: 'ground-close-day.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool });
-      terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
+      terra.images.set('wide-night', { image: 'ground-wide-night.png', bounds: H.wide, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: o });
+      terra.images.set('close-night', { image: 'ground-close-night.png', bounds: H.close, minZoom: Z.pool, fade: Z.valley - Z.pool, opacity: Math.max(0, (o - 0.75) * 4) });
     }
     // the dark over the second channel lies over all of them (its first set comes last)
     var v = Math.round(veil(h) * 50) / 50;

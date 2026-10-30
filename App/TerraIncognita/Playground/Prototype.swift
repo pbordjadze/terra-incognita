@@ -301,6 +301,18 @@ final class PrototypeStage {
         geo?.update(globe: globe)
     }
 
+    /// A touchable sprite of this stage's under a point (the topmost drawn; a fingertip's reach, as its
+    /// button), if any: a drag that begins on it is this stage's.
+    func spriteHit(_ point: CGPoint, globe: GlobeView) -> String? {
+        guard !ended else { return nil }
+        for marker in markers.reversed() where marker.view.isUserInteractionEnabled && !marker.view.isHidden {
+            guard marker.view.point(inside: globe.convert(point, to: marker.view), with: nil),
+                  let id = sprites.first(where: { $0.value === marker })?.key else { continue }
+            return id
+        }
+        return nil
+    }
+
     /// A touchable feature of this stage's geography under a point, if any.
     func geoHit(_ point: CGPoint, globe: GlobeView) -> (layer: String, index: Int)? {
         guard !ended else { return nil }

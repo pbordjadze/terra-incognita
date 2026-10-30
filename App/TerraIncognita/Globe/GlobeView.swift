@@ -128,7 +128,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     /// stray meanwhile (points): about a third of a second, as iOS lifts an icon to move it.
     static let holdSeconds = 0.3
     static let holdSlack: CGFloat = 8
-    /// Whether a one-finger drag starting at this point is the pack's (the `touchables` scheme).
+    /// Whether a one-finger drag starting at this point is the pack's (the `touchables` scheme: it
+    /// began on a touchable sprite or feature of its).
     var worldDragBegins: ((CGPoint) -> Bool)?
     /// A drag that is the pack's: "began", "moved", "ended", with the place under the finger.
     var onWorldDrag: ((_ phase: String, _ point: CGPoint, _ place: (lon: Double, lat: Double)?) -> Void)?
@@ -945,8 +946,12 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
     // MARK: the reader's hands
 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        if markers.contains(where: { touch.view?.isDescendant(of: $0.view) == true }) { return false }
         if gestureRecognizer === worldDragRecognizer { worldDragStart = touch.location(in: self) }
+        if markers.contains(where: { touch.view?.isDescendant(of: $0.view) == true }) {
+            // a touch on a marker's button: its tap is the button's, and a drag from it can only be the
+            // pack's (a sprite is a touchable thing: `worldDragBegins` says), never a turn of the globe
+            return gestureRecognizer === worldDragRecognizer
+        }
         return !(touch.view is UIControl)
     }
 
