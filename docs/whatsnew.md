@@ -29,10 +29,10 @@ tool is `tools/whatsnew/whatsnew.py`.
    **Stop** (or just tap a verdict: the note stops and goes with it). A picture of the screen:
    **Picture**. **‹** goes back a piece; **About** opens the piece's own words; **✕** closes the
    round where it is (what was answered stays answered, the rest waits).
-4. At the end, a card: the answers as words (*Nice · Skip · Wow · Meh · Nice*), one gold button
-   that sends them to the company (with a token; see [Where the answers go](#where-the-answers-go))
-   or hands them to the share sheet (without one, as a zip: AirDrop, Files, Mail), **Keep going**
-   while pieces wait, **Close**.
+4. At the end, a card: each piece with what was said of it (*The vine: Nice*), one gold button
+   that sends them to the company (with a token; see [Where the answers go](#where-the-answers-go)),
+   or **Close** with the answers saved on the device (**Share** hands them on as a zip: AirDrop,
+   Files, Mail); **7 more** plays the next few; the skipped stay in the list.
 
 Two minutes. Nothing is scored but the owner's time: a skipped piece stops asking until its makers
 change it, and the list keeps the way back.

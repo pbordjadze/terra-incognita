@@ -165,16 +165,34 @@ final class TerraWhatsNew: WhatsNewHost {
         // nothing else in the way: the other doorways go, the clouds thin as they do under an experience
         playground.hostHidesDoorways = !start.doorways
         playground.hostVeils = start.clouds != true
+        // (on a phone the bar and the band take a third of the globe's height: the camera comes in by as much)
+        let camera = framed(start.camera ?? start.run.first.flatMap(anchor(of:)))
         if start.run.isEmpty {
-            if let camera = start.camera { playground.globe?.setAuthoredCamera(camera, duration: 0.9) }
+            if let camera { playground.globe?.setAuthoredCamera(camera, duration: 0.9) }
         } else {
-            for id in start.run { playground.start(id, entry: .launch, camera: start.camera) }
+            for id in start.run { playground.start(id, entry: .launch, camera: camera) }
             if let date = start.date { playground.stage?.preset(date: date, playing: start.playing) }
         }
         if let name = start.select { _ = playground.globe?.select(countryNamed: name) }
         // (the flight lands before the taps are offered, so the reader sees the place, not the way to it)
         try? await Task.sleep(for: .milliseconds(UIAccessibility.isReduceMotionEnabled ? 100 : 900))
         if start.open { playground.stage?.open() }
+    }
+
+    /// A pack's anchor (its manifest's) or a native's, where its makers open it.
+    private func anchor(of id: String) -> GlobeCamera? {
+        if let a = playground?.packs.listings.first(where: { $0.id == id })?.current?.manifest.anchor {
+            return GlobeCamera(lon: a.lon, lat: a.lat, zoom: a.zoom ?? 1)
+        }
+        return playground?.prototype(id)?.anchor
+    }
+
+    /// The camera for this screen: on a phone, closer by the share of the globe's height the chrome takes,
+    /// so the piece is the same size in the eye as its makers framed it on an iPad.
+    private func framed(_ camera: GlobeCamera?) -> GlobeCamera? {
+        guard var camera, let globe = playground?.globe, globe.bounds.width < 600 else { return camera }
+        camera.zoom = min(camera.zoom * 1.35, 8)
+        return camera
     }
 
     func end(_ piece: WhatsNewPiece) {

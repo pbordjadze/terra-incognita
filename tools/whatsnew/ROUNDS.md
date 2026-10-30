@@ -140,3 +140,21 @@ round. The last piece was a pack skipped within a second of starting; the task p
 held the stage until the preparing was done, seconds after the reader had left. The task holds it
 weakly now, so the Live counts are back the moment the round ends. Not a leak, but exactly what the
 Live rule is for: a fast skipper would have hit it.
+
+## Round 6
+
+**The third critic** (round 5's fourteen pictures, both devices): the core loop works and nothing
+structural is wrong; the worst that remains is one screen, the end card (verdicts without the
+pieces' names; Share as the primary when the answers are saved anyway; "7 more wait for next time"
+contradicting Keep going), and on the phone the globe shrunk between the bar and the band so the
+piece is a thumbnail; then the band shifting under a thumb when Say or Picture change width, quiet
+pieces with no instruction, Skip's consequence unsaid, 10-point labels, the picture's affordance,
+Meh's grey. "Both are afternoon fixes, not a redesign."
+
+**Changed.** The card names each piece beside what was said of it; the gold button is Send when a
+token is set, else Close with the answers saved here (Share beside it); the foot says where the
+skipped went and that more wait "when you like". On a phone the camera comes in by a third, the
+share of the globe's height the chrome takes, so the piece is the size its makers framed on an iPad.
+Say and Picture keep one width in every state; the picture's thumbnail says Retake; labels are 12
+points; the quiet pieces' hints say what to do ("Tap near a place: its name comes for a while").
+Meh's grey is a shade warmer.

@@ -49,7 +49,7 @@ enum WhatsNewStyle {
         switch reaction {
         case .wow: Color(red: 0.98, green: 0.86, blue: 0.52)
         case .nice: Color(red: 0.80, green: 0.90, blue: 0.74)
-        default: Color(red: 0.88, green: 0.86, blue: 0.82)
+        default: Color(red: 0.86, green: 0.83, blue: 0.77)
         }
     }
 }
@@ -200,9 +200,11 @@ struct WhatsNewReactionRow: View {
                 Image(systemName: session.recorder.recording ? "stop.circle.fill" : (session.voice == nil ? "mic" : "mic.fill"))
                     .font(.system(size: 20, weight: .medium))
                 Text(session.recorder.recording ? "Stop \(Self.clock(session.recorder.seconds))" : (session.voice == nil ? "Say" : "Said"))
-                    .font(.caption2.weight(.semibold).monospacedDigit())
+                    .font(.caption.weight(.semibold).monospacedDigit())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
-            .frame(width: session.recorder.recording ? 64 : 48, height: compact ? 54 : 58)
+            .frame(width: 64, height: compact ? 54 : 58)
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
@@ -213,28 +215,27 @@ struct WhatsNewReactionRow: View {
 
     private var cameraButton: some View {
         Button { session.takePicture() } label: {
-            ZStack {
+            VStack(spacing: 2) {
                 if let picture = session.lastPicture {
                     Image(uiImage: picture)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 44, height: compact ? 50 : 54)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(WhatsNewStyle.gold, lineWidth: 1.5))
+                        .frame(width: 40, height: compact ? 30 : 34)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(WhatsNewStyle.gold, lineWidth: 1.5))
+                    Text("Retake").font(.caption.weight(.semibold))
                 } else {
-                    VStack(spacing: 2) {
-                        Image(systemName: session.screenshot == nil ? "camera" : "camera.fill").font(.system(size: 20, weight: .medium))
-                        Text(session.screenshot == nil ? "Picture" : "Taken").font(.caption2.weight(.semibold))
-                    }
+                    Image(systemName: "camera").font(.system(size: 20, weight: .medium))
+                    Text("Picture").font(.caption.weight(.semibold))
                 }
             }
-            .frame(width: 48, height: compact ? 54 : 58)
+            .frame(width: 64, height: compact ? 54 : 58)
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
         .foregroundStyle(WhatsNewStyle.faint)
         .disabled(session.capturing)
-        .accessibilityLabel(session.lastPicture.map { Text("Picture taken, \(Int((WhatsNewSnapshot.darkness(of: $0) * 100).rounded())) percent dark; take another") }
+        .accessibilityLabel(session.lastPicture.map { Text("Picture taken, \(Int((WhatsNewSnapshot.darkness(of: $0) * 100).rounded())) percent dark; retake") }
                             ?? Text("Take a picture of the screen"))
         .accessibilityIdentifier("whatsNewCamera")
     }
@@ -256,16 +257,20 @@ struct WhatsNewFinishCard: View {
         VStack(spacing: 14) {
             Text(session.single ? "Noted" : (session.waiting > 0 ? "That's all for now" : "That's all for this build"))
                 .font(.title3.weight(.semibold))
-            Text(tallyLine)
-                .font(.subheadline)
-                .foregroundStyle(WhatsNewStyle.ink)
-                .multilineTextAlignment(.center)
-                .accessibilityIdentifier("whatsNewTally")
-            if session.waiting > 0, !session.single {
-                Text(session.waiting == 1 ? "One more waits for next time" : "\(session.waiting) more wait for next time")
-                    .font(.footnote).foregroundStyle(WhatsNewStyle.faint)
-                    .accessibilityIdentifier("whatsNewWaiting")
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(said, id: \.title) { line in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(line.title).font(.subheadline).foregroundStyle(WhatsNewStyle.ink).lineLimit(1)
+                        Spacer(minLength: 8)
+                        Text(line.verdict).font(.subheadline.weight(.semibold))
+                            .foregroundStyle(line.verdict == WhatsNewReaction.skip.label ? WhatsNewStyle.faint : WhatsNewStyle.ink)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text(tallyLine))
+            .accessibilityIdentifier("whatsNewTally")
             if session.hasToken {
                 Button { session.send() } label: {
                     HStack(spacing: 8) {
@@ -278,27 +283,36 @@ struct WhatsNewFinishCard: View {
                 .tint(WhatsNewStyle.gold)
                 .disabled(session.sending || session.unsentCount == 0)
                 .accessibilityIdentifier("whatsNewSend")
-            } else if let bundle {
-                ShareLink(item: bundle) {
-                    Label(count == 1 ? "Share this answer" : "Share these \(count)", systemImage: "square.and.arrow.up")
-                        .fontWeight(.semibold).frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(WhatsNewStyle.gold)
-                .accessibilityIdentifier("whatsNewShare")
+            } else {
+                Button { session.dismiss() } label: { Text("Close").fontWeight(.semibold).frame(maxWidth: .infinity, minHeight: 44) }
+                    .buttonStyle(.borderedProminent)
+                    .tint(WhatsNewStyle.gold)
+                    .accessibilityIdentifier("whatsNewDone")
             }
             HStack(spacing: 12) {
                 if session.waiting > 0, !session.single {
                     Button(action: keepGoing) {
-                        Text(session.waiting == 1 ? "One more" : "Keep going").frame(maxWidth: .infinity, minHeight: 44)
+                        Text(session.waiting == 1 ? "One more" : "\(session.waiting) more").frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.bordered)
                     .accessibilityIdentifier("whatsNewKeepGoing")
                 }
-                Button { session.dismiss() } label: { Text("Close").frame(maxWidth: .infinity, minHeight: 44) }
+                if let bundle {
+                    ShareLink(item: bundle) {
+                        Label("Share", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity, minHeight: 44)
+                    }
                     .buttonStyle(.bordered)
-                    .accessibilityIdentifier("whatsNewDone")
+                    .accessibilityIdentifier("whatsNewShare")
+                }
+                if session.hasToken {
+                    Button { session.dismiss() } label: { Text("Close").frame(maxWidth: .infinity, minHeight: 44) }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("whatsNewDone")
+                }
             }
+            Text(footLine)
+                .font(.footnote).foregroundStyle(WhatsNewStyle.faint).multilineTextAlignment(.center)
+                .accessibilityIdentifier("whatsNewWaiting")
             if let result = session.sendResult {
                 Text(result).font(.footnote).foregroundStyle(WhatsNewStyle.faint).multilineTextAlignment(.center)
                     .accessibilityIdentifier("whatsNewSendResult")
@@ -314,10 +328,26 @@ struct WhatsNewFinishCard: View {
         .task { bundle = session.store.bundleForSharing() }
     }
 
-    /// The answers in the order they were given: "Nice · Skip · Wow · Meh · Nice".
+    /// Each piece and what was said of it, in the round's order.
+    private var said: [(title: String, verdict: String)] {
+        session.pieces.compactMap { piece in
+            session.answers.last { $0.piece == piece.id }.map { (piece.title, $0.reaction.label) }
+        }
+    }
+
+    /// The same as one line, for VoiceOver: "Wikipedia's words: Nice; The vine: Skipped".
     private var tallyLine: String {
-        let words = session.pieces.compactMap { piece in session.answers.last { $0.piece == piece.id }?.reaction.label }
-        return words.isEmpty ? "Nothing answered this time" : words.joined(separator: " · ")
+        said.isEmpty ? "Nothing answered this time" : said.map { "\($0.title): \($0.verdict)" }.joined(separator: "; ")
+    }
+
+    /// Where things stand: saved here (and how they reach the company), what waits, where the skipped went.
+    private var footLine: String {
+        var parts: [String] = []
+        if !session.hasToken { parts.append("Saved on this device; sending is in Workbench › What's new") }
+        if session.waiting > 0, !session.single { parts.append(session.waiting == 1 ? "one more when you like" : "\(session.waiting) more when you like") }
+        if session.tally[.skip, default: 0] > 0 { parts.append("the skipped stay in the list") }
+        let line = parts.joined(separator: " · ")
+        return line.isEmpty ? " " : line.prefix(1).uppercased() + line.dropFirst()
     }
 
     private var sendLabel: String {

@@ -93,9 +93,9 @@ final class WhatsNewTests: XCTestCase {
         last.tap()
         let finish = app.otherElements["whatsNewFinish"].firstMatch
         XCTAssertTrue(finish.waitForExistence(timeout: 20), "After the last piece, the card")
-        let tally = app.staticTexts["whatsNewTally"].firstMatch
-        XCTAssertTrue(tally.label.hasPrefix("Nice · Skip"), "The card lists the answers as words, in order: \(tally.label)")
-        XCTAssertTrue(app.staticTexts["whatsNewWaiting"].firstMatch.exists, "The card says more pieces wait")
+        let tally = app.descendants(matching: .any)["whatsNewTally"].firstMatch
+        XCTAssertTrue(tally.label.contains(": Nice") && tally.label.contains(": Skipped"), "The card names each piece beside what was said: \(tally.label)")
+        XCTAssertTrue(app.staticTexts["whatsNewWaiting"].firstMatch.label.contains("more"), "The card says more pieces wait")
         XCTAssertTrue(app.buttons["whatsNewKeepGoing"].firstMatch.exists, "More pieces wait: the card offers to keep going")
         XCTAssertTrue(app.buttons["whatsNewShare"].firstMatch.exists || app.buttons["whatsNewSend"].firstMatch.exists, "The card's one gold button hands the answers on")
         attach("24-finish", in: app)
