@@ -274,4 +274,8 @@ pub enum Intent {
     Scrub { days: f64 },
     /// The date stops or runs.
     SetRunning { running: bool },
+    /// Every float is taken out at once, as one touch: undo gives them all back (R4).
+    ClearAll,
+    /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
+    Home,
 }

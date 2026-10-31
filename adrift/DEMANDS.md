@@ -15,6 +15,8 @@ At most two new demands a craft a round. Engineering rules on one that comes rou
 
 ## Open
 
+(R4 opens at the head Engineering named; the round's goals are DECISIONS.md § 11. New demands go here, in the form above.)
+
 ### D1 Truth → Engineering (R0)  [answered]
 I need anything in [a float's state carrying its eddy velocity (two f32, zonal and meridional,
 m/s) through the step: `Rules::step` taking and returning that velocity beside the position (a

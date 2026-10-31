@@ -166,3 +166,48 @@ a state the app can't yet reach without editing `app.rs`; let the check relink a
 the manifest changes; and either give the integrator force-with-lease on the integration branch or
 rule that the integrator merges and never rebuilds. The device's verdict is the one thing this
 session could not give.
+
+## 11. R4 opens: the first device verdict (Oct 31, 14:35 UTC)
+
+The owner ran Adrift on a phone (painting-company row 196 has the words). In short: it opens fast and
+runs well, the night reads, and five things stand between the screen and the hand. The water's
+glitter at night draws the eye away from the floats, where living lights on the land would not. The
+date control isn't obvious the first time, and nothing else on the screen says it can be changed.
+No way was found to clear the sea of floats or to bring the globe home. Holding a float to see its
+maybes doesn't yet come to the hand. And floats were put on the Black and Caspian seas and the
+Baltic, where the record may not speak. These are the round's goals, not a spec: each becomes a
+demand on the craft that owns it, in the cascade's form, and the Holt critic judges the answer
+(undoable, no penalty, nothing marks or points or waits).
+
+**Who owns which goal.**
+- *Motion*: a way to clear the sea and to bring the globe home that a hand finds without being told
+  (`Intent::ClearAll` and `Intent::Home` exist as of this head: one touch, undo gives every float
+  back, the home flight uses the camera's own ease; what gesture reaches them is Motion's); the date
+  control obvious the first time (what a hand expects of the band, with Visual for its look); picking
+  a float up to see its maybes made natural (what does a hand expect: a tap that shows them a while,
+  a rest that lifts?). `App::hit`'s reach is still Motion's number.
+- *Visual*: the water's glitter quieted where it competes with the floats, and the land's lights
+  alive by night instead (the ground pass has the view's `time`, and the stage redraws every tick
+  while the sea moves, so this is a shader's change); the date band's look saying it can be moved and
+  whether the date runs or rests; whatever affordance Motion's new gestures need drawn.
+- *Truth*: where a float may be put. The Black and Caspian seas, the Baltic and the ice's edge: does
+  the record speak there, and if not, does the sea hold the float, refuse it, or carry it as a marked
+  guess? A float on land must be impossible (`Hit::Land`); check the coast mask against the sheets'
+  extent and say in SOURCES.md what the answer rests on.
+- *Engineering*: the seams below, the check's asset relinking (it now links what the manifest names
+  and the directory lacks), the scene's `credits_open`, integration and the build.
+
+**The "add a field" procedure (from every exit interview).**
+- A `LookState` field is Visual's: add it in `look/mod.rs` and fill it in `App::look_state()`, which
+  is Visual's to edit; nothing else in `app.rs` is.
+- A `Probe` question is Motion's: add it to the trait in `touch/gestures.rs` and answer it in
+  `touch/probe.rs` from the app's public state; a private field it needs is a demand.
+- A `Rules` method or a sheet is Truth's, in `sea/`; its call in `app.rs` is a demand or an
+  invitation.
+- A new `Intent`, a `Scene` or plan field is Engineering's: ask by demand; it is answered within the
+  round's first hour.
+- Branch from the head named in the round's message; the integrator merges and never rebuilds.
+
+**The round's build** is whatever stands on `adrift` when the three heads are merged and the plans
+pass; it ships to the SideStore source as the next `adrift-build-<n>` and the web link's next
+version.

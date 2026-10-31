@@ -18,7 +18,12 @@ enum Undo {
     Put(u32),
     Moved { id: u32, from: Float },
     Removed(Float),
+    /// Every float taken out at once (`Intent::ClearAll`); on the redo stack, the clearing itself.
+    Cleared(Vec<Float>),
 }
+
+/// The opening view: the whole Earth, the Atlantic facing (`Intent::Home` flies back to it).
+pub const HOME: Camera = Camera { lon: -30.0, lat: 25.0, zoom: 1.0 };
 
 /// Everything about the sea's state that a scene file can set (adrift-check) and a frame reads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,6 +40,9 @@ pub struct Scene {
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
+    /// The page of credits open (R4: a scene can photograph it without a touch).
+    #[serde(default)]
+    pub credits_open: bool,
     /// The night palette (the system's dark appearance).
     #[serde(default)]
     pub night: bool,
@@ -434,6 +442,12 @@ impl App {
             }
             Intent::SetRunning { running } => self.clock.running = running,
             Intent::ToggleCredits => self.credits_open = !self.credits_open,
+            Intent::ClearAll => self.clear_all(),
+            Intent::Home => {
+                self.camera.riding = None;
+                let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
+                self.camera.fly_to(HOME, self.now, motion);
+            }
         }
     }
 
@@ -465,9 +479,33 @@ impl App {
         self.redo.clear();
     }
 
+    /// Every float taken out as one touch (R4): undo gives them all back where they were.
+    fn clear_all(&mut self) {
+        if self.floats.is_empty() {
+            return;
+        }
+        let mut gone = std::mem::take(&mut self.floats);
+        for f in &mut gone {
+            f.hand = Hand::Free;
+        }
+        self.pressing = None;
+        self.camera.riding = None;
+        self.undo.push(Undo::Cleared(gone));
+        self.redo.clear();
+    }
+
     fn undo(&mut self) {
         let day = self.clock.day;
         match self.undo.pop() {
+            Some(Undo::Cleared(gone)) => {
+                for mut f in gone {
+                    f.hand = Hand::Free;
+                    f.lit_for = 0.0;
+                    self.stepped.insert(f.id, day);
+                    self.floats.push(f);
+                }
+                self.redo.push(Undo::Cleared(Vec::new()));
+            }
             Some(Undo::Put(id)) => {
                 if let Some(i) = self.floats.iter().position(|f| f.id == id) {
                     let f = self.floats.remove(i);
@@ -499,6 +537,14 @@ impl App {
     fn redo(&mut self) {
         let day = self.clock.day;
         match self.redo.pop() {
+            Some(Undo::Cleared(_)) => {
+                let mut gone = std::mem::take(&mut self.floats);
+                for f in &mut gone {
+                    f.hand = Hand::Free;
+                }
+                self.camera.riding = None;
+                self.undo.push(Undo::Cleared(gone));
+            }
             Some(Undo::Removed(mut f)) => {
                 f.hand = Hand::Free;
                 f.lit_for = 0.0;
@@ -700,6 +746,7 @@ impl App {
         self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
         self.seconds = scene.seconds;
         self.night = scene.night;
+        self.credits_open = scene.credits_open;
         self.rest = if scene.running { 0.0 } else { 1.0 };
         for (i, sf) in scene.floats.iter().enumerate() {
             self.clock.day = scene.day - sf.days_ago;
