@@ -100,8 +100,8 @@ and `look_state()`:
   speck's own sizes and inks, crossfading with the cloud's bloom), with no wake; a lamp whose cloud is
   not out keeps its glass float and wake. The panel says which lamp is which.
 - **The panel** (`words.rs › Words::panel`): a very small column at the top left (from 60 reading
-  points down), one row a lamp, oldest first, the latest ten: its mark in its hue (filled while its
-  cloud is out, a ring while not; the front one a size larger) and where and when it was put in 10 pt
+  points down), one row a lamp, oldest first, the latest ten: its mark, a filled lamp in its own hue
+  (large with a soft glow of its colour while its cloud is out, small while not; the front the largest) and where and when it was put in 10 pt
   italic ("9 Jun · 35°N 74°W"). Rows are 24 reading points tall; `panel_bounds` holds each row's whole
   rect (from 6 points left of the mark to the end of the widest line) for Motion's probe.
 - **Several clouds** (`maybes.rs`): laid in turns, an eighth of each in turn, so where they overlap

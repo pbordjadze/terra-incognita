@@ -300,7 +300,7 @@ impl Words {
 
     /// The panel of lamps (R6): a very small column at the screen's top left, off the globe's middle,
     /// one row a lamp out there, oldest at the top, at most `PANEL_ROWS` (the latest). A row is the
-    /// lamp's mark in its hue (a filled lamp while its cloud is out, a ring of it while not) and where
+    /// lamp's mark in its hue (large and glowing while its cloud is out, small while not) and where
     /// and when it was put, in small italic ("8 Jun · 35°N 74°W"): the one place that says which
     /// lamp is which, since on the globe a lamp whose cloud is out is one maybe among them. The front
     /// one's words in full ink. Each row's rect (the whole row, a fingertip tall) goes to
@@ -340,13 +340,17 @@ impl Words {
             // box on the land; the inks hold their contrast on the sea and the night's ground alone)
             let halo = if inside { [sea_halo[0], sea_halo[1], sea_halo[2], 0.0] } else { paper_halo };
             let hue = super::lamp_hue(r.id);
-            let mark_size = if r.front { 11.0 } else { 10.0 } * reading;
-            // (a ring by day in the hue darkened, as the bead's edge is, or a pale ring would vanish on the paper)
-            let ring = if night { hue } else { [hue[0] * 0.62, hue[1] * 0.62, hue[2] * 0.62] };
-            let (glyph, mi) = if r.shown { ("\u{25cf}", hue) } else { ("\u{25cb}", ring) };
-            let mark = Line { text: glyph, style: Style::Regular, size: mark_size, ink: [mi[0], mi[1], mi[2], 1.0], tracking: 0.0 };
-            // (the mark sits on the line's x-height middle; a ring of the lamp's own colour on a halo)
-            out.extend(self.face.layout(&mark, x0 + 6.0 * reading, mid + 0.36 * mark_size, halo));
+            // every mark a filled lamp in its own hue, unmistakable (it is how a reader finds whose
+            // cloud is whose): larger with a soft glow of its colour while its cloud is out, a small
+            // lamp while not; the front one the largest
+            let mark_size = if r.front { 13.0 } else if r.shown { 12.0 } else { 8.5 } * reading;
+            if r.shown {
+                let gs = mark_size * 1.7;
+                let glow = Line { text: "\u{25cf}", style: Style::Regular, size: gs, ink: [hue[0], hue[1], hue[2], 0.22], tracking: 0.0 };
+                out.extend(self.face.layout(&glow, x0 + 6.0 * reading, mid + 0.36 * gs, [0.0; 4]));
+            }
+            let mark = Line { text: "\u{25cf}", style: Style::Regular, size: mark_size, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
+            out.extend(self.face.layout(&mark, x0 + 6.0 * reading, mid + 0.36 * mark_size, [0.0; 4]));
             let line = Line { text: &text, style: Style::Italic, size, ink: if r.front { ink } else { soft_ink }, tracking: 0.0 };
             out.extend(self.face.layout(&line, text_x + w / 2.0, mid + 0.33 * size, halo));
             self.panel_bounds.push((r.id, [x0 - 6.0 * reading, y, panel_w + 6.0 * reading, row_h]));
