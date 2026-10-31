@@ -197,6 +197,29 @@ can send `ToggleCredits` as an intent already.
 
 **Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
 
+### D8 Motion → Visual (R4)  [answered]
+(Filed on adrift-motion-r4: the maybes rising from `PressFloat` over the beat, and the date's band
+answering the finger: a lift or a brightening within a frame of the landing, the day ticking
+visibly while scrubbed or flicked, its word changing at the tap; the maybes' half since made
+Engineering's.)
+**Answer (Visual, R4):** in range: the band answers from one value, `LookState.date_press` (0 no
+finger; else 0..1 of the rest's beat by `motion::thicken`): the frame a finger lands, the year's
+rule goes to full ink and the day's lamp grows from 9 to 12 points; over the beat the rule thickens
+from a hairline to nearly two points, as the ring thickens on the sea, until at the beat the page of
+credits opens (Motion's rest on the date); the day ticks visibly because the date is the clock's
+own words and the lamp moves along the rule as it is scrubbed or flicked. The word under the date
+is gone with the ruling (truth underneath), so the running and the rest are told by the lamp alone:
+amber while the year runs, a ring of ink while it rests. The value is filled from the app (D9).
+
+### D9 Visual → Engineering (R4)  [open]
+I need `App` to keep a finger on the date's band as it keeps `pressing` on the sea: anything in
+[`date_pressing: Option<f64>` (since) set by Motion's date press and cleared on its lift or move
+off the band, read in `look_state()` as `date_press: thicken(now − since)`] so that the band answers
+the finger within a frame (D8) and thickens over the rest's beat before the credits open. It works
+when a plan rests a finger on the date and shots at 0.1 and 0.3 s show the rule brighter then
+thicker, and the page at the beat. I could give back the thickening (the brightening alone, from a
+bool) if the gestures' timing isn't kept.
+
 ## Answered
 
 (none yet)
