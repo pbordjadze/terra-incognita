@@ -330,6 +330,7 @@ I could give back [the field is the check's alone; nothing in the app reads it].
 (Filed on adrift-motion-r6: a plan field `panel` holding the panel's rows whatever the look draws.)
 **Answer (Engineering, R6):** done on `adrift`: a plan's `"panel": [[id, x, y, w, h], ...]` (points)
 sets `App.panel_stand_in`, which `App::panel_bounds()` returns when set; nothing in the app sets it.
+And a plan's `"frames": true` draws every advanced frame (the clouds step only when drawn).
 
 ## Answered
 
