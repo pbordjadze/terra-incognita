@@ -460,3 +460,21 @@ fn a_float_glides_between_steps() {
     assert!(km < 2.0, "the glide and the step differ by {km} km over a quarter day");
     assert_eq!(r.velocity(Drift::put(LonLat { lon: -150.0, lat: 74.0 }), 15.0 + 2.0 * 30.4375), (0.0, 0.0), "held in ice: still");
 }
+
+/// Where no drifter went, the float rides no smoothed-in current: the wind's leeway and the
+/// wander alone, a lake's drift; where one measured, the whole current.
+#[test]
+fn unrecorded_water_carries_a_float_on_the_wind_alone() {
+    let r = rules();
+    let caspian = Drift::put(LonLat { lon: 51.0, lat: 42.0 });
+    let (u, v) = r.velocity(caspian, JULY);
+    let (wu, wv) = r.wind.at(JULY as f32, 51.0, 42.0);
+    assert!((u - r.leeway * wu).abs() < 1e-5 && (v - r.leeway * wv).abs() < 1e-5, "the Caspian: leeway only ({u}, {v})");
+    let hatteras = Drift::put(LonLat { lon: -74.5, lat: 35.8 });
+    let (u, _) = r.velocity(hatteras, JULY);
+    let (cu, _, m) = r.currents.at(JULY as f32, -74.5, 35.8);
+    assert!(m > 0.99 && (u - cu).abs() < 0.1, "the Gulf Stream: the whole current");
+    assert_eq!(super::rules::reach(0.0), 0.0);
+    assert_eq!(super::rules::reach(0.25), 0.5);
+    assert_eq!(super::rules::reach(0.9), 1.0);
+}

@@ -75,6 +75,7 @@ impl Rules {
             return Step { at, held: Held::Ice, measured };
         }
         let (u, v, _) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let secs = dt * SECONDS_A_DAY;
@@ -223,6 +224,7 @@ impl Rules {
             return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
         }
         let (u, v, _) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let (tu, tv) = self.eddy_time.at(lon, lat);
@@ -277,7 +279,8 @@ impl Rules {
         if self.ice.at(day, lon, lat) >= self.ice_hold {
             return (0.0, 0.0);
         }
-        let (u, v, _) = self.currents.at(day, lon, lat);
+        let (u, v, measured) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         (u + self.leeway * wu + d.eddy.0, v + self.leeway * wv + d.eddy.1)
     }
@@ -312,6 +315,16 @@ impl Rules {
             })
             .collect()
     }
+}
+
+/// How much of the sheet's current a float rides, by how far the record reaches the place:
+/// all of it where a drifter measured within 1.5 degrees (`measured` 0.5 and over), none where
+/// none came within three (0), and between in proportion. Where the sheet's value is only
+/// smoothed in from far away (the Caspian, the Great Lakes, Hudson Bay) the float goes on the
+/// wind's leeway and the wander alone, the way a lake's surface drifts.
+#[inline]
+pub fn reach(measured: f32) -> f32 {
+    (measured / Rules::GUESS).clamp(0.0, 1.0)
 }
 
 #[inline]
