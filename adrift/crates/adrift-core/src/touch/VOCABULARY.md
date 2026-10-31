@@ -10,13 +10,13 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | rest a beat | the sea | the ring thickens into a float, held under your finger; lift and the sea has it |
 | rest a beat | a float | you hold it: its maybes bloom, the nearest drifter rises; lift and they fold back |
 | rest, then drag | a float (or the one just put) | you carry it: set it down on other water, or off the rim and it is taken out |
-| tap | a float | you ride it: the camera drifts with it, until any drag |
+| tap | a float | you ride it: the camera drifts with it, until any drag; its maybes rise from the moment the finger lands and stay out while you ride |
 | drag (before the beat) | anything | the globe turns; let go moving and it flings |
 | two fingers | anything | zoom and turn, the point under the fingers staying under them |
 | double tap | anything | fly in about the point (out to the whole globe from deep in) |
 | drag | the date at the foot | scrub the date; the sea pauses with it |
 | tap | the date | pause or play |
-| tap | the credit line | the page of credits opens; any tap while it is open closes it |
+| rest a beat | the date | the page of credits opens; any tap while it is open closes it |
 | three-finger swipe left · shake · ⌘Z | | undo the last touch; nothing else moves |
 | three-finger swipe right · ⇧⌘Z | | redo it |
 | three-finger swipe down · a second shake within two seconds · Backspace | | clear the sea: every float out as one touch (undo brings them all back) |
@@ -69,7 +69,8 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `ClearAll` | a three-finger swipe down; a second shake 0.4–2 s after the first; Backspace or Delete |
 | `Home` | a pinch that would have taken the zoom below three quarters of its least, at the lift; a three-finger swipe up; `h` or `0` |
 | `Scrub { days }` (again) | every frame after a flick on the date, by the flick's speed decaying as a fling does (`DATE_SPIN_REST` stops it); any touch stops it at once |
-| `ToggleCredits` | a tap on the credit line (`Hit::Credits`, the look's `credit_bounds`); while the page is open, a tap anywhere but the date |
+| `PressFloat { float, since }` | a finger lands on a float: its maybes and its nearest drifter rise from `since` (the app's `shown()`); `Unpress` if it lifts or moves before the beat, a second finger lands, or the touch is taken |
+| `ToggleCredits` | a rest of one beat on the date (the finger still), or a tap on the credit line while the look draws one (`Hit::Credits`); while the page is open, any tap closes it (the date's included; its drag still scrubs) |
 
 Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
 float stays where it was last over water (the app watches the carried float and takes it out when
@@ -127,14 +128,15 @@ Three{x0, y0}
  ├─ the fingers' mean moves ≥ SWIPE: left ─▶ Undo once; right ─▶ Redo; up ─▶ Home; down ─▶ ClearAll
  └─ all Up / Cancel ───────────────▶ Idle
 
-CreditsDown{x0,y0}          (Down on the credit line; or Down anywhere but the date while the page is open)
+CreditsDown{x0,y0}          (Down on the credit line, if drawn; or Down anywhere but the date while the page is open)
  ├─ Move beyond SLOP ──────────────▶ Orbit           a drag is always the globe's
  ├─ Up ────────────────────────────▶ Idle            emits ToggleCredits
  └─ second finger Down ────────────▶ Pinch
 
 DateDown{x0}
+ ├─ tick past BEAT, still within SLOP, page closed ─▶ Idle   emits ToggleCredits: the page of credits opens
  ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once, then Scrub{day} by dx
- ├─ Up within SLOP ────────────────▶ Idle            emits Play(!playing)   (the probe says if playing)
+ ├─ Up within SLOP ────────────────▶ Idle            emits Play(!playing); ToggleCredits instead while the page is open
  ├─ Up while scrubbing, moving ────▶ Idle            the date runs on at the finger's speed, slowing (a flick)
  ├─ second finger Down ────────────▶ DateDown        (ignored)
  └─ Cancel ────────────────────────▶ Idle
@@ -205,10 +207,18 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     the Earth does, 4°/s. With a float put, it holds still: a float you are watching must not be
     carried out of view.
 
-19. **The credits**: the credit line along the foot is the one other thing drawn that takes a touch
-    (D5): a tap on it opens the page; while the page is open, a tap anywhere but the date closes it
-    and nothing else happens (no ring, no float: the beat waits for the page to go), a drag is the
-    globe's and a drag on the date scrubs, as ever. `plans/credits.json`.
+19. **The credits**: the credit line left the foot (R4's ruling: delight first), so the page is
+    reached by a rest of one beat on the date, the finger still (the beat means "more about this
+    thing" everywhere); a tap on the date still pauses and plays, a drag scrubs, a flick runs it on.
+    While the page is open any tap closes it, the date's included, and nothing else happens (no
+    ring, no float: the beat waits for the page to go); a drag is the globe's and a drag on the date
+    scrubs, as ever. If the look still draws a credit line, a tap on it opens the page too.
+    `plans/credits.json`.
+22. **Landing on a float** (R4, D7): the maybes and the nearest drifter rise from the moment the
+    finger lands (`PressFloat`), so a hand learns at once that staying shows more; lift before the
+    beat and you ride it with its cloud out (the ridden float stays shown); stay the beat and it is
+    yours to carry (`Hold`, no gap); move before the beat and it is the globe's drag, the cloud
+    folding (`Unpress`). `plans/hold-maybes.json`, `ride.json`.
 
 20. **Clearing the sea and going home** (R4, the owner's "can't reset the globe or clear all the
     lamps"): both are reached two ways, one a hand does on its own and one in the family of the

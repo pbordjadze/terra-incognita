@@ -289,7 +289,10 @@ impl Gestures {
                         out.intents.push(Intent::Press { at, since: e.t });
                         State::Pressing { id: e.id, x0: e.x, y0: e.y, t0: e.t, at }
                     }
-                    Hit::Float(float, at) => State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at },
+                    Hit::Float(float, at) => {
+                        out.intents.push(Intent::PressFloat { float, since: e.t });
+                        State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at }
+                    }
                     Hit::Date => State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false },
                     Hit::Credits => State::CreditsDown { id: e.id, x0: e.x, y0: e.y },
                     Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y, t0: e.t },
@@ -297,7 +300,7 @@ impl Gestures {
             }
             // a second finger before the beat, or during the globe's drag: a pinch
             (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. }, 2) => {
-                if matches!(self.state, State::Pressing { .. }) {
+                if matches!(self.state, State::Pressing { .. } | State::Resting { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
                 self.state = State::Pinch { a: id, b: e.id, zoom0: probe.frame().zoom, scale: 1.0 };
@@ -333,9 +336,7 @@ impl Gestures {
                         self.moved(e, probe, out);
                         return;
                     }
-                    if matches!(self.state, State::Pressing { .. }) {
-                        out.intents.push(Intent::Unpress);
-                    }
+                    out.intents.push(Intent::Unpress);
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
             }
@@ -461,6 +462,7 @@ impl Gestures {
                     self.up_from_hold(e, probe, out);
                     return;
                 }
+                out.intents.push(Intent::Unpress);
                 if probe.riding() != Some(float) {
                     out.intents.push(Intent::Ride { float });
                 }
@@ -499,7 +501,8 @@ impl Gestures {
             }
             State::DateDown { id, scrubbing, .. } if id == e.id => {
                 if !scrubbing {
-                    out.intents.push(Intent::SetRunning { running: !probe.running() });
+                    // a tap: pause or play; while the page of credits is open, it closes the page
+                    out.intents.push(if probe.credits_open() { Intent::ToggleCredits } else { Intent::SetRunning { running: !probe.running() } });
                 } else if !probe.motion().reduce {
                     // let go moving: the date runs on, slowing (a flick)
                     let (vx, _) = self.velocity(e.t);
@@ -574,7 +577,11 @@ impl Gestures {
                 out.intents.push(Intent::Unpress);
                 self.state = State::Idle;
             }
-            State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } if id == e.id => {
+            State::Resting { id, .. } if id == e.id => {
+                out.intents.push(Intent::Unpress);
+                self.state = State::Idle;
+            }
+            State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {
@@ -608,6 +615,11 @@ impl Gestures {
         self.now = now;
         match self.state {
             State::Pressing { t0, .. } | State::Resting { t0, .. } if now - t0 >= motion::BEAT => self.rest_elapsed(probe, &mut out),
+            // a rest on the date (the finger still for the beat) opens the page of credits
+            State::DateDown { t0, scrubbing: false, .. } if now - t0 >= motion::BEAT && !probe.credits_open() => {
+                out.intents.push(Intent::ToggleCredits);
+                self.state = State::Idle;
+            }
             _ => {}
         }
         if self.date_spin != 0.0 && self.fingers.is_empty() {

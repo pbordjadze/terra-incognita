@@ -101,7 +101,7 @@ plan("orbit-then-rest", "Once a drag, always a drag: a finger that moves and the
 
 # --- hold and carry ---
 plan("hold-maybes", "Rest a beat on a float: you hold it (its maybes); lift and nothing changed", [
-    ev(0.0, "down", at=SEA), expect(0.5, state="holding", saw=["Hold"], held=1, not_=["Ring"]),
+    ev(0.0, "down", at=SEA), shot(0.2, "rising"), expect(0.5, state="holding", saw=["PressFloat", "Hold"], held=1, not_=["Ring", "Unpress"]),
     shot(0.8, "maybes"), ev(1.2, "up", at=SEA),
     expect(1.3, floats=1, state="idle", saw=["Release"], held=None, float={"id": 1, **F1}, camera_moved=False),
 ], floats=[F1])
@@ -145,7 +145,7 @@ plan("cancel", "The system takes the touch: a press lets go, a hold puts the flo
 
 # --- the ride ---
 plan("ride", "Tap a float and the camera drifts with it; any drag leaves it", [
-    ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.1, saw=["Ride"], riding=1, not_=["Put"]),
+    ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.1, saw=["PressFloat", "Unpress", "Ride"], riding=1, not_=["Put", "Hold"]),
     shot(1.0, "catching-up"),
     expect(3.0, riding=1, camera_near_float=[1, 0.5], camera_moved=True), shot(3.0, "riding"),
     ev(3.1, "down", at=[-45.0, 0.0]), *drag(3.1, 0, [(0.5, 0.6), (0.58, 0.62)]),
@@ -257,20 +257,20 @@ def credit_xy(w=W, h=H):
     # the credit line along the foot: its glyphs 12 reading points above the bottom edge
     reading = 1.0 + 0.2 * min(max((min(w, h) - 430.0) / (1032.0 - 430.0), 0.0), 1.0)
     return [w / 2, h - 12.0 * reading - 5.0 * reading]
-plan("credits", "A tap on the credit line opens the credits; any tap closes them; the date is unchanged", [
-    ev(0.0, "down", xy=credit_xy()), ev(0.1, "up", xy=credit_xy()), shot(0.15, "page"),
-    expect(0.2, saw=["ToggleCredits"], not_=["Ring", "Press"], floats=0),
-    ev(0.5, "down", at=SEA), ev(1.2, "up", at=SEA),                       # a rest on the sea while the page is open
-    expect(1.3, not_=["Put", "Ring"], floats=0, saw=["ToggleCredits"]),   # closes it, puts nothing
-    shot(1.35, "closed"),
-    ev(1.5, "down", at=SEA), ev(1.6, "up", at=SEA), expect(1.7, saw=["Ring"], not_=["ToggleCredits"]),
-    ev(2.0, "down", xy=date_xy()), ev(2.1, "up", xy=date_xy()), expect(2.2, saw=["Pause"], playing=False, not_=["ToggleCredits"]),
-    ev(2.5, "down", xy=credit_xy()), ev(2.6, "up", xy=credit_xy()), expect(2.7, saw=["ToggleCredits"]),
+plan("credits", "A rest on the date opens the credits; any tap closes them; the date's tap, drag and flick are unchanged", [
+    ev(0.0, "down", xy=date_xy()), shot(0.3, "resting"), expect(0.5, saw=["ToggleCredits"], not_=["Pause", "Scrub"], state="idle"),
+    ev(0.6, "up", xy=date_xy()), shot(0.65, "page"), expect(0.7, not_=["Pause", "Play"]),
+    ev(1.0, "down", at=SEA), ev(1.7, "up", at=SEA),                       # a rest on the sea while the page is open
+    expect(1.8, not_=["Put", "Ring"], floats=0, saw=["ToggleCredits"]),   # closes it, puts nothing
+    shot(1.85, "closed"),
+    ev(2.0, "down", at=SEA), ev(2.1, "up", at=SEA), expect(2.2, saw=["Ring"], not_=["ToggleCredits"]),
+    ev(2.5, "down", xy=date_xy()), ev(2.6, "up", xy=date_xy()), expect(2.7, saw=["Pause"], playing=False, not_=["ToggleCredits"]),
     ev(3.0, "down", xy=date_xy()), ev(3.1, "move", xy=date_xy(50)), ev(3.2, "move", xy=date_xy(100)), ev(3.3, "up", xy=date_xy(100)),
-    expect(3.4, saw=["Scrub"], not_=["ToggleCredits"]),                   # the date still scrubs under the page
-    ev(3.6, "down", at=[-25.0, 10.0]), *drag(3.6, 0, [(0.5, 0.6), (0.58, 0.62)]),
-    expect(3.9, camera_moved=True, not_=["ToggleCredits"]),               # a drag is the globe's, page or no page
-    ev(4.2, "down", at=SEA), ev(4.3, "up", at=SEA), expect(4.4, saw=["ToggleCredits"], not_=["Ring"]),
+    expect(3.4, saw=["Scrub"], not_=["ToggleCredits"]),                   # a drag scrubs, never opens
+    ev(4.0, "down", xy=date_xy()), expect(4.5, saw=["ToggleCredits"]), ev(4.6, "up", xy=date_xy()),
+    ev(5.0, "down", at=[-25.0, 10.0]), *drag(5.0, 0, [(0.5, 0.6), (0.58, 0.62)]),
+    expect(5.3, camera_moved=True, not_=["ToggleCredits"]),               # a drag is the globe's, page or no page
+    ev(5.6, "down", xy=date_xy()), ev(5.7, "up", xy=date_xy()), expect(5.8, saw=["ToggleCredits"], not_=["Pause", "Play"]),  # a tap on the date closes it too
 ], day=9800.0)
 
 # --- R4: clear the sea, bring the globe home, the date's flick ---

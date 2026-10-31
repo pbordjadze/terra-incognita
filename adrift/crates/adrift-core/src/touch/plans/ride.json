@@ -30,11 +30,14 @@
    "t": 0.1,
    "expect": {
     "saw": [
+     "PressFloat",
+     "Unpress",
      "Ride"
     ],
     "riding": 1,
     "not": [
-     "Put"
+     "Put",
+     "Hold"
     ]
    }
   },
