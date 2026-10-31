@@ -29,7 +29,7 @@ pub const CREDITS: &[&str] = &[
     "The currents, their eddies and the real drifters: this study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html (CC BY 4.0). Climatology: Laurindo, Mariano and Lumpkin (2017). Trajectories: Lumpkin and Centurioni, NOAA NCEI, doi:10.25921/7ntx-z961.",
     "The wind: NCEP/NCAR Reanalysis 1 data provided by the NOAA PSL, Boulder, Colorado, USA, from their website at https://psl.noaa.gov (Kalnay et al. 1996).",
     "The sea ice: Fetterer, F., K. Knowles, W. N. Meier, M. Savoie and A. K. Windnagel, Sea Ice Index, Version 4, NSIDC.",
-    "The coast: made with Natural Earth.",
+    "The coast: made with Natural Earth, at about ten kilometres; a float is held five kilometres off it, and an island smaller than that is not there. The sea ice is each month's usual edge; a float is held where the ice covers fifteen percent or more.",
     "The sea is a typical year, not this one: a float's path is what a typical year's sea would do from that day, never what the sea did on it.",
 ];
 
