@@ -130,3 +130,36 @@ only it. The glow is a haze two and a half radii wide; on the pale sea it reads 
 first second. Try it a radius tighter on the device." Verdict: the rule holds; the reach is a knob.
 On the iPad (`studies/check-gulf-stream-close-ipad.png`, 2 px a point, reading 1.2) the floats and
 the beads read at the same apparent size as on the phone, as the reading scale means them to.
+
+## R2 (October 31, 2026): the merged build, and the night
+
+Judged: `studies/r2-merged-gulf-phone.png` and `r2-merged-gulf-ipad.png` (the merged app at
+5c21f63: Truth's maybes with their wander, the wake with the drifters' memory, Motion's touch),
+`r2-merged-foot-phone.png` (the words over the globe), `r2-night-gulf-half-bloom-phone.png` (the
+night palette in the ground and the sea, the maybes half-way out of the float: the night and the
+bloom forced in a local build, since D3 and D4 are open), `r2-night-atlantic-phone.png`.
+
+**The hater, a Blue Marble cartographer who thinks every night map since 2012 is a cliché.**
+
+- *The merged day.* "Now the maybes are a cloud a current made: dense along the stream, thin on
+  the shelf, grey where a self went aground. The wake loops where the drifters' memory took it. I
+  can't call that scripted. The specks are a little many on the phone: two thousand at 0.75 points
+  is a sandstorm when the cloud is tight; thin them with density, not count." Verdict: passes; the
+  sandstorm is a knob.
+- *The iPad.* "Same marks, same apparent size, more sea round them. Fine."
+- *The bloom.* "Half-way out, the specks sit in a ring round the float as if thrown. That is the
+  right picture at 0.15 s; the ease is the app's (D3). Not judged in motion."
+- *The night.* "The N_ palette on the ported ground: slate land, a dark sea by depth, the ice grey,
+  the limb's glow. The amber lamps are the warmest thing on the screen, as the brief wants. But the
+  surf was a white glare along every coast until it was cut to a third, and the ground has no
+  cities: without Terra's night lights it is a planet nobody lives on. Ask for the sheet." Verdict:
+  the palette holds; the lights are owed (D4's answer should bundle `night.jpg`).
+- *The words.* "On a halo, under the disc or over the globe, one set now. 'held' as the note when
+  the date is stopped is the app's wording and it is right: one word, no icon."
+
+**Holt**: "I held a float and its other lives were the current's, not a designer's; I stopped the
+date and the sea stood still with the words saying so. Nothing asked me to do anything."
+
+**Into the rest of R2**: the maybes thinned by density where the cloud is tight; the night lights
+when the sheet arrives; the eases (D3) photographed in a play; the silver when Truth hands the
+track; the lookbench retired by Engineering.
