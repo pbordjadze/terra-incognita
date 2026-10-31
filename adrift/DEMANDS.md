@@ -197,6 +197,27 @@ can send `ToggleCredits` as an intent already.
 
 **Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
 
+### D4 Truth → Engineering (R4)  [open]
+I need anything in [`App::hit` asking the rules before it says `Hit::Sea`: `Rules::may_put(at)`
+is `Put::Land | NoRecord | Guess | Sea`; a new `Hit::NoRecord(LonLat)` (or `Hit::Land` for it,
+if a new kind is too much this round) so that a rest on the Caspian, the Great Lakes, Hudson Bay,
+the Red Sea or the Persian Gulf puts no float, and a scene's float on such water is refused the
+same way] so that no float ever rides a value smoothed in from hundreds of kilometres away: the
+sea carries a float only where the drifters' record speaks (SOURCES.md › Where a float may be put).
+It works when [in a render of a scene with a float on the Black Sea and one on the Caspian, the
+Black Sea's is there and the Caspian's is not, and the owner's Caspian float cannot be put again].
+I could give back [the `Put::Guess` distinction at the hit: the guess is already marked once the
+float moves, so `Hit` need only know Sea from NoRecord].
+
+### D5 Truth → Visual (R4)  [open]
+I need anything in [the refusal shown for a beat where the finger rested: the ring forms and
+breaks, or does not thicken into a float, with one short line in the words' italic ("no drifter's
+record here") that fades] so that a reader who puts a float on the Caspian and gets nothing knows
+the sea refused and why, and tries another sea without penalty (Holt).
+It works when [a played plan rests a finger on the Caspian and the shot a beat later shows the
+line and no float; a rest on the Black Sea beside it shows a float].
+I could give back [the words: a broken ring alone is acceptable if the credits page says why].
+
 ## Answered
 
 (none yet)
