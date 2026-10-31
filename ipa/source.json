@@ -1,0 +1,125 @@
+{
+  "name": "Terra Incognita (CI builds)",
+  "identifier": "com.pbordjadze.terraincognita.source",
+  "subtitle": "Automatic builds",
+  "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+  "website": "https://github.com/pbordjadze/terra-incognita",
+  "tintColor": "#C9A243",
+  "apps": [
+    {
+      "name": "Terra Incognita",
+      "bundleIdentifier": "com.pbordjadze.terraincognita",
+      "developerName": "pbordjadze",
+      "subtitle": "The world, closer and closer",
+      "localizedDescription": "A wandering atlas in the making: a live globe, its ground, sea and clouds as satellites and buoys saw them, and a workbench of prototypes to try on it. Offline, apart from the workbench's optional prototype packs.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/icon.png",
+      "tintColor": "#C9A243",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.245",
+          "buildVersion": "245",
+          "date": "2026-10-31T10:18:35Z",
+          "localizedDescription": "Merge claude/workbench-list-short: the workbench listing test reads the whole list on the iPad",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-245/TerraIncognita.ipa",
+          "size": 27030163,
+          "minOSVersion": "26.0"
+        },
+        {
+          "version": "1.0.196",
+          "buildVersion": "196",
+          "date": "2026-10-30T00:46:38Z",
+          "localizedDescription": "Merge claude/rebuilt-experiences: the camelid test asks for a pack that exists; the device runs get their time (painting-company row 176)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-196/TerraIncognita.ipa",
+          "size": 121263852,
+          "minOSVersion": "26.0"
+        },
+        {
+          "version": "1.0.190",
+          "buildVersion": "190",
+          "date": "2026-10-29T13:52:25Z",
+          "localizedDescription": "Merge claude/the-amazon (painting-company row 172)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-190/TerraIncognita.ipa",
+          "size": 121821334,
+          "minOSVersion": "26.0"
+        },
+        {
+          "version": "1.0.172",
+          "buildVersion": "172",
+          "date": "2026-10-29T07:41:02Z",
+          "localizedDescription": "Merge the quiet globe: names on demand, clouds clear where you look, the Earth at night, the quiet frame",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-172/TerraIncognita.ipa",
+          "size": 110683399,
+          "minOSVersion": "26.0"
+        },
+        {
+          "version": "1.0.151",
+          "buildVersion": "151",
+          "date": "2026-10-28T17:14:13Z",
+          "localizedDescription": "The ocean on the stage: the month's measured surface currents, alive on the globe",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-151/TerraIncognita.ipa",
+          "size": 110344348,
+          "minOSVersion": "26.0"
+        }
+      ],
+      "version": "1.0.245",
+      "versionDate": "2026-10-31T10:18:35Z",
+      "versionDescription": "Merge claude/workbench-list-short: the workbench listing test reads the whole list on the iPad",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/build-245/TerraIncognita.ipa",
+      "size": 27030163,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    },
+    {
+      "name": "Adrift",
+      "bundleIdentifier": "com.pbordjadze.adrift",
+      "developerName": "pbordjadze",
+      "subtitle": "Glass floats on the real sea",
+      "localizedDescription": "Tap the open sea and it rings; rest a beat longer and a glass float is yours, lamp amber on a cool sea. The month's real currents and winds, measured by drifting buoys, carry it; nothing scripts where it goes. Written from scratch in Rust on the GPU. Offline; every dataset credited.",
+      "iconURL": "https://raw.githubusercontent.com/pbordjadze/terra-incognita/sidestore/adrift-icon.png",
+      "tintColor": "#E0A040",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.0.23",
+          "buildVersion": "23",
+          "date": "2026-10-31T09:29:10Z",
+          "localizedDescription": "Merge adrift: round 3 closed (the credits' tap and page, the guessed sea marked, the frame's cost logged, one text system) (painting-company row 196)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-23/Adrift.ipa",
+          "size": 31830081,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.20",
+          "buildVersion": "20",
+          "date": "2026-10-31T09:17:44Z",
+          "localizedDescription": "Merge adrift: round 3 (the maybes' budget, the measured sea on the float, the dusting at the whole Earth, the ride aiming ahead, the web shell's wheel and keys) and the two-app SideStore source script (painting-company row 196)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-20/Adrift.ipa",
+          "size": 31943552,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.0.14",
+          "buildVersion": "14",
+          "date": "2026-10-31T09:10:20Z",
+          "localizedDescription": "Merge adrift: Adrift, glass floats on the real sea, as its own app beside Terra in the SideStore source (painting-company row 196)",
+          "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-14/Adrift.ipa",
+          "size": 31943287,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "version": "1.0.23",
+      "versionDate": "2026-10-31T09:29:10Z",
+      "versionDescription": "Merge adrift: round 3 closed (the credits' tap and page, the guessed sea marked, the frame's cost logged, one text system) (painting-company row 196)",
+      "downloadURL": "https://github.com/pbordjadze/terra-incognita/releases/download/adrift-build-23/Adrift.ipa",
+      "size": 31830081,
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}
