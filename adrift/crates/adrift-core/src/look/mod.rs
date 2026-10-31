@@ -189,6 +189,11 @@ pub struct LookState {
     pub drifter: Vec<LonLat>,
     /// 0..1 as the drifter rises among the maybes and sinks back.
     pub rise: f32,
+    /// The drifter's buoy and its dates ("Drifter 300234061198840, 12 May 2019 to 3 Feb 2020"): a real
+    /// buoy and a real year, drawn as a label at the point nearest the held float.
+    pub drifter_label: String,
+    /// The index in `drifter` of the point nearest the held float; found from the held float if none.
+    pub drifter_nearest: Option<usize>,
     /// The night palette.
     pub night: bool,
     /// The date as words ("14 October").
@@ -204,6 +209,8 @@ pub const WAKE_DAYS: usize = 45;
 
 /// The marks on the sea, in their draw order, behind one `prepare` and one `draw`.
 pub struct Look {
+    /// Where the maybes bloom from: the float last held.
+    bloom_from: [f32; 3],
     pub wake: wake::Wake,
     pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
@@ -214,6 +221,7 @@ pub struct Look {
 impl Look {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Look {
         Look {
+            bloom_from: [0.0, 0.0, 1.0],
             wake: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
@@ -232,7 +240,11 @@ impl Look {
             beads.extend(wake::beads(&f.wake[start..], n));
         }
         self.wake.prepare(gpu, &beads);
-        self.maybes.prepare(gpu, state.bloom, n);
+        // the maybes bloom from the held float (the last held place is kept while they fold)
+        if let Some(f) = state.floats.iter().find(|f| f.held) {
+            self.bloom_from = unit(f.at);
+        }
+        self.maybes.prepare(gpu, self.bloom_from, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n);
         let mut fl: Vec<floats::FloatInstance> = state
@@ -244,7 +256,21 @@ impl Look {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32 });
         }
         self.floats.prepare(gpu, &fl);
-        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n);
+        // the drifter's label, at its point nearest the held float, rising with the silver
+        let mut labels = Vec::new();
+        if state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() {
+            let nearest = state.drifter_nearest.unwrap_or_else(|| {
+                let from = state.floats.iter().find(|f| f.held).map(|f| f.at);
+                match from {
+                    Some(at) => (0..state.drifter.len()).min_by(|&a, &b| state.drifter[a].distance_m(at).partial_cmp(&state.drifter[b].distance_m(at)).unwrap()).unwrap_or(0),
+                    None => 0,
+                }
+            });
+            let at = unit(state.drifter[nearest.min(state.drifter.len() - 1)]);
+            let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
+            labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
+        }
+        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n, &labels);
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).

@@ -79,6 +79,7 @@ and `motion::thicken(now - since)` as the 0..1 the look draws (0 a tap's ring, 1
 `BEAT` 0.40 s); the app hands it to the look as `LookState.resting`.
 
 ### D3 Visual → Engineering (R2)  [answered]
+### D3 Visual → Engineering (R2)  [open]
 I need two eased values where the app now hands the look a switch: `LookState.bloom` going 0 → 1
 over anything in 0.3–0.4 s eased out when a float is held and 1 → 0 over 0.2–0.3 s eased in when
 it is let go (the held float's place and the maybes' buffer kept until the fold ends), and
@@ -95,6 +96,7 @@ app's frame loop can't carry a value past the float's release.
 value); `View.tone.w` 0 → 1 over 0.6 s eased out when the date stops, 1 → 0 over 0.3 s eased in
 when it runs; the stage redraws while either moves.
 ### D4 Visual → Engineering (R2)  [answered]
+### D4 Visual → Engineering (R2)  [open]
 I need the night told to the look: `LookState.night` and `View.pad.x` (the View's unused lane)
 set 1 when the shell is in the system's dark appearance (and by `-night` for the checks: a scene
 field `night: true`), so that the ground, the sea and every mark can draw the night palette

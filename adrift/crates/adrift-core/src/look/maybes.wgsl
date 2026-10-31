@@ -7,6 +7,7 @@
 struct Maybe { @location(0) p: vec2f, @location(1) held: u32 };   // lon, lat (degrees), what holds it (Truth's Path)
 
 struct Maybes {
+    origin: vec4<f32>,  // the held float's place (a unit vector), where the specks bloom from
     bloom: f32,         // 0..1 as they bloom out of the float and fold back
     night: f32,
     _p0: f32,
@@ -25,9 +26,12 @@ struct SpeckOut {
 fn vs(@builtin(vertex_index) vi: u32, m: Maybe) -> SpeckOut {
     let la = radians(m.p.y);
     let lo = radians(m.p.x);
-    let g = vec3<f32>(cos(la) * sin(lo), sin(la), cos(la) * cos(lo));
+    // from the float's place out to its own, eased, so blooming out means out (and folding back, back)
+    let own = vec3<f32>(cos(la) * sin(lo), sin(la), cos(la) * cos(lo));
+    let b = M.bloom * M.bloom * (3.0 - 2.0 * M.bloom);
+    let g = normalize(mix(M.origin.xyz, own, b));
     let p = place(g);
-    let r = 0.75 * rp() * M.bloom;
+    let r = 0.75 * rp() * min(M.bloom * 2.0, 1.0);
     let c = corner(vi % 6u);
     var o: SpeckOut;
     o.local = c * (r + 0.5 * U.frame.z);
@@ -45,8 +49,8 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     var acc = vec4<f32>(0.0);
     // a self held at a coast or in ice is a little greyer: it stopped
     let speck = mix(mix(vec3<f32>(0.984, 0.914, 0.800), vec3<f32>(0.914, 0.827, 0.682), n), vec3<f32>(0.85, 0.84, 0.80), 0.6 * i.held);
-    let a = mix(0.80, 0.30, n) * M.bloom;
+    let a = mix(0.80, 0.30, n) * min(M.bloom * 2.0, 1.0);
     acc = over(acc, speck, a * cover(d - i.r));
-    acc = over(acc, vec3<f32>(0.557, 0.341, 0.071), 0.5 * (1.0 - n) * M.bloom * cover(d - 0.35 * i.r));
+    acc = over(acc, vec3<f32>(0.557, 0.341, 0.071), 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0) * cover(d - 0.35 * i.r));
     return acc;
 }

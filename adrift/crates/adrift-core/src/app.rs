@@ -720,6 +720,8 @@ impl App {
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
             drifter: self.drifter.clone(),
+            drifter_label: self.drifter_label.clone(),
+            drifter_nearest: if self.drifter.is_empty() { None } else { Some(self.drifter_nearest.min(self.drifter.len() - 1)) },
             rise: self.bloom_eased(),
             night: self.night,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
