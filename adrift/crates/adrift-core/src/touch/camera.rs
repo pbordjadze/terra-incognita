@@ -131,7 +131,7 @@ impl CameraControl {
         let (s0, s1) = (((ang - t).sin()) / ang.sin(), (t.sin()) / ang.sin());
         let v = [c[0] * s0 + a[0] * s1, c[1] * s0 + a[1] * s1, c[2] * s0 + a[2] * s1];
         let to = LonLat::from_xyz(v);
-        self.fly_to(Camera { lon: to.lon, lat: to.lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: self.camera.zoom }, now, motion);
+        self.fly_to(Camera { lon: to.lon, lat: to.lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: self.camera.zoom, roll: self.camera.roll }, now, motion);
     }
 
     // --- the sphere ---
