@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "generated": "2026-10-29T14:30:03-04:00",
+  "generated": "2026-10-31T03:49:26-04:00",
   "packs": [
     {
       "id": "borders-on-old-maps",
@@ -352,7 +352,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "gathering-of-water",
@@ -423,7 +423,7 @@
         }
       ],
       "published": "2026-10-29T06:48:23-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "gathering-of-water-alive",
@@ -634,7 +634,7 @@
         }
       ],
       "published": "2026-10-29T06:58:20-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "hello-pack",
@@ -2971,7 +2971,7 @@
         }
       ],
       "published": "2026-10-29T06:58:20-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "lead-line",
@@ -3122,7 +3122,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "low-sea",
@@ -3298,7 +3298,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "monsoon-sails",
@@ -3694,7 +3694,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "sea-between",
@@ -4341,7 +4341,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     },
     {
       "id": "sounding-the-deep",
@@ -4648,7 +4648,7 @@
         }
       ],
       "published": "2026-10-29T14:30:03-04:00",
-      "retired": false
+      "retired": true
     }
   ]
 }
