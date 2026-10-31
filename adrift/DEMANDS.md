@@ -30,6 +30,8 @@ their half, and none is on a coast north of the cape; today's walk gives 68.2° 
 ashore (`tools/adrift/data/sea-harness`, `cargo run`), and the Sargasso spread test still holds].
 I could give back [the step depending only on (at, day, dt, seed, k): with memory it depends on
 the velocity carried too, still deterministic for a seed; and 8 bytes a path on the GPU].
+The flight itself is ready in `sea/rules.rs` (`Rules::flight`, `Drift`, `flights`) and
+`rules.wgsl` (`maybes_flight`, `Path.eddy_u/v`), tested; it gives 65.9° W, 46%, 6 of 500 ashore.
 
 ## Answered
 
