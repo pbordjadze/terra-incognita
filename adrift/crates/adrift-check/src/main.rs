@@ -82,6 +82,9 @@ struct Plan {
     floats: Vec<adrift_core::SceneFloat>,
     #[serde(default)]
     day: f64,
+    /// The reader's Reduce Motion setting.
+    #[serde(default)]
+    reduce_motion: bool,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -150,6 +153,7 @@ fn play(args: &[String]) -> Result<()> {
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, plan.ppp)?;
     app.budget.locked = true;
     app.budget.scale = 1.0;
+    app.reduce_motion = plan.reduce_motion;
     let scene = plan.scene.clone().unwrap_or_else(|| Scene {
         camera: plan.camera.unwrap_or(adrift_core::Camera { lon: -40.0, lat: 22.0, zoom: 1.0 }),
         day: plan.day,
