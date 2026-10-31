@@ -9,12 +9,14 @@
 //! never what the sea did on it. The screen should say "a typical <month>", and never a year.
 
 pub mod drifters;
+pub mod gpu;
 pub mod rules;
 pub mod sheets;
 #[cfg(test)]
 mod tests;
 
 pub use drifters::{Drifters, Nearest, Run};
+pub use gpu::{GpuPath, Maybes, Params};
 pub use rules::{Drift, Flight, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
 

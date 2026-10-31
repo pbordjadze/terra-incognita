@@ -211,3 +211,81 @@ fn the_flight_off_hatteras_keeps_to_the_record() {
     assert!((median + 64.8).abs() < 4.0, "the flight's median {median} is far from the record's 64.8 W");
     assert!((east - 0.5).abs() < 0.2, "the flight's share east of 65 W, {east}, is far from the record's half");
 }
+
+/// The GPU mirror held to the CPU: the same paths stepped by `rules.wgsl` and by `Rules::step`
+/// (and `flight`) land within a few metres after a step and within a kilometre after eight (the
+/// sheets are read the same way; only the rounding of a fused multiply differs).
+#[test]
+fn the_gpu_steps_as_the_cpu_does() {
+    use crate::gpu::{Gpu, Textures};
+    use super::gpu::{GpuPath, Maybes, Params};
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let gpu = match pollster_block(Gpu::new(&instance, None)) {
+        Ok(g) => g,
+        Err(e) => {
+            eprintln!("no GPU here ({e}); the mirror is not checked");
+            return;
+        }
+    };
+    let assets = DirAssets(assets());
+    let textures = Textures::load(&gpu, &assets, 6).unwrap();
+    let r = rules();
+    // a grid of sea points, a quarter day at a time
+    let mut starts = Vec::new();
+    for lat in (-60..=70).step_by(10) {
+        for lon in (-180..180).step_by(15) {
+            let (lon, lat) = (lon as f64 + 0.5, lat as f64 + 0.5);
+            if r.coast.is_sea(lon as f32, lat as f32) {
+                starts.push(LonLat { lon, lat });
+            }
+        }
+    }
+    let n = starts.len() as u32;
+    let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
+    for flight in [false, true] {
+        let paths: Vec<GpuPath> = starts.iter().map(|p| GpuPath { lon: p.lon as f32, lat: p.lat as f32, ..Default::default() }).collect();
+        maybes.seed(&gpu, &paths);
+        let mut cpu: Vec<Drift> = starts.iter().map(|p| Drift::put(*p)).collect();
+        let mut day = JULY;
+        let dt = 0.25;
+        let mut worst = 0.0f32;
+        for step in 0..8 {
+            maybes.step(&gpu, Params::new(&r, day, dt, 99, n), flight);
+            for (i, d) in cpu.iter_mut().enumerate() {
+                let k = i as u32 + 1;
+                if flight {
+                    *d = r.flight(*d, day, dt, 99, k).drift;
+                } else {
+                    d.at = r.step(d.at, day, dt, 99, k).at;
+                }
+            }
+            day += dt;
+            let got = maybes.read(&gpu, n);
+            for (g, d) in got.iter().zip(&cpu) {
+                let km = distance_km(g.lon, g.lat, d.at.lon as f32, d.at.lat as f32);
+                worst = worst.max(km);
+            }
+            if step == 0 {
+                assert!(worst < 0.01, "after one step the GPU and the CPU differ by {worst} km ({})", if flight { "flight" } else { "walk" });
+            }
+        }
+        eprintln!("{}: {} paths, worst gap after 8 quarter-days {:.4} km", if flight { "flight" } else { "walk" }, n, worst);
+        assert!(worst < 1.0, "after eight steps the GPU and the CPU differ by {worst} km");
+    }
+}
+
+fn pollster_block<F: std::future::Future>(f: F) -> F::Output {
+    use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+    fn noop(_: *const ()) {}
+    fn clone(p: *const ()) -> RawWaker { RawWaker::new(p, &VTABLE) }
+    static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, noop, noop, noop);
+    let waker = unsafe { Waker::from_raw(RawWaker::new(std::ptr::null(), &VTABLE)) };
+    let mut cx = Context::from_waker(&waker);
+    let mut f = std::pin::pin!(f);
+    loop {
+        if let Poll::Ready(v) = f.as_mut().poll(&mut cx) {
+            return v;
+        }
+        std::thread::yield_now();
+    }
+}
