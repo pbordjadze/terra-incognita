@@ -37,7 +37,7 @@ fn vs(@builtin(vertex_index) vi: u32, b: BeadIn) -> BeadOut {
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
-    o.a = pow(1.0 - b.age, 1.4) * 0.95 + 0.05;
+    o.a = pow(1.0 - b.age, 1.2) * 0.9 + 0.1;
     o.night = b.night;
     return o;
 }
