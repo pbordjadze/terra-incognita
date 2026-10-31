@@ -118,6 +118,10 @@ struct Plan {
     /// The panel's rows held fixed, `[[id, x, y, w, h], ...]` in points, whatever the look draws
     /// (Motion's D11, R6).
     panel: Option<Vec<[f64; 5]>>,
+    /// Draw every advanced frame, not only the shots (Motion's D11, R6): the clouds step only when a
+    /// frame is drawn, so a plan that reads `behind()` needs it; slower on the software driver.
+    #[serde(default)]
+    frames: bool,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -210,11 +214,16 @@ fn play(args: &[String]) -> Result<()> {
     app.frame(&target.view, t);
     let mut log = String::new();
     let mut failed = 0;
+    let every_frame = plan.frames;
     let advance = |app: &mut App, t: &mut f64, secs: f64| {
         let n = (secs * fps).ceil().max(1.0) as usize;
         for _ in 0..n {
             *t += secs / n as f64;
-            app.advance(*t);
+            if every_frame {
+                app.frame(&target.view, *t);
+            } else {
+                app.advance(*t);
+            }
         }
     };
     let camera0 = app.camera.camera;
