@@ -88,11 +88,7 @@ impl App {
     pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> anyhow::Result<App> {
         let clock = Clock { day: 0.0, running: true, rate: RATE };
         let textures = Textures::load(&gpu, assets.as_ref(), clock.months().0)?;
-        let rules = Rules {
-            currents: crate::sea::Currents::load(assets.as_ref())?,
-            coast: crate::sea::Coast::load(assets.as_ref())?,
-            ice: crate::sea::Ice::load(assets.as_ref())?,
-        };
+        let rules = Rules::load(assets.as_ref())?;
         let view_layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("view"),
             entries: &[wgpu::BindGroupLayoutEntry {
