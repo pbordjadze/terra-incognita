@@ -2,7 +2,6 @@
 //! the data, and an offscreen target for the checks. (Engineering.)
 
 pub mod stage;
-pub mod text;
 pub mod textures;
 pub mod view;
 
@@ -10,7 +9,6 @@ use std::sync::Arc;
 
 pub use textures::{Texture, Textures};
 pub use stage::{Blit, Budget, Stage};
-pub use text::{GlyphInstance, Text, TextPass};
 pub use view::{View, ViewUniform};
 
 /// The device and its queue, shared by every pass.
