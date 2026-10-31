@@ -107,3 +107,12 @@ it back and the globe was as before. Holding a float shows its other selves with
 You can wander, stop, undo. Leaving is not yet in a plan; the silver drifter is not yet on the
 screen, so the one thing that would make a stranger believe the cloud (a real buoy that went
 there) is missing. Verdict: the rules keep their promises; the screen is a round behind them.
+
+**Later, on d2bd376 (`critics/r2/gulf-stream-close-silver.png`).** Engineering wired the put's
+draw, the silver drifter and the credit line. The hater: the silver is a real run (a tight loop
+on the shelf, then off along the stream to the edge of the frame and beyond), and it is too much
+of one: a whole year of a buoy across the frame says "a drifter went everywhere", not "a drifter
+passed here". `Track::window(30)` is the month about the nearest point, with `label_window` for
+its dates; draw that. The credit line is on the foot and runs off both edges of the phone: a
+licence cut in half is not met; it is now under eighty characters. Holt: holding the float shows
+a real buoy's way; nothing moved. Fine.
