@@ -16,7 +16,7 @@ pub mod sheets;
 mod tests;
 
 pub use drifters::{Drifters, Nearest, Run, Track};
-pub use gpu::{GpuPath, Maybes, Params};
+pub use gpu::{GpuPath, Keep, Maybes, Params, MAX_STEPS};
 pub use rules::{Drift, Flight, Put, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
 
