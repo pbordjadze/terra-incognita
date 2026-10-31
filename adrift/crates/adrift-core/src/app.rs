@@ -110,6 +110,9 @@ pub struct App {
     gestures: Gestures,
     /// A finger resting on the sea, the ring thickening: where, and since when.
     pressing: Option<(LonLat, f64)>,
+    /// A float under a resting finger, from when (`Intent::PressFloat`): its maybes show from the
+    /// landing; `Unpress` clears it.
+    pressing_float: Option<(u32, f64)>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -214,6 +217,7 @@ impl App {
             camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
             gestures: Gestures::new(),
             pressing: None,
+            pressing_float: None,
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -353,7 +357,11 @@ impl App {
         match intent {
             Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
             Intent::Press { at, since } => self.pressing = Some((at, since)),
-            Intent::Unpress => self.pressing = None,
+            Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
+            Intent::Unpress => {
+                self.pressing = None;
+                self.pressing_float = None;
+            }
             Intent::Put { at } => {
                 self.pressing = None;
                 self.haptic = true;
@@ -492,6 +500,7 @@ impl App {
             f.hand = Hand::Free;
         }
         self.pressing = None;
+        self.pressing_float = None;
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
@@ -664,10 +673,12 @@ impl App {
     /// camera rides (R4: tap-to-ride is the natural way to follow a float, so following shows its
     /// maybes; `SHOW_RIDDEN` is the switch while Motion decides).
     fn shown(&self) -> Option<&Float> {
+        let by_id = |id: u32| self.floats.iter().find(|f| f.id == id);
         self.floats
             .iter()
             .find(|f| f.hand == Hand::Held)
-            .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(|id| self.floats.iter().find(|f| f.id == id)) } else { None })
+            .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
+            .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
     }
 
     /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day:

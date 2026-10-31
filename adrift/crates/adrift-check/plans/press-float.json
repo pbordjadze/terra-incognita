@@ -1,0 +1,12 @@
+{
+ "title": "A finger landing on a float raises its maybes at once (PressFloat); lifting before the beat lets them fold",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -70.0, "lat": 30.0, "zoom": 2.5},
+ "floats": [{"lon": -74.0, "lat": 34.0}],
+ "steps": [
+  {"t": 0.5, "intent": {"PressFloat": {"float": 1, "since": 0.5}}},
+  {"t": 0.8, "expect": {"saw": ["PressFloat"], "floats": 1}, "shot": "pressed"},
+  {"t": 0.9, "intent": "Unpress"},
+  {"t": 1.5, "expect": {"saw": ["Unpress"]}, "shot": "let-be"}
+ ]
+}

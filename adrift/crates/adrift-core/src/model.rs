@@ -252,8 +252,11 @@ pub enum Intent {
     Ring { at: LonLat },
     /// The finger rests on the sea: the ring thickens from `since` (Motion's D1).
     Press { at: LonLat, since: f64 },
-    /// It lifted or moved before the beat: the ring lets go.
+    /// It lifted or moved before the beat: the ring lets go (and a pressed float is let be).
     Unpress,
+    /// The finger lands on a float and rests from `since`: its maybes rise from the landing, before
+    /// the beat that holds it (Motion's D7, R4). Cleared by `Unpress`, superseded by `Hold`.
+    PressFloat { float: u32, since: f64 },
     /// A finger has rested a beat on the sea: a float is put there (and is held while the finger stays).
     Put { at: LonLat },
     /// A finger rests on a float: its maybes show.
