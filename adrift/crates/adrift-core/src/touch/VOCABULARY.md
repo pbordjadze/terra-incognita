@@ -16,6 +16,7 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | double tap | anything | fly in about the point (out to the whole globe from deep in) |
 | drag | the date at the foot | scrub the date; the sea pauses with it |
 | tap | the date | pause or play |
+| tap | the credit line | the page of credits opens; any tap while it is open closes it |
 | three-finger swipe left · shake · ⌘Z | | undo the last touch; nothing else moves |
 | three-finger swipe right · ⇧⌘Z | | redo it |
 
@@ -62,6 +63,7 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
 | `Redo` | a three-finger swipe right, ⇧⌘Z |
+| `ToggleCredits` | a tap on the credit line (`Hit::Credits`, the look's `credit_bounds`); while the page is open, a tap anywhere but the date |
 
 Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
 float stays where it was last over water (the app watches the carried float and takes it out when
@@ -117,6 +119,11 @@ Pinch{a, b}
 Three{x0}
  ├─ the fingers' mean x moves ≥ SWIPE left ─▶ emits Undo once; right ─▶ Redo once
  └─ all Up / Cancel ───────────────▶ Idle
+
+CreditsDown{x0,y0}          (Down on the credit line; or Down anywhere but the date while the page is open)
+ ├─ Move beyond SLOP ──────────────▶ Orbit           a drag is always the globe's
+ ├─ Up ────────────────────────────▶ Idle            emits ToggleCredits
+ └─ second finger Down ────────────▶ Pinch
 
 DateDown{x0}
  ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once, then Scrub{day} by dx
@@ -189,6 +196,11 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 18. **The idle turn**: after 8 s untouched, with no float on the sea and no ride, the globe turns as
     the Earth does, 4°/s. With a float put, it holds still: a float you are watching must not be
     carried out of view.
+
+19. **The credits**: the credit line along the foot is the one other thing drawn that takes a touch
+    (D5): a tap on it opens the page; while the page is open, a tap anywhere but the date closes it
+    and nothing else happens (no ring, no float: the beat waits for the page to go), a drag is the
+    globe's and a drag on the date scrubs, as ever. `plans/credits.json`.
 
 ## The numbers (`motion.rs`)
 

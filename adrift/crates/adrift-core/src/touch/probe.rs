@@ -13,6 +13,7 @@ impl Probe for App {
             Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
             None => date_band(&frame),
         };
+        let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 });
         match App::hit(self, x, y) {
             // the float in hand lies under the finger: what matters is the water under it
             Under::Float(id, p) if self.floats.iter().any(|f| f.id == id && f.hand == Hand::Carried) => {
@@ -23,6 +24,7 @@ impl Probe for App {
                 }
             }
             Under::Float(id, p) => Hit::Float(id, p),
+            _ if credits.is_some_and(|r| r.contains(x, y)) => Hit::Credits,
             _ if date.contains(x, y) => Hit::Date,
             Under::Sea(p) => Hit::Sea(p),
             Under::Land(p) => Hit::Land(p),
@@ -47,5 +49,8 @@ impl Probe for App {
     }
     fn motion(&self) -> Motion {
         Motion { reduce: self.reduce_motion }
+    }
+    fn credits_open(&self) -> bool {
+        self.credits_open
     }
 }

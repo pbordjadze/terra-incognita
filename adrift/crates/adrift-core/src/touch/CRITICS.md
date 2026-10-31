@@ -154,6 +154,11 @@ under a real finger) are not in yet; this entry is reopened when they are.
   its undo is a bare `z` and there is no redo, while `App::wheel` and `App::key` sit unused. D3.
 - *The maybes' smudge* at phone zoom 1 stands from R2 (Visual's).
 
+- *The credits* (`r3-credits.jpg`, D5): a tap on the credit line opens the page over the globe, a
+  tap on the sea closes it and puts nothing (a rest there while the page is open puts nothing
+  either), the date still scrubs beneath, a drag still turns. One line that was already there is
+  the only control added, and it is the licences' due.
+
 **Holt:** nothing new to penalise; the ride on a fast float is now a thing you can watch rather
 than chase. The device will say whether the beat is felt and whether a fling toward the pole feels
 like a wheel. Verdict withheld until it does.
