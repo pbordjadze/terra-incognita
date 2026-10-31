@@ -27,7 +27,7 @@ scattering everywhere at once.
 It works when [of 500 maybes put off Cape Hatteras in a typical July, thirty days on, the median
 is within 2° of the bundled GDP runs' 64.8° W, the share east of 65° W is within ten points of
 their half, and none is on a coast north of the cape; today's walk gives 68.2° W, 38%, and 3%
-ashore (`tools/adrift/data/sea-harness`, `cargo run`), and the Sargasso spread test still holds].
+ashore (the test `the_flight_off_hatteras_keeps_to_the_record` prints both), and the Sargasso spread test still holds].
 I could give back [the step depending only on (at, day, dt, seed, k): with memory it depends on
 the velocity carried too, still deterministic for a seed; and 8 bytes a path on the GPU].
 The flight itself is ready in `sea/rules.rs` (`Rules::flight`, `Drift`, `flights`) and
