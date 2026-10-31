@@ -1,0 +1,118 @@
+name: Adrift
+
+# Adrift (adrift/README.md), the Rust app on wgpu beside Terra in the same SideStore source.
+#   check  Linux: the workspace built and tested; every scene rendered and every plan played headless
+#          on Mesa's software Vulkan (the renders are the `adrift-check` artifact: look at them); the web
+#          build (WebGPU) as the `adrift-web` artifact, a directory any static server serves.
+#   ipa    macOS, only when a branch commit's first line carries `[adrift-ipa]` or on main (the macOS
+#          runners are shared: render and check on Linux first): the Rust library for aarch64-apple-ios
+#          and the Swift shell built by adrift/ios/build.sh into an unsigned IPA; on main it is published
+#          as the `adrift-build-<n>` prerelease (the five newest kept) and the SideStore source on the
+#          `sidestore` branch is regenerated to list both apps (ci/sidestore_publish.sh). On a branch the
+#          IPA is the `adrift-ipa` artifact.
+# Terra's ci.yml ignores pushes that change only Adrift; this one runs only for them.
+
+on:
+  push:
+    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh']
+  workflow_dispatch:
+    inputs:
+      ipa:
+        description: Build the device IPA too (macOS runner)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: adrift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, test, render on Linux; the web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: wasm32-unknown-unknown }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: adrift }
+      - name: Software Vulkan and the data
+        run: |
+          bash tools/adrift/linux-setup.sh
+          python3 tools/adrift/assets.py adrift/build/assets --link
+      - name: Build and test
+        working-directory: adrift
+        run: |
+          cargo build --release -p adrift-check -p adrift-core
+          cargo test --release -p adrift-core
+          cargo clippy --release -p adrift-core -p adrift-check -- -D warnings || echo "::warning::clippy has findings"
+      - name: Render every scene and play every plan
+        working-directory: adrift
+        run: |
+          mkdir -p build/out
+          for s in crates/adrift-check/scenes/*.json; do
+            n=$(basename "$s" .json)
+            cargo run -q --release -p adrift-check -- render "$s" "build/out/$n.png" --size 1179x2556 --ppp 3
+            cargo run -q --release -p adrift-check -- render "$s" "build/out/$n-ipad.png" --size 2064x2752 --ppp 2
+          done
+          for p in crates/adrift-check/plans/*.json; do
+            n=$(basename "$p" .json)
+            cargo run -q --release -p adrift-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: adrift-check, path: adrift/build/out, if-no-files-found: error }
+      - name: The web build
+        run: |
+          cargo install wasm-bindgen-cli --version 0.2.130 --locked
+          bash tools/adrift/web-build.sh adrift/build/web
+      - uses: actions/upload-artifact@v5
+        with: { name: adrift-web, path: adrift/build/web, if-no-files-found: error }
+
+  ipa:
+    name: IPA for SideStore (unsigned device build)
+    needs: [check]
+    if: ${{ !cancelled() && needs.check.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
+    permissions:
+      contents: write
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      BUILD: ${{ github.run_number }}
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-apple-ios }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: adrift }
+      - name: Build the IPA
+        run: |
+          mkdir -p out
+          BUILD="$BUILD" bash adrift/ios/build.sh out 2>&1 | tee out/ipa-build.log | tail -40
+          ls -l out/Adrift.ipa
+      - name: Publish release and SideStore source
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git log -1 --format=%s > out/notes.txt
+          if gh release view "adrift-build-$BUILD" > /dev/null 2>&1; then
+            gh release upload "adrift-build-$BUILD" out/Adrift.ipa --clobber
+          else
+            gh release create "adrift-build-$BUILD" out/Adrift.ipa --prerelease --target "$GITHUB_SHA" \
+              --title "Adrift build $BUILD" --notes-file out/notes.txt
+          fi
+          gh release list --limit 100 --json tagName -q '.[].tagName' | grep '^adrift-build-' | sort -t- -k3 -n -r | tail -n +6 |
+            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
+          bash ci/sidestore_publish.sh build/source "SideStore source after Adrift build $BUILD"
+          cp build/source/source.json out/
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: adrift-ipa, path: out, if-no-files-found: error }

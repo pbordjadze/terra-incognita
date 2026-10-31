@@ -23,7 +23,8 @@ name: CI
 # `[ipa]` packages a device build (main publishes it). ci/fast.py reads `[shots]` and `[test]`. Main
 # ignores the narrowing tags: merge into it with a merge commit whose message carries none, as a
 # fast-forward would bring a branch head's `[skip ci]` along.
-# A push that changes only web packs (Prototypes/) skips this workflow: packs.yml handles it on Linux.
+# A push that changes only web packs (Prototypes/) skips this workflow: packs.yml handles it on Linux;
+# one that changes only Adrift (adrift/, tools/adrift/) is adrift.yml's.
 # The macOS runners (5 at once) are shared with pbordjadze/paint-by-number and pbordjadze/pigeon:
 # one macOS job per push here.
 
@@ -31,7 +32,7 @@ on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore']
     # a web pack alone needs no native build: packs.yml (Linux) validates and publishes it
-    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml']
+    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml', 'adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json']
   workflow_dispatch:
     inputs:
       device:
@@ -318,17 +319,9 @@ jobs:
           # Keep the five newest builds (KEEP in ci/sidestore_source.py: the same number).
           gh release list --limit 100 --json tagName -q '.[].tagName' | grep '^build-' | tail -n +6 |
             while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
-          SOURCE="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/sidestore"
-          mkdir -p build/source
-          python3 ci/sidestore_source.py build/TerraIncognita.xcarchive/Products/Applications/TerraIncognita.app \
-            "$SOURCE/icon.png" > build/source/source.json
-          cp ci/sidestore-icon.png build/source/icon.png
-          printf '# SideStore source\n\nAdd %s/source.json in SideStore (Sources → +).\n' "$SOURCE" > build/source/README.md
+          # the source lists every app built here (ci/sidestore_apps.json: Terra and Adrift)
+          bash ci/sidestore_publish.sh build/source "SideStore source for build $BUILD"
           cp build/source/source.json out/
-          cd build/source
-          git init -q && git checkout -q -b sidestore && git add -A
-          git -c user.name="ci" -c user.email="ci@users.noreply.github.com" commit -qm "SideStore source for build $BUILD"
-          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "sidestore:refs/heads/sidestore"
       - name: Retire the separate Study II listing after verified main publication
         if: ${{ success() && github.ref_name == 'main' && contains(github.event.head_commit.message, '[retire-study2]') }}
         timeout-minutes: 5

@@ -1,0 +1,4 @@
+module AdriftCore {
+    header "adrift.h"
+    export *
+}

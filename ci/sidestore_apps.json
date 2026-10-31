@@ -1,0 +1,27 @@
+{
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's ipa job and adrift.yml both regenerate the source from here.",
+  "apps": [
+    {
+      "tag": "build",
+      "name": "Terra Incognita",
+      "bundleIdentifier": "com.pbordjadze.terraincognita",
+      "subtitle": "The world, closer and closer",
+      "localizedDescription": "A wandering atlas in the making: a live globe, and a workbench of prototypes to try on it, from illustrated natural histories to geographic studies and the first films. Offline, apart from the workbench's optional prototype packs.",
+      "icon": "icon.png",
+      "iconSource": "ci/sidestore-icon.png",
+      "tintColor": "#C9A243",
+      "minOSVersion": "26.0"
+    },
+    {
+      "tag": "adrift-build",
+      "name": "Adrift",
+      "bundleIdentifier": "com.pbordjadze.adrift",
+      "subtitle": "Glass floats on the real sea",
+      "localizedDescription": "Tap the open sea and it rings; rest a beat longer and a glass float is yours, lamp amber on a cool sea. The month's real currents and winds, measured by drifting buoys, carry it; nothing scripts where it goes. Written from scratch in Rust on the GPU. Offline; every dataset credited.",
+      "icon": "adrift-icon.png",
+      "iconSource": "adrift/ios/icon/icon.png",
+      "tintColor": "#E0A040",
+      "minOSVersion": "17.0"
+    }
+  ]
+}
