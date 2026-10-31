@@ -166,7 +166,7 @@ plan("tap-near-two", "A tap near two floats takes the nearest", [
 plan("fling", "Let go moving and the globe flings, then rests; a touch stops it at once", [
     ev(0.0, "down", at=[-45.0, 0.0]), *drag(0.0, 0, [(0.5, 0.6), (0.56, 0.61), (0.62, 0.62)]),
     expect(0.3, camera_moved=True), expect(0.6, camera_same_as_last=False),           # still going
-    ev(0.7, "down", xy=px(0.62, 0.42)), ev(0.75, "up", xy=px(0.62, 0.42)),             # a tap (on the Atlantic, wherever the fling went): it stops, and the sea rings
+    ev(0.7, "down", at=SEA), ev(0.75, "up", at=SEA),                                   # a tap on the Atlantic, wherever the fling took it: it stops, and the sea rings
     expect(0.8, saw=["Ring"]), expect(1.5, camera_same_as_last=True),
 ])
 plan("pinch", "Two fingers zoom and turn; a second finger before the beat puts no float", [
