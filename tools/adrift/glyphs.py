@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Builds the look's type: a signed-distance atlas of Libertinus Serif for the date and the credits
-(adrift/crates/adrift-core/src/look/words.wgsl draws from it at any size, with its halo).
+"""Builds the look's type: a signed-distance atlas of Libertinus Serif, Regular and Italic, for the date,
+the note and the credits (adrift/crates/adrift-core/src/look/words.wgsl draws from it at any size, with
+its halo).
 
     python3 tools/adrift/glyphs.py            # writes look/type/libertinus.png and libertinus.json
 
@@ -20,7 +21,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parents[2]
-FONT = ROOT / 'Globe' / 'fonts' / 'LibertinusSerif-Regular.otf'
+FONTS = {'regular': ROOT / 'Globe' / 'fonts' / 'LibertinusSerif-Regular.otf', 'italic': ROOT / 'Globe' / 'fonts' / 'LibertinusSerif-Italic.otf'}
 OUT = ROOT / 'adrift' / 'crates' / 'adrift-core' / 'src' / 'look' / 'type'
 EM, SPREAD, PAD = 64, 8, 14
 SS = 4                         # rasterised at SS times the em and thresholded there, so hairlines survive
@@ -62,10 +63,11 @@ def sdf(mask):
     return enc.reshape(h // SS, SS, w // SS, SS).mean((1, 3))      # (box-filtered down to the em)
 
 
-def main():
-    font = ImageFont.truetype(str(FONT), EM)
-    big = ImageFont.truetype(str(FONT), EM * SS)
-    cells, glyphs = [], {}
+def face(name, cells):
+    """Rasterises one face's glyphs into cells (appended) and returns its metrics and glyph table."""
+    font = ImageFont.truetype(str(FONTS[name]), EM)
+    big = ImageFont.truetype(str(FONTS[name]), EM * SS)
+    glyphs = {}
     for ch in CHARS:
         l, t, r, b = font.getbbox(ch, anchor='ls')
         w, h = r - l + 1, b - t + 1
@@ -75,26 +77,32 @@ def main():
             continue
         im = Image.new('L', ((w + 2 * PAD) * SS, (h + 2 * PAD) * SS), 0)
         ImageDraw.Draw(im).text(((PAD - l) * SS, (PAD - t) * SS), ch, font=big, fill=255, anchor='ls')
-        cells.append((ch, sdf(np.asarray(im) > 127), l - PAD, t - PAD, adv))
+        cells.append(((name, ch), sdf(np.asarray(im) > 127), l - PAD, t - PAD, adv))
+    asc, desc = font.getmetrics()
+    return {'font': FONTS[name].stem, 'ascent': asc, 'descent': desc, 'glyphs': glyphs}
+
+
+def main():
+    cells, faces = [], {}
+    for name in FONTS:
+        faces[name] = face(name, cells)
     W, x, y, rowh = 1024, 0, 0, 0                            # packed in rows
-    for ch, cell, left, top, adv in cells:
+    for (name, ch), cell, left, top, adv in cells:
         h, w = cell.shape
         if x + w > W:
             x, y, rowh = 0, y + rowh, 0
-        glyphs[ch] = {'advance': adv, 'left': left, 'top': top, 'w': w, 'h': h, 'x': x, 'y': y}
+        faces[name]['glyphs'][ch] = {'advance': adv, 'left': left, 'top': top, 'w': w, 'h': h, 'x': x, 'y': y}
         x, rowh = x + w, max(rowh, h)
     H = y + rowh
     atlas = np.zeros((H, W), np.float32)
-    for ch, cell, *_ in cells:
-        g = glyphs[ch]
+    for (name, ch), cell, *_ in cells:
+        g = faces[name]['glyphs'][ch]
         atlas[g['y']:g['y'] + g['h'], g['x']:g['x'] + g['w']] = cell
     OUT.mkdir(parents=True, exist_ok=True)
     Image.fromarray((atlas * 255 + 0.5).astype(np.uint8)).save(OUT / 'libertinus.png', optimize=True)
-    asc, desc = font.getmetrics()
     (OUT / 'libertinus.json').write_text(json.dumps({
-        'about': 'Signed-distance atlas of Libertinus Serif Regular (OFL, Globe/fonts) for words.wgsl: built by tools/adrift/glyphs.py, never hand-edited. Texels at em pixels an em; a glyph is drawn at (pen.x + left, baseline + top) with its w x h, scaled by size / em; the atlas holds (distance / spread) * 0.5 + 0.5, positive inside.',
-        'font': 'LibertinusSerif-Regular', 'em': EM, 'spread': SPREAD, 'ascent': asc, 'descent': desc,
-        'width': W, 'height': H, 'glyphs': glyphs}, ensure_ascii=False))
+        'about': 'Signed-distance atlas of Libertinus Serif Regular and Italic (OFL, Globe/fonts) for words.wgsl: built by tools/adrift/glyphs.py, never hand-edited. Texels at em pixels an em; a glyph is drawn at (pen.x + left, baseline + top) with its w x h, scaled by size / em; the atlas holds (distance / spread) * 0.5 + 0.5, positive inside.',
+        'em': EM, 'spread': SPREAD, 'width': W, 'height': H, 'faces': faces}, ensure_ascii=False))
     print(OUT / 'libertinus.png', W, H, len(cells), 'glyphs')
 
 

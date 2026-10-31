@@ -182,9 +182,7 @@ pub struct LookState {
     pub floats: Vec<LookFloat>,
     /// A finger resting on the sea before a float is put: where, and how far through the beat (0..1).
     pub resting: Option<(LonLat, f32)>,
-    /// The held float's maybes: where its other possible selves would be now (Truth's sampler).
-    pub maybes: Vec<LonLat>,
-    /// 0..1 as the maybes bloom out and fold back.
+    /// 0..1 as the held float's maybes (the GPU buffer `gpu::Maybes`) bloom out and fold back.
     pub bloom: f32,
     /// The nearest real drifter's track, in order, where it passed the held float.
     pub drifter: Vec<LonLat>,
@@ -194,6 +192,8 @@ pub struct LookState {
     pub night: bool,
     /// The date as words ("14 October").
     pub date: String,
+    /// A note under it, in italic ("a typical year, by the drifters' record"); empty for none.
+    pub note: String,
     /// The credits owed, one line (Truth's SOURCES.md says whose).
     pub credits: String,
 }
@@ -204,7 +204,7 @@ pub const WAKE_DAYS: usize = 45;
 /// The marks on the sea, in their draw order, behind one `prepare` and one `draw`.
 pub struct Look {
     pub wake: wake::Wake,
-    pub maybes: maybes::Maybes,
+    pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
     pub floats: floats::Floats,
     pub words: words::Words,
@@ -214,7 +214,7 @@ impl Look {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Look {
         Look {
             wake: wake::Wake::new(gpu, view),
-            maybes: maybes::Maybes::new(gpu, view),
+            maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
             floats: floats::Floats::new(gpu, view),
             words: words::Words::new(gpu, view),
@@ -231,8 +231,7 @@ impl Look {
             beads.extend(wake::beads(&f.wake[start..], n));
         }
         self.wake.prepare(gpu, &beads);
-        let specks: Vec<maybes::SpeckInstance> = state.maybes.iter().map(|p| maybes::SpeckInstance { g: unit(*p) }).collect();
-        self.maybes.prepare(gpu, &specks, state.bloom, n);
+        self.maybes.prepare(gpu, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n);
         let mut fl: Vec<floats::FloatInstance> = state
@@ -244,12 +243,13 @@ impl Look {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32 });
         }
         self.floats.prepare(gpu, &fl);
-        self.words.prepare_foot(gpu, &state.date, &state.credits, width, height, reading, disc, n);
+        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n);
     }
 
-    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup) {
+    /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).
+    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::gpu::Maybes) {
         self.wake.draw(rp, view_bind);
-        self.maybes.draw(rp, view_bind);
+        self.maybes.draw(rp, view_bind, maybes);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
         self.words.draw(rp, view_bind);

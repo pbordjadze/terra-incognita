@@ -94,14 +94,20 @@ fn main() {
     let state = LookState {
         floats: scene.floats.iter().enumerate().map(|(i, f)| LookFloat { at: LonLat::new(f.lon, f.lat), lit: f.lit, held: f.held > 0.5, wake: if i == 0 { wake.clone() } else { Vec::new() } }).collect(),
         resting: scene.resting.map(|(lon, lat, beat)| (LonLat::new(lon, lat), beat)),
-        maybes: scene.maybes.iter().map(|p| LonLat::new(p[0], p[1])).collect(),
         bloom: scene.maybes_bloom,
         drifter: scene.silver.iter().map(|p| LonLat::new(p[0], p[1])).collect(),
         rise: scene.silver_rise,
         night: scene.night,
         date: scene.date.clone(),
+        note: String::new(),
         credits: scene.credits.clone(),
     };
+    // the maybes as the GPU buffer holds them: lon, lat, held, k
+    let specks: Vec<[f32; 4]> = scene.maybes.iter().enumerate().map(|(k, p)| [p[0] as f32, p[1] as f32, 0.0, k as f32]).collect();
+    let maybes_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some("maybes"), size: (specks.len().max(1) * 16) as u64, usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+    if !specks.is_empty() {
+        gpu.queue.write_buffer(&maybes_buffer, 0, bytemuck::cast_slice(&specks));
+    }
     look.prepare(&gpu, &state, scene.frame[0] / scene.frame[2], scene.frame[1] / scene.frame[2], scene.frame[3], [scene.disc[0], scene.disc[1], scene.disc[2]]);
 
     let mut enc = gpu.device.create_command_encoder(&Default::default());
@@ -113,7 +119,11 @@ fn main() {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        look.draw(&mut rp, &view_bind);
+        look.wake.draw(&mut rp, &view_bind);
+        look.maybes.draw_buffer(&mut rp, &view_bind, &maybes_buffer, specks.len() as u32);
+        look.silver.draw(&mut rp, &view_bind);
+        look.floats.draw(&mut rp, &view_bind);
+        look.words.draw(&mut rp, &view_bind);
     }
     // read back
     let bpr = (w * 4 + 255) / 256 * 256;

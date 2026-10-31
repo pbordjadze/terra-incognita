@@ -112,3 +112,13 @@ the app owns, which is next round's ask, not a shader's." Verdict: the rule hold
 **Into the rest of R1**: the sea at rest's ease (a demand on Engineering's View in R2); photographed in a play (the
 light held, the glitter still); the ring's beat the moment D2 lands; the night palette waiting on
 a night.
+
+**Later in R1, on the moved skeleton** (maybes on the GPU, the stage to a texture, a text tool of
+Engineering's): the maybes pass draws Engineering's buffer with the designed specks (the bench
+shows it, two thousand from a buffer), the words gained an italic note and the credits moved to
+the foot, each glyph on a halo of its own ground (`studies/check-foot-phone.png`,
+`check-foot-over-globe-phone.png`: both the look's words and R0's un-haloed chrome are in these,
+since the wiring isn't merged; the hater: "two of everything is worse than either; pick"). The
+maybes in the app all sit under the float: Truth's R0 rules have no wander yet, so every self takes
+the same path; nothing for the look to fix, and the first thing the cloud will show when the wander
+lands.

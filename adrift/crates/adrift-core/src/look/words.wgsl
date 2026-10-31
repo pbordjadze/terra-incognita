@@ -8,6 +8,7 @@ struct GlyphIn {
     @location(0) rect: vec4<f32>,   // x, y, w, h on the screen, points (y down), the halo's room included
     @location(1) uv: vec4<f32>,     // the glyph's atlas rectangle, 0..1
     @location(2) ink: vec4<f32>,    // the ink, and its alpha (fading only in time)
+    @location(3) halo: vec4<f32>,   // the halo: the tone of what is under the glyph, and its alpha
 };
 
 struct GlyphOut {
@@ -15,10 +16,10 @@ struct GlyphOut {
     @location(0) uv: vec2<f32>,
     @location(1) ink: vec4<f32>,
     @location(2) px_per_texel: f32,
+    @location(3) halo: vec4<f32>,
 };
 
 struct Words {
-    halo: vec4<f32>,    // the halo's colour and alpha
     spread: f32,        // the atlas's distance spread in texels (glyphs.py writes it)
     halo_pt: f32,       // the halo's reach in reading points (1.5)
     layer: f32,         // 0 this draw lays the halos, 1 the inks
@@ -36,6 +37,7 @@ fn vs(@builtin(vertex_index) vi: u32, g: GlyphIn) -> GlyphOut {
     o.pos = clip((g.rect.xy + c * g.rect.zw) * ppp);
     o.uv = g.uv.xy + c * g.uv.zw;
     o.ink = g.ink;
+    o.halo = g.halo;
     let dims = vec2<f32>(textureDimensions(atlas));
     o.px_per_texel = g.rect.z * ppp / (g.uv.z * dims.x);
     return o;
@@ -50,7 +52,7 @@ fn fs(i: GlyphOut) -> @location(0) vec4<f32> {
     let halo_px = W.halo_pt * rp();
     var acc = vec4<f32>(0.0);
     if (W.layer < 0.5) {
-        acc = over(acc, W.halo.rgb, W.halo.a * cover(-(d + halo_px)));
+        acc = over(acc, i.halo.rgb, i.halo.a * cover(-(d + halo_px)));
     } else {
         acc = over(acc, i.ink.rgb, i.ink.a * cover(-d));
     }

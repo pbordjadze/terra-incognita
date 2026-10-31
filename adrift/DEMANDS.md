@@ -16,23 +16,27 @@ At most two new demands a craft a round. Engineering rules on one that comes rou
 ## Open
 
 ### D1 Visual → Engineering (R1)  [open]
-I need `app.rs` to draw the marks through `look::Look` in place of `SpritePass` and `instances()`:
-one `look: Look` field (`Look::new(&gpu, &view_layout)`), a `look_state()` that fills
-`look::LookState` from the state (each float's `at`, `lit` as 1 − lit_for / 3 clamped, `held` as
-`hand == Held`, its wake's places oldest first; `resting` from the gestures, D2; `maybes` and
-`drifter` empty until Truth's sampler and tracks exist, with `bloom` and `rise` 0; `night` false;
-the date as "14 October" from `clock.calendar()`; the credits line), then in `render`
+I need `app.rs` to draw the marks and the words through `look::Look` in place of `SpritePass`,
+`instances()`, its own `MaybesPass` field and the `chrome()` text: one `look: Look` field
+(`Look::new(&gpu, &view_layout)`; `Look` holds the maybes pass, same `draw(rp, view_bind,
+&Maybes)` as before), a `look_state()` that fills `look::LookState` from the state (each float's
+`at`, `lit` as 1 − lit_for / 3 clamped, `held` as `hand == Held`, its wake's places oldest first;
+`resting` from the gestures, D2; `bloom` 1 and `rise` 0 with `drifter` empty until Truth's
+tracks exist; `night` false; the date as "14 October" from `clock.calendar()`, the note and the
+credits line as `chrome()` has them), then in `render`
 `self.look.prepare(&self.gpu, &state, width_pt, height_pt, reading, [cx, cy, r])` and in the pass
-`self.look.draw(&mut rp, &self.view_bind)` after the sea; `look/README.md › Wiring` has the lines.
-So that the float, its lamp, the wake, the words and (when they come) the maybes and the silver
-drifter are what the app draws, at every zoom and in `adrift-check`'s pictures, instead of R0's
-plain forms.
+`self.look.draw(&mut rp, &self.view_bind, &self.maybes)` after the blit, with `text_pass` not drawn
+(the look's words carry their halos, Libertinus Regular and Italic from one signed-distance atlas
+at any size; `gpu/text.rs` can stay the runtime's tool for anything else). `look/README.md ›
+Wiring` has the lines. So that the float, its lamp, the wake, the maybes, the words and (when it
+comes) the silver drifter are what the app draws, at every zoom and in `adrift-check`'s pictures,
+instead of R0's plain forms and un-haloed text.
 It works when `adrift-check render scenes/gulf-stream-close.json` shows the glass floats with their
-amber lamps and beaded wakes, and the date and credits in Libertinus under the disc
-(`look/studies/check-gulf-stream-close-phone.png` and `check-foot-phone.png` are what it gives
-with the wiring applied).
-I could give back `sprites.rs` and `sprites.wgsl` (the look keeps them until the wiring lands,
-then parks them).
+amber lamps and beaded wakes, the date and the note on a halo over the globe, and the credits along
+the foot (`look/studies/check-gulf-stream-close-phone.png`, `check-foot-over-globe-phone.png`,
+`check-foot-phone.png` are what it gives with the wiring applied).
+I could give back the words pass and its atlas, if `gpu/text.rs` gains a halo of what is under
+each glyph and sizes that don't need a face per pixel size.
 
 ### D2 Visual → Motion (R1)  [open]
 I need `Gestures` to tell the look where a finger is resting on the sea before the beat ends and
