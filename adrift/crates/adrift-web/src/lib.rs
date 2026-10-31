@@ -54,7 +54,17 @@ pub async fn start() -> Result<(), JsValue> {
     let mut files = HashMap::new();
     for name in adrift_core::assets::FILES {
         let path = index.get(*name).cloned().unwrap_or_else(|| format!("assets/{name}"));
-        files.insert(name.to_string(), fetch(&window, &path).await?);
+        let bytes = fetch(&window, &path).await?;
+        // a binary sheet a host could only serve as JSON: {"base64": "..."}
+        let bytes = if path.ends_with(".json") && !name.ends_with(".json") {
+            let v: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            let b64 = v.get("base64").and_then(|b| b.as_str()).ok_or_else(|| JsValue::from_str("no base64"))?;
+            let bin = window.atob(b64)?;
+            bin.chars().map(|c| c as u8).collect()
+        } else {
+            bytes
+        };
+        files.insert(name.to_string(), bytes);
     }
 
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..Default::default() });
