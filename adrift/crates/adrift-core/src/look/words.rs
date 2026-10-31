@@ -159,6 +159,8 @@ pub struct PanelRow {
     pub put_day: f64,
     /// its cloud is out
     pub shown: bool,
+    /// chosen as itself, its journey followed (R8)
+    pub followed: bool,
     /// the one in front
     pub front: bool,
 }
@@ -313,7 +315,7 @@ impl Words {
             return out;
         }
         let (ink, soft_ink, sea_halo, paper_halo) = if night {
-            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.08, 0.10, 0.14, 0.92])
+            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.055, 0.063, 0.086, 0.92])
         } else {
             ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 0.85], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
         };
@@ -335,20 +337,40 @@ impl Words {
         }
         let text_x = x0 + 16.0 * reading;
         let panel_w = (text_x - x0) + widest + 10.0 * reading;
+        // over the globe the panel lies on a quiet card of the page's tone, one for the whole column,
+        // so its words read on land and sea alike (a halo per glyph would lie as boxes at this size)
+        let n_rows = lines.len() as f32;
+        let over_globe = lines.iter().any(|(_, _, mid, _, _)| ((x0 + panel_w / 2.0 - disc[0]).powi(2) + (mid - disc[1]).powi(2)).sqrt() < disc[2] + 20.0 * reading);
+        if over_globe {
+            if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
+                let page = if night { [0.055, 0.063, 0.086, 0.78] } else { [0.957, 0.945, 0.918, 0.78] };
+                let uv = [(b.x + 2.0) / self.face.width, (b.y + 2.0) / self.face.height, (b.w - 4.0) / self.face.width, (b.h - 4.0) / self.face.height];
+                out.push(GlyphInstance { rect: [x0 - 8.0 * reading, top + 4.0 * reading, panel_w + 12.0 * reading, n_rows * row_h - 8.0 * reading], uv, ink: page, halo: [0.0; 4], anchor: [0.0; 4] });
+            }
+        }
         for (r, y, mid, text, w) in lines {
             let inside = ((x0 + panel_w / 2.0 - disc[0]).powi(2) + (mid - disc[1]).powi(2)).sqrt() < disc[2];
             // (over the globe no halo: at these sizes it fills the glyph's cell and would lie as a
             // box on the land; the inks hold their contrast on the sea and the night's ground alone)
-            let halo = if inside { [sea_halo[0], sea_halo[1], sea_halo[2], 0.0] } else { paper_halo };
+            let halo = if inside || over_globe { [sea_halo[0], sea_halo[1], sea_halo[2], 0.0] } else { paper_halo };
             let hue = super::lamp_hue(r.id);
             // every mark a filled lamp in its own hue, unmistakable (it is how a reader finds whose
             // cloud is whose): larger with a soft glow of its colour while its cloud is out, a small
             // lamp while not; the front one the largest
-            let mark_size = if r.front { 13.0 } else if r.shown { 12.0 } else { 8.5 } * reading;
+            // the way it is chosen, as quietly as the rest (R8): as its cloud a larger lamp in a soft
+            // glow of its colour (a haze, as the cloud is); as itself a small lamp in a ring of its
+            // colour (a float, as it is on the sea); not chosen a small lamp alone. The front a size up
+            let up = if r.front { 1.0 } else { 0.0 };
+            let mark_size = if r.shown { 12.0 + up } else { 8.5 + 0.5 * up } * reading;
             if r.shown {
                 let gs = mark_size * 1.7;
                 let glow = Line { text: "\u{25cf}", style: Style::Regular, size: gs, ink: [hue[0], hue[1], hue[2], 0.22], tracking: 0.0 };
                 out.extend(self.face.layout(&glow, x0 + 6.0 * reading, mid + 0.36 * gs, [0.0; 4]));
+            }
+            if r.followed {
+                let rs = (16.0 + 1.5 * up) * reading;
+                let ring = Line { text: "\u{25cb}", style: Style::Regular, size: rs, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
+                out.extend(self.face.layout(&ring, x0 + 6.0 * reading, mid + 0.33 * rs, [0.0; 4]));
             }
             let mark = Line { text: "\u{25cf}", style: Style::Regular, size: mark_size, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
             out.extend(self.face.layout(&mark, x0 + 6.0 * reading, mid + 0.36 * mark_size, [0.0; 4]));
