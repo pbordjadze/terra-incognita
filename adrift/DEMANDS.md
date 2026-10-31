@@ -197,6 +197,27 @@ can send `ToggleCredits` as an intent already.
 
 **Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
 
+### D7 Motion → Engineering (R4)  [open]
+I need anything in [`model::Intent` gains `PressFloat { float, since }` (a finger has landed on a
+float and rests), cleared by the existing `Unpress`; the app keeps it (as it keeps `pressing`) and
+hands it to the look; `Hold` stays the beat's intent] so that the maybes begin to rise the moment
+a finger lands on a float rather than 0.4 s later (the owner holds and "nothing seems to happen
+until the bloom"): the hand learns at once that staying shows more, and a lift before the beat
+still rides. It works when a plan's shot 0.2 s into a rest on a float shows the maybes rising and
+a lift at 0.3 s shows them folding back with the ride begun. I could give back: the intent's name
+(a `Press { at, since, float: Option<u32> }` would do as well) and the fold-back's shape.
+
+### D8 Motion → Visual (R4)  [open]
+I need anything in [the maybes rising from `PressFloat { since }` over the beat (by
+`motion::thicken(now - since)`, as the ring forms) and folding back on `Unpress`, the full bloom at
+`Hold`; and the date's band answering the finger: on the finger's landing a lift or a brightening
+within a frame, the day ticking visibly while it is scrubbed or flicked (Motion adds a flick: the
+date runs on after the finger leaves, slowing), and its word ("held") changing at the tap] so that
+a hand that touches a float or the date is answered at once and finds the controls without being
+told (the owner's "date controls aren't intuitive" and "picking up a lamp isn't natural"). It works
+when the device shows the maybes starting to rise under a landing finger and the date brightening
+under one. I could give back: the brightening's form (anything the eye reads within a frame).
+
 ## Answered
 
 (none yet)
