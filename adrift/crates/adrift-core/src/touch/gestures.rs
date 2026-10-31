@@ -354,6 +354,11 @@ impl Gestures {
                 if matches!(self.state, State::Pressing { .. } | State::Resting { .. } | State::PanelDown { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
+                // the second finger rings the sea where it lands too, as the first did: a pinch
+                // leaves two rings (R7)
+                if let Hit::Sea(at) = probe.hit(e.x, e.y) {
+                    out.intents.push(Intent::Ring { at });
+                }
                 self.state = State::Pinch { a: id, b: e.id, zoom0: probe.frame().zoom, scale: 1.0 };
             }
             // a third finger ends the pinch where it is and waits for a swipe
@@ -863,6 +868,16 @@ mod tests {
             all.extend(out.intents);
         }
         all
+    }
+
+    #[test]
+    fn a_pinch_rings_the_sea_under_both_fingers() {
+        let (mut g, p) = (Gestures::new(), Fake::new());
+        let first = g.feed(PointerEvent { id: 1, phase: Phase::Down, x: 150.0, y: 400.0, t: 0.0 }, &p);
+        let second = g.feed(PointerEvent { id: 2, phase: Phase::Down, x: 250.0, y: 420.0, t: 0.05 }, &p);
+        let rings: Vec<LonLat> = first.intents.iter().chain(&second.intents).filter_map(|i| if let Intent::Ring { at } = i { Some(*at) } else { None }).collect();
+        assert_eq!(rings, vec![LonLat::new(15.0, 40.0), LonLat::new(25.0, 42.0)]);
+        assert!(!second.intents.iter().any(|i| matches!(i, Intent::Put { .. })));
     }
 
     #[test]
