@@ -15,7 +15,9 @@ pub struct MaybesUniform {
     /// 0..1 as they bloom out of the float and fold back
     pub bloom: f32,
     pub night: f32,
-    pub _pad: [f32; 2],
+    /// 512 over the count drawn: the field's alpha a kernel scales so it reads the same at any budget
+    pub density: f32,
+    pub _pad: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
@@ -27,20 +29,26 @@ const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
 pub struct MaybesPass {
     pipeline: wgpu::RenderPipeline,
     uniform: Uniform<MaybesUniform>,
+    queue: std::sync::Arc<wgpu::Queue>,
+    /// what the uniform holds (the density is set at draw time, when the count is known)
+    last: std::cell::Cell<MaybesUniform>,
 }
 
 impl MaybesPass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout) -> MaybesPass {
         let module = gpu.shader("maybes draw", &marks_wgsl(include_str!("maybes.wgsl")));
         let uniform = Uniform::new(gpu, "maybes draw");
-        uniform.write(gpu, &MaybesUniform { origin: [0.0, 0.0, 1.0, 0.0], hue: [0.957, 0.647, 0.165, 0.0], bloom: 1.0, night: 0.0, _pad: [0.0; 2] });
-        MaybesPass { pipeline: mark_pipeline(gpu, "maybes draw", &module, LAYOUT, view_layout, Some(&uniform.layout)), uniform }
+        let last = MaybesUniform { origin: [0.0, 0.0, 1.0, 0.0], hue: [0.957, 0.647, 0.165, 0.0], bloom: 1.0, night: 0.0, density: 1.0, _pad: 0.0 };
+        uniform.write(gpu, &last);
+        MaybesPass { pipeline: mark_pipeline(gpu, "maybes draw", &module, LAYOUT, view_layout, Some(&uniform.layout)), uniform, queue: gpu.queue.clone(), last: std::cell::Cell::new(last) }
     }
 
     /// Where the specks bloom from (the held float's unit vector), how far they have bloomed (0..1) and
     /// whether it is night.
     pub fn prepare(&mut self, gpu: &Gpu, origin: [f32; 3], bloom: f32, night: bool, hue: [f32; 3]) {
-        self.uniform.write(gpu, &MaybesUniform { origin: [origin[0], origin[1], origin[2], 0.0], hue: [hue[0], hue[1], hue[2], 0.0], bloom, night: night as u8 as f32, _pad: [0.0; 2] });
+        let u = MaybesUniform { origin: [origin[0], origin[1], origin[2], 0.0], hue: [hue[0], hue[1], hue[2], 0.0], bloom, night: night as u8 as f32, density: self.last.get().density, _pad: 0.0 };
+        self.last.set(u);
+        self.uniform.write(gpu, &u);
     }
 
     /// `count` of the paths in Truth's buffer (`sea::Maybes`), as the app last ran them.
@@ -52,6 +60,14 @@ impl MaybesPass {
     pub fn draw_buffer<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, buffer: &'a wgpu::Buffer, count: u32) {
         if count == 0 {
             return;
+        }
+        // (the field's density follows the count drawn; written before this frame's submit)
+        let density = 512.0 / count as f32;
+        let mut u = self.last.get();
+        if (density - u.density).abs() > 1e-6 {
+            u.density = density;
+            self.last.set(u);
+            self.queue.write_buffer(&self.uniform.buffer, 0, bytemuck::bytes_of(&u));
         }
         rp.set_pipeline(&self.pipeline);
         rp.set_bind_group(0, view_bind, &[]);
