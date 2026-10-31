@@ -1,0 +1,14 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -60.0, "lat": 33.0, "zoom": 3.0 }, "day": 200.0, "seconds": 5.0,
+    "floats": [ { "lon": -74.5, "lat": 35.8, "days_ago": 0.0 }, { "lon": -45.0, "lat": 30.0, "days_ago": 0.0 } ] },
+  "steps": [
+    { "shot": "t0-put" },
+    { "advance": 0.5 },
+    { "shot": "t1-one-day" },
+    { "advance": 2.5 },
+    { "shot": "t2-six-days" },
+    { "advance": 7.0 },
+    { "shot": "t3-twenty-days" }
+  ]
+}

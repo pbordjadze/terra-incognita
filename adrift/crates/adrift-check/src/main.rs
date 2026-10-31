@@ -18,11 +18,30 @@ use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
 fn assets_dir() -> PathBuf {
-    if let Ok(d) = std::env::var("ADRIFT_ASSETS") {
-        return d.into();
+    let dir = match std::env::var("ADRIFT_ASSETS") {
+        Ok(d) => PathBuf::from(d),
+        Err(_) => Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"),
+    };
+    ensure_assets(&dir);
+    dir
+}
+
+/// Assembles the assets directory when the manifest names a file it lacks (a craft's new sheet),
+/// so a check never fails for a missing link: `tools/adrift/assets.py <dir> --link`.
+fn ensure_assets(dir: &Path) {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let Ok(text) = std::fs::read_to_string(root.join("adrift/data/manifest.json")) else { return };
+    let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&text) else { return };
+    let Some(files) = manifest.get("files").and_then(|f| f.as_object()) else { return };
+    let missing: Vec<&String> = files.keys().filter(|name| !dir.join(name).exists()).collect();
+    if missing.is_empty() {
+        return;
     }
-    let here = Path::new(env!("CARGO_MANIFEST_DIR"));
-    here.join("../../build/assets")
+    eprintln!("assets: {} file(s) the manifest names are not in {}: linking", missing.len(), dir.display());
+    let status = std::process::Command::new("python3").arg(root.join("tools/adrift/assets.py")).arg(dir).arg("--link").status();
+    if !matches!(status, Ok(s) if s.success()) {
+        eprintln!("assets: tools/adrift/assets.py failed; set ADRIFT_ASSETS or run it by hand");
+    }
 }
 
 fn gpu() -> Result<(wgpu::Instance, Gpu)> {
@@ -88,6 +107,9 @@ struct Plan {
     /// The night palette.
     #[serde(default)]
     night: bool,
+    /// The page of credits open from the start.
+    #[serde(default)]
+    credits_open: bool,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -165,6 +187,7 @@ fn play(args: &[String]) -> Result<()> {
         hold: None,
         seconds: 0.0,
         night: plan.night,
+        credits_open: plan.credits_open,
     });
     app.set_scene(&scene);
     let mut t = 0.0;
@@ -201,7 +224,12 @@ fn play(args: &[String]) -> Result<()> {
             app.intend(intent);
         }
         if let Some(k) = &s.key {
-            app.key(if k.eq_ignore_ascii_case("redo") { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });
+            app.key(match k.to_ascii_lowercase().as_str() {
+                "redo" => adrift_core::touch::Key::Redo,
+                "home" => adrift_core::touch::Key::Home,
+                "clear" => adrift_core::touch::Key::ClearAll,
+                _ => adrift_core::touch::Key::Undo,
+            });
         }
         if s.shake == Some(true) {
             app.shaken();
@@ -262,9 +290,15 @@ fn play(args: &[String]) -> Result<()> {
                 }
             }
             if let Some(r) = e.get("riding") {
+                // a float's id, or true/false for riding any float or none
                 let riding = app.riding().map(|id| id as u64);
-                if riding != r.as_u64() {
-                    bad.push(format!("riding {riding:?} not {:?}", r.as_u64()));
+                let ok = match (r.as_bool(), r.as_u64()) {
+                    (Some(b), _) => riding.is_some() == b,
+                    (_, Some(id)) => riding == Some(id),
+                    _ => r.is_null() && riding.is_none(),
+                };
+                if !ok {
+                    bad.push(format!("riding {riding:?} not {r}"));
                 }
             }
             if let Some(p) = e.get("playing").and_then(|v| v.as_bool()) {

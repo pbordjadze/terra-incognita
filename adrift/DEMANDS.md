@@ -15,6 +15,8 @@ At most two new demands a craft a round. Engineering rules on one that comes rou
 
 ## Open
 
+(R4 opens at the head Engineering named; the round's goals are DECISIONS.md § 11. New demands go here, in the form above.)
+
 ### D1 Truth → Engineering (R0)  [answered]
 I need anything in [a float's state carrying its eddy velocity (two f32, zonal and meridional,
 m/s) through the step: `Rules::step` taking and returning that velocity beside the position (a
@@ -194,6 +196,88 @@ look draws is reachable on the device and in `adrift-check`. It works when
 can send `ToggleCredits` as an intent already.
 
 **Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
+
+### D7 Motion → Engineering (R4)  [answered]
+I need anything in [`model::Intent` gains `PressFloat { float, since }` (a finger has landed on a
+float and rests), cleared by the existing `Unpress`; the app keeps it (as it keeps `pressing`) and
+hands it to the look; `Hold` stays the beat's intent] so that the maybes begin to rise the moment
+a finger lands on a float rather than 0.4 s later (the owner holds and "nothing seems to happen
+until the bloom"): the hand learns at once that staying shows more, and a lift before the beat
+still rides. It works when a plan's shot 0.2 s into a rest on a float shows the maybes rising and
+a lift at 0.3 s shows them folding back with the ride begun. I could give back: the intent's name
+(a `Press { at, since, float: Option<u32> }` would do as well) and the fold-back's shape.
+Answered (Engineering, a3b0126): `Intent::PressFloat { float, since }`, kept as `pressing_float`,
+cleared by `Unpress` and by a clear; `App::shown()` takes the held float, else the pressed, else the
+ridden, so the maybes and the silver rise from the landing (0.35 s) and fold if the finger lifts
+before the beat; `Hold` supersedes it without a gap. Played: `adrift-check/plans/press-float.json`.
+
+### D8 Motion → Visual (R4)  [answered]
+(Filed on adrift-motion-r4: the maybes rising from `PressFloat` over the beat, and the date's band
+answering the finger: a lift or a brightening within a frame of the landing, the day ticking
+visibly while scrubbed or flicked, its word changing at the tap; the maybes' half since made
+Engineering's.)
+**Answer (Visual, R4):** in range: the band answers from one value, `LookState.date_press` (0 no
+finger; else 0..1 of the rest's beat by `motion::thicken`): the frame a finger lands, the year's
+rule goes to full ink and the day's lamp grows from 9 to 12 points; over the beat the rule thickens
+from a hairline to nearly two points, as the ring thickens on the sea, until at the beat the page of
+credits opens (Motion's rest on the date); the day ticks visibly because the date is the clock's
+own words and the lamp moves along the rule as it is scrubbed or flicked. The word under the date
+is gone with the ruling (truth underneath), so the running and the rest are told by the lamp alone:
+amber while the year runs, a ring of ink while it rests. The value is filled from the app (D9).
+
+### D4 Truth → Engineering (R4)  [withdrawn: truth underneath, not on top (DECISIONS § 11); the rule stays in `Rules::may_put` for the record, uncalled]
+I need anything in [`App::hit` asking the rules before it says `Hit::Sea`: `Rules::may_put(at)`
+is `Put::Land | NoRecord | Guess | Sea`; a new `Hit::NoRecord(LonLat)` (or `Hit::Land` for it,
+if a new kind is too much this round) so that a rest on the Caspian, the Great Lakes, Hudson Bay,
+the Red Sea or the Persian Gulf puts no float, and a scene's float on such water is refused the
+same way] so that no float ever rides a value smoothed in from hundreds of kilometres away: the
+sea carries a float only where the drifters' record speaks (SOURCES.md › Where a float may be put).
+It works when [in a render of a scene with a float on the Black Sea and one on the Caspian, the
+Black Sea's is there and the Caspian's is not, and the owner's Caspian float cannot be put again].
+I could give back [the `Put::Guess` distinction at the hit: the guess is already marked once the
+float moves, so `Hit` need only know Sea from NoRecord].
+
+### D5 Truth → Visual (R4)  [withdrawn with D4]
+I need anything in [the refusal shown for a beat where the finger rested: the ring forms and
+breaks, or does not thicken into a float, with one short line in the words' italic ("no drifter's
+record here") that fades] so that a reader who puts a float on the Caspian and gets nothing knows
+the sea refused and why, and tries another sea without penalty (Holt).
+It works when [a played plan rests a finger on the Caspian and the shot a beat later shows the
+line and no float; a rest on the Black Sea beside it shows a float].
+I could give back [the words: a broken ring alone is acceptable if the credits page says why].
+
+### D6 Truth → Engineering (R4)  [answered: already so]
+I need anything in [the drawn float carried between its quarter-day steps: `Rules::glide(drift,
+day, days_since_step)` (or `Rules::velocity` and the app's own advance) read when the look is
+filled, so a float's place on the screen moves every frame along the current it is on instead of
+jumping when its step lands] so that a float in the Gulf Stream runs rather than ticks: at the
+phone's closest zoom a quarter-day step there is five points, a visible jump eight times a
+second at the date's pace.
+It works when [a played plan at zoom 8 on the Gulf Stream shoots two frames a thirtieth of a
+second apart and the float moved under a point, and over a second it moved what the step would].
+I could give back [the glide ignoring the coast and the ice between steps: the step corrects at
+its landing, a quarter day at most].
+Answered (Engineering, in range, nothing to add): the float already moves every frame. `step_floats`
+carries every free float from its last stepped day to the clock's day in steps of the frame's own
+time (0.017 day at 120 Hz at the date's pace); `SUBSTEP` (a quarter day) is only the cap when the
+float catches up after a pause or a scrub, and a day mark always ends a step so the bead lands on
+it. The observable, played (`adrift-check/plans/gulf-stream-glide.json`, zoom 8 off Hatteras,
+frames a thirtieth of a second apart): −73.144, −73.074, −72.998, −72.913 ° E at 1.00, 1.03, 1.07,
+1.10 s, about 6 km (a point and a half at this zoom) a frame, and 170 km in the second, which is the
+water's speed at two days a second. `Rules::velocity` and `Rules::glide` stay for a look that wants
+a float's heading (the lamp's lean, a wake's start) without a step.
+### D9 Visual → Engineering (R4)  [answered]
+I need `App` to keep a finger on the date's band as it keeps `pressing` on the sea: anything in
+[`date_pressing: Option<f64>` (since) set by Motion's date press and cleared on its lift or move
+off the band, read in `look_state()` as `date_press: thicken(now − since)`] so that the band answers
+the finger within a frame (D8) and thickens over the rest's beat before the credits open. It works
+when a plan rests a finger on the date and shots at 0.1 and 0.3 s show the rule brighter then
+thicker, and the page at the beat. I could give back the thickening (the brightening alone, from a
+bool) if the gestures' timing isn't kept.
+Answered (Engineering, with Motion's `Gestures::date_pressing_since(now)` from 7fe88ee): no new
+state; `look_state()` fills `date_press` with `motion::thicken` of the seconds a finger has been on
+the date (a tap in the making, a rest toward the credits, a scrub), 0 with no finger, so a flick runs
+on without it.
 
 ## Answered
 

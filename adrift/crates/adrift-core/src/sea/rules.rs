@@ -40,7 +40,8 @@ pub struct Rules {
     pub ice_hold: f32,
     /// The eddy wander's scale: 1 is the measured diffusivity; 0 switches it off (for tests).
     pub wander: f32,
-    /// How far off the shore a held float sits, in the coast sheet's pixels.
+    /// How far off the shore a held float sits, in the coast sheet's pixels: one, the coast's own
+    /// resolution (about 10 km), so a float never sits inside the shoreline's own uncertainty.
     pub shore: f32,
 }
 
@@ -60,7 +61,7 @@ impl Rules {
             leeway: Self::LEEWAY,
             ice_hold: Self::ICE_HOLD,
             wander: 1.0,
-            shore: 0.5,
+            shore: 1.0,
         })
     }
 
@@ -74,6 +75,7 @@ impl Rules {
             return Step { at, held: Held::Ice, measured };
         }
         let (u, v, _) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let secs = dt * SECONDS_A_DAY;
@@ -139,6 +141,51 @@ impl Rules {
     }
 }
 
+/// Whether the sea at a place can carry a float, by what the record holds there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Put {
+    /// Land: no float.
+    Land,
+    /// Water, but no drifter came within about three degrees of it in any month (the Caspian,
+    /// the Great Lakes, Hudson Bay, the Red Sea, the Persian Gulf, the seas under the ice): the
+    /// sheets hold only a value smoothed in from far away, which is no record of this water. The
+    /// sea refuses the float: nothing scripts where it goes, and here nothing measured could.
+    NoRecord,
+    /// Water the record reaches only from a distance (`measured` under 0.5): the float is carried
+    /// as a marked guess.
+    Guess,
+    /// Water a drifter measured.
+    Sea,
+}
+
+impl Rules {
+    /// How far the record reaches a place, 0..1: the most measured month's `measured` there.
+    pub fn record(&self, at: LonLat) -> f32 {
+        let (lon, lat) = (at.lon as f32, at.lat as f32);
+        (0..12).map(|m| self.currents.0.sample(m, 2, lon, lat) / 255.0).fold(0.0, f32::max)
+    }
+
+    /// Whether a float may be put at `at`, and on what footing.
+    pub fn may_put(&self, at: LonLat) -> Put {
+        if self.coast.is_land(at) {
+            return Put::Land;
+        }
+        let r = self.record(at);
+        if r < Self::NO_RECORD {
+            Put::NoRecord
+        } else if r < Self::GUESS {
+            Put::Guess
+        } else {
+            Put::Sea
+        }
+    }
+
+    /// Below this the record is nothing: no measured cell within about 2.9 degrees.
+    pub const NO_RECORD: f32 = 0.05;
+    /// Below this the current is a guess from more than 1.5 degrees away (the mark's threshold).
+    pub const GUESS: f32 = 0.5;
+}
+
 /// A float with the memory of its wander: where it is and the eddy velocity it carries (m/s,
 /// zonal and meridional; zero when first put). The answer to D1 (DEMANDS.md): with this carried
 /// through the step, the wander is a random flight with the drifters' measured time scale.
@@ -177,6 +224,7 @@ impl Rules {
             return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
         }
         let (u, v, _) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let (tu, tv) = self.eddy_time.at(lon, lat);
@@ -221,6 +269,34 @@ impl Rules {
         Drift { at, eddy: (eu, ev) }
     }
 
+    /// The velocity a float has between steps (m/s east, north): the mean current, its leeway
+    /// and the eddy velocity it carries. For the look: a float drawn at `at` plus this times the
+    /// seconds since its last step glides instead of ticking a quarter day at a time (at the
+    /// phone's closest zoom a Gulf Stream float's quarter-day step is five points).
+    pub fn velocity(&self, d: Drift, day: f64) -> (f32, f32) {
+        let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
+        let day = day as f32;
+        if self.ice.at(day, lon, lat) >= self.ice_hold {
+            return (0.0, 0.0);
+        }
+        let (u, v, measured) = self.currents.at(day, lon, lat);
+        let (u, v) = (u * reach(measured), v * reach(measured));
+        let (wu, wv) = self.wind.at(day, lon, lat);
+        (u + self.leeway * wu + d.eddy.0, v + self.leeway * wv + d.eddy.1)
+    }
+
+    /// Where a float drawn between steps is: `at` carried by `velocity` for `days` (a fraction
+    /// of a step; the coast is not consulted, the step does that).
+    pub fn glide(&self, d: Drift, day: f64, days: f64) -> LonLat {
+        let (u, v) = self.velocity(d, day);
+        let secs = days as f32 * SECONDS_A_DAY;
+        let coslat = (d.at.lat as f32).to_radians().cos().max(0.01);
+        LonLat {
+            lon: wrap(d.at.lon as f32 + (u * secs / (EARTH_RADIUS * coslat)).to_degrees()) as f64,
+            lat: (d.at.lat as f32 + (v * secs / EARTH_RADIUS).to_degrees()).clamp(-89.5, 89.5) as f64,
+        }
+    }
+
     /// A float's maybes with memory, as `maybes` (k = 1..=n), each the flight reached.
     pub fn flights(&self, from: Drift, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Flight> {
         (1..=n)
@@ -239,6 +315,16 @@ impl Rules {
             })
             .collect()
     }
+}
+
+/// How much of the sheet's current a float rides, by how far the record reaches the place:
+/// all of it where a drifter measured within 1.5 degrees (`measured` 0.5 and over), none where
+/// none came within three (0), and between in proportion. Where the sheet's value is only
+/// smoothed in from far away (the Caspian, the Great Lakes, Hudson Bay) the float goes on the
+/// wind's leeway and the wander alone, the way a lake's surface drifts.
+#[inline]
+pub fn reach(measured: f32) -> f32 {
+    (measured / Rules::GUESS).clamp(0.0, 1.0)
 }
 
 #[inline]

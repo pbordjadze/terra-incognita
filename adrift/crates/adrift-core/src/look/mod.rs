@@ -211,6 +211,16 @@ pub struct LookState {
     pub date: String,
     /// A note under it, in italic ("a typical year, by the drifters' record"); empty for none.
     pub note: String,
+    /// The date runs (its marker is lit, amber) or rests (the marker a ring of ink).
+    pub date_running: bool,
+    /// How far through the year the date is, 0..1: the marker's place on the year's rule under the date.
+    pub year_day: f32,
+    /// A finger on the date's band: 0 none, else how far through the rest's beat (Motion's thicken);
+    /// the band brightens the frame it lands and thickens over the beat (DEMANDS.md D8, D9).
+    pub date_press: f32,
+    /// The truth's marks on the screen (the guess mark on a float and its beads): off by default
+    /// (DECISIONS.md › Truth underneath, not on top).
+    pub truth_marks: bool,
     /// The credits owed, one line (Truth's SOURCES.md says whose).
     pub credits: String,
     /// The credits in full (`sea::CREDITS`), shown on a page over the globe while `credits_open`.
@@ -255,7 +265,13 @@ impl Look {
         let mut beads = Vec::new();
         for f in &state.floats {
             let start = f.wake.len().saturating_sub(WAKE_DAYS);
-            beads.extend(wake::beads(&f.wake[start..], n));
+            let mut b = wake::beads(&f.wake[start..], n);
+            if !state.truth_marks {
+                for bead in &mut b {
+                    bead.measured = 1.0;
+                }
+            }
+            beads.extend(b);
         }
         self.wake.prepare(gpu, &beads);
         // the maybes bloom from the held float (the last held place is kept while they fold)
@@ -268,7 +284,7 @@ impl Look {
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: f.held as u8 as f32, night: n as u8 as f32, measured: f.measured })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: f.held as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 } })
             .collect();
         if let Some((at, beat)) = state.resting {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0 });
@@ -293,7 +309,7 @@ impl Look {
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }
-        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n, &labels);
+        self.words.prepare_foot(gpu, &state.date, &state.note, width, height, reading, disc, n, state.date_running, state.year_day, state.date_press, &labels);
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).

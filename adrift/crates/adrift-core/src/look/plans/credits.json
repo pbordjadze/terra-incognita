@@ -1,0 +1,4 @@
+{
+  "_": "The page of credits, one rest on the date away (Truth's D2, the ruling that the credits line leaves the foot): rendered with the scene's credits_open. adrift-check render adrift/crates/adrift-core/src/look/plans/credits.json <out.png>.",
+  "camera": { "lon": -40.0, "lat": 30.0, "zoom": 1.0 }, "day": 200.0, "seconds": 12.0, "credits_open": true
+}

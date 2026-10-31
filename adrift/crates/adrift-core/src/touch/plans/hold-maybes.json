@@ -19,15 +19,21 @@
    ]
   },
   {
+   "t": 0.2,
+   "shot": "rising"
+  },
+  {
    "t": 0.5,
    "expect": {
     "state": "holding",
     "saw": [
+     "PressFloat",
      "Hold"
     ],
     "held": 1,
     "not": [
-     "Ring"
+     "Ring",
+     "Unpress"
     ]
    }
   },

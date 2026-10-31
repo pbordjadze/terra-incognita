@@ -1,0 +1,24 @@
+{
+ "title": "Clear every float as one touch, undo gives them all back; Home flies to the opening view",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -70.0, "lat": 15.0, "zoom": 3.0},
+ "floats": [
+  {"lon": -75.0, "lat": 20.0, "days_ago": 3.0},
+  {"lon": -65.0, "lat": 12.0, "days_ago": 5.0},
+  {"lon": -80.0, "lat": 25.0, "days_ago": 1.0}
+ ],
+ "steps": [
+  {"t": 0.1, "expect": {"floats": 3}},
+  {"t": 0.5, "intent": "ClearAll"},
+  {"t": 0.6, "expect": {"floats": 0, "saw": ["ClearAll"]}},
+  {"t": 1.0, "key": "undo"},
+  {"t": 1.1, "expect": {"floats": 3, "saw": ["Undo"]}},
+  {"t": 1.5, "key": "redo"},
+  {"t": 1.6, "expect": {"floats": 0}},
+  {"t": 2.0, "key": "undo"},
+  {"t": 2.1, "expect": {"floats": 3}},
+  {"t": 2.5, "intent": "Home"},
+  {"t": 2.6, "expect": {"camera_moved": true}},
+  {"t": 4.5, "expect": {"camera": {"lon": -30.0, "lat": 25.0, "zoom": 1.0}, "floats": 3}, "shot": "home"}
+ ]
+}

@@ -158,3 +158,50 @@ there is also a slow one, so the beads sit on each other); and the page says the
 words a reader can reach, which is what SOURCES.md was waiting for. Verdict: both met on the
 running build. Holt: nothing moved to show either; the page closes with any tap and leaves the
 sea as it was.
+
+## R4 (October 31, 2026; the owner's first device run; the build at 5cd8398)
+
+The owner put about thirty-five floats on his phone, some on the Black and Caspian seas, the
+Baltic and the ice's edge, and then said the thing that reset the round: truth underneath, not
+on top (DECISIONS.md § 11). So the first half of this round, which measured the record's reach
+and would have refused the Caspian (`Rules::may_put`, D4, D5), stays in the rules and in
+SOURCES.md and leaves the screen: D4 and D5 withdrawn, the float put anywhere the mask shows
+water. What ran for the second half: `adrift-check play` of `critics/r4/run-and-loiter.json`
+(a float put off Cape Hatteras and one in the Sargasso Sea at zoom 3, shots at the put, one day,
+six days and twenty days; `run-and-loiter.png`, the four moments stacked), `owners-seas.json`
+by night (the owner's seas, `owners-seas.png`), 26 tests (two new: where a float may be put, for
+the record; a float glides between steps).
+
+**The hater (the same oceanographer, now asked whether the sea feels alive).**
+- *The run and the loiter.* In twenty days the Hatteras float ran 1,100 km north-east along the
+  stream and the Sargasso float wandered 150 km in no direction; at the date's pace (two days a
+  second) the first crosses a phone's screen at zoom 3 in about ten seconds and the second barely
+  stirs. That is the Atlantic: a jet and a quiet middle. The wake tells it too: beads a thumb's
+  width apart in the stream, piled on each other where the float slowed in a meander near 40° N,
+  and in the Sargasso a smudge. Verdict: right to the eye at this zoom; the rate is Engineering's
+  number and it reads.
+- *The first day.* The Hatteras float's first day is 60 km north-east and the Sargasso float's
+  12 km in a random direction: the water took both, and the second looks like a float that was
+  put on quiet water, not one that is stuck. Verdict: good; the put's draw (R2) is what makes it.
+- *Ticking: a claim withdrawn.* The hater said a float moves only when its quarter-day step
+  lands, a five-point jump eight times a second at zoom 8, and D6 asked for a glide between
+  steps. Engineering's played plan (`crates/adrift-check/plans/gulf-stream-glide.json`) shows the
+  premise false: the app steps each float by the frame's own time (0.017 day at 120 Hz), and a
+  quarter day is only the cap after a pause or a scrub; at zoom 8 the float moves a point and a
+  half a frame and 170 km a second, the stream's real pace. The critic judged the rules' step
+  size, not the running build, which is the one thing a critic here must not do. D6 answered in
+  range with nothing to add; `Rules::glide` stays for a look that wants a heading.
+- *Unrecorded water.* A float on the Caspian drifts 7 km a day on a smoothed-in current with a
+  32 km wander; Lake Michigan's 11 km and 48 km; Hudson Bay's 5 km and 27 km. Nothing sits dead,
+  nothing jitters; the coast holds what reaches it. SOURCES.md says it is no record of that
+  water. Verdict: plausible underneath, honest in the account; the screen says nothing, as ruled.
+- *The maybes as possibilities.* At 512 paths the cloud is a cloud, bunched in the stream and
+  thin on the shelf. Whether it reads as "the sea's possibilities" rather than specks is the
+  look's (density, fading with distance from the float); the shape is the data's and right.
+
+**Holt.** Put, drift, stop, undo hold as before. A float put on quiet water loiters, and that is
+not a penalty but the sea: the reader who wants motion puts the next one in the stream, and the
+wake of the first shows why. The Caspian float drifts; nothing refuses, nothing marks, nothing
+says no: the owner's "truth underneath" is Holt's "without penalty". The stutter the hater feared at close zoom
+is not there on the running build (above). Verdict: alive at the zooms a thumb uses and at the
+closest.

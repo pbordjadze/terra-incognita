@@ -94,8 +94,16 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
         // the measured lights over the drawn land, lifted a little (a village's glow is faint in the
         // record), in sodium gold whitening at a city's core, each shimmering slowly by the drawn
         // motion's clock as lights seen from far do: a noise in the world and in time, never a flicker
-        let shimmer = vnoise3(G.g * 1400.0 + vec3f(U.tone.z * 0.45, U.tone.z * 0.31, 7.9));
-        let lights = pow(lightsRaw, 0.75) * (0.86 + 0.28 * shimmer) * smoothstep(0.45, 1.0, night);
+        // alive, not flickering: a slow shimmer over whole regions (as Terra's night), a finer and
+        // quicker one over streets and suburbs, the whole field breathing over nine seconds, and the
+        // brightest cores catching now and then, as lights seen from far do
+        let t = U.tone.z;
+        let shimmer = vnoise3(G.g * 1400.0 + vec3f(t * 0.45, t * 0.31, 7.9));
+        let fine = vnoise3(G.g * 6000.0 + vec3f(t * 0.9, -t * 0.7, 3.1));
+        let breath = 0.96 + 0.04 * sin(t * 0.7);
+        let catching = smoothstep(0.82, 1.0, vnoise3(G.g * 9000.0 + vec3f(-t * 1.3, t * 1.1, 11.0)));
+        var lights = pow(lightsRaw, 0.75) * (0.74 + 0.28 * shimmer + 0.24 * fine) * breath * smoothstep(0.45, 1.0, night);
+        lights = lights + 0.5 * catching * smoothstep(0.6, 1.0, lights);
         nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
         nland = mix(nland, N_CORE, 0.7 * smoothstep(0.7, 1.0, lights));
         var nsea = mix(N_SEA, N_DEEP, smoothstep(2500.0, 6000.0, depthM)) * (1.0 + 0.06 * fl);
