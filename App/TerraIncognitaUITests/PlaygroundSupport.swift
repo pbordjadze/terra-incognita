@@ -92,8 +92,9 @@ extension XCTestCase {
             guard let snapshot = try? app.snapshot() else { break }
             let now = identifiers(snapshot).filter { !$0.isEmpty }
             listed.formUnion(now.filter { $0.hasPrefix("prototype_") }.map { String($0.dropFirst("prototype_".count)) })
-            // the end of the list, or it no longer moves
-            if now.contains("playgroundLive") || now == before { break }
+            // the end: it no longer moves (the Live line's cell can be in the tree below rows not yet
+            // built, so seeing it isn't the end)
+            if now == before { break }
             before = now
             drag(list, by: clip(list, in: app).height * 0.6, in: app)
         }
