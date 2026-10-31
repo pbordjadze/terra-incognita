@@ -172,7 +172,7 @@ fn play(args: &[String]) -> Result<()> {
         let n = (secs * fps).ceil().max(1.0) as usize;
         for _ in 0..n {
             *t += secs / n as f64;
-            app.frame(&target.view, *t);
+            app.advance(*t);
         }
     };
     let camera0 = app.camera.camera;
