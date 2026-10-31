@@ -94,8 +94,8 @@ it), `r2-take-out.jpg` and `r2-ride.jpg`.
 - *The beat is seen now, and it over-promises.* `r2-put.jpg`: at 0.2 s a tap's ring; at 0.39 s a
   formed glass float with its lamp lit, a hundredth of a second before the beat. Lift there and a
   lit float vanishes. The ring thickening is right; the lamp lighting before the state has a float
-  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual: the lamp lights on
-  `Put`, not during the press.
+  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual, and agreed the same
+  hour: the lamp lights on `Put`, the press only forms glass; the curve stays.
 - *The date is a real control now* (`r2-date.jpg`: "3 January, a typical year, by the drifters'
   record", under the disc; `date-scrub` and `date-tap` pass against `Look::date_bounds()`). Still
   nothing says it can be touched. That is the design, and the hater notes it will be the first thing
