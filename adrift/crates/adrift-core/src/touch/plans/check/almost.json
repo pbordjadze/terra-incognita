@@ -1,0 +1,55 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.35
+    },
+    {
+      "id": 0,
+      "up": [
+        226.27960378789263,
+        431.3931664700614
+      ]
+    },
+    {
+      "advance": 0.25
+    },
+    {
+      "expect": {
+        "floats": 0,
+        "not": [
+          "Put"
+        ],
+        "saw": [
+          "Ring"
+        ]
+      },
+      "shot": "expect-01"
+    }
+  ],
+  "title": "A lift just short of the beat is a tap: no float"
+}

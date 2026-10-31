@@ -1,0 +1,73 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 20.0,
+      "lon": -32.0,
+      "zoom": 7.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        238.39535638741614,
+        425.74988540071547
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.08
+    },
+    {
+      "id": 0,
+      "up": [
+        238.39535638741614,
+        425.74988540071547
+      ]
+    },
+    {
+      "advance": 0.12000000000000001
+    },
+    {
+      "down": [
+        238.39535638741614,
+        425.74988540071547
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.08000000000000002
+    },
+    {
+      "id": 0,
+      "up": [
+        238.39535638741614,
+        425.74988540071547
+      ]
+    },
+    {
+      "advance": 0.8200000000000001
+    },
+    {
+      "expect": {
+        "camera": {
+          "lat": 20.0,
+          "lon": -32.0,
+          "zoom": 1.0
+        }
+      },
+      "shot": "expect-01"
+    }
+  ],
+  "title": "Past half the deepest, a double tap flies out to the whole globe about the centre"
+}

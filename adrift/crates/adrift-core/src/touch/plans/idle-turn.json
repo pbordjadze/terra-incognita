@@ -1,0 +1,61 @@
+{
+ "title": "Left alone with nothing on the sea the globe turns; with a float, it holds still",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -100.0,
+   40.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 7.9,
+   "expect": {
+    "camera_moved": false
+   }
+  },
+  {
+   "t": 9.0,
+   "expect": {
+    "camera_moved": true
+   }
+  },
+  {
+   "t": 9.1,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 9.6,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 9.7,
+   "expect": {
+    "floats": 1
+   }
+  },
+  {
+   "t": 19.0,
+   "expect": {
+    "camera_same_as_last": true
+   }
+  }
+ ]
+}

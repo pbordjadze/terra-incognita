@@ -1,0 +1,128 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        180.59407694855238,
+        494.10555115718336
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.05
+    },
+    {
+      "id": 0,
+      "move": [
+        196.5,
+        511.2
+      ]
+    },
+    {
+      "advance": 0.05
+    },
+    {
+      "id": 0,
+      "move": [
+        220.1,
+        519.7
+      ]
+    },
+    {
+      "advance": 0.05000000000000002
+    },
+    {
+      "id": 0,
+      "move": [
+        243.7,
+        528.2
+      ]
+    },
+    {
+      "advance": 0.04999999999999999
+    },
+    {
+      "id": 0,
+      "up": [
+        243.7,
+        528.2
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "camera_moved": true
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.3
+    },
+    {
+      "expect": {
+        "camera_same_as_last": false
+      },
+      "shot": "expect-02"
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "down": [
+        243.7,
+        357.8
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "id": 0,
+      "up": [
+        243.7,
+        357.8
+      ]
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "expect": {
+        "saw": [
+          "Ring"
+        ]
+      },
+      "shot": "expect-03"
+    },
+    {
+      "advance": 0.7
+    },
+    {
+      "expect": {
+        "camera_same_as_last": true
+      },
+      "shot": "expect-04"
+    }
+  ],
+  "title": "Let go moving and the globe flings, then rests; a touch stops it at once"
+}

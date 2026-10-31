@@ -1,0 +1,82 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.5
+    },
+    {
+      "expect": {
+        "floats": 1,
+        "saw": [
+          "Put"
+        ],
+        "state": "holding"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "id": 0,
+      "move": [
+        256.7918113427568,
+        444.2586851097581
+      ]
+    },
+    {
+      "advance": 0.20000000000000007
+    },
+    {
+      "id": 0,
+      "up": [
+        256.7918113427568,
+        444.2586851097581
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "float": {
+          "id": 1,
+          "lat": 15.0,
+          "lon": -20.0
+        },
+        "floats": 1,
+        "saw": [
+          "Carry",
+          "Release"
+        ]
+      },
+      "shot": "expect-02"
+    }
+  ],
+  "title": "The float just put is already in hand: drag it before lifting"
+}

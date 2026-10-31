@@ -1,0 +1,142 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [
+      {
+        "days_ago": 3.0,
+        "lat": 20.0,
+        "lon": -30.0
+      }
+    ],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.08
+    },
+    {
+      "id": 0,
+      "up": [
+        226.27960378789263,
+        431.3931664700614
+      ]
+    },
+    {
+      "advance": 0.020000000000000004
+    },
+    {
+      "expect": {
+        "not": [
+          "Put"
+        ],
+        "riding": 1,
+        "saw": [
+          "Ride"
+        ]
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.9
+    },
+    {
+      "shot": "catching-up"
+    },
+    {
+      "advance": 2.0
+    },
+    {
+      "expect": {
+        "camera_moved": true,
+        "camera_near_float": [
+          1,
+          0.4
+        ],
+        "riding": 1
+      },
+      "shot": "expect-02"
+    },
+    {
+      "shot": "riding"
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "down": [
+        145.27416187749958,
+        485.9097776941393
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.04999999999999982
+    },
+    {
+      "id": 0,
+      "move": [
+        196.5,
+        511.2
+      ]
+    },
+    {
+      "advance": 0.050000000000000266
+    },
+    {
+      "id": 0,
+      "move": [
+        227.9,
+        528.2
+      ]
+    },
+    {
+      "advance": 0.04999999999999982
+    },
+    {
+      "id": 0,
+      "up": [
+        227.9,
+        528.2
+      ]
+    },
+    {
+      "advance": 0.1499999999999999
+    },
+    {
+      "expect": {
+        "riding": null
+      },
+      "shot": "expect-03"
+    },
+    {
+      "advance": 2.6
+    },
+    {
+      "expect": {
+        "riding": null
+      },
+      "shot": "expect-04"
+    }
+  ],
+  "title": "Tap a float and the camera drifts with it; any drag leaves it"
+}

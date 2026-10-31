@@ -1,0 +1,181 @@
+{
+  "needs": [
+    "cancel"
+  ],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [
+      {
+        "days_ago": 3.0,
+        "lat": 20.0,
+        "lon": -30.0
+      }
+    ],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        256.7918113427568,
+        444.2586851097581
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.2
+    },
+    {
+      "cancel": [
+        256.7918113427568,
+        444.2586851097581
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "floats": 1,
+        "not": [
+          "Put"
+        ],
+        "saw": [
+          "Ring"
+        ]
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.2
+    },
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.5
+    },
+    {
+      "expect": {
+        "saw": [
+          "Hold"
+        ]
+      },
+      "shot": "expect-02"
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "id": 0,
+      "move": [
+        239.30897317178932,
+        414.3374396001139
+      ]
+    },
+    {
+      "advance": 0.09999999999999987
+    },
+    {
+      "cancel": [
+        239.30897317178932,
+        414.3374396001139
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "float": {
+          "id": 1,
+          "lat": 20.0,
+          "lon": -30.0
+        },
+        "floats": 1,
+        "held": null,
+        "saw": [
+          "Release"
+        ]
+      },
+      "shot": "expect-03"
+    },
+    {
+      "advance": 0.19999999999999996
+    },
+    {
+      "down": [
+        180.59407694855238,
+        494.10555115718336
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "id": 0,
+      "move": [
+        196.5,
+        511.2
+      ]
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "id": 0,
+      "move": [
+        227.9,
+        528.2
+      ]
+    },
+    {
+      "advance": 0.020000000000000018
+    },
+    {
+      "cancel": [
+        227.9,
+        528.2
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.07999999999999985
+    },
+    {
+      "expect": {
+        "camera_moved": true
+      },
+      "shot": "expect-04"
+    },
+    {
+      "advance": 0.8
+    },
+    {
+      "expect": {
+        "camera_same_as_last": true
+      },
+      "shot": "expect-05"
+    }
+  ],
+  "title": "The system takes the touch: a press lets go, a hold puts the float back, a drag stops"
+}

@@ -1,0 +1,144 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [
+      {
+        "days_ago": 3.0,
+        "lat": 20.0,
+        "lon": -30.0
+      }
+    ],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.5
+    },
+    {
+      "expect": {
+        "saw": [
+          "Hold"
+        ],
+        "state": "holding"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "id": 0,
+      "move": [
+        241.42265593795258,
+        436.5150656909123
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "id": 0,
+      "move": [
+        256.7918113427568,
+        444.2586851097581
+      ]
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "shot": "carrying"
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "held": 1,
+        "saw": [
+          "Carry"
+        ],
+        "state": "carrying"
+      },
+      "shot": "expect-02"
+    },
+    {
+      "advance": 0.050000000000000044
+    },
+    {
+      "id": 0,
+      "up": [
+        256.7918113427568,
+        444.2586851097581
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "float": {
+          "id": 1,
+          "lat": 15.0,
+          "lon": -20.0
+        },
+        "floats": 1,
+        "held": null,
+        "saw": [
+          "Release"
+        ],
+        "state": "idle"
+      },
+      "shot": "expect-03"
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "shot": "set-down"
+    },
+    {
+      "advance": 0.5
+    },
+    {
+      "intent": "Undo"
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "expect": {
+        "float": {
+          "id": 1,
+          "lat": 20.0,
+          "lon": -30.0
+        },
+        "floats": 1,
+        "saw": [
+          "Undo"
+        ]
+      },
+      "shot": "expect-04"
+    }
+  ],
+  "title": "Rest, then drag: carry the float to other water; the globe does not move; undo takes it back"
+}

@@ -1,0 +1,174 @@
+{
+  "needs": [],
+  "ppp": 3.0,
+  "reduce_motion": false,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        75.42695445916877,
+        343.4188149707405
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "id": 0,
+      "up": [
+        75.42695445916877,
+        343.4188149707405
+      ]
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "expect": {
+        "floats": 0,
+        "not": [
+          "Ring"
+        ]
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.3
+    },
+    {
+      "down": [
+        75.42695445916877,
+        343.4188149707405
+      ],
+      "id": 0
+    },
+    {
+      "advance": 1.0
+    },
+    {
+      "id": 0,
+      "up": [
+        75.42695445916877,
+        343.4188149707405
+      ]
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "floats": 0,
+        "not": [
+          "Ring",
+          "Put",
+          "Hold"
+        ]
+      },
+      "shot": "expect-02"
+    },
+    {
+      "advance": 0.3999999999999999
+    },
+    {
+      "down": [
+        75.42695445916877,
+        343.4188149707405
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.04999999999999982
+    },
+    {
+      "id": 0,
+      "move": [
+        157.2,
+        468.6
+      ]
+    },
+    {
+      "advance": 0.050000000000000266
+    },
+    {
+      "id": 0,
+      "move": [
+        196.5,
+        485.6
+      ]
+    },
+    {
+      "advance": 0.04999999999999982
+    },
+    {
+      "id": 0,
+      "up": [
+        196.5,
+        485.6
+      ]
+    },
+    {
+      "advance": 0.25
+    },
+    {
+      "expect": {
+        "camera_moved": true,
+        "floats": 0,
+        "not": [
+          "Ring",
+          "Put"
+        ]
+      },
+      "shot": "expect-03"
+    },
+    {
+      "advance": 0.6000000000000001
+    },
+    {
+      "down": [
+        6.0,
+        6.0
+      ],
+      "id": 0
+    },
+    {
+      "advance": 1.0
+    },
+    {
+      "id": 0,
+      "up": [
+        6.0,
+        6.0
+      ]
+    },
+    {
+      "advance": 0.09999999999999964
+    },
+    {
+      "expect": {
+        "floats": 0,
+        "not": [
+          "Ring",
+          "Put"
+        ]
+      },
+      "shot": "expect-04"
+    }
+  ],
+  "title": "Land and off the disc are silent: no ring, no float; a drag is still the globe's"
+}
