@@ -40,3 +40,9 @@ full run there; a round carried three crafts' work in about 40 min here against 
 device. Every motion verdict so far is a still or a played plan on a software driver, and the beat
 under a real finger and a fling toward the pole wait for the owner's capture (both shells log their
 frame stats every five seconds for it).
+
+**The shared source from Terra's side (11:35 UTC):** Terra's own full CI run on main (run 245,
+2a19c67) finished green at 10:19 and published build-245 through the same `ci/sidestore_publish.sh`;
+the source then listed Terra 1.0.245 and Adrift 1.0.23 together. Either workflow's publish keeps the
+other app's entries, which is what the two-app script was for. The craft branches carry nothing
+beyond `adrift`; nothing is left to merge.
