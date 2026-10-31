@@ -69,3 +69,38 @@ the beads and the silver scale with zoom (a floor of 0.8 pt, full size from zoom
 maybes at a third; the ring's beat as one continuous function with the amber from 0.5 of the beat;
 the sea at rest drawn and photographed; the maybes as point sprites, costed on the device; the
 foot's layout raised with Engineering (a demand if the View's disc does not leave it clear).
+
+## R1, first look (October 31, 2026): the marks in the app, through `adrift-check`
+
+Judged: `studies/check-gulf-stream-close-phone.png` (two floats put twenty days before, one held,
+at zoom 5 off Hatteras: `adrift-check render scenes/gulf-stream-close.json`, the wiring of
+DEMANDS.md D1 applied), `studies/check-atlantic-phone.png` (the whole Atlantic at zoom 1, three
+floats), `studies/check-foot-phone.png` (the date and credits under the disc after
+`plans/put-and-drift.json`). All on Engineering's ground and sea, on lavapipe.
+
+**The hater, a reviewer who gives apps one star for a single pixel out of place.**
+
+- "The floats are what the studies promised, on the real sea, and the words sit under the disc on
+  the paper, so the sticker is gone. One star back."
+- *The wake at zoom 5.* "Twenty beads in slow water pile into a caterpillar behind the float: each
+  bead's dark edge over the last bead's amber makes a brown worm. In a jet they string out and are
+  beautiful; in an eddy they are a stain. Draw a bead's edge only where it isn't over another
+  bead, or draw all edges then all beads, as you did the silver." Verdict: fails in slow water.
+- *The whole Earth.* "At zoom 1 the floats are nine-point rings with a dot of amber: findable,
+  and the wakes thin as asked. Fine."
+- *The ring's beat.* "Still not in the running build: the float appears from nothing at the beat,
+  because the gestures keep the resting finger to themselves (D2). Not judged until it is."
+- *The maybes and the silver.* "Not in the app; Truth's. The bench shows what they will be."
+- *The sea at rest.* "Still unphotographed."
+
+**Holt**: "In `put-and-drift` I put a float, it drifted forty days, I stopped the date and took it
+back, and the pictures show each state with nothing pointing at me. The ring's thickening is the
+one promise the build doesn't yet keep. Something unscripted: the float in the Sargasso barely
+moved in forty days, which no one chose."
+
+**Done the same day**: the beads are drawn edges then beads (`wake.wgsl`, two layers), so a bunch
+stays amber; the bench shows it (`tools/adrift/lookbench`).
+
+**Into the rest of R1**: the sea at rest photographed in a play (the
+light held, the glitter still); the ring's beat the moment D2 lands; the night palette waiting on
+a night.

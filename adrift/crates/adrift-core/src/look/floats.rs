@@ -1,5 +1,6 @@
 //! The floats and the ring that thickens into one (`floats.wgsl`).
-use super::{pipeline, shader, Instances};
+use super::{mark_pipeline, marks_wgsl, Instances};
+use crate::gpu::Gpu;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -28,13 +29,13 @@ pub struct Floats {
 }
 
 impl Floats {
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, view: &wgpu::BindGroupLayout) -> Self {
-        let module = shader(device, "floats", include_str!("floats.wgsl"));
-        Self { pipeline: pipeline(device, "floats", &module, format, LAYOUT, view, None), instances: Instances::new(device, "floats", 16) }
+    pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        let module = gpu.shader("floats", &marks_wgsl(include_str!("floats.wgsl")));
+        Self { pipeline: mark_pipeline(gpu, "floats", &module, LAYOUT, view, None), instances: Instances::new(gpu, "floats", 16) }
     }
 
-    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, floats: &[FloatInstance]) {
-        self.instances.write(device, queue, "floats", floats);
+    pub fn prepare(&mut self, gpu: &Gpu, floats: &[FloatInstance]) {
+        self.instances.write(gpu, floats);
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {

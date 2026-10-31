@@ -1,6 +1,7 @@
 //! The date and the credits as drawn things (`words.wgsl`): Libertinus Serif from the signed-distance
 //! atlas in `type/` (built by `tools/adrift/glyphs.py`), each glyph on a halo, laid out here in points.
-use super::{pipeline, shader, Instances};
+use super::{mark_pipeline, marks_wgsl, Instances};
+use crate::gpu::Gpu;
 use bytemuck::{Pod, Zeroable};
 use std::collections::HashMap;
 
@@ -108,10 +109,11 @@ pub struct Words {
 }
 
 impl Words {
-    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, format: wgpu::TextureFormat, view: &wgpu::BindGroupLayout) -> Self {
+    pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        let device = &gpu.device;
         let face = Face::load();
-        let module = shader(device, "words", include_str!("words.wgsl"));
-        let texture = atlas(device, queue);
+        let module = gpu.shader("words", &marks_wgsl(include_str!("words.wgsl")));
+        let texture = atlas(gpu);
         let tv = texture.create_view(&Default::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("words atlas"),
@@ -144,16 +146,34 @@ impl Words {
         };
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
-        let pipeline = pipeline(device, "words", &module, format, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(device, "words", 256), buffers: [b0, b1], groups: [g0, g1], face }
+        let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face }
     }
 
     /// The glyphs of every line this frame (`Face::layout`), on a halo of the given tone.
-    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, glyphs: &[GlyphInstance], halo: [f32; 4]) {
-        self.instances.write(device, queue, "words", glyphs);
+    pub fn prepare(&mut self, gpu: &Gpu, glyphs: &[GlyphInstance], halo: [f32; 4]) {
+        self.instances.write(gpu, glyphs);
         for (i, b) in self.buffers.iter().enumerate() {
-            queue.write_buffer(b, 0, bytemuck::bytes_of(&WordsUniform { halo, spread: self.face.spread, halo_pt: 1.5, layer: i as f32, _pad: 0.0 }));
+            gpu.queue.write_buffer(b, 0, bytemuck::bytes_of(&WordsUniform { halo, spread: self.face.spread, halo_pt: 1.5, layer: i as f32, _pad: 0.0 }));
         }
+    }
+
+    /// The date (17 pt) and the credits (10 pt) centred under the globe's disc (`cx, cy, r` in
+    /// points) on a `width` x `height` point screen, or at the foot over the globe when the disc
+    /// fills it, in the palette's inks on a halo of what is under them: the paper below the disc, the
+    /// sea over it (palette.json).
+    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool) {
+        let under = disc[1] + disc[2] + 40.0 * reading;
+        let foot = under.min(height - 50.0 * reading);
+        let on_globe = foot - 14.0 * reading < disc[1] + disc[2];
+        let (date_ink, credit_ink, halo) = if night {
+            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], if on_globe { [0.063, 0.094, 0.157, 0.92] } else { [0.08, 0.10, 0.14, 0.92] })
+        } else {
+            ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 1.0], if on_globe { [0.761, 0.894, 0.957, 0.92] } else { [0.96, 0.95, 0.92, 0.92] })
+        };
+        let mut glyphs = self.face.layout(&Line { text: date, size: 17.0 * reading, ink: date_ink, tracking: 0.0 }, width / 2.0, foot);
+        glyphs.extend(self.face.layout(&Line { text: credits, size: 10.0 * reading, ink: credit_ink, tracking: 0.0 }, width / 2.0, foot + 22.0 * reading));
+        self.prepare(gpu, &glyphs, halo);
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {
@@ -170,40 +190,45 @@ impl Words {
 
 /// The atlas as an R8 texture with its mipmaps (made here, box-filtered, so small words sample it
 /// near their own scale).
-fn atlas(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Texture {
-    let decoder = png::Decoder::new(ATLAS_PNG);
-    let mut reader = decoder.read_info().expect("type/libertinus.png");
-    let mut buf = vec![0u8; reader.output_buffer_size()];
-    let info = reader.next_frame(&mut buf).expect("type/libertinus.png");
-    let (w, h) = (info.width, info.height);
-    let mut levels = vec![buf[..info.buffer_size()].to_vec()];
+fn atlas(gpu: &Gpu) -> wgpu::Texture {
+    let img = image::load_from_memory(ATLAS_PNG).expect("type/libertinus.png").to_luma8();
+    let (w, h) = img.dimensions();
+    let mut levels = vec![img.into_raw()];
     let (mut lw, mut lh) = (w, h);
     while lw > 1 && lh > 1 {
         let (nw, nh) = (lw / 2, lh / 2);
         let prev = levels.last().unwrap();
         let mut next = vec![0u8; (nw * nh) as usize];
-        for y in 0..nh { for x in 0..nw {
-            let i = |xx: u32, yy: u32| prev[(yy * lw + xx) as usize] as u32;
-            next[(y * nw + x) as usize] = ((i(2 * x, 2 * y) + i(2 * x + 1, 2 * y) + i(2 * x, 2 * y + 1) + i(2 * x + 1, 2 * y + 1) + 2) / 4) as u8;
-        } }
+        for y in 0..nh {
+            for x in 0..nw {
+                let i = |xx: u32, yy: u32| prev[(yy * lw + xx) as usize] as u32;
+                next[(y * nw + x) as usize] = ((i(2 * x, 2 * y) + i(2 * x + 1, 2 * y) + i(2 * x, 2 * y + 1) + i(2 * x + 1, 2 * y + 1) + 2) / 4) as u8;
+            }
+        }
         levels.push(next);
-        lw = nw; lh = nh;
+        lw = nw;
+        lh = nh;
     }
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
+    let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("words atlas"),
         size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        mip_level_count: levels.len() as u32, sample_count: 1, dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::R8Unorm, usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST, view_formats: &[],
+        mip_level_count: levels.len() as u32,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::R8Unorm,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
     });
     let (mut lw, mut lh) = (w, h);
     for (level, data) in levels.iter().enumerate() {
-        queue.write_texture(
+        gpu.queue.write_texture(
             wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: level as u32, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             data,
             wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(lw), rows_per_image: Some(lh) },
             wgpu::Extent3d { width: lw, height: lh, depth_or_array_layers: 1 },
         );
-        lw = (lw / 2).max(1); lh = (lh / 2).max(1);
+        lw = (lw / 2).max(1);
+        lh = (lh / 2).max(1);
     }
     texture
 }

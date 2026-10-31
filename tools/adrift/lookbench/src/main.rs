@@ -1,18 +1,17 @@
-//! The look's own bench: draws every look pass with wgpu over a picture of the sea (Terra's Metal
-//! stand-in's, or any PNG) from a scene that `tools/adrift/study.py --scene` writes, headless on
-//! Linux (Mesa's lavapipe: `bash tools/adrift/linux-setup.sh`, or `apt-get install mesa-vulkan-drivers`).
+//! The look's own bench: draws the marks (adrift-core's `look::Look`) with wgpu over a picture of
+//! the sea (Terra's Metal stand-in's, or any PNG) from a scene that `tools/adrift/study.py --scene`
+//! writes, headless on Linux (Mesa's lavapipe: `bash tools/adrift/linux-setup.sh`). It is for trying
+//! a colour or a size with the maybes and the drifter in place before Truth's data exists; the
+//! whole app, ground and sea and all, is `adrift-check`.
 //!
 //!     python3 tools/adrift/study.py held phone --at=-68,36,2.6 --put=-74.5,35.3 --scene build/adrift/scene.json
 //!     cargo run --release --manifest-path tools/adrift/lookbench/Cargo.toml -- build/adrift/scene.json out.png
 //!
 //! The scene names the base picture, the View (frame, disc, rotation, time, tone), the floats, the
-//! wake, the maybes, the silver track and the words. The look's Rust is included from the crate by
-//! path, so what this draws is what the app draws; until Engineering's `adrift-check` renders the
-//! look, this is the running build the critics judge.
-#[path = "../../../../adrift/crates/adrift-core/src/look/mod.rs"]
-mod look;
-
-use look::{floats::FloatInstance, maybes::SpeckInstance, words::Line};
+//! wake, the maybes, the silver track and the words.
+use adrift_core::gpu::{Gpu, ViewUniform};
+use adrift_core::look::{self, Look, LookFloat, LookState};
+use adrift_core::model::LonLat;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -32,112 +31,107 @@ struct Scene {
     silver_rise: f32,
     date: String,
     credits: String,
-    foot: f32,
+    #[serde(default)]
+    resting: Option<(f64, f64, f32)>,
 }
 
 #[derive(Deserialize)]
-struct SceneFloat { lon: f64, lat: f64, beat: f32, lit: f32, held: f32 }
-
-fn read_png(path: &str) -> (u32, u32, Vec<u8>) {
-    let decoder = png::Decoder::new(std::fs::File::open(path).expect("base png"));
-    let mut reader = decoder.read_info().expect("png");
-    let mut buf = vec![0u8; reader.output_buffer_size()];
-    let info = reader.next_frame(&mut buf).expect("png frame");
-    let rgba = match info.color_type {
-        png::ColorType::Rgba => buf[..info.buffer_size()].to_vec(),
-        png::ColorType::Rgb => buf[..info.buffer_size()].chunks(3).flat_map(|c| [c[0], c[1], c[2], 255]).collect(),
-        _ => panic!("the base must be RGB or RGBA"),
-    };
-    (info.width, info.height, rgba)
+struct SceneFloat {
+    lon: f64,
+    lat: f64,
+    #[allow(dead_code)]
+    beat: f32,
+    lit: f32,
+    held: f32,
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let (scene_path, out) = (&args[1], &args[2]);
     let scene: Scene = serde_json::from_str(&std::fs::read_to_string(scene_path).expect("scene")).expect("scene json");
-    let (w, h, base) = read_png(&scene.base);
+    let base = image::open(&scene.base).expect("base png").to_rgba8();
+    let (w, h) = base.dimensions();
 
-    let instance = wgpu::Instance::default();
-    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default())).expect("an adapter (install mesa-vulkan-drivers)");
-    eprintln!("adapter: {} ({:?})", adapter.get_info().name, adapter.get_info().backend);
-    let (device, queue) = pollster::block_on(adapter.request_device(&Default::default(), None)).expect("a device");
-    let format = wgpu::TextureFormat::Rgba8Unorm;
-
-    // the sea: the base picture as the target's first contents
-    let target = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("target"), size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2, format,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST, view_formats: &[],
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let gpu = pollster::block_on(Gpu::new(&instance, None)).expect("a device (install mesa-vulkan-drivers)");
+    eprintln!("adapter: {}", gpu.adapter_info.name);
+    // the target, with the sea (the base picture) as its first contents
+    let target = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("target"),
+        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: gpu.format,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
     });
-    queue.write_texture(
+    let target_view = target.create_view(&Default::default());
+    gpu.queue.write_texture(
         wgpu::TexelCopyTextureInfo { texture: &target, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-        &base, wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(h) },
-        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 });
+        &base,
+        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(h) },
+        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+    );
 
-    let view = look::ViewBinding::new(&device);
-    view.write(&queue, &look::ViewRaw { frame: scene.frame, disc: scene.disc, rot0: scene.rot[0], rot1: scene.rot[1], rot2: scene.rot[2], time: scene.time, tone: scene.tone });
-    let night = scene.night;
-    let n = night as u8 as f32;
+    let view_layout = look::view_layout(&gpu);
+    let view_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("view"),
+        size: std::mem::size_of::<ViewUniform>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    let view_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("view"),
+        layout: &view_layout,
+        entries: &[wgpu::BindGroupEntry { binding: 0, resource: view_buffer.as_entire_binding() }],
+    });
+    let u = ViewUniform { frame: scene.frame, disc: scene.disc, rot0: scene.rot[0], rot1: scene.rot[1], rot2: scene.rot[2], time: scene.time, tone: scene.tone, _pad: [0.0; 4] };
+    gpu.queue.write_buffer(&view_buffer, 0, bytemuck::bytes_of(&u));
 
-    let mut wake = look::wake::Wake::new(&device, format, &view.layout);
-    let mut maybes = look::maybes::Maybes::new(&device, format, &view.layout);
-    let mut silver = look::silver::Silver::new(&device, format, &view.layout);
-    let mut floats = look::floats::Floats::new(&device, format, &view.layout);
-    let mut words = look::words::Words::new(&device, &queue, format, &view.layout);
-
-    let path: Vec<[f32; 3]> = scene.wake.iter().map(|p| look::unit(p[0], p[1])).collect();
-    wake.prepare(&device, &queue, &look::wake::beads(&path, night));
-    let specks: Vec<SpeckInstance> = scene.maybes.iter().map(|p| SpeckInstance { g: look::unit(p[0], p[1]) }).collect();
-    maybes.prepare(&device, &queue, &specks, scene.maybes_bloom, night);
-    let track: Vec<[f32; 3]> = scene.silver.iter().map(|p| look::unit(p[0], p[1])).collect();
-    silver.prepare(&device, &queue, &track, scene.silver_rise, night);
-    let fl: Vec<FloatInstance> = scene.floats.iter().map(|f| FloatInstance { g: look::unit(f.lon, f.lat), beat: f.beat, lit: f.lit, held: f.held, night: n }).collect();
-    floats.prepare(&device, &queue, &fl);
-
-    // the words: the date 17 pt and the credits 10 pt, centred at the foot (palette.json)
-    let reading = scene.frame[3];
-    let (date_ink, credit_ink, halo) = if night {
-        ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92])
-    } else {
-        ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 1.0], [0.761, 0.894, 0.957, 0.92])
+    let mut look = Look::new(&gpu, &view_layout);
+    let wake: Vec<LonLat> = scene.wake.iter().map(|p| LonLat::new(p[0], p[1])).collect();
+    let state = LookState {
+        floats: scene.floats.iter().enumerate().map(|(i, f)| LookFloat { at: LonLat::new(f.lon, f.lat), lit: f.lit, held: f.held > 0.5, wake: if i == 0 { wake.clone() } else { Vec::new() } }).collect(),
+        resting: scene.resting.map(|(lon, lat, beat)| (LonLat::new(lon, lat), beat)),
+        maybes: scene.maybes.iter().map(|p| LonLat::new(p[0], p[1])).collect(),
+        bloom: scene.maybes_bloom,
+        drifter: scene.silver.iter().map(|p| LonLat::new(p[0], p[1])).collect(),
+        rise: scene.silver_rise,
+        night: scene.night,
+        date: scene.date.clone(),
+        credits: scene.credits.clone(),
     };
-    let cx = scene.frame[0] / scene.frame[2] / 2.0;
-    let mut glyphs = words.face.layout(&Line { text: &scene.date, size: 17.0 * reading, ink: date_ink, tracking: 0.0 }, cx, scene.foot);
-    glyphs.extend(words.face.layout(&Line { text: &scene.credits, size: 10.0 * reading, ink: credit_ink, tracking: 0.0 }, cx, scene.foot + 22.0 * reading));
-    words.prepare(&device, &queue, &glyphs, halo);
+    look.prepare(&gpu, &state, scene.frame[0] / scene.frame[2], scene.frame[1] / scene.frame[2], scene.frame[3], [scene.disc[0], scene.disc[1], scene.disc[2]]);
 
-    let tv = target.create_view(&Default::default());
-    let mut encoder = device.create_command_encoder(&Default::default());
+    let mut enc = gpu.device.create_command_encoder(&Default::default());
     {
-        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("look"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment { view: &tv, resolve_target: None, ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store } })],
-            ..Default::default()
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { view: &target_view, resolve_target: None, ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store }, depth_slice: None })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
         });
-        // the draw order (DECISIONS.md §3): wakes, maybes, drifter, floats, chrome
-        wake.draw(&mut pass, &view.group);
-        maybes.draw(&mut pass, &view.group);
-        silver.draw(&mut pass, &view.group);
-        floats.draw(&mut pass, &view.group);
-        words.draw(&mut pass, &view.group);
+        look.draw(&mut rp, &view_bind);
     }
     // read back
     let bpr = (w * 4 + 255) / 256 * 256;
-    let staging = device.create_buffer(&wgpu::BufferDescriptor { label: Some("staging"), size: (bpr * h) as u64, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-    encoder.copy_texture_to_buffer(
+    let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some("readback"), size: (bpr * h) as u64, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
+    enc.copy_texture_to_buffer(
         wgpu::TexelCopyTextureInfo { texture: &target, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-        wgpu::TexelCopyBufferInfo { buffer: &staging, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(bpr), rows_per_image: Some(h) } },
-        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 });
-    queue.submit([encoder.finish()]);
-    let slice = staging.slice(..);
+        wgpu::TexelCopyBufferInfo { buffer: &buf, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(bpr), rows_per_image: None } },
+        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+    );
+    gpu.queue.submit([enc.finish()]);
+    let slice = buf.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    device.poll(wgpu::Maintain::Wait);
+    gpu.device.poll(wgpu::PollType::wait()).expect("poll");
     let data = slice.get_mapped_range();
-    let mut pixels = Vec::with_capacity((w * h * 4) as usize);
-    for y in 0..h { pixels.extend_from_slice(&data[(y * bpr) as usize..(y * bpr + w * 4) as usize]); }
-    let file = std::fs::File::create(out).expect("out");
-    let mut enc = png::Encoder::new(std::io::BufWriter::new(file), w, h);
-    enc.set_color(png::ColorType::Rgba);
-    enc.write_header().unwrap().write_image_data(&pixels).unwrap();
+    let mut px = Vec::with_capacity((w * h * 4) as usize);
+    for y in 0..h {
+        px.extend_from_slice(&data[(y * bpr) as usize..(y * bpr + w * 4) as usize]);
+    }
+    image::save_buffer(out, &px, w, h, image::ColorType::Rgba8).expect("out");
     println!("{out}");
 }

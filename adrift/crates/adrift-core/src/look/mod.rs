@@ -221,8 +221,9 @@ impl Look {
         }
     }
 
-    /// Writes this frame's instances. `width`, `height` in points, `reading` the reading scale.
-    pub fn prepare(&mut self, gpu: &Gpu, state: &LookState, width: f32, height: f32, reading: f32) {
+    /// Writes this frame's instances. `width`, `height` in points, `reading` the reading scale,
+    /// `disc` the globe's centre and radius in points (where the words sit).
+    pub fn prepare(&mut self, gpu: &Gpu, state: &LookState, width: f32, height: f32, reading: f32, disc: [f32; 3]) {
         let n = state.night;
         let mut beads = Vec::new();
         for f in &state.floats {
@@ -243,7 +244,7 @@ impl Look {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32 });
         }
         self.floats.prepare(gpu, &fl);
-        self.words.prepare_foot(gpu, &state.date, &state.credits, width, height, reading, n);
+        self.words.prepare_foot(gpu, &state.date, &state.credits, width, height, reading, disc, n);
     }
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup) {

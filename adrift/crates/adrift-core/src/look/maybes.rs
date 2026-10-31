@@ -1,6 +1,7 @@
 //! The maybes: thousands of pale specks (`maybes.wgsl`). Their positions come from Truth's sampler
 //! (a buffer `rules.wgsl` writes, or a slice from the CPU); the look only draws them.
-use super::{pipeline, shader, Instances, Uniform};
+use super::{mark_pipeline, marks_wgsl, Instances, Uniform};
+use crate::gpu::Gpu;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -31,15 +32,15 @@ pub struct Maybes {
 }
 
 impl Maybes {
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, view: &wgpu::BindGroupLayout) -> Self {
-        let module = shader(device, "maybes", include_str!("maybes.wgsl"));
-        let uniform = Uniform::new(device, "maybes");
-        Self { pipeline: pipeline(device, "maybes", &module, format, LAYOUT, view, Some(&uniform.layout)), instances: Instances::new(device, "maybes", 4096), uniform }
+    pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        let module = gpu.shader("maybes", &marks_wgsl(include_str!("maybes.wgsl")));
+        let uniform = Uniform::new(gpu, "maybes");
+        Self { pipeline: mark_pipeline(gpu, "maybes", &module, LAYOUT, view, Some(&uniform.layout)), instances: Instances::new(gpu, "maybes", 4096), uniform }
     }
 
-    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, specks: &[SpeckInstance], bloom: f32, night: bool) {
-        self.instances.write(device, queue, "maybes", specks);
-        self.uniform.write(queue, &MaybesUniform { bloom, night: night as u8 as f32, _pad: [0.0; 2] });
+    pub fn prepare(&mut self, gpu: &Gpu, specks: &[SpeckInstance], bloom: f32, night: bool) {
+        self.instances.write(gpu, specks);
+        self.uniform.write(gpu, &MaybesUniform { bloom, night: night as u8 as f32, _pad: [0.0; 2] });
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {

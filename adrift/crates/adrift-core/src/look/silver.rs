@@ -1,5 +1,6 @@
 //! The nearest real drifter's track in silver (`silver.wgsl`).
-use super::{pipeline, shader, Instances, Uniform};
+use super::{mark_pipeline, marks_wgsl, Instances, Uniform};
+use crate::gpu::Gpu;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -36,20 +37,20 @@ pub struct Silver {
 }
 
 impl Silver {
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, view: &wgpu::BindGroupLayout) -> Self {
-        let module = shader(device, "silver", include_str!("silver.wgsl"));
-        let uniforms = [Uniform::new(device, "silver lines"), Uniform::new(device, "silver wires")];
-        Self { pipeline: pipeline(device, "silver", &module, format, LAYOUT, view, Some(&uniforms[0].layout)), instances: Instances::new(device, "silver", 512), uniforms }
+    pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        let module = gpu.shader("silver", &marks_wgsl(include_str!("silver.wgsl")));
+        let uniforms = [Uniform::new(gpu, "silver lines"), Uniform::new(gpu, "silver wires")];
+        Self { pipeline: mark_pipeline(gpu, "silver", &module, LAYOUT, view, Some(&uniforms[0].layout)), instances: Instances::new(gpu, "silver", 512), uniforms }
     }
 
     /// The track's positions in order, the last where it was last seen.
-    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, track: &[[f32; 3]], rise: f32, night: bool) {
+    pub fn prepare(&mut self, gpu: &Gpu, track: &[[f32; 3]], rise: f32, night: bool) {
         let n = track.len().saturating_sub(1).max(1) as f32;
         let segs: Vec<SegmentInstance> = track.windows(2).enumerate()
             .map(|(i, w)| SegmentInstance { a: w[0], b: w[1], t: i as f32 / n }).collect();
-        self.instances.write(device, queue, "silver", &segs);
+        self.instances.write(gpu, &segs);
         for (i, u) in self.uniforms.iter().enumerate() {
-            u.write(queue, &SilverUniform { rise, night: night as u8 as f32, layer: i as f32, _pad: 0.0 });
+            u.write(gpu, &SilverUniform { rise, night: night as u8 as f32, layer: i as f32, _pad: 0.0 });
         }
     }
 

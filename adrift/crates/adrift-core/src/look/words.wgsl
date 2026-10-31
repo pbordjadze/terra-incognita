@@ -31,7 +31,7 @@ struct Words {
 @vertex
 fn vs(@builtin(vertex_index) vi: u32, g: GlyphIn) -> GlyphOut {
     let c = corner(vi % 6u) * 0.5 + 0.5;
-    let ppp = V.frame.z;
+    let ppp = U.frame.z;
     var o: GlyphOut;
     o.pos = clip((g.rect.xy + c * g.rect.zw) * ppp);
     o.uv = g.uv.xy + c * g.uv.zw;

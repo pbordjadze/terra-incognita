@@ -27,7 +27,7 @@ fn vs(@builtin(vertex_index) vi: u32, s: SpeckIn) -> SpeckOut {
     let r = 0.75 * rp() * M.bloom;
     let c = corner(vi % 6u);
     var o: SpeckOut;
-    o.local = c * (r + 0.5 * V.frame.z);
+    o.local = c * (r + 0.5 * U.frame.z);
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
