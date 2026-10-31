@@ -183,11 +183,14 @@ the record; a float glides between steps).
 - *The first day.* The Hatteras float's first day is 60 km north-east and the Sargasso float's
   12 km in a random direction: the water took both, and the second looks like a float that was
   put on quiet water, not one that is stuck. Verdict: good; the put's draw (R2) is what makes it.
-- *Ticking.* A float moves when its quarter-day step lands, eight times a second at the date's
-  pace: at zoom 8 a Gulf Stream float jumps five points a tick. At zoom 3 it is under two points
-  and reads as motion; closer in it will read as a stutter. `Rules::glide` carries the drawn
-  float along its velocity between steps; D6 asks Engineering to draw it so. Verdict: the one
-  thing in the rules' gift that would make the sea feel more alive, filed.
+- *Ticking: a claim withdrawn.* The hater said a float moves only when its quarter-day step
+  lands, a five-point jump eight times a second at zoom 8, and D6 asked for a glide between
+  steps. Engineering's played plan (`crates/adrift-check/plans/gulf-stream-glide.json`) shows the
+  premise false: the app steps each float by the frame's own time (0.017 day at 120 Hz), and a
+  quarter day is only the cap after a pause or a scrub; at zoom 8 the float moves a point and a
+  half a frame and 170 km a second, the stream's real pace. The critic judged the rules' step
+  size, not the running build, which is the one thing a critic here must not do. D6 answered in
+  range with nothing to add; `Rules::glide` stays for a look that wants a heading.
 - *Unrecorded water.* A float on the Caspian drifts 7 km a day on a smoothed-in current with a
   32 km wander; Lake Michigan's 11 km and 48 km; Hudson Bay's 5 km and 27 km. Nothing sits dead,
   nothing jitters; the coast holds what reaches it. SOURCES.md says it is no record of that
@@ -199,6 +202,6 @@ the record; a float glides between steps).
 **Holt.** Put, drift, stop, undo hold as before. A float put on quiet water loiters, and that is
 not a penalty but the sea: the reader who wants motion puts the next one in the stream, and the
 wake of the first shows why. The Caspian float drifts; nothing refuses, nothing marks, nothing
-says no: the owner's "truth underneath" is Holt's "without penalty". The stutter at close zoom is
-the one thing that breaks the sense of a real sea; D6. Verdict: alive at the zooms a thumb uses;
-D6 for the closest.
+says no: the owner's "truth underneath" is Holt's "without penalty". The stutter the hater feared at close zoom
+is not there on the running build (above). Verdict: alive at the zooms a thumb uses and at the
+closest.
