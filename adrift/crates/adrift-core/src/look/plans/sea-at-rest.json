@@ -1,0 +1,11 @@
+{
+  "_": "The sea pauses with the date (Adrift's rule 7): three frames 0.3 s apart with the date running, then the date stopped and three more; the running light and the glitter must move in the first three and hold in the last three, dimmer. adrift-check play adrift/crates/adrift-core/src/look/plans/sea-at-rest.json <out>; tools/adrift/study.py strips them (see CRITICS.md).",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -62.0, "lat": 38.0, "zoom": 3.2 }, "day": 280.0, "seconds": 12.0, "running": true,
+             "floats": [ { "lon": -72.0, "lat": 36.5, "days_ago": 30 } ] },
+  "steps": [
+    { "shot": "run-0" }, { "advance": 0.3 }, { "shot": "run-1" }, { "advance": 0.3 }, { "shot": "run-2" },
+    { "intent": { "SetRunning": { "running": false } } }, { "advance": 0.5 },
+    { "shot": "rest-0" }, { "advance": 0.3 }, { "shot": "rest-1" }, { "advance": 0.3 }, { "shot": "rest-2" }
+  ]
+}

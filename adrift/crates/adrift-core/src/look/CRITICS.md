@@ -101,6 +101,14 @@ moved in forty days, which no one chose."
 **Done the same day**: the beads are drawn edges then beads (`wake.wgsl`, two layers), so a bunch
 stays amber; the bench shows it (`tools/adrift/lookbench`).
 
-**Into the rest of R1**: the sea at rest photographed in a play (the
+**The sea at rest, photographed** (`look/plans/sea-at-rest.json` through `adrift-check play`;
+`studies/check-sea-running-then-at-rest-phone.png`, the last running frame beside the first at
+rest): running, three frames 0.3 s apart differ by 0.16–0.21 grey levels a pixel on average (the
+light runs, the beads advance); stopped, three frames differ by exactly 0 (the light holds, the
+glitter is gone), and the held light sits at half its running strength (`sea.wgsl`). The hater:
+"It rests. But it drops to rest in one frame, a cut, not a settling; an eased rest wants a value
+the app owns, which is next round's ask, not a shader's." Verdict: the rule holds; the ease is owed.
+
+**Into the rest of R1**: the sea at rest's ease (a demand on Engineering's View in R2); photographed in a play (the
 light held, the glitter still); the ring's beat the moment D2 lands; the night palette waiting on
 a night.

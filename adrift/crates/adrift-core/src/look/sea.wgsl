@@ -1,7 +1,7 @@
 // The sea, one pixel at a time, over the ground: Terra's Ocean.metal ported (its comments say what is
 // measured and what is drawn; tools/ocean/SOURCES.md). The streamlines are the contours of the month's
 // stream function, light runs along them the way the water goes; close in, glitter and surf; rings
-// where it is touched. Visual takes it from here.
+// where it is touched. Visual's from R1: the sea at rest (the light settles while the date is stopped).
 
 @group(0) @binding(0) var<uniform> U: View;
 @group(1) @binding(0) var currents: texture_2d<f32>;
@@ -129,6 +129,9 @@ fn contour(q: f32, fw: f32) -> vec2f {
         }
     }
     glow = smoothstep(0.3, 1.5, glow / (0.185 * 0.86 * sqrt(w2))) * running * mix(0.45, 1.0, smoothstep(1.0, 2.2, zoom));
+    // the sea at rest: while the date is stopped the light holds where it is (tm is held) and settles to
+    // half its strength, so a still frame reads as light lying along the lines, not a flash caught mid-air
+    glow *= mix(0.5, 1.0, U.tone.y);
     acc = over(acc, vec3f(0.96, 0.99, 1.0), (0.24 * halo + 0.6 * core) * glow * water);
 
     // -- close in, the wind on the water: patches of glitter drifting slowly
