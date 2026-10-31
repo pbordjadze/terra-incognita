@@ -24,6 +24,8 @@ pub const FLIGHT_S: f64 = 0.70;
 /// The ride's catch-up: a critically damped spring with this time constant (from rest it covers
 /// 90% of the way in about 4τ, a second, and never overshoots).
 pub const RIDE_TAU: f64 = 0.25;
+/// The ridden float's speed is smoothed over this long before the spring aims ahead by it.
+pub const RIDE_SPEED_TAU: f64 = 0.3;
 /// Left alone this long, with nothing on the sea, the globe turns at this rate (degrees a second).
 pub const IDLE_AFTER: f64 = 8.0;
 pub const IDLE_RATE: f64 = 4.0;

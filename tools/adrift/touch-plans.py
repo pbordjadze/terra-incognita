@@ -24,10 +24,12 @@ PLANS = {}
 def px(fx, fy):
     return [round(fx * W, 1), round(fy * H, 1)]
 
-def date_xy(dx=0.0):
-    # the stand-in band's centre at zoom 1: baseline cy + r + 40, the band 10 above it (touch::date_band)
-    r = (min(W, H) / 2 - 14.0)
-    return [W / 2 + dx, min(H / 2 + r + 40.0, H - 72.0) - 10.0]
+def date_xy(dx=0.0, w=W, h=H):
+    # the date's centre at zoom 1 (Look::date_bounds and touch::date_band agree): the baseline
+    # cy + r + 40 reading points, the glyphs 10 above it
+    r = (min(w, h) / 2 - 14.0)
+    reading = 1.0 + 0.2 * min(max((min(w, h) - 430.0) / (1032.0 - 430.0), 0.0), 1.0)
+    return [w / 2 + dx, min(h / 2 + r + 40.0 * reading, h - 72.0) - 10.0]
 
 def plan(name, title, steps, **kw):
     p = {"title": title, "size": [W, H], "camera": {"lon": -40.0, "lat": 22.0, "zoom": 1.0}, "steps": steps}
@@ -226,6 +228,30 @@ plan("undo-gestures", "Undo by three-finger swipe, by shake, by the keyboard: on
     ev(3.5, "down", at=SEA2), ev(4.0, "up", at=SEA2), expect(4.1, floats=1),
     {"t": 4.5, "key": "undo"}, expect(4.6, saw=["Undo"], floats=0),
 ])
+
+# --- R3: the hater's list on the merged build ---
+IPAD = (1032.0, 1376.0)
+plan("date-ipad", "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date", [
+    ev(0.0, "down", xy=date_xy(0, *IPAD)), ev(0.1, "up", xy=date_xy(0, *IPAD)), shot(0.15, "paused"),
+    expect(0.2, saw=["Pause"], playing=False, floats=0),
+    ev(0.5, "down", xy=date_xy(0, *IPAD)), ev(0.6, "move", xy=date_xy(60, *IPAD)), ev(0.7, "move", xy=date_xy(120, *IPAD)),
+    shot(0.72, "scrubbed"), expect(0.75, saw=["Scrub"], state="scrubbing", day=9920.0),
+    ev(0.8, "up", xy=date_xy(120, *IPAD)), expect(0.9, playing=False, state="idle", camera_moved=False, floats=0),
+], size=list(IPAD), day=9800.0)
+GULF = {"lon": -74.0, "lat": 36.0}     # the Gulf Stream off Cape Hatteras
+plan("ride-fast", "Ride a Gulf Stream float close in: the camera keeps it centred, not trailing", [
+    ev(0.0, "down", at=[GULF["lon"], GULF["lat"]]), ev(0.08, "up", at=[GULF["lon"], GULF["lat"]]), expect(0.1, saw=["Ride"], riding=1),
+    shot(1.0, "catching-up"), expect(2.0, riding=1, camera_near_float=[1, 0.3]),
+    shot(4.0, "riding"), expect(4.0, riding=1, camera_near_float=[1, 0.3]),
+    expect(6.0, riding=1, camera_near_float=[1, 0.3]), shot(6.0, "still-riding"),
+], floats=[GULF], camera={"lon": GULF["lon"], "lat": GULF["lat"], "zoom": 4.0})
+plan("reduce-motion-ride", "Reduce Motion: a ride follows without a glide, a double tap cuts, nothing turns by itself", [
+    ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.15, riding=1, camera_near_float=[1, 0.05]),
+    ev(0.5, "down", at=SEA), ev(0.58, "up", at=SEA), ev(0.7, "down", at=SEA), ev(0.78, "up", at=SEA),
+    expect(0.8, zoom_gt=1.99, riding=1), shot(0.9, "cut-in"),
+    ev(1.0, "down", at=[-25.0, 10.0]), *drag(1.0, 0, [(0.5, 0.6), (0.58, 0.62)]),
+    expect(1.3, riding=None), expect(10.0, camera_same_as_last=True),
+], floats=[F1], reduce_motion=True)
 
 os.makedirs(OUT, exist_ok=True)
 for f in os.listdir(OUT):

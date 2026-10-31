@@ -1,0 +1,100 @@
+{
+ "title": "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date",
+ "size": [
+  1032.0,
+  1376.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "xy": [
+    516.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "up": 0,
+   "xy": [
+    516.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.15,
+   "shot": "paused"
+  },
+  {
+   "t": 0.2,
+   "expect": {
+    "saw": [
+     "Pause"
+    ],
+    "playing": false,
+    "floats": 0
+   }
+  },
+  {
+   "t": 0.5,
+   "down": 0,
+   "xy": [
+    516.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.6,
+   "move": 0,
+   "xy": [
+    576.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.7,
+   "move": 0,
+   "xy": [
+    636.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.72,
+   "shot": "scrubbed"
+  },
+  {
+   "t": 0.75,
+   "expect": {
+    "saw": [
+     "Scrub"
+    ],
+    "state": "scrubbing",
+    "day": 9920.0
+   }
+  },
+  {
+   "t": 0.8,
+   "up": 0,
+   "xy": [
+    636.0,
+    1228.0
+   ]
+  },
+  {
+   "t": 0.9,
+   "expect": {
+    "playing": false,
+    "state": "idle",
+    "camera_moved": false,
+    "floats": 0
+   }
+  }
+ ],
+ "day": 9800.0
+}
