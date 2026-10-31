@@ -22,6 +22,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }
 anyhow = { workspace = true }
+ab_glyph = "0.2"
 
 [target.'cfg(target_os = "ios")'.dependencies]
 wgpu = { workspace = true, features = ["metal"] }

@@ -6,7 +6,8 @@
 set -euo pipefail
 if ! ls /usr/share/vulkan/icd.d/lvp_icd* > /dev/null 2>&1; then
   export DEBIAN_FRONTEND=noninteractive
-  (sudo -n true 2>/dev/null && SUDO=sudo) || SUDO=""
+  SUDO=""
+  if [ "$(id -u)" != 0 ] && command -v sudo > /dev/null; then SUDO="sudo -n"; fi
   $SUDO apt-get update -qq
   $SUDO apt-get install -y -qq mesa-vulkan-drivers > /dev/null
 fi

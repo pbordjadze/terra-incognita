@@ -2,7 +2,7 @@
 //! intents (Engineering; DECISIONS.md §2).
 
 use crate::assets::Assets;
-use crate::gpu::{Gpu, Textures, View, ViewUniform};
+use crate::gpu::{GlyphInstance, Gpu, Text, TextPass, Textures, View, ViewUniform};
 use crate::look::sprites::{KIND_BEAD, KIND_FLOAT, KIND_MAYBE};
 use crate::look::{sea::Ripple, GroundPass, Instance, SeaPass, SpritePass};
 use crate::model::*;
@@ -58,6 +58,8 @@ pub struct App {
     ground: GroundPass,
     sea: SeaPass,
     sprites: SpritePass,
+    text: Text,
+    text_pass: TextPass,
     pub floats: Vec<Float>,
     next_id: u32,
     pub clock: Clock,
@@ -117,6 +119,11 @@ impl App {
         let sea = SeaPass::new(&gpu, &view_layout, &textures);
         let sprites = SpritePass::new(&gpu, &view_layout);
         let reading = Self::reading_for(width, height, ppp);
+        let regular = assets.read("LibertinusSerif-Regular.otf")?;
+        let italic = assets.read("LibertinusSerif-Italic.otf")?;
+        let px = (ppp * reading) as f32;
+        let text = Text::new(&gpu, &[(&regular, 17.0 * px), (&italic, 13.0 * px), (&regular, 11.0 * px)])?;
+        let text_pass = TextPass::new(&gpu, &view_layout, &text);
         Ok(App {
             gpu,
             assets,
@@ -127,6 +134,8 @@ impl App {
             ground,
             sea,
             sprites,
+            text,
+            text_pass,
             floats: Vec::new(),
             next_id: 1,
             clock,
@@ -428,6 +437,8 @@ impl App {
         self.sea.prepare(&self.gpu, &self.ripples);
         let instances = self.instances(&view);
         self.sprites.prepare(&self.gpu, &instances);
+        let glyphs = self.chrome(&view);
+        self.text_pass.prepare(&self.gpu, &glyphs);
         let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame") });
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -445,6 +456,7 @@ impl App {
             self.ground.draw(&mut rp, &self.view_bind);
             self.sea.draw(&mut rp, &self.view_bind);
             self.sprites.draw(&mut rp, &self.view_bind);
+            self.text_pass.draw(&mut rp, &self.view_bind);
         }
         self.gpu.queue.submit([enc.finish()]);
     }
@@ -453,6 +465,30 @@ impl App {
     pub fn frame(&mut self, target: &wgpu::TextureView, now: f64) {
         self.advance(now);
         self.render(target);
+    }
+
+    /// The words at the foot: the date (a typical year's), and the credit owed to the data that moves
+    /// the floats (R0's plain setting; Visual designs it, Truth says what is true).
+    fn chrome(&self, view: &View) -> Vec<GlyphInstance> {
+        const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let mut out = Vec::new();
+        let ppp = view.ppp as f32;
+        let w = view.width as f32 / ppp;
+        let h = view.height as f32 / ppp;
+        let (m, d) = self.clock.calendar();
+        let date = format!("{} {}", d, MONTHS[(m - 1) as usize]);
+        let ink = [0.24, 0.22, 0.19, 1.0];
+        let faint = [0.24, 0.22, 0.19, 0.6];
+        let foot = h - 34.0 * self.reading as f32;
+        let dw = self.text.width(0, &date, ppp);
+        self.text.line(0, &date, (w - dw) / 2.0, foot, ppp, ink, &mut out);
+        let note = if self.clock.running { "a typical year, by the drifters’ record" } else { "held" };
+        let nw = self.text.width(1, note, ppp);
+        self.text.line(1, note, (w - nw) / 2.0, foot + 17.0 * self.reading as f32, ppp, faint, &mut out);
+        let credit = "Currents: NOAA Global Drifter Program (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0";
+        let cw = self.text.width(2, credit, ppp);
+        self.text.line(2, credit, (w - cw) / 2.0, h - 8.0 * self.reading as f32, ppp, faint, &mut out);
+        out
     }
 
     /// The things on the sea, as sprites on the screen: wakes first, then the maybes, then the floats.
