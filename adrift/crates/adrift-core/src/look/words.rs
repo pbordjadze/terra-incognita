@@ -216,7 +216,22 @@ impl Words {
             let y = foot + 19.0 * reading;
             glyphs.extend(self.face.layout(&Line { text: note, style: Style::Italic, size: 13.0 * reading, ink: note_ink, tracking: 0.0 }, cx, y, halo_for(y)));
         }
-        glyphs.extend(self.face.layout(&Line { text: credits, style: Style::Regular, size: 10.0 * reading, ink: credit_ink, tracking: 0.0 }, cx, bottom, halo_for(bottom)));
+        // the credits: one line along the foot, or two when the line would overrun the screen (wrapped at
+        // the separator nearest its middle: never shrunk under 10 points, never cut)
+        fn credit_line<'a>(text: &'a str, reading: f32, ink: [f32; 4]) -> Line<'a> {
+            Line { text, style: Style::Regular, size: 10.0 * reading, ink, tracking: 0.0 }
+        }
+        if self.face.width(&credit_line(credits, reading, credit_ink)) <= width - 24.0 * reading || !credits.contains(" \u{b7} ") {
+            glyphs.extend(self.face.layout(&credit_line(credits, reading, credit_ink), cx, bottom, halo_for(bottom)));
+        } else {
+            let seps: Vec<usize> = credits.match_indices(" \u{b7} ").map(|(i, _)| i).collect();
+            let mid = credits.len() / 2;
+            let at = *seps.iter().min_by_key(|&&i| (i as i64 - mid as i64).abs()).unwrap();
+            let (first, second) = (&credits[..at], &credits[at + " \u{b7} ".len()..]);
+            let up = bottom - 13.0 * reading;
+            glyphs.extend(self.face.layout(&credit_line(first, reading, credit_ink), cx, up, halo_for(up)));
+            glyphs.extend(self.face.layout(&credit_line(second, reading, credit_ink), cx, bottom, halo_for(bottom)));
+        }
         glyphs.extend_from_slice(labels);
         self.prepare(gpu, &glyphs);
     }

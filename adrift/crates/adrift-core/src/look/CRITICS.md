@@ -196,3 +196,9 @@ the silver a hair warmer by night, or the light a hair cooler." Verdict: passes;
 
 **Holt**, on the day's merged build and the night: "I held, I let go, I stopped the date, the
 room went dark and the floats stayed mine. Nothing marked, nothing pointed, nothing waited."
+
+**The press, with the lamp on Put** (`look/plans/press.json`; `studies/check-press-phone.png`:
+0.10, 0.25 and 0.37 s into a rest, the put at 0.43, held at 0.73): a tap's ring, the ring still,
+glass formed without a lamp, then the float with its lamp lit and its maybes and silver out.
+Motion's hater had seen a lit float vanish on a lift just short of the beat; now a lift before the
+beat only un-forms glass, and the beat is the moment the light comes on. Verdict: passes.

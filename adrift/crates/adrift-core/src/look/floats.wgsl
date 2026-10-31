@@ -1,7 +1,8 @@
 // The floats (and the ring that thickens into one): one instanced quad a float, drawn on the screen
 // in reading points from the palette (palette.json; PALETTE.md says why). A float is a marker: its
 // radius goes from 4.5 to 7 points between zoom 1 and 3 and is then held; it never grows with the
-// water. Premultiplied alpha, over the sea.
+// water. Under a resting finger (beat < 1) the ring draws in and the glass forms, without a lamp; the
+// float the app puts at the beat arrives with its lamp lit. Premultiplied alpha, over the sea.
 
 struct FloatIn {
     @location(0) g: vec3<f32>,      // the float's position, a unit vector
@@ -73,8 +74,8 @@ fn fs(i: FloatOut) -> @location(0) vec4<f32> {
         let gb = glass_body(n);
         acc = over(acc, gb.rgb, gb.a * k * cover(d - (rr - w * 0.5)));
         acc = over(acc, glass_rim(n), k * cover(abs(d - rr) - w * 0.5));
-        let kl = clamp((t - 0.5) / 0.5, 0.0, 1.0);          // (the amber from half the beat: CRITICS.md R0)
-        acc = over(acc, lamp(n), kl * cover(d - 0.55 * r * kl));
+        // (no lamp during the press: the lamp lights on Put, when the float exists, so the beat is the
+        // moment the light comes on and a lift before it only un-forms glass)
         return acc;
     }
 
