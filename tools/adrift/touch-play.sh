@@ -7,6 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 OUT=${1:-adrift/build/out/motion}
 mkdir -p "$OUT"
+python3 tools/adrift/assets.py adrift/build/assets --link > /dev/null
 (cd adrift && cargo build -q -p adrift-check)
 status=0
 for plan in adrift/crates/adrift-core/src/touch/plans/*.json; do
