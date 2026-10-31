@@ -25,9 +25,12 @@ that were screensavers).**
   memoryless random walk with K = 30,000 m²/s throws a float 70 km sideways a day: of two
   thirty-day floats printed by the harness off Cape Hatteras, one ran the stream to 55° W, the
   other (the same seed, a day later in the year) left it in two days and sat on the Delaware shore.
-  Real drifters stay in the stream for weeks because their velocity has memory (the time scale this very
+  Against the record (the harness prints it): of 500 maybes put off Hatteras in a typical July,
+  thirty days on, 38% are east of 65° W and the median is at 68.2° W, with 3% on a coast; of the
+  18 bundled GDP runs that passed there, half were east of 65° W (median 64.8° W) and none ashore.
+  Real drifters stay in the stream because their velocity has memory (the time scale this very
   tool measured, 2–4 days) and the jet is coherent. **Verdict: the wander's size is measured; its
-  shape in the jets is wrong.** The fix is a random flight (an Ornstein–Uhlenbeck velocity with the
+  shape in the jets is wrong: behind the record, and some of it on the beach.** The fix is a random flight (an Ornstein–Uhlenbeck velocity with the
   measured T), which needs the float to carry its eddy velocity: filed as D1.
 - *The drifters* (`drifters.png`): 1,979 real runs, and the mean distance from an open-sea point to
   the nearest bundled point is 18 km, with 3 of 1,193 points beyond 300 km (the southern Pacific
