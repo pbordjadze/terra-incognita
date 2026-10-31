@@ -239,10 +239,12 @@ beat) still waits on captures.
 - *Tap the ridden lamp and what happens?* Decided: the ride lets go, the choice (and the cloud)
   stays; tap it again to ride again; tap the open sea to let it all go. One rule a thumb can
   learn by doing it twice.
-- *Smoothness is not provable here.* Per move the date's gesture does one frame read, one day
-  read, a multiply, a ring-buffer push and one intent; the check's cost per scrubbed frame is
-  Engineering's measurement and the device's thumb the verdict. The hater will not sign off on
-  "buttery" from a Linux log.
+- *Smoothness is not provable here, but the gesture's share is measured.* Per move the date's
+  gesture does one frame read, one day read, a multiply, a ring-buffer push and one intent.
+  Engineering's measurement on the check (thirty floats, one chosen, a hundred days each way in
+  two seconds at 60 fps): the app's whole state step, gesture included, 0.18–0.27 ms a frame
+  mean, 0.68 ms worst; the frame's cost is the stage's redraw and the maybes' GPU steps. Nothing
+  in the gesture to trim. The device's thumb still has the last word on "buttery".
 - Not failed: 31 of the earlier plans unchanged and green; the flick's feel kept (a touch stops
   it, as it stops the globe).
 
