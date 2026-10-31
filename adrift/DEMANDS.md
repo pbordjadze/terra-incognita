@@ -297,6 +297,14 @@ cloud, and many steps in one submit are the steps one by one. Spacing and count 
 0.5-day steps a 10-day spacing is twenty dispatches at most between a keep and any day, well
 within two frames. The step itself is a pure function (SOURCES.md › Time is reversible), and a
 third cheaper this round with the same numbers.
+### D10 Motion → Engineering (R5)  [open]
+I need anything in [`Intent::Ring` no longer clearing `App.chosen`; `Intent::Unchoose` alone does
+(Motion sends it on a tap on the open sea, with the ride ended), `Choose`/`Ride` set it, ClearAll
+and the float's going clear it] so that a pinch or a drag that begins on the sea (the sea rings at
+touch-down, not at the lift) keeps the chosen float and its maybes, as the owner asked ("zooming
+out shouldn't deselect it"), while a tap on the open sea still lets it go. It works when
+`touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
+I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
 
 ## Answered
 
