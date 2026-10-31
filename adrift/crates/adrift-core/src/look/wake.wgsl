@@ -10,6 +10,7 @@ struct BeadIn {
     @location(2) night: f32,
     @location(3) measured: f32,     // under a half the bead is hollow: the sea there is the sheet's guess
     @location(4) hue: vec3<f32>,    // its lamp's hue
+    @location(5) follow: f32,       // 1 if its lamp is chosen as itself (R8): its whole journey, fuller
 };
 
 struct WakeUniform {
@@ -34,14 +35,17 @@ struct BeadOut {
 fn vs(@builtin(vertex_index) vi: u32, b: BeadIn) -> BeadOut {
     let p = place(b.g);
     let k = by_zoom(0.45, 2.5);
-    let r = mix(2.2, 1.2, b.age) * rp() * k;
+    // a lamp chosen as itself (R8) carries its whole journey back to where it was put: the beads a
+    // little larger and never fading below a third, so the path reads as a line of its colour at any
+    // zoom; the others keep the comet's tail of their last days
+    let r = mix(mix(2.2, 1.2, b.age), mix(2.5, 1.1, b.age), b.follow) * rp() * k;
     let c = corner(vi % 6u);
     var o: BeadOut;
     o.local = c * (r + 1.0 * rp());
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
-    o.a = pow(1.0 - b.age, 1.2) * 0.9 + 0.1;
+    o.a = mix(pow(1.0 - b.age, 1.2) * 0.9 + 0.1, 1.0 - 0.62 * pow(b.age, 1.5), b.follow);
     o.night = b.night;
     o.measured = b.measured;
     o.hue = b.hue;

@@ -125,3 +125,17 @@ and `look_state()`:
   exactly where the rings go (`studies/r6-pairs-gyre-before-after-phone.png`: quiet water, most
   still ringed; `r6-pairs-jet-…`: the Gulf Stream, few). The quad grows for the ring only close in,
   where it is drawn: the eight-cloud scrub's frame is unchanged within the software GPU's noise.
+
+## R8: each lamp its own way
+
+- **A lamp chosen as itself** (`LookFloat.followed`): its glass float stays lit and is ringed in its
+  own colour (`floats.wgsl`, the held ring tinted by the hue), and its whole kept journey is drawn back
+  to where it was put (`wake.wgsl › follow`: the beads a little larger, never fading below about a
+  third), so two lamps followed together show their dance whole. A lamp chosen as its cloud is drawn
+  as R6 has it (one speck among its maybes); a lamp not chosen keeps its float and the comet's tail of
+  its last 45 days.
+- **The panel** says which way, as quietly: as its cloud a larger lamp in a soft glow of its colour;
+  as itself a small lamp in a ring of its colour; not chosen a small lamp alone. Over the globe the
+  column lies on one quiet card of the page's tone (a halo per glyph lay as boxes at this size).
+- Studies: `studies/r8-cloud-lamp-neither{,-night}-phone-half.png` (one of each, two followed),
+  `studies/r8-two-lamps-followed-before-after-phone.png`; scenes `scenes/r8-*.json`.
