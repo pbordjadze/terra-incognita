@@ -85,6 +85,16 @@ fn one() -> f32 {
 }
 
 /// A glass float.
+/// One leg of a float's life: put (or set down after a carry) at `at` on `day` with `seed`. Its
+/// path from there is a pure function of these three and the rules (R5: time is reversible, so a
+/// float's place at any date is read off the leg active then, never stepped from where it was).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Leg {
+    pub at: LonLat,
+    pub day: f64,
+    pub seed: u64,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Float {
     pub id: u32,
@@ -106,6 +116,31 @@ pub struct Float {
     pub wake: Vec<Bead>,
     /// The seconds since the reader last touched it (what was just done stays lit).
     pub lit_for: f64,
+    /// Its legs, oldest first (R5); empty in a kept state from before legs, which `legs()` reads as
+    /// one leg from the wake's first bead (or `at`) on `put_day` with `seed`.
+    #[serde(default)]
+    pub legs: Vec<Leg>,
+}
+
+impl Float {
+    /// The legs, with the one a pre-leg state implies.
+    pub fn legs(&self) -> Vec<Leg> {
+        if self.legs.is_empty() {
+            vec![Leg { at: self.wake.first().map_or(self.at, |b| b.at), day: self.put_day, seed: self.seed }]
+        } else {
+            self.legs.clone()
+        }
+    }
+
+    /// Whether the float exists on `day`: not before its first put.
+    pub fn born(&self, day: f64) -> bool {
+        self.legs.first().map_or(self.put_day, |l| l.day) <= day + 1e-9
+    }
+
+    /// The leg active on `day` (the last put on or before it), if any.
+    pub fn leg_at(&self, day: f64) -> Option<usize> {
+        self.legs.iter().rposition(|l| l.day <= day + 1e-9)
+    }
 }
 
 /// The date: days since 2000-01-01 00:00 UTC, running or held.

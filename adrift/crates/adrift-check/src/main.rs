@@ -44,6 +44,11 @@ fn ensure_assets(dir: &Path) {
     }
 }
 
+/// Waits for the GPU's queue, so a frame's time includes its drawing (the software driver's).
+fn gpu_wait(app: &App) {
+    let _ = app.gpu.device.poll(wgpu::PollType::Wait);
+}
+
 fn gpu() -> Result<(wgpu::Instance, Gpu)> {
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
     let gpu = pollster::block_on(Gpu::new(&instance, None))?;
@@ -149,6 +154,9 @@ struct Step {
     tick: Option<f64>,
     shot: Option<String>,
     intent: Option<adrift_core::Intent>,
+    /// A measured scrub (R5): `[days, seconds]`, the date dragged by `days` over `seconds` at 60
+    /// frames a second, every frame drawn, the CPU cost of the state and of the frame logged.
+    scrub: Option<[f64; 2]>,
     expect: Option<serde_json::Value>,
 }
 
@@ -222,6 +230,36 @@ fn play(args: &[String]) -> Result<()> {
         }
         if let Some(intent) = s.intent {
             app.intend(intent);
+        }
+        if let Some([days, secs]) = s.scrub {
+            let n = (secs * fps).ceil().max(1.0) as usize;
+            let (mut a_sum, mut a_worst, mut f_sum, mut f_worst) = (0.0f64, 0.0f64, 0.0f64, 0.0f64);
+            for _ in 0..n {
+                t += secs / n as f64;
+                app.intend(adrift_core::Intent::Scrub { days: days / n as f64 });
+                let t0 = std::time::Instant::now();
+                app.advance(t);
+                let a = t0.elapsed().as_secs_f64() * 1000.0;
+                let t1 = std::time::Instant::now();
+                app.frame(&target.view, t);
+                gpu_wait(&app);
+                let f = t1.elapsed().as_secs_f64() * 1000.0;
+                a_sum += a;
+                a_worst = a_worst.max(a);
+                f_sum += f;
+                f_worst = f_worst.max(f);
+            }
+            let line = format!(
+                "{i:3} t={t:8.2}s scrub {days:+.0} days over {secs:.1}s: {n} frames; state {:.2} ms mean {:.2} worst; frame {:.1} ms mean {:.1} worst (software GPU); {}",
+                a_sum / n as f64,
+                a_worst,
+                f_sum / n as f64,
+                f_worst,
+                app.stats()
+            );
+            println!("{line}");
+            log.push_str(&line);
+            log.push('\n');
         }
         if let Some(k) = &s.key {
             app.key(match k.to_ascii_lowercase().as_str() {
