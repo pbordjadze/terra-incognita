@@ -204,3 +204,15 @@ and the beat under a finger are still unanswered by the device.
   setting.
 - Verdict: the vocabulary now has a way out of everything (home, clear) and a way back from both;
   what it lacks is still the look's answer under the finger (D7, D8). Reopened for the captures.
+
+**A last look at the shipping tree** (`main` at 095620e, 15:05 UTC; `date-flick`, `hold-maybes`
+and `credits` replayed on it; `critics/r4-ship-date.jpg`, `r4-ship-rising.jpg`):
+- The date answers the finger now: at rest a hairline under the day with the ink ring; under a
+  resting finger (0.3 s in, on the way to the credits) the rule goes to full ink and thickens and
+  the lamp swells amber, from `date_pressing_since` through Visual's band. The hater withdraws
+  "looks like a caption": it looks like a thing that answers.
+- The maybes under a landing finger do not read at phone zoom 1: the halo swells (0.2 s, 0.8 s)
+  and the cloud itself is a few points wide, because the eddy wander of a day or two is a few
+  kilometres on a globe three thousand kilometres across. The press is seen; what it shows is
+  not, until the reader is close. Not Motion's to fix (the spread is real and the drawing is
+  Visual's), and worth the owner's word: he rides and comes close, and there the cloud is.
