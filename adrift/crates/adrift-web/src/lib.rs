@@ -45,9 +45,16 @@ pub async fn start() -> Result<(), JsValue> {
     canvas.set_height(h.max(1));
 
     status(&document, "the sea is loading…");
+    // the data: each file beside the page under assets/, or where assets/index.json says (a host
+    // that serves only some file types may keep a sheet under another name)
+    let index: HashMap<String, String> = match fetch(&window, "assets/index.json").await {
+        Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
+        Err(_) => HashMap::new(),
+    };
     let mut files = HashMap::new();
     for name in adrift_core::assets::FILES {
-        files.insert(name.to_string(), fetch(&window, &format!("assets/{name}")).await?);
+        let path = index.get(*name).cloned().unwrap_or_else(|| format!("assets/{name}"));
+        files.insert(name.to_string(), fetch(&window, &path).await?);
     }
 
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..Default::default() });

@@ -18,3 +18,4 @@ js-sys = "0.3"
 web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlCanvasElement", "PointerEvent", "Response", "Request", "Performance", "console", "CssStyleDeclaration", "KeyboardEvent", "WheelEvent", "DomRect", "Headers", "Storage", "MediaQueryList"] }
 console_error_panic_hook = "0.1"
 anyhow = { workspace = true }
+serde_json = { workspace = true }
