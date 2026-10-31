@@ -218,7 +218,7 @@ impl App {
             rest: 0.0,
             seen: Vec::new(),
             haptic: false,
-            credits_open: self.credits_open,
+            credits_open: false,
         })
     }
 
