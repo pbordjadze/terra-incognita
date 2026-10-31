@@ -211,6 +211,8 @@ pub const WAKE_DAYS: usize = 45;
 pub struct Look {
     /// Where the maybes bloom from: the float last held.
     bloom_from: [f32; 3],
+    /// The drifter's point nearest the float last held, kept while the silver sinks.
+    nearest: usize,
     pub wake: wake::Wake,
     pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
@@ -222,6 +224,7 @@ impl Look {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Look {
         Look {
             bloom_from: [0.0, 0.0, 1.0],
+            nearest: 0,
             wake: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
@@ -259,14 +262,13 @@ impl Look {
         // the drifter's label, at its point nearest the held float, rising with the silver
         let mut labels = Vec::new();
         if state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() {
-            let nearest = state.drifter_nearest.unwrap_or_else(|| {
-                let from = state.floats.iter().find(|f| f.held).map(|f| f.at);
-                match from {
-                    Some(at) => (0..state.drifter.len()).min_by(|&a, &b| state.drifter[a].distance_m(at).partial_cmp(&state.drifter[b].distance_m(at)).unwrap()).unwrap_or(0),
-                    None => 0,
-                }
-            });
-            let at = unit(state.drifter[nearest.min(state.drifter.len() - 1)]);
+            // (the point nearest the held float; kept while the silver sinks after the float is let go)
+            if let Some(i) = state.drifter_nearest {
+                self.nearest = i;
+            } else if let Some(at) = state.floats.iter().find(|f| f.held).map(|f| f.at) {
+                self.nearest = (0..state.drifter.len()).min_by(|&a, &b| state.drifter[a].distance_m(at).partial_cmp(&state.drifter[b].distance_m(at)).unwrap()).unwrap_or(0);
+            }
+            let at = unit(state.drifter[self.nearest.min(state.drifter.len() - 1)]);
             let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }

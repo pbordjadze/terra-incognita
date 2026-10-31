@@ -172,3 +172,14 @@ and a date is the most honest thing on the screen, and the loops are the Gulf St
 is too long for a hold: it leaves the frame both ways and reads as a border. A window of days
 round the nearest point (Engineering is passing one) will make it a visit, not a fence. The label
 sits on the track; move it off." Verdict: passes once windowed; the label's offset is a knob.
+
+**The bloom and the fold, photographed** (`look/plans/bloom.json`: a float twenty days adrift, the
+date stopped, held by intent and let go where it is; `studies/check-bloom-and-fold-phone.png`,
+frames at 0.02, 0.12, 0.22, 0.32 and 0.62 s of the hold, then 0.08, 0.16 and 0.36 s after the
+lift): the specks travel out of the float to where the current would have taken each self, the
+silver and its label rise with them, and on the lift they fold back into the float and the silver
+sinks, the label staying at its point. The hater: "Out means out now, and back means back; the
+fold is quick enough that nothing lingers to be mistaken for a mark. The first held frame is
+already a third of the way out: the ease is front-loaded, which is right for a hand that wants an
+answer. The silver's whole run is still a fence until it is windowed." Verdict: passes; the
+window is Engineering's.
