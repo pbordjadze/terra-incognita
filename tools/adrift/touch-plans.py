@@ -166,7 +166,7 @@ plan("tap-near-two", "A tap near two floats takes the nearest", [
 plan("fling", "Let go moving and the globe flings, then rests; a touch stops it at once", [
     ev(0.0, "down", at=[-45.0, 0.0]), *drag(0.0, 0, [(0.5, 0.6), (0.56, 0.61), (0.62, 0.62)]),
     expect(0.3, camera_moved=True), expect(0.6, camera_same_as_last=False),           # still going
-    ev(0.7, "down", xy=px(0.62, 0.42)), ev(0.75, "up", xy=px(0.62, 0.42)),             # a tap (on the Atlantic, wherever the fling went): it stops, and the sea rings
+    ev(0.7, "down", at=SEA), ev(0.75, "up", at=SEA),                                   # a tap on the Atlantic, wherever the fling took it: it stops, and the sea rings
     expect(0.8, saw=["Ring"]), expect(1.5, camera_same_as_last=True),
 ])
 plan("pinch", "Two fingers zoom and turn; a second finger before the beat puts no float", [
@@ -398,7 +398,21 @@ plan("panel-rim", "The rim: a lamp out at the globe's edge chosen from the panel
 ], floats=[{"lon": 8.0, "lat": -33.0, "days_ago": 20.0}, {"lon": -25.0, "lat": -15.0, "days_ago": 20.0}], day=9800.0, camera={"lon": -40.0, "lat": 22.0, "zoom": 1.0},
    panel=[[1] + row(0), [2] + row(1)], frames=True)
 
-for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim"):
+# The poles (R6): the orb has no north to stop at. A finger takes a point above the centre and
+# drags it down the screen, carrying the north pole through the middle and on: the point stays
+# under the finger the whole way (no lock, no jump), then Home turns it back upright.
+POLE_STEPS = [ev(0.0, "down", xy=[W / 2, H / 2 - 150.0])]
+for i in range(1, 31):
+    POLE_STEPS.append(ev(0.0 + 0.04 * i, "move", xy=[W / 2, H / 2 - 150.0 + 9.0 * i]))
+POLE_STEPS.append(ev(1.3, "up", xy=[W / 2, H / 2 + 120.0]))
+plan("over-the-pole", "Drag the orb over the north pole: the point taken stays under the finger the whole way, no lock and no jump; Home brings it back upright", [
+    shot(0.0, "before"), *POLE_STEPS[:16], shot(0.62, "pole-in-the-middle"), *POLE_STEPS[16:],
+    shot(1.25, "over"), expect(1.25, state="orbit", camera_moved=True),
+    expect(3.0, state="idle"), shot(3.0, "after"),
+    {"t": 3.2, "key": "home"}, expect(4.2, camera={"lon": -30.0, "lat": 25.0}), shot(4.2, "home"),
+], camera={"lon": -40.0, "lat": 55.0, "zoom": 1.0})
+
+for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole"):
     PLANS[name]["steps"].sort(key=lambda st: st["t"])    # played in order of time (a stable sort)
 
 os.makedirs(OUT, exist_ok=True)

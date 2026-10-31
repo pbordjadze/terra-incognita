@@ -36,8 +36,6 @@ pub const ZOOM_MAX: f64 = 8.0;
 /// screen's half when zoomed past it) from the centre: inside it a cloud of a few hundred
 /// kilometres lies on the globe's face, not along its limb (R6).
 pub const FACE_WITHIN: f64 = 0.55;
-/// The camera's centre never passes this latitude: the pole never flips.
-pub const LAT_LIMIT: f64 = 80.0;
 /// A three-finger swipe this far is undo (left), redo (right), home (up) or clear the sea (down).
 pub const SWIPE: f64 = 40.0;
 /// Pinching out past the whole globe: when the fingers would have taken the zoom this far below
