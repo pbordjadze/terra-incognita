@@ -15,6 +15,8 @@ pub struct SegmentInstance {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
 pub struct SilverUniform {
+    /// the lamp's hue, tinting the wire a little
+    pub hue: [f32; 4],
     /// 0..1 as it rises among the maybes and sinks back
     pub rise: f32,
     pub night: f32,
@@ -47,7 +49,7 @@ impl Silver {
     /// (Truth's runs), which bends sharply at the scale of a jet's eddies; the wire is rounded through
     /// them with two passes of corner-cutting (Chaikin's), which keeps every day's point within its
     /// own segment and draws the line a buoy would have made between them.
-    pub fn prepare(&mut self, gpu: &Gpu, track: &[[f32; 3]], rise: f32, night: bool) {
+    pub fn prepare(&mut self, gpu: &Gpu, track: &[[f32; 3]], rise: f32, night: bool, hue: [f32; 3]) {
         let mut pts: Vec<[f32; 3]> = track.to_vec();
         for _ in 0..2 {
             if pts.len() < 3 {
@@ -68,7 +70,7 @@ impl Silver {
             .map(|(i, w)| SegmentInstance { a: w[0], b: w[1], t: i as f32 / n }).collect();
         self.instances.write(gpu, &segs);
         for (i, u) in self.uniforms.iter().enumerate() {
-            u.write(gpu, &SilverUniform { rise, night: night as u8 as f32, layer: i as f32, _pad: 0.0 });
+            u.write(gpu, &SilverUniform { hue: [hue[0], hue[1], hue[2], 0.0], rise, night: night as u8 as f32, layer: i as f32, _pad: 0.0 });
         }
     }
 

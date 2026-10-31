@@ -133,6 +133,9 @@ fn contour(q: f32, fw: f32) -> vec2f {
     // half its strength over a beat (U.tone.w eases 0..1 as the date stops: DEMANDS.md D3), so a still
     // frame reads as light lying along the lines, not a flash caught mid-air
     glow *= mix(1.0, 0.5, U.tone.w);
+    // close in the light's bands were the brightest thing on the sea (the owner's screenshot at zoom 6):
+    // from zoom 4 they thin to a third, so a lamp and its cloud are what the eye finds
+    glow *= mix(1.0, 0.35, smoothstep(4.0, 6.5, zoom));
     acc = over(acc, vec3f(0.96, 0.99, 1.0), (0.24 * halo + 0.6 * core) * glow * water);
 
     // -- close in, the wind on the water: patches of glitter drifting slowly

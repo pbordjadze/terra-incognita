@@ -8,6 +8,7 @@ struct Maybe { @location(0) p: vec2f, @location(1) held: u32 };   // lon, lat (d
 
 struct Maybes {
     origin: vec4<f32>,  // the held float's place (a unit vector), where the specks bloom from
+    hue: vec4<f32>,     // its lamp's hue: the specks are a pale wash of it
     bloom: f32,         // 0..1 as they bloom out of the float and fold back
     night: f32,
     _p0: f32,
@@ -52,10 +53,12 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     let n = M.night;
     let d = length(i.local);
     var acc = vec4<f32>(0.0);
-    // a self held at a coast or in ice is a little greyer: it stopped
-    let speck = mix(mix(vec3<f32>(0.984, 0.914, 0.800), vec3<f32>(0.914, 0.827, 0.682), n), vec3<f32>(0.85, 0.84, 0.80), 0.6 * i.held);
+    // a pale wash of the lamp's hue (a self aground is not marked: truth underneath)
+    let speck = mix(mix(M.hue.rgb, vec3<f32>(1.0), 0.72), mix(M.hue.rgb, vec3<f32>(1.0), 0.55), n);
     let a = mix(0.80, 0.30, n) * min(M.bloom * 2.0, 1.0) * by_zoom(0.8, 3.0);
     acc = over(acc, speck, a * cover(d - i.r));
-    acc = over(acc, vec3<f32>(0.557, 0.341, 0.071), 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0) * cover(d - 0.35 * i.r));
+    // the grain that gives the cloud texture from afar, gone close in where it read as ringed dots
+    let grain = (1.0 - smoothstep(3.5, 5.5, U.disc.w)) * 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0);
+    acc = over(acc, M.hue.rgb * 0.55, grain * cover(d - 0.35 * i.r));
     return acc;
 }
