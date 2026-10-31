@@ -122,3 +122,11 @@ since the wiring isn't merged; the hater: "two of everything is worse than eithe
 maybes in the app all sit under the float: Truth's R0 rules have no wander yet, so every self takes
 the same path; nothing for the look to fix, and the first thing the cloud will show when the wander
 lands.
+
+**What stays lit, photographed** (`look/plans/stays-lit.json`; `studies/check-stays-lit-phone.png`:
+a float just put, the same four seconds on, then a second put beside it): the wide amber glow after
+the touch, gone when it settles, and only the newest touched one lit. The hater: "It stays lit, and
+only it. The glow is a haze two and a half radii wide; on the pale sea it reads as a smudge for the
+first second. Try it a radius tighter on the device." Verdict: the rule holds; the reach is a knob.
+On the iPad (`studies/check-gulf-stream-close-ipad.png`, 2 px a point, reading 1.2) the floats and
+the beads read at the same apparent size as on the phone, as the reading scale means them to.
