@@ -264,8 +264,8 @@ impl Words {
     pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, press: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
         let foot = under.min(height - 72.0 * reading);
-        let bottom = height - 12.0 * reading;
-        let (date_ink, note_ink, credit_ink, sea_halo, paper_halo) = if night {
+        let _bottom = height - 12.0 * reading;
+        let (date_ink, note_ink, _credit_ink, sea_halo, paper_halo) = if night {
             ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.08, 0.10, 0.14, 0.92])
         } else {
             ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 1.0], [0.243, 0.298, 0.353, 1.0], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
