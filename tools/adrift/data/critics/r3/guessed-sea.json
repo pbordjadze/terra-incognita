@@ -1,0 +1,9 @@
+{
+  "camera": { "lon": -75.0, "lat": 50.0, "zoom": 2.2 },
+  "day": 200.0,
+  "seconds": 20.0,
+  "floats": [
+    { "lon": -86.0, "lat": 58.5, "days_ago": 12 },
+    { "lon": -74.5, "lat": 35.8, "days_ago": 12 }
+  ]
+}

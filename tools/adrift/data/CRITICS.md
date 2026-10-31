@@ -146,3 +146,15 @@ float and a real buoy's winter rises beside its summer, which no one scripted an
 most honest thing on the screen. Leaving still isn't in a plan (nothing marks, nothing points,
 nothing waits: that is for the device, where a reader can put the phone down). Verdict: the
 rules keep their promises; two demands stand between the screen and the whole truth.
+
+**D2 and D3 judged on f6b7246** (`critics/r3/guessed-sea.png` from the scene `guessed-sea.json`
+beside it, a float in Hudson Bay and one off Cape Hatteras, twelve days each; `credits.png` from
+the plan `credits.json`). The hater: the Hudson Bay float wears a dashed rim and its wake's beads
+are hollow, the Gulf Stream float a solid rim and full beads, in one render, as D3 asked. The
+credits page opens from the foot's line and carries the five sentences whole, the Global Drifter
+Program's licence sentence among them, and closes on a tap: D2 met. Two notes, not demands: the
+hollow beads of the Hudson Bay float are hard to see at this zoom, which is fair (a guessed sea
+there is also a slow one, so the beads sit on each other); and the page says the sea's limits in
+words a reader can reach, which is what SOURCES.md was waiting for. Verdict: both met on the
+running build. Holt: nothing moved to show either; the page closes with any tap and leaves the
+sea as it was.
