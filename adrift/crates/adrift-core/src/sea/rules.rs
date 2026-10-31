@@ -213,7 +213,9 @@ impl Rules {
     /// T and is kicked so its variance stays K / T (an Ornstein-Uhlenbeck velocity: Taylor's
     /// random flight), and the float moves with the mean current, its leeway and that velocity.
     /// Over times long against T the spread is 2 K t, as `step`'s; within T a float keeps going
-    /// the way it was going, as a drifter does. Deterministic for (drift, day, dt, seed, k).
+    /// the way it was going, as a drifter does. The kicks are world k's (`world_kick`), so the k-th
+    /// paths of floats near each other are kicked alike. Deterministic for (drift, day, dt, k); the
+    /// seed is kept in the signature and no longer read (R6).
     pub fn flight(&self, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
         let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
         let day = day as f32;
@@ -227,9 +229,8 @@ impl Rules {
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let (tu, tv) = self.eddy_time.at(lon, lat);
         let secs = dt * SECONDS_A_DAY;
-        let h = hash_seed(seed, k, day.to_bits());
-        let gx = gaussian(h, 0);
-        let gy = gaussian(h, 12);
+        let _ = seed; // the wander is the world's (k's), not the float's: see `world_kick`
+        let (gx, gy) = world_kick(k, day, dt, lon, lat);
         let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
         let (au, av) = ((-secs / tu).exp(), (-secs / tv).exp());
         let eu = d.eddy.0 * au + gx * (ku / tu * (1.0 - au * au)).sqrt() * self.wander;
@@ -252,18 +253,21 @@ impl Rules {
     /// A float as it is put: at `at`, with a first eddy velocity drawn from what the drifters
     /// measured there (a Gaussian of variance K / T on each axis: the velocity a water parcel
     /// has at any moment, not the zero of a parcel that has just started), deterministic for
-    /// (at, day, seed, k). The real float is k = 0 and each maybe k = 1..n starts with its own
-    /// draw, so the cloud is right from the first day instead of growing from a point held still
+    /// (at, day, k): world k's water there (R6). The real float is k = 0 and each maybe k = 1..n
+    /// starts with its own draw, so the cloud is right from the first day instead of growing from a point held still
     /// for the memory's two or three days.
     pub fn put(&self, at: LonLat, day: f64, seed: u64, k: u32) -> Drift {
         let (lon, lat) = (at.lon as f32, at.lat as f32);
         let (ku, kv, _) = self.eddy.at(lon, lat);
         let (tu, tv) = self.eddy_time.at(lon, lat);
         let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
-        // the put's draws are kept apart from the first step's by the day's bits inverted
-        let h = hash_seed(seed, k, !(day as f32).to_bits());
-        let eu = gaussian(h, 24) * (ku / tu).sqrt() * self.wander;
-        let ev = gaussian(h, 36) * (kv / tv).sqrt() * self.wander;
+        // the velocity world k's sea has here as the float is put (its own stream of the field,
+        // apart from the steps' kicks), so two floats put near each other start as that world's
+        // water there moves
+        let _ = seed;
+        let (gu, gv) = world_field(k ^ PUT_STREAM, quarter_cell(day as f32), lon, lat);
+        let eu = gu * (ku / tu).sqrt() * self.wander;
+        let ev = gv * (kv / tv).sqrt() * self.wander;
         Drift { at, eddy: (eu, ev) }
     }
 
@@ -328,6 +332,80 @@ pub fn reach(measured: f32) -> f32 {
 #[inline]
 pub fn wrap(lon: f32) -> f32 {
     (lon + 180.0).rem_euclid(360.0) - 180.0
+}
+
+/// The worlds (R6). A float's eddy wander is not its own dice but the sea of a world: world k is
+/// one random eddy field, shared by every float's k-th path, so lamp A's k-th maybe and lamp B's
+/// k-th meet the same eddies. Two paths near each other in one world are kicked alike and keep
+/// together; once an eddy's width apart they are kicked apart, and the jets and fronts of the
+/// mean current carry them their own ways, as real drifter pairs part. One path alone sees what it
+/// saw before: a unit-variance kick each step, so its velocity keeps the measured variance K / T
+/// and its memory T (`flight`), and the single cloud is unchanged in law.
+///
+/// The field: on a lattice `WORLD_CELL` degrees square, each node of each quarter day holds two
+/// standard draws for world k; between nodes they are mixed bilinearly and renormalised to unit
+/// variance (a kick is never weaker between nodes). The lattice's width is the one number here
+/// not measured per place: about the mesoscale eddies' size (SOURCES.md › The worlds). A step's
+/// kick is the quarter days whose middles it spans, summed and renormalised, so a quarter-day
+/// lamp and half-day maybes read the same field.
+pub const WORLD_CELL: f32 = 1.0;
+/// The quarter days a step may span (a longer one reads only the first eight).
+pub const WORLD_SPAN: u32 = 8;
+/// The put's stream of the field, apart from the steps'.
+pub const PUT_STREAM: u32 = 0x8000_0000;
+
+/// The quarter day `day` falls in.
+#[inline]
+pub fn quarter_cell(day: f32) -> i32 {
+    (day * 4.0).floor() as i32
+}
+
+/// Four standard-ish draws from one hash's bytes: (sum of four uniform bytes - 2) * sqrt 3,
+/// mean 0, variance 1, within +-3.46; integer to the last step, so the CPU and GPU agree.
+#[inline]
+pub fn bytes_gaussian(h: u32) -> f32 {
+    let s = (h & 255) + ((h >> 8) & 255) + ((h >> 16) & 255) + (h >> 24);
+    ((s as f32 + 2.0) / 256.0 - 2.0) * 1.732_050_8
+}
+
+/// World k's two unit draws at (lon, lat) in quarter day `cell`.
+#[inline]
+pub fn world_field(k: u32, cell: i32, lon: f32, lat: f32) -> (f32, f32) {
+    let n = (360.0 / WORLD_CELL) as i32;
+    let fx = (lon + 180.0) / WORLD_CELL;
+    let fy = (lat + 90.0) / WORLD_CELL;
+    let (x0, y0) = (fx.floor(), fy.floor());
+    let (tx, ty) = (fx - x0, fy - y0);
+    let base = mix(mix(k ^ 0x5eed_c0de) ^ cell as u32);
+    let (x0, y0) = (x0 as i32, y0 as i32);
+    let (mut gu, mut gv) = (0.0f32, 0.0f32);
+    for (dx, dy, w) in [(0, 0, (1.0 - tx) * (1.0 - ty)), (1, 0, tx * (1.0 - ty)), (0, 1, (1.0 - tx) * ty), (1, 1, tx * ty)] {
+        let ix = (x0 + dx).rem_euclid(n) as u32;
+        let h = mix(mix(base ^ ix) ^ (y0 + dy) as u32);
+        gu += w * bytes_gaussian(h);
+        gv += w * bytes_gaussian(mix(h ^ 0x68e3_1da4));
+    }
+    let a = (1.0 - tx) * (1.0 - tx) + tx * tx;
+    let b = (1.0 - ty) * (1.0 - ty) + ty * ty;
+    let norm = 1.0 / (a * b).sqrt();
+    (gu * norm, gv * norm)
+}
+
+/// World k's kick over a step of `dt` days from `day`: the quarter days whose middles the step
+/// spans (the one it starts in, if it spans none), summed and renormalised to unit variance.
+#[inline]
+pub fn world_kick(k: u32, day: f32, dt: f32, lon: f32, lat: f32) -> (f32, f32) {
+    let first = ((day - 0.125) * 4.0).ceil() as i32;
+    let end = ((day + dt - 0.125) * 4.0).ceil() as i32;
+    let (first, count) = if end > first { (first, ((end - first) as u32).min(WORLD_SPAN)) } else { (quarter_cell(day), 1) };
+    let (mut gu, mut gv) = (0.0f32, 0.0f32);
+    for i in 0..count {
+        let (u, v) = world_field(k, first + i as i32, lon, lat);
+        gu += u;
+        gv += v;
+    }
+    let norm = 1.0 / (count as f32).sqrt();
+    (gu * norm, gv * norm)
 }
 
 /// A 32-bit mixer (the "lowbias32" of Chris Wellons), the same in WGSL.

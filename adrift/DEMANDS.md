@@ -306,6 +306,18 @@ out shouldn't deselect it"), while a tap on the open sea still lets it go. It wo
 `touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
 I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
 
+### D11 Truth → Engineering (R6)  [open]
+I need anything in [`adrift-check render` stepping the clouds until they reach the date
+(`App::behind()` is 0) before it draws, e.g. calling the clouds' step until caught up, or drawing
+frames until it is] so that a rendered scene shows each cloud at the scene's date. Today `render`
+draws one frame, so a cloud steps 24 half-days (12 days): in `scenes/two-clouds.json` the lamps are
+60 days on and their clouds 12, which is why the lamps sat at the north-east tip with the clouds
+south-west of them. The rules are not at fault: the lamp (k = 0, quarter-day grid) ranks uniformly
+in its own cloud (k ≥ 1, half-day steps) over 160 seeds at Hatteras, the Sargasso and the Agulhas
+(`sea::tests::the_lamp_is_one_of_its_cloud`, a tool). It works when `render` of
+`scenes/two-clouds.json` shows each lamp among its cloud (a played plan with a second of frames,
+`sea/plans/two-lamps-*.json`, already does). I could give back: nothing; the plans do it meanwhile.
+
 ## Answered
 
 (none yet)
