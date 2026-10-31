@@ -183,3 +183,16 @@ fold is quick enough that nothing lingers to be mistaken for a mark. The first h
 already a third of the way out: the ease is front-loaded, which is right for a hand that wants an
 answer. The silver's whole run is still a fence until it is windowed." Verdict: passes; the
 window is Engineering's.
+
+**The night, in the app** (`adrift-check render scenes/gulf-stream-night.json`, Engineering's D4
+answer: the night from the shell, `night.jpg` bound; `studies/check-night-gulf-phone.png` at device
+pixels, `check-night-atlantic-half-phone.png` at half): the N_ ground with the Black Marble's
+lights in sodium gold whitening at the cities' cores, the sea by depth, the lines pale, the amber
+lamps the warmest thing on the screen, the words pale on halos of the night's sea. The hater:
+"Now it is lived on. The eastern seaboard reads as itself at zoom 5 and the lamps still win. The
+maybes by night are a dust at a third, right. The one thing: the Gulf Stream's light runs white
+over a black sea and the silver is white too; at the whole Earth they are the same thread. Tint
+the silver a hair warmer by night, or the light a hair cooler." Verdict: passes; one hue apart.
+
+**Holt**, on the day's merged build and the night: "I held, I let go, I stopped the date, the
+room went dark and the floats stayed mine. Nothing marked, nothing pointed, nothing waited."

@@ -29,6 +29,8 @@ const N_ICE = vec3f(68.0, 78.0, 96.0) / 255.0;
 const N_COAST = vec3f(60.0, 88.0, 116.0) / 255.0;
 const N_ATMOS = vec3f(92.0, 130.0, 184.0) / 255.0;
 const N_PAGE = vec3f(14.0, 16.0, 22.0) / 255.0;
+const N_LIGHT = vec3f(255.0, 214.0, 134.0) / 255.0;   // sodium gold
+const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitening
 
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let pix = in.position.xy;
@@ -62,6 +64,8 @@ const N_PAGE = vec3f(14.0, 16.0, 22.0) / 255.0;
     let fl = (textureSampleGrad(floorTex, linearS, G.uv, gr.dx, gr.dy).r * 255.0 - 128.0) / 127.0;
     let ice = mix(textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.y), 0.0).r,
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
+    // the Earth's lights (NASA's Black Marble, Terra's sheet), sampled before any pixel leaves
+    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
     if (rr >= 1.0) { return vec4f(page, 1.0); }
 
     // the land: the month's picture, shaded from the north-west
@@ -86,7 +90,14 @@ const N_PAGE = vec3f(14.0, 16.0, 22.0) / 255.0;
         // the night: the land a slate shaded by the picture's own light and the hills, the sea by depth,
         // the ice grey-blue, the coast faint; a sphere by night, darker at the limb, the air's glow at it
         let lum = dot(landCol, vec3f(0.30, 0.59, 0.11));
-        let nland = N_LAND * (0.75 + 0.5 * lum) * (1.0 + 0.25 * hill);
+        var nland = N_LAND * (0.75 + 0.5 * lum) * (1.0 + 0.25 * hill);
+        // the measured lights over the drawn land, lifted a little (a village's glow is faint in the
+        // record), in sodium gold whitening at a city's core, each shimmering slowly by the drawn
+        // motion's clock as lights seen from far do: a noise in the world and in time, never a flicker
+        let shimmer = vnoise3(G.g * 1400.0 + vec3f(U.tone.z * 0.45, U.tone.z * 0.31, 7.9));
+        let lights = pow(lightsRaw, 0.75) * (0.86 + 0.28 * shimmer) * smoothstep(0.45, 1.0, night);
+        nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
+        nland = mix(nland, N_CORE, 0.7 * smoothstep(0.7, 1.0, lights));
         var nsea = mix(N_SEA, N_DEEP, smoothstep(2500.0, 6000.0, depthM)) * (1.0 + 0.06 * fl);
         nsea = mix(nsea, N_ICE * (0.97 + 0.04 * jag), smoothstep(0.30, 0.55, ice + 0.25 * (jag - 0.5)));
         var ncol = mix(nsea, nland, landa);
