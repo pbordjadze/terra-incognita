@@ -12,6 +12,7 @@ struct FloatIn {
     @location(4) night: f32,        // 1 by night (the night palette)
     @location(5) measured: f32,     // how measured the sea is where it rides (0..1): under a half the rim is dashed
     @location(6) hue: vec3<f32>,    // the lamp's colour (amber the first, then each its own)
+    @location(7) speck: f32,        // 0 a glass float, 1 one maybe among its cloud's (R6), between as it blooms
 };
 
 struct FloatOut {
@@ -25,6 +26,7 @@ struct FloatOut {
     @location(6) facing: f32,
     @location(7) measured: f32,
     @location(8) hue: vec3<f32>,
+    @location(9) speck: f32,
 };
 
 fn float_radius() -> f32 {
@@ -42,7 +44,9 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     var o: FloatOut;
     o.local = c * reach;
     o.pos = clip(p.xy + o.local);
-    if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }   // (hidden past the limb: clipped)
+    // (past the limb gone; toward it fading by its facing, as the maybes do, never clipped at a line)
+    if (p.z < 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
+    o.speck = f.speck;
     o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured; o.hue = f.hue;
     return o;
 }
@@ -60,6 +64,35 @@ fn ring_shade(n: f32) -> vec4<f32> { return mix(vec4<f32>(0.129, 0.322, 0.498, 0
 
 @fragment
 fn fs(i: FloatOut) -> @location(0) vec4<f32> {
+    let rim_fade = smoothstep(0.02, 0.32, i.facing);
+    let glass = glass_float(i);
+    if (i.speck <= 0.0) { return glass * rim_fade; }
+    return (glass * (1.0 - i.speck) + as_maybe(i) * i.speck) * rim_fade;
+}
+
+// The lamp drawn as one maybe of its own cloud (maybes.wgsl's speck, the same sizes and inks), so the
+// cloud's possibilities are all equal and nothing on the globe says which one is "the" lamp (R6).
+fn as_maybe(i: FloatOut) -> vec4<f32> {
+    let n = i.night;
+    let d = length(i.local);
+    let field = 1.0 - smoothstep(1.3, 2.4, U.disc.w);
+    let r = mix(mix(0.75, 1.0, n), 7.0, field) * rp();
+    var acc = vec4<f32>(0.0);
+    let night_hue = mix(i.hue, vec3<f32>(0.70, 0.90, 1.0), 0.62);
+    if (n > 0.5) {
+        let close = 1.0 - field;
+        acc = over(acc, night_hue, 0.5 * close * cover(abs(d - 0.72 * r) - 0.2 * r));
+        acc = over(acc, i.hue, 0.6 * close * cover(d - 0.24 * r));
+        return acc;
+    }
+    let speck = mix(i.hue, vec3<f32>(1.0), mix(0.72, 0.35, field));
+    acc = over(acc, speck, 0.80 * (1.0 - field) * cover(d - r));
+    let grain = (1.0 - smoothstep(3.5, 5.5, U.disc.w)) * mix(0.5, 0.3, field);
+    acc = over(acc, i.hue * 0.55, grain * cover(d - mix(0.35 * r, 0.3 * rp(), field)));
+    return acc;
+}
+
+fn glass_float(i: FloatOut) -> vec4<f32> {
     let n = i.night;
     let d = length(i.local);
     let r = i.r;

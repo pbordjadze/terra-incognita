@@ -1,0 +1,13 @@
+{
+ "title": "A tap on the open sea and its rings (R6: gentler), at 0.4, 0.9 and 1.6 s. adrift-check play adrift/crates/adrift-core/src/look/plans/ripple.json <out>",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -45.0, "lat": 32.0, "zoom": 2.2},
+ "day": 200.0,
+ "steps": [
+  {"t": 0.0, "down": 0, "at": [-45.0, 32.0]},
+  {"t": 0.1, "up": 0, "at": [-45.0, 32.0]},
+  {"t": 0.4, "shot": "ripple-0.4"},
+  {"t": 0.9, "shot": "ripple-0.9"},
+  {"t": 1.6, "shot": "ripple-1.6", "expect": {"saw": ["Ring"]}}
+ ]
+}

@@ -264,15 +264,16 @@ pub struct LookState {
 }
 
 /// A lamp's hue by its number (palette.json › hues): amber first, then the others, each a glass
-/// lamp's colour that reads warm on the cool sea and tells its cloud, wake and silver from another's.
+/// lamp's colour that tells its cloud, wake and silver from another's; each next one far round the
+/// wheel from the last, so two lamps put one after the other are told apart at a glance (R6).
 pub fn lamp_hue(id: u32) -> [f32; 3] {
     const HUES: [[f32; 3]; 8] = [
         [0.957, 0.647, 0.165],   // amber
-        [0.941, 0.439, 0.353],   // coral
-        [0.910, 0.435, 0.627],   // rose
-        [0.706, 0.549, 0.941],   // lilac
         [0.345, 0.722, 0.910],   // sky
+        [0.910, 0.435, 0.627],   // rose
         [0.310, 0.816, 0.659],   // mint
+        [0.941, 0.439, 0.353],   // coral
+        [0.706, 0.549, 0.941],   // lilac
         [0.722, 0.839, 0.290],   // lime
         [0.949, 0.812, 0.227],   // gold
     ];
@@ -319,6 +320,10 @@ impl Look {
         let n = state.night;
         let mut beads = Vec::new();
         for f in &state.floats {
+            // (a lamp whose cloud is out is one maybe among them: no wake singles it out, R6)
+            if f.shown {
+                continue;
+            }
             let start = f.wake.len().saturating_sub(WAKE_DAYS);
             let mut b = wake::beads(&f.wake[start..], n, lamp_hue(f.id));
             if !state.truth_marks {
@@ -331,7 +336,7 @@ impl Look {
         self.wake.prepare(gpu, &beads);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
         // silver are the front one's (its place and hue kept while it folds)
-        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom }).collect();
+        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front }).collect();
         self.maybes.prepare(gpu, &draws, n);
         if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);
@@ -343,10 +348,10 @@ impl Look {
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: (f.held || f.chosen) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id) })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: (f.held || f.chosen) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
         if let Some((at, beat)) = state.resting {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1) });
+            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
@@ -365,6 +370,9 @@ impl Look {
             let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
+        // the panel of every lamp out there (R6): where each was put, and which are out
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, front: f.chosen && f.shown }).collect();
+        labels.extend(self.words.panel(&rows, reading, disc, n));
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }

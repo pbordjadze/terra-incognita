@@ -181,7 +181,8 @@ fn contour(q: f32, fw: f32) -> vec2f {
         acc = over(acc, vec3f(1.0), (0.28 * swell * fade + 0.8 * foam) * surfing * water * mix(1.0, 0.35, U.pad.x));
     }
 
-    // -- touched: rings spreading on the water from each touch
+    // -- touched: rings spreading on the water from each touch (R6: gentler, two rings, quieter and
+    //    sooner gone; still the water's own answer to the finger)
     for (var i = 0; i < 4; i++) {
         let at = S.ripple[2 * i]; let how = S.ripple[2 * i + 1];
         let age = t - at.w;
@@ -189,15 +190,15 @@ fn contour(q: f32, fw: f32) -> vec2f {
         let dPt = acos(clamp(dot(g, at.xyz), -1.0, 1.0)) * R;
         let r = 34.0 * reading * pow(mix(0.8, age, U.tone.y), 0.75);
         var light = 0.0; var shade = 0.0;
-        for (var j = 0; j < 3; j++) {
+        for (var j = 0; j < 2; j++) {
             let x = (dPt - (r - f32(j) * 12.0 * reading)) / reading;
-            let a = (1.0 - 0.28 * f32(j)) * step(0.0, r - f32(j) * 12.0 * reading);
+            let a = (1.0 - 0.4 * f32(j)) * step(0.0, r - f32(j) * 12.0 * reading);
             light += a * exp(-sq((x + 1.4) / 2.0));
             shade += a * exp(-sq((x - 2.6) / 2.4));
         }
-        let strength = how.x * exp(-age / 1.5) * smoothstep(0.0, 0.12, age) / (1.0 + r / (90.0 * reading));
-        acc = over(acc, vec3f(0.13, 0.32, 0.50), 0.20 * shade * strength * water);
-        acc = over(acc, vec3f(1.0), 0.65 * light * strength * water);
+        let strength = how.x * exp(-age / 1.1) * smoothstep(0.0, 0.12, age) / (1.0 + r / (90.0 * reading));
+        acc = over(acc, vec3f(0.13, 0.32, 0.50), 0.12 * shade * strength * water);
+        acc = over(acc, vec3f(1.0), 0.40 * light * strength * water * mix(1.0, 0.7, U.pad.x));
     }
     return acc;
 }
