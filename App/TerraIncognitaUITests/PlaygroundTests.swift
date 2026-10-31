@@ -28,12 +28,6 @@ final class PlaygroundTests: XCTestCase {
         openWorkbench(in: app)
         let listed = listedPrototypes(in: app)
         attach("01-workbench", in: app)
-        if !listed.contains("hello-pack") {
-            let tree = XCTAttachment(string: app.debugDescription)
-            tree.name = "01-workbench-tree"
-            tree.lifetime = .keepAlways
-            add(tree)
-        }
         for id in ["plain", "hello-pack", "quiet-names", "quiet-clouds", "night", "quiet-frame"] {
             XCTAssertTrue(listed.contains(id), "The workbench lists \(id): \(listed.sorted())")
         }

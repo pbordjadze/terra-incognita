@@ -92,12 +92,11 @@ extension XCTestCase {
             guard let snapshot = try? app.snapshot() else { break }
             let now = identifiers(snapshot).filter { !$0.isEmpty }
             listed.formUnion(now.filter { $0.hasPrefix("prototype_") }.map { String($0.dropFirst("prototype_".count)) })
-            // it no longer moves: the end of the list, or all of it on one screen (a short list's
-            // first snapshot can come before every row is drawn, so the Live line alone isn't the end)
+            // the end: it no longer moves (the Live line's cell can be in the tree below rows not yet
+            // built, so seeing it isn't the end)
             if now == before { break }
             before = now
-            if now.contains("playgroundLive") { Thread.sleep(forTimeInterval: 1) }
-            else { drag(list, by: clip(list, in: app).height * 0.6, in: app) }
+            drag(list, by: clip(list, in: app).height * 0.6, in: app)
         }
         return listed
     }
