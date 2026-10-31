@@ -9,6 +9,7 @@ struct GlyphIn {
     @location(1) uv: vec4<f32>,     // the glyph's atlas rectangle, 0..1
     @location(2) ink: vec4<f32>,    // the ink, and its alpha (fading only in time)
     @location(3) halo: vec4<f32>,   // the halo: the tone of what is under the glyph, and its alpha
+    @location(4) anchor: vec4<f32>, // xyz a place on the globe the rect is offset from (w 1), or none (w 0)
 };
 
 struct GlyphOut {
@@ -34,7 +35,15 @@ fn vs(@builtin(vertex_index) vi: u32, g: GlyphIn) -> GlyphOut {
     let c = corner(vi % 6u) * 0.5 + 0.5;
     let ppp = U.frame.z;
     var o: GlyphOut;
-    o.pos = clip((g.rect.xy + c * g.rect.zw) * ppp);
+    var at = g.rect.xy;
+    var hidden = false;
+    if (g.anchor.w > 0.5) {
+        let p = place(g.anchor.xyz);
+        at = at + p.xy / ppp;
+        hidden = p.z < 0.3;
+    }
+    o.pos = clip((at + c * g.rect.zw) * ppp);
+    if (hidden) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.uv = g.uv.xy + c * g.uv.zw;
     o.ink = g.ink;
     o.halo = g.halo;
