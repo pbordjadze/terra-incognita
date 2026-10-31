@@ -54,6 +54,37 @@ impl Tiled {
         Ok(Tiled { sheet, cells, tiles })
     }
 
+    /// Every channel of month `m` at (lon, lat), bilinear, as raw byte values 0..255 (unused
+    /// channels 0): the corners are found once for all of them. The same arithmetic as `sample`,
+    /// channel by channel.
+    #[inline]
+    pub fn sample_all(&self, m: usize, lon: f32, lat: f32) -> [f32; 4] {
+        let (w, h) = (self.cells.0 as f32, self.cells.1 as f32);
+        let fx = (lon + 180.0).rem_euclid(360.0) / 360.0 * w - 0.5;
+        let fy = ((90.0 - lat) / 180.0 * h - 0.5).clamp(-1.0, h);
+        let x0 = fx.floor();
+        let y0 = fy.floor();
+        let tx = fx - x0;
+        let ty = fy - y0;
+        let ox = (m % self.tiles.0) * (self.cells.0 + 2) + 1;
+        let oy = (m / self.tiles.0) * (self.cells.1 + 2) + 1;
+        let xa = (ox as isize + x0 as isize) as usize;
+        let ya = (oy as isize + y0 as isize) as usize;
+        let s = &self.sheet;
+        let n = s.channels;
+        let i00 = (ya * s.width + xa) * n;
+        let i10 = i00 + n;
+        let i01 = ((ya + 1) * s.width + xa) * n;
+        let i11 = i01 + n;
+        let mut out = [0.0; 4];
+        for (c, o) in out.iter_mut().enumerate().take(n.min(4)) {
+            let top = s.bytes[i00 + c] as f32 * (1.0 - tx) + s.bytes[i10 + c] as f32 * tx;
+            let bottom = s.bytes[i01 + c] as f32 * (1.0 - tx) + s.bytes[i11 + c] as f32 * tx;
+            *o = top * (1.0 - ty) + bottom * ty;
+        }
+        out
+    }
+
     /// Channel `c` of month `m` at (lon, lat), bilinear, as the raw byte value 0..255; the tile's
     /// border does the wrap and the clamp.
     #[inline]
@@ -108,10 +139,11 @@ impl Currents {
     /// decoded, then mixed: the encoding is not linear.
     pub fn at(&self, day: f32, lon: f32, lat: f32) -> (f32, f32, f32) {
         let (a, b, t) = months(day);
-        let mix = |c| self.0.sample(a, c, lon, lat) * (1.0 - t) + self.0.sample(b, c, lon, lat) * t;
-        let u = Self::decode(self.0.sample(a, 0, lon, lat)) * (1.0 - t) + Self::decode(self.0.sample(b, 0, lon, lat)) * t;
-        let v = Self::decode(self.0.sample(a, 1, lon, lat)) * (1.0 - t) + Self::decode(self.0.sample(b, 1, lon, lat)) * t;
-        (u, v, mix(2) / 255.0)
+        let pa = self.0.sample_all(a, lon, lat);
+        let pb = self.0.sample_all(b, lon, lat);
+        let u = Self::decode(pa[0]) * (1.0 - t) + Self::decode(pb[0]) * t;
+        let v = Self::decode(pa[1]) * (1.0 - t) + Self::decode(pb[1]) * t;
+        (u, v, (pa[2] * (1.0 - t) + pb[2] * t) / 255.0)
     }
 }
 
@@ -128,7 +160,9 @@ impl Wind {
     /// (u east, v north) in m/s at the day's mix of months.
     pub fn at(&self, day: f32, lon: f32, lat: f32) -> (f32, f32) {
         let (a, b, t) = months(day);
-        let mix = |c| self.0.sample(a, c, lon, lat) * (1.0 - t) + self.0.sample(b, c, lon, lat) * t;
+        let pa = self.0.sample_all(a, lon, lat);
+        let pb = self.0.sample_all(b, lon, lat);
+        let mix = |c: usize| pa[c] * (1.0 - t) + pb[c] * t;
         ((mix(0) - 128.0) / 127.0 * Self::WMAX, (mix(1) - 128.0) / 127.0 * Self::WMAX)
     }
 }
@@ -146,11 +180,12 @@ impl Eddy {
 
     /// (K zonal, K meridional) in m^2/s and how measured 0..1.
     pub fn at(&self, lon: f32, lat: f32) -> (f32, f32, f32) {
-        let k = |c| {
-            let s = self.0.sample(0, c, lon, lat) / 255.0;
+        let p = self.0.sample_all(0, lon, lat);
+        let k = |c: usize| {
+            let s = p[c] / 255.0;
             s * s * Self::KMAX
         };
-        (k(0), k(1), self.0.sample(0, 2, lon, lat) / 255.0)
+        (k(0), k(1), p[2] / 255.0)
     }
 }
 
@@ -166,7 +201,8 @@ impl EddyTime {
 
     /// (T zonal, T meridional) in days.
     pub fn at(&self, lon: f32, lat: f32) -> (f32, f32) {
-        (self.0.sample(0, 0, lon, lat) / 255.0 * Self::TMAX, self.0.sample(0, 1, lon, lat) / 255.0 * Self::TMAX)
+        let p = self.0.sample_all(0, lon, lat);
+        (p[0] / 255.0 * Self::TMAX, p[1] / 255.0 * Self::TMAX)
     }
 }
 
