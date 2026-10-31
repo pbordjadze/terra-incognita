@@ -289,3 +289,36 @@ fn pollster_block<F: std::future::Future>(f: F) -> F::Output {
         std::thread::yield_now();
     }
 }
+
+#[test]
+fn a_put_float_starts_with_the_measured_velocity_and_a_track_has_real_dates() {
+    let r = rules();
+    let from = LonLat { lon: -40.0, lat: 30.0 };
+    let (ku, kv, _) = r.eddy.at(-40.0, 30.0);
+    let (tu, tv) = r.eddy_time.at(-40.0, 30.0);
+    let n = 3000;
+    let (mut su, mut sv) = (0.0f64, 0.0f64);
+    for k in 0..n {
+        let d = r.put(from, JULY, 5, k);
+        su += (d.eddy.0 as f64).powi(2);
+        sv += (d.eddy.1 as f64).powi(2);
+    }
+    let (eu, ev) = (ku / (tu * 86400.0), kv / (tv * 86400.0));
+    assert!((su / n as f64 / eu as f64 - 1.0).abs() < 0.15, "zonal first velocity variance {} against K/T {eu}", su / n as f64);
+    assert!((sv / n as f64 / ev as f64 - 1.0).abs() < 0.15, "meridional {} against {ev}", sv / n as f64);
+    assert_eq!(r.put(from, JULY, 5, 3).eddy, r.put(from, JULY, 5, 3).eddy);
+    assert_ne!(r.put(from, JULY, 5, 3).eddy, r.put(from, JULY, 5, 4).eddy);
+    // the calendar is the real one
+    assert_eq!(super::drifters::civil(0.0), (2000, 1, 1));
+    assert_eq!(super::drifters::civil(59.0), (2000, 2, 29));
+    assert_eq!(super::drifters::civil(60.0), (2000, 3, 1));
+    assert_eq!(super::drifters::civil(9000.0), (2024, 8, 22));
+    let d = Drifters::load(&assets().join("drifters.bin")).unwrap();
+    let t = d.track(LonLat { lon: -74.5, lat: 35.8 }, 500.0).expect("a drifter passed Hatteras");
+    assert!(t.km < 100.0 && t.xyz.len() == t.run.points.len() && t.xyz.len() >= 2);
+    let v = t.xyz[t.point];
+    assert!((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1.0).abs() < 1e-4, "unit vectors");
+    let label = t.label();
+    eprintln!("{label} ({:.0} km off)", t.km);
+    assert!(label.starts_with("Drifter ") && label.contains(" to ") && label.contains("201") || label.contains("202"));
+}
