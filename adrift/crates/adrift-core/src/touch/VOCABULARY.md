@@ -32,7 +32,10 @@ To decide, it asks a `Probe` (`touch/probe.rs` answers for `App`) what is under 
 `Hit::Sea`, `Hit::Land`, `Hit::Off` (off the disc); where a float is; which float is ridden; the
 clock; the frame (size, reading scale, disc); Reduce Motion. It reads the state no other way. It
 returns `Out`: `model::Intent`s, which `App` applies, and `CameraMove`s, which `App` hands to
-`CameraControl::apply`; the look draws the state and never reads pointers. Undo also arrives as
+`CameraControl::apply`; the look draws the state and never reads pointers. Two things the look
+draws straight from the hand's timing come as readings, not intents: `Gestures::pressing_since`
+(a rest on the sea, the ring's thickening) and `Gestures::date_pressing_since` (a finger on the
+date, the band's answer: D8), both by `motion::thicken`. Undo also arrives as
 `Gestures::shaken()` and `Gestures::key(Key::Undo)`; `Gestures::wheel(x, y, factor)` zooms about a
 mouse's cursor (the web build).
 

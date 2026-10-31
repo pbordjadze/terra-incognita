@@ -197,6 +197,16 @@ impl Gestures {
         }
     }
 
+    /// How long a finger has been on the date (a tap in the making, a rest toward the credits, or
+    /// a scrub), for the look's band (`LookState.date_press` by `motion::thicken`); None when no
+    /// finger is on it (a flick runs on without one).
+    pub fn date_pressing_since(&self, now: f64) -> Option<f64> {
+        match self.state {
+            State::DateDown { t0, .. } => Some(now - t0),
+            _ => None,
+        }
+    }
+
     /// The float in hand, if any.
     pub fn is_holding(&self) -> Option<u32> {
         match self.state {
