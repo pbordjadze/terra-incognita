@@ -32,6 +32,13 @@ pub const IDLE_RATE: f64 = 4.0;
 /// How far in and out the camera goes.
 pub const ZOOM_MIN: f64 = 0.8;
 pub const ZOOM_MAX: f64 = 8.0;
+/// The framing of everything chosen (R8): every place held within this share of the room (the
+/// screen's half-width) from the centre; places spread wider than `FRAME_WIDEST` (radians, about
+/// 70°) from their centre take the whole globe; the camera closes on the frame with this time
+/// constant (slower than the ride: a frame that breathes as the clouds grow, not one that twitches).
+pub const FRAME_WITHIN: f64 = 0.8;
+pub const FRAME_WIDEST: f64 = 1.22;
+pub const FRAME_TAU: f64 = 0.45;
 /// A lamp chosen from the panel is brought within this share of the room (the disc's radius, or the
 /// screen's half when zoomed past it) from the centre: inside it a cloud of a few hundred
 /// kilometres lies on the globe's face, not along its limb (R6).
