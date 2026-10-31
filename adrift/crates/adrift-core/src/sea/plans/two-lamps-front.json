@@ -1,0 +1,42 @@
+{
+ "title": "Two lamps put 50 km apart in the Brazil-Malvinas confluence, a front, 60 days on, both clouds out (R6 Truth, the worlds: lamp A's k-th maybe and lamp B's k-th meet the same sea). The clouds are given a second of frames to catch up to the date.",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "ppp": 3,
+ "scene": {
+  "camera": {
+   "lon": -48,
+   "lat": -39,
+   "zoom": 1.8
+  },
+  "day": 256.0,
+  "running": false,
+  "floats": [
+   {
+    "lon": -53.5,
+    "lat": -38.5,
+    "days_ago": 60
+   },
+   {
+    "lon": -52.925,
+    "lat": -38.5,
+    "days_ago": 60
+   }
+  ],
+  "choose": [
+   0,
+   1
+  ]
+ },
+ "steps": [
+  {
+   "t": 1.0,
+   "expect": {
+    "floats": 2
+   },
+   "shot": "two-lamps-front"
+  }
+ ]
+}

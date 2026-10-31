@@ -35,7 +35,10 @@ pub struct Params {
     pub seed_lo: u32,
     pub seed_hi: u32,
     pub count: u32,
-    pub _pad: [u32; 3],
+    /// The cloud's first path in the buffer (R6: many clouds share one buffer, each its own range;
+    /// k is still 1..=count within the range).
+    pub base: u32,
+    pub _pad: [u32; 2],
 }
 
 impl Params {
@@ -50,8 +53,15 @@ impl Params {
             seed_lo: seed as u32,
             seed_hi: (seed >> 32) as u32,
             count,
-            _pad: [0; 3],
+            base: 0,
+            _pad: [0; 2],
         }
+    }
+
+    /// The same for the cloud whose paths begin at `base`.
+    pub fn at_base(mut self, base: u32) -> Params {
+        self.base = base;
+        self
     }
 }
 
@@ -61,6 +71,8 @@ impl Params {
 pub struct Keep {
     buffer: wgpu::Buffer,
     pub count: u32,
+    /// The first path it was kept from (and is restored to).
+    pub base: u32,
 }
 
 /// The most steps one `step_many` call encodes (its parameters ride a ring of uniform slots).
@@ -173,8 +185,13 @@ impl Maybes {
 
     /// Writes the paths to step (at most `capacity`).
     pub fn seed(&self, gpu: &Gpu, paths: &[GpuPath]) {
-        assert!(paths.len() as u32 <= self.capacity);
-        gpu.queue.write_buffer(&self.paths, 0, bytemuck::cast_slice(paths));
+        self.seed_at(gpu, 0, paths);
+    }
+
+    /// Writes a cloud's paths from `base` (R6).
+    pub fn seed_at(&self, gpu: &Gpu, base: u32, paths: &[GpuPath]) {
+        assert!(base + paths.len() as u32 <= self.capacity);
+        gpu.queue.write_buffer(&self.paths, base as u64 * std::mem::size_of::<GpuPath>() as u64, bytemuck::cast_slice(paths));
     }
 
     /// One step of every path (k = its index + 1), with memory (`flight`) or without.
@@ -209,7 +226,13 @@ impl Maybes {
 
     /// A checkpoint: the paths as they are now, copied on the GPU.
     pub fn keep(&self, gpu: &Gpu, count: u32) -> Keep {
+        self.keep_at(gpu, 0, count)
+    }
+
+    /// A checkpoint of the cloud whose `count` paths begin at `base` (R6).
+    pub fn keep_at(&self, gpu: &Gpu, base: u32, count: u32) -> Keep {
         let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
+        let from = base as u64 * std::mem::size_of::<GpuPath>() as u64;
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("maybes keep"),
             size: size.max(4),
@@ -217,16 +240,16 @@ impl Maybes {
             mapped_at_creation: false,
         });
         let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&self.paths, 0, &buffer, 0, size);
+        enc.copy_buffer_to_buffer(&self.paths, from, &buffer, 0, size);
         gpu.queue.submit([enc.finish()]);
-        Keep { buffer, count }
+        Keep { buffer, count, base }
     }
 
     /// The paths put back as a checkpoint had them.
     pub fn restore(&self, gpu: &Gpu, keep: &Keep) {
         let size = keep.count as u64 * std::mem::size_of::<GpuPath>() as u64;
         let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&keep.buffer, 0, &self.paths, 0, size);
+        enc.copy_buffer_to_buffer(&keep.buffer, 0, &self.paths, keep.base as u64 * std::mem::size_of::<GpuPath>() as u64, size);
         gpu.queue.submit([enc.finish()]);
     }
 

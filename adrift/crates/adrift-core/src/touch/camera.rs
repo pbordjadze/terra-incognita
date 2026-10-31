@@ -23,6 +23,11 @@ pub enum CameraMove {
     Fly { at: Option<LonLat> },
     /// The ride ends (a tap on the open sea lets the float go); the camera stays where it is.
     Leave,
+    /// A lamp just chosen (R6, from the panel): if it is out of sight, or out toward the globe's
+    /// rim where its cloud would lie along the limb, the globe turns (at the same zoom, the
+    /// flight's ease) just far enough to bring it within `motion::FACE_WITHIN` of the disc's radius
+    /// from the centre; where it already reads well, nothing moves.
+    Face { at: LonLat },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -44,10 +49,10 @@ pub struct CameraControl {
     spin: (f64, f64),
     flight: Option<Flight>,
     /// The ride's spring velocity, degrees a second.
-    ride_v: (f64, f64),
+    ride_v: f64,
     /// The ridden float's last place and its smoothed speed (degrees a second): the spring aims
     /// ahead by the lag a steady speed would leave, so a fast float is kept centred, not trailed.
-    ride_seen: Option<(LonLat, (f64, f64))>,
+    ride_seen: Option<(LonLat, [f64; 3])>,
     /// When a finger last touched (the shell's seconds), for the idle turn.
     last_touch: f64,
     /// The disc the last move was measured in (the fling turns by it between frames).
@@ -62,7 +67,7 @@ impl CameraControl {
             zoom_range: (motion::ZOOM_MIN, motion::ZOOM_MAX),
             spin: (0.0, 0.0),
             flight: None,
-            ride_v: (0.0, 0.0),
+            ride_v: 0.0,
             ride_seen: None,
             last_touch: f64::NEG_INFINITY,
             disc: Disc { cx: 0.0, cy: 0.0, r: 0.0 },
@@ -93,66 +98,67 @@ impl CameraControl {
             CameraMove::Pinch { grab, ax, ay, bx, by, factor } => self.pinch(disc, grab, ax, ay, bx, by, factor),
             CameraMove::Fly { at } => self.double_tap(at, now, motion),
             CameraMove::Leave => self.riding = None,
+            CameraMove::Face { at } => self.face(at, now, motion),
         }
+    }
+
+    /// Turns the globe (no zoom) so `at` lies within `FACE_WITHIN` of the room from the centre:
+    /// along the great circle from the camera's centre toward it, no further than needed.
+    fn face(&mut self, at: LonLat, now: f64, motion: Motion) {
+        if self.riding.is_some() {
+            return; // the ride keeps its own float centred
+        }
+        let d = self.disc;
+        // the room: the disc, or the screen about it when zoomed in past it (cx, cy its middle)
+        let room = d.r.min(d.cx).min(d.cy).max(1.0);
+        let within = motion::FACE_WITHIN * room;
+        let (p, facing) = d.project(&self.camera, at);
+        let off = (p[0] - d.cx).hypot(p[1] - d.cy);
+        if facing > 0.0 && off <= within {
+            return;
+        }
+        // the angle from the centre at which a place lies `within` points out; the globe turns about
+        // the axis that carries the lamp straight toward the centre, by no more than it must
+        let keep = (within / d.r).clamp(0.0, 1.0).asin();
+        let v = self.camera.view(at.to_xyz());
+        let ang = v[2].clamp(-1.0, 1.0).acos();
+        if ang <= keep + 1e-9 {
+            return;
+        }
+        let to = toward_centre(&self.camera, at, ang - keep);
+        self.fly_to(to, now, motion);
     }
 
     // --- the sphere ---
 
     /// Turns the globe as a finger moving (dx, dy) points would drag the point at the screen's
-    /// centre; the longitude's turn is scaled by the centre's latitude so the surface there moves
-    /// as far as the finger (Terra's turn without that slows toward the poles).
+    /// centre: a trackball (R6), about the view's axis (dy, dx, 0) by hypot(dx, dy) / r, so the orb
+    /// turns the same way under the hand over a pole as anywhere else, with no north to stop at.
     pub fn turn(&mut self, disc: &Disc, dx: f64, dy: f64) {
         if disc.r <= 0.0 {
             return;
         }
-        let c = self.camera.lat.to_radians().cos().max(0.17);
-        self.camera.lon = motion::wrap_lon(self.camera.lon - (dx / (disc.r * c)).to_degrees());
-        self.camera.lat = (self.camera.lat + (dy / disc.r).to_degrees()).clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
+        self.camera = self.camera.turned([dy, dx, 0.0], dx.hypot(dy) / disc.r);
         self.riding = None;
     }
 
-    /// Turns the globe so that `grab`, the point of the globe the finger took, lies under the
-    /// finger at (x, y): Newton's method on the camera's (lon, lat), a few steps, each measuring
-    /// how the point moves on screen for a small turn. Off the disc, or where the pole stops it,
-    /// the finger's own move turns the globe by `turn` alone.
+    /// Turns the globe so that `grab`, the point of the globe the finger took, lies exactly under
+    /// the finger at (x, y): the one rotation carrying its view direction to the finger's (R6: no
+    /// solving in lon and lat, so no pole to stall on). Off the disc, or with the point gone round
+    /// the back, the finger's own move turns the globe by `turn` alone.
     fn turn_to(&mut self, disc: &Disc, grab: LonLat, x: f64, y: f64, dx: f64, dy: f64) {
-        if disc.unproject(&self.camera, x, y).is_none() {
+        let vx = (x - disc.cx) / disc.r;
+        let vy = (disc.cy - y) / disc.r;
+        let r2 = vx * vx + vy * vy;
+        let a = self.camera.view(grab.to_xyz());
+        if r2 >= 1.0 || a[2] <= 0.0 {
             self.turn(disc, dx, dy);
             return;
         }
-        let before = self.camera;
-        for _ in 0..6 {
-            let (p, facing) = disc.project(&self.camera, grab);
-            if facing <= 0.0 {
-                self.camera = before;
-                self.turn(disc, dx, dy);
-                return;
-            }
-            let (rx, ry) = (x - p[0], y - p[1]);
-            if rx.abs() < 1e-4 && ry.abs() < 1e-4 {
-                break;
-            }
-            // the Jacobian of the point's screen position in the camera's lon and lat
-            let h = 0.01;
-            let mut cam = self.camera;
-            cam.lon = motion::wrap_lon(self.camera.lon + h);
-            let (a, _) = disc.project(&cam, grab);
-            cam.lon = self.camera.lon;
-            cam.lat = self.camera.lat + h;
-            let (b, _) = disc.project(&cam, grab);
-            let (j11, j21) = ((a[0] - p[0]) / h, (a[1] - p[1]) / h);
-            let (j12, j22) = ((b[0] - p[0]) / h, (b[1] - p[1]) / h);
-            let det = j11 * j22 - j12 * j21;
-            if det.abs() < 1e-9 {
-                self.camera = before;
-                self.turn(disc, dx, dy);
-                return;
-            }
-            let dlon = (rx * j22 - j12 * ry) / det;
-            let dlat = (j11 * ry - j21 * rx) / det;
-            self.camera.lon = motion::wrap_lon(self.camera.lon + dlon);
-            self.camera.lat = (self.camera.lat + dlat).clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
-        }
+        let b = [vx, vy, (1.0 - r2).sqrt()];
+        let axis = cross(a, b);
+        let angle = dot(a, b).clamp(-1.0, 1.0).acos();
+        self.camera = self.camera.turned(axis, angle);
     }
 
     /// Two fingers: zoom by `factor`, and move the point of the globe that was under (ax, ay) to
@@ -191,11 +197,15 @@ impl CameraControl {
         let z = self.camera.zoom;
         let deepest = self.zoom_range.1;
         let target_zoom = if z < deepest / 2.0 { (z * 2.0).min(deepest) } else { 1.0 };
-        let (lon, lat) = match at {
-            Some(p) if z < 4.0 && target_zoom > z => (p.lon, p.lat),
-            _ => (self.camera.lon, self.camera.lat),
+        let mut to = match at {
+            Some(p) if z < 4.0 && target_zoom > z => {
+                let ang = self.camera.view(p.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                toward_centre(&self.camera, p, ang)
+            }
+            _ => self.camera,
         };
-        self.fly_to(Camera { lon, lat: lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: target_zoom }, now, motion);
+        to.zoom = target_zoom;
+        self.fly_to(to, now, motion);
     }
 
     pub fn fly_to(&mut self, to: Camera, now: f64, motion: Motion) {
@@ -224,9 +234,10 @@ impl CameraControl {
         if let Some(fl) = self.flight {
             let u = if fl.duration > 0.0 { ((now - fl.start) / fl.duration).min(1.0) } else { 1.0 };
             let e = motion::ease_in_out(u);
-            self.camera.lon = motion::wrap_lon(fl.from.lon + motion::lon_delta(fl.from.lon, fl.to.lon) * e);
-            self.camera.lat = fl.from.lat + (fl.to.lat - fl.from.lat) * e;
-            self.camera.zoom = (fl.from.zoom.ln() + (fl.to.zoom.ln() - fl.from.zoom.ln()) * e).exp();
+            // the orientation slerped (R6: the shortest turn from one to the other, a pole
+            // included, the roll with it, so Home comes back upright), the zoom by its log
+            let zoom = (fl.from.zoom.ln() + (fl.to.zoom.ln() - fl.from.zoom.ln()) * e).exp();
+            self.camera = if u >= 1.0 { Camera { zoom, ..fl.to } } else { Camera::from_rotation(quat_mat(slerp(mat_quat(fl.from.rotation()), mat_quat(fl.to.rotation()))(e)), zoom) };
             if u >= 1.0 {
                 self.flight = None;
             }
@@ -235,40 +246,131 @@ impl CameraControl {
             self.turn(&disc, self.spin.0 * dt, self.spin.1 * dt);
             self.spin = (motion::fling_decay(self.spin.0, dt), motion::fling_decay(self.spin.1, dt));
         } else if let Some(p) = ride_at.filter(|_| self.riding.is_some()) {
+            let px = p.to_xyz();
             if motion.reduce {
-                self.camera.lon = p.lon;
-                self.camera.lat = p.lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
+                let ang = self.camera.view(px)[2].clamp(-1.0, 1.0).acos();
+                self.camera = toward_centre(&self.camera, p, ang);
             } else {
-                // the float's speed, smoothed over about a third of a second (it steps, not glides)
+                // the float's velocity on the sphere, smoothed over about a third of a second (it
+                // steps, not glides)
                 let speed = match self.ride_seen {
                     Some((last, v)) if dt > 0.0 => {
-                        let now_v = (motion::lon_delta(last.lon, p.lon) / dt, (p.lat - last.lat) / dt);
+                        let l = last.to_xyz();
+                        let now_v = [(px[0] - l[0]) / dt, (px[1] - l[1]) / dt, (px[2] - l[2]) / dt];
                         let k = 1.0 - (-dt / motion::RIDE_SPEED_TAU).exp();
-                        (v.0 + (now_v.0 - v.0) * k, v.1 + (now_v.1 - v.1) * k)
+                        [v[0] + (now_v[0] - v[0]) * k, v[1] + (now_v[1] - v[1]) * k, v[2] + (now_v[2] - v[2]) * k]
                     }
                     Some((_, v)) => v,
-                    None => (0.0, 0.0),
+                    None => [0.0; 3],
                 };
                 self.ride_seen = Some((p, speed));
-                // aim ahead by the lag a steady speed leaves a critically damped spring (2τ·v)
+                // aim ahead by the lag a steady speed leaves a critically damped spring (2τ·v), and
+                // close the angle to the aim on the spring, turning about the axis that carries it
+                // straight to the centre (R6: in rotation, so a pole is no different)
                 let ahead = 2.0 * motion::RIDE_TAU;
-                let aim = LonLat { lon: p.lon + speed.0 * ahead, lat: p.lat + speed.1 * ahead };
-                let target_lon = self.camera.lon + motion::lon_delta(self.camera.lon, aim.lon);
-                let (lon, vl) = motion::spring(self.camera.lon, self.ride_v.0, target_lon, motion::RIDE_TAU, dt);
-                let (lat, vb) = motion::spring(self.camera.lat, self.ride_v.1, aim.lat, motion::RIDE_TAU, dt);
-                self.camera.lon = motion::wrap_lon(lon);
-                self.camera.lat = lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
-                self.ride_v = (vl, vb);
+                let aim = LonLat::from_xyz(norm([px[0] + speed[0] * ahead, px[1] + speed[1] * ahead, px[2] + speed[2] * ahead]));
+                let ang = self.camera.view(aim.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                let (left, v) = motion::spring(ang, self.ride_v, 0.0, motion::RIDE_TAU, dt);
+                self.camera = toward_centre(&self.camera, aim, ang - left.max(0.0));
+                self.ride_v = v;
             }
         } else if !touching && sea_is_empty && self.riding.is_none() && !motion.reduce && now - self.last_touch > motion::IDLE_AFTER {
             // left alone, it turns as the Earth does, west to east
             self.camera.lon = motion::wrap_lon(self.camera.lon - motion::IDLE_RATE * dt);
         }
         if self.riding.is_none() {
-            self.ride_v = (0.0, 0.0);
+            self.ride_v = 0.0;
             self.ride_seen = None;
         }
         self.camera != before
+    }
+}
+
+// --- rotations (R6: the orb has no north to stop at) ---
+
+fn dot(a: [f64; 3], b: [f64; 3]) -> f64 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+fn norm(a: [f64; 3]) -> [f64; 3] {
+    let n = dot(a, a).sqrt().max(1e-15);
+    [a[0] / n, a[1] / n, a[2] / n]
+}
+
+/// The camera turned by `angle` radians about the axis that carries `at` straight toward the
+/// screen's centre (the whole angle centres it); the roll goes with the turn, nothing else changes.
+/// Away from the poles the roll is kept as it was (a turn about a tilted axis would otherwise
+/// creep it), so a reader who has never gone over a pole keeps north up.
+fn toward_centre(cam: &Camera, at: LonLat, angle: f64) -> Camera {
+    let v = cam.view(at.to_xyz());
+    let axis = cross(v, [0.0, 0.0, 1.0]);
+    let t = if dot(axis, axis) < 1e-20 {
+        // at the centre already, or right behind it: any axis in the screen's plane
+        if v[2] > 0.0 { *cam } else { cam.turned([0.0, 1.0, 0.0], angle) }
+    } else {
+        cam.turned(axis, angle)
+    };
+    if t.lat.abs() < 85.0 && cam.lat.abs() < 85.0 {
+        Camera { roll: cam.roll, ..t }
+    } else {
+        t
+    }
+}
+
+/// A rotation (columns) as a unit quaternion (w, x, y, z).
+fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
+    // m[i][j] = row i, column j = c[j][i]
+    let m = |i: usize, j: usize| c[j][i];
+    let tr = m(0, 0) + m(1, 1) + m(2, 2);
+    let q = if tr > 0.0 {
+        let s = (tr + 1.0).sqrt() * 2.0;
+        [0.25 * s, (m(2, 1) - m(1, 2)) / s, (m(0, 2) - m(2, 0)) / s, (m(1, 0) - m(0, 1)) / s]
+    } else if m(0, 0) > m(1, 1) && m(0, 0) > m(2, 2) {
+        let s = (1.0 + m(0, 0) - m(1, 1) - m(2, 2)).sqrt() * 2.0;
+        [(m(2, 1) - m(1, 2)) / s, 0.25 * s, (m(0, 1) + m(1, 0)) / s, (m(0, 2) + m(2, 0)) / s]
+    } else if m(1, 1) > m(2, 2) {
+        let s = (1.0 + m(1, 1) - m(0, 0) - m(2, 2)).sqrt() * 2.0;
+        [(m(0, 2) - m(2, 0)) / s, (m(0, 1) + m(1, 0)) / s, 0.25 * s, (m(1, 2) + m(2, 1)) / s]
+    } else {
+        let s = (1.0 + m(2, 2) - m(0, 0) - m(1, 1)).sqrt() * 2.0;
+        [(m(1, 0) - m(0, 1)) / s, (m(0, 2) + m(2, 0)) / s, (m(1, 2) + m(2, 1)) / s, 0.25 * s]
+    };
+    let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+    [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
+}
+
+/// A unit quaternion as a rotation (columns).
+fn quat_mat(q: [f64; 4]) -> [[f64; 3]; 3] {
+    let [w, x, y, z] = q;
+    let r = [
+        [1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - w * z), 2.0 * (x * z + w * y)],
+        [2.0 * (x * y + w * z), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - w * x)],
+        [2.0 * (x * z - w * y), 2.0 * (y * z + w * x), 1.0 - 2.0 * (x * x + y * y)],
+    ];
+    // columns
+    [[r[0][0], r[1][0], r[2][0]], [r[0][1], r[1][1], r[2][1]], [r[0][2], r[1][2], r[2][2]]]
+}
+
+/// The shortest turn from `a` to `b`, a share `t` of the way.
+fn slerp(a: [f64; 4], b: [f64; 4]) -> impl Fn(f64) -> [f64; 4] {
+    let mut b = b;
+    let mut d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if d < 0.0 {
+        b = [-b[0], -b[1], -b[2], -b[3]];
+        d = -d;
+    }
+    move |t| {
+        let (wa, wb) = if d > 0.9995 {
+            (1.0 - t, t)
+        } else {
+            let th = d.clamp(-1.0, 1.0).acos();
+            (((1.0 - t) * th).sin() / th.sin(), (t * th).sin() / th.sin())
+        };
+        let q = [wa * a[0] + wb * b[0], wa * a[1] + wb * b[1], wa * a[2] + wb * b[2], wa * a[3] + wb * b[3]];
+        let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+        [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
     }
 }
 
@@ -283,9 +385,65 @@ mod tests {
         Disc { cx: 400.0, cy: 300.0, r: 276.0 * zoom }
     }
     fn rig(lon: f64, lat: f64, zoom: f64) -> CameraControl {
-        let mut c = CameraControl::new(Camera { lon, lat, zoom });
+        let mut c = CameraControl::new(Camera::new(lon, lat, zoom));
         c.apply(&disc(zoom), CameraMove::Stop, 0.0, M);
         c
+    }
+
+    #[test]
+    fn a_lamp_at_the_rim_is_turned_inward_and_one_on_the_face_is_left() {
+        let d = disc(1.0);
+        let mut r = rig(0.0, 0.0, 1.0);
+        r.apply(&d, CameraMove::Face { at: LonLat { lon: 20.0, lat: 0.0 } }, 0.0, M);
+        assert!(!r.moving());
+        r.apply(&d, CameraMove::Face { at: LonLat { lon: 85.0, lat: 0.0 } }, 0.0, M);
+        r.tick(motion::FLIGHT_S, 0.01, None, true, false, M);
+        let keep = motion::FACE_WITHIN.asin().to_degrees();
+        assert!((r.camera.lon - (85.0 - keep)).abs() < 1e-6 && r.camera.lat.abs() < 1e-6 && r.camera.zoom == 1.0, "{:?}", r.camera);
+        // behind the globe: turned the long way just as far as needed
+        let mut b = rig(0.0, 0.0, 1.0);
+        b.apply(&d, CameraMove::Face { at: LonLat { lon: 150.0, lat: 0.0 } }, 0.0, R);
+        assert!((b.camera.lon - (150.0 - keep)).abs() < 1e-6, "{:?}", b.camera);
+    }
+
+    #[test]
+    fn a_drag_carries_the_orb_over_the_pole_smoothly_and_home_comes_back_upright() {
+        // the finger takes a point on the meridian above the centre and drags it down, carrying the
+        // north pole through the middle and on: no lock, every step as small as the finger's
+        let d = disc(1.0);
+        let mut r = rig(10.0, 60.0, 1.0);
+        let (x, mut y) = (d.cx, d.cy - 150.0);
+        let grab = d.unproject(&r.camera, x, y).unwrap();
+        let mut last = r.camera;
+        let mut north = 0.0f64;
+        for _ in 0..60 {
+            y += 4.0;
+            r.apply(&d, CameraMove::Drag { grab: Some(grab), x, y, dx: 0.0, dy: 4.0 }, 0.0, M);
+            let (p, _) = d.project(&r.camera, grab);
+            assert!((p[0] - x).abs() < 1e-6 && (p[1] - y).abs() < 1e-6, "{p:?} {y}");
+            // the centre moves on the sphere by about the finger's step over the radius, never a jump
+            let a = LonLat::new(last.lon, last.lat).to_xyz();
+            let b = LonLat::new(r.camera.lon, r.camera.lat).to_xyz();
+            let step = dot(a, b).clamp(-1.0, 1.0).acos().to_degrees();
+            assert!(step < 1.5, "jumped {step}° at {:?}", r.camera);
+            north = north.max(r.camera.lat);
+            last = r.camera;
+        }
+        assert!(north > 89.0, "never crossed: {north}");
+        assert!(r.camera.lat < 70.0 && r.camera.roll.abs() > 90.0, "{:?}", r.camera);
+        // home: the flight turns it the short way and lands upright
+        r.fly_to(Camera::new(-30.0, 25.0, 1.0), 0.0, M);
+        r.tick(motion::FLIGHT_S / 2.0, 0.01, None, true, false, M);
+        r.tick(motion::FLIGHT_S, 0.01, None, true, false, M);
+        assert_eq!((r.camera.lon, r.camera.lat, r.camera.roll), (-30.0, 25.0, 0.0));
+        // a fling over the pole: the trackball, no lock
+        let mut f = rig(0.0, 80.0, 1.0);
+        f.apply(&d, CameraMove::Fling { vx: 0.0, vy: 800.0 }, 0.0, M);
+        let mut t = 0.0;
+        while f.tick(t, 1.0 / 60.0, None, true, false, M) && t < 5.0 {
+            t += 1.0 / 60.0;
+        }
+        assert!(f.camera.roll.abs() > 90.0, "{:?}", f.camera);
     }
 
     #[test]
@@ -307,11 +465,14 @@ mod tests {
         h.apply(&d, CameraMove::Drag { grab: Some(under), x: d.cx + 60.0, y: d.cy, dx: 60.0, dy: 0.0 }, 0.0, M);
         let (p, _) = d.project(&h.camera, under);
         assert!((p[0] - (d.cx + 60.0)).abs() < 0.05, "{:?}", p);
-        // the pole never flips
-        for _ in 0..200 {
-            r.apply(&d, CameraMove::Drag { grab: None, x: d.cx, y: d.cy, dx: 0.0, dy: 100.0 }, 0.0, M);
-        }
-        assert!(r.camera.lat <= motion::LAT_LIMIT);
+        // off the disc the surface still goes the finger's way: down brings the north in, right
+        // the west (R6: a trackball, nothing clamps it)
+        let mut o = rig(0.0, 0.0, 1.0);
+        o.apply(&d, CameraMove::Drag { grab: None, x: 0.0, y: 0.0, dx: 0.0, dy: 20.0 }, 0.0, M);
+        assert!(o.camera.lat > 4.0 && o.camera.lon.abs() < 1e-9, "{:?}", o.camera);
+        let mut o = rig(0.0, 0.0, 1.0);
+        o.apply(&d, CameraMove::Drag { grab: None, x: 0.0, y: 0.0, dx: 20.0, dy: 0.0 }, 0.0, M);
+        assert!(o.camera.lon < -4.0 && o.camera.lat.abs() < 1e-9, "{:?}", o.camera);
         // a drag leaves a ride
         r.riding = Some(3);
         r.apply(&d, CameraMove::Drag { grab: None, x: d.cx, y: d.cy, dx: 1.0, dy: 0.0 }, 0.0, M);
@@ -365,9 +526,10 @@ mod tests {
         let mut r = rig(0.0, 0.0, 1.0);
         r.apply(&d, CameraMove::Fly { at: Some(LonLat { lon: 30.0, lat: 10.0 }) }, 0.0, M);
         r.tick(motion::FLIGHT_S / 2.0, 0.01, None, true, false, M);
-        assert!((r.camera.lon - 15.0).abs() < 1e-9 && (r.camera.zoom - 2.0f64.sqrt()).abs() < 1e-9);
+        // (R6: halfway along the great circle, the orientation slerped)
+        assert!((r.camera.lon - 15.0).abs() < 0.5 && (r.camera.lat - 5.0).abs() < 0.5 && (r.camera.zoom - 2.0f64.sqrt()).abs() < 1e-9, "{:?}", r.camera);
         r.tick(motion::FLIGHT_S, 0.01, None, true, false, M);
-        assert_eq!((r.camera.lon, r.camera.lat, r.camera.zoom), (30.0, 10.0, 2.0));
+        assert!((r.camera.lon - 30.0).abs() < 1e-9 && (r.camera.lat - 10.0).abs() < 1e-9 && r.camera.zoom == 2.0 && r.camera.roll == 0.0, "{:?}", r.camera);
         assert!(!r.moving());
         let mut deep = rig(30.0, 10.0, 6.0);
         deep.apply(&disc(6.0), CameraMove::Fly { at: Some(LonLat { lon: 50.0, lat: 0.0 }) }, 0.0, M);

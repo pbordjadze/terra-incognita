@@ -64,16 +64,17 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `Release { float, at: Some(p) }` | the hand opens over water (`p` there), or without having carried (`p` where it was lifted: the app sees nothing moved) |
 | `Carry { to: from }` then `Release { at: Some(from) }` | the hand opens over land, or the system cancels the touch: back where it was lifted |
 | `Release { float, at: None }` | the hand opens off the disc: taken out |
-| `Ride { float }` | every tap on a float (the app toggles: the ridden one is let go, its choice kept; any other is chosen and ridden) |
+| `Ride { float }` | every tap on a float (the app toggles: the ridden one is let go, its choice kept; any other joins the chosen, in front, and is ridden: so tapping lamps one after another on the globe chooses several, R6); a rest of one beat on a lamp's row in the panel |
 | `Unchoose` | a tap on the open sea, with `CameraMove::Leave` ending the ride (the ring at touch-down must not unchoose by itself: D10) |
-| `Scrub { days }` | a drag on the date, by its horizontal move since the last event (`DAYS_PER_POINT`) |
-| `SetRunning { false }` | the first move of a scrub, when the clock was running; `SetRunning { !running }` a tap on the date; `SetRunning { as found }` when the scrub ends, the flick rests, or a touch stops the flick |
+| `Scrub { days }` | every frame while the date is short of the day the hand asked for (a drag on the date sets that day by its horizontal move, `DAYS_PER_POINT`; a flick moves it on): the gap closed at its size over `SCRUB_TAU`, at most `SCRUB_RATE` days a second, less while the clouds trail the date (`Probe::behind`) (R6: the speed limit) |
+| `ChooseAlso { float }` | a tap on a lamp's row in the panel (`Hit::Panel`): it joins the chosen in front, or, chosen already, is let go; with `CameraMove::Face` when it is newly chosen (R6) |
+| `SetRunning { false }` | the first move of a scrub, when the clock was running; `SetRunning { !running }` a tap on the date; `SetRunning { as found }` when the date has reached the day the hand asked for with no finger on it and no flick running (R6: the speed limit means that can be a moment after the lift), or when a finger takes the date again |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
 | `Redo` | a three-finger swipe right, ⇧⌘Z |
 | `ClearAll` | a three-finger swipe down; a second shake 0.4–2 s after the first; Backspace or Delete |
 | `Home` | a pinch that would have taken the zoom below three quarters of its least, at the lift; a three-finger swipe up; `h` or `0` |
-| `Scrub { days }` (again) | every frame after a flick on the date, by the flick's speed decaying as a fling does (`DATE_SPIN_REST` stops it); any touch stops it at once |
-| `PressFloat { float, since }` | a finger lands on a float: its maybes and its nearest drifter rise from `since` (the app's `shown()`); `Unpress` if it lifts or moves before the beat, a second finger lands, or the touch is taken |
+| `Scrub { days }` (again) | every frame after a flick on the date: the flick moves the day asked for at its speed, decaying as a fling does (`DATE_SPIN_REST` stops it), and the date follows under the limit; any touch stops the flick at once (the date still goes on to where the flick had reached) |
+| `PressFloat { float, since }` | a finger lands on a float or on its row in the panel: its maybes and its nearest drifter rise from `since` (the app's `shown()`); `Unpress` if it lifts or moves before the beat, a second finger lands, or the touch is taken |
 | `ToggleCredits` | a rest of one beat on the date (the finger still), or a tap on the credit line while the look draws one (`Hit::Credits`); while the page is open, any tap closes it (the date's included; its drag still scrubs) |
 
 Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
@@ -87,7 +88,8 @@ when the look can draw it. The camera is read, not sent (`CameraControl` is the 
 Idle
  ├─ Down on Sea ──────────────▶ Pressing{at,t0}    emits Ring, Press
  ├─ Down on Float(id) ────────▶ Resting{id,t0}
- ├─ Down on Date ─────────────▶ DateDown{x0}
+ ├─ Down on Date ─────────────▶ DateDown{x0}       a glide still under way ends where the date is
+ ├─ Down on a panel row(id) ──▶ PanelDown{id,t0}   emits PressFloat (never Ring: the panel is not the sea)
  ├─ Down on Land/Off ─────────▶ Down{t0}            (silent)
  └─ (Riding is a camera mode, not a state: see camera.rs)
 
@@ -137,17 +139,33 @@ CreditsDown{x0,y0}          (Down on the credit line, if drawn; or Down anywhere
  ├─ Up ────────────────────────────▶ Idle            emits ToggleCredits
  └─ second finger Down ────────────▶ Pinch
 
+PanelDown{id,t0}            (Down on a lamp's row in the panel, R6)
+ ├─ Up before BEAT ────────────────▶ Idle            Unpress, ChooseAlso{id}; Face{at} if it was not chosen
+ ├─ tick past BEAT ────────────────▶ PanelDown(rode) Unpress, Ride{id}; the lift then does nothing
+ ├─ Move beyond SLOP ──────────────▶ Orbit           Unpress (if not ridden); a drag is the globe's
+ └─ second finger Down ────────────▶ Pinch           Unpress
+
 DateDown{x0}
  ├─ tick past BEAT, still within SLOP, page closed ─▶ Idle   emits ToggleCredits: the page of credits opens
- ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once, then Scrub{day} by dx
+ ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once; the day asked for = day0 + dx·DAYS_PER_POINT;
+ │                                                  every tick Scrub{step} toward it under the limit
  ├─ Up within SLOP ────────────────▶ Idle            emits Play(!playing); ToggleCredits instead while the page is open
  ├─ Up while scrubbing, moving ────▶ Idle            the date runs on at the finger's speed, slowing (a flick)
  ├─ second finger Down ────────────▶ DateDown        (ignored)
  └─ Cancel ────────────────────────▶ Idle
 ```
 
+The orb (R6): the camera is an orientation (`Camera.roll` beside lon and lat), and nothing in
+touch knows north. A drag turns the globe by the one rotation that keeps the point taken exactly
+under the finger (`turn_to`), off the disc or for a fling a trackball (about the view's axis
+(dy, dx, 0) by the move over the radius, `Camera::turned`); a flight slerps the orientation, so
+Home comes back upright the short way; a ride and a double tap turn about the axis that carries
+the float straight to the centre, keeping the roll as it was away from the poles (so whoever never
+crosses one keeps north up). There is no latitude limit: over a pole the orb simply goes on,
+upside down beyond it, until Home. `plans/over-the-pole.json`.
+
 A ride (`CameraControl::riding`): `Ride{float}` makes the camera's centre spring toward the float
-every frame (critically damped, `RIDE_TAU`); zoom is untouched. Any orbit or pinch leaves it (the
+every frame (critically damped, `RIDE_TAU`, on the angle to the float); zoom is untouched. Any orbit or pinch leaves it (the
 camera clears `riding` itself); a tap on the ridden float changes nothing; a double tap flies in and
 the ride continues at the new zoom.
 
@@ -247,6 +265,27 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     chosen float lets the ride go and keeps the choice; a tap on another float chooses that one; a
     tap on the open sea lets the choice and the ride go (`Unchoose`, `Leave`). `plans/chosen.json`.
 
+25. **Many clouds, one hand** (R6): on the globe, tapping lamps one after another chooses each
+    beside the others (the last ridden, in front); a pinch or a drag keeps them all; the open sea
+    lets them all go. The panel off the globe (`Hit::Panel`, Visual's rows from
+    `App::panel_bounds()`, read before anything under them) is where one is let go: a tap on a row
+    toggles that lamp among the chosen, a rest rides it, a drag is the globe's. A touch on the panel
+    never rings the sea, puts a float, or sets a carried float down (it goes back where it was
+    lifted). `plans/choose-two-on-globe.json`, `plans/panel-two.json`.
+26. **A scrub back is free** (R6): every maybe is a seeded flight, so going back replays the same
+    cloud; what made going back costly was the date outrunning the clouds. The date now goes after
+    the finger at no more than `SCRUB_RATE` (ten days a frame at 60, under the twelve each cloud
+    steps), closing small gaps in a few hundredths so a slow hand feels nothing and a fast one feels
+    a heavy wheel that arrives, never a jump; while the clouds still trail (`App::behind()` past a
+    quarter of `SCRUB_LEAD`), it slows to a fifth, never stops. It lands exactly where the finger
+    left it; the clock is given back once it has. `plans/scrub-limit.json` (the date at 0.15, 0.3,
+    0.6 s after a flick of 300 days; flung back, the same clouds).
+27. **The rim** (R6): a lamp chosen from the panel that lies out of sight, or out toward the limb
+    where its cloud would lie along the edge, turns the globe (no zoom, the flight's ease) just far
+    enough to bring it within `FACE_WITHIN` of the room from the centre (`CameraMove::Face`); a lamp
+    already on the globe's face moves nothing; a ridden lamp is the ride's. On the globe the ride
+    already keeps its lamp centred. `plans/panel-rim.json`.
+
 ## The numbers (`motion.rs`)
 
 | | | why |
@@ -260,10 +299,13 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 | `RIDE_TAU` | 0.6 s critically damped | catches up in about a second without overshoot |
 | `IDLE_AFTER`, `IDLE_RATE` | 8 s, 4 °/s | Terra's |
 | `ZOOM` | 0.8…8 | Terra's; the look may ask deeper |
-| `LAT_LIMIT` | ±80° | Terra's: the pole never flips |
 | `SWIPE` | 40 pt | three-finger undo |
 | `DAYS_PER_POINT` | 365 / width, ≥ 1 | a year across the screen |
 | `DATE_BELOW_DISC`, `DATE_FOOT`, `DATE_BAND` | 40, 72, 44 pt | the stand-in date band: under the disc, above the foot, its height |
 | `OVERPINCH` | 0.75 | a pinch out that would have taken the zoom below this fraction of its least goes home |
 | `SHAKE_AGAIN` | 0.4–2.0 s | a second shake in this window clears the sea |
 | `DATE_SPIN_REST` | 2 days/s | a flicked date rests under this |
+| `SCRUB_RATE` | 600 days/s | the speed limit: 10 days a frame at 60, under the 12 every cloud steps a frame (R6) |
+| `SCRUB_TAU`, `SCRUB_FLOOR` | 0.03 s, 60 days/s | a gap closed at its size over τ, never slower than the floor: no creep at the end |
+| `SCRUB_LEAD` | 24 days | the clouds this far behind slow the date to a fifth (from a quarter of it) |
+| `FACE_WITHIN` | 0.55 of the room | a lamp chosen from the panel is brought this near the centre: its cloud on the face, not the limb |

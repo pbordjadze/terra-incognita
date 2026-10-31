@@ -6,7 +6,7 @@
 
 use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
-use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookFloat, LookState, SeaPass};
+use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookCloud, LookFloat, LookState, SeaPass};
 use crate::model::*;
 use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
@@ -26,7 +26,7 @@ enum Undo {
 /// A ridden float shows its maybes and its nearest drifter as a held one does (R4).
 pub const SHOW_RIDDEN: bool = true;
 
-pub const HOME: Camera = Camera { lon: -30.0, lat: 25.0, zoom: 1.0 };
+pub const HOME: Camera = Camera::new(-30.0, 25.0, 1.0);
 
 /// Everything about the sea's state that a scene file can set (adrift-check) and a frame reads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,6 +40,9 @@ pub struct Scene {
     /// A float held (its maybes shown), by its index in `floats`.
     #[serde(default)]
     pub hold: Option<usize>,
+    /// Floats chosen, their clouds out, by index in `floats`, in order (the last in front) (R6).
+    #[serde(default)]
+    pub choose: Vec<usize>,
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
@@ -91,13 +94,10 @@ pub struct App {
     look: Look,
     blit: Blit,
     stage: Option<Stage>,
-    /// Truth's sampler: a held float's maybes on the GPU.
+    /// Truth's sampler: the shown floats' maybes on the GPU, one range of the buffer a cloud (R6).
     maybes: Maybes,
-    /// The float whose maybes are in the buffer, how many, and the day they have reached (R5:
-    /// stepped on from there, never re-run from the put while the float and its leg are the same).
-    maybes_of: Option<(u32, u32, f64)>,
-    /// The leg the maybes were seeded from (its put day and seed).
-    maybes_leg: Option<(f64, u64)>,
+    /// The clouds out (R6: several at once), in the order shown, the front one last.
+    clouds: Vec<Cloud>,
     pub budget: Budget,
     /// What the stage last showed: the view uniform's bytes and the months, to know when to redraw.
     stage_shown: Option<(ViewUniform, (u32, u32))>,
@@ -116,9 +116,10 @@ pub struct App {
     /// A float under a resting finger, from when (`Intent::PressFloat`): its maybes show from the
     /// landing; `Unpress` clears it.
     pressing_float: Option<(u32, f64)>,
-    /// The chosen float (R5): its maybes and nearest drifter stay shown whatever the camera does,
-    /// until the sea is tapped, another is chosen, or it is taken out.
-    pub chosen: Option<u32>,
+    /// The chosen floats (R5; several since R6, the last in front): their maybes stay shown whatever
+    /// the camera does, until the sea is tapped (`Unchoose`), one is let go (`ChooseAlso` again) or
+    /// taken out. The front one's nearest drifter shows.
+    pub chosen: Vec<u32>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -137,9 +138,6 @@ pub struct App {
     now: f64,
     /// Every leg's path as computed so far (R5): a float's place at any date is read here.
     paths: std::collections::HashMap<(u32, usize), Path>,
-    /// Keeps of the shown float's maybes, oldest first, and the day the next is due.
-    keeps: Vec<Kept>,
-    next_keep: f64,
     pub reduce_motion: bool,
     /// The system's dark appearance: the look's night (the shells set it).
     pub night: bool,
@@ -154,6 +152,9 @@ pub struct App {
     frames: (u32, f64, f64, u32),
     /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
     pub credits_open: bool,
+    /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
+    /// `panel_bounds()` returns these. Nothing in the app sets it.
+    pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
 }
 
 /// Days a second while the date runs.
@@ -174,7 +175,28 @@ const FLIGHT_BUDGET: usize = 1500;
 const MAYBES_BUDGET: usize = 24;
 /// A keep of the maybes' paths every so many days, so a rewind is a restore and a few steps.
 const KEEP_EVERY: f64 = 10.0;
-const KEEPS_MAX: usize = 64;
+const KEEPS_MAX: usize = 40;
+/// The most clouds out at once (R6): each its own `MAYBES` range of one buffer; past this the
+/// earliest chosen folds away. Eight at 2048 is 16 384 maybes, 24 steps a cloud a frame.
+pub const MAX_CLOUDS: usize = 8;
+
+/// One cloud of maybes out (R6): the float's, seeded from its leg, in buffer slot `slot`.
+struct Cloud {
+    id: u32,
+    /// The leg it was seeded from (its put day and seed) and its place.
+    leg: Leg,
+    slot: u32,
+    /// How many maybes, and the day they have reached.
+    n: u32,
+    reached: f64,
+    /// Keeps of its paths, oldest first, and the day the next is due.
+    keeps: Vec<Kept>,
+    next_keep: f64,
+    /// 0..1 as it blooms out and folds back.
+    bloom: f32,
+    /// Shown this frame (else folding away).
+    wanted: bool,
+}
 
 /// One sample of a leg's path on the quarter-day grid.
 #[derive(Clone, Copy, Debug)]
@@ -254,7 +276,7 @@ impl App {
         let look = Look::new(&gpu, &view_layout);
         let blit = Blit::new(&gpu);
         let budget = Budget::new(ppp);
-        let maybes = Maybes::new(&gpu, assets.as_ref(), &textures, MAYBES)?;
+        let maybes = Maybes::new(&gpu, assets.as_ref(), &textures, MAYBES * MAX_CLOUDS as u32)?;
         let reading = Self::reading_for(width, height, ppp);
         Ok(App {
             gpu,
@@ -272,8 +294,7 @@ impl App {
             blit,
             stage: None,
             maybes,
-            maybes_of: None,
-            maybes_leg: None,
+            clouds: Vec::new(),
             budget,
             stage_shown: None,
             stage_seconds: -1.0,
@@ -283,11 +304,11 @@ impl App {
             clock,
             undo: Vec::new(),
             redo: Vec::new(),
-            camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
+            camera: CameraControl::new(Camera::new(-30.0, 25.0, 1.0)),
             gestures: Gestures::new(),
             pressing: None,
             pressing_float: None,
-            chosen: None,
+            chosen: Vec::new(),
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -301,8 +322,6 @@ impl App {
             last_t: None,
             now: 0.0,
             paths: Default::default(),
-            keeps: Vec::new(),
-            next_keep: 0.0,
             reduce_motion: false,
             night: false,
             rest: 0.0,
@@ -310,6 +329,7 @@ impl App {
             haptic: false,
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
+            panel_stand_in: None,
         })
     }
 
@@ -434,10 +454,20 @@ impl App {
             Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
             Intent::Choose { float } => {
                 if self.floats.iter().any(|f| f.id == float) {
-                    self.chosen = Some(float);
+                    self.chosen = vec![float];
                 }
             }
-            Intent::Unchoose => self.chosen = None,
+            Intent::ChooseAlso { float } => {
+                if let Some(i) = self.chosen.iter().position(|&c| c == float) {
+                    self.chosen.remove(i);
+                    if self.camera.riding == Some(float) {
+                        self.camera.riding = None;
+                    }
+                } else if self.floats.iter().any(|f| f.id == float) {
+                    self.chosen.push(float);
+                }
+            }
+            Intent::Unchoose => self.chosen.clear(),
             Intent::Press { at, since } => self.pressing = Some((at, since)),
             Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
             Intent::Unpress => {
@@ -520,7 +550,9 @@ impl App {
                     self.camera.riding = None;
                 } else if self.floats.iter().any(|f| f.id == float) {
                     self.camera.riding = Some(float);
-                    self.chosen = Some(float);
+                    // it joins the chosen, in front (R6: the others stay out)
+                    self.chosen.retain(|&c| c != float);
+                    self.chosen.push(float);
                     if let Some(f) = self.floats.iter_mut().find(|f| f.id == float) {
                         f.lit_for = 0.0;
                     }
@@ -554,9 +586,7 @@ impl App {
     fn take_out(&mut self, float: u32) {
         let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
         let mut f = self.floats.remove(i);
-        if self.chosen == Some(float) {
-            self.chosen = None;
-        }
+        self.chosen.retain(|&c| c != float);
         if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
             if id == float {
                 self.undo.pop();
@@ -579,7 +609,7 @@ impl App {
         }
         self.pressing = None;
         self.pressing_float = None;
-        self.chosen = None;
+        self.chosen.clear();
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
@@ -706,8 +736,15 @@ impl App {
         } else {
             self.rest = (self.rest + (dt / 0.6) as f32).min(1.0);
         }
-        // the maybes bloom out as a float is held (0.35 s, eased out) and fold back when it is let
-        // go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
+        // every shown float's cloud blooms out (0.35 s) and folds back when it is no longer shown
+        // (0.25 s); a folded cloud gives its slot back (R6)
+        self.open_clouds();
+        for c in &mut self.clouds {
+            c.bloom = if c.wanted { (c.bloom + (dt / 0.35) as f32).min(1.0) } else { (c.bloom - (dt / 0.25) as f32).max(0.0) };
+        }
+        self.clouds.retain(|c| c.wanted || c.bloom > 0.0);
+        // the front's maybes bloom out as a float is held (0.35 s, eased out) and fold back when it
+        // is let go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
         let held = self.shown().map(|f| (f.id, f.at));
         match held {
             Some((_, at)) => {
@@ -741,17 +778,81 @@ impl App {
         if self.shown().is_some() { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b }
     }
 
-    /// The float whose maybes and nearest drifter show: the one held by a finger, else the one the
-    /// camera rides (R4: tap-to-ride is the natural way to follow a float, so following shows its
-    /// maybes; `SHOW_RIDDEN` is the switch while Motion decides).
+    /// The float in front, whose nearest drifter shows: the one held by a finger, else the one
+    /// pressed, else the last chosen, else the one the camera rides (R4: following shows its maybes;
+    /// `SHOW_RIDDEN` is the switch).
     fn shown(&self) -> Option<&Float> {
         let by_id = |id: u32| self.floats.iter().find(|f| f.id == id);
         self.floats
             .iter()
             .find(|f| f.hand == Hand::Held)
             .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
-            .or_else(|| self.chosen.and_then(by_id))
+            .or_else(|| self.chosen.last().copied().and_then(by_id))
             .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
+    }
+
+    /// Every float whose cloud is out (R6), the front one last: the chosen in order, the ridden, the
+    /// pressed, the held; at most `MAX_CLOUDS` (the earliest chosen give way).
+    pub fn shown_ids(&self) -> Vec<u32> {
+        let mut ids: Vec<u32> = self.chosen.clone();
+        let front = |ids: &mut Vec<u32>, id: u32| {
+            ids.retain(|&i| i != id);
+            ids.push(id);
+        };
+        if SHOW_RIDDEN {
+            if let Some(id) = self.camera.riding {
+                if !ids.contains(&id) {
+                    ids.push(id);
+                }
+            }
+        }
+        if let Some((id, _)) = self.pressing_float {
+            front(&mut ids, id);
+        }
+        if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
+            front(&mut ids, f.id);
+        }
+        let day = self.clock.day;
+        ids.retain(|id| self.floats.iter().any(|f| f.id == *id && f.born(day)));
+        if ids.len() > MAX_CLOUDS {
+            ids.drain(0..ids.len() - MAX_CLOUDS);
+        }
+        ids
+    }
+
+    /// Marks which clouds are wanted, gives a slot to a newly shown float's, and orders them as
+    /// shown (the front last); returns the ids shown.
+    fn open_clouds(&mut self) -> Vec<u32> {
+        let ids = self.shown_ids();
+        for c in &mut self.clouds {
+            c.wanted = ids.contains(&c.id);
+        }
+        for &id in &ids {
+            if !self.clouds.iter().any(|c| c.id == id) {
+                if let Some(slot) = (0..MAX_CLOUDS as u32).find(|s| !self.clouds.iter().any(|c| c.slot == *s)) {
+                    let leg = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(self.clock.day).map(|li| f.legs[li])).unwrap_or(Leg { at: LonLat::new(0.0, 0.0), day: f64::NAN, seed: 0 });
+                    self.clouds.push(Cloud { id, leg, slot, n: 0, reached: f64::INFINITY, keeps: Vec::new(), next_keep: 0.0, bloom: 0.0, wanted: true });
+                }
+            }
+        }
+        // in the order shown, the front one last (a folding one first)
+        self.clouds.sort_by_key(|c| ids.iter().position(|&i| i == c.id).map_or(0, |p| p + 1));
+        ids
+    }
+
+    /// The days the clouds out are still behind the date, the most of any (R6: 0 when caught up;
+    /// a scrub faster than `MAYBES_BUDGET` half-days a frame shows here).
+    pub fn behind(&self) -> f64 {
+        let day = self.clock.day;
+        self.clouds.iter().filter(|c| c.wanted && c.reached.is_finite()).map(|c| (day.max(c.leg.day) - c.reached).abs()).fold(0.0, f64::max)
+    }
+
+    /// The panel's rows as the look drew them (R6): each lamp's id and rect in points.
+    pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
+        if let Some(rows) = &self.panel_stand_in {
+            return rows.clone();
+        }
+        self.look.panel_bounds()
     }
 
     /// Every float not in the hand is where its path says it is on the clock's day (R5): the leg
@@ -899,7 +1000,16 @@ impl App {
         }
         self.clock.day = scene.day;
         self.step_floats_with(usize::MAX);
-        self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
+        let ids: Vec<u32> = self.floats.iter().map(|f| f.id).collect();
+        self.chosen = scene.choose.iter().filter_map(|&i| ids.get(i).copied()).collect();
+        self.clouds.clear();
+        self.bloom = if scene.hold.is_some() || !self.chosen.is_empty() { 1.0 } else { 0.0 };
+        // the clouds out at full bloom, caught up to the date (a scene is a still)
+        self.open_clouds();
+        for c in &mut self.clouds {
+            c.bloom = 1.0;
+        }
+        self.step_clouds(usize::MAX);
         if let Some(f) = self.shown() {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
                 let w = t.window(45);
@@ -915,15 +1025,31 @@ impl App {
         const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         let (month, day) = self.clock.calendar();
         let resting = self.pressing.map(|(at, since)| (at, crate::touch::motion::thicken(self.now - since) as f32));
+        let front = self.shown().map(|f| f.id);
+        let ease = |b: f32, opening: bool| if opening { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b };
+        let clouds: Vec<LookCloud> = self
+            .clouds
+            .iter()
+            .filter(|c| c.n > 0)
+            .filter_map(|c| {
+                let f = self.floats.iter().find(|f| f.id == c.id)?;
+                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id) })
+            })
+            .collect();
         LookState {
             floats: self
                 .floats
                 .iter()
                 .filter(|f| f.born(self.clock.day))
-                .map(|f| LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: self.shown().map_or(false, |s| s.id == f.id), wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
+                .map(|f| {
+                    let first = f.legs.first().copied().unwrap_or(Leg { at: f.at, day: f.put_day, seed: f.seed });
+                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), origin: first.at, put_day: first.day, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
+                })
                 .collect(),
+            behind: self.behind() as f32,
             resting,
-            bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
+            bloom: clouds.iter().find(|c| c.front).map_or(0.0, |c| c.bloom),
+            clouds,
             drifter: self.drifter.clone(),
             drifter_label: self.drifter_label.clone(),
             drifter_nearest: if self.drifter.is_empty() { None } else { Some(self.drifter_nearest.min(self.drifter.len() - 1)) },
@@ -940,6 +1066,81 @@ impl App {
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
             credits_open: self.credits_open,
         }
+    }
+
+    /// Every shown float's cloud stepped toward the date, at most `budget` steps each (R6).
+    fn step_clouds(&mut self, budget: usize) {
+        // every shown float's maybes on the GPU (R5, several since R6): seeded once from its leg's
+        // put, stepped on from the day they have reached, a budget of steps a frame each; a rewind
+        // restores the nearest keep and steps from there, so a scrub never re-runs a cloud from the put
+        let day = self.clock.day;
+        let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
+        let mut clouds = std::mem::take(&mut self.clouds);
+        for c in &mut clouds {
+            if !c.wanted {
+                continue; // folding: drawn as it stands
+            }
+            let Some(f) = self.floats.iter().find(|f| f.id == c.id) else { continue };
+            let Some(li) = f.leg_at(day) else { continue };
+            let leg = f.legs[li];
+            let base = c.slot * MAYBES;
+            let same = c.n == n && c.leg == leg;
+            let target = day.max(leg.day);
+            let mut reached = if same { c.reached } else { f64::INFINITY };
+            if reached > target + 1e-9 {
+                // behind us: the nearest keep at or before the target, else the put itself
+                let keep = if same { c.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
+                match keep {
+                    Some(k) => {
+                        self.maybes.restore(&self.gpu, &c.keeps[k].keep);
+                        reached = c.keeps[k].day;
+                        c.keeps.truncate(k + 1);
+                        c.next_keep = reached + KEEP_EVERY;
+                    }
+                    None => {
+                        let paths: Vec<GpuPath> = (1..=n)
+                            .map(|k| {
+                                let e = self.rules.put(leg.at, leg.day, leg.seed, k).eddy;
+                                GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
+                            })
+                            .collect();
+                        self.maybes.seed_at(&self.gpu, base, &paths);
+                        c.keeps.clear();
+                        reached = leg.day;
+                        c.next_keep = leg.day + KEEP_EVERY;
+                        c.leg = leg;
+                        c.n = n;
+                    }
+                }
+            }
+            // the frame's steps in one submit (Truth's step_many), a keep where one falls due
+            let mut steps = 0;
+            let mut batch: Vec<Params> = Vec::new();
+            let budget = budget;
+            while reached < target - 1e-6 && steps < budget {
+                let dt = MAYBES_STEP.min(target - reached);
+                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base));
+                reached += dt;
+                steps += 1;
+                if reached >= c.next_keep - 1e-9 || batch.len() as u32 >= crate::sea::MAX_STEPS {
+                    self.maybes.step_many(&self.gpu, &batch, true);
+                    batch.clear();
+                    if reached < c.next_keep - 1e-9 {
+                        continue;
+                    }
+                    c.keeps.push(Kept { day: reached, keep: self.maybes.keep_at(&self.gpu, base, n) });
+                    if c.keeps.len() > KEEPS_MAX {
+                        c.keeps.remove(0);
+                    }
+                    c.next_keep = reached + KEEP_EVERY;
+                }
+            }
+            if !batch.is_empty() {
+                self.maybes.step_many(&self.gpu, &batch, true);
+            }
+            c.reached = reached;
+        }
+        self.clouds = clouds;
     }
 
     /// Draws a frame into `target`.
@@ -1004,73 +1205,7 @@ impl App {
             self.stage_seconds = self.seconds;
             self.frames.3 += 1;
         }
-        // the shown float's maybes on the GPU (R5): seeded once from its leg's put, stepped on from
-        // the day they have reached, a budget of steps a frame; a rewind restores the nearest keep
-        // and steps from there, so a scrub never re-runs the cloud from the put
-        let day = self.clock.day;
-        let shown = self.shown().filter(|f| f.born(day)).and_then(|f| f.leg_at(day).map(|li| (f.id, f.legs[li])));
-        match shown {
-            Some((id, leg)) => {
-                let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
-                let same = self.maybes_of.map_or(false, |m| m.0 == id && m.1 == n) && self.maybes_leg == Some((leg.day, leg.seed));
-                let target = day.max(leg.day);
-                let mut reached = if same { self.maybes_of.unwrap().2 } else { f64::INFINITY };
-                if reached > target + 1e-9 {
-                    // behind us: the nearest keep at or before the target, else the put itself
-                    let keep = if same { self.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
-                    match keep {
-                        Some(k) => {
-                            self.maybes.restore(&self.gpu, &self.keeps[k].keep);
-                            reached = self.keeps[k].day;
-                            self.keeps.truncate(k + 1);
-                            self.next_keep = reached + KEEP_EVERY;
-                        }
-                        None => {
-                            let paths: Vec<GpuPath> = (1..=n)
-                                .map(|k| {
-                                    let e = self.rules.put(leg.at, leg.day, leg.seed, k).eddy;
-                                    GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
-                                })
-                                .collect();
-                            self.maybes.seed(&self.gpu, &paths);
-                            self.keeps.clear();
-                            reached = leg.day;
-                            self.next_keep = leg.day + KEEP_EVERY;
-                            self.maybes_leg = Some((leg.day, leg.seed));
-                        }
-                    }
-                }
-                // the frame's steps in one submit (Truth's step_many), a keep where one falls due
-                let mut steps = 0;
-                let mut batch: Vec<Params> = Vec::new();
-                while reached < target - 1e-6 && steps < MAYBES_BUDGET {
-                    let dt = MAYBES_STEP.min(target - reached);
-                    batch.push(Params::new(&self.rules, reached, dt, leg.seed, n));
-                    reached += dt;
-                    steps += 1;
-                    if reached >= self.next_keep - 1e-9 {
-                        self.maybes.step_many(&self.gpu, &batch, true);
-                        batch.clear();
-                        self.keeps.push(Kept { day: reached, keep: self.maybes.keep(&self.gpu, n) });
-                        if self.keeps.len() > KEEPS_MAX {
-                            self.keeps.remove(0);
-                        }
-                        self.next_keep = reached + KEEP_EVERY;
-                    }
-                }
-                if !batch.is_empty() {
-                    self.maybes.step_many(&self.gpu, &batch, true);
-                }
-                self.maybes_of = Some((id, n, reached));
-            }
-            None => {
-                if self.bloom <= 0.0 {
-                    self.maybes_of = None;
-                    self.maybes_leg = None;
-                    self.keeps.clear();
-                }
-            }
-        }
+        self.step_clouds(MAYBES_BUDGET);
         let state = self.look_state();
         let d = view.disc;
         self.look.prepare(&self.gpu, &state, (self.width as f64 / self.ppp) as f32, (self.height as f64 / self.ppp) as f32, self.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
@@ -1089,7 +1224,7 @@ impl App {
                 occlusion_query_set: None,
             });
             self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
-            self.look.draw(&mut rp, &self.view_bind, &self.maybes, self.maybes_of.map_or(0, |m| m.1));
+            self.look.draw(&mut rp, &self.view_bind, &self.maybes);
         }
         self.gpu.queue.submit([enc.finish()]);
     }
@@ -1107,11 +1242,12 @@ impl App {
         let (n, sum, worst, stage) = std::mem::replace(&mut self.frames, (0, 0.0, 0.0, 0));
         let mean = if n > 0 { sum / n as f64 * 1000.0 } else { 0.0 };
         format!(
-            "adrift: {n} frames, {mean:.1} ms mean, {:.1} ms worst, stage redrawn {stage}x at {:.2}, {} floats, {} maybes",
+            "adrift: {n} frames, {mean:.1} ms mean, {:.1} ms worst, stage redrawn {stage}x at {:.2}, {} floats, {} maybes in {} clouds",
             worst * 1000.0,
             self.budget.scale,
             self.floats.len(),
-            self.maybes_of.map_or(0, |m| m.1)
+            self.clouds.iter().map(|c| c.n).sum::<u32>(),
+            self.clouds.len()
         )
     }
 

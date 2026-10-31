@@ -32,8 +32,10 @@ pub const IDLE_RATE: f64 = 4.0;
 /// How far in and out the camera goes.
 pub const ZOOM_MIN: f64 = 0.8;
 pub const ZOOM_MAX: f64 = 8.0;
-/// The camera's centre never passes this latitude: the pole never flips.
-pub const LAT_LIMIT: f64 = 80.0;
+/// A lamp chosen from the panel is brought within this share of the room (the disc's radius, or the
+/// screen's half when zoomed past it) from the centre: inside it a cloud of a few hundred
+/// kilometres lies on the globe's face, not along its limb (R6).
+pub const FACE_WITHIN: f64 = 0.55;
 /// A three-finger swipe this far is undo (left), redo (right), home (up) or clear the sea (down).
 pub const SWIPE: f64 = 40.0;
 /// Pinching out past the whole globe: when the fingers would have taken the zoom this far below
@@ -51,6 +53,36 @@ pub const DATE_SPIN_REST: f64 = 2.0;
 pub const DATE_BELOW_DISC: f64 = 40.0;
 pub const DATE_FOOT: f64 = 72.0;
 pub const DATE_BAND: f64 = 44.0;
+/// The scrub's speed limit (R6): the date goes after the day the finger asks for no faster than
+/// `SCRUB_RATE` days a second (ten days a frame at 60 frames, under the 12 a frame every cloud can
+/// step: a year across the phone's width arrives in about two thirds of a second), closing on it with `SCRUB_TAU`'s ease so
+/// a slow hand feels no lag at all and a fast one a heavy wheel, never a jump. When the clouds still
+/// trail the date (`Probe::behind`), it slows: full speed under `SCRUB_LEAD / 4` days behind, a fifth
+/// of it at `SCRUB_LEAD` and past (never stopped: a cloud too slow must not freeze the hand).
+pub const SCRUB_RATE: f64 = 600.0;
+pub const SCRUB_TAU: f64 = 0.03;
+pub const SCRUB_FLOOR: f64 = 60.0;
+pub const SCRUB_LEAD: f64 = 24.0;
+/// Within this many days of the day asked for, the date is there.
+pub const SCRUB_THERE: f64 = 0.01;
+
+/// The date's step this frame toward a day `gap` days away, `behind` days the slowest cloud trails.
+pub fn scrub_step(gap: f64, dt: f64, behind: f64) -> f64 {
+    if gap.abs() <= SCRUB_THERE {
+        return gap;
+    }
+    if dt <= 0.0 {
+        return 0.0;
+    }
+    let brake = 1.0 - 0.8 * smoothstep(SCRUB_LEAD / 4.0, SCRUB_LEAD, behind);
+    let limit = SCRUB_RATE * brake * dt;
+    // the gap closed at its own size over `SCRUB_TAU`, never slower than `SCRUB_FLOOR` (so the last
+    // of it lands in a frame or two instead of creeping), never faster than the limit
+    let speed = (gap.abs() / SCRUB_TAU).max(SCRUB_FLOOR);
+    let step = (speed * dt).min(limit).min(gap.abs()) * gap.signum();
+    if (gap - step).abs() <= SCRUB_THERE { gap } else { step }
+}
+
 /// Scrubbing: a year across the screen's width, never less than a day a point.
 pub fn days_per_point(screen_width: f64) -> f64 {
     (365.0 / screen_width.max(1.0)).max(1.0)

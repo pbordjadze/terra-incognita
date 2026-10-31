@@ -16,7 +16,7 @@ struct Params {
     seed_lo: u32,
     seed_hi: u32,
     count: u32,        // paths
-    _pad0: u32,
+    base: u32,         // the first path of this cloud in the buffer (R6: many clouds in one buffer); k = i + 1 within it
     _pad1: u32,
     _pad2: u32,
 };
@@ -77,6 +77,60 @@ fn gaussian(h: u32, i: u32) -> f32 {
         s += draw(h, i + j);
     }
     return s - 6.0;
+}
+
+// --- the worlds (rules.rs: world_field, world_kick; R6) ---
+// World k is one random eddy field shared by every float's k-th path: bilinear lattice draws a
+// degree apart, a fresh lattice each quarter day, renormalised to unit variance.
+
+const WORLD_CELL: f32 = 1.0;
+const WORLD_SPAN: u32 = 8u;
+
+fn bytes_gaussian(h: u32) -> f32 {
+    let s = (h & 255u) + ((h >> 8u) & 255u) + ((h >> 16u) & 255u) + (h >> 24u);
+    return ((f32(s) + 2.0) / 256.0 - 2.0) * 1.7320508;
+}
+
+fn world_field(k: u32, cell: i32, lon: f32, lat: f32) -> vec2<f32> {
+    let n = i32(360.0 / WORLD_CELL);
+    let fx = (lon + 180.0) / WORLD_CELL;
+    let fy = (lat + 90.0) / WORLD_CELL;
+    let x0f = floor(fx);
+    let y0f = floor(fy);
+    let tx = fx - x0f;
+    let ty = fy - y0f;
+    let base = mix(mix(k ^ 0x5eedc0deu) ^ bitcast<u32>(cell));
+    let x0 = i32(x0f);
+    let y0 = i32(y0f);
+    var g = vec2<f32>(0.0, 0.0);
+    for (var c = 0; c < 4; c++) {
+        let dx = c & 1;
+        let dy = c >> 1u;
+        let w = select(1.0 - tx, tx, dx == 1) * select(1.0 - ty, ty, dy == 1);
+        let ix = u32((((x0 + dx) % n) + n) % n);
+        let h = mix(mix(base ^ ix) ^ bitcast<u32>(y0 + dy));
+        g.x += w * bytes_gaussian(h);
+        g.y += w * bytes_gaussian(mix(h ^ 0x68e31da4u));
+    }
+    let a = (1.0 - tx) * (1.0 - tx) + tx * tx;
+    let b = (1.0 - ty) * (1.0 - ty) + ty * ty;
+    return g * (1.0 / sqrt(a * b));
+}
+
+fn world_kick(k: u32, day: f32, dt: f32, lon: f32, lat: f32) -> vec2<f32> {
+    var first = i32(ceil((day - 0.125) * 4.0));
+    let end = i32(ceil((day + dt - 0.125) * 4.0));
+    var count = 1u;
+    if (end > first) {
+        count = min(u32(end - first), WORLD_SPAN);
+    } else {
+        first = i32(floor(day * 4.0));
+    }
+    var g = vec2<f32>(0.0, 0.0);
+    for (var i = 0u; i < count; i++) {
+        g += world_field(k, first + i32(i), lon, lat);
+    }
+    return g * (1.0 / sqrt(f32(count)));
 }
 
 // --- the sheets (sheets.rs) ---
@@ -281,9 +335,9 @@ fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
     let kk = eddy_at(lon, lat);
     let tt = max(eddy_time_at(lon, lat), vec2<f32>(0.25, 0.25)) * SECONDS_A_DAY;
     let secs = dt * SECONDS_A_DAY;
-    let h = hash_seed(params.seed_lo, params.seed_hi, k, bitcast<u32>(day));
-    let gx = gaussian(h, 0u);
-    let gy = gaussian(h, 12u);
+    let g = world_kick(k, day, dt, lon, lat);
+    let gx = g.x;
+    let gy = g.y;
     let au = exp(-secs / tt.x);
     let av = exp(-secs / tt.y);
     let eu = eu0 * au + gx * sqrt(kk.x / tt.x * (1.0 - au * au)) * params.wander;
@@ -312,8 +366,9 @@ fn maybes(@builtin(global_invocation_id) id: vec3<u32>) {
     if (i >= params.count) {
         return;
     }
-    let p = paths[i];
-    paths[i] = step(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
+    let j = params.base + i;
+    let p = paths[j];
+    paths[j] = step(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
 }
 
 @compute @workgroup_size(64)
@@ -322,6 +377,7 @@ fn maybes_flight(@builtin(global_invocation_id) id: vec3<u32>) {
     if (i >= params.count) {
         return;
     }
-    let p = paths[i];
-    paths[i] = flight(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
+    let j = params.base + i;
+    let p = paths[j];
+    paths[j] = flight(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
 }

@@ -45,8 +45,8 @@
     "halo":        {"hex": "#101828", "alpha": 0.92}
   },
   "hues": {
-    "about": "A lamp's hue by its number, so each lamp's maybes, wake and silver are its own (R5, the owner's ask); amber first. Each is a mark against the day's sea and the rim (3:1) like the lamp.",
-    "list": ["#F4A52A", "#F0705A", "#E86FA0", "#B48CF0", "#58B8E8", "#4FD0A8", "#B8D64A", "#F2CF3A"]
+    "about": "A lamp's hue by its number, so each lamp's maybes, wake and silver are its own (R5, the owner's ask); amber first, and each next one far round the wheel from the last (R6: two lamps put together are told apart at a glance, their clouds mixed where they overlap). Each is a mark against the day's sea and the rim (3:1) like the lamp.",
+    "list": ["#F4A52A", "#58B8E8", "#E86FA0", "#4FD0A8", "#F0705A", "#B48CF0", "#B8D64A", "#F2CF3A"]
   },
   "sizes": {
     "about": "points at reading scale 1; the reading scale (1.0 phone, 1.2 the 13-inch iPad) multiplies them, as Terra's names.",
