@@ -253,6 +253,26 @@ plan("reduce-motion-ride", "Reduce Motion: a ride follows without a glide, a dou
     expect(1.3, riding=None), expect(10.0, camera_same_as_last=True),
 ], floats=[F1], reduce_motion=True)
 
+def credit_xy(w=W, h=H):
+    # the credit line along the foot: its glyphs 12 reading points above the bottom edge
+    reading = 1.0 + 0.2 * min(max((min(w, h) - 430.0) / (1032.0 - 430.0), 0.0), 1.0)
+    return [w / 2, h - 12.0 * reading - 5.0 * reading]
+plan("credits", "A tap on the credit line opens the credits; any tap closes them; the date is unchanged", [
+    ev(0.0, "down", xy=credit_xy()), ev(0.1, "up", xy=credit_xy()), shot(0.15, "page"),
+    expect(0.2, saw=["ToggleCredits"], not_=["Ring", "Press"], floats=0),
+    ev(0.5, "down", at=SEA), ev(1.2, "up", at=SEA),                       # a rest on the sea while the page is open
+    expect(1.3, not_=["Put", "Ring"], floats=0, saw=["ToggleCredits"]),   # closes it, puts nothing
+    shot(1.35, "closed"),
+    ev(1.5, "down", at=SEA), ev(1.6, "up", at=SEA), expect(1.7, saw=["Ring"], not_=["ToggleCredits"]),
+    ev(2.0, "down", xy=date_xy()), ev(2.1, "up", xy=date_xy()), expect(2.2, saw=["Pause"], playing=False, not_=["ToggleCredits"]),
+    ev(2.5, "down", xy=credit_xy()), ev(2.6, "up", xy=credit_xy()), expect(2.7, saw=["ToggleCredits"]),
+    ev(3.0, "down", xy=date_xy()), ev(3.1, "move", xy=date_xy(50)), ev(3.2, "move", xy=date_xy(100)), ev(3.3, "up", xy=date_xy(100)),
+    expect(3.4, saw=["Scrub"], not_=["ToggleCredits"]),                   # the date still scrubs under the page
+    ev(3.6, "down", at=[-25.0, 10.0]), *drag(3.6, 0, [(0.5, 0.6), (0.58, 0.62)]),
+    expect(3.9, camera_moved=True, not_=["ToggleCredits"]),               # a drag is the globe's, page or no page
+    ev(4.2, "down", at=SEA), ev(4.3, "up", at=SEA), expect(4.4, saw=["ToggleCredits"], not_=["Ring"]),
+], day=9800.0)
+
 os.makedirs(OUT, exist_ok=True)
 for f in os.listdir(OUT):
     if f.endswith(".json"):
