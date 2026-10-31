@@ -17,6 +17,7 @@ struct SegOut {
 };
 
 struct Silver {
+    hue: vec4<f32>,     // the lamp's hue, which tints the wire a little so the silver is its lamp's
     rise: f32,          // 0..1 as it rises among the maybes and sinks back
     night: f32,
     layer: f32,         // 0 this draw lays the dark lines, 1 the wires
@@ -57,7 +58,7 @@ fn fs(i: SegOut) -> @location(0) vec4<f32> {
     if (S.layer < 0.5) {
         acc = over(acc, edge, (1.0 - n) * S.rise * cover(d - i.w * 0.5));
     } else {
-        acc = over(acc, wire, S.rise * cover(d - i.w * 0.225));
+        acc = over(acc, mix(wire, S.hue.rgb, 0.3), S.rise * cover(d - i.w * 0.225));
     }
     return acc;
 }

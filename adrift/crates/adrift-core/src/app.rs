@@ -934,6 +934,7 @@ impl App {
             note: String::new(),
             date_running: self.clock.running,
             year_day: (self.clock.year_day() / 365.25) as f32,
+            seconds: self.seconds as f32,
             date_press: self.gestures.date_pressing_since(self.now).map_or(0.0, |secs| crate::touch::motion::thicken(secs) as f32),
             truth_marks: false,
             credits: crate::sea::CREDIT_LINE.to_string(),

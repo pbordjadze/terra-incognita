@@ -9,6 +9,7 @@ struct BeadIn {
     @location(1) age: f32,          // 0 the newest bead .. 1 the oldest shown
     @location(2) night: f32,
     @location(3) measured: f32,     // under a half the bead is hollow: the sea there is the sheet's guess
+    @location(4) hue: vec3<f32>,    // its lamp's hue
 };
 
 struct WakeUniform {
@@ -26,6 +27,7 @@ struct BeadOut {
     @location(2) a: f32,
     @location(3) night: f32,
     @location(4) measured: f32,
+    @location(5) hue: vec3<f32>,
 };
 
 @vertex
@@ -42,6 +44,7 @@ fn vs(@builtin(vertex_index) vi: u32, b: BeadIn) -> BeadOut {
     o.a = pow(1.0 - b.age, 1.2) * 0.9 + 0.1;
     o.night = b.night;
     o.measured = b.measured;
+    o.hue = b.hue;
     return o;
 }
 
@@ -50,8 +53,8 @@ fn fs(i: BeadOut) -> @location(0) vec4<f32> {
     let n = i.night;
     let d = length(i.local);
     var acc = vec4<f32>(0.0);
-    let edge = vec3<f32>(0.549, 0.310, 0.063);                      // bead_edge, by day only
-    let bead = mix(vec3<f32>(0.910, 0.584, 0.173), vec3<f32>(0.941, 0.627, 0.251), n);
+    let edge = i.hue * 0.42;                                       // the bead's edge: its hue darkened, by day only
+    let bead = mix(i.hue * 0.95, i.hue, n);
     // a hollow bead where the sea was a guess: its edge and a ring of amber, no heart
     let hollow = step(i.measured, 0.5);
     if (W.layer < 0.5) {

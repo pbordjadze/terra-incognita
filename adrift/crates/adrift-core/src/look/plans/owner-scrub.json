@@ -1,0 +1,11 @@
+{
+  "_": "The owner's screenshot reproduced (R5): zoomed in on the open sea by day, three lamps, the date scrubbed back and forth; the white streamline bands across the sea and the grey ringed dots are what to quiet. adrift-check play adrift/crates/adrift-core/src/look/plans/owner-scrub.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -48.0, "lat": 34.0, "zoom": 6.0 }, "day": 218.0, "seconds": 14.0, "running": true,
+             "floats": [ { "lon": -48.6, "lat": 34.3, "days_ago": 15 }, { "lon": -47.4, "lat": 33.6, "days_ago": 10 }, { "lon": -48.0, "lat": 34.9, "days_ago": 25 } ], "hold": 1 },
+  "steps": [
+    { "shot": "as-is" },
+    { "intent": { "Scrub": { "days": -20.0 } } }, { "advance": 0.3 }, { "shot": "scrubbed-back" },
+    { "intent": { "Scrub": { "days": 30.0 } } }, { "advance": 0.3 }, { "shot": "scrubbed-forward" }
+  ]
+}

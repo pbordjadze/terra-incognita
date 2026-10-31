@@ -44,6 +44,10 @@
     "credit_ink":  {"hex": "#B8C6D4", "rule": "ink", "against": ["sea", "deep"]},
     "halo":        {"hex": "#101828", "alpha": 0.92}
   },
+  "hues": {
+    "about": "A lamp's hue by its number, so each lamp's maybes, wake and silver are its own (R5, the owner's ask); amber first. Each is a mark against the day's sea and the rim (3:1) like the lamp.",
+    "list": ["#F4A52A", "#F0705A", "#E86FA0", "#B48CF0", "#58B8E8", "#4FD0A8", "#B8D64A", "#F2CF3A"]
+  },
   "sizes": {
     "about": "points at reading scale 1; the reading scale (1.0 phone, 1.2 the 13-inch iPad) multiplies them, as Terra's names.",
     "float_radius": {"far": 4.5, "near": 7.0, "zoom": [1.0, 3.0], "is": "the float's radius, by zoom between far and near, then held: a marker, never a thing of the world's size"},
