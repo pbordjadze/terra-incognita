@@ -254,9 +254,9 @@ impl Look {
         self.words.date_bounds
     }
 
-    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::gpu::Maybes) {
+    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes, count: u32) {
         self.wake.draw(rp, view_bind);
-        self.maybes.draw(rp, view_bind, maybes);
+        self.maybes.draw(rp, view_bind, maybes, count);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
         self.words.draw(rp, view_bind);

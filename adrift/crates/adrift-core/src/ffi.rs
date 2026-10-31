@@ -97,6 +97,24 @@ pub unsafe extern "C" fn adrift_pointer(shell: *mut Shell, id: u64, phase: u32, 
     s.app.pointer(PointerEvent { id, phase, x, y, t });
 }
 
+/// The device was shaken: undo (touch/VOCABULARY.md).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_shaken(shell: *mut Shell) {
+    if let Some(s) = shell.as_mut() {
+        s.app.shaken();
+    }
+}
+
+/// Whether a Put or a Hold happened since the shell last asked (it plays a light haptic: the beat is
+/// felt as well as seen); cleared by the asking.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_take_haptic(shell: *mut Shell) -> bool {
+    match shell.as_mut() {
+        Some(s) => std::mem::take(&mut s.app.haptic),
+        None => false,
+    }
+}
+
 /// Where the state is kept between launches (a file in the app's documents): read now, written by
 /// `adrift_pause`.
 #[no_mangle]

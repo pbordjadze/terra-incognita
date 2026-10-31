@@ -4,7 +4,7 @@
 // the GPU (gpu/maybes.rs: lon, lat in degrees, held, k; sea/rules.wgsl moved them); one point-sized
 // quad a speck, 0.75 reading points, scaled by M.bloom as they bloom out and fold back.
 
-struct Maybe { @location(0) p: vec4f };   // lon, lat (degrees), held, k
+struct Maybe { @location(0) p: vec2f, @location(1) held: u32 };   // lon, lat (degrees), what holds it (Truth's Path)
 
 struct Maybes {
     bloom: f32,         // 0..1 as they bloom out of the float and fold back
@@ -34,7 +34,7 @@ fn vs(@builtin(vertex_index) vi: u32, m: Maybe) -> SpeckOut {
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
-    o.held = m.p.z;
+    o.held = f32(m.held);
     return o;
 }
 

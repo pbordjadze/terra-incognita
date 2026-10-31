@@ -114,7 +114,7 @@ impl Maybes {
         let paths = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("maybes paths"),
             size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
         let readback = gpu.device.create_buffer(&wgpu::BufferDescriptor {

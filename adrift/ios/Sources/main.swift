@@ -50,6 +50,7 @@ final class AdriftView: UIView {
         l.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
         l.add(to: .main, forMode: .common)
         link = l
+        becomeFirstResponder()
     }
 
     override func layoutSubviews() {
@@ -62,9 +63,17 @@ final class AdriftView: UIView {
         }
     }
 
+    let haptic = UIImpactFeedbackGenerator(style: .light)
+
     @objc func tick(_ link: CADisplayLink) {
         guard let shell else { return }
         adrift_frame(shell, link.targetTimestamp)
+        if adrift_take_haptic(shell) { haptic.impactOccurred() }
+    }
+
+    override var canBecomeFirstResponder: Bool { true }
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if motion == .motionShake, let shell { adrift_shaken(shell) }
     }
 
     func send(_ touches: Set<UITouch>, _ phase: UInt32) {

@@ -72,7 +72,15 @@ struct Plan {
     size: [u32; 2],
     #[serde(default = "default_ppp")]
     ppp: f64,
-    scene: Scene,
+    /// Engineering's form: a whole scene.
+    scene: Option<Scene>,
+    /// Motion's form (touch/VOCABULARY.md › Plans): a camera, steps at absolute times `t`, fingers
+    /// by id at a place `at: [lon, lat]` or at screen points `xy`, and `expect`s.
+    camera: Option<adrift_core::Camera>,
+    #[serde(default)]
+    floats: Vec<adrift_core::SceneFloat>,
+    #[serde(default)]
+    day: f64,
     steps: Vec<Step>,
 }
 fn default_size() -> [u32; 2] {
@@ -82,17 +90,52 @@ fn default_ppp() -> f64 {
     3.0
 }
 
+/// A finger's place: screen points `[x, y]` (Engineering's plans) or a finger id whose place is the
+/// step's `at: [lon, lat]` or `xy` (Motion's).
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Where {
+    Point([f64; 2]),
+    Finger(u64),
+}
+
 #[derive(Deserialize)]
 struct Step {
     #[serde(default)]
     id: u64,
-    down: Option<[f64; 2]>,
+    t: Option<f64>,
+    down: Option<Where>,
     #[serde(rename = "move")]
-    move_: Option<[f64; 2]>,
-    up: Option<[f64; 2]>,
+    move_: Option<Where>,
+    up: Option<Where>,
+    cancel: Option<Where>,
+    at: Option<[f64; 2]>,
+    #[serde(alias = "px")]
+    xy: Option<[f64; 2]>,
+    /// A key the shell forwards: "undo" or "redo".
+    key: Option<String>,
+    /// The device shaken.
+    shake: Option<bool>,
     advance: Option<f64>,
+    tick: Option<f64>,
     shot: Option<String>,
     intent: Option<adrift_core::Intent>,
+    expect: Option<serde_json::Value>,
+}
+
+/// A finger's id and screen point: given, or its place projected through the camera.
+fn point(app: &App, w: &Where, id: u64, at: Option<[f64; 2]>, xy: Option<[f64; 2]>) -> (u64, f64, f64) {
+    match w {
+        Where::Point(p) => (id, p[0], p[1]),
+        Where::Finger(f) => {
+            if let Some(p) = xy {
+                return (*f, p[0], p[1]);
+            }
+            let at = at.expect("a finger step needs `at: [lon, lat]` or `xy`");
+            let (p, _) = app.disc().project(&app.camera.camera, adrift_core::LonLat::new(at[0], at[1]));
+            (*f, p[0], p[1])
+        }
+    }
 }
 
 fn play(args: &[String]) -> Result<()> {
@@ -105,43 +148,172 @@ fn play(args: &[String]) -> Result<()> {
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, plan.ppp)?;
     app.budget.locked = true;
     app.budget.scale = 1.0;
-    app.set_scene(&plan.scene);
+    let scene = plan.scene.clone().unwrap_or_else(|| Scene {
+        camera: plan.camera.unwrap_or(adrift_core::Camera { lon: -40.0, lat: 22.0, zoom: 1.0 }),
+        day: plan.day,
+        running: true,
+        floats: plan.floats.clone(),
+        hold: None,
+        seconds: 0.0,
+    });
+    app.set_scene(&scene);
     let mut t = 0.0;
-    let fps = 30.0;
+    let fps = 60.0;
     app.frame(&target.view, t);
     let mut log = String::new();
+    let mut failed = 0;
+    let advance = |app: &mut App, t: &mut f64, secs: f64| {
+        let n = (secs * fps).ceil().max(1.0) as usize;
+        for _ in 0..n {
+            *t += secs / n as f64;
+            app.frame(&target.view, *t);
+        }
+    };
+    let camera0 = app.camera.camera;
+    let mut last_camera: Option<adrift_core::Camera> = None;
     for (i, s) in plan.steps.iter().enumerate() {
-        if let Some(p) = s.down {
-            app.pointer(PointerEvent { id: s.id, phase: Phase::Down, x: p[0], y: p[1], t });
+        if let Some(at) = s.t {
+            if at > t {
+                let d = at - t;
+                advance(&mut app, &mut t, d);
+            }
         }
-        if let Some(p) = s.move_ {
-            app.pointer(PointerEvent { id: s.id, phase: Phase::Move, x: p[0], y: p[1], t });
+        if let Some(secs) = s.tick {
+            advance(&mut app, &mut t, secs);
         }
-        if let Some(p) = s.up {
-            app.pointer(PointerEvent { id: s.id, phase: Phase::Up, x: p[0], y: p[1], t });
+        for (wh, phase) in [(&s.down, Phase::Down), (&s.move_, Phase::Move), (&s.up, Phase::Up), (&s.cancel, Phase::Cancel)] {
+            if let Some(wh) = wh {
+                let (id, x, y) = point(&app, wh, s.id, s.at, s.xy);
+                app.pointer(PointerEvent { id, phase, x, y, t });
+            }
         }
         if let Some(intent) = s.intent {
             app.intend(intent);
         }
+        if let Some(k) = &s.key {
+            app.key(if k.eq_ignore_ascii_case("redo") { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });
+        }
+        if s.shake == Some(true) {
+            app.shaken();
+        }
         if let Some(secs) = s.advance {
-            let n = (secs * fps).ceil().max(1.0) as usize;
-            for _ in 0..n {
-                t += secs / n as f64;
-                app.frame(&target.view, t);
+            advance(&mut app, &mut t, secs);
+        }
+        if let Some(e) = &s.expect {
+            let cam = app.camera.camera;
+            let mut bad = Vec::new();
+            if let Some(n) = e.get("floats").and_then(|v| v.as_u64()) {
+                if app.floats.len() as u64 != n {
+                    bad.push(format!("floats {} not {n}", app.floats.len()));
+                }
             }
+            if let Some(st) = e.get("state").and_then(|v| v.as_str()) {
+                if app.gesture_state() != st {
+                    bad.push(format!("state {} not {st}", app.gesture_state()));
+                }
+            }
+            if let Some(f) = e.get("float") {
+                let id = f.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32 + 1;
+                match app.floats.iter().find(|x| x.id == id) {
+                    Some(x) => {
+                        if let (Some(lon), Some(lat)) = (f.get("lon").and_then(|v| v.as_f64()), f.get("lat").and_then(|v| v.as_f64())) {
+                            if (x.at.lon - lon).abs() > 1.5 || (x.at.lat - lat).abs() > 1.5 {
+                                bad.push(format!("float {id} at {:.2},{:.2} not near {lon},{lat}", x.at.lon, x.at.lat));
+                            }
+                        }
+                    }
+                    None => bad.push(format!("no float {id}")),
+                }
+            }
+            if let Some(moved) = e.get("camera_moved").and_then(|v| v.as_bool()) {
+                let did = (cam.lon - camera0.lon).abs() > 0.01 || (cam.lat - camera0.lat).abs() > 0.01 || (cam.zoom - camera0.zoom).abs() > 0.001;
+                if did != moved {
+                    bad.push(format!("camera moved {did}, expected {moved}"));
+                }
+            }
+            if let Some(saw) = e.get("saw").and_then(|v| v.as_array()) {
+                for want in saw.iter().filter_map(|v| v.as_str()) {
+                    if !app.seen.iter().any(|s| s == want) {
+                        bad.push(format!("never saw {want} (saw {:?})", app.seen));
+                    }
+                }
+            }
+            if let Some(not) = e.get("not").and_then(|v| v.as_array()) {
+                for n in not.iter().filter_map(|v| v.as_str()) {
+                    if app.seen.iter().any(|s| s == n) {
+                        bad.push(format!("saw {n}, which it must not"));
+                    }
+                }
+            }
+            if let Some(hv) = e.get("held") {
+                let held = app.floats.iter().find(|f| f.hand != adrift_core::Hand::Free).map(|f| f.id as u64 - 1);
+                if held != hv.as_u64() {
+                    bad.push(format!("held {held:?} not {:?}", hv.as_u64()));
+                }
+            }
+            if let Some(r) = e.get("riding") {
+                let riding = app.riding().map(|id| id as u64 - 1);
+                if riding != r.as_u64() {
+                    bad.push(format!("riding {riding:?} not {:?}", r.as_u64()));
+                }
+            }
+            if let Some(p) = e.get("playing").and_then(|v| v.as_bool()) {
+                if app.clock.running != p {
+                    bad.push(format!("playing {} not {p}", app.clock.running));
+                }
+            }
+            if let Some(d) = e.get("day").and_then(|v| v.as_f64()) {
+                if (app.clock.day - d).abs() > 2.0 {
+                    bad.push(format!("day {:.1} not near {d}", app.clock.day));
+                }
+            }
+            if let Some(z) = e.get("zoom_gt").and_then(|v| v.as_f64()) {
+                if !(cam.zoom > z) {
+                    bad.push(format!("zoom {:.2} not > {z}", cam.zoom));
+                }
+            }
+            if let Some(c) = e.get("camera") {
+                if let (Some(lon), Some(lat)) = (c.get("lon").and_then(|v| v.as_f64()), c.get("lat").and_then(|v| v.as_f64())) {
+                    if (cam.lon - lon).abs() > 2.0 || (cam.lat - lat).abs() > 2.0 {
+                        bad.push(format!("camera {:.2},{:.2} not near {lon},{lat}", cam.lon, cam.lat));
+                    }
+                }
+            }
+            if e.get("camera_same_as_last").and_then(|v| v.as_bool()) == Some(true) {
+                if let Some(last) = last_camera {
+                    if (cam.lon - last.lon).abs() > 0.01 || (cam.lat - last.lat).abs() > 0.01 || (cam.zoom - last.zoom).abs() > 0.001 {
+                        bad.push("camera moved since the last expectation".into());
+                    }
+                }
+            }
+            if e.get("camera_near_float").is_some() {
+                if let Some(f) = app.floats.first() {
+                    if (cam.lon - f.at.lon).abs() > 3.0 || (cam.lat - f.at.lat).abs() > 3.0 {
+                        bad.push(format!("camera {:.1},{:.1} not near the float {:.1},{:.1}", cam.lon, cam.lat, f.at.lon, f.at.lat));
+                    }
+                }
+            }
+            last_camera = Some(cam);
+            let line = if bad.is_empty() { format!("{i:3} t={t:7.2}s expect ok\n") } else { failed += 1; format!("{i:3} t={t:7.2}s EXPECT FAILED: {}\n", bad.join("; ")) };
+            print!("{line}");
+            log.push_str(&line);
         }
         if let Some(name) = &s.shot {
             app.frame(&target.view, t);
             let px = target.read(&app.gpu);
             let path = out.join(format!("{name}.png"));
             save(&path, w, h, &px)?;
+            let cam = app.camera.camera;
             let floats: Vec<String> = app.floats.iter().map(|f| format!("#{} {:.3},{:.3} {:?} {:?} wake {}", f.id, f.at.lon, f.at.lat, f.held, f.hand, f.wake.len())).collect();
-            let line = format!("{i:3} t={t:7.2}s day={:8.2} cam={:.2},{:.2} z{:.2} {} floats [{}]\n", app.clock.day, app.camera.camera.lon, app.camera.camera.lat, app.camera.camera.zoom, path.display(), floats.join("; "));
+            let line = format!("{i:3} t={t:7.2}s day={:8.2} cam={:.2},{:.2} z{:.2} {} {} floats [{}]\n", app.clock.day, cam.lon, cam.lat, cam.zoom, app.gesture_state(), path.display(), floats.join("; "));
             print!("{line}");
             log.push_str(&line);
         }
     }
     std::fs::write(out.join("play.log"), log)?;
+    if failed > 0 {
+        anyhow::bail!("{failed} expectation(s) failed");
+    }
     Ok(())
 }
 

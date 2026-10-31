@@ -89,6 +89,10 @@ pub struct Float {
     pub seed: u64,
     pub held: Held,
     pub hand: Hand,
+    /// The eddy velocity it carries (zonal, meridional, m/s): the wander's memory, the drifters'
+    /// measured time scale (Truth's D1). Zero when put or set down.
+    #[serde(default)]
+    pub eddy: [f32; 2],
     /// One bead a day, oldest first, since it was put or last set down.
     pub wake: Vec<Bead>,
     /// The seconds since the reader last touched it (what was just done stays lit).
@@ -237,6 +241,10 @@ pub enum Hit {
 pub enum Intent {
     /// A tap on the sea: it rings there.
     Ring { at: LonLat },
+    /// The finger rests on the sea: the ring thickens from `since` (Motion's D1).
+    Press { at: LonLat, since: f64 },
+    /// It lifted or moved before the beat: the ring lets go.
+    Unpress,
     /// A finger has rested a beat on the sea: a float is put there (and is held while the finger stays).
     Put { at: LonLat },
     /// A finger rests on a float: its maybes show.
@@ -247,6 +255,8 @@ pub enum Intent {
     Release { float: u32, at: Option<LonLat> },
     /// The last touch is taken back.
     Undo,
+    /// A touch taken back is given back.
+    Redo,
     /// The camera drifts with this float.
     Ride { float: u32 },
     /// The date is moved by so many days.

@@ -1,14 +1,15 @@
 //! The app: the state (floats, the clock, the camera, undo), a frame, a pointer event, and applying
-//! intents (Engineering; DECISIONS.md §2).
+//! intents (Engineering; DECISIONS.md §2). The seams: Truth's `Rules` step the floats and its
+//! `Maybes` run a held float's other selves on the GPU; Visual's `Look` draws the marks and the words
+//! from a `LookState` filled here; Motion's `Gestures` turn pointer events into intents through the
+//! `Probe` the app answers (touch/probe.rs), and its `CameraControl` owns the camera's motion.
 
 use crate::assets::Assets;
-use crate::gpu::{Blit, Budget, GlyphInstance, Gpu, Maybes, Stage, Text, TextPass, Textures, View, ViewUniform};
-use crate::look::sprites::{KIND_BEAD, KIND_FLOAT, KIND_MAYBE};
-use crate::look::{sea::Ripple, GroundPass, Instance, MaybesPass, SeaPass, SpritePass};
+use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
+use crate::look::{sea::Ripple, GroundPass, Look, LookFloat, LookState, SeaPass};
 use crate::model::*;
-use crate::sea::Rules;
-use crate::touch::gestures::CameraMove;
-use crate::touch::{CameraControl, Gestures};
+use crate::sea::{Drift, GpuPath, Maybes, Params, Rules};
+use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
 use serde::{Deserialize, Serialize};
 
 /// What the reader has done, to take back.
@@ -70,15 +71,14 @@ pub struct App {
     stage_view_bind: wgpu::BindGroup,
     ground: GroundPass,
     sea: SeaPass,
-    sprites: SpritePass,
-    text: Text,
-    text_pass: TextPass,
+    /// Visual's marks and words.
+    look: Look,
     blit: Blit,
     stage: Option<Stage>,
+    /// Truth's sampler: a held float's maybes on the GPU.
     maybes: Maybes,
-    maybes_pass: MaybesPass,
-    /// The float whose maybes are in the buffer, and the day they were run to.
-    maybes_of: Option<(u32, f64)>,
+    /// The float whose maybes are in the buffer, how many, and the day they were run to.
+    maybes_of: Option<(u32, u32, f64)>,
     pub budget: Budget,
     /// What the stage last showed: the view uniform's bytes and the months, to know when to redraw.
     stage_shown: Option<(ViewUniform, (u32, u32))>,
@@ -88,8 +88,12 @@ pub struct App {
     next_id: u32,
     pub clock: Clock,
     undo: Vec<Undo>,
+    redo: Vec<Undo>,
+    /// Motion's camera: the truth of where the reader looks.
     pub camera: CameraControl,
     gestures: Gestures,
+    /// A finger resting on the sea, the ring thickening: where, and since when.
+    pressing: Option<(LonLat, f64)>,
     ripples: Vec<Ripple>,
     width: u32,
     height: u32,
@@ -98,9 +102,14 @@ pub struct App {
     /// The drawn motion's seconds (held while the date is).
     seconds: f64,
     last_t: Option<f64>,
+    now: f64,
     /// How far each float has been stepped (`id` → day).
     stepped: std::collections::HashMap<u32, f64>,
     pub reduce_motion: bool,
+    /// The intents applied, by name (the checks' `expect.saw`).
+    pub seen: Vec<String>,
+    /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
+    pub haptic: bool,
 }
 
 /// Days a second while the date runs.
@@ -117,50 +126,30 @@ impl App {
         let clock = Clock { day: 0.0, running: true, rate: RATE };
         let textures = Textures::load(&gpu, assets.as_ref(), clock.months().0)?;
         let rules = Rules::load(assets.as_ref())?;
-        let view_layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("view"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None,
-            }],
-        });
-        let view_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("view"),
-            size: std::mem::size_of::<ViewUniform>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-        let view_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("view"),
-            layout: &view_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: view_buffer.as_entire_binding() }],
-        });
-        let stage_view_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("stage view"),
-            size: std::mem::size_of::<ViewUniform>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-        let stage_view_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("stage view"),
-            layout: &view_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: stage_view_buffer.as_entire_binding() }],
-        });
+        let view_layout = crate::look::view_layout(&gpu);
+        let make_view = |label: &str| {
+            let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size: std::mem::size_of::<ViewUniform>() as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some(label),
+                layout: &view_layout,
+                entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
+            });
+            (buffer, bind)
+        };
+        let (view_buffer, view_bind) = make_view("view");
+        let (stage_view_buffer, stage_view_bind) = make_view("stage view");
         let ground = GroundPass::new(&gpu, &view_layout, &textures);
         let sea = SeaPass::new(&gpu, &view_layout, &textures);
-        let sprites = SpritePass::new(&gpu, &view_layout);
-        let reading = Self::reading_for(width, height, ppp);
-        let regular = assets.read("LibertinusSerif-Regular.otf")?;
-        let italic = assets.read("LibertinusSerif-Italic.otf")?;
-        let px = (ppp * reading) as f32;
-        let text = Text::new(&gpu, &[(&regular, 17.0 * px), (&italic, 13.0 * px), (&regular, 11.0 * px)])?;
-        let text_pass = TextPass::new(&gpu, &view_layout, &text);
+        let look = Look::new(&gpu, &view_layout);
         let blit = Blit::new(&gpu);
         let budget = Budget::new(ppp);
-        let maybes = Maybes::new(&gpu, &textures, MAYBES);
-        let maybes_pass = MaybesPass::new(&gpu, &view_layout);
+        let maybes = Maybes::new(&gpu, assets.as_ref(), &textures, MAYBES)?;
+        let reading = Self::reading_for(width, height, ppp);
         Ok(App {
             gpu,
             assets,
@@ -172,13 +161,10 @@ impl App {
             stage_view_bind,
             ground,
             sea,
-            sprites,
-            text,
-            text_pass,
+            look,
             blit,
             stage: None,
             maybes,
-            maybes_pass,
             maybes_of: None,
             budget,
             stage_shown: None,
@@ -188,8 +174,10 @@ impl App {
             next_id: 1,
             clock,
             undo: Vec::new(),
+            redo: Vec::new(),
             camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
             gestures: Gestures::new(),
+            pressing: None,
             ripples: Vec::new(),
             width,
             height,
@@ -197,15 +185,18 @@ impl App {
             reading,
             seconds: 0.0,
             last_t: None,
+            now: 0.0,
             stepped: Default::default(),
             reduce_motion: false,
+            seen: Vec::new(),
+            haptic: false,
         })
     }
 
     /// The reading scale: 1.0 on a phone, up to 1.2 on a 13-inch iPad (Terra's rule).
     fn reading_for(width: u32, height: u32, ppp: f64) -> f64 {
         let short = (width.min(height) as f64) / ppp;
-        (1.0 + 0.2 * ((short - 430.0) / (1032.0 - 430.0)).clamp(0.0, 1.0) * 1.0).clamp(1.0, 1.2)
+        (1.0 + 0.2 * ((short - 430.0) / (1032.0 - 430.0)).clamp(0.0, 1.0)).clamp(1.0, 1.2)
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -232,11 +223,16 @@ impl App {
         }
     }
 
-    /// What is under a point of the screen (points).
+    fn motion(&self) -> Motion {
+        Motion { reduce: self.reduce_motion }
+    }
+
+    /// What is under a point of the screen (points): the nearest float within reach and the place
+    /// under the finger, the sea, the land, or nothing (the date's band is the probe's: touch/probe.rs).
     pub fn hit(&self, x: f64, y: f64) -> Hit {
         let disc = self.disc();
-        let reach = 14.0 * self.reading;
-        let mut best: Option<(f64, u32)> = None;
+        let reach = crate::touch::motion::REACH * self.reading;
+        let mut best: Option<(f64, u32, LonLat)> = None;
         for f in &self.floats {
             let (p, facing) = disc.project(&self.camera.camera, f.at);
             if facing < 0.05 {
@@ -244,13 +240,12 @@ impl App {
             }
             let d = ((p[0] - x).powi(2) + (p[1] - y).powi(2)).sqrt();
             if d < reach && best.map_or(true, |b| d < b.0) {
-                best = Some((d, f.id));
+                best = Some((d, f.id, f.at));
             }
         }
         let place = disc.unproject(&self.camera.camera, x, y);
-        if let Some((_, id)) = best {
-            let f = self.floats.iter().find(|f| f.id == id).unwrap();
-            return Hit::Float(id, place.unwrap_or(f.at));
+        if let Some((_, id, at)) = best {
+            return Hit::Float(id, place.unwrap_or(at));
         }
         match place {
             Some(p) if self.rules.coast.is_land(p) => Hit::Land(p),
@@ -261,41 +256,74 @@ impl App {
 
     pub fn pointer(&mut self, ev: PointerEvent) {
         let mut gestures = std::mem::take(&mut self.gestures);
-        let out = gestures.feed(ev, |x, y| self.hit(x, y));
+        let out = gestures.feed(ev, &*self);
         self.gestures = gestures;
-        self.apply(out.intents, out.camera);
+        self.apply(out, ev.t);
     }
 
-    fn apply(&mut self, intents: Vec<Intent>, moves: Vec<CameraMove>) {
+    /// A key the shell forwards (the web build, a hardware keyboard).
+    pub fn key(&mut self, key: Key) {
+        let out = self.gestures.key(key);
+        self.apply(out, self.now);
+    }
+
+    /// A wheel or trackpad pinch: zoom by `factor` about the point.
+    pub fn wheel(&mut self, x: f64, y: f64, factor: f64) {
+        let mut gestures = std::mem::take(&mut self.gestures);
+        let out = gestures.wheel(x, y, factor, &*self);
+        self.gestures = gestures;
+        self.apply(out, self.now);
+    }
+
+    /// The device was shaken: undo.
+    pub fn shaken(&mut self) {
+        let out = self.gestures.shaken();
+        self.apply(out, self.now);
+    }
+
+    fn apply(&mut self, out: Out, now: f64) {
         let disc = self.disc();
-        for m in moves {
-            match m {
-                CameraMove::Turn { dx, dy } => self.camera.turn(&disc, dx, dy),
-                CameraMove::Fling { vx, vy } => self.camera.fling(&disc, vx, vy),
-                CameraMove::Zoom { factor } => self.camera.zoom_by(factor),
-                CameraMove::Stop => self.camera.stop(),
-            }
+        let motion = self.motion();
+        for m in out.camera {
+            self.camera.apply(&disc, m, now, motion);
         }
-        for i in intents {
+        for i in out.intents {
             self.intend(i);
         }
     }
 
     /// Applies one intent to the state.
     pub fn intend(&mut self, intent: Intent) {
+        let name = match intent {
+            Intent::Release { at: None, .. } => "ReleaseBack".to_string(),
+            Intent::SetRunning { running: false } => "Pause".to_string(),
+            Intent::SetRunning { running: true } => "Play".to_string(),
+            other => format!("{other:?}").split(|c| c == ' ' || c == '{' || c == '(').next().unwrap_or("").to_string(),
+        };
+        if self.seen.last() != Some(&name) {
+            self.seen.push(name);
+        }
+        let day = self.clock.day;
         match intent {
             Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
+            Intent::Press { at, since } => self.pressing = Some((at, since)),
+            Intent::Unpress => self.pressing = None,
             Intent::Put { at } => {
+                self.pressing = None;
+                self.haptic = true;
                 let id = self.put(at);
                 self.gestures.float_put(id);
                 self.undo.push(Undo::Put(id));
+                self.redo.clear();
                 self.ripples.push(Ripple { at, when: self.seconds, strength: 0.6 });
             }
             Intent::Hold { float } => {
+                self.haptic = true;
                 if let Some(f) = self.floats.iter_mut().find(|f| f.id == float) {
                     f.hand = Hand::Held;
                     f.lit_for = 0.0;
-                    self.undo.push(Undo::Moved { id: float, from: f.clone() });
+                    let from = f.clone();
+                    self.undo.push(Undo::Moved { id: float, from });
                 }
             }
             Intent::Carry { float, to } => {
@@ -306,36 +334,43 @@ impl App {
             }
             Intent::Release { float, at } => {
                 let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
-                match at {
-                    Some(p) => {
-                        let moved = self.floats[i].hand == Hand::Carried;
+                let moved = self.floats[i].hand == Hand::Carried;
+                match (at, moved) {
+                    (Some(p), true) => {
                         let f = &mut self.floats[i];
                         f.hand = Hand::Free;
                         f.lit_for = 0.0;
-                        if moved {
-                            f.at = p;
-                            f.put_day = self.clock.day;
-                            f.wake.clear();
-                            f.held = Held::No;
-                            self.stepped.insert(f.id, self.clock.day);
-                            self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
-                        } else {
-                            // held and let go where it was: nothing changed, nothing to undo
-                            if matches!(self.undo.last(), Some(Undo::Moved { id, .. }) if *id == float) {
+                        f.at = p;
+                        f.put_day = day;
+                        f.wake.clear();
+                        f.held = Held::No;
+                        f.eddy = [0.0; 2];
+                        self.stepped.insert(float, day);
+                        self.redo.clear();
+                        self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
+                    }
+                    _ => {
+                        // let go where it was, or over land, or past the beat without moving: back as
+                        // it was lifted; nothing changed, nothing to undo
+                        if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
+                            if id == float {
                                 self.undo.pop();
+                                let mut back = from;
+                                back.hand = Hand::Free;
+                                back.lit_for = 0.0;
+                                self.floats[i] = back;
+                                self.stepped.insert(float, day);
+                                return;
                             }
                         }
-                    }
-                    None => {
-                        let f = self.floats.remove(i);
-                        if matches!(self.undo.last(), Some(Undo::Moved { id, .. }) if *id == float) {
-                            self.undo.pop();
-                        }
-                        self.undo.push(Undo::Removed(f));
+                        let f = &mut self.floats[i];
+                        f.hand = Hand::Free;
+                        f.lit_for = 0.0;
                     }
                 }
             }
             Intent::Undo => self.undo(),
+            Intent::Redo => self.redo(),
             Intent::Ride { float } => {
                 if self.camera.riding == Some(float) {
                     self.camera.riding = None;
@@ -348,10 +383,11 @@ impl App {
             }
             Intent::Scrub { days } => {
                 self.clock.day += days;
+                let day = self.clock.day;
                 for f in &self.floats {
-                    let s = self.stepped.entry(f.id).or_insert(self.clock.day);
-                    if *s > self.clock.day {
-                        *s = self.clock.day;
+                    let s = self.stepped.entry(f.id).or_insert(day);
+                    if *s > day {
+                        *s = day;
                     }
                 }
             }
@@ -363,28 +399,84 @@ impl App {
         let id = self.next_id;
         self.next_id += 1;
         let seed = (self.clock.day.to_bits() ^ (id as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)).rotate_left(17);
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, wake: Vec::new(), lit_for: 0.0 });
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [0.0; 2], wake: Vec::new(), lit_for: 0.0 });
         self.stepped.insert(id, self.clock.day);
         id
     }
 
+    /// A float taken out past the rim (Motion's `Release { at: None }` while carried, or its own
+    /// intent): undo gives it back as it was before the touch began.
+    fn take_out(&mut self, float: u32) {
+        let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
+        let mut f = self.floats.remove(i);
+        if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
+            if id == float {
+                self.undo.pop();
+                f = from;
+            }
+        }
+        f.hand = Hand::Free;
+        self.undo.push(Undo::Removed(f));
+        self.redo.clear();
+    }
+
     fn undo(&mut self) {
+        let day = self.clock.day;
         match self.undo.pop() {
-            Some(Undo::Put(id)) => self.floats.retain(|f| f.id != id),
+            Some(Undo::Put(id)) => {
+                if let Some(i) = self.floats.iter().position(|f| f.id == id) {
+                    let f = self.floats.remove(i);
+                    self.redo.push(Undo::Removed(f));
+                }
+            }
             Some(Undo::Moved { id, from }) => {
                 if let Some(f) = self.floats.iter_mut().find(|f| f.id == id) {
+                    let now = f.clone();
                     let mut back = from;
                     back.hand = Hand::Free;
                     back.lit_for = 0.0;
                     *f = back;
-                    self.stepped.insert(id, self.clock.day);
+                    self.stepped.insert(id, day);
+                    self.redo.push(Undo::Moved { id, from: now });
                 }
             }
             Some(Undo::Removed(mut f)) => {
                 f.hand = Hand::Free;
                 f.lit_for = 0.0;
-                self.stepped.insert(f.id, self.clock.day);
+                self.stepped.insert(f.id, day);
+                self.redo.push(Undo::Put(f.id));
                 self.floats.push(f);
+            }
+            None => {}
+        }
+    }
+
+    fn redo(&mut self) {
+        let day = self.clock.day;
+        match self.redo.pop() {
+            Some(Undo::Removed(mut f)) => {
+                f.hand = Hand::Free;
+                f.lit_for = 0.0;
+                self.stepped.insert(f.id, day);
+                self.undo.push(Undo::Put(f.id));
+                self.floats.push(f);
+            }
+            Some(Undo::Moved { id, from }) => {
+                if let Some(f) = self.floats.iter_mut().find(|f| f.id == id) {
+                    let now = f.clone();
+                    let mut to = from;
+                    to.hand = Hand::Free;
+                    to.lit_for = 0.0;
+                    *f = to;
+                    self.stepped.insert(id, day);
+                    self.undo.push(Undo::Moved { id, from: now });
+                }
+            }
+            Some(Undo::Put(id)) => {
+                if let Some(i) = self.floats.iter().position(|f| f.id == id) {
+                    let f = self.floats.remove(i);
+                    self.undo.push(Undo::Removed(f));
+                }
             }
             None => {}
         }
@@ -398,8 +490,17 @@ impl App {
         };
         self.last_t = Some(now);
         self.last_dt = dt;
-        let out = self.gestures.tick(now);
-        self.apply(out.intents, out.camera);
+        self.now = now;
+        let mut gestures = std::mem::take(&mut self.gestures);
+        let out = gestures.tick(now, &*self);
+        self.gestures = gestures;
+        self.apply(out, now);
+        // a float carried off the disc and let go is taken out (the gestures say so with a release
+        // without a place while it is carried)
+        let gone: Vec<u32> = self.floats.iter().filter(|f| f.hand == Hand::Carried && self.gestures.is_holding() != Some(f.id)).map(|f| f.id).collect();
+        for id in gone {
+            self.take_out(id);
+        }
         if self.clock.running {
             self.clock.day += self.clock.rate * dt;
             if !self.reduce_motion {
@@ -414,12 +515,14 @@ impl App {
         if self.camera.riding.is_some() && ride_at.is_none() {
             self.camera.riding = None;
         }
-        self.camera.tick(dt, ride_at);
+        let motion = self.motion();
+        self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
     }
 
-    /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day.
+    /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day:
+    /// the flight (Truth's rules), with the eddy memory the float carries.
     fn step_floats(&mut self) {
         let day = self.clock.day;
         for f in &mut self.floats {
@@ -433,8 +536,9 @@ impl App {
                 let dt = SUBSTEP.min(day - t);
                 let next_day_mark = t.floor() + 1.0;
                 let dt = dt.min(next_day_mark - t).max(1e-6);
-                let s = self.rules.step(f.at, t, dt, f.seed, 0);
-                f.at = s.at;
+                let s = self.rules.flight(Drift { at: f.at, eddy: (f.eddy[0], f.eddy[1]) }, t, dt, f.seed, 0);
+                f.at = s.drift.at;
+                f.eddy = [s.drift.eddy.0, s.drift.eddy.1];
                 f.held = s.held;
                 t += dt;
                 if (t - next_day_mark).abs() < 1e-6 {
@@ -450,6 +554,16 @@ impl App {
             }
             self.stepped.insert(f.id, t);
         }
+    }
+
+    /// The float the camera drifts with, if any.
+    pub fn riding(&self) -> Option<u32> {
+        self.camera.riding
+    }
+
+    /// What the finger is doing (touch/gestures.rs `describe`).
+    pub fn gesture_state(&self) -> &'static str {
+        self.gestures.describe()
     }
 
     /// The state to keep, as JSON.
@@ -474,6 +588,7 @@ impl App {
         self.clock.running = s.running;
         self.camera = CameraControl::new(s.camera);
         self.undo.clear();
+        self.redo.clear();
         self.ripples.clear();
         self.stepped.clear();
         for f in &self.floats {
@@ -486,9 +601,11 @@ impl App {
     pub fn set_scene(&mut self, scene: &Scene) {
         self.floats.clear();
         self.undo.clear();
+        self.redo.clear();
         self.ripples.clear();
         self.stepped.clear();
         self.camera = CameraControl::new(scene.camera);
+        self.gestures = Gestures::new();
         self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
         self.seconds = scene.seconds;
         for (i, sf) in scene.floats.iter().enumerate() {
@@ -501,6 +618,28 @@ impl App {
         }
         self.clock.day = scene.day;
         self.step_floats();
+    }
+
+    /// What the look draws this frame, from the state (look/README.md › Wiring).
+    fn look_state(&self) -> LookState {
+        const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let (month, day) = self.clock.calendar();
+        let resting = self.pressing.map(|(at, since)| (at, crate::touch::motion::thicken(self.now - since) as f32));
+        LookState {
+            floats: self
+                .floats
+                .iter()
+                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| b.at).collect() })
+                .collect(),
+            resting,
+            bloom: if self.maybes_of.is_some() { 1.0 } else { 0.0 },
+            drifter: Vec::new(),
+            rise: 0.0,
+            night: false,
+            date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
+            note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
+            credits: "Currents: NOAA Global Drifter Program (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0".to_string(),
+        }
     }
 
     /// Draws a frame into `target`.
@@ -517,15 +656,11 @@ impl App {
         // the stage: the ground and the sea, redrawn when the view, the months or the sea's clock
         // moved (the clock at most thirty times a second), at the budget's scale
         let months = self.textures.land_months;
-        let mut stage_view = uniform;
-        stage_view.frame[0] = 0.0; // (the frame's size is the stage's own, below)
         let moved = match &self.stage_shown {
             Some((shown, m)) => {
-                let mut a = *shown;
-                a.frame[0] = 0.0;
+                let (mut a, mut b) = (*shown, uniform);
                 a.time[0] = 0.0;
                 a.tone[2] = 0.0;
-                let mut b = stage_view;
                 b.time[0] = 0.0;
                 b.tone[2] = 0.0;
                 bytemuck::bytes_of(&a) != bytemuck::bytes_of(&b) || *m != months
@@ -533,12 +668,12 @@ impl App {
             None => true,
         };
         let sea_ticked = (self.clock.running || !self.ripples.is_empty()) && self.seconds - self.stage_seconds >= 1.0 / 30.0 - 1e-6;
-        let rescaled = self.stage.as_ref().map_or(true, |s| s.scale != self.budget.scale || s.width != ((self.width as f64 * s.scale).round() as u32).max(1) || s.height != ((self.height as f64 * s.scale).round() as u32).max(1));
+        let wanted = |s: &Stage, scale: f64, w: u32, h: u32| s.scale == scale && s.width == ((w as f64 * scale).round() as u32).max(1) && s.height == ((h as f64 * scale).round() as u32).max(1);
+        let rescaled = self.stage.as_ref().map_or(true, |s| !wanted(s, self.budget.scale, self.width, self.height));
         if rescaled {
             self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
         }
-        let redraw = moved || sea_ticked || rescaled;
-        if redraw {
+        if moved || sea_ticked || rescaled {
             if moved && self.budget.frame(self.last_dt) {
                 self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
             }
@@ -568,26 +703,32 @@ impl App {
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
         }
-        // a held float's maybes, run on the GPU from its put day to now (again as the day moves)
+        // a held float's maybes, run on the GPU from its put place and day to now (again as the day
+        // moves): every path flies a quarter day at a time with the drifters' memory
         let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.put_day, f.seed, f.wake.first().map_or(f.at, |b| b.at)));
         match held {
             Some((id, put_day, seed, origin)) => {
-                let rerun = self.maybes_of.map_or(true, |(i, d)| i != id || (self.clock.day - d).abs() > 0.5);
+                let rerun = self.maybes_of.map_or(true, |(i, _, d)| i != id || (self.clock.day - d).abs() > 0.5);
                 if rerun {
                     let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
-                    self.maybes.run(&self.gpu, [origin.lon, origin.lat], put_day, self.clock.day, seed, n, SUBSTEP);
-                    self.maybes_of = Some((id, self.clock.day));
+                    let start = GpuPath { lon: origin.lon as f32, lat: origin.lat as f32, held: 0, measured: 1.0, eddy_u: 0.0, eddy_v: 0.0 };
+                    self.maybes.seed(&self.gpu, &vec![start; n as usize]);
+                    let mut day = put_day;
+                    let mut steps = 0;
+                    while day < self.clock.day - 1e-6 && steps < 2000 {
+                        let dt = SUBSTEP.min(self.clock.day - day);
+                        self.maybes.step(&self.gpu, Params::new(&self.rules, day, dt, seed, n), true);
+                        day += dt;
+                        steps += 1;
+                    }
+                    self.maybes_of = Some((id, n, self.clock.day));
                 }
             }
-            None => {
-                self.maybes.count = 0;
-                self.maybes_of = None;
-            }
+            None => self.maybes_of = None,
         }
-        let instances = self.instances(&view);
-        self.sprites.prepare(&self.gpu, &instances);
-        let glyphs = self.chrome(&view);
-        self.text_pass.prepare(&self.gpu, &glyphs);
+        let state = self.look_state();
+        let d = view.disc;
+        self.look.prepare(&self.gpu, &state, (self.width as f64 / self.ppp) as f32, (self.height as f64 / self.ppp) as f32, self.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
         let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame") });
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -603,9 +744,7 @@ impl App {
                 occlusion_query_set: None,
             });
             self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
-            self.maybes_pass.draw(&mut rp, &self.view_bind, &self.maybes);
-            self.sprites.draw(&mut rp, &self.view_bind);
-            self.text_pass.draw(&mut rp, &self.view_bind);
+            self.look.draw(&mut rp, &self.view_bind, &self.maybes, self.maybes_of.map_or(0, |m| m.1));
         }
         self.gpu.queue.submit([enc.finish()]);
     }
@@ -616,67 +755,8 @@ impl App {
         self.render(target);
     }
 
-    /// The words at the foot: the date (a typical year's), and the credit owed to the data that moves
-    /// the floats (R0's plain setting; Visual designs it, Truth says what is true).
-    fn chrome(&self, view: &View) -> Vec<GlyphInstance> {
-        const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        let mut out = Vec::new();
-        let ppp = view.ppp as f32;
-        let w = view.width as f32 / ppp;
-        let h = view.height as f32 / ppp;
-        let (m, d) = self.clock.calendar();
-        let date = format!("{} {}", d, MONTHS[(m - 1) as usize]);
-        let ink = [0.24, 0.22, 0.19, 1.0];
-        let faint = [0.24, 0.22, 0.19, 0.6];
-        let foot = h - 34.0 * self.reading as f32;
-        let dw = self.text.width(0, &date, ppp);
-        self.text.line(0, &date, (w - dw) / 2.0, foot, ppp, ink, &mut out);
-        let note = if self.clock.running { "a typical year, by the drifters’ record" } else { "held" };
-        let nw = self.text.width(1, note, ppp);
-        self.text.line(1, note, (w - nw) / 2.0, foot + 17.0 * self.reading as f32, ppp, faint, &mut out);
-        let credit = "Currents: NOAA Global Drifter Program (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0";
-        let cw = self.text.width(2, credit, ppp);
-        self.text.line(2, credit, (w - cw) / 2.0, h - 8.0 * self.reading as f32, ppp, faint, &mut out);
-        out
-    }
-
-    /// The things on the sea, as sprites on the screen: wakes first, then the maybes, then the floats.
-    fn instances(&self, view: &View) -> Vec<Instance> {
-        let disc = view.disc;
-        let cam = &view.camera;
-        let mut out = Vec::new();
-        let r = self.reading as f32;
-        let amber = [1.0, 0.68, 0.22];
-        for f in &self.floats {
-            let n = f.wake.len().max(1) as f32;
-            for (i, b) in f.wake.iter().enumerate() {
-                let (p, facing) = disc.project(cam, b.at);
-                if facing < 0.0 {
-                    continue;
-                }
-                let age = 1.0 - (i as f32 + 1.0) / n; // 0 newest
-                let a = 0.85 * (1.0 - age).powf(1.6);
-                out.push(Instance { at: [p[0] as f32, p[1] as f32], size: (1.1 + 0.5 * (1.0 - age)) * r, kind: KIND_BEAD, color: [amber[0], amber[1], amber[2], a], t: 0.0, _pad: [0.0; 3] });
-            }
-        }
-        for f in &self.floats {
-            if f.hand == Hand::Held {
-                // the maybes: R0 draws none (Truth's sampler is to come); a faint halo says it is held
-                let (p, facing) = disc.project(cam, f.at);
-                if facing >= 0.0 {
-                    out.push(Instance { at: [p[0] as f32, p[1] as f32], size: 16.0 * r, kind: KIND_MAYBE, color: [1.0, 0.95, 0.85, 0.18], t: 0.0, _pad: [0.0; 3] });
-                }
-            }
-        }
-        for f in &self.floats {
-            let (p, facing) = disc.project(cam, f.at);
-            if facing < 0.0 {
-                continue;
-            }
-            let lit = if f.lit_for < 3.0 { 1.0 } else { 0.35 };
-            let size = (6.0 + if f.hand != Hand::Free { 2.0 } else { 0.0 }) * r;
-            out.push(Instance { at: [p[0] as f32, p[1] as f32], size, kind: KIND_FLOAT, color: [1.0, 1.0, 1.0, 1.0], t: lit, _pad: [0.0; 3] });
-        }
-        out
+    /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.
+    pub fn date_bounds(&self) -> Option<[f32; 4]> {
+        self.look.date_bounds()
     }
 }
