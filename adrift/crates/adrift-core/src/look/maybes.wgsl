@@ -23,7 +23,7 @@ struct SpeckOut {
 };
 
 @vertex
-fn vs(@builtin(vertex_index) vi: u32, m: Maybe) -> SpeckOut {
+fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) k: u32, m: Maybe) -> SpeckOut {
     let la = radians(m.p.y);
     let lo = radians(m.p.x);
     // from the float's place out to its own, eased, so blooming out means out (and folding back, back)
@@ -36,7 +36,12 @@ fn vs(@builtin(vertex_index) vi: u32, m: Maybe) -> SpeckOut {
     var o: SpeckOut;
     o.local = c * (r + 0.5 * U.frame.z);
     o.pos = clip(p.xy + o.local);
-    if (p.z < 0.3 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
+    // toward the whole Earth the cloud is a dusting, not a smudge: a share of the specks shows (a
+    // quarter at zoom 1, all from zoom 3), chosen by a hash of each one's number so the cloud keeps
+    // its shape as the camera comes and goes
+    let share = by_zoom(0.25, 3.0);
+    let pick = fract(sin(f32(k) * 12.9898 + 78.233) * 43758.5453);
+    if (p.z < 0.3 || M.bloom <= 0.0 || pick > share) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
     o.held = f32(m.held);
     return o;
@@ -49,7 +54,7 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     var acc = vec4<f32>(0.0);
     // a self held at a coast or in ice is a little greyer: it stopped
     let speck = mix(mix(vec3<f32>(0.984, 0.914, 0.800), vec3<f32>(0.914, 0.827, 0.682), n), vec3<f32>(0.85, 0.84, 0.80), 0.6 * i.held);
-    let a = mix(0.80, 0.30, n) * min(M.bloom * 2.0, 1.0);
+    let a = mix(0.80, 0.30, n) * min(M.bloom * 2.0, 1.0) * by_zoom(0.7, 3.0);
     acc = over(acc, speck, a * cover(d - i.r));
     acc = over(acc, vec3<f32>(0.557, 0.341, 0.071), 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0) * cover(d - 0.35 * i.r));
     return acc;

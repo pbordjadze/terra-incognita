@@ -51,6 +51,7 @@
     "lamp_core": 0.42,
     "lamp": 0.55,
     "glow_reach": 2.2,
+    "lit_reach": 1.9,
     "bead": {"new": 2.2, "old": 1.2, "days": 45, "is": "a bead's radius, newest to oldest, over this many days of wake"},
     "maybe": 0.75,
     "silver": 0.9,

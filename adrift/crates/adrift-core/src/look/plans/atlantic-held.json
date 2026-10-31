@@ -1,0 +1,8 @@
+{
+  "_": "The whole Atlantic at zoom 1 with a float held: the maybes, the silver and the wake at the whole Earth (R3's first question: a smudge under the halo, or a cloud). adrift-check render adrift/crates/adrift-core/src/look/plans/atlantic-held.json <out.png> [--size 2064x2752 --ppp 2].",
+  "camera": { "lon": -40.0, "lat": 30.0, "zoom": 1.0 },
+  "day": 200.0,
+  "seconds": 12.0,
+  "floats": [ { "lon": -74.0, "lat": 35.0, "days_ago": 30 }, { "lon": -20.0, "lat": 15.0, "days_ago": 30 }, { "lon": -45.0, "lat": 40.0, "days_ago": 5 } ],
+  "hold": 0
+}
