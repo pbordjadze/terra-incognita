@@ -1,33 +1,47 @@
-// The maybes: a held float's other possible selves, as pale specks where each would be now. The
-// positions come from the GPU (gpu/maybes.rs: lon, lat, held, k); the vertex shader projects them on
-// the globe and the fragment draws each (Visual's to design; R0 is a soft dot).
+// The maybes: thousands of pale amber specks where the held float might be now (Truth's sampler
+// writes their positions; rules.wgsl moves them), each with one dark grain by day so the cloud has
+// texture and is read as a cloud, never as a tint. Point-sized instanced quads: a speck is 0.75
+// reading points, three pixels on the phone, and costs what a point sprite costs. By night at
+// half strength, or they out-shine the cities (CRITICS.md R0).
 
-@group(0) @binding(0) var<uniform> U: View;
+struct SpeckIn {
+    @location(0) g: vec3<f32>,
+};
 
-struct Maybe { @location(0) p: vec4f };   // lon, lat (degrees), held, k
-struct MOut { @builtin(position) position: vec4f, @location(0) local: vec2f, @location(1) fade: f32, @location(2) held: f32 };
+struct SpeckOut {
+    @builtin(position) pos: vec4<f32>,
+    @location(0) local: vec2<f32>,
+    @location(1) r: f32,
+};
 
-@vertex fn vs_maybe(@builtin(vertex_index) vid: u32, m: Maybe) -> MOut {
-    let la = radians(m.p.y); let lo = radians(m.p.x);
-    let w = vec3f(cos(la) * sin(lo), sin(la), cos(la) * cos(lo));
-    let rot = mat3x3f(U.rot0.xyz, U.rot1.xyz, U.rot2.xyz);
-    let v = transpose(rot) * w;
-    let size = 1.4 * U.frame.w;
-    let corner = vec2f(f32(vid & 1u) * 2.0 - 1.0, f32((vid >> 1u) & 1u) * 2.0 - 1.0);
-    let pt = vec2f(U.disc.x + v.x * U.disc.z, U.disc.y - v.y * U.disc.z) + corner * (size + 1.0);
-    var out: MOut;
-    let behind = v.z < 0.0;
-    out.position = select(vec4f(pt.x / (U.frame.x / U.frame.z) * 2.0 - 1.0, 1.0 - pt.y / (U.frame.y / U.frame.z) * 2.0, 0.0, 1.0), vec4f(0.0, 0.0, 2.0, 1.0), behind);
-    out.local = corner * (size + 1.0);
-    out.fade = smoothstep(0.0, 0.15, v.z);
-    out.held = m.p.z;
-    return out;
+struct Maybes {
+    bloom: f32,         // 0..1 as they bloom out of the float and fold back
+    night: f32,
+    _pad: vec2<f32>,
+};
+@group(1) @binding(0) var<uniform> M: Maybes;
+
+@vertex
+fn vs(@builtin(vertex_index) vi: u32, s: SpeckIn) -> SpeckOut {
+    let p = place(s.g);
+    let r = 0.75 * rp() * M.bloom;
+    let c = corner(vi % 6u);
+    var o: SpeckOut;
+    o.local = c * (r + 0.5 * V.frame.z);
+    o.pos = clip(p.xy + o.local);
+    if (p.z < 0.3 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
+    o.r = r;
+    return o;
 }
 
-@fragment fn fs_maybe(in: MOut) -> @location(0) vec4f {
-    let d = length(in.local);
-    let size = 1.4 * U.frame.w;
-    let a = (1.0 - smoothstep(size - 0.5, size + 0.5, d)) * 0.55 * in.fade;
-    let col = select(vec3f(1.0, 0.96, 0.88), vec3f(0.85, 0.82, 0.78), in.held > 0.5);
-    return vec4f(col * a, a);
+@fragment
+fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
+    let n = M.night;
+    let d = length(i.local);
+    var acc = vec4<f32>(0.0);
+    let speck = mix(vec3<f32>(0.984, 0.914, 0.800), vec3<f32>(0.914, 0.827, 0.682), n);
+    let a = mix(0.80, 0.30, n) * M.bloom;
+    acc = over(acc, speck, a * cover(d - i.r));
+    acc = over(acc, vec3<f32>(0.557, 0.341, 0.071), 0.5 * (1.0 - n) * M.bloom * cover(d - 0.35 * i.r));
+    return acc;
 }
