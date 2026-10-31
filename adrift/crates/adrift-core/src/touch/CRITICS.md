@@ -81,3 +81,47 @@ gone, undone), `r1-ride.jpg` (0.1 s, 1 s, 3 s of a ride, then left by a drag).
   nothing but a halo.
 - Verdict: the vocabulary holds; the build does not yet show it. Nothing in Motion's module is
   waiting on Motion; three things are waiting on D1 and D2.
+
+## R2 (October 31, 2026): the merged build (`adrift` at d2bd376)
+
+What was judged: all 24 plans played by `adrift-check` on the merged tree (Engineering's run on its
+check with the app's ids: 24 of 24 pass; this branch's run drew the PNGs), and the strips in
+`critics/`: `r2-put.jpg` (0.2 s, 0.39 s, 0.6 s, 1.5 s of a rest on the sea), `r2-hold.jpg` (a float
+held, then carried, then set down), `r2-date.jpg` (the date under the disc as the probe now reads
+it), `r2-take-out.jpg` and `r2-ride.jpg`.
+
+**The hater** (a new one, who read R1's verdict and came to see if anything changed):
+- *The beat is seen now, and it over-promises.* `r2-put.jpg`: at 0.2 s a tap's ring; at 0.39 s a
+  formed glass float with its lamp lit, a hundredth of a second before the beat. Lift there and a
+  lit float vanishes. The ring thickening is right; the lamp lighting before the state has a float
+  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual: the lamp lights on
+  `Put`, not during the press.
+- *The date is a real control now* (`r2-date.jpg`: "3 January, a typical year, by the drifters'
+  record", under the disc; `date-scrub` and `date-tap` pass against `Look::date_bounds()`). Still
+  nothing says it can be touched. That is the design, and the hater notes it will be the first thing
+  a tester fails to find. A device test decides; no change asked.
+- *The maybes do not read at phone size.* `r2-hold.jpg`, first frame: the silver drifter's track
+  rises (good) and a halo; the maybes are specks under the halo at zoom 1. Hold a float zoomed out
+  and the one gesture that shows the rules' other answers shows a smudge. Visual's and Truth's to
+  weigh; Motion's part (the hold fires at the beat, carry only after) is proved.
+- *A take-out still does not leave in plain sight*: with `Carry { to }` a place, the float waits at
+  its last water until the hand opens off the disc (`r2-take-out.jpg`, first frame). Both sides
+  agreed to change `to` to a hand when the look can draw the leaving; not this round. And on the
+  tree these PNGs come from (d2bd376) the hand opening off the disc put the float *back* (second
+  frame: afloat again at 30° W): the app's reading of `Release { at: None }` changed under the
+  merge; Engineering's next push takes it out while carried (its run passes `take-out`). The
+  gesture emits the same intent either way; the PNG is the proof that a seam's meaning must be
+  written where both sides read it (VOCABULARY's table is that place).
+- *The ride* (`r2-ride.jpg`): the camera at 31.4° W after one second, at the float after three,
+  no overshoot; the stand-in's zero-step snap of R1 is gone on the real build.
+- Not failed: 24 of 24 on the real globe with real land (Kansas is land; the Atlantic is sea);
+  cancel and Reduce Motion now checked on the build, not the stand-in; the pinch ends a press with
+  `Unpress`; the spring and the undo bugs of R1 stay fixed.
+
+**Holt:**
+- *Wander, stop, undo, leave*: as R1, and now the date can be found by a reader who looks under the
+  globe; undo and redo are mirrors (`undo-gestures`, 7 of 7).
+- *Unscripted*: the silver drifter that rises on a hold is a real buoy's real track, and it was not
+  where the plan's author expected (east, along the Canary current). The sea answered.
+- Verdict: the vocabulary is complete on the build; what remains is the look's timing of the lamp
+  and the device's own verdict on the fling toward the pole and the invisible date.

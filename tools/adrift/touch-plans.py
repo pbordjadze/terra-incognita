@@ -204,11 +204,12 @@ plan("reduce-motion", "Reduce Motion: no fling, flights are cuts; the beat is un
 # --- the date and undo ---
 plan("date-scrub", "Drag the date: the clock pauses and the day follows the finger; it stays paused", [
     ev(0.0, "down", xy=date_xy()), ev(0.1, "move", xy=date_xy(50)), ev(0.2, "move", xy=date_xy(100)),
+    shot(0.22, "scrubbed"),
     expect(0.25, saw=["Pause", "Scrub"], state="scrubbing", playing=False, day=9900.0),
     ev(0.3, "up", xy=date_xy(100)), expect(0.4, playing=False, state="idle", camera_moved=False, floats=0),
 ], day=9800.0)
 plan("date-tap", "Tap the date to pause, tap again to play", [
-    ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), expect(0.2, saw=["Pause"], playing=False),
+    ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), shot(0.15, "paused"), expect(0.2, saw=["Pause"], playing=False),
     ev(0.5, "down", xy=date_xy()), ev(0.6, "up", xy=date_xy()), expect(0.7, saw=["Play"], playing=True),
 ], day=9800.0)
 three = lambda t, fx: [ev(t, "down" if fx is None else "move", i, xy=px(0.3 + 0.15 * i + (fx or 0), 0.6)) for i in range(3)]
