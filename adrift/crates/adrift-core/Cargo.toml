@@ -1,0 +1,33 @@
+[package]
+name = "adrift-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Adrift: glass floats on the real sea. The one library; the shells are thin."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[features]
+default = []
+# the device's shell: a C ABI over a CAMetalLayer (adrift/ios)
+ffi = []
+
+[dependencies]
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+image = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+anyhow = { workspace = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+wgpu = { workspace = true, features = ["metal"] }
+
+[target.'cfg(all(not(target_os = "ios"), not(target_arch = "wasm32")))'.dependencies]
+wgpu = { workspace = true, features = ["vulkan", "metal"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu = { workspace = true, features = ["webgpu"] }

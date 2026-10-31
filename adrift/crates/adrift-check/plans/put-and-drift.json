@@ -1,0 +1,24 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -50.0, "lat": 30.0, "zoom": 1.6 }, "day": 150.0, "seconds": 5.0 },
+  "steps": [
+    { "shot": "01-empty" },
+    { "down": [230, 400], "id": 1 },
+    { "advance": 0.1 },
+    { "up": [230, 400], "id": 1 },
+    { "advance": 0.4 },
+    { "shot": "02-rang" },
+    { "down": [180, 420], "id": 2 },
+    { "advance": 0.8 },
+    { "shot": "03-put-held" },
+    { "up": [180, 420], "id": 2 },
+    { "advance": 20.0 },
+    { "shot": "04-drifted-40-days" },
+    { "intent": { "SetRunning": { "running": false } } },
+    { "advance": 3.0 },
+    { "shot": "05-held-date" },
+    { "intent": "Undo" },
+    { "advance": 0.5 },
+    { "shot": "06-undone" }
+  ]
+}

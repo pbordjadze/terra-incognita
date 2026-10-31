@@ -1,0 +1,18 @@
+{
+  "_": "The files the app loads, by the names the code uses (adrift-core/src/assets.rs FILES), and where each is in this repository. Terra's own data is borrowed as it is (tools/ocean/build.py, tools/globe/build.py and ground.py built it); files under adrift/data/ are Adrift's own. tools/adrift/assets.py assembles a directory of them for a shell.",
+  "files": {
+    "geo.png": "Globe/geo.png",
+    "terrain.png": "Globe/terrain.png",
+    "floor.png": "Globe/ground/floor.png",
+    "currents.png": "App/TerraIncognita/Ocean/OceanCurrents.png",
+    "stream.png": "App/TerraIncognita/Ocean/OceanStream.png",
+    "ice-01.png": "Globe/ground/ice-01.png", "ice-02.png": "Globe/ground/ice-02.png", "ice-03.png": "Globe/ground/ice-03.png",
+    "ice-04.png": "Globe/ground/ice-04.png", "ice-05.png": "Globe/ground/ice-05.png", "ice-06.png": "Globe/ground/ice-06.png",
+    "ice-07.png": "Globe/ground/ice-07.png", "ice-08.png": "Globe/ground/ice-08.png", "ice-09.png": "Globe/ground/ice-09.png",
+    "ice-10.png": "Globe/ground/ice-10.png", "ice-11.png": "Globe/ground/ice-11.png", "ice-12.png": "Globe/ground/ice-12.png",
+    "land-01.jpg": "Globe/ground/01.jpg", "land-02.jpg": "Globe/ground/02.jpg", "land-03.jpg": "Globe/ground/03.jpg",
+    "land-04.jpg": "Globe/ground/04.jpg", "land-05.jpg": "Globe/ground/05.jpg", "land-06.jpg": "Globe/ground/06.jpg",
+    "land-07.jpg": "Globe/ground/07.jpg", "land-08.jpg": "Globe/ground/08.jpg", "land-09.jpg": "Globe/ground/09.jpg",
+    "land-10.jpg": "Globe/ground/10.jpg", "land-11.jpg": "Globe/ground/11.jpg", "land-12.jpg": "Globe/ground/12.jpg"
+  }
+}
