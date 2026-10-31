@@ -13,7 +13,9 @@ time; everything is bundled.
 | The current | the month's mean near-surface current in each half-degree cell, from the drifters' climatology (`currents.png`); the stream function solved from it (`stream.png`) | a float moves with the cell's mean current, interpolated between cells and between months by the day of the year |
 | The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); a float is put with a first velocity drawn from that same measured variance (the water is already moving), and each maybe with its own; deterministic for a seed, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
 | The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below) |
-| The coast | the globe's own signed distance to the shore (`coast.png`) | a float that steps onto land is put back at the water's edge and held there |
+| The coast | the globe's own signed distance to the shore (Terra's `geo.png`) | a float that steps onto land is put back at the water's edge, one of the coast's own pixels (about 10 km) off, and held there |
+| Where it may be put | how far the nearest drifter-measured cell is, by month (the currents sheet's B; `Rules::record`) | anywhere the mask shows water; where no drifter went the float rides the smoothed-in current and wander, plausibly (below: Where a float may be put) |
+| Between steps | | the drawn float glides along its velocity (`Rules::glide`) between its quarter-day steps, so it runs rather than ticks |
 | The ice | each month's usual sea-ice concentration (`ice.png`) | a float is held where the concentration is 15% or more (the Sea Ice Index's own edge) and let go when the month's ice retreats past it |
 | The real drifters | a subsample of the Global Drifter Program's tracks at one point a day (`drifters.bin`) | which run is "the nearest that passed there": the one whose point lies closest to the float's, in any year |
 | The date | | the climatology is a typical year, not a given one: the date on the screen is the day of a typical year, and a float's path is what a typical year's sea would do, never what the sea did on that day |
@@ -99,6 +101,38 @@ time; everything is bundled.
 | The silver drifter and its label ("Drifter 145813, 2 Jun to 18 Jul 2016") | `Drifters::track`: a real GDP buoy, its real calendar dates, the month about where it passed nearest |
 | The credit line | `sea::CREDIT_LINE`; the full sentences, `sea::CREDITS` |
 
+## Where a float may be put, and what unrecorded water does
+
+A float may be put on any water the coast mask shows (truth underneath, not on top: DECISIONS.md
+§ 11). Where no drifter of the programme ever came within three degrees (the Caspian, the Great
+Lakes, Baikal, Victoria, Hudson Bay, the Red Sea, the Persian Gulf, the seas under the ice: 7% of
+the sea by area) the sheets hold a current and a wander smoothed in from the nearest measured
+water, hundreds of kilometres away, which is no record of that water. There the float rides no
+current at all: it goes on the wind's leeway and the wander alone (`rules::reach`: the current
+weighted by the record's reach, whole at 0.5 and over, none at 0, in proportion between), the way
+a lake's surface drifts with the wind; the smoothed-in current would have run a Red Sea float at
+68 cm/s on the Gulf of Aden's monsoon and piled a lake's floats on one shore. With the wander
+(the Caspian's about 32 km a day, Lake Michigan's 48, Hudson Bay's 27, all smoothed in too and
+kept, so the water looks alive) nothing sits dead and nothing jitters, and the coast holds what
+reaches it.
+What is true is written here, not on the screen: `Rules::record(at)` says how far the nearest
+measured cell is (1 there, 0 three degrees away) and `Rules::may_put(at)` sorts water into
+measured, a reach, and no record, for anyone who wants the honest answer; nothing in the app
+calls them. The ice is different: a float put on the month's ice is held (`Held::Ice`) until the
+ice retreats, which is the record speaking.
+
+## The coast against the phone
+
+The coast is the globe's distance field at 4096 pixels round, about 9.8 km a pixel at the
+equator, narrower east-west toward the poles. A held float sits one pixel off the shore. At the
+phone's closest zoom (8) the globe's radius is about 1,440 points, so a point is about 4.4 km: the
+mask's pixel is 2.2 points, the hold-off 2.2 points, and the float's own symbol (7 points round)
+31 km across. At the whole Earth (zoom 1) a point is 35 km and the symbol 250 km across: a float
+put a safe 20 km off Panama draws over the isthmus. So a float "on the coast" in the owner's
+screenshot is the symbol's size on the sea, not the mask's: the mask is finer than the symbol at
+every zoom, and finer than the point from zoom 4.5 in. What would fix the look at the whole Earth
+is the symbol's (Visual's) to decide; the mask would need 8192 pixels only for a zoom beyond 8.
+
 ## How many maybes, and how often
 
 Measured (`sea::tests::maybes_budget`, a tool run by hand): thirty days after a put off Cape
@@ -110,6 +144,35 @@ sixteenth of 2048 paths at a quarter day. A whole-day step is not honest in a je
 the shelf and the coast catches nearly twice as many (73 of 2048 against 41), and the spread
 across the stream narrows. The cloud need not be re-run more often than the day moves half a
 day.
+
+## Whales (not in the app; what it would take)
+
+Whales could inhabit Adrift honestly only as the silver drifter does: real tagged animals, drawn
+as data, each with its tag, its species, its real dates and its dataset's credit; never as rules.
+A float drifts, so the sea's rules are its truth; a whale swims, and any rule for where it goes
+(prey, season, the sea) would be a story Adrift invented. What it would take, for a next round:
+
+- **Data.** Satellite-tag tracks published for reuse: the Movebank Data Repository publishes
+  studies under CC0 (blue whales of the eastern North Pacific, Oregon State's Marine Mammal
+  Institute, from Bailey, Mate and others' Argos tags; humpback and other baleen-whale tags from
+  the same group), each with a DOI to cite; NOAA's Northwest Fisheries Science Center's satellite
+  tags on Southern Resident killer whales (Hanson and others, 2012–2016), a federal work, by
+  request; OBIS-SEAMAP's telemetry sets, whose licences are the contributors' own and often
+  non-commercial, to be read one by one. Nothing scraped, nothing whose terms were not read:
+  a dataset enters `adrift/data` only with its licence and credit in this file and in
+  `manifest.json`.
+- **The sheet.** `drifters.bin`'s layout fits as it is (a run per tag at a point a day, with a
+  species in the flags); a few hundred tracks of a few hundred days are under a megabyte. The
+  builder would be `tools/adrift/data/whales.py`, reading each dataset's own file, with its
+  docstring naming every source and term.
+- **The rules.** None: the tracks are shown, not simulated. The nearest whale that passed a
+  float's water could rise as the drifter does, with its name and dates (`Drifters::track` works
+  unchanged on a second file); or whales could glint on their own waters by the month of the year,
+  as the tracks' own dates place them. Either needs a mark from Visual and a seam from
+  Engineering (a second `Drifters` on the `App`, a `LookState` field), asked as demands then.
+- **The honesty.** A tag's track has gaps and ends when the tag falls off; a whale shown at a
+  date is one that was there in that year, not a typical year's whale; the label must say so, as
+  the drifter's does.
 
 ## Credit owed
 

@@ -139,10 +139,19 @@ pub async fn start() -> Result<(), JsValue> {
         wheel.forget();
         let a = app.clone();
         let key = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            if !(e.meta_key() || e.ctrl_key()) {
+            let k = e.key().to_lowercase();
+            // without a modifier: h or 0 flies home, Backspace or Delete clears the sea (undoable)
+            if !(e.meta_key() || e.ctrl_key() || e.alt_key()) {
+                match k.as_str() {
+                    "h" | "0" => a.borrow_mut().key(adrift_core::touch::Key::Home),
+                    "backspace" | "delete" => {
+                        e.prevent_default();
+                        a.borrow_mut().key(adrift_core::touch::Key::ClearAll);
+                    }
+                    _ => {}
+                }
                 return;
             }
-            let k = e.key().to_lowercase();
             if k == "z" {
                 e.prevent_default();
                 a.borrow_mut().key(if e.shift_key() { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });

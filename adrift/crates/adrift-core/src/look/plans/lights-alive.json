@@ -1,0 +1,8 @@
+{
+  "_": "The land's lights alive by night (R4): frames a third of a second apart over the eastern seaboard at zoom 5 with the date running; the lights must differ frame to frame a little everywhere and more at the cores, never flicker (a pixel on, then off). adrift-check play adrift/crates/adrift-core/src/look/plans/lights-alive.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -74.0, "lat": 40.0, "zoom": 5.0 }, "day": 200.0, "seconds": 20.0, "running": true, "night": true },
+  "steps": [
+    { "shot": "t0" }, { "advance": 0.33 }, { "shot": "t1" }, { "advance": 0.33 }, { "shot": "t2" }, { "advance": 2.0 }, { "shot": "t3" }
+  ]
+}

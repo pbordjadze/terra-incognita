@@ -17,7 +17,7 @@ mod tests;
 
 pub use drifters::{Drifters, Nearest, Run, Track};
 pub use gpu::{GpuPath, Maybes, Params};
-pub use rules::{Drift, Flight, Rules, Step};
+pub use rules::{Drift, Flight, Put, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
 
 /// What the foot says of where the sea comes from: one line, and the full credits behind it

@@ -261,7 +261,7 @@ impl Words {
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
-    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, labels: &[GlyphInstance]) {
+    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
         let foot = under.min(height - 72.0 * reading);
         let bottom = height - 12.0 * reading;
@@ -273,12 +273,27 @@ impl Words {
         let halo_for = |baseline: f32| if baseline - 14.0 * reading < disc[1] + disc[2] { sea_halo } else { paper_halo };
         let cx = width / 2.0;
         let date_line = Line { text: date, style: Style::Regular, size: 17.0 * reading, ink: date_ink, tracking: 0.0 };
-        let dw = self.face.width(&date_line) + 24.0 * reading;
-        let dh = 17.0 * reading * 1.3 + 12.0 * reading;
+        let dw = (self.face.width(&date_line) + 24.0 * reading).max(150.0 * reading);
+        let dh = 17.0 * reading * 1.3 + 12.0 * reading + 10.0 * reading;
         self.date_bounds = Some([cx - dw / 2.0, foot - 17.0 * reading * 0.95 - 6.0 * reading, dw, dh]);
         let mut glyphs = self.face.layout(&date_line, cx, foot, halo_for(foot));
+        // the year's rule under the date, a hairline the band's width, and the day's marker on it: a
+        // lamp of amber while the date runs, a ring of ink while it rests; the one drawn thing that
+        // says it can be moved (a drag along it scrubs, a tap rests or runs it: Motion's), without a
+        // control that points or waits
+        let rule_y = foot + 8.0 * reading;
+        let rule_w = dw - 24.0 * reading;
+        let rule_ink = if night { [0.722, 0.776, 0.831, 0.55] } else { [0.243, 0.298, 0.353, 0.45] };
+        if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
+            let uv = [(b.x as f32 + 2.0) / self.face.width, (b.y as f32 + 2.0) / self.face.height, (b.w as f32 - 4.0) / self.face.width, (b.h as f32 - 4.0) / self.face.height];
+            glyphs.push(GlyphInstance { rect: [cx - rule_w / 2.0, rule_y - 0.35 * reading, rule_w, 0.7 * reading], uv, ink: rule_ink, halo: [0.0; 4], anchor: [0.0; 4] });
+        }
+        let mx = cx - rule_w / 2.0 + rule_w * year_day.clamp(0.0, 1.0);
+        let (mark, mark_ink) = if running { ("\u{25cf}", if night { [0.965, 0.682, 0.227, 1.0] } else { [0.957, 0.647, 0.165, 1.0] }) } else { ("\u{25cb}", if night { [0.894, 0.925, 0.957, 1.0] } else { [0.149, 0.188, 0.227, 1.0] }) };
+        let marker = Line { text: mark, style: Style::Regular, size: 9.0 * reading, ink: mark_ink, tracking: 0.0 };
+        glyphs.extend(self.face.layout(&marker, mx, rule_y + 3.2 * reading, [0.0; 4]));   // (a mark, not a word: no halo)
         if !note.is_empty() {
-            let y = foot + 19.0 * reading;
+            let y = foot + 24.0 * reading;
             glyphs.extend(self.face.layout(&Line { text: note, style: Style::Italic, size: 13.0 * reading, ink: note_ink, tracking: 0.0 }, cx, y, halo_for(y)));
         }
         // the credits: one line along the foot, or two when the line would overrun the screen (wrapped at
