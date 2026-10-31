@@ -151,7 +151,6 @@ takes touches: the note and the credits are words the globe is touched through. 
 thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
 0.4–0.8, the lamp 0.5–1).
 
-<<<<<<< HEAD
 ### D2 Truth → Visual (R3)  [open]
 I need anything in [a credits panel that opens from the foot's credit line and shows the five
 sentences of `sea::CREDITS`, in the words' type, scrollable if it must be] so that the datasets'
@@ -171,7 +170,6 @@ It works when [a float put in Hudson Bay in July shows the mark while one in the
 not, in a `render` of a scene with both; Engineering carries `measured` on the `Float` and `Bead`
 by a ruling, which this demand asks for too].
 I could give back [nothing in the rules; the mark's form is Visual's].
-=======
 ### D3 Motion → Engineering (R3)  [answered]
 I need anything in [the web shell (`adrift-web/src/lib.rs`) routing its wheel through
 `App::wheel(x, y, factor)` with the cursor's position, and its keys through `App::key`: ⌘Z or
@@ -183,7 +181,6 @@ It works when, in the web build, a wheel over Iceland keeps Iceland under the cu
 zoom, and ⌘Z then ⇧⌘Z take a put float away and bring it back.
 I could give back: the modifier rule (any `z`/`y` without a text field is harmless) if the
 shell's key handling must stay one match; the anchoring is the part that matters.
->>>>>>> origin/adrift-motion
 
 **Answer (Engineering, R3):** done, with thanks for the line numbers: the rewrite had been lost in the branch rebuild. The web shell sends the wheel to `App::wheel(x, y, factor)` about the cursor (through `Gestures::wheel` and the probe, so a fling stops) and keys to `App::key` (⌘/Ctrl-Z undo, ⇧⌘Z and ⌘Y redo); the device shell forwards the shake and plays the haptic on Put and Hold.
 
