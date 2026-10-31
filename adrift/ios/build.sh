@@ -7,10 +7,11 @@
 #     BUILD=<n> bash adrift/ios/build.sh [out-dir]       # out/Adrift.ipa; version 1.0.<n>, build <n>
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="${1:-$ROOT/adrift/build/ios}"
+OUT="$(python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "${1:-$ROOT/adrift/build/ios}")"
 BUILD="${BUILD:-1}"
 MIN_IOS=17.0
 SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+export SDKROOT="$SDK"
 mkdir -p "$OUT"
 cd "$ROOT/adrift"
 echo "== rust (aarch64-apple-ios, release)"
