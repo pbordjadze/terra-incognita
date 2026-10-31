@@ -304,6 +304,8 @@ fn play(args: &[String]) -> Result<()> {
                 }
             }
             last_camera = Some(cam);
+            // `saw` and `not` speak of the intents since the last check (touch/VOCABULARY.md › Plans)
+            app.seen.clear();
             let line = if bad.is_empty() { format!("{i:3} t={t:7.2}s expect ok\n") } else { failed += 1; format!("{i:3} t={t:7.2}s EXPECT FAILED: {}\n", bad.join("; ")) };
             print!("{line}");
             log.push_str(&line);

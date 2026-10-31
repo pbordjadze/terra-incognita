@@ -104,6 +104,8 @@ pub struct App {
     /// The nearest real drifter's track for the held float, as places in order, and its label.
     drifter: Vec<LonLat>,
     pub drifter_label: String,
+    /// The index in `drifter` of the point nearest the float.
+    pub drifter_nearest: usize,
     ripples: Vec<Ripple>,
     width: u32,
     height: u32,
@@ -197,6 +199,7 @@ impl App {
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
+            drifter_nearest: 0,
             ripples: Vec::new(),
             width,
             height,
@@ -566,8 +569,12 @@ impl App {
                 if self.bloom <= 0.0 {
                     self.drifter = match self.drifters.track(at, 500.0) {
                         Some(t) => {
-                            self.drifter_label = t.label();
-                            t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
+                            // the month and a half each side of where the buoy passed nearest (the
+                            // wake's own 45 days, so the two read as one scale), not its whole run
+                            let w = t.window(90);
+                            self.drifter_label = t.label_window(w.clone());
+                            self.drifter_nearest = t.point.saturating_sub(w.start);
+                            t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
                         }
                         None => Vec::new(),
                     };
@@ -691,8 +698,10 @@ impl App {
         self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
         if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
-                self.drifter_label = t.label();
-                self.drifter = t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
+                let w = t.window(90);
+                self.drifter_label = t.label_window(w.clone());
+                self.drifter_nearest = t.point.saturating_sub(w.start);
+                self.drifter = t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
             }
         }
     }
