@@ -116,3 +116,12 @@ and `look_state()`:
 - **The tap's rings** (`sea.wgsl`) gentler: two rings, not three, their light at 0.40 (0.65 before)
   and less by night, the shade under them lighter, gone sooner (`plans/ripple.json`,
   `studies/r6-ripple-before-after-phone.png`, before above, after below).
+- **Pairs** (R6, after Truth's worlds: the i-th self of every lamp met the same sea): each cloud's
+  partner is the one in front (and the front's, the one out before it); the maybes pass reads the
+  partner's i-th self from a second instance slot over the same buffer (`maybes.rs › PARTNER`), so
+  no storage binding. Close in, a pair still within ~25 km is one speck, the front lamp's hue ringed
+  in its partner's, and the other cloud's self steps aside; by 160 km apart the ring is gone and each
+  is its own lamp's speck. From afar the pair's hues mix in the field. So where two clouds diverge is
+  exactly where the rings go (`studies/r6-pairs-gyre-before-after-phone.png`: quiet water, most
+  still ringed; `r6-pairs-jet-…`: the Gulf Stream, few). The quad grows for the ring only close in,
+  where it is drawn: the eight-cloud scrub's frame is unchanged within the software GPU's noise.
