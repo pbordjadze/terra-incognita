@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """Wikipedia's words: the articles behind the atlas's paragraphs, fetched once and bundled.
 
+No current users: the switch and the experiences it served were retired on October 31, 2026
+(painting-company row 195; the app's side is at before-retirement-2026-10-31). `--app` would write a
+Wikipedia.json the app no longer reads, into a folder the app bundles: don't run it until the switch
+comes back.
+
 The app has a switch, Wikipedia's words (App/TerraIncognita/Wikipedia/): on, every paragraph the atlas
 wrote itself gives way to Wikipedia's own first sentences on the same subject and a link to the
 article. The app fetches nothing (its rule: no network), so the articles are bundled, and this tool

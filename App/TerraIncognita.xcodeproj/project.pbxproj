@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
         0E0000000000000000000001 /* Prototypes in Resources */ = {isa = PBXBuildFile; fileRef = 0E0000000000000000000002 /* Prototypes */; };
-		0B00000000000000000000F3 /* Atlas in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B06 /* Atlas */; };
 		0B00000000000000000000F4 /* Globe in Resources */ = {isa = PBXBuildFile; fileRef = 0B0000000000000000000B07 /* Globe */; };
 /* End PBXBuildFile section */
 
@@ -21,7 +20,6 @@
         0C0000000000000000000002 /* TerraIncognitaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TerraIncognitaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B01 /* TerraIncognita.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TerraIncognita.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B0000000000000000000B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		0B0000000000000000000B06 /* Atlas */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Atlas; path = ../Atlas; sourceTree = "<group>"; };
 		0B0000000000000000000B07 /* Globe */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Globe; path = ../Globe; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -51,7 +49,6 @@
 			children = (
 				0B0000000000000000000D01 /* TerraIncognita */,
                 0C0000000000000000000003 /* TerraIncognitaUITests */,
-				0B0000000000000000000B06 /* Atlas */,
 				0B0000000000000000000B07 /* Globe */,
                 0E0000000000000000000002 /* Prototypes */,
 				0B0000000000000000000004 /* Config */,
@@ -152,7 +149,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0B00000000000000000000F3 /* Atlas in Resources */,
 				0B00000000000000000000F4 /* Globe in Resources */,
                 0E0000000000000000000001 /* Prototypes in Resources */,
 			);

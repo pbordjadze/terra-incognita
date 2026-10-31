@@ -12,7 +12,8 @@ geography, pictures and sprites the globe draws; no pack has a web page. Standar
                                                                the `packs` branch); committing is the caller's
     playground.py publish [ids...] [--dry-run] [--summary FILE]
                                                                pack against the live R2 bucket, upload what changed
-    playground.py retire <id> [--out DIR] [--undo]             mark a pack withdrawn (catalog only)
+    playground.py retire <id> [--out DIR] [--undo]             mark a pack withdrawn (catalog only; publish
+                                                               --into does it for a pack deleted from Prototypes/)
     playground.py list [--remote URL]                          the bundled prototypes, and a remote catalog's
 
 publish --into needs no credentials (packs.yml publishes the `packs` branch with it). publish and
@@ -948,22 +949,45 @@ def stored_revisions(folder):
 GITATTRIBUTES = b'# Written by tools/playground/playground.py: every file is kept byte for byte (the catalog has its SHA-256).\n* -text\n'
 
 
-def publish_dir(packs, into, now, dry_run=False):
+def withdraw(catalog, gone, now):
+    """Marks retired the catalog's entries for packs whose folders are gone from Prototypes/ (`gone`,
+    ids): a pack deleted from main leaves the catalog as `retire` would take it out, its files kept.
+    Returns the ids newly retired, in order."""
+    out = []
+    for e in catalog['packs']:
+        if e['id'] in gone and not e.get('retired', False):
+            e['retired'] = True
+            out.append(e['id'])
+    if out:
+        catalog['generated'] = now
+    return out
+
+
+def missing_packs(catalog, root=None):
+    """The ids the catalog lists whose folders are not in Prototypes/ (or `root`)."""
+    root = Path(root) if root else PROTOTYPES
+    return {e['id'] for e in catalog['packs'] if not (root / e['id']).is_dir()}
+
+
+def publish_dir(packs, into, now, dry_run=False, gone=()):
     """Publishes into a folder that holds a published tree (a checkout of the `packs` branch, or an
     empty folder for the first time): reads its catalog.json, gives each pack whose contents changed
     the next revision (never one already stored there), writes packs/<id>/r<rev>/ and then
     catalog.json, with paths relative to it. Unchanged packs keep their revision; if one's stored
     files are missing or altered they are restored from the pack, which the catalog's hash vouches
-    for. Retired entries stay retired. Writes nothing on a dry run. Returns (catalog, results,
-    restored), restored being the unchanged results whose files were (or would be) rewritten."""
+    for. Retired entries stay retired; entries for `gone` packs (deleted from Prototypes/) are retired
+    (`withdraw`). Writes nothing on a dry run. Returns (catalog, results, restored, withdrawn),
+    restored being the unchanged results whose files were (or would be) rewritten, withdrawn the ids
+    newly retired."""
     into = Path(into)
     existing = into / 'catalog.json'
     base = parse_catalog(existing.read_text(encoding='utf-8'), display(existing)) if existing.is_file() else empty_catalog()
     catalog, results = plan(packs, base, now, stored_revisions(into))
+    withdrawn = withdraw(catalog, set(gone) - {p.id for p in packs}, now)
     restored = [r for r in results if not r.changed
                 and not _dir_matches(into / 'packs' / r.pack.id / f'r{r.revision}', r.pack)]
     if dry_run:
-        return catalog, results, restored
+        return catalog, results, restored, withdrawn
     for r in results:
         if r.changed and (into / 'packs' / r.pack.id / f'r{r.revision}').exists():
             raise ToolError(f'packs/{r.pack.id}/r{r.revision} already exists: a revision\'s files never change')
@@ -975,12 +999,12 @@ def publish_dir(packs, into, now, dry_run=False):
         else:
             (into / key).parent.mkdir(parents=True, exist_ok=True)
             (into / key).write_bytes(data)
-    if not existing.is_file():
+    if not existing.is_file() or (withdrawn and not any(r.changed for r in results)):
         atomic_write(existing, catalog_bytes(catalog))
     attributes = into / '.gitattributes'
     if not attributes.is_file() or attributes.read_bytes() != GITATTRIBUTES:
         atomic_write(attributes, GITATTRIBUTES)
-    return catalog, results, restored
+    return catalog, results, restored, withdrawn
 
 
 # ---------------------------------------------------------------- network
@@ -1227,20 +1251,29 @@ def publish_into(args):
     if args.public_url and not url_ok(args.public_url):
         raise ToolError('--public-url must be an https:// URL')
     packs = prepare(args.ids, [], Report())
-    catalog, results, restored = publish_dir(packs, into, now_eastern(), args.dry_run)
+    # (every pack published: the catalog's packs no longer in Prototypes/ are withdrawn; a publish of
+    # chosen ids leaves the others alone)
+    existing = into / 'catalog.json'
+    gone = set()
+    if not args.ids and existing.is_file():
+        gone = missing_packs(parse_catalog(existing.read_text(encoding='utf-8'), display(existing)))
+    catalog, results, restored, withdrawn = publish_dir(packs, into, now_eastern(), args.dry_run, gone)
     describe(results)
     changed = [r for r in results if r.changed]
     base = (args.public_url or '').rstrip('/')
     where = f'{base}/catalog.json' if base else display(into / 'catalog.json')
     for r in restored:
         print(f'  {"would restore" if args.dry_run else "restored"} packs/{r.pack.id}/r{r.revision}/ (its files were missing or altered)')
-    if not changed and not restored:
+    for i in withdrawn:
+        print(f'  {"would retire" if args.dry_run else "retired"} {i} (its folder is gone from Prototypes/; its files stay)')
+    if not changed and not restored and not withdrawn:
         print('Nothing to publish: every pack is already at its current revision.')
     elif args.dry_run:
         print(f'Dry run: nothing written. {len(changed)} pack{"" if len(changed) == 1 else "s"} would get a new revision.')
     else:
         print(f'Published into {display(into)}: {len(changed)} new revision{"" if len(changed) == 1 else "s"}. Catalog: {where}')
-    parts = [f'{r.pack.id} r{r.revision}' for r in changed] + [f'{r.pack.id} r{r.revision} restored' for r in restored]
+    parts = ([f'{r.pack.id} r{r.revision}' for r in changed] + [f'{r.pack.id} r{r.revision} restored' for r in restored]
+             + [f'{i} retired' for i in withdrawn])
     if args.commit_message and parts and not args.dry_run:
         Path(args.commit_message).write_text('Publish packs: ' + ', '.join(parts) + '\n', encoding='utf-8')
     if args.summary:
@@ -1253,6 +1286,8 @@ def publish_into(args):
                     f.write(f'- `{r.pack.id}` revision {r.revision}: opens with `{OPEN_SCHEME}://open/{r.pack.id}`\n')
                 for r in restored:
                     f.write(f'- `{r.pack.id}` revision {r.revision}: its files restored\n')
+                for i in withdrawn:
+                    f.write(f'- `{i}`: retired (its folder is gone from Prototypes/)\n')
                 f.write(f'\nCatalog: {where}\n')
     return 0
 

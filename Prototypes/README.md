@@ -40,7 +40,9 @@ caches for about five minutes). `[no-publish]` in the commit message holds a pub
 validate and keep the packed output as an artifact. CI owns the branch (an orphan, with no workflows) and needs
 no secret. A link `terraincognita://open/<id>` opens a pack on a phone with the development build.
 
-To withdraw a published pack (the owner's call), retire it on the branch; its files stay:
+A pack whose folder is deleted from `Prototypes/` is retired from the catalog by `main`'s next publish
+(its files stay). To withdraw a published pack that stays in `Prototypes/` (the owner's call), retire it
+on the branch:
 
 ```sh
 git fetch origin packs && git worktree add ../packs-branch origin/packs

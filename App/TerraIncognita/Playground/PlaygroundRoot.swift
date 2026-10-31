@@ -33,7 +33,6 @@ struct PlaygroundRoot: View {
                 VStack(alignment: .trailing, spacing: 8) {
                     HStack(alignment: .top, spacing: 10) {
                         if let stage = playground.stage, !covered { chip(stage) }
-                        WikipediaButton()
                         CloudsButton(style: style, experience: playground.veiled)
                         // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
                         #if WORKBENCH

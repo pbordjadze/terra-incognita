@@ -37,9 +37,7 @@ jobs:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
       - name: Validate
-        run: |
-          python3 tools/playground/playground.py validate
-          python3 ci/check_wikipedia.py --packs
+        run: python3 tools/playground/playground.py validate
       - name: Syntax and unit tests
         run: |
           rc=0
@@ -115,11 +113,3 @@ jobs:
           done
           echo "::error::Could not push the packs branch after 3 attempts"
           exit 1
-
-  globe-packs:
-    name: The globe-drawn packs' data tools
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v5
-        with: { persist-credentials: false }
