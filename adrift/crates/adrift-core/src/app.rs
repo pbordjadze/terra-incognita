@@ -162,9 +162,10 @@ pub const RATE: f64 = 2.0;
 const SUBSTEP: f64 = 0.25;
 /// Beads kept in a wake.
 const WAKE_MAX: usize = 400;
-/// Maybes run for a held float, and their step: 512 at a half day tell the shape 8192 at a quarter
-/// day do (Truth's budget, SOURCES.md › How many maybes); a whole day is not honest in a jet.
-pub const MAYBES: u32 = 512;
+/// Maybes run for a shown float, and their step: 512 at a half day already tell the shape 8192 at a
+/// quarter day do (Truth's budget, SOURCES.md › How many maybes), and more are more honest, never
+/// less: 2048 so the cloud reads as a field at the whole Earth (R5); a whole day is not honest in a jet.
+pub const MAYBES: u32 = 2048;
 const MAYBES_STEP: f64 = 0.5;
 /// The most flight steps the floats take in one frame (the rest wait for the next): a scrub of a
 /// hundred days with thirty floats catches up over a few frames instead of stalling one (R5).

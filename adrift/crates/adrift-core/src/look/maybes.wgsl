@@ -32,17 +32,16 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) k: u32, m: Maybe)
     let b = M.bloom * M.bloom * (3.0 - 2.0 * M.bloom);
     let g = normalize(mix(M.origin.xyz, own, b));
     let p = place(g);
-    let r = 0.75 * rp() * min(M.bloom * 2.0, 1.0);
+    // at globe scale the cloud must read at a glance: each self is a soft kernel seven reading points
+    // across, and five hundred of them lie over one another into a field of the lamp's hue (dense where
+    // the sea would most likely have carried it); close in they shrink to the specks of a dusting
+    let field = 1.0 - smoothstep(1.3, 2.4, U.disc.w);
+    let r = mix(0.75, 7.0, field) * rp() * min(M.bloom * 2.0, 1.0);
     let c = corner(vi % 6u);
     var o: SpeckOut;
     o.local = c * (r + 0.5 * U.frame.z);
     o.pos = clip(p.xy + o.local);
-    // toward the whole Earth the cloud is a dusting, not a smudge: a share of the specks shows (six in
-    // ten at zoom 1 of Truth's five hundred, all from zoom 3), chosen by a hash of each one's number so
-    // the cloud keeps its shape as the camera comes and goes
-    let share = by_zoom(0.6, 3.0);
-    let pick = fract(sin(f32(k) * 12.9898 + 78.233) * 43758.5453);
-    if (p.z < 0.3 || M.bloom <= 0.0 || pick > share) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
+    if (p.z < 0.3 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.r = r;
     o.held = f32(m.held);
     return o;
@@ -53,10 +52,15 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     let n = M.night;
     let d = length(i.local);
     var acc = vec4<f32>(0.0);
-    // a pale wash of the lamp's hue (a self aground is not marked: truth underneath)
-    let speck = mix(mix(M.hue.rgb, vec3<f32>(1.0), 0.72), mix(M.hue.rgb, vec3<f32>(1.0), 0.55), n);
-    let a = mix(0.80, 0.30, n) * min(M.bloom * 2.0, 1.0) * by_zoom(0.8, 3.0);
-    acc = over(acc, speck, a * cover(d - i.r));
+    // a pale wash of the lamp's hue (a self aground is not marked: truth underneath); at globe scale a
+    // soft kernel at a low alpha, so the field is the sum of many and glows where they crowd
+    let field = 1.0 - smoothstep(1.3, 2.4, U.disc.w);
+    let speck = mix(mix(M.hue.rgb, vec3<f32>(1.0), mix(0.72, 0.35, field)), mix(M.hue.rgb, vec3<f32>(1.0), mix(0.55, 0.15, field)), n);
+    let soft = exp(-d * d / (0.45 * i.r * i.r));
+    // (a low alpha a kernel, so the field is a density: pale where one self passed, the lamp's own
+    // colour where many did)
+    let a = mix(mix(0.80, 0.30, n), 0.045, field) * min(M.bloom * 2.0, 1.0);
+    acc = over(acc, speck, a * mix(cover(d - i.r), soft, field));
     // the grain that gives the cloud texture from afar, gone close in where it read as ringed dots
     let grain = (1.0 - smoothstep(3.5, 5.5, U.disc.w)) * 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0);
     acc = over(acc, M.hue.rgb * 0.55, grain * cover(d - 0.35 * i.r));

@@ -1,0 +1,6 @@
+{
+  "_": "A chosen lamp's cloud at a glance (R5, the owner's real use case): Europe and Africa by night at zoom 1.6, a lamp chosen off Libya and another in the Atlantic; its cloud must read as a field in its hue and the land's lights step back round it. adrift-check render adrift/crates/adrift-core/src/look/plans/glance.json <out.png>.",
+  "camera": { "lon": 10.0, "lat": 30.0, "zoom": 1.6 }, "day": 345.0, "seconds": 12.0, "night": true,
+  "floats": [ { "lon": -20.0, "lat": 25.0, "days_ago": 30 }, { "lon": 16.0, "lat": 34.0, "days_ago": 30 }, { "lon": -30.0, "lat": 40.0, "days_ago": 20 } ],
+  "hold": 1
+}

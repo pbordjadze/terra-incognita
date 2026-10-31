@@ -335,3 +335,27 @@ across the sea and grey ringed dots. Judged on 241d9e0 with this round's changes
 **Holt**: "My lamps are mine by colour now, and their other lives wear the same colour, so I
 never wonder whose cloud I am looking at. The date breathes when it is alive and is still when I
 stopped it; nothing else tells me what to do."
+
+**The real use case: a chosen lamp's possibilities at a glance** (the owner's third word; the
+round's centre). `look/plans/glance.json` (Europe and Africa by night at zoom 1.6, a lamp chosen
+off Libya) and `glance-atlantic.json` (the whole Atlantic at zoom 1, the Gulf Stream lamp chosen):
+`studies/r5-glance-mediterranean-night-phone.png`, `r5-glance-atlantic-night-phone.png`, device
+pixels. What changed: from zoom 2.4 out each self is a soft kernel seven reading points across at a
+low alpha, so five hundred of them lie into a field of the lamp's hue, pale where one passed and the
+lamp's own colour where many did; a veil of Visual's own (a full-screen pass before the marks)
+deepens the night everywhere but a soft window round the chosen lamp, so the living land steps back
+without going dark; the drifter's label is gone (no buoy number in prose); close in the lights
+blink a tiny bit each, the airplane feeling.
+
+**The hater, asked the round's one question: does the land pull the eye from the lamp and its
+cloud?** "No. At the whole Atlantic the gold plume off Hatteras is the brightest thing on the dark
+side of the screen and the cities under it are a texture; the plume has shape, dense by the lamp
+and thinning along the stream, which is the current's own. Off Libya the cloud is a pink disc: the
+sea there barely moves, so the selves sit together, and the field says so honestly, if plainly. The
+veil is a vignette, and I would mock a vignette, but it is half a stop and it ends where the cloud
+does; I noticed the cloud before I noticed the veil. The blink close in is small enough that I had
+to look for it; good." Verdict: passes. One knob: the disc of a still sea could carry a hint of
+its lamp's glass (a rim) so it reads as a place, not a stain.
+
+**Holt**: "I zoomed out and the cloud was still there, bigger and softer, where I'd left it; the
+land went quieter round it without my asking; nothing told me anything in words."
