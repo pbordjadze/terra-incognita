@@ -155,8 +155,17 @@ DateDown{x0}
  └─ Cancel ────────────────────────▶ Idle
 ```
 
+The orb (R6): the camera is an orientation (`Camera.roll` beside lon and lat), and nothing in
+touch knows north. A drag turns the globe by the one rotation that keeps the point taken exactly
+under the finger (`turn_to`), off the disc or for a fling a trackball (about the view's axis
+(dy, dx, 0) by the move over the radius, `Camera::turned`); a flight slerps the orientation, so
+Home comes back upright the short way; a ride and a double tap turn about the axis that carries
+the float straight to the centre, keeping the roll as it was away from the poles (so whoever never
+crosses one keeps north up). There is no latitude limit: over a pole the orb simply goes on,
+upside down beyond it, until Home. `plans/over-the-pole.json`.
+
 A ride (`CameraControl::riding`): `Ride{float}` makes the camera's centre spring toward the float
-every frame (critically damped, `RIDE_TAU`); zoom is untouched. Any orbit or pinch leaves it (the
+every frame (critically damped, `RIDE_TAU`, on the angle to the float); zoom is untouched. Any orbit or pinch leaves it (the
 camera clears `riding` itself); a tap on the ridden float changes nothing; a double tap flies in and
 the ride continues at the new zoom.
 
@@ -290,7 +299,6 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 | `RIDE_TAU` | 0.6 s critically damped | catches up in about a second without overshoot |
 | `IDLE_AFTER`, `IDLE_RATE` | 8 s, 4 °/s | Terra's |
 | `ZOOM` | 0.8…8 | Terra's; the look may ask deeper |
-| `LAT_LIMIT` | ±80° | Terra's: the pole never flips |
 | `SWIPE` | 40 pt | three-finger undo |
 | `DAYS_PER_POINT` | 365 / width, ≥ 1 | a year across the screen |
 | `DATE_BELOW_DISC`, `DATE_FOOT`, `DATE_BAND` | 40, 72, 44 pt | the stand-in date band: under the disc, above the foot, its height |
