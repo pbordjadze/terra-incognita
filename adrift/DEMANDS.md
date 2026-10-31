@@ -297,7 +297,7 @@ cloud, and many steps in one submit are the steps one by one. Spacing and count 
 0.5-day steps a 10-day spacing is twenty dispatches at most between a keep and any day, well
 within two frames. The step itself is a pure function (SOURCES.md › Time is reversible), and a
 third cheaper this round with the same numbers.
-### D10 Motion → Engineering (R5)  [open]
+### D10 Motion → Engineering (R5)  [answered]
 I need anything in [`Intent::Ring` no longer clearing `App.chosen`; `Intent::Unchoose` alone does
 (Motion sends it on a tap on the open sea, with the ride ended), `Choose`/`Ride` set it, ClearAll
 and the float's going clear it] so that a pinch or a drag that begins on the sea (the sea rings at
@@ -305,6 +305,26 @@ touch-down, not at the lift) keeps the chosen float and its maybes, as the owner
 out shouldn't deselect it"), while a tap on the open sea still lets it go. It works when
 `touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
 I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
+**Answer (Engineering, checked by Motion R6):** in effect at 12149c8: `Intent::Ring` only rings
+(`app.rs`, the ring arm), `Unchoose` alone clears; `touch/plans/chosen.json` passes (pinch from the
+sea, still chosen; tap the sea, none), and `choose-two-on-globe.json` does the same with two.
+
+### D11 Motion → Engineering (R6)  [open]
+I need anything in [a plan field `panel: [[id, x, y, w, h], ...]` (points; `id` a float's id) that
+the check holds as the panel's rows whatever the look draws, e.g. `App.panel_stand_in:
+Option<Vec<(u32, [f32; 4])>>` which `App::panel_bounds()` returns when set; and a plan field
+`frames: true` that draws every advanced frame as the device does (`app.frame` after each
+`app.advance` in `play`'s advance), since the clouds step only when drawn and the scrub's brake
+reads `App::behind()`] so that the panel's
+touch (a tap on a row chooses that lamp beside the others or lets it go, a rest rides it, nothing
+on it rings the sea or puts a float) is played and proved before Visual's panel lands, and stays
+proved against a fixed layout after.
+It works when [`touch/plans/panel-two.json` and `panel-rim.json` pass (two rows tapped, both
+chosen; the date scrubbed, both still chosen; one row tapped again, only the other left; a rest
+and a carry over a row neither ring nor put; a lamp at the rim turned inward), and
+`scrub-limit.json` lands the date within its tenths with two clouds out. Both pass on
+adrift-motion-r6 with a local patch of the two fields, not committed].
+I could give back [the field is the check's alone; nothing in the app reads it].
 
 ### D11 Motion → Engineering (R6)  [answered]
 (Filed on adrift-motion-r6: a plan field `panel` holding the panel's rows whatever the look draws.)

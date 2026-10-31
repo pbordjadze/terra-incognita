@@ -204,11 +204,13 @@ plan("reduce-motion", "Reduce Motion: no fling, flights are cuts; the beat is un
 ], reduce_motion=True)
 
 # --- the date and undo ---
-plan("date-scrub", "Drag the date: the clock pauses and the day follows the finger; it stays paused", [
+# (R6: under the speed limit the date reaches a fast finger a moment later, so the finger rests a
+# tenth before the check; let go still, the clock is given back as it was, running)
+plan("date-scrub", "Drag the date: the clock pauses and the day follows the finger; let go still, the clock is given back as it was (running) (R6: under the speed limit the date reaches the finger a moment after a fast drag)", [
     ev(0.0, "down", xy=date_xy()), ev(0.1, "move", xy=date_xy(50)), ev(0.2, "move", xy=date_xy(100)),
-    shot(0.22, "scrubbed"),
-    expect(0.25, saw=["Pause", "Scrub"], state="scrubbing", playing=False, day=9900.0),
-    ev(0.3, "up", xy=date_xy(100)), expect(0.4, playing=False, state="idle", camera_moved=False, floats=0),
+    shot(0.32, "scrubbed"),
+    expect(0.35, saw=["Pause", "Scrub"], state="scrubbing", playing=False, day=9900.0),
+    ev(0.4, "up", xy=date_xy(100)), expect(0.5, playing=True, state="idle", camera_moved=False, floats=0),
 ], day=9800.0)
 plan("date-tap", "Tap the date to pause, tap again to play", [
     ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), shot(0.15, "paused"), expect(0.2, saw=["Pause"], playing=False),
@@ -231,12 +233,12 @@ plan("undo-gestures", "Undo by three-finger swipe, by shake, by the keyboard: on
 
 # --- R3: the hater's list on the merged build ---
 IPAD = (1032.0, 1376.0)
-plan("date-ipad", "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date", [
+plan("date-ipad", "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date (R6: under the speed limit the date reaches the finger a moment after a fast drag)", [
     ev(0.0, "down", xy=date_xy(0, *IPAD)), ev(0.1, "up", xy=date_xy(0, *IPAD)), shot(0.15, "paused"),
     expect(0.2, saw=["Pause"], playing=False, floats=0),
     ev(0.5, "down", xy=date_xy(0, *IPAD)), ev(0.6, "move", xy=date_xy(60, *IPAD)), ev(0.7, "move", xy=date_xy(120, *IPAD)),
-    shot(0.72, "scrubbed"), expect(0.75, saw=["Scrub"], state="scrubbing", day=9920.0),
-    ev(0.8, "up", xy=date_xy(120, *IPAD)), expect(0.9, playing=False, state="idle", camera_moved=False, floats=0),
+    shot(0.84, "scrubbed"), expect(0.87, saw=["Scrub"], state="scrubbing", day=9920.0),
+    ev(0.92, "up", xy=date_xy(120, *IPAD)), expect(1.02, playing=False, state="idle", camera_moved=False, floats=0),
 ], size=list(IPAD), day=9800.0)
 GULF = {"lon": -74.0, "lat": 36.0}     # the Gulf Stream off Cape Hatteras
 plan("ride-fast", "Ride a Gulf Stream float close in: the camera keeps it centred, not trailing", [
@@ -337,6 +339,67 @@ plan("chosen", "Tap a float and it is chosen and ridden; pinch away and it stays
     ev(3.0, "down", at=SEA2), ev(3.08, "up", at=SEA2), expect(3.2, chosen=2, riding=2),     # another: chosen instead
     ev(3.5, "down", at=[-45.0, 5.0]), ev(3.58, "up", at=[-45.0, 5.0]), expect(3.7, saw=["Ring"], chosen=None, riding=None),  # the open sea: none
 ], floats=[F1, F2])
+
+
+# --- R6: several clouds, the panel, the scrub's speed limit, the rim (painting-company row 196) ---
+# The panel's rows until Visual's land: a stand-in column at the left edge, a row 36 points tall per
+# lamp (the plan's `panel`, D11: the check holds it as `App::panel_bounds()`).
+def row(i):
+    return [8.0, 96.0 + 40.0 * i, 120.0, 36.0]
+def row_xy(i):
+    r = row(i)
+    return [r[0] + r[2] / 2, r[1] + r[3] / 2]
+NEAR = {"lon": -29.0, "lat": 20.5}      # dropped beside F1: two clouds from almost one place
+# (the clock runs between scrubs, two days a second: a scrub lands 300 days from the day it began,
+# which is what the `day`s below say)
+def scrub(t0, finger, dxs, dt=0.02, rest=0.0):
+    """A drag on the date through `dxs` points from its centre, `dt` apart, resting `rest` before the lift."""
+    steps = [ev(t0, "down", finger, xy=date_xy())]
+    for i, dx in enumerate(dxs):
+        steps.append(ev(t0 + dt * (i + 1), "move", finger, xy=date_xy(dx)))
+    t = t0 + dt * len(dxs) + rest
+    if rest:
+        steps.append(ev(t, "move", finger, xy=date_xy(dxs[-1])))
+    steps.append(ev(t + 0.02, "up", finger, xy=date_xy(dxs[-1])))
+    return steps
+plan("panel-two", "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and only the other stays; nothing on the panel rings or puts", [
+    ev(0.0, "down", 0, xy=row_xy(0)), ev(0.08, "up", 0, xy=row_xy(0)), expect(0.2, chosen=[1], riding=None, not_=["Ring", "Press", "Put"]),
+    ev(0.5, "down", 0, xy=row_xy(1)), ev(0.58, "up", 0, xy=row_xy(1)), expect(0.7, chosen=[1, 2], floats=2, not_=["Ring", "Put", "Unchoose"]),
+    shot(1.2, "two-chosen"),
+    *scrub(1.5, 0, [60, 120, 180, 240, 300], rest=0.6), shot(2.8, "two-forward"), expect(2.8, chosen=[1, 2], day=10104.2),
+    *scrub(3.0, 0, [-60, -120, -180, -240, -300], rest=0.6), shot(4.3, "two-back"), expect(4.3, chosen=[1, 2], day=9805.7),
+    ev(4.5, "down", 0, xy=row_xy(0)), ev(4.58, "up", 0, xy=row_xy(0)), expect(4.7, chosen=[2], floats=2),
+    shot(5.0, "one-let-go"),
+    # a rest on a row rides it, never puts a float
+    ev(5.5, "down", 0, xy=row_xy(0)), expect(6.0, riding=1, chosen=[2, 1], floats=2, not_=["Put", "Ring", "Hold"]), ev(6.1, "up", 0, xy=row_xy(0)),
+    # a float carried over the panel and let go there goes back where it was lifted
+    ev(7.0, "down", 1, at=SEA2), expect(7.5, held=2), ev(7.6, "move", 1, xy=row_xy(2)), ev(7.7, "up", 1, xy=row_xy(2)),
+    expect(7.9, floats=2, not_=["Put", "Ring"]), shot(8.0, "carried-back"),
+], floats=[NEAR, F2], day=9800.0, panel=[[1] + row(0), [2] + row(1)], frames=True)
+plan("choose-two-on-globe", "On the globe: tap two lamps and both are chosen, the last ridden; a pinch keeps both; scrub, both stay; the open sea lets both go", [
+    ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.2, chosen=[1], riding=1),
+    ev(0.6, "down", at=[NEAR["lon"], NEAR["lat"]]), ev(0.68, "up", at=[NEAR["lon"], NEAR["lat"]]), expect(0.8, chosen=[1, 2], riding=2),
+    shot(2.0, "two-out"),
+    *scrub(2.2, 0, [40, 80, 120], rest=0.4), expect(3.0, chosen=[1, 2]), shot(3.0, "two-scrubbed"),
+    ev(3.5, "down", at=[-45.0, 5.0]), ev(3.58, "up", at=[-45.0, 5.0]), expect(3.7, saw=["Ring"], chosen=None, riding=None),
+], floats=[F1, NEAR], day=9800.0, camera={"lon": -30.0, "lat": 20.0, "zoom": 1.0})
+plan("scrub-limit", "The speed limit: two clouds out, the date flung 300 days in a tenth of a second goes after the finger at ten days a frame and lands exactly; flung back, the same clouds", [
+    {"t": 0.0, "intent": {"Choose": {"float": 1}}}, {"t": 0.0, "intent": {"ChooseAlso": {"float": 2}}},
+    shot(1.0, "before"),
+    *scrub(1.1, 0, [100, 200, 300], dt=0.033, rest=0.8),
+    shot(1.25, "limit-0.15s"), shot(1.4, "limit-0.3s"), shot(1.7, "limit-0.6s"), expect(1.95, day=10102.2, chosen=[1, 2]),
+    *scrub(2.2, 0, [-100, -200, -300], dt=0.033, rest=0.8), expect(3.1, day=9802.6, chosen=[1, 2]), shot(3.1, "back"),
+], floats=[F1, NEAR], day=9800.0, camera={"lon": -30.0, "lat": 20.0, "zoom": 1.0}, frames=True)
+plan("panel-rim", "The rim: a lamp out at the globe's edge chosen from the panel is turned inward, its cloud on the face; one already facing leaves the globe still", [
+    shot(0.1, "at-the-rim"),
+    ev(0.2, "down", 0, xy=row_xy(0)), ev(0.28, "up", 0, xy=row_xy(0)), expect(0.3, chosen=[1]),
+    expect(1.2, camera_moved=True), shot(1.2, "turned-in"),
+    ev(1.5, "down", 0, xy=row_xy(1)), ev(1.58, "up", 0, xy=row_xy(1)), expect(2.5, chosen=[1, 2], camera_same_as_last=True),
+], floats=[{"lon": 8.0, "lat": -33.0, "days_ago": 20.0}, {"lon": -25.0, "lat": -15.0, "days_ago": 20.0}], day=9800.0, camera={"lon": -40.0, "lat": 22.0, "zoom": 1.0},
+   panel=[[1] + row(0), [2] + row(1)], frames=True)
+
+for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim"):
+    PLANS[name]["steps"].sort(key=lambda st: st["t"])    # played in order of time (a stable sort)
 
 os.makedirs(OUT, exist_ok=True)
 for f in os.listdir(OUT):

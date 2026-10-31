@@ -1,5 +1,5 @@
 {
- "title": "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date",
+ "title": "The date on the 13-inch iPad: a tap pauses, a drag scrubs, against the drawn date (R6: under the speed limit the date reaches the finger a moment after a fast drag)",
  "size": [
   1032.0,
   1376.0
@@ -65,11 +65,11 @@
    ]
   },
   {
-   "t": 0.72,
+   "t": 0.84,
    "shot": "scrubbed"
   },
   {
-   "t": 0.75,
+   "t": 0.87,
    "expect": {
     "saw": [
      "Scrub"
@@ -79,7 +79,7 @@
    }
   },
   {
-   "t": 0.8,
+   "t": 0.92,
    "up": 0,
    "xy": [
     636.0,
@@ -87,7 +87,7 @@
    ]
   },
   {
-   "t": 0.9,
+   "t": 1.02,
    "expect": {
     "playing": false,
     "state": "idle",
