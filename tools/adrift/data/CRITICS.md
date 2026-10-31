@@ -116,3 +116,33 @@ passed here". `Track::window(30)` is the month about the nearest point, with `la
 its dates; draw that. The credit line is on the foot and runs off both edges of the phone: a
 licence cut in half is not met; it is now under eighty characters. Holt: holding the float shows
 a real buoy's way; nothing moved. Fine.
+
+## R3 (October 31, 2026; the merged build at 37e8ee1, the first build on main)
+
+What ran: `adrift-check render scenes/gulf-stream-close.json` and `gulf-stream-night.json`
+(`critics/r3/`), `play plans/put-and-drift.json`, 23 tests, and the budget tool
+`sea::tests::maybes_budget` (its table is in SOURCES.md › How many maybes).
+
+**The hater.**
+- *The silver* is now a month and a half of a real buoy about where it passed, with its name and
+  its dates: "Drifter 132676, 7 Jan to 6 Apr 2016" beside a float held on 19 July. That is the
+  truth and it is a little uncomfortable: the buoy's winter beside the float's summer. Good: it
+  says "any year" without a word. Verdict: honest; the label is the thing that makes it so.
+- *The credit line* fits the foot now and names the four. The licence's sentence is still not
+  on the device anywhere a reader can reach: D2.
+- *The guess.* Nothing on the screen tells a float on a measured current from one riding the
+  sheet's smoothed-in guess (Hudson Bay, under the ice, some gulfs). The rules know (`measured`);
+  the look doesn't show it: D3. Until then SOURCES.md says it and the screen doesn't.
+- *The budget.* 2048 paths at a quarter day, re-run each half day, is more than the honesty
+  needs: 512 at a half day tell the same shape (Kolmogorov under 0.05 on both axes at Hatteras
+  and in the Sargasso). A whole day is not honest in a jet (the coast catches nearly twice the
+  paths). Verdict: spend the frame elsewhere.
+- *Still owed from R0:* the jets' variance holds their meandering as well as their eddies (no
+  shear correction), and K is capped at 40,000 m²/s; both are written in SOURCES.md and neither
+  is on the screen, which is right: a reader can't use them, a reviewer can.
+
+**Holt.** Put, drift, stop the date, undo: the four hold in the played session as in R2. Hold a
+float and a real buoy's winter rises beside its summer, which no one scripted and which is the
+most honest thing on the screen. Leaving still isn't in a plan (nothing marks, nothing points,
+nothing waits: that is for the device, where a reader can put the phone down). Verdict: the
+rules keep their promises; two demands stand between the screen and the whole truth.

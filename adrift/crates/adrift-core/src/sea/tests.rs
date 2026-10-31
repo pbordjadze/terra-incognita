@@ -365,3 +365,50 @@ fn no_maybe_lies_on_land() {
     }
     assert_eq!(worst, 0, "GPU maybes on land at some step");
 }
+
+/// A tool, not a check (ignored): what count and step the maybes' honesty needs, for the device's
+/// budget (DECISIONS.md R3).
+///
+///     cargo test -p adrift-core maybes_budget -- --ignored --nocapture
+///
+/// Each (paths, step) cloud thirty days after a put off Cape Hatteras (a jet) and in the Sargasso
+/// Sea (quiet) against a reference of 8192 paths at a quarter day: Kolmogorov's greatest
+/// difference of the clouds' cumulative shares along longitude and latitude (0 the same shape,
+/// 0.05 a difference an eye can't see in specks), the share east of 65 W, the spread, how many
+/// ashore.
+#[test]
+#[ignore]
+fn maybes_budget() {
+    let r = rules();
+    let ks = |a: &mut Vec<f64>, b: &mut Vec<f64>| {
+        a.sort_by(|x, y| x.partial_cmp(y).unwrap());
+        b.sort_by(|x, y| x.partial_cmp(y).unwrap());
+        let (mut i, mut j, mut worst) = (0usize, 0usize, 0.0f64);
+        while i < a.len() && j < b.len() {
+            if a[i] <= b[j] { i += 1 } else { j += 1 }
+            worst = worst.max((i as f64 / a.len() as f64 - j as f64 / b.len() as f64).abs());
+        }
+        worst
+    };
+    let std = |v: &[f64]| { let m = v.iter().sum::<f64>() / v.len() as f64; (v.iter().map(|x| (x - m).powi(2)).sum::<f64>() / v.len() as f64).sqrt() };
+    for (name, from) in [("Hatteras", LonLat { lon: -74.5, lat: 35.8 }), ("Sargasso", LonLat { lon: -40.0, lat: 30.0 })] {
+        let reference = r.flights(Drift::put(from), JULY, JULY + 30.0, 0.25, 3, 8192);
+        let mut rlon: Vec<f64> = reference.iter().map(|f| f.drift.at.lon).collect();
+        let mut rlat: Vec<f64> = reference.iter().map(|f| f.drift.at.lat).collect();
+        let reast = rlon.iter().filter(|l| **l >= -65.0).count() as f64 / rlon.len() as f64;
+        eprintln!("{name}: reference 8192 paths at 1/4 day: spread {:.0} x {:.0} km, east of 65 W {:.2}, ashore {}",
+            std(&rlon) * 111.0 * (from.lat.to_radians().cos()), std(&rlat) * 111.0, reast, reference.iter().filter(|f| f.held == Held::Coast).count());
+        eprintln!("  paths  step   KS lon  KS lat  east  spread km   ashore");
+        for n in [256u32, 512, 1024, 2048] {
+            for dt in [0.25, 0.5, 1.0] {
+                let c = r.flights(Drift::put(from), JULY, JULY + 30.0, dt, 3, n);
+                let mut lon: Vec<f64> = c.iter().map(|f| f.drift.at.lon).collect();
+                let mut lat: Vec<f64> = c.iter().map(|f| f.drift.at.lat).collect();
+                let east = lon.iter().filter(|l| **l >= -65.0).count() as f64 / n as f64;
+                let ashore = c.iter().filter(|f| f.held == Held::Coast).count();
+                let (sx, sy) = (std(&lon) * 111.0 * from.lat.to_radians().cos(), std(&lat) * 111.0);
+                eprintln!("  {n:5}  {dt:4.2}   {:.3}   {:.3}   {east:.2}  {sx:4.0} x {sy:4.0}   {ashore}", ks(&mut lon, &mut rlon.clone()), ks(&mut lat, &mut rlat.clone()));
+            }
+        }
+    }
+}
