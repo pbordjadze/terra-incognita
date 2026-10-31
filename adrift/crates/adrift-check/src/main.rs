@@ -285,9 +285,15 @@ fn play(args: &[String]) -> Result<()> {
                 }
             }
             if let Some(r) = e.get("riding") {
+                // a float's id, or true/false for riding any float or none
                 let riding = app.riding().map(|id| id as u64);
-                if riding != r.as_u64() {
-                    bad.push(format!("riding {riding:?} not {:?}", r.as_u64()));
+                let ok = match (r.as_bool(), r.as_u64()) {
+                    (Some(b), _) => riding.is_some() == b,
+                    (_, Some(id)) => riding == Some(id),
+                    _ => r.is_null() && riding.is_none(),
+                };
+                if !ok {
+                    bad.push(format!("riding {riding:?} not {r}"));
                 }
             }
             if let Some(p) = e.get("playing").and_then(|v| v.as_bool()) {

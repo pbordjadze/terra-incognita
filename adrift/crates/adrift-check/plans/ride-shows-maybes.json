@@ -1,0 +1,59 @@
+{
+ "title": "A tap on a float rides it, and following it shows its maybes and the nearest drifter",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -70.0,
+  "lat": 30.0,
+  "zoom": 2.5
+ },
+ "floats": [
+  {
+   "lon": -74.0,
+   "lat": 34.0
+  }
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -74.0,
+    34.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -74.0,
+    34.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "saw": [
+     "Ride"
+    ],
+    "riding": 1,
+    "not": [
+     "Put"
+    ]
+   }
+  },
+  {
+   "t": 3.0,
+   "expect": {
+    "riding": true,
+    "camera_near_float": [
+     1,
+     0.5
+    ]
+   },
+   "shot": "riding"
+  }
+ ]
+}
