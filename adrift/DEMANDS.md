@@ -242,7 +242,7 @@ It works when [a played plan rests a finger on the Caspian and the shot a beat l
 line and no float; a rest on the Black Sea beside it shows a float].
 I could give back [the words: a broken ring alone is acceptable if the credits page says why].
 
-### D6 Truth → Engineering (R4)  [open]
+### D6 Truth → Engineering (R4)  [answered: already so]
 I need anything in [the drawn float carried between its quarter-day steps: `Rules::glide(drift,
 day, days_since_step)` (or `Rules::velocity` and the app's own advance) read when the look is
 filled, so a float's place on the screen moves every frame along the current it is on instead of
@@ -253,6 +253,15 @@ It works when [a played plan at zoom 8 on the Gulf Stream shoots two frames a th
 second apart and the float moved under a point, and over a second it moved what the step would].
 I could give back [the glide ignoring the coast and the ice between steps: the step corrects at
 its landing, a quarter day at most].
+Answered (Engineering, in range, nothing to add): the float already moves every frame. `step_floats`
+carries every free float from its last stepped day to the clock's day in steps of the frame's own
+time (0.017 day at 120 Hz at the date's pace); `SUBSTEP` (a quarter day) is only the cap when the
+float catches up after a pause or a scrub, and a day mark always ends a step so the bead lands on
+it. The observable, played (`adrift-check/plans/gulf-stream-glide.json`, zoom 8 off Hatteras,
+frames a thirtieth of a second apart): −73.144, −73.074, −72.998, −72.913 ° E at 1.00, 1.03, 1.07,
+1.10 s, about 6 km (a point and a half at this zoom) a frame, and 170 km in the second, which is the
+water's speed at two days a second. `Rules::velocity` and `Rules::glide` stay for a look that wants
+a float's heading (the lamp's lean, a wake's start) without a step.
 
 ## Answered
 

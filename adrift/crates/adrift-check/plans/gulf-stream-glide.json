@@ -1,0 +1,55 @@
+{
+ "title": "At the phone's closest zoom a Gulf Stream float moves every frame, not a quarter day at a time",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -74.5,
+  "lat": 35.8,
+  "zoom": 8.0
+ },
+ "floats": [
+  {
+   "lon": -74.6,
+   "lat": 35.6
+  }
+ ],
+ "steps": [
+  {
+   "t": 1.0,
+   "expect": {
+    "floats": 1
+   },
+   "shot": "frame-1000"
+  },
+  {
+   "t": 1.033,
+   "expect": {
+    "floats": 1
+   },
+   "shot": "frame-1033"
+  },
+  {
+   "t": 1.067,
+   "expect": {
+    "floats": 1
+   },
+   "shot": "frame-1067"
+  },
+  {
+   "t": 1.1,
+   "expect": {
+    "floats": 1
+   },
+   "shot": "frame-1100"
+  },
+  {
+   "t": 2.0,
+   "expect": {
+    "floats": 1
+   },
+   "shot": "frame-2000"
+  }
+ ]
+}
