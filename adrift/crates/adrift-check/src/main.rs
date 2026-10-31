@@ -293,7 +293,8 @@ fn play(args: &[String]) -> Result<()> {
                 match app.floats.iter().find(|x| x.id == id) {
                     Some(x) => {
                         if let (Some(lon), Some(lat)) = (f.get("lon").and_then(|v| v.as_f64()), f.get("lat").and_then(|v| v.as_f64())) {
-                            if (x.at.lon - lon).abs() > 1.5 || (x.at.lat - lat).abs() > 1.5 {
+                            let tol = f.get("tol").and_then(|v| v.as_f64()).unwrap_or(1.5);
+                            if (x.at.lon - lon).abs() > tol || (x.at.lat - lat).abs() > tol {
                                 bad.push(format!("float {id} at {:.2},{:.2} not near {lon},{lat}", x.at.lon, x.at.lat));
                             }
                         }
@@ -325,6 +326,13 @@ fn play(args: &[String]) -> Result<()> {
                 let held = app.floats.iter().find(|f| f.hand != adrift_core::Hand::Free).map(|f| f.id as u64);
                 if held != hv.as_u64() {
                     bad.push(format!("held {held:?} not {:?}", hv.as_u64()));
+                }
+            }
+            if let Some(n) = e.get("born").and_then(|v| v.as_u64()) {
+                // the floats that exist on the day (R5: none before its put)
+                let born = app.floats.iter().filter(|f| f.born(app.clock.day)).count() as u64;
+                if born != n {
+                    bad.push(format!("{born} floats born, not {n}"));
                 }
             }
             if let Some(c) = e.get("chosen") {

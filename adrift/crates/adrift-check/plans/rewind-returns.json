@@ -1,0 +1,125 @@
+{
+ "title": "Rewinding the date brings a float back to where it was; the wake agrees; forward again is the same path",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -60.0,
+  "lat": 30.0,
+  "zoom": 2.0
+ },
+ "floats": [
+  {
+   "lon": -74.0,
+   "lat": 34.0,
+   "days_ago": 20.0
+  },
+  {
+   "lon": -45.0,
+   "lat": 25.0,
+   "days_ago": 5.0
+  }
+ ],
+ "steps": [
+  {
+   "t": 0.5,
+   "intent": {
+    "SetRunning": {
+     "running": false
+    }
+   }
+  },
+  {
+   "t": 0.6,
+   "expect": {
+    "float": {
+     "id": 1,
+     "lon": -71.425,
+     "lat": 31.755,
+     "tol": 0.002
+    },
+    "born": 2
+   },
+   "shot": "day-1"
+  },
+  {
+   "t": 0.7,
+   "intent": {
+    "Scrub": {
+     "days": -10.0
+    }
+   }
+  },
+  {
+   "t": 1.2,
+   "expect": {
+    "float": {
+     "id": 1,
+     "lon": -70.468,
+     "lat": 32.231,
+     "tol": 0.002
+    },
+    "born": 1
+   },
+   "shot": "rewound-10"
+  },
+  {
+   "t": 1.3,
+   "intent": {
+    "Scrub": {
+     "days": 10.0
+    }
+   }
+  },
+  {
+   "t": 1.8,
+   "expect": {
+    "float": {
+     "id": 1,
+     "lon": -71.425,
+     "lat": 31.755,
+     "tol": 0.002
+    },
+    "born": 2
+   },
+   "shot": "back-to-day-1"
+  },
+  {
+   "t": 1.9,
+   "intent": {
+    "Scrub": {
+     "days": -30.0
+    }
+   }
+  },
+  {
+   "t": 2.4,
+   "expect": {
+    "born": 0
+   },
+   "shot": "before-the-puts"
+  },
+  {
+   "t": 2.5,
+   "intent": {
+    "Scrub": {
+     "days": 30.0
+    }
+   }
+  },
+  {
+   "t": 3.0,
+   "expect": {
+    "float": {
+     "id": 1,
+     "lon": -71.425,
+     "lat": 31.755,
+     "tol": 0.002
+    },
+    "born": 2
+   },
+   "shot": "day-1-again"
+  }
+ ]
+}
