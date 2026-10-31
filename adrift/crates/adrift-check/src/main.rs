@@ -201,6 +201,7 @@ fn play(args: &[String]) -> Result<()> {
         floats: plan.floats.clone(),
         hold: None,
         choose: Vec::new(),
+        follow: Vec::new(),
         seconds: 0.0,
         night: plan.night,
         credits_open: plan.credits_open,
@@ -363,6 +364,26 @@ fn play(args: &[String]) -> Result<()> {
                 };
                 if !ok {
                     bad.push(format!("chosen {:?} not {c}", app.chosen));
+                }
+            }
+            if let Some(c) = e.get("followed") {
+                // the floats chosen as themselves, in order (R8), as an array of ids
+                let want: Option<Vec<u32>> = c.as_array().and_then(|a| a.iter().map(|v| v.as_u64().map(|x| x as u32)).collect());
+                if want.as_ref() != Some(&app.followed) {
+                    bad.push(format!("followed {:?} not {c}", app.followed));
+                }
+            }
+            if let Some(n) = e.get("framed").and_then(|v| v.as_u64()) {
+                // every place `frame_points` names is on the globe's face (R8: the camera frames the chosen)
+                let disc = app.disc();
+                let (w, h) = (app.view().width as f64 / app.view().ppp, app.view().height as f64 / app.view().ppp);
+                let inside = app.frame_points().iter().filter(|p| {
+                    let (q, facing) = disc.project(&app.camera.camera, **p);
+                    facing > 0.0 && q[0] >= 0.0 && q[0] <= w && q[1] >= 0.0 && q[1] <= h
+                }).count();
+                let all = app.frame_points().len();
+                if inside < all || (all as u64) < n {
+                    bad.push(format!("{inside} of {all} framed points in view, wanted all of at least {n}"));
                 }
             }
             if let Some(r) = e.get("riding") {

@@ -1,0 +1,16 @@
+{
+ "title": "R8 seam: one lamp shown as its cloud, one as itself, one not chosen; frame_points names the followed lamp, the cloud's lamp and its CPU samples, all on the face at the whole Atlantic",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -50.0, "lat": 30.0, "zoom": 1.0},
+ "day": 200.0,
+ "floats": [{"lon": -74.0, "lat": 34.5, "days_ago": 60}, {"lon": -40.0, "lat": 28.0, "days_ago": 60}, {"lon": -20.0, "lat": 10.0, "days_ago": 20}],
+ "steps": [
+  {"t": 0.2, "intent": {"Show": {"float": 1, "shown": "Cloud"}}},
+  {"t": 0.2, "intent": {"Show": {"float": 2, "shown": "Lamp"}}},
+  {"t": 1.0, "expect": {"chosen": [1], "followed": [2], "framed": 18}, "shot": "mixed"},
+  {"t": 1.1, "intent": {"Show": {"float": 1, "shown": "Lamp"}}},
+  {"t": 1.2, "expect": {"chosen": null, "followed": [2, 1], "framed": 2}},
+  {"t": 1.3, "intent": "Unchoose"},
+  {"t": 1.4, "expect": {"chosen": null, "followed": []}}
+ ]
+}

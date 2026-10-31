@@ -180,6 +180,8 @@ pub struct LookFloat {
     pub chosen: bool,
     /// Its cloud is out (R6: one of `LookState.clouds`), in front or not.
     pub shown: bool,
+    /// Chosen as itself (R8): its journey followed, no cloud (`App.followed`).
+    pub followed: bool,
     /// Where it was put (its first leg's place: where it started) and on what day (`Clock.day`) (R6).
     pub origin: LonLat,
     pub put_day: f64,

@@ -43,6 +43,9 @@ pub struct Scene {
     /// Floats chosen, their clouds out, by index in `floats`, in order (the last in front) (R6).
     #[serde(default)]
     pub choose: Vec<usize>,
+    /// Floats chosen as themselves, their journeys followed, by index in `floats` (R8).
+    #[serde(default)]
+    pub follow: Vec<usize>,
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
@@ -120,6 +123,12 @@ pub struct App {
     /// the camera does, until the sea is tapped (`Unchoose`), one is let go (`ChooseAlso` again) or
     /// taken out. The front one's nearest drifter shows.
     pub chosen: Vec<u32>,
+    /// Floats chosen as themselves (R8), the front last: their journeys followed, no cloud. A float
+    /// is in `chosen` or `followed`, never both.
+    pub followed: Vec<u32>,
+    /// A few of each chosen cloud's maybes stepped on the CPU (k = 1..=`FRAME_SAMPLES`), so the
+    /// camera can hold every chosen cloud in view (`frame_points`) without reading the GPU back.
+    samples: std::collections::HashMap<(u32, u32), Path>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -179,6 +188,8 @@ const KEEPS_MAX: usize = 40;
 /// The most clouds out at once (R6): each its own `MAYBES` range of one buffer; past this the
 /// earliest chosen folds away. Eight at 2048 is 16 384 maybes, 24 steps a cloud a frame.
 pub const MAX_CLOUDS: usize = 8;
+/// Maybes a chosen cloud steps on the CPU for the camera's framing (R8).
+pub const FRAME_SAMPLES: u32 = 16;
 
 /// One cloud of maybes out (R6): the float's, seeded from its leg, in buffer slot `slot`.
 struct Cloud {
@@ -309,6 +320,8 @@ impl App {
             pressing: None,
             pressing_float: None,
             chosen: Vec::new(),
+            followed: Vec::new(),
+            samples: Default::default(),
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -455,6 +468,22 @@ impl App {
             Intent::Choose { float } => {
                 if self.floats.iter().any(|f| f.id == float) {
                     self.chosen = vec![float];
+                    self.followed.retain(|&c| c != float);
+                }
+            }
+            Intent::Show { float, shown } => {
+                if self.floats.iter().any(|f| f.id == float) {
+                    self.chosen.retain(|&c| c != float);
+                    self.followed.retain(|&c| c != float);
+                    match shown {
+                        Some(Shown::Cloud) => self.chosen.push(float),
+                        Some(Shown::Lamp) => self.followed.push(float),
+                        None => {
+                            if self.camera.riding == Some(float) {
+                                self.camera.riding = None;
+                            }
+                        }
+                    }
                 }
             }
             Intent::ChooseAlso { float } => {
@@ -464,10 +493,14 @@ impl App {
                         self.camera.riding = None;
                     }
                 } else if self.floats.iter().any(|f| f.id == float) {
+                    self.followed.retain(|&c| c != float);
                     self.chosen.push(float);
                 }
             }
-            Intent::Unchoose => self.chosen.clear(),
+            Intent::Unchoose => {
+                self.chosen.clear();
+                self.followed.clear();
+            }
             Intent::Press { at, since } => self.pressing = Some((at, since)),
             Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
             Intent::Unpress => {
@@ -587,6 +620,7 @@ impl App {
         let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
         let mut f = self.floats.remove(i);
         self.chosen.retain(|&c| c != float);
+        self.followed.retain(|&c| c != float);
         if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
             if id == float {
                 self.undo.pop();
@@ -610,6 +644,7 @@ impl App {
         self.pressing = None;
         self.pressing_float = None;
         self.chosen.clear();
+        self.followed.clear();
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
@@ -862,6 +897,7 @@ impl App {
     /// up over a few frames instead of stalling one.
     fn step_floats(&mut self) {
         self.step_floats_with(FLIGHT_BUDGET);
+        self.step_samples(FLIGHT_BUDGET / 2);
     }
 
     fn step_floats_with(&mut self, mut budget: usize) {
@@ -917,10 +953,14 @@ impl App {
 
     /// A leg's path computed to `upto` (as far as the budget allows this frame).
     fn ensure_path(&mut self, id: u32, li: usize, leg: Leg, upto: f64, budget: &mut usize) {
-        let rules = &self.rules;
         let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, samples: Vec::new() });
+        Self::extend_path(&self.rules, path, leg, 0, upto, budget);
+    }
+
+    /// A path of leg `leg` for maybe `k` (0 the float itself) stepped to `upto` on the quarter-day grid.
+    fn extend_path(rules: &Rules, path: &mut Path, leg: Leg, k: u32, upto: f64, budget: &mut usize) {
         if path.leg != leg || path.samples.is_empty() {
-            let e = rules.put(leg.at, leg.day, leg.seed, 0).eddy;
+            let e = rules.put(leg.at, leg.day, leg.seed, k).eddy;
             path.leg = leg;
             path.samples.clear();
             path.samples.push(Sample { day: leg.day, at: leg.at, eddy: [e.0, e.1], measured: 1.0, held: Held::No });
@@ -931,10 +971,59 @@ impl App {
                 break;
             }
             let next = grid_next(last.day);
-            let s = rules.flight(Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, 0);
+            let s = rules.flight(Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
             path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
             *budget -= 1;
         }
+    }
+
+    /// Steps the chosen clouds' CPU samples toward the date (R8), within what the floats' budget
+    /// left this frame; samples of clouds no longer chosen are dropped.
+    fn step_samples(&mut self, mut budget: usize) {
+        let day = self.clock.day;
+        let chosen = self.chosen.clone();
+        self.samples.retain(|(id, _), _| chosen.contains(id));
+        for id in chosen {
+            let Some(leg) = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(day).map(|li| f.legs[li])) else { continue };
+            for k in 1..=FRAME_SAMPLES {
+                let path = self.samples.entry((id, k)).or_insert_with(|| Path { leg, samples: Vec::new() });
+                Self::extend_path(&self.rules, path, leg, k, day, &mut budget);
+            }
+        }
+    }
+
+    /// How the float is chosen, if it is (R8).
+    pub fn shown_as(&self, id: u32) -> Option<Shown> {
+        if self.chosen.contains(&id) {
+            Some(Shown::Cloud)
+        } else if self.followed.contains(&id) {
+            Some(Shown::Lamp)
+        } else {
+            None
+        }
+    }
+
+    /// The places the camera should hold in view to frame everything chosen (R8): each followed
+    /// lamp's place, and each chosen cloud's lamp and `FRAME_SAMPLES` of its maybes on the date
+    /// (stepped on the CPU, so a scrub's first frames may lag a little behind the drawn cloud).
+    pub fn frame_points(&self) -> Vec<LonLat> {
+        let day = self.clock.day;
+        let mut out = Vec::new();
+        for f in self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))) {
+            out.push(f.at);
+        }
+        for ((_, _), p) in self.samples.iter().filter(|((id, _), _)| self.chosen.contains(id)) {
+            if p.samples.is_empty() || p.leg.day > day + 1e-9 {
+                continue;
+            }
+            let k = p.samples.partition_point(|s| s.day <= day + 1e-9).saturating_sub(1);
+            let a = p.samples[k];
+            out.push(match p.samples.get(k + 1) {
+                Some(b) => lerp_place(a.at, b.at, ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0)),
+                None => a.at,
+            });
+        }
+        out
     }
 
     /// The float the camera drifts with, if any.
@@ -1002,6 +1091,9 @@ impl App {
         self.step_floats_with(usize::MAX);
         let ids: Vec<u32> = self.floats.iter().map(|f| f.id).collect();
         self.chosen = scene.choose.iter().filter_map(|&i| ids.get(i).copied()).collect();
+        self.followed = scene.follow.iter().filter_map(|&i| ids.get(i).copied()).filter(|id| !self.chosen.contains(id)).collect();
+        self.samples.clear();
+        self.step_samples(usize::MAX);
         self.clouds.clear();
         self.bloom = if scene.hold.is_some() || !self.chosen.is_empty() { 1.0 } else { 0.0 };
         // the clouds out at full bloom, caught up to the date (a scene is a still)
@@ -1043,7 +1135,7 @@ impl App {
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
                     let first = f.legs.first().copied().unwrap_or(Leg { at: f.at, day: f.put_day, seed: f.seed });
-                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), origin: first.at, put_day: first.day, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
+                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
                 })
                 .collect(),
             behind: self.behind() as f32,
