@@ -1,0 +1,56 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "687AB7EE-DF9A-4A96-878E-7509AB01A80C",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "modelName" : "iPad Pro 13-inch (M5)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 7,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "TerraIncognita · Built with macOS 26.6.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1793440064.191,
+  "passedTests" : 7,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1793437914.293,
+  "statistics" : [
+    {
+      "subtitle" : "9 test runs",
+      "title" : "1 configuration ran with test repetitions"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertTrue failed - The workbench lists hello-pack: [\"night\", \"plain\", \"quiet-clouds\", \"quiet-frame\", \"quiet-names\"]",
+      "targetName" : "TerraIncognitaUITests",
+      "testIdentifier" : 4,
+      "testIdentifierString" : "PlaygroundTests/testEveryPrototypeIsListed()",
+      "testIdentifierURL" : "test://com.apple.xcode/TerraIncognita/TerraIncognitaUITests/PlaygroundTests/testEveryPrototypeIsListed",
+      "testName" : "testEveryPrototypeIsListed()"
+    }
+  ],
+  "title" : "Test - TerraIncognita",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "100% of failures",
+      "text" : "2 runs of 1 test failed with XCTAssertTrue failed - The workbench lists hello-pack: [\"night\", \"plain\", \"quiet-clouds\", \"quiet-frame\", \"quiet-names\"]"
+    }
+  ],
+  "totalTestCount" : 8
+}
