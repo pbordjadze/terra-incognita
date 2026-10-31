@@ -317,7 +317,8 @@ impl Words {
         } else {
             ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 0.85], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
         };
-        let row_h = 24.0 * reading;
+        // (36 points a row: a thumb picks the right lamp; Motion takes each row's rect as its target)
+        let row_h = 36.0 * reading;
         let x0 = 12.0 * reading;
         let top = PANEL_TOP * reading;
         let size = 10.0 * reading;
