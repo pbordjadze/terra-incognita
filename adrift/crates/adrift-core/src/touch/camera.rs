@@ -28,6 +28,14 @@ pub enum CameraMove {
     /// flight's ease) just far enough to bring it within `motion::FACE_WITHIN` of the disc's radius
     /// from the centre; where it already reads well, nothing moves.
     Face { at: LonLat },
+    /// Follow the choice (R8): the camera holds what is chosen in view (the app's `riding` names
+    /// the float in front); the zoom it has now is the deepest the framing will come back to.
+    Follow { float: u32 },
+    /// What is chosen, as the camera should hold it this frame (R8): the centre of every place to
+    /// frame (`App::frame_points`) and the widest angle of any from it, radians. While the camera
+    /// follows, it turns toward the centre and zooms out (never in past where the follow began) to
+    /// hold them all within `motion::FRAME_WITHIN` of the room; a single place is the old ride.
+    Frame { centre: LonLat, spread: f64, n: usize },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -57,6 +65,16 @@ pub struct CameraControl {
     last_touch: f64,
     /// The disc the last move was measured in (the fling turns by it between frames).
     disc: Disc,
+    /// What to frame while following (R8): centre, spread (radians), how many places.
+    frame: Option<(LonLat, f64, usize)>,
+    /// The zoom when the follow began: the framing zooms out from it to hold everything and back in
+    /// to it, never deeper (only the hand zooms in).
+    frame_zoom: f64,
+    /// The framing's zoom spring velocity (log zoom a second).
+    zoom_v: f64,
+    /// Whether the camera followed last frame: a follow that begins (a tap's `Ride`, a `Follow`)
+    /// takes the zoom it finds as the framing's deepest.
+    was_following: bool,
 }
 
 impl CameraControl {
@@ -71,6 +89,10 @@ impl CameraControl {
             ride_seen: None,
             last_touch: f64::NEG_INFINITY,
             disc: Disc { cx: 0.0, cy: 0.0, r: 0.0 },
+            frame: None,
+            frame_zoom: 1.0,
+            zoom_v: 0.0,
+            was_following: false,
         }
     }
 
@@ -99,7 +121,20 @@ impl CameraControl {
             CameraMove::Fly { at } => self.double_tap(at, now, motion),
             CameraMove::Leave => self.riding = None,
             CameraMove::Face { at } => self.face(at, now, motion),
+            CameraMove::Follow { float } => self.riding = Some(float),
+            CameraMove::Frame { centre, spread, n } => self.frame = Some((centre, spread, n)),
         }
+    }
+
+    /// The zoom that holds places spread `spread` radians about the centre within `FRAME_WITHIN` of
+    /// the room (orthographic: a place θ from the centre lies r·sin θ out), no deeper than the follow
+    /// began, no shallower than the least.
+    fn frame_zoom_for(&self, spread: f64) -> f64 {
+        let d = self.disc;
+        let r1 = d.r / self.camera.zoom.max(1e-6);
+        let room = d.cx.min(d.cy).max(1.0);
+        let needed = if spread >= motion::FRAME_WIDEST { self.zoom_range.0 } else { motion::FRAME_WITHIN * room / (r1 * spread.sin()).max(1e-6) };
+        needed.min(self.frame_zoom.max(self.zoom_range.0)).clamp(self.zoom_range.0, self.zoom_range.1)
     }
 
     /// Turns the globe (no zoom) so `at` lies within `FACE_WITHIN` of the room from the centre:
@@ -205,6 +240,8 @@ impl CameraControl {
             _ => self.camera,
         };
         to.zoom = target_zoom;
+        // a following camera frames no deeper than the hand last asked (R8)
+        self.frame_zoom = target_zoom;
         self.fly_to(to, now, motion);
     }
 
@@ -231,6 +268,10 @@ impl CameraControl {
             self.last_touch = now;
         }
         let before = self.camera;
+        if self.riding.is_some() && !self.was_following {
+            self.frame_zoom = self.camera.zoom;
+        }
+        self.was_following = self.riding.is_some();
         if let Some(fl) = self.flight {
             let u = if fl.duration > 0.0 { ((now - fl.start) / fl.duration).min(1.0) } else { 1.0 };
             let e = motion::ease_in_out(u);
@@ -245,6 +286,24 @@ impl CameraControl {
             let disc = self.disc;
             self.turn(&disc, self.spin.0 * dt, self.spin.1 * dt);
             self.spin = (motion::fling_decay(self.spin.0, dt), motion::fling_decay(self.spin.1, dt));
+        } else if let (Some((centre, spread, n)), true) = (self.frame.filter(|f| f.2 > 1), self.riding.is_some()) {
+            // several places to hold (R8): turn toward their centre and zoom out to hold the
+            // widest within FRAME_WITHIN of the room, back in no deeper than the follow began
+            let _ = n;
+            let target_zoom = self.frame_zoom_for(spread);
+            if motion.reduce {
+                let ang = self.camera.view(centre.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                self.camera = toward_centre(&self.camera, centre, ang);
+                self.camera.zoom = target_zoom;
+            } else {
+                let ang = self.camera.view(centre.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                let (left, v) = motion::spring(ang, self.ride_v, 0.0, motion::FRAME_TAU, dt);
+                self.camera = toward_centre(&self.camera, centre, ang - left.max(0.0));
+                self.ride_v = v;
+                let (lz, vz) = motion::spring(self.camera.zoom.ln(), self.zoom_v, target_zoom.ln(), motion::FRAME_TAU, dt);
+                self.camera.zoom = lz.exp().clamp(self.zoom_range.0, self.zoom_range.1);
+                self.zoom_v = vz;
+            }
         } else if let Some(p) = ride_at.filter(|_| self.riding.is_some()) {
             let px = p.to_xyz();
             if motion.reduce {
@@ -279,6 +338,8 @@ impl CameraControl {
             self.camera.lon = motion::wrap_lon(self.camera.lon - motion::IDLE_RATE * dt);
         }
         if self.riding.is_none() {
+            self.frame = None;
+            self.zoom_v = 0.0;
             self.ride_v = 0.0;
             self.ride_seen = None;
         }

@@ -329,13 +329,15 @@ plan("date-keeps-running", "A scrub or a flick leaves the clock as it found it: 
     expect(6.8, playing=False), ev(7.0, "down", at=SEA), ev(7.1, "up", at=SEA),              # a touch stops the flick and gives the clock back at once
     expect(7.2, saw=["Play"], playing=True),
 ], day=9800.0)
-plan("chosen", "Tap a float and it is chosen and ridden; pinch away and it stays chosen; tap it to let the ride go; tap the sea to unchoose", [
+# (R8: a tap turns a lamp through three ways, its cloud, itself, let go; the camera follows and
+# frames whatever is chosen)
+plan("chosen", "Tap a float and its cloud is chosen and followed; pinch away and it stays chosen, unfollowed; tap it again and it is chosen as itself, followed; again and it is let go; tap the sea to unchoose", [
     ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.2, chosen=1, riding=1),
     ev(0.5, "down", 0, xy=px(0.42, 0.5)), ev(0.52, "down", 1, xy=px(0.58, 0.5)),
     ev(0.6, "move", 0, xy=px(0.38, 0.5)), ev(0.65, "move", 1, xy=px(0.62, 0.5)), ev(0.7, "up", 0, xy=px(0.38, 0.5)), ev(0.72, "up", 1, xy=px(0.62, 0.5)),
     expect(0.8, chosen=1, riding=None, zoom_gt=1.1),                                        # the pinch ended the ride, not the choice
-    ev(1.0, "down", at=SEA), ev(1.08, "up", at=SEA), expect(1.2, chosen=1, riding=1),       # tap it again: ridden again
-    ev(2.5, "down", at=SEA), ev(2.58, "up", at=SEA), expect(2.7, chosen=1, riding=None),    # tap the ridden one: the ride lets go, the choice stays
+    ev(1.0, "down", at=SEA), ev(1.08, "up", at=SEA), expect(1.2, chosen=None, followed=[1], riding=1),  # again: itself, followed
+    ev(2.5, "down", at=SEA), ev(2.58, "up", at=SEA), expect(2.7, chosen=None, followed=[], riding=None),  # again: let go
     ev(3.0, "down", at=SEA2), ev(3.08, "up", at=SEA2), expect(3.2, chosen=2, riding=2),     # another: chosen instead
     ev(3.5, "down", at=[-45.0, 5.0]), ev(3.58, "up", at=[-45.0, 5.0]), expect(3.7, saw=["Ring"], chosen=None, riding=None),  # the open sea: none
 ], floats=[F1, F2])
@@ -362,16 +364,18 @@ def scrub(t0, finger, dxs, dt=0.02, rest=0.0):
         steps.append(ev(t, "move", finger, xy=date_xy(dxs[-1])))
     steps.append(ev(t + 0.02, "up", finger, xy=date_xy(dxs[-1])))
     return steps
-plan("panel-two", "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and only the other stays; nothing on the panel rings or puts", [
-    ev(0.0, "down", 0, xy=row_xy(0)), ev(0.08, "up", 0, xy=row_xy(0)), expect(0.2, chosen=[1], riding=None, not_=["Ring", "Press", "Put"]),
+plan("panel-two", "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and it is chosen as itself, the other still a cloud; a drag turns away, a rest on a row frames both again; nothing on the panel rings or puts", [
+    ev(0.0, "down", 0, xy=row_xy(0)), ev(0.08, "up", 0, xy=row_xy(0)), expect(0.2, chosen=[1], riding=1, not_=["Ring", "Press", "Put"]),
     ev(0.5, "down", 0, xy=row_xy(1)), ev(0.58, "up", 0, xy=row_xy(1)), expect(0.7, chosen=[1, 2], floats=2, not_=["Ring", "Put", "Unchoose"]),
     shot(1.2, "two-chosen"),
     *scrub(1.5, 0, [60, 120, 180, 240, 300], rest=0.6), shot(2.8, "two-forward"), expect(2.8, chosen=[1, 2], day=10104.2),
     *scrub(3.0, 0, [-60, -120, -180, -240, -300], rest=0.6), shot(4.3, "two-back"), expect(4.3, chosen=[1, 2], day=9805.7),
-    ev(4.5, "down", 0, xy=row_xy(0)), ev(4.58, "up", 0, xy=row_xy(0)), expect(4.7, chosen=[2], floats=2),
-    shot(5.0, "one-let-go"),
-    # a rest on a row rides it, never puts a float
-    ev(5.5, "down", 0, xy=row_xy(0)), expect(6.0, riding=1, chosen=[2, 1], floats=2, not_=["Put", "Ring", "Hold"]), ev(6.1, "up", 0, xy=row_xy(0)),
+    ev(4.5, "down", 0, xy=row_xy(0)), expect(4.55, state="panel"), ev(4.58, "up", 0, xy=row_xy(0)), expect(4.7, chosen=[2], followed=[1], floats=2),
+    shot(5.0, "one-as-itself"),
+    # (R8) a drag turns the globe away; a rest on a row follows again, framing both; never puts a float
+    ev(5.1, "down", 1, at=[-45.0, 5.0]), *drag(5.1, 1, [(0.3, 0.55), (0.2, 0.55)]), expect(5.3, riding=None),
+    ev(5.5, "down", 0, xy=row_xy(0)), expect(6.0, chosen=[2], followed=[1], floats=2, not_=["Put", "Ring", "Hold"]), ev(6.1, "up", 0, xy=row_xy(0)),
+    expect(7.0, riding=True, framed=18),
     # a float carried over the panel and let go there goes back where it was lifted
     ev(7.0, "down", 1, at=SEA2), expect(7.5, held=2), ev(7.6, "move", 1, xy=row_xy(2)), ev(7.7, "up", 1, xy=row_xy(2)),
     expect(7.9, floats=2, not_=["Put", "Ring"]), shot(8.0, "carried-back"),
@@ -390,11 +394,11 @@ plan("scrub-limit", "The speed limit: two clouds out, the date flung 300 days in
     shot(1.25, "limit-0.15s"), shot(1.4, "limit-0.3s"), shot(1.7, "limit-0.6s"), expect(1.95, day=10102.2, chosen=[1, 2]),
     *scrub(2.2, 0, [-100, -200, -300], dt=0.033, rest=0.8), expect(3.1, day=9802.6, chosen=[1, 2]), shot(3.1, "back"),
 ], floats=[F1, NEAR], day=9800.0, camera={"lon": -30.0, "lat": 20.0, "zoom": 1.0}, frames=True)
-plan("panel-rim", "The rim: a lamp out at the globe's edge chosen from the panel is turned inward, its cloud on the face; one already facing leaves the globe still", [
+plan("panel-rim", "The rim: a lamp out at the globe's edge chosen from the panel is followed, its cloud brought onto the face; a second chosen, the globe frames both clouds (R8)", [
     shot(0.1, "at-the-rim"),
     ev(0.2, "down", 0, xy=row_xy(0)), ev(0.28, "up", 0, xy=row_xy(0)), expect(0.3, chosen=[1]),
     expect(1.2, camera_moved=True), shot(1.2, "turned-in"),
-    ev(1.5, "down", 0, xy=row_xy(1)), ev(1.58, "up", 0, xy=row_xy(1)), expect(2.5, chosen=[1, 2], camera_same_as_last=True),
+    ev(1.5, "down", 0, xy=row_xy(1)), ev(1.58, "up", 0, xy=row_xy(1)), expect(3.5, chosen=[1, 2], framed=34), shot(3.5, "both-framed"),
 ], floats=[{"lon": 8.0, "lat": -33.0, "days_ago": 20.0}, {"lon": -25.0, "lat": -15.0, "days_ago": 20.0}], day=9800.0, camera={"lon": -40.0, "lat": 22.0, "zoom": 1.0},
    panel=[[1] + row(0), [2] + row(1)], frames=True)
 
@@ -412,7 +416,31 @@ plan("over-the-pole", "Drag the orb over the north pole: the point taken stays u
     {"t": 3.2, "key": "home"}, expect(4.2, camera={"lon": -30.0, "lat": 25.0}), shot(4.2, "home"),
 ], camera={"lon": -40.0, "lat": 55.0, "zoom": 1.0})
 
-for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole"):
+# R8: each lamp its own way. Four lamps across the Atlantic: two tapped once (their clouds), two
+# tapped twice (themselves, their journeys); the camera turns and zooms out to hold them all; a
+# drag takes the camera and the framing lets go of it; a rest on a row frames them again; a double
+# tap on a lamp flies in and leaves how it is chosen as it was.
+FOUR = [{"lon": -30.0, "lat": 20.0}, {"lon": -29.0, "lat": 20.5}, {"lon": -60.0, "lat": 30.0}, {"lon": -20.0, "lat": 40.0}]
+def tap_at(t, place):
+    return [ev(t, "down", 0, at=place), ev(t + 0.08, "up", 0, at=place)]
+plan("four-two-ways", "Four lamps, two as clouds and two as themselves, chosen by taps on the globe and the panel; the globe turns and zooms to hold them all; a drag takes the camera; a rest on a row frames them again; a double tap on a lamp flies in without changing it", [
+    shot(0.0, "four"),
+    *tap_at(0.2, [-30.0, 20.0]), expect(0.4, chosen=[1], riding=1),
+    *tap_at(0.8, [-60.0, 30.0]), *tap_at(1.4, [-60.0, 30.0]), expect(1.6, chosen=[1], followed=[3]),
+    ev(2.0, "down", 0, xy=row_xy(1)), ev(2.08, "up", 0, xy=row_xy(1)), expect(2.2, chosen=[1, 2], followed=[3]),
+    ev(2.6, "down", 0, xy=row_xy(3)), ev(2.68, "up", 0, xy=row_xy(3)), ev(3.2, "down", 0, xy=row_xy(3)), ev(3.28, "up", 0, xy=row_xy(3)),
+    expect(3.4, chosen=[1, 2], followed=[3, 4], not_=["Ring", "Put"]),
+    expect(5.5, riding=True, framed=36), shot(5.5, "all-four-framed"),
+    ev(6.0, "down", 1, at=[-45.0, 0.0]), *drag(6.0, 1, [(0.45, 0.62), (0.35, 0.64)]), expect(6.3, riding=None),
+    expect(9.0, chosen=[1, 2], followed=[3, 4]), shot(9.0, "hand-took-it"), expect(9.15, camera_same_as_last=True),
+    ev(9.2, "down", 0, xy=row_xy(0)), ev(9.8, "up", 0, xy=row_xy(0)), expect(12.0, riding=True, framed=36, chosen=[1, 2], followed=[3, 4]),
+    shot(12.0, "framed-again"),
+    *tap_at(12.5, [-60.0, 30.0]), *tap_at(12.7, [-60.0, 30.0]), expect(13.6, followed=[4, 3], chosen=[1, 2], zoom_gt=1.0),
+    ev(14.0, "down", 0, at=[-40.0, 0.0]), ev(14.08, "up", 0, at=[-40.0, 0.0]), expect(14.2, chosen=None, followed=[], riding=None),
+], floats=FOUR, day=9800.0, camera={"lon": -40.0, "lat": 25.0, "zoom": 1.6}, frames=True,
+   panel=[[i + 1] + row(i) for i in range(4)])
+
+for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole", "four-two-ways"):
     PLANS[name]["steps"].sort(key=lambda st: st["t"])    # played in order of time (a stable sort)
 
 os.makedirs(OUT, exist_ok=True)

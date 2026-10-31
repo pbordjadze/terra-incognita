@@ -1,5 +1,5 @@
 {
- "title": "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and only the other stays; nothing on the panel rings or puts",
+ "title": "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and it is chosen as itself, the other still a cloud; a drag turns away, a rest on a row frames both again; nothing on the panel rings or puts",
  "size": [
   393.0,
   852.0
@@ -32,7 +32,7 @@
     "chosen": [
      1
     ],
-    "riding": null,
+    "riding": 1,
     "not": [
      "Ring",
      "Press",
@@ -240,6 +240,12 @@
    ]
   },
   {
+   "t": 4.55,
+   "expect": {
+    "state": "panel"
+   }
+  },
+  {
    "t": 4.58,
    "up": 0,
    "xy": [
@@ -253,12 +259,53 @@
     "chosen": [
      2
     ],
+    "followed": [
+     1
+    ],
     "floats": 2
    }
   },
   {
    "t": 5.0,
-   "shot": "one-let-go"
+   "shot": "one-as-itself"
+  },
+  {
+   "t": 5.1,
+   "down": 1,
+   "at": [
+    -45.0,
+    5.0
+   ]
+  },
+  {
+   "t": 5.1499999999999995,
+   "move": 1,
+   "xy": [
+    117.9,
+    468.6
+   ]
+  },
+  {
+   "t": 5.199999999999999,
+   "move": 1,
+   "xy": [
+    78.6,
+    468.6
+   ]
+  },
+  {
+   "t": 5.25,
+   "up": 1,
+   "xy": [
+    78.6,
+    468.6
+   ]
+  },
+  {
+   "t": 5.3,
+   "expect": {
+    "riding": null
+   }
   },
   {
    "t": 5.5,
@@ -271,9 +318,10 @@
   {
    "t": 6.0,
    "expect": {
-    "riding": 1,
     "chosen": [
-     2,
+     2
+    ],
+    "followed": [
      1
     ],
     "floats": 2,
@@ -291,6 +339,13 @@
     68.0,
     114.0
    ]
+  },
+  {
+   "t": 7.0,
+   "expect": {
+    "riding": true,
+    "framed": 18
+   }
   },
   {
    "t": 7.0,
