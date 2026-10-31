@@ -290,3 +290,48 @@ reads as a thing, not a dashboard. The lamp on the rule is the only hint that an
 touched, and that is enough for a hand that has already put a lamp on the sea." Holt: "Nothing on
 the screen tells me what the sea is made of, and the sea behaves; the credits are there when I
 rest on the date, and asking for them costs me nothing."
+
+**Riding a float with its maybes out** (`look/plans/riding.json` on the merged round, main 095620e:
+a float twenty days adrift at zoom 2.2, ridden by intent while the date runs;
+`studies/r4-riding-with-maybes-phone.png`, before and at 0.6, 2.1 and 6.1 s of the ride): the
+camera eases after the float, the cloud, the silver and its label ride with it, the wake trails
+behind. The hater: "While the globe slides under them the cloud reads as the float's own weather
+and the silver as a road it is on; the label is the one thing that fights the motion, a line of
+words sliding over a sliding map. Pin it to the screen's corner while riding, or let it go after
+a beat." Verdict: passes; the label while riding is a knob for the next round. Holt: "I tapped it
+and went with it, and it showed me its other lives on the way without my asking twice."
+
+## R5 (October 31, 2026): the owner's second phone
+
+The owner on build 30: the maybes are the thing; lamps should be different colours so each one's
+maybes are its own; a gentle, beautiful sign of playing or paused; and his screenshot's white bands
+across the sea and grey ringed dots. Judged on 241d9e0 with this round's changes
+(`studies/r5-owner-scene-before-after-phone-half.png`: his scene reproduced in
+`look/plans/owner-scrub.json`, before and after; `r5-five-lamps-hues-phone.png`;
+`r5-date-lamp-breathing-then-at-rest-phone.png`).
+
+**The hater, a colourist who thinks every app with a palette of eight is a toy.**
+
+- *A hue per lamp.* "Amber, coral, rose, lilac, sky, mint, lime, gold, by the lamp's number; each
+  rim stays dark sea glass and each core warm-white, so five lamps still read as glass lamps and
+  not as a bag of sweets. The wake takes the hue with its edge darkened from it, the cloud is a
+  pale wash of it, the silver is tinted a third toward it. In the five-lamp scene the coral cloud
+  is unmistakably the coral lamp's. The rose and the coral are cousins; a sixth and seventh lamp
+  will be told apart by position more than hue. Fine for a pocket of lamps." Verdict: passes;
+  the hues belong (each one's things wear it) rather than label.
+- *The white bands.* "Reproduced: at zoom 6 the running light was the brightest thing on the sea,
+  bands of white over the lamps' water. From zoom 4 it thins to a third; the lamps and the cloud
+  are what the eye finds now, and the lines still say which way the water goes." Verdict: passes.
+- *The grey ringed dots.* "They were the specks' dark grain, which from afar gives the cloud
+  texture and close in read as ringed dots. Gone from zoom 3.5 in; the cloud is a wash of the
+  lamp's hue there." Verdict: passes. (The concentric rings in his screenshot are the touch's own
+  rings, which fade in six seconds; not the look's.)
+- *The sign of running.* "While the year runs the date's lamp breathes: a soft glow of its own
+  amber swelling and settling every three seconds; at rest it is a still ring of ink with no glow.
+  Quiet, and once you have seen it breathe you know what the ring means. It is small on the
+  phone; I'd want to see it breathe on the device before I say it is unmistakable." Verdict:
+  passes on the picture; the breath's size is a knob for the device.
+
+**Holt**: "My lamps are mine by colour now, and their other lives wear the same colour, so I
+never wonder whose cloud I am looking at. The date breathes when it is alive and is still when I
+stopped it; nothing else tells me what to do."

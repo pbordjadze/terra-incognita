@@ -279,6 +279,33 @@ state; `look_state()` fills `date_press` with `motion::thicken` of the seconds a
 the date (a tap in the making, a rest toward the credits, a scrub), 0 with no finger, so a flick runs
 on without it.
 
+### D7 Engineering → Truth (R5)  [answered]
+I need anything in [`Maybes` keeping a checkpoint of its paths buffer at a day (`keep(gpu) -> Keep`,
+`restore(gpu, &Keep)`) and stepping at most n steps a call] so that a rewind of the shown cloud
+is a restore and a few steps instead of a re-simulation from the put (today a scrub of a float
+put 300 days ago re-runs 600 dispatches whenever the day moves half a day).
+It works when [a plan that scrubs back 50 days with a float's maybes shown redraws the cloud
+within two frames and the cloud at day D after a rewind equals the cloud at day D stepped
+forward, within the GPU-vs-CPU tolerance].
+I could give back [the checkpoint spacing and count: every 10 days, the last 40].
+**Answer (Truth):** in range, on `adrift-truth`: `Maybes::keep(gpu, count) -> Keep` copies the
+paths on the GPU (no readback; the app records the day), `restore(gpu, &Keep)` copies back, and
+`step_many(gpu, &[Params], flight)` encodes up to `MAX_STEPS` (1024) steps in one submit, each
+with its own parameters on a ring of uniform slots, so a catch-up is one command buffer. Tested
+bit for bit: a cloud kept at day 30, stepped to 50, restored and stepped to 50 again is the same
+cloud, and many steps in one submit are the steps one by one. Spacing and count are the app's; at
+0.5-day steps a 10-day spacing is twenty dispatches at most between a keep and any day, well
+within two frames. The step itself is a pure function (SOURCES.md › Time is reversible), and a
+third cheaper this round with the same numbers.
+### D10 Motion → Engineering (R5)  [open]
+I need anything in [`Intent::Ring` no longer clearing `App.chosen`; `Intent::Unchoose` alone does
+(Motion sends it on a tap on the open sea, with the ride ended), `Choose`/`Ride` set it, ClearAll
+and the float's going clear it] so that a pinch or a drag that begins on the sea (the sea rings at
+touch-down, not at the lift) keeps the chosen float and its maybes, as the owner asked ("zooming
+out shouldn't deselect it"), while a tap on the open sea still lets it go. It works when
+`touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
+I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
+
 ## Answered
 
 (none yet)

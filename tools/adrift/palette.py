@@ -47,6 +47,17 @@ def check(spec):
                 ok = k >= RULE[rule]
                 bad += not ok
                 rows.append((style, name, c['hex'], g, grounds[g], rule, k, ok))
+    # the lamps' hues: each a mark against the rim that carries it (as the lamp is), and its bead's edge
+    # (the hue darkened to 0.42, wake.wgsl) a mark against the day's sea (as the amber bead's edge is)
+    for i, hx in enumerate(spec.get('hues', {}).get('list', [])):
+        k = contrast(hx, spec['day']['glass_rim']['hex'])
+        rows.append(('day', f'hue{i + 1}', hx, 'glass_rim', spec['day']['glass_rim']['hex'], 'mark', k, k >= RULE['mark']))
+        bad += k < RULE['mark']
+        edge = '#' + ''.join(f'{int(round(int(hx[j:j + 2], 16) * 0.42)):02X}' for j in (1, 3, 5))
+        for g in ('shelf', 'open', 'deep'):
+            k = contrast(edge, spec['grounds']['day'][g])
+            rows.append(('day', f'hue{i + 1} edge', edge, g, spec['grounds']['day'][g], 'mark', k, k >= RULE['mark']))
+            bad += k < RULE['mark']
     return rows, bad
 
 

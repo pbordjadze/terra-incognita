@@ -478,3 +478,133 @@ fn unrecorded_water_carries_a_float_on_the_wind_alone() {
     assert_eq!(super::rules::reach(0.25), 0.5);
     assert_eq!(super::rules::reach(0.9), 1.0);
 }
+
+/// Time is reversible because a step is a pure function of (state, day, dt, seed, k): the draws
+/// hash the seed, the path and the step's start day (as f32 bits) and nothing else; no call
+/// remembers the last. A quarter-day grid is exact in f32 for any day under 2^21 (the year
+/// 7745), so the same mark always gives the same bits; a day off the grid (a put's first step)
+/// is rounded to f32 once, the same way every time.
+#[test]
+fn a_step_is_a_pure_function_of_its_arguments() {
+    let r = rules();
+    let d = Drift { at: LonLat { lon: -74.5, lat: 35.8 }, eddy: (0.1, -0.05) };
+    let a = r.flight(d, 9000.25, 0.25, 42, 7);
+    // other calls between, other arguments
+    let _ = r.flight(Drift::put(LonLat { lon: -40.0, lat: 30.0 }), 100.0, 1.0, 1, 1);
+    let _ = r.step(d.at, 9000.5, 0.25, 42, 7);
+    let b = r.flight(d, 9000.25, 0.25, 42, 7);
+    assert_eq!((a.drift, a.held, a.measured), (b.drift, b.held, b.measured));
+    // the start day's bits are what the draws hang on: a different quarter mark, a different draw
+    let c = r.flight(d, 9000.5, 0.25, 42, 7);
+    assert_ne!(a.drift.eddy, c.drift.eddy);
+    // the quarter grid is exact in f32 far beyond the app's years
+    for day in [9000.25f64, 9000.5, 9000.75, 16000.25, 100000.75, 2097151.75] {
+        assert_eq!(day as f32 as f64, day, "{day} is exact in f32");
+    }
+    // a day off the grid rounds the same way every time
+    let e = r.flight(d, 9000.137, 0.113, 42, 7);
+    let f = r.flight(d, 9000.137, 0.113, 42, 7);
+    assert_eq!(e.drift, f.drift);
+}
+
+/// A tool (ignored): what a step costs on this box, for the scrub's budget.
+///
+///     cargo test -p adrift-core step_cost -- --ignored --nocapture
+#[test]
+#[ignore]
+fn step_cost() {
+    let r = rules();
+    let starts: Vec<LonLat> = (0..64).map(|i| LonLat { lon: -74.5 + (i % 8) as f64 * 3.0, lat: 20.0 + (i / 8) as f64 * 2.5 }).collect();
+    let n = 20_000;
+    let t = std::time::Instant::now();
+    let mut acc = 0.0f64;
+    for i in 0..n {
+        let s = starts[i % starts.len()];
+        let f = r.flight(Drift::put(s), 9000.25 + (i % 97) as f64 * 0.25, 0.25, 5, i as u32);
+        acc += f.drift.at.lon;
+    }
+    let per = t.elapsed().as_secs_f64() * 1e6 / n as f64;
+    eprintln!("flight: {per:.2} us a call ({acc:.0}); a scrub of 30 floats x 400 steps = {:.1} ms", per * 12000.0 / 1000.0);
+    let t = std::time::Instant::now();
+    for i in 0..n {
+        let s = starts[i % starts.len()];
+        acc += r.currents.at(9000.25, s.lon as f32, s.lat as f32).0 as f64;
+    }
+    eprintln!("currents.at: {:.2} us", t.elapsed().as_secs_f64() * 1e6 / n as f64);
+    let t = std::time::Instant::now();
+    for i in 0..n {
+        let s = starts[i % starts.len()];
+        acc += r.coast.distance(s.lon as f32, s.lat as f32) as f64;
+    }
+    eprintln!("coast.distance: {:.2} us ({acc:.0})", t.elapsed().as_secs_f64() * 1e6 / n as f64);
+}
+
+/// The sheets read all their channels at once give the same numbers as channel by channel.
+#[test]
+fn the_cheaper_sampling_changes_no_number() {
+    let r = rules();
+    let mut n = 0;
+    for lat in (-88..=88).step_by(4) {
+        for lon in (-180..180).step_by(5) {
+            let (lon, lat) = (lon as f32 + 0.37, lat as f32 - 0.21);
+            for (tiled, months) in [(&r.currents.0, 12usize), (&r.wind.0, 12), (&r.eddy.0, 1), (&r.eddy_time.0, 1)] {
+                for m in 0..months {
+                    let all = tiled.sample_all(m, lon, lat);
+                    for c in 0..3 {
+                        assert_eq!(all[c], tiled.sample(m, c, lon, lat), "month {m} channel {c} at ({lon}, {lat})");
+                    }
+                    n += 1;
+                }
+            }
+        }
+    }
+    assert!(n > 10_000);
+}
+
+/// A rewind of the cloud is a restore and a few steps: a checkpoint kept at day D, stepped on to
+/// D + 20, restored and stepped on again lands the same paths bit for bit; and many steps in one
+/// submit are the steps one by one.
+#[test]
+fn a_kept_cloud_restores_and_steps_on_the_same() {
+    use super::gpu::{GpuPath, Maybes, Params};
+    use crate::gpu::{Gpu, Textures};
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let gpu = match pollster_block(Gpu::new(&instance, None)) {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    let assets = DirAssets(assets());
+    let textures = Textures::load(&gpu, &assets, 6).unwrap();
+    let r = rules();
+    let n = 512;
+    let from = LonLat { lon: -74.5, lat: 35.8 };
+    let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
+    let seed = |k: u32| {
+        let d = r.put(from, JULY, 9, k);
+        GpuPath { lon: from.lon as f32, lat: from.lat as f32, held: 0, measured: 1.0, eddy_u: d.eddy.0, eddy_v: d.eddy.1 }
+    };
+    let paths: Vec<GpuPath> = (1..=n).map(seed).collect();
+    let steps = |from_day: f64, days: usize| -> Vec<Params> { (0..days * 2).map(|i| Params::new(&r, from_day + i as f64 * 0.5, 0.5, 9, n)).collect() };
+    // one by one to day 30
+    maybes.seed(&gpu, &paths);
+    for p in steps(JULY, 30) {
+        maybes.step(&gpu, p, true);
+    }
+    let one_by_one = maybes.read(&gpu, n);
+    // in one submit to day 30, kept there, on to 50, restored, on to 50 again
+    maybes.seed(&gpu, &paths);
+    maybes.step_many(&gpu, &steps(JULY, 30), true);
+    let many = maybes.read(&gpu, n);
+    assert!(one_by_one.iter().zip(&many).all(|(a, b)| (a.lon, a.lat, a.eddy_u, a.eddy_v) == (b.lon, b.lat, b.eddy_u, b.eddy_v)), "many steps in one submit are the steps one by one");
+    let kept = maybes.keep(&gpu, n);
+    maybes.step_many(&gpu, &steps(JULY + 30.0, 20), true);
+    let first = maybes.read(&gpu, n);
+    maybes.restore(&gpu, &kept);
+    let back = maybes.read(&gpu, n);
+    assert!(back.iter().zip(&many).all(|(a, b)| (a.lon, a.lat) == (b.lon, b.lat)), "restored to the kept day");
+    maybes.step_many(&gpu, &steps(JULY + 30.0, 20), true);
+    let again = maybes.read(&gpu, n);
+    assert!(first.iter().zip(&again).all(|(a, b)| (a.lon, a.lat, a.eddy_u, a.eddy_v) == (b.lon, b.lat, b.eddy_u, b.eddy_v)), "stepped on from the keep, the same cloud bit for bit");
+    let moved = first.iter().zip(&many).filter(|(a, b)| a.lon != b.lon).count();
+    assert!(moved > n as usize / 2, "the cloud moved on between day 30 and 50");
+}

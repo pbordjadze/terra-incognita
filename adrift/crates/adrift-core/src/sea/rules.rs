@@ -70,11 +70,10 @@ impl Rules {
         let (lon, lat) = (at.lon as f32, at.lat as f32);
         let day = day as f32;
         let dt = dt_days as f32;
-        let measured = self.currents.at(day, lon, lat).2;
+        let (u, v, measured) = self.currents.at(day, lon, lat);
         if self.ice.at(day, lon, lat) >= self.ice_hold {
             return Step { at, held: Held::Ice, measured };
         }
-        let (u, v, _) = self.currents.at(day, lon, lat);
         let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);
@@ -219,11 +218,10 @@ impl Rules {
         let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
         let day = day as f32;
         let dt = dt_days as f32;
-        let measured = self.currents.at(day, lon, lat).2;
+        let (u, v, measured) = self.currents.at(day, lon, lat);
         if self.ice.at(day, lon, lat) >= self.ice_hold {
             return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
         }
-        let (u, v, _) = self.currents.at(day, lon, lat);
         let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
         let (ku, kv, _) = self.eddy.at(lon, lat);

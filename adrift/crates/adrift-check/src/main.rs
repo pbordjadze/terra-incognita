@@ -44,6 +44,11 @@ fn ensure_assets(dir: &Path) {
     }
 }
 
+/// Waits for the GPU's queue, so a frame's time includes its drawing (the software driver's).
+fn gpu_wait(app: &App) {
+    let _ = app.gpu.device.poll(wgpu::PollType::Wait);
+}
+
 fn gpu() -> Result<(wgpu::Instance, Gpu)> {
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
     let gpu = pollster::block_on(Gpu::new(&instance, None))?;
@@ -149,6 +154,9 @@ struct Step {
     tick: Option<f64>,
     shot: Option<String>,
     intent: Option<adrift_core::Intent>,
+    /// A measured scrub (R5): `[days, seconds]`, the date dragged by `days` over `seconds` at 60
+    /// frames a second, every frame drawn, the CPU cost of the state and of the frame logged.
+    scrub: Option<[f64; 2]>,
     expect: Option<serde_json::Value>,
 }
 
@@ -223,6 +231,36 @@ fn play(args: &[String]) -> Result<()> {
         if let Some(intent) = s.intent {
             app.intend(intent);
         }
+        if let Some([days, secs]) = s.scrub {
+            let n = (secs * fps).ceil().max(1.0) as usize;
+            let (mut a_sum, mut a_worst, mut f_sum, mut f_worst) = (0.0f64, 0.0f64, 0.0f64, 0.0f64);
+            for _ in 0..n {
+                t += secs / n as f64;
+                app.intend(adrift_core::Intent::Scrub { days: days / n as f64 });
+                let t0 = std::time::Instant::now();
+                app.advance(t);
+                let a = t0.elapsed().as_secs_f64() * 1000.0;
+                let t1 = std::time::Instant::now();
+                app.frame(&target.view, t);
+                gpu_wait(&app);
+                let f = t1.elapsed().as_secs_f64() * 1000.0;
+                a_sum += a;
+                a_worst = a_worst.max(a);
+                f_sum += f;
+                f_worst = f_worst.max(f);
+            }
+            let line = format!(
+                "{i:3} t={t:8.2}s scrub {days:+.0} days over {secs:.1}s: {n} frames; state {:.2} ms mean {:.2} worst; frame {:.1} ms mean {:.1} worst (software GPU); {}",
+                a_sum / n as f64,
+                a_worst,
+                f_sum / n as f64,
+                f_worst,
+                app.stats()
+            );
+            println!("{line}");
+            log.push_str(&line);
+            log.push('\n');
+        }
         if let Some(k) = &s.key {
             app.key(match k.to_ascii_lowercase().as_str() {
                 "redo" => adrift_core::touch::Key::Redo,
@@ -255,7 +293,8 @@ fn play(args: &[String]) -> Result<()> {
                 match app.floats.iter().find(|x| x.id == id) {
                     Some(x) => {
                         if let (Some(lon), Some(lat)) = (f.get("lon").and_then(|v| v.as_f64()), f.get("lat").and_then(|v| v.as_f64())) {
-                            if (x.at.lon - lon).abs() > 1.5 || (x.at.lat - lat).abs() > 1.5 {
+                            let tol = f.get("tol").and_then(|v| v.as_f64()).unwrap_or(1.5);
+                            if (x.at.lon - lon).abs() > tol || (x.at.lat - lat).abs() > tol {
                                 bad.push(format!("float {id} at {:.2},{:.2} not near {lon},{lat}", x.at.lon, x.at.lat));
                             }
                         }
@@ -287,6 +326,24 @@ fn play(args: &[String]) -> Result<()> {
                 let held = app.floats.iter().find(|f| f.hand != adrift_core::Hand::Free).map(|f| f.id as u64);
                 if held != hv.as_u64() {
                     bad.push(format!("held {held:?} not {:?}", hv.as_u64()));
+                }
+            }
+            if let Some(n) = e.get("born").and_then(|v| v.as_u64()) {
+                // the floats that exist on the day (R5: none before its put)
+                let born = app.floats.iter().filter(|f| f.born(app.clock.day)).count() as u64;
+                if born != n {
+                    bad.push(format!("{born} floats born, not {n}"));
+                }
+            }
+            if let Some(c) = e.get("chosen") {
+                // a float's id, or true/false for any or none (R5)
+                let ok = match (c.as_bool(), c.as_u64()) {
+                    (Some(b), _) => app.chosen.is_some() == b,
+                    (_, Some(id)) => app.chosen == Some(id as u32),
+                    _ => c.is_null() && app.chosen.is_none(),
+                };
+                if !ok {
+                    bad.push(format!("chosen {:?} not {c}", app.chosen));
                 }
             }
             if let Some(r) = e.get("riding") {

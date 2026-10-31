@@ -261,7 +261,7 @@ impl Words {
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
-    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, press: f32, labels: &[GlyphInstance]) {
+    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, press: f32, seconds: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
         let foot = under.min(height - 72.0 * reading);
         let _bottom = height - 12.0 * reading;
@@ -295,6 +295,15 @@ impl Words {
         }
         let mx = cx - rule_w / 2.0 + rule_w * year_day.clamp(0.0, 1.0);
         let (mark, mark_ink) = if running { ("\u{25cf}", if night { [0.965, 0.682, 0.227, 1.0] } else { [0.957, 0.647, 0.165, 1.0] }) } else { ("\u{25cb}", if night { [0.894, 0.925, 0.957, 1.0] } else { [0.149, 0.188, 0.227, 1.0] }) };
+        // the sign that the year runs: the lamp breathes, a soft glow of its own colour swelling and
+        // settling over three seconds; at rest the ring is still and has no glow (gentle, unmistakable)
+        if running {
+            let breath = 0.5 + 0.5 * (seconds * 2.1).sin();
+            let glow = Line { text: "\u{25cf}", style: Style::Regular, size: (14.0 + 6.0 * breath + 3.0 * touched) * reading, ink: [mark_ink[0], mark_ink[1], mark_ink[2], 0.16 + 0.14 * breath], tracking: 0.0 };
+            let gs = (14.0 + 6.0 * breath + 3.0 * touched) * reading;
+            let ms = (9.0 + 3.0 * touched) * reading;
+            glyphs.extend(self.face.layout(&glow, mx, rule_y + 3.2 * reading + 0.35 * (gs - ms), [0.0; 4]));
+        }
         let marker = Line { text: mark, style: Style::Regular, size: (9.0 + 3.0 * touched) * reading, ink: mark_ink, tracking: 0.0 };
         glyphs.extend(self.face.layout(&marker, mx, rule_y + 3.2 * reading, [0.0; 4]));   // (a mark, not a word: no halo)
         if !note.is_empty() {

@@ -55,6 +55,18 @@ impl Params {
     }
 }
 
+/// A checkpoint of the paths buffer: a copy on the GPU (no readback), to restore and step on
+/// from, so a rewind of a shown cloud is a copy and a few steps instead of a run from the put.
+/// The app records the day it was kept at.
+pub struct Keep {
+    buffer: wgpu::Buffer,
+    pub count: u32,
+}
+
+/// The most steps one `step_many` call encodes (its parameters ride a ring of uniform slots).
+pub const MAX_STEPS: u32 = 1024;
+const SLOT: u64 = 256;
+
 pub struct Maybes {
     walk: wgpu::ComputePipeline,
     flight: wgpu::ComputePipeline,
@@ -87,7 +99,7 @@ impl Maybes {
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: true, min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<Params>() as u64) },
                     count: None,
                 },
                 tex(1, wgpu::TextureViewDimension::D2),
@@ -106,7 +118,7 @@ impl Maybes {
         });
         let params = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("maybes params"),
-            size: std::mem::size_of::<Params>() as u64,
+            size: SLOT * MAX_STEPS as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -127,7 +139,10 @@ impl Maybes {
             label: Some("maybes"),
             layout: &layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: params.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &params, offset: 0, size: wgpu::BufferSize::new(std::mem::size_of::<Params>() as u64) }),
+                },
                 wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&textures.currents.view) },
                 wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&wind.view) },
                 wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&eddy.view) },
@@ -164,14 +179,54 @@ impl Maybes {
 
     /// One step of every path (k = its index + 1), with memory (`flight`) or without.
     pub fn step(&self, gpu: &Gpu, params: Params, flight: bool) {
-        gpu.queue.write_buffer(&self.params, 0, bytemuck::bytes_of(&params));
+        self.step_many(gpu, &[params], flight);
+    }
+
+    /// Several steps in one submit, each with its own parameters (at most `MAX_STEPS`): a scrub
+    /// that must catch a cloud up by many steps costs one command buffer, not one a step. The
+    /// result is the same as the steps one by one.
+    pub fn step_many(&self, gpu: &Gpu, steps: &[Params], flight: bool) {
+        assert!(steps.len() as u32 <= MAX_STEPS, "at most {MAX_STEPS} steps a call");
+        if steps.is_empty() {
+            return;
+        }
+        let mut bytes = vec![0u8; SLOT as usize * steps.len()];
+        for (i, p) in steps.iter().enumerate() {
+            bytes[i * SLOT as usize..i * SLOT as usize + std::mem::size_of::<Params>()].copy_from_slice(bytemuck::bytes_of(p));
+        }
+        gpu.queue.write_buffer(&self.params, 0, &bytes);
         let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("maybes") });
         {
             let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("maybes"), timestamp_writes: None });
             pass.set_pipeline(if flight { &self.flight } else { &self.walk });
-            pass.set_bind_group(0, &self.bind, &[]);
-            pass.dispatch_workgroups((params.count + 63) / 64, 1, 1);
+            for (i, p) in steps.iter().enumerate() {
+                pass.set_bind_group(0, &self.bind, &[(i as u64 * SLOT) as u32]);
+                pass.dispatch_workgroups((p.count + 63) / 64, 1, 1);
+            }
         }
+        gpu.queue.submit([enc.finish()]);
+    }
+
+    /// A checkpoint: the paths as they are now, copied on the GPU.
+    pub fn keep(&self, gpu: &Gpu, count: u32) -> Keep {
+        let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
+        let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("maybes keep"),
+            size: size.max(4),
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.copy_buffer_to_buffer(&self.paths, 0, &buffer, 0, size);
+        gpu.queue.submit([enc.finish()]);
+        Keep { buffer, count }
+    }
+
+    /// The paths put back as a checkpoint had them.
+    pub fn restore(&self, gpu: &Gpu, keep: &Keep) {
+        let size = keep.count as u64 * std::mem::size_of::<GpuPath>() as u64;
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.copy_buffer_to_buffer(&keep.buffer, 0, &self.paths, 0, size);
         gpu.queue.submit([enc.finish()]);
     }
 

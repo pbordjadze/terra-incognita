@@ -1,0 +1,11 @@
+{
+  "_": "Riding a float with its maybes out (R4: the owner's 'tapping on it and following it'): a float twenty days adrift at zoom 2.2, ridden by intent while the date runs; frames as the camera drifts with it, to see how the cloud and the silver read while the globe moves under them. adrift-check play adrift/crates/adrift-core/src/look/plans/riding.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -60.0, "lat": 36.0, "zoom": 2.2 }, "day": 200.0, "seconds": 10.0, "running": true,
+             "floats": [ { "lon": -70.0, "lat": 36.0, "days_ago": 20 } ] },
+  "steps": [
+    { "shot": "before" },
+    { "intent": { "Ride": { "float": 1 } } }, { "advance": 0.6 }, { "shot": "riding-0.6" },
+    { "advance": 1.5 }, { "shot": "riding-2.1" }, { "advance": 4.0 }, { "shot": "riding-6.1" }
+  ]
+}

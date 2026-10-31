@@ -221,3 +221,37 @@ the coast mask says water, and the Black, the Caspian and the Baltic need only b
 be ruled on. Truth's round is the sea feeling alive and right to the hand and eye (the wake, the
 wander, the speeds as a finger reads them), not its annotation; SOURCES.md keeps the whole account.
 Whales, if they come, by rules that feel true before strict telemetry. Delight first.
+
+## 12. R5 opens: the second device verdict (Oct 31, 17:00 UTC)
+
+The owner on build 30 (painting-company row 196 has the words): the maybes are the heart of it, and
+the round is built round them. His asks, in his order: the date scroller buttery smooth; rewinding
+time brings the lamps back to where they were; a scrub leaves the date running if it was running,
+with a gentle sign of running or resting; the trails went wrong (wakes that zigzag and double back,
+their heads apart from any lamp); each lamp its own colour, its maybes in the same, so each cloud
+reads as its lamp's; and once a lamp is chosen and its maybes shown, zooming out must not let it go.
+His screenshot also showed heavy white bands across the sea close in by day and faint grey rings on
+the water.
+
+**Who owns which goal.**
+- *Engineering*: the scrub's cost (measured in the check: CPU per frame while scrubbing with thirty
+  floats; the maybes stepped on from where they are with a budget of steps a frame instead of
+  re-simulated from the put, the floats' catch-up budgeted); time reversible, which is the trail bug
+  too: a float's place is a function of its put (place, day, seed) and the date, on a fixed
+  quarter-day grid from the put, so the rewind restores it and its wake is read off the same path;
+  a carry starts a new leg; a float before its put is not there; the choice (`Intent::Choose`,
+  `Unchoose`, `App.chosen`, set by `Ride`, cleared by a tap on the sea or the float's going).
+- *Motion*: the scrub leaves the clock as it found it (running stays running); zooming or panning
+  away keeps the choice and ends only the ride; whatever else the hand expects of a choice.
+- *Visual*: a hue per lamp (`LookFloat.id`) carried by its maybes, wake and silver so each cloud is
+  its lamp's; the gentle sign of running or resting at the date; the screenshot's white bands and grey
+  rings found and quieted (the glitter or the streamlines' light close in; old rings or the cloud's
+  ghosts); whatever the chosen state needs drawn (`LookFloat.chosen`).
+- *Truth*: the flight a pure function of (state, day, dt, seed, k) on the fixed grid, stated and
+  tested, so a replayed path is the same path; the sampler's cost per call (the scrub's budget is
+  spent there); `Maybes` able to keep and restore a checkpoint of its paths so a rewind of the cloud
+  is a restore and a few steps, not a re-simulation from the put.
+
+Seams at the head named in the round's message: `Intent::Choose`/`Unchoose`, `App.chosen`,
+`LookFloat.id`/`chosen`, the check's `chosen` expectation. The path grid and the maybes' budget
+follow on `adrift` within the hour; the crafts need not wait for them.

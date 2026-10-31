@@ -167,11 +167,15 @@ pub fn unit(at: LonLat) -> [f32; 3] {
 /// A float as the look sees it.
 #[derive(Clone, Debug)]
 pub struct LookFloat {
+    /// The app's id (1, 2, 3…): a hue per lamp can hang on it (R5).
+    pub id: u32,
     pub at: LonLat,
     /// 1 while it is what the reader just did, fading to 0 in time (the app's `lit_for` against the beat).
     pub lit: f32,
     /// Under a resting finger: its maybes out.
     pub held: bool,
+    /// The one whose maybes and drifter are shown now (held, pressed, chosen or ridden; R5).
+    pub chosen: bool,
     /// One bead a day, oldest first (the last `WAKE_DAYS` are drawn).
     pub wake: Vec<LookBead>,
     /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
@@ -218,6 +222,8 @@ pub struct LookState {
     /// A finger on the date's band: 0 none, else how far through the rest's beat (Motion's thicken);
     /// the band brightens the frame it lands and thickens over the beat (DEMANDS.md D8, D9).
     pub date_press: f32,
+    /// The shell's seconds, for what breathes on the screen (the date's lamp while the year runs).
+    pub seconds: f32,
     /// The truth's marks on the screen (the guess mark on a float and its beads): off by default
     /// (DECISIONS.md › Truth underneath, not on top).
     pub truth_marks: bool,
@@ -229,13 +235,31 @@ pub struct LookState {
     pub credits_open: bool,
 }
 
+/// A lamp's hue by its number (palette.json › hues): amber first, then the others, each a glass
+/// lamp's colour that reads warm on the cool sea and tells its cloud, wake and silver from another's.
+pub fn lamp_hue(id: u32) -> [f32; 3] {
+    const HUES: [[f32; 3]; 8] = [
+        [0.957, 0.647, 0.165],   // amber
+        [0.941, 0.439, 0.353],   // coral
+        [0.910, 0.435, 0.627],   // rose
+        [0.706, 0.549, 0.941],   // lilac
+        [0.345, 0.722, 0.910],   // sky
+        [0.310, 0.816, 0.659],   // mint
+        [0.722, 0.839, 0.290],   // lime
+        [0.949, 0.812, 0.227],   // gold
+    ];
+    HUES[((id.max(1) - 1) % 8) as usize]
+}
+
 /// Days of wake drawn (palette.json › sizes.bead.days).
 pub const WAKE_DAYS: usize = 45;
 
 /// The marks on the sea, in their draw order, behind one `prepare` and one `draw`.
 pub struct Look {
-    /// Where the maybes bloom from: the float last held.
+    /// Where the maybes bloom from: the float last held or chosen.
     bloom_from: [f32; 3],
+    /// That float's hue, carried by its maybes and its silver.
+    hue: [f32; 3],
     /// The drifter's point nearest the float last held, kept while the silver sinks.
     nearest: usize,
     pub wake: wake::Wake,
@@ -249,6 +273,7 @@ impl Look {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Look {
         Look {
             bloom_from: [0.0, 0.0, 1.0],
+            hue: [0.957, 0.647, 0.165],
             nearest: 0,
             wake: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
@@ -265,7 +290,7 @@ impl Look {
         let mut beads = Vec::new();
         for f in &state.floats {
             let start = f.wake.len().saturating_sub(WAKE_DAYS);
-            let mut b = wake::beads(&f.wake[start..], n);
+            let mut b = wake::beads(&f.wake[start..], n, lamp_hue(f.id));
             if !state.truth_marks {
                 for bead in &mut b {
                     bead.measured = 1.0;
@@ -274,20 +299,22 @@ impl Look {
             beads.extend(b);
         }
         self.wake.prepare(gpu, &beads);
-        // the maybes bloom from the held float (the last held place is kept while they fold)
-        if let Some(f) = state.floats.iter().find(|f| f.held) {
+        // the maybes bloom from the held or chosen float in its own hue (the last place and hue are kept
+        // while they fold)
+        if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);
+            self.hue = lamp_hue(f.id);
         }
-        self.maybes.prepare(gpu, self.bloom_from, state.bloom, n);
+        self.maybes.prepare(gpu, self.bloom_from, state.bloom, n, self.hue);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
-        self.silver.prepare(gpu, &track, state.rise, n);
+        self.silver.prepare(gpu, &track, state.rise, n, self.hue);
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: f.held as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 } })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: (f.held || f.chosen) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id) })
             .collect();
         if let Some((at, beat)) = state.resting {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0 });
+            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1) });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
@@ -309,7 +336,7 @@ impl Look {
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }
-        self.words.prepare_foot(gpu, &state.date, &state.note, width, height, reading, disc, n, state.date_running, state.year_day, state.date_press, &labels);
+        self.words.prepare_foot(gpu, &state.date, &state.note, width, height, reading, disc, n, state.date_running, state.year_day, state.date_press, state.seconds, &labels);
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).

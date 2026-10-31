@@ -1,0 +1,6 @@
+{
+  "_": "Five lamps, each its own hue (R5): the maybes, the wake and the silver carry the chosen lamp's colour so its cloud is unmistakably its own. adrift-check render adrift/crates/adrift-core/src/look/plans/hues.json <out.png>.",
+  "camera": { "lon": -55.0, "lat": 36.0, "zoom": 2.6 }, "day": 200.0, "seconds": 12.0,
+  "floats": [ { "lon": -62.0, "lat": 37.0, "days_ago": 20 }, { "lon": -58.0, "lat": 33.0, "days_ago": 20 }, { "lon": -52.0, "lat": 38.0, "days_ago": 15 }, { "lon": -48.0, "lat": 34.0, "days_ago": 10 }, { "lon": -56.0, "lat": 40.0, "days_ago": 25 } ],
+  "hold": 1
+}

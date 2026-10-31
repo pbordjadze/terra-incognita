@@ -11,6 +11,7 @@ struct FloatIn {
     @location(3) held: f32,         // 1 while held (its maybes out)
     @location(4) night: f32,        // 1 by night (the night palette)
     @location(5) measured: f32,     // how measured the sea is where it rides (0..1): under a half the rim is dashed
+    @location(6) hue: vec3<f32>,    // the lamp's colour (amber the first, then each its own)
 };
 
 struct FloatOut {
@@ -23,6 +24,7 @@ struct FloatOut {
     @location(5) night: f32,
     @location(6) facing: f32,
     @location(7) measured: f32,
+    @location(8) hue: vec3<f32>,
 };
 
 fn float_radius() -> f32 {
@@ -41,7 +43,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     o.local = c * reach;
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }   // (hidden past the limb: clipped)
-    o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured;
+    o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured; o.hue = f.hue;
     return o;
 }
 
@@ -50,6 +52,7 @@ fn glass_rim(n: f32) -> vec3<f32> { return mix(vec3<f32>(0.118, 0.290, 0.345), v
 fn glass_body(n: f32) -> vec4<f32> { return mix(vec4<f32>(0.561, 0.816, 0.776, 0.70), vec4<f32>(0.247, 0.478, 0.525, 0.45), n); }
 fn glass_light(n: f32) -> f32 { return mix(0.95, 0.55, n); }
 fn lamp(n: f32) -> vec3<f32> { return mix(vec3<f32>(0.957, 0.647, 0.165), vec3<f32>(0.965, 0.682, 0.227), n); }
+fn lamp_of(h: vec3<f32>, n: f32) -> vec3<f32> { return mix(h, h * 1.04, n); }
 fn lamp_core(n: f32) -> vec3<f32> { return mix(vec3<f32>(1.0, 0.914, 0.722), vec3<f32>(1.0, 0.941, 0.784), n); }
 fn lamp_glow_a(n: f32) -> f32 { return mix(0.30, 0.40, n); }
 fn lit_a(n: f32) -> f32 { return mix(0.22, 0.28, n); }
@@ -82,14 +85,15 @@ fn fs(i: FloatOut) -> @location(0) vec4<f32> {
     }
 
     // what you just did stays lit, and the lamp's light on the water
-    acc = over(acc, lamp(n), lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
-    acc = over(acc, lamp(n), lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
+    let hue = lamp_of(i.hue, n);
+    acc = over(acc, hue, lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
+    acc = over(acc, hue, lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // the glass, the lamp, its core
     let gb = glass_body(n);
     acc = over(acc, gb.rgb, gb.a * cover(d - r));
     let rl = 0.55 * r;
-    acc = over(acc, lamp(n), cover(d - rl));
-    acc = over(acc, lamp_core(n), pow(clamp(1.0 - d / (rl * 0.72), 0.0, 1.0), 1.6));
+    acc = over(acc, hue, cover(d - rl));
+    acc = over(acc, mix(lamp_core(n), hue, 0.25), pow(clamp(1.0 - d / (rl * 0.72), 0.0, 1.0), 1.6));
     // the rim, dashed where the sea's current is the sheet's guess and no drifter measured it (Truth's
     // D3: nothing claims the current where no drifter went), and the sun's highlight upper left
     var dash = 1.0;

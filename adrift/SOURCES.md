@@ -133,6 +133,20 @@ screenshot is the symbol's size on the sea, not the mask's: the mask is finer th
 every zoom, and finer than the point from zoom 4.5 in. What would fix the look at the whole Earth
 is the symbol's (Visual's) to decide; the mask would need 8192 pixels only for a zoom beyond 8.
 
+## Time is reversible
+
+A step is a pure function of its arguments: `Rules::flight(state, day, dt, seed, k)` reads the
+sheets and hashes the seed, the path and the step's start day (as the bits of an f32) and nothing
+else; no call remembers the last. A float's place at any day is therefore the same whichever way
+the date was scrubbed to reach it, if the app steps it on a fixed grid from its put: a quarter
+day is exact in f32 for any day under 2^21 (the year 7745), so a grid mark always gives the same
+bits, and a day off the grid (the put's first, short step) is rounded to f32 once, the same way
+every time (`sea::tests::a_step_is_a_pure_function_of_its_arguments`). The maybes on the GPU are
+the same rules, so a kept cloud restored and stepped on is bit for bit the cloud stepped straight
+through (`a_kept_cloud_restores_and_steps_on_the_same`). A step costs about a microsecond on a
+Linux box at the dev profile (`step_cost`, a tool): thirty floats scrubbed a hundred days is some
+ten milliseconds, and the maybes' steps ride one command buffer a scrub (`Maybes::step_many`).
+
 ## How many maybes, and how often
 
 Measured (`sea::tests::maybes_budget`, a tool run by hand): thirty days after a put off Cape

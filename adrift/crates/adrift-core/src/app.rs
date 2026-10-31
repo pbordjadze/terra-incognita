@@ -93,8 +93,11 @@ pub struct App {
     stage: Option<Stage>,
     /// Truth's sampler: a held float's maybes on the GPU.
     maybes: Maybes,
-    /// The float whose maybes are in the buffer, how many, and the day they were run to.
+    /// The float whose maybes are in the buffer, how many, and the day they have reached (R5:
+    /// stepped on from there, never re-run from the put while the float and its leg are the same).
     maybes_of: Option<(u32, u32, f64)>,
+    /// The leg the maybes were seeded from (its put day and seed).
+    maybes_leg: Option<(f64, u64)>,
     pub budget: Budget,
     /// What the stage last showed: the view uniform's bytes and the months, to know when to redraw.
     stage_shown: Option<(ViewUniform, (u32, u32))>,
@@ -113,6 +116,9 @@ pub struct App {
     /// A float under a resting finger, from when (`Intent::PressFloat`): its maybes show from the
     /// landing; `Unpress` clears it.
     pressing_float: Option<(u32, f64)>,
+    /// The chosen float (R5): its maybes and nearest drifter stay shown whatever the camera does,
+    /// until the sea is tapped, another is chosen, or it is taken out.
+    pub chosen: Option<u32>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -129,8 +135,11 @@ pub struct App {
     seconds: f64,
     last_t: Option<f64>,
     now: f64,
-    /// How far each float has been stepped (`id` → day).
-    stepped: std::collections::HashMap<u32, f64>,
+    /// Every leg's path as computed so far (R5): a float's place at any date is read here.
+    paths: std::collections::HashMap<(u32, usize), Path>,
+    /// Keeps of the shown float's maybes, oldest first, and the day the next is due.
+    keeps: Vec<Kept>,
+    next_keep: f64,
     pub reduce_motion: bool,
     /// The system's dark appearance: the look's night (the shells set it).
     pub night: bool,
@@ -157,6 +166,64 @@ const WAKE_MAX: usize = 400;
 /// day do (Truth's budget, SOURCES.md › How many maybes); a whole day is not honest in a jet.
 pub const MAYBES: u32 = 512;
 const MAYBES_STEP: f64 = 0.5;
+/// The most flight steps the floats take in one frame (the rest wait for the next): a scrub of a
+/// hundred days with thirty floats catches up over a few frames instead of stalling one (R5).
+const FLIGHT_BUDGET: usize = 1500;
+/// The most steps the shown float's maybes take in one frame (half-day steps: twelve days a frame).
+const MAYBES_BUDGET: usize = 24;
+/// A keep of the maybes' paths every so many days, so a rewind is a restore and a few steps.
+const KEEP_EVERY: f64 = 10.0;
+const KEEPS_MAX: usize = 64;
+
+/// One sample of a leg's path on the quarter-day grid.
+#[derive(Clone, Copy, Debug)]
+struct Sample {
+    day: f64,
+    at: LonLat,
+    eddy: [f32; 2],
+    measured: f32,
+    held: Held,
+}
+
+/// A leg's path as computed so far (`App.paths`, keyed by float id and leg index; a leg that
+/// changed under its key is recomputed).
+struct Path {
+    leg: Leg,
+    samples: Vec<Sample>,
+}
+
+/// A keep of the maybes' paths at a day (R5; Truth's `Maybes::keep`).
+struct Kept {
+    day: f64,
+    keep: crate::sea::Keep,
+}
+
+/// The next quarter-day mark after `t` (t itself on the grid: the one after it).
+fn grid_next(t: f64) -> f64 {
+    let q = (t / SUBSTEP).floor() * SUBSTEP + SUBSTEP;
+    if q - t < 1e-9 {
+        q + SUBSTEP
+    } else {
+        q
+    }
+}
+
+/// A place between two samples, the longitude the short way round.
+fn lerp_place(a: LonLat, b: LonLat, f: f64) -> LonLat {
+    let mut dlon = b.lon - a.lon;
+    if dlon > 180.0 {
+        dlon -= 360.0;
+    } else if dlon < -180.0 {
+        dlon += 360.0;
+    }
+    let mut lon = a.lon + dlon * f;
+    if lon > 180.0 {
+        lon -= 360.0;
+    } else if lon < -180.0 {
+        lon += 360.0;
+    }
+    LonLat { lon, lat: a.lat + (b.lat - a.lat) * f }
+}
 
 impl App {
     pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> anyhow::Result<App> {
@@ -205,6 +272,7 @@ impl App {
             stage: None,
             maybes,
             maybes_of: None,
+            maybes_leg: None,
             budget,
             stage_shown: None,
             stage_seconds: -1.0,
@@ -218,6 +286,7 @@ impl App {
             gestures: Gestures::new(),
             pressing: None,
             pressing_float: None,
+            chosen: None,
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -230,7 +299,9 @@ impl App {
             seconds: 0.0,
             last_t: None,
             now: 0.0,
-            stepped: Default::default(),
+            paths: Default::default(),
+            keeps: Vec::new(),
+            next_keep: 0.0,
             reduce_motion: false,
             night: false,
             rest: 0.0,
@@ -284,6 +355,9 @@ impl App {
         let reach = crate::touch::motion::REACH * self.reading;
         let mut best: Option<(f64, u32, LonLat)> = None;
         for f in &self.floats {
+            if !f.born(self.clock.day) {
+                continue;
+            }
             let (p, facing) = disc.project(&self.camera.camera, f.at);
             if facing < 0.05 {
                 continue;
@@ -355,7 +429,14 @@ impl App {
         }
         let day = self.clock.day;
         match intent {
+            // (D10: a ring at touch-down keeps the choice; `Unchoose` is the tap's carrier)
             Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
+            Intent::Choose { float } => {
+                if self.floats.iter().any(|f| f.id == float) {
+                    self.chosen = Some(float);
+                }
+            }
+            Intent::Unchoose => self.chosen = None,
             Intent::Press { at, since } => self.pressing = Some((at, since)),
             Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
             Intent::Unpress => {
@@ -401,11 +482,14 @@ impl App {
                         f.lit_for = 0.0;
                         f.at = p;
                         f.put_day = day;
-                        f.wake.clear();
                         f.held = Held::No;
+                        // a new leg from here, its own seed: the path before it stays what it was
+                        let mut legs = f.legs();
+                        f.seed = (f.seed ^ day.to_bits()).rotate_left(23).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                        legs.push(Leg { at: p, day, seed: f.seed });
+                        f.legs = legs;
                         let e = self.rules.put(p, day, f.seed, 0).eddy;
                         f.eddy = [e.0, e.1];
-                        self.stepped.insert(float, day);
                         self.redo.clear();
                         self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
                     }
@@ -419,7 +503,6 @@ impl App {
                                 back.hand = Hand::Free;
                                 back.lit_for = 0.0;
                                 self.floats[i] = back;
-                                self.stepped.insert(float, day);
                                 return;
                             }
                         }
@@ -436,21 +519,13 @@ impl App {
                     self.camera.riding = None;
                 } else if self.floats.iter().any(|f| f.id == float) {
                     self.camera.riding = Some(float);
+                    self.chosen = Some(float);
                     if let Some(f) = self.floats.iter_mut().find(|f| f.id == float) {
                         f.lit_for = 0.0;
                     }
                 }
             }
-            Intent::Scrub { days } => {
-                self.clock.day += days;
-                let day = self.clock.day;
-                for f in &self.floats {
-                    let s = self.stepped.entry(f.id).or_insert(day);
-                    if *s > day {
-                        *s = day;
-                    }
-                }
-            }
+            Intent::Scrub { days } => self.clock.day += days,
             Intent::SetRunning { running } => self.clock.running = running,
             Intent::ToggleCredits => self.credits_open = !self.credits_open,
             Intent::ClearAll => self.clear_all(),
@@ -469,8 +544,7 @@ impl App {
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), lit_for: 0.0 });
-        self.stepped.insert(id, self.clock.day);
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), lit_for: 0.0, legs: vec![Leg { at, day: self.clock.day, seed }] });
         id
     }
 
@@ -479,6 +553,9 @@ impl App {
     fn take_out(&mut self, float: u32) {
         let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
         let mut f = self.floats.remove(i);
+        if self.chosen == Some(float) {
+            self.chosen = None;
+        }
         if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
             if id == float {
                 self.undo.pop();
@@ -501,19 +578,18 @@ impl App {
         }
         self.pressing = None;
         self.pressing_float = None;
+        self.chosen = None;
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
     }
 
     fn undo(&mut self) {
-        let day = self.clock.day;
         match self.undo.pop() {
             Some(Undo::Cleared(gone)) => {
                 for mut f in gone {
                     f.hand = Hand::Free;
                     f.lit_for = 0.0;
-                    self.stepped.insert(f.id, day);
                     self.floats.push(f);
                 }
                 self.redo.push(Undo::Cleared(Vec::new()));
@@ -531,14 +607,12 @@ impl App {
                     back.hand = Hand::Free;
                     back.lit_for = 0.0;
                     *f = back;
-                    self.stepped.insert(id, day);
                     self.redo.push(Undo::Moved { id, from: now });
                 }
             }
             Some(Undo::Removed(mut f)) => {
                 f.hand = Hand::Free;
                 f.lit_for = 0.0;
-                self.stepped.insert(f.id, day);
                 self.redo.push(Undo::Put(f.id));
                 self.floats.push(f);
             }
@@ -547,7 +621,6 @@ impl App {
     }
 
     fn redo(&mut self) {
-        let day = self.clock.day;
         match self.redo.pop() {
             Some(Undo::Cleared(_)) => {
                 let mut gone = std::mem::take(&mut self.floats);
@@ -560,7 +633,6 @@ impl App {
             Some(Undo::Removed(mut f)) => {
                 f.hand = Hand::Free;
                 f.lit_for = 0.0;
-                self.stepped.insert(f.id, day);
                 self.undo.push(Undo::Put(f.id));
                 self.floats.push(f);
             }
@@ -571,7 +643,6 @@ impl App {
                     to.hand = Hand::Free;
                     to.lit_for = 0.0;
                     *f = to;
-                    self.stepped.insert(id, day);
                     self.undo.push(Undo::Moved { id, from: now });
                 }
             }
@@ -619,7 +690,7 @@ impl App {
         for f in &mut self.floats {
             f.lit_for += dt;
         }
-        let ride_at = self.camera.riding.and_then(|id| self.floats.iter().find(|f| f.id == id).map(|f| f.at));
+        let ride_at = self.camera.riding.and_then(|id| self.floats.iter().find(|f| f.id == id && f.born(self.clock.day)).map(|f| f.at));
         if self.camera.riding.is_some() && ride_at.is_none() {
             self.camera.riding = None;
         }
@@ -678,42 +749,89 @@ impl App {
             .iter()
             .find(|f| f.hand == Hand::Held)
             .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
+            .or_else(|| self.chosen.and_then(by_id))
             .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
     }
 
-    /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day:
-    /// the flight (Truth's rules), with the eddy memory the float carries.
+    /// Every float not in the hand is where its path says it is on the clock's day (R5): the leg
+    /// active then, stepped on the quarter-day grid from its put with Truth's flight, cached, the
+    /// place between samples interpolated; the wake is the path's day marks. At most `budget`
+    /// flight steps are taken this frame; what remains waits for the next, so a long scrub catches
+    /// up over a few frames instead of stalling one.
     fn step_floats(&mut self) {
+        self.step_floats_with(FLIGHT_BUDGET);
+    }
+
+    fn step_floats_with(&mut self, mut budget: usize) {
         let day = self.clock.day;
-        for f in &mut self.floats {
+        let mut floats = std::mem::take(&mut self.floats);
+        for f in &mut floats {
             if f.hand == Hand::Carried {
-                self.stepped.insert(f.id, day);
                 continue;
             }
-            let mut t = *self.stepped.get(&f.id).unwrap_or(&day);
-            let mut n = 0;
-            while t < day - 1e-9 && n < 240 {
-                let dt = SUBSTEP.min(day - t);
-                let next_day_mark = t.floor() + 1.0;
-                let dt = dt.min(next_day_mark - t).max(1e-6);
-                let s = self.rules.flight(Drift { at: f.at, eddy: (f.eddy[0], f.eddy[1]) }, t, dt, f.seed, 0);
-                f.at = s.drift.at;
-                f.eddy = [s.drift.eddy.0, s.drift.eddy.1];
-                f.held = s.held;
-                f.measured = s.measured;
-                t += dt;
-                if (t - next_day_mark).abs() < 1e-6 {
-                    t = next_day_mark;
-                    if f.wake.last().map_or(true, |b| b.day < next_day_mark - 0.5) {
-                        f.wake.push(Bead { at: f.at, day: t, measured: f.measured });
-                        if f.wake.len() > WAKE_MAX {
-                            f.wake.remove(0);
+            if f.legs.is_empty() {
+                f.legs = f.legs();
+            }
+            let Some(li) = f.leg_at(day) else { continue };
+            // the earlier legs' paths, up to the day the next leg began (their beads stay drawn)
+            for (i, leg) in f.legs.iter().enumerate().take(li) {
+                self.ensure_path(f.id, i, *leg, f.legs[i + 1].day, &mut budget);
+            }
+            let leg = f.legs[li];
+            self.ensure_path(f.id, li, leg, day, &mut budget);
+            let path = &self.paths[&(f.id, li)];
+            let k = path.samples.partition_point(|s| s.day <= day + 1e-9).saturating_sub(1);
+            let a = path.samples[k];
+            if let Some(b) = path.samples.get(k + 1) {
+                let fr = ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0);
+                f.at = lerp_place(a.at, b.at, fr);
+            } else {
+                f.at = a.at;
+            }
+            f.eddy = a.eddy;
+            f.measured = a.measured;
+            f.held = a.held;
+            // the wake: a bead at every day mark of every leg up to now
+            f.wake.clear();
+            for i in 0..=li {
+                let until = if i < li { f.legs[i + 1].day } else { day };
+                if let Some(p) = self.paths.get(&(f.id, i)) {
+                    for s in &p.samples {
+                        if s.day > until + 1e-9 {
+                            break;
+                        }
+                        if s.day.fract() == 0.0 {
+                            f.wake.push(Bead { at: s.at, day: s.day, measured: s.measured });
                         }
                     }
                 }
-                n += 1;
             }
-            self.stepped.insert(f.id, t);
+            if f.wake.len() > WAKE_MAX {
+                f.wake.drain(0..f.wake.len() - WAKE_MAX);
+            }
+        }
+        self.floats = floats;
+    }
+
+    /// A leg's path computed to `upto` (as far as the budget allows this frame).
+    fn ensure_path(&mut self, id: u32, li: usize, leg: Leg, upto: f64, budget: &mut usize) {
+        let rules = &self.rules;
+        let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, samples: Vec::new() });
+        if path.leg != leg || path.samples.is_empty() {
+            let e = rules.put(leg.at, leg.day, leg.seed, 0).eddy;
+            path.leg = leg;
+            path.samples.clear();
+            path.samples.push(Sample { day: leg.day, at: leg.at, eddy: [e.0, e.1], measured: 1.0, held: Held::No });
+        }
+        while *budget > 0 {
+            let last = *path.samples.last().unwrap();
+            if last.day >= upto - 1e-9 {
+                break;
+            }
+            let next = grid_next(last.day);
+            let s = rules.flight(Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, 0);
+            path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
+            *budget -= 1;
         }
     }
 
@@ -751,20 +869,18 @@ impl App {
         self.undo.clear();
         self.redo.clear();
         self.ripples.clear();
-        self.stepped.clear();
-        for f in &self.floats {
-            self.stepped.insert(f.id, self.clock.day);
-        }
+        self.paths.clear();
+        self.step_floats_with(usize::MAX);
         true
     }
 
     /// Sets the whole scene (the checks): the camera, the date, floats with their wakes simulated.
     pub fn set_scene(&mut self, scene: &Scene) {
         self.floats.clear();
+        self.paths.clear();
         self.undo.clear();
         self.redo.clear();
         self.ripples.clear();
-        self.stepped.clear();
         self.camera = CameraControl::new(scene.camera);
         self.gestures = Gestures::new();
         self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
@@ -781,7 +897,7 @@ impl App {
             }
         }
         self.clock.day = scene.day;
-        self.step_floats();
+        self.step_floats_with(usize::MAX);
         self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
         if let Some(f) = self.shown() {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
@@ -802,7 +918,8 @@ impl App {
             floats: self
                 .floats
                 .iter()
-                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
+                .filter(|f| f.born(self.clock.day))
+                .map(|f| LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: self.shown().map_or(false, |s| s.id == f.id), wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
                 .collect(),
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
@@ -815,6 +932,7 @@ impl App {
             note: String::new(),
             date_running: self.clock.running,
             year_day: (self.clock.year_day() / 365.25) as f32,
+            seconds: self.seconds as f32,
             date_press: self.gestures.date_pressing_since(self.now).map_or(0.0, |secs| crate::touch::motion::thicken(secs) as f32),
             truth_marks: false,
             credits: crate::sea::CREDIT_LINE.to_string(),
@@ -885,35 +1003,70 @@ impl App {
             self.stage_seconds = self.seconds;
             self.frames.3 += 1;
         }
-        // a held float's maybes, run on the GPU from its put place and day to now (again as the day
-        // moves): every path flies a quarter day at a time with the drifters' memory
-        let held = self.shown().map(|f| (f.id, f.put_day, f.seed, f.wake.first().map_or(f.at, |b| b.at)));
-        match held {
-            Some((id, put_day, seed, origin)) => {
-                let rerun = self.maybes_of.map_or(true, |(i, _, d)| i != id || (self.clock.day - d).abs() > 0.5);
-                if rerun {
-                    let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
-                    let paths: Vec<GpuPath> = (1..=n)
-                        .map(|k| {
-                            let e = self.rules.put(origin, put_day, seed, k).eddy;
-                            GpuPath { lon: origin.lon as f32, lat: origin.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
-                        })
-                        .collect();
-                    self.maybes.seed(&self.gpu, &paths);
-                    let mut day = put_day;
-                    let mut steps = 0;
-                    while day < self.clock.day - 1e-6 && steps < 2000 {
-                        let dt = MAYBES_STEP.min(self.clock.day - day);
-                        self.maybes.step(&self.gpu, Params::new(&self.rules, day, dt, seed, n), true);
-                        day += dt;
-                        steps += 1;
+        // the shown float's maybes on the GPU (R5): seeded once from its leg's put, stepped on from
+        // the day they have reached, a budget of steps a frame; a rewind restores the nearest keep
+        // and steps from there, so a scrub never re-runs the cloud from the put
+        let day = self.clock.day;
+        let shown = self.shown().filter(|f| f.born(day)).and_then(|f| f.leg_at(day).map(|li| (f.id, f.legs[li])));
+        match shown {
+            Some((id, leg)) => {
+                let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
+                let same = self.maybes_of.map_or(false, |m| m.0 == id && m.1 == n) && self.maybes_leg == Some((leg.day, leg.seed));
+                let target = day.max(leg.day);
+                let mut reached = if same { self.maybes_of.unwrap().2 } else { f64::INFINITY };
+                if reached > target + 1e-9 {
+                    // behind us: the nearest keep at or before the target, else the put itself
+                    let keep = if same { self.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
+                    match keep {
+                        Some(k) => {
+                            self.maybes.restore(&self.gpu, &self.keeps[k].keep);
+                            reached = self.keeps[k].day;
+                            self.keeps.truncate(k + 1);
+                            self.next_keep = reached + KEEP_EVERY;
+                        }
+                        None => {
+                            let paths: Vec<GpuPath> = (1..=n)
+                                .map(|k| {
+                                    let e = self.rules.put(leg.at, leg.day, leg.seed, k).eddy;
+                                    GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
+                                })
+                                .collect();
+                            self.maybes.seed(&self.gpu, &paths);
+                            self.keeps.clear();
+                            reached = leg.day;
+                            self.next_keep = leg.day + KEEP_EVERY;
+                            self.maybes_leg = Some((leg.day, leg.seed));
+                        }
                     }
-                    self.maybes_of = Some((id, n, self.clock.day));
                 }
+                // the frame's steps in one submit (Truth's step_many), a keep where one falls due
+                let mut steps = 0;
+                let mut batch: Vec<Params> = Vec::new();
+                while reached < target - 1e-6 && steps < MAYBES_BUDGET {
+                    let dt = MAYBES_STEP.min(target - reached);
+                    batch.push(Params::new(&self.rules, reached, dt, leg.seed, n));
+                    reached += dt;
+                    steps += 1;
+                    if reached >= self.next_keep - 1e-9 {
+                        self.maybes.step_many(&self.gpu, &batch, true);
+                        batch.clear();
+                        self.keeps.push(Kept { day: reached, keep: self.maybes.keep(&self.gpu, n) });
+                        if self.keeps.len() > KEEPS_MAX {
+                            self.keeps.remove(0);
+                        }
+                        self.next_keep = reached + KEEP_EVERY;
+                    }
+                }
+                if !batch.is_empty() {
+                    self.maybes.step_many(&self.gpu, &batch, true);
+                }
+                self.maybes_of = Some((id, n, reached));
             }
             None => {
                 if self.bloom <= 0.0 {
                     self.maybes_of = None;
+                    self.maybes_leg = None;
+                    self.keeps.clear();
                 }
             }
         }

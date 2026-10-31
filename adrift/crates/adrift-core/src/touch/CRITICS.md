@@ -204,3 +204,49 @@ and the beat under a finger are still unanswered by the device.
   setting.
 - Verdict: the vocabulary now has a way out of everything (home, clear) and a way back from both;
   what it lacks is still the look's answer under the finger (D7, D8). Reopened for the captures.
+
+**A last look at the shipping tree** (`main` at 095620e, 15:05 UTC; `date-flick`, `hold-maybes`
+and `credits` replayed on it; `critics/r4-ship-date.jpg`, `r4-ship-rising.jpg`):
+- The date answers the finger now: at rest a hairline under the day with the ink ring; under a
+  resting finger (0.3 s in, on the way to the credits) the rule goes to full ink and thickens and
+  the lamp swells amber, from `date_pressing_since` through Visual's band. The hater withdraws
+  "looks like a caption": it looks like a thing that answers.
+- The maybes under a landing finger do not read at phone zoom 1: the halo swells (0.2 s, 0.8 s)
+  and the cloud itself is a few points wide, because the eddy wander of a day or two is a few
+  kilometres on a globe three thousand kilometres across. The press is seen; what it shows is
+  not, until the reader is close. Not Motion's to fix (the spread is real and the drawing is
+  Visual's), and worth the owner's word: he rides and comes close, and there the cloud is.
+
+## R5 (October 31, 2026): the second device verdict, answered on the Linux build
+
+The owner on build 30: "the new maybes thing is incredible and ought to be the focus"; a swipe on
+the date should leave it playing if it was playing; zooming out should not deselect a lamp; the
+date scroller must be buttery smooth. Judged here: 33 plans on `adrift` at 241d9e0 with this
+round's gestures; the device's part (smoothness under a real thumb, the fling toward the pole, the
+beat) still waits on captures.
+
+**The hater** (a fifth, who scrubs):
+- *The scrub took the clock and kept it.* Every scrub sent `SetRunning { false }` and nothing
+  sent it back; the owner found the sea stopped after every swipe. Now the gesture remembers
+  what it found and gives it back when the finger lifts, the flick rests, or a touch stops the
+  flick (`date-keeps-running`: running → scrub → running; resting → scrub → resting; a flick
+  keeps the clock resting while the date runs on, then gives it back). The hater notes that for
+  a round the vocabulary said "the reader stopped time" and the owner said otherwise: the
+  owner was right, a swipe is a look, not a decision.
+- *A pinch on the sea unchose the lamp.* Because the sea rings at touch-down and the app took the
+  ring for a tap. The gesture now says `Unchoose` on a tap alone and asks the app to stop reading
+  the ring (D10); until that lands, `chosen.json` fails at the pinch, honestly.
+- *Tap the ridden lamp and what happens?* Decided: the ride lets go, the choice (and the cloud)
+  stays; tap it again to ride again; tap the open sea to let it all go. One rule a thumb can
+  learn by doing it twice.
+- *Smoothness is not provable here.* Per move the date's gesture does one frame read, one day
+  read, a multiply, a ring-buffer push and one intent; the check's cost per scrubbed frame is
+  Engineering's measurement and the device's thumb the verdict. The hater will not sign off on
+  "buttery" from a Linux log.
+- Not failed: 31 of the earlier plans unchanged and green; the flick's feel kept (a touch stops
+  it, as it stops the globe).
+
+**Holt:** the round removed two penalties the reader did not deserve (a stopped sea after a look
+at the date; a lost choice after a look at the whole globe). Nothing new is to learn: a tap still
+means what it meant, and what you chose stays chosen until you tap elsewhere. Verdict: good, with
+the device's word owed on smoothness.
