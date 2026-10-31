@@ -188,7 +188,7 @@ fn play(args: &[String]) -> Result<()> {
     app.budget.scale = 1.0;
     app.reduce_motion = plan.reduce_motion;
     let scene = plan.scene.clone().unwrap_or_else(|| Scene {
-        camera: plan.camera.unwrap_or(adrift_core::Camera { lon: -40.0, lat: 22.0, zoom: 1.0 }),
+        camera: plan.camera.unwrap_or(adrift_core::Camera::new(-40.0, 22.0, 1.0)),
         day: plan.day,
         running: true,
         floats: plan.floats.clone(),

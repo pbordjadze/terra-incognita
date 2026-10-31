@@ -26,7 +26,7 @@ enum Undo {
 /// A ridden float shows its maybes and its nearest drifter as a held one does (R4).
 pub const SHOW_RIDDEN: bool = true;
 
-pub const HOME: Camera = Camera { lon: -30.0, lat: 25.0, zoom: 1.0 };
+pub const HOME: Camera = Camera::new(-30.0, 25.0, 1.0);
 
 /// Everything about the sea's state that a scene file can set (adrift-check) and a frame reads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -301,7 +301,7 @@ impl App {
             clock,
             undo: Vec::new(),
             redo: Vec::new(),
-            camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
+            camera: CameraControl::new(Camera::new(-30.0, 25.0, 1.0)),
             gestures: Gestures::new(),
             pressing: None,
             pressing_float: None,

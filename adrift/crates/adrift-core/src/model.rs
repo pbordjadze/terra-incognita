@@ -187,18 +187,78 @@ pub struct Camera {
     pub lon: f64,
     pub lat: f64,
     pub zoom: f64,
+    /// The picture turned about the screen's centre, degrees (R6: no pole the camera must keep
+    /// up; with `roll` any orientation of the orb is a camera, so a drag can turn it freely over a
+    /// pole). 0 is north up; positive turns the globe's north toward the screen's left.
+    #[serde(default)]
+    pub roll: f64,
 }
 
 impl Camera {
-    /// World from view: Ry(lon) · Rx(-lat), as columns `[c0, c1, c2]` (Terra's `rotation`).
+    pub const fn new(lon: f64, lat: f64, zoom: f64) -> Camera {
+        Camera { lon, lat, zoom, roll: 0.0 }
+    }
+
+    /// World from view: Ry(lon) · Rx(-lat) · Rz(roll), as columns `[c0, c1, c2]` (Terra's
+    /// `rotation`, then the roll about the view's axis).
     pub fn rotation(&self) -> [[f64; 3]; 3] {
         let a = self.lon.to_radians();
         let b = -self.lat.to_radians();
+        let c0 = [a.cos(), 0.0, -a.sin()];
+        let c1 = [a.sin() * b.sin(), b.cos(), a.cos() * b.sin()];
+        let c2 = [a.sin() * b.cos(), -b.sin(), a.cos() * b.cos()];
+        if self.roll == 0.0 {
+            return [c0, c1, c2];
+        }
+        let (sr, cr) = self.roll.to_radians().sin_cos();
         [
-            [a.cos(), 0.0, -a.sin()],
-            [a.sin() * b.sin(), b.cos(), a.cos() * b.sin()],
-            [a.sin() * b.cos(), -b.sin(), a.cos() * b.cos()],
+            [cr * c0[0] + sr * c1[0], cr * c0[1] + sr * c1[1], cr * c0[2] + sr * c1[2]],
+            [-sr * c0[0] + cr * c1[0], -sr * c0[1] + cr * c1[1], -sr * c0[2] + cr * c1[2]],
+            c2,
         ]
+    }
+
+    /// The camera whose `rotation()` is `m` (columns, world from view), at this zoom: the centre's
+    /// place from the third column, the roll from the first. At a pole the longitude is whatever
+    /// `atan2` gives and the roll takes up the rest, so the picture is exact there too.
+    pub fn from_rotation(m: [[f64; 3]; 3], zoom: f64) -> Camera {
+        let c = m[2];
+        let lat = c[1].clamp(-1.0, 1.0).asin().to_degrees();
+        let lon = if c[0].abs() < 1e-12 && c[2].abs() < 1e-12 { 0.0 } else { c[0].atan2(c[2]).to_degrees() };
+        let base = Camera { lon, lat, zoom, roll: 0.0 }.rotation();
+        let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        let roll = dot(m[0], base[1]).atan2(dot(m[0], base[0])).to_degrees();
+        Camera { lon, lat, zoom, roll }
+    }
+
+    /// The globe turned on the screen by `angle` radians about `axis`, a direction in view space
+    /// (x right, y up, z toward the reader): a drag of dx, dy points over a disc of radius r turns it
+    /// about (-dy, dx, 0) by hypot(dx, dy) / r, and the place under the finger follows it, over a
+    /// pole as anywhere else (R6; Motion's trackball).
+    pub fn turned(&self, axis: [f64; 3], angle: f64) -> Camera {
+        let n = (axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]).sqrt();
+        if n < 1e-15 || angle == 0.0 {
+            return *self;
+        }
+        let (x, y, z) = (axis[0] / n, axis[1] / n, axis[2] / n);
+        let (s, c) = angle.sin_cos();
+        let t = 1.0 - c;
+        // Q (view-space rotation), row-major
+        let q = [
+            [t * x * x + c, t * x * y - s * z, t * x * z + s * y],
+            [t * x * y + s * z, t * y * y + c, t * y * z - s * x],
+            [t * x * z - s * y, t * y * z + s * x, t * z * z + c],
+        ];
+        // M' = M · Qᵀ: a world point's view place v = Mᵀ w becomes Q v
+        let m = self.rotation();
+        let mut out = [[0.0; 3]; 3];
+        for j in 0..3 {
+            // column j of M Qᵀ = Σ_k M[:,k] · Q[j][k]
+            for i in 0..3 {
+                out[j][i] = (0..3).map(|k| m[k][i] * q[j][k]).sum();
+            }
+        }
+        Camera::from_rotation(out, self.zoom)
     }
 
     /// The point of the globe at `v` in view space.
@@ -324,4 +384,42 @@ pub enum Intent {
     Unchoose,
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
+}
+
+#[cfg(test)]
+mod camera_tests {
+    use super::*;
+
+    fn close(a: [[f64; 3]; 3], b: [[f64; 3]; 3]) -> bool {
+        a.iter().flatten().zip(b.iter().flatten()).all(|(x, y)| (x - y).abs() < 1e-9)
+    }
+
+    #[test]
+    fn a_rotation_reads_back_as_its_camera() {
+        for &(lon, lat, roll) in &[(-30.0, 25.0, 0.0), (120.0, -60.0, 33.0), (10.0, 89.9, -150.0), (0.0, 90.0, 0.0), (45.0, -90.0, 70.0)] {
+            let c = Camera { lon, lat, zoom: 2.0, roll };
+            let back = Camera::from_rotation(c.rotation(), 2.0);
+            assert!(close(c.rotation(), back.rotation()), "{c:?} -> {back:?}");
+        }
+    }
+
+    #[test]
+    fn a_turn_carries_the_globe_over_the_pole_without_a_jump() {
+        // a drag straight up the screen from 80° N, in small steps: the centre crosses the pole and
+        // comes down the far side, every step the same small arc (no pole lock, no jump)
+        let mut c = Camera::new(-30.0, 80.0, 1.0);
+        let step = 0.5f64.to_radians();
+        let mut last = LonLat::new(c.lon, c.lat);
+        for _ in 0..80 {
+            c = c.turned([-1.0, 0.0, 0.0], -step);
+            let now = LonLat::new(c.lon, c.lat);
+            let arc = now.distance_m(last) / EARTH_RADIUS_M;
+            assert!((arc - step).abs() < 1e-6, "{arc} at {c:?}");
+            last = now;
+        }
+        assert!((c.lat - 60.0).abs() < 1e-6 && (c.lon - 150.0).abs() < 1e-6, "{c:?}");
+        // the place under the screen's top moved by the same turn: what was 10° above the centre
+        let v = c.view(LonLat::new(150.0, 70.0).to_xyz());
+        assert!(v[2] > 0.0, "the far side came into view: {v:?}");
+    }
 }
