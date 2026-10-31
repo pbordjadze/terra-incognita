@@ -6,7 +6,7 @@
 
 use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
-use crate::look::{sea::Ripple, GroundPass, Look, LookFloat, LookState, SeaPass};
+use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookFloat, LookState, SeaPass};
 use crate::model::*;
 use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
@@ -126,6 +126,11 @@ pub struct App {
     pub seen: Vec<String>,
     /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
     pub haptic: bool,
+    /// The frames since the shell last asked for the stats: their count, the sum and the worst of
+    /// their intervals, and how many redrew the stage.
+    frames: (u32, f64, f64, u32),
+    /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
+    pub credits_open: bool,
 }
 
 /// Days a second while the date runs.
@@ -216,6 +221,8 @@ impl App {
             rest: 0.0,
             seen: Vec::new(),
             haptic: false,
+            credits_open: false,
+            frames: (0, 0.0, 0.0, 0),
         })
     }
 
@@ -426,6 +433,7 @@ impl App {
                 }
             }
             Intent::SetRunning { running } => self.clock.running = running,
+            Intent::ToggleCredits => self.credits_open = !self.credits_open,
         }
     }
 
@@ -528,6 +536,11 @@ impl App {
         self.last_t = Some(now);
         self.last_dt = dt;
         self.now = now;
+        if dt > 0.0 {
+            self.frames.0 += 1;
+            self.frames.1 += dt;
+            self.frames.2 = self.frames.2.max(dt);
+        }
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.tick(now, &*self);
         self.gestures = gestures;
@@ -718,7 +731,7 @@ impl App {
             floats: self
                 .floats
                 .iter()
-                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| b.at).collect() })
+                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
                 .collect(),
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
@@ -730,6 +743,8 @@ impl App {
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
             credits: crate::sea::CREDIT_LINE.to_string(),
+            credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
+            credits_open: self.credits_open,
         }
     }
 
@@ -793,6 +808,7 @@ impl App {
             self.gpu.queue.submit([enc.finish()]);
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
+            self.frames.3 += 1;
         }
         // a held float's maybes, run on the GPU from its put place and day to now (again as the day
         // moves): every path flies a quarter day at a time with the drifters' memory
@@ -853,6 +869,27 @@ impl App {
     pub fn frame(&mut self, target: &wgpu::TextureView, now: f64) {
         self.advance(now);
         self.render(target);
+    }
+
+    /// The frames since last asked, as one line for a log: how many, the mean and the worst interval
+    /// in milliseconds, how many redrew the stage, the stage's scale, the floats and the maybes. The
+    /// device prints it every few seconds; so does the web's console. The count starts again.
+    pub fn stats(&mut self) -> String {
+        let (n, sum, worst, stage) = std::mem::replace(&mut self.frames, (0, 0.0, 0.0, 0));
+        let mean = if n > 0 { sum / n as f64 * 1000.0 } else { 0.0 };
+        format!(
+            "adrift: {n} frames, {mean:.1} ms mean, {:.1} ms worst, stage redrawn {stage}x at {:.2}, {} floats, {} maybes",
+            worst * 1000.0,
+            self.budget.scale,
+            self.floats.len(),
+            self.maybes_of.map_or(0, |m| m.1)
+        )
+    }
+
+    /// Where the credit line is drawn, if the look has drawn it (x, y, w, h in points): the tap that
+    /// opens the credits (Motion's probe).
+    pub fn credit_bounds(&self) -> Option<[f32; 4]> {
+        self.look.credit_bounds()
     }
 
     /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.

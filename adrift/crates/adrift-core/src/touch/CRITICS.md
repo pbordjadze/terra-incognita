@@ -59,7 +59,8 @@ gone, undone), `r1-ride.jpg` (0.1 s, 1 s, 3 s of a ride, then left by a drag).
 - *The fling toward the pole runs away in longitude.* `ride` after the leaving drag: 89° W at
   3.4 s, 168° W at 6 s. Correct geometry (the surface under the finger keeps its screen speed)
   but worth a device test: does it feel like a wheel, or like the globe escaping?
-- *The hand's reach is 14 points*, a toddler's fingertip. Motion wants 22. The app's `hit` decides.
+- *The hand's reach was 14 points* on the R1 skeleton, a toddler's fingertip; Motion wants 22. (The
+  merged head reads `motion::REACH`: 22.)
 - Not failed: the globe never moved under a carry (`carry`, `carry-fresh`: camera unchanged in
   every line); a drag that began on a float left the float where it was; a drag never put a float;
   land never rang; the double tap arrived at zoom 2 and 4 at the tapped place; the idle turn waited
@@ -152,6 +153,11 @@ under a real finger) are not in yet; this entry is reopened when they are.
 - *The web shell is not the vocabulary.* Its wheel zooms about the centre and never stops a fling;
   its undo is a bare `z` and there is no redo, while `App::wheel` and `App::key` sit unused. D3.
 - *The maybes' smudge* at phone zoom 1 stands from R2 (Visual's).
+
+- *The credits* (`r3-credits.jpg`, D5): a tap on the credit line opens the page over the globe, a
+  tap on the sea closes it and puts nothing (a rest there while the page is open puts nothing
+  either), the date still scrubs beneath, a drag still turns. One line that was already there is
+  the only control added, and it is the licences' due.
 
 **Holt:** nothing new to penalise; the ride on a fast float is now a thing you can watch rather
 than chase. The device will say whether the beat is felt and whether a fling toward the pole feels

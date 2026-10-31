@@ -10,12 +10,14 @@ pub struct BeadInstance {
     /// 0 the newest bead .. 1 the oldest shown
     pub age: f32,
     pub night: f32,
+    /// how measured the sea was there (0..1); under a half the bead is hollow
+    pub measured: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: std::mem::size_of::<BeadInstance>() as u64,
     step_mode: wgpu::VertexStepMode::Instance,
-    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32],
+    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32, 3 => Float32],
 };
 
 #[repr(C)]
@@ -60,8 +62,8 @@ impl Wake {
     }
 }
 
-/// A wake's beads from its daily positions, oldest first.
-pub fn beads(path: &[crate::model::LonLat], night: bool) -> Vec<BeadInstance> {
+/// A wake's beads from its daily places, oldest first.
+pub fn beads(path: &[super::LookBead], night: bool) -> Vec<BeadInstance> {
     let n = path.len().saturating_sub(1).max(1) as f32;
-    path.iter().enumerate().map(|(i, p)| BeadInstance { g: super::unit(*p), age: 1.0 - i as f32 / n, night: night as u8 as f32 }).collect()
+    path.iter().enumerate().map(|(i, b)| BeadInstance { g: super::unit(b.at), age: 1.0 - i as f32 / n, night: night as u8 as f32, measured: b.measured }).collect()
 }

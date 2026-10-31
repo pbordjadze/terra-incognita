@@ -173,7 +173,18 @@ pub struct LookFloat {
     /// Under a resting finger: its maybes out.
     pub held: bool,
     /// One bead a day, oldest first (the last `WAKE_DAYS` are drawn).
-    pub wake: Vec<LonLat>,
+    pub wake: Vec<LookBead>,
+    /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
+    /// dashed, so nothing claims the current where no drifter went.
+    pub measured: f32,
+}
+
+/// One bead of a wake as the look sees it.
+#[derive(Clone, Copy, Debug)]
+pub struct LookBead {
+    pub at: LonLat,
+    /// How measured the sea was there (0..1): under a half the bead is hollow.
+    pub measured: f32,
 }
 
 /// Everything the marks draw this frame. The app fills it from its state; the look reads nothing else.
@@ -202,6 +213,10 @@ pub struct LookState {
     pub note: String,
     /// The credits owed, one line (Truth's SOURCES.md says whose).
     pub credits: String,
+    /// The credits in full (`sea::CREDITS`), shown on a page over the globe while `credits_open`.
+    pub credits_full: Vec<String>,
+    /// The page of credits is open (a tap on the credit line opens it, a tap anywhere closes it).
+    pub credits_open: bool,
 }
 
 /// Days of wake drawn (palette.json › sizes.bead.days).
@@ -253,10 +268,10 @@ impl Look {
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: f.held as u8 as f32, night: n as u8 as f32 })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: f.held as u8 as f32, night: n as u8 as f32, measured: f.measured })
             .collect();
         if let Some((at, beat)) = state.resting {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32 });
+            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0 });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
@@ -275,6 +290,9 @@ impl Look {
             let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
+        if state.credits_open {
+            labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
+        }
         self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n, &labels);
     }
 
@@ -283,6 +301,12 @@ impl Look {
     /// scrub and pause gestures probe (touch/VOCABULARY.md); the only chrome there is.
     pub fn date_bounds(&self) -> Option<[f32; 4]> {
         self.words.date_bounds
+    }
+
+    /// Where the credit line is drawn, x, y, w, h in points (y down), after a `prepare`: a tap on it
+    /// opens the page of credits (Truth's D2); the page closes on any tap.
+    pub fn credit_bounds(&self) -> Option<[f32; 4]> {
+        self.words.credit_bounds
     }
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes, count: u32) {

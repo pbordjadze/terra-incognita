@@ -1,0 +1,9 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -50.0, "lat": 30.0, "zoom": 1.6 }, "day": 200.0, "seconds": 5.0 },
+  "steps": [
+    { "intent": "ToggleCredits" },
+    { "advance": 1.0 },
+    { "shot": "credits" }
+  ]
+}

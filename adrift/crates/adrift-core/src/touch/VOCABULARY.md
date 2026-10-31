@@ -16,6 +16,7 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | double tap | anything | fly in about the point (out to the whole globe from deep in) |
 | drag | the date at the foot | scrub the date; the sea pauses with it |
 | tap | the date | pause or play |
+| tap | the credit line | the page of credits opens; any tap while it is open closes it |
 | three-finger swipe left · shake · ⌘Z | | undo the last touch; nothing else moves |
 | three-finger swipe right · ⇧⌘Z | | redo it |
 
@@ -62,6 +63,7 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
 | `Redo` | a three-finger swipe right, ⇧⌘Z |
+| `ToggleCredits` | a tap on the credit line (`Hit::Credits`, the look's `credit_bounds`); while the page is open, a tap anywhere but the date |
 
 Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
 float stays where it was last over water (the app watches the carried float and takes it out when
@@ -118,6 +120,11 @@ Three{x0}
  ├─ the fingers' mean x moves ≥ SWIPE left ─▶ emits Undo once; right ─▶ Redo once
  └─ all Up / Cancel ───────────────▶ Idle
 
+CreditsDown{x0,y0}          (Down on the credit line; or Down anywhere but the date while the page is open)
+ ├─ Move beyond SLOP ──────────────▶ Orbit           a drag is always the globe's
+ ├─ Up ────────────────────────────▶ Idle            emits ToggleCredits
+ └─ second finger Down ────────────▶ Pinch
+
 DateDown{x0}
  ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once, then Scrub{day} by dx
  ├─ Up within SLOP ────────────────▶ Idle            emits Play(!playing)   (the probe says if playing)
@@ -153,8 +160,9 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 5. **The sea under ice** is sea: a float may be put there; Truth's rules hold it till the ice goes.
 6. **Land and off the disc** are silent to every one-finger touch except the drag, which is the
    globe's. No ring on land.
-7. **Tap near two floats**: the nearest within reach (the app's `hit`: 14 reading points; Motion
-   would have 22, a fingertip, for a thing drawn smaller than one). Beyond reach it is the sea.
+7. **Tap near two floats**: the nearest within reach (`motion::REACH`, 22 reading points, a
+   fingertip, for a thing drawn smaller than one; the app's `hit` reads it). Beyond reach it is
+   the sea.
 8. **A tap during a fling or flight** stops the motion first (Terra's `touched()`), then is a tap
    (the sea rings). A touch always stops the camera's own motion at once.
 9. **Double tap**: zoom ×2 about the point (toward it below zoom 4, about the centre above, as
@@ -189,13 +197,18 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     the Earth does, 4°/s. With a float put, it holds still: a float you are watching must not be
     carried out of view.
 
+19. **The credits**: the credit line along the foot is the one other thing drawn that takes a touch
+    (D5): a tap on it opens the page; while the page is open, a tap anywhere but the date closes it
+    and nothing else happens (no ring, no float: the beat waits for the page to go), a drag is the
+    globe's and a drag on the date scrubs, as ever. `plans/credits.json`.
+
 ## The numbers (`motion.rs`)
 
 | | | why |
 | --- | --- | --- |
 | `BEAT` | 0.40 s | longer than a slow tap (~0.25 s), shorter than iOS's long press (0.5), so a rest reads as deliberate and a tap never puts |
 | `SLOP` | 8 reading pt | Terra's hold scheme; a resting fingertip strays this far |
-| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one (the app's `hit` uses 14 for now) |
+| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one (the app's `hit` reads it) |
 | `DOUBLE_TAP` | 0.30 s, 40 pt | iOS |
 | `FLING_DECAY` | 3.2 /s | Terra's; stops under 2 pt/s |
 | `FLIGHT` | 0.70 s ease-in-out cubic | Terra's |

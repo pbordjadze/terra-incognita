@@ -19,3 +19,10 @@ Merged into `main` at 09:01 (R2 complete for all three crafts): the first Adrift
 SideStore source is `main`'s adrift.yml run. The device loop so far: a change pushed to `adrift` is
 an unsigned IPA in about 5½ minutes when nothing else holds the Mac; Terra's own look check is
 21–74 minutes.
+
+| R3 | Truth's maybes budget (512 at a half day) and the measured sea on the float; Visual's dusting at the whole Earth, the label from zoom 1.5; Motion's ride aiming ahead, 27 plans | 09:08 (atlantic, whole Earth), 09:11 (27 plans in 2 min) | — | main run 14 built the IPA in 66 s and made release adrift-build-14 at 09:10, but its source publish failed on the merge's wrong copy of ci/sidestore_source.py; fixed and merged again at 09:12 (main run 15) | ~10 queued behind Terra's full run on the shared Macs |
+
+**The first SideStore build:** main's run 20 (c94b4eb, pushed 09:13) published release adrift-build-20
+and the two-app source at 09:17:44, four and a half minutes after the push; the Interviewer was
+told at 09:20. From the first line of Rust (06:55) to an app in the SideStore source beside Terra:
+2 h 23 m, three rounds of three crafts.

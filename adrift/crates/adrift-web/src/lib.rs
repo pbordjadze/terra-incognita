@@ -164,6 +164,7 @@ pub async fn start() -> Result<(), JsValue> {
     let window2 = window.clone();
     let app2 = app.clone();
     let perf2 = perf.clone();
+    let mut stats_at = 0.0f64;
     *g.borrow_mut() = Some(Closure::new(move || {
         let dpr = window2.device_pixel_ratio();
         let r = canvas2.get_bounding_client_rect();
@@ -178,8 +179,14 @@ pub async fn start() -> Result<(), JsValue> {
         }
         if let Ok(frame) = surface.get_current_texture() {
             let view = frame.texture.create_view(&Default::default());
-            app2.borrow_mut().frame(&view, now(&perf2));
+            let t = now(&perf2);
+            app2.borrow_mut().frame(&view, t);
             frame.present();
+            // the frame's cost, every five seconds, in the console
+            if t - stats_at >= 5.0 {
+                stats_at = t;
+                web_sys::console::log_1(&app2.borrow_mut().stats().into());
+            }
         }
         window2.request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref()).unwrap();
     }));

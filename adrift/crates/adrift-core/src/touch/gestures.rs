@@ -12,8 +12,10 @@ use std::collections::{BTreeMap, VecDeque};
 pub enum Hit {
     /// A float within reach (the nearest), and the place under the finger.
     Float(u32, LonLat),
-    /// The date drawn at the foot: the control for scrubbing and pausing.
+    /// The date drawn under the globe: the control for scrubbing and pausing.
     Date,
+    /// The credit line drawn along the foot: a tap opens the page of credits.
+    Credits,
     Sea(LonLat),
     Land(LonLat),
     /// Off the globe's disc.
@@ -25,7 +27,7 @@ impl Hit {
     pub fn place(self) -> Option<LonLat> {
         match self {
             Hit::Float(_, p) | Hit::Sea(p) | Hit::Land(p) => Some(p),
-            Hit::Date | Hit::Off => None,
+            Hit::Date | Hit::Credits | Hit::Off => None,
         }
     }
 }
@@ -85,6 +87,8 @@ pub trait Probe {
     fn day(&self) -> f64;
     fn frame(&self) -> Frame;
     fn motion(&self) -> Motion;
+    /// The page of credits is open: any tap closes it, and the beat does nothing.
+    fn credits_open(&self) -> bool;
 }
 
 /// What the gestures ask of the app: intents for the state, moves for the camera.
@@ -118,6 +122,9 @@ enum State {
     /// Three fingers: waiting for a swipe.
     Three { x0: f64, done: bool },
     DateDown { id: u64, x0: f64, t0: f64, day: f64, scrubbing: bool },
+    /// A finger down on the credit line, or anywhere while the page of credits is open: a tap
+    /// toggles the page; a drag is the globe's.
+    CreditsDown { id: u64, x0: f64, y0: f64 },
 }
 
 /// The state machine. One per screen.
@@ -164,6 +171,7 @@ impl Gestures {
             State::Three { .. } => "three",
             State::DateDown { scrubbing: false, .. } => "date",
             State::DateDown { scrubbing: true, .. } => "scrubbing",
+            State::CreditsDown { .. } => "credits",
         }
     }
 
@@ -243,7 +251,14 @@ impl Gestures {
         match (self.state, n) {
             (State::Idle, 1) => {
                 self.samples.clear();
-                self.state = match probe.hit(e.x, e.y) {
+                let hit = probe.hit(e.x, e.y);
+                // the page of credits is open: a tap anywhere closes it (a drag on the date still
+                // scrubs; any other drag is the globe's)
+                if probe.credits_open() && hit != Hit::Date {
+                    self.state = State::CreditsDown { id: e.id, x0: e.x, y0: e.y };
+                    return;
+                }
+                self.state = match hit {
                     Hit::Sea(at) => {
                         out.intents.push(Intent::Ring { at });
                         out.intents.push(Intent::Press { at, since: e.t });
@@ -251,11 +266,12 @@ impl Gestures {
                     }
                     Hit::Float(float, at) => State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at },
                     Hit::Date => State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false },
+                    Hit::Credits => State::CreditsDown { id: e.id, x0: e.x, y0: e.y },
                     Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y, t0: e.t },
                 };
             }
             // a second finger before the beat, or during the globe's drag: a pinch
-            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. }, 2) => {
+            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. }, 2) => {
                 if matches!(self.state, State::Pressing { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
@@ -294,7 +310,7 @@ impl Gestures {
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
             }
-            State::Down { id, x0, y0, .. } if id == e.id => {
+            State::Down { id, x0, y0, .. } | State::CreditsDown { id, x0, y0 } if id == e.id => {
                 if (e.x - x0).hypot(e.y - y0) > slop {
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
@@ -443,6 +459,11 @@ impl Gestures {
                 }
                 self.state = State::Idle;
             }
+            State::CreditsDown { id, .. } if id == e.id => {
+                // a tap (the finger stayed within the slop, or it would be an orbit by now)
+                out.intents.push(Intent::ToggleCredits);
+                self.state = State::Idle;
+            }
             _ => {
                 if self.fingers.is_empty() {
                     self.state = State::Idle;
@@ -460,7 +481,7 @@ impl Gestures {
             } else {
                 match probe.hit(e.x, e.y) {
                     Hit::Sea(p) | Hit::Float(_, p) => out.intents.push(Intent::Release { float, at: Some(p) }),
-                    Hit::Land(_) | Hit::Date => {
+                    Hit::Land(_) | Hit::Date | Hit::Credits => {
                         out.intents.push(Intent::Carry { float, to: from });
                         out.intents.push(Intent::Release { float, at: Some(from) });
                     }
@@ -505,7 +526,7 @@ impl Gestures {
                 out.intents.push(Intent::Unpress);
                 self.state = State::Idle;
             }
-            State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } if id == e.id => {
+            State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {

@@ -236,3 +236,13 @@ hold a float the cloud is a hint, not a wall. Nothing marks, nothing points, not
 
 **Left for the device's captures**: the night on an actual OLED (the N_ page may read as grey),
 the speck's three pixels on the real panel, and the words' halos at the device's gamma.
+
+**Truth's demands, and the maybes at Truth's budget** (`studies/r3-whole-earth-held-512-phone.png`:
+five hundred maybes at zoom 1, six in ten shown; `r3-measured-hudson-bay-and-gulf-stream-phone.png`;
+`r3-credits-page-phone-half.png`, `r3-credits-page-night-phone.png`, the page forced in a local
+build since the tap is Motion's and the state Engineering's). The hater: "Five hundred at a half
+day is thin at zoom 5 but still a cloud, and the whole Earth now shows six in ten of them, which is
+a dusting with a shape. The dashed rim says 'a guess' without a word; the hollow bead I'll have to
+see where a float has actually moved on a guessed sea. The credits page is a page: Libertinus on
+paper, the sentences whole, the night's the same page in reverse; nothing on it to press, which is
+the point." Verdict: the three pass; the hollow bead unseen until a guessed sea moves a float.

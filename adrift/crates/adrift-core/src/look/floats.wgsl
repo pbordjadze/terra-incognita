@@ -10,6 +10,7 @@ struct FloatIn {
     @location(2) lit: f32,          // 1 while it is what you just did (stays lit), fading in time
     @location(3) held: f32,         // 1 while held (its maybes out)
     @location(4) night: f32,        // 1 by night (the night palette)
+    @location(5) measured: f32,     // how measured the sea is where it rides (0..1): under a half the rim is dashed
 };
 
 struct FloatOut {
@@ -21,6 +22,7 @@ struct FloatOut {
     @location(4) held: f32,
     @location(5) night: f32,
     @location(6) facing: f32,
+    @location(7) measured: f32,
 };
 
 fn float_radius() -> f32 {
@@ -39,7 +41,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     o.local = c * reach;
     o.pos = clip(p.xy + o.local);
     if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }   // (hidden past the limb: clipped)
-    o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z;
+    o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured;
     return o;
 }
 
@@ -88,8 +90,14 @@ fn fs(i: FloatOut) -> @location(0) vec4<f32> {
     let rl = 0.55 * r;
     acc = over(acc, lamp(n), cover(d - rl));
     acc = over(acc, lamp_core(n), pow(clamp(1.0 - d / (rl * 0.72), 0.0, 1.0), 1.6));
-    // the rim, and the sun's highlight upper left (where the sea's sheen is)
-    acc = over(acc, glass_rim(n), cover(abs(d - (r - rim * 0.5)) - rim * 0.5));
+    // the rim, dashed where the sea's current is the sheet's guess and no drifter measured it (Truth's
+    // D3: nothing claims the current where no drifter went), and the sun's highlight upper left
+    var dash = 1.0;
+    if (i.measured < 0.5) {
+        let ang = atan2(i.local.y, i.local.x);
+        dash = step(0.0, sin(ang * 8.0));
+    }
+    acc = over(acc, glass_rim(n), dash * cover(abs(d - (r - rim * 0.5)) - rim * 0.5));
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     acc = over(acc, vec3<f32>(1.0), glass_light(n) * exp(-((h.x * 1.2) * (h.x * 1.2) + (h.y * 2.4) * (h.y * 2.4)) / (0.16 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
