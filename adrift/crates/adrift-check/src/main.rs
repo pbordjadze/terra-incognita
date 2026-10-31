@@ -84,7 +84,7 @@ fn render(args: &[String]) -> Result<()> {
     let t1 = std::time::Instant::now();
     app.render(&target.view);
     let px = target.read(&app.gpu);
-    eprintln!("drawn in {:?}", t1.elapsed());
+    eprintln!("drawn in {:?}; clouds behind the date by {:.2} days", t1.elapsed(), app.behind());
     save(&out, w, h, &px)?;
     println!("{}", out.display());
     Ok(())
