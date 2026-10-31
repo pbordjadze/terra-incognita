@@ -8,6 +8,8 @@ use bytemuck::{Pod, Zeroable};
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
 pub struct MaybesUniform {
+    /// the held float's place, a unit vector: where the specks bloom from
+    pub origin: [f32; 4],
     /// 0..1 as they bloom out of the float and fold back
     pub bloom: f32,
     pub night: f32,
@@ -29,13 +31,14 @@ impl MaybesPass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout) -> MaybesPass {
         let module = gpu.shader("maybes draw", &marks_wgsl(include_str!("maybes.wgsl")));
         let uniform = Uniform::new(gpu, "maybes draw");
-        uniform.write(gpu, &MaybesUniform { bloom: 1.0, night: 0.0, _pad: [0.0; 2] });
+        uniform.write(gpu, &MaybesUniform { origin: [0.0, 0.0, 1.0, 0.0], bloom: 1.0, night: 0.0, _pad: [0.0; 2] });
         MaybesPass { pipeline: mark_pipeline(gpu, "maybes draw", &module, LAYOUT, view_layout, Some(&uniform.layout)), uniform }
     }
 
-    /// How far the maybes have bloomed (0..1) and whether it is night; 1 and day until told.
-    pub fn prepare(&mut self, gpu: &Gpu, bloom: f32, night: bool) {
-        self.uniform.write(gpu, &MaybesUniform { bloom, night: night as u8 as f32, _pad: [0.0; 2] });
+    /// Where the specks bloom from (the held float's unit vector), how far they have bloomed (0..1) and
+    /// whether it is night.
+    pub fn prepare(&mut self, gpu: &Gpu, origin: [f32; 3], bloom: f32, night: bool) {
+        self.uniform.write(gpu, &MaybesUniform { origin: [origin[0], origin[1], origin[2], 0.0], bloom, night: night as u8 as f32, _pad: [0.0; 2] });
     }
 
     /// `count` of the paths in Truth's buffer (`sea::Maybes`), as the app last ran them.

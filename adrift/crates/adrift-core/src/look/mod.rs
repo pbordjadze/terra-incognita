@@ -204,6 +204,8 @@ pub const WAKE_DAYS: usize = 45;
 
 /// The marks on the sea, in their draw order, behind one `prepare` and one `draw`.
 pub struct Look {
+    /// Where the maybes bloom from: the float last held.
+    bloom_from: [f32; 3],
     pub wake: wake::Wake,
     pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
@@ -214,6 +216,7 @@ pub struct Look {
 impl Look {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Look {
         Look {
+            bloom_from: [0.0, 0.0, 1.0],
             wake: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
@@ -232,7 +235,11 @@ impl Look {
             beads.extend(wake::beads(&f.wake[start..], n));
         }
         self.wake.prepare(gpu, &beads);
-        self.maybes.prepare(gpu, state.bloom, n);
+        // the maybes bloom from the held float (the last held place is kept while they fold)
+        if let Some(f) = state.floats.iter().find(|f| f.held) {
+            self.bloom_from = unit(f.at);
+        }
+        self.maybes.prepare(gpu, self.bloom_from, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n);
         let mut fl: Vec<floats::FloatInstance> = state

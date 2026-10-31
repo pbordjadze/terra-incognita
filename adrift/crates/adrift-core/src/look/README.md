@@ -34,6 +34,10 @@ skeleton lands.
   the layout); the Rust lays a line out from the JSON's advances and bearings in points: the date
   under the disc (over the globe when it fills the screen), the note in italic under it, the
   credits along the foot, each on a halo of what is under it.
+- `ground.wgsl` and `sea.wgsl` are Visual's from R2: Terra's ports, with the night palette gated by
+  `View.pad.x` (DEMANDS.md D4: the `N_` ground, the sea's lines pale, the surf a line, no sheen) and
+  the sea's rest eased by `View.tone.w` (D3: the running light settles to half, the glitter goes).
+  The maybes bloom from the held float's place to their own as `LookState.bloom` runs 0 → 1.
 - `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
   control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's
   `Press { at, since }` as `(at, thicken(now - since))`.
