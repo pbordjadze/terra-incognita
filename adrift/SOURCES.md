@@ -142,6 +142,35 @@ the shelf and the coast catches nearly twice as many (73 of 2048 against 41), an
 across the stream narrows. The cloud need not be re-run more often than the day moves half a
 day.
 
+## Whales (not in the app; what it would take)
+
+Whales could inhabit Adrift honestly only as the silver drifter does: real tagged animals, drawn
+as data, each with its tag, its species, its real dates and its dataset's credit; never as rules.
+A float drifts, so the sea's rules are its truth; a whale swims, and any rule for where it goes
+(prey, season, the sea) would be a story Adrift invented. What it would take, for a next round:
+
+- **Data.** Satellite-tag tracks published for reuse: the Movebank Data Repository publishes
+  studies under CC0 (blue whales of the eastern North Pacific, Oregon State's Marine Mammal
+  Institute, from Bailey, Mate and others' Argos tags; humpback and other baleen-whale tags from
+  the same group), each with a DOI to cite; NOAA's Northwest Fisheries Science Center's satellite
+  tags on Southern Resident killer whales (Hanson and others, 2012–2016), a federal work, by
+  request; OBIS-SEAMAP's telemetry sets, whose licences are the contributors' own and often
+  non-commercial, to be read one by one. Nothing scraped, nothing whose terms were not read:
+  a dataset enters `adrift/data` only with its licence and credit in this file and in
+  `manifest.json`.
+- **The sheet.** `drifters.bin`'s layout fits as it is (a run per tag at a point a day, with a
+  species in the flags); a few hundred tracks of a few hundred days are under a megabyte. The
+  builder would be `tools/adrift/data/whales.py`, reading each dataset's own file, with its
+  docstring naming every source and term.
+- **The rules.** None: the tracks are shown, not simulated. The nearest whale that passed a
+  float's water could rise as the drifter does, with its name and dates (`Drifters::track` works
+  unchanged on a second file); or whales could glint on their own waters by the month of the year,
+  as the tracks' own dates place them. Either needs a mark from Visual and a seam from
+  Engineering (a second `Drifters` on the `App`, a `LookState` field), asked as demands then.
+- **The honesty.** A tag's track has gaps and ends when the tag falls off; a whale shown at a
+  date is one that was there in that year, not a typical year's whale; the label must say so, as
+  the drifter's does.
+
 ## Credit owed
 
 The app credits, wherever it credits its sources: the NOAA Global Drifter Program (CC BY 4.0: "This
