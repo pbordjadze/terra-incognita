@@ -210,6 +210,11 @@ fn coast_distance(lon: f32, lat: f32) -> f32 {
     return (v.y - 128.0) * 2.0;
 }
 
+// How much of the sheet's current a float rides, by the record's reach (rules.rs: reach).
+fn reach(measured: f32) -> f32 {
+    return clamp(measured / 0.5, 0.0, 1.0);
+}
+
 // --- the step (rules.rs: step, ashore) ---
 
 struct Shore { lon: f32, lat: f32, held: u32 };
@@ -243,12 +248,13 @@ fn step(lon: f32, lat: f32, eu: f32, ev: f32, k: u32) -> Path {
     }
     let w = wind_at(day, lon, lat);
     let kk = eddy_at(lon, lat);
+    let rc = reach(measured);
     let secs = dt * SECONDS_A_DAY;
     let h = hash_seed(params.seed_lo, params.seed_hi, k, bitcast<u32>(day));
     let gx = gaussian(h, 0u);
     let gy = gaussian(h, 12u);
-    let dx = (cur.x + params.leeway * w.x) * secs + gx * sqrt(2.0 * kk.x * secs) * params.wander;
-    let dy = (cur.y + params.leeway * w.y) * secs + gy * sqrt(2.0 * kk.y * secs) * params.wander;
+    let dx = (cur.x * rc + params.leeway * w.x) * secs + gx * sqrt(2.0 * kk.x * secs) * params.wander;
+    let dy = (cur.y * rc + params.leeway * w.y) * secs + gy * sqrt(2.0 * kk.y * secs) * params.wander;
     let coslat = max(cos(lat * PI / 180.0), 0.01);
     let dlon = dx / (EARTH_RADIUS * coslat) * 180.0 / PI;
     let dlat = dy / EARTH_RADIUS * 180.0 / PI;
@@ -282,8 +288,9 @@ fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
     let av = exp(-secs / tt.y);
     let eu = eu0 * au + gx * sqrt(kk.x / tt.x * (1.0 - au * au)) * params.wander;
     let ev = ev0 * av + gy * sqrt(kk.y / tt.y * (1.0 - av * av)) * params.wander;
-    let dx = (cur.x + params.leeway * w.x + eu) * secs;
-    let dy = (cur.y + params.leeway * w.y + ev) * secs;
+    let rc = reach(measured);
+    let dx = (cur.x * rc + params.leeway * w.x + eu) * secs;
+    let dy = (cur.y * rc + params.leeway * w.y + ev) * secs;
     let coslat = max(cos(lat * PI / 180.0), 0.01);
     let dlon = dx / (EARTH_RADIUS * coslat) * 180.0 / PI;
     let dlat = dy / EARTH_RADIUS * 180.0 / PI;

@@ -107,11 +107,14 @@ A float may be put on any water the coast mask shows (truth underneath, not on t
 § 11). Where no drifter of the programme ever came within three degrees (the Caspian, the Great
 Lakes, Baikal, Victoria, Hudson Bay, the Red Sea, the Persian Gulf, the seas under the ice: 7% of
 the sea by area) the sheets hold a current and a wander smoothed in from the nearest measured
-water, hundreds of kilometres away, which is no record of that water. The float rides them all
-the same, and plausibly: the Caspian's smoothed-in current is 2 to 21 cm/s by month with a wander
-of about 32 km a day, Lake Michigan's 11 to 15 cm/s and 48 km, Hudson Bay's 4 to 8 cm/s and 27
-km, the Red Sea's 4 to 68 cm/s (the Gulf of Aden's monsoon pushed up the sea) and 28 km; nothing
-sits dead and nothing jitters, and the coast holds what reaches it. No smaller rule is needed.
+water, hundreds of kilometres away, which is no record of that water. There the float rides no
+current at all: it goes on the wind's leeway and the wander alone (`rules::reach`: the current
+weighted by the record's reach, whole at 0.5 and over, none at 0, in proportion between), the way
+a lake's surface drifts with the wind; the smoothed-in current would have run a Red Sea float at
+68 cm/s on the Gulf of Aden's monsoon and piled a lake's floats on one shore. With the wander
+(the Caspian's about 32 km a day, Lake Michigan's 48, Hudson Bay's 27, all smoothed in too and
+kept, so the water looks alive) nothing sits dead and nothing jitters, and the coast holds what
+reaches it.
 What is true is written here, not on the screen: `Rules::record(at)` says how far the nearest
 measured cell is (1 there, 0 three degrees away) and `Rules::may_put(at)` sorts water into
 measured, a reach, and no record, for anyone who wants the honest answer; nothing in the app
