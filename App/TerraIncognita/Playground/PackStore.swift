@@ -529,10 +529,24 @@ final class PackStore {
         lastChecked = Date()
         checking = false
         mergeRemotes()
+        forgetWithdrawn()
         rebuild()
         let sourceWord = targets.count == 1 ? "source" : "sources"
         let problemNote = problems.isEmpty ? "" : ", \(problems.count) failed"
         record("checked \(targets.count) \(sourceWord)\(problemNote)")
+    }
+
+    /// A pack its sources have all withdrawn (`playground.py retire`) and the app doesn't bundle: its
+    /// downloads go, so it leaves the workbench and the globe on a phone that had downloaded it too.
+    private func forgetWithdrawn() {
+        var retired = Set<String>()
+        for source in sources {
+            guard let catalog = catalogs[source] else { continue }
+            for entry in catalog.packs where entry.retired == true { retired.insert(entry.id) }
+        }
+        for id in retired where remotes[id] == nil && bundledPacks[id] == nil && installedPacks[id] != nil {
+            removeDownloads(id)
+        }
     }
 
     /// The newest non-retired entry for each id across the sources' catalogs.

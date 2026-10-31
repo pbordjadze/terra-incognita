@@ -1089,6 +1089,21 @@ class BranchPublishing(TempCase):
         self.assertEqual(run('retire', 'demo-pack', '--out', str(self.into), '--undo')[0], 0)
         self.assertFalse(self.entry()['retired'])
 
+    def test_a_pack_deleted_from_prototypes_is_retired(self):
+        self.publish()
+        shutil.rmtree(self.src / 'second-pack')
+        self.publish('demo-pack')                               # chosen ids leave the others alone
+        self.assertFalse(self.entry('second-pack')['retired'])
+        out = self.publish()
+        self.assertIn('retired second-pack', out)
+        self.assertEqual((self.entry('second-pack')['revision'], self.entry('second-pack')['retired']), (1, True))
+        self.assertFalse(self.entry()['retired'])
+        self.assertTrue((self.into / 'packs/second-pack/r1/main.js').is_file())   # its files stay
+        self.assertEqual(self.message.read_text(), 'Publish packs: second-pack retired\n')
+        out = self.publish()
+        self.assertIn('Nothing to publish', out)
+        self.assertFalse(self.message.exists())
+
     def test_revisions_only_go_up_even_when_the_catalog_forgets(self):
         self.publish()
         r1 = tree(self.into / 'packs/demo-pack/r1')

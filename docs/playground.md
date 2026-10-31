@@ -53,7 +53,7 @@ leaves something behind shows up there (and fails `PlaygroundTests`).
 | Pack, bundled | `Prototypes/<id>/` (bundled in the app) | from its doorway or the workbench | no, once published as a remote revision |
 | Pack, remote | the `packs` branch's `catalog.json` | the same, downloaded on demand | no |
 | Native | `App/TerraIncognita/<Name>/` + an entry in `Playground/Catalog.swift` | from its doorway (it opens straight away) or the workbench | yes |
-| Parked | the Persian globe style, the films, test packs | from the workbench's Parked shelf | per its kind |
+| Parked | test packs (the delivery check) | from the workbench's Parked shelf | per its kind |
 
 ## Make a pack
 
@@ -61,8 +61,6 @@ leaves something behind shows up there (and fails `PlaygroundTests`).
 python3 tools/playground/playground.py new tide-pool          # scaffolds Prototypes/tide-pool/
 node tools/playground/serve.cjs                               # http://127.0.0.1:8790/ : every pack, over a stand-in globe
 node tools/playground/check.cjs tide-pool                     # headless Chromium: runs it, fails on errors, screenshots
-node tools/playground/check.cjs tide-pool --wikipedia         # the same with Wikipedia's words on (the reader's switch)
-python3 tools/wikipedia/build.py --pack tide-pool             # its wikipedia.json: the articles its words name (docs/runtime3.md)
 node tools/playground/check.cjs --living                      # two packs side by side on /atlas, by touch, ended in turn
 node tools/playground/explore.cjs tide-pool out/ '[{"wait":3000,"shot":"a"}]'   # its moments from a plan: fly, scrub, touch, screenshot
 python3 tools/playground/playground.py validate               # the contract, sizes, the offline boundary (CI runs it too)
@@ -74,11 +72,12 @@ reader's first sight of it: give it a glint from afar (`python3 tools/playground
 the mark every pack uses) and itself up close.
 
 `Prototypes/hello-pack/` is the smallest complete example (words at the foot, a panel, rings where
-the sea is tapped); `Prototypes/lead-line/` and `Prototypes/vine/` use the globe's date and geography,
-`Prototypes/sea-of-whales/` pictures on the globe faded in and out, `Prototypes/monsoon-sails/` sprites
-placed by the date; `Prototypes/herds/` (runtime 5) moves things with the date: sprites on dated ways, a
-date with an uneven pace, slowed as the reader comes close. A pack's art is drawn from code: a sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built
-in Node, a `.cjs` module, as the herds' and the boto's are), rendered by
+the sea is tapped). Every experience was retired on October 31, 2026 (painting-company row 195); for
+packs that use the globe's date and geography, pictures on the globe, sprites placed by the date and
+sprites on dated ways (runtime 5), read `Prototypes/lead-line/`, `vine/`, `sea-of-whales/`,
+`monsoon-sails/` and `herds/` at `before-retirement-2026-10-31`. A pack's art is drawn from code: a
+sheet of canvas drawings in `tools/<pack>/art.js` (or of SVG built in Node, a `.cjs` module, as the
+retired herds' and boto's were), rendered by
 `node tools/packart/render.cjs <sheet> Prototypes/<id>` (headless Chromium, three pixels a point); and `node tools/packart/moments.cjs <id> <out dir> '<plan>'` photographs a pack
 over time in the preview (camera, waits, touches, drags, the date's strip), for what `check.cjs`'s fixed
 screenshots can't show (`check.cjs` taps a thing under way where it is at that moment). A pack is a script, its data and pictures, with everything inside its
@@ -95,7 +94,7 @@ something the system has):
    `Prototypes/_runtime/terra.js`, its mirror in the desktop preview (`tools/playground/harness/`),
    and its entry in `docs/runtime3.md` with an example. Raise the runtime version only for an
    incompatible change.
-2. The packs that use it, and a UI check (`GlobePackTests` or `PlaygroundTests`).
+2. The packs that use it, and a UI check (in `PlaygroundTests`, or a class of its own beside it).
 3. `[build-only]` in the commit message for a quick compile, then `[playground-check]`; `main`
    publishes the IPA to SideStore.
 
@@ -104,7 +103,7 @@ A native prototype: its code in its own folder `App/TerraIncognita/<Name>/`, one
 `start` does with the stage), its timers stopped when its views go away. A prototype of the globe's own
 look (the quiet globe's rules: no doorway, nothing placed, a rule asked of the stage) sets `veils: false`,
 so the clouds and the sea stay full while it runs and the comparison with today's look is fair. An experience on the globe
-opens as a lens (`stage.openLens`, as the camelid and whale sequences do): its canvas, a view the
+opens as a lens (`stage.openLens`, as the retired camelid sequence did): its canvas, a view the
 stage lays over the one globe, sets its hooks in `attach` and drives the globe's authored camera;
 its chrome lies over the playground and closes it through the `close` it is given; the stage puts
 back everything it set on the globe. It never makes a globe of its own. Only an experience with a map
@@ -127,9 +126,12 @@ of its own (the ocean) presents a screen, closed with `@Environment(\.dismiss)`.
   meant for such a change rides a commit that also touches something the macOS workflow watches.
 - **Park**: `"shelf": "parked"` in `prototype.json` (or `shelf: .parked` in Swift) moves it to the
   Parked shelf, still one tap away (and takes its doorway off the globe).
-- **Remove**: delete the folder or entry. A published pack is withdrawn with
-  `playground.py retire <id>` (`--undo` brings it back; `--out DIR` acts on a local packed folder);
-  its files stay on the `packs` branch. Ids are never reused: nothing can check that across branches, so
+- **Remove**: delete the folder or entry. A published pack whose folder is deleted is retired by
+  main's next publish (`publish --into`); one still in `Prototypes/` is withdrawn with
+  `playground.py retire <id>` (`--undo` brings it back; `--out DIR` acts on a local packed folder).
+  Its files stay on the `packs` branch, and a phone that downloaded it (and doesn't bundle it) deletes
+  those downloads the next time the workbench checks its sources (`PackStore.forgetWithdrawn`). Ids are
+  never reused: nothing can check that across branches, so
   pick a new one rather than recycling an old one.
 
 ## The catalog

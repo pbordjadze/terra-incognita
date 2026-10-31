@@ -138,7 +138,7 @@ final class Playground {
             prototype.start(stage)
             // a native prototype on the globe says at the foot what it is and what to touch
             if prototype.made == .native, prototype.doorway != nil {
-                stage.describe(title: prototype.title, text: prototype.summary, wikipedia: prototype.wikipedia)
+                stage.describe(title: prototype.title, text: prototype.summary)
             }
             refreshDoorways()
             applyGlobeState()
@@ -441,22 +441,15 @@ final class Playground {
 
     #if DEBUG
     /// `-prototype <id>` starts one (`-prototype-open`: and opens it); `-workbench` opens the
-    /// workbench. The older flags still work: `-camelid <s>`/`-camelid-play`, `-look <id>`/`-film <s>`,
-    /// `-globeStyle persian` (or `wikipedia`).
+    /// workbench.
     private func launchFromArguments() {
         let args = ProcessInfo.processInfo.arguments
         func value(_ flag: String) -> String? {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
             return args[i + 1]
         }
-        var id = value("-prototype")
-        var open = args.contains("-prototype-open")
-        if id == nil {
-            if args.contains("-camelid") || args.contains("-camelid-play") { id = "camelid"; open = true }
-            else if args.contains("-look") || args.contains("-film") { id = "film" }
-            else if value("-globeStyle") == "persian" { id = "persian" }
-            else if value("-globeStyle") == "wikipedia" { id = "wikipedia" }
-        }
+        let id = value("-prototype")
+        let open = args.contains("-prototype-open")
         if let id {
             start(id, entry: .launch)
             if open { stage?.open() }

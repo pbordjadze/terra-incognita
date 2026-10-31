@@ -86,7 +86,7 @@ No DOM, no `fetch`, no network, no storage that lasts. What there is:
 | `terra.pack` | `{ id, revision, origin }` (origin `bundled`, `downloaded` or `preview`) |
 | `terra.focus`, `terra.on('focus', fn)` | *new in 4:* true while this is the experience in front, the one the reader is with ([Many at once](#many-at-once-runtime-4)); the event is `{ front, by }` (by `reader` or `host`) when that changes |
 | `terra.entry` | *new in 4:* how the reader came in: `{ by, lon, lat, zoom }`, by `doorway` (where the reader was: no flight to the anchor), `workbench`, `link` or `launch` |
-| `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active, wikipedia }` (`wikipedia`, since October 29, 2026: the reader wants [Wikipedia's words](#wikipedias-words)) |
+| `terra.settings`, `terra.on('settings', fn)` | `{ reduceMotion, textScale, active, wikipedia }` (`wikipedia` is always false: [Wikipedia's words](#wikipedias-words) were retired) |
 | `terra.camera` | `{ lon, lat, zoom, cx, cy, radius, width, height }` now (points) |
 | `terra.on('camera', fn)` | the camera, at most 20 times a second while it moves and once when it stops |
 | `terra.project(lon, lat)` | `{ x, y, facing, visible }` on screen (facing 1 at the centre, < 0 behind) |
@@ -238,7 +238,7 @@ terra.touch.scheme('hold')         // new in 4 (October 29)
 | `terra.on('time', fn)` | `{ value, playing, by }`, by `reader`, `play` or `host` |
 | `terra.time.set(v)`, `.play(bool)`, `.hide()` | move it (not echoed back), play or pause, hide |
 | `terra.time.speed(f)` | *new in 5:* how fast playback runs, 1 as written (0.001–100): slower as the reader comes close, say, so what moves with the date walks rather than races. Not echoed; the strip and its date are unchanged |
-| `terra.caption.set({ title, text, wikipedia })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters; `wikipedia` (optional) names the article on it ([Wikipedia's words](#wikipedias-words)) |
+| `terra.caption.set({ title, text, wikipedia })` | the words at the foot, in the globe's caption type: what the reader is looking at first, then why it matters (a `wikipedia` key is accepted and ignored: [Wikipedia's words](#wikipedias-words)) |
 | `terra.globe.set({ historical, still, maxZoom })` | hide today's borders and names (coasts stay); stop the idle turn; let the reader zoom deeper than 8 (up to 32) for the pack's close views, put back when it ends |
 
 ## The panel: longer words and sources (new in 3)
@@ -257,32 +257,17 @@ terra.on('panel', function (p) { /* { open: false } when the reader closes it */
 
 A native sheet over the globe (half height, can be pulled up), in the app's type, with the globe
 still visible and live above it. Plain text only (paragraphs split on blank lines). Source links
-open in Safari only when the reader taps them. The panel, and each section, may name the Wikipedia
-article on its subject (`wikipedia: 'Santorini caldera'`): see below.
+open in Safari only when the reader taps them. A `wikipedia` key on the panel or a section is accepted
+and ignored (see below).
 
 ## Wikipedia's words
 
-The app has a switch beside the clouds' (a W): on, every paragraph the atlas wrote itself gives way to
-Wikipedia's own words on the same subject, the article's first sentences as they stand with a link to
-it, so what is left to read is Wikipedia's. A pack takes part by naming its subjects: a `wikipedia`
-key on `terra.caption.set`, on `terra.panel.show` and on each of its `sections`, with the article's
-title. With the switch on, the host shows the article's first sentence at the foot (and "Wikipedia ↗"
-under it) and the article's card where the panel's paragraphs were; a text with no key stays only when
-it is a tip (one sentence under 120 characters), and a section with neither goes, its heading with
-it; the sources go too, so only Wikipedia's words are left to read.
-
-The words are bundled, never fetched by the app: `python3 tools/wikipedia/build.py --pack <id>` reads
-the keys a pack names (and any listed for it in `tools/wikipedia/articles.txt`, as "Toward the Amazon
-system" lists the systems' rivers) and writes the pack's `wikipedia.json`, the articles' first
-paragraphs with their URLs and revisions, under Wikipedia's licence (CC BY-SA 4.0, shown on every
-card). A pack's own articles are laid over the app's index (every country, the native experiences'
-subjects), so a downloaded revision can name what the app never heard of; a key with no article is a
-build failure (`ci/check_wikipedia.py`), not a quiet gap.
-
-`terra.settings.wikipedia` says the switch is on, and `terra.on('settings')` hears it change: a line
-that is data (a depth sounded, a station's reading) should then be sent without the atlas's
-instruction after it, so it stays within a tip's length and is kept. The preview mirrors all of it
-(the checkbox under Reader settings, `?wikipedia=1`, `check.cjs --wikipedia`).
+Retired on October 31, 2026 with the experiences whose words it stood for (painting-company row 195).
+The app had a switch (a W) that put Wikipedia's own words, bundled per pack as `wikipedia.json`, in
+place of the atlas's paragraphs. Packs written for it keep working: the `wikipedia` keys on
+`terra.caption.set`, `terra.panel.show` and its `sections` are accepted and ignored, a pack's
+`wikipedia.json` is not read, and `terra.settings.wikipedia` is always false. `tools/wikipedia/build.py`
+remains, with no current users; how it worked is at `before-retirement-2026-10-31`.
 
 ## Many at once (runtime 4)
 
@@ -308,7 +293,7 @@ tool assumes others share the stage; the host keeps these rules so none can take
 - **The reader's hands win.** A flight asked for while the reader's fingers are on the globe, or
   within a second of their last turn or pinch, is dropped. Two fingers always turn and zoom the
   globe, in any scheme. A touch on the globe ends any flight. ✕ is always there.
-- **A lens** (a native sequence that takes the screen: the camel's, the whale's) is an excursion:
+- **A lens** (a native sequence that takes the screen, as the retired camel's did) is an excursion:
   while it is open, every other experience's things are hidden with the names, and closing it puts
   them back.
 - **Budget:** at most 6 experiences run at once; starting a seventh ends the one the reader left

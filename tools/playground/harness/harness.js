@@ -73,6 +73,8 @@
     reduceMotion: Q.reduceMotion === '1' || Q.reduceMotion === 'true',
     textScale: clamp(parseFloat(Q.textScale) || 1, 1, 3.2),
     active: true,
+    // (Wikipedia's words, the app's switch, were retired with the experiences: painting-company row 195;
+    // `wikipedia=1` still shows what a pack would have shown, for no current user)
     wikipedia: Q.wikipedia === '1' || Q.wikipedia === 'true',
   };
 
@@ -1899,7 +1901,6 @@
     $('scale').value = settings.textScale;
     $('scale-out').textContent = settings.textScale.toFixed(1);
     $('motion').checked = !!settings.reduceMotion;
-    $('wikipedia').checked = !!settings.wikipedia;
     document.documentElement.style.setProperty('--ts', String(settings.textScale));
     if (panelOwner && panelContent && !panel.hidden) showPanel(panelOwner, panelContent);
     if (settings.reduceMotion) for (const s of stages) if (s.time && s.time.playing) { s.time.playing = false; sendTime(s, 'host'); }
@@ -1909,7 +1910,6 @@
   }
   $('scale').addEventListener('input', (e) => applySettings({ textScale: +e.target.value }));
   $('motion').addEventListener('change', (e) => applySettings({ reduceMotion: e.target.checked }));
-  $('wikipedia').addEventListener('change', (e) => applySettings({ wikipedia: e.target.checked }));
   document.addEventListener('visibilitychange', () => applySettings({ active: !document.hidden }));
   const startPrimary = () => { if (primaryPack) startStage(primaryPack, 'workbench'); };
   $('start-button').addEventListener('click', startPrimary);

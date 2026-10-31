@@ -2,15 +2,12 @@ name: CI
 
 # Every run publishes a report (STATUS.md, logs, screenshots) to the ref refs/ci-shots/<branch>,
 # outside refs/heads so a clone never downloads it; ci/fetch.sh waits for it and unpacks it.
-#   plates Linux: every look in Atlas/ and the globe's data in Globe/ sound (ci/check_atlas.py,
-#          ci/check_globe.py), Wikipedia's words all bundled (ci/check_wikipedia.py), the tools' syntax,
+#   plates Linux: the globe's data in Globe/ sound (ci/check_globe.py), the tools' syntax,
 #          and every Metal shader compiled as C++
 #          (tools/metal/metal.py check: seconds, where a macOS build waits on a runner)
-#   apple  macOS: Debug and Release builds, real encounter UI tests (including largest text),
-#          and the plates checked byte for byte
-#          in the bundle; screenshots only when the workflow is run by hand, as a report: on the
-#          13" iPad Pro (the primary device), the iPhone or both, every look at moments of its film
-#          (unless `film` is off) and the globe in each style
+#   apple  macOS: Debug and Release builds, the UI tests (including largest text), and the globe's
+#          maps checked byte for byte in the bundle; screenshots only when the workflow is run by hand,
+#          as a report: on the 13" iPad Pro (the primary device), the iPhone or both, the globe at places
 #   ipa    after green `plates` and `apple` jobs, on main (or `[ipa]` in a branch commit's message, without
 #          publishing): an unsigned Release IPA, published as the `build-<n>` prerelease (the five
 #          newest are kept), and the SideStore source on the `sidestore` branch, which SideStore
@@ -39,19 +36,11 @@ on:
         type: choice
         options: [ipad, iphone, both]
         default: ipad
-      leaf_only:
-        description: Photograph only the atlas leaf
-        type: boolean
-        default: false
       interaction_suite:
         description: Branch interaction check (main always runs all tests)
         type: choice
-        options: [all, leaf, playground]
+        options: [all, playground]
         default: all
-      film:
-        description: The films' moments too (off - the globe only)
-        type: boolean
-        default: true
       tests:
         description: Only these UI test classes or Class/testMethod, on the iPad (branch only; ci/fast.py)
         type: string
@@ -81,14 +70,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
-      - name: Check Atlas and the plate tools
+      - name: Check the globe's data and the tools
         run: |
           set -o pipefail
           mkdir -p out
           rc=0
-          python3 ci/check_atlas.py 2>&1 | tee out/plates-check.log || rc=1
-          python3 ci/check_globe.py 2>&1 | tee -a out/plates-check.log || rc=1
-          python3 ci/check_wikipedia.py 2>&1 | tee -a out/plates-check.log || rc=1
+          python3 ci/check_globe.py 2>&1 | tee out/plates-check.log || rc=1
           # the packs' art sheets and builders (tools/packart and each pack's tools/<name>/)
           for f in tools/packart/*.cjs tools/packart/*.js tools/herds/*.cjs tools/water/boto.cjs tools/whales/*.js tools/monsoon/*.js tools/beacons/*.js tools/leadline/*.js tools/lowsea/*.js tools/vine/*.js; do
             node --check "$f" 2>&1 | tee -a out/plates-check.log || rc=1
@@ -175,13 +162,13 @@ jobs:
       - name: Bundled data
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          # the plates and the globe's maps must reach the app byte for byte (an image tool would
-          # recompress the one and bend the other's distances)
+          # the globe's maps and the packs must reach the app byte for byte (an image tool would
+          # bend the maps' distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Atlas Globe Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          for f in $(find Globe Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           for f in OceanCurrents.png OceanStream.png; do cmp "App/TerraIncognita/Ocean/$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
-      - name: Encounter interactions and accessible text
+      - name: UI tests and accessible text
         id: encounter
         # `[build-only]` in a branch commit's message: compile and check the bundle, no simulator time
         if: ${{ !cancelled() && steps.build.outcome == 'success' && !(github.ref_name != 'main' && contains(github.event.head_commit.message, '[build-only]')) && steps.fast.outputs.fast != 'shots' }}
@@ -192,11 +179,10 @@ jobs:
           # Focused branch checks support iteration; main's publication gate is always full.
           if [ "$GITHUB_REF_NAME" != main ]; then
             case "${{ inputs.interaction_suite }}" in
-              leaf) export UI_TEST_TARGET=TerraIncognitaUITests/MovedPackTests ;;
-              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests TerraIncognitaUITests/RiverPackTests" ;;
+              playground) export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests" ;;
             esac
             if [ "${{ contains(github.event.head_commit.message, '[playground-check]') }}" = true ]; then
-              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests TerraIncognitaUITests/GlobePackTests TerraIncognitaUITests/MovedPackTests TerraIncognitaUITests/RiverPackTests"
+              export UI_TEST_TARGET="TerraIncognitaUITests/PlaygroundTests TerraIncognitaUITests/RemotePackTests"
             fi
             if [ -n "${{ steps.fast.outputs.tests }}" ]; then export UI_TEST_TARGET="${{ steps.fast.outputs.tests }}"; fi
           fi
@@ -207,32 +193,9 @@ jobs:
           export TEST_RUNNER_PACKS_URL=http://127.0.0.1:8790/packs/catalog.json
           for _ in $(seq 1 20); do curl -fsS "$TEST_RUNNER_PACKS_URL" > /dev/null 2>&1 && break; sleep 0.5; done
           bash ci/encounter_tests.sh
-      - name: Capture camelid playback and compositions
-        id: camelid_capture
-        # A review artifact, like the manual film screenshots; native tests remain a gate.
-        continue-on-error: true
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
-        timeout-minutes: 20
-        run: |
-          # Capture the uninterrupted primary-phone film after native interactions. The UI suite supplies comparable
-          # iPad/phone milestone and interaction screenshots without repeating the iPad cold boot.
-          sort -r out/sims.txt > out/capture-sims.txt
-          while read -r KIND UDID _ <&3; do
-            [ "$KIND" = iphone ] || continue
-            export CAMELID_VIDEO=1
-            bash ci/camelid_capture.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/camelid/$KIND" "$UDID"
-          done 3< out/capture-sims.txt
-      - name: Preserve camelid review capture separately
-        continue-on-error: true
-        uses: actions/upload-artifact@v5
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && contains(github.event.head_commit.message, '[camelid-capture]') }}
-        with:
-          name: camelid-preview
-          path: out/camelid
-          if-no-files-found: warn
       - name: The stage at places
         # `[shots]`: the stage at rest (the ground's month, the clouds and the sea held) at each place,
-        # as tools/metal/metal.py's `shot` draws it at the same names; a report, like the film's
+        # as tools/metal/metal.py's `shot` draws it at the same names; a report
         id: stage
         if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.fast.outputs.places != '' }}
         continue-on-error: true
@@ -242,32 +205,26 @@ jobs:
           while read -r KIND UDID _ <&3; do
             ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID"
           done 3< out/sims.txt
-      - name: Screenshots of the film on the simulator
+      - name: Screenshots on the simulator
         # By hand only (Run workflow), and a report, not a gate: a slot's worth of runner time for
-        # pictures a person looks at.
-        # Focused branch checks attach opening/reading images through XCTest already.
-        # Avoid booting both simulators again for duplicate pictures after those checks.
+        # pictures a person looks at. A branch's playground check attaches its own through XCTest.
         id: shots
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && steps.fast.outputs.fast == '' && !(github.ref_name != 'main' && (inputs.interaction_suite == 'leaf' || inputs.interaction_suite == 'playground')) }}
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && github.event_name == 'workflow_dispatch' && steps.fast.outputs.fast == '' && !(github.ref_name != 'main' && inputs.interaction_suite == 'playground') }}
         continue-on-error: true
         timeout-minutes: 50
         run: |
-          # on each device (the iPad first): the globe in each style (GLOBE=1), then every look at
-          # five moments of its film (unless `film` is off); each device's pictures in out/shots/<device>/
-          export GLOBE=1 LEAF=1
-          if [ "${{ inputs.leaf_only }}" = true ]; then export GLOBE=0; fi
-          ALL="$(python3 -c "import json; print(' '.join(l['id'] for l in json.load(open('Atlas/looks.json'))))")"
-          # (the list on its own descriptor, so the simulator commands can't read it; macOS's bash is 3.2)
+          # on each device (the iPad first): the playground, then the globe at places; each device's
+          # pictures in out/shots/<device>/
+          export GLOBE=1
           while read -r KIND UDID _ <&3; do
-            if [ "${{ inputs.film }}" = false ] || [ "${{ inputs.leaf_only }}" = true ]; then export LOOKS=""; MOMENTS=""; else export LOOKS="$ALL"; MOMENTS="4 16 28 40 52"; fi
-            ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID" $MOMENTS
+            ci/sim_shots.sh build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app "out/shots/$KIND" "$UDID"
           done 3< out/sims.txt
       - name: Collect
         if: always()
         run: |
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
-          echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} camelid_capture=${{ steps.camelid_capture.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
+          echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
