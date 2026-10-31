@@ -211,3 +211,13 @@ demand on the craft that owns it, in the cascade's form, and the Holt critic jud
 **The round's build** is whatever stands on `adrift` when the three heads are merged and the plans
 pass; it ships to the SideStore source as the next `adrift-build-<n>` and the web link's next
 version.
+
+**Truth underneath, not on top (ruled 14:50 UTC, from the owner's second word on the round;
+painting-company row 196).** The sea's rules stay honest; the screen stops saying so. This round: the
+credits line leaves the foot (the credits page stays one tap away: Motion and Visual say where the
+tap is; failing a better answer, a rest on the date opens it); the note under the date leaves; the
+guess mark goes, or is all but invisible (Visual's call, off by default); a float may be put wherever
+the coast mask says water, and the Black, the Caspian and the Baltic need only behave plausibly, not
+be ruled on. Truth's round is the sea feeling alive and right to the hand and eye (the wake, the
+wander, the speeds as a finger reads them), not its annotation; SOURCES.md keeps the whole account.
+Whales, if they come, by rules that feel true before strict telemetry. Delight first.

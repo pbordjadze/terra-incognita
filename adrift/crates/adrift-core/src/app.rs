@@ -23,6 +23,9 @@ enum Undo {
 }
 
 /// The opening view: the whole Earth, the Atlantic facing (`Intent::Home` flies back to it).
+/// A ridden float shows its maybes and its nearest drifter as a held one does (R4).
+pub const SHOW_RIDDEN: bool = true;
+
 pub const HOME: Camera = Camera { lon: -30.0, lat: 25.0, zoom: 1.0 };
 
 /// Everything about the sea's state that a scene file can set (adrift-check) and a frame reads.
@@ -107,6 +110,9 @@ pub struct App {
     gestures: Gestures,
     /// A finger resting on the sea, the ring thickening: where, and since when.
     pressing: Option<(LonLat, f64)>,
+    /// A float under a resting finger, from when (`Intent::PressFloat`): its maybes show from the
+    /// landing; `Unpress` clears it.
+    pressing_float: Option<(u32, f64)>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -211,6 +217,7 @@ impl App {
             camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
             gestures: Gestures::new(),
             pressing: None,
+            pressing_float: None,
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -350,7 +357,11 @@ impl App {
         match intent {
             Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
             Intent::Press { at, since } => self.pressing = Some((at, since)),
-            Intent::Unpress => self.pressing = None,
+            Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
+            Intent::Unpress => {
+                self.pressing = None;
+                self.pressing_float = None;
+            }
             Intent::Put { at } => {
                 self.pressing = None;
                 self.haptic = true;
@@ -489,6 +500,7 @@ impl App {
             f.hand = Hand::Free;
         }
         self.pressing = None;
+        self.pressing_float = None;
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
@@ -624,7 +636,7 @@ impl App {
         }
         // the maybes bloom out as a float is held (0.35 s, eased out) and fold back when it is let
         // go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
-        let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.at));
+        let held = self.shown().map(|f| (f.id, f.at));
         match held {
             Some((_, at)) => {
                 if self.bloom <= 0.0 {
@@ -654,7 +666,19 @@ impl App {
     /// The bloom as drawn: eased out while opening, eased in while folding.
     fn bloom_eased(&self) -> f32 {
         let b = self.bloom;
-        if self.floats.iter().any(|f| f.hand == Hand::Held) { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b }
+        if self.shown().is_some() { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b }
+    }
+
+    /// The float whose maybes and nearest drifter show: the one held by a finger, else the one the
+    /// camera rides (R4: tap-to-ride is the natural way to follow a float, so following shows its
+    /// maybes; `SHOW_RIDDEN` is the switch while Motion decides).
+    fn shown(&self) -> Option<&Float> {
+        let by_id = |id: u32| self.floats.iter().find(|f| f.id == id);
+        self.floats
+            .iter()
+            .find(|f| f.hand == Hand::Held)
+            .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
+            .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
     }
 
     /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day:
@@ -759,7 +783,7 @@ impl App {
         self.clock.day = scene.day;
         self.step_floats();
         self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
-        if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
+        if let Some(f) = self.shown() {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
                 let w = t.window(45);
                 self.drifter_label = t.label_window(w.clone());
@@ -859,7 +883,7 @@ impl App {
         }
         // a held float's maybes, run on the GPU from its put place and day to now (again as the day
         // moves): every path flies a quarter day at a time with the drifters' memory
-        let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.put_day, f.seed, f.wake.first().map_or(f.at, |b| b.at)));
+        let held = self.shown().map(|f| (f.id, f.put_day, f.seed, f.wake.first().map_or(f.at, |b| b.at)));
         match held {
             Some((id, put_day, seed, origin)) => {
                 let rerun = self.maybes_of.map_or(true, |(i, _, d)| i != id || (self.clock.day - d).abs() > 0.5);
