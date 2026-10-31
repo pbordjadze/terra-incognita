@@ -201,14 +201,14 @@ impl Gestures {
         out
     }
 
-    /// Undo and redo from a keyboard (the web build). Redo waits on `Intent::Redo` (DEMANDS.md).
+    /// Undo and redo from a keyboard (the web build).
     pub fn key(&mut self, key: Key) -> Out {
         let mut out = Out::default();
         if matches!(self.state, State::Idle) {
-            match key {
-                Key::Undo => out.intents.push(Intent::Undo),
-                Key::Redo => {}
-            }
+            out.intents.push(match key {
+                Key::Undo => Intent::Undo,
+                Key::Redo => Intent::Redo,
+            });
         }
         out
     }
@@ -246,6 +246,7 @@ impl Gestures {
                 self.state = match probe.hit(e.x, e.y) {
                     Hit::Sea(at) => {
                         out.intents.push(Intent::Ring { at });
+                        out.intents.push(Intent::Press { at, since: e.t });
                         State::Pressing { id: e.id, x0: e.x, y0: e.y, t0: e.t, at }
                     }
                     Hit::Float(float, at) => State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at },
@@ -255,6 +256,9 @@ impl Gestures {
             }
             // a second finger before the beat, or during the globe's drag: a pinch
             (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. }, 2) => {
+                if matches!(self.state, State::Pressing { .. }) {
+                    out.intents.push(Intent::Unpress);
+                }
                 self.state = State::Pinch { a: id, b: e.id };
             }
             // a third finger ends the pinch where it is and waits for a swipe
@@ -283,6 +287,9 @@ impl Gestures {
                         self.rest_elapsed(probe, out);
                         self.moved(e, probe, out);
                         return;
+                    }
+                    if matches!(self.state, State::Pressing { .. }) {
+                        out.intents.push(Intent::Unpress);
                     }
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
@@ -320,10 +327,7 @@ impl Gestures {
             State::Three { x0, done: false } => {
                 let dx = self.mean_x() - x0;
                 if dx.abs() >= motion::SWIPE {
-                    if dx < 0.0 {
-                        out.intents.push(Intent::Undo);
-                    }
-                    // (a swipe right waits on `Intent::Redo`: DEMANDS.md)
+                    out.intents.push(if dx < 0.0 { Intent::Undo } else { Intent::Redo });
                     self.state = State::Three { x0, done: true };
                 }
             }
@@ -393,6 +397,7 @@ impl Gestures {
                     return;
                 }
                 // a tap: the ring alone
+                out.intents.push(Intent::Unpress);
                 self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
@@ -496,7 +501,11 @@ impl Gestures {
                 }
             }
             State::Three { .. } if !self.fingers.is_empty() => {}
-            State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } if id == e.id => {
+            State::Pressing { id, .. } if id == e.id => {
+                out.intents.push(Intent::Unpress);
+                self.state = State::Idle;
+            }
+            State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {

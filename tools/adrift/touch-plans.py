@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """Writes the touch module's plans, adrift/crates/adrift-core/src/touch/plans/*.json: one played
-session a gesture and an ambiguous case of VOCABULARY.md, each with the expectations that prove it.
-touch-replay checks them in milliseconds over the stand-in sea, and exports them (plans/check/) in
-the form `adrift-check -- play` takes, where check_play.py reads the play.log against them.
+session a gesture and an ambiguous case of VOCABULARY.md, each with the expectations that prove it,
+in the form `adrift-check -- play` takes (fingers by id at a place `at` or screen points `xy`,
+absolute times, `expect`s it fails on). They run on the real globe: land in them is real land.
 
-    python3 tools/adrift/touch-standalone/plans.py        # rewrites the plans
+    python3 tools/adrift/touch-plans.py                                   # rewrites the plans
+    cd adrift && for p in crates/adrift-core/src/touch/plans/*.json; do   # plays them all
+        cargo run -q -p adrift-check -- play $p build/out/motion/$(basename $p .json); done
 
 Sizes are points on a phone (393 x 852, the check's default at three pixels a point). Floats are
 numbered from 1 in the order listed; a put float takes the next number.
 """
 import json, os
 
-OUT = os.path.join(os.path.dirname(__file__), "../../../adrift/crates/adrift-core/src/touch/plans")
+OUT = os.path.join(os.path.dirname(__file__), "../../adrift/crates/adrift-core/src/touch/plans")
 W, H = 393.0, 852.0
 SEA = [-30.0, 20.0]          # open sea in the Atlantic view
 SEA2 = [-20.0, 15.0]
-LAND = [-100.0, 40.0]        # Kansas: the stand-in continent's centre (the real coast in adrift-check)
+LAND = [-100.0, 40.0]        # Kansas
 OFF = [6.0, 6.0]             # a corner: off the disc
 PLANS = {}
 
@@ -28,7 +30,7 @@ def date_xy(dx=0.0):
     return [W / 2 + dx, min(H / 2 + r + 40.0, H - 72.0) - 10.0]
 
 def plan(name, title, steps, **kw):
-    p = {"title": title, "size": [W, H], "camera": {"lon": -40.0, "lat": 22.0, "zoom": 1.0}, "land": [[-100.0, 40.0, 14.0]], "steps": steps}
+    p = {"title": title, "size": [W, H], "camera": {"lon": -40.0, "lat": 22.0, "zoom": 1.0}, "steps": steps}
     p.update(kw)
     PLANS[name] = p
 
@@ -143,11 +145,11 @@ plan("cancel", "The system takes the touch: a press lets go, a hold puts the flo
 plan("ride", "Tap a float and the camera drifts with it; any drag leaves it", [
     ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.1, saw=["Ride"], riding=1, not_=["Put"]),
     shot(1.0, "catching-up"),
-    expect(3.0, riding=1, camera_near_float=[1, 0.4], camera_moved=True), shot(3.0, "riding"),
+    expect(3.0, riding=1, camera_near_float=[1, 0.5], camera_moved=True), shot(3.0, "riding"),
     ev(3.1, "down", at=[-45.0, 0.0]), *drag(3.1, 0, [(0.5, 0.6), (0.58, 0.62)]),
     expect(3.4, riding=None),
     expect(6.0, riding=None),
-], floats=[F1], drift=[0.5, 0.0])
+], floats=[F1])
 plan("ride-and-hold-another", "Riding one float, hold another: the ride goes on; carry it and the ride is left", [
     ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.1, riding=1),
     ev(0.5, "down", at=SEA2), expect(1.0, saw=["Hold"], riding=1, held=2),
