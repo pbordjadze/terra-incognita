@@ -153,8 +153,9 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 5. **The sea under ice** is sea: a float may be put there; Truth's rules hold it till the ice goes.
 6. **Land and off the disc** are silent to every one-finger touch except the drag, which is the
    globe's. No ring on land.
-7. **Tap near two floats**: the nearest within reach (the app's `hit`: 14 reading points; Motion
-   would have 22, a fingertip, for a thing drawn smaller than one). Beyond reach it is the sea.
+7. **Tap near two floats**: the nearest within reach (`motion::REACH`, 22 reading points, a
+   fingertip, for a thing drawn smaller than one; the app's `hit` reads it). Beyond reach it is
+   the sea.
 8. **A tap during a fling or flight** stops the motion first (Terra's `touched()`), then is a tap
    (the sea rings). A touch always stops the camera's own motion at once.
 9. **Double tap**: zoom ×2 about the point (toward it below zoom 4, about the centre above, as
@@ -195,7 +196,7 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 | --- | --- | --- |
 | `BEAT` | 0.40 s | longer than a slow tap (~0.25 s), shorter than iOS's long press (0.5), so a rest reads as deliberate and a tap never puts |
 | `SLOP` | 8 reading pt | Terra's hold scheme; a resting fingertip strays this far |
-| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one (the app's `hit` uses 14 for now) |
+| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one (the app's `hit` reads it) |
 | `DOUBLE_TAP` | 0.30 s, 40 pt | iOS |
 | `FLING_DECAY` | 3.2 /s | Terra's; stops under 2 pt/s |
 | `FLIGHT` | 0.70 s ease-in-out cubic | Terra's |

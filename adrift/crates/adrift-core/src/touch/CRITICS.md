@@ -59,7 +59,8 @@ gone, undone), `r1-ride.jpg` (0.1 s, 1 s, 3 s of a ride, then left by a drag).
 - *The fling toward the pole runs away in longitude.* `ride` after the leaving drag: 89° W at
   3.4 s, 168° W at 6 s. Correct geometry (the surface under the finger keeps its screen speed)
   but worth a device test: does it feel like a wheel, or like the globe escaping?
-- *The hand's reach is 14 points*, a toddler's fingertip. Motion wants 22. The app's `hit` decides.
+- *The hand's reach was 14 points* on the R1 skeleton, a toddler's fingertip; Motion wants 22. (The
+  merged head reads `motion::REACH`: 22.)
 - Not failed: the globe never moved under a carry (`carry`, `carry-fresh`: camera unchanged in
   every line); a drag that began on a float left the float where it was; a drag never put a float;
   land never rang; the double tap arrived at zoom 2 and 4 at the tapped place; the idle turn waited
