@@ -46,3 +46,7 @@ frame stats every five seconds for it).
 the source then listed Terra 1.0.245 and Adrift 1.0.23 together. Either workflow's publish keeps the
 other app's entries, which is what the two-app script was for. The craft branches carry nothing
 beyond `adrift`; nothing is left to merge.
+
+| R4 (the first device verdict; DECISIONS § 11) | Engineering's seams first (clear-all and home, a ridden or pressed float showing its maybes, the check relinking assets, a scene's credits flag): opened 14:35, pushed 14:38–14:47; the crafts' heads 14:45–14:56 (Motion: home by over-pinch or three fingers up, clear by three fingers down or a second shake, a flick on the date, the credits by a rest on the date, 31 plans; Visual: the glitter quieted, the land's lights alive by night, the date's rule and lamp answering the finger, the foot cleared to the date; Truth: a float put anywhere the mask shows water, a lake's float on leeway and wander, the run and the loiter judged; nine demands filed, every one answered, countered or withdrawn the same hour) | 14:41 (clear-and-home played), 15:05 (the merged head: 27 tests, 36 plans, the credits page and the night's lights rendered) | 15:07 (web build 30 s; artifact version 5) | main's adrift.yml run after the merge (filled in below) | — |
+
+The round's loop, from the owner's words (14:31) to the merged head with every craft's work (15:05): 34 minutes; the seams written before the crafts began cost 12 minutes and no branch was rebuilt.
