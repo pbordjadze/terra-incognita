@@ -322,3 +322,35 @@ is to show him (Visual and Motion).
   angle hypot / r), `Camera::new(lon, lat, zoom)`. Tested: a drag carries the centre over the pole
   with no jump, every step the same arc. `CameraControl`'s orbit, fling, fly and ride stay
   lon/lat and are Motion's to move onto it.
+
+## 14. R6 merged (Oct 31, 20:50 UTC)
+
+All three crafts are on `adrift` (Visual 35f1868, Motion a75e160, Truth b9328f5), with every test
+and plan green. What the round built, in short:
+
+- *Truth*: **the worlds.** A float's k-th self lives in world k: one random eddy field on a 1°
+  lattice, fresh each quarter day, scaled by the measured variance and time scale, shared by every
+  float's k-th path; the lamp is k = 0, world 0. Two lamps put near each other meet the same sea, so
+  their k-th selves stay together in quiet water and part by hundreds of km in a jet; as whole
+  clouds they differ little (SOURCES.md › The worlds has the numbers). The lamp ranks uniformly
+  within its own cloud. Same cost a step. The seed no longer enters the flight: a lamp put twice at
+  one place and day takes one path.
+- *Visual*: by night the cities glow by their brightness from the sheet's coarser mips and the
+  maybes are cool glass rings with a spark of their lamp's hue, never warm points; a lamp is its
+  glass float with its wake until its cloud is out, then one speck among its maybes; the panel (top
+  left, a lamp in its hue a row, its put day and place); several clouds interleaved, and a pair of
+  same-world selves from two lamps drawn as one ringed speck until the currents part them; the rim
+  fades by facing; gentler rings at a tap.
+- *Motion*: the panel's touch (a tap adds or lets go, a rest rides; it never rings or puts); a
+  scrub's speed limit (600 days a second, braked while a cloud trails by more than six days, landing
+  exactly); a lamp chosen from the panel turned in from the rim; the orb free over the poles (a drag
+  keeps the grabbed point under the finger; flights turn the whole orientation; Home upright).
+- *Engineering*: several clouds out at once (up to 8 of 2048, each its own range, keeps and bloom);
+  the chosen set; the camera's roll; the check's `choose`, `panel`, `frames` and its "behind" line;
+  the panel's rows 36 pt tall at the merge (a fingertip; Visual's 24 was under a thumb).
+
+For the next round, from the exit interviews: name each craft's peers in its brief; let a plan's
+expectation be "the same as at shot X" so a rules change doesn't break a rewind test; make `frames`
+the check's default and warn on out-of-order step times or a tap that does nothing; give the panel
+a minimum touch height in the seam; a density outline per cloud (an offscreen pass) and a seam for
+each cloud's extent (to frame them all) are the next tools if differences must read stronger.

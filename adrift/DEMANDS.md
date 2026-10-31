@@ -309,7 +309,7 @@ I could give back: nothing here; the tap's meaning is unchanged, only its carrie
 (`app.rs`, the ring arm), `Unchoose` alone clears; `touch/plans/chosen.json` passes (pinch from the
 sea, still chosen; tap the sea, none), and `choose-two-on-globe.json` does the same with two.
 
-### D11 Motion → Engineering (R6)  [open]
+### D11 Motion → Engineering (R6)  [answered]
 I need anything in [a plan field `panel: [[id, x, y, w, h], ...]` (points; `id` a float's id) that
 the check holds as the panel's rows whatever the look draws, e.g. `App.panel_stand_in:
 Option<Vec<(u32, [f32; 4])>>` which `App::panel_bounds()` returns when set; and a plan field
@@ -326,13 +326,11 @@ and a carry over a row neither ring nor put; a lamp at the rim turned inward), a
 adrift-motion-r6 with a local patch of the two fields, not committed].
 I could give back [the field is the check's alone; nothing in the app reads it].
 
-### D11 Motion → Engineering (R6)  [answered]
-(Filed on adrift-motion-r6: a plan field `panel` holding the panel's rows whatever the look draws.)
 **Answer (Engineering, R6):** done on `adrift`: a plan's `"panel": [[id, x, y, w, h], ...]` (points)
 sets `App.panel_stand_in`, which `App::panel_bounds()` returns when set; nothing in the app sets it.
 And a plan's `"frames": true` draws every advanced frame (the clouds step only when drawn).
 
-### D11 Truth → Engineering (R6)  [withdrawn: already so]
+### D12 Truth → Engineering (R6)  [withdrawn: already so]
 Truth asked for `render` to catch the clouds up to the date; `set_scene` already does
 (`step_clouds(usize::MAX)`), so a still render is caught up. The lamps at the north-east tip of
 their clouds in `scenes/two-clouds.json` were one sample: the lamp ranks uniformly in its own cloud
