@@ -57,6 +57,19 @@ thirty days on: 46% east of 65° W (the record's half), median 65.9° W (the rec
 their thirty days). The hater: better; the beach count is the next thing to look at on a screen.
 D1 now asks Engineering only to carry the two numbers.
 
+**The running build** (the skeleton landed the same day; `critics/r0/atlantic.png` from
+`adrift-check render scenes/atlantic.json`, `play-04-drifted-40-days.png` from `play
+plans/put-and-drift.json`, both on Linux's software Vulkan, the rules now Truth's `Rules::step`).
+The hater: three floats on the Atlantic, and their wakes run the right way: the Hatteras one east
+along the stream, the one off West Africa down the Canary Current. But the put float's forty-day
+wake (play-04) is a scribble: a daily bead of a memoryless walk at a quarter-day step, each bead
+seventy kilometres from the last in no particular direction. That is the walk, drawn honestly; it
+is not what a drifter's track looks like. The app steps with `Rules::step`; the flight waits on D1.
+Nothing on the screen says the date is a typical year. Holt: a float was put, drifted, the date
+was stopped and it rested, undo took it back and nothing else moved (`06-undone`): the first four
+promises hold in the check. Something unscripted happened: the float went north-east where the
+current and its draws took it, and no one wrote that.
+
 **What Truth takes from R0:** D1 (velocity memory for the wander); the date and the years must be
 said on the screen (a demand on Visual once the look exists); the jets' shear contamination is a
 R1 improvement to `eddy.py` (Zhurbas and Oh's correction, or a coarser variance in the jets).
