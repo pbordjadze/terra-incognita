@@ -6,7 +6,7 @@
 
 use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
-use crate::look::{sea::Ripple, GroundPass, Look, LookFloat, LookState, SeaPass};
+use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookFloat, LookState, SeaPass};
 use crate::model::*;
 use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
@@ -126,6 +126,8 @@ pub struct App {
     pub seen: Vec<String>,
     /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
     pub haptic: bool,
+    /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
+    pub credits_open: bool,
 }
 
 /// Days a second while the date runs.
@@ -216,6 +218,7 @@ impl App {
             rest: 0.0,
             seen: Vec::new(),
             haptic: false,
+            credits_open: self.credits_open,
         })
     }
 
@@ -426,6 +429,7 @@ impl App {
                 }
             }
             Intent::SetRunning { running } => self.clock.running = running,
+            Intent::ToggleCredits => self.credits_open = !self.credits_open,
         }
     }
 
@@ -718,7 +722,7 @@ impl App {
             floats: self
                 .floats
                 .iter()
-                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| b.at).collect() })
+                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
                 .collect(),
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
@@ -730,6 +734,8 @@ impl App {
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
             credits: crate::sea::CREDIT_LINE.to_string(),
+            credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
+            credits_open: self.credits_open,
         }
     }
 
@@ -853,6 +859,12 @@ impl App {
     pub fn frame(&mut self, target: &wgpu::TextureView, now: f64) {
         self.advance(now);
         self.render(target);
+    }
+
+    /// Where the credit line is drawn, if the look has drawn it (x, y, w, h in points): the tap that
+    /// opens the credits (Motion's probe).
+    pub fn credit_bounds(&self) -> Option<[f32; 4]> {
+        self.look.credit_bounds()
     }
 
     /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.

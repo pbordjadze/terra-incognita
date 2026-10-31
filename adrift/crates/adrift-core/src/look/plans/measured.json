@@ -1,0 +1,7 @@
+{
+  "_": "Where no drifter measured the current (Truth's D3): a float in Hudson Bay in July rides the sheet's smoothed-in guess and shows it, a dashed rim and hollow beads; one in the Gulf Stream does not. adrift-check render adrift/crates/adrift-core/src/look/plans/measured.json <out.png>.",
+  "camera": { "lon": -78.0, "lat": 50.0, "zoom": 1.6 },
+  "day": 200.0,
+  "seconds": 12.0,
+  "floats": [ { "lon": -85.0, "lat": 59.0, "days_ago": 12 }, { "lon": -72.0, "lat": 37.0, "days_ago": 12 } ]
+}

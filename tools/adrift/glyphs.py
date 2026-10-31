@@ -25,7 +25,7 @@ FONTS = {'regular': ROOT / 'Globe' / 'fonts' / 'LibertinusSerif-Regular.otf', 'i
 OUT = ROOT / 'adrift' / 'crates' / 'adrift-core' / 'src' / 'look' / 'type'
 EM, SPREAD, PAD = 64, 8, 14
 SS = 4                         # rasterised at SS times the em and thresholded there, so hairlines survive
-CHARS = [chr(c) for c in range(32, 127)] + ['·', '–', '—', '’', '‘', '“', '”', 'é', 'ü', 'ö', 'ñ', '°']
+CHARS = [chr(c) for c in range(32, 127)] + ['·', '–', '—', '’', '‘', '“', '”', 'é', 'ü', 'ö', 'ñ', '°', '█']   # (the block: a solid cell the look draws pages with)
 INF = 1e12
 
 
@@ -77,6 +77,9 @@ def face(name, cells):
             continue
         im = Image.new('L', ((w + 2 * PAD) * SS, (h + 2 * PAD) * SS), 0)
         ImageDraw.Draw(im).text(((PAD - l) * SS, (PAD - t) * SS), ch, font=big, fill=255, anchor='ls')
+        if ch == '█':                                     # solid to its cell's edge: inside everywhere
+            cells.append(((name, ch), np.ones(((h + 2 * PAD), (w + 2 * PAD)), np.float32), l - PAD, t - PAD, adv))
+            continue
         cells.append(((name, ch), sdf(np.asarray(im) > 127), l - PAD, t - PAD, adv))
     asc, desc = font.getmetrics()
     return {'font': FONTS[name].stem, 'ascent': asc, 'descent': desc, 'glyphs': glyphs}

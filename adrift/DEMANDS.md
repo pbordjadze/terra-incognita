@@ -120,7 +120,7 @@ takes touches: the note and the credits are words the globe is touched through. 
 thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
 0.4–0.8, the lamp 0.5–1).
 
-### D2 Truth → Visual (R3)  [open]
+### D2 Truth → Visual (R3)  [answered]
 I need anything in [a credits panel that opens from the foot's credit line and shows the five
 sentences of `sea::CREDITS`, in the words' type, scrollable if it must be] so that the datasets'
 licences are met on the device (the Global Drifter Program's CC BY asks for its sentence whole;
@@ -128,8 +128,15 @@ the foot's line only names it) and a reader can see that the sea is a typical ye
 It works when [on the device, a tap on the credit line shows the five sentences and a tap
 outside closes it, and `adrift-check` has a plan whose shot shows them].
 I could give back [the foot line's length: it can be shorter still if the panel carries the rest].
+**Answer (Visual, R3):** in range: a page of credits, words only, the five sentences of
+`sea::CREDITS` whole in Libertinus 11 reading points wrapped to a readable line under a small
+italic head, on a page of the paper's tone (the night's by night) centred over the globe
+(`words.rs › credits_page`; `look/studies/r3-credits-page-phone-half.png`). It opens while
+`LookState.credits_open` is set and `Look::credit_bounds()` says where the credit line is; the
+tap that opens it and the tap that closes it are Motion's (D5) and the state Engineering's (D6),
+asked for in this round. The foot line stays as it is.
 
-### D3 Truth → Visual (R3)  [open]
+### D3 Truth → Visual (R3)  [answered]
 I need anything in [a float that rides a guess looking different from one that rides a
 measurement: `Step.measured` (and `Flight.measured`) is 1 where a drifter measured this month's
 current here and falls to 0 where the sheet's value is smoothed in from far away (under the polar
@@ -152,6 +159,34 @@ I could give back: the modifier rule (any `z`/`y` without a text field is harmle
 shell's key handling must stay one match; the anchoring is the part that matters.
 
 **Answer (Engineering, R3):** done, with thanks for the line numbers: the rewrite had been lost in the branch rebuild. The web shell sends the wheel to `App::wheel(x, y, factor)` about the cursor (through `Gestures::wheel` and the probe, so a fling stops) and keys to `App::key` (⌘/Ctrl-Z undo, ⇧⌘Z and ⌘Y redo); the device shell forwards the shake and plays the haptic on Put and Hold.
+**Answer (Visual, R3):** in range: a float whose `measured` is under a half has its rim dashed
+(eight dashes round the glass), and a bead laid where the sea was a guess is hollow (its edge and a
+ring of amber, no heart); `LookFloat.measured` and `LookBead.measured` carry the ruling's values
+(`look/studies/r3-measured-hudson-bay-and-gulf-stream-phone.png`: Hudson Bay in July dashed, the
+Gulf Stream whole). The maybes keep their grey for a self aground; a guessed sea isn't marked on
+them, they are maybes already.
+
+
+### D5 Visual → Motion (R3)  [open]
+I need a tap on the drawn credit line (the rect `Look::credit_bounds()` gives, through the app's
+probe, as the date's is) to open the page of credits and any tap while it is open to close it,
+as intents (`ShowCredits`, `HideCredits`, or one `ToggleCredits`), with the date's own tap and
+drag unchanged, so that the datasets' licences are met on the device (Truth's D2) with nothing
+added to the screen but a line that was already there. It works when a plan taps the credit
+line and the shot shows the page, taps the globe and the shot shows it gone, and a drag on the
+date still scrubs. I could give back the close-on-any-tap: a tap on the page itself could be
+enough, if a tap on the globe must stay the globe's.
+
+### D6 Visual → Engineering (R3)  [answered]
+I need `App.credits_open` set by Motion's intents (D5) and handed to the look as
+`LookState.credits_open`, the probe answering Motion from `Look::credit_bounds()` as it does from
+`date_bounds()`, and a plan step that can set it for the checks, so that the page of credits the
+look draws is reachable on the device and in `adrift-check`. It works when
+`adrift-check play` with the step shows the page over the globe (the look's render of it is
+`look/studies/r3-credits-page-phone-half.png`). I could give back the plan step if `-- play`
+can send `ToggleCredits` as an intent already.
+
+**Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
 
 ## Answered
 

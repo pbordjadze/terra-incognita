@@ -266,6 +266,8 @@ pub enum Intent {
     Undo,
     /// A touch taken back is given back.
     Redo,
+    /// The page of credits opens (a tap on the credit line) or closes (any tap while it is open).
+    ToggleCredits,
     /// The camera drifts with this float.
     Ride { float: u32 },
     /// The date is moved by so many days.
