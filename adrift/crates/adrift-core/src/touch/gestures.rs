@@ -129,7 +129,9 @@ enum State {
     Pinch { a: u64, b: u64, zoom0: f64, scale: f64 },
     /// Three fingers: waiting for a swipe (left undo, right redo, up home, down clear the sea).
     Three { x0: f64, y0: f64, done: bool },
-    DateDown { id: u64, x0: f64, t0: f64, day: f64, scrubbing: bool },
+    /// A finger on the date: `was_running` is the clock as the finger found it, given back when
+    /// the scrub (or the flick after it) ends.
+    DateDown { id: u64, x0: f64, t0: f64, day: f64, scrubbing: bool, was_running: bool },
     /// A finger down on the credit line, or anywhere while the page of credits is open: a tap
     /// toggles the page; a drag is the globe's.
     CreditsDown { id: u64, x0: f64, y0: f64 },
@@ -145,6 +147,8 @@ pub struct Gestures {
     samples: VecDeque<(f64, f64, f64)>,
     /// The date running on after a flick, days a second.
     date_spin: f64,
+    /// Whether the clock ran before the scrub or flick now in progress: given back when it ends.
+    date_restore: Option<bool>,
     /// The last shake, for a second one that clears the sea.
     last_shake: Option<f64>,
     /// The clock as last seen, for the shake and the flick.
@@ -159,7 +163,7 @@ impl Default for Gestures {
 
 impl Gestures {
     pub fn new() -> Gestures {
-        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, last_shake: None, now: 0.0 }
+        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, date_restore: None, last_shake: None, now: 0.0 }
     }
 
     /// The app answers `Intent::Put` with the float it made, so the finger goes on holding it.
@@ -280,8 +284,11 @@ impl Gestures {
         self.fingers.insert(e.id, Finger { x: e.x, y: e.y });
         self.now = e.t;
         out.camera.push(CameraMove::Stop);
-        // a touch stops the date's flick, as it stops the globe's
+        // a touch stops the date's flick, as it stops the globe's, and gives the clock back
         self.date_spin = 0.0;
+        if let Some(running) = self.date_restore.take() {
+            out.intents.push(Intent::SetRunning { running });
+        }
         let n = self.fingers.len();
         match (self.state, n) {
             (State::Idle, 1) => {
@@ -303,7 +310,7 @@ impl Gestures {
                         out.intents.push(Intent::PressFloat { float, since: e.t });
                         State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at }
                     }
-                    Hit::Date => State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false },
+                    Hit::Date => State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false, was_running: probe.running() },
                     Hit::Credits => State::CreditsDown { id: e.id, x0: e.x, y0: e.y },
                     Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y, t0: e.t },
                 };
@@ -394,11 +401,15 @@ impl Gestures {
                     self.state = State::Three { x0, y0, done: true };
                 }
             }
-            State::DateDown { id, x0, t0, day, scrubbing } if id == e.id => {
+            State::DateDown { id, x0, t0, day, scrubbing, was_running } if id == e.id => {
                 let dx = e.x - x0;
                 if scrubbing || dx.abs() > slop {
                     if !scrubbing {
-                        out.intents.push(Intent::SetRunning { running: false });
+                        // the clock rests while the finger moves it, and is given back after
+                        if was_running {
+                            out.intents.push(Intent::SetRunning { running: false });
+                        }
+                        self.date_restore = Some(was_running);
                         self.samples.clear();
                     }
                     self.sample(e);
@@ -407,7 +418,7 @@ impl Gestures {
                     if (to - now).abs() > 1e-9 {
                         out.intents.push(Intent::Scrub { days: to - now });
                     }
-                    self.state = State::DateDown { id, x0, t0, day, scrubbing: true };
+                    self.state = State::DateDown { id, x0, t0, day, scrubbing: true, was_running };
                 }
             }
             _ => {}
@@ -461,8 +472,10 @@ impl Gestures {
                     self.up_from_hold(e, probe, out);
                     return;
                 }
-                // a tap: the ring alone
+                // a tap: the ring alone; and the chosen float, if any, is let go with its ride
                 out.intents.push(Intent::Unpress);
+                out.intents.push(Intent::Unchoose);
+                out.camera.push(CameraMove::Leave);
                 self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
@@ -473,9 +486,9 @@ impl Gestures {
                     return;
                 }
                 out.intents.push(Intent::Unpress);
-                if probe.riding() != Some(float) {
-                    out.intents.push(Intent::Ride { float });
-                }
+                // ride it; the app toggles, so a tap on the ridden float lets the ride go (its
+                // choice, and so its maybes, stay)
+                out.intents.push(Intent::Ride { float });
                 self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
@@ -513,10 +526,19 @@ impl Gestures {
                 if !scrubbing {
                     // a tap: pause or play; while the page of credits is open, it closes the page
                     out.intents.push(if probe.credits_open() { Intent::ToggleCredits } else { Intent::SetRunning { running: !probe.running() } });
-                } else if !probe.motion().reduce {
-                    // let go moving: the date runs on, slowing (a flick)
-                    let (vx, _) = self.velocity(e.t);
-                    self.date_spin = vx * motion::days_per_point(probe.frame().width);
+                } else {
+                    if !probe.motion().reduce {
+                        // let go moving: the date runs on, slowing (a flick)
+                        let (vx, _) = self.velocity(e.t);
+                        self.date_spin = vx * motion::days_per_point(probe.frame().width);
+                    }
+                    if self.date_spin.abs() < motion::DATE_SPIN_REST {
+                        // no flick: the clock is given back now; a flick gives it back when it rests
+                        self.date_spin = 0.0;
+                        if let Some(running) = self.date_restore.take() {
+                            out.intents.push(Intent::SetRunning { running });
+                        }
+                    }
                 }
                 self.state = State::Idle;
             }
@@ -634,7 +656,11 @@ impl Gestures {
         }
         if self.date_spin != 0.0 && self.fingers.is_empty() {
             if self.date_spin.abs() < motion::DATE_SPIN_REST {
+                // the flick has come to rest: the clock as the finger found it
                 self.date_spin = 0.0;
+                if let Some(running) = self.date_restore.take() {
+                    out.intents.push(Intent::SetRunning { running });
+                }
             } else if dt > 0.0 {
                 out.intents.push(Intent::Scrub { days: self.date_spin * dt });
                 self.date_spin = motion::fling_decay(self.date_spin, dt);

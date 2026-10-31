@@ -306,10 +306,37 @@ plan("date-flick", "Flick the date and it runs on, slowing; a touch stops it", [
     ev(0.17, "up", xy=date_xy(120)),
     expect(0.2, saw=["Pause", "Scrub"], playing=False, state="idle"),
     expect(0.6, saw=["Scrub"]), shot(0.6, "running-on"),                 # still scrubbing with no finger down
-    ev(0.7, "down", at=SEA), ev(0.8, "up", at=SEA),                       # a touch stops it (and rings)
-    expect(0.9, saw=["Ring"]), expect(1.5, not_=["Scrub"], playing=False),
+    ev(0.7, "down", at=SEA), ev(0.8, "up", at=SEA),                       # a touch stops it (and rings), and the clock runs again
+    expect(0.9, saw=["Ring", "Play"], playing=True), expect(1.5, not_=["Scrub"]),
     expect(3.0, not_=["Scrub"]),
 ], day=9800.0)
+
+# --- R5: the clock as the finger found it; a choice that outlives the camera ---
+plan("date-keeps-running", "A scrub or a flick leaves the clock as it found it: running stays running, resting stays resting", [
+    ev(0.0, "down", xy=date_xy()), ev(0.1, "move", xy=date_xy(40)), ev(0.2, "move", xy=date_xy(80)),
+    expect(0.25, saw=["Pause", "Scrub"], playing=False),
+    ev(0.28, "move", xy=date_xy(80)), ev(0.3, "up", xy=date_xy(80)), expect(0.4, saw=["Play"], playing=True),   # it was running: it runs again
+    ev(1.0, "down", xy=date_xy()), ev(1.1, "up", xy=date_xy()), expect(1.2, saw=["Pause"], playing=False),
+    ev(1.5, "down", xy=date_xy()), ev(1.6, "move", xy=date_xy(40)), ev(1.7, "move", xy=date_xy(80)), ev(1.78, "move", xy=date_xy(80)), ev(1.8, "up", xy=date_xy(80)),
+    expect(1.9, saw=["Scrub"], not_=["Play"], playing=False),                                 # it was resting: it rests still
+    ev(2.2, "down", xy=date_xy()), ev(2.3, "up", xy=date_xy()), expect(2.4, saw=["Play"], playing=True),
+    ev(2.6, "down", xy=date_xy()), ev(2.65, "move", xy=date_xy(30)), ev(2.7, "move", xy=date_xy(70)), ev(2.75, "move", xy=date_xy(120)), ev(2.77, "up", xy=date_xy(120)),
+    expect(2.8, saw=["Pause", "Scrub"], playing=False), expect(3.3, saw=["Scrub"], playing=False, not_=["Play"]),   # a flick: resting while it runs on
+    expect(6.0, saw=["Play"], playing=True),                                                  # at rest, running again
+    ev(6.5, "down", xy=date_xy()), ev(6.55, "move", xy=date_xy(30)), ev(6.6, "move", xy=date_xy(70)), ev(6.65, "move", xy=date_xy(120)), ev(6.67, "up", xy=date_xy(120)),
+    expect(6.8, playing=False), ev(7.0, "down", at=SEA), ev(7.1, "up", at=SEA),              # a touch stops the flick and gives the clock back at once
+    expect(7.2, saw=["Play"], playing=True),
+], day=9800.0)
+plan("chosen", "Tap a float and it is chosen and ridden; pinch away and it stays chosen; tap it to let the ride go; tap the sea to unchoose", [
+    ev(0.0, "down", at=SEA), ev(0.08, "up", at=SEA), expect(0.2, chosen=1, riding=1),
+    ev(0.5, "down", 0, xy=px(0.42, 0.5)), ev(0.52, "down", 1, xy=px(0.58, 0.5)),
+    ev(0.6, "move", 0, xy=px(0.38, 0.5)), ev(0.65, "move", 1, xy=px(0.62, 0.5)), ev(0.7, "up", 0, xy=px(0.38, 0.5)), ev(0.72, "up", 1, xy=px(0.62, 0.5)),
+    expect(0.8, chosen=1, riding=None, zoom_gt=1.1),                                        # the pinch ended the ride, not the choice
+    ev(1.0, "down", at=SEA), ev(1.08, "up", at=SEA), expect(1.2, chosen=1, riding=1),       # tap it again: ridden again
+    ev(2.5, "down", at=SEA), ev(2.58, "up", at=SEA), expect(2.7, chosen=1, riding=None),    # tap the ridden one: the ride lets go, the choice stays
+    ev(3.0, "down", at=SEA2), ev(3.08, "up", at=SEA2), expect(3.2, chosen=2, riding=2),     # another: chosen instead
+    ev(3.5, "down", at=[-45.0, 5.0]), ev(3.58, "up", at=[-45.0, 5.0]), expect(3.7, saw=["Ring"], chosen=None, riding=None),  # the open sea: none
+], floats=[F1, F2])
 
 os.makedirs(OUT, exist_ok=True)
 for f in os.listdir(OUT):

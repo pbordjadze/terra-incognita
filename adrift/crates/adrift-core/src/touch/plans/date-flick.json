@@ -93,14 +93,15 @@
    "t": 0.9,
    "expect": {
     "saw": [
-     "Ring"
-    ]
+     "Ring",
+     "Play"
+    ],
+    "playing": true
    }
   },
   {
    "t": 1.5,
    "expect": {
-    "playing": false,
     "not": [
      "Scrub"
     ]

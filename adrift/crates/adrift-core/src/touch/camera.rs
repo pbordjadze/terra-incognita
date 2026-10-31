@@ -21,6 +21,8 @@ pub enum CameraMove {
     Pinch { grab: Option<LonLat>, ax: f64, ay: f64, bx: f64, by: f64, factor: f64 },
     /// A double tap at a place of the globe (None off it): fly in about it, or out.
     Fly { at: Option<LonLat> },
+    /// The ride ends (a tap on the open sea lets the float go); the camera stays where it is.
+    Leave,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -90,6 +92,7 @@ impl CameraControl {
             }
             CameraMove::Pinch { grab, ax, ay, bx, by, factor } => self.pinch(disc, grab, ax, ay, bx, by, factor),
             CameraMove::Fly { at } => self.double_tap(at, now, motion),
+            CameraMove::Leave => self.riding = None,
         }
     }
 
