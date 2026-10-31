@@ -136,3 +136,21 @@ first Adrift build to the SideStore source is main's adrift.yml run 14. Rulings:
   a finger) decide Motion's remaining knobs; Visual's remaining knobs wait for the same captures; Truth
   sets the maybes' count and step the honesty needs, for the device budget. Each craft sends its
   exit-interview answers when R3 is done.
+
+## 9. R3 closed and shipped (Oct 31, 09:25 UTC)
+
+Main 5823c0d is the shipped round: every demand in DEMANDS.md answered (Truth's eddy memory and the
+put velocity; Visual's Look wiring, eases, night and lights; Motion's press, redo and the credits'
+tap; Truth's credits page and guess mark on Visual), 24 tests and 28 played plans green, the device
+IPA published to the SideStore source beside Terra, the web link republished. What is parked on the
+owner's device captures (a fling toward the pole; the beat under a real finger; the frame stats the
+shells now log every five seconds): Motion's last knobs on the fling and the spring, Visual's on the
+night's near-black and the specks' three pixels, and the frame budget's thresholds. Nothing further
+is asked of the crafts; each has sent its exit interview.
+
+Engineering's own account, for the record: the spiral's cost was one round of parallel integration
+(three crafts each built against a seam that then moved; the branch had to be rebuilt once); its
+gain was that every ask between crafts arrived as a testable sentence with a range and an
+observable, and all twelve were answered in range without a bare no. The one process change that
+would have saved the most: the shared types, the plan form and the "add a field" procedure named on
+day one, before the crafts began.
