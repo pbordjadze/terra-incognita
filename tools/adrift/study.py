@@ -17,6 +17,7 @@ how a real wake bunches and spreads. The silver drifter is such a walk from anot
 for a real track. Reads only this machine.
 """
 import argparse, json, math, subprocess, sys
+sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parents[1] / 'metal'))
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -24,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools' / 'globe'))
 import preview                                          # layout, rotation, reading: GlobeView's own
+import layers                                           # the View's rotation columns, as the Metal layers pass them
 SPEC = json.loads((ROOT / 'adrift' / 'crates' / 'adrift-core' / 'src' / 'look' / 'palette.json').read_text())
 FONTS = ROOT / 'Globe' / 'fonts'
 BASE = ROOT / 'build' / 'adrift' / 'base'
@@ -306,11 +308,28 @@ def crop_1x(cv, x, y, half, path):
     im.crop((x0, y0, min(x0 + 2 * half, cv.w), min(y0 + 2 * half, cv.h))).save(path)
 
 
-def study(kind, device, at, style, days, maybes, put=None, month=9):
+def write_scene(path, kind, device, at, style, cam, base, floats, wake, maybes, silver, lon, lat):
+    """The scene for tools/adrift/lookbench (its main.rs says the fields): the View as the Metal layers
+    fill it, and everything the look draws, in degrees."""
+    r0, r1, r2 = layers.columns(lon, lat)
+    foot = cam.h - (20 if min(cam.w, cam.h) >= 700 else 34) - 150 + 44
+    json.dump({
+        'base': str(base), 'frame': [cam.w * cam.px, cam.h * cam.px, cam.px, cam.reading],
+        'disc': [cam.cx, cam.cy, cam.R, cam.zoom], 'rot': [list(r0), list(r1), list(r2)],
+        'time': [12.0, 9, 10, 0.45], 'tone': [1.0, 1.0, 12.0, 0.0], 'night': style == 'night',
+        'floats': floats, 'wake': wake, 'maybes': maybes, 'maybes_bloom': 1.0 if kind in ('held', 'all') else 0.0,
+        'silver': silver, 'silver_rise': 1.0 if kind in ('held', 'all') else 0.0,
+        'date': '14 October', 'credits': 'Currents: NOAA Global Drifter Program  ·  Land: NASA Blue Marble  ·  Sea floor: GEBCO',
+        'foot': foot}, open(path, 'w'))
+    print(path)
+
+
+def study(kind, device, at, style, days, maybes, put=None, month=9, scene=None):
     OUT.mkdir(parents=True, exist_ok=True)
     lon, lat, zoom = map(float, at.split(','))
     cam = Camera(device, lon, lat, zoom)
-    cv = Canvas(base_for(device, at, style))
+    base = base_for(device, at, style)
+    cv = Canvas(base)
     sea = Sea()
     plon, plat = put if put else (lon + 2.0, lat - 2.0)
     tag = f'{device}-{kind}-{style}-z{zoom:g}'
@@ -342,6 +361,12 @@ def study(kind, device, at, style, days, maybes, put=None, month=9):
     if kind == 'all':
         x2, y2, _ = cam.project(plon - 3, plat + 1.5)
         draw_float(cv, cam, style, x2, y2)
+    if scene:
+        fl = [{'lon': float(real[-1, 0]), 'lat': float(real[-1, 1]), 'beat': 1.0, 'lit': float(kind != 'held'), 'held': float(kind == 'held')}]
+        if kind == 'all':
+            fl.append({'lon': plon - 3, 'lat': plat + 1.5, 'beat': 1.0, 'lit': 0.0, 'held': 0.0})
+        write_scene(scene, kind, device, at, style, cam, base.filename, fl, real.tolist(),
+                    others.tolist() if kind in ('held', 'all') else [], silver.tolist(), lon, lat)
     draw_words(cv, cam, style, '14 October', 'Currents: NOAA Global Drifter Program  ·  Land: NASA Blue Marble  ·  Sea floor: GEBCO')
     cv.save(OUT / f'{tag}.png')
     crop_1x(cv, fx, fy, int((50 if kind == 'float' else 110) * cam.px), OUT / f'{tag}-1x.png')
@@ -380,6 +405,7 @@ def main():
     a.add_argument('--days', type=int, default=45)
     a.add_argument('--maybes', type=int, default=2000)
     a.add_argument('--put', default=None, help='lon,lat the float was put at (default: near the camera)')
+    a.add_argument('--scene', default=None, help='also write the scene for tools/adrift/lookbench here')
     o = a.parse_args()
     put = tuple(map(float, o.put.split(','))) if o.put else None
     if o.kind == 'everything':
@@ -391,7 +417,7 @@ def main():
             study(kind, 'phone', '-68,36,2.6', 'night', o.days, o.maybes, put)
         sheets()
         return
-    study(o.kind, o.device, o.at, o.style, o.days, o.maybes, put)
+    study(o.kind, o.device, o.at, o.style, o.days, o.maybes, put, scene=o.scene)
 
 
 if __name__ == '__main__':

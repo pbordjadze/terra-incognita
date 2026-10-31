@@ -1,45 +1,53 @@
-use crate::gpu::{Gpu, Maybes};
+//! The maybes: thousands of pale specks (`maybes.wgsl`). Their positions come from Truth's sampler
+//! (a buffer `rules.wgsl` writes, or a slice from the CPU); the look only draws them.
+use super::{pipeline, shader, Instances, Uniform};
+use bytemuck::{Pod, Zeroable};
 
-/// Draws the maybes from the compute buffer (one instance a maybe).
-pub struct MaybesPass {
-    pipeline: wgpu::RenderPipeline,
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct SpeckInstance {
+    pub g: [f32; 3],
 }
 
-impl MaybesPass {
-    pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout) -> MaybesPass {
-        let shader = gpu.shader("maybes draw", &super::wgsl(include_str!("maybes.wgsl")));
-        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("maybes draw"), bind_group_layouts: &[view_layout], push_constant_ranges: &[] });
-        let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("maybes draw"),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_maybe"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: 16, step_mode: wgpu::VertexStepMode::Instance, attributes: &wgpu::vertex_attr_array![0 => Float32x4] }],
-                compilation_options: Default::default(),
-            },
-            primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleStrip, ..Default::default() },
-            depth_stencil: None,
-            multisample: Default::default(),
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_maybe"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
-                compilation_options: Default::default(),
-            }),
-            multiview: None,
-            cache: None,
-        });
-        MaybesPass { pipeline }
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, Pod, Zeroable)]
+pub struct MaybesUniform {
+    /// 0..1 as they bloom out of the float and fold back
+    pub bloom: f32,
+    pub night: f32,
+    pub _pad: [f32; 2],
+}
+
+const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
+    array_stride: std::mem::size_of::<SpeckInstance>() as u64,
+    step_mode: wgpu::VertexStepMode::Instance,
+    attributes: &wgpu::vertex_attr_array![0 => Float32x3],
+};
+
+pub struct Maybes {
+    pipeline: wgpu::RenderPipeline,
+    instances: Instances<SpeckInstance>,
+    uniform: Uniform<MaybesUniform>,
+}
+
+impl Maybes {
+    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, view: &wgpu::BindGroupLayout) -> Self {
+        let module = shader(device, "maybes", include_str!("maybes.wgsl"));
+        let uniform = Uniform::new(device, "maybes");
+        Self { pipeline: pipeline(device, "maybes", &module, format, LAYOUT, view, Some(&uniform.layout)), instances: Instances::new(device, "maybes", 4096), uniform }
     }
 
-    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a Maybes) {
-        if maybes.count == 0 {
-            return;
-        }
-        rp.set_pipeline(&self.pipeline);
-        rp.set_bind_group(0, view_bind, &[]);
-        rp.set_vertex_buffer(0, maybes.buffer.slice(..(maybes.count as u64) * 16));
-        rp.draw(0..4, 0..maybes.count);
+    pub fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, specks: &[SpeckInstance], bloom: f32, night: bool) {
+        self.instances.write(device, queue, "maybes", specks);
+        self.uniform.write(queue, &MaybesUniform { bloom, night: night as u8 as f32, _pad: [0.0; 2] });
+    }
+
+    pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {
+        if self.instances.count == 0 { return; }
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, view, &[]);
+        pass.set_bind_group(1, &self.uniform.group, &[]);
+        pass.set_vertex_buffer(0, self.instances.slice());
+        pass.draw(0..6, 0..self.instances.count);
     }
 }

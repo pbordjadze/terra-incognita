@@ -1,6 +1,7 @@
 // The nearest real drifter that passed where the held float is: its track as a silver wire on a dark
 // line by day (its own light by night), one instanced quad a segment with round joins, thinning
-// toward the whole Earth with the beads. Its last position a small silver disc.
+// toward the whole Earth with the beads. Drawn twice, every segment's dark line then every segment's
+// wire (S.layer), or a segment's line would cut the wire of the one before it at the join.
 
 struct SegIn {
     @location(0) a: vec3<f32>,
@@ -18,7 +19,8 @@ struct SegOut {
 struct Silver {
     rise: f32,          // 0..1 as it rises among the maybes and sinks back
     night: f32,
-    _pad: vec2<f32>,
+    layer: f32,         // 0 this draw lays the dark lines, 1 the wires
+    _pad: f32,
 };
 @group(1) @binding(0) var<uniform> S: Silver;
 
@@ -52,7 +54,10 @@ fn fs(i: SegOut) -> @location(0) vec4<f32> {
     var acc = vec4<f32>(0.0);
     let edge = vec3<f32>(0.290, 0.337, 0.388);
     let wire = mix(vec3<f32>(0.867, 0.890, 0.914), vec3<f32>(0.863, 0.890, 0.918), n);
-    acc = over(acc, edge, (1.0 - n) * S.rise * cover(d - i.w * 0.5));
-    acc = over(acc, wire, S.rise * cover(d - i.w * 0.225));
+    if (S.layer < 0.5) {
+        acc = over(acc, edge, (1.0 - n) * S.rise * cover(d - i.w * 0.5));
+    } else {
+        acc = over(acc, wire, S.rise * cover(d - i.w * 0.225));
+    }
     return acc;
 }

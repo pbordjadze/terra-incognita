@@ -1,0 +1,15 @@
+[package]
+name = "lookbench"
+version = "0.1.0"
+edition = "2021"
+description = "Draws the look's passes over a stand-in sea with wgpu, headless, until adrift-check does (src/main.rs says how)."
+
+[workspace]
+
+[dependencies]
+wgpu = "24"
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "0.4"
+png = "0.17"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

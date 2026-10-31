@@ -54,6 +54,16 @@ points or waits, and the one warm thing is mine. But a study cannot show me wand
 undoing; the ring's beat is five stills. The unscripted thing is there in the wake, bunched and
 strung by a real current, which no one drew. Judge again when it runs."
 
+**Later in R0, the passes running on wgpu.** The same scenes drawn by the look's own shaders and
+Rust through `tools/adrift/lookbench` on Mesa's lavapipe (`studies/wgpu-held-day-phone.png`,
+`studies/wgpu-held-night-phone.png`, `studies/wgpu-foot-phone.png`), over the stand-in's sea. The
+hater, again: "It is the numpy picture to the pixel, which is the point. Two things only the running
+build showed: the silver was a row of dashes until its dark lines and its wires were drawn as two
+layers (every line, then every wire), and the credits at ten points come out a hair heavier than
+the numpy twin's, the mipmapped distance field's doing; acceptable, watch it on the device. The
+foot still lies over Brazil." Verdict unchanged otherwise; the layout of the foot stands as the one
+thing not in Visual's hands.
+
 **What Visual takes from R0 into R1** (in the shaders, with `adrift-check` renders to show it):
 the beads and the silver scale with zoom (a floor of 0.8 pt, full size from zoom 2.5); the night
 maybes at a third; the ring's beat as one continuous function with the amber from 0.5 of the beat;

@@ -21,7 +21,7 @@ skeleton lands.
 | --- | --- | --- |
 | `wake.wgsl` | `g: vec3<f32>`, `age: f32` (0 newest .. 1 oldest), `night: f32` | none |
 | `maybes.wgsl` | `g: vec3<f32>` (Truth's buffer, written by `rules.wgsl`) | `Maybes {bloom, night}` uniform |
-| `silver.wgsl` | `a: vec3<f32>`, `b: vec3<f32>`, `t: f32` (segments of the track) | `Silver {rise, night}` uniform |
+| `silver.wgsl` | `a: vec3<f32>`, `b: vec3<f32>`, `t: f32` (segments of the track) | `Silver {rise, night, layer}`; drawn twice, dark lines then wires |
 | `floats.wgsl` | `g: vec3<f32>`, `beat` (0..1 the resting finger; 1 a float), `lit`, `held`, `night` | none |
 | `words.wgsl` | `rect: vec4` (points, y down), `uv: vec4` (atlas 0..1), `ink: vec4` | `Words {halo, spread, halo_pt, layer}`, the atlas `texture_2d`, a linear sampler with mipmaps; drawn twice, halos (`layer` 0) then inks (1) |
 
@@ -30,6 +30,9 @@ skeleton lands.
   the Rust lays a line out from the JSON's advances and bearings in points, centred at the foot.
 - A float past the limb (facing under 0.3) is clipped away in the vertex shader; the Rust owns the
   slack (shown above 0.4, kept to 0.3) so nothing flickers at the rim.
+- `tools/adrift/lookbench` (a crate of its own) draws these passes with wgpu, headless, over a stand-in
+  sea from a scene `tools/adrift/study.py --scene` writes: the running build of the look until
+  `adrift-check` renders it (its `main.rs` says how).
 - `tools/adrift/study.py` draws all of this over Terra's stand-in sea without the build; it is the
   numpy twin of these shaders until `adrift-check` renders them, and stays as the place to try a
   colour or a size in seconds.
