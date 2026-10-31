@@ -1,0 +1,108 @@
+{
+ "title": "The rim: a lamp out at the globe's edge chosen from the panel is turned inward, its cloud on the face; one already facing leaves the globe still",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.1,
+   "shot": "at-the-rim"
+  },
+  {
+   "t": 0.2,
+   "down": 0,
+   "xy": [
+    68.0,
+    114.0
+   ]
+  },
+  {
+   "t": 0.28,
+   "up": 0,
+   "xy": [
+    68.0,
+    114.0
+   ]
+  },
+  {
+   "t": 0.3,
+   "expect": {
+    "chosen": [
+     1
+    ]
+   }
+  },
+  {
+   "t": 1.2,
+   "expect": {
+    "camera_moved": true
+   }
+  },
+  {
+   "t": 1.2,
+   "shot": "turned-in"
+  },
+  {
+   "t": 1.5,
+   "down": 0,
+   "xy": [
+    68.0,
+    154.0
+   ]
+  },
+  {
+   "t": 1.58,
+   "up": 0,
+   "xy": [
+    68.0,
+    154.0
+   ]
+  },
+  {
+   "t": 2.5,
+   "expect": {
+    "chosen": [
+     1,
+     2
+    ],
+    "camera_same_as_last": true
+   }
+  }
+ ],
+ "floats": [
+  {
+   "lon": 8.0,
+   "lat": -33.0,
+   "days_ago": 20.0
+  },
+  {
+   "lon": -25.0,
+   "lat": -15.0,
+   "days_ago": 20.0
+  }
+ ],
+ "day": 9800.0,
+ "panel": [
+  [
+   1,
+   8.0,
+   96.0,
+   120.0,
+   36.0
+  ],
+  [
+   2,
+   8.0,
+   136.0,
+   120.0,
+   36.0
+  ]
+ ],
+ "frames": true
+}

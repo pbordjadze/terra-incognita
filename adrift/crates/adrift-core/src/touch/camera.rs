@@ -23,6 +23,11 @@ pub enum CameraMove {
     Fly { at: Option<LonLat> },
     /// The ride ends (a tap on the open sea lets the float go); the camera stays where it is.
     Leave,
+    /// A lamp just chosen (R6, from the panel): if it is out of sight, or out toward the globe's
+    /// rim where its cloud would lie along the limb, the globe turns (at the same zoom, the
+    /// flight's ease) just far enough to bring it within `motion::FACE_WITHIN` of the disc's radius
+    /// from the centre; where it already reads well, nothing moves.
+    Face { at: LonLat },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -93,7 +98,40 @@ impl CameraControl {
             CameraMove::Pinch { grab, ax, ay, bx, by, factor } => self.pinch(disc, grab, ax, ay, bx, by, factor),
             CameraMove::Fly { at } => self.double_tap(at, now, motion),
             CameraMove::Leave => self.riding = None,
+            CameraMove::Face { at } => self.face(at, now, motion),
         }
+    }
+
+    /// Turns the globe (no zoom) so `at` lies within `FACE_WITHIN` of the room from the centre:
+    /// along the great circle from the camera's centre toward it, no further than needed.
+    fn face(&mut self, at: LonLat, now: f64, motion: Motion) {
+        if self.riding.is_some() {
+            return; // the ride keeps its own float centred
+        }
+        let d = self.disc;
+        // the room: the disc, or the screen about it when zoomed in past it (cx, cy its middle)
+        let room = d.r.min(d.cx).min(d.cy).max(1.0);
+        let within = motion::FACE_WITHIN * room;
+        let (p, facing) = d.project(&self.camera, at);
+        let off = (p[0] - d.cx).hypot(p[1] - d.cy);
+        if facing > 0.0 && off <= within {
+            return;
+        }
+        // the angle from the centre at which a place lies `within` points out
+        let keep = (within / d.r).clamp(0.0, 1.0).asin();
+        let c = LonLat::new(self.camera.lon, self.camera.lat).to_xyz();
+        let a = at.to_xyz();
+        let cos = (c[0] * a[0] + c[1] * a[1] + c[2] * a[2]).clamp(-1.0, 1.0);
+        let ang = cos.acos();
+        if ang <= keep + 1e-9 || ang.sin() < 1e-9 {
+            return;
+        }
+        // slerp from the centre toward the lamp by (ang - keep)
+        let t = ang - keep;
+        let (s0, s1) = (((ang - t).sin()) / ang.sin(), (t.sin()) / ang.sin());
+        let v = [c[0] * s0 + a[0] * s1, c[1] * s0 + a[1] * s1, c[2] * s0 + a[2] * s1];
+        let to = LonLat::from_xyz(v);
+        self.fly_to(Camera { lon: to.lon, lat: to.lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: self.camera.zoom }, now, motion);
     }
 
     // --- the sphere ---
@@ -286,6 +324,22 @@ mod tests {
         let mut c = CameraControl::new(Camera { lon, lat, zoom });
         c.apply(&disc(zoom), CameraMove::Stop, 0.0, M);
         c
+    }
+
+    #[test]
+    fn a_lamp_at_the_rim_is_turned_inward_and_one_on_the_face_is_left() {
+        let d = disc(1.0);
+        let mut r = rig(0.0, 0.0, 1.0);
+        r.apply(&d, CameraMove::Face { at: LonLat { lon: 20.0, lat: 0.0 } }, 0.0, M);
+        assert!(!r.moving());
+        r.apply(&d, CameraMove::Face { at: LonLat { lon: 85.0, lat: 0.0 } }, 0.0, M);
+        r.tick(motion::FLIGHT_S, 0.01, None, true, false, M);
+        let keep = motion::FACE_WITHIN.asin().to_degrees();
+        assert!((r.camera.lon - (85.0 - keep)).abs() < 1e-6 && r.camera.lat.abs() < 1e-6 && r.camera.zoom == 1.0, "{:?}", r.camera);
+        // behind the globe: turned the long way just as far as needed
+        let mut b = rig(0.0, 0.0, 1.0);
+        b.apply(&d, CameraMove::Face { at: LonLat { lon: 150.0, lat: 0.0 } }, 0.0, R);
+        assert!((b.camera.lon - (150.0 - keep)).abs() < 1e-6, "{:?}", b.camera);
     }
 
     #[test]

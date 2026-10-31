@@ -13,6 +13,13 @@ impl Probe for App {
             Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
             None => date_band(&frame),
         };
+        // the panel off the globe (R6): its rows come before anything under them, so a touch there
+        // never rings the sea, puts a float or sets one down
+        for (id, [bx, by, bw, bh]) in self.panel_bounds() {
+            if (Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 }).contains(x, y) {
+                return Hit::Panel(id);
+            }
+        }
         let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 });
         match App::hit(self, x, y) {
             // the float in hand lies under the finger: what matters is the water under it
@@ -52,5 +59,11 @@ impl Probe for App {
     }
     fn credits_open(&self) -> bool {
         self.credits_open
+    }
+    fn is_chosen(&self, id: u32) -> bool {
+        self.chosen.contains(&id)
+    }
+    fn behind(&self) -> f64 {
+        App::behind(self)
     }
 }
