@@ -50,6 +50,13 @@ trapping forever (the next step tries again), the ice lets go when the month tur
 unscripted does happen on paper: the harness's float ran up the shelf to Delaware and came back
 off it, which no one wrote. Verdict withheld until there is a screen to leave.
 
+**Later the same day, the flight.** `Rules::flight` (and `rules.wgsl`'s `maybes_flight`) carries
+an eddy velocity with the measured time scale (`eddy-time.png`). The same 500 off Hatteras,
+thirty days on: 46% east of 65° W (the record's half), median 65.9° W (the record's 64.8°),
+6 on a coast (the record's none; real drifters do run aground, though none of these 18 did in
+their thirty days). The hater: better; the beach count is the next thing to look at on a screen.
+D1 now asks Engineering only to carry the two numbers.
+
 **What Truth takes from R0:** D1 (velocity memory for the wander); the date and the years must be
 said on the screen (a demand on Visual once the look exists); the jets' shear contamination is a
 R1 improvement to `eddy.py` (Zhurbas and Oh's correction, or a coarser variance in the jets).

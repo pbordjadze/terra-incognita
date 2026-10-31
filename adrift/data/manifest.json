@@ -58,6 +58,26 @@
     "what": "lateral eddy diffusivity, zonal in R and meridional in G, how measured in B",
     "width": 722
   },
+  "eddy-time": {
+    "border": 1,
+    "cells": [
+      360,
+      180
+    ],
+    "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html",
+    "decode": "byte / 255 * max",
+    "file": "eddy-time.png",
+    "height": 182,
+    "max": 10.0,
+    "source": "measured from GDP 6-hourly trajectories 2016-2023 in 10-degree boxes, smoothed",
+    "tiles": [
+      1,
+      1
+    ],
+    "unit": "days",
+    "what": "the Lagrangian integral time scale, zonal in R and meridional in G",
+    "width": 362
+  },
   "ice": {
     "border": 1,
     "cells": [

@@ -167,6 +167,18 @@ impl Eddy {
     }
 }
 
+/// The eddy time sheet (one tile): R, G the Lagrangian integral time scale, 255 T / 10 days.
+pub struct EddyTime(pub Tiled);
+
+impl EddyTime {
+    pub const TMAX: f32 = 10.0;
+
+    /// (T zonal, T meridional) in days.
+    pub fn at(&self, lon: f32, lat: f32) -> (f32, f32) {
+        (self.0.sample(0, 0, lon, lat) / 255.0 * Self::TMAX, self.0.sample(0, 1, lon, lat) / 255.0 * Self::TMAX)
+    }
+}
+
 /// The ice sheet: grey, 255 all ice.
 pub struct Ice(pub Tiled);
 
@@ -223,6 +235,7 @@ pub struct Sea {
     pub currents: Currents,
     pub wind: Wind,
     pub eddy: Eddy,
+    pub eddy_time: EddyTime,
     pub ice: Ice,
     pub coast: Coast,
 }
@@ -234,6 +247,7 @@ impl Sea {
             currents: Currents(Tiled::new(Sheet::load(&dir.join("currents.png"))?, (720, 360), 1, (4, 3))),
             wind: Wind(Tiled::new(Sheet::load(&dir.join("wind.png"))?, (360, 180), 1, (4, 3))),
             eddy: Eddy(Tiled::new(Sheet::load(&dir.join("eddy.png"))?, (720, 360), 1, (1, 1))),
+            eddy_time: EddyTime(Tiled::new(Sheet::load(&dir.join("eddy-time.png"))?, (360, 180), 1, (1, 1))),
             ice: Ice(Tiled::new(Sheet::load(&dir.join("ice.png"))?, (1440, 720), 1, (4, 3))),
             coast: Coast(Sheet::load(&dir.join("coast.png"))?),
         })

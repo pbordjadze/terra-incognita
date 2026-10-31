@@ -26,7 +26,10 @@ is for the whole year; the seasons' change is in the mean current, not here):
       B  how measured: 255 where the variance has a value, falling to 0 within about 3 degrees of
          the nearest one; the values there are smoothed in from the measured cells
 and the time scales as `eddy-time.json` beside it (the 10-degree boxes' T, days, for the tests and
-the record).
+the record), and as a sheet, adrift/data/eddy-time.png, 362 x 182 RGB, one tile of 1-degree cells:
+      R  the zonal time scale, G the meridional: 255 T / 10 days (the boxes, smoothed, bilinear)
+      B  0
+so a random flight (a velocity with memory) can read T where it is.
 
 Reading K in a step: a float moving dt days takes a Gaussian step of standard deviation
 sqrt(2 K dt) metres on each axis (2 K t is a variance, so the 30-day cloud of a float's maybes has
@@ -229,6 +232,31 @@ def main():
     def encode(k):
         return np.clip(np.round(255 * np.sqrt(np.clip(k, 0, KMAX) / KMAX)), 0, 255).astype(np.uint8)
     rgb = np.stack([encode(Ku), encode(Kv), np.round(255 * measured).astype(np.uint8)], -1)
+    lat1 = 90 - (np.arange(180) + 0.5)
+    lon1 = -180 + (np.arange(360) + 0.5)
+    def onto1(t):
+        by = np.clip((90 - lat1) / BOX - 0.5, 0, 180 / BOX - 1)
+        bx = (lon1 + 180) / BOX - 0.5
+        y0 = np.floor(by).astype(int)
+        ty = (by - y0)[:, None]
+        y1 = np.minimum(y0 + 1, 180 // BOX - 1)
+        x0 = np.floor(bx).astype(int) % (360 // BOX)
+        tx = (bx - np.floor(bx))[None, :]
+        x1 = (x0 + 1) % (360 // BOX)
+        return ((t[y0][:, x0] * (1 - tx) + t[y0][:, x1] * tx) * (1 - ty)
+                + (t[y1][:, x0] * (1 - tx) + t[y1][:, x1] * tx) * ty)
+    tz, tm = onto1(T['zonal']), onto1(T['meridional'])
+    time_rgb = np.stack([np.clip(np.round(255 * tz / TMAX_DAYS), 0, 255).astype(np.uint8),
+                         np.clip(np.round(255 * tm / TMAX_DAYS), 0, 255).astype(np.uint8),
+                         np.zeros((180, 360), np.uint8)], -1)
+    save('eddy-time.png', tile(time_rgb), 'RGB', {
+        'what': 'the Lagrangian integral time scale, zonal in R and meridional in G',
+        'cells': [360, 180], 'tiles': [1, 1], 'border': 1,
+        'decode': 'byte / 255 * max', 'max': TMAX_DAYS, 'unit': 'days',
+        'source': 'measured from GDP 6-hourly trajectories ' + f'{years[0]}-{years[-1]}' + ' in 10-degree boxes, smoothed',
+        'credit': 'This study used data collected and made freely available by the NOAA Global Drifter '
+                  'Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from '
+                  'https://erddap.aoml.noaa.gov/gdp/erddap/index.html'})
     save('eddy.png', tile(rgb), 'RGB', {
         'what': 'lateral eddy diffusivity, zonal in R and meridional in G, how measured in B',
         'cells': [W, H], 'tiles': [1, 1], 'border': 1,

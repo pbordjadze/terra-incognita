@@ -15,7 +15,7 @@ pub mod sheets;
 mod tests;
 
 pub use drifters::{Drifters, Nearest, Run};
-pub use rules::{Held, Rules, Step};
+pub use rules::{Drift, Flight, Held, Rules, Step};
 pub use sheets::Sea;
 
 /// The GPU mirror of `Rules::step`, for the maybes by the thousand.

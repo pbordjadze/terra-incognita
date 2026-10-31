@@ -136,6 +136,89 @@ impl Rules {
     }
 }
 
+/// A float with the memory of its wander: where it is and the eddy velocity it carries (m/s,
+/// zonal and meridional; zero when first put). The answer to D1 (DEMANDS.md): with this carried
+/// through the step, the wander is a random flight with the drifters' measured time scale.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Drift {
+    pub at: LonLat,
+    pub eddy: (f32, f32),
+}
+
+impl Drift {
+    pub fn put(at: LonLat) -> Drift {
+        Drift { at, eddy: (0.0, 0.0) }
+    }
+}
+
+/// The result of a flight step.
+#[derive(Clone, Copy, Debug)]
+pub struct Flight {
+    pub drift: Drift,
+    pub held: Held,
+    pub measured: f32,
+}
+
+impl Rules {
+    /// One step of `dt_days` with memory: the eddy velocity decays over the measured time scale
+    /// T and is kicked so its variance stays K / T (an Ornstein-Uhlenbeck velocity: Taylor's
+    /// random flight), and the float moves with the mean current, its leeway and that velocity.
+    /// Over times long against T the spread is 2 K t, as `step`'s; within T a float keeps going
+    /// the way it was going, as a drifter does. Deterministic for (drift, day, dt, seed, k).
+    pub fn flight(&self, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
+        let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
+        let day = day as f32;
+        let dt = dt_days as f32;
+        let measured = self.sea.currents.at(day, lon, lat).2;
+        if self.sea.ice.at(day, lon, lat) >= self.ice_hold {
+            return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
+        }
+        let (u, v, _) = self.sea.currents.at(day, lon, lat);
+        let (wu, wv) = self.sea.wind.at(day, lon, lat);
+        let (ku, kv, _) = self.sea.eddy.at(lon, lat);
+        let (tu, tv) = self.sea.eddy_time.at(lon, lat);
+        let secs = dt * SECONDS_A_DAY;
+        let h = hash_seed(seed, k, day.to_bits());
+        let gx = gaussian(h, 0);
+        let gy = gaussian(h, 12);
+        let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
+        let (au, av) = ((-secs / tu).exp(), (-secs / tv).exp());
+        let eu = d.eddy.0 * au + gx * (ku / tu * (1.0 - au * au)).sqrt() * self.wander;
+        let ev = d.eddy.1 * av + gy * (kv / tv * (1.0 - av * av)).sqrt() * self.wander;
+        let dx = (u + self.leeway * wu + eu) * secs;
+        let dy = (v + self.leeway * wv + ev) * secs;
+        let coslat = (lat.to_radians()).cos().max(0.01);
+        let dlon = (dx / (EARTH_RADIUS * coslat)).to_degrees();
+        let dlat = (dy / EARTH_RADIUS).to_degrees();
+        let nlon = wrap(lon + dlon);
+        let nlat = (lat + dlat).clamp(-89.5, 89.5);
+        if self.sea.ice.at(day, nlon, nlat) >= self.ice_hold {
+            return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
+        }
+        let (slon, slat, held) = self.ashore(lon, lat, nlon, nlat);
+        let eddy = if held == Held::Coast { (0.0, 0.0) } else { (eu, ev) };
+        Flight { drift: Drift { at: LonLat { lon: slon as f64, lat: slat as f64 }, eddy }, held, measured }
+    }
+
+    /// A float's maybes with memory, as `maybes` (k = 1..=n), each the flight reached.
+    pub fn flights(&self, from: Drift, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Flight> {
+        (1..=n)
+            .map(|k| {
+                let mut d = from;
+                let mut day = day0;
+                let mut last = Flight { drift: d, held: Held::Free, measured: 1.0 };
+                while day < until - 1e-9 {
+                    let dt = dt_days.min(until - day);
+                    last = self.flight(d, day, dt, seed, k);
+                    d = last.drift;
+                    day += dt;
+                }
+                last
+            })
+            .collect()
+    }
+}
+
 #[inline]
 pub fn wrap(lon: f32) -> f32 {
     (lon + 180.0).rem_euclid(360.0) - 180.0

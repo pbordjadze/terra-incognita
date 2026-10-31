@@ -5,7 +5,7 @@
 
 use super::drifters::distance_km;
 use super::rules::{gaussian, hash_seed, uniform};
-use super::{Drifters, Held, Rules};
+use super::{Drift, Drifters, Held, Rules};
 use crate::model::LonLat;
 use std::path::{Path, PathBuf};
 
@@ -141,4 +141,38 @@ fn the_nearest_real_drifter_is_usually_near() {
     eprintln!("{total} open-sea points: mean nearest {mean:.0} km, {far} beyond 300 km");
     assert!(mean < 150.0, "mean nearest drifter point {mean} km");
     assert!((far as f32) < 0.1 * total as f32, "{far} of {total} points have no drifter within 300 km");
+}
+
+#[test]
+fn the_flight_spreads_as_the_diffusivity_says_and_keeps_its_way() {
+    let mut r = rules();
+    r.leeway = 0.0;
+    let from = LonLat { lon: -40.0, lat: 30.0 };
+    let (ku, kv, _) = r.sea.eddy.at(from.lon as f32, from.lat as f32);
+    let (tu, tv) = r.sea.eddy_time.at(from.lon as f32, from.lat as f32);
+    assert!(tu > 1.0 && tu < 6.0 && tv > 1.0 && tv < 6.0, "time scales of days: {tu}, {tv}");
+    let days = 30.0f32;
+    let ends = r.flights(Drift::put(from), JULY, JULY + days as f64, 0.25, 5, 3000);
+    let coslat = (from.lat as f32).to_radians().cos();
+    let m = 6_371_000.0f32;
+    let xs: Vec<f32> = ends.iter().map(|f| ((f.drift.at.lon - from.lon) as f32).to_radians() * m * coslat).collect();
+    let ys: Vec<f32> = ends.iter().map(|f| ((f.drift.at.lat - from.lat) as f32).to_radians() * m).collect();
+    let var = |v: &[f32]| {
+        let mean = v.iter().sum::<f32>() / v.len() as f32;
+        v.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / v.len() as f32
+    };
+    // Taylor (1921): the variance is 2 K (t - T (1 - exp(-t / T)))
+    let expect = |k: f32, t: f32| 2.0 * k * 86400.0 * (days - t * (1.0 - (-days / t).exp()));
+    let (vx, vy) = (var(&xs), var(&ys));
+    let (ex, ey) = (expect(ku, tu), expect(kv, tv));
+    assert!((vx / ex - 1.0).abs() < 0.2, "zonal spread {} km against {} (K {ku}, T {tu})", vx.sqrt() / 1000.0, ex.sqrt() / 1000.0);
+    assert!((vy / ey - 1.0).abs() < 0.2, "meridional spread {} km against {} (K {kv}, T {tv})", vy.sqrt() / 1000.0, ey.sqrt() / 1000.0);
+    // the carried velocity's variance is K / T
+    let vu = var(&ends.iter().map(|f| f.drift.eddy.0).collect::<Vec<_>>());
+    let eu = ku / (tu * 86400.0);
+    assert!((vu / eu - 1.0).abs() < 0.2, "eddy velocity variance {vu} against K/T {eu}");
+    // and a flight is deterministic
+    let a = r.flight(Drift::put(from), JULY, 0.25, 5, 7);
+    let b = r.flight(Drift::put(from), JULY, 0.25, 5, 7);
+    assert_eq!(a.drift, b.drift);
 }

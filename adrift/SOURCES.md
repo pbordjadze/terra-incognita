@@ -10,7 +10,7 @@ time; everything is bundled.
 | | Measured (the record) | Drawn (our choices) |
 | --- | --- | --- |
 | The current | the month's mean near-surface current in each half-degree cell, from the drifters' climatology (`currents.png`); the stream function solved from it (`stream.png`) | a float moves with the cell's mean current, interpolated between cells and between months by the day of the year |
-| The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.json`) | a random walk: each day a Gaussian step of standard deviation √(2 K dt), so the cloud of a float's maybes spreads as the real drifters' did; the walk is deterministic for a seed, so a float's path can be replayed |
+| The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); deterministic for a seed, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
 | The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below) |
 | The coast | the globe's own signed distance to the shore (`coast.png`) | a float that steps onto land is put back at the water's edge and held there |
 | The ice | each month's usual sea-ice concentration (`ice.png`) | a float is held where the concentration is 15% or more (the Sea Ice Index's own edge) and let go when the month's ice retreats past it |
@@ -49,8 +49,9 @@ time; everything is bundled.
   1,000 in the quiet gyres, tens of thousands in the Gulf Stream, Kuroshio, Agulhas and the equatorial bands. Honest limits:
   the box time scale is smoothed over about 15°; in the jets the variance holds the current's own
   meandering as well as its eddies (Zhurbas and Oh's shear correction is not made) and K is
-  capped at 40,000 m²/s in the sheet; the random walk has no memory, so over a day or two a float
-  wanders a little more than a real drifter, whose velocity stays correlated for T.
+  capped at 40,000 m²/s in the sheet. Checked against the record: of the bundled drifters that
+  passed Cape Hatteras, half were east of 65° W thirty days on (median 64.8° W); of 500 flights
+  put there in a typical July, 46% are (median 65.9° W), with 6 on a coast.
 - **The wind.** The NCEP/NCAR Reanalysis 1 (Kalnay, E. et al. (1996), *The NCEP/NCAR 40-Year
   Reanalysis Project*, Bull. Amer. Meteor. Soc. 77, 437–471), its long-term monthly means of the
   10 m wind over 1991–2020, from NOAA PSL (public domain; "NCEP/NCAR Reanalysis 1 data provided by

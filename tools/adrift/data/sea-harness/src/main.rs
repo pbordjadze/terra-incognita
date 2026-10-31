@@ -30,5 +30,11 @@ fn main() {
     let coast = ends.iter().filter(|s| s.held == sea::Held::Coast).count();
     let mut lons: Vec<f64> = ends.iter().map(|s| s.at.lon).collect();
     lons.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    println!("maybes after 30 days: {} of 500 east of 65 W, {} on a coast, median {:.1}", east, coast, lons[250]);
+    println!("walk's maybes after 30 days: {} of 500 east of 65 W, {} on a coast, median {:.1}", east, coast, lons[250]);
+    let ends = rules.flights(sea::Drift::put(from), july, july + 30.0, 0.25, 11, 500);
+    let east = ends.iter().filter(|f| f.drift.at.lon >= -65.0).count();
+    let coast = ends.iter().filter(|f| f.held == sea::Held::Coast).count();
+    let mut lons: Vec<f64> = ends.iter().map(|f| f.drift.at.lon).collect();
+    lons.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    println!("flight's maybes after 30 days: {} of 500 east of 65 W, {} on a coast, median {:.1}", east, coast, lons[250]);
 }

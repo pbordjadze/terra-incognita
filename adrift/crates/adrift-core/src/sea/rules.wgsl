@@ -26,6 +26,8 @@ struct Path {
     lat: f32,
     held: u32,         // 0 free, 1 coast, 2 ice
     measured: f32,
+    eddy_u: f32,       // the eddy velocity a flight carries (m/s); the walk leaves it alone
+    eddy_v: f32,
 };
 
 @group(0) @binding(0) var<uniform> params: Params;
@@ -35,6 +37,7 @@ struct Path {
 @group(0) @binding(4) var ice: texture_2d<f32>;        // r8unorm, 5768 x 2166
 @group(0) @binding(5) var coast: texture_2d<f32>;      // rg8unorm, 4096 x 2048
 @group(0) @binding(6) var<storage, read_write> paths: array<Path>;
+@group(0) @binding(7) var eddy_time: texture_2d<f32>;  // rgba8unorm, 362 x 182
 
 const EARTH_RADIUS: f32 = 6371000.0;
 const SECONDS_A_DAY: f32 = 86400.0;
@@ -42,6 +45,7 @@ const PI: f32 = 3.14159265358979;
 const VMAX: f32 = 2.0;
 const WMAX: f32 = 16.0;
 const KMAX: f32 = 40000.0;
+const TMAX: f32 = 10.0;
 const COAST_PX: f32 = 360.0 / 4096.0;
 
 // --- the hash and the draws (rules.rs: mix, hash_seed, uniform (draw here), gaussian) ---
@@ -145,6 +149,11 @@ fn eddy_at(lon: f32, lat: f32) -> vec3<f32> {
     return vec3<f32>(su * su * KMAX, sv * sv * KMAX, tiled(eddy, 720.0, 360.0, 0u, 2u, lon, lat) / 255.0);
 }
 
+// (T zonal, T meridional) in days
+fn eddy_time_at(lon: f32, lat: f32) -> vec2<f32> {
+    return vec2<f32>(tiled(eddy_time, 360.0, 180.0, 0u, 0u, lon, lat), tiled(eddy_time, 360.0, 180.0, 0u, 1u, lon, lat)) / 255.0 * TMAX;
+}
+
 fn ice_at(day: f32, lon: f32, lat: f32) -> f32 {
     let mo = months(day);
     return (tiled(ice, 1440.0, 720.0, mo.a, 0u, lon, lat) * (1.0 - mo.t)
@@ -202,13 +211,13 @@ fn ashore(lon: f32, lat: f32, nlon: f32, nlat: f32) -> Shore {
     return Shore(lon, lat, 1u);
 }
 
-fn step(lon: f32, lat: f32, k: u32) -> Path {
+fn step(lon: f32, lat: f32, eu: f32, ev: f32, k: u32) -> Path {
     let day = params.day;
     let dt = params.dt;
     let cur = current_at(day, lon, lat);
     let measured = cur.z;
     if (ice_at(day, lon, lat) >= params.ice_hold) {
-        return Path(lon, lat, 2u, measured);
+        return Path(lon, lat, 2u, measured, eu, ev);
     }
     let w = wind_at(day, lon, lat);
     let kk = eddy_at(lon, lat);
@@ -224,10 +233,48 @@ fn step(lon: f32, lat: f32, k: u32) -> Path {
     let nlon = wrap(lon + dlon);
     let nlat = clamp(lat + dlat, -89.5, 89.5);
     if (ice_at(day, nlon, nlat) >= params.ice_hold) {
-        return Path(lon, lat, 2u, measured);
+        return Path(lon, lat, 2u, measured, eu, ev);
     }
     let s = ashore(lon, lat, nlon, nlat);
-    return Path(s.lon, s.lat, s.held, measured);
+    return Path(s.lon, s.lat, s.held, measured, eu, ev);
+}
+
+// The step with memory (rules.rs: flight): an Ornstein-Uhlenbeck eddy velocity with the measured
+// time scale, kicked so its variance stays K / T.
+fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
+    let day = params.day;
+    let dt = params.dt;
+    let cur = current_at(day, lon, lat);
+    let measured = cur.z;
+    if (ice_at(day, lon, lat) >= params.ice_hold) {
+        return Path(lon, lat, 2u, measured, 0.0, 0.0);
+    }
+    let w = wind_at(day, lon, lat);
+    let kk = eddy_at(lon, lat);
+    let tt = max(eddy_time_at(lon, lat), vec2<f32>(0.25, 0.25)) * SECONDS_A_DAY;
+    let secs = dt * SECONDS_A_DAY;
+    let h = hash_seed(params.seed_lo, params.seed_hi, k, bitcast<u32>(day));
+    let gx = gaussian(h, 0u);
+    let gy = gaussian(h, 12u);
+    let au = exp(-secs / tt.x);
+    let av = exp(-secs / tt.y);
+    let eu = eu0 * au + gx * sqrt(kk.x / tt.x * (1.0 - au * au)) * params.wander;
+    let ev = ev0 * av + gy * sqrt(kk.y / tt.y * (1.0 - av * av)) * params.wander;
+    let dx = (cur.x + params.leeway * w.x + eu) * secs;
+    let dy = (cur.y + params.leeway * w.y + ev) * secs;
+    let coslat = max(cos(lat * PI / 180.0), 0.01);
+    let dlon = dx / (EARTH_RADIUS * coslat) * 180.0 / PI;
+    let dlat = dy / EARTH_RADIUS * 180.0 / PI;
+    let nlon = wrap(lon + dlon);
+    let nlat = clamp(lat + dlat, -89.5, 89.5);
+    if (ice_at(day, nlon, nlat) >= params.ice_hold) {
+        return Path(lon, lat, 2u, measured, 0.0, 0.0);
+    }
+    let s = ashore(lon, lat, nlon, nlat);
+    if (s.held == 1u) {
+        return Path(s.lon, s.lat, 1u, measured, 0.0, 0.0);
+    }
+    return Path(s.lon, s.lat, 0u, measured, eu, ev);
 }
 
 @compute @workgroup_size(64)
@@ -237,5 +284,15 @@ fn maybes(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
     let p = paths[i];
-    paths[i] = step(p.lon, p.lat, i + 1u);
+    paths[i] = step(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
+}
+
+@compute @workgroup_size(64)
+fn maybes_flight(@builtin(global_invocation_id) id: vec3<u32>) {
+    let i = id.x;
+    if (i >= params.count) {
+        return;
+    }
+    let p = paths[i];
+    paths[i] = flight(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
 }
