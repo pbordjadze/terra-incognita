@@ -134,8 +134,10 @@ pub const RATE: f64 = 2.0;
 const SUBSTEP: f64 = 0.25;
 /// Beads kept in a wake.
 const WAKE_MAX: usize = 400;
-/// Maybes run for a held float.
-pub const MAYBES: u32 = 2048;
+/// Maybes run for a held float, and their step: 512 at a half day tell the shape 8192 at a quarter
+/// day do (Truth's budget, SOURCES.md › How many maybes); a whole day is not honest in a jet.
+pub const MAYBES: u32 = 512;
+const MAYBES_STEP: f64 = 0.5;
 
 impl App {
     pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> anyhow::Result<App> {
@@ -434,7 +436,7 @@ impl App {
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], wake: Vec::new(), lit_for: 0.0 });
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), lit_for: 0.0 });
         self.stepped.insert(id, self.clock.day);
         id
     }
@@ -615,11 +617,12 @@ impl App {
                 f.at = s.drift.at;
                 f.eddy = [s.drift.eddy.0, s.drift.eddy.1];
                 f.held = s.held;
+                f.measured = s.measured;
                 t += dt;
                 if (t - next_day_mark).abs() < 1e-6 {
                     t = next_day_mark;
                     if f.wake.last().map_or(true, |b| b.day < next_day_mark - 0.5) {
-                        f.wake.push(Bead { at: f.at, day: t });
+                        f.wake.push(Bead { at: f.at, day: t, measured: f.measured });
                         if f.wake.len() > WAKE_MAX {
                             f.wake.remove(0);
                         }
@@ -809,7 +812,7 @@ impl App {
                     let mut day = put_day;
                     let mut steps = 0;
                     while day < self.clock.day - 1e-6 && steps < 2000 {
-                        let dt = SUBSTEP.min(self.clock.day - day);
+                        let dt = MAYBES_STEP.min(self.clock.day - day);
                         self.maybes.step(&self.gpu, Params::new(&self.rules, day, dt, seed, n), true);
                         day += dt;
                         steps += 1;
