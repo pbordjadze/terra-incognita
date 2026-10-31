@@ -151,6 +151,18 @@ takes touches: the note and the credits are words the globe is touched through. 
 thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
 0.4–0.8, the lamp 0.5–1).
 
+### D3 Motion → Engineering (R3)  [open]
+I need anything in [the web shell (`adrift-web/src/lib.rs`) routing its wheel through
+`App::wheel(x, y, factor)` with the cursor's position, and its keys through `App::key`: ⌘Z or
+Ctrl-Z undo, ⇧⌘Z, Ctrl-Shift-Z or ⌘Y/Ctrl-Y redo (a bare `z` may stay as an alias; space and the
+arrows for the date may stay)] so that on the web what is under the cursor stays under it as the
+wheel zooms (as a pinch does on the device), a wheel stops a fling as a touch does, and undo has
+its mirror, as VOCABULARY › What the shells owe says.
+It works when, in the web build, a wheel over Iceland keeps Iceland under the cursor at every
+zoom, and ⌘Z then ⇧⌘Z take a put float away and bring it back.
+I could give back: the modifier rule (any `z`/`y` without a text field is harmless) if the
+shell's key handling must stay one match; the anchoring is the part that matters.
+
 ## Answered
 
 (none yet)
