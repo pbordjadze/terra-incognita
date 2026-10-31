@@ -162,3 +162,45 @@ under a real finger) are not in yet; this entry is reopened when they are.
 **Holt:** nothing new to penalise; the ride on a fast float is now a thing you can watch rather
 than chase. The device will say whether the beat is felt and whether a fling toward the pole feels
 like a wheel. Verdict withheld until it does.
+
+## R4 (October 31, 2026): the owner's first words, answered on the Linux build
+
+The first device verdict came as words, not captures: "really cool and my favorite thing so far";
+"no UI to change anything and the date controls aren't super intuitive at first"; "can't reset the
+globe or clear all the lamps no matter how hard I try"; "picking up a lamp to see the maybes just
+isn't natural yet". Judged here: the 31 plans on `adrift` at 5cd8398 with this round's gestures,
+`critics/r4-home.jpg` (the camera a third of the way home after an over-pinch) and `r4-flick.jpg`
+(the date running on after a flick, "held" beneath it, no finger down). The fling toward the pole
+and the beat under a finger are still unanswered by the device.
+
+**The hater** (a fourth, who read the owner's words first):
+- *He tried hard and found nothing, and two of the four new routes are still things nobody finds.*
+  Three-finger swipes up and down are for a hand that already knows iOS's three-finger family;
+  the hater grants them as the mirror of undo and redo but not as discovery. What a hand does on
+  its own: pinch the globe all the way out and keep squeezing (home: `home.json`, the camera flies
+  to the opening view, 0.7 s eased), and shake again when one shake was not enough (clear:
+  `clear.json`, every float out as one touch, undo brings all back). Those two are the answer; the
+  three-finger ones are the family. The device will say whether "keep squeezing" is what he does.
+- *A second shake clearing the sea is one shake away from a disaster* if the system ever delivers
+  one shake twice. The window (0.4–2 s after the first) is the guard; the undo is the net. Watch
+  it on the device: if a single vigorous shake clears, the window moves to 0.6 s.
+- *The date's flick is the first thing on the date a hand will like* (`date-flick.json`: the date
+  runs on and slows, a touch stops it, the word "held" stays); but the band still looks like a
+  caption, which is the owner's whole complaint. Motion cannot draw; D8 asks Visual for the band
+  to answer the finger within a frame.
+- *Picking up a float still shows nothing for 0.4 s.* The hater's R2 point, now the owner's. D7
+  asks for `PressFloat` so the maybes rise from the finger's landing; until it lands, a hold is a
+  wait, and this round's build has not fixed it. Reach is 22 points; not the problem.
+- Not failed: the three new gestures leave the 28 earlier plans passing; home ends a ride; clear
+  is one undoable touch; a touch stops the flicked date as it stops the globe.
+
+**Holt:**
+- *Undo without penalty*: clearing the sea is one touch and one undo gives it all back; home moves
+  the camera only, never a float. The owner's "no matter how hard I try" is the real penalty: he
+  was never told, and nothing marks; this round answers with what a hand does by itself (squeeze
+  past the end; shake again), which Holt accepts as the right kind of answer and the device must
+  confirm.
+- *Wander, stop, leave*: unchanged; the flick makes the date a thing to play with rather than a
+  setting.
+- Verdict: the vocabulary now has a way out of everything (home, clear) and a way back from both;
+  what it lacks is still the look's answer under the finger (D7, D8). Reopened for the captures.

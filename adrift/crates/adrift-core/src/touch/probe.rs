@@ -45,7 +45,7 @@ impl Probe for App {
     }
     fn frame(&self) -> Frame {
         let v = self.view();
-        Frame { width: v.width as f64 / v.ppp, height: v.height as f64 / v.ppp, reading: v.reading, disc: v.disc }
+        Frame { width: v.width as f64 / v.ppp, height: v.height as f64 / v.ppp, reading: v.reading, disc: v.disc, zoom: v.camera.zoom }
     }
     fn motion(&self) -> Motion {
         Motion { reduce: self.reduce_motion }

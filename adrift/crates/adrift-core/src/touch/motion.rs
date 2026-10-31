@@ -34,8 +34,17 @@ pub const ZOOM_MIN: f64 = 0.8;
 pub const ZOOM_MAX: f64 = 8.0;
 /// The camera's centre never passes this latitude: the pole never flips.
 pub const LAT_LIMIT: f64 = 80.0;
-/// A three-finger swipe this far is undo (left) or redo (right).
+/// A three-finger swipe this far is undo (left), redo (right), home (up) or clear the sea (down).
 pub const SWIPE: f64 = 40.0;
+/// Pinching out past the whole globe: when the fingers would have taken the zoom this far below
+/// its least (as a fraction of it), letting go flies the camera home.
+pub const OVERPINCH: f64 = 0.75;
+/// A second shake this soon after the first (seconds, at least and at most) clears the sea; one
+/// shake alone undoes the last touch.
+pub const SHAKE_AGAIN: (f64, f64) = (0.4, 2.0);
+/// A flick on the date keeps it running, slowing by the fling's decay, and rests under this many
+/// days a second.
+pub const DATE_SPIN_REST: f64 = 2.0;
 /// The date's stand-in band (the look's `date_bounds` replaces it): its baseline lies this many
 /// reading points below the disc's bottom edge, never lower than `DATE_FOOT` points above the
 /// screen's foot (the look's rule); the band is `DATE_BAND` points tall about the glyphs.

@@ -37,6 +37,10 @@ impl Hit {
 pub enum Key {
     Undo,
     Redo,
+    /// `h` or `0`: the camera flies home.
+    Home,
+    /// Backspace or Delete: every float out, as one touch.
+    ClearAll,
 }
 
 /// The screen as drawn this frame, in points: its size, the reading scale, the disc.
@@ -47,6 +51,8 @@ pub struct Frame {
     /// Terra's reading scale: 1 on a phone, 1.2 on the 13-inch iPad; slop and reach grow with it.
     pub reading: f64,
     pub disc: Disc,
+    /// The camera's zoom as drawn (the over-pinch is measured against its least).
+    pub zoom: f64,
 }
 
 /// A rectangle of the screen, points.
@@ -118,9 +124,11 @@ enum State {
     Holding { id: u64, x0: f64, y0: f64, float: Option<u32>, from: LonLat, carried: bool, over: Hit },
     /// The globe's drag: the finger, and the point of the globe it took.
     Orbit { id: u64, x: f64, y: f64, grab: Option<LonLat> },
-    Pinch { a: u64, b: u64 },
-    /// Three fingers: waiting for a swipe.
-    Three { x0: f64, done: bool },
+    /// Two fingers; `zoom0` the zoom when they landed and `scale` their distance's ratio since,
+    /// so a pinch out past the whole globe can be known at the lift.
+    Pinch { a: u64, b: u64, zoom0: f64, scale: f64 },
+    /// Three fingers: waiting for a swipe (left undo, right redo, up home, down clear the sea).
+    Three { x0: f64, y0: f64, done: bool },
     DateDown { id: u64, x0: f64, t0: f64, day: f64, scrubbing: bool },
     /// A finger down on the credit line, or anywhere while the page of credits is open: a tap
     /// toggles the page; a drag is the globe's.
@@ -133,8 +141,14 @@ pub struct Gestures {
     fingers: BTreeMap<u64, Finger>,
     /// The last tap's lift, for a double tap.
     last_tap: Option<(f64, f64, f64)>,
-    /// The drag's last samples, for the fling.
+    /// The drag's last samples, for the fling (and a scrub's, for the date's flick).
     samples: VecDeque<(f64, f64, f64)>,
+    /// The date running on after a flick, days a second.
+    date_spin: f64,
+    /// The last shake, for a second one that clears the sea.
+    last_shake: Option<f64>,
+    /// The clock as last seen, for the shake and the flick.
+    now: f64,
 }
 
 impl Default for Gestures {
@@ -145,7 +159,7 @@ impl Default for Gestures {
 
 impl Gestures {
     pub fn new() -> Gestures {
-        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new() }
+        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, last_shake: None, now: 0.0 }
     }
 
     /// The app answers `Intent::Put` with the float it made, so the finger goes on holding it.
@@ -200,11 +214,17 @@ impl Gestures {
         motion::SLOP * probe.frame().reading
     }
 
-    /// Undo by the system's shake (the device).
+    /// The system's shake (the device): one shake undoes the last touch; a second within
+    /// `SHAKE_AGAIN` of the first clears the sea (every float out as one touch, undoable).
     pub fn shaken(&mut self) -> Out {
         let mut out = Out::default();
         if matches!(self.state, State::Idle) {
-            out.intents.push(Intent::Undo);
+            let again = self.last_shake.is_some_and(|t| {
+                let dt = self.now - t;
+                dt >= motion::SHAKE_AGAIN.0 && dt <= motion::SHAKE_AGAIN.1
+            });
+            out.intents.push(if again { Intent::ClearAll } else { Intent::Undo });
+            self.last_shake = Some(self.now);
         }
         out
     }
@@ -216,6 +236,8 @@ impl Gestures {
             out.intents.push(match key {
                 Key::Undo => Intent::Undo,
                 Key::Redo => Intent::Redo,
+                Key::Home => Intent::Home,
+                Key::ClearAll => Intent::ClearAll,
             });
         }
         out
@@ -246,7 +268,10 @@ impl Gestures {
 
     fn down(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
         self.fingers.insert(e.id, Finger { x: e.x, y: e.y });
+        self.now = e.t;
         out.camera.push(CameraMove::Stop);
+        // a touch stops the date's flick, as it stops the globe's
+        self.date_spin = 0.0;
         let n = self.fingers.len();
         match (self.state, n) {
             (State::Idle, 1) => {
@@ -275,11 +300,11 @@ impl Gestures {
                 if matches!(self.state, State::Pressing { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
-                self.state = State::Pinch { a: id, b: e.id };
+                self.state = State::Pinch { a: id, b: e.id, zoom0: probe.frame().zoom, scale: 1.0 };
             }
             // a third finger ends the pinch where it is and waits for a swipe
             (State::Pinch { .. }, 3) => {
-                self.state = State::Three { x0: self.mean_x(), done: false };
+                self.state = State::Three { x0: self.mean_x(), y0: self.mean_y(), done: false };
             }
             // a float in hand, or the date: more fingers are ignored
             _ => {}
@@ -289,6 +314,10 @@ impl Gestures {
     fn mean_x(&self) -> f64 {
         let n = self.fingers.len().max(1) as f64;
         self.fingers.values().map(|f| f.x).sum::<f64>() / n
+    }
+    fn mean_y(&self) -> f64 {
+        let n = self.fingers.len().max(1) as f64;
+        self.fingers.values().map(|f| f.y).sum::<f64>() / n
     }
 
     fn moved(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
@@ -332,19 +361,26 @@ impl Gestures {
                 self.sample(e);
                 self.state = State::Orbit { id, x: e.x, y: e.y, grab };
             }
-            State::Pinch { a, b } if e.id == a || e.id == b => {
+            State::Pinch { a, b, zoom0, scale } if e.id == a || e.id == b => {
                 let other = self.fingers[&if e.id == a { b } else { a }];
                 let d0 = (prev.x - other.x).hypot(prev.y - other.y).max(1.0);
                 let d1 = (e.x - other.x).hypot(e.y - other.y).max(1.0);
                 let (ax, ay) = ((prev.x + other.x) / 2.0, (prev.y + other.y) / 2.0);
                 let (bx, by) = ((e.x + other.x) / 2.0, (e.y + other.y) / 2.0);
                 out.camera.push(CameraMove::Pinch { grab: probe.hit(ax, ay).place(), ax, ay, bx, by, factor: d1 / d0 });
+                self.state = State::Pinch { a, b, zoom0, scale: scale * d1 / d0 };
             }
-            State::Three { x0, done: false } => {
-                let dx = self.mean_x() - x0;
-                if dx.abs() >= motion::SWIPE {
-                    out.intents.push(if dx < 0.0 { Intent::Undo } else { Intent::Redo });
-                    self.state = State::Three { x0, done: true };
+            State::Three { x0, y0, done: false } => {
+                let (dx, dy) = (self.mean_x() - x0, self.mean_y() - y0);
+                if dx.abs() >= motion::SWIPE || dy.abs() >= motion::SWIPE {
+                    out.intents.push(if dx.abs() >= dy.abs() {
+                        if dx < 0.0 { Intent::Undo } else { Intent::Redo }
+                    } else if dy < 0.0 {
+                        Intent::Home
+                    } else {
+                        Intent::ClearAll
+                    });
+                    self.state = State::Three { x0, y0, done: true };
                 }
             }
             State::DateDown { id, x0, t0, day, scrubbing } if id == e.id => {
@@ -352,7 +388,9 @@ impl Gestures {
                 if scrubbing || dx.abs() > slop {
                     if !scrubbing {
                         out.intents.push(Intent::SetRunning { running: false });
+                        self.samples.clear();
                     }
+                    self.sample(e);
                     let to = day + dx * motion::days_per_point(probe.frame().width);
                     let now = probe.day();
                     if (to - now).abs() > 1e-9 {
@@ -441,7 +479,13 @@ impl Gestures {
                 }
                 self.state = State::Idle;
             }
-            State::Pinch { a, b } if e.id == a || e.id == b => {
+            State::Pinch { a, b, zoom0, scale } if e.id == a || e.id == b => {
+                // pinched out past the whole globe and let go: the camera flies home
+                if zoom0 * scale < motion::ZOOM_MIN * motion::OVERPINCH {
+                    out.intents.push(Intent::Home);
+                    self.state = State::Idle;
+                    return;
+                }
                 // the drag goes on with the other finger, anchored where it is now
                 let rest = if e.id == a { b } else { a };
                 let f = self.fingers[&rest];
@@ -456,6 +500,10 @@ impl Gestures {
             State::DateDown { id, scrubbing, .. } if id == e.id => {
                 if !scrubbing {
                     out.intents.push(Intent::SetRunning { running: !probe.running() });
+                } else if !probe.motion().reduce {
+                    // let go moving: the date runs on, slowing (a flick)
+                    let (vx, _) = self.velocity(e.t);
+                    self.date_spin = vx * motion::days_per_point(probe.frame().width);
                 }
                 self.state = State::Idle;
             }
@@ -514,7 +562,7 @@ impl Gestures {
                 }
                 self.state = State::Idle;
             }
-            State::Pinch { a, b } if e.id == a || e.id == b => {
+            State::Pinch { a, b, .. } if e.id == a || e.id == b => {
                 let rest = if e.id == a { b } else { a };
                 match self.fingers.get(&rest).copied() {
                     Some(f) => self.state = State::Orbit { id: rest, x: f.x, y: f.y, grab: None },
@@ -553,12 +601,22 @@ impl Gestures {
         }
     }
 
-    /// Every frame: the beat elapsing under a resting finger.
+    /// Every frame: the beat elapsing under a resting finger; the date running on after a flick.
     pub fn tick(&mut self, now: f64, probe: &dyn Probe) -> Out {
         let mut out = Out::default();
+        let dt = (now - self.now).clamp(0.0, 0.05);
+        self.now = now;
         match self.state {
             State::Pressing { t0, .. } | State::Resting { t0, .. } if now - t0 >= motion::BEAT => self.rest_elapsed(probe, &mut out),
             _ => {}
+        }
+        if self.date_spin != 0.0 && self.fingers.is_empty() {
+            if self.date_spin.abs() < motion::DATE_SPIN_REST {
+                self.date_spin = 0.0;
+            } else if dt > 0.0 {
+                out.intents.push(Intent::Scrub { days: self.date_spin * dt });
+                self.date_spin = motion::fling_decay(self.date_spin, dt);
+            }
         }
         out
     }

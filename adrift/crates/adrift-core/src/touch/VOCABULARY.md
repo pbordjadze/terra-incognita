@@ -19,6 +19,9 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | tap | the credit line | the page of credits opens; any tap while it is open closes it |
 | three-finger swipe left · shake · ⌘Z | | undo the last touch; nothing else moves |
 | three-finger swipe right · ⇧⌘Z | | redo it |
+| three-finger swipe down · a second shake within two seconds · Backspace | | clear the sea: every float out as one touch (undo brings them all back) |
+| pinch out past the whole globe and let go · three-finger swipe up · `h` | | the camera flies home, to the opening view |
+| flick the date | | it runs on, slowing to rest; a touch stops it |
 
 ## Inputs
 
@@ -63,6 +66,9 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
 | `Redo` | a three-finger swipe right, ⇧⌘Z |
+| `ClearAll` | a three-finger swipe down; a second shake 0.4–2 s after the first; Backspace or Delete |
+| `Home` | a pinch that would have taken the zoom below three quarters of its least, at the lift; a three-finger swipe up; `h` or `0` |
+| `Scrub { days }` (again) | every frame after a flick on the date, by the flick's speed decaying as a fling does (`DATE_SPIN_REST` stops it); any touch stops it at once |
 | `ToggleCredits` | a tap on the credit line (`Hit::Credits`, the look's `credit_bounds`); while the page is open, a tap anywhere but the date |
 
 Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
@@ -109,15 +115,16 @@ Orbit{last, samples}
  ├─ second finger Down ────────────▶ Pinch
  └─ Cancel ────────────────────────▶ Idle            no fling
 
-Pinch{a, b}
+Pinch{a, b, zoom0, scale}
  ├─ Move ──────────────────────────▶ Pinch           zoom by the distance's ratio, clamped; the point under
- │                                                  the fingers' midpoint stays under it (two passes)
+ │                                                  the fingers' midpoint stays under it; scale remembered
+ ├─ one finger Up, zoom0·scale < 0.75·ZOOM_MIN ──▶ Idle   emits Home: pinched out past the whole globe
  ├─ one finger Up ─────────────────▶ Orbit           with the remaining finger, anchored where it is now
  ├─ third finger Down ─────────────▶ Three{x0}       the pinch ends where it is
  └─ Cancel ────────────────────────▶ Idle
 
-Three{x0}
- ├─ the fingers' mean x moves ≥ SWIPE left ─▶ emits Undo once; right ─▶ Redo once
+Three{x0, y0}
+ ├─ the fingers' mean moves ≥ SWIPE: left ─▶ Undo once; right ─▶ Redo; up ─▶ Home; down ─▶ ClearAll
  └─ all Up / Cancel ───────────────▶ Idle
 
 CreditsDown{x0,y0}          (Down on the credit line; or Down anywhere but the date while the page is open)
@@ -128,6 +135,7 @@ CreditsDown{x0,y0}          (Down on the credit line; or Down anywhere but the d
 DateDown{x0}
  ├─ Move beyond SLOP ──────────────▶ Scrubbing       emits Play(false) once, then Scrub{day} by dx
  ├─ Up within SLOP ────────────────▶ Idle            emits Play(!playing)   (the probe says if playing)
+ ├─ Up while scrubbing, moving ────▶ Idle            the date runs on at the finger's speed, slowing (a flick)
  ├─ second finger Down ────────────▶ DateDown        (ignored)
  └─ Cancel ────────────────────────▶ Idle
 ```
@@ -202,6 +210,19 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     and nothing else happens (no ring, no float: the beat waits for the page to go), a drag is the
     globe's and a drag on the date scrubs, as ever. `plans/credits.json`.
 
+20. **Clearing the sea and going home** (R4, the owner's "can't reset the globe or clear all the
+    lamps"): both are reached two ways, one a hand does on its own and one in the family of the
+    three-finger take-backs. Home: pinch the globe out past the whole Earth and keep on (the zoom
+    stops at its least but the fingers' closing is counted; letting go with the would-be zoom below
+    three quarters of it flies the camera to the opening view, the ride ended), or a three-finger
+    swipe up; `h` or `0` on the web. Clear: a three-finger swipe down, or a second shake 0.4–2 s
+    after the first (one shake undoes one touch, as always; a vigorous single shake never arrives
+    twice within 0.4 s), or Backspace on the web. Clearing is one touch: undo brings every float
+    back, redo clears again. Nothing marks, nothing waits; the double tap keeps its zoom-in.
+21. **A flick on the date** runs it on at the finger's speed, slowing by the fling's decay to rest
+    under two days a second; any touch stops it at once (as a touch stops the globe); under Reduce
+    Motion the date stops where the finger leaves it.
+
 ## The numbers (`motion.rs`)
 
 | | | why |
@@ -219,3 +240,6 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 | `SWIPE` | 40 pt | three-finger undo |
 | `DAYS_PER_POINT` | 365 / width, ≥ 1 | a year across the screen |
 | `DATE_BELOW_DISC`, `DATE_FOOT`, `DATE_BAND` | 40, 72, 44 pt | the stand-in date band: under the disc, above the foot, its height |
+| `OVERPINCH` | 0.75 | a pinch out that would have taken the zoom below this fraction of its least goes home |
+| `SHAKE_AGAIN` | 0.4–2.0 s | a second shake in this window clears the sea |
+| `DATE_SPIN_REST` | 2 days/s | a flicked date rests under this |
