@@ -36,7 +36,7 @@
     "bead_edge":   {"hex": "#F0A040", "alpha": 0.0, "is": "no edge by night: the bead is its own light"},
     "maybe":       {"hex": "#E9D3AE", "alpha": 0.45, "rule": "mark", "against": ["sea", "deep"]},
     "maybe_core":  {"hex": "#E9D3AE", "alpha": 0.0},
-    "silver":      {"hex": "#DCE3EA", "rule": "mark", "against": ["sea", "deep"]},
+    "silver":      {"hex": "#E6E0D6", "rule": "mark", "against": ["sea", "deep"], "is": "a hair warmer than the running light by night, so the two are not one thread"},
     "silver_edge": {"hex": "#DCE3EA", "alpha": 0.0},
     "ring":        {"hex": "#FFFFFF", "alpha": 0.7},
     "ring_shade":  {"hex": "#000000", "alpha": 0.0},
