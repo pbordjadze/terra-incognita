@@ -138,7 +138,7 @@ pub struct App {
     /// Every leg's path as computed so far (R5): a float's place at any date is read here.
     paths: std::collections::HashMap<(u32, usize), Path>,
     /// Keeps of the shown float's maybes, oldest first, and the day the next is due.
-    keeps: Vec<Keep>,
+    keeps: Vec<Kept>,
     next_keep: f64,
     pub reduce_motion: bool,
     /// The system's dark appearance: the look's night (the shells set it).
@@ -192,10 +192,10 @@ struct Path {
     samples: Vec<Sample>,
 }
 
-/// A keep of the maybes' paths buffer at a day (R5).
-struct Keep {
+/// A keep of the maybes' paths at a day (R5; Truth's `Maybes::keep`).
+struct Kept {
     day: f64,
-    buffer: wgpu::Buffer,
+    keep: crate::sea::Keep,
 }
 
 /// The next quarter-day mark after `t` (t itself on the grid: the one after it).
@@ -429,10 +429,8 @@ impl App {
         }
         let day = self.clock.day;
         match intent {
-            Intent::Ring { at } => {
-                self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 });
-                self.chosen = None;
-            }
+            // (D10: a ring at touch-down keeps the choice; `Unchoose` is the tap's carrier)
+            Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
             Intent::Choose { float } => {
                 if self.floats.iter().any(|f| f.id == float) {
                     self.chosen = Some(float);
@@ -1021,10 +1019,7 @@ impl App {
                     let keep = if same { self.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
                     match keep {
                         Some(k) => {
-                            let size = self.keeps[k].buffer.size();
-                            let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("maybes restore") });
-                            enc.copy_buffer_to_buffer(&self.keeps[k].buffer, 0, self.maybes.buffer(), 0, size);
-                            self.gpu.queue.submit([enc.finish()]);
+                            self.maybes.restore(&self.gpu, &self.keeps[k].keep);
                             reached = self.keeps[k].day;
                             self.keeps.truncate(k + 1);
                             self.next_keep = reached + KEEP_EVERY;
@@ -1044,24 +1039,26 @@ impl App {
                         }
                     }
                 }
+                // the frame's steps in one submit (Truth's step_many), a keep where one falls due
                 let mut steps = 0;
+                let mut batch: Vec<Params> = Vec::new();
                 while reached < target - 1e-6 && steps < MAYBES_BUDGET {
                     let dt = MAYBES_STEP.min(target - reached);
-                    self.maybes.step(&self.gpu, Params::new(&self.rules, reached, dt, leg.seed, n), true);
+                    batch.push(Params::new(&self.rules, reached, dt, leg.seed, n));
                     reached += dt;
                     steps += 1;
                     if reached >= self.next_keep - 1e-9 {
-                        let size = self.maybes.buffer().size();
-                        let buffer = self.gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some("maybes keep"), size, usage: wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-                        let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("maybes keep") });
-                        enc.copy_buffer_to_buffer(self.maybes.buffer(), 0, &buffer, 0, size);
-                        self.gpu.queue.submit([enc.finish()]);
-                        self.keeps.push(Keep { day: reached, buffer });
+                        self.maybes.step_many(&self.gpu, &batch, true);
+                        batch.clear();
+                        self.keeps.push(Kept { day: reached, keep: self.maybes.keep(&self.gpu, n) });
                         if self.keeps.len() > KEEPS_MAX {
                             self.keeps.remove(0);
                         }
                         self.next_keep = reached + KEEP_EVERY;
                     }
+                }
+                if !batch.is_empty() {
+                    self.maybes.step_many(&self.gpu, &batch, true);
                 }
                 self.maybes_of = Some((id, n, reached));
             }
