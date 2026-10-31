@@ -10,7 +10,7 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | rest a beat | the sea | the ring thickens into a float, held under your finger; lift and the sea has it |
 | rest a beat | a float | you hold it: its maybes bloom, the nearest drifter rises; lift and they fold back |
 | rest, then drag | a float (or the one just put) | you carry it: set it down on other water, or off the rim and it is taken out |
-| tap | a float | you ride it: the camera drifts with it, until any drag; its maybes rise from the moment the finger lands and stay out while you ride |
+| tap | a float | you choose it and ride it: the camera drifts with it until any drag or pinch, which end the ride and keep the choice (its maybes stay out); tap it again and the ride lets go, the choice stays; tap the open sea and the choice goes |
 | drag (before the beat) | anything | the globe turns; let go moving and it flings |
 | two fingers | anything | zoom and turn, the point under the fingers staying under them |
 | double tap | anything | fly in about the point (out to the whole globe from deep in) |
@@ -21,7 +21,7 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 | three-finger swipe right · ⇧⌘Z | | redo it |
 | three-finger swipe down · a second shake within two seconds · Backspace | | clear the sea: every float out as one touch (undo brings them all back) |
 | pinch out past the whole globe and let go · three-finger swipe up · `h` | | the camera flies home, to the opening view |
-| flick the date | | it runs on, slowing to rest; a touch stops it |
+| flick the date | | it runs on, slowing to rest; a touch stops it; the clock is given back as the finger found it (running stays running, resting stays resting) |
 
 ## Inputs
 
@@ -64,9 +64,10 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `Release { float, at: Some(p) }` | the hand opens over water (`p` there), or without having carried (`p` where it was lifted: the app sees nothing moved) |
 | `Carry { to: from }` then `Release { at: Some(from) }` | the hand opens over land, or the system cancels the touch: back where it was lifted |
 | `Release { float, at: None }` | the hand opens off the disc: taken out |
-| `Ride { float }` | a tap on a float the camera is not already riding (the app's `Ride` toggles; Motion never sends it for the ridden one) |
+| `Ride { float }` | every tap on a float (the app toggles: the ridden one is let go, its choice kept; any other is chosen and ridden) |
+| `Unchoose` | a tap on the open sea, with `CameraMove::Leave` ending the ride (the ring at touch-down must not unchoose by itself: D10) |
 | `Scrub { days }` | a drag on the date, by its horizontal move since the last event (`DAYS_PER_POINT`) |
-| `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
+| `SetRunning { false }` | the first move of a scrub, when the clock was running; `SetRunning { !running }` a tap on the date; `SetRunning { as found }` when the scrub ends, the flick rests, or a touch stops the flick |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
 | `Redo` | a three-finger swipe right, ⇧⌘Z |
 | `ClearAll` | a three-finger swipe down; a second shake 0.4–2 s after the first; Backspace or Delete |
@@ -235,6 +236,16 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 21. **A flick on the date** runs it on at the finger's speed, slowing by the fling's decay to rest
     under two days a second; any touch stops it at once (as a touch stops the globe); under Reduce
     Motion the date stops where the finger leaves it.
+
+23. **The clock is the finger's to borrow, not to keep** (R5): a scrub rests the clock while the
+    finger moves the date and gives it back as it was found, running or resting, when the finger
+    lifts; a flick keeps it resting until the date comes to rest, then gives it back; a touch that
+    stops the flick gives it back at once. Only a tap on the date changes whether it runs.
+    `plans/date-keeps-running.json`.
+24. **A choice outlives the camera** (R5): a tap on a float chooses it and rides it; a drag or a
+    pinch ends the ride and keeps the choice, so its maybes stay through zooming out; a tap on the
+    chosen float lets the ride go and keeps the choice; a tap on another float chooses that one; a
+    tap on the open sea lets the choice and the ride go (`Unchoose`, `Leave`). `plans/chosen.json`.
 
 ## The numbers (`motion.rs`)
 
