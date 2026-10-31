@@ -1,0 +1,52 @@
+# Truth: the critics' verdicts
+
+Each round a fresh hater (who wants Adrift to fail and judges only what runs: renders, never
+descriptions) and a Holt critic (does it let you wander, stop, undo and leave without penalty; does
+something unscripted happen). What they judged is in `critics/r<n>/`.
+
+## R0 (October 31, 2026)
+
+There is no running build yet; the skeleton is Engineering's R0. What ran: the builders, and
+`look.py`, which draws every sheet exactly as the rules decode it (`critics/r0/`: `wind-07.png`,
+`currents-07.png`, `eddy.png`, `ice-01.png`, `drifters.png`), and the rules' seven tests in
+`sea/tests.rs` (`sea-harness`: all pass).
+
+**The hater (a sea-going physical oceanographer who has watched too many "ocean simulations"
+that were screensavers).**
+- *The wind sheet* (`wind-07.png`): the July monsoon jet off Somalia, the trades, the roaring
+  forties: it is NCEP's July, recognisably. But it is a monthly *mean*: the real wind veers and
+  gusts, and a float's leeway on the mean is a smoothed fiction. Verdict: honest as labelled, and
+  the label had better be on the screen.
+- *The eddy sheet* (`eddy.png`): the Gulf Stream, Kuroshio, Agulhas rings, the Brazil-Malvinas
+  confluence and the equatorial bands are where they should be, the gyre interiors quiet. Two
+  objections. The equatorial band is bright because the tropical instability waves are in the
+  variance, fair; but the jets are bright partly because a 0.25° cell straddling a 1 m/s jet holds
+  the jet's own shear as "eddy" variance, and nobody corrected it (Zhurbas and Oh did). And a
+  memoryless random walk with K = 30,000 m²/s throws a float 70 km sideways a day: of two
+  thirty-day floats printed by the harness off Cape Hatteras, one ran the stream to 55° W, the
+  other (the same seed, a day later in the year) left it in two days and sat on the Delaware shore.
+  Real drifters stay in the stream for weeks because their velocity has memory (the time scale this very
+  tool measured, 2–4 days) and the jet is coherent. **Verdict: the wander's size is measured; its
+  shape in the jets is wrong.** The fix is a random flight (an Ornstein–Uhlenbeck velocity with the
+  measured T), which needs the float to carry its eddy velocity: filed as D1.
+- *The drifters* (`drifters.png`): 1,979 real runs, and the mean distance from an open-sea point to
+  the nearest bundled point is 18 km, with 3 of 1,193 points beyond 300 km (the southern Pacific
+  and the Arctic shelves). Fair. But a track drawn whole on a flat map is a lie of omission: these
+  are eight different years laid on top of each other. Verdict: fine as data; the screen must show
+  one run at a time, with its year.
+- *The coast and the ice* (`ice-01.png`): the ice edge is January's mean of 2015–2024, the coast
+  Natural Earth's 1:50m. An island under 10 km does not exist here; a float will sail through the
+  Maldives. Verdict: say so (SOURCES.md does).
+- *The leeway*: 3% is derived, not measured; no glass float was ever towed behind a current meter.
+  Verdict: tolerable only because the derivation is written down with its one measured anchor
+  (a sphere three quarters under at 2%).
+
+**Holt.** Nothing to wander in yet. On the rules as tests: a float put down is left alone by them
+(no script decides its path; two seeds part ways, the test says so), a coast holds without
+trapping forever (the next step tries again), the ice lets go when the month turns. Something
+unscripted does happen on paper: the harness's float ran up the shelf to Delaware and came back
+off it, which no one wrote. Verdict withheld until there is a screen to leave.
+
+**What Truth takes from R0:** D1 (velocity memory for the wander); the date and the years must be
+said on the screen (a demand on Visual once the look exists); the jets' shear contamination is a
+R1 improvement to `eddy.py` (Zhurbas and Oh's correction, or a coarser variance in the jets).

@@ -1,0 +1,2 @@
+[env]
+ADRIFT_DATA = { value = "../../../../adrift/data", relative = true }

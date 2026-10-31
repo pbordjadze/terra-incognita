@@ -1,0 +1,19 @@
+# A stand-in for adrift-core while its skeleton is not there: compiles the sea module
+# (adrift/crates/adrift-core/src/sea) against a stub model and runs its tests, and prints one
+# float's thirty days off Cape Hatteras.
+#
+#     cd tools/adrift/data/sea-harness && cargo test && cargo run
+#
+# Once adrift-core exists, `cargo test -p adrift-core sea::` is the check and this is spare.
+[package]
+name = "sea-harness"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+png = "0.17"
+
+[profile.dev]
+opt-level = 2
+
+[workspace]
