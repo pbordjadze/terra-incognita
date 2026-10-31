@@ -1,7 +1,8 @@
 //! Touch: pointer events to intents (`Gestures`), the camera under a finger (`CameraControl`), and
 //! the curves and the beat (`motion`). VOCABULARY.md is the state machine, with every ambiguous
 //! case resolved; WORKS.md what it is measured against; CRITICS.md the critics' verdicts; `plans/`
-//! the played sessions that prove it.
+//! the played sessions that prove it (`adrift-check -- play`; `tools/adrift/touch-play.sh` plays
+//! them all; `tools/adrift/touch-plans.py` writes them).
 //!
 //! The seam: `Gestures::feed` and `Gestures::tick` take a `Probe` (what is under a point, where a
 //! float is, the clock, the frame; `probe.rs` answers for `App`) and return `Out`: intents for the

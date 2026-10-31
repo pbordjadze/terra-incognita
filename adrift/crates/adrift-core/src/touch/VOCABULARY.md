@@ -49,7 +49,9 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | Intent | Motion emits it when |
 | --- | --- |
 | `Ring { at }` | a finger lands on the sea (the ring starts at touch-down, not at the lift: the sea answers at once) |
-| `Put { at }` | the beat passes on the sea; the app answers `Gestures::float_put(id)` and the finger holds it |
+| `Press { at, since }` | the same moment: the finger rests, and the look thickens the ring by `motion::thicken(now - since)` |
+| `Unpress` | the finger lifts or moves before the beat, a second finger lands, or the system takes the touch: the ring lets go |
+| `Put { at }` | the beat passes on the sea (the app clears the press itself); the app answers `Gestures::float_put(id)` and the finger holds it |
 | `Hold { float }` | the beat passes on a float |
 | `Carry { float, to }` | a held finger moves past the slop: `to` is the place under it, water or land |
 | `Release { float, at: Some(p) }` | the hand opens over water (`p` there), or without having carried (`p` where it was lifted: the app sees nothing moved) |
@@ -59,12 +61,12 @@ by the look's rule: a baseline 40 reading points under the disc's bottom edge, n
 | `Scrub { days }` | a drag on the date, by its horizontal move since the last event (`DAYS_PER_POINT`) |
 | `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
 | `Undo` | a three-finger swipe left, a shake, ⌘Z |
+| `Redo` | a three-finger swipe right, ⇧⌘Z |
 
-Not yet expressible, so not yet done (DEMANDS.md D1): the ring's thickening while the finger
-rests (the look needs `Press`/`Unpress`, or to read `Gestures::pressing_since`); a carry held off
-the disc ("taken out in plain sight": `Carry` needs a `to` of none); `Redo` (the three-finger swipe
-right and ⇧⌘Z are received and dropped); the camera is read, not sent (`CameraControl` is the
-truth, so no `Camera` intent is needed).
+Still a place, not a hand: `Carry { to }` is a `LonLat`, so while the hand is off the disc the
+float stays where it was last over water (the app watches the carried float and takes it out when
+the hand opens there); "taken out in plain sight" waits on a `Carry` with no place, to be asked for
+when the look can draw it. The camera is read, not sent (`CameraControl` is the truth).
 
 ## The state machine (one finger)
 
@@ -131,10 +133,9 @@ the ride continues at the new zoom.
 ## Plans
 
 `plans/*.json` are the played sessions, one a gesture and an ambiguous case, written by
-`tools/adrift/touch-standalone/plans.py` with the expectations that prove each (floats, places,
-the hand's state, the intents seen, the camera). `touch-replay` plays them over a stand-in sea in
-milliseconds; `plans/check/*.json` are the same plans in the form `adrift-check -- play` takes, and
-`check_play.py` reads the real build's play.log against them (`play_all.sh` does all 24).
+`tools/adrift/touch-plans.py` with the expectations that prove each (floats, places, the hand's
+state, the intents seen, the camera). `adrift-check -- play` runs them on the real globe and fails
+on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land is real land.
 
 ## Every ambiguous case, resolved
 
