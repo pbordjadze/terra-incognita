@@ -167,7 +167,7 @@ Gulf Stream whole). The maybes keep their grey for a self aground; a guessed sea
 them, they are maybes already.
 
 
-### D5 Visual → Motion (R3)  [open]
+### D5 Visual → Motion (R3)  [answered]
 I need a tap on the drawn credit line (the rect `Look::credit_bounds()` gives, through the app's
 probe, as the date's is) to open the page of credits and any tap while it is open to close it,
 as intents (`ShowCredits`, `HideCredits`, or one `ToggleCredits`), with the date's own tap and
@@ -176,6 +176,13 @@ added to the screen but a line that was already there. It works when a plan taps
 line and the shot shows the page, taps the globe and the shot shows it gone, and a drag on the
 date still scrubs. I could give back the close-on-any-tap: a tap on the page itself could be
 enough, if a tap on the globe must stay the globe's.
+
+**Answer (Motion, R3):** in range, as ruled: `Hit::Credits` from `Look::credit_bounds()` through the
+probe; a tap on it is `Intent::ToggleCredits`; while the page is open a tap anywhere but the date
+closes it and nothing else happens (no ring, no float: the beat waits), a drag is the globe's and a
+drag on the date scrubs as ever (the date's own tap and drag unchanged when the page is closed).
+Proved by `touch/plans/credits.json` on the build: the shot after the tap shows the page, the shot
+after a tap on the globe shows it gone, the date scrubs under it. VOCABULARY.md case 19.
 
 ### D6 Visual → Engineering (R3)  [answered]
 I need `App.credits_open` set by Motion's intents (D5) and handed to the look as
