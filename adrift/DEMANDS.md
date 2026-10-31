@@ -32,6 +32,41 @@ I could give back [the step depending only on (at, day, dt, seed, k): with memor
 the velocity carried too, still deterministic for a seed; and 8 bytes a path on the GPU].
 The flight itself is ready in `sea/rules.rs` (`Rules::flight`, `Drift`, `flights`) and
 `rules.wgsl` (`maybes_flight`, `Path.eddy_u/v`), tested; it gives 65.9° W, 46%, 6 of 500 ashore.
+### D1 Visual → Engineering (R1)  [open]
+I need `app.rs` to draw the marks and the words through `look::Look` in place of `SpritePass`,
+`instances()`, its own `MaybesPass` field and the `chrome()` text: one `look: Look` field
+(`Look::new(&gpu, &view_layout)`; `Look` holds the maybes pass, same `draw(rp, view_bind,
+&Maybes)` as before), a `look_state()` that fills `look::LookState` from the state (each float's
+`at`, `lit` as 1 − lit_for / 3 clamped, `held` as `hand == Held`, its wake's places oldest first;
+`resting` from the gestures, D2; `bloom` 1 and `rise` 0 with `drifter` empty until Truth's
+tracks exist; `night` false; the date as "14 October" from `clock.calendar()`, the note and the
+credits line as `chrome()` has them), then in `render`
+`self.look.prepare(&self.gpu, &state, width_pt, height_pt, reading, [cx, cy, r])` and in the pass
+`self.look.draw(&mut rp, &self.view_bind, &self.maybes)` after the blit, with `text_pass` not drawn
+(the look's words carry their halos, Libertinus Regular and Italic from one signed-distance atlas
+at any size; `gpu/text.rs` can stay the runtime's tool for anything else). `look/README.md ›
+Wiring` has the lines. So that the float, its lamp, the wake, the maybes, the words and (when it
+comes) the silver drifter are what the app draws, at every zoom and in `adrift-check`'s pictures,
+instead of R0's plain forms and un-haloed text.
+It works when `adrift-check render scenes/gulf-stream-close.json` shows the glass floats with their
+amber lamps and beaded wakes, the date and the note on a halo over the globe, and the credits along
+the foot (`look/studies/check-gulf-stream-close-phone.png`, `check-foot-over-globe-phone.png`,
+`check-foot-phone.png` are what it gives with the wiring applied).
+I could give back the words pass and its atlas, if `gpu/text.rs` gains a halo of what is under
+each glyph and sizes that don't need a face per pixel size.
+
+### D2 Visual → Motion (R1)  [open]
+I need `Gestures` to tell the look where a finger is resting on the sea before the beat ends and
+how far through the beat it is: anything in the range of a `pub fn resting(&self, now: f64) ->
+Option<(LonLat, f32)>` (the place under the finger and 0..1 of `BEAT`), or the same two values
+on `Out`, so that the ring the finger draws can thicken into the float as one continuous motion
+(`floats.wgsl`: the white ring draws in, the glass forms over the middle of the beat, the lamp
+lights at its end) instead of a float appearing from nothing at the beat.
+It works when `adrift-check play plans/put-and-drift.json` shot at 0.2 s and 0.35 s after the
+finger goes down shows the ring at two stages of thickening, and at the beat the float with its
+lamp where the ring was.
+I could give back the ring's starting radius (16 reading points) if the gesture's rest slop needs
+it smaller.
 
 ## Answered
 

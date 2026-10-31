@@ -1,0 +1,63 @@
+{
+  "about": "Adrift's palette: every colour the look draws, and the grounds it is read against. Read by the look's Rust (include_str), mirrored by tools/adrift/study.py, and held to the contrast rule by tools/adrift/palette.py (CLAUDE.md > Design rules: inks 4.5:1, large or non-text marks 3:1, every ink on a halo). Hex sRGB; alpha where a colour is laid over the sea. The sea's own tones are Terra's G_ and N_ palettes (Globe.metal), which the ground pass keeps.",
+  "grounds": {
+    "day": {"shelf": "#D3F0EE", "open": "#C2E4F4", "deep": "#A9D2EC", "ice": "#F1F5F8"},
+    "night": {"sea": "#101828", "deep": "#09101E", "ice": "#444E60"}
+  },
+  "day": {
+    "glass_rim":   {"hex": "#1E4A58", "rule": "mark", "against": ["shelf", "open", "deep", "ice"], "is": "the float's rim: dark sea glass, the edge that makes it readable at a glance"},
+    "glass_body":  {"hex": "#8FD0C6", "alpha": 0.7, "is": "the glass itself, a wash over the sea (not an ink; no contrast owed)"},
+    "glass_light": {"hex": "#FFFFFF", "alpha": 0.95, "is": "the sun's highlight on the glass, upper left as the sea's sheen is"},
+    "lamp_core":   {"hex": "#FFE9B8", "rule": "mark", "against": ["glass_rim"], "is": "the lamp's heart, a warm white"},
+    "lamp":        {"hex": "#F4A52A", "rule": "mark", "against": ["glass_rim"], "is": "the lamp's amber, the one warm thing"},
+    "lamp_glow":   {"hex": "#F4A52A", "alpha": 0.30, "is": "the lamp's light on the water round the float"},
+    "lit":         {"hex": "#F4A52A", "alpha": 0.22, "is": "what you just did stays lit: a wider, softer glow"},
+    "bead":        {"hex": "#E8952C", "is": "the wake's beads, one a day, amber"},
+    "bead_edge":   {"hex": "#8C4F10", "rule": "mark", "against": ["shelf", "open", "deep", "ice"], "is": "each bead's dark edge, which lets it read on the pale sea"},
+    "maybe":       {"hex": "#FBE9CC", "alpha": 0.8, "is": "the maybes: pale amber specks, thousands, read as a cloud not one by one"},
+    "maybe_core":  {"hex": "#8E5712", "alpha": 0.5, "rule": "mark", "against": ["shelf", "open", "deep"], "is": "a speck's one dark pixel, so the cloud has grain"},
+    "silver":      {"hex": "#DDE3E9", "is": "the nearest real drifter's track, silver"},
+    "silver_edge": {"hex": "#4A5663", "rule": "mark", "against": ["shelf", "open", "deep", "ice"], "is": "the dark line under the silver, which makes it wire"},
+    "ring":        {"hex": "#FFFFFF", "alpha": 0.9, "is": "the touch's ring, the sea's own (Ocean.metal's crest)"},
+    "ring_shade":  {"hex": "#21527F", "alpha": 0.35, "is": "the ring's trough"},
+    "date_ink":    {"hex": "#26303A", "rule": "ink", "against": ["open", "shelf", "ice"], "is": "the date, Libertinus Serif 17 pt, on a halo of the open sea"},
+    "credit_ink":  {"hex": "#3E4C5A", "rule": "ink", "against": ["open", "shelf", "ice"], "is": "the credits, Libertinus Serif 10 pt, on the same halo"},
+    "halo":        {"hex": "#C2E4F4", "alpha": 0.92, "is": "the words' halo: the open sea's tone"}
+  },
+  "night": {
+    "glass_rim":   {"hex": "#B9DDE3", "rule": "mark", "against": ["sea", "deep", "ice"], "is": "the rim by night: pale glass catching the lamp"},
+    "glass_body":  {"hex": "#3F7A86", "alpha": 0.45, "is": "the glass by night"},
+    "glass_light": {"hex": "#FFFFFF", "alpha": 0.55},
+    "lamp_core":   {"hex": "#FFF0C8", "rule": "mark", "against": ["sea", "deep"]},
+    "lamp":        {"hex": "#F6AE3A", "rule": "mark", "against": ["sea", "deep"]},
+    "lamp_glow":   {"hex": "#F6AE3A", "alpha": 0.40},
+    "lit":         {"hex": "#F6AE3A", "alpha": 0.28},
+    "bead":        {"hex": "#F0A040", "rule": "mark", "against": ["sea", "deep"]},
+    "bead_edge":   {"hex": "#F0A040", "alpha": 0.0, "is": "no edge by night: the bead is its own light"},
+    "maybe":       {"hex": "#E9D3AE", "alpha": 0.45, "rule": "mark", "against": ["sea", "deep"]},
+    "maybe_core":  {"hex": "#E9D3AE", "alpha": 0.0},
+    "silver":      {"hex": "#DCE3EA", "rule": "mark", "against": ["sea", "deep"]},
+    "silver_edge": {"hex": "#DCE3EA", "alpha": 0.0},
+    "ring":        {"hex": "#FFFFFF", "alpha": 0.7},
+    "ring_shade":  {"hex": "#000000", "alpha": 0.0},
+    "date_ink":    {"hex": "#E4ECF4", "rule": "ink", "against": ["sea", "deep"]},
+    "credit_ink":  {"hex": "#B8C6D4", "rule": "ink", "against": ["sea", "deep"]},
+    "halo":        {"hex": "#101828", "alpha": 0.92}
+  },
+  "sizes": {
+    "about": "points at reading scale 1; the reading scale (1.0 phone, 1.2 the 13-inch iPad) multiplies them, as Terra's names.",
+    "float_radius": {"far": 4.5, "near": 7.0, "zoom": [1.0, 3.0], "is": "the float's radius, by zoom between far and near, then held: a marker, never a thing of the world's size"},
+    "rim": 1.1,
+    "lamp_core": 0.42,
+    "lamp": 0.55,
+    "glow_reach": 2.2,
+    "bead": {"new": 2.2, "old": 1.2, "days": 45, "is": "a bead's radius, newest to oldest, over this many days of wake"},
+    "maybe": 0.75,
+    "silver": 0.9,
+    "silver_edge": 2.0,
+    "ring": {"start": 16, "rest": 10, "beat": 0.55, "is": "the ring's radius as the finger rests, and the beat after which it is a float"},
+    "date": 17,
+    "credit": 10,
+    "min": 10
+  }
+}
