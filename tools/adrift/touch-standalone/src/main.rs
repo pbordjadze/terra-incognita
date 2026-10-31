@@ -163,6 +163,9 @@ fn run(path: &str, verbose: bool, export: Option<&str>) -> Result<usize, String>
     let mut exported_t = 0.0;
     let mut expects = 0;
     let mut needs: Vec<&str> = vec![];
+    if plan.reduce_motion {
+        needs.push("reduce_motion");
+    }
 
     for (n, s) in plan.steps.iter().enumerate() {
         // ticks up to the step's time, the floats drifting as the plan says
@@ -365,6 +368,7 @@ fn run(path: &str, verbose: bool, export: Option<&str>) -> Result<usize, String>
         let out = serde_json::json!({
             "title": plan.title,
             "needs": needs,
+            "reduce_motion": plan.reduce_motion,
             "size": [(plan.size[0] * ppp) as u32, (plan.size[1] * ppp) as u32], "ppp": ppp,
             "scene": scene, "steps": exported,
         });

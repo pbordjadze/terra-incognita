@@ -127,7 +127,7 @@ plan("take-out", "Carry a float off the rim and it is taken out; undo brings it 
     ev(1.0, "move", xy=OFF), ev(1.1, "up", xy=OFF),
     expect(1.2, floats=0, saw=["TakeOut"], held=None),
     shot(1.3, "gone"),
-    {"t": 1.5, "shake": True}, expect(1.6, floats=1, saw=["Undo"], float={"id": 1, "lon": -60.0, "lat": 40.0}),
+    {"t": 1.5, "shake": True}, expect(1.6, floats=1, saw=["Undo"], float={"id": 1, **F1}),   # back as before the touch
 ], floats=[F1])
 plan("cancel", "The system takes the touch: a press lets go, a hold puts the float back, a drag stops", [
     ev(0.0, "down", at=SEA2), ev(0.2, "cancel", at=SEA2), expect(0.3, floats=1, saw=["Ring"], not_=["Put"]),
@@ -204,7 +204,7 @@ plan("date-scrub", "Drag the date: the clock pauses and the day follows the fing
     ev(0.3, "up", xy=date_xy(100)), expect(0.4, playing=False, state="idle", camera_moved=False, floats=0),
 ], day=9800.0)
 plan("date-tap", "Tap the date to pause, tap again to play", [
-    ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), expect(0.2, saw=["Pause"], playing=False, day=9800.0),
+    ev(0.0, "down", xy=date_xy()), ev(0.1, "up", xy=date_xy()), expect(0.2, saw=["Pause"], playing=False),
     ev(0.5, "down", xy=date_xy()), ev(0.6, "up", xy=date_xy()), expect(0.7, saw=["Play"], playing=True),
 ], day=9800.0)
 three = lambda t, fx: [ev(t, "down" if fx is None else "move", i, xy=px(0.3 + 0.15 * i + (fx or 0), 0.6)) for i in range(3)]

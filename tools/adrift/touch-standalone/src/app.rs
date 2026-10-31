@@ -187,10 +187,17 @@ impl App {
                     }
                     None => {
                         let f = self.floats.remove(i);
-                        if matches!(self.undo.last(), Some(Undo::Moved { id, .. }) if *id == float) {
-                            self.undo.pop();
-                        }
-                        self.undo.push(Undo::Removed(f));
+                        // taken out: undo gives it back as it was before the touch began (the
+                        // held snapshot), not where the hand last carried it
+                        let before = match self.undo.last() {
+                            Some(Undo::Moved { id, from }) if *id == float => {
+                                let from = from.clone();
+                                self.undo.pop();
+                                from
+                            }
+                            _ => f,
+                        };
+                        self.undo.push(Undo::Removed(before));
                     }
                 }
             }

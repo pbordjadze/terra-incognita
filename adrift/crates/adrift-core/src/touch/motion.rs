@@ -82,8 +82,12 @@ pub fn thicken(since: f64) -> f64 {
 /// A critically damped spring's step toward `target`: returns the new (position, velocity) after
 /// `dt` with time constant `tau` (it settles in about 4·tau and never overshoots).
 pub fn spring(x: f64, v: f64, target: f64, tau: f64, dt: f64) -> (f64, f64) {
-    if tau <= 0.0 || dt <= 0.0 {
+    if tau <= 0.0 {
         return (target, 0.0);
+    }
+    if dt <= 0.0 {
+        // no time passed: nothing moves (a frame drawn twice at one moment must not snap)
+        return (x, v);
     }
     let w = 1.0 / tau;
     let e = (-w * dt).exp();
@@ -157,6 +161,11 @@ mod tests {
         }
         // from rest, (1 + u)·e^-u = 0.01 at u ≈ 6.6 time constants
         assert!(t > 6.0 * RIDE_TAU && t < 7.5 * RIDE_TAU, "{}", t);
+    }
+
+    #[test]
+    fn a_zero_step_leaves_the_spring_where_it_is() {
+        assert_eq!(spring(10.0, 3.0, 0.0, RIDE_TAU, 0.0), (10.0, 3.0));
     }
 
     #[test]

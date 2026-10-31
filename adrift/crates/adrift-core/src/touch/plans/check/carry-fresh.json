@@ -1,5 +1,7 @@
 {
+  "needs": [],
   "ppp": 3.0,
+  "reduce_motion": false,
   "scene": {
     "camera": {
       "lat": 22.0,
