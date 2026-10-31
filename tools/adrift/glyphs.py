@@ -25,7 +25,7 @@ FONTS = {'regular': ROOT / 'Globe' / 'fonts' / 'LibertinusSerif-Regular.otf', 'i
 OUT = ROOT / 'adrift' / 'crates' / 'adrift-core' / 'src' / 'look' / 'type'
 EM, SPREAD, PAD = 64, 8, 14
 SS = 4                         # rasterised at SS times the em and thresholded there, so hairlines survive
-CHARS = [chr(c) for c in range(32, 127)] + ['·', '–', '—', '’', '‘', '“', '”', 'é', 'ü', 'ö', 'ñ', '°', '█']   # (the block: a solid cell the look draws pages with)
+CHARS = [chr(c) for c in range(32, 127)] + ['·', '–', '—', '’', '‘', '“', '”', 'é', 'ü', 'ö', 'ñ', '°', '█', '●', '○']   # (the block: a solid cell the look draws pages with; the marks: the date's marker)
 INF = 1e12
 
 

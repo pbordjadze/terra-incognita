@@ -211,6 +211,10 @@ pub struct LookState {
     pub date: String,
     /// A note under it, in italic ("a typical year, by the drifters' record"); empty for none.
     pub note: String,
+    /// The date runs (its marker is lit, amber) or rests (the marker a ring of ink).
+    pub date_running: bool,
+    /// How far through the year the date is, 0..1: the marker's place on the year's rule under the date.
+    pub year_day: f32,
     /// The credits owed, one line (Truth's SOURCES.md says whose).
     pub credits: String,
     /// The credits in full (`sea::CREDITS`), shown on a page over the globe while `credits_open`.
@@ -293,7 +297,7 @@ impl Look {
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }
-        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n, &labels);
+        self.words.prepare_foot(gpu, &state.date, &state.note, &state.credits, width, height, reading, disc, n, state.date_running, state.year_day, &labels);
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).

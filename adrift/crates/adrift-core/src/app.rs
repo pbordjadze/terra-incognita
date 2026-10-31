@@ -789,6 +789,8 @@ impl App {
             night: self.night,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
+            date_running: self.clock.running,
+            year_day: (self.clock.year_day() / 365.25) as f32,
             credits: crate::sea::CREDIT_LINE.to_string(),
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
             credits_open: self.credits_open,

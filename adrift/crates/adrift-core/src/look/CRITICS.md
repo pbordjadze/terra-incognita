@@ -246,3 +246,37 @@ a dusting with a shape. The dashed rim says 'a guess' without a word; the hollow
 see where a float has actually moved on a guessed sea. The credits page is a page: Libertinus on
 paper, the sentences whole, the night's the same page in reverse; nothing on it to press, which is
 the point." Verdict: the three pass; the hollow bead unseen until a guessed sea moves a float.
+
+## R4 (October 31, 2026): the first device verdict
+
+The owner's phone said: the night reads, the water's glitter draws the eye from the floats where
+living lights on the land would not, the date control isn't obvious the first time. Judged on the
+build at 5cd8398 with this round's changes (`studies/r4-lights-alive-night-phone.png`, four frames
+of the eastern seaboard by night 0.33 s and 2 s apart; `r4-night-lights-phone.png`;
+`r4-date-band-running-then-held-phone.png`; `r4-date-band-night-phone.png`).
+
+**The hater, an OLED owner who hates anything that blinks.**
+
+- *The glitter.* "By night it is a trace now (an eighth of what it was), by day two thirds; the
+  lamps are the brightest thing on the water again. Good riddance, mostly: by day I'd keep a little
+  more, it was the sea's one luxury." Verdict: passes by night; by day a knob.
+- *The lights alive.* "Alive, not blinking: the regions breathe, the suburbs shift a little every
+  third of a second (two grey levels on average over the lit pixels, six over three seconds, never
+  more than twenty in one step), and now and then a core catches. Nothing goes on-off. On the
+  phone the stage redraws thirty times a second while the date runs, so this will move; when the
+  date is held the lights hold too, which is the rule's own consistency." Verdict: passes; judge
+  the pace on the device, since lavapipe can't show me motion.
+- *The date band.* "A hairline the band's width under the date, with the day's place on it: an
+  amber lamp while the year runs, a ring of ink while it rests, and 'held' under it. It says
+  'this is a year and you are here' without a slider's handle, and the amber makes the running
+  one look like the floats' own light. A hand that has moved a float will try to move the lamp;
+  Motion's drag along it will answer." Verdict: passes; the first version had the marker on a
+  square of halo over the land, which was a sticker; gone.
+
+**Holt**: "The lights live without asking anything of me, and the date's lamp tells me the year
+is moving without a button; stopping it leaves a ring where the lamp was, so I know what I did.
+Nothing marks, nothing points, nothing waits."
+
+**Open for Motion's demand**: what a float lifting under a rest should look like, and what a
+clear-all and a home should look like as they happen (every float taken out in plain sight, the
+globe's flight home), drawn the moment Motion says which gesture reaches them.
