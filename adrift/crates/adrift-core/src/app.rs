@@ -571,7 +571,7 @@ impl App {
                         Some(t) => {
                             // the month and a half each side of where the buoy passed nearest (the
                             // wake's own 45 days, so the two read as one scale), not its whole run
-                            let w = t.window(90);
+                            let w = t.window(45);
                             self.drifter_label = t.label_window(w.clone());
                             self.drifter_nearest = t.point.saturating_sub(w.start);
                             t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
@@ -698,7 +698,7 @@ impl App {
         self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
         if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
-                let w = t.window(90);
+                let w = t.window(45);
                 self.drifter_label = t.label_window(w.clone());
                 self.drifter_nearest = t.point.saturating_sub(w.start);
                 self.drifter = t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
