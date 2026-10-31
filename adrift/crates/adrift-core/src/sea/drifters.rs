@@ -129,6 +129,68 @@ impl Drifters {
     }
 }
 
+/// A real run to draw beside a held float: the nearest point of any run and the run itself,
+/// as unit vectors in the globe's frame (`LonLat::to_xyz`), with what to say of it.
+pub struct Track<'a> {
+    pub run: &'a Run,
+    /// The run's point nearest the float, and how far.
+    pub point: usize,
+    pub km: f32,
+    /// Every point of the run, in order, as unit vectors.
+    pub xyz: Vec<[f32; 3]>,
+}
+
+impl Track<'_> {
+    /// The buoy and its days, for the screen: a real buoy, a real year, never the float's day.
+    /// "Drifter 300234061198840, 12 May 2019 to 3 Feb 2020".
+    pub fn label(&self) -> String {
+        let n = self.run.points.len() as f64;
+        let (y0, m0, d0) = civil(self.run.day0 as f64);
+        let (y1, m1, d1) = civil(self.run.day0 as f64 + (n - 1.0));
+        format!("Drifter {}, {} {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], y0, d1, MONTHS[m1 - 1], y1)
+    }
+
+    /// The day (days since 2000-01-01) of the point nearest the float.
+    pub fn day(&self) -> f64 {
+        self.run.day0 as f64 + self.point as f64
+    }
+}
+
+const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/// The calendar date of a day since 2000-01-01 00:00 UTC (the real calendar, with its leap
+/// days: a run's dates are real dates, unlike the climatology's typical year).
+pub fn civil(day: f64) -> (i64, usize, u32) {
+    // days since 1970-01-01, then Howard Hinnant's civil-from-days
+    let z = day.floor() as i64 + 10957 + 719468;
+    let era = z.div_euclid(146097);
+    let doe = z.rem_euclid(146097);
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as usize;
+    (if m <= 2 { y + 1 } else { y }, m, d)
+}
+
+impl Drifters {
+    /// The run to draw for a float at `at`: the nearest point of any run within `within_km`.
+    pub fn track(&self, at: LonLat, within_km: f32) -> Option<Track<'_>> {
+        let n = self.nearest(at, within_km)?;
+        let run = &self.runs[n.run];
+        let xyz = run
+            .points
+            .iter()
+            .map(|&(lon, lat)| {
+                let v = LonLat { lon: lon as f64, lat: lat as f64 }.to_xyz();
+                [v[0] as f32, v[1] as f32, v[2] as f32]
+            })
+            .collect();
+        Some(Track { run, point: n.point, km: n.km, xyz })
+    }
+}
+
 #[inline]
 fn cell(lon: f32, lat: f32) -> usize {
     let x = (((lon + 180.0).rem_euclid(360.0)) / CELL) as usize % NX;
