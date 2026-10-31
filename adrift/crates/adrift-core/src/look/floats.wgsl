@@ -33,7 +33,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     let p = place(f.g);
     let r = float_radius();
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
-    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, 2.8 * r);
+    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, 2.4 * r);
     let c = corner(vi % 6u);
     var o: FloatOut;
     o.local = c * reach;
@@ -80,7 +80,7 @@ fn fs(i: FloatOut) -> @location(0) vec4<f32> {
     }
 
     // what you just did stays lit, and the lamp's light on the water
-    acc = over(acc, lamp(n), lit_a(n) * i.lit * exp(-d * d / (2.4 * 2.4 * r * r)));
+    acc = over(acc, lamp(n), lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
     acc = over(acc, lamp(n), lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // the glass, the lamp, its core
     let gb = glass_body(n);
