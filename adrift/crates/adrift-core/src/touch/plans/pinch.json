@@ -1,0 +1,112 @@
+{
+ "title": "Two fingers zoom and turn; a second finger before the beat puts no float",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "xy": [
+    350,
+    500
+   ]
+  },
+  {
+   "t": 0.05,
+   "down": 1,
+   "xy": [
+    470,
+    500
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "saw": [
+     "Unpress"
+    ],
+    "state": "pinch"
+   }
+  },
+  {
+   "t": 0.15,
+   "move": 0,
+   "xy": [
+    320,
+    500
+   ]
+  },
+  {
+   "t": 0.2,
+   "move": 1,
+   "xy": [
+    520,
+    500
+   ]
+  },
+  {
+   "t": 0.3,
+   "move": 0,
+   "xy": [
+    300,
+    500
+   ]
+  },
+  {
+   "t": 0.35,
+   "expect": {
+    "zoom_gt": 1.3,
+    "floats": 0
+   }
+  },
+  {
+   "t": 0.4,
+   "up": 1,
+   "xy": [
+    520,
+    500
+   ]
+  },
+  {
+   "t": 0.45,
+   "expect": {
+    "state": "orbit"
+   }
+  },
+  {
+   "t": 0.5,
+   "move": 0,
+   "xy": [
+    340,
+    560
+   ]
+  },
+  {
+   "t": 0.6,
+   "up": 0,
+   "xy": [
+    340,
+    560
+   ]
+  },
+  {
+   "t": 1.2,
+   "expect": {
+    "floats": 0,
+    "not": [
+     "Put"
+    ]
+   }
+  }
+ ]
+}

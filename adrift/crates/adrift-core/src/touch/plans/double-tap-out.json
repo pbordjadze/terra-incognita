@@ -1,0 +1,59 @@
+{
+ "title": "Past half the deepest, a double tap flies out to the whole globe about the centre",
+ "camera": {
+  "lon": -32.0,
+  "lat": 20.0,
+  "zoom": 6.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.2,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.28,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 1.1,
+   "expect": {
+    "camera": {
+     "lon": -32.0,
+     "lat": 20.0,
+     "zoom": 1.0
+    }
+   }
+  }
+ ]
+}

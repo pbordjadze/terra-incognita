@@ -1,0 +1,45 @@
+{
+ "title": "A lift just short of the beat is a tap: no float",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.35,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.6,
+   "expect": {
+    "floats": 0,
+    "saw": [
+     "Unpress"
+    ],
+    "not": [
+     "Put"
+    ]
+   }
+  }
+ ]
+}

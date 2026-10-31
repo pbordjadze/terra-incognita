@@ -1,0 +1,62 @@
+{
+ "title": "Once a drag, always a drag: a finger that moves and then rests puts nothing",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "move": 0,
+   "xy": [
+    430,
+    560
+   ]
+  },
+  {
+   "t": 0.2,
+   "move": 0,
+   "xy": [
+    480,
+    570
+   ]
+  },
+  {
+   "t": 1.5,
+   "up": 0,
+   "xy": [
+    480,
+    570
+   ]
+  },
+  {
+   "t": 1.6,
+   "expect": {
+    "floats": 0,
+    "saw": [
+     "Unpress"
+    ],
+    "not": [
+     "Put"
+    ],
+    "camera_moved": true
+   }
+  }
+ ]
+}

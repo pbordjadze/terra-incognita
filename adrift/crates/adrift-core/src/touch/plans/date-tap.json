@@ -1,0 +1,69 @@
+{
+ "title": "Tap the date to pause, tap again to play",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "xy": [
+    410,
+    1140
+   ]
+  },
+  {
+   "t": 0.1,
+   "up": 0,
+   "xy": [
+    410,
+    1140
+   ]
+  },
+  {
+   "t": 0.2,
+   "expect": {
+    "saw": [
+     "Pause"
+    ],
+    "playing": false,
+    "day": 9800.0
+   }
+  },
+  {
+   "t": 0.5,
+   "down": 0,
+   "xy": [
+    410,
+    1140
+   ]
+  },
+  {
+   "t": 0.6,
+   "up": 0,
+   "xy": [
+    410,
+    1140
+   ]
+  },
+  {
+   "t": 0.7,
+   "expect": {
+    "saw": [
+     "Play"
+    ],
+    "playing": true
+   }
+  }
+ ],
+ "day": 9800.0
+}

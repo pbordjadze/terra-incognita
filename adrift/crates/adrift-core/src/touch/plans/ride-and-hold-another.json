@@ -1,0 +1,102 @@
+{
+ "title": "Riding one float, hold another: the ride goes on; carry it and the ride is left",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "riding": 0
+   }
+  },
+  {
+   "t": 0.5,
+   "down": 0,
+   "at": [
+    -20.0,
+    15.0
+   ]
+  },
+  {
+   "t": 1.0,
+   "expect": {
+    "saw": [
+     "Hold"
+    ],
+    "riding": 0,
+    "held": 1
+   }
+  },
+  {
+   "t": 1.1,
+   "move": 0,
+   "at": [
+    -18.0,
+    12.0
+   ]
+  },
+  {
+   "t": 1.2,
+   "expect": {
+    "saw": [
+     "Leave",
+     "Carry"
+    ],
+    "riding": null
+   }
+  },
+  {
+   "t": 1.3,
+   "up": 0,
+   "at": [
+    -18.0,
+    12.0
+   ]
+  },
+  {
+   "t": 1.4,
+   "expect": {
+    "saw": [
+     "Release"
+    ],
+    "floats": 2
+   }
+  }
+ ],
+ "floats": [
+  {
+   "lon": -30.0,
+   "lat": 20.0
+  },
+  {
+   "lon": -20.0,
+   "lat": 15.0
+  }
+ ]
+}

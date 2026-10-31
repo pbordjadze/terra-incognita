@@ -1,0 +1,140 @@
+{
+ "title": "Land and off the disc are silent: no ring, no float; a drag is still the globe's",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -70.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "up": 0,
+   "at": [
+    -70.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.2,
+   "expect": {
+    "floats": 0,
+    "not": [
+     "Ring",
+     "Press"
+    ]
+   }
+  },
+  {
+   "t": 0.5,
+   "down": 0,
+   "at": [
+    -70.0,
+    20.0
+   ]
+  },
+  {
+   "t": 1.5,
+   "up": 0,
+   "at": [
+    -70.0,
+    20.0
+   ]
+  },
+  {
+   "t": 1.6,
+   "expect": {
+    "floats": 0,
+    "not": [
+     "Ring",
+     "Put",
+     "Hold"
+    ],
+    "camera_moved": false
+   }
+  },
+  {
+   "t": 2.0,
+   "down": 0,
+   "at": [
+    -70.0,
+    20.0
+   ]
+  },
+  {
+   "t": 2.1,
+   "move": 0,
+   "xy": [
+    300,
+    500
+   ]
+  },
+  {
+   "t": 2.2,
+   "move": 0,
+   "xy": [
+    380,
+    520
+   ]
+  },
+  {
+   "t": 2.3,
+   "up": 0,
+   "xy": [
+    380,
+    520
+   ]
+  },
+  {
+   "t": 2.4,
+   "expect": {
+    "floats": 0,
+    "camera_moved": true,
+    "not": [
+     "Ring",
+     "Put"
+    ]
+   }
+  },
+  {
+   "t": 3.0,
+   "down": 0,
+   "xy": [
+    10,
+    10
+   ]
+  },
+  {
+   "t": 4.0,
+   "up": 0,
+   "xy": [
+    10,
+    10
+   ]
+  },
+  {
+   "t": 4.1,
+   "expect": {
+    "floats": 0,
+    "not": [
+     "Ring",
+     "Put"
+    ]
+   }
+  }
+ ]
+}

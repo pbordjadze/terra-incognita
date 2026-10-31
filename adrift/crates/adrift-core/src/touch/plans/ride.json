@@ -1,0 +1,121 @@
+{
+ "title": "Tap a float and the camera drifts with it; any drag leaves it",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "saw": [
+     "Ride"
+    ],
+    "riding": 0,
+    "not": [
+     "Press"
+    ]
+   }
+  },
+  {
+   "t": 1.0,
+   "shot": "catching-up"
+  },
+  {
+   "t": 3.0,
+   "expect": {
+    "riding": 0,
+    "camera_near_float": [
+     0,
+     0.3
+    ],
+    "camera_moved": true
+   }
+  },
+  {
+   "t": 3.0,
+   "shot": "riding"
+  },
+  {
+   "t": 3.1,
+   "down": 0,
+   "at": [
+    -45.0,
+    0.0
+   ]
+  },
+  {
+   "t": 3.15,
+   "move": 0,
+   "xy": [
+    400,
+    700
+   ]
+  },
+  {
+   "t": 3.2,
+   "move": 0,
+   "xy": [
+    460,
+    720
+   ]
+  },
+  {
+   "t": 3.3,
+   "up": 0,
+   "xy": [
+    460,
+    720
+   ]
+  },
+  {
+   "t": 3.4,
+   "expect": {
+    "saw": [
+     "Leave"
+    ],
+    "riding": null
+   }
+  },
+  {
+   "t": 6.0,
+   "expect": {
+    "riding": null
+   }
+  }
+ ],
+ "floats": [
+  {
+   "lon": -30.0,
+   "lat": 20.0
+  }
+ ],
+ "drift": [
+  0.5,
+  0.0
+ ]
+}

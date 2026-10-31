@@ -1,0 +1,52 @@
+{
+ "title": "A tap on the sea rings and changes nothing",
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "land": [
+  [
+   -70.0,
+   20.0,
+   14.0
+  ]
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.05,
+   "shot": "ring"
+  },
+  {
+   "t": 0.12,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.5,
+   "expect": {
+    "floats": 0,
+    "state": "idle",
+    "saw": [
+     "Ring",
+     "Unpress"
+    ],
+    "not": [
+     "Put"
+    ],
+    "camera_moved": false
+   }
+  }
+ ]
+}
