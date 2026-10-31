@@ -738,7 +738,7 @@ impl App {
         }
         // every shown float's cloud blooms out (0.35 s) and folds back when it is no longer shown
         // (0.25 s); a folded cloud gives its slot back (R6)
-        let ids = self.open_clouds();
+        self.open_clouds();
         for c in &mut self.clouds {
             c.bloom = if c.wanted { (c.bloom + (dt / 0.35) as f32).min(1.0) } else { (c.bloom - (dt / 0.25) as f32).max(0.0) };
         }

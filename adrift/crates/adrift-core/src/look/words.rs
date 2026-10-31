@@ -317,7 +317,7 @@ impl Words {
         } else {
             ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 0.85], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
         };
-        let row_h = 24.0 * reading;
+        let row_h = 36.0 * reading; // (a fingertip's height: 24 was under a thumb; integrator R6)
         let x0 = 12.0 * reading;
         let top = PANEL_TOP * reading;
         let size = 10.0 * reading;
