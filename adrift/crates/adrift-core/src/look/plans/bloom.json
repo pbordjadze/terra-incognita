@@ -1,0 +1,14 @@
+{
+  "_": "The maybes bloom out of a held float and fold back (Adrift's rule 4; the look's timing 0.35 s out eased out, 0.25 s back eased in): a float twenty days adrift with the date stopped, held by intent, frames a tenth of a second apart, then let go where it is. adrift-check play adrift/crates/adrift-core/src/look/plans/bloom.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -62.0, "lat": 36.0, "zoom": 3.0 }, "day": 200.0, "seconds": 6.0, "running": false,
+             "floats": [ { "lon": -63.0, "lat": 36.0, "days_ago": 20 } ] },
+  "steps": [
+    { "shot": "free" },
+    { "intent": { "Hold": { "float": 1 } } }, { "advance": 0.02 }, { "shot": "held-0.02" },
+    { "advance": 0.1 }, { "shot": "held-0.12" }, { "advance": 0.1 }, { "shot": "held-0.22" },
+    { "advance": 0.1 }, { "shot": "held-0.32" }, { "advance": 0.3 }, { "shot": "held-0.62" },
+    { "intent": { "Release": { "float": 1, "at": { "lon": 0.0, "lat": 0.0 } } } },
+    { "advance": 0.08 }, { "shot": "let-go-0.08" }, { "advance": 0.08 }, { "shot": "let-go-0.16" }, { "advance": 0.2 }, { "shot": "let-go-0.36" }
+  ]
+}
