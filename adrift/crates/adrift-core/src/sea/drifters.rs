@@ -150,6 +150,11 @@ impl Track<'_> {
         format!("Drifter {}, {} {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], y0, d1, MONTHS[m1 - 1], y1)
     }
 
+    /// Every point of the run, in order, as places (for a look that wants degrees).
+    pub fn lonlat(&self) -> Vec<LonLat> {
+        self.run.points.iter().map(|&(lon, lat)| LonLat { lon: lon as f64, lat: lat as f64 }).collect()
+    }
+
     /// The day (days since 2000-01-01) of the point nearest the float.
     pub fn day(&self) -> f64 {
         self.run.day0 as f64 + self.point as f64
