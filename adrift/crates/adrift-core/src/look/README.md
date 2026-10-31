@@ -34,6 +34,9 @@ skeleton lands.
   the layout); the Rust lays a line out from the JSON's advances and bearings in points: the date
   under the disc (over the globe when it fills the screen), the note in italic under it, the
   credits along the foot, each on a halo of what is under it.
+- `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
+  control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's
+  `Press { at, since }` as `(at, thicken(now - since))`.
 - A float past the limb (facing under 0.3) is clipped away in the vertex shader; the Rust owns the
   slack (shown above 0.4, kept to 0.3) so nothing flickers at the rim.
 - `tools/adrift/lookbench` (a crate of its own on `adrift-core`) draws the marks with wgpu, headless,

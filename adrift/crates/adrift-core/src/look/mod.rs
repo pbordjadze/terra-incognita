@@ -180,7 +180,8 @@ pub struct LookFloat {
 #[derive(Clone, Debug, Default)]
 pub struct LookState {
     pub floats: Vec<LookFloat>,
-    /// A finger resting on the sea before a float is put: where, and how far through the beat (0..1).
+    /// A finger resting on the sea before a float is put: where, and how far through the beat (0..1:
+    /// Motion's `thicken(now - since)` from its `Press { at, since }`; `Unpress` clears it).
     pub resting: Option<(LonLat, f32)>,
     /// 0..1 as the held float's maybes (the GPU buffer `gpu::Maybes`) bloom out and fold back.
     pub bloom: f32,
@@ -247,6 +248,12 @@ impl Look {
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).
+    /// Where the date is drawn, x, y, w, h in points (y down), after a `prepare`: the control Motion's
+    /// scrub and pause gestures probe (touch/VOCABULARY.md); the only chrome there is.
+    pub fn date_bounds(&self) -> Option<[f32; 4]> {
+        self.words.date_bounds
+    }
+
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::gpu::Maybes) {
         self.wake.draw(rp, view_bind);
         self.maybes.draw(rp, view_bind, maybes);

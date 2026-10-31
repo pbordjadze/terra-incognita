@@ -123,6 +123,9 @@ pub struct Words {
     buffers: [wgpu::Buffer; 2],
     groups: [wgpu::BindGroup; 2],
     pub face: Face,
+    /// Where the date was last laid: x, y, w, h in points (y down), with the halo's room; the one
+    /// drawn thing that is also a control (a drag on it scrubs the date, a tap pauses it: Motion's).
+    pub date_bounds: Option<[f32; 4]>,
 }
 
 impl Words {
@@ -164,7 +167,7 @@ impl Words {
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
         let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face }
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None }
     }
 
     /// The glyphs of every line this frame (`Face::layout`).
@@ -190,7 +193,11 @@ impl Words {
         };
         let halo_for = |baseline: f32| if baseline - 14.0 * reading < disc[1] + disc[2] { sea_halo } else { paper_halo };
         let cx = width / 2.0;
-        let mut glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 17.0 * reading, ink: date_ink, tracking: 0.0 }, cx, foot, halo_for(foot));
+        let date_line = Line { text: date, style: Style::Regular, size: 17.0 * reading, ink: date_ink, tracking: 0.0 };
+        let dw = self.face.width(&date_line) + 24.0 * reading;
+        let dh = 17.0 * reading * 1.3 + 12.0 * reading;
+        self.date_bounds = Some([cx - dw / 2.0, foot - 17.0 * reading * 0.95 - 6.0 * reading, dw, dh]);
+        let mut glyphs = self.face.layout(&date_line, cx, foot, halo_for(foot));
         if !note.is_empty() {
             let y = foot + 19.0 * reading;
             glyphs.extend(self.face.layout(&Line { text: note, style: Style::Italic, size: 13.0 * reading, ink: note_ink, tracking: 0.0 }, cx, y, halo_for(y)));
