@@ -115,6 +115,9 @@ struct Plan {
     /// The page of credits open from the start.
     #[serde(default)]
     credits_open: bool,
+    /// The panel's rows held fixed, `[[id, x, y, w, h], ...]` in points, whatever the look draws
+    /// (Motion's D11, R6).
+    panel: Option<Vec<[f64; 5]>>,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -199,6 +202,9 @@ fn play(args: &[String]) -> Result<()> {
         credits_open: plan.credits_open,
     });
     app.set_scene(&scene);
+    if let Some(rows) = &plan.panel {
+        app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
+    }
     let mut t = 0.0;
     let fps = 60.0;
     app.frame(&target.view, t);

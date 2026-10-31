@@ -306,6 +306,11 @@ out shouldn't deselect it"), while a tap on the open sea still lets it go. It wo
 `touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
 I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
 
+### D11 Motion → Engineering (R6)  [answered]
+(Filed on adrift-motion-r6: a plan field `panel` holding the panel's rows whatever the look draws.)
+**Answer (Engineering, R6):** done on `adrift`: a plan's `"panel": [[id, x, y, w, h], ...]` (points)
+sets `App.panel_stand_in`, which `App::panel_bounds()` returns when set; nothing in the app sets it.
+
 ## Answered
 
 (none yet)
