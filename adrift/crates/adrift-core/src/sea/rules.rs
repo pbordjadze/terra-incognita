@@ -203,11 +203,30 @@ impl Rules {
         Flight { drift: Drift { at: LonLat { lon: slon as f64, lat: slat as f64 }, eddy }, held, measured }
     }
 
+    /// A float as it is put: at `at`, with a first eddy velocity drawn from what the drifters
+    /// measured there (a Gaussian of variance K / T on each axis: the velocity a water parcel
+    /// has at any moment, not the zero of a parcel that has just started), deterministic for
+    /// (at, day, seed, k). The real float is k = 0 and each maybe k = 1..n starts with its own
+    /// draw, so the cloud is right from the first day instead of growing from a point held still
+    /// for the memory's two or three days.
+    pub fn put(&self, at: LonLat, day: f64, seed: u64, k: u32) -> Drift {
+        let (lon, lat) = (at.lon as f32, at.lat as f32);
+        let (ku, kv, _) = self.eddy.at(lon, lat);
+        let (tu, tv) = self.eddy_time.at(lon, lat);
+        let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
+        // the put's draws are kept apart from the first step's by the day's bits inverted
+        let h = hash_seed(seed, k, !(day as f32).to_bits());
+        let eu = gaussian(h, 24) * (ku / tu).sqrt() * self.wander;
+        let ev = gaussian(h, 36) * (kv / tv).sqrt() * self.wander;
+        Drift { at, eddy: (eu, ev) }
+    }
+
     /// A float's maybes with memory, as `maybes` (k = 1..=n), each the flight reached.
     pub fn flights(&self, from: Drift, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Flight> {
         (1..=n)
             .map(|k| {
-                let mut d = from;
+                // each maybe is put afresh at the float's place, with its own first draw
+                let mut d = if from.eddy == (0.0, 0.0) { self.put(from.at, day0, seed, k) } else { from };
                 let mut day = day0;
                 let mut last = Flight { drift: d, held: Held::No, measured: 1.0 };
                 while day < until - 1e-9 {
