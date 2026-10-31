@@ -1,0 +1,8 @@
+   3m 26s  Passed   PlaygroundTests/testQuietGlobeRulesRunTogetherAndLeaveNothingBehind()
+   2m 51s  Passed   RemotePackTests/testRemoteRevisionArrivesRollsBackAndWorksOffline()
+   2m 20s  Passed   PlaygroundTests/testTwoDissimilarPrototypesInSuccessionLeaveNothingBehind()
+   1m 59s  Passed   PlaygroundTests/testBundledPackRunsOnTheGlobe()
+   1m 48s  Passed   PlaygroundTests/testCloudsAreOnTheGlobeAndTurnOff()
+   1m 29s  Passed   PlaygroundTests/testTheOceanMovesAndRingsWhereTouched()
+      48s  Passed   PlaygroundTests/testColdLaunchIsThePlainGlobe()
+      20s  Passed   PlaygroundTests/testEveryPrototypeIsListed()
