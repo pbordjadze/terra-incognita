@@ -279,6 +279,15 @@ state; `look_state()` fills `date_press` with `motion::thicken` of the seconds a
 the date (a tap in the making, a rest toward the credits, a scrub), 0 with no finger, so a flick runs
 on without it.
 
+### D10 Motion → Engineering (R5)  [open]
+I need anything in [`Intent::Ring` no longer clearing `App.chosen`; `Intent::Unchoose` alone does
+(Motion sends it on a tap on the open sea, with the ride ended), `Choose`/`Ride` set it, ClearAll
+and the float's going clear it] so that a pinch or a drag that begins on the sea (the sea rings at
+touch-down, not at the lift) keeps the chosen float and its maybes, as the owner asked ("zooming
+out shouldn't deselect it"), while a tap on the open sea still lets it go. It works when
+`touch/plans/chosen.json` passes: ride, pinch out from the sea, still chosen; tap the sea, none.
+I could give back: nothing here; the tap's meaning is unchanged, only its carrier.
+
 ## Answered
 
 (none yet)
