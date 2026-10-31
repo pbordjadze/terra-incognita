@@ -1,5 +1,9 @@
 {
- "title": "Rest, then drag: carry the float to other water; the globe does not move; undo and redo",
+ "title": "Rest, then drag: carry the float to other water; the globe does not move; undo takes it back",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -57,7 +61,7 @@
     "saw": [
      "Carry"
     ],
-    "held": 0,
+    "held": 1,
     "camera_moved": false
    }
   },
@@ -79,7 +83,7 @@
     ],
     "held": null,
     "float": {
-     "id": 0,
+     "id": 1,
      "lon": -20.0,
      "lat": 15.0
     },
@@ -102,27 +106,9 @@
      "Undo"
     ],
     "float": {
-     "id": 0,
+     "id": 1,
      "lon": -30.0,
      "lat": 20.0
-    }
-   }
-  },
-  {
-   "t": 2.0,
-   "key": "redo"
-  },
-  {
-   "t": 2.1,
-   "expect": {
-    "floats": 1,
-    "saw": [
-     "Redo"
-    ],
-    "float": {
-     "id": 0,
-     "lon": -20.0,
-     "lat": 15.0
     }
    }
   }

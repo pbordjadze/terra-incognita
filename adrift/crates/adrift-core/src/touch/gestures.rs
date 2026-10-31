@@ -2,22 +2,32 @@
 //! a touch that moves before the beat is the globe's, a touch that rests the beat is about what is
 //! under it. Nothing here reads the state but through the `Probe`.
 
-use super::camera::{CameraRig, Frame};
+use super::camera::CameraMove;
 use super::motion::{self, Motion};
-use crate::model::{Camera, FloatId, Hand, Intent, LonLat, Phase, PointerEvent};
+use crate::model::{Disc, Intent, LonLat, Phase, PointerEvent};
 use std::collections::{BTreeMap, VecDeque};
 
 /// What is under a point of the screen, as the state knows it this frame.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Hit {
-    /// A float within `REACH` reading points (the nearest), and where it is.
-    Float(FloatId, LonLat),
+    /// A float within reach (the nearest), and the place under the finger.
+    Float(u32, LonLat),
     /// The date drawn at the foot: the control for scrubbing and pausing.
     Date,
     Sea(LonLat),
     Land(LonLat),
     /// Off the globe's disc.
     Off,
+}
+
+impl Hit {
+    /// The place under the finger, if it is on the globe.
+    pub fn place(self) -> Option<LonLat> {
+        match self {
+            Hit::Float(_, p) | Hit::Sea(p) | Hit::Land(p) => Some(p),
+            Hit::Date | Hit::Off => None,
+        }
+    }
 }
 
 /// Keys the shells forward (the web build; a hardware keyboard).
@@ -27,19 +37,59 @@ pub enum Key {
     Redo,
 }
 
-/// The questions `Gestures` asks of the state. `App` answers them from the state and the camera it
-/// mirrored last frame.
+/// The screen as drawn this frame, in points: its size, the reading scale, the disc.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Frame {
+    pub width: f64,
+    pub height: f64,
+    /// Terra's reading scale: 1 on a phone, 1.2 on the 13-inch iPad; slop and reach grow with it.
+    pub reading: f64,
+    pub disc: Disc,
+}
+
+/// A rectangle of the screen, points.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Rect {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+impl Rect {
+    pub fn contains(&self, x: f64, y: f64) -> bool {
+        x >= self.x && x <= self.x + self.w && y >= self.y && y <= self.y + self.h
+    }
+}
+
+/// Where the date lives: a band at the foot of the screen, centred, the middle half of the width
+/// and `DATE_BAND` points tall above the bottom inset. The look draws the date in it; a drag there
+/// scrubs and a tap pauses. The one place both read.
+pub fn date_band(frame: &Frame) -> Rect {
+    let w = frame.width * 0.5;
+    Rect { x: (frame.width - w) / 2.0, y: frame.height - motion::DATE_INSET - motion::DATE_BAND, w, h: motion::DATE_BAND }
+}
+
+/// The questions `Gestures` asks of the state. The app answers them from the state and the camera
+/// as drawn this frame (touch/probe.rs).
 pub trait Probe {
     fn hit(&self, x: f64, y: f64) -> Hit;
-    /// Where a float is now; None once it is gone (taken out, undone).
-    fn float_at(&self, id: FloatId) -> Option<LonLat>;
-    /// Whether any float is on the sea (the idle turn holds still for one).
-    fn any_floats(&self) -> bool;
-    fn playing(&self) -> bool;
-    /// The clock's day (days since 2000-01-01).
+    /// Where a float is now; None once it is gone.
+    fn float_at(&self, id: u32) -> Option<LonLat>;
+    /// The float the camera drifts with.
+    fn riding(&self) -> Option<u32>;
+    fn running(&self) -> bool;
+    /// The clock's day.
     fn day(&self) -> f64;
-    /// The id the state will give the next float put, so the hand can name it before it exists.
-    fn next_float_id(&self) -> FloatId;
+    fn frame(&self) -> Frame;
+    fn motion(&self) -> Motion;
+}
+
+/// What the gestures ask of the app: intents for the state, moves for the camera.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Out {
+    pub intents: Vec<Intent>,
+    pub camera: Vec<CameraMove>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -48,50 +98,56 @@ struct Finger {
     y: f64,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum State {
     Idle,
     /// A finger down on the sea, the ring thickening.
-    Pressing { id: u32, x0: f64, y0: f64, t0: f64, at: LonLat },
+    Pressing { id: u64, x0: f64, y0: f64, t0: f64, at: LonLat },
     /// A finger down on a float.
-    Resting { id: u32, x0: f64, y0: f64, t0: f64, float: FloatId },
+    Resting { id: u64, x0: f64, y0: f64, t0: f64, float: u32, at: LonLat },
     /// A finger down on land or off the disc: silent unless it drags.
-    Down { id: u32, x0: f64, y0: f64 },
-    /// A float in hand: the one just put, or one held past the beat.
-    Holding { id: u32, x0: f64, y0: f64, float: FloatId, carried: bool, over: Hand },
-    /// The globe's drag.
+    Down { id: u64, x0: f64, y0: f64, t0: f64 },
+    /// A float in hand: the one just put (`float` None until the app names it), or one held past
+    /// the beat. `from` is where it was lifted; `over` where the hand is now.
+    Holding { id: u64, x0: f64, y0: f64, float: Option<u32>, from: LonLat, carried: bool, over: Hit },
     /// The globe's drag: the finger, and the point of the globe it took.
-    Orbit { id: u32, x: f64, y: f64, grab: Option<LonLat> },
-    Pinch { a: u32, b: u32 },
+    Orbit { id: u64, x: f64, y: f64, grab: Option<LonLat> },
+    Pinch { a: u64, b: u64 },
     /// Three fingers: waiting for a swipe.
     Three { x0: f64, done: bool },
-    DateDown { id: u32, x0: f64, day0: f64, scrubbing: bool },
+    DateDown { id: u64, x0: f64, t0: f64, day: f64, scrubbing: bool },
 }
 
 /// The state machine. One per screen.
 pub struct Gestures {
     state: State,
-    fingers: BTreeMap<u32, Finger>,
+    fingers: BTreeMap<u64, Finger>,
     /// The last tap's lift, for a double tap.
     last_tap: Option<(f64, f64, f64)>,
     /// The drag's last samples, for the fling.
     samples: VecDeque<(f64, f64, f64)>,
-    pub camera: CameraRig,
-    frame: Frame,
+}
+
+impl Default for Gestures {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Gestures {
-    pub fn new(camera: Camera, motion: Motion, frame: Frame, now: f64) -> Gestures {
-        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), camera: CameraRig::new(camera, motion, now), frame }
+    pub fn new() -> Gestures {
+        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new() }
     }
 
-    /// The screen changed (its size, the disc): the camera's turns are measured in it.
-    pub fn set_frame(&mut self, frame: Frame) {
-        self.frame = frame;
+    /// The app answers `Intent::Put` with the float it made, so the finger goes on holding it.
+    pub fn float_put(&mut self, id: u32) {
+        if let State::Holding { float: None, .. } = &mut self.state {
+            if let State::Holding { float, .. } = &mut self.state {
+                *float = Some(id);
+            }
+        }
     }
-    pub fn frame(&self) -> &Frame {
-        &self.frame
-    }
+
     /// What the finger is doing, for the checks and the workbench.
     pub fn describe(&self) -> &'static str {
         match self.state {
@@ -108,7 +164,8 @@ impl Gestures {
             State::DateDown { scrubbing: true, .. } => "scrubbing",
         }
     }
-    /// How long the finger has rested, for the look's ring (0 when not pressing).
+
+    /// How long the finger has rested on the sea, for the look's ring (None when not pressing).
     pub fn pressing_since(&self, now: f64) -> Option<f64> {
         match self.state {
             State::Pressing { t0, .. } => Some(now - t0),
@@ -116,92 +173,87 @@ impl Gestures {
         }
     }
 
-    fn slop(&self) -> f64 {
-        motion::SLOP * self.frame.reading
+    /// The float in hand, if any.
+    pub fn is_holding(&self) -> Option<u32> {
+        match self.state {
+            State::Holding { float, .. } => float,
+            _ => None,
+        }
     }
 
-    fn touching(&self) -> bool {
+    /// Whether any finger is down.
+    pub fn touching(&self) -> bool {
         !self.fingers.is_empty()
     }
 
-    fn hand(&self, probe: &dyn Probe, x: f64, y: f64) -> Hand {
-        match probe.hit(x, y) {
-            Hit::Sea(p) | Hit::Float(_, p) => Hand::Sea(p),
-            Hit::Land(p) => Hand::Land(p),
-            // the date lies over the globe or off it; what matters is the water under the finger
-            Hit::Date => match self.camera.unproject(x, y, &self.frame) {
-                Some(p) => Hand::Land(p),
-                None => Hand::Off,
-            },
-            Hit::Off => Hand::Off,
-        }
+    fn slop(probe: &dyn Probe) -> f64 {
+        motion::SLOP * probe.frame().reading
     }
 
     /// Undo by the system's shake (the device).
-    pub fn shaken(&mut self, out: &mut Vec<Intent>) {
+    pub fn shaken(&mut self) -> Out {
+        let mut out = Out::default();
         if matches!(self.state, State::Idle) {
-            out.push(Intent::Undo);
+            out.intents.push(Intent::Undo);
         }
+        out
     }
 
-    /// Undo and redo from a keyboard (the web build).
-    pub fn key(&mut self, key: Key, out: &mut Vec<Intent>) {
+    /// Undo and redo from a keyboard (the web build). Redo waits on `Intent::Redo` (DEMANDS.md).
+    pub fn key(&mut self, key: Key) -> Out {
+        let mut out = Out::default();
         if matches!(self.state, State::Idle) {
-            out.push(match key {
-                Key::Undo => Intent::Undo,
-                Key::Redo => Intent::Redo,
-            });
+            match key {
+                Key::Undo => out.intents.push(Intent::Undo),
+                Key::Redo => {}
+            }
         }
+        out
     }
 
     /// A mouse's wheel or a trackpad's pinch (the web build): zoom by `factor` about the cursor,
     /// what is under it staying under it. Nothing a finger does is changed by it.
-    pub fn wheel(&mut self, x: f64, y: f64, factor: f64, now: f64) {
-        if !matches!(self.state, State::Idle | State::Orbit { .. }) {
-            return;
+    pub fn wheel(&mut self, x: f64, y: f64, factor: f64, probe: &dyn Probe) -> Out {
+        let mut out = Out::default();
+        if matches!(self.state, State::Idle | State::Orbit { .. }) {
+            out.camera.push(CameraMove::Stop);
+            out.camera.push(CameraMove::Pinch { grab: probe.hit(x, y).place(), ax: x, ay: y, bx: x, by: y, factor });
         }
-        self.camera.touched(now);
-        self.camera.pinch(factor, x, y, x, y, &self.frame);
+        out
     }
 
-    /// A pointer event. Pushes the intents it means onto `out`.
-    pub fn event(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
+    /// A pointer event: the intents and camera moves it means.
+    pub fn feed(&mut self, e: PointerEvent, probe: &dyn Probe) -> Out {
+        let mut out = Out::default();
         match e.phase {
-            Phase::Down => self.down(e, probe, out),
-            Phase::Move => self.moved(e, probe, out),
-            Phase::Up => self.up(e, probe, out),
-            Phase::Cancel => self.cancel(e, out),
+            Phase::Down => self.down(&e, probe, &mut out),
+            Phase::Move => self.moved(&e, probe, &mut out),
+            Phase::Up => self.up(&e, probe, &mut out),
+            Phase::Cancel => self.cancel(&e, &mut out),
         }
+        out
     }
 
-    fn down(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
+    fn down(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
         self.fingers.insert(e.id, Finger { x: e.x, y: e.y });
-        self.camera.touched(e.t);
+        out.camera.push(CameraMove::Stop);
         let n = self.fingers.len();
-        match (&self.state, n) {
+        match (self.state, n) {
             (State::Idle, 1) => {
                 self.samples.clear();
                 self.state = match probe.hit(e.x, e.y) {
                     Hit::Sea(at) => {
-                        out.push(Intent::Ring { at });
-                        out.push(Intent::Press { at, since: e.t });
+                        out.intents.push(Intent::Ring { at });
                         State::Pressing { id: e.id, x0: e.x, y0: e.y, t0: e.t, at }
                     }
-                    Hit::Float(float, _) => State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float },
-                    Hit::Date => State::DateDown { id: e.id, x0: e.x, day0: probe.day(), scrubbing: false },
-                    Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y },
+                    Hit::Float(float, at) => State::Resting { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, at },
+                    Hit::Date => State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false },
+                    Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y, t0: e.t },
                 };
             }
             // a second finger before the beat, or during the globe's drag: a pinch
             (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. }, 2) => {
-                let a = *id;
-                if matches!(self.state, State::Pressing { .. }) {
-                    out.push(Intent::Unpress);
-                }
-                if self.camera.leave() {
-                    out.push(Intent::Leave);
-                }
-                self.state = State::Pinch { a, b: e.id };
+                self.state = State::Pinch { a: id, b: e.id };
             }
             // a third finger ends the pinch where it is and waits for a swipe
             (State::Pinch { .. }, 3) => {
@@ -217,44 +269,41 @@ impl Gestures {
         self.fingers.values().map(|f| f.x).sum::<f64>() / n
     }
 
-    fn moved(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
+    fn moved(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
         let Some(prev) = self.fingers.get(&e.id).copied() else { return };
         self.fingers.insert(e.id, Finger { x: e.x, y: e.y });
-        let slop = self.slop();
-        match self.state.clone() {
+        let slop = Self::slop(probe);
+        match self.state {
             State::Pressing { id, x0, y0, t0, .. } | State::Resting { id, x0, y0, t0, .. } if id == e.id => {
-                let strayed = (e.x - x0).hypot(e.y - y0) > slop;
-                if strayed {
+                if (e.x - x0).hypot(e.y - y0) > slop {
                     if e.t - t0 >= motion::BEAT {
                         // the beat passed without a tick: it was a rest
                         self.rest_elapsed(probe, out);
                         self.moved(e, probe, out);
                         return;
                     }
-                    if matches!(self.state, State::Pressing { .. }) {
-                        out.push(Intent::Unpress);
-                    }
-                    self.begin_orbit(id, x0, y0, e, out);
+                    self.begin_orbit(id, x0, y0, e, probe, out);
                 }
             }
-            State::Down { id, x0, y0 } if id == e.id => {
+            State::Down { id, x0, y0, .. } if id == e.id => {
                 if (e.x - x0).hypot(e.y - y0) > slop {
-                    self.begin_orbit(id, x0, y0, e, out);
+                    self.begin_orbit(id, x0, y0, e, probe, out);
                 }
             }
-            State::Holding { id, x0, y0, float, carried, .. } if id == e.id => {
+            State::Holding { id, x0, y0, float, from, carried, .. } if id == e.id => {
                 let carried = carried || (e.x - x0).hypot(e.y - y0) > slop;
                 if carried {
-                    if self.camera.leave() {
-                        out.push(Intent::Leave);
+                    let over = probe.hit(e.x, e.y);
+                    if let (Some(float), Some(to)) = (float, over.place()) {
+                        out.intents.push(Intent::Carry { float, to });
                     }
-                    let over = self.hand(probe, e.x, e.y);
-                    out.push(Intent::Carry { id: float, to: over });
-                    self.state = State::Holding { id, x0, y0, float, carried: true, over };
+                    // (off the disc the float stays where it was last over water, in hand, until
+                    // `Intent::Carry` can say "over the rim": DEMANDS.md)
+                    self.state = State::Holding { id, x0, y0, float, from, carried: true, over };
                 }
             }
             State::Orbit { id, x, y, grab } if id == e.id => {
-                self.camera.drag(grab, e.x, e.y, e.x - x, e.y - y, &self.frame);
+                out.camera.push(CameraMove::Drag { grab, x: e.x, y: e.y, dx: e.x - x, dy: e.y - y });
                 self.sample(e);
                 self.state = State::Orbit { id, x: e.x, y: e.y, grab };
             }
@@ -264,35 +313,39 @@ impl Gestures {
                 let d1 = (e.x - other.x).hypot(e.y - other.y).max(1.0);
                 let (ax, ay) = ((prev.x + other.x) / 2.0, (prev.y + other.y) / 2.0);
                 let (bx, by) = ((e.x + other.x) / 2.0, (e.y + other.y) / 2.0);
-                self.camera.pinch(d1 / d0, ax, ay, bx, by, &self.frame);
+                out.camera.push(CameraMove::Pinch { grab: probe.hit(ax, ay).place(), ax, ay, bx, by, factor: d1 / d0 });
             }
             State::Three { x0, done: false } => {
                 let dx = self.mean_x() - x0;
                 if dx.abs() >= motion::SWIPE {
-                    out.push(if dx < 0.0 { Intent::Undo } else { Intent::Redo });
+                    if dx < 0.0 {
+                        out.intents.push(Intent::Undo);
+                    }
+                    // (a swipe right waits on `Intent::Redo`: DEMANDS.md)
                     self.state = State::Three { x0, done: true };
                 }
             }
-            State::DateDown { id, x0, day0, scrubbing } if id == e.id => {
+            State::DateDown { id, x0, t0, day, scrubbing } if id == e.id => {
                 let dx = e.x - x0;
                 if scrubbing || dx.abs() > slop {
                     if !scrubbing {
-                        out.push(Intent::Play(false));
+                        out.intents.push(Intent::SetRunning { running: false });
                     }
-                    out.push(Intent::Scrub { day: day0 + dx * motion::days_per_point(self.frame.width) });
-                    self.state = State::DateDown { id, x0, day0, scrubbing: true };
+                    let to = day + dx * motion::days_per_point(probe.frame().width);
+                    let now = probe.day();
+                    if (to - now).abs() > 1e-9 {
+                        out.intents.push(Intent::Scrub { days: to - now });
+                    }
+                    self.state = State::DateDown { id, x0, t0, day, scrubbing: true };
                 }
             }
             _ => {}
         }
     }
 
-    fn begin_orbit(&mut self, id: u32, x0: f64, y0: f64, e: &PointerEvent, out: &mut Vec<Intent>) {
-        if self.camera.leave() {
-            out.push(Intent::Leave);
-        }
-        let grab = self.camera.unproject(x0, y0, &self.frame);
-        self.camera.drag(grab, e.x, e.y, e.x - x0, e.y - y0, &self.frame);
+    fn begin_orbit(&mut self, id: u64, x0: f64, y0: f64, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
+        let grab = probe.hit(x0, y0).place();
+        out.camera.push(CameraMove::Drag { grab, x: e.x, y: e.y, dx: e.x - x0, dy: e.y - y0 });
         self.samples.clear();
         self.sample(e);
         self.state = State::Orbit { id, x: e.x, y: e.y, grab };
@@ -326,42 +379,43 @@ impl Gestures {
         ((last.1 - first.1) / dt, (last.2 - first.2) / dt)
     }
 
-    fn up(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
+    fn up(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
         if self.fingers.remove(&e.id).is_none() {
             return;
         }
-        match self.state.clone() {
-            State::Pressing { id, t0, .. } if id == e.id => {
+        match self.state {
+            State::Pressing { id, t0, at, .. } if id == e.id => {
                 if e.t - t0 >= motion::BEAT {
                     self.rest_elapsed(probe, out);
                     self.up_from_hold(e, probe, out);
                     return;
                 }
-                out.push(Intent::Unpress);
-                self.tapped(e, probe);
+                // a tap: the ring alone
+                self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
-            State::Resting { id, t0, float, .. } if id == e.id => {
+            State::Resting { id, t0, float, at, .. } if id == e.id => {
                 if e.t - t0 >= motion::BEAT {
                     self.rest_elapsed(probe, out);
                     self.up_from_hold(e, probe, out);
                     return;
                 }
-                if self.camera.riding() != Some(float) {
-                    self.camera.ride(float);
-                    out.push(Intent::Ride { id: float });
+                if probe.riding() != Some(float) {
+                    out.intents.push(Intent::Ride { float });
                 }
-                self.tapped(e, probe);
+                self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
             State::Down { id, .. } if id == e.id => {
-                self.tapped(e, probe);
+                self.tapped(e, probe.hit(e.x, e.y).place(), out);
                 self.state = State::Idle;
             }
             State::Holding { id, .. } if id == e.id => self.up_from_hold(e, probe, out),
             State::Orbit { id, .. } if id == e.id => {
                 let (vx, vy) = self.velocity(e.t);
-                self.camera.fling(vx, vy, e.t);
+                if vx != 0.0 || vy != 0.0 {
+                    out.camera.push(CameraMove::Fling { vx, vy });
+                }
                 self.state = State::Idle;
             }
             State::Pinch { a, b } if e.id == a || e.id == b => {
@@ -369,8 +423,7 @@ impl Gestures {
                 let rest = if e.id == a { b } else { a };
                 let f = self.fingers[&rest];
                 self.samples.clear();
-                let grab = self.camera.unproject(f.x, f.y, &self.frame);
-                self.state = State::Orbit { id: rest, x: f.x, y: f.y, grab };
+                self.state = State::Orbit { id: rest, x: f.x, y: f.y, grab: probe.hit(f.x, f.y).place() };
             }
             State::Three { .. } => {
                 if self.fingers.is_empty() {
@@ -379,7 +432,7 @@ impl Gestures {
             }
             State::DateDown { id, scrubbing, .. } if id == e.id => {
                 if !scrubbing {
-                    out.push(Intent::Play(!probe.playing()));
+                    out.intents.push(Intent::SetRunning { running: !probe.running() });
                 }
                 self.state = State::Idle;
             }
@@ -391,15 +444,20 @@ impl Gestures {
         }
     }
 
-    fn up_from_hold(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
-        if let State::Holding { float, carried, .. } = self.state {
+    /// The hand opens: not carried, nothing changed; carried over sea, set down there; over land,
+    /// back where it was lifted; off the disc, taken out.
+    fn up_from_hold(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
+        if let State::Holding { float: Some(float), from, carried, .. } = self.state {
             if !carried {
-                out.push(Intent::Release { id: float, at: None });
+                out.intents.push(Intent::Release { float, at: Some(from) });
             } else {
-                match self.hand(probe, e.x, e.y) {
-                    Hand::Sea(p) => out.push(Intent::Release { id: float, at: Some(p) }),
-                    Hand::Land(_) => out.push(Intent::Release { id: float, at: None }),
-                    Hand::Off => out.push(Intent::TakeOut { id: float }),
+                match probe.hit(e.x, e.y) {
+                    Hit::Sea(p) | Hit::Float(_, p) => out.intents.push(Intent::Release { float, at: Some(p) }),
+                    Hit::Land(_) | Hit::Date => {
+                        out.intents.push(Intent::Carry { float, to: from });
+                        out.intents.push(Intent::Release { float, at: Some(from) });
+                    }
+                    Hit::Off => out.intents.push(Intent::Release { float, at: None }),
                 }
             }
         }
@@ -407,10 +465,10 @@ impl Gestures {
     }
 
     /// A tap lifted: a second within the double tap's time and distance flies in about it.
-    fn tapped(&mut self, e: &PointerEvent, _probe: &dyn Probe) {
+    fn tapped(&mut self, e: &PointerEvent, at: Option<LonLat>, out: &mut Out) {
         if let Some((t, x, y)) = self.last_tap {
             if e.t - t <= motion::DOUBLE_TAP_S && (e.x - x).hypot(e.y - y) <= motion::DOUBLE_TAP_PT {
-                self.camera.double_tap(self.camera.unproject(e.x, e.y, &self.frame), e.t);
+                out.camera.push(CameraMove::Fly { at });
                 self.last_tap = None;
                 return;
             }
@@ -418,29 +476,25 @@ impl Gestures {
         self.last_tap = Some((e.t, e.x, e.y));
     }
 
-    fn cancel(&mut self, e: &PointerEvent, out: &mut Vec<Intent>) {
+    fn cancel(&mut self, e: &PointerEvent, out: &mut Out) {
         self.fingers.remove(&e.id);
-        match self.state.clone() {
-            State::Pressing { id, .. } if id == e.id => {
-                out.push(Intent::Unpress);
-                self.state = State::Idle;
-            }
-            State::Holding { id, float, .. } if id == e.id => {
-                out.push(Intent::Release { id: float, at: None });
+        match self.state {
+            State::Holding { id, float, from, .. } if id == e.id => {
+                if let Some(float) = float {
+                    out.intents.push(Intent::Carry { float, to: from });
+                    out.intents.push(Intent::Release { float, at: Some(from) });
+                }
                 self.state = State::Idle;
             }
             State::Pinch { a, b } if e.id == a || e.id == b => {
                 let rest = if e.id == a { b } else { a };
                 match self.fingers.get(&rest).copied() {
-                    Some(f) => {
-                        let grab = self.camera.unproject(f.x, f.y, &self.frame);
-                        self.state = State::Orbit { id: rest, x: f.x, y: f.y, grab };
-                    }
+                    Some(f) => self.state = State::Orbit { id: rest, x: f.x, y: f.y, grab: None },
                     None => self.state = State::Idle,
                 }
             }
             State::Three { .. } if !self.fingers.is_empty() => {}
-            State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } if id == e.id => {
+            State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {
@@ -452,36 +506,28 @@ impl Gestures {
     }
 
     /// The beat passed with the finger resting: the sea's press puts a float, a float's rest holds it.
-    fn rest_elapsed(&mut self, probe: &dyn Probe, out: &mut Vec<Intent>) {
-        match self.state.clone() {
+    fn rest_elapsed(&mut self, probe: &dyn Probe, out: &mut Out) {
+        match self.state {
             State::Pressing { id, x0, y0, at, .. } => {
-                let float = probe.next_float_id();
-                out.push(Intent::Put { id: float, at });
-                self.state = State::Holding { id, x0, y0, float, carried: false, over: Hand::Sea(at) };
+                out.intents.push(Intent::Put { at });
+                self.state = State::Holding { id, x0, y0, float: None, from: at, carried: false, over: Hit::Sea(at) };
             }
-            State::Resting { id, x0, y0, float, .. } => {
-                out.push(Intent::Hold { id: float });
-                let over = match probe.float_at(float) {
-                    Some(p) => Hand::Sea(p),
-                    None => Hand::Off,
-                };
-                self.state = State::Holding { id, x0, y0, float, carried: false, over };
+            State::Resting { id, x0, y0, float, at, .. } => {
+                out.intents.push(Intent::Hold { float });
+                let from = probe.float_at(float).unwrap_or(at);
+                self.state = State::Holding { id, x0, y0, float: Some(float), from, carried: false, over: Hit::Sea(from) };
             }
             _ => {}
         }
     }
 
-    /// Every frame: the beat elapsing under a resting finger, and the camera's own motion.
-    /// `dt` seconds since the last tick.
-    pub fn tick(&mut self, now: f64, dt: f64, probe: &dyn Probe, out: &mut Vec<Intent>) {
+    /// Every frame: the beat elapsing under a resting finger.
+    pub fn tick(&mut self, now: f64, probe: &dyn Probe) -> Out {
+        let mut out = Out::default();
         match self.state {
-            State::Pressing { t0, .. } | State::Resting { t0, .. } if now - t0 >= motion::BEAT => self.rest_elapsed(probe, out),
+            State::Pressing { t0, .. } | State::Resting { t0, .. } if now - t0 >= motion::BEAT => self.rest_elapsed(probe, &mut out),
             _ => {}
         }
-        let ridden = self.camera.riding().and_then(|id| probe.float_at(id));
-        let touching = self.touching();
-        if let Some(c) = self.camera.frame(now, dt, &self.frame, ridden, !probe.any_floats(), touching) {
-            out.push(Intent::Camera(c));
-        }
+        out
     }
 }

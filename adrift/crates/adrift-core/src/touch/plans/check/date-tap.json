@@ -1,0 +1,83 @@
+{
+  "ppp": 3.0,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 9800.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        196.5,
+        806.0
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "id": 0,
+      "up": [
+        196.5,
+        806.0
+      ]
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "expect": {
+        "day": 9800.0,
+        "playing": false,
+        "saw": [
+          "Pause"
+        ]
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.3
+    },
+    {
+      "down": [
+        196.5,
+        806.0
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "id": 0,
+      "up": [
+        196.5,
+        806.0
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "playing": true,
+        "saw": [
+          "Play"
+        ]
+      },
+      "shot": "expect-02"
+    }
+  ],
+  "title": "Tap the date to pause, tap again to play"
+}

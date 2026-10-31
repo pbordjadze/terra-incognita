@@ -1,0 +1,85 @@
+{
+  "ppp": 3.0,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 9800.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        196.5,
+        806.0
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "id": 0,
+      "move": [
+        246.5,
+        806.0
+      ]
+    },
+    {
+      "advance": 0.1
+    },
+    {
+      "id": 0,
+      "move": [
+        296.5,
+        806.0
+      ]
+    },
+    {
+      "advance": 0.04999999999999999
+    },
+    {
+      "expect": {
+        "day": 9900.0,
+        "playing": false,
+        "saw": [
+          "Pause",
+          "Scrub"
+        ],
+        "state": "scrubbing"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.04999999999999999
+    },
+    {
+      "id": 0,
+      "up": [
+        296.5,
+        806.0
+      ]
+    },
+    {
+      "advance": 0.10000000000000003
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "floats": 0,
+        "playing": false,
+        "state": "idle"
+      },
+      "shot": "expect-02"
+    }
+  ],
+  "title": "Drag the date: the clock pauses and the day follows the finger; it stays paused"
+}

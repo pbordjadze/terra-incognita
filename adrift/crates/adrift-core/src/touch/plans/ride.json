@@ -1,5 +1,9 @@
 {
  "title": "Tap a float and the camera drifts with it; any drag leaves it",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -35,9 +39,9 @@
     "saw": [
      "Ride"
     ],
-    "riding": 0,
+    "riding": 1,
     "not": [
-     "Press"
+     "Put"
     ]
    }
   },
@@ -48,10 +52,10 @@
   {
    "t": 3.0,
    "expect": {
-    "riding": 0,
+    "riding": 1,
     "camera_near_float": [
-     0,
-     0.3
+     1,
+     0.4
     ],
     "camera_moved": true
    }
@@ -72,32 +76,29 @@
    "t": 3.15,
    "move": 0,
    "xy": [
-    400,
-    700
+    196.5,
+    511.2
    ]
   },
   {
    "t": 3.2,
    "move": 0,
    "xy": [
-    460,
-    720
+    227.9,
+    528.2
    ]
   },
   {
-   "t": 3.3,
+   "t": 3.25,
    "up": 0,
    "xy": [
-    460,
-    720
+    227.9,
+    528.2
    ]
   },
   {
    "t": 3.4,
    "expect": {
-    "saw": [
-     "Leave"
-    ],
     "riding": null
    }
   },

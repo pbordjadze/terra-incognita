@@ -1,0 +1,102 @@
+{
+  "ppp": 3.0,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [
+      {
+        "days_ago": 3.0,
+        "lat": 20.0,
+        "lon": -30.0
+      }
+    ],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.05
+    },
+    {
+      "id": 0,
+      "move": [
+        216.2,
+        426.0
+      ]
+    },
+    {
+      "advance": 0.05
+    },
+    {
+      "id": 0,
+      "move": [
+        235.8,
+        443.0
+      ]
+    },
+    {
+      "advance": 0.05000000000000002
+    },
+    {
+      "id": 0,
+      "move": [
+        255.5,
+        460.1
+      ]
+    },
+    {
+      "advance": 0.04999999999999999
+    },
+    {
+      "id": 0,
+      "up": [
+        255.5,
+        460.1
+      ]
+    },
+    {
+      "advance": 0.09999999999999998
+    },
+    {
+      "expect": {
+        "camera_moved": true,
+        "float": {
+          "id": 1,
+          "lat": 20.0,
+          "lon": -30.0
+        },
+        "floats": 1,
+        "not": [
+          "Hold",
+          "Carry",
+          "Release",
+          "Ride"
+        ],
+        "state": "idle"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.10000000000000003
+    },
+    {
+      "shot": "turned"
+    }
+  ],
+  "title": "A drag that begins on a float before the beat is the globe's: the float stays"
+}

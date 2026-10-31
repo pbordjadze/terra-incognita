@@ -1,5 +1,9 @@
 {
  "title": "A tap near two floats takes the nearest",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -32,7 +36,7 @@
   {
    "t": 0.1,
    "expect": {
-    "riding": 1
+    "riding": 2
    }
   }
  ],

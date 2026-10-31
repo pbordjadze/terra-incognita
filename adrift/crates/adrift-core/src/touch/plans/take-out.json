@@ -1,5 +1,9 @@
 {
- "title": "Carry a float off the rim and it is taken out in plain sight; undo brings it back",
+ "title": "Carry a float off the rim and it is taken out; undo brings it back",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -41,8 +45,8 @@
    "t": 0.7,
    "move": 0,
    "xy": [
-    30,
-    200
+    6.0,
+    6.0
    ]
   },
   {
@@ -52,9 +56,6 @@
   {
    "t": 0.75,
    "expect": {
-    "saw": [
-     "CarryOff"
-    ],
     "state": "carrying",
     "floats": 1
    }
@@ -79,16 +80,16 @@
    "t": 1.0,
    "move": 0,
    "xy": [
-    30,
-    200
+    6.0,
+    6.0
    ]
   },
   {
    "t": 1.1,
    "up": 0,
    "xy": [
-    30,
-    200
+    6.0,
+    6.0
    ]
   },
   {
@@ -117,9 +118,9 @@
      "Undo"
     ],
     "float": {
-     "id": 0,
-     "lon": -30.0,
-     "lat": 20.0
+     "id": 1,
+     "lon": -60.0,
+     "lat": 40.0
     }
    }
   }

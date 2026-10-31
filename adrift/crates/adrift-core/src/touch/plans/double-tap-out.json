@@ -1,14 +1,18 @@
 {
  "title": "Past half the deepest, a double tap flies out to the whole globe about the centre",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -32.0,
   "lat": 20.0,
-  "zoom": 6.0
+  "zoom": 7.0
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],

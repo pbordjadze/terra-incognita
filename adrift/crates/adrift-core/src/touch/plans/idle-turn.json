@@ -1,5 +1,9 @@
 {
  "title": "Left alone with nothing on the sea the globe turns; with a float, it holds still",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],

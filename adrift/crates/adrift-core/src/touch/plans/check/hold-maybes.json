@@ -1,0 +1,86 @@
+{
+  "ppp": 3.0,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [
+      {
+        "days_ago": 3.0,
+        "lat": 20.0,
+        "lon": -30.0
+      }
+    ],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.5
+    },
+    {
+      "expect": {
+        "held": 1,
+        "not": [
+          "Ring"
+        ],
+        "saw": [
+          "Hold"
+        ],
+        "state": "holding"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.30000000000000004
+    },
+    {
+      "shot": "maybes"
+    },
+    {
+      "advance": 0.3999999999999999
+    },
+    {
+      "id": 0,
+      "up": [
+        226.27960378789263,
+        431.3931664700614
+      ]
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "float": {
+          "id": 1,
+          "lat": 20.0,
+          "lon": -30.0
+        },
+        "floats": 1,
+        "held": null,
+        "saw": [
+          "Release"
+        ],
+        "state": "idle"
+      },
+      "shot": "expect-02"
+    }
+  ],
+  "title": "Rest a beat on a float: you hold it (its maybes); lift and nothing changed"
+}

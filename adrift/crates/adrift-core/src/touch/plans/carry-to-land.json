@@ -1,5 +1,9 @@
 {
  "title": "A carry released over land goes back where it was lifted",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -41,15 +45,15 @@
    "t": 0.7,
    "move": 0,
    "at": [
-    -70.0,
-    20.0
+    -100.0,
+    40.0
    ]
   },
   {
    "t": 0.75,
    "expect": {
     "saw": [
-     "CarryLand"
+     "Carry"
     ],
     "state": "carrying"
    }
@@ -58,8 +62,8 @@
    "t": 0.8,
    "up": 0,
    "at": [
-    -70.0,
-    20.0
+    -100.0,
+    40.0
    ]
   },
   {
@@ -67,10 +71,10 @@
    "expect": {
     "floats": 1,
     "saw": [
-     "ReleaseBack"
+     "Release"
     ],
     "float": {
-     "id": 0,
+     "id": 1,
      "lon": -30.0,
      "lat": 20.0
     },

@@ -7,8 +7,7 @@ use crate::look::sprites::{KIND_BEAD, KIND_FLOAT, KIND_MAYBE};
 use crate::look::{sea::Ripple, GroundPass, Instance, SeaPass, SpritePass};
 use crate::model::*;
 use crate::sea::Rules;
-use crate::touch::gestures::CameraMove;
-use crate::touch::{CameraControl, Gestures};
+use crate::touch::{CameraControl, Gestures, Motion, Out};
 use serde::{Deserialize, Serialize};
 
 /// What the reader has done, to take back.
@@ -204,22 +203,22 @@ impl App {
 
     pub fn pointer(&mut self, ev: PointerEvent) {
         let mut gestures = std::mem::take(&mut self.gestures);
-        let out = gestures.feed(ev, |x, y| self.hit(x, y));
+        let out = gestures.feed(ev, &*self);
         self.gestures = gestures;
-        self.apply(out.intents, out.camera);
+        self.apply(out, ev.t);
     }
 
-    fn apply(&mut self, intents: Vec<Intent>, moves: Vec<CameraMove>) {
+    fn motion(&self) -> Motion {
+        Motion { reduce: self.reduce_motion }
+    }
+
+    fn apply(&mut self, out: Out, now: f64) {
         let disc = self.disc();
-        for m in moves {
-            match m {
-                CameraMove::Turn { dx, dy } => self.camera.turn(&disc, dx, dy),
-                CameraMove::Fling { vx, vy } => self.camera.fling(&disc, vx, vy),
-                CameraMove::Zoom { factor } => self.camera.zoom_by(factor),
-                CameraMove::Stop => self.camera.stop(),
-            }
+        let motion = self.motion();
+        for m in out.camera {
+            self.camera.apply(&disc, m, now, motion);
         }
-        for i in intents {
+        for i in out.intents {
             self.intend(i);
         }
     }
@@ -340,8 +339,10 @@ impl App {
             None => 0.0,
         };
         self.last_t = Some(now);
-        let out = self.gestures.tick(now);
-        self.apply(out.intents, out.camera);
+        let mut gestures = std::mem::take(&mut self.gestures);
+        let out = gestures.tick(now, &*self);
+        self.gestures = gestures;
+        self.apply(out, now);
         if self.clock.running {
             self.clock.day += self.clock.rate * dt;
             if !self.reduce_motion {
@@ -356,7 +357,7 @@ impl App {
         if self.camera.riding.is_some() && ride_at.is_none() {
             self.camera.riding = None;
         }
-        self.camera.tick(dt, ride_at);
+        self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), self.motion());
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
     }

@@ -21,44 +21,47 @@ that rests the beat is about what is under it. Nothing marks, nothing points, no
 
 ## Inputs
 
-`Gestures` receives `model::PointerEvent { id, phase: Down|Move|Up|Cancel, x, y, t }` (points,
-seconds) and a `tick(t)` each frame (the beat elapses without an event). To decide, it asks a
-`Probe` what is under a point, nothing more: `Hit::Float(id)` (within `REACH`, the nearest),
-`Hit::Date` (the date's drawn bounds), `Hit::Sea`, `Hit::Land`, `Hit::Off` (off the globe's disc); where a float is; whether the clock
-plays and its day; the id the next float will get. It never reads the state otherwise. It writes `model::Intent`s; `App` applies them; the look draws
-the result. Undo and redo also arrive as `Gestures::shaken(t)` and `Gestures::key(Key)`.
+`Gestures::feed` receives `model::PointerEvent { id, phase: Down|Move|Up|Cancel, x, y, t }`
+(points, seconds) and `Gestures::tick(now)` runs each frame (the beat elapses without an event).
+To decide, it asks a `Probe` (`touch/probe.rs` answers for `App`) what is under a point:
+`Hit::Float(id, place)` (within reach, the nearest), `Hit::Date` (inside `touch::date_band`),
+`Hit::Sea`, `Hit::Land`, `Hit::Off` (off the disc); where a float is; which float is ridden; the
+clock; the frame (size, reading scale, disc); Reduce Motion. It reads the state no other way. It
+returns `Out`: `model::Intent`s, which `App` applies, and `CameraMove`s, which `App` hands to
+`CameraControl::apply`; the look draws the state and never reads pointers. Undo also arrives as
+`Gestures::shaken()` and `Gestures::key(Key::Undo)`; `Gestures::wheel(x, y, factor)` zooms about a
+mouse's cursor (the web build).
 
 ## What the shells owe
 
 The device shell turns touches into `PointerEvent`s (one id a finger, times in seconds), calls
 `Gestures::shaken` on the system's shake, plays a light haptic when it applies `Put` or `Hold` (the
-beat is felt as well as seen, Terra's `hold` feel), and reads Reduce Motion into `Motion`. The web
-shell forwards pointer events the same way, `Gestures::key(Undo|Redo)` for ⌘Z / ⇧⌘Z (Ctrl on other
-systems) and `Gestures::wheel(x, y, factor)` for a mouse's wheel or a trackpad's pinch (zoom about
-the cursor; a mouse has no pinch). Both give `Gestures` a `Frame` whenever the screen or the disc
-changes.
+beat is felt as well as seen, Terra's `hold` feel), and reads Reduce Motion into `App`. The web
+shell forwards pointer events the same way, `Gestures::key` for ⌘Z (Ctrl on other systems) and
+`Gestures::wheel` for a mouse's wheel or a trackpad's pinch. The look draws the date inside
+`touch::date_band(frame)`: the middle half of the width, 44 points tall, 24 above the bottom edge.
 
-## Proposed intents (model.rs is Engineering's; this is Motion's ask)
+## The intents (model.rs, Engineering's) and how the vocabulary maps onto them
 
-```
-enum Intent {
-    Ring { at: LonLat },                       // the sea rings where it was touched (Down on sea)
-    Press { at: LonLat, since: f64 },          // the finger rests on the sea: the ring thickens from `since`
-    Unpress,                                   // it lifted or moved before the beat: the ring lets go
-    Put { id: FloatId, at: LonLat },           // the beat: a float (the id the probe promised), held under the finger (undoable)
-    Hold { id: FloatId },                      // a held float: its maybes, the nearest drifter
-    Carry { id: FloatId, to: Hand },           // Hand::Sea(LonLat) | Hand::Land(LonLat) | Hand::Off
-    Release { id: FloatId, at: Option<LonLat> },// Some: set down there (undoable if moved); None: back where lifted
-    TakeOut { id: FloatId },                   // released off the rim (undoable)
-    Ride { id: FloatId }, Leave,               // the camera drifts with it; any drag leaves
-    Camera(Camera),                            // every frame the camera moved (orbit, fling, pinch, flight, ride)
-    Scrub { day: f64 }, Play(bool),            // the date
-    Undo, Redo,
-}
-```
+| Intent | Motion emits it when |
+| --- | --- |
+| `Ring { at }` | a finger lands on the sea (the ring starts at touch-down, not at the lift: the sea answers at once) |
+| `Put { at }` | the beat passes on the sea; the app answers `Gestures::float_put(id)` and the finger holds it |
+| `Hold { float }` | the beat passes on a float |
+| `Carry { float, to }` | a held finger moves past the slop: `to` is the place under it, water or land |
+| `Release { float, at: Some(p) }` | the hand opens over water (`p` there), or without having carried (`p` where it was lifted: the app sees nothing moved) |
+| `Carry { to: from }` then `Release { at: Some(from) }` | the hand opens over land, or the system cancels the touch: back where it was lifted |
+| `Release { float, at: None }` | the hand opens off the disc: taken out |
+| `Ride { float }` | a tap on a float the camera is not already riding (the app's `Ride` toggles; Motion never sends it for the ridden one) |
+| `Scrub { days }` | a drag on the date, by its horizontal move since the last event (`DAYS_PER_POINT`) |
+| `SetRunning { false }` | the first move of a scrub; `SetRunning { !running }` a tap on the date |
+| `Undo` | a three-finger swipe left, a shake, ⌘Z |
 
-`Camera { lon, lat, zoom }` is the point of the globe at the screen's centre and how far in, as
-Terra's. The look draws from the state only; it never reads pointers.
+Not yet expressible, so not yet done (DEMANDS.md D1): the ring's thickening while the finger
+rests (the look needs `Press`/`Unpress`, or to read `Gestures::pressing_since`); a carry held off
+the disc ("taken out in plain sight": `Carry` needs a `to` of none); `Redo` (the three-finger swipe
+right and ⇧⌘Z are received and dropped); the camera is read, not sent (`CameraControl` is the
+truth, so no `Camera` intent is needed).
 
 ## The state machine (one finger)
 
@@ -117,9 +120,18 @@ DateDown{x0}
  └─ Cancel ────────────────────────▶ Idle
 ```
 
-A ride (`Camera` mode): `Ride{id}` makes the camera's centre spring toward the float every frame
-(critically damped, `RIDE_TAU`); zoom is untouched. Any Orbit or Carry leaves it (`Leave`); a tap on
-the ridden float changes nothing; a double tap flies in and the ride continues at the new zoom.
+A ride (`CameraControl::riding`): `Ride{float}` makes the camera's centre spring toward the float
+every frame (critically damped, `RIDE_TAU`); zoom is untouched. Any orbit or pinch leaves it (the
+camera clears `riding` itself); a tap on the ridden float changes nothing; a double tap flies in and
+the ride continues at the new zoom.
+
+## Plans
+
+`plans/*.json` are the played sessions, one a gesture and an ambiguous case, written by
+`tools/adrift/touch-standalone/plans.py` with the expectations that prove each (floats, places,
+the hand's state, the intents seen, the camera). `touch-replay` plays them over a stand-in sea in
+milliseconds; `plans/check/*.json` are the same plans in the form `adrift-check -- play` takes, and
+`check_play.py` reads the real build's play.log against them (`play_all.sh` does all 24).
 
 ## Every ambiguous case, resolved
 
@@ -137,9 +149,8 @@ the ridden float changes nothing; a double tap flies in and the ride continues a
 5. **The sea under ice** is sea: a float may be put there; Truth's rules hold it till the ice goes.
 6. **Land and off the disc** are silent to every one-finger touch except the drag, which is the
    globe's. No ring on land.
-7. **Tap near two floats**: the nearest within REACH (a fingertip, 22 reading points, as Terra's
-   country reach of 10 is for borders this is for a small thing you aim at). Beyond REACH it is the
-   sea.
+7. **Tap near two floats**: the nearest within reach (the app's `hit`: 14 reading points; Motion
+   would have 22, a fingertip, for a thing drawn smaller than one). Beyond reach it is the sea.
 8. **A tap during a fling or flight** stops the motion first (Terra's `touched()`), then is a tap
    (the sea rings). A touch always stops the camera's own motion at once.
 9. **Double tap**: zoom ×2 about the point (toward it below zoom 4, about the centre above, as
@@ -151,10 +162,12 @@ the ridden float changes nothing; a double tap flies in and the ride continues a
 11. **One finger lifts from a pinch**: the drag goes on with the other, anchored where it is now, so
     nothing jumps.
 12. **A carry released over land** goes back where it was lifted; over sea it is set down; off the
-    disc it is taken out "in plain sight": the look sees `Carry{to: Off}` while it is held there and
-    can draw it going. Back over the disc before lifting and it is in hand again.
+    disc it is taken out; "in plain sight" waits on a `Carry` that can say "over the rim" (D1): until
+    then the float stays where it was last over water while the hand is off the disc. Back over the
+    disc before lifting and it is in hand again.
 13. **Cancel** (the system takes the touch) undoes the touch in progress and nothing else: a press
-    lets go, a hold or carry puts the float back, an orbit stops without a fling.
+    lets go (the ring already rang), a hold or carry puts the float back, an orbit stops without a
+    fling.
 14. **Riding and holding another float**: the hold shows its maybes while the camera goes on
     following; a carry (a drag) leaves the ride first, so the globe is still under the hand.
 15. **The date**: the drawn date at the foot is the control (Visual draws it; the probe reports its
@@ -162,8 +175,9 @@ the ridden float changes nothing; a double tap flies in and the ride continues a
     the screen's width, never less than a day a point); the first move pauses the clock, and it stays
     paused after: the reader stopped time. A tap toggles pause and play. The sea pauses with the
     date because the clock does (Engineering's `Clock`), not because the look is told.
-16. **Undo granularity**: what changed the sea: Put, a carried Release, TakeOut. Ring, Ride, Hold
-    without a carry, the camera and the date change nothing and are not undone.
+16. **Undo granularity**: what changed the sea: a put, a carried release, a float taken out
+    (`App`'s undo stack). Ring, Ride, a hold without a carry, the camera and the date change nothing
+    and are not undone.
 17. **Reduce Motion**: no fling (the globe stops where it is left), flights and the ride's catch-up
     are cuts, the idle turn is off. The beat and the ring are unchanged (they are the gesture, not
     decoration).
@@ -177,7 +191,7 @@ the ridden float changes nothing; a double tap flies in and the ride continues a
 | --- | --- | --- |
 | `BEAT` | 0.40 s | longer than a slow tap (~0.25 s), shorter than iOS's long press (0.5), so a rest reads as deliberate and a tap never puts |
 | `SLOP` | 8 reading pt | Terra's hold scheme; a resting fingertip strays this far |
-| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one |
+| `REACH` | 22 reading pt | a fingertip, for a thing drawn smaller than one (the app's `hit` uses 14 for now) |
 | `DOUBLE_TAP` | 0.30 s, 40 pt | iOS |
 | `FLING_DECAY` | 3.2 /s | Terra's; stops under 2 pt/s |
 | `FLIGHT` | 0.70 s ease-in-out cubic | Terra's |
@@ -187,3 +201,4 @@ the ridden float changes nothing; a double tap flies in and the ride continues a
 | `LAT_LIMIT` | ±80° | Terra's: the pole never flips |
 | `SWIPE` | 40 pt | three-finger undo |
 | `DAYS_PER_POINT` | 365 / width, ≥ 1 | a year across the screen |
+| `DATE_BAND`, `DATE_INSET` | 44 pt, 24 pt | the date's band at the foot, the middle half of the width |

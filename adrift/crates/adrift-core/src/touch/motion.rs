@@ -34,6 +34,9 @@ pub const ZOOM_MAX: f64 = 8.0;
 pub const LAT_LIMIT: f64 = 80.0;
 /// A three-finger swipe this far is undo (left) or redo (right).
 pub const SWIPE: f64 = 40.0;
+/// The date's band at the foot: its height, and its inset above the bottom edge (points).
+pub const DATE_BAND: f64 = 44.0;
+pub const DATE_INSET: f64 = 24.0;
 /// Scrubbing: a year across the screen's width, never less than a day a point.
 pub fn days_per_point(screen_width: f64) -> f64 {
     (365.0 / screen_width.max(1.0)).max(1.0)

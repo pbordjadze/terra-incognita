@@ -1,5 +1,9 @@
 {
  "title": "Rest a beat on the sea: the ring thickens into a float; lift and the sea has it",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -35,10 +39,9 @@
     "floats": 1,
     "state": "holding",
     "saw": [
-     "Press",
      "Put"
     ],
-    "held": 0
+    "held": 1
    }
   },
   {
@@ -59,11 +62,11 @@
     "floats": 1,
     "state": "idle",
     "saw": [
-     "ReleaseBack"
+     "Release"
     ],
     "held": null,
     "float": {
-     "id": 0,
+     "id": 1,
      "lon": -30.0,
      "lat": 20.0
     },

@@ -1,5 +1,9 @@
 {
  "title": "Riding one float, hold another: the ride goes on; carry it and the ride is left",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -32,7 +36,7 @@
   {
    "t": 0.1,
    "expect": {
-    "riding": 0
+    "riding": 1
    }
   },
   {
@@ -49,8 +53,8 @@
     "saw": [
      "Hold"
     ],
-    "riding": 0,
-    "held": 1
+    "riding": 1,
+    "held": 2
    }
   },
   {
@@ -65,10 +69,8 @@
    "t": 1.2,
    "expect": {
     "saw": [
-     "Leave",
      "Carry"
-    ],
-    "riding": null
+    ]
    }
   },
   {

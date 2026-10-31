@@ -1,0 +1,96 @@
+{
+  "ppp": 3.0,
+  "scene": {
+    "camera": {
+      "lat": 22.0,
+      "lon": -40.0,
+      "zoom": 1.0
+    },
+    "day": 0.0,
+    "floats": [],
+    "running": true,
+    "seconds": 5.0
+  },
+  "size": [
+    1179,
+    2556
+  ],
+  "steps": [
+    {
+      "down": [
+        226.27960378789263,
+        431.3931664700614
+      ],
+      "id": 0
+    },
+    {
+      "advance": 0.2
+    },
+    {
+      "shot": "thickening"
+    },
+    {
+      "advance": 0.19
+    },
+    {
+      "shot": "almost"
+    },
+    {
+      "advance": 0.06
+    },
+    {
+      "expect": {
+        "floats": 1,
+        "held": 1,
+        "saw": [
+          "Put"
+        ],
+        "state": "holding"
+      },
+      "shot": "expect-01"
+    },
+    {
+      "advance": 0.14999999999999997
+    },
+    {
+      "shot": "held"
+    },
+    {
+      "advance": 0.4
+    },
+    {
+      "id": 0,
+      "up": [
+        226.27960378789263,
+        431.3931664700614
+      ]
+    },
+    {
+      "advance": 0.10000000000000009
+    },
+    {
+      "expect": {
+        "camera_moved": false,
+        "float": {
+          "id": 1,
+          "lat": 20.0,
+          "lon": -30.0
+        },
+        "floats": 1,
+        "held": null,
+        "saw": [
+          "Release"
+        ],
+        "state": "idle"
+      },
+      "shot": "expect-02"
+    },
+    {
+      "advance": 0.3999999999999999
+    },
+    {
+      "shot": "afloat"
+    }
+  ],
+  "title": "Rest a beat on the sea: the ring thickens into a float; lift and the sea has it"
+}

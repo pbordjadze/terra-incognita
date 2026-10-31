@@ -1,5 +1,9 @@
 {
  "title": "Rest a beat on a float: you hold it (its maybes); lift and nothing changed",
+ "size": [
+  393.0,
+  852.0
+ ],
  "camera": {
   "lon": -40.0,
   "lat": 22.0,
@@ -7,8 +11,8 @@
  },
  "land": [
   [
-   -70.0,
-   20.0,
+   -100.0,
+   40.0,
    14.0
   ]
  ],
@@ -28,10 +32,9 @@
     "saw": [
      "Hold"
     ],
-    "held": 0,
+    "held": 1,
     "not": [
-     "Ring",
-     "Press"
+     "Ring"
     ]
    }
   },
@@ -53,11 +56,11 @@
     "floats": 1,
     "state": "idle",
     "saw": [
-     "ReleaseBack"
+     "Release"
     ],
     "held": null,
     "float": {
-     "id": 0,
+     "id": 1,
      "lon": -30.0,
      "lat": 20.0
     },
