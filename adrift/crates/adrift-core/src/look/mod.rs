@@ -261,7 +261,10 @@ impl Look {
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
         let mut labels = Vec::new();
-        if state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() {
+        // (the label from zoom 1.5: at the whole Earth it would be a banner across an ocean; shown or not,
+        // never half)
+        let zoom = disc[2] / ((width.min(height) / 2.0 - 14.0).max(40.0));
+        if state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() && zoom >= 1.5 {
             // (the point nearest the held float; kept while the silver sinks after the float is let go)
             if let Some(i) = state.drifter_nearest {
                 self.nearest = i;

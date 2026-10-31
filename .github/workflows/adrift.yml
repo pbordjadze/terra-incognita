@@ -4,8 +4,7 @@ name: Adrift
 #   check  Linux: the workspace built and tested; every scene rendered and every plan played headless
 #          on Mesa's software Vulkan (the renders are the `adrift-check` artifact: look at them); the web
 #          build (WebGPU) as the `adrift-web` artifact, a directory any static server serves.
-#   ipa    macOS, on main, on the integration branch `adrift`, or when a branch commit's first line
-#          carries `[adrift-ipa]` (the macOS
+#   ipa    macOS, on main or when a branch commit's first line carries `[adrift-ipa]` (the macOS
 #          runners are shared: render and check on Linux first): the Rust library for aarch64-apple-ios
 #          and the Swift shell built by adrift/ios/build.sh into an unsigned IPA; on main it is published
 #          as the `adrift-build-<n>` prerelease (the five newest kept) and the SideStore source on the
@@ -79,7 +78,7 @@ jobs:
   ipa:
     name: IPA for SideStore (unsigned device build)
     needs: [check]
-    if: ${{ !cancelled() && needs.check.result == 'success' && (github.ref_name == 'main' || github.ref_name == 'adrift' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
+    if: ${{ !cancelled() && needs.check.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
     permissions:
       contents: write
     runs-on: macos-26

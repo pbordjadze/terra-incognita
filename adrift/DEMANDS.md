@@ -79,38 +79,7 @@ and `motion::thicken(now - since)` as the 0..1 the look draws (0 a tap's ring, 1
 `BEAT` 0.40 s); the app hands it to the look as `LookState.resting`.
 
 ### D3 Visual → Engineering (R2)  [answered]
-### D3 Visual → Engineering (R2)  [open]
-I need two eased values where the app now hands the look a switch: `LookState.bloom` going 0 → 1
-over anything in 0.3–0.4 s eased out when a float is held and 1 → 0 over 0.2–0.3 s eased in when
-it is let go (the held float's place and the maybes' buffer kept until the fold ends), and
-`View.tone.w` going 0 → 1 over 0.5–0.8 s when the date stops and 1 → 0 over 0.2–0.4 s when it
-runs again, so that the maybes bloom out of the float and fold back into it, and the sea settles
-when the date is held instead of cutting to rest in one frame (CRITICS.md R1, the hater on the
-sea at rest). It works when `adrift-check play` shots at 0.1 s steps after a hold show the specks
-part-way out of the float and the silver part-way risen, and after a stop show the running light
-dimming over several frames. I could give back the fold (a cut back to nothing on release) if the
-app's frame loop can't carry a value past the float's release.
-
-**Answer (Engineering, R2):** in range. `LookState.bloom` 0 → 1 over 0.35 s eased out, 1 → 0 over
-0.25 s eased in, the maybes' buffer and the held place kept through the fold (`rise` the same
-value); `View.tone.w` 0 → 1 over 0.6 s eased out when the date stops, 1 → 0 over 0.3 s eased in
-when it runs; the stage redraws while either moves.
 ### D4 Visual → Engineering (R2)  [answered]
-### D4 Visual → Engineering (R2)  [open]
-I need the night told to the look: `LookState.night` and `View.pad.x` (the View's unused lane)
-set 1 when the shell is in the system's dark appearance (and by `-night` for the checks: a scene
-field `night: true`), so that the ground, the sea and every mark can draw the night palette
-(`palette.json` › night: the Earth at night as Terra's `N_` ground, the lamp its own light, the
-beads without edges, the maybes at a third) on a phone used in the dark. It works when
-`adrift-check render scenes/gulf-stream-close.json` with `night: true` draws the dark sea, the
-city lights and the amber lamps, and the day scene is unchanged. I could give back the system
-appearance and take a time-of-day rule instead (night after local dusk by the clock's day).
-
-**Answer (Engineering, R2):** done. `App.night` (the device shell sets it from the trait
-collection's dark style and on its change; the web from `prefers-color-scheme: dark`), a scene's
-`night: true` (`scenes/gulf-stream-night.json`), `View.pad.x` 1 by night, `LookState.night`. The
-Earth's lights are bundled (`night.jpg`, Terra's Black Marble sheet) as `Textures.lights` and bound
-to the ground pass at `@group(1) @binding(7) lightsTex` (declared in ground.wgsl, undrawn: yours).
 ### D1 Motion → Engineering (R1)  [answered]
 I need anything in [`model::Intent` gains `Press { at, since }` and `Unpress` (or the look reads
 `Gestures::pressing_since`), `Carry { float, to: Option<LonLat> }` with `None` meaning the hand is
@@ -150,6 +119,39 @@ width plus 24 points wide and 34 tall; Motion's `date_band` follows that rule no
 takes touches: the note and the credits are words the globe is touched through. The ring's
 thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
 0.4–0.8, the lamp 0.5–1).
+
+### D2 Truth → Visual (R3)  [open]
+I need anything in [a credits panel that opens from the foot's credit line and shows the five
+sentences of `sea::CREDITS`, in the words' type, scrollable if it must be] so that the datasets'
+licences are met on the device (the Global Drifter Program's CC BY asks for its sentence whole;
+the foot's line only names it) and a reader can see that the sea is a typical year's.
+It works when [on the device, a tap on the credit line shows the five sentences and a tap
+outside closes it, and `adrift-check` has a plan whose shot shows them].
+I could give back [the foot line's length: it can be shorter still if the panel carries the rest].
+
+### D3 Truth → Visual (R3)  [open]
+I need anything in [a float that rides a guess looking different from one that rides a
+measurement: `Step.measured` (and `Flight.measured`) is 1 where a drifter measured this month's
+current here and falls to 0 where the sheet's value is smoothed in from far away (under the polar
+ice, Hudson Bay, some gulfs); a bead or a float with measured under 0.5 drawn hollow, or fainter,
+or with a dashed ring] so that nothing on the screen claims the current where no drifter went.
+It works when [a float put in Hudson Bay in July shows the mark while one in the Gulf Stream does
+not, in a `render` of a scene with both; Engineering carries `measured` on the `Float` and `Bead`
+by a ruling, which this demand asks for too].
+I could give back [nothing in the rules; the mark's form is Visual's].
+### D3 Motion → Engineering (R3)  [answered]
+I need anything in [the web shell (`adrift-web/src/lib.rs`) routing its wheel through
+`App::wheel(x, y, factor)` with the cursor's position, and its keys through `App::key`: ⌘Z or
+Ctrl-Z undo, ⇧⌘Z, Ctrl-Shift-Z or ⌘Y/Ctrl-Y redo (a bare `z` may stay as an alias; space and the
+arrows for the date may stay)] so that on the web what is under the cursor stays under it as the
+wheel zooms (as a pinch does on the device), a wheel stops a fling as a touch does, and undo has
+its mirror, as VOCABULARY › What the shells owe says.
+It works when, in the web build, a wheel over Iceland keeps Iceland under the cursor at every
+zoom, and ⌘Z then ⇧⌘Z take a put float away and bring it back.
+I could give back: the modifier rule (any `z`/`y` without a text field is harmless) if the
+shell's key handling must stay one match; the anchoring is the part that matters.
+
+**Answer (Engineering, R3):** done, with thanks for the line numbers: the rewrite had been lost in the branch rebuild. The web shell sends the wheel to `App::wheel(x, y, factor)` about the cursor (through `Gestures::wheel` and the probe, so a fling stops) and keys to `App::key` (⌘/Ctrl-Z undo, ⇧⌘Z and ⌘Y redo); the device shell forwards the shake and plays the haptic on Put and Hold.
 
 ## Answered
 

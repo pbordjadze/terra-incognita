@@ -94,8 +94,8 @@ it), `r2-take-out.jpg` and `r2-ride.jpg`.
 - *The beat is seen now, and it over-promises.* `r2-put.jpg`: at 0.2 s a tap's ring; at 0.39 s a
   formed glass float with its lamp lit, a hundredth of a second before the beat. Lift there and a
   lit float vanishes. The ring thickening is right; the lamp lighting before the state has a float
-  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual: the lamp lights on
-  `Put`, not during the press.
+  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual, and agreed the same
+  hour: the lamp lights on `Put`, the press only forms glass; the curve stays.
 - *The date is a real control now* (`r2-date.jpg`: "3 January, a typical year, by the drifters'
   record", under the disc; `date-scrub` and `date-tap` pass against `Look::date_bounds()`). Still
   nothing says it can be touched. That is the design, and the hater notes it will be the first thing
@@ -125,3 +125,34 @@ it), `r2-take-out.jpg` and `r2-ride.jpg`.
   where the plan's author expected (east, along the Canary current). The sea answered.
 - Verdict: the vocabulary is complete on the build; what remains is the look's timing of the lamp
   and the device's own verdict on the fling toward the pole and the invisible date.
+
+## R3 (October 31, 2026): the merged build after R2; the device to come
+
+What was judged: the 27 plans (three new: `date-ipad`, `ride-fast`, `reduce-motion-ride`) on
+`adrift` at 480529d with this round's camera, and `critics/r3-date-ipad.jpg` (the 13-inch iPad's
+date, paused and scrubbed), `critics/r3-ride-fast.jpg` (a Gulf Stream float ridden at zoom 4 at
+1 s, 4 s and 6 s). The device captures the owner was asked for (a fling toward the pole, the beat
+under a real finger) are not in yet; this entry is reopened when they are.
+
+**The hater** (a third, who reads logs):
+- *The ride trailed a fast float and nobody had measured it.* A critically damped spring trails a
+  steady target by twice its time constant times the speed: at the clock's two days a second a
+  Gulf Stream float moves about a degree a second, so the camera would have sat half a degree
+  behind, six points at zoom 4, forever. Measured on `ride-fast` after the fix (the spring aims
+  ahead by the float's smoothed speed): the camera within 0.2° of the float at 4 s and 6 s, on a
+  float that curves north-east; the unit test holds it under 0.15° on a straight one.
+- *The date on the iPad is where the look draws it* (`r3-date-ipad.jpg`): a tap pauses ("held"
+  under the date, a word, as the rule asks), a drag of 120 points scrubs 120 days. The probe reads
+  `Look::date_bounds()`, not Motion's band, so the two cannot drift apart. Still unmarked, still a
+  device question.
+- *Reduce Motion* (`reduce-motion-ride`, `reduce-motion`): no fling, a double tap cuts, the ride
+  follows without a glide, nothing turns by itself. What still animates under it is the ring's
+  thickening (the gesture itself, kept on purpose) and the look's own motion (the sea, the wakes,
+  the ripples: Visual's call, not judged here).
+- *The web shell is not the vocabulary.* Its wheel zooms about the centre and never stops a fling;
+  its undo is a bare `z` and there is no redo, while `App::wheel` and `App::key` sit unused. D3.
+- *The maybes' smudge* at phone zoom 1 stands from R2 (Visual's).
+
+**Holt:** nothing new to penalise; the ride on a fast float is now a thing you can watch rather
+than chase. The device will say whether the beat is felt and whether a fling toward the pole feels
+like a wheel. Verdict withheld until it does.

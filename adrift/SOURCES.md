@@ -89,6 +89,28 @@ time; everything is bundled.
   is a real track, a real year, a real buoy with its GDP identifier; it is not the float's own
   forecast, and no day on it is the day on the screen.
 
+## What the screen says, and where each thing comes from
+
+| On the screen | Its source |
+| --- | --- |
+| The date ("19 July") and its note ("a typical year, by the drifters' record") | `Clock` read against the climatology's typical year (`sea::sheets::months`); never a year |
+| A float's place and wake | `Rules::flight` on the sheets above, one bead a day |
+| A held float's maybes | the same rules, k = 1..n, on the GPU (`rules.wgsl`), from the put place and day |
+| The silver drifter and its label ("Drifter 145813, 2 Jun to 18 Jul 2016") | `Drifters::track`: a real GDP buoy, its real calendar dates, the month about where it passed nearest |
+| The credit line | `sea::CREDIT_LINE`; the full sentences, `sea::CREDITS` |
+
+## How many maybes, and how often
+
+Measured (`sea::tests::maybes_budget`, a tool run by hand): thirty days after a put off Cape
+Hatteras (a jet) and in the Sargasso Sea (quiet), clouds of 256 to 2048 paths at steps of a
+quarter, a half and a whole day against 8192 paths at a quarter day. **512 paths at a half-day
+step tell the same shape** (Kolmogorov's difference of the clouds' cumulative shares under 0.05
+along both axes, the share east of 65° W and the spread within the reference's noise), at a
+sixteenth of 2048 paths at a quarter day. A whole-day step is not honest in a jet: the paths jump
+the shelf and the coast catches nearly twice as many (73 of 2048 against 41), and the spread
+across the stream narrows. The cloud need not be re-run more often than the day moves half a
+day.
+
 ## Credit owed
 
 The app credits, wherever it credits its sources: the NOAA Global Drifter Program (CC BY 4.0: "This

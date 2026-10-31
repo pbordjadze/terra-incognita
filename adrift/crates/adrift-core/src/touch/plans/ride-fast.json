@@ -1,0 +1,87 @@
+{
+ "title": "Ride a Gulf Stream float close in: the camera keeps it centred, not trailing",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -74.0,
+  "lat": 36.0,
+  "zoom": 4.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -74.0,
+    36.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -74.0,
+    36.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "saw": [
+     "Ride"
+    ],
+    "riding": 1
+   }
+  },
+  {
+   "t": 1.0,
+   "shot": "catching-up"
+  },
+  {
+   "t": 2.0,
+   "expect": {
+    "riding": 1,
+    "camera_near_float": [
+     1,
+     0.3
+    ]
+   }
+  },
+  {
+   "t": 4.0,
+   "shot": "riding"
+  },
+  {
+   "t": 4.0,
+   "expect": {
+    "riding": 1,
+    "camera_near_float": [
+     1,
+     0.3
+    ]
+   }
+  },
+  {
+   "t": 6.0,
+   "expect": {
+    "riding": 1,
+    "camera_near_float": [
+     1,
+     0.3
+    ]
+   }
+  },
+  {
+   "t": 6.0,
+   "shot": "still-riding"
+  }
+ ],
+ "floats": [
+  {
+   "lon": -74.0,
+   "lat": 36.0
+  }
+ ]
+}

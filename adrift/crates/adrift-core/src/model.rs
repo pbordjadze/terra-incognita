@@ -76,6 +76,12 @@ pub enum Hand {
 pub struct Bead {
     pub at: LonLat,
     pub day: f64,
+    /// How measured the sea was there (0..1): under 1 the sheet's smoothed-in guess (Truth's D3).
+    #[serde(default = "one")]
+    pub measured: f32,
+}
+fn one() -> f32 {
+    1.0
 }
 
 /// A glass float.
@@ -93,6 +99,9 @@ pub struct Float {
     /// measured time scale (Truth's D1). Zero when put or set down.
     #[serde(default)]
     pub eddy: [f32; 2],
+    /// How measured the sea is where it is now (0..1; Truth's rules say).
+    #[serde(default = "one")]
+    pub measured: f32,
     /// One bead a day, oldest first, since it was put or last set down.
     pub wake: Vec<Bead>,
     /// The seconds since the reader last touched it (what was just done stays lit).

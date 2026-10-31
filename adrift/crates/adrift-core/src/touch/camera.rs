@@ -43,6 +43,9 @@ pub struct CameraControl {
     flight: Option<Flight>,
     /// The ride's spring velocity, degrees a second.
     ride_v: (f64, f64),
+    /// The ridden float's last place and its smoothed speed (degrees a second): the spring aims
+    /// ahead by the lag a steady speed would leave, so a fast float is kept centred, not trailed.
+    ride_seen: Option<(LonLat, (f64, f64))>,
     /// When a finger last touched (the shell's seconds), for the idle turn.
     last_touch: f64,
     /// The disc the last move was measured in (the fling turns by it between frames).
@@ -58,6 +61,7 @@ impl CameraControl {
             spin: (0.0, 0.0),
             flight: None,
             ride_v: (0.0, 0.0),
+            ride_seen: None,
             last_touch: f64::NEG_INFINITY,
             disc: Disc { cx: 0.0, cy: 0.0, r: 0.0 },
         }
@@ -232,9 +236,23 @@ impl CameraControl {
                 self.camera.lon = p.lon;
                 self.camera.lat = p.lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
             } else {
-                let target_lon = self.camera.lon + motion::lon_delta(self.camera.lon, p.lon);
+                // the float's speed, smoothed over about a third of a second (it steps, not glides)
+                let speed = match self.ride_seen {
+                    Some((last, v)) if dt > 0.0 => {
+                        let now_v = (motion::lon_delta(last.lon, p.lon) / dt, (p.lat - last.lat) / dt);
+                        let k = 1.0 - (-dt / motion::RIDE_SPEED_TAU).exp();
+                        (v.0 + (now_v.0 - v.0) * k, v.1 + (now_v.1 - v.1) * k)
+                    }
+                    Some((_, v)) => v,
+                    None => (0.0, 0.0),
+                };
+                self.ride_seen = Some((p, speed));
+                // aim ahead by the lag a steady speed leaves a critically damped spring (2τ·v)
+                let ahead = 2.0 * motion::RIDE_TAU;
+                let aim = LonLat { lon: p.lon + speed.0 * ahead, lat: p.lat + speed.1 * ahead };
+                let target_lon = self.camera.lon + motion::lon_delta(self.camera.lon, aim.lon);
                 let (lon, vl) = motion::spring(self.camera.lon, self.ride_v.0, target_lon, motion::RIDE_TAU, dt);
-                let (lat, vb) = motion::spring(self.camera.lat, self.ride_v.1, p.lat, motion::RIDE_TAU, dt);
+                let (lat, vb) = motion::spring(self.camera.lat, self.ride_v.1, aim.lat, motion::RIDE_TAU, dt);
                 self.camera.lon = motion::wrap_lon(lon);
                 self.camera.lat = lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT);
                 self.ride_v = (vl, vb);
@@ -245,6 +263,7 @@ impl CameraControl {
         }
         if self.riding.is_none() {
             self.ride_v = (0.0, 0.0);
+            self.ride_seen = None;
         }
         self.camera != before
     }
@@ -370,6 +389,25 @@ mod tests {
         }
         assert!((r.camera.lon - 10.0).abs() < 0.01 && (r.camera.lat - 5.0).abs() < 0.01);
         assert!(max_lon <= 10.0 + 1e-6, "overshot to {}", max_lon);
+    }
+
+    #[test]
+    fn a_ride_keeps_a_fast_float_centred() {
+        let mut r = rig(0.0, 0.0, 1.0);
+        r.riding = Some(7);
+        // a float at 2 degrees a second (a Gulf Stream float at the clock's two days a second)
+        let mut t = 0.0;
+        let mut lag: f64 = 0.0;
+        for i in 0..600 {
+            t += 1.0 / 120.0;
+            let p = LonLat { lon: 2.0 * t, lat: 0.0 };
+            r.tick(t, 1.0 / 120.0, Some(p), false, false, M);
+            if i > 360 {
+                lag = lag.max((p.lon - r.camera.lon).abs());
+            }
+        }
+        // without aiming ahead the lag would be 2τ·v = 1 degree
+        assert!(lag < 0.15, "lag {lag}");
     }
 
     #[test]

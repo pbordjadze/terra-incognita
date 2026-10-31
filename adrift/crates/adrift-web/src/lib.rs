@@ -125,26 +125,30 @@ pub async fn start() -> Result<(), JsValue> {
             canvas.add_event_listener_with_callback(name, c.as_ref().unchecked_ref())?;
             c.forget();
         }
-        // the wheel zooms (a desktop's pinch); keys: z undo, space holds the date
+        // the wheel zooms about the cursor (a desktop's pinch, through the gestures so a fling stops);
+        // ⌘Z / ⇧⌘Z (Ctrl elsewhere) and ⌘Y undo and redo (touch/VOCABULARY.md › What the shells owe)
         let a = app.clone();
+        let c2 = canvas.clone();
         let wheel = Closure::<dyn FnMut(web_sys::WheelEvent)>::new(move |e: web_sys::WheelEvent| {
             e.prevent_default();
-            a.borrow_mut().camera.zoom_by((-e.delta_y() / 400.0).exp());
+            let r = c2.get_bounding_client_rect();
+            let factor = if e.ctrl_key() { (-e.delta_y() / 100.0).exp() } else { (-e.delta_y() / 400.0).exp() };
+            a.borrow_mut().wheel(e.client_x() as f64 - r.left(), e.client_y() as f64 - r.top(), factor);
         });
         canvas.add_event_listener_with_callback("wheel", wheel.as_ref().unchecked_ref())?;
         wheel.forget();
         let a = app.clone();
         let key = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            let mut app = a.borrow_mut();
-            match e.key().as_str() {
-                "z" | "Z" => app.intend(adrift_core::Intent::Undo),
-                " " => {
-                    let running = !app.clock.running;
-                    app.intend(adrift_core::Intent::SetRunning { running })
-                }
-                "ArrowRight" => app.intend(adrift_core::Intent::Scrub { days: 7.0 }),
-                "ArrowLeft" => app.intend(adrift_core::Intent::Scrub { days: -7.0 }),
-                _ => {}
+            if !(e.meta_key() || e.ctrl_key()) {
+                return;
+            }
+            let k = e.key().to_lowercase();
+            if k == "z" {
+                e.prevent_default();
+                a.borrow_mut().key(if e.shift_key() { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });
+            } else if k == "y" {
+                e.prevent_default();
+                a.borrow_mut().key(adrift_core::touch::Key::Redo);
             }
         });
         window.add_event_listener_with_callback("keydown", key.as_ref().unchecked_ref())?;

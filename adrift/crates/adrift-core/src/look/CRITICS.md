@@ -202,3 +202,37 @@ room went dark and the floats stayed mine. Nothing marked, nothing pointed, noth
 glass formed without a lamp, then the float with its lamp lit and its maybes and silver out.
 Motion's hater had seen a lit float vanish on a lift just short of the beat; now a lift before the
 beat only un-forms glass, and the beat is the moment the light comes on. Verdict: passes.
+
+## R3 (October 31, 2026): the whole Earth, and the knobs
+
+Judged on the merged build at 37e8ee1 (`look/plans/atlantic-held.json`, a float held at zoom 1, phone
+and iPad; `scenes/gulf-stream-close.json`; `look/plans/stays-lit.json`): `studies/r3-before-whole-earth-held-phone.png`
+(as merged), `r3-whole-earth-held-phone.png` (after), `r3-gulf-stream-close-phone.png`,
+`r3-stays-lit-phone.png`, `r3-foot-ipad-half.png`.
+
+**The hater, a phone reviewer who holds the thing at arm's length and squints.**
+
+- *The maybes at zoom 1.* "As merged: two thousand specks over a thumb of ocean, a smudge under
+  the halo, Motion's hater was right. After: a quarter of them, fainter, in the cloud's own shape
+  (a hash of each speck's number picks it, so coming and going the dusting keeps its form). It is a
+  cloud now, not a stain. At zoom 5 nothing changed." Verdict: passes.
+- *The label at zoom 1.* "A buoy's number and two dates are a banner across the Atlantic at the
+  whole Earth. Gone below zoom 1.5; the silver stays, which is enough to say a real one passed."
+  Verdict: passes.
+- *What stays lit.* "A radius tighter. Still a glow, no longer a smudge; the sea's own ring from
+  the put spreads round it, which says 'just now' better than the glow does." Verdict: passes.
+- *The wake's oldest beads.* "They end at a tenth instead of nothing; the tail has an end you can
+  see. Fine." Verdict: passes.
+- *The lamp by day at zoom 1.* "Nine points, dark rim, amber heart: I find it across the globe at
+  arm's length. Leave it." Verdict: passes.
+- *The iPad's foot.* "Date and note under the disc, the credits a colophon at the very bottom, a
+  hand's width of paper between. It is a page, not a dashboard; I expected to mind and don't."
+  Verdict: passes.
+- *A credits panel.* "Nobody asked for it and I won't. One line names the sources; the device's
+  settings can hold the five sentences if the owner wants them." Verdict: not built.
+
+**Holt**: "At the whole Earth I can still see what I did and what the sea did with it, and when I
+hold a float the cloud is a hint, not a wall. Nothing marks, nothing points, nothing waits."
+
+**Left for the device's captures**: the night on an actual OLED (the N_ page may read as grey),
+the speck's three pixels on the real panel, and the words' halos at the device's gamma.
