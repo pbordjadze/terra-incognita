@@ -1,12 +1,24 @@
-//! The sea as measured, and the rules a float follows on it (Truth's module; DECISIONS.md §2).
+//! The sea as the rules read it (Truth's module: `adrift/DECISIONS.md` §2). The data sheets in
+//! `adrift/data` (`sheets`), where a float goes in a step (`rules`, mirrored on the GPU by
+//! `rules.wgsl`), and the real drifters it is measured against (`drifters`). What is measured and
+//! what is drawn, with the credit owed, is `adrift/SOURCES.md`.
 //!
-//! R0 (Engineering's skeleton): the month's mean current from the drifter climatology's sheet, the
-//! coast from the globe's distance field, the month's ice; a float moves with the current alone.
-//! Truth adds the eddy wander, the leeway on the wind, the maybes' sampler, the drifters' tracks,
-//! and `rules.wgsl`, the GPU mirror of `Rules::step`.
+//! **The honest reading of the date.** Every sheet is a climatology: a typical year, not a given
+//! one. `Clock.day` picks a day of that typical year (`sheets::months`), which mixes the two
+//! nearest months' means; a float's path is what a typical year's sea would do from that day,
+//! never what the sea did on it. The screen should say "a typical <month>", and never a year.
 
-pub mod data;
+pub mod drifters;
+pub mod gpu;
 pub mod rules;
+pub mod sheets;
+#[cfg(test)]
+mod tests;
 
-pub use data::{Coast, Currents, Ice};
-pub use rules::{Rules, Step};
+pub use drifters::{Drifters, Nearest, Run};
+pub use gpu::{GpuPath, Maybes, Params};
+pub use rules::{Drift, Flight, Rules, Step};
+pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
+
+/// The GPU mirror of `Rules::step`, for the maybes by the thousand.
+pub const RULES_WGSL: &str = include_str!("rules.wgsl");
