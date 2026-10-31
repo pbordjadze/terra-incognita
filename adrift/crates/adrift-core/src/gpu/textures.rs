@@ -217,6 +217,8 @@ pub struct Textures {
     pub land_a: Texture,
     pub land_b: Texture,
     pub land_months: (u32, u32),
+    /// The Earth's lights at night (one channel), for the look's night.
+    pub lights: Texture,
     pub noise: Texture,
     pub linear_wrap_x: wgpu::Sampler,
     pub linear_clamp: wgpu::Sampler,
@@ -239,6 +241,7 @@ impl Textures {
         let (ma, mb) = (month % 12, (month + 1) % 12);
         let land_a = Self::land(gpu, assets, ma)?;
         let land_b = Self::land(gpu, assets, mb)?;
+        let lights = Texture::from_pixels(gpu, "lights", &decode(&assets.read("night.jpg")?, 1)?, false);
         let noise = Texture::noise_tile(gpu);
         let sampler = |label, u, v, filter| {
             gpu.device.create_sampler(&wgpu::SamplerDescriptor {
@@ -264,6 +267,7 @@ impl Textures {
             land_a,
             land_b,
             land_months: (ma, mb),
+            lights,
             noise,
             linear_wrap_x: sampler("linear wrap x", Repeat, ClampToEdge, Linear),
             linear_clamp: sampler("linear clamp", ClampToEdge, ClampToEdge, Linear),

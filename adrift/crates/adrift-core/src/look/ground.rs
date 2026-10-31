@@ -38,7 +38,7 @@ impl GroundPass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout, tx: &Textures) -> GroundPass {
         let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("ground textures"),
-            entries: &[tex2d(0), tex2d(1), tex2d(2), tex_array(3), tex2d(4), tex2d(5), sampler(6)],
+            entries: &[tex2d(0), tex2d(1), tex2d(2), tex_array(3), tex2d(4), tex2d(5), sampler(6), tex2d(7)],
         });
         let shader = gpu.shader("ground", &super::wgsl(include_str!("ground.wgsl")));
         let pipeline = gpu.fullscreen_pipeline("ground", &shader, &[view_layout, &layout], None);
@@ -58,6 +58,7 @@ impl GroundPass {
                 wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&tx.land_a.view) },
                 wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(&tx.land_b.view) },
                 wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x) },
+                wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::TextureView(&tx.lights.view) },
             ],
         })
     }

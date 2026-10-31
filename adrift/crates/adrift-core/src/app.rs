@@ -35,6 +35,9 @@ pub struct Scene {
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
+    /// The night palette (the system's dark appearance).
+    #[serde(default)]
+    pub night: bool,
 }
 fn yes() -> bool {
     true
@@ -113,6 +116,10 @@ pub struct App {
     /// How far each float has been stepped (`id` → day).
     stepped: std::collections::HashMap<u32, f64>,
     pub reduce_motion: bool,
+    /// The system's dark appearance: the look's night (the shells set it).
+    pub night: bool,
+    /// How far the sea has settled to rest with the date held, 0..1.
+    rest: f32,
     /// The intents applied, by name (the checks' `expect.saw`).
     pub seen: Vec<String>,
     /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
@@ -200,6 +207,8 @@ impl App {
             now: 0.0,
             stepped: Default::default(),
             reduce_motion: false,
+            night: false,
+            rest: 0.0,
             seen: Vec::new(),
             haptic: false,
         })
@@ -232,6 +241,8 @@ impl App {
             camera: self.camera.camera,
             seconds: self.seconds,
             clock: self.clock,
+            rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
+            night: if self.night { 1.0 } else { 0.0 },
         }
     }
 
@@ -348,6 +359,11 @@ impl App {
                 let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
                 let moved = self.floats[i].hand == Hand::Carried;
                 match (at, moved) {
+                    (None, true) => {
+                        // carried off the disc and let go: taken out in plain sight (undoable)
+                        self.seen.push("TakeOut".to_string());
+                        self.take_out(float);
+                    }
                     (Some(p), true) => {
                         let f = &mut self.floats[i];
                         f.hand = Hand::Free;
@@ -535,6 +551,13 @@ impl App {
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
+        // the sea settles to rest when the date is held (0.6 s, eased out) and wakes when it runs
+        // again (0.3 s, eased in): Visual's D3
+        if self.clock.running {
+            self.rest = (self.rest - (dt / 0.3) as f32).max(0.0);
+        } else {
+            self.rest = (self.rest + (dt / 0.6) as f32).min(1.0);
+        }
         // the maybes bloom out as a float is held (0.35 s, eased out) and fold back when it is let
         // go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
         let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.at));
@@ -653,6 +676,8 @@ impl App {
         self.gestures = Gestures::new();
         self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
         self.seconds = scene.seconds;
+        self.night = scene.night;
+        self.rest = if scene.running { 0.0 } else { 1.0 };
         for (i, sf) in scene.floats.iter().enumerate() {
             self.clock.day = scene.day - sf.days_ago;
             let id = self.put(LonLat::new(sf.lon, sf.lat));
@@ -687,7 +712,7 @@ impl App {
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
             drifter: self.drifter.clone(),
             rise: self.bloom_eased(),
-            night: false,
+            night: self.night,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
             credits: crate::sea::CREDIT_LINE.to_string(),

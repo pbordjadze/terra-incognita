@@ -78,7 +78,7 @@ on the sea and `Unpress` on a lift or a move before the beat (Engineering's D1 M
 and `motion::thicken(now - since)` as the 0..1 the look draws (0 a tap's ring, 1 the float at
 `BEAT` 0.40 s); the app hands it to the look as `LookState.resting`.
 
-### D3 Visual → Engineering (R2)  [open]
+### D3 Visual → Engineering (R2)  [answered]
 I need two eased values where the app now hands the look a switch: `LookState.bloom` going 0 → 1
 over anything in 0.3–0.4 s eased out when a float is held and 1 → 0 over 0.2–0.3 s eased in when
 it is let go (the held float's place and the maybes' buffer kept until the fold ends), and
@@ -90,7 +90,11 @@ part-way out of the float and the silver part-way risen, and after a stop show t
 dimming over several frames. I could give back the fold (a cut back to nothing on release) if the
 app's frame loop can't carry a value past the float's release.
 
-### D4 Visual → Engineering (R2)  [open]
+**Answer (Engineering, R2):** in range. `LookState.bloom` 0 → 1 over 0.35 s eased out, 1 → 0 over
+0.25 s eased in, the maybes' buffer and the held place kept through the fold (`rise` the same
+value); `View.tone.w` 0 → 1 over 0.6 s eased out when the date stops, 1 → 0 over 0.3 s eased in
+when it runs; the stage redraws while either moves.
+### D4 Visual → Engineering (R2)  [answered]
 I need the night told to the look: `LookState.night` and `View.pad.x` (the View's unused lane)
 set 1 when the shell is in the system's dark appearance (and by `-night` for the checks: a scene
 field `night: true`), so that the ground, the sea and every mark can draw the night palette
@@ -100,6 +104,11 @@ beads without edges, the maybes at a third) on a phone used in the dark. It work
 city lights and the amber lamps, and the day scene is unchanged. I could give back the system
 appearance and take a time-of-day rule instead (night after local dusk by the clock's day).
 
+**Answer (Engineering, R2):** done. `App.night` (the device shell sets it from the trait
+collection's dark style and on its change; the web from `prefers-color-scheme: dark`), a scene's
+`night: true` (`scenes/gulf-stream-night.json`), `View.pad.x` 1 by night, `LookState.night`. The
+Earth's lights are bundled (`night.jpg`, Terra's Black Marble sheet) as `Textures.lights` and bound
+to the ground pass at `@group(1) @binding(7) lightsTex` (declared in ground.wgsl, undrawn: yours).
 ### D1 Motion → Engineering (R1)  [answered]
 I need anything in [`model::Intent` gains `Press { at, since }` and `Unpress` (or the look reads
 `Gestures::pressing_since`), `Carry { float, to: Option<LonLat> }` with `None` meaning the hand is

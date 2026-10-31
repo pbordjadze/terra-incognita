@@ -85,6 +85,9 @@ struct Plan {
     /// The reader's Reduce Motion setting.
     #[serde(default)]
     reduce_motion: bool,
+    /// The night palette.
+    #[serde(default)]
+    night: bool,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -161,6 +164,7 @@ fn play(args: &[String]) -> Result<()> {
         floats: plan.floats.clone(),
         hold: None,
         seconds: 0.0,
+        night: plan.night,
     });
     app.set_scene(&scene);
     let mut t = 0.0;
@@ -219,7 +223,7 @@ fn play(args: &[String]) -> Result<()> {
                 }
             }
             if let Some(f) = e.get("float") {
-                let id = f.get("id").and_then(|v| v.as_u64()).unwrap_or(0) as u32 + 1;
+                let id = f.get("id").and_then(|v| v.as_u64()).unwrap_or(1) as u32;
                 match app.floats.iter().find(|x| x.id == id) {
                     Some(x) => {
                         if let (Some(lon), Some(lat)) = (f.get("lon").and_then(|v| v.as_f64()), f.get("lat").and_then(|v| v.as_f64())) {
@@ -252,13 +256,13 @@ fn play(args: &[String]) -> Result<()> {
                 }
             }
             if let Some(hv) = e.get("held") {
-                let held = app.floats.iter().find(|f| f.hand != adrift_core::Hand::Free).map(|f| f.id as u64 - 1);
+                let held = app.floats.iter().find(|f| f.hand != adrift_core::Hand::Free).map(|f| f.id as u64);
                 if held != hv.as_u64() {
                     bad.push(format!("held {held:?} not {:?}", hv.as_u64()));
                 }
             }
             if let Some(r) = e.get("riding") {
-                let riding = app.riding().map(|id| id as u64 - 1);
+                let riding = app.riding().map(|id| id as u64);
                 if riding != r.as_u64() {
                     bad.push(format!("riding {riding:?} not {:?}", r.as_u64()));
                 }

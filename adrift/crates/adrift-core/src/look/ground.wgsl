@@ -10,6 +10,7 @@
 @group(1) @binding(4) var landA: texture_2d<f32>;
 @group(1) @binding(5) var landB: texture_2d<f32>;
 @group(1) @binding(6) var linearS: sampler;     // wrap east-west, clamp north-south, mips
+@group(1) @binding(7) var lightsTex: texture_2d<f32>;   // the Earth's lights at night (U.pad.x is the night)
 
 const G_SHELF = vec3f(211.0, 240.0, 238.0) / 255.0;
 const G_OPEN = vec3f(194.0, 228.0, 244.0) / 255.0;

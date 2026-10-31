@@ -72,6 +72,9 @@ pub async fn start() -> Result<(), JsValue> {
             app.restore(&json);
         }
     }
+    if let Ok(Some(mq)) = window.match_media("(prefers-color-scheme: dark)") {
+        app.night = mq.matches();
+    }
     let app = Rc::new(RefCell::new(app));
     {
         // nothing is lost: the state is kept when the page is hidden or left
