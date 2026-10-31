@@ -163,3 +163,12 @@ date and the sea stood still with the words saying so. Nothing asked me to do an
 **Into the rest of R2**: the maybes thinned by density where the cloud is tight; the night lights
 when the sheet arrives; the eases (D3) photographed in a play; the silver when Truth hands the
 track; the lookbench retired by Engineering.
+
+**The silver with a real track** (`studies/r2-silver-drifter-phone.png`, the merged build at
+d2bd376 with Truth's nearest run and its label): a buoy's whole run across the frame at zoom 5,
+rounded through its daily points so its eddies read as loops, and "Drifter 132676, 1 Jan 2016…"
+in italic on a halo at the point nearest the held float. The hater: "A real buoy with a number
+and a date is the most honest thing on the screen, and the loops are the Gulf Stream's own. The run
+is too long for a hold: it leaves the frame both ways and reads as a border. A window of days
+round the nearest point (Engineering is passing one) will make it a visit, not a fence. The label
+sits on the track; move it off." Verdict: passes once windowed; the label's offset is a knob.
