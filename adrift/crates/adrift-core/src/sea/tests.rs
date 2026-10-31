@@ -242,12 +242,13 @@ fn the_gpu_steps_as_the_cpu_does() {
     }
     let n = starts.len() as u32;
     let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
-    for flight in [false, true] {
+    // the walk and the flight a quarter day at a time from the grid; the flight half a day at a
+    // time from a day off it (the maybes' steps: a world's kick spans two quarter days)
+    for (flight, dt, day0) in [(false, 0.25, JULY), (true, 0.25, JULY), (true, 0.5, JULY + 0.37)] {
         let paths: Vec<GpuPath> = starts.iter().map(|p| GpuPath { lon: p.lon as f32, lat: p.lat as f32, ..Default::default() }).collect();
         maybes.seed(&gpu, &paths);
         let mut cpu: Vec<Drift> = starts.iter().map(|p| Drift::put(*p)).collect();
-        let mut day = JULY;
-        let dt = 0.25;
+        let mut day = day0;
         let mut worst = 0.0f32;
         for step in 0..8 {
             maybes.step(&gpu, Params::new(&r, day, dt, 99, n), flight);
@@ -269,7 +270,7 @@ fn the_gpu_steps_as_the_cpu_does() {
                 assert!(worst < 0.01, "after one step the GPU and the CPU differ by {worst} km ({})", if flight { "flight" } else { "walk" });
             }
         }
-        eprintln!("{}: {} paths, worst gap after 8 quarter-days {:.4} km", if flight { "flight" } else { "walk" }, n, worst);
+        eprintln!("{}: {} paths, worst gap after 8 steps of {dt} days {:.4} km", if flight { "flight" } else { "walk" }, n, worst);
         assert!(worst < 1.0, "after eight steps the GPU and the CPU differ by {worst} km");
     }
 }
@@ -607,4 +608,209 @@ fn a_kept_cloud_restores_and_steps_on_the_same() {
     assert!(first.iter().zip(&again).all(|(a, b)| (a.lon, a.lat, a.eddy_u, a.eddy_v) == (b.lon, b.lat, b.eddy_u, b.eddy_v)), "stepped on from the keep, the same cloud bit for bit");
     let moved = first.iter().zip(&many).filter(|(a, b)| a.lon != b.lon).count();
     assert!(moved > n as usize / 2, "the cloud moved on between day 30 and 50");
+}
+
+/// A tool (ignored): is the lamp (k = 0, stepped as the app steps it: put, then the quarter-day
+/// grid) statistically one of its cloud (k = 1..n, put afresh and stepped half a day at a time as
+/// the GPU does)? For many seeds, the lamp's end is ranked within its own cloud along each axis;
+/// honest means the ranks are uniform (a mean near 0.5, a tenth of them in each tenth).
+///
+///     cargo test --release -p adrift-core the_lamp_is_one_of_its_cloud -- --ignored --nocapture
+#[test]
+#[ignore]
+fn the_lamp_is_one_of_its_cloud() {
+    let r = rules();
+    for (name, from, day0, days) in [
+        ("Hatteras", LonLat { lon: -74.2, lat: 34.6 }, 160.37, 60.0),
+        ("Sargasso", LonLat { lon: -40.0, lat: 30.0 }, 160.37, 60.0),
+        ("Agulhas", LonLat { lon: 31.0, lat: -31.0 }, 40.6, 45.0),
+    ] {
+        let seeds = 160u64;
+        let n = 400u32;
+        let (mut rx, mut ry) = (Vec::new(), Vec::new());
+        let (mut lamp_lon, mut cloud_lon) = (0.0, 0.0);
+        for s in 0..seeds {
+            let seed = 0x5eed_0000 + s * 7919;
+            let lamp = lamp_path(&r, from, day0, day0 + days, seed);
+            let cloud = cloud_at(&r, from, day0, day0 + days, 0.5, seed, n);
+            let below = |f: &dyn Fn(&LonLat) -> f64, v: f64| cloud.iter().filter(|c| f(c) < v).count() as f64 / n as f64;
+            rx.push(below(&|c| c.lon, lamp.lon));
+            ry.push(below(&|c| c.lat, lamp.lat));
+            lamp_lon += lamp.lon / seeds as f64;
+            cloud_lon += cloud.iter().map(|c| c.lon).sum::<f64>() / n as f64 / seeds as f64;
+        }
+        let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
+        let tenths = |v: &[f64]| (0..10).map(|t| v.iter().filter(|x| (**x * 10.0).floor() as i32 == t || (t == 9 && **x >= 1.0)).count()).collect::<Vec<_>>();
+        eprintln!("{name}: lamp's rank in its cloud: lon mean {:.2} {:?}, lat mean {:.2} {:?}; mean lon lamps {:.2} clouds {:.2}",
+            mean(&rx), tenths(&rx), mean(&ry), tenths(&ry), lamp_lon, cloud_lon);
+    }
+}
+
+/// The lamp as the app steps it (app.rs `ensure_path`): put with k = 0, then to the quarter grid.
+fn lamp_path(r: &Rules, from: LonLat, day0: f64, until: f64, seed: u64) -> LonLat {
+    let mut d = r.put(from, day0, seed, 0);
+    let mut day = day0;
+    while day < until - 1e-9 {
+        let next = ((day / 0.25).floor() * 0.25 + 0.25).min(until);
+        let next = if next - day < 1e-9 { next + 0.25 } else { next };
+        d = r.flight(d, day, next - day, seed, 0).drift;
+        day = next;
+    }
+    d.at
+}
+
+/// A cloud as the GPU steps it (app.rs `step_clouds`): each k put afresh, `dt` at a time.
+fn cloud_at(r: &Rules, from: LonLat, day0: f64, until: f64, dt: f64, seed: u64, n: u32) -> Vec<LonLat> {
+    r.flights(Drift::put(from), day0, until, dt, seed, n).iter().map(|f| f.drift.at).collect()
+}
+
+/// A tool (ignored): two lamps put 50 km apart, their clouds 30, 60 and 90 days on (R6, the
+/// worlds). For each place: each cloud's centroid and spread, the distance between the
+/// centroids, and the k-th selves' separation (lamp A's k-th maybe from lamp B's k-th: the same
+/// world) beside the separation of selves from different worlds (what every pair was before the
+/// worlds: two independent draws).
+///
+///     cargo test --release -p adrift-core two_lamps_fifty_km_apart -- --ignored --nocapture
+///
+/// With ADRIFT_OUT=<dir> it also draws `two-lamps-<place>.png` there: the 30, 60 and 90 days side
+/// by side, land grey, lamp A's maybes amber, B's blue, and a thread between every fourth pair of
+/// k-th selves (the same world), so where the worlds keep them together and where they part shows.
+#[test]
+#[ignore]
+fn two_lamps_fifty_km_apart() {
+    let r = rules();
+    let n = 1024u32;
+    let km = |a: &LonLat, b: &LonLat| distance_km(a.lon as f32, a.lat as f32, b.lon as f32, b.lat as f32) as f64;
+    for (name, a, day0) in [
+        ("jet (Gulf Stream off Hatteras)", LonLat { lon: -74.0, lat: 35.2 }, JULY),
+        ("gyre's middle (Sargasso)", LonLat { lon: -50.0, lat: 28.0 }, JULY),
+        ("front (Brazil-Malvinas confluence)", LonLat { lon: -53.5, lat: -38.5 }, JULY),
+        ("front (Kuroshio Extension)", LonLat { lon: 146.0, lat: 35.5 }, JULY),
+    ] {
+        let b = LonLat { lon: a.lon + 50.0 / (111.2 * a.lat.to_radians().cos()), lat: a.lat };
+        eprintln!("{name}: A {:.2},{:.2}  B {:.2},{:.2} ({:.0} km apart)", a.lon, a.lat, b.lon, b.lat, km(&a, &b));
+        eprintln!("  days  centroids km apart  spread A  spread B   same world: sep p10 / p50 / p90 km   other worlds: p10 / p50 / p90");
+        let (mut ca, mut cb): (Vec<Drift>, Vec<Drift>) = ((1..=n).map(|k| r.put(a, day0, 1, k)).collect(), (1..=n).map(|k| r.put(b, day0, 2, k)).collect());
+        let mut day = day0;
+        let mut panels = Vec::new();
+        for until in [30.0, 60.0, 90.0] {
+            while day < day0 + until - 1e-9 {
+                for (i, d) in ca.iter_mut().enumerate() { *d = r.flight(*d, day, 0.5, 1, i as u32 + 1).drift; }
+                for (i, d) in cb.iter_mut().enumerate() { *d = r.flight(*d, day, 0.5, 2, i as u32 + 1).drift; }
+                day += 0.5;
+            }
+            let (pa, pb): (Vec<LonLat>, Vec<LonLat>) = (ca.iter().map(|d| d.at).collect(), cb.iter().map(|d| d.at).collect());
+            let (ma, sa) = centroid_spread(&pa);
+            let (mb, sb) = centroid_spread(&pb);
+            let pct = |mut v: Vec<f64>| { v.sort_by(|x, y| x.partial_cmp(y).unwrap()); (v[v.len() / 10], v[v.len() / 2], v[v.len() * 9 / 10]) };
+            let same = pct(pa.iter().zip(&pb).map(|(x, y)| km(x, y)).collect());
+            let other = pct(pa.iter().zip(pb.iter().cycle().skip(n as usize / 2)).map(|(x, y)| km(x, y)).collect());
+            eprintln!("  {until:4.0}  {:8.0}            {sa:6.0}    {sb:6.0}       {:5.0} / {:5.0} / {:5.0}                {:5.0} / {:5.0} / {:5.0}",
+                km(&ma, &mb), same.0, same.1, same.2, other.0, other.1, other.2);
+            panels.push((pa, pb));
+        }
+        if let Some(dir) = std::env::var_os("ADRIFT_OUT") {
+            let key = name.split(' ').next().unwrap().trim_end_matches("'s").to_string();
+            let path = Path::new(&dir).join(format!("two-lamps-{key}.png"));
+            draw_pairs(&r, &panels, &path);
+            eprintln!("  drawn: {}", path.display());
+        }
+    }
+}
+
+/// The panels of `two_lamps_fifty_km_apart`: each its own frame round both clouds.
+fn draw_pairs(r: &Rules, panels: &[(Vec<LonLat>, Vec<LonLat>)], path: &Path) {
+    let side = 600u32;
+    let mut img = image::RgbImage::from_pixel(side * panels.len() as u32 + 8 * (panels.len() as u32 - 1), side, image::Rgb([250, 248, 242]));
+    for (pi, (pa, pb)) in panels.iter().enumerate() {
+        let all: Vec<&LonLat> = pa.iter().chain(pb.iter()).collect();
+        let q = |f: &dyn Fn(&LonLat) -> f64, at: f64| { let mut v: Vec<f64> = all.iter().map(|p| f(p)).collect(); v.sort_by(|a, b| a.partial_cmp(b).unwrap()); v[((v.len() - 1) as f64 * at) as usize] };
+        let (lo_lon, hi_lon, lo_lat, hi_lat) = (q(&|p| p.lon, 0.01), q(&|p| p.lon, 0.99), q(&|p| p.lat, 0.01), q(&|p| p.lat, 0.99));
+        let mid_lat = (lo_lat + hi_lat) / 2.0;
+        let c = mid_lat.to_radians().cos();
+        let span = ((hi_lon - lo_lon) * c).max(hi_lat - lo_lat) * 1.15 + 0.5;
+        let (cx, cy) = ((lo_lon + hi_lon) / 2.0, mid_lat);
+        let ox = pi as u32 * (side + 8);
+        let to_px = |p: &LonLat| -> (f64, f64) { (((p.lon - cx) * c / span + 0.5) * side as f64, ((cy - p.lat) / span + 0.5) * side as f64) };
+        for y in 0..side {
+            for x in 0..side {
+                let lat = cy - (y as f64 / side as f64 - 0.5) * span;
+                let lon = cx + (x as f64 / side as f64 - 0.5) * span / c;
+                let land = r.coast.is_land(LonLat { lon, lat });
+                img.put_pixel(ox + x, y, if land { image::Rgb([205, 200, 190]) } else { image::Rgb([232, 240, 246]) });
+            }
+        }
+        let mut dot = |img: &mut image::RgbImage, (x, y): (f64, f64), rgb: [u8; 3], a: f32, rad: i32| {
+            for dy in -rad..=rad {
+                for dx in -rad..=rad {
+                    if dx * dx + dy * dy > rad * rad { continue; }
+                    let (px, py) = (x as i32 + dx, y as i32 + dy);
+                    if px < 0 || py < 0 || px >= side as i32 || py >= side as i32 { continue; }
+                    let o = img.get_pixel_mut(ox + px as u32, py as u32);
+                    for ch in 0..3 { o.0[ch] = (o.0[ch] as f32 * (1.0 - a) + rgb[ch] as f32 * a) as u8; }
+                }
+            }
+        };
+        for (k, (a, b)) in pa.iter().zip(pb).enumerate() {
+            if k % 4 != 0 { continue; }
+            let (p0, p1) = (to_px(a), to_px(b));
+            let n = ((p1.0 - p0.0).hypot(p1.1 - p0.1) as usize).max(1);
+            for i in 0..=n {
+                let t = i as f64 / n as f64;
+                dot(&mut img, (p0.0 + (p1.0 - p0.0) * t, p0.1 + (p1.1 - p0.1) * t), [90, 90, 100], 0.12, 0);
+            }
+        }
+        for a in pa { dot(&mut img, to_px(a), [214, 120, 30], 0.7, 2); }
+        for b in pb { dot(&mut img, to_px(b), [30, 90, 200], 0.6, 2); }
+    }
+    img.save(path).unwrap();
+}
+
+/// A cloud's centroid (on the sphere's tangent, fine for clouds of a few thousand km) and its rms
+/// spread from it in km.
+fn centroid_spread(p: &[LonLat]) -> (LonLat, f64) {
+    let lat = p.iter().map(|q| q.lat).sum::<f64>() / p.len() as f64;
+    let lon0 = p[0].lon;
+    let lon = lon0 + p.iter().map(|q| (q.lon - lon0 + 540.0).rem_euclid(360.0) - 180.0).sum::<f64>() / p.len() as f64;
+    let c = LonLat { lon, lat };
+    let s = (p.iter().map(|q| (distance_km(q.lon as f32, q.lat as f32, c.lon as f32, c.lat as f32) as f64).powi(2)).sum::<f64>() / p.len() as f64).sqrt();
+    (c, s)
+}
+
+/// A tool (ignored): what the maybes' step costs on this box's GPU, as the app runs it with eight
+/// clouds out: 8 x 2048 paths, 24 half-day steps each, one submit a cloud, timed to the queue's
+/// end (the median of a few frames). On a software GPU (llvmpipe) the number is the shader's ALU
+/// and loads on the CPU: compare runs, not boxes.
+///
+///     cargo test --release -p adrift-core gpu_step_cost -- --ignored --nocapture
+#[test]
+#[ignore]
+fn gpu_step_cost() {
+    use crate::gpu::{Gpu, Textures};
+    use super::gpu::{GpuPath, Maybes, Params};
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let Ok(gpu) = pollster_block(Gpu::new(&instance, None)) else { return };
+    let assets = DirAssets(assets());
+    let textures = Textures::load(&gpu, &assets, 6).unwrap();
+    let r = rules();
+    let per = 2048u32;
+    let maybes = Maybes::new(&gpu, &assets, &textures, per * 8).unwrap();
+    let starts = [(-74.0, 35.2), (-50.0, 28.0), (-53.5, -38.5), (146.0, 35.5), (-30.0, 45.0), (60.0, -20.0), (-140.0, 10.0), (5.0, -40.0)];
+    let mut frames = Vec::new();
+    for frame in 0..6 {
+        for (c, (lon, lat)) in starts.iter().enumerate() {
+            let paths: Vec<GpuPath> = (1..=per).map(|k| { let e = r.put(LonLat { lon: *lon, lat: *lat }, JULY, 1, k).eddy; GpuPath { lon: *lon as f32, lat: *lat as f32, eddy_u: e.0, eddy_v: e.1, measured: 1.0, ..Default::default() } }).collect();
+            maybes.seed_at(&gpu, c as u32 * per, &paths);
+        }
+        let _ = maybes.read(&gpu, 1);
+        let t = std::time::Instant::now();
+        for c in 0..8u32 {
+            let steps: Vec<Params> = (0..24).map(|i| Params::new(&r, JULY + frame as f64 * 12.0 + i as f64 * 0.5, 0.5, 1, per).at_base(c * per)).collect();
+            maybes.step_many(&gpu, &steps, true);
+        }
+        let _ = maybes.read(&gpu, 1);
+        frames.push(t.elapsed().as_secs_f64() * 1000.0);
+    }
+    frames.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    eprintln!("8 clouds x {per} paths x 24 half-day steps: {:.1} ms a frame (median of {}; {:.1} ns a path-step) on {}", frames[frames.len() / 2], frames.len(), frames[frames.len() / 2] * 1e6 / (8.0 * per as f64 * 24.0), gpu.adapter_info.name);
 }

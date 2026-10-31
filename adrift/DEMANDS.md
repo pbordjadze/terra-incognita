@@ -332,6 +332,12 @@ I could give back [the field is the check's alone; nothing in the app reads it].
 sets `App.panel_stand_in`, which `App::panel_bounds()` returns when set; nothing in the app sets it.
 And a plan's `"frames": true` draws every advanced frame (the clouds step only when drawn).
 
+### D11 Truth → Engineering (R6)  [withdrawn: already so]
+Truth asked for `render` to catch the clouds up to the date; `set_scene` already does
+(`step_clouds(usize::MAX)`), so a still render is caught up. The lamps at the north-east tip of
+their clouds in `scenes/two-clouds.json` were one sample: the lamp ranks uniformly in its own cloud
+(`sea::tests::the_lamp_is_one_of_its_cloud`, a tool).
+
 ## Answered
 
 (none yet)

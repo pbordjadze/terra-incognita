@@ -11,7 +11,7 @@ time; everything is bundled.
 | | Measured (the record) | Drawn (our choices) |
 | --- | --- | --- |
 | The current | the month's mean near-surface current in each half-degree cell, from the drifters' climatology (`currents.png`); the stream function solved from it (`stream.png`) | a float moves with the cell's mean current, interpolated between cells and between months by the day of the year |
-| The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); a float is put with a first velocity drawn from that same measured variance (the water is already moving), and each maybe with its own; deterministic for a seed, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
+| The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); a float is put with a first velocity drawn from that same measured variance (the water is already moving), and each maybe with its own. The kicks are not each path's own dice but a world's: world k is one random eddy field, shared by every float's k-th path (below: The worlds); deterministic, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
 | The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below) |
 | The coast | the globe's own signed distance to the shore (Terra's `geo.png`) | a float that steps onto land is put back at the water's edge, one of the coast's own pixels (about 10 km) off, and held there |
 | Where it may be put | how far the nearest drifter-measured cell is, by month (the currents sheet's B; `Rules::record`) | anywhere the mask shows water; where no drifter went the float rides the smoothed-in current and wander, plausibly (below: Where a float may be put) |
@@ -136,8 +136,9 @@ is the symbol's (Visual's) to decide; the mask would need 8192 pixels only for a
 ## Time is reversible
 
 A step is a pure function of its arguments: `Rules::flight(state, day, dt, seed, k)` reads the
-sheets and hashes the seed, the path and the step's start day (as the bits of an f32) and nothing
-else; no call remembers the last. A float's place at any day is therefore the same whichever way
+sheets and hashes the path's world (k) and the quarter days the step spans (from its start day
+and length as f32; the walk, `Rules::step`, still hashes the seed, the path and the start day's
+bits) and nothing else; no call remembers the last. A float's place at any day is therefore the same whichever way
 the date was scrubbed to reach it, if the app steps it on a fixed grid from its put: a quarter
 day is exact in f32 for any day under 2^21 (the year 7745), so a grid mark always gives the same
 bits, and a day off the grid (the put's first, short step) is rounded to f32 once, the same way
@@ -158,6 +159,53 @@ sixteenth of 2048 paths at a quarter day. A whole-day step is not honest in a je
 the shelf and the coast catches nearly twice as many (73 of 2048 against 41), and the spread
 across the stream narrows. The cloud need not be re-run more often than the day moves half a
 day.
+
+## The worlds (R6)
+
+What is measured: at each place, how strongly the drifters' velocity strays from the mean (K / T)
+and for how long it remembers (T). What is drawn: which eddies are where. Before R6 every path
+drew its own kicks, so two floats put 50 km apart met two unrelated seas from the first step,
+which no real pair of drifters does: water a few kilometres apart moves alike. Now path k of every
+float lives in world k, one random eddy field (`rules::world_field`): two standard draws on a
+lattice a degree square (about 110 km north-south, the size of the mesoscale eddies that part
+drifter pairs; Chelton et al. 2011 measure their radii at 50 to 150 km in mid-latitudes), a fresh
+lattice each quarter day, mixed bilinearly between nodes and renormalised so a kick is a unit
+draw everywhere. The lattice's width is the one number here not measured per place. A step's kick
+is the quarter days whose middles it spans, summed and renormalised, so the lamp's quarter-day
+steps and the maybes' half-day steps read the same field. One path alone sees exactly what it saw
+before (a unit kick a step: the same K / T and T; every single-cloud test passes unchanged and
+the Hatteras record holds), so a cloud as a whole is the same in law; what is new is that the
+k-th selves of two floats can be compared, because they met the same sea.
+
+Two lamps put 50 km apart in a typical July, 1024 worlds, half-day steps
+(`sea::tests::two_lamps_fifty_km_apart`, a tool; with ADRIFT_OUT it draws them):
+
+| place | days | centroids apart | spread (rms) | k-th selves apart, same world: p10 / p50 / p90 | different worlds (as before R6) |
+| --- | --- | --- | --- | --- | --- |
+| jet: Gulf Stream off Hatteras | 30 | 83 km | 637 km | 135 / 584 / 1249 km | 265 / 716 / 1359 km |
+| | 90 | 101 km | 1034 km | 298 / 1038 / 2244 km | 416 / 1188 / 2344 km |
+| gyre's middle: Sargasso | 30 | 43 km | 165 km | 10 / 79 / 258 km | 77 / 197 / 357 km |
+| | 90 | 50 km | 342 km | 9 / 201 / 581 km | 152 / 388 / 743 km |
+| front: Brazil-Malvinas confluence | 30 | 47 km | 496 km | 88 / 464 / 939 km | 226 / 608 / 1074 km |
+| front: Kuroshio Extension | 30 | 35 km | 550 km | 130 / 513 / 1068 km | 238 / 653 / 1159 km |
+
+The honest reading. Two clouds 50 km apart stay nearly one cloud: their centroids stay 35 to 100
+km apart in every place tried, because the record's mean current is a half-degree climatology and
+smooth at that distance, and the measured wander is the same for both. What diverges is the
+pair in each world: in the gyre's middle half the worlds keep the two lamps' selves within 80 km
+for a month and a tenth keep them within 10 km for three; in a jet or a front most worlds part
+them by hundreds of kilometres within a month and a tenth by more than a thousand. That is what
+real pairs do (pairs that start close separate slowly in quiet water and fast where the flow
+shears; LaCasce 2008 reviews it); the numbers here are not held to measured pair statistics yet,
+which the bundled tracks could do where two drifters were launched together.
+
+The lamp is k = 0, world 0: two lamps meet the same sea too, and a lamp put twice at the same
+place and day takes the same path. It is one of its own cloud: ranked within its cloud along
+each axis over 160 seeds, its rank is uniform at Hatteras, the Sargasso and the Agulhas (means
+0.48 to 0.53; `sea::tests::the_lamp_is_one_of_its_cloud`, a tool). The cost: the kick reads four
+lattice nodes a quarter day, about the hashing the twelve-uniform draws took; 8 clouds of 2048
+paths at 24 half-day steps cost the same on the software GPU as before (95 ms against 95 to 104
+ms, about 240 ns a path-step on llvmpipe; `sea::tests::gpu_step_cost`, a tool).
 
 ## Whales (not in the app; what it would take)
 
