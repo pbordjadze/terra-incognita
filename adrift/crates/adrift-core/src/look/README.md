@@ -102,7 +102,7 @@ and `look_state()`:
 - **The panel** (`words.rs › Words::panel`): a very small column at the top left (from 60 reading
   points down), one row a lamp, oldest first, the latest ten: its mark, a filled lamp in its own hue
   (large with a soft glow of its colour while its cloud is out, small while not; the front the largest) and where and when it was put in 10 pt
-  italic ("9 Jun · 35°N 74°W"). Rows are 24 reading points tall; `panel_bounds` holds each row's whole
+  italic ("9 Jun · 35°N 74°W"). Rows are 36 reading points tall (a thumb's reach, Motion's ask); `panel_bounds` holds each row's whole
   rect (from 6 points left of the mark to the end of the widest line) for Motion's probe.
 - **Several clouds** (`maybes.rs`): laid in turns, an eighth of each in turn, so where they overlap
   their hues mix like two sands and where the currents part them each is its own colour; the ones
