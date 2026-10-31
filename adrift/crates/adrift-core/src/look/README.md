@@ -113,3 +113,6 @@ and `look_state()`:
 - The atlas's neighbour bleed at coarse mips (thin lines beside small glyphs) is masked at each cell's
   edge in `words.wgsl`.
 - Studies: `studies/r6-*.png`, from `scenes/r6-*.json` by `bash scenes/render.sh <out>`.
+- **The tap's rings** (`sea.wgsl`) gentler: two rings, not three, their light at 0.40 (0.65 before)
+  and less by night, the shade under them lighter, gone sooner (`plans/ripple.json`,
+  `studies/r6-ripple-before-after-phone.png`, before above, after below).
