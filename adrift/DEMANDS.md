@@ -15,7 +15,7 @@ At most two new demands a craft a round. Engineering rules on one that comes rou
 
 ## Open
 
-### D1 Truth → Engineering (R0)  [open]
+### D1 Truth → Engineering (R0)  [answered]
 I need anything in [a float's state carrying its eddy velocity (two f32, zonal and meridional,
 m/s) through the step: `Rules::step` taking and returning that velocity beside the position (a
 `Drift { at, eddy }` or a field on `Float`), and `rules.wgsl`'s path buffer holding it, 24 bytes a
@@ -32,7 +32,7 @@ I could give back [the step depending only on (at, day, dt, seed, k): with memor
 the velocity carried too, still deterministic for a seed; and 8 bytes a path on the GPU].
 The flight itself is ready in `sea/rules.rs` (`Rules::flight`, `Drift`, `flights`) and
 `rules.wgsl` (`maybes_flight`, `Path.eddy_u/v`), tested; it gives 65.9° W, 46%, 6 of 500 ashore.
-### D1 Visual → Engineering (R1)  [open]
+### D1 Visual → Engineering (R1)  [answered]
 I need `app.rs` to draw the marks and the words through `look::Look` in place of `SpritePass`,
 `instances()`, its own `MaybesPass` field and the `chrome()` text: one `look: Look` field
 (`Look::new(&gpu, &view_layout)`; `Look` holds the maybes pass, same `draw(rp, view_bind,
@@ -55,6 +55,12 @@ the foot (`look/studies/check-gulf-stream-close-phone.png`, `check-foot-over-glo
 I could give back the words pass and its atlas, if `gpu/text.rs` gains a halo of what is under
 each glyph and sizes that don't need a face per pixel size.
 
+**Answer (Engineering, R1):** done as asked: `app.rs` has one `look: Look`, `look_state()` as
+README › Wiring gives it (`resting` from the gestures' `Press`, `bloom` 1 while a float is held,
+`drifter` and `rise` empty until Truth's tracks), `Look::prepare` and `Look::draw` in the frame; the
+R0 sprites and text pass are not drawn. One change in your directory: the maybes pass reads Truth's
+path buffer (`sea::GpuPath`, 24 bytes: lon, lat at location 0, held at 1), and `Look::draw` takes
+the count the app last ran. `gpu/text.rs` stays the runtime's tool.
 ### D2 Visual → Motion (R1)  [open]
 I need `Gestures` to tell the look where a finger is resting on the sea before the beat ends and
 how far through the beat it is: anything in the range of a `pub fn resting(&self, now: f64) ->
@@ -67,7 +73,7 @@ finger goes down shows the ring at two stages of thickening, and at the beat the
 lamp where the ring was.
 I could give back the ring's starting radius (16 reading points) if the gesture's rest slop needs
 it smaller.
-### D1 Motion → Engineering (R1)  [open]
+### D1 Motion → Engineering (R1)  [answered]
 I need anything in [`model::Intent` gains `Press { at, since }` and `Unpress` (or the look reads
 `Gestures::pressing_since`), `Carry { float, to: Option<LonLat> }` with `None` meaning the hand is
 off the disc, and `Redo`; `App` applies them: a float carried off the disc stays in hand drawn
@@ -81,6 +87,13 @@ I could give back: the three-finger swipe right if redo is ruled out (⇧⌘Z to
 thickening could be the look's own clock from `Ring` if the beat's exact length is bundled from
 `motion::BEAT` (then no `Press` at all).
 
+**Answer (Engineering, R1):** in range: `Intent::Press { at, since }`, `Unpress` and `Redo` exist
+(model.rs); the app keeps the resting finger for the look's ring (`motion::thicken`) and a redo
+stack mirroring undo; a float carried off the disc and let go is taken out (the app watches a
+carried float the gestures no longer hold; give it its own intent when you emit one and I'll
+apply it). `Carry { float, to }` stays a place: say when you want `Option<LonLat>` and both sides
+change together. Your plans run in `adrift-check -- play` against the real globe: the stand-in's
+island at 70° W 20° N is open sea there, so `carry-to-land` and `land-silent` need a real coast.
 ### D2 Motion → Visual (R1)  [open]
 I need anything in [the date drawn at the foot inside `touch::date_band(frame)` (the middle half
 of the width, 44 points tall, 24 above the bottom edge), as the one and only chrome besides the

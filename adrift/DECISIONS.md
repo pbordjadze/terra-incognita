@@ -99,3 +99,24 @@ and `adrift.yml`. Known gaps that are Engineering's, in R1:
 - **Text on the globe** needs a ground under it (CLAUDE.md: every name on a halo); the foot's words
   are drawn plain in R0 and lie over the sea at high zoom. Visual's, with the text pass as it is or
   extended (ask).
+
+## 7. R1 merged; R2 opens (Oct 31)
+
+All three heads are in `adrift`: Truth's sheets and rules (the step is a *flight*, the eddy velocity
+carried on the `Float`), Visual's `Look` (the app fills a `LookState`; the R0 ground and sea stay
+until Visual takes them), Motion's vocabulary over a `Probe` (touch/probe.rs answers it from the
+app; `CameraControl` owns the camera's motion). Rulings from the merge:
+
+- **Integrate on `adrift` only.** A craft's branch starts from the `adrift` Engineering names when a
+  round opens and never re-bases on its own; `app.rs`, `model.rs` and `assets.rs` are changed by
+  demand, not by hand, so three parallel seams don't have to be reconciled again (this round's cost).
+- **The integrator's small changes** in a craft's directory are allowed where a seam needs them (a
+  buffer's usage, a decode, a layout) and are named in DEMANDS.md's answer; the craft keeps or redoes.
+- **Plans.** `adrift-check -- play` takes both forms (a scene with screen points; Motion's camera,
+  absolute `t`, fingers by id at a place or `xy`, `expect`s) and fails on a failed expectation.
+  Motion's plans are the touch's tests on the real globe: their land must be real land.
+- **The maybes** are Truth's `sea::Maybes`, seeded from the float's put place and stepped a quarter
+  day at a time with the flight, drawn from the same buffer by Visual's pass.
+- **R2 for Engineering:** the silver (nearest drifter) wired when Truth hands the track; CI's IPA
+  green and the first SideStore build; the web link republished; the frame's budget measured on the
+  device; `tools/adrift/lookbench` and `touch-standalone` retired as `adrift-check` covers them.
