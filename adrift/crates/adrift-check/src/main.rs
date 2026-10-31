@@ -68,8 +68,9 @@ fn render(args: &[String]) -> Result<()> {
 
 #[derive(Deserialize)]
 struct Plan {
+    /// Pixels (Engineering's plans) or points (Motion's: a plan with a `camera` and no `scene`).
     #[serde(default = "default_size")]
-    size: [u32; 2],
+    size: [f64; 2],
     #[serde(default = "default_ppp")]
     ppp: f64,
     /// Engineering's form: a whole scene.
@@ -83,8 +84,8 @@ struct Plan {
     day: f64,
     steps: Vec<Step>,
 }
-fn default_size() -> [u32; 2] {
-    [1179, 2556]
+fn default_size() -> [f64; 2] {
+    [1179.0, 2556.0]
 }
 fn default_ppp() -> f64 {
     3.0
@@ -143,7 +144,8 @@ fn play(args: &[String]) -> Result<()> {
     let out = PathBuf::from(&args[1]);
     std::fs::create_dir_all(&out)?;
     let (_instance, gpu) = gpu()?;
-    let [w, h] = plan.size;
+    let points = plan.scene.is_none();
+    let (w, h) = if points { ((plan.size[0] * plan.ppp) as u32, (plan.size[1] * plan.ppp) as u32) } else { (plan.size[0] as u32, plan.size[1] as u32) };
     let target = Offscreen::new(&gpu, w, h);
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, plan.ppp)?;
     app.budget.locked = true;
