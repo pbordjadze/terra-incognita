@@ -290,3 +290,13 @@ reads as a thing, not a dashboard. The lamp on the rule is the only hint that an
 touched, and that is enough for a hand that has already put a lamp on the sea." Holt: "Nothing on
 the screen tells me what the sea is made of, and the sea behaves; the credits are there when I
 rest on the date, and asking for them costs me nothing."
+
+**Riding a float with its maybes out** (`look/plans/riding.json` on the merged round, main 095620e:
+a float twenty days adrift at zoom 2.2, ridden by intent while the date runs;
+`studies/r4-riding-with-maybes-phone.png`, before and at 0.6, 2.1 and 6.1 s of the ride): the
+camera eases after the float, the cloud, the silver and its label ride with it, the wake trails
+behind. The hater: "While the globe slides under them the cloud reads as the float's own weather
+and the silver as a road it is on; the label is the one thing that fights the motion, a line of
+words sliding over a sliding map. Pin it to the screen's corner while riding, or let it go after
+a beat." Verdict: passes; the label while riding is a knob for the next round. Holt: "I tapped it
+and went with it, and it showed me its other lives on the way without my asking twice."
