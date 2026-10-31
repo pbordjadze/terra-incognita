@@ -40,7 +40,8 @@ pub struct Rules {
     pub ice_hold: f32,
     /// The eddy wander's scale: 1 is the measured diffusivity; 0 switches it off (for tests).
     pub wander: f32,
-    /// How far off the shore a held float sits, in the coast sheet's pixels.
+    /// How far off the shore a held float sits, in the coast sheet's pixels: one, the coast's own
+    /// resolution (about 10 km), so a float never sits inside the shoreline's own uncertainty.
     pub shore: f32,
 }
 
@@ -60,7 +61,7 @@ impl Rules {
             leeway: Self::LEEWAY,
             ice_hold: Self::ICE_HOLD,
             wander: 1.0,
-            shore: 0.5,
+            shore: 1.0,
         })
     }
 
@@ -137,6 +138,51 @@ impl Rules {
             })
             .collect()
     }
+}
+
+/// Whether the sea at a place can carry a float, by what the record holds there.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Put {
+    /// Land: no float.
+    Land,
+    /// Water, but no drifter came within about three degrees of it in any month (the Caspian,
+    /// the Great Lakes, Hudson Bay, the Red Sea, the Persian Gulf, the seas under the ice): the
+    /// sheets hold only a value smoothed in from far away, which is no record of this water. The
+    /// sea refuses the float: nothing scripts where it goes, and here nothing measured could.
+    NoRecord,
+    /// Water the record reaches only from a distance (`measured` under 0.5): the float is carried
+    /// as a marked guess.
+    Guess,
+    /// Water a drifter measured.
+    Sea,
+}
+
+impl Rules {
+    /// How far the record reaches a place, 0..1: the most measured month's `measured` there.
+    pub fn record(&self, at: LonLat) -> f32 {
+        let (lon, lat) = (at.lon as f32, at.lat as f32);
+        (0..12).map(|m| self.currents.0.sample(m, 2, lon, lat) / 255.0).fold(0.0, f32::max)
+    }
+
+    /// Whether a float may be put at `at`, and on what footing.
+    pub fn may_put(&self, at: LonLat) -> Put {
+        if self.coast.is_land(at) {
+            return Put::Land;
+        }
+        let r = self.record(at);
+        if r < Self::NO_RECORD {
+            Put::NoRecord
+        } else if r < Self::GUESS {
+            Put::Guess
+        } else {
+            Put::Sea
+        }
+    }
+
+    /// Below this the record is nothing: no measured cell within about 2.9 degrees.
+    pub const NO_RECORD: f32 = 0.05;
+    /// Below this the current is a guess from more than 1.5 degrees away (the mark's threshold).
+    pub const GUESS: f32 = 0.5;
 }
 
 /// A float with the memory of its wander: where it is and the eddy velocity it carries (m/s,

@@ -158,3 +158,41 @@ there is also a slow one, so the beads sit on each other); and the page says the
 words a reader can reach, which is what SOURCES.md was waiting for. Verdict: both met on the
 running build. Holt: nothing moved to show either; the page closes with any tap and leaves the
 sea as it was.
+
+## R4 (October 31, 2026; the owner's first device run; the build at 5cd8398)
+
+The owner put about thirty-five floats on his phone, among them one on the Baltic that wore the
+guess mark, two near the Black and Caspian seas, one at Antarctica's ice edge. What ran here:
+`adrift-check render` of `critics/r4/owners-seas.json` (eight floats, by night, 17 June: the
+Black Sea, the Caspian, two in the Baltic, the Gulf of Guinea, the Red Sea, the ice's edge at 65° S,
+the Cape Verde sea; `owners-seas.png`), 25 tests (one new: where a float may be put), and the
+record itself measured (SOURCES.md › Where a float may be put).
+
+**The hater (the same oceanographer, with the owner's thumb on the screen).**
+- *The Caspian float wears the guess mark, and that is the mark lying for the sheet.* The
+  Caspian is not the ocean; no drifter of the programme was ever in it; the current the sheet
+  holds there is smoothed in from the Black Sea and the Persian Gulf across six hundred kilometres
+  of land. A dashed rim says "a guess about this water"; there is none. The same for the Red Sea
+  float: no record (the programme's Red Sea drifters are not in the climatology's cells), a
+  current from the Gulf of Aden pushed up the sea. Verdict: the sea must refuse these, and
+  `Rules::may_put` now does (the Caspian, the Great Lakes, Baikal, Hudson Bay, the Red Sea, the
+  Persian Gulf: 7% of the sea by area); D4 asks the hit to honour it, D5 asks the screen to say
+  why.
+- *The Black Sea float is honest*: the programme's drifters measured it (1999–2003, in the
+  climatology), and the sheet says so. The Baltic too, its south-west corner a reach rather than
+  a measurement (0.55), which the mark shows when the float wanders under 0.5. Both stay.
+- *The ice's edge*: a float at 65° S in June sits in ice and is held; the record there is a
+  reach (0.88 at the edge, falling under the ice). Honest as the rule stands: the ice holds it,
+  and the hold says so.
+- *The coast at phone zoom* (SOURCES.md › The coast against the phone): the clusters along
+  Central America and the Gulf of Guinea look ashore because the float's symbol is 250 km across
+  at the whole Earth; the mask is finer than the symbol at every zoom. The hold-off is now one
+  pixel (10 km) instead of half, so no float sits inside the shoreline's own uncertainty. Verdict:
+  not the mask's; the symbol's, if anyone's.
+- *Still:* the leeway is derived, not measured; the jets' variance holds their meandering.
+
+**Holt.** The refusal is the first "no" Adrift says, and it must cost nothing: the ring forms,
+the float does not, a line says why, and the reader puts it on the next sea with nothing to undo.
+That is D5's shape. A float wandering from measured water into unrecorded water is carried on
+and marked rather than stopped: the sea takes it where it takes it. Verdict withheld until D4
+and D5 run on a screen.
