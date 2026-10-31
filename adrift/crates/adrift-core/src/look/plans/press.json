@@ -1,0 +1,10 @@
+{
+  "_": "The press: a finger resting on the sea draws the ring in and forms glass, without a lamp; at the beat the float is put and its lamp comes on (Motion's thicken curve, BEAT 0.40 s). adrift-check play adrift/crates/adrift-core/src/look/plans/press.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -45.0, "lat": 32.0, "zoom": 2.2 }, "day": 200.0, "seconds": 8.0, "running": false },
+  "steps": [
+    { "down": [150, 400], "id": 1 }, { "advance": 0.1 }, { "shot": "press-0.10" },
+    { "advance": 0.15 }, { "shot": "press-0.25" }, { "advance": 0.12 }, { "shot": "press-0.37" },
+    { "advance": 0.06 }, { "shot": "put-0.43" }, { "advance": 0.3 }, { "shot": "held-0.73" }
+  ]
+}

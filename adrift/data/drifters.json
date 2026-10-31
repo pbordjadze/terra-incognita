@@ -1,0 +1,21 @@
+{
+ "runs": 1979,
+ "points": 918916,
+ "bytes": 3707340,
+ "years": [
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022,
+  2023
+ ],
+ "drifters": 1933,
+ "cell_degrees": 2,
+ "cover": 3,
+ "cells_passed_by_any_run": 10023,
+ "cells_covered": 9022,
+ "day_scale": 180.0
+}

@@ -1,0 +1,96 @@
+{
+ "title": "Let go moving and the globe flings, then rests; a touch stops it at once",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -45.0,
+    0.0
+   ]
+  },
+  {
+   "t": 0.05,
+   "move": 0,
+   "xy": [
+    196.5,
+    511.2
+   ]
+  },
+  {
+   "t": 0.1,
+   "move": 0,
+   "xy": [
+    220.1,
+    519.7
+   ]
+  },
+  {
+   "t": 0.15000000000000002,
+   "move": 0,
+   "xy": [
+    243.7,
+    528.2
+   ]
+  },
+  {
+   "t": 0.2,
+   "up": 0,
+   "xy": [
+    243.7,
+    528.2
+   ]
+  },
+  {
+   "t": 0.3,
+   "expect": {
+    "camera_moved": true
+   }
+  },
+  {
+   "t": 0.6,
+   "expect": {
+    "camera_same_as_last": false
+   }
+  },
+  {
+   "t": 0.7,
+   "down": 0,
+   "xy": [
+    243.7,
+    357.8
+   ]
+  },
+  {
+   "t": 0.75,
+   "up": 0,
+   "xy": [
+    243.7,
+    357.8
+   ]
+  },
+  {
+   "t": 0.8,
+   "expect": {
+    "saw": [
+     "Ring"
+    ]
+   }
+  },
+  {
+   "t": 1.5,
+   "expect": {
+    "camera_same_as_last": true
+   }
+  }
+ ]
+}

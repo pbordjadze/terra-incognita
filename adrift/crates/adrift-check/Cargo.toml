@@ -1,0 +1,16 @@
+[package]
+name = "adrift-check"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Headless renders and played sessions of Adrift, to PNG, on Linux's software Vulkan."
+
+[dependencies]
+adrift-core = { path = "../adrift-core" }
+wgpu = { workspace = true, features = ["vulkan"] }
+image = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+pollster = { workspace = true }

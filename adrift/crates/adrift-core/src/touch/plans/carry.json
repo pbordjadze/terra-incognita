@@ -1,0 +1,115 @@
+{
+ "title": "Rest, then drag: carry the float to other water; the globe does not move; undo takes it back",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.5,
+   "expect": {
+    "state": "holding",
+    "saw": [
+     "Hold"
+    ]
+   }
+  },
+  {
+   "t": 0.6,
+   "move": 0,
+   "at": [
+    -25.0,
+    18.0
+   ]
+  },
+  {
+   "t": 0.7,
+   "move": 0,
+   "at": [
+    -20.0,
+    15.0
+   ]
+  },
+  {
+   "t": 0.75,
+   "shot": "carrying"
+  },
+  {
+   "t": 0.75,
+   "expect": {
+    "state": "carrying",
+    "saw": [
+     "Carry"
+    ],
+    "held": 1,
+    "camera_moved": false
+   }
+  },
+  {
+   "t": 0.8,
+   "up": 0,
+   "at": [
+    -20.0,
+    15.0
+   ]
+  },
+  {
+   "t": 0.9,
+   "expect": {
+    "floats": 1,
+    "state": "idle",
+    "saw": [
+     "Release"
+    ],
+    "held": null,
+    "float": {
+     "id": 1,
+     "lon": -20.0,
+     "lat": 15.0
+    },
+    "camera_moved": false
+   }
+  },
+  {
+   "t": 1.0,
+   "shot": "set-down"
+  },
+  {
+   "t": 1.5,
+   "key": "undo"
+  },
+  {
+   "t": 1.6,
+   "expect": {
+    "floats": 1,
+    "saw": [
+     "Undo"
+    ],
+    "float": {
+     "id": 1,
+     "lon": -30.0,
+     "lat": 20.0
+    }
+   }
+  }
+ ],
+ "floats": [
+  {
+   "lon": -30.0,
+   "lat": 20.0
+  }
+ ]
+}

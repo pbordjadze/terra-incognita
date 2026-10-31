@@ -1,0 +1,83 @@
+{
+ "title": "A drag that begins on a float before the beat is the globe's: the float stays",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.05,
+   "move": 0,
+   "xy": [
+    216.2,
+    426.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "move": 0,
+   "xy": [
+    235.8,
+    443.0
+   ]
+  },
+  {
+   "t": 0.15000000000000002,
+   "move": 0,
+   "xy": [
+    255.5,
+    460.1
+   ]
+  },
+  {
+   "t": 0.2,
+   "up": 0,
+   "xy": [
+    255.5,
+    460.1
+   ]
+  },
+  {
+   "t": 0.3,
+   "expect": {
+    "floats": 1,
+    "state": "idle",
+    "camera_moved": true,
+    "float": {
+     "id": 1,
+     "lon": -30.0,
+     "lat": 20.0
+    },
+    "not": [
+     "Hold",
+     "Carry",
+     "Release",
+     "Ride"
+    ]
+   }
+  },
+  {
+   "t": 0.4,
+   "shot": "turned"
+  }
+ ],
+ "floats": [
+  {
+   "lon": -30.0,
+   "lat": 20.0
+  }
+ ]
+}

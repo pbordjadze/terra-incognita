@@ -1,0 +1,74 @@
+{
+ "title": "Rest a beat on the sea: the ring thickens into a float; lift and the sea has it",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 0.2,
+   "shot": "thickening"
+  },
+  {
+   "t": 0.39,
+   "shot": "almost"
+  },
+  {
+   "t": 0.45,
+   "expect": {
+    "floats": 1,
+    "state": "holding",
+    "saw": [
+     "Put"
+    ],
+    "held": 1
+   }
+  },
+  {
+   "t": 0.6,
+   "shot": "held"
+  },
+  {
+   "t": 1.0,
+   "up": 0,
+   "at": [
+    -30.0,
+    20.0
+   ]
+  },
+  {
+   "t": 1.1,
+   "expect": {
+    "floats": 1,
+    "state": "idle",
+    "saw": [
+     "Release"
+    ],
+    "held": null,
+    "float": {
+     "id": 1,
+     "lon": -30.0,
+     "lat": 20.0
+    },
+    "camera_moved": false
+   }
+  },
+  {
+   "t": 1.5,
+   "shot": "afloat"
+  }
+ ]
+}

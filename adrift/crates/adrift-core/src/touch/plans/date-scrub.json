@@ -1,0 +1,72 @@
+{
+ "title": "Drag the date: the clock pauses and the day follows the finger; it stays paused",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 22.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "xy": [
+    196.5,
+    638.5
+   ]
+  },
+  {
+   "t": 0.1,
+   "move": 0,
+   "xy": [
+    246.5,
+    638.5
+   ]
+  },
+  {
+   "t": 0.2,
+   "move": 0,
+   "xy": [
+    296.5,
+    638.5
+   ]
+  },
+  {
+   "t": 0.22,
+   "shot": "scrubbed"
+  },
+  {
+   "t": 0.25,
+   "expect": {
+    "saw": [
+     "Pause",
+     "Scrub"
+    ],
+    "state": "scrubbing",
+    "playing": false,
+    "day": 9900.0
+   }
+  },
+  {
+   "t": 0.3,
+   "up": 0,
+   "xy": [
+    296.5,
+    638.5
+   ]
+  },
+  {
+   "t": 0.4,
+   "expect": {
+    "playing": false,
+    "state": "idle",
+    "camera_moved": false,
+    "floats": 0
+   }
+  }
+ ],
+ "day": 9800.0
+}

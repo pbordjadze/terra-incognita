@@ -7,3 +7,5 @@ build/
 ci-report/
 __pycache__/
 node_modules/
+adrift/target/
+adrift/build/

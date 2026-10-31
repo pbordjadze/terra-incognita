@@ -1,0 +1,12 @@
+{
+  "_": "What you just did stays lit (Adrift's rule 6): a float put by a resting finger glows wider for a beat after the touch, then settles; a second float put later is the lit one. adrift-check play adrift/crates/adrift-core/src/look/plans/stays-lit.json <out>.",
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -45.0, "lat": 32.0, "zoom": 2.2 }, "day": 200.0, "seconds": 8.0, "running": true },
+  "steps": [
+    { "down": [150, 400], "id": 1 }, { "advance": 0.6 }, { "up": [150, 400], "id": 1 },
+    { "advance": 0.2 }, { "shot": "lit-just-put" },
+    { "advance": 4.0 }, { "shot": "settled" },
+    { "down": [260, 470], "id": 2 }, { "advance": 0.6 }, { "up": [260, 470], "id": 2 },
+    { "advance": 0.2 }, { "shot": "second-lit-first-not" }
+  ]
+}

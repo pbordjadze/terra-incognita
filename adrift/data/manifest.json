@@ -1,0 +1,186 @@
+{
+  "_": "The files the app loads, by the names the code uses (adrift-core/src/assets.rs FILES), and where each is in this repository. Terra's own data is borrowed as it is (tools/ocean/build.py, tools/globe/build.py and ground.py built it); files under adrift/data/ are Adrift's own. tools/adrift/assets.py assembles a directory of them for a shell. `sheets` says how each sheet is decoded (Truth's builders write their own entries) and the credit each is owed.",
+  "files": {
+    "geo.png": "Globe/geo.png",
+    "terrain.png": "Globe/terrain.png",
+    "floor.png": "Globe/ground/floor.png",
+    "currents.png": "App/TerraIncognita/Ocean/OceanCurrents.png",
+    "stream.png": "App/TerraIncognita/Ocean/OceanStream.png",
+    "ice-01.png": "Globe/ground/ice-01.png",
+    "ice-02.png": "Globe/ground/ice-02.png",
+    "ice-03.png": "Globe/ground/ice-03.png",
+    "ice-04.png": "Globe/ground/ice-04.png",
+    "ice-05.png": "Globe/ground/ice-05.png",
+    "ice-06.png": "Globe/ground/ice-06.png",
+    "ice-07.png": "Globe/ground/ice-07.png",
+    "ice-08.png": "Globe/ground/ice-08.png",
+    "ice-09.png": "Globe/ground/ice-09.png",
+    "ice-10.png": "Globe/ground/ice-10.png",
+    "ice-11.png": "Globe/ground/ice-11.png",
+    "ice-12.png": "Globe/ground/ice-12.png",
+    "land-01.jpg": "Globe/ground/01.jpg",
+    "land-02.jpg": "Globe/ground/02.jpg",
+    "land-03.jpg": "Globe/ground/03.jpg",
+    "land-04.jpg": "Globe/ground/04.jpg",
+    "land-05.jpg": "Globe/ground/05.jpg",
+    "land-06.jpg": "Globe/ground/06.jpg",
+    "land-07.jpg": "Globe/ground/07.jpg",
+    "land-08.jpg": "Globe/ground/08.jpg",
+    "land-09.jpg": "Globe/ground/09.jpg",
+    "land-10.jpg": "Globe/ground/10.jpg",
+    "land-11.jpg": "Globe/ground/11.jpg",
+    "land-12.jpg": "Globe/ground/12.jpg",
+    "wind.png": "adrift/data/wind.png",
+    "eddy.png": "adrift/data/eddy.png",
+    "eddy-time.png": "adrift/data/eddy-time.png",
+    "drifters.bin": "adrift/data/drifters.bin",
+    "LibertinusSerif-Regular.otf": "Globe/fonts/LibertinusSerif-Regular.otf",
+    "LibertinusSerif-Italic.otf": "Globe/fonts/LibertinusSerif-Italic.otf",
+    "night.jpg": "Globe/ground/night.jpg"
+  },
+  "sheets": {
+    "eddy": {
+      "border": 1,
+      "cells": [
+        720,
+        360
+      ],
+      "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html",
+      "decode": "(byte / 255)^2 * max",
+      "file": "eddy.png",
+      "height": 362,
+      "max": 40000.0,
+      "source": "NOAA GDP current variance (Laurindo, Mariano and Lumpkin 2017) times the Lagrangian integral time scale measured from GDP 6-hourly trajectories 2016-2023",
+      "step": "a Gaussian step of standard deviation sqrt(2 K dt) metres on each axis",
+      "tiles": [
+        1,
+        1
+      ],
+      "unit": "m^2/s",
+      "what": "lateral eddy diffusivity, zonal in R and meridional in G, how measured in B",
+      "width": 722
+    },
+    "eddy-time": {
+      "border": 1,
+      "cells": [
+        360,
+        180
+      ],
+      "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html",
+      "decode": "byte / 255 * max",
+      "file": "eddy-time.png",
+      "height": 182,
+      "max": 10.0,
+      "source": "measured from GDP 6-hourly trajectories 2016-2023 in 10-degree boxes, smoothed",
+      "tiles": [
+        1,
+        1
+      ],
+      "unit": "days",
+      "what": "the Lagrangian integral time scale, zonal in R and meridional in G",
+      "width": 362
+    },
+    "wind": {
+      "border": 1,
+      "cells": [
+        360,
+        180
+      ],
+      "credit": "NCEP/NCAR Reanalysis 1 data provided by the NOAA PSL, Boulder, Colorado, USA",
+      "decode": "(byte - 128) / 127 * max",
+      "file": "wind.png",
+      "height": 546,
+      "max": 16.0,
+      "source": "NCEP/NCAR Reanalysis 1, long-term monthly means 1991-2020 (NOAA PSL)",
+      "tiles": [
+        4,
+        3
+      ],
+      "unit": "m/s",
+      "what": "the month's mean 10 m wind, eastward in R and northward in G",
+      "width": 1448
+    },
+    "currents": {
+      "file": "currents.png",
+      "what": "the month's mean near-surface current, eastward in R, northward in G, how measured in B (Terra's OceanCurrents.png, tools/ocean/build.py)",
+      "cells": [
+        720,
+        360
+      ],
+      "tiles": [
+        4,
+        3
+      ],
+      "border": 1,
+      "decode": "sign(b - 128) * ((b - 128) / 127)^2 * max",
+      "max": 2.0,
+      "unit": "m/s",
+      "source": "NOAA GDP drifter climatology v3.10 monthly means (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0",
+      "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html"
+    },
+    "stream": {
+      "file": "stream.png",
+      "what": "the month's stream function, sixteen bits (R high, G low): (R * 256 + G) / 65535 * 0.4 - 0.2, m/s radians on the unit sphere (Terra's OceanStream.png)",
+      "cells": [
+        720,
+        360
+      ],
+      "tiles": [
+        4,
+        3
+      ],
+      "border": 1,
+      "source": "solved from the currents by tools/ocean/build.py",
+      "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html"
+    },
+    "ice": {
+      "file": "ice-MM.png",
+      "what": "month MM's usual sea-ice concentration, grey, 255 all ice; a float is held at 0.15 and over (Terra's Globe/ground/ice-MM.png, tools/globe/ground.py)",
+      "cells": [
+        1440,
+        720
+      ],
+      "tiles": [
+        1,
+        1
+      ],
+      "border": 0,
+      "hold": 0.15,
+      "source": "NSIDC Sea Ice Index v4, monthly means 2015-2024",
+      "credit": "Fetterer, F., K. Knowles, W. N. Meier, M. Savoie and A. K. Windnagel. Sea Ice Index, Version 4. NSIDC"
+    },
+    "coast": {
+      "file": "geo.png",
+      "what": "signed distance to the coast, fine in R (128 + 8 d, |d| <= 16 px) and coarse in G (128 + d / 2), land positive, in pixels of 360/4096 degrees (Terra's Globe/geo.png, tools/globe/build.py)",
+      "cells": [
+        4096,
+        2048
+      ],
+      "tiles": [
+        1,
+        1
+      ],
+      "border": 0,
+      "source": "Natural Earth 1:50m land and lakes",
+      "credit": "Made with Natural Earth (public domain)"
+    },
+    "drifters": {
+      "file": "drifters.bin",
+      "what": "real GDP drifter runs at a point a day (tools/adrift/data/drifters.py has the layout)",
+      "runs": 1979,
+      "points": 918916,
+      "years": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023
+      ],
+      "source": "NOAA GDP 6-hourly interpolated trajectories (Lumpkin and Centurioni, doi:10.25921/7ntx-z961), CC BY 4.0",
+      "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Adrift</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f4f1ea; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+  #status { position: fixed; left: 0; right: 0; bottom: 18px; text-align: center; font: 15px/1.4 Georgia, serif; color: #5a5650; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="adrift"></canvas>
+<div id="status"></div>
+<script type="module">
+  import init from './adrift_web.js';
+  init().catch(e => { document.getElementById('status').textContent = 'Adrift could not start: ' + e; console.error(e); });
+</script>
+</body>
+</html>

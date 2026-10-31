@@ -1,0 +1,127 @@
+# Critics: motion and interaction
+
+Two critics each round, judging the running build and nothing else: a fresh *hater* who wants
+Adrift to fail, and a *Holt* who asks whether you can wander, stop, undo and leave without penalty,
+and whether something unscripted happens. Their verdicts here, with the PNGs they judged.
+
+## R0 (October 31, 2026): no build to judge
+
+There is no skeleton yet, so there is no PNG and no verdict. What exists is the state machine
+(VOCABULARY.md), 10 unit tests and 24 played plans that pass in `touch-replay` over a stand-in sea
+(`tools/adrift/touch-standalone`). A plan passing there proves the intents come out in the right
+order with the right places; it proves nothing about how it feels. The critics' briefs for R1, so
+they are not written by the builder after the fact:
+
+**The hater (R1 brief).** Play `plans/*.json` through `adrift-check -- play` and look for:
+- a half-float: lift at 0.35 s (`almost`) and find any frame where the ring has visibly started to
+  become glass. If `thicken` is readable before 150 ms, the beat is a trap.
+- the globe moving under a carry (`carry`, `carry-fresh`): any camera change is a fail.
+- the point under the finger sliding (`orbit-from-float`, `pinch`): compare the taken point's
+  screen position frame to frame against the finger's.
+- a fling that feels like a motor (constant speed) or a brake (stops dead): the decay curve read
+  off successive frames must be exponential.
+- a ride that overshoots or lags visibly behind a float on a fast current (`ride`).
+- anything that waits: a tutorial, a hint, a toolbar, a cursor. One pixel of chrome that is not
+  the date and the credits is a fail.
+- the sea ringing on land, a float put on land, a touch off the disc doing anything but turning.
+
+**Holt (R1 brief).** In a played session of two minutes with no plan (random taps, rests, drags, a
+pinch, a shake): did a float ever go somewhere nobody chose (the rules, not a script)? Could every
+touch be taken back by one undo, and did undo move nothing else? Was there a moment the reader was
+made to wait, or told what to do? Did leaving (no touch for a minute) mark, point or wait?
+
+The PNGs for both go in `adrift/crates/adrift-check/out/motion/` (Engineering's directory; a demand
+if it needs one) and are named here.
+
+## R1 (October 31, 2026): the running build on Linux
+
+What was judged: `adrift-check -- play` over `plans/check/*.json` on the R0 skeleton with this
+module landed (branch `adrift-motion`), 22 plans checked against their expectations by
+`check_play.py` (`cancel` and `reduce-motion` wait on two steps the check has yet to take), and the
+strips in `critics/`: `r1-put.jpg` (0.2 s, 0.39 s, 0.6 s, 1.5 s of a rest on the sea),
+`r1-carry.jpg` (held, carried, set down, undone), `r1-take-out.jpg` (held, the hand off the disc,
+gone, undone), `r1-ride.jpg` (0.1 s, 1 s, 3 s of a ride, then left by a drag).
+
+**The hater** (wants it to fail; judged the PNGs and the logs, not the text):
+- *The beat is invisible until it is over.* In `r1-put.jpg` the ring at 0.2 s and at 0.39 s is the
+  same ring a tap makes; the float pops in at 0.4 s with nothing having promised it. A reader has no
+  way to learn that resting does anything but wait. The rule says "the ring thickens"; the build
+  does not. (D1, D2.) The one mercy: a lift at 0.35 s shows no half-float, because nothing is drawn.
+- *The float carried off the rim does not go anywhere.* `r1-take-out.jpg`, second frame: the hand is
+  off the disc and the float sits off Nova Scotia as if set down. "Taken out in plain sight" is a
+  sentence, not a picture. (D1.)
+- *The date is a control nobody can see.* The band at the foot scrubs and pauses (the log proves it)
+  and nothing is drawn there. Worse than a toolbar: an invisible one. (D2.)
+- *The ride's first tenth of a second snapped to the float in the first run.* A zero-length frame
+  made the spring jump to its target; fixed in the same round (`motion::spring` on `dt = 0`), and
+  the strip now shows the camera easing from 40° W to 31.4° W in a second without overshoot. The
+  bug would never have been seen on a 120 Hz device, only in the check: keep the check.
+- *The fling toward the pole runs away in longitude.* `ride` after the leaving drag: 89° W at
+  3.4 s, 168° W at 6 s. Correct geometry (the surface under the finger keeps its screen speed)
+  but worth a device test: does it feel like a wheel, or like the globe escaping?
+- *The hand's reach is 14 points*, a toddler's fingertip. Motion wants 22. The app's `hit` decides.
+- Not failed: the globe never moved under a carry (`carry`, `carry-fresh`: camera unchanged in
+  every line); a drag that began on a float left the float where it was; a drag never put a float;
+  land never rang; the double tap arrived at zoom 2 and 4 at the tapped place; the idle turn waited
+  8 s and held still once a float was on the sea; undo took back exactly one touch each time
+  (`undo-gestures`: 6 checks).
+
+**Holt** (can you wander, stop, undo and leave without penalty; does something unscripted happen):
+- *Wander*: yes. Every one-finger touch does something or nothing, never the wrong thing; a drag
+  is always the globe's; two fingers always zoom. No mode was entered in 24 sessions.
+- *Stop*: the date can be stopped by a tap, and the sea stops with it (`date-tap`, `date-scrub`),
+  but only if you already know the band is there (the hater is right).
+- *Undo*: one touch at a time, nothing else moving: `carry` undone put the float back and the
+  camera stayed; `take-out` undone gave the float back where it was lifted, after a fix this round
+  (before it, undo returned a float to a place the reader never left it: a penalty for leaving).
+- *Leave*: nothing marks, nothing points; the globe turns by itself only on an empty sea.
+- *Unscripted*: the floats moved between every shot by the real current (every `float` check needed
+  a degree of slack for it): the sea did something nobody chose. Not yet felt: no maybes bloom on
+  a hold (Truth's sampler), so the one gesture that shows the rules have other answers shows
+  nothing but a halo.
+- Verdict: the vocabulary holds; the build does not yet show it. Nothing in Motion's module is
+  waiting on Motion; three things are waiting on D1 and D2.
+
+## R2 (October 31, 2026): the merged build (`adrift` at d2bd376)
+
+What was judged: all 24 plans played by `adrift-check` on the merged tree (Engineering's run on its
+check with the app's ids: 24 of 24 pass; this branch's run drew the PNGs), and the strips in
+`critics/`: `r2-put.jpg` (0.2 s, 0.39 s, 0.6 s, 1.5 s of a rest on the sea), `r2-hold.jpg` (a float
+held, then carried, then set down), `r2-date.jpg` (the date under the disc as the probe now reads
+it), `r2-take-out.jpg` and `r2-ride.jpg`.
+
+**The hater** (a new one, who read R1's verdict and came to see if anything changed):
+- *The beat is seen now, and it over-promises.* `r2-put.jpg`: at 0.2 s a tap's ring; at 0.39 s a
+  formed glass float with its lamp lit, a hundredth of a second before the beat. Lift there and a
+  lit float vanishes. The ring thickening is right; the lamp lighting before the state has a float
+  is a lie of ten milliseconds, and the kind a reader feels. Asked of Visual: the lamp lights on
+  `Put`, not during the press.
+- *The date is a real control now* (`r2-date.jpg`: "3 January, a typical year, by the drifters'
+  record", under the disc; `date-scrub` and `date-tap` pass against `Look::date_bounds()`). Still
+  nothing says it can be touched. That is the design, and the hater notes it will be the first thing
+  a tester fails to find. A device test decides; no change asked.
+- *The maybes do not read at phone size.* `r2-hold.jpg`, first frame: the silver drifter's track
+  rises (good) and a halo; the maybes are specks under the halo at zoom 1. Hold a float zoomed out
+  and the one gesture that shows the rules' other answers shows a smudge. Visual's and Truth's to
+  weigh; Motion's part (the hold fires at the beat, carry only after) is proved.
+- *A take-out still does not leave in plain sight*: with `Carry { to }` a place, the float waits at
+  its last water until the hand opens off the disc (`r2-take-out.jpg`, first frame). Both sides
+  agreed to change `to` to a hand when the look can draw the leaving; not this round. And on the
+  tree these PNGs come from (d2bd376) the hand opening off the disc put the float *back* (second
+  frame: afloat again at 30° W): the app's reading of `Release { at: None }` changed under the
+  merge; Engineering's next push takes it out while carried (its run passes `take-out`). The
+  gesture emits the same intent either way; the PNG is the proof that a seam's meaning must be
+  written where both sides read it (VOCABULARY's table is that place).
+- *The ride* (`r2-ride.jpg`): the camera at 31.4° W after one second, at the float after three,
+  no overshoot; the stand-in's zero-step snap of R1 is gone on the real build.
+- Not failed: 24 of 24 on the real globe with real land (Kansas is land; the Atlantic is sea);
+  cancel and Reduce Motion now checked on the build, not the stand-in; the pinch ends a press with
+  `Unpress`; the spring and the undo bugs of R1 stay fixed.
+
+**Holt:**
+- *Wander, stop, undo, leave*: as R1, and now the date can be found by a reader who looks under the
+  globe; undo and redo are mirrors (`undo-gestures`, 7 of 7).
+- *Unscripted*: the silver drifter that rises on a hold is a real buoy's real track, and it was not
+  where the plan's author expected (east, along the Canary current). The sea answered.
+- Verdict: the vocabulary is complete on the build; what remains is the look's timing of the lamp
+  and the device's own verdict on the fling toward the pole and the invisible date.
