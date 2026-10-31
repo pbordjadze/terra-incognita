@@ -154,6 +154,16 @@ impl Gestures {
         }
     }
 
+    /// A mouse's wheel or a trackpad's pinch (the web build): zoom by `factor` about the cursor,
+    /// what is under it staying under it. Nothing a finger does is changed by it.
+    pub fn wheel(&mut self, x: f64, y: f64, factor: f64, now: f64) {
+        if !matches!(self.state, State::Idle | State::Orbit { .. }) {
+            return;
+        }
+        self.camera.touched(now);
+        self.camera.pinch(factor, x, y, x, y, &self.frame);
+    }
+
     /// A pointer event. Pushes the intents it means onto `out`.
     pub fn event(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Vec<Intent>) {
         match e.phase {

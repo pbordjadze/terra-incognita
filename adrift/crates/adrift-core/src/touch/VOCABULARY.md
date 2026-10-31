@@ -28,6 +28,16 @@ seconds) and a `tick(t)` each frame (the beat elapses without an event). To deci
 plays and its day; the id the next float will get. It never reads the state otherwise. It writes `model::Intent`s; `App` applies them; the look draws
 the result. Undo and redo also arrive as `Gestures::shaken(t)` and `Gestures::key(Key)`.
 
+## What the shells owe
+
+The device shell turns touches into `PointerEvent`s (one id a finger, times in seconds), calls
+`Gestures::shaken` on the system's shake, plays a light haptic when it applies `Put` or `Hold` (the
+beat is felt as well as seen, Terra's `hold` feel), and reads Reduce Motion into `Motion`. The web
+shell forwards pointer events the same way, `Gestures::key(Undo|Redo)` for ⌘Z / ⇧⌘Z (Ctrl on other
+systems) and `Gestures::wheel(x, y, factor)` for a mouse's wheel or a trackpad's pinch (zoom about
+the cursor; a mouse has no pinch). Both give `Gestures` a `Frame` whenever the screen or the disc
+changes.
+
 ## Proposed intents (model.rs is Engineering's; this is Motion's ask)
 
 ```
