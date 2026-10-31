@@ -23,6 +23,7 @@ skeleton lands.
 
 | pass | instance (vertex buffer, step mode instance) | group 1 |
 | --- | --- | --- |
+| `veil.wgsl` | none: a full-screen quad | `Veil {centre, radius, soft, strength, night}`: the night deepening round the chosen lamp, drawn before the marks |
 | `wake.wgsl` | `g: vec3<f32>`, `age: f32` (0 newest .. 1 oldest), `night: f32` | `Wake {layer}`; drawn twice, edges then beads |
 | `maybes.wgsl` | `p: vec4<f32>` lon, lat, held, k (`gpu::Maybes`, the buffer `rules.wgsl` fills) | `Maybes {bloom, night}` uniform |
 | `silver.wgsl` | `a: vec3<f32>`, `b: vec3<f32>`, `t: f32` (segments of the track) | `Silver {rise, night, layer}`; drawn twice, dark lines then wires |

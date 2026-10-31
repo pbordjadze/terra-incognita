@@ -104,6 +104,11 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
         let catching = smoothstep(0.82, 1.0, vnoise3(G.g * 9000.0 + vec3f(-t * 1.3, t * 1.1, 11.0)));
         var lights = pow(lightsRaw, 0.75) * (0.74 + 0.28 * shimmer + 0.24 * fine) * breath * smoothstep(0.45, 1.0, night);
         lights = lights + 0.5 * catching * smoothstep(0.6, 1.0, lights);
+        // close in, flying over a city: each street's light blinks a tiny bit of its own, quick and small
+        let close = smoothstep(3.5, 5.5, zoom);
+        let cell = floor(G.g * 24000.0);
+        let blink = 0.5 + 0.5 * sin(t * (5.0 + 4.0 * hash13(cell)) + 6.2832 * hash13(cell + 1.0));
+        lights = lights * (1.0 + close * 0.12 * (blink - 0.5));
         nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
         nland = mix(nland, N_CORE, 0.7 * smoothstep(0.7, 1.0, lights));
         var nsea = mix(N_SEA, N_DEEP, smoothstep(2500.0, 6000.0, depthM)) * (1.0 + 0.06 * fl);
