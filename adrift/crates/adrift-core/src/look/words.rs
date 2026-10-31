@@ -160,7 +160,7 @@ pub struct Words {
     /// Where the date was last laid: x, y, w, h in points (y down), with the halo's room; the one
     /// drawn thing that is also a control (a drag on it scrubs the date, a tap pauses it: Motion's).
     pub date_bounds: Option<[f32; 4]>,
-    /// Where the credit line was last laid (points, y down, with its halo's room): a tap on it opens the credits.
+    /// Where a credit line was last laid, if one is drawn (none since the ruling: the credits page is a rest on the date away).
     pub credit_bounds: Option<[f32; 4]>,
 }
 
@@ -261,11 +261,11 @@ impl Words {
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
-    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, labels: &[GlyphInstance]) {
+    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, press: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
         let foot = under.min(height - 72.0 * reading);
-        let bottom = height - 12.0 * reading;
-        let (date_ink, note_ink, credit_ink, sea_halo, paper_halo) = if night {
+        let _bottom = height - 12.0 * reading;
+        let (date_ink, note_ink, _credit_ink, sea_halo, paper_halo) = if night {
             ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.08, 0.10, 0.14, 0.92])
         } else {
             ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 1.0], [0.243, 0.298, 0.353, 1.0], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
@@ -281,40 +281,28 @@ impl Words {
         // lamp of amber while the date runs, a ring of ink while it rests; the one drawn thing that
         // says it can be moved (a drag along it scrubs, a tap rests or runs it: Motion's), without a
         // control that points or waits
+        // the band answers the finger (D8): the frame it lands the rule is full ink and the lamp larger;
+        // over the rest's beat the rule thickens, as the ring on the sea does, until the page of credits opens
+        let touched = if press > 0.0 { 1.0 } else { 0.0 };
         let rule_y = foot + 8.0 * reading;
         let rule_w = dw - 24.0 * reading;
-        let rule_ink = if night { [0.722, 0.776, 0.831, 0.55] } else { [0.243, 0.298, 0.353, 0.45] };
+        let rule_a = if night { 0.55 } else { 0.45 } + 0.5 * touched;
+        let rule_ink = if night { [0.722, 0.776, 0.831, rule_a] } else { [0.243, 0.298, 0.353, rule_a] };
+        let rule_h = (0.7 + 1.1 * press.clamp(0.0, 1.0)) * reading;
         if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
             let uv = [(b.x as f32 + 2.0) / self.face.width, (b.y as f32 + 2.0) / self.face.height, (b.w as f32 - 4.0) / self.face.width, (b.h as f32 - 4.0) / self.face.height];
-            glyphs.push(GlyphInstance { rect: [cx - rule_w / 2.0, rule_y - 0.35 * reading, rule_w, 0.7 * reading], uv, ink: rule_ink, halo: [0.0; 4], anchor: [0.0; 4] });
+            glyphs.push(GlyphInstance { rect: [cx - rule_w / 2.0, rule_y - rule_h / 2.0, rule_w, rule_h], uv, ink: rule_ink, halo: [0.0; 4], anchor: [0.0; 4] });
         }
         let mx = cx - rule_w / 2.0 + rule_w * year_day.clamp(0.0, 1.0);
         let (mark, mark_ink) = if running { ("\u{25cf}", if night { [0.965, 0.682, 0.227, 1.0] } else { [0.957, 0.647, 0.165, 1.0] }) } else { ("\u{25cb}", if night { [0.894, 0.925, 0.957, 1.0] } else { [0.149, 0.188, 0.227, 1.0] }) };
-        let marker = Line { text: mark, style: Style::Regular, size: 9.0 * reading, ink: mark_ink, tracking: 0.0 };
+        let marker = Line { text: mark, style: Style::Regular, size: (9.0 + 3.0 * touched) * reading, ink: mark_ink, tracking: 0.0 };
         glyphs.extend(self.face.layout(&marker, mx, rule_y + 3.2 * reading, [0.0; 4]));   // (a mark, not a word: no halo)
         if !note.is_empty() {
             let y = foot + 24.0 * reading;
             glyphs.extend(self.face.layout(&Line { text: note, style: Style::Italic, size: 13.0 * reading, ink: note_ink, tracking: 0.0 }, cx, y, halo_for(y)));
         }
-        // the credits: one line along the foot, or two when the line would overrun the screen (wrapped at
-        // the separator nearest its middle: never shrunk under 10 points, never cut)
-        fn credit_line<'a>(text: &'a str, reading: f32, ink: [f32; 4]) -> Line<'a> {
-            Line { text, style: Style::Regular, size: 10.0 * reading, ink, tracking: 0.0 }
-        }
-        if self.face.width(&credit_line(credits, reading, credit_ink)) <= width - 24.0 * reading || !credits.contains(" \u{b7} ") {
-            let cw = self.face.width(&credit_line(credits, reading, credit_ink)) + 24.0 * reading;
-            self.credit_bounds = Some([cx - cw / 2.0, bottom - 10.0 * reading - 8.0 * reading, cw, 10.0 * reading + 16.0 * reading]);
-            glyphs.extend(self.face.layout(&credit_line(credits, reading, credit_ink), cx, bottom, halo_for(bottom)));
-        } else {
-            self.credit_bounds = Some([12.0 * reading, bottom - 23.0 * reading - 8.0 * reading, width - 24.0 * reading, 23.0 * reading + 16.0 * reading]);
-            let seps: Vec<usize> = credits.match_indices(" \u{b7} ").map(|(i, _)| i).collect();
-            let mid = credits.len() / 2;
-            let at = *seps.iter().min_by_key(|&&i| (i as i64 - mid as i64).abs()).unwrap();
-            let (first, second) = (&credits[..at], &credits[at + " \u{b7} ".len()..]);
-            let up = bottom - 13.0 * reading;
-            glyphs.extend(self.face.layout(&credit_line(first, reading, credit_ink), cx, up, halo_for(up)));
-            glyphs.extend(self.face.layout(&credit_line(second, reading, credit_ink), cx, bottom, halo_for(bottom)));
-        }
+        // (no credits line: the page of credits is a rest on the date away, DECISIONS.md › Truth underneath)
+        self.credit_bounds = None;
         glyphs.extend_from_slice(labels);
         self.prepare(gpu, &glyphs);
     }

@@ -211,16 +211,20 @@ cleared by `Unpress` and by a clear; `App::shown()` takes the held float, else t
 ridden, so the maybes and the silver rise from the landing (0.35 s) and fold if the finger lifts
 before the beat; `Hold` supersedes it without a gap. Played: `adrift-check/plans/press-float.json`.
 
-### D8 Motion → Visual (R4)  [open]
-I need anything in [the maybes rising from `PressFloat { since }` over the beat (by
-`motion::thicken(now - since)`, as the ring forms) and folding back on `Unpress`, the full bloom at
-`Hold`; and the date's band answering the finger: on the finger's landing a lift or a brightening
-within a frame, the day ticking visibly while it is scrubbed or flicked (Motion adds a flick: the
-date runs on after the finger leaves, slowing), and its word ("held") changing at the tap] so that
-a hand that touches a float or the date is answered at once and finds the controls without being
-told (the owner's "date controls aren't intuitive" and "picking up a lamp isn't natural"). It works
-when the device shows the maybes starting to rise under a landing finger and the date brightening
-under one. I could give back: the brightening's form (anything the eye reads within a frame).
+### D8 Motion → Visual (R4)  [answered]
+(Filed on adrift-motion-r4: the maybes rising from `PressFloat` over the beat, and the date's band
+answering the finger: a lift or a brightening within a frame of the landing, the day ticking
+visibly while scrubbed or flicked, its word changing at the tap; the maybes' half since made
+Engineering's.)
+**Answer (Visual, R4):** in range: the band answers from one value, `LookState.date_press` (0 no
+finger; else 0..1 of the rest's beat by `motion::thicken`): the frame a finger lands, the year's
+rule goes to full ink and the day's lamp grows from 9 to 12 points; over the beat the rule thickens
+from a hairline to nearly two points, as the ring thickens on the sea, until at the beat the page of
+credits opens (Motion's rest on the date); the day ticks visibly because the date is the clock's
+own words and the lamp moves along the rule as it is scrubbed or flicked. The word under the date
+is gone with the ruling (truth underneath), so the running and the rest are told by the lamp alone:
+amber while the year runs, a ring of ink while it rests. The value is filled from the app (D9).
+
 ### D4 Truth → Engineering (R4)  [withdrawn: truth underneath, not on top (DECISIONS § 11); the rule stays in `Rules::may_put` for the record, uncalled]
 I need anything in [`App::hit` asking the rules before it says `Hit::Sea`: `Rules::may_put(at)`
 is `Put::Land | NoRecord | Guess | Sea`; a new `Hit::NoRecord(LonLat)` (or `Hit::Land` for it,
@@ -262,6 +266,18 @@ frames a thirtieth of a second apart): −73.144, −73.074, −72.998, −72.91
 1.10 s, about 6 km (a point and a half at this zoom) a frame, and 170 km in the second, which is the
 water's speed at two days a second. `Rules::velocity` and `Rules::glide` stay for a look that wants
 a float's heading (the lamp's lean, a wake's start) without a step.
+### D9 Visual → Engineering (R4)  [answered]
+I need `App` to keep a finger on the date's band as it keeps `pressing` on the sea: anything in
+[`date_pressing: Option<f64>` (since) set by Motion's date press and cleared on its lift or move
+off the band, read in `look_state()` as `date_press: thicken(now − since)`] so that the band answers
+the finger within a frame (D8) and thickens over the rest's beat before the credits open. It works
+when a plan rests a finger on the date and shots at 0.1 and 0.3 s show the rule brighter then
+thicker, and the page at the beat. I could give back the thickening (the brightening alone, from a
+bool) if the gestures' timing isn't kept.
+Answered (Engineering, with Motion's `Gestures::date_pressing_since(now)` from 7fe88ee): no new
+state; `look_state()` fills `date_press` with `motion::thicken` of the seconds a finger has been on
+the date (a tap in the making, a rest toward the credits, a scrub), 0 with no finger, so a flick runs
+on without it.
 
 ## Answered
 

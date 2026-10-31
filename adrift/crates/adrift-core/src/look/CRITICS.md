@@ -280,3 +280,13 @@ Nothing marks, nothing points, nothing waits."
 **Open for Motion's demand**: what a float lifting under a rest should look like, and what a
 clear-all and a home should look like as they happen (every float taken out in plain sight, the
 globe's flight home), drawn the moment Motion says which gesture reaches them.
+
+**The ruling, drawn** (truth underneath, not on top; `studies/r4-foot-date-alone-phone-half.png`,
+`r4-credits-page-one-rest-away-phone-third.png`): the note and the credits line have left the foot;
+the date stands alone under the disc with its year's rule and lamp; the guess mark is off by
+default (`LookState.truth_marks`); the page of credits is one rest on the date away, with Motion.
+The hater: "A page with one line of words under a globe. That is the whole interface, and it
+reads as a thing, not a dashboard. The lamp on the rule is the only hint that anything can be
+touched, and that is enough for a hand that has already put a lamp on the sea." Holt: "Nothing on
+the screen tells me what the sea is made of, and the sea behaves; the credits are there when I
+rest on the date, and asking for them costs me nothing."
