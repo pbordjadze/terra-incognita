@@ -11,7 +11,7 @@ struct Maybes {
     hue: vec4<f32>,     // its lamp's hue: the specks are a pale wash of it
     bloom: f32,         // 0..1 as they bloom out of the float and fold back
     night: f32,
-    _p0: f32,
+    density: f32,       // 512 over the count drawn, so the field reads the same whatever Truth's budget
     _p1: f32,
 };
 @group(1) @binding(0) var<uniform> M: Maybes;
@@ -59,7 +59,7 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     let soft = exp(-d * d / (0.45 * i.r * i.r));
     // (a low alpha a kernel, so the field is a density: pale where one self passed, the lamp's own
     // colour where many did)
-    let a = mix(mix(0.80, 0.30, n), 0.045, field) * min(M.bloom * 2.0, 1.0);
+    let a = mix(mix(0.80, 0.30, n), 0.045 * pow(M.density, 0.75), field) * min(M.bloom * 2.0, 1.0);
     acc = over(acc, speck, a * mix(cover(d - i.r), soft, field));
     // the grain that gives the cloud texture from afar, gone close in where it read as ringed dots
     let grain = (1.0 - smoothstep(3.5, 5.5, U.disc.w)) * 0.5 * (1.0 - n) * min(M.bloom * 2.0, 1.0);
