@@ -151,6 +151,26 @@ takes touches: the note and the credits are words the globe is touched through. 
 thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
 0.4–0.8, the lamp 0.5–1).
 
+### D2 Truth → Visual (R3)  [open]
+I need anything in [a credits panel that opens from the foot's credit line and shows the five
+sentences of `sea::CREDITS`, in the words' type, scrollable if it must be] so that the datasets'
+licences are met on the device (the Global Drifter Program's CC BY asks for its sentence whole;
+the foot's line only names it) and a reader can see that the sea is a typical year's.
+It works when [on the device, a tap on the credit line shows the five sentences and a tap
+outside closes it, and `adrift-check` has a plan whose shot shows them].
+I could give back [the foot line's length: it can be shorter still if the panel carries the rest].
+
+### D3 Truth → Visual (R3)  [open]
+I need anything in [a float that rides a guess looking different from one that rides a
+measurement: `Step.measured` (and `Flight.measured`) is 1 where a drifter measured this month's
+current here and falls to 0 where the sheet's value is smoothed in from far away (under the polar
+ice, Hudson Bay, some gulfs); a bead or a float with measured under 0.5 drawn hollow, or fainter,
+or with a dashed ring] so that nothing on the screen claims the current where no drifter went.
+It works when [a float put in Hudson Bay in July shows the mark while one in the Gulf Stream does
+not, in a `render` of a scene with both; Engineering carries `measured` on the `Float` and `Bead`
+by a ruling, which this demand asks for too].
+I could give back [nothing in the rules; the mark's form is Visual's].
+
 ## Answered
 
 (none yet)
