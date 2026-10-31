@@ -73,3 +73,29 @@ the best ships.
 - **R1**: each craft lands its module on the skeleton; critics judge the running build; demands.
 - **R2**: demands answered; the device build judged; polish.
 - **R3** if the budget allows: the best round shipped.
+
+## 6. R0 landed; what Engineering carries into R1 (R0, Oct 31)
+
+The skeleton is on `adrift`: the ground and sea ported, a float on the mean current with a bead a
+day, plain gestures, a text pass (`gpu/text.rs`: a glyph atlas from Libertinus at three sizes; a
+look lays out lines with `Text::line` and `TextPass` draws them; the atlas is Engineering's, what is
+written and where is Visual's), the headless checks, the web shell, the device shell built by script,
+and `adrift.yml`. Known gaps that are Engineering's, in R1:
+
+- **The frame's budget.** The sea is drawn at the screen's every pixel every frame; Terra draws it at
+  a fraction and ten to thirty times a second at rest. R1: the ground and sea drawn to a texture at a
+  scale the frame time sets (full when it affords, down to half), composited under the sprites, and
+  redrawn only when the camera, the date or the sea's clock moved. The target: 120 Hz on the
+  device while a finger moves, and a frame under 4 ms at rest.
+- **The maybes on the GPU.** Truth's `rules.wgsl` runs as a compute pass over N seeds from a held
+  float's put day to now, writing positions the sprite pass reads; N by the budget (thousands).
+- **Nothing is lost.** The floats, the date and the camera are kept across launches (the device's
+  documents, the web's local storage), written when the app goes to the background; no account, no
+  network.
+- **Undo** is an inverse per touch (put, move, take out) so nothing else moves; it keeps a short
+  history. How it is reached is Motion's.
+- **The web link** is published by Engineering from each round's build (a private claude.ai artifact;
+  the owner shares it); CI keeps the same build as the `adrift-web` artifact.
+- **Text on the globe** needs a ground under it (CLAUDE.md: every name on a halo); the foot's words
+  are drawn plain in R0 and lie over the sea at high zoom. Visual's, with the text pass as it is or
+  extended (ask).
