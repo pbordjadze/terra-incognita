@@ -6,7 +6,7 @@
 
 use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
-use crate::look::{sea::Ripple, GroundPass, Look, LookFloat, LookState, SeaPass};
+use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookFloat, LookState, SeaPass};
 use crate::model::*;
 use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
@@ -718,7 +718,7 @@ impl App {
             floats: self
                 .floats
                 .iter()
-                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| b.at).collect() })
+                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
                 .collect(),
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
@@ -730,6 +730,8 @@ impl App {
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
             credits: crate::sea::CREDIT_LINE.to_string(),
+            credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
+            credits_open: false,
         }
     }
 

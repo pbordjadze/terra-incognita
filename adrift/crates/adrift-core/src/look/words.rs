@@ -109,6 +109,26 @@ impl Face {
         out
     }
 
+    /// A paragraph's lines, wrapped by words to `max_width` points at `line.size`.
+    pub fn wrap<'a>(&self, line: &Line<'a>, max_width: f32) -> Vec<String> {
+        let mut lines = Vec::new();
+        let mut current = String::new();
+        for word in line.text.split(' ') {
+            let trial = if current.is_empty() { word.to_string() } else { format!("{current} {word}") };
+            let probe = Line { text: &trial, style: line.style, size: line.size, ink: line.ink, tracking: line.tracking };
+            if self.width(&probe) > max_width && !current.is_empty() {
+                lines.push(std::mem::take(&mut current));
+                current = word.to_string();
+            } else {
+                current = trial;
+            }
+        }
+        if !current.is_empty() {
+            lines.push(current);
+        }
+        lines
+    }
+
     /// Glyphs for a line centred at x on the baseline y (points, y down), each on a halo of `halo`.
     pub fn layout(&self, line: &Line, x: f32, baseline: f32, halo: [f32; 4]) -> Vec<GlyphInstance> {
         let s = line.size / self.em;
@@ -140,6 +160,8 @@ pub struct Words {
     /// Where the date was last laid: x, y, w, h in points (y down), with the halo's room; the one
     /// drawn thing that is also a control (a drag on it scrubs the date, a tap pauses it: Motion's).
     pub date_bounds: Option<[f32; 4]>,
+    /// Where the credit line was last laid (points, y down, with its halo's room): a tap on it opens the credits.
+    pub credit_bounds: Option<[f32; 4]>,
 }
 
 impl Words {
@@ -181,7 +203,7 @@ impl Words {
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
         let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None }
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None }
     }
 
     /// The glyphs of every line this frame (`Face::layout`).
@@ -190,6 +212,49 @@ impl Words {
         for (i, b) in self.buffers.iter().enumerate() {
             gpu.queue.write_buffer(b, 0, bytemuck::bytes_of(&WordsUniform { spread: self.face.spread, halo_pt: 1.5, layer: i as f32, _pad: 0.0 }));
         }
+    }
+
+    /// The page of credits (Truth's D2): the sentences in full, 11 reading points, wrapped to a readable
+    /// line, on a page of the paper's tone (the night's page by night) centred on the screen, with a
+    /// small italic head; words only, nothing to press but anywhere. The page itself is one glyph of
+    /// the atlas's solid block.
+    pub fn credits_page(&self, sentences: &[String], width: f32, height: f32, reading: f32, night: bool) -> Vec<GlyphInstance> {
+        let (ink, head_ink, page) = if night {
+            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.055, 0.063, 0.086, 0.96])
+        } else {
+            ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 1.0], [0.957, 0.945, 0.918, 0.96])
+        };
+        let size = 11.0 * reading;
+        let lead = 15.0 * reading;
+        let inner = (560.0 * reading).min(width - 32.0 * reading) - 32.0 * reading;
+        let mut lines: Vec<(String, Style, f32)> = vec![("Credits".into(), Style::Italic, 13.0 * reading)];
+        for s in sentences {
+            let probe = Line { text: s, style: Style::Regular, size, ink, tracking: 0.0 };
+            for l in self.face.wrap(&probe, inner) {
+                lines.push((l, Style::Regular, size));
+            }
+            lines.push((String::new(), Style::Regular, size));      // a paragraph's gap
+        }
+        lines.pop();
+        let total = lines.len() as f32 * lead + 8.0 * reading;
+        let page_w = inner + 32.0 * reading;
+        let page_h = total + 32.0 * reading;
+        let x0 = width / 2.0 - page_w / 2.0;
+        let y0 = (height / 2.0 - page_h / 2.0).max(16.0 * reading);
+        let mut out = Vec::new();
+        if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
+            out.push(GlyphInstance { rect: [x0, y0, page_w, page_h], uv: [(b.x as f32 + 2.0) / self.face.width, (b.y as f32 + 2.0) / self.face.height, (b.w as f32 - 4.0) / self.face.width, (b.h as f32 - 4.0) / self.face.height], ink: page, halo: [0.0, 0.0, 0.0, 0.0], anchor: [0.0; 4] });
+        }
+        let mut y = y0 + 16.0 * reading + 13.0 * reading;
+        for (text, style, sz) in &lines {
+            if !text.is_empty() {
+                let line = Line { text, style: *style, size: *sz, ink: if *style == Style::Italic { head_ink } else { ink }, tracking: 0.0 };
+                let w = self.face.width(&line);
+                out.extend(self.face.layout(&line, x0 + 16.0 * reading + w / 2.0, y, [page[0], page[1], page[2], 0.0]));
+            }
+            y += lead;
+        }
+        out
     }
 
     /// The words at the foot: the date (17 pt) centred under the globe's disc (`cx, cy, r` in points)
@@ -222,8 +287,11 @@ impl Words {
             Line { text, style: Style::Regular, size: 10.0 * reading, ink, tracking: 0.0 }
         }
         if self.face.width(&credit_line(credits, reading, credit_ink)) <= width - 24.0 * reading || !credits.contains(" \u{b7} ") {
+            let cw = self.face.width(&credit_line(credits, reading, credit_ink)) + 24.0 * reading;
+            self.credit_bounds = Some([cx - cw / 2.0, bottom - 10.0 * reading - 8.0 * reading, cw, 10.0 * reading + 16.0 * reading]);
             glyphs.extend(self.face.layout(&credit_line(credits, reading, credit_ink), cx, bottom, halo_for(bottom)));
         } else {
+            self.credit_bounds = Some([12.0 * reading, bottom - 23.0 * reading - 8.0 * reading, width - 24.0 * reading, 23.0 * reading + 16.0 * reading]);
             let seps: Vec<usize> = credits.match_indices(" \u{b7} ").map(|(i, _)| i).collect();
             let mid = credits.len() / 2;
             let at = *seps.iter().min_by_key(|&&i| (i as i64 - mid as i64).abs()).unwrap();
