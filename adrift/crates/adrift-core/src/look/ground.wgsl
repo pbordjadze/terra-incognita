@@ -31,6 +31,8 @@ const N_ATMOS = vec3f(92.0, 130.0, 184.0) / 255.0;
 const N_PAGE = vec3f(14.0, 16.0, 22.0) / 255.0;
 const N_LIGHT = vec3f(255.0, 214.0, 134.0) / 255.0;   // sodium gold
 const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitening
+const N_HALO = vec3f(255.0, 146.0, 58.0) / 255.0;     // the pool of light round a city, deeper sodium
+const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a lit region
 
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let pix = in.position.xy;
@@ -66,6 +68,13 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
     // the Earth's lights (NASA's Black Marble, Terra's sheet), sampled before any pixel leaves
     let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
+    // and their glow, as a long exposure from orbit sees it (R6): the same sheet read a few mips
+    // coarser than the pixel's own, a near halo and a wide one, so a city sits in a pool of its own
+    // light that spills a little over its coast; drawn from the measured lights, never invented
+    let ldims = vec2f(textureDimensions(lightsTex));
+    let lod0 = log2(max(max(length(gr.dx * ldims), length(gr.dy * ldims)), 1e-4));
+    let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r;
+    let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r;
     if (rr >= 1.0) { return vec4f(page, 1.0); }
 
     // the land: the month's picture, shaded from the north-west
@@ -109,11 +118,19 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
         let cell = floor(G.g * 24000.0);
         let blink = 0.5 + 0.5 * sin(t * (5.0 + 4.0 * hash13(cell)) + 6.2832 * hash13(cell + 1.0));
         lights = lights * (1.0 + close * 0.12 * (blink - 0.5));
-        nland = mix(nland, N_LIGHT, smoothstep(0.0, 0.85, lights));
+        // a light's colour by how bright it is, as the photographs from orbit show it: a village a
+        // deep sodium ember, a town gold, a city's heart whitening
+        let ember = mix(N_HALO * 0.95, N_LIGHT, smoothstep(0.12, 0.6, lights));
+        nland = mix(nland, ember, smoothstep(0.0, 0.85, lights));
         nland = mix(nland, N_CORE, 0.7 * smoothstep(0.7, 1.0, lights));
         var nsea = mix(N_SEA, N_DEEP, smoothstep(2500.0, 6000.0, depthM)) * (1.0 + 0.06 * fl);
         nsea = mix(nsea, N_ICE * (0.97 + 0.04 * jag), smoothstep(0.30, 0.55, ice + 0.25 * (jag - 0.5)));
         var ncol = mix(nsea, nland, landa);
+        // the glow over all, land and the water by it: the wide one a breath of warm air over a lit
+        // region, the near one the pool each town sits in, breathing with the field's slow shimmer
+        let pool = smoothstep(0.45, 1.0, night) * breath;
+        ncol = ncol + N_AIR * 0.26 * pow(wide, 0.9) * pool * (0.85 + 0.3 * shimmer);
+        ncol = ncol + N_HALO * 0.5 * pow(halo, 0.9) * pool * (0.8 + 0.4 * shimmer) * mix(0.55, 1.0, landa);
         ncol = mix(ncol, N_COAST, 0.5 * stroke(d, 0.6 * scale * min(pow(k, 0.3), 1.5), fwD));
         ncol *= 1.0 - 0.35 * pow(1.0 - z, 2.0);
         ncol = mix(ncol, N_ATMOS, 0.45 * pow(1.0 - z, 5.0));

@@ -18,6 +18,7 @@ struct GlyphOut {
     @location(1) ink: vec4<f32>,
     @location(2) px_per_texel: f32,
     @location(3) halo: vec4<f32>,
+    @location(4) cell: vec4<f32>,   // pixels from the cell's corner, and the cell's size in pixels
 };
 
 struct Words {
@@ -47,6 +48,7 @@ fn vs(@builtin(vertex_index) vi: u32, g: GlyphIn) -> GlyphOut {
     o.uv = g.uv.xy + c * g.uv.zw;
     o.ink = g.ink;
     o.halo = g.halo;
+    o.cell = vec4<f32>(c * g.rect.zw * ppp, g.rect.zw * ppp);
     let dims = vec2<f32>(textureDimensions(atlas));
     o.px_per_texel = g.rect.z * ppp / (g.uv.z * dims.x);
     return o;
@@ -60,10 +62,14 @@ fn fs(i: GlyphOut) -> @location(0) vec4<f32> {
     let d = d_tex * i.px_per_texel;                         // pixels inside
     let halo_px = W.halo_pt * rp();
     var acc = vec4<f32>(0.0);
+    // nothing at a cell's very edge: a glyph's own ink never reaches it (the atlas pads each by its
+    // spread), so what does is a neighbour's, bled in by the filter at a coarse mip (R6)
+    let e = min(i.cell.xy, i.cell.zw - i.cell.xy);
+    let inside = clamp(min(e.x, e.y) - 0.5, 0.0, 1.0);
     if (W.layer < 0.5) {
-        acc = over(acc, i.halo.rgb, i.halo.a * cover(-(d + halo_px)));
+        acc = over(acc, i.halo.rgb, inside * i.halo.a * cover(-(d + halo_px)));
     } else {
-        acc = over(acc, i.ink.rgb, i.ink.a * cover(-d));
+        acc = over(acc, i.ink.rgb, inside * i.ink.a * cover(-d));
     }
     return acc;
 }

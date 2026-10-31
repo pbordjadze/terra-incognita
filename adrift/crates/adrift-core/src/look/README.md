@@ -86,3 +86,30 @@ and `look_state()`:
             credits: "Currents: NOAA Global Drifter Program (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0".into(),
         }
     }
+
+## R6: lights and maybes apart, the lamp one maybe among them, the panel, several clouds
+
+- **The night's lights** (`ground.wgsl`): each light coloured by its brightness as photographs from
+  orbit show it (a village an ember, a town gold, a city's heart whitening), and its glow read off the
+  same sheet a few mips coarser than the pixel's own, a near pool and a wide warm air, spilling a little
+  over the coast. Measured lights only; the glow is how they are drawn.
+- **The maybes by night** (`maybes.wgsl`) are of the sea: the lamp's hue cooled toward the glass's
+  pale, and close in each a tiny ring of glass with its lamp's spark at the heart. Towns are warm points
+  in pools of glow; nothing on the water is drawn that way, so a maybe is never read as a town.
+- **The lamp while its cloud is out** is drawn as one maybe of it (`floats.wgsl › as_maybe`, the
+  speck's own sizes and inks, crossfading with the cloud's bloom), with no wake; a lamp whose cloud is
+  not out keeps its glass float and wake. The panel says which lamp is which.
+- **The panel** (`words.rs › Words::panel`): a very small column at the top left (from 60 reading
+  points down), one row a lamp, oldest first, the latest ten: its mark in its hue (filled while its
+  cloud is out, a ring while not; the front one a size larger) and where and when it was put in 10 pt
+  italic ("9 Jun · 35°N 74°W"). Rows are 24 reading points tall; `panel_bounds` holds each row's whole
+  rect (from 6 points left of the mark to the end of the widest line) for Motion's probe.
+- **Several clouds** (`maybes.rs`): laid in turns, an eighth of each in turn, so where they overlap
+  their hues mix like two sands and where the currents part them each is its own colour; the ones
+  behind the front a shade quieter. The hues are reordered so each next lamp is far round the wheel
+  from the last (amber, sky, rose, mint, coral, lilac, lime, gold).
+- **The rim**: maybes and floats fade by facing from 0.32 to 0.02 instead of clipping at 0.3; the
+  field's kernels shrink and thin with the foreshortening and nothing is drawn past the globe's edge.
+- The atlas's neighbour bleed at coarse mips (thin lines beside small glyphs) is masked at each cell's
+  edge in `words.wgsl`.
+- Studies: `studies/r6-*.png`, from `scenes/r6-*.json` by `bash scenes/render.sh <out>`.
