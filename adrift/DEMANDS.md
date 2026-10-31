@@ -197,7 +197,7 @@ can send `ToggleCredits` as an intent already.
 
 **Answer (Engineering, R3):** done: `Intent::ToggleCredits` (model.rs; the one intent D5 names, ruled), `App.credits_open` flipped by it and handed to the look as `LookState.credits_open`; `App::credit_bounds()` exposes `Look::credit_bounds()` for Motion's probe (touch/probe.rs is Motion's: it maps the tap); a plan step `{"intent": "ToggleCredits"}` sets it for the checks.
 
-### D7 Motion → Engineering (R4)  [open]
+### D7 Motion → Engineering (R4)  [answered]
 I need anything in [`model::Intent` gains `PressFloat { float, since }` (a finger has landed on a
 float and rests), cleared by the existing `Unpress`; the app keeps it (as it keeps `pressing`) and
 hands it to the look; `Hold` stays the beat's intent] so that the maybes begin to rise the moment
@@ -206,6 +206,10 @@ until the bloom"): the hand learns at once that staying shows more, and a lift b
 still rides. It works when a plan's shot 0.2 s into a rest on a float shows the maybes rising and
 a lift at 0.3 s shows them folding back with the ride begun. I could give back: the intent's name
 (a `Press { at, since, float: Option<u32> }` would do as well) and the fold-back's shape.
+Answered (Engineering, a3b0126): `Intent::PressFloat { float, since }`, kept as `pressing_float`,
+cleared by `Unpress` and by a clear; `App::shown()` takes the held float, else the pressed, else the
+ridden, so the maybes and the silver rise from the landing (0.35 s) and fold if the finger lifts
+before the beat; `Hold` supersedes it without a gap. Played: `adrift-check/plans/press-float.json`.
 
 ### D8 Motion → Visual (R4)  [open]
 I need anything in [the maybes rising from `PressFloat { since }` over the beat (by
@@ -217,6 +221,38 @@ a hand that touches a float or the date is answered at once and finds the contro
 told (the owner's "date controls aren't intuitive" and "picking up a lamp isn't natural"). It works
 when the device shows the maybes starting to rise under a landing finger and the date brightening
 under one. I could give back: the brightening's form (anything the eye reads within a frame).
+### D4 Truth → Engineering (R4)  [withdrawn: truth underneath, not on top (DECISIONS § 11); the rule stays in `Rules::may_put` for the record, uncalled]
+I need anything in [`App::hit` asking the rules before it says `Hit::Sea`: `Rules::may_put(at)`
+is `Put::Land | NoRecord | Guess | Sea`; a new `Hit::NoRecord(LonLat)` (or `Hit::Land` for it,
+if a new kind is too much this round) so that a rest on the Caspian, the Great Lakes, Hudson Bay,
+the Red Sea or the Persian Gulf puts no float, and a scene's float on such water is refused the
+same way] so that no float ever rides a value smoothed in from hundreds of kilometres away: the
+sea carries a float only where the drifters' record speaks (SOURCES.md › Where a float may be put).
+It works when [in a render of a scene with a float on the Black Sea and one on the Caspian, the
+Black Sea's is there and the Caspian's is not, and the owner's Caspian float cannot be put again].
+I could give back [the `Put::Guess` distinction at the hit: the guess is already marked once the
+float moves, so `Hit` need only know Sea from NoRecord].
+
+### D5 Truth → Visual (R4)  [withdrawn with D4]
+I need anything in [the refusal shown for a beat where the finger rested: the ring forms and
+breaks, or does not thicken into a float, with one short line in the words' italic ("no drifter's
+record here") that fades] so that a reader who puts a float on the Caspian and gets nothing knows
+the sea refused and why, and tries another sea without penalty (Holt).
+It works when [a played plan rests a finger on the Caspian and the shot a beat later shows the
+line and no float; a rest on the Black Sea beside it shows a float].
+I could give back [the words: a broken ring alone is acceptable if the credits page says why].
+
+### D6 Truth → Engineering (R4)  [open]
+I need anything in [the drawn float carried between its quarter-day steps: `Rules::glide(drift,
+day, days_since_step)` (or `Rules::velocity` and the app's own advance) read when the look is
+filled, so a float's place on the screen moves every frame along the current it is on instead of
+jumping when its step lands] so that a float in the Gulf Stream runs rather than ticks: at the
+phone's closest zoom a quarter-day step there is five points, a visible jump eight times a
+second at the date's pace.
+It works when [a played plan at zoom 8 on the Gulf Stream shoots two frames a thirtieth of a
+second apart and the float moved under a point, and over a second it moved what the step would].
+I could give back [the glide ignoring the coast and the ice between steps: the step corrects at
+its landing, a quarter day at most].
 
 ## Answered
 

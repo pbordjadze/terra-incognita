@@ -224,7 +224,12 @@ fn play(args: &[String]) -> Result<()> {
             app.intend(intent);
         }
         if let Some(k) = &s.key {
-            app.key(if k.eq_ignore_ascii_case("redo") { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });
+            app.key(match k.to_ascii_lowercase().as_str() {
+                "redo" => adrift_core::touch::Key::Redo,
+                "home" => adrift_core::touch::Key::Home,
+                "clear" => adrift_core::touch::Key::ClearAll,
+                _ => adrift_core::touch::Key::Undo,
+            });
         }
         if s.shake == Some(true) {
             app.shaken();

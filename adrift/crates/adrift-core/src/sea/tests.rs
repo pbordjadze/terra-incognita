@@ -5,7 +5,7 @@
 
 use super::drifters::distance_km;
 use super::rules::{gaussian, hash_seed, uniform};
-use super::{Drift, Drifters, Rules};
+use super::{Drift, Drifters, Put, Rules};
 use crate::assets::DirAssets;
 use crate::model::{Clock, Held, LonLat};
 use std::path::{Path, PathBuf};
@@ -411,4 +411,52 @@ fn maybes_budget() {
             }
         }
     }
+}
+
+/// Where a float may be put: the record's reach decides, and lakes and the seas no drifter
+/// entered refuse it; the enclosed seas the programme measured take it.
+#[test]
+fn where_a_float_may_be_put() {
+    let r = rules();
+    let put = |lon, lat| r.may_put(LonLat { lon, lat });
+    assert_eq!(put(-77.5, 35.4), Put::Land, "North Carolina");
+    assert_eq!(put(51.0, 42.0), Put::NoRecord, "the Caspian");
+    assert_eq!(put(-87.0, 44.0), Put::NoRecord, "Lake Michigan");
+    assert_eq!(put(108.0, 53.0), Put::NoRecord, "Baikal");
+    assert_eq!(put(-86.0, 58.5), Put::NoRecord, "Hudson Bay");
+    assert_eq!(put(38.0, 20.0), Put::NoRecord, "the Red Sea");
+    assert_eq!(put(52.0, 27.0), Put::NoRecord, "the Persian Gulf");
+    assert_eq!(put(34.0, 43.0), Put::Sea, "the Black Sea: the programme's drifters went there");
+    assert_eq!(put(19.5, 58.5), Put::Sea, "the Baltic");
+    assert_eq!(put(18.0, 36.0), Put::Sea, "the Ionian Sea");
+    assert_eq!(put(-74.5, 35.8), Put::Sea, "Cape Hatteras");
+    assert_eq!(put(0.0, -65.0), Put::Sea, "the ice's edge at 65 S in a typical year's record");
+    // the record's reach is a number any look can read
+    assert!(r.record(LonLat { lon: 51.0, lat: 42.0 }) == 0.0 && r.record(LonLat { lon: -40.0, lat: 30.0 }) > 0.99);
+    // somewhere the record reaches only from a distance: a guess, carried and marked
+    let mut guesses = 0;
+    for lat in (-70..=80).step_by(2) {
+        for lon in (-180..180).step_by(2) {
+            if put(lon as f64 + 0.5, lat as f64 + 0.5) == Put::Guess {
+                guesses += 1;
+            }
+        }
+    }
+    assert!(guesses > 20, "{guesses} guess cells on a 2-degree grid");
+}
+
+/// Between steps a float glides along its velocity: a quarter day of gliding lands within a
+/// few kilometres of the step itself (the step's draw aside), so the drawn float never jumps.
+#[test]
+fn a_float_glides_between_steps() {
+    let mut r = rules();
+    r.wander = 0.0;
+    let d = Drift::put(LonLat { lon: -74.5, lat: 35.8 });
+    let (u, v) = r.velocity(d, JULY);
+    assert!((u * u + v * v).sqrt() > 0.5, "the Gulf Stream runs: {u}, {v}");
+    let glided = r.glide(d, JULY, 0.25);
+    let stepped = r.flight(d, JULY, 0.25, 1, 0).drift.at;
+    let km = distance_km(glided.lon as f32, glided.lat as f32, stepped.lon as f32, stepped.lat as f32);
+    assert!(km < 2.0, "the glide and the step differ by {km} km over a quarter day");
+    assert_eq!(r.velocity(Drift::put(LonLat { lon: -150.0, lat: 74.0 }), 15.0 + 2.0 * 30.4375), (0.0, 0.0), "held in ice: still");
 }

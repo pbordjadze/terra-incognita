@@ -158,3 +158,47 @@ there is also a slow one, so the beads sit on each other); and the page says the
 words a reader can reach, which is what SOURCES.md was waiting for. Verdict: both met on the
 running build. Holt: nothing moved to show either; the page closes with any tap and leaves the
 sea as it was.
+
+## R4 (October 31, 2026; the owner's first device run; the build at 5cd8398)
+
+The owner put about thirty-five floats on his phone, some on the Black and Caspian seas, the
+Baltic and the ice's edge, and then said the thing that reset the round: truth underneath, not
+on top (DECISIONS.md § 11). So the first half of this round, which measured the record's reach
+and would have refused the Caspian (`Rules::may_put`, D4, D5), stays in the rules and in
+SOURCES.md and leaves the screen: D4 and D5 withdrawn, the float put anywhere the mask shows
+water. What ran for the second half: `adrift-check play` of `critics/r4/run-and-loiter.json`
+(a float put off Cape Hatteras and one in the Sargasso Sea at zoom 3, shots at the put, one day,
+six days and twenty days; `run-and-loiter.png`, the four moments stacked), `owners-seas.json`
+by night (the owner's seas, `owners-seas.png`), 26 tests (two new: where a float may be put, for
+the record; a float glides between steps).
+
+**The hater (the same oceanographer, now asked whether the sea feels alive).**
+- *The run and the loiter.* In twenty days the Hatteras float ran 1,100 km north-east along the
+  stream and the Sargasso float wandered 150 km in no direction; at the date's pace (two days a
+  second) the first crosses a phone's screen at zoom 3 in about ten seconds and the second barely
+  stirs. That is the Atlantic: a jet and a quiet middle. The wake tells it too: beads a thumb's
+  width apart in the stream, piled on each other where the float slowed in a meander near 40° N,
+  and in the Sargasso a smudge. Verdict: right to the eye at this zoom; the rate is Engineering's
+  number and it reads.
+- *The first day.* The Hatteras float's first day is 60 km north-east and the Sargasso float's
+  12 km in a random direction: the water took both, and the second looks like a float that was
+  put on quiet water, not one that is stuck. Verdict: good; the put's draw (R2) is what makes it.
+- *Ticking.* A float moves when its quarter-day step lands, eight times a second at the date's
+  pace: at zoom 8 a Gulf Stream float jumps five points a tick. At zoom 3 it is under two points
+  and reads as motion; closer in it will read as a stutter. `Rules::glide` carries the drawn
+  float along its velocity between steps; D6 asks Engineering to draw it so. Verdict: the one
+  thing in the rules' gift that would make the sea feel more alive, filed.
+- *Unrecorded water.* A float on the Caspian drifts 7 km a day on a smoothed-in current with a
+  32 km wander; Lake Michigan's 11 km and 48 km; Hudson Bay's 5 km and 27 km. Nothing sits dead,
+  nothing jitters; the coast holds what reaches it. SOURCES.md says it is no record of that
+  water. Verdict: plausible underneath, honest in the account; the screen says nothing, as ruled.
+- *The maybes as possibilities.* At 512 paths the cloud is a cloud, bunched in the stream and
+  thin on the shelf. Whether it reads as "the sea's possibilities" rather than specks is the
+  look's (density, fading with distance from the float); the shape is the data's and right.
+
+**Holt.** Put, drift, stop, undo hold as before. A float put on quiet water loiters, and that is
+not a penalty but the sea: the reader who wants motion puts the next one in the stream, and the
+wake of the first shows why. The Caspian float drifts; nothing refuses, nothing marks, nothing
+says no: the owner's "truth underneath" is Holt's "without penalty". The stutter at close zoom is
+the one thing that breaks the sense of a real sea; D6. Verdict: alive at the zooms a thumb uses;
+D6 for the closest.
