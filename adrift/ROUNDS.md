@@ -26,3 +26,17 @@ an unsigned IPA in about 5½ minutes when nothing else holds the Mac; Terra's ow
 and the two-app source at 09:17:44, four and a half minutes after the push; the Interviewer was
 told at 09:20. From the first line of Rust (06:55) to an app in the SideStore source beside Terra:
 2 h 23 m, three rounds of three crafts.
+
+**The shipped round:** main 5823c0d (R3 closed) pushed 09:25; adrift.yml run 23 published release
+adrift-build-23 and the two-app source at 09:29:10, three and a half minutes after the push (the
+Linux job and the Mac's IPA in parallel on main). The source lists Terra 1.0.196 and Adrift 1.0.23.
+From the first line of Rust (06:55) to the shipped third round in the source: 2 h 34 m, four rounds
+(R0 the skeleton, then three of three crafts), each round's build kept as a release or a branch head.
+
+**The loop against Terra's, in one line:** a look is seen in 10–20 s on Linux here against 21–74 min
+on macOS CI there; a device build is about 5½ min after a push here against an hour and more for a
+full run there; a round carried three crafts' work in about 40 min here against one change in
+25–40 min there (Georgia, the night crossing). What this loop cannot do: show the thing moving on a
+device. Every motion verdict so far is a still or a played plan on a software driver, and the beat
+under a real finger and a fling toward the pole wait for the owner's capture (both shells log their
+frame stats every five seconds for it).

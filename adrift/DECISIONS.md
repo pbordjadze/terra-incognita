@@ -154,3 +154,15 @@ gain was that every ask between crafts arrived as a testable sentence with a ran
 observable, and all twelve were answered in range without a bare no. The one process change that
 would have saved the most: the shared types, the plan form and the "add a field" procedure named on
 day one, before the crafts began.
+
+## 10. Closed (Oct 31, 09:45 UTC)
+
+Main's run 23 published adrift-build-23 and the two-app source at 09:29; the close was reported.
+Nothing is open on the crafts. What a next session does first, from all four accounts: write
+`model.rs`, the check's plan form and the "add a field" procedure (a `LookState` field is Visual's
+to add and `app.rs` fills it; a `Probe` question is Motion's; a `Rules` method is Truth's) before
+any craft starts; let the check take a look's state (`--set look.field=value`) so a craft photographs
+a state the app can't yet reach without editing `app.rs`; let the check relink assets itself when
+the manifest changes; and either give the integrator force-with-lease on the integration branch or
+rule that the integrator merges and never rebuilds. The device's verdict is the one thing this
+session could not give.
