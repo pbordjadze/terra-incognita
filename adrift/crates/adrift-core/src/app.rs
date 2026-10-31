@@ -26,7 +26,7 @@ enum Undo {
 /// A ridden float shows its maybes and its nearest drifter as a held one does (R4).
 pub const SHOW_RIDDEN: bool = true;
 
-pub const HOME: Camera = Camera { lon: -30.0, lat: 25.0, zoom: 1.0 };
+pub const HOME: Camera = Camera::new(-30.0, 25.0, 1.0);
 
 /// Everything about the sea's state that a scene file can set (adrift-check) and a frame reads.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -152,6 +152,9 @@ pub struct App {
     frames: (u32, f64, f64, u32),
     /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
     pub credits_open: bool,
+    /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
+    /// `panel_bounds()` returns these. Nothing in the app sets it.
+    pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
 }
 
 /// Days a second while the date runs.
@@ -301,7 +304,7 @@ impl App {
             clock,
             undo: Vec::new(),
             redo: Vec::new(),
-            camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
+            camera: CameraControl::new(Camera::new(-30.0, 25.0, 1.0)),
             gestures: Gestures::new(),
             pressing: None,
             pressing_float: None,
@@ -326,6 +329,7 @@ impl App {
             haptic: false,
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
+            panel_stand_in: None,
         })
     }
 
@@ -845,6 +849,9 @@ impl App {
 
     /// The panel's rows as the look drew them (R6): each lamp's id and rect in points.
     pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
+        if let Some(rows) = &self.panel_stand_in {
+            return rows.clone();
+        }
         self.look.panel_bounds()
     }
 

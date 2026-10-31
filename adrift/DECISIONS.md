@@ -304,3 +304,21 @@ welcome, trimming freely is welcome, truth stays underneath.
   `App::panel_bounds()` for Motion's probe (a `Hit` for it is Motion's to add in `touch/`).
 - The check: a scene's `choose: [index, ...]`; a plan's `expect.chosen` takes an id (the front), a
   bool, null, or the whole set as an array.
+
+**Added to the round (19:35 UTC; painting-company row 196).** Three more of the owner's notes, given
+just after the round opened: the touch's ripples are a little too intense to the eye (Visual); the
+poles are odd: near one, small gestures make big jumps, and nothing here needs a north and a south,
+so why keep the constraint unless it serves (Motion: the camera free to turn over a pole like any
+orb; Engineering's seam below); and second thoughts on taking the lamps off the globe: watching a
+few lamps' own journeys (two dropped close together and watched) is part of the pleasure too, so
+both are wanted, a lamp's journey to follow and a lamp equal among its possibilities, and the build
+is to show him (Visual and Motion).
+
+- *Seam (Engineering):* `Camera.roll` (degrees, serde default 0) joins lon, lat and zoom, and
+  `rotation()` is Ry(lon) · Rx(-lat) · Rz(roll), so any orientation is a camera and every shader
+  follows it unchanged (they read the rotation's columns). `Camera::from_rotation(m, zoom)` reads a
+  rotation back (exact at a pole), `Camera::turned(axis, angle)` turns the globe about a view-space
+  axis (a trackball: a drag of dx, dy over a disc of radius r is the axis (-dy, dx, 0) and the
+  angle hypot / r), `Camera::new(lon, lat, zoom)`. Tested: a drag carries the centre over the pole
+  with no jump, every step the same arc. `CameraControl`'s orbit, fling, fly and ride stay
+  lon/lat and are Motion's to move onto it.

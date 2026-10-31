@@ -84,7 +84,7 @@ fn render(args: &[String]) -> Result<()> {
     let t1 = std::time::Instant::now();
     app.render(&target.view);
     let px = target.read(&app.gpu);
-    eprintln!("drawn in {:?}", t1.elapsed());
+    eprintln!("drawn in {:?}; clouds behind the date by {:.2} days", t1.elapsed(), app.behind());
     save(&out, w, h, &px)?;
     println!("{}", out.display());
     Ok(())
@@ -115,6 +115,9 @@ struct Plan {
     /// The page of credits open from the start.
     #[serde(default)]
     credits_open: bool,
+    /// The panel's rows held fixed, `[[id, x, y, w, h], ...]` in points, whatever the look draws
+    /// (Motion's D11, R6).
+    panel: Option<Vec<[f64; 5]>>,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -188,7 +191,7 @@ fn play(args: &[String]) -> Result<()> {
     app.budget.scale = 1.0;
     app.reduce_motion = plan.reduce_motion;
     let scene = plan.scene.clone().unwrap_or_else(|| Scene {
-        camera: plan.camera.unwrap_or(adrift_core::Camera { lon: -40.0, lat: 22.0, zoom: 1.0 }),
+        camera: plan.camera.unwrap_or(adrift_core::Camera::new(-40.0, 22.0, 1.0)),
         day: plan.day,
         running: true,
         floats: plan.floats.clone(),
@@ -199,6 +202,9 @@ fn play(args: &[String]) -> Result<()> {
         credits_open: plan.credits_open,
     });
     app.set_scene(&scene);
+    if let Some(rows) = &plan.panel {
+        app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
+    }
     let mut t = 0.0;
     let fps = 60.0;
     app.frame(&target.view, t);

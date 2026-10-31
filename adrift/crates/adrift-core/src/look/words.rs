@@ -151,6 +151,45 @@ impl Face {
     }
 }
 
+/// One lamp's row in the panel (R6).
+#[derive(Clone, Copy, Debug)]
+pub struct PanelRow {
+    pub id: u32,
+    pub origin: crate::model::LonLat,
+    pub put_day: f64,
+    /// its cloud is out
+    pub shown: bool,
+    /// the one in front
+    pub front: bool,
+}
+
+/// The most rows the panel shows (the latest lamps), and where its first row's top lies in reading
+/// points (below a phone's status bar and island).
+pub const PANEL_ROWS: usize = 10;
+pub const PANEL_TOP: f32 = 60.0;
+
+/// "8 Jun": a day as `Clock.day` counts it, on the typical year's calendar (as the date is).
+pub fn day_words(day: f64) -> String {
+    const DAYS: [u32; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let mut d = (day.rem_euclid(365.25) * 365.0 / 365.25).floor() as u32;
+    for (i, n) in DAYS.iter().enumerate() {
+        if d < *n {
+            return format!("{} {}", d + 1, MONTHS[i]);
+        }
+        d -= n;
+    }
+    "31 Dec".into()
+}
+
+/// "35°N 74°W": a place to the whole degree.
+pub fn place_words(at: crate::model::LonLat) -> String {
+    let (la, lo) = (at.lat.round() as i32, at.lon.round() as i32);
+    let ns = if la < 0 { 'S' } else { 'N' };
+    let ew = if lo < 0 { 'W' } else { 'E' };
+    format!("{}\u{b0}{} {}\u{b0}{}", la.abs(), ns, lo.abs(), ew)
+}
+
 pub struct Words {
     pipeline: wgpu::RenderPipeline,
     instances: Instances<GlyphInstance>,
@@ -255,6 +294,66 @@ impl Words {
                 out.extend(self.face.layout(&line, x0 + 16.0 * reading + w / 2.0, y, [page[0], page[1], page[2], 0.0]));
             }
             y += lead;
+        }
+        out
+    }
+
+    /// The panel of lamps (R6): a very small column at the screen's top left, off the globe's middle,
+    /// one row a lamp out there, oldest at the top, at most `PANEL_ROWS` (the latest). A row is the
+    /// lamp's mark in its hue (large and glowing while its cloud is out, small while not) and where
+    /// and when it was put, in small italic ("8 Jun · 35°N 74°W"): the one place that says which
+    /// lamp is which, since on the globe a lamp whose cloud is out is one maybe among them. The front
+    /// one's words in full ink. Each row's rect (the whole row, a fingertip tall) goes to
+    /// `panel_bounds`, where Motion's probe answers a touch. Words and marks only, each on a halo of
+    /// what is under it; nothing is a control that points or waits.
+    pub fn panel(&mut self, rows: &[PanelRow], reading: f32, disc: [f32; 3], night: bool) -> Vec<GlyphInstance> {
+        self.panel_bounds.clear();
+        let mut out = Vec::new();
+        if rows.is_empty() {
+            return out;
+        }
+        let (ink, soft_ink, sea_halo, paper_halo) = if night {
+            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.08, 0.10, 0.14, 0.92])
+        } else {
+            ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 0.85], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
+        };
+        let row_h = 24.0 * reading;
+        let x0 = 12.0 * reading;
+        let top = PANEL_TOP * reading;
+        let size = 10.0 * reading;
+        let start = rows.len().saturating_sub(PANEL_ROWS);
+        let mut widest: f32 = 0.0;
+        let mut lines = Vec::new();
+        for (i, r) in rows[start..].iter().enumerate() {
+            let y = top + i as f32 * row_h;
+            let mid = y + row_h / 2.0;
+            let text = format!("{} \u{b7} {}", day_words(r.put_day), place_words(r.origin));
+            let w = self.face.width(&Line { text: &text, style: Style::Italic, size, ink, tracking: 0.0 });
+            widest = widest.max(w);
+            lines.push((r, y, mid, text, w));
+        }
+        let text_x = x0 + 16.0 * reading;
+        let panel_w = (text_x - x0) + widest + 10.0 * reading;
+        for (r, y, mid, text, w) in lines {
+            let inside = ((x0 + panel_w / 2.0 - disc[0]).powi(2) + (mid - disc[1]).powi(2)).sqrt() < disc[2];
+            // (over the globe no halo: at these sizes it fills the glyph's cell and would lie as a
+            // box on the land; the inks hold their contrast on the sea and the night's ground alone)
+            let halo = if inside { [sea_halo[0], sea_halo[1], sea_halo[2], 0.0] } else { paper_halo };
+            let hue = super::lamp_hue(r.id);
+            // every mark a filled lamp in its own hue, unmistakable (it is how a reader finds whose
+            // cloud is whose): larger with a soft glow of its colour while its cloud is out, a small
+            // lamp while not; the front one the largest
+            let mark_size = if r.front { 13.0 } else if r.shown { 12.0 } else { 8.5 } * reading;
+            if r.shown {
+                let gs = mark_size * 1.7;
+                let glow = Line { text: "\u{25cf}", style: Style::Regular, size: gs, ink: [hue[0], hue[1], hue[2], 0.22], tracking: 0.0 };
+                out.extend(self.face.layout(&glow, x0 + 6.0 * reading, mid + 0.36 * gs, [0.0; 4]));
+            }
+            let mark = Line { text: "\u{25cf}", style: Style::Regular, size: mark_size, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
+            out.extend(self.face.layout(&mark, x0 + 6.0 * reading, mid + 0.36 * mark_size, [0.0; 4]));
+            let line = Line { text: &text, style: Style::Italic, size, ink: if r.front { ink } else { soft_ink }, tracking: 0.0 };
+            out.extend(self.face.layout(&line, text_x + w / 2.0, mid + 0.33 * size, halo));
+            self.panel_bounds.push((r.id, [x0 - 6.0 * reading, y, panel_w + 6.0 * reading, row_h]));
         }
         out
     }

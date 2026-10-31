@@ -326,6 +326,11 @@ and a carry over a row neither ring nor put; a lamp at the rim turned inward), a
 adrift-motion-r6 with a local patch of the two fields, not committed].
 I could give back [the field is the check's alone; nothing in the app reads it].
 
+### D11 Motion → Engineering (R6)  [answered]
+(Filed on adrift-motion-r6: a plan field `panel` holding the panel's rows whatever the look draws.)
+**Answer (Engineering, R6):** done on `adrift`: a plan's `"panel": [[id, x, y, w, h], ...]` (points)
+sets `App.panel_stand_in`, which `App::panel_bounds()` returns when set; nothing in the app sets it.
+
 ## Answered
 
 (none yet)

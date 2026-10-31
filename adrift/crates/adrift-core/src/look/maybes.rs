@@ -17,7 +17,8 @@ pub struct MaybesUniform {
     pub night: f32,
     /// 512 over the count drawn: the field's alpha a kernel scales so it reads the same at any budget
     pub density: f32,
-    pub _pad: f32,
+    /// 0 the cloud in front; the others out with it a little quieter (R6)
+    pub quiet: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
@@ -35,6 +36,8 @@ pub struct CloudDraw {
     pub origin: [f32; 3],
     pub hue: [f32; 3],
     pub bloom: f32,
+    /// The one in front (R6): drawn whole; the others with it a shade quieter.
+    pub front: bool,
 }
 
 /// The most clouds drawn at once (the app's `MAX_CLOUDS`).
@@ -64,7 +67,7 @@ impl MaybesPass {
                 continue;
             }
             // the field's density follows the count drawn: it reads the same at any budget
-            let u = MaybesUniform { origin: [c.origin[0], c.origin[1], c.origin[2], 0.0], hue: [c.hue[0], c.hue[1], c.hue[2], 0.0], bloom: c.bloom, night: night as u8 as f32, density: 512.0 / c.count as f32, _pad: 0.0 };
+            let u = MaybesUniform { origin: [c.origin[0], c.origin[1], c.origin[2], 0.0], hue: [c.hue[0], c.hue[1], c.hue[2], 0.0], bloom: c.bloom, night: night as u8 as f32, density: 512.0 / c.count as f32, quiet: if c.front || clouds.len() == 1 { 0.0 } else { 0.18 } };
             self.uniforms[slot].write(gpu, &u);
             self.clouds.push((slot, c.base, c.count));
         }
@@ -82,10 +85,20 @@ impl MaybesPass {
         }
         rp.set_pipeline(&self.pipeline);
         rp.set_bind_group(0, view_bind, &[]);
-        for &(slot, base, count) in &self.clouds {
-            rp.set_bind_group(1, &self.uniforms[slot].group, &[]);
-            rp.set_vertex_buffer(0, buffer.slice(base as u64 * 24..(base + count) as u64 * 24));
-            rp.draw(0..6, 0..count);
+        // several clouds out (R6) are laid in turns, a slice of each in turn, so where they overlap
+        // neither lies wholly over the other: their hues mix as two sands poured together, and where
+        // the currents part them each is its own colour again
+        let slices = if self.clouds.len() > 1 { 8u32 } else { 1 };
+        for s in 0..slices {
+            for &(slot, base, count) in &self.clouds {
+                let (a, b) = (count * s / slices, count * (s + 1) / slices);
+                if b <= a {
+                    continue;
+                }
+                rp.set_bind_group(1, &self.uniforms[slot].group, &[]);
+                rp.set_vertex_buffer(0, buffer.slice((base + a) as u64 * 24..(base + b) as u64 * 24));
+                rp.draw(0..6, 0..b - a);
+            }
         }
     }
 }

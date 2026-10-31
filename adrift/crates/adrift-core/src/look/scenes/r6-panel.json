@@ -1,0 +1,4 @@
+{"camera": {"lon": -40.0, "lat": 30.0, "zoom": 1.1}, "day": 220.0, "running": true, "seconds": 5.0,
+ "floats": [{"lon": -74.2, "lat": 34.6, "days_ago": 60}, {"lon": -30.0, "lat": 40.0, "days_ago": 20},
+            {"lon": -50.0, "lat": 20.0, "days_ago": 90}, {"lon": -20.0, "lat": 10.0, "days_ago": 5},
+            {"lon": -65.0, "lat": 42.0, "days_ago": 35}], "choose": [2, 0]}

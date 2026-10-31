@@ -233,7 +233,7 @@ impl CameraControl {
             Some(p) if z < 4.0 && target_zoom > z => (p.lon, p.lat),
             _ => (self.camera.lon, self.camera.lat),
         };
-        self.fly_to(Camera { lon, lat: lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: target_zoom }, now, motion);
+        self.fly_to(Camera { lon, lat: lat.clamp(-motion::LAT_LIMIT, motion::LAT_LIMIT), zoom: target_zoom, roll: self.camera.roll }, now, motion);
     }
 
     pub fn fly_to(&mut self, to: Camera, now: f64, motion: Motion) {
@@ -321,7 +321,7 @@ mod tests {
         Disc { cx: 400.0, cy: 300.0, r: 276.0 * zoom }
     }
     fn rig(lon: f64, lat: f64, zoom: f64) -> CameraControl {
-        let mut c = CameraControl::new(Camera { lon, lat, zoom });
+        let mut c = CameraControl::new(Camera::new(lon, lat, zoom));
         c.apply(&disc(zoom), CameraMove::Stop, 0.0, M);
         c
     }
