@@ -161,38 +161,44 @@ sea as it was.
 
 ## R4 (October 31, 2026; the owner's first device run; the build at 5cd8398)
 
-The owner put about thirty-five floats on his phone, among them one on the Baltic that wore the
-guess mark, two near the Black and Caspian seas, one at Antarctica's ice edge. What ran here:
-`adrift-check render` of `critics/r4/owners-seas.json` (eight floats, by night, 17 June: the
-Black Sea, the Caspian, two in the Baltic, the Gulf of Guinea, the Red Sea, the ice's edge at 65° S,
-the Cape Verde sea; `owners-seas.png`), 25 tests (one new: where a float may be put), and the
-record itself measured (SOURCES.md › Where a float may be put).
+The owner put about thirty-five floats on his phone, some on the Black and Caspian seas, the
+Baltic and the ice's edge, and then said the thing that reset the round: truth underneath, not
+on top (DECISIONS.md § 11). So the first half of this round, which measured the record's reach
+and would have refused the Caspian (`Rules::may_put`, D4, D5), stays in the rules and in
+SOURCES.md and leaves the screen: D4 and D5 withdrawn, the float put anywhere the mask shows
+water. What ran for the second half: `adrift-check play` of `critics/r4/run-and-loiter.json`
+(a float put off Cape Hatteras and one in the Sargasso Sea at zoom 3, shots at the put, one day,
+six days and twenty days; `run-and-loiter.png`, the four moments stacked), `owners-seas.json`
+by night (the owner's seas, `owners-seas.png`), 26 tests (two new: where a float may be put, for
+the record; a float glides between steps).
 
-**The hater (the same oceanographer, with the owner's thumb on the screen).**
-- *The Caspian float wears the guess mark, and that is the mark lying for the sheet.* The
-  Caspian is not the ocean; no drifter of the programme was ever in it; the current the sheet
-  holds there is smoothed in from the Black Sea and the Persian Gulf across six hundred kilometres
-  of land. A dashed rim says "a guess about this water"; there is none. The same for the Red Sea
-  float: no record (the programme's Red Sea drifters are not in the climatology's cells), a
-  current from the Gulf of Aden pushed up the sea. Verdict: the sea must refuse these, and
-  `Rules::may_put` now does (the Caspian, the Great Lakes, Baikal, Hudson Bay, the Red Sea, the
-  Persian Gulf: 7% of the sea by area); D4 asks the hit to honour it, D5 asks the screen to say
-  why.
-- *The Black Sea float is honest*: the programme's drifters measured it (1999–2003, in the
-  climatology), and the sheet says so. The Baltic too, its south-west corner a reach rather than
-  a measurement (0.55), which the mark shows when the float wanders under 0.5. Both stay.
-- *The ice's edge*: a float at 65° S in June sits in ice and is held; the record there is a
-  reach (0.88 at the edge, falling under the ice). Honest as the rule stands: the ice holds it,
-  and the hold says so.
-- *The coast at phone zoom* (SOURCES.md › The coast against the phone): the clusters along
-  Central America and the Gulf of Guinea look ashore because the float's symbol is 250 km across
-  at the whole Earth; the mask is finer than the symbol at every zoom. The hold-off is now one
-  pixel (10 km) instead of half, so no float sits inside the shoreline's own uncertainty. Verdict:
-  not the mask's; the symbol's, if anyone's.
-- *Still:* the leeway is derived, not measured; the jets' variance holds their meandering.
+**The hater (the same oceanographer, now asked whether the sea feels alive).**
+- *The run and the loiter.* In twenty days the Hatteras float ran 1,100 km north-east along the
+  stream and the Sargasso float wandered 150 km in no direction; at the date's pace (two days a
+  second) the first crosses a phone's screen at zoom 3 in about ten seconds and the second barely
+  stirs. That is the Atlantic: a jet and a quiet middle. The wake tells it too: beads a thumb's
+  width apart in the stream, piled on each other where the float slowed in a meander near 40° N,
+  and in the Sargasso a smudge. Verdict: right to the eye at this zoom; the rate is Engineering's
+  number and it reads.
+- *The first day.* The Hatteras float's first day is 60 km north-east and the Sargasso float's
+  12 km in a random direction: the water took both, and the second looks like a float that was
+  put on quiet water, not one that is stuck. Verdict: good; the put's draw (R2) is what makes it.
+- *Ticking.* A float moves when its quarter-day step lands, eight times a second at the date's
+  pace: at zoom 8 a Gulf Stream float jumps five points a tick. At zoom 3 it is under two points
+  and reads as motion; closer in it will read as a stutter. `Rules::glide` carries the drawn
+  float along its velocity between steps; D6 asks Engineering to draw it so. Verdict: the one
+  thing in the rules' gift that would make the sea feel more alive, filed.
+- *Unrecorded water.* A float on the Caspian drifts 7 km a day on a smoothed-in current with a
+  32 km wander; Lake Michigan's 11 km and 48 km; Hudson Bay's 5 km and 27 km. Nothing sits dead,
+  nothing jitters; the coast holds what reaches it. SOURCES.md says it is no record of that
+  water. Verdict: plausible underneath, honest in the account; the screen says nothing, as ruled.
+- *The maybes as possibilities.* At 512 paths the cloud is a cloud, bunched in the stream and
+  thin on the shelf. Whether it reads as "the sea's possibilities" rather than specks is the
+  look's (density, fading with distance from the float); the shape is the data's and right.
 
-**Holt.** The refusal is the first "no" Adrift says, and it must cost nothing: the ring forms,
-the float does not, a line says why, and the reader puts it on the next sea with nothing to undo.
-That is D5's shape. A float wandering from measured water into unrecorded water is carried on
-and marked rather than stopped: the sea takes it where it takes it. Verdict withheld until D4
-and D5 run on a screen.
+**Holt.** Put, drift, stop, undo hold as before. A float put on quiet water loiters, and that is
+not a penalty but the sea: the reader who wants motion puts the next one in the stream, and the
+wake of the first shows why. The Caspian float drifts; nothing refuses, nothing marks, nothing
+says no: the owner's "truth underneath" is Holt's "without penalty". The stutter at close zoom is
+the one thing that breaks the sense of a real sea; D6. Verdict: alive at the zooms a thumb uses;
+D6 for the closest.

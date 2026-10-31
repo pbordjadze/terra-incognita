@@ -14,7 +14,8 @@ time; everything is bundled.
 | The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); a float is put with a first velocity drawn from that same measured variance (the water is already moving), and each maybe with its own; deterministic for a seed, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
 | The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below) |
 | The coast | the globe's own signed distance to the shore (Terra's `geo.png`) | a float that steps onto land is put back at the water's edge, one of the coast's own pixels (about 10 km) off, and held there |
-| Where it may be put | how far the nearest drifter-measured cell is, by month (the currents sheet's B) | refused where no drifter came within three degrees, carried as a marked guess where one came within three but not within one and a half, carried where one measured it (below: Where a float may be put) |
+| Where it may be put | how far the nearest drifter-measured cell is, by month (the currents sheet's B; `Rules::record`) | anywhere the mask shows water; where no drifter went the float rides the smoothed-in current and wander, plausibly (below: Where a float may be put) |
+| Between steps | | the drawn float glides along its velocity (`Rules::glide`) between its quarter-day steps, so it runs rather than ticks |
 | The ice | each month's usual sea-ice concentration (`ice.png`) | a float is held where the concentration is 15% or more (the Sea Ice Index's own edge) and let go when the month's ice retreats past it |
 | The real drifters | a subsample of the Global Drifter Program's tracks at one point a day (`drifters.bin`) | which run is "the nearest that passed there": the one whose point lies closest to the float's, in any year |
 | The date | | the climatology is a typical year, not a given one: the date on the screen is the day of a typical year, and a float's path is what a typical year's sea would do, never what the sea did on that day |
@@ -100,23 +101,22 @@ time; everything is bundled.
 | The silver drifter and its label ("Drifter 145813, 2 Jun to 18 Jul 2016") | `Drifters::track`: a real GDP buoy, its real calendar dates, the month about where it passed nearest |
 | The credit line | `sea::CREDIT_LINE`; the full sentences, `sea::CREDITS` |
 
-## Where a float may be put
+## Where a float may be put, and what unrecorded water does
 
-The sea carries a float only where the record speaks (`Rules::may_put`, `Rules::record`): the
-currents sheet's *how measured* channel, at its most measured month, says how far the nearest
-drifter-measured cell is (1 there, falling to 0 three degrees away).
-
-| The record there | What the sea does | Where |
-| --- | --- | --- |
-| Land | no float (`Hit::Land`) | |
-| Nothing: no measured cell within about 2.9° in any month (`record` < 0.05) | **refuses the float**: the sheets hold only a value smoothed in from far away, which is no record of this water; nothing measured could say where it goes | the Caspian, the Great Lakes, Baikal, Victoria, Hudson Bay, the Red Sea, the Persian Gulf, the Arctic basins and the Weddell Sea under the ice: 7% of the sea by area |
-| A reach: the nearest measured cell 1.5° to 2.9° away (0.05 to 0.5) | carries it as a **marked guess** (the dashed rim, the hollow beads) | the ice's edge round Antarctica, the Bering and Okhotsk shelves, some Indonesian seas: 2% |
-| Measured (0.5 and over) | carries it | 91% of the sea, the Black Sea, the Baltic and the Mediterranean among it: the programme's drifters went there |
-
-The ice is a different thing: a float put on the month's ice is held where it is (`Held::Ice`)
-and let go when the ice retreats, which is the record speaking, not failing. A float that drifts
-from measured water into unrecorded water (the Gulf of Aden into the Red Sea) is carried on as a
-guess and marked: the refusal is only at the putting, where the reader can choose another sea.
+A float may be put on any water the coast mask shows (truth underneath, not on top: DECISIONS.md
+§ 11). Where no drifter of the programme ever came within three degrees (the Caspian, the Great
+Lakes, Baikal, Victoria, Hudson Bay, the Red Sea, the Persian Gulf, the seas under the ice: 7% of
+the sea by area) the sheets hold a current and a wander smoothed in from the nearest measured
+water, hundreds of kilometres away, which is no record of that water. The float rides them all
+the same, and plausibly: the Caspian's smoothed-in current is 2 to 21 cm/s by month with a wander
+of about 32 km a day, Lake Michigan's 11 to 15 cm/s and 48 km, Hudson Bay's 4 to 8 cm/s and 27
+km, the Red Sea's 4 to 68 cm/s (the Gulf of Aden's monsoon pushed up the sea) and 28 km; nothing
+sits dead and nothing jitters, and the coast holds what reaches it. No smaller rule is needed.
+What is true is written here, not on the screen: `Rules::record(at)` says how far the nearest
+measured cell is (1 there, 0 three degrees away) and `Rules::may_put(at)` sorts water into
+measured, a reach, and no record, for anyone who wants the honest answer; nothing in the app
+calls them. The ice is different: a float put on the month's ice is held (`Held::Ice`) until the
+ice retreats, which is the record speaking.
 
 ## The coast against the phone
 

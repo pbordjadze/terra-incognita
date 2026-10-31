@@ -267,6 +267,33 @@ impl Rules {
         Drift { at, eddy: (eu, ev) }
     }
 
+    /// The velocity a float has between steps (m/s east, north): the mean current, its leeway
+    /// and the eddy velocity it carries. For the look: a float drawn at `at` plus this times the
+    /// seconds since its last step glides instead of ticking a quarter day at a time (at the
+    /// phone's closest zoom a Gulf Stream float's quarter-day step is five points).
+    pub fn velocity(&self, d: Drift, day: f64) -> (f32, f32) {
+        let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
+        let day = day as f32;
+        if self.ice.at(day, lon, lat) >= self.ice_hold {
+            return (0.0, 0.0);
+        }
+        let (u, v, _) = self.currents.at(day, lon, lat);
+        let (wu, wv) = self.wind.at(day, lon, lat);
+        (u + self.leeway * wu + d.eddy.0, v + self.leeway * wv + d.eddy.1)
+    }
+
+    /// Where a float drawn between steps is: `at` carried by `velocity` for `days` (a fraction
+    /// of a step; the coast is not consulted, the step does that).
+    pub fn glide(&self, d: Drift, day: f64, days: f64) -> LonLat {
+        let (u, v) = self.velocity(d, day);
+        let secs = days as f32 * SECONDS_A_DAY;
+        let coslat = (d.at.lat as f32).to_radians().cos().max(0.01);
+        LonLat {
+            lon: wrap(d.at.lon as f32 + (u * secs / (EARTH_RADIUS * coslat)).to_degrees()) as f64,
+            lat: (d.at.lat as f32 + (v * secs / EARTH_RADIUS).to_degrees()).clamp(-89.5, 89.5) as f64,
+        }
+    }
+
     /// A float's maybes with memory, as `maybes` (k = 1..=n), each the flight reached.
     pub fn flights(&self, from: Drift, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Flight> {
         (1..=n)

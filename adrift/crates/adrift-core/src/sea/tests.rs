@@ -444,3 +444,19 @@ fn where_a_float_may_be_put() {
     }
     assert!(guesses > 20, "{guesses} guess cells on a 2-degree grid");
 }
+
+/// Between steps a float glides along its velocity: a quarter day of gliding lands within a
+/// few kilometres of the step itself (the step's draw aside), so the drawn float never jumps.
+#[test]
+fn a_float_glides_between_steps() {
+    let mut r = rules();
+    r.wander = 0.0;
+    let d = Drift::put(LonLat { lon: -74.5, lat: 35.8 });
+    let (u, v) = r.velocity(d, JULY);
+    assert!((u * u + v * v).sqrt() > 0.5, "the Gulf Stream runs: {u}, {v}");
+    let glided = r.glide(d, JULY, 0.25);
+    let stepped = r.flight(d, JULY, 0.25, 1, 0).drift.at;
+    let km = distance_km(glided.lon as f32, glided.lat as f32, stepped.lon as f32, stepped.lat as f32);
+    assert!(km < 2.0, "the glide and the step differ by {km} km over a quarter day");
+    assert_eq!(r.velocity(Drift::put(LonLat { lon: -150.0, lat: 74.0 }), 15.0 + 2.0 * 30.4375), (0.0, 0.0), "held in ice: still");
+}
