@@ -1,0 +1,6 @@
+{
+  "_": "The same at the whole Atlantic by night at zoom 1, the Gulf Stream lamp chosen. adrift-check render adrift/crates/adrift-core/src/look/plans/glance-atlantic.json <out.png>.",
+  "camera": { "lon": -40.0, "lat": 30.0, "zoom": 1.0 }, "day": 345.0, "seconds": 12.0, "night": true,
+  "floats": [ { "lon": -74.0, "lat": 35.0, "days_ago": 30 }, { "lon": -20.0, "lat": 15.0, "days_ago": 30 } ],
+  "hold": 0
+}

@@ -9,6 +9,7 @@ pub mod ground;
 pub mod maybes;
 pub mod sea;
 pub mod silver;
+pub mod veil;
 pub mod sprites;
 pub mod wake;
 pub mod words;
@@ -262,6 +263,7 @@ pub struct Look {
     hue: [f32; 3],
     /// The drifter's point nearest the float last held, kept while the silver sinks.
     nearest: usize,
+    pub veil: veil::Veil,
     pub wake: wake::Wake,
     pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
@@ -275,6 +277,7 @@ impl Look {
             bloom_from: [0.0, 0.0, 1.0],
             hue: [0.957, 0.647, 0.165],
             nearest: 0,
+            veil: veil::Veil::new(gpu, view),
             wake: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
@@ -306,6 +309,7 @@ impl Look {
             self.hue = lamp_hue(f.id);
         }
         self.maybes.prepare(gpu, self.bloom_from, state.bloom, n, self.hue);
+        self.veil.prepare(gpu, self.bloom_from, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n, self.hue);
         let mut fl: Vec<floats::FloatInstance> = state
@@ -322,7 +326,7 @@ impl Look {
         // (the label from zoom 1.5: at the whole Earth it would be a banner across an ocean; shown or not,
         // never half)
         let zoom = disc[2] / ((width.min(height) / 2.0 - 14.0).max(40.0));
-        if state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() && zoom >= 1.5 {
+        if state.truth_marks && state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() && zoom >= 1.5 {
             // (the point nearest the held float; kept while the silver sinks after the float is let go)
             if let Some(i) = state.drifter_nearest {
                 self.nearest = i;
