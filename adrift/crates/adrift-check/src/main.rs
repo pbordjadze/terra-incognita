@@ -289,6 +289,17 @@ fn play(args: &[String]) -> Result<()> {
                     bad.push(format!("held {held:?} not {:?}", hv.as_u64()));
                 }
             }
+            if let Some(c) = e.get("chosen") {
+                // a float's id, or true/false for any or none (R5)
+                let ok = match (c.as_bool(), c.as_u64()) {
+                    (Some(b), _) => app.chosen.is_some() == b,
+                    (_, Some(id)) => app.chosen == Some(id as u32),
+                    _ => c.is_null() && app.chosen.is_none(),
+                };
+                if !ok {
+                    bad.push(format!("chosen {:?} not {c}", app.chosen));
+                }
+            }
             if let Some(r) = e.get("riding") {
                 // a float's id, or true/false for riding any float or none
                 let riding = app.riding().map(|id| id as u64);

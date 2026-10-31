@@ -113,6 +113,9 @@ pub struct App {
     /// A float under a resting finger, from when (`Intent::PressFloat`): its maybes show from the
     /// landing; `Unpress` clears it.
     pressing_float: Option<(u32, f64)>,
+    /// The chosen float (R5): its maybes and nearest drifter stay shown whatever the camera does,
+    /// until the sea is tapped, another is chosen, or it is taken out.
+    pub chosen: Option<u32>,
     /// The maybes' bloom, 0..1, and whether it is opening.
     bloom: f32,
     /// The nearest real drifter's track for the held float, as places in order, and its label.
@@ -218,6 +221,7 @@ impl App {
             gestures: Gestures::new(),
             pressing: None,
             pressing_float: None,
+            chosen: None,
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
@@ -355,7 +359,16 @@ impl App {
         }
         let day = self.clock.day;
         match intent {
-            Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
+            Intent::Ring { at } => {
+                self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 });
+                self.chosen = None;
+            }
+            Intent::Choose { float } => {
+                if self.floats.iter().any(|f| f.id == float) {
+                    self.chosen = Some(float);
+                }
+            }
+            Intent::Unchoose => self.chosen = None,
             Intent::Press { at, since } => self.pressing = Some((at, since)),
             Intent::PressFloat { float, since } => self.pressing_float = Some((float, since)),
             Intent::Unpress => {
@@ -436,6 +449,7 @@ impl App {
                     self.camera.riding = None;
                 } else if self.floats.iter().any(|f| f.id == float) {
                     self.camera.riding = Some(float);
+                    self.chosen = Some(float);
                     if let Some(f) = self.floats.iter_mut().find(|f| f.id == float) {
                         f.lit_for = 0.0;
                     }
@@ -479,6 +493,9 @@ impl App {
     fn take_out(&mut self, float: u32) {
         let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
         let mut f = self.floats.remove(i);
+        if self.chosen == Some(float) {
+            self.chosen = None;
+        }
         if let Some(Undo::Moved { id, from }) = self.undo.last().cloned() {
             if id == float {
                 self.undo.pop();
@@ -501,6 +518,7 @@ impl App {
         }
         self.pressing = None;
         self.pressing_float = None;
+        self.chosen = None;
         self.camera.riding = None;
         self.undo.push(Undo::Cleared(gone));
         self.redo.clear();
@@ -678,6 +696,7 @@ impl App {
             .iter()
             .find(|f| f.hand == Hand::Held)
             .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
+            .or_else(|| self.chosen.and_then(by_id))
             .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
     }
 
@@ -802,7 +821,7 @@ impl App {
             floats: self
                 .floats
                 .iter()
-                .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
+                .map(|f| LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: self.shown().map_or(false, |s| s.id == f.id), wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured })
                 .collect(),
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },

@@ -279,6 +279,11 @@ pub enum Intent {
     SetRunning { running: bool },
     /// Every float is taken out at once, as one touch: undo gives them all back (R4).
     ClearAll,
+    /// A float is chosen: its maybes and nearest drifter stay shown through zooming and panning
+    /// until the sea is tapped or another is chosen (R5). `Ride` chooses its float too.
+    Choose { float: u32 },
+    /// The choice is let go.
+    Unchoose,
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
 }

@@ -1,0 +1,16 @@
+{
+ "title": "A tapped float stays chosen, its maybes shown, when the camera leaves it: home flight, then a tap on the sea lets it go",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -70.0, "lat": 30.0, "zoom": 2.5},
+ "floats": [{"lon": -74.0, "lat": 34.0}],
+ "steps": [
+  {"t": 0.0, "down": 0, "at": [-74.0, 34.0]},
+  {"t": 0.08, "up": 0, "at": [-74.0, 34.0]},
+  {"t": 0.1, "expect": {"saw": ["Ride"], "riding": 1, "chosen": 1}},
+  {"t": 1.5, "intent": "Home"},
+  {"t": 3.5, "expect": {"chosen": 1, "camera": {"lon": -30.0, "lat": 25.0, "zoom": 1.0}}, "shot": "home-still-chosen"},
+  {"t": 4.0, "down": 0, "at": [-30.0, 10.0]},
+  {"t": 4.08, "up": 0, "at": [-30.0, 10.0]},
+  {"t": 4.5, "expect": {"saw": ["Ring"], "chosen": null, "floats": 1}, "shot": "let-go"}
+ ]
+}

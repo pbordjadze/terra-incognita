@@ -167,11 +167,15 @@ pub fn unit(at: LonLat) -> [f32; 3] {
 /// A float as the look sees it.
 #[derive(Clone, Debug)]
 pub struct LookFloat {
+    /// The app's id (1, 2, 3…): a hue per lamp can hang on it (R5).
+    pub id: u32,
     pub at: LonLat,
     /// 1 while it is what the reader just did, fading to 0 in time (the app's `lit_for` against the beat).
     pub lit: f32,
     /// Under a resting finger: its maybes out.
     pub held: bool,
+    /// The one whose maybes and drifter are shown now (held, pressed, chosen or ridden; R5).
+    pub chosen: bool,
     /// One bead a day, oldest first (the last `WAKE_DAYS` are drawn).
     pub wake: Vec<LookBead>,
     /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
