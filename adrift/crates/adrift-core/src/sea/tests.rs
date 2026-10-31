@@ -319,7 +319,11 @@ fn a_put_float_starts_with_the_measured_velocity_and_a_track_has_real_dates() {
     let v = t.xyz[t.point];
     assert!((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1.0).abs() < 1e-4, "unit vectors");
     let label = t.label();
-    eprintln!("{label} ({:.0} km off)", t.km);
+    let w = t.window(30);
+    assert!(w.contains(&t.point) && w.len() <= 61 && w.len() >= 31);
+    let short = t.label_window(w.clone());
+    eprintln!("{label} ({:.0} km off); the month about it: {short}, {} points", t.km, w.len());
+    assert!(short.starts_with("Drifter ") && short.contains(" to "));
     assert!(label.starts_with("Drifter ") && label.contains(" to ") && label.contains("201") || label.contains("202"));
 }
 

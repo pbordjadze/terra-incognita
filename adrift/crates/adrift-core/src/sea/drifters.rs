@@ -155,6 +155,29 @@ impl Track<'_> {
         self.run.points.iter().map(|&(lon, lat)| LonLat { lon: lon as f64, lat: lat as f64 }).collect()
     }
 
+    /// The run's points within `days` of where it passed nearest the float, as a range of
+    /// indices into `xyz` and `run.points`: a whole run can cross a frame and a year, while what
+    /// the float asks is where this buoy went from here. Thirty days each side shows a month's
+    /// way in and out.
+    pub fn window(&self, days: usize) -> std::ops::Range<usize> {
+        let start = self.point.saturating_sub(days);
+        let end = (self.point + days + 1).min(self.run.points.len());
+        start..end
+    }
+
+    /// The label for a window: the buoy and the real dates of those days.
+    pub fn label_window(&self, w: std::ops::Range<usize>) -> String {
+        let (y0, m0, d0) = civil(self.run.day0 as f64 + w.start as f64);
+        let (y1, m1, d1) = civil(self.run.day0 as f64 + (w.end.max(1) - 1) as f64);
+        if (y0, m0) == (y1, m1) {
+            format!("Drifter {}, {} to {} {} {}", self.run.id, d0, d1, MONTHS[m0 - 1], y0)
+        } else if y0 == y1 {
+            format!("Drifter {}, {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], d1, MONTHS[m1 - 1], y0)
+        } else {
+            format!("Drifter {}, {} {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], y0, d1, MONTHS[m1 - 1], y1)
+        }
+    }
+
     /// The day (days since 2000-01-01) of the point nearest the float.
     pub fn day(&self) -> f64 {
         self.run.day0 as f64 + self.point as f64
