@@ -8,7 +8,7 @@ use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
 use crate::look::{sea::Ripple, GroundPass, Look, LookFloat, LookState, SeaPass};
 use crate::model::*;
-use crate::sea::{Drift, GpuPath, Maybes, Params, Rules};
+use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +65,8 @@ pub struct App {
     assets: Box<dyn Assets>,
     textures: Textures,
     pub rules: Rules,
+    /// The real drifters' runs (Truth): the nearest rises in silver beside a held float.
+    pub drifters: Drifters,
     view_buffer: wgpu::Buffer,
     view_bind: wgpu::BindGroup,
     stage_view_buffer: wgpu::Buffer,
@@ -94,6 +96,11 @@ pub struct App {
     gestures: Gestures,
     /// A finger resting on the sea, the ring thickening: where, and since when.
     pressing: Option<(LonLat, f64)>,
+    /// The maybes' bloom, 0..1, and whether it is opening.
+    bloom: f32,
+    /// The nearest real drifter's track for the held float, as places in order, and its label.
+    drifter: Vec<LonLat>,
+    pub drifter_label: String,
     ripples: Vec<Ripple>,
     width: u32,
     height: u32,
@@ -126,6 +133,7 @@ impl App {
         let clock = Clock { day: 0.0, running: true, rate: RATE };
         let textures = Textures::load(&gpu, assets.as_ref(), clock.months().0)?;
         let rules = Rules::load(assets.as_ref())?;
+        let drifters = Drifters::parse(&assets.read("drifters.bin")?).map_err(|e| anyhow::anyhow!("drifters.bin: {e}"))?;
         let view_layout = crate::look::view_layout(&gpu);
         let make_view = |label: &str| {
             let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -155,6 +163,7 @@ impl App {
             assets,
             textures,
             rules,
+            drifters,
             view_buffer,
             view_bind,
             stage_view_buffer,
@@ -178,6 +187,9 @@ impl App {
             camera: CameraControl::new(Camera { lon: -30.0, lat: 25.0, zoom: 1.0 }),
             gestures: Gestures::new(),
             pressing: None,
+            bloom: 0.0,
+            drifter: Vec::new(),
+            drifter_label: String::new(),
             ripples: Vec::new(),
             width,
             height,
@@ -344,7 +356,8 @@ impl App {
                         f.put_day = day;
                         f.wake.clear();
                         f.held = Held::No;
-                        f.eddy = [0.0; 2];
+                        let e = self.rules.put(p, day, f.seed, 0).eddy;
+                        f.eddy = [e.0, e.1];
                         self.stepped.insert(float, day);
                         self.redo.clear();
                         self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
@@ -399,7 +412,10 @@ impl App {
         let id = self.next_id;
         self.next_id += 1;
         let seed = (self.clock.day.to_bits() ^ (id as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)).rotate_left(17);
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [0.0; 2], wake: Vec::new(), lit_for: 0.0 });
+        // the water there is already moving: the first eddy velocity is drawn from the measured
+        // variance (Truth's `Rules::put`), deterministic for the seed
+        let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], wake: Vec::new(), lit_for: 0.0 });
         self.stepped.insert(id, self.clock.day);
         id
     }
@@ -519,6 +535,35 @@ impl App {
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
+        // the maybes bloom out as a float is held (0.35 s, eased out) and fold back when it is let
+        // go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
+        let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.at));
+        match held {
+            Some((_, at)) => {
+                if self.bloom <= 0.0 {
+                    self.drifter = match self.drifters.track(at, 500.0) {
+                        Some(t) => {
+                            self.drifter_label = t.label();
+                            t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
+                        }
+                        None => Vec::new(),
+                    };
+                }
+                self.bloom = (self.bloom + (dt / 0.35) as f32).min(1.0);
+            }
+            None => {
+                self.bloom = (self.bloom - (dt / 0.25) as f32).max(0.0);
+                if self.bloom <= 0.0 {
+                    self.drifter.clear();
+                }
+            }
+        }
+    }
+
+    /// The bloom as drawn: eased out while opening, eased in while folding.
+    fn bloom_eased(&self) -> f32 {
+        let b = self.bloom;
+        if self.floats.iter().any(|f| f.hand == Hand::Held) { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b }
     }
 
     /// Every free float catches up with the clock, a quarter day at a time, a bead at each new day:
@@ -618,6 +663,13 @@ impl App {
         }
         self.clock.day = scene.day;
         self.step_floats();
+        self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
+        if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
+            if let Some(t) = self.drifters.track(f.at, 500.0) {
+                self.drifter_label = t.label();
+                self.drifter = t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
+            }
+        }
     }
 
     /// What the look draws this frame, from the state (look/README.md › Wiring).
@@ -632,13 +684,13 @@ impl App {
                 .map(|f| LookFloat { at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, wake: f.wake.iter().map(|b| b.at).collect() })
                 .collect(),
             resting,
-            bloom: if self.maybes_of.is_some() { 1.0 } else { 0.0 },
-            drifter: Vec::new(),
-            rise: 0.0,
+            bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
+            drifter: self.drifter.clone(),
+            rise: self.bloom_eased(),
             night: false,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
-            credits: "Currents: NOAA Global Drifter Program (Laurindo, Mariano and Lumpkin 2017), CC BY 4.0".to_string(),
+            credits: crate::sea::CREDIT_LINE.to_string(),
         }
     }
 
@@ -711,8 +763,13 @@ impl App {
                 let rerun = self.maybes_of.map_or(true, |(i, _, d)| i != id || (self.clock.day - d).abs() > 0.5);
                 if rerun {
                     let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
-                    let start = GpuPath { lon: origin.lon as f32, lat: origin.lat as f32, held: 0, measured: 1.0, eddy_u: 0.0, eddy_v: 0.0 };
-                    self.maybes.seed(&self.gpu, &vec![start; n as usize]);
+                    let paths: Vec<GpuPath> = (1..=n)
+                        .map(|k| {
+                            let e = self.rules.put(origin, put_day, seed, k).eddy;
+                            GpuPath { lon: origin.lon as f32, lat: origin.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
+                        })
+                        .collect();
+                    self.maybes.seed(&self.gpu, &paths);
                     let mut day = put_day;
                     let mut steps = 0;
                     while day < self.clock.day - 1e-6 && steps < 2000 {
@@ -724,7 +781,11 @@ impl App {
                     self.maybes_of = Some((id, n, self.clock.day));
                 }
             }
-            None => self.maybes_of = None,
+            None => {
+                if self.bloom <= 0.0 {
+                    self.maybes_of = None;
+                }
+            }
         }
         let state = self.look_state();
         let d = view.disc;
