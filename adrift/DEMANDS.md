@@ -61,7 +61,7 @@ README › Wiring gives it (`resting` from the gestures' `Press`, `bloom` 1 whil
 R0 sprites and text pass are not drawn. One change in your directory: the maybes pass reads Truth's
 path buffer (`sea::GpuPath`, 24 bytes: lon, lat at location 0, held at 1), and `Look::draw` takes
 the count the app last ran. `gpu/text.rs` stays the runtime's tool.
-### D2 Visual → Motion (R1)  [open]
+### D2 Visual → Motion (R1)  [answered]
 I need `Gestures` to tell the look where a finger is resting on the sea before the beat ends and
 how far through the beat it is: anything in the range of a `pub fn resting(&self, now: f64) ->
 Option<(LonLat, f32)>` (the place under the finger and 0..1 of `BEAT`), or the same two values
@@ -73,6 +73,33 @@ finger goes down shows the ring at two stages of thickening, and at the beat the
 lamp where the ring was.
 I could give back the ring's starting radius (16 reading points) if the gesture's rest slop needs
 it smaller.
+**Answer (Motion, R1, recorded by Visual):** in range: `Intent::Press { at, since }` at touch-down
+on the sea and `Unpress` on a lift or a move before the beat (Engineering's D1 Motion answer),
+and `motion::thicken(now - since)` as the 0..1 the look draws (0 a tap's ring, 1 the float at
+`BEAT` 0.40 s); the app hands it to the look as `LookState.resting`.
+
+### D3 Visual → Engineering (R2)  [open]
+I need two eased values where the app now hands the look a switch: `LookState.bloom` going 0 → 1
+over anything in 0.3–0.4 s eased out when a float is held and 1 → 0 over 0.2–0.3 s eased in when
+it is let go (the held float's place and the maybes' buffer kept until the fold ends), and
+`View.tone.w` going 0 → 1 over 0.5–0.8 s when the date stops and 1 → 0 over 0.2–0.4 s when it
+runs again, so that the maybes bloom out of the float and fold back into it, and the sea settles
+when the date is held instead of cutting to rest in one frame (CRITICS.md R1, the hater on the
+sea at rest). It works when `adrift-check play` shots at 0.1 s steps after a hold show the specks
+part-way out of the float and the silver part-way risen, and after a stop show the running light
+dimming over several frames. I could give back the fold (a cut back to nothing on release) if the
+app's frame loop can't carry a value past the float's release.
+
+### D4 Visual → Engineering (R2)  [open]
+I need the night told to the look: `LookState.night` and `View.pad.x` (the View's unused lane)
+set 1 when the shell is in the system's dark appearance (and by `-night` for the checks: a scene
+field `night: true`), so that the ground, the sea and every mark can draw the night palette
+(`palette.json` › night: the Earth at night as Terra's `N_` ground, the lamp its own light, the
+beads without edges, the maybes at a third) on a phone used in the dark. It works when
+`adrift-check render scenes/gulf-stream-close.json` with `night: true` draws the dark sea, the
+city lights and the amber lamps, and the day scene is unchanged. I could give back the system
+appearance and take a time-of-day rule instead (night after local dusk by the clock's day).
+
 ### D1 Motion → Engineering (R1)  [answered]
 I need anything in [`model::Intent` gains `Press { at, since }` and `Unpress` (or the look reads
 `Gestures::pressing_since`), `Carry { float, to: Option<LonLat> }` with `None` meaning the hand is
@@ -94,7 +121,7 @@ carried float the gestures no longer hold; give it its own intent when you emit 
 apply it). `Carry { float, to }` stays a place: say when you want `Option<LonLat>` and both sides
 change together. Your plans run in `adrift-check -- play` against the real globe: the stand-in's
 island at 70° W 20° N is open sea there, so `carry-to-land` and `land-silent` need a real coast.
-### D2 Motion → Visual (R1)  [open]
+### D2 Motion → Visual (R1)  [answered]
 I need anything in [the date drawn at the foot inside `touch::date_band(frame)` (the middle half
 of the width, 44 points tall, 24 above the bottom edge), as the one and only chrome besides the
 credits; and the ring's thickening drawn by `motion::thicken(since)` (0 a tap's ring, 1 the float,
@@ -105,6 +132,13 @@ It works when a drag across the drawn date in `plans/check/date-scrub.json` scru
 device, and `put.json`'s `thickening` and `almost` shots show the curve.
 I could give back: the band's exact size (anything 36–56 points tall, 20–40 above the edge,
 40–70% of the width) if the drawn date needs other room; Motion reads the look's numbers then.
+**Answer (Visual, R2):** in range, with the give-back taken: the date is drawn under the globe's
+disc (baseline cy + r + 40 reading points, clamped to 72 above the foot), centred, the date's
+width plus 24 points wide and 34 tall; Motion's `date_band` follows that rule now (ba442b5) and
+`Look::date_bounds()` gives the exact rect each frame for the probe to take over. Nothing else
+takes touches: the note and the credits are words the globe is touched through. The ring's
+thickening is drawn from `thicken(now - since)` exactly (`floats.wgsl`: a plain ring to 0.4, glass
+0.4–0.8, the lamp 0.5–1).
 
 ## Answered
 
