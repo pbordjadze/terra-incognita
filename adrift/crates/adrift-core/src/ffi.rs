@@ -138,6 +138,14 @@ pub unsafe extern "C" fn adrift_pause(shell: *mut Shell) {
     }
 }
 
+/// The system's appearance: dark is the look's night.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_set_night(shell: *mut Shell, on: bool) {
+    if let Some(s) = shell.as_mut() {
+        s.app.night = on;
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn adrift_set_reduce_motion(shell: *mut Shell, on: bool) {
     if let Some(s) = shell.as_mut() {

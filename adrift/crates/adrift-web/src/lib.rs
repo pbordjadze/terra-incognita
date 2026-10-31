@@ -45,9 +45,26 @@ pub async fn start() -> Result<(), JsValue> {
     canvas.set_height(h.max(1));
 
     status(&document, "the sea is loading…");
+    // the data: each file beside the page under assets/, or where assets/index.json says (a host
+    // that serves only some file types may keep a sheet under another name)
+    let index: HashMap<String, String> = match fetch(&window, "assets/index.json").await {
+        Ok(bytes) => serde_json::from_slice(&bytes).unwrap_or_default(),
+        Err(_) => HashMap::new(),
+    };
     let mut files = HashMap::new();
     for name in adrift_core::assets::FILES {
-        files.insert(name.to_string(), fetch(&window, &format!("assets/{name}")).await?);
+        let path = index.get(*name).cloned().unwrap_or_else(|| format!("assets/{name}"));
+        let bytes = fetch(&window, &path).await?;
+        // a binary sheet a host could only serve as JSON: {"base64": "..."}
+        let bytes = if path.ends_with(".json") && !name.ends_with(".json") {
+            let v: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            let b64 = v.get("base64").and_then(|b| b.as_str()).ok_or_else(|| JsValue::from_str("no base64"))?;
+            let bin = window.atob(b64)?;
+            bin.chars().map(|c| c as u8).collect()
+        } else {
+            bytes
+        };
+        files.insert(name.to_string(), bytes);
     }
 
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..Default::default() });
@@ -71,6 +88,9 @@ pub async fn start() -> Result<(), JsValue> {
         if let Ok(Some(json)) = store.get_item("adrift") {
             app.restore(&json);
         }
+    }
+    if let Ok(Some(mq)) = window.match_media("(prefers-color-scheme: dark)") {
+        app.night = mq.matches();
     }
     let app = Rc::new(RefCell::new(app));
     {

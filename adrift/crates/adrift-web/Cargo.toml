@@ -15,6 +15,7 @@ wgpu = { workspace = true, features = ["webgpu"] }
 wasm-bindgen = "=0.2.130"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
-web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlCanvasElement", "PointerEvent", "Response", "Request", "Performance", "console", "CssStyleDeclaration", "KeyboardEvent", "WheelEvent", "DomRect", "Headers", "Storage"] }
+web-sys = { version = "0.3", features = ["Window", "Document", "Element", "HtmlCanvasElement", "PointerEvent", "Response", "Request", "Performance", "console", "CssStyleDeclaration", "KeyboardEvent", "WheelEvent", "DomRect", "Headers", "Storage", "MediaQueryList"] }
 console_error_panic_hook = "0.1"
 anyhow = { workspace = true }
+serde_json = { workspace = true }

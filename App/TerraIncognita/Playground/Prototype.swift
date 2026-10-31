@@ -27,9 +27,6 @@ struct Prototype: Identifiable {
     let id: String
     let title: String
     let summary: String
-    /// The Wikipedia article on its subject: with Wikipedia's words on, the words at its foot are that
-    /// article's first sentence, and the summary (the atlas's own) is not shown.
-    var wikipedia: String? = nil
     var shelf: Shelf = .current
     /// Where the globe goes when it starts; nil leaves the camera where the reader had it.
     var anchor: GlobeCamera?
@@ -190,11 +187,10 @@ final class PrototypeStage {
     func quietClouds() { request { $0.quietClouds = true } }
     func quietFrame() { request { $0.quietFrame = true } }
 
-    /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch
-    /// (and Wikipedia's article on it, for when its words are wanted instead).
-    func describe(title: String, text: String, wikipedia: String? = nil) {
+    /// Words at the foot for a prototype that gives none of its own: what it is, and what to touch.
+    func describe(title: String, text: String) {
         guard !ended, caption == nil else { return }
-        caption = StageCaption(title: title, text: text, article: WikipediaIndex.shared[wikipedia])
+        caption = StageCaption(title: title, text: text)
     }
 
     /// Moves the globe (Reduce Motion: at once). A script's flight (`byScript`) is honoured only while

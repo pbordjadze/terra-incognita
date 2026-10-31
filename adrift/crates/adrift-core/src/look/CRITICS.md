@@ -130,3 +130,75 @@ only it. The glow is a haze two and a half radii wide; on the pale sea it reads 
 first second. Try it a radius tighter on the device." Verdict: the rule holds; the reach is a knob.
 On the iPad (`studies/check-gulf-stream-close-ipad.png`, 2 px a point, reading 1.2) the floats and
 the beads read at the same apparent size as on the phone, as the reading scale means them to.
+
+## R2 (October 31, 2026): the merged build, and the night
+
+Judged: `studies/r2-merged-gulf-phone.png` and `r2-merged-gulf-ipad.png` (the merged app at
+5c21f63: Truth's maybes with their wander, the wake with the drifters' memory, Motion's touch),
+`r2-merged-foot-phone.png` (the words over the globe), `r2-night-gulf-half-bloom-phone.png` (the
+night palette in the ground and the sea, the maybes half-way out of the float: the night and the
+bloom forced in a local build, since D3 and D4 are open), `r2-night-atlantic-phone.png`.
+
+**The hater, a Blue Marble cartographer who thinks every night map since 2012 is a cliché.**
+
+- *The merged day.* "Now the maybes are a cloud a current made: dense along the stream, thin on
+  the shelf, grey where a self went aground. The wake loops where the drifters' memory took it. I
+  can't call that scripted. The specks are a little many on the phone: two thousand at 0.75 points
+  is a sandstorm when the cloud is tight; thin them with density, not count." Verdict: passes; the
+  sandstorm is a knob.
+- *The iPad.* "Same marks, same apparent size, more sea round them. Fine."
+- *The bloom.* "Half-way out, the specks sit in a ring round the float as if thrown. That is the
+  right picture at 0.15 s; the ease is the app's (D3). Not judged in motion."
+- *The night.* "The N_ palette on the ported ground: slate land, a dark sea by depth, the ice grey,
+  the limb's glow. The amber lamps are the warmest thing on the screen, as the brief wants. But the
+  surf was a white glare along every coast until it was cut to a third, and the ground has no
+  cities: without Terra's night lights it is a planet nobody lives on. Ask for the sheet." Verdict:
+  the palette holds; the lights are owed (D4's answer should bundle `night.jpg`).
+- *The words.* "On a halo, under the disc or over the globe, one set now. 'held' as the note when
+  the date is stopped is the app's wording and it is right: one word, no icon."
+
+**Holt**: "I held a float and its other lives were the current's, not a designer's; I stopped the
+date and the sea stood still with the words saying so. Nothing asked me to do anything."
+
+**Into the rest of R2**: the maybes thinned by density where the cloud is tight; the night lights
+when the sheet arrives; the eases (D3) photographed in a play; the silver when Truth hands the
+track; the lookbench retired by Engineering.
+
+**The silver with a real track** (`studies/r2-silver-drifter-phone.png`, the merged build at
+d2bd376 with Truth's nearest run and its label): a buoy's whole run across the frame at zoom 5,
+rounded through its daily points so its eddies read as loops, and "Drifter 132676, 1 Jan 2016…"
+in italic on a halo at the point nearest the held float. The hater: "A real buoy with a number
+and a date is the most honest thing on the screen, and the loops are the Gulf Stream's own. The run
+is too long for a hold: it leaves the frame both ways and reads as a border. A window of days
+round the nearest point (Engineering is passing one) will make it a visit, not a fence. The label
+sits on the track; move it off." Verdict: passes once windowed; the label's offset is a knob.
+
+**The bloom and the fold, photographed** (`look/plans/bloom.json`: a float twenty days adrift, the
+date stopped, held by intent and let go where it is; `studies/check-bloom-and-fold-phone.png`,
+frames at 0.02, 0.12, 0.22, 0.32 and 0.62 s of the hold, then 0.08, 0.16 and 0.36 s after the
+lift): the specks travel out of the float to where the current would have taken each self, the
+silver and its label rise with them, and on the lift they fold back into the float and the silver
+sinks, the label staying at its point. The hater: "Out means out now, and back means back; the
+fold is quick enough that nothing lingers to be mistaken for a mark. The first held frame is
+already a third of the way out: the ease is front-loaded, which is right for a hand that wants an
+answer. The silver's whole run is still a fence until it is windowed." Verdict: passes; the
+window is Engineering's.
+
+**The night, in the app** (`adrift-check render scenes/gulf-stream-night.json`, Engineering's D4
+answer: the night from the shell, `night.jpg` bound; `studies/check-night-gulf-phone.png` at device
+pixels, `check-night-atlantic-half-phone.png` at half): the N_ ground with the Black Marble's
+lights in sodium gold whitening at the cities' cores, the sea by depth, the lines pale, the amber
+lamps the warmest thing on the screen, the words pale on halos of the night's sea. The hater:
+"Now it is lived on. The eastern seaboard reads as itself at zoom 5 and the lamps still win. The
+maybes by night are a dust at a third, right. The one thing: the Gulf Stream's light runs white
+over a black sea and the silver is white too; at the whole Earth they are the same thread. Tint
+the silver a hair warmer by night, or the light a hair cooler." Verdict: passes; one hue apart.
+
+**Holt**, on the day's merged build and the night: "I held, I let go, I stopped the date, the
+room went dark and the floats stayed mine. Nothing marked, nothing pointed, nothing waited."
+
+**The press, with the lamp on Put** (`look/plans/press.json`; `studies/check-press-phone.png`:
+0.10, 0.25 and 0.37 s into a rest, the put at 0.43, held at 0.73): a tap's ring, the ring still,
+glass formed without a lamp, then the float with its lamp lit and its maybes and silver out.
+Motion's hater had seen a lit float vanish on a lift just short of the beat; now a lift before the
+beat only un-forms glass, and the beat is the moment the light comes on. Verdict: passes.

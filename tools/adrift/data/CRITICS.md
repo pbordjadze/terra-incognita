@@ -73,3 +73,46 @@ current and its draws took it, and no one wrote that.
 **What Truth takes from R0:** D1 (velocity memory for the wander); the date and the years must be
 said on the screen (a demand on Visual once the look exists); the jets' shear contamination is a
 R1 improvement to `eddy.py` (Zhurbas and Oh's correction, or a coarser variance in the jets).
+
+## R2 (October 31, 2026; the merged build at 5c21f63 with Truth's R2 commit on it)
+
+What ran: `adrift-check render scenes/gulf-stream-close.json` (`critics/r2/gulf-stream-close.png`,
+and `-hatteras.png`, the coast close up), `play plans/put-and-drift.json` (`play-04-drifted-40-days.png`);
+23 sea tests, among them a new one: no maybe is on land after any step, on the CPU or the GPU.
+
+**The hater (the same oceanographer, now looking at a cloud of 2,000 maybes).**
+- *The wakes* now follow the flight: the Hatteras float's beads bunch where it dawdled on the
+  shelf and stretch where the stream took it, the second float's run north-east along the jet.
+  That is what a drifter's track looks like. Verdict: the walk's scribble is gone.
+- *The maybes* bunch along the stream and spread north-east, thinner on the shelf and in the
+  sounds: the right shape. Specks sit in Pamlico Sound and on the shoreline: the sounds are sea
+  to Natural Earth and to the rules, and a held float sits five kilometres off a shore drawn ten
+  kilometres a pixel, so at this zoom it lies on the line. A few specks look inland on the
+  Virginia shore: river mouths the ground paints as land. Not a lie, but a reader will think a
+  float went up a river. Verdict: honest to the data's resolution; say the resolution somewhere.
+- *The maybes start from rest.* Every speck starts with zero eddy velocity (app.rs seeds the
+  buffer that way); the measured sea at the put place is already moving. `Rules::put` draws the
+  first velocity from the measured variance; until the app seeds with it, the cloud's first two
+  or three days are too tight. Verdict: wire it (asked).
+- *The words.* "19 July, a typical year, by the drifters' record" is the honest date, at last on
+  the screen. But the foot credits only the currents; the wind, the ice, the coast and the real
+  drifters are owed theirs. `sea::CREDIT_LINE` is one line that names all four. Verdict: a licence
+  is not met by naming one of four.
+- *Not yet there:* the silver drifter (`Drifters::track` exists; nothing draws it), and nothing
+  says the coast is ten kilometres a pixel.
+
+**Holt.** In the played session a float was put, drifted forty days where the rules and its
+draws took it (north-east, not where anyone said), the date was stopped and it rested, undo took
+it back and the globe was as before. Holding a float shows its other selves without moving it.
+You can wander, stop, undo. Leaving is not yet in a plan; the silver drifter is not yet on the
+screen, so the one thing that would make a stranger believe the cloud (a real buoy that went
+there) is missing. Verdict: the rules keep their promises; the screen is a round behind them.
+
+**Later, on d2bd376 (`critics/r2/gulf-stream-close-silver.png`).** Engineering wired the put's
+draw, the silver drifter and the credit line. The hater: the silver is a real run (a tight loop
+on the shelf, then off along the stream to the edge of the frame and beyond), and it is too much
+of one: a whole year of a buoy across the frame says "a drifter went everywhere", not "a drifter
+passed here". `Track::window(30)` is the month about the nearest point, with `label_window` for
+its dates; draw that. The credit line is on the foot and runs off both edges of the phone: a
+licence cut in half is not met; it is now under eighty characters. Holt: holding the float shows
+a real buoy's way; nothing moved. Fine.

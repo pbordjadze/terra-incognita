@@ -35,6 +35,9 @@ pub struct Scene {
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
+    /// The night palette (the system's dark appearance).
+    #[serde(default)]
+    pub night: bool,
 }
 fn yes() -> bool {
     true
@@ -101,6 +104,8 @@ pub struct App {
     /// The nearest real drifter's track for the held float, as places in order, and its label.
     drifter: Vec<LonLat>,
     pub drifter_label: String,
+    /// The index in `drifter` of the point nearest the float.
+    pub drifter_nearest: usize,
     ripples: Vec<Ripple>,
     width: u32,
     height: u32,
@@ -113,6 +118,10 @@ pub struct App {
     /// How far each float has been stepped (`id` → day).
     stepped: std::collections::HashMap<u32, f64>,
     pub reduce_motion: bool,
+    /// The system's dark appearance: the look's night (the shells set it).
+    pub night: bool,
+    /// How far the sea has settled to rest with the date held, 0..1.
+    rest: f32,
     /// The intents applied, by name (the checks' `expect.saw`).
     pub seen: Vec<String>,
     /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
@@ -190,6 +199,7 @@ impl App {
             bloom: 0.0,
             drifter: Vec::new(),
             drifter_label: String::new(),
+            drifter_nearest: 0,
             ripples: Vec::new(),
             width,
             height,
@@ -200,6 +210,8 @@ impl App {
             now: 0.0,
             stepped: Default::default(),
             reduce_motion: false,
+            night: false,
+            rest: 0.0,
             seen: Vec::new(),
             haptic: false,
         })
@@ -232,6 +244,8 @@ impl App {
             camera: self.camera.camera,
             seconds: self.seconds,
             clock: self.clock,
+            rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
+            night: if self.night { 1.0 } else { 0.0 },
         }
     }
 
@@ -348,6 +362,11 @@ impl App {
                 let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
                 let moved = self.floats[i].hand == Hand::Carried;
                 match (at, moved) {
+                    (None, true) => {
+                        // carried off the disc and let go: taken out in plain sight (undoable)
+                        self.seen.push("TakeOut".to_string());
+                        self.take_out(float);
+                    }
                     (Some(p), true) => {
                         let f = &mut self.floats[i];
                         f.hand = Hand::Free;
@@ -535,6 +554,13 @@ impl App {
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
+        // the sea settles to rest when the date is held (0.6 s, eased out) and wakes when it runs
+        // again (0.3 s, eased in): Visual's D3
+        if self.clock.running {
+            self.rest = (self.rest - (dt / 0.3) as f32).max(0.0);
+        } else {
+            self.rest = (self.rest + (dt / 0.6) as f32).min(1.0);
+        }
         // the maybes bloom out as a float is held (0.35 s, eased out) and fold back when it is let
         // go (0.25 s, eased in); the silver rises and sinks with them (Visual's numbers)
         let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.at));
@@ -543,8 +569,12 @@ impl App {
                 if self.bloom <= 0.0 {
                     self.drifter = match self.drifters.track(at, 500.0) {
                         Some(t) => {
-                            self.drifter_label = t.label();
-                            t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
+                            // the month and a half each side of where the buoy passed nearest (the
+                            // wake's own 45 days, so the two read as one scale), not its whole run
+                            let w = t.window(45);
+                            self.drifter_label = t.label_window(w.clone());
+                            self.drifter_nearest = t.point.saturating_sub(w.start);
+                            t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
                         }
                         None => Vec::new(),
                     };
@@ -653,6 +683,8 @@ impl App {
         self.gestures = Gestures::new();
         self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
         self.seconds = scene.seconds;
+        self.night = scene.night;
+        self.rest = if scene.running { 0.0 } else { 1.0 };
         for (i, sf) in scene.floats.iter().enumerate() {
             self.clock.day = scene.day - sf.days_ago;
             let id = self.put(LonLat::new(sf.lon, sf.lat));
@@ -666,8 +698,10 @@ impl App {
         self.bloom = if scene.hold.is_some() { 1.0 } else { 0.0 };
         if let Some(f) = self.floats.iter().find(|f| f.hand == Hand::Held) {
             if let Some(t) = self.drifters.track(f.at, 500.0) {
-                self.drifter_label = t.label();
-                self.drifter = t.xyz.iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
+                let w = t.window(45);
+                self.drifter_label = t.label_window(w.clone());
+                self.drifter_nearest = t.point.saturating_sub(w.start);
+                self.drifter = t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
             }
         }
     }
@@ -686,8 +720,10 @@ impl App {
             resting,
             bloom: if self.maybes_of.is_some() || self.bloom > 0.0 { self.bloom_eased() } else { 0.0 },
             drifter: self.drifter.clone(),
+            drifter_label: self.drifter_label.clone(),
+            drifter_nearest: if self.drifter.is_empty() { None } else { Some(self.drifter_nearest.min(self.drifter.len() - 1)) },
             rise: self.bloom_eased(),
-            night: false,
+            night: self.night,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: if self.clock.running { "a typical year, by the drifters’ record".to_string() } else { "held".to_string() },
             credits: crate::sea::CREDIT_LINE.to_string(),

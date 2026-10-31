@@ -35,7 +35,8 @@
     "eddy-time.png": "adrift/data/eddy-time.png",
     "drifters.bin": "adrift/data/drifters.bin",
     "LibertinusSerif-Regular.otf": "Globe/fonts/LibertinusSerif-Regular.otf",
-    "LibertinusSerif-Italic.otf": "Globe/fonts/LibertinusSerif-Italic.otf"
+    "LibertinusSerif-Italic.otf": "Globe/fonts/LibertinusSerif-Italic.otf",
+    "night.jpg": "Globe/ground/night.jpg"
   },
   "sheets": {
     "eddy": {

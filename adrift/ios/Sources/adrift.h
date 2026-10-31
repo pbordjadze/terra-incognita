@@ -10,5 +10,6 @@ void adrift_shaken(AdriftShell *shell);
 bool adrift_take_haptic(AdriftShell *shell);
 void adrift_store(AdriftShell *shell, const char *path);
 void adrift_pause(AdriftShell *shell);
+void adrift_set_night(AdriftShell *shell, bool on);
 void adrift_set_reduce_motion(AdriftShell *shell, bool on);
 void adrift_free(AdriftShell *shell);

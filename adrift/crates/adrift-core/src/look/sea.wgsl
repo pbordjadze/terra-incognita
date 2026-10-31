@@ -89,7 +89,7 @@ fn contour(q: f32, fw: f32) -> vec2f {
     let n = vec3f(v, z);
     let h = normalize(toLight + vec3f(0.0, 0.0, 1.0));
     let sheen = pow(max(dot(n, h), 0.0), 18.0) * (1.0 - smoothstep(1.5, 3.0, zoom));
-    acc = over(acc, vec3f(1.0), 0.10 * sheen * water);
+    acc = over(acc, vec3f(1.0), 0.10 * sheen * water * (1.0 - U.pad.x));
 
     // -- the streamlines, in octaves fixed to the globe and blended between
     let gap = 9.0 * reading; let ref_ = 0.5;
@@ -104,7 +104,7 @@ fn contour(q: f32, fw: f32) -> vec2f {
                    dense.y * (1.0 - smoothstep(lineW * 0.5, lineW * 0.5 + 1.0, dense.x)));
     let halo = max(sparse.y * exp(-sparse.x * sparse.x / (haloW * haloW)), dense.y * exp(-dense.x * dense.x / (haloW * haloW)));
     let running = smoothstep(0.04, 0.40, speed) * measured;
-    acc = over(acc, vec3f(0.20, 0.42, 0.62), 0.22 * core * running * water);
+    acc = over(acc, mix(vec3f(0.20, 0.42, 0.62), vec3f(0.62, 0.74, 0.86), U.pad.x), mix(0.22, 0.30, U.pad.x) * core * running * water);
 
     // -- light running along them: noise carried by the current, each bright place trailing a tail
     // upstream, so a still picture shows which way the water goes
@@ -130,12 +130,13 @@ fn contour(q: f32, fw: f32) -> vec2f {
     }
     glow = smoothstep(0.3, 1.5, glow / (0.185 * 0.86 * sqrt(w2))) * running * mix(0.45, 1.0, smoothstep(1.0, 2.2, zoom));
     // the sea at rest: while the date is stopped the light holds where it is (tm is held) and settles to
-    // half its strength, so a still frame reads as light lying along the lines, not a flash caught mid-air
-    glow *= mix(0.5, 1.0, U.tone.y);
+    // half its strength over a beat (U.tone.w eases 0..1 as the date stops: DEMANDS.md D3), so a still
+    // frame reads as light lying along the lines, not a flash caught mid-air
+    glow *= mix(1.0, 0.5, U.tone.w);
     acc = over(acc, vec3f(0.96, 0.99, 1.0), (0.24 * halo + 0.6 * core) * glow * water);
 
     // -- close in, the wind on the water: patches of glitter drifting slowly
-    let near = smoothstep(2.6, 4.2, zoom) * U.tone.y;
+    let near = smoothstep(2.6, 4.2, zoom) * U.tone.y * (1.0 - U.tone.w);
     if (near > 0.0) {
         let gusts = smoothstep(-0.4, 1.1, gnoise(g * R / (420.0 * reading) + vec3f(0.0, tm * 0.02, tm * 0.03)) / 0.185);
         let cell = 15.0 * reading;
@@ -171,7 +172,8 @@ fn contour(q: f32, fw: f32) -> vec2f {
         let breaking = 0.5 + 0.5 * cos(6.2832 * arriving);
         let lace = 0.6 + 0.4 * smoothstep(-0.8, 0.8, gnoise(g * R / (5.0 * reading)) / 0.185);
         let foam = exp(-sq(max(shore - 0.3 * reading, 0.0) / ((0.8 + 1.1 * breaking) * reading))) * lace;
-        acc = over(acc, vec3f(1.0), (0.28 * swell * fade + 0.8 * foam) * surfing * water);
+        // (by night the foam is a line, not a glare)
+        acc = over(acc, vec3f(1.0), (0.28 * swell * fade + 0.8 * foam) * surfing * water * mix(1.0, 0.35, U.pad.x));
     }
 
     // -- touched: rings spreading on the water from each touch

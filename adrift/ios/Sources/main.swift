@@ -38,6 +38,7 @@ final class AdriftView: UIView {
         shell = assets.withCString { adrift_new(Unmanaged.passUnretained(metal).toOpaque(), w, h, scale, $0) }
         if shell == nil { NSLog("adrift: the library did not start"); return }
         adrift_set_reduce_motion(shell, UIAccessibility.isReduceMotionEnabled)
+        adrift_set_night(shell, traitCollection.userInterfaceStyle == .dark)
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("adrift.json").path
         docs.withCString { adrift_store(shell, $0) }
         NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
@@ -69,6 +70,11 @@ final class AdriftView: UIView {
         guard let shell else { return }
         adrift_frame(shell, link.targetTimestamp)
         if adrift_take_haptic(shell) { haptic.impactOccurred() }
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        if let shell { adrift_set_night(shell, traitCollection.userInterfaceStyle == .dark) }
     }
 
     override var canBecomeFirstResponder: Bool { true }

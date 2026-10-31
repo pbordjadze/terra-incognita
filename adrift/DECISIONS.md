@@ -120,3 +120,19 @@ app; `CameraControl` owns the camera's motion). Rulings from the merge:
 - **R2 for Engineering:** the silver (nearest drifter) wired when Truth hands the track; CI's IPA
   green and the first SideStore build; the web link republished; the frame's budget measured on the
   device; `tools/adrift/lookbench` and `touch-standalone` retired as `adrift-check` covers them.
+
+## 8. R2 closed; the first build on main; R3 (Oct 31, 09:05 UTC)
+
+R2 landed from all three crafts (Truth: the put velocity, the drifter's window with its dates, no
+maybe on land; Visual: the bloom from the float, the eased rest, the night with the Black Marble
+lights, the silver with its label, the lamp on Put; Motion: Press/Unpress/Redo, the date band on the
+drawn date, 24 plans passing on the real globe) and `adrift` was merged into `main` at 480529d: the
+first Adrift build to the SideStore source is main's adrift.yml run 14. Rulings:
+
+- **The device builds on every push of `adrift`** (two minutes of a Mac each), so the integration
+  branch never needs a tag commit; and crafts' merges are batched between runs, since each push
+  restarts the branch's one run.
+- **R3** is judged against the device: the owner's captures (a fling toward the pole, the beat under
+  a finger) decide Motion's remaining knobs; Visual's remaining knobs wait for the same captures; Truth
+  sets the maybes' count and step the honesty needs, for the device budget. Each craft sends its
+  exit-interview answers when R3 is done.

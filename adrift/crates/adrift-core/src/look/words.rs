@@ -16,6 +16,8 @@ pub struct GlyphInstance {
     pub ink: [f32; 4],
     /// the halo's colour and alpha: what is under the glyph (the sea's tone over the globe, the paper's below)
     pub halo: [f32; 4],
+    /// a place on the globe (unit vector, w 1) the rect is offset from: a label; w 0 for words on the screen
+    pub anchor: [f32; 4],
 }
 
 #[repr(C)]
@@ -31,7 +33,7 @@ pub struct WordsUniform {
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: std::mem::size_of::<GlyphInstance>() as u64,
     step_mode: wgpu::VertexStepMode::Instance,
-    attributes: &wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4, 3 => Float32x4],
+    attributes: &wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4, 3 => Float32x4, 4 => Float32x4],
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -96,6 +98,17 @@ impl Face {
         f.glyphs.get(&c.to_string()).or_else(|| f.glyphs.get("?")).expect("a glyph")
     }
 
+    /// A label: a line anchored to a place on the globe, its left edge `dx` points right of the place
+    /// and its baseline `dy` points below it (negative above), hidden past the limb.
+    pub fn label(&self, line: &Line, place: [f32; 3], dx: f32, dy: f32, halo: [f32; 4]) -> Vec<GlyphInstance> {
+        let w = self.width(line);
+        let mut out = self.layout(line, dx + w / 2.0, dy, halo);
+        for g in &mut out {
+            g.anchor = [place[0], place[1], place[2], 1.0];
+        }
+        out
+    }
+
     /// Glyphs for a line centred at x on the baseline y (points, y down), each on a halo of `halo`.
     pub fn layout(&self, line: &Line, x: f32, baseline: f32, halo: [f32; 4]) -> Vec<GlyphInstance> {
         let s = line.size / self.em;
@@ -109,6 +122,7 @@ impl Face {
                     uv: [g.x / self.width, g.y / self.height, g.w / self.width, g.h / self.height],
                     ink: line.ink,
                     halo,
+                    anchor: [0.0, 0.0, 0.0, 0.0],
                 });
             }
             pen += g.advance * s + line.tracking * line.size;
@@ -182,7 +196,7 @@ impl Words {
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
-    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool) {
+    pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, credits: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
         let foot = under.min(height - 72.0 * reading);
         let bottom = height - 12.0 * reading;
@@ -202,7 +216,23 @@ impl Words {
             let y = foot + 19.0 * reading;
             glyphs.extend(self.face.layout(&Line { text: note, style: Style::Italic, size: 13.0 * reading, ink: note_ink, tracking: 0.0 }, cx, y, halo_for(y)));
         }
-        glyphs.extend(self.face.layout(&Line { text: credits, style: Style::Regular, size: 10.0 * reading, ink: credit_ink, tracking: 0.0 }, cx, bottom, halo_for(bottom)));
+        // the credits: one line along the foot, or two when the line would overrun the screen (wrapped at
+        // the separator nearest its middle: never shrunk under 10 points, never cut)
+        fn credit_line<'a>(text: &'a str, reading: f32, ink: [f32; 4]) -> Line<'a> {
+            Line { text, style: Style::Regular, size: 10.0 * reading, ink, tracking: 0.0 }
+        }
+        if self.face.width(&credit_line(credits, reading, credit_ink)) <= width - 24.0 * reading || !credits.contains(" \u{b7} ") {
+            glyphs.extend(self.face.layout(&credit_line(credits, reading, credit_ink), cx, bottom, halo_for(bottom)));
+        } else {
+            let seps: Vec<usize> = credits.match_indices(" \u{b7} ").map(|(i, _)| i).collect();
+            let mid = credits.len() / 2;
+            let at = *seps.iter().min_by_key(|&&i| (i as i64 - mid as i64).abs()).unwrap();
+            let (first, second) = (&credits[..at], &credits[at + " \u{b7} ".len()..]);
+            let up = bottom - 13.0 * reading;
+            glyphs.extend(self.face.layout(&credit_line(first, reading, credit_ink), cx, up, halo_for(up)));
+            glyphs.extend(self.face.layout(&credit_line(second, reading, credit_ink), cx, bottom, halo_for(bottom)));
+        }
+        glyphs.extend_from_slice(labels);
         self.prepare(gpu, &glyphs);
     }
 

@@ -319,6 +319,49 @@ fn a_put_float_starts_with_the_measured_velocity_and_a_track_has_real_dates() {
     let v = t.xyz[t.point];
     assert!((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1.0).abs() < 1e-4, "unit vectors");
     let label = t.label();
-    eprintln!("{label} ({:.0} km off)", t.km);
+    let w = t.window(30);
+    assert!(w.contains(&t.point) && w.len() <= 61 && w.len() >= 31);
+    let short = t.label_window(w.clone());
+    eprintln!("{label} ({:.0} km off); the month about it: {short}, {} points", t.km, w.len());
+    assert!(short.starts_with("Drifter ") && short.contains(" to "));
     assert!(label.starts_with("Drifter ") && label.contains(" to ") && label.contains("201") || label.contains("202"));
+}
+
+/// No maybe is ever on land: the held float of `gulf-stream-close.json`, its paths flown twenty
+/// days on the CPU and on the GPU, every one on the water at the end and after every step.
+#[test]
+fn no_maybe_lies_on_land() {
+    use super::gpu::{GpuPath, Maybes, Params};
+    use crate::gpu::{Gpu, Textures};
+    let r = rules();
+    let from = LonLat { lon: -75.5, lat: 33.0 };
+    let (day0, days, dt, seed, n) = (180.0, 20.0, 0.25, 7u64, 2000u32);
+    let ends = r.flights(Drift::put(from), day0, day0 + days, dt, seed, n);
+    let ashore: Vec<_> = ends.iter().filter(|f| r.coast.is_land(f.drift.at)).collect();
+    assert!(ashore.is_empty(), "{} of {n} CPU maybes end on land, e.g. {:?}", ashore.len(), ashore.first().map(|f| f.drift.at));
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let gpu = match pollster_block(Gpu::new(&instance, None)) {
+        Ok(g) => g,
+        Err(_) => return,
+    };
+    let assets = DirAssets(assets());
+    let textures = Textures::load(&gpu, &assets, 6).unwrap();
+    let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
+    let paths: Vec<GpuPath> = (1..=n)
+        .map(|k| {
+            let d = r.put(from, day0, seed, k);
+            GpuPath { lon: from.lon as f32, lat: from.lat as f32, held: 0, measured: 1.0, eddy_u: d.eddy.0, eddy_v: d.eddy.1 }
+        })
+        .collect();
+    maybes.seed(&gpu, &paths);
+    let mut day = day0;
+    let mut worst = 0usize;
+    while day < day0 + days - 1e-9 {
+        maybes.step(&gpu, Params::new(&r, day, dt, seed, n), true);
+        day += dt;
+        let got = maybes.read(&gpu, n);
+        let on_land = got.iter().filter(|p| r.coast.is_land(LonLat { lon: p.lon as f64, lat: p.lat as f64 })).count();
+        worst = worst.max(on_land);
+    }
+    assert_eq!(worst, 0, "GPU maybes on land at some step");
 }

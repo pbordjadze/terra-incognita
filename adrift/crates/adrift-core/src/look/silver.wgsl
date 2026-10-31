@@ -53,7 +53,7 @@ fn fs(i: SegOut) -> @location(0) vec4<f32> {
     let d = length(i.local - vec2<f32>(t, 0.0));
     var acc = vec4<f32>(0.0);
     let edge = vec3<f32>(0.290, 0.337, 0.388);
-    let wire = mix(vec3<f32>(0.867, 0.890, 0.914), vec3<f32>(0.863, 0.890, 0.918), n);
+    let wire = mix(vec3<f32>(0.867, 0.890, 0.914), vec3<f32>(0.902, 0.878, 0.839), n);   // (by night a hair warmer than the running light's white, so the two are not one thread)
     if (S.layer < 0.5) {
         acc = over(acc, edge, (1.0 - n) * S.rise * cover(d - i.w * 0.5));
     } else {

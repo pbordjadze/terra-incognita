@@ -6,7 +6,7 @@
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
       "subtitle": "The world, closer and closer",
-      "localizedDescription": "A wandering atlas in the making: a live globe, and a workbench of prototypes to try on it, from illustrated natural histories to geographic studies and the first films. Offline, apart from the workbench's optional prototype packs.",
+      "localizedDescription": "A wandering atlas in the making: a live globe, its ground, sea and clouds as satellites and buoys saw them, and a workbench of prototypes to try on it. Offline, apart from the workbench's optional prototype packs.",
       "icon": "icon.png",
       "iconSource": "ci/sidestore-icon.png",
       "tintColor": "#C9A243",

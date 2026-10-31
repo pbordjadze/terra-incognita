@@ -2,13 +2,11 @@ import SwiftUI
 
 /// Longer words and their sources a pack shows over the globe (terra.js runtime 3, `terra.panel`):
 /// what you're looking at first, then why it's interesting, then where it comes from. Plain text only.
-/// Each text may name the Wikipedia article on its subject (`wikipedia`): with Wikipedia's words on,
-/// the article's card stands where the paragraph was (`WikipediaWords`).
+/// (A text's `wikipedia` key, from when the reader could have Wikipedia's words instead, is ignored.)
 struct PackPanel: Identifiable, Equatable {
     struct Section: Equatable {
         let title: String
         let text: String
-        var article: WikipediaArticle? = nil
     }
     struct Source: Equatable {
         let title: String
@@ -20,22 +18,18 @@ struct PackPanel: Identifiable, Equatable {
     let pack: String
     let title: String
     let text: String
-    let article: WikipediaArticle?
     let sections: [Section]
     let sources: [Source]
 
-    /// From `terra.panel.show(content)`, bounded: a panel is a page or two, not a book. `index` resolves
-    /// the texts' `wikipedia` keys (the pack's own articles over the app's).
-    init(_ pack: String, _ content: [String: Any], index: WikipediaIndex = .shared) {
+    /// From `terra.panel.show(content)`, bounded: a panel is a page or two, not a book.
+    init(_ pack: String, _ content: [String: Any]) {
         func text(_ x: Any?, _ limit: Int) -> String { String(((x as? String) ?? "").prefix(limit)) }
-        func lookup(_ x: Any?) -> WikipediaArticle? { index[(x as? String).map { String($0.prefix(200)) }] }
         self.pack = pack
         title = text(content["title"], 120)
         self.text = text(content["text"], 4000)
-        self.article = lookup(content["wikipedia"])
         sections = ((content["sections"] as? [Any]) ?? []).prefix(12).compactMap { item in
             guard let s = item as? [String: Any] else { return nil }
-            return Section(title: text(s["title"], 120), text: text(s["text"], 4000), article: lookup(s["wikipedia"]))
+            return Section(title: text(s["title"], 120), text: text(s["text"], 4000))
         }
         sources = ((content["sources"] as? [Any]) ?? []).prefix(24).compactMap { item in
             guard let s = item as? [String: Any] else { return nil }
@@ -48,9 +42,7 @@ struct PackPanel: Identifiable, Equatable {
     static func == (a: PackPanel, b: PackPanel) -> Bool { a.id == b.id }
 }
 
-/// The panel's sheet: half height (the globe stays live above it), pulled up for more. With Wikipedia's
-/// words on, each paragraph gives way to its article's card (a tip stays; a paragraph with no article
-/// goes, its heading with it), and the sources go too: only Wikipedia's words are left to read.
+/// The panel's sheet: half height (the globe stays live above it), pulled up for more.
 struct PackPanelView: View {
     let panel: PackPanel
     @Environment(\.dismiss) private var dismiss
@@ -58,7 +50,6 @@ struct PackPanelView: View {
     private static let ink = Color(red: 0.145, green: 0.165, blue: 0.18)
     private static let faint = Color(red: 0.36, green: 0.38, blue: 0.39)
     private static let paper = Color(red: 0.965, green: 0.949, blue: 0.906)
-    private var wikipedia: Bool { WikipediaWords.shared.on }
 
     var body: some View {
         ScrollView {
@@ -69,22 +60,18 @@ struct PackPanelView: View {
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("packPanelTitle")
                 }
-                Words(text: panel.text, article: panel.article) { text in paragraphs(text) }
+                paragraphs(panel.text)
                 ForEach(Array(panel.sections.enumerated()), id: \.offset) { _, section in
-                    if let article = section.article, wikipedia {
-                        WikipediaCard(article: article)
-                    } else if !wikipedia || WordsRule.isTip(section.text) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            if !section.title.isEmpty {
-                                Text(section.title)
-                                    .font(.system(.headline, design: .serif))
-                                    .accessibilityAddTraits(.isHeader)
-                            }
-                            paragraphs(section.text)
+                    VStack(alignment: .leading, spacing: 6) {
+                        if !section.title.isEmpty {
+                            Text(section.title)
+                                .font(.system(.headline, design: .serif))
+                                .accessibilityAddTraits(.isHeader)
                         }
+                        paragraphs(section.text)
                     }
                 }
-                if !panel.sources.isEmpty && !wikipedia {
+                if !panel.sources.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Sources")
                             .font(.system(.subheadline, design: .serif).weight(.semibold))

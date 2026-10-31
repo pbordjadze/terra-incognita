@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Installs the app on a booted simulator and screenshots the film at moments of it.
-#   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid> <t1> <t2> ...
-# Each moment is a launch with `-film <T>` (the film held at T seconds; Debug builds only), a wait,
-# and a screenshot; with LOOKS="id id ..." in the environment, each moment of each look (`-look`);
-# with GLOBE=1, the globe too, in each style (`-globe`, `-globeStyle`, held at a place with
-# `-globe-at`, a country lit with `-globe-select`); always the playground's plain globe, workbench and
-# two prototypes (`-workbench`, `-prototype <id>`), unless STAGE_ONLY=1; with PLACES="name:lon,lat,zoom
-# ...", the stage at rest at each (ci/fast.py: the ground's month, the clouds' drift and the sea held).
+# Installs the app on a booted simulator and screenshots it: each shot is a launch, a wait and a
+# screenshot.
+#   ci/sim_shots.sh <TerraIncognita.app> <outdir> <udid>
+# With GLOBE=1, the globe at places (held with `-globe-at`, a country lit with `-globe-select`) and by
+# night; always the playground's plain globe, workbench and the delivery check (`-workbench`,
+# `-prototype <id>`), unless STAGE_ONLY=1; with PLACES="name:lon,lat,zoom ...", the stage at rest at each
+# (ci/fast.py: the ground's month, the clouds' drift and the sea held).
 # Every simulator command runs under a watchdog, so one that hangs costs a minute, not the job.
 set -uo pipefail
 APP="$1"; OUT="$2"; UDID="$3"; shift 3
@@ -38,7 +37,6 @@ shot() {
 }
 WAIT=20
 SINCE=$(date '+%Y-%m-%d %H:%M:%S')
-# the globe first (the film's moments can take long, and a timeout should cut them, not it)
 # the playground: the plain globe, the workbench, prototypes on the globe
 if [ -n "${PLACES:-}" ]; then
   # (as tools/metal/metal.py's `shot` draws the same names: month 10, day 0.4 of the drift, the sea at 12 s)
@@ -51,23 +49,13 @@ fi
 if [ "${STAGE_ONLY:-}" != 1 ]; then
   shot plain -globe-at -40 22 1
   shot workbench -workbench
-  shot camelid -prototype camelid
   shot hello-pack -prototype hello-pack
 fi
 if [ "${GLOBE:-}" = 1 ]; then
-  # each style (the defaults' `globeStyle`, set by the launch argument)
-  shot globe-whole -globe -globeStyle wikipedia -globe-at -83 28 1
-  shot globe-italy -globe -globeStyle wikipedia -globe-at 12 44 2.6 -globe-select Italy
-  shot globe-lakes -globe -globeStyle wikipedia -globe-at -84 41 4.5 -globe-select "United States of America"
-  shot persian-whole -globe -globeStyle persian -globe-at 30 25 1
-  shot persian-iran -globe -globeStyle persian -globe-at 53 33 1 -globe-select Iran
-  shot persian-region -globe -globeStyle persian -globe-at 53 33 4.5 -globe-select Iran
-  shot persian-himalaya -globe -globeStyle persian -globe-at 84 31 7 -globe-select Nepal
-fi
-if [ -n "${LOOKS:-}" ]; then
-  for L in $LOOKS; do for T in "$@"; do shot "$L-t$(printf '%03d' "$T")" -look "$L" -film "$T"; done; done
-else
-  for T in "$@"; do shot "t$(printf '%03d' "$T")" -film "$T"; done
+  shot globe-whole -globe-at -83 28 1
+  shot globe-italy -globe-at 12 44 2.6 -globe-select Italy
+  shot globe-lakes -globe-at -84 41 4.5 -globe-select "United States of America"
+  shot globe-night -prototype night -globe-at 78 26 3.2 -night-time 0
 fi
 run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
 step done

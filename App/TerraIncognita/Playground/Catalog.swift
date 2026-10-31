@@ -26,66 +26,7 @@ enum Catalog {
                                  path: path, breathes: breathes)
     }
 
-    static let native: [Prototype] = [camelid, QuietGlobe.names, QuietGlobe.clouds, QuietGlobe.night, QuietGlobe.frame,
-                                      persian, wikipedia, stillSea, film]
-
-    /// The dromedary in Arabia opens the illustrated lineage (`Camelid/`), on the globe itself. Its
-    /// doorway stirs: the camel walks a little way over the Nafud's sands and back, breathing, facing
-    /// the way it goes (the picture faces east); from afar, a glint.
-    static let camelid = Prototype(
-        id: "camelid", title: "Camel and Llama",
-        summary: "An illustrated lineage of the camels, from North America to Arabia and the Andes. Tap the dromedary.",
-        wikipedia: "Dromedary",
-        anchor: GlobeCamera(lon: 46, lat: 24, zoom: 1.5),
-        doorway: doorway(CamelidArt.image(.dromedary), lon: 46, lat: 24, label: "Dromedary camel",
-                         size: CGSize(width: 40, height: 34), minZoom: 1.35, every: 11,
-                         path: GlobeMarker.Path(points: [(lon: 45.7, lat: 23.9), (lon: 46.3, lat: 24.1)], seconds: 140, loop: .back),
-                         breathes: true)
-    ) { stage in
-        guard let image = CamelidArt.image(.dromedary) else { return }
-        stage.place(GlobeMarker(id: "camelidAnimal", lon: 46, lat: 24, look: .picture(image), size: CGSize(width: 76, height: 64),
-                                label: "Dromedary camel", hint: "Inspect this animal", breathes: true) { [weak stage] in
-            stage?.openLens { CamelidExperience.lens(on: $0, close: $1) }
-        })
-    }
-
-    /// The globe's second style, parked: the ground is the base (`Globe.metal`'s P_).
-    static let persian = Prototype(
-        id: "persian", title: "The Persian globe",
-        summary: "The globe in colours and a frame studied from a 1529 Persian manuscript.",
-        shelf: .parked
-    ) { stage in
-        stage.style = .persian
-    }
-
-    /// The globe's first base style, parked when the ground became the base (October 28, 2026):
-    /// Wikipedia's location-map colours, the political map.
-    static let wikipedia = Prototype(
-        id: "wikipedia", title: "The Wikipedia globe",
-        summary: "The political map in Wikipedia's location-map colours, as the globe was until the ground.",
-        shelf: .parked
-    ) { stage in
-        stage.style = .wikipedia
-    }
-
-    /// The sea as it was before it moved, parked when the ocean joined the stage (October 28, 2026):
-    /// no currents, light, glitter, surf or rings.
-    static let stillSea = Prototype(
-        id: "still-sea", title: "The still sea",
-        summary: "The globe with its sea still, as it was before the currents, the light on the water and the surf.",
-        shelf: .parked
-    ) { stage in
-        stage.stillSea()
-    }
-
-    /// The first atlas, parked: the plate films and their five looks (`Atlas/`), made only when opened.
-    static let film = Prototype(
-        id: "film", title: "The film",
-        summary: "A flight from the whole world down to a street, in five looks. Touch to wander.",
-        shelf: .parked, ownScreen: true
-    ) { stage in
-        stage.present("film") { FilmScreen() }
-    }
+    static let native: [Prototype] = [QuietGlobe.names, QuietGlobe.clouds, QuietGlobe.night, QuietGlobe.frame]
 }
 
 /// A glint: a small warm light with four fine rays, drawn once, on nothing (the same recipe as

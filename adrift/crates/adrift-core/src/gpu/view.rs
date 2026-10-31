@@ -18,6 +18,10 @@ pub struct View {
     /// The drawn motion's seconds.
     pub seconds: f64,
     pub clock: Clock,
+    /// How far the sea has settled to rest with the date held, 0..1 (eased by the app).
+    pub rest: f32,
+    /// 1 by night (the system's dark appearance, or a scene's).
+    pub night: f32,
 }
 
 impl View {
@@ -39,8 +43,8 @@ impl View {
             rot1: [m[1][0] as f32, m[1][1] as f32, m[1][2] as f32, 0.0],
             rot2: [m[2][0] as f32, m[2][1] as f32, m[2][2] as f32, 0.0],
             time: [self.seconds as f32, ma as f32, mb as f32, mix as f32],
-            tone: [1.0, if self.clock.running { 1.0 } else { 0.0 }, self.seconds as f32, 0.0],
-            _pad: [0.0; 4],
+            tone: [1.0, if self.clock.running { 1.0 } else { 0.0 }, self.seconds as f32, self.rest],
+            _pad: [self.night, 0.0, 0.0, 0.0],
         }
     }
 }
@@ -59,8 +63,10 @@ pub struct ViewUniform {
     pub rot2: [f32; 4],
     /// seconds; this month (0 = January), the next, how far between
     pub time: [f32; 4],
-    /// x how much shows; y 1 while the date runs, 0 held; z the drawn motion's seconds
+    /// x how much shows; y 1 while the date runs, 0 held; z the drawn motion's seconds; w how far
+    /// the sea has settled to rest (eased)
     pub tone: [f32; 4],
+    /// x 1 by night
     pub _pad: [f32; 4],
 }
 
@@ -72,7 +78,7 @@ struct View {
     rot1: vec4f,
     rot2: vec4f,
     time: vec4f,    // seconds; this month (0 = January), the next, how far between
-    tone: vec4f,    // x how much shows; y 1 while the date runs; z the drawn motion's seconds
-    pad: vec4f,
+    tone: vec4f,    // x how much shows; y 1 while the date runs; z the drawn motion's seconds; w the sea's rest
+    pad: vec4f,     // x 1 by night
 };
 "#;
