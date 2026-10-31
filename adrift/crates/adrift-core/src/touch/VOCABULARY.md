@@ -38,8 +38,10 @@ The device shell turns touches into `PointerEvent`s (one id a finger, times in s
 `Gestures::shaken` on the system's shake, plays a light haptic when it applies `Put` or `Hold` (the
 beat is felt as well as seen, Terra's `hold` feel), and reads Reduce Motion into `App`. The web
 shell forwards pointer events the same way, `Gestures::key` for ⌘Z (Ctrl on other systems) and
-`Gestures::wheel` for a mouse's wheel or a trackpad's pinch. The look draws the date inside
-`touch::date_band(frame)`: the middle half of the width, 44 points tall, 24 above the bottom edge.
+`Gestures::wheel` for a mouse's wheel or a trackpad's pinch. The date's touchable rect is the
+look's own (`Look::date_bounds()`, the drawn glyphs with their halo's room, once Visual's look is
+on `adrift`; `probe.rs` reads it through `App`); until then `touch::date_band(frame)` stands in:
+the middle half of the width, 44 points tall, 24 above the bottom edge.
 
 ## The intents (model.rs, Engineering's) and how the vocabulary maps onto them
 
