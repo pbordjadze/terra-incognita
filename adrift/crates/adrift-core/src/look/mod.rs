@@ -3,6 +3,7 @@
 //! plain forms. Draw order (§3): ground, sea, wakes, maybes, drifter, floats, lamp, chrome.
 
 pub mod ground;
+pub mod maybes;
 pub mod sea;
 pub mod sprites;
 
@@ -16,5 +17,6 @@ pub fn wgsl(own: &str) -> String {
 }
 
 pub use ground::GroundPass;
+pub use maybes::MaybesPass;
 pub use sea::SeaPass;
 pub use sprites::{Instance, SpritePass};

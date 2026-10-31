@@ -2,9 +2,9 @@
 //! intents (Engineering; DECISIONS.md §2).
 
 use crate::assets::Assets;
-use crate::gpu::{Blit, Budget, GlyphInstance, Gpu, Stage, Text, TextPass, Textures, View, ViewUniform};
+use crate::gpu::{Blit, Budget, GlyphInstance, Gpu, Maybes, Stage, Text, TextPass, Textures, View, ViewUniform};
 use crate::look::sprites::{KIND_BEAD, KIND_FLOAT, KIND_MAYBE};
-use crate::look::{sea::Ripple, GroundPass, Instance, SeaPass, SpritePass};
+use crate::look::{sea::Ripple, GroundPass, Instance, MaybesPass, SeaPass, SpritePass};
 use crate::model::*;
 use crate::sea::Rules;
 use crate::touch::gestures::CameraMove;
@@ -75,6 +75,10 @@ pub struct App {
     text_pass: TextPass,
     blit: Blit,
     stage: Option<Stage>,
+    maybes: Maybes,
+    maybes_pass: MaybesPass,
+    /// The float whose maybes are in the buffer, and the day they were run to.
+    maybes_of: Option<(u32, f64)>,
     pub budget: Budget,
     /// What the stage last showed: the view uniform's bytes and the months, to know when to redraw.
     stage_shown: Option<(ViewUniform, (u32, u32))>,
@@ -105,6 +109,8 @@ pub const RATE: f64 = 2.0;
 const SUBSTEP: f64 = 0.25;
 /// Beads kept in a wake.
 const WAKE_MAX: usize = 400;
+/// Maybes run for a held float.
+pub const MAYBES: u32 = 2048;
 
 impl App {
     pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> anyhow::Result<App> {
@@ -157,6 +163,8 @@ impl App {
         let text_pass = TextPass::new(&gpu, &view_layout, &text);
         let blit = Blit::new(&gpu);
         let budget = Budget::new(ppp);
+        let maybes = Maybes::new(&gpu, &textures, MAYBES);
+        let maybes_pass = MaybesPass::new(&gpu, &view_layout);
         Ok(App {
             gpu,
             assets,
@@ -173,6 +181,9 @@ impl App {
             text_pass,
             blit,
             stage: None,
+            maybes,
+            maybes_pass,
+            maybes_of: None,
             budget,
             stage_shown: None,
             stage_seconds: -1.0,
@@ -561,6 +572,22 @@ impl App {
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
         }
+        // a held float's maybes, run on the GPU from its put day to now (again as the day moves)
+        let held = self.floats.iter().find(|f| f.hand == Hand::Held).map(|f| (f.id, f.put_day, f.seed, f.wake.first().map_or(f.at, |b| b.at)));
+        match held {
+            Some((id, put_day, seed, origin)) => {
+                let rerun = self.maybes_of.map_or(true, |(i, d)| i != id || (self.clock.day - d).abs() > 0.5);
+                if rerun {
+                    let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
+                    self.maybes.run(&self.gpu, [origin.lon, origin.lat], put_day, self.clock.day, seed, n, SUBSTEP);
+                    self.maybes_of = Some((id, self.clock.day));
+                }
+            }
+            None => {
+                self.maybes.count = 0;
+                self.maybes_of = None;
+            }
+        }
         let instances = self.instances(&view);
         self.sprites.prepare(&self.gpu, &instances);
         let glyphs = self.chrome(&view);
@@ -580,6 +607,7 @@ impl App {
                 occlusion_query_set: None,
             });
             self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
+            self.maybes_pass.draw(&mut rp, &self.view_bind, &self.maybes);
             self.sprites.draw(&mut rp, &self.view_bind);
             self.text_pass.draw(&mut rp, &self.view_bind);
         }
