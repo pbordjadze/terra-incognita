@@ -16,8 +16,14 @@ source, and a web build opened by link. Nothing here is a web view; nothing is f
   `crates/adrift-web`: the WebGPU build. `ios/`: the device shell.
 - `data/`: the sheets the app loads, built by `tools/adrift/data/`; never hand-edited.
 
-Build and check on Linux:
+Build and check on Linux (about two seconds a render on the software driver):
 
     bash tools/adrift/linux-setup.sh
-    cargo build --manifest-path adrift/Cargo.toml
-    cargo run --manifest-path adrift/Cargo.toml -p adrift-check -- render adrift/crates/adrift-check/scenes/atlantic.json out.png
+    python3 tools/adrift/assets.py adrift/build/assets --link
+    cd adrift && cargo run -p adrift-check -- render crates/adrift-check/scenes/atlantic.json build/out/a.png --size 1179x2556 --ppp 3
+    cargo run -p adrift-check -- play crates/adrift-check/plans/put-and-drift.json build/out/put
+
+The web build: `bash tools/adrift/web-build.sh` (a directory for any static server; WebGPU: Safari
+26, Chrome, Edge). The device: `adrift/ios/build.sh` on a Mac, or `[adrift-ipa]` in a branch commit's
+first line for CI's unsigned IPA (`.github/workflows/adrift.yml`); on `main` every build is published
+to the SideStore source beside Terra.
