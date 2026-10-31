@@ -175,8 +175,14 @@ pub struct LookFloat {
     pub lit: f32,
     /// Under a resting finger: its maybes out.
     pub held: bool,
-    /// The one whose maybes and drifter are shown now (held, pressed, chosen or ridden; R5).
+    /// The one whose maybes and drifter are shown now (held, pressed, chosen or ridden; R5): with
+    /// several clouds out (R6) the one in front, the last chosen or the one under the finger.
     pub chosen: bool,
+    /// Its cloud is out (R6: one of `LookState.clouds`), in front or not.
+    pub shown: bool,
+    /// Where it was put (its first leg's place: where it started) and on what day (`Clock.day`) (R6).
+    pub origin: LonLat,
+    pub put_day: f64,
     /// One bead a day, oldest first (the last `WAKE_DAYS` are drawn).
     pub wake: Vec<LookBead>,
     /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
@@ -192,14 +198,35 @@ pub struct LookBead {
     pub measured: f32,
 }
 
+/// One cloud of maybes out (R6: several at once). Its paths are `count` from `base` in Truth's
+/// buffer (`sea::Maybes`), k = 1..=count; its lamp is the float `id` (k = 0, the same rules).
+#[derive(Clone, Copy, Debug)]
+pub struct LookCloud {
+    pub id: u32,
+    /// Where its lamp is now, and where it was put (the cloud's leg: where it started).
+    pub at: LonLat,
+    pub origin: LonLat,
+    pub base: u32,
+    pub count: u32,
+    /// 0..1 as it blooms out (eased) and folds back.
+    pub bloom: f32,
+    /// The one in front (the last chosen, or the one under the finger): its silver and its veil.
+    pub front: bool,
+}
+
 /// Everything the marks draw this frame. The app fills it from its state; the look reads nothing else.
 #[derive(Clone, Debug, Default)]
 pub struct LookState {
     pub floats: Vec<LookFloat>,
+    /// The clouds out, in the order chosen (the front one last) (R6).
+    pub clouds: Vec<LookCloud>,
+    /// The days the clouds are still behind the date, the most of any (0 when they have caught up):
+    /// a scrub faster than they can follow shows it here (R6).
+    pub behind: f32,
     /// A finger resting on the sea before a float is put: where, and how far through the beat (0..1:
     /// Motion's `thicken(now - since)` from its `Press { at, since }`; `Unpress` clears it).
     pub resting: Option<(LonLat, f32)>,
-    /// 0..1 as the held float's maybes (the GPU buffer `gpu::Maybes`) bloom out and fold back.
+    /// 0..1 as the front cloud blooms out and folds back (each cloud's own is in `clouds`).
     pub bloom: f32,
     /// The nearest real drifter's track, in order, where it passed the held float.
     pub drifter: Vec<LonLat>,
@@ -302,13 +329,14 @@ impl Look {
             beads.extend(b);
         }
         self.wake.prepare(gpu, &beads);
-        // the maybes bloom from the held or chosen float in its own hue (the last place and hue are kept
-        // while they fold)
+        // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
+        // silver are the front one's (its place and hue kept while it folds)
+        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom }).collect();
+        self.maybes.prepare(gpu, &draws, n);
         if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);
             self.hue = lamp_hue(f.id);
         }
-        self.maybes.prepare(gpu, self.bloom_from, state.bloom, n, self.hue);
         self.veil.prepare(gpu, self.bloom_from, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n, self.hue);
@@ -350,15 +378,21 @@ impl Look {
         self.words.date_bounds
     }
 
+    /// The panel's rows, if the look draws one (R6): each lamp's id and its rect, x, y, w, h in points
+    /// (y down), after a `prepare`; Motion's probe answers a touch there. Empty until Visual draws it.
+    pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
+        self.words.panel_bounds.clone()
+    }
+
     /// Where the credit line is drawn, x, y, w, h in points (y down), after a `prepare`: a tap on it
     /// opens the page of credits (Truth's D2); the page closes on any tap.
     pub fn credit_bounds(&self) -> Option<[f32; 4]> {
         self.words.credit_bounds
     }
 
-    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes, count: u32) {
+    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes) {
         self.wake.draw(rp, view_bind);
-        self.maybes.draw(rp, view_bind, maybes, count);
+        self.maybes.draw(rp, view_bind, maybes);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
         self.words.draw(rp, view_bind);

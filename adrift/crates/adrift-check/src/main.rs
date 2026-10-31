@@ -193,6 +193,7 @@ fn play(args: &[String]) -> Result<()> {
         running: true,
         floats: plan.floats.clone(),
         hold: None,
+        choose: Vec::new(),
         seconds: 0.0,
         night: plan.night,
         credits_open: plan.credits_open,
@@ -337,10 +338,13 @@ fn play(args: &[String]) -> Result<()> {
             }
             if let Some(c) = e.get("chosen") {
                 // a float's id, or true/false for any or none (R5)
-                let ok = match (c.as_bool(), c.as_u64()) {
-                    (Some(b), _) => app.chosen.is_some() == b,
-                    (_, Some(id)) => app.chosen == Some(id as u32),
-                    _ => c.is_null() && app.chosen.is_none(),
+                // (R6: several may be chosen; an id means it is the front one, the last chosen; an array
+                // is the whole set in order)
+                let ok = match (c.as_bool(), c.as_u64(), c.as_array()) {
+                    (Some(b), _, _) => !app.chosen.is_empty() == b,
+                    (_, Some(id), _) => app.chosen.last() == Some(&(id as u32)),
+                    (_, _, Some(ids)) => ids.iter().map(|v| v.as_u64().map(|x| x as u32)).collect::<Option<Vec<u32>>>() == Some(app.chosen.clone()),
+                    _ => c.is_null() && app.chosen.is_empty(),
                 };
                 if !ok {
                     bad.push(format!("chosen {:?} not {c}", app.chosen));

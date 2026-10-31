@@ -255,3 +255,52 @@ the water.
 Seams at the head named in the round's message: `Intent::Choose`/`Unchoose`, `App.chosen`,
 `LookFloat.id`/`chosen`, the check's `chosen` expectation. The path grid and the maybes' budget
 follow on `adrift` within the hour; the crafts need not wait for them.
+
+## 13. R6 opens: the third device verdict (Oct 31, 19:15 UTC)
+
+The owner on build 40 (painting-company row 196 has the words): the best thing yet, and five ideas.
+In short: the night's lights don't distract, which is right, but could be lovely enough to be gazed
+at for themselves, without distracting; a lamp's maybes, small warm dots, are hard to tell from the
+cities' lights at night (one problem with the last: they share a colour and a size, so one hand
+on both); dropping a lamp and scrubbing fast through time is the joy, so the scrub must be quick
+enough that going back to look is free, and a speed limit fits, since every maybe is a seeded
+flight and a scrub back replays the same cloud; two lamps dropped near each other: can even their
+clouds diverge, several chosen at once and scrubbed together, the differences seen in a way as
+natural as the rest (and the clouds diverge because the currents make them, not because the drawing
+says so); and a lamp at the globe's edge is clumsy beside the rest: a very small panel off the globe
+of every lamp out there, and on the globe only the possibilities, each equal (the lamp is maybe
+k = 0 underneath, the same rules with its own seed, so it may be drawn as one possibility among the
+rest, and the panel holds where it was dropped). These are goals, not specs: creative answers are
+welcome, trimming freely is welcome, truth stays underneath.
+
+**Who owns which goal.**
+- *Engineering*: several clouds out at once and the scrub's cost with them (the seams below);
+  integration, the build, the measure.
+- *Visual*: the lights and the maybes as one problem (the night's lights beautiful enough to be the
+  centrepiece without distracting; a maybe never read as a city); the lamp as one possibility among
+  its maybes, each equal; the panel's look; several clouds at once and their differences seen
+  naturally; whatever the edge needs.
+- *Motion*: the panel's touch (choosing one, two or ten lamps; letting one go; where the hand finds
+  it), the scrub's speed limit and its feel, the edge's behaviour; the gestures for `ChooseAlso`.
+- *Truth*: whether two nearby lamps' clouds can diverge as the sea would make them (a shared eddy
+  field a maybe's index k lives in, a world per k, would let lamp A's k-th and lamp B's k-th meet
+  the same sea; or any better idea); the step's cost as several clouds run at once.
+
+**The seams (Engineering, at the head named in the round's message).**
+- `App.chosen` is a `Vec<u32>`, the front one last. `Intent::Choose { float }` makes it the only
+  one; `Intent::ChooseAlso { float }` adds it in front, or lets it go if it is chosen; `Unchoose`
+  lets all go; `Ride` adds its float in front (others stay); a float's going removes it.
+- `App::shown_ids()`: every float whose cloud is out (the chosen, the ridden, the pressed, the held;
+  the front last; at most `MAX_CLOUDS` = 8). Each has its own range of Truth's one buffer
+  (`MAYBES` = 2048 a cloud, `base = slot * MAYBES`), its own keeps and bloom, stepped
+  `MAYBES_BUDGET` = 24 half-days a frame each. `Params.base` and `Maybes::seed_at/keep_at` carry
+  the range (k is still 1..=count within it).
+- `LookState.clouds: Vec<LookCloud { id, at, origin, base, count, bloom, front }>`;
+  `LookState.behind` (the days the slowest cloud trails the date: a speed limit can read it);
+  `LookFloat.shown`, `origin` (its first leg's place: where it started) and `put_day`. The maybes
+  pass draws each cloud in its hue from its own uniform (`maybes::CloudDraw`); the veil and the
+  silver stay the front one's.
+- The panel: `Look::panel_bounds()` (Visual's, empty until drawn; `Words.panel_bounds` holds it) and
+  `App::panel_bounds()` for Motion's probe (a `Hit` for it is Motion's to add in `touch/`).
+- The check: a scene's `choose: [index, ...]`; a plan's `expect.chosen` takes an id (the front), a
+  bool, null, or the whole set as an array.

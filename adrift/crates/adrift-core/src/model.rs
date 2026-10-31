@@ -317,7 +317,10 @@ pub enum Intent {
     /// A float is chosen: its maybes and nearest drifter stay shown through zooming and panning
     /// until the sea is tapped or another is chosen (R5). `Ride` chooses its float too.
     Choose { float: u32 },
-    /// The choice is let go.
+    /// This float joins the chosen, or leaves them if it is chosen already (R6: several clouds out at
+    /// once, to compare; the last chosen is in front). `Choose` makes it the only one.
+    ChooseAlso { float: u32 },
+    /// The choice is let go (every chosen float).
     Unchoose,
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,

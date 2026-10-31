@@ -16,7 +16,7 @@ struct Params {
     seed_lo: u32,
     seed_hi: u32,
     count: u32,        // paths
-    _pad0: u32,
+    base: u32,         // the first path of this cloud in the buffer (R6: many clouds in one buffer); k = i + 1 within it
     _pad1: u32,
     _pad2: u32,
 };
@@ -312,8 +312,9 @@ fn maybes(@builtin(global_invocation_id) id: vec3<u32>) {
     if (i >= params.count) {
         return;
     }
-    let p = paths[i];
-    paths[i] = step(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
+    let j = params.base + i;
+    let p = paths[j];
+    paths[j] = step(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
 }
 
 @compute @workgroup_size(64)
@@ -322,6 +323,7 @@ fn maybes_flight(@builtin(global_invocation_id) id: vec3<u32>) {
     if (i >= params.count) {
         return;
     }
-    let p = paths[i];
-    paths[i] = flight(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
+    let j = params.base + i;
+    let p = paths[j];
+    paths[j] = flight(p.lon, p.lat, p.eddy_u, p.eddy_v, i + 1u);
 }
