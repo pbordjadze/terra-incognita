@@ -157,7 +157,9 @@ fn contour(q: f32, fw: f32) -> vec2f {
                      + 0.28 * exp(-off.y * off.y / 3.5 - off.x * off.x / 0.1);
             glint += wo * there * flash * star;
         }
-        acc = over(acc, vec3f(1.0), min(glint, 1.0) * 0.95 * near * water * smoothstep(0.0, 6.0, shore));
+        // (quieted: by day a little, by night to a trace, so the water's glitter never draws the eye from a
+        // float's lamp; the land's lights are what lives by night)
+        acc = over(acc, vec3f(1.0), min(glint, 1.0) * mix(0.6, 0.12, U.pad.x) * near * water * smoothstep(0.0, 6.0, shore));
     }
 
     // -- close in, the surf: swells coming in to the coast, a set at a time, and a line of foam
