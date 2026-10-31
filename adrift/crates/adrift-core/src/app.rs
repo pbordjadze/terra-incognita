@@ -126,6 +126,9 @@ pub struct App {
     pub seen: Vec<String>,
     /// A Put or a Hold happened since the shell last asked: the beat, felt (a light haptic).
     pub haptic: bool,
+    /// The frames since the shell last asked for the stats: their count, the sum and the worst of
+    /// their intervals, and how many redrew the stage.
+    frames: (u32, f64, f64, u32),
     /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
     pub credits_open: bool,
 }
@@ -219,6 +222,7 @@ impl App {
             seen: Vec::new(),
             haptic: false,
             credits_open: false,
+            frames: (0, 0.0, 0.0, 0),
         })
     }
 
@@ -532,6 +536,11 @@ impl App {
         self.last_t = Some(now);
         self.last_dt = dt;
         self.now = now;
+        if dt > 0.0 {
+            self.frames.0 += 1;
+            self.frames.1 += dt;
+            self.frames.2 = self.frames.2.max(dt);
+        }
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.tick(now, &*self);
         self.gestures = gestures;
@@ -799,6 +808,7 @@ impl App {
             self.gpu.queue.submit([enc.finish()]);
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
+            self.frames.3 += 1;
         }
         // a held float's maybes, run on the GPU from its put place and day to now (again as the day
         // moves): every path flies a quarter day at a time with the drifters' memory
@@ -859,6 +869,21 @@ impl App {
     pub fn frame(&mut self, target: &wgpu::TextureView, now: f64) {
         self.advance(now);
         self.render(target);
+    }
+
+    /// The frames since last asked, as one line for a log: how many, the mean and the worst interval
+    /// in milliseconds, how many redrew the stage, the stage's scale, the floats and the maybes. The
+    /// device prints it every few seconds; so does the web's console. The count starts again.
+    pub fn stats(&mut self) -> String {
+        let (n, sum, worst, stage) = std::mem::replace(&mut self.frames, (0, 0.0, 0.0, 0));
+        let mean = if n > 0 { sum / n as f64 * 1000.0 } else { 0.0 };
+        format!(
+            "adrift: {n} frames, {mean:.1} ms mean, {:.1} ms worst, stage redrawn {stage}x at {:.2}, {} floats, {} maybes",
+            worst * 1000.0,
+            self.budget.scale,
+            self.floats.len(),
+            self.maybes_of.map_or(0, |m| m.1)
+        )
     }
 
     /// Where the credit line is drawn, if the look has drawn it (x, y, w, h in points): the tap that

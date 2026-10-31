@@ -12,6 +12,8 @@ pub struct Shell {
     config: wgpu::SurfaceConfiguration,
     app: App,
     store: Option<std::path::PathBuf>,
+    /// When the frame stats were last printed.
+    stats_at: f64,
 }
 
 /// Makes the app over a CAMetalLayer. `scale` is the screen's pixels a point; `assets` the bundle's
@@ -52,7 +54,7 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
             return std::ptr::null_mut();
         }
     };
-    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None }))
+    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0 }))
 }
 
 #[no_mangle]
@@ -82,6 +84,11 @@ pub unsafe extern "C" fn adrift_frame(shell: *mut Shell, t: f64) {
     let view = frame.texture.create_view(&Default::default());
     s.app.frame(&view, t);
     frame.present();
+    // the frame's cost, every five seconds, in the device's log (Console.app, or Xcode's)
+    if t - s.stats_at >= 5.0 {
+        s.stats_at = t;
+        eprintln!("{}", s.app.stats());
+    }
 }
 
 /// A touch: `phase` 0 down, 1 move, 2 up, 3 cancel; x, y in points; t seconds.
