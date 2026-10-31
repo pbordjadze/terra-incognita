@@ -2,7 +2,7 @@
 //! intents (Engineering; DECISIONS.md §2).
 
 use crate::assets::Assets;
-use crate::gpu::{GlyphInstance, Gpu, Text, TextPass, Textures, View, ViewUniform};
+use crate::gpu::{Blit, Budget, GlyphInstance, Gpu, Stage, Text, TextPass, Textures, View, ViewUniform};
 use crate::look::sprites::{KIND_BEAD, KIND_FLOAT, KIND_MAYBE};
 use crate::look::{sea::Ripple, GroundPass, Instance, SeaPass, SpritePass};
 use crate::model::*;
@@ -48,6 +48,17 @@ pub struct SceneFloat {
     pub days_ago: f64,
 }
 
+/// What is kept between launches: nothing is lost (DECISIONS.md §6).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Snapshot {
+    pub version: u32,
+    pub floats: Vec<Float>,
+    pub next_id: u32,
+    pub day: f64,
+    pub running: bool,
+    pub camera: Camera,
+}
+
 pub struct App {
     pub gpu: Gpu,
     assets: Box<dyn Assets>,
@@ -55,11 +66,20 @@ pub struct App {
     pub rules: Rules,
     view_buffer: wgpu::Buffer,
     view_bind: wgpu::BindGroup,
+    stage_view_buffer: wgpu::Buffer,
+    stage_view_bind: wgpu::BindGroup,
     ground: GroundPass,
     sea: SeaPass,
     sprites: SpritePass,
     text: Text,
     text_pass: TextPass,
+    blit: Blit,
+    stage: Option<Stage>,
+    pub budget: Budget,
+    /// What the stage last showed: the view uniform's bytes and the months, to know when to redraw.
+    stage_shown: Option<(ViewUniform, (u32, u32))>,
+    stage_seconds: f64,
+    last_dt: f64,
     pub floats: Vec<Float>,
     next_id: u32,
     pub clock: Clock,
@@ -115,6 +135,17 @@ impl App {
             layout: &view_layout,
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: view_buffer.as_entire_binding() }],
         });
+        let stage_view_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("stage view"),
+            size: std::mem::size_of::<ViewUniform>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let stage_view_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("stage view"),
+            layout: &view_layout,
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: stage_view_buffer.as_entire_binding() }],
+        });
         let ground = GroundPass::new(&gpu, &view_layout, &textures);
         let sea = SeaPass::new(&gpu, &view_layout, &textures);
         let sprites = SpritePass::new(&gpu, &view_layout);
@@ -124,6 +155,8 @@ impl App {
         let px = (ppp * reading) as f32;
         let text = Text::new(&gpu, &[(&regular, 17.0 * px), (&italic, 13.0 * px), (&regular, 11.0 * px)])?;
         let text_pass = TextPass::new(&gpu, &view_layout, &text);
+        let blit = Blit::new(&gpu);
+        let budget = Budget::new(ppp);
         Ok(App {
             gpu,
             assets,
@@ -131,11 +164,19 @@ impl App {
             rules,
             view_buffer,
             view_bind,
+            stage_view_buffer,
+            stage_view_bind,
             ground,
             sea,
             sprites,
             text,
             text_pass,
+            blit,
+            stage: None,
+            budget,
+            stage_shown: None,
+            stage_seconds: -1.0,
+            last_dt: 0.0,
             floats: Vec::new(),
             next_id: 1,
             clock,
@@ -349,6 +390,7 @@ impl App {
             None => 0.0,
         };
         self.last_t = Some(now);
+        self.last_dt = dt;
         let out = self.gestures.tick(now);
         self.apply(out.intents, out.camera);
         if self.clock.running {
@@ -403,6 +445,36 @@ impl App {
         }
     }
 
+    /// The state to keep, as JSON.
+    pub fn snapshot(&self) -> String {
+        let mut floats = self.floats.clone();
+        for f in &mut floats {
+            f.hand = Hand::Free;
+            f.lit_for = 10.0;
+        }
+        serde_json::to_string(&Snapshot { version: 1, floats, next_id: self.next_id, day: self.clock.day, running: self.clock.running, camera: self.camera.camera }).unwrap_or_default()
+    }
+
+    /// Takes a kept state back; a state that can't be read is ignored.
+    pub fn restore(&mut self, json: &str) -> bool {
+        let Ok(s) = serde_json::from_str::<Snapshot>(json) else { return false };
+        if s.version != 1 {
+            return false;
+        }
+        self.floats = s.floats;
+        self.next_id = s.next_id.max(self.floats.iter().map(|f| f.id + 1).max().unwrap_or(1));
+        self.clock.day = s.day;
+        self.clock.running = s.running;
+        self.camera = CameraControl::new(s.camera);
+        self.undo.clear();
+        self.ripples.clear();
+        self.stepped.clear();
+        for f in &self.floats {
+            self.stepped.insert(f.id, self.clock.day);
+        }
+        true
+    }
+
     /// Sets the whole scene (the checks): the camera, the date, floats with their wakes simulated.
     pub fn set_scene(&mut self, scene: &Scene) {
         self.floats.clear();
@@ -433,8 +505,62 @@ impl App {
             Ok(false) => {}
             Err(e) => log::error!("land for month {ma}: {e}"),
         }
-        self.gpu.queue.write_buffer(&self.view_buffer, 0, bytemuck::bytes_of(&view.uniform()));
-        self.sea.prepare(&self.gpu, &self.ripples);
+        let uniform = view.uniform();
+        self.gpu.queue.write_buffer(&self.view_buffer, 0, bytemuck::bytes_of(&uniform));
+        // the stage: the ground and the sea, redrawn when the view, the months or the sea's clock
+        // moved (the clock at most thirty times a second), at the budget's scale
+        let months = self.textures.land_months;
+        let mut stage_view = uniform;
+        stage_view.frame[0] = 0.0; // (the frame's size is the stage's own, below)
+        let moved = match &self.stage_shown {
+            Some((shown, m)) => {
+                let mut a = *shown;
+                a.frame[0] = 0.0;
+                a.time[0] = 0.0;
+                a.tone[2] = 0.0;
+                let mut b = stage_view;
+                b.time[0] = 0.0;
+                b.tone[2] = 0.0;
+                bytemuck::bytes_of(&a) != bytemuck::bytes_of(&b) || *m != months
+            }
+            None => true,
+        };
+        let sea_ticked = (self.clock.running || !self.ripples.is_empty()) && self.seconds - self.stage_seconds >= 1.0 / 30.0 - 1e-6;
+        let rescaled = self.stage.as_ref().map_or(true, |s| s.scale != self.budget.scale || s.width != ((self.width as f64 * s.scale).round() as u32).max(1) || s.height != ((self.height as f64 * s.scale).round() as u32).max(1));
+        if rescaled {
+            self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
+        }
+        let redraw = moved || sea_ticked || rescaled;
+        if redraw {
+            if moved && self.budget.frame(self.last_dt) {
+                self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
+            }
+            let stage = self.stage.as_ref().unwrap();
+            let mut u = uniform;
+            u.frame = [stage.width as f32, stage.height as f32, (stage.width as f64 / self.width as f64 * self.ppp) as f32, self.reading as f32];
+            self.gpu.queue.write_buffer(&self.stage_view_buffer, 0, bytemuck::bytes_of(&u));
+            self.sea.prepare(&self.gpu, &self.ripples);
+            let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stage") });
+            {
+                let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("stage"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &stage.view,
+                        resolve_target: None,
+                        ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 }), store: wgpu::StoreOp::Store },
+                        depth_slice: None,
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+                self.ground.draw(&mut rp, &self.stage_view_bind);
+                self.sea.draw(&mut rp, &self.stage_view_bind);
+            }
+            self.gpu.queue.submit([enc.finish()]);
+            self.stage_shown = Some((uniform, months));
+            self.stage_seconds = self.seconds;
+        }
         let instances = self.instances(&view);
         self.sprites.prepare(&self.gpu, &instances);
         let glyphs = self.chrome(&view);
@@ -446,15 +572,14 @@ impl App {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 }), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
                     depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            self.ground.draw(&mut rp, &self.view_bind);
-            self.sea.draw(&mut rp, &self.view_bind);
+            self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
             self.sprites.draw(&mut rp, &self.view_bind);
             self.text_pass.draw(&mut rp, &self.view_bind);
         }

@@ -11,6 +11,7 @@ pub struct Shell {
     surface: wgpu::Surface<'static>,
     config: wgpu::SurfaceConfiguration,
     app: App,
+    store: Option<std::path::PathBuf>,
 }
 
 /// Makes the app over a CAMetalLayer. `scale` is the screen's pixels a point; `assets` the bundle's
@@ -51,7 +52,7 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
             return std::ptr::null_mut();
         }
     };
-    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app }))
+    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None }))
 }
 
 #[no_mangle]
@@ -94,6 +95,29 @@ pub unsafe extern "C" fn adrift_pointer(shell: *mut Shell, id: u64, phase: u32, 
         _ => Phase::Cancel,
     };
     s.app.pointer(PointerEvent { id, phase, x, y, t });
+}
+
+/// Where the state is kept between launches (a file in the app's documents): read now, written by
+/// `adrift_pause`.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_store(shell: *mut Shell, path: *const c_char) {
+    let Some(s) = shell.as_mut() else { return };
+    let p = std::path::PathBuf::from(CStr::from_ptr(path).to_string_lossy().into_owned());
+    if let Ok(json) = std::fs::read_to_string(&p) {
+        s.app.restore(&json);
+    }
+    s.store = Some(p);
+}
+
+/// The app is going to the background: the state is written.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_pause(shell: *mut Shell) {
+    let Some(s) = shell.as_mut() else { return };
+    if let Some(p) = &s.store {
+        if let Err(e) = std::fs::write(p, s.app.snapshot()) {
+            eprintln!("adrift: store: {e}");
+        }
+    }
 }
 
 #[no_mangle]

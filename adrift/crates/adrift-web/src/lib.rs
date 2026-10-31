@@ -66,7 +66,26 @@ pub async fn start() -> Result<(), JsValue> {
     surface.configure(&gpu.device, &config);
     let app = App::new(gpu, Box::new(MemoryAssets(files)), w, h, dpr).map_err(|e| JsValue::from_str(&e.to_string()))?;
     status(&document, "");
+    let mut app = app;
+    if let Ok(Some(store)) = window.local_storage() {
+        if let Ok(Some(json)) = store.get_item("adrift") {
+            app.restore(&json);
+        }
+    }
     let app = Rc::new(RefCell::new(app));
+    {
+        // nothing is lost: the state is kept when the page is hidden or left
+        let a = app.clone();
+        let w = window.clone();
+        let keep = Closure::<dyn FnMut()>::new(move || {
+            if let Ok(Some(store)) = w.local_storage() {
+                let _ = store.set_item("adrift", &a.borrow().snapshot());
+            }
+        });
+        document.add_event_listener_with_callback("visibilitychange", keep.as_ref().unchecked_ref())?;
+        window.add_event_listener_with_callback("pagehide", keep.as_ref().unchecked_ref())?;
+        keep.forget();
+    }
 
     // pointer events (points: CSS pixels)
     {

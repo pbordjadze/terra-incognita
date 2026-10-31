@@ -12,7 +12,7 @@ pub mod touch;
 #[cfg(target_os = "ios")]
 pub mod ffi;
 
-pub use app::{App, Scene, SceneFloat};
+pub use app::{App, Scene, SceneFloat, Snapshot};
 pub use assets::{Assets, DirAssets, MemoryAssets};
 pub use gpu::{Gpu, Offscreen};
 pub use model::*;

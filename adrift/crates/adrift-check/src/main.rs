@@ -53,6 +53,8 @@ fn render(args: &[String]) -> Result<()> {
     let target = Offscreen::new(&gpu, w, h);
     let t0 = std::time::Instant::now();
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    app.budget.locked = true;
+    app.budget.scale = 1.0;
     eprintln!("loaded in {:?} ({})", t0.elapsed(), app.gpu.adapter_info.name);
     app.set_scene(&scene);
     let t1 = std::time::Instant::now();
@@ -101,6 +103,8 @@ fn play(args: &[String]) -> Result<()> {
     let [w, h] = plan.size;
     let target = Offscreen::new(&gpu, w, h);
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, plan.ppp)?;
+    app.budget.locked = true;
+    app.budget.scale = 1.0;
     app.set_scene(&plan.scene);
     let mut t = 0.0;
     let fps = 30.0;

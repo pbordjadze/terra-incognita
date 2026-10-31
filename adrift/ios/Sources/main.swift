@@ -38,6 +38,14 @@ final class AdriftView: UIView {
         shell = assets.withCString { adrift_new(Unmanaged.passUnretained(metal).toOpaque(), w, h, scale, $0) }
         if shell == nil { NSLog("adrift: the library did not start"); return }
         adrift_set_reduce_motion(shell, UIAccessibility.isReduceMotionEnabled)
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("adrift.json").path
+        docs.withCString { adrift_store(shell, $0) }
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            if let shell = self?.shell { adrift_pause(shell) }
+        }
+        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            if let shell = self?.shell { adrift_pause(shell) }
+        }
         let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
         l.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 120, preferred: 120)
         l.add(to: .main, forMode: .common)

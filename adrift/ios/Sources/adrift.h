@@ -6,5 +6,7 @@ AdriftShell *adrift_new(void *layer, uint32_t width, uint32_t height, double sca
 void adrift_resize(AdriftShell *shell, uint32_t width, uint32_t height, double scale);
 void adrift_frame(AdriftShell *shell, double t);
 void adrift_pointer(AdriftShell *shell, uint64_t id, uint32_t phase, double x, double y, double t);
+void adrift_store(AdriftShell *shell, const char *path);
+void adrift_pause(AdriftShell *shell);
 void adrift_set_reduce_motion(AdriftShell *shell, bool on);
 void adrift_free(AdriftShell *shell);
