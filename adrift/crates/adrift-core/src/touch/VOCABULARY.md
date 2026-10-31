@@ -40,8 +40,9 @@ beat is felt as well as seen, Terra's `hold` feel), and reads Reduce Motion into
 shell forwards pointer events the same way, `Gestures::key` for ⌘Z (Ctrl on other systems) and
 `Gestures::wheel` for a mouse's wheel or a trackpad's pinch. The date's touchable rect is the
 look's own (`Look::date_bounds()`, the drawn glyphs with their halo's room, once Visual's look is
-on `adrift`; `probe.rs` reads it through `App`); until then `touch::date_band(frame)` stands in:
-the middle half of the width, 44 points tall, 24 above the bottom edge.
+on `adrift`; `probe.rs` reads it through `App`); until then `touch::date_band(frame)` stands in
+by the look's rule: a baseline 40 reading points under the disc's bottom edge, never lower than
+72 above the foot (so past zoom 2 it lies over the globe), the middle half of the width, 44 tall.
 
 ## The intents (model.rs, Engineering's) and how the vocabulary maps onto them
 
@@ -172,8 +173,8 @@ milliseconds; `plans/check/*.json` are the same plans in the form `adrift-check 
     fling.
 14. **Riding and holding another float**: the hold shows its maybes while the camera goes on
     following; a carry (a drag) leaves the ride first, so the globe is still under the hand.
-15. **The date**: the drawn date at the foot is the control (Visual draws it; the probe reports its
-    bounds). Any drag from it scrubs by its horizontal component (`DAYS_PER_POINT`: a year across
+15. **The date**: the drawn date under the globe is the control (Visual draws it; the probe
+    reports its bounds). Any drag from it scrubs by its horizontal component (`DAYS_PER_POINT`: a year across
     the screen's width, never less than a day a point); the first move pauses the clock, and it stays
     paused after: the reader stopped time. A tap toggles pause and play. The sea pauses with the
     date because the clock does (Engineering's `Clock`), not because the look is told.
@@ -203,4 +204,4 @@ milliseconds; `plans/check/*.json` are the same plans in the form `adrift-check 
 | `LAT_LIMIT` | ±80° | Terra's: the pole never flips |
 | `SWIPE` | 40 pt | three-finger undo |
 | `DAYS_PER_POINT` | 365 / width, ≥ 1 | a year across the screen |
-| `DATE_BAND`, `DATE_INSET` | 44 pt, 24 pt | the date's band at the foot, the middle half of the width |
+| `DATE_BELOW_DISC`, `DATE_FOOT`, `DATE_BAND` | 40, 72, 44 pt | the stand-in date band: under the disc, above the foot, its height |

@@ -62,12 +62,14 @@ impl Rect {
     }
 }
 
-/// Where the date lives: a band at the foot of the screen, centred, the middle half of the width
-/// and `DATE_BAND` points tall above the bottom inset. The look draws the date in it; a drag there
-/// scrubs and a tap pauses. The one place both read.
+/// Where the date lives until the look says exactly (`Look::date_bounds()`): its baseline
+/// `DATE_BELOW_DISC` reading points under the disc's bottom edge, clamped to `DATE_FOOT` above
+/// the screen's foot (so past zoom 2 it lies over the globe), the middle half of the width,
+/// `DATE_BAND` tall about the glyphs. A drag there scrubs and a tap pauses.
 pub fn date_band(frame: &Frame) -> Rect {
     let w = frame.width * 0.5;
-    Rect { x: (frame.width - w) / 2.0, y: frame.height - motion::DATE_INSET - motion::DATE_BAND, w, h: motion::DATE_BAND }
+    let baseline = (frame.disc.cy + frame.disc.r + motion::DATE_BELOW_DISC * frame.reading).min(frame.height - motion::DATE_FOOT);
+    Rect { x: (frame.width - w) / 2.0, y: baseline - 10.0 - motion::DATE_BAND / 2.0, w, h: motion::DATE_BAND }
 }
 
 /// The questions `Gestures` asks of the state. The app answers them from the state and the camera

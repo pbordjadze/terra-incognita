@@ -23,7 +23,9 @@ def px(fx, fy):
     return [round(fx * W, 1), round(fy * H, 1)]
 
 def date_xy(dx=0.0):
-    return [W / 2 + dx, H - 46.0]
+    # the stand-in band's centre at zoom 1: baseline cy + r + 40, the band 10 above it (touch::date_band)
+    r = (min(W, H) / 2 - 14.0)
+    return [W / 2 + dx, min(H / 2 + r + 40.0, H - 72.0) - 10.0]
 
 def plan(name, title, steps, **kw):
     p = {"title": title, "size": [W, H], "camera": {"lon": -40.0, "lat": 22.0, "zoom": 1.0}, "land": [[-100.0, 40.0, 14.0]], "steps": steps}

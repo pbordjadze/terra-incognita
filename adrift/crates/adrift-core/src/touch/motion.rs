@@ -34,9 +34,12 @@ pub const ZOOM_MAX: f64 = 8.0;
 pub const LAT_LIMIT: f64 = 80.0;
 /// A three-finger swipe this far is undo (left) or redo (right).
 pub const SWIPE: f64 = 40.0;
-/// The date's band at the foot: its height, and its inset above the bottom edge (points).
+/// The date's stand-in band (the look's `date_bounds` replaces it): its baseline lies this many
+/// reading points below the disc's bottom edge, never lower than `DATE_FOOT` points above the
+/// screen's foot (the look's rule); the band is `DATE_BAND` points tall about the glyphs.
+pub const DATE_BELOW_DISC: f64 = 40.0;
+pub const DATE_FOOT: f64 = 72.0;
 pub const DATE_BAND: f64 = 44.0;
-pub const DATE_INSET: f64 = 24.0;
 /// Scrubbing: a year across the screen's width, never less than a day a point.
 pub fn days_per_point(screen_width: f64) -> f64 {
     (365.0 / screen_width.max(1.0)).max(1.0)
