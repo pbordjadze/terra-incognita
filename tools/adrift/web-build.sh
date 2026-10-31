@@ -9,7 +9,7 @@
 # --version 0.2.130; the crate's wasm-bindgen is pinned to the same).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="${1:-$ROOT/adrift/build/web}"
+OUT="$(python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "${1:-$ROOT/adrift/build/web}")"
 cd "$ROOT/adrift"
 cargo build --release --target wasm32-unknown-unknown -p adrift-web
 mkdir -p "$OUT"
