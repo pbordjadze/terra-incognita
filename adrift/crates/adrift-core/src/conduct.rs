@@ -73,6 +73,75 @@ pub struct Choice {
     pub k: u32,
     pub matches: u32,
     pub near: Vec<u32>,
+    /// The runners-up spread round the pick (R12, for the look's fan that collapses into it): up to
+    /// `FAN` worlds, 1-based, from those scored nearest the pick, evenly through the next best
+    /// `max(4 FAN, matches)` (so a fan is the gesture's own kind of world, not the cloud at large).
+    pub fan: Vec<u32>,
+}
+
+/// How many runners-up a choice returns for the fan.
+pub const FAN: usize = 6;
+/// Days a tap looks ahead: the world that will come nearest the finger within them (half a second
+/// of clip at the conducting tempo).
+pub const TAP_AHEAD: f64 = 1.5;
+/// Days a circle looks ahead: the world looping that way through the stroke and after it.
+pub const CIRCLE_AHEAD: f64 = 2.0;
+
+/// The pick from scored worlds (higher better) at quantile `q` (1: the best), with the fan.
+fn finish(mut scored: Vec<(f64, usize)>, q: f64, near: Vec<u32>) -> Option<Choice> {
+    if scored.is_empty() {
+        return None;
+    }
+    scored.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap().then(a.1.cmp(&b.1)));
+    let pi = ((scored.len() as f64 - 1.0) * q).round() as usize;
+    let k = scored[pi].1 as u32 + 1;
+    // the fan: evenly through the band of worlds scored nearest the pick, the pick left out
+    let band = (FAN * 4).max(near.len()).min(scored.len() - 1);
+    let lo = pi.saturating_sub(band / 2).min(scored.len() - 1 - band.min(scored.len() - 1));
+    let hi = (lo + band).min(scored.len() - 1);
+    let mut fan = Vec::new();
+    for i in 0..FAN {
+        let j = lo + ((hi - lo) as f64 * (i as f64 + 0.5) / FAN as f64) as usize;
+        let w = scored[j].1 as u32 + 1;
+        if j != pi && !fan.contains(&w) {
+            fan.push(w);
+        }
+    }
+    Some(Choice { k, matches: near.len() as u32, near, fan })
+}
+
+/// How much a path looped, radians (positive anticlockwise on a y-down screen's cross, as the
+/// hand's circle is measured): its net turning, each turn weighted by how far the path went on
+/// either side of it against the path's median step, times its consistency (net over the sum of
+/// the turns' sizes). A loop's steady turning counts in full; a stall's flips (tiny steps, turns
+/// of both senses) count for little (R12: the plain sum was won by stalls, not loops).
+pub fn looping(pts: &[[f64; 2]]) -> f64 {
+    let d: Vec<[f64; 2]> = pts.windows(2).map(|w| [w[1][0] - w[0][0], w[1][1] - w[0][1]]).collect();
+    if d.len() < 2 {
+        return 0.0;
+    }
+    let mut lens: Vec<f64> = d.iter().map(|v| v[0].hypot(v[1])).collect();
+    let mut sorted = lens.clone();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let med = sorted[sorted.len() / 2].max(1e-9);
+    for l in lens.iter_mut() {
+        *l = (*l / med).min(1.0);
+    }
+    let (mut net, mut total) = (0.0, 0.0);
+    for i in 1..d.len() {
+        let (a, b) = (d[i - 1], d[i]);
+        if a[0].hypot(a[1]) < 1e-9 || b[0].hypot(b[1]) < 1e-9 {
+            continue;
+        }
+        let t = (a[0] * b[1] - a[1] * b[0]).atan2(a[0] * b[0] + a[1] * b[1]) * lens[i - 1].min(lens[i]);
+        net += t;
+        total += t.abs();
+    }
+    if total < 1e-12 {
+        0.0
+    } else {
+        net * (net.abs() / total)
+    }
 }
 
 impl Worlds {
@@ -179,37 +248,66 @@ impl Worlds {
         self.marks[i].w[k].at
     }
 
+    /// Every world's places at the next `n` quarter-day marks after the newest kept one (computed
+    /// on demand, unbudgeted, so a replay sees the same: R12, a tap and a circle look ahead).
+    pub fn ahead(&self, rules: &Rules, n: usize) -> Vec<Vec<W>> {
+        let mut out: Vec<Vec<W>> = Vec::with_capacity(n);
+        let mut day = self.marks.back().unwrap().day;
+        let mut cur: Vec<W> = self.marks.back().unwrap().w.clone();
+        for _ in 0..n {
+            let next = crate::app::grid_next(day);
+            let dt = next - day;
+            cur = cur
+                .iter()
+                .enumerate()
+                .map(|(i, x)| {
+                    let s = rules.flight(Drift { at: x.at, eddy: x.eddy }, day, dt, self.leg.seed, i as u32 + 1);
+                    W { at: s.drift.at, eddy: s.drift.eddy }
+                })
+                .collect();
+            day = next;
+            out.push(cur.clone());
+        }
+        out
+    }
+
     /// The world that did what the hand did on `day`. `project` puts a place on the screen (None
     /// when it faces away); `rate` is the date's days a second (a stroke's seconds become days).
-    pub fn choose(&self, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
+    /// A tap and a circle also look ahead (`TAP_AHEAD`, `CIRCLE_AHEAD` days, the worlds' own
+    /// future steps, `rules`): the world chosen is the one that will reach the finger, or that is
+    /// looping that way, so the lamp is seen to obey after the cue, not only to have obeyed.
+    pub fn choose(&self, rules: &Rules, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
         let n = WORLDS as usize;
         let now: Vec<Option<[f64; 2]>> = (1..=WORLDS).map(|k| project(self.place(k, day).at)).collect();
         let marks_for = |secs: f64, least: usize| ((secs * rate * 4.0).round() as usize).clamp(least, HISTORY - 1);
-        let pick = |scored: &mut Vec<(f64, usize)>, q: f64| {
-            scored.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-            scored.get(((scored.len() as f64 - 1.0) * q).round() as usize).map(|s| s.1)
-        };
+        // the marks after the newest kept one (which is at or just after `day`)
+        let newest = self.marks.len() - 1;
         match g {
             ConductGesture::Tap { x, y } => {
-                let mut best: Option<(f64, usize)> = None;
+                let ahead = self.ahead(rules, (TAP_AHEAD * 4.0) as usize);
+                let mut scored = Vec::new();
                 let mut near = Vec::new();
-                for (k, s) in now.iter().enumerate() {
-                    let Some([sx, sy]) = s else { continue };
-                    let d = (sx - x).hypot(sy - y);
-                    if best.map_or(true, |b| d < b.0) {
-                        best = Some((d, k));
+                for k in 0..n {
+                    // the nearest the world comes to the finger, from now through the look ahead
+                    let mut best = f64::INFINITY;
+                    let pts = now[k].into_iter().chain(std::iter::once(project(self.marks[newest].w[k].at)).flatten()).chain(ahead.iter().filter_map(|m| project(m[k].at)));
+                    for [sx, sy] in pts {
+                        best = best.min((sx - x).hypot(sy - y));
                     }
-                    if d < TAP_NEAR {
+                    if !best.is_finite() {
+                        continue;
+                    }
+                    if best < TAP_NEAR {
                         near.push(k as u32 + 1);
                     }
+                    scored.push((-best, k));
                 }
-                best.map(|b| Choice { k: b.1 as u32 + 1, matches: near.len() as u32, near })
+                Some(finish(scored, 1.0, near)?)
             }
             ConductGesture::Sweep { dx, dy, secs } => {
                 let len = dx.hypot(dy).max(1e-9);
                 let (ux, uy) = (dx / len, dy / len);
                 let m = marks_for(secs, 1);
-                // each world's displacement over the stroke's stretch, less the worlds' mean drift
                 let disp: Vec<Option<[f64; 2]>> = (0..n).map(|k| match (now[k], project(self.back(m, k, day))) {
                     (Some(s), Some(t)) => Some([s[0] - t[0], s[1] - t[1]]),
                     _ => None,
@@ -238,40 +336,33 @@ impl Worlds {
                 }
                 // a longer stroke reaches further out along the cloud's edge
                 let reach = (len / 300.0).clamp(0.0, 1.0);
-                pick(&mut scored, 0.80 + 0.199 * reach).map(|k| Choice { k: k as u32 + 1, matches: near.len() as u32, near })
+                finish(scored, 0.80 + 0.199 * reach, near)
             }
             ConductGesture::Circle { turn, secs } => {
                 let m = marks_for(secs, 4);
+                let ahead = self.ahead(rules, (CIRCLE_AHEAD * 4.0) as usize);
                 let sense = turn.signum();
                 let mut scored = Vec::new();
                 let mut near = Vec::new();
                 for k in 0..n {
+                    // the world's path over the stroke's look back and the look ahead, a mark apart
                     let mut pts: Vec<[f64; 2]> = (1..=m).rev().filter_map(|b| project(self.back(b, k, day))).collect();
-                    if let Some(s) = now[k] {
-                        pts.push(s);
+                    pts.extend(project(self.marks[self.at_or_before(day)].w[k].at));
+                    for i in self.at_or_before(day) + 1..self.marks.len() {
+                        pts.extend(project(self.marks[i].w[k].at));
                     }
-                    let mut tsum = 0.0;
-                    let mut last: Option<[f64; 2]> = None;
-                    for w in pts.windows(2) {
-                        let d = [w[1][0] - w[0][0], w[1][1] - w[0][1]];
-                        if d[0].hypot(d[1]) < 0.25 {
-                            continue;
-                        }
-                        if let Some(a) = last {
-                            tsum += (a[0] * d[1] - a[1] * d[0]).atan2(a[0] * d[0] + a[1] * d[1]);
-                        }
-                        last = Some(d);
-                    }
-                    let s = tsum * sense;
+                    pts.extend(ahead.iter().filter_map(|mk| project(mk[k].at)));
+                    let s = looping(&pts) * sense;
                     if s > std::f64::consts::FRAC_PI_2 {
                         near.push(k as u32 + 1);
                     }
                     scored.push((s, k));
                 }
-                pick(&mut scored, 1.0).map(|k| Choice { k: k as u32 + 1, matches: near.len() as u32, near })
+                finish(scored, 1.0, near)
             }
         }
     }
+
 }
 
 /// The conductor held to its honesty (R11, Truth): the App driven as a take is, with its lamps'
@@ -456,32 +547,44 @@ mod tests {
     }
 
     #[test]
-    fn a_tap_picks_a_world_under_the_finger() {
-        let (_, w, day) = worlds(4.1);
+    fn a_tap_picks_a_world_heading_for_the_finger() {
+        let (rules, w, day) = worlds(4.1);
         let places = w.places(day);
-        let n = places.len();
+        let ahead = w.ahead(&rules, (TAP_AHEAD * 4.0) as usize);
         let mut counts = Vec::new();
-        for (i, j) in [(17usize, 4.0), (600, -9.0), (1000, 15.0)] {
-            let [x, y] = flat(places[i]).unwrap();
-            let c = w.choose(ConductGesture::Tap { x: x + j, y: y - j }, day, 2.0, &flat).unwrap();
-            let [cx, cy] = flat(w.place(c.k, day).at).unwrap();
-            assert!((cx - x - j).hypot(cy - y + j) <= j.abs() * 2f64.sqrt() + 1e-9, "the pick is at least as near as the world tapped");
-            assert!(c.matches >= 1 && c.near.contains(&c.k));
+        let (mut closed, mut median_closed) = (Vec::new(), Vec::new());
+        for i in [17usize, 600, 1000] {
+            // a finger where a world will be at the end of the look ahead: the pick gets there too
+            let [fx, fy] = flat(ahead.last().unwrap()[i].at).unwrap();
+            let c = w.choose(&rules, ConductGesture::Tap { x: fx, y: fy }, day, 3.0, &flat).unwrap();
+            let dist = |p: LonLat| {
+                let [a, b] = flat(p).unwrap();
+                (a - fx).hypot(b - fy)
+            };
+            let nearest = |k: usize| ahead.iter().map(|m| dist(m[k].at)).fold(dist(places[k]), f64::min);
+            assert!(nearest(c.k as usize - 1) < TAP_NEAR, "the pick reaches the finger within the look ahead");
+            assert!(c.fan.len() >= 4 && !c.fan.contains(&c.k), "a fan of runners-up: {:?}", c.fan);
+            // it is seen to go toward the finger: how far it closes in the look ahead, against the cloud's median
+            let close = |k: usize| dist(places[k]) - nearest(k);
+            closed.push(close(c.k as usize - 1));
+            let mut all: Vec<f64> = (0..WORLDS as usize).map(close).collect();
+            all.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            median_closed.push(all[all.len() / 2]);
             counts.push(c.matches);
         }
-        // far from every world: still the nearest, but none did it
-        let c = w.choose(ConductGesture::Tap { x: 1e5, y: 0.0 }, day, 2.0, &flat).unwrap();
-        assert_eq!(c.matches, 0);
-        eprintln!("taps matched {counts:?} of {n} worlds (within {TAP_NEAR} pt)");
+        eprintln!("taps matched {counts:?} of {WORLDS} worlds; the pick closed on the finger by {closed:.0?} pt in {TAP_AHEAD} days (the median world {median_closed:.0?})");
+        assert!(closed.iter().zip(&median_closed).all(|(c, m)| c > m), "the pick heads for the finger more than the cloud does");
+        let c = w.choose(&rules, ConductGesture::Tap { x: 1e5, y: 0.0 }, day, 3.0, &flat).unwrap();
+        assert_eq!(c.matches, 0, "far from every world: still a pick, but none did it");
     }
 
     #[test]
     fn a_sweep_picks_a_world_that_moved_the_strokes_way() {
-        let (_, w, day) = worlds(6.0);
+        let (rules, w, day) = worlds(6.0);
         let mut fr = Vec::new();
         for (dx, dy) in [(0.0, -160.0), (160.0, 0.0), (0.0, 120.0), (-200.0, 40.0)] {
             let secs = 0.5;
-            let c = w.choose(ConductGesture::Sweep { dx, dy, secs }, day, 2.0, &flat).unwrap();
+            let c = w.choose(&rules, ConductGesture::Sweep { dx, dy, secs }, day, 2.0, &flat).unwrap();
             let m = ((secs * 2.0 * 4.0) as usize).max(1);
             let disp = |k: usize| {
                 let (a, b) = (flat(w.place(k as u32 + 1, day).at).unwrap(), flat(w.back(m, k, day)).unwrap());
@@ -502,23 +605,38 @@ mod tests {
     }
 
     #[test]
-    fn a_circle_picks_a_world_that_turned_that_way() {
-        let (_, w, day) = worlds(8.0);
+    fn a_circle_picks_a_world_that_loops_that_way() {
+        // in the open Atlantic (the blue lamp's sea), where the eddies outrun the mean current
+        let rules = Rules::load(&DirAssets(assets())).unwrap();
+        let leg = Leg::new(LonLat { lon: -40.0, lat: 38.0 }, 160.0, 7);
+        let mut w = Worlds::new(&rules, leg, 0);
+        let day = 168.0;
+        w.step_to(&rules, day);
+        let mut dump = Vec::new();
         for turn in [5.0, -5.0] {
-            let secs = 1.0;
-            let c = w.choose(ConductGesture::Circle { turn, secs }, day, 2.0, &flat).unwrap();
-            let m = (secs * 2.0 * 4.0) as usize;
-            let mut pts: Vec<[f64; 2]> = (1..=m).rev().map(|b| flat(w.back(b, c.k as usize - 1, day)).unwrap()).collect();
-            pts.push(flat(w.place(c.k, day).at).unwrap());
-            let mut t = 0.0;
-            for q in pts.windows(3) {
-                let (a, b) = ([q[1][0] - q[0][0], q[1][1] - q[0][1]], [q[2][0] - q[1][0], q[2][1] - q[1][1]]);
-                t += (a[0] * b[1] - a[1] * b[0]).atan2(a[0] * b[0] + a[1] * b[1]);
-            }
-            assert!(t * turn.signum() > std::f64::consts::FRAC_PI_2, "the pick turned the circle's way: {t:.2} rad");
+            let c = w.choose(&rules, ConductGesture::Circle { turn, secs: 1.0 }, day, 3.0, &flat).unwrap();
+            // the chosen world's look back and its next six days: the lamp's line through the cue
+            let ahead = w.ahead(&rules, 24);
+            let line = |k: u32| -> Vec<[f64; 2]> {
+                let mut p: Vec<[f64; 2]> = (1..=12).rev().map(|b| flat(w.back(b, k as usize - 1, day)).unwrap()).collect();
+                p.extend(ahead.iter().map(|m| flat(m[k as usize - 1].at).unwrap()));
+                p
+            };
+            let after: Vec<[f64; 2]> = ahead.iter().map(|m| flat(m[c.k as usize - 1].at).unwrap()).collect();
+            let t = looping(&after);
+            let mut all: Vec<f64> = (1..=WORLDS).map(|k| looping(&ahead.iter().map(|m| flat(m[k as usize - 1].at).unwrap()).collect::<Vec<_>>()) * turn.signum()).collect();
+            all.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            let beaten = all.iter().filter(|a| **a < t * turn.signum()).count() as f64 / all.len() as f64;
+            let p = w.place(c.k, day).at;
+            let spinning = crate::sea::rules::spin(c.k, day as f32, p.lon as f32, p.lat as f32);
             let f = c.matches as f64 / WORLDS as f64;
-            eprintln!("a circle of sense {turn:+}: the pick turned {t:+.2} rad; {:.1}% of the worlds turned a quarter or more that way", f * 100.0);
-            assert!(f > 0.01 && f < 0.4);
+            eprintln!("a circle of sense {turn:+}: world {} (its eddy spins {spinning:+.2} rad/day) loops {t:+.2} rad in the 6 days after the cue, beyond {:.0}% of the worlds; {:.1}% matched; fan {:?}", c.k, beaten * 100.0, f * 100.0, c.fan);
+            assert!(t * turn.signum() > 0.0 && beaten > 0.8, "after the cue the lamp goes on looping the circle's way, more than nearly every other world");
+            assert!(f > 0.005 && f < 0.4);
+            dump.push(serde_json::json!({ "turn": turn, "chosen": line(c.k), "fan": c.fan.iter().map(|k| line(*k)).collect::<Vec<_>>(), "cue_index": 12 }));
+        }
+        if let Some(out) = std::env::var_os("ADRIFT_CIRCLE_OUT") {
+            std::fs::write(out, serde_json::to_string(&dump).unwrap()).unwrap();
         }
     }
 
@@ -564,7 +682,7 @@ mod tests {
         ] {
             let t = std::time::Instant::now();
             for _ in 0..10 {
-                std::hint::black_box(w.choose(g, d, 2.0, &flat));
+                std::hint::black_box(w.choose(&rules, g, d, 2.0, &flat));
             }
             eprintln!("choose {name}: {:.2} ms", t.elapsed().as_secs_f64() / 10.0 * 1e3);
         }
@@ -578,7 +696,7 @@ mod tests {
     #[test]
     #[ignore]
     fn the_tempo() {
-        let (_, w, day) = worlds(15.5);
+        let (rules, w, day) = worlds(15.5);
         eprintln!("rate  secs  days  drift pt  spread pt  sweep 0.95 pt  turned >= 1/4 (1 s)");
         for rate in [1.0, 2.0, 3.0, 4.0, 6.0] {
             for secs in [0.5, 1.0] {
@@ -596,7 +714,7 @@ mod tests {
                 north.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 let q95 = north[(0.95 * (n - 1.0)) as usize];
                 let turned = if secs == 1.0 {
-                    let c = w.choose(ConductGesture::Circle { turn: 5.0, secs }, day, rate, &flat).unwrap();
+                    let c = w.choose(&rules, ConductGesture::Circle { turn: 5.0, secs }, day, rate, &flat).unwrap();
                     format!("{:.0}%", c.matches as f64 / n * 100.0)
                 } else {
                     String::new()

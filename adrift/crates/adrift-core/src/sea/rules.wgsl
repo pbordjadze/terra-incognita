@@ -133,6 +133,31 @@ fn world_kick(k: u32, day: f32, dt: f32, lon: f32, lat: f32) -> vec2<f32> {
     return g * (1.0 / sqrt(f32(count)));
 }
 
+// --- the spinning eddies (rules.rs: spin; R12) ---
+
+const SPIN_CELL: f32 = 1.0;
+const SPIN_SHARE: f32 = 0.15;
+const SPIN_RATE: f32 = 0.58;
+const SPIN_ANTICYCLONIC: f32 = 0.8;
+const SPIN_EPOCH: f32 = 30.0;
+const SPIN_STREAM: u32 = 0x5b170000u;
+
+fn spin(k: u32, day: f32, lon: f32, lat: f32) -> f32 {
+    let n = i32(360.0 / SPIN_CELL);
+    let ix = u32(((i32(floor((lon + 180.0) / SPIN_CELL)) % n) + n) % n);
+    let iy = u32(i32(floor((lat + 90.0) / SPIN_CELL)));
+    let node = mix(mix(mix(k ^ SPIN_STREAM) ^ ix) ^ iy);
+    let phase = f32(node >> 8u) / 16777216.0 * SPIN_EPOCH;
+    let epoch = i32(floor((day + phase) / SPIN_EPOCH));
+    let h = mix(node ^ bitcast<u32>(epoch));
+    if (f32(h >> 8u) / 16777216.0 >= SPIN_SHARE) {
+        return 0.0;
+    }
+    let anti = f32(mix(h ^ 0x0a17c1c1u) >> 8u) / 16777216.0 < SPIN_ANTICYCLONIC;
+    let north = select(-1.0, 1.0, lat >= 0.0);
+    return select(north * SPIN_RATE, -north * SPIN_RATE, anti);
+}
+
 // --- the sheets (sheets.rs) ---
 
 fn wrap(lon: f32) -> f32 {
@@ -340,8 +365,14 @@ fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
     let gy = g.y;
     let au = exp(-secs / tt.x);
     let av = exp(-secs / tt.y);
-    let eu = eu0 * au + gx * sqrt(kk.x / tt.x * (1.0 - au * au)) * params.wander;
-    let ev = ev0 * av + gy * sqrt(kk.y / tt.y * (1.0 - av * av)) * params.wander;
+    let om = spin(k, day, lon, lat);
+    let phi = om * dt;
+    let cs = cos(phi);
+    let sn = sin(phi);
+    let ru = eu0 * cs - ev0 * sn;
+    let rv = eu0 * sn + ev0 * cs;
+    let eu = ru * au + gx * sqrt(kk.x / tt.x * (1.0 - au * au)) * params.wander;
+    let ev = rv * av + gy * sqrt(kk.y / tt.y * (1.0 - av * av)) * params.wander;
     let rc = reach(measured);
     let dx = (cur.x * rc + params.leeway * w.x + eu) * secs;
     let dy = (cur.y * rc + params.leeway * w.y + ev) * secs;
