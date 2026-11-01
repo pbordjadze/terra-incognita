@@ -191,7 +191,7 @@ pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate:
         places.truncate(k + 1);
     }
     places.push((here, path.last().map_or(1.0, |b| b.measured)));
-    let line_pts: Vec<Pt> = round_corners(smooth(&places, 1, 2), 10.0 * heavy.sqrt() * rad_per_pt)
+    let line_pts: Vec<Pt> = round_corners(smooth(&places, 1, 2), 10.0 * heavy * rad_per_pt)
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;

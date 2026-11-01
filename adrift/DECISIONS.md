@@ -711,3 +711,14 @@ in). The marks draw nothing at rest (their cells, words and press-to-reveal kept
 the pair and their last 15 days of line, its centre on a slow spring and its zoom held so every lamp
 and line stays clear of the edges and the lower third: it pulls back rather than pans; it opens three
 times wider and eases in over 2.4 s; a journey's end beat (2.5 s) pulls out to the whole lines.
+
+## 23. R16: the edges taken off (Nov 1, 20:40 UTC)
+
+Round 15's critic: close ("'Dance' he might post as is"), with corners and spikes in the lines, a
+blocky coast close in, tails off the top in the last third, a still middle in the early pair's clip.
+Truth 3a202b3: the pace by visible change (the lamps' motion relative to each other and each line's
+bend at the frame's scale), so a hover passes quickly. Visual cc0a31d: every join and cap round, turns
+rounded over ~20 reading points in a clip; magnified land eases to its broad colour (the shelf's
+shading still steps past zoom ~20). Motion a65fde2: a journey's last third eases to hold the whole
+braid since the clip began, opening rather than panning; the zoom capped at 20 within 250 km of land,
+easing to 40 beyond 450 km.

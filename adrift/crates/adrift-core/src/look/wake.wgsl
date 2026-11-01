@@ -1,7 +1,7 @@
 // Strokes (R10): one continuous line through a path's points, a tapering ribbon in its lamp's hue on
 // a dark edge by day (its own light by night). The wake is one drawn line, not beads: each segment is
 // an instanced quad that keeps only its own piece of the line, cut at the bisector of the turn at each
-// end, so neighbouring pieces meet exactly (a miter) and never lie twice over each other; a fading line
+// end, so neighbouring pieces meet exactly (a round join, R16) and never lie twice over each other; a fading line
 // has no darker knots at its joints. A true end has a round cap. The same strokes draw the globe's
 // wakes (points on the unit sphere, placed and hidden at the rim as every mark is) and the screen's
 // own marks (points in points: the panel's journeys and lamps, the record control's ring). Drawn twice,
@@ -64,11 +64,9 @@ fn vs(@builtin(vertex_index) vi: u32, s: StrokeIn) -> StrokeOut {
     let ma = dir_or(dp + d, d);
     let mb = dir_or(d + dn, d);
     let h = max(ha, hb) + 0.45 * U.frame.z + 1.5;
-    let cap_a = s.flags.x > 0.5;
-    let cap_b = s.flags.y > 0.5;
-    // the quad reaches past each end as far as the cut there needs (a miter), at most four widths
-    let ea = select(h * abs(dot(n, ma)) / max(dot(d, ma), 0.25), h, cap_a) + 1.0;
-    let eb = select(h * abs(dot(n, mb)) / max(dot(d, mb), 0.25), h, cap_b) + 1.0;
+        // the quad reaches a half width past each end: every join is round (R16), never a miter's tip
+    let ea = h + 1.0;
+    let eb = h + 1.0;
     let c = corner(vi % 6u);
     var at = select(B.xy + d * eb, A.xy - d * ea, c.x < 0.0);
     at = at + n * c.y * h;
@@ -97,9 +95,12 @@ fn fs(i: StrokeOut) -> @location(0) vec4<f32> {
     // to the next); a true end is round instead
     if (i.flags.x < 0.5 && dot(p - A, i.m.xy) < 0.0) { return vec4<f32>(0.0); }
     if (i.flags.y < 0.5 && dot(p - B, i.m.zw) >= 0.0) { return vec4<f32>(0.0); }
+    // past either end the distance is to the end itself: a round cap at a true end, and at a join
+    // the outer side of the turn rounded (R16: a miter there drew an arrowhead where a line turns
+    // back on itself); the cuts above still give each pixel to one segment only
     var dist = abs(dot(p - A, n));
-    if (i.flags.x > 0.5 && t < 0.0) { dist = length(p - A); }
-    if (i.flags.y > 0.5 && t > len) { dist = length(p - B); }
+    if (t < 0.0) { dist = length(p - A); }
+    if (t > len) { dist = length(p - B); }
     let f = clamp(t / max(len, 1e-3), 0.0, 1.0);
     let hw = mix(i.hw.x, i.hw.y, f);
     let al = mix(i.hw.z, i.hw.w, f);

@@ -61,8 +61,17 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let fwD = fwidth(d);
     let landa = smoothstep(-0.5, 0.5, d / max(fwD, 1e-5));
     let k = clamp(zoom, 1.0, 8.0);
-    let landCol = mix(textureSampleGrad(landA, linearS, G.uv, gr.dx, gr.dy).rgb,
+    var landCol = mix(textureSampleGrad(landA, linearS, G.uv, gr.dx, gr.dy).rgb,
                       textureSampleGrad(landB, linearS, G.uv, gr.dx, gr.dy).rgb, U.time.w);
+    // magnified past its own pixels (a clip close in, R16), the month's picture would show as blocks,
+    // and its dark sea pixels as notches along the drawn coast: it eases toward the picture read a few
+    // mips coarser (its broad colour) with a fine grain at the screen's own scale, a soft painted
+    // ground rather than an enlarged photograph; the coast stays the distance field's
+    let adims = vec2f(textureDimensions(landA));
+    let alod = log2(max(max(length(gr.dx * adims), length(gr.dy * adims)), 1e-5));
+    let soft = mix(textureSampleLevel(landA, linearS, G.uv, 3.0).rgb, textureSampleLevel(landB, linearS, G.uv, 3.0).rgb, U.time.w);
+    let magnified = smoothstep(-1.0, -3.0, alod);
+    landCol = mix(landCol, soft * (0.97 + 0.06 * grain), 0.85 * magnified);
     let fl = (textureSampleGrad(floorTex, linearS, G.uv, gr.dx, gr.dy).r * 255.0 - 128.0) / 127.0;
     let ice = mix(textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.y), 0.0).r,
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
