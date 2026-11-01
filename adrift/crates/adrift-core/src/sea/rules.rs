@@ -260,9 +260,46 @@ impl Rules {
         if self.ice.at(day, nlon, nlat) >= self.ice_hold {
             return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
         }
-        let (slon, slat, held) = self.ashore(lon, lat, nlon, nlat);
-        let eddy = if held == Held::Coast { (0.0, 0.0) } else { (eu, ev) };
+        let (slon, slat, held, eddy) = if law >= 2 {
+            self.slide(lon, lat, nlon, nlat, (eu, ev))
+        } else {
+            let (slon, slat, held) = self.ashore(lon, lat, nlon, nlat);
+            (slon, slat, held, if held == Held::Coast { (0.0, 0.0) } else { (eu, ev) })
+        };
         Flight { drift: Drift { at: LonLat { lon: slon as f64, lat: slat as f64 }, eddy }, held, measured }
+    }
+
+    /// The coast under law 2 (R15): no water flows through it. A step that would end ashore (or
+    /// within `shore` pixels of it) loses only its landward part, the coast's normal taken from the
+    /// distance field's gradient where the step began, so the float slides along the shore with the
+    /// rest of its motion; its eddy velocity loses its landward part too, and keeps the rest. Law 1
+    /// put the end back along the gradient and stopped the eddy, which drew a V or an elbow at every
+    /// touch. If the slid end is still too near (a headland, a strait), law 1's hold is the fallback.
+    pub fn slide(&self, lon: f32, lat: f32, nlon: f32, nlat: f32, eddy: (f32, f32)) -> (f32, f32, Held, (f32, f32)) {
+        let coast = &self.coast;
+        if coast.distance(nlon, nlat) < -self.shore {
+            return (nlon, nlat, Held::No, eddy);
+        }
+        let px = Coast::DEGREES_PER_PIXEL;
+        let c = lat.to_radians().cos().max(0.01);
+        // the landward normal where the step began, east and north in metres' proportions
+        let gx = (coast.distance(lon + px, lat) - coast.distance(lon - px, lat)) / c;
+        let gy = coast.distance(lon, (lat + px).min(89.9)) - coast.distance(lon, (lat - px).max(-89.9));
+        let g = (gx * gx + gy * gy).sqrt();
+        if g > 1e-6 {
+            let (nx, ny) = (gx / g, gy / g);
+            let (sx, sy) = ((nlon - lon) * c, nlat - lat);
+            let sn = sx * nx + sy * ny;
+            let (sx, sy) = if sn > 0.0 { (sx - sn * nx, sy - sn * ny) } else { (sx, sy) };
+            let (blon, blat) = (wrap(lon + sx / c), (lat + sy).clamp(-89.5, 89.5));
+            if coast.distance(blon, blat) < -self.shore * 0.5 {
+                let en = eddy.0 * nx + eddy.1 * ny;
+                let e = if en > 0.0 { (eddy.0 - en * nx, eddy.1 - en * ny) } else { eddy };
+                return (blon, blat, Held::Coast, e);
+            }
+        }
+        let (blon, blat, held) = self.ashore(lon, lat, nlon, nlat);
+        (blon, blat, held, if held == Held::Coast { (0.0, 0.0) } else { eddy })
     }
 
     /// A float as it is put: at `at`, with a first eddy velocity drawn from what the drifters
@@ -369,9 +406,9 @@ pub const WORLD_SPAN: u32 = 8;
 /// The put's stream of the field, apart from the steps'.
 pub const PUT_STREAM: u32 = 0x8000_0000;
 
-/// The sea's current law (R13, `Leg::law`): 1, with the spinning eddies (R12). 0 is the law as
-/// shipped up to build 49, kept for the lamps made under it.
-pub const LAW: u32 = 1;
+/// The sea's current law (R13, `Leg::law`): 2, the coast a slip (R15: `slide`). 1 added the spinning
+/// eddies (R12) to 0, the law as shipped up to build 49; each is kept for the lamps made under it.
+pub const LAW: u32 = 2;
 
 /// The spinning eddies (R12). Drifters' daily tracks (the bundled 1979 runs) set against a
 /// random flight with no spin: their velocity's turning from day to day is mostly what such a

@@ -17,7 +17,7 @@ struct Params {
     seed_hi: u32,
     count: u32,        // paths
     base: u32,         // the first path of this cloud in the buffer (R6: many clouds in one buffer); k = i + 1 within it
-    law: u32,          // the cloud's leg's law (R13, Leg::law): 0 no spinning eddies, 1 with them
+    law: u32,          // the cloud's leg's law (R13, Leg::law): 0 no spinning eddies, 1 with them, 2 the coast a slip
     _pad2: u32,
 };
 
@@ -386,6 +386,46 @@ fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
     let nlat = clamp(lat + dlat, -89.5, 89.5);
     if (ice_at(day, nlon, nlat) >= params.ice_hold) {
         return Path(lon, lat, 2u, measured, 0.0, 0.0);
+    }
+    if (params.law >= 2u) {
+        return slide(lon, lat, nlon, nlat, eu, ev, measured);
+    }
+    let s = ashore(lon, lat, nlon, nlat);
+    if (s.held == 1u) {
+        return Path(s.lon, s.lat, 1u, measured, 0.0, 0.0);
+    }
+    return Path(s.lon, s.lat, 0u, measured, eu, ev);
+}
+
+// The coast under law 2 (rules.rs: slide): the step and the eddy lose their landward part.
+fn slide(lon: f32, lat: f32, nlon: f32, nlat: f32, eu: f32, ev: f32, measured: f32) -> Path {
+    if (coast_distance(nlon, nlat) < -params.shore) {
+        return Path(nlon, nlat, 0u, measured, eu, ev);
+    }
+    let c = max(cos(lat * PI / 180.0), 0.01);
+    let gx = (coast_distance(lon + COAST_PX, lat) - coast_distance(lon - COAST_PX, lat)) / c;
+    let gy = coast_distance(lon, min(lat + COAST_PX, 89.9)) - coast_distance(lon, max(lat - COAST_PX, -89.9));
+    let g = sqrt(gx * gx + gy * gy);
+    if (g > 1e-6) {
+        let nx = gx / g;
+        let ny = gy / g;
+        var sx = (nlon - lon) * c;
+        var sy = nlat - lat;
+        let sn = sx * nx + sy * ny;
+        if (sn > 0.0) {
+            sx = sx - sn * nx;
+            sy = sy - sn * ny;
+        }
+        let blon = wrap(lon + sx / c);
+        let blat = clamp(lat + sy, -89.5, 89.5);
+        if (coast_distance(blon, blat) < -params.shore * 0.5) {
+            let en = eu * nx + ev * ny;
+            var e = vec2<f32>(eu, ev);
+            if (en > 0.0) {
+                e = vec2<f32>(eu - en * nx, ev - en * ny);
+            }
+            return Path(blon, blat, 1u, measured, e.x, e.y);
+        }
     }
     let s = ashore(lon, lat, nlon, nlat);
     if (s.held == 1u) {
