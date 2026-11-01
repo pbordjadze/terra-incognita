@@ -125,7 +125,8 @@ Orbit{last, samples}
 
 Pinch{a, b, zoom0, scale}
  ├─ Move ──────────────────────────▶ Pinch           zoom by the distance's ratio, clamped; the point under
- │                                                  the fingers' midpoint stays under it; scale remembered
+ │                                                  the fingers' midpoint stays under it; scale remembered;
+ │                                                  the fingers' turn about each other rolls the orb (Twist, R8)
  ├─ one finger Up, zoom0·scale < 0.75·ZOOM_MIN ──▶ Idle   emits Home: pinched out past the whole globe
  ├─ one finger Up ─────────────────▶ Orbit           with the remaining finger, anchored where it is now
  ├─ third finger Down ─────────────▶ Three{x0}       the pinch ends where it is
@@ -302,6 +303,12 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     ends the follow and the camera stays where the hand left it, the choices kept; a tap that
     chooses, or a rest on a row, follows again. The rim's `Face` is now this framing.
     `plans/four-two-ways.json`, `plans/panel-rim.json`.
+
+30. **Two fingers twist** (R8): while two fingers pinch, their turn about each other rolls the orb
+    about the place under their midpoint by as much (`CameraMove::Twist`), as a map does, while
+    their spread zooms and their midpoint carries what they hold; both still ring the sea where they
+    land (R7). Clockwise on the screen turns the globe clockwise. Home sets it upright.
+    `plans/twist.json`.
 
 ## The numbers (`motion.rs`)
 
