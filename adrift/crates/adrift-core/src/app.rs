@@ -925,6 +925,11 @@ impl App {
         self.clouds.iter().filter(|c| c.wanted && c.reached.is_finite()).map(|c| (day.max(c.leg.day) - c.reached).abs()).fold(0.0, f64::max)
     }
 
+    /// The record control's rect as the look drew it (R9; Motion's probe), x, y, w, h in points.
+    pub fn record_bounds(&self) -> Option<[f32; 4]> {
+        self.look.record_bounds()
+    }
+
     /// The panel's rows as the look drew them (R6): each lamp's id and rect in points.
     pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
         if let Some(rows) = &self.panel_stand_in {
