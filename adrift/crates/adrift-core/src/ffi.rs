@@ -245,6 +245,37 @@ pub unsafe extern "C" fn adrift_panel_item(shell: *mut Shell, i: u32, rect: *mut
     true
 }
 
+/// The song the shell plays from its start while a take records (R12), by a name (UTF-8,
+/// NUL-terminated), or none (null).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_set_song(shell: *mut Shell, name: *const std::os::raw::c_char) {
+    let Some(s) = shell.as_mut() else { return };
+    let name = if name.is_null() { None } else { Some(std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned()) };
+    s.app.set_song(name);
+}
+
+/// Whether a take is being recorded now (R12: the shell starts its song when this turns true and
+/// stops it when it turns false).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_recording(shell: *mut Shell) -> bool {
+    shell.as_ref().is_some_and(|s| s.app.recording())
+}
+
+/// While exporting: whether the take had a song, and if so where it begins in the clip and how long
+/// it runs, seconds, written to `start` and `length` (R12).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, length: *mut f64) -> bool {
+    let Some(s) = shell.as_ref() else { return false };
+    let Some((a, n)) = s.app.export_song() else { return false };
+    if let Some(p) = start.as_mut() {
+        *p = a;
+    }
+    if let Some(p) = length.as_mut() {
+        *p = n;
+    }
+    true
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn adrift_free(shell: *mut Shell) {
     if !shell.is_null() {

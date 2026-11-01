@@ -185,6 +185,8 @@ pub struct App {
     clip_phase: (f32, f32),
     /// Each lamp's worlds while the hand conducts (R11, `conduct.rs`), by lamp id.
     conduct: std::collections::HashMap<u32, crate::conduct::Worlds>,
+    /// The song the shell has, by name (R12): it plays from its start while a take records.
+    song: Option<String>,
     /// The cues of the last seconds, for the look (R11).
     cues: Vec<(crate::look::LookCue, f64)>,
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
@@ -373,6 +375,7 @@ impl App {
             exporting: false,
             clip_phase: (1.0, 0.0),
             conduct: Default::default(),
+            song: None,
             cues: Vec::new(),
         })
     }
@@ -1247,6 +1250,7 @@ impl App {
                     .collect()
             },
             conducting: self.conducting(),
+            song: self.song.is_some(),
             cues: self.cues.iter().map(|(c, when)| {
                 let mut c = c.clone();
                 c.age = (self.seconds - when) as f32;
@@ -1547,6 +1551,27 @@ impl App {
         self.step_clouds(usize::MAX);
     }
 
+    /// The song the shell plays from its start while a take records (R12), by name; None for none.
+    pub fn set_song(&mut self, name: Option<String>) {
+        self.song = name;
+    }
+
+    /// The song's name, if the shell has one.
+    pub fn song(&self) -> Option<&str> {
+        self.song.as_deref()
+    }
+
+    /// Whether a take is being recorded now (the shell starts and stops the song by it).
+    pub fn recording(&self) -> bool {
+        self.studio.recording.is_some()
+    }
+
+    /// While exporting, where the take's song begins in the clip and how long it runs, seconds
+    /// (R12); None without a song or at another speed.
+    pub fn export_song(&self) -> Option<(f64, f64)> {
+        self.studio.replay.as_ref()?.take.song_in_clip()
+    }
+
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
     /// export.
     pub fn conducting(&self) -> bool {
@@ -1683,7 +1708,7 @@ impl App {
         self.clock.rate = crate::conduct::TEMPO;
         let start = self.take_start();
         self.apply_start(&start, now);
-        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default() });
+        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: self.song.clone() });
     }
 
     /// The take ends and is kept, the newest last (R9).

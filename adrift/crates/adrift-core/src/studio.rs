@@ -357,6 +357,10 @@ pub struct Take {
     /// How the clip frames itself (R10).
     #[serde(default)]
     pub framing: Framing,
+    /// The song that played from its start as the take began, by the name the shell gave it (R12:
+    /// the reader conducts to it; the export lays it under the clip from the take's first moment).
+    #[serde(default)]
+    pub song: Option<String>,
 }
 
 fn one() -> f64 {
@@ -378,6 +382,17 @@ impl Take {
     }
 
     /// The clip's length in seconds: the still beat, the span at the take's speed, the eased beat.
+    /// Where the take's song begins in its clip, seconds (the still opening beat), and how long it
+    /// runs before the clip's end; None without a song, or for a clip not at the take's own speed
+    /// (a slowed song is not the song).
+    pub fn song_in_clip(&self) -> Option<(f64, f64)> {
+        self.song.as_ref()?;
+        if (self.speed - 1.0).abs() > 1e-9 {
+            return None;
+        }
+        Some((self.framing.hold_in, self.clip_seconds() - self.framing.hold_in))
+    }
+
     pub fn clip_seconds(&self) -> f64 {
         let (a, b) = self.span();
         self.framing.hold_in + (b - a) / self.speed.max(0.05) + self.framing.hold_out
@@ -454,7 +469,7 @@ mod tests {
     #[test]
     fn clip_parts() {
         let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: Camera::new(0.0, 0.0, 1.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
-        let take = Take { start, events: vec![], t0: 10.0, t1: 14.0, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 0.5, framing: Framing::default() };
+        let take = Take { start, events: vec![], t0: 10.0, t1: 14.0, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 0.5, framing: Framing::default(), song: None };
         let f = take.framing;
         assert!((take.clip_seconds() - (f.hold_in + 8.0 + f.hold_out)).abs() < 1e-9);
         assert_eq!(take.clip_at(0.2).1, ClipPart::Before);
@@ -477,7 +492,7 @@ mod tests {
     /// The clip's camera through a whole clip at `fps`: (clip seconds, camera) a frame.
     fn run_clip(fps: f64) -> Vec<(f64, Camera)> {
         let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: take_cam(0.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
-        let take = Take { start, events: vec![], t0: 0.0, t1: 1.6, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 1.0, framing: Framing::default() };
+        let take = Take { start, events: vec![], t0: 0.0, t1: 1.6, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 1.0, framing: Framing::default(), song: None };
         let mut cc = ClipCamera::new(take.start.camera);
         let n = (take.clip_seconds() * fps).ceil() as usize;
         (0..n)

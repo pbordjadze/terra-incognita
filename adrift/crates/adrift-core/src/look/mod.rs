@@ -240,6 +240,8 @@ pub struct LookState {
     pub panel_press: Option<(u32, f32)>,
     /// A take is being recorded or replayed, so the hand conducts (R11).
     pub conducting: bool,
+    /// The shell has a song that plays from its start when a take begins (R12).
+    pub song: bool,
     /// The cues of the last two seconds (R11): the look flashes the worlds a lamp chose among and
     /// folds them into the chosen one.
     pub cues: Vec<LookCue>,

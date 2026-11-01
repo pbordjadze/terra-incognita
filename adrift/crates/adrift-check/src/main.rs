@@ -132,6 +132,10 @@ struct Plan {
     /// struggling phone (R10, Motion).
     #[serde(default = "default_fps")]
     fps: f64,
+    /// A song the takes are conducted to (R12): a path to an audio file, or "tone" (a test tone);
+    /// an export lays it under the clip from the take's first moment, as the device does.
+    #[serde(default)]
+    song: Option<String>,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -225,6 +229,9 @@ fn play(args: &[String]) -> Result<()> {
         credits_open: plan.credits_open,
     });
     app.set_scene(&scene);
+    if let Some(song) = &plan.song {
+        app.set_song(Some(song.clone()));
+    }
     if let Some(rows) = &plan.panel {
         app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
     }
@@ -515,6 +522,26 @@ fn play(args: &[String]) -> Result<()> {
             std::fs::write(out.join(format!("{name}-camera.csv")), trace)?;
             drop(ff.stdin.take());
             ff.wait()?;
+            // the song under the clip, from the take's first moment, fading over its last second (R12)
+            if let (Some(song), Some((start, len))) = (&plan.song, app.export_song()) {
+                let silent = out.join(format!("{name}-silent.mp4"));
+                std::fs::rename(&mp4, &silent)?;
+                let mut cmd = std::process::Command::new("ffmpeg");
+                cmd.args(["-loglevel", "error", "-y", "-i"]).arg(&silent);
+                if song == "tone" {
+                    cmd.args(["-f", "lavfi", "-i", &format!("sine=frequency=330:duration={len}")]);
+                } else {
+                    cmd.arg("-i").arg(song);
+                }
+                let ms = (start * 1000.0).round() as u64;
+                let fade = (len - 1.0).max(0.0);
+                cmd.args(["-filter_complex", &format!("[1:a]atrim=0:{len},adelay={ms}|{ms},afade=t=out:st={:.3}:d=1[a]", start + fade), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-t", &format!("{:.3}", start + len)]);
+                let ok = cmd.arg(&mp4).status().context("ffmpeg (song)")?.success();
+                anyhow::ensure!(ok, "export {name}: the song could not be laid under the clip");
+                let line = format!("{i:3} t={t:7.2}s export {name}: the song from {start:.2} s for {len:.2} s\n");
+                print!("{line}");
+                log.push_str(&line);
+            }
             let drift = app.export_drift();
             app.export_end();
             let line = format!("{i:3} t={t:7.2}s export {name}: {n} frames {ew}x{eh} in {:.1}s, the replay ends {} from the take\n", t_export.elapsed().as_secs_f64(), drift.map_or("(no end recorded)".to_string(), |d| format!("{d:.3} km")));
