@@ -372,6 +372,26 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     move it. `plans/take-fling-away.json` with `tools/adrift/lamp_in_clip.py` (the take loses the
     lamp, the clip does not).
 
+36. **Frame the lamps, not the region** (R12): `studio::frame` centres the smallest circle round every
+    lamp out and its last `FRAME_TRAIL` (6) days of line and zooms until it, with a 25 km margin, fills
+    `FRAME_FILL` (60%) of the width; a lone lamp no wider than `FRAME_SPAN_MIN_KM` (100 km) either side,
+    so a stroke's tens of km are tens of points (zoom up to `FRAME_ZOOM_MAX`, 40). The clip frames by
+    it on a 0.3 s spring (end beat 1.5 s; the opening beat, where the song's first moment falls, is
+    unchanged). A cue on one lamp among several leans the clip in on it (`focus_weight`: in over
+    0.5 s, held to 1.5 s, out by 4 s, at most 60% of the way, never so far that another lamp passes
+    `FOCUS_HOLD` of the half-width), so the camera answers the cue. Every lamp, not only the
+    conducted ones: switching sets made the frame jump. Live, while conducting, the camera comes in to
+    the same frame for its own screen (`CameraControl::hold_frame`, a 0.6 s spring, no focus so the
+    hand can reach every lamp); a two-finger move wins for `HOLD_AFTER` (3 s); when conducting ends
+    the zoom range is the hand's again (flown back within `ZOOM_MAX` if deeper).
+37. **Misreads** (R12): a stroke gives no sweep mid-way in its first `SWEEP_AGE` (80 ms), so a
+    two-finger move whose first finger flicks before the second lands cues nothing (without it, a
+    stray sweep at 42 ms). Checked at 120 and 20 events a second: a sloppy tap rolling 12 points, a
+    quick 18-point roll in 50 ms (taps); a slow 120-point sweep never fast (a sweep at the lift); a
+    sweep ending in a curl (a sweep at its peak); a 20-point circle, a lopsided 60×25 loop, a slow
+    two-second loop (circles, at ¾ turn). `Gestures::fermata()` says a rest holds the date (a date
+    tap's pause is not one).
+
 ## The numbers (`motion.rs`)
 
 | | | why |

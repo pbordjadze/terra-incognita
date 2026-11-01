@@ -177,7 +177,25 @@ pub struct Lean {
     pub trail: Vec<crate::model::LonLat>,
     pub r1: f64,
     pub half: f64,
+    /// A lamp just cued alone (R12): its place, its line, and how far the frame leans in on it, 0..1.
+    pub focus: Option<(Vec<crate::model::LonLat>, Vec<crate::model::LonLat>, f64)>,
 }
+
+/// How far the clip leans in on a lamp cued alone, `age` seconds after the cue (R12): in over half a
+/// second, held to 1.5 s, back out to every lamp by 4 s; at most `FOCUS_MAX` of the way.
+pub fn focus_weight(age: f64) -> f64 {
+    let ss = |x: f64| {
+        let x = x.clamp(0.0, 1.0);
+        x * x * (3.0 - 2.0 * x)
+    };
+    if age < 0.0 {
+        return 0.0;
+    }
+    FOCUS_MAX * ss(age / 0.5) * (1.0 - ss((age - 1.5) / 2.5))
+}
+pub const FOCUS_MAX: f64 = 0.6;
+/// The lean on a cued lamp stops where any lamp out would pass this share of the half-width.
+pub const FOCUS_HOLD: f64 = 0.75;
 
 /// The lamps' span, their recent lines and a margin, fills this share of the view's width (R12: the
 /// round-11 critic; at zoom 3 a whole take's conducting was a hook a few millimetres long).
@@ -191,19 +209,58 @@ pub const FRAME_MARGIN_KM: f64 = 25.0;
 pub const FRAME_SPAN_MIN_KM: f64 = 100.0;
 /// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise).
 pub const FRAME_ZOOM_MAX: f64 = 40.0;
-/// How much of the take's own pinch (its zoom against the take's first) the clip keeps on top of the
-/// frame, in the zoom's log: a pinch in the take still pushes the clip in, by half as much.
-pub const FRAME_PINCH: f64 = 0.5;
+/// How much of the take's own zoom (against the take's first) the clip keeps on top of the frame, in
+/// the zoom's log. 0 since R12: while conducting, the take's camera itself comes in to the lamps (the
+/// live hold), so its zoom is mostly the frame's, not the reader's pinch, and counting it doubled
+/// the push-in.
+pub const FRAME_PINCH: f64 = 0.0;
 const EARTH_KM: f64 = 6371.0;
 
 /// The centre and zoom that frame the lamps (R12): the centre of the smallest circle round the lamps
 /// and their lines (Bădoiu–Clarkson, on the sphere), the zoom at which that circle and its margin fill
 /// `FRAME_FILL` of the width. None without lamps.
 pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
-    if l.lamps.is_empty() || l.r1 <= 0.0 || l.half <= 0.0 {
+    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half)?;
+    match &l.focus {
+        Some((lamps, trail, w)) if *w > 0.0 => {
+            let one = frame_of(lamps, trail, l.r1, l.half)?;
+            // the zoom in its log; the centre at least as far toward the lamp as keeps it no further
+            // out on the screen than it lay in the frame of them all (the zoom grows faster than a
+            // plain blend of centres would follow)
+            let at = |w: f64| {
+                let zoom = (all.1.ln() + (one.1.ln() - all.1.ln()) * w).exp();
+                let wc = w.max(1.0 - all.1 / zoom);
+                let (a, b) = (all.0.to_xyz(), one.0.to_xyz());
+                let v = [a[0] + (b[0] - a[0]) * wc, a[1] + (b[1] - a[1]) * wc, a[2] + (b[2] - a[2]) * wc];
+                (crate::model::LonLat::from_xyz(v), zoom)
+            };
+            // never so far in that another lamp leaves the frame (the lean is as much as keeps them all)
+            let holds = |(c, z): (crate::model::LonLat, f64)| {
+                let cam = Camera::new(c.lon, c.lat, z);
+                l.lamps.iter().all(|p| {
+                    let v = cam.view(p.to_xyz());
+                    v[2] > 0.0 && (v[0] * v[0] + v[1] * v[1]).sqrt() * l.r1 * z <= FOCUS_HOLD * l.half
+                })
+            };
+            if holds(at(*w)) {
+                return Some(at(*w));
+            }
+            let (mut lo, mut hi) = (0.0, *w);
+            for _ in 0..14 {
+                let mid = (lo + hi) / 2.0;
+                if holds(at(mid)) { lo = mid } else { hi = mid }
+            }
+            Some(at(lo))
+        }
+        _ => Some(all),
+    }
+}
+
+fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64) -> Option<(crate::model::LonLat, f64)> {
+    if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
-    let pts: Vec<[f64; 3]> = l.lamps.iter().chain(&l.trail).map(|p| p.to_xyz()).collect();
+    let pts: Vec<[f64; 3]> = lamps.iter().chain(trail).map(|p| p.to_xyz()).collect();
     let dot = |a: [f64; 3], b: [f64; 3]| (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
     let norm = |v: [f64; 3]| {
         let m = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
@@ -217,7 +274,7 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     }
     let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
     let half_span = (spread + FRAME_MARGIN_KM / EARTH_KM).max(FRAME_SPAN_MIN_KM / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
-    let zoom = (FRAME_FILL * l.half / (l.r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
+    let zoom = (FRAME_FILL * half / (r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
     Some((crate::model::LonLat::from_xyz(c), zoom))
 }
 
@@ -556,11 +613,11 @@ mod tests {
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;
         // a lone lamp, a short line: close enough that 40 km is plainly visible (≥ 30 points)
-        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0 };
+        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None };
         let (c, z) = frame(&lone).unwrap();
         assert!(40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2, "{c:?} {z}");
         // two lamps a thousand km apart: their span (with the margin) fills 60% of the width
-        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0 };
+        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None };
         let (c, z) = frame(&two).unwrap();
         let cam = Camera::new(c.lon, c.lat, z);
         let reach = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z }).fold(0.0, f64::max);
@@ -571,9 +628,28 @@ mod tests {
         let (c2, z2) = frame(&more).unwrap();
         let (c1, z1) = frame(&lone).unwrap();
         assert!((c2.lon - c1.lon).abs() < 0.05 && (z2 / z1 - 1.0).abs() < 0.1, "{c1:?} {z1} → {c2:?} {z2}");
-        // the clip keeps half the take's own pinch; no lamps, the take's camera
+        // the clip frames the lamps whatever the take's zoom; no lamps, the take's camera
         let a = lean(Camera::new(-50.0, 30.0, 2.0), &two, 1.0);
-        assert!((a.zoom / z - 2f64.sqrt()).abs() < 1e-6, "{a:?}");
+        assert!((a.zoom / z - 1.0).abs() < 1e-6, "{a:?}");
         assert_eq!(lean(Camera::new(-100.0, 10.0, 1.3), &Lean::default(), 1.3), Camera::new(-100.0, 10.0, 1.3));
+        // a lamp cued alone: the frame leans in on it, then eases back to both; never a jump
+        assert_eq!(focus_weight(-0.1), 0.0);
+        let mut last = frame(&two).unwrap();
+        for i in 0..=100 {
+            let age = i as f64 * 0.05;
+            let f = Lean { focus: Some((vec![LonLat::new(-72.0, 35.0)], vec![], focus_weight(age))), ..two.clone() };
+            let now = frame(&f).unwrap();
+            assert!((now.1 / last.1).ln().abs() < 0.15 && (now.0.lon - last.0.lon).abs() < 0.8, "at {age}: {last:?} → {now:?}");
+            let cam = Camera::new(now.0.lon, now.0.lat, now.1);
+            let v = cam.view(LonLat::new(-72.0, 35.0).to_xyz());
+            assert!((v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * now.1 <= 0.62 * 180.0, "the cued lamp out of frame at {age}");
+            let o = cam.view(LonLat::new(-61.0, 37.0).to_xyz());
+            assert!((o[0] * o[0] + o[1] * o[1]).sqrt() * 166.0 * now.1 <= 0.91 * 180.0, "the other lamp out of frame at {age}");
+            if (age - 1.0).abs() < 1e-9 {
+                assert!(now.1 > 1.1 * z && (now.0.lon + 72.0).abs() < 6.0, "not in on the lamp: {now:?}");
+            }
+            last = now;
+        }
+        assert!((last.1 / z - 1.0).abs() < 1e-6, "not back out to both: {last:?}");
     }
 }

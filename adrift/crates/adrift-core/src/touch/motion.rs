@@ -184,6 +184,9 @@ pub const SWEEP_FALL: f64 = 0.8;
 pub const SPEED_WINDOW: f64 = 0.04;
 /// A stroke that has curved this far (radians) may become a circle: no sweep is given mid-stroke.
 pub const SWEEP_CURVE: f64 = 1.2;
+/// No sweep is given mid-stroke in its first 80 ms (R12): a second finger landing that soon makes a
+/// camera move of it, and a real stroke's peak comes later than that.
+pub const SWEEP_AGE: f64 = 0.08;
 
 /// How far a fling of speed 1 goes in `dt` as it decays: (1 − e^(−k·dt)) / k, so the glide's whole
 /// length is v / FLING_DECAY at any frame rate (R10).
