@@ -814,3 +814,37 @@ fn gpu_step_cost() {
     frames.sort_by(|a, b| a.partial_cmp(b).unwrap());
     eprintln!("8 clouds x {per} paths x 24 half-day steps: {:.1} ms a frame (median of {}; {:.1} ns a path-step) on {}", frames[frames.len() / 2], frames.len(), frames[frames.len() / 2] * 1e6 / (8.0 * per as f64 * 24.0), gpu.adapter_info.name);
 }
+
+/// Visual's question (R10): does a lamp's journey zigzag? The atlantic scene's Gulf Stream lamp
+/// (put 34N 75W on May 2, followed 60 days), stepped a quarter day as the app steps it: how far its
+/// direction turns between quarter days and between days, and where it was held. `--ignored
+/// --nocapture` prints it.
+#[test]
+#[ignore]
+fn a_lamps_line_at_a_quarter_day_and_a_day() {
+    let r = rules();
+    let day0 = 182.0 - 60.0;
+    let mut d = r.put(LonLat { lon: -75.0, lat: 34.0 }, day0, 0, 0);
+    let mut pts = vec![(d.at, Held::No)];
+    for i in 0..240 {
+        let f = r.flight(d, day0 + i as f64 * 0.25, 0.25, 0, 0);
+        d = f.drift;
+        pts.push((d.at, f.held));
+    }
+    let turn = |s: usize| {
+        let mut t = Vec::new();
+        let p: Vec<_> = pts.iter().step_by(s).collect();
+        for w in p.windows(3) {
+            let h = |a: LonLat, b: LonLat| ((b.lat - a.lat).atan2((b.lon - a.lon) * a.lat.to_radians().cos())).to_degrees();
+            let (h1, h2) = (h(w[0].0, w[1].0), h(w[1].0, w[2].0));
+            t.push(((h2 - h1 + 540.0).rem_euclid(360.0) - 180.0).abs());
+        }
+        t.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        (t[t.len() / 2], t[t.len() * 9 / 10])
+    };
+    let held = pts.iter().filter(|p| p.1 != Held::No).count();
+    eprintln!("turn between quarter-day segments (median, 90th): {:?}; between daily: {:?}; held {held} of 240 steps", turn(1), turn(4));
+    for (i, p) in pts.iter().enumerate().step_by(4) {
+        eprintln!("day {:2}: {:7.2} {:6.2} {:?}", i / 4, p.0.lon, p.0.lat, p.1);
+    }
+}
