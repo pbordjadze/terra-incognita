@@ -399,3 +399,35 @@ zooming to hold everything chosen at once (a single lamp is already followed). G
   message (a craft read a late goal an hour late); a `play-all` that runs every plan in one process
   with one summary line (the suite now takes over ten minutes); the framing's centre by a minimum
   enclosing circle rather than the mean.
+
+## 16. R9 opens: the studio, step 1 (Nov 1, 07:30 UTC)
+
+A new direction (painting-company row 199): Adrift becomes a studio for making short edits of these
+lines (stochasticity as where the beauty is, a little structure dropped in), and the ocean of lamps
+is its first preset. Step 1 is the scaffolding: a light recording mode, the first tools any preset
+will share, a timing or two. Later steps add presets, and what differs between two presets becomes
+configurable. The ocean may change where step 1 needs it to.
+
+Every session that has worked on Adrift independently proposed the same foundation, and it is the
+round's seam: **a take is data, not pixels.**
+
+- *Engineering* (`studio.rs`, at the head named in the round's message): a `Take` is the state when
+  it began (`TakeStart`: floats, clock, camera, chosen and followed, the ride, the drawn seconds,
+  night) and every input the shell fed the app while it ran (each frame's time, touch, wheel, key,
+  shake, and intents applied from outside through `App::command`), with the screen it was recorded
+  on and an optional `trim`. `Intent::Record { on }` begins and ends one (beginning resets the live
+  camera's inertia, the gestures and the ripples, so live and replay agree from the first frame);
+  `Intent::Export` asks the shell to export the newest. `App::export_begin/frame/end` replay a take
+  offline at a fixed rate with the budget locked at full quality, each frame rendered into an
+  offscreen target and returned as BGRA, and put the live app back after; `export_drift` says how
+  far the replay ended from the take (0 km in the check). `LookState.recording` (seconds),
+  `.exporting` (this frame goes into the clip), `.takes`. The device: `adrift_take_export`,
+  `adrift_export_begin/frame/end`; the shell writes H.264 with AVAssetWriter and offers the file
+  through the share sheet (Save Video among its actions). The check: a plan's `record: true|false`
+  and `export: "<name>"` (ffmpeg to `<name>.mp4`, its first and last frames, a drift check);
+  `plans/take-and-export.json` (a rest, a tap, a scrub, a pinch: 172 frames, drift 0.000 km, the
+  last frame identical to the live one).
+- *Motion*: how a hand starts and stops a take and exports it, with nothing that gets in the way of
+  playing; the first timing tool (a trim, a speed); whatever "minor selection tools" the hand needs.
+- *Visual*: the exported frame clean (what of the chrome stays out of a clip), a recording's mark on
+  the live screen only, whatever the export's control needs drawn.

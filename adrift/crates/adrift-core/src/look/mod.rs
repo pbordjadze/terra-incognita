@@ -220,6 +220,13 @@ pub struct LookCloud {
 #[derive(Clone, Debug, Default)]
 pub struct LookState {
     pub floats: Vec<LookFloat>,
+    /// A take is being recorded, and for how many seconds (R9).
+    pub recording: Option<f32>,
+    /// This frame is rendered into an exported clip (R9): the screen's chrome (the date, the panel,
+    /// the recording's mark) is the look's to leave out or keep.
+    pub exporting: bool,
+    /// How many takes are kept, the newest ready to export (R9).
+    pub takes: u32,
     /// The clouds out, in the order chosen (the front one last) (R6).
     pub clouds: Vec<LookCloud>,
     /// The days the clouds are still behind the date, the most of any (0 when they have caught up):

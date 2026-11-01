@@ -27,6 +27,7 @@ swiftc -O -target arm64-apple-ios$MIN_IOS -sdk "$SDK" \
   -parse-as-library -module-name Adrift \
   "$ROOT/adrift/ios/Sources/main.swift" "$LIB" \
   -framework UIKit -framework QuartzCore -framework Metal -framework CoreGraphics -framework Foundation \
+  -framework AVFoundation -framework CoreMedia -framework CoreVideo \
   -lc++ -o "$APP/Adrift"
 echo "== bundle"
 sed -e "s/ADRIFT_VERSION/1.0.$BUILD/" -e "s/ADRIFT_BUILD/$BUILD/" "$ROOT/adrift/ios/Info.plist" > "$APP/Info.plist"

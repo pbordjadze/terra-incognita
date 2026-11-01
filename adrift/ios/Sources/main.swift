@@ -3,6 +3,9 @@
 // frame at the screen's own rate. Nothing else lives here: the library is the app.
 import UIKit
 import QuartzCore
+import AVFoundation
+import CoreMedia
+import CoreVideo
 
 final class AdriftView: UIView {
     override class var layerClass: AnyClass { CAMetalLayer.self }
@@ -70,6 +73,84 @@ final class AdriftView: UIView {
         guard let shell else { return }
         adrift_frame(shell, link.targetTimestamp)
         if adrift_take_haptic(shell) { haptic.impactOccurred() }
+        if adrift_take_export(shell) { exportTake() }
+    }
+
+    // ---- the studio's export (R9): the newest take replayed offline by the library at 30 fps,
+    // written as H.264 by AVAssetWriter, then offered by the share sheet (Save Video, Messages, ...)
+
+    var exporting = false
+    let spinner = UIActivityIndicatorView(style: .large)
+
+    func exportTake() {
+        guard let shell, !exporting else { return }
+        var w: UInt32 = 0, h: UInt32 = 0
+        let frames = adrift_export_begin(shell, 30, &w, &h)
+        guard frames > 0 else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Adrift-\(Int(Date().timeIntervalSince1970)).mp4")
+        try? FileManager.default.removeItem(at: url)
+        guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mp4) else { adrift_export_end(shell); return }
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: Int(w),
+            AVVideoHeightKey: Int(h),
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 12_000_000],
+        ])
+        input.expectsMediaDataInRealTime = false
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: Int(w),
+            kCVPixelBufferHeightKey as String: Int(h),
+        ])
+        writer.add(input)
+        guard writer.startWriting() else { adrift_export_end(shell); return }
+        writer.startSession(atSourceTime: .zero)
+        exporting = true
+        link?.isPaused = true
+        spinner.center = CGPoint(x: bounds.midX, y: bounds.midY)
+        addSubview(spinner)
+        spinner.startAnimating()
+        var index: Int64 = 0
+        func finish() {
+            input.markAsFinished()
+            writer.finishWriting { [weak self] in
+                DispatchQueue.main.async {
+                    guard let self, let shell = self.shell else { return }
+                    adrift_export_end(shell)
+                    self.spinner.stopAnimating()
+                    self.spinner.removeFromSuperview()
+                    self.exporting = false
+                    self.link?.isPaused = false
+                    if writer.status == .completed { self.share(url) } else { NSLog("adrift: export failed: \(String(describing: writer.error))") }
+                }
+            }
+        }
+        func step() {
+            guard let shell = self.shell else { return }
+            for _ in 0..<4 {
+                guard input.isReadyForMoreMediaData else { break }
+                guard let pool = adaptor.pixelBufferPool else { finish(); return }
+                var buffer: CVPixelBuffer?
+                CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
+                guard let pb = buffer else { finish(); return }
+                CVPixelBufferLockBaseAddress(pb, [])
+                let base = CVPixelBufferGetBaseAddress(pb)!.assumingMemoryBound(to: UInt8.self)
+                let ok = adrift_export_frame(shell, base, CVPixelBufferGetBytesPerRow(pb))
+                CVPixelBufferUnlockBaseAddress(pb, [])
+                if !ok { finish(); return }
+                adaptor.append(pb, withPresentationTime: CMTime(value: index, timescale: 30))
+                index += 1
+            }
+            DispatchQueue.main.async { step() }
+        }
+        DispatchQueue.main.async { step() }
+    }
+
+    func share(_ url: URL) {
+        let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = self
+        sheet.popoverPresentationController?.sourceRect = CGRect(x: bounds.midX, y: bounds.midY, width: 1, height: 1)
+        window?.rootViewController?.present(sheet, animated: true)
     }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {

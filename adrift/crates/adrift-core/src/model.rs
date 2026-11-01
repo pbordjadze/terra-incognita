@@ -393,6 +393,10 @@ pub enum Intent {
     /// (`Shown::Cloud`: its maybes out, as `ChooseAlso` adds it), or neither (`None`), and comes to
     /// the front (R8: each lamp chosen its own way, mixed freely).
     Show { float: u32, shown: Option<Shown> },
+    /// A take begins (`on`) or ends (R9: the studio's recording; `studio.rs`).
+    Record { on: bool },
+    /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
+    Export,
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
 }
