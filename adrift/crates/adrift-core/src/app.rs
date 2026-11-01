@@ -1558,16 +1558,26 @@ impl App {
     /// legs after the date (a scrub back) are dropped: the take writes the future afresh.
     fn cut_legs(&mut self) {
         let day = self.clock.day;
-        for f in &mut self.floats {
+        // the cut is on the quarter-day grid, at the first mark at or after the date, with the path's
+        // own sample there (place and eddy): the new leg's flight is the old one's, bit for bit (R11,
+        // Truth: `conduct::tests`), and the lamp is where it was drawn
+        let mut cuts = Vec::new();
+        for f in &self.floats {
             if !f.born(day) || f.hand != Hand::Free {
                 continue;
             }
-            let mut legs = f.legs();
             let Some(li) = f.leg_at(day) else { continue };
+            cuts.push((f.id, li, f.legs()[li]));
+        }
+        for (id, li, leg) in cuts {
+            let mut budget = usize::MAX;
+            self.ensure_path(id, li, leg, day, &mut budget);
+            let s = self.paths[&(id, li)].samples.iter().copied().find(|s| s.day >= day - 1e-9);
+            let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else { continue };
+            let mut legs = f.legs();
             legs.truncate(li + 1);
-            let leg = legs[li];
-            if day > leg.day + 1e-9 {
-                legs.push(Leg { at: f.at, day, seed: leg.seed, world: leg.world, eddy: Some(f.eddy) });
+            if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9) {
+                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy) });
             }
             f.legs = legs;
         }
@@ -1590,7 +1600,7 @@ impl App {
             let leg = legs[li];
             live.push(f.id);
             let w = self.conduct.entry(f.id).or_insert_with(|| crate::conduct::Worlds::new(&self.rules, leg, li));
-            if w.leg != leg || w.leg_index != li {
+            if !w.serves(&leg, li) {
                 *w = crate::conduct::Worlds::new(&self.rules, leg, li);
             }
             w.step_to(&self.rules, day);
@@ -1623,16 +1633,17 @@ impl App {
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
             let li = w.leg_index;
+            // the leg becomes world k to the next grid mark, and the next leg begins there with world
+            // k's exact state, still in world k: the lamp's path is that world's, bit for bit (Truth)
+            let (cut_day, cut) = w.cut(choice.k, day);
             let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else { continue };
             before.push(f.clone());
             let mut legs = f.legs();
             legs.truncate(li + 1);
-            if day > legs[li].day + 1e-9 {
-                legs[li].world = choice.k;
+            legs[li].world = choice.k;
+            if cut_day > legs[li].day + 1e-9 {
                 let seed = legs[li].seed;
-                legs.push(Leg { at: chosen.at, day, seed, world: 0, eddy: Some([chosen.eddy.0, chosen.eddy.1]) });
-            } else {
-                legs[li].world = choice.k;
+                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]) });
             }
             f.legs = legs;
             let from = f.at;
@@ -1641,7 +1652,6 @@ impl App {
             f.lit_for = 0.0;
             let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, age: 0.0 };
             self.cues.push((cue, self.seconds));
-            self.conduct.remove(&id);
         }
         if !before.is_empty() {
             self.undo.push(Undo::Conducted(before));
