@@ -84,7 +84,25 @@ pub async fn start() -> Result<(), JsValue> {
     let app = App::new(gpu, Box::new(MemoryAssets(files)), w, h, dpr).map_err(|e| JsValue::from_str(&e.to_string()))?;
     status(&document, "");
     let mut app = app;
-    if let Ok(Some(store)) = window.local_storage() {
+    // the conductor spike (painting-company row 199): this build opens conducting one lamp's cloud
+    // off Cape Hatteras in a typical June; `?free` opens the ordinary sea
+    let conduct = !window.location().search().unwrap_or_default().contains("free");
+    if conduct {
+        app.set_scene(&adrift_core::Scene {
+            camera: adrift_core::Camera::new(-70.0, 37.0, 4.5),
+            day: 160.0,
+            running: true,
+            floats: Vec::new(),
+            hold: None,
+            choose: Vec::new(),
+            follow: Vec::new(),
+            seconds: 5.0,
+            credits_open: false,
+            night: false,
+            conduct: Some([-74.0, 35.6]),
+            conduct_lines: true,
+        });
+    } else if let Ok(Some(store)) = window.local_storage() {
         if let Ok(Some(json)) = store.get_item("adrift") {
             app.restore(&json);
         }
@@ -98,6 +116,9 @@ pub async fn start() -> Result<(), JsValue> {
         let a = app.clone();
         let w = window.clone();
         let keep = Closure::<dyn FnMut()>::new(move || {
+            if a.borrow().conduct.is_some() {
+                return;
+            }
             if let Ok(Some(store)) = w.local_storage() {
                 let _ = store.set_item("adrift", &a.borrow().snapshot());
             }
@@ -107,10 +128,35 @@ pub async fn start() -> Result<(), JsValue> {
         keep.forget();
     }
 
+    // the conductor's buttons and baton (index.html calls these)
+    let lifted = Rc::new(std::cell::Cell::new(0.0f64));
+    {
+        let a = app.clone();
+        let act = Closure::<dyn FnMut(String)>::new(move |what: String| match what.as_str() {
+            "cloud" => a.borrow_mut().conduct_mode(false),
+            "lines" => a.borrow_mut().conduct_mode(true),
+            w => a.borrow_mut().conduct_action(w == "again"),
+        });
+        js_sys::Reflect::set(&window, &"adriftConduct".into(), act.as_ref())?;
+        act.forget();
+        let a = app.clone();
+        let l = lifted.clone();
+        let p = perf.clone();
+        let swing = Closure::<dyn FnMut(f64, f64, f64)>::new(move |dx: f64, dy: f64, secs: f64| {
+            l.set(now(&p));
+            a.borrow_mut().conduct_swing(dx, dy, secs);
+        });
+        js_sys::Reflect::set(&window, &"adriftSwing".into(), swing.as_ref())?;
+        swing.forget();
+    }
+
     // pointer events (points: CSS pixels)
     {
-        let make = |phase: Phase, app: Rc<RefCell<App>>, perf: web_sys::Performance, canvas: web_sys::HtmlCanvasElement| {
+        let make = |phase: Phase, app: Rc<RefCell<App>>, perf: web_sys::Performance, canvas: web_sys::HtmlCanvasElement, lifted: Rc<std::cell::Cell<f64>>| {
             Closure::<dyn FnMut(web_sys::PointerEvent)>::new(move |e: web_sys::PointerEvent| {
+                if phase == Phase::Up {
+                    lifted.set(now(&perf));
+                }
                 let r = canvas.get_bounding_client_rect();
                 let (x, y) = (e.client_x() as f64 - r.left(), e.client_y() as f64 - r.top());
                 if phase == Phase::Down {
@@ -121,7 +167,7 @@ pub async fn start() -> Result<(), JsValue> {
             })
         };
         for (name, phase) in [("pointerdown", Phase::Down), ("pointermove", Phase::Move), ("pointerup", Phase::Up), ("pointercancel", Phase::Cancel)] {
-            let c = make(phase, app.clone(), perf.clone(), canvas.clone());
+            let c = make(phase, app.clone(), perf.clone(), canvas.clone(), lifted.clone());
             canvas.add_event_listener_with_callback(name, c.as_ref().unchecked_ref())?;
             c.forget();
         }
@@ -174,6 +220,8 @@ pub async fn start() -> Result<(), JsValue> {
     let app2 = app.clone();
     let perf2 = perf.clone();
     let mut stats_at = 0.0f64;
+    let mut hud_text = String::new();
+    let document2 = document.clone();
     *g.borrow_mut() = Some(Closure::new(move || {
         let dpr = window2.device_pixel_ratio();
         let r = canvas2.get_bounding_client_rect();
@@ -191,6 +239,26 @@ pub async fn start() -> Result<(), JsValue> {
             let t = now(&perf2);
             app2.borrow_mut().frame(&view, t);
             frame.present();
+            // the conductor's line: the last cue, and the finger's lift to its frame drawn
+            if let Some((line, cued)) = app2.borrow_mut().conduct_line() {
+                // (the finger's lift to the frame that shows the cue, in the console for the report)
+                if cued {
+                    let done = now(&perf2);
+                    web_sys::console::log_1(&format!("{line} · lift to frame {:.0} ms (frame {:.0} ms)", (done - lifted.get()) * 1000.0, (done - t) * 1000.0).into());
+                    if let Some(el) = document2.get_element_by_id("hint") {
+                        let _ = el.set_attribute("hidden", "");
+                    }
+                }
+                let text = Some(line);
+                if let Some(text) = text {
+                    if text != hud_text {
+                        if let Some(el) = document2.get_element_by_id("hud") {
+                            el.set_text_content(Some(&text));
+                        }
+                        hud_text = text;
+                    }
+                }
+            }
             // the frame's cost, every five seconds, in the console
             if t - stats_at >= 5.0 {
                 stats_at = t;

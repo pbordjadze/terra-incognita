@@ -55,6 +55,12 @@ pub struct Scene {
     /// The night palette (the system's dark appearance).
     #[serde(default)]
     pub night: bool,
+    /// Conduct one lamp's cloud from this place (lon, lat): the spike of painting-company row 199.
+    #[serde(default)]
+    pub conduct: Option<[f64; 2]>,
+    /// Conduct a few lamps as lines instead of one cloud.
+    #[serde(default)]
+    pub conduct_lines: bool,
 }
 fn yes() -> bool {
     true
@@ -164,6 +170,8 @@ pub struct App {
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
+    /// Conducting a cloud (the spike, `conduct.rs`): while set, the pointer is the conductor's.
+    pub conduct: Option<crate::conduct::Orchestra>,
 }
 
 /// Days a second while the date runs.
@@ -343,6 +351,7 @@ impl App {
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
             panel_stand_in: None,
+            conduct: None,
         })
     }
 
@@ -413,6 +422,11 @@ impl App {
     }
 
     pub fn pointer(&mut self, ev: PointerEvent) {
+        if self.conduct.is_some() {
+            let lamps = self.conduct.as_ref().unwrap().lamps_on(&self.disc(), &self.camera.camera);
+            self.conduct.as_mut().unwrap().pointer(ev, &lamps);
+            return;
+        }
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.feed(ev, &*self);
         self.gestures = gestures;
@@ -752,6 +766,9 @@ impl App {
         for id in gone {
             self.take_out(id);
         }
+        if let Some(c) = &mut self.conduct {
+            self.clock.running = !c.resting(now);
+        }
         if self.clock.running {
             self.clock.day += self.clock.rate * dt;
             if !self.reduce_motion {
@@ -768,6 +785,23 @@ impl App {
         }
         let motion = self.motion();
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
+        if let Some(mut c) = self.conduct.take() {
+            let disc = self.disc();
+            c.tick(&self.rules, self.clock.day, now, &disc, &self.camera.camera);
+            // the camera drifts with the cloud's middle
+            let m = c.middle();
+            let cam = &mut self.camera.camera;
+            let f = 1.0 - (-dt * 1.2).exp();
+            let mut dlon = m.lon - cam.lon;
+            if dlon > 180.0 {
+                dlon -= 360.0;
+            } else if dlon < -180.0 {
+                dlon += 360.0;
+            }
+            cam.lon += dlon * f;
+            cam.lat += (m.lat - cam.lat) * f;
+            self.conduct = Some(c);
+        }
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
         // the sea settles to rest when the date is held (0.6 s, eased out) and wakes when it runs
@@ -1086,6 +1120,10 @@ impl App {
         self.night = scene.night;
         self.credits_open = scene.credits_open;
         self.rest = if scene.running { 0.0 } else { 1.0 };
+        self.conduct = scene.conduct.map(|[lon, lat]| crate::conduct::Orchestra::new(&self.rules, LonLat::new(lon, lat), scene.day, scene.conduct_lines));
+        if self.conduct.is_some() {
+            self.clock.rate = crate::conduct::RATE;
+        }
         for (i, sf) in scene.floats.iter().enumerate() {
             self.clock.day = scene.day - sf.days_ago;
             let id = self.put(LonLat::new(sf.lon, sf.lat));
@@ -1135,7 +1173,7 @@ impl App {
                 Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id) })
             })
             .collect();
-        LookState {
+        let mut state = LookState {
             floats: self
                 .floats
                 .iter()
@@ -1164,7 +1202,13 @@ impl App {
             credits: crate::sea::CREDIT_LINE.to_string(),
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
             credits_open: self.credits_open,
+        };
+        if let Some(c) = &self.conduct {
+            state.floats.extend(c.lamps());
+            state.clouds = c.clouds(MAYBES);
+            state.bloom = state.clouds.last().map_or(0.0, |c| c.bloom);
         }
+        state
     }
 
     /// Every shown float's cloud stepped toward the date, at most `budget` steps each (R6).
@@ -1305,6 +1349,11 @@ impl App {
             self.frames.3 += 1;
         }
         self.step_clouds(MAYBES_BUDGET);
+        if let Some(c) = &self.conduct {
+            for (base, paths) in c.uploads(MAYBES) {
+                self.maybes.seed_at(&self.gpu, base, &paths);
+            }
+        }
         let state = self.look_state();
         let d = view.disc;
         self.look.prepare(&self.gpu, &state, (self.width as f64 / self.ppp) as f32, (self.height as f64 / self.ppp) as f32, self.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
@@ -1359,5 +1408,38 @@ impl App {
     /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.
     pub fn date_bounds(&self) -> Option<[f32; 4]> {
         self.look.date_bounds()
+    }
+
+    /// The conductor's again (the same take replayed) or a fresh take (the spike).
+    pub fn conduct_action(&mut self, again: bool) {
+        if let Some(mut c) = self.conduct.take() {
+            let day = if again { c.again(&self.rules) } else { c.fresh(&self.rules) };
+            self.clock.day = day;
+            self.clock.running = true;
+            self.conduct = Some(c);
+        }
+    }
+
+    /// The phone's swing as a sweep (points on the screen, the swing's seconds).
+    pub fn conduct_swing(&mut self, dx: f64, dy: f64, secs: f64) {
+        if let Some(c) = &mut self.conduct {
+            c.swing(dx, dy, secs);
+        }
+    }
+
+    /// The conductor's line, and whether a cue was made since last asked.
+    pub fn conduct_line(&mut self) -> Option<(String, bool)> {
+        self.conduct.as_mut().map(|c| (c.line.clone(), std::mem::take(&mut c.cued)))
+    }
+
+    /// Conducting the cloud, or the lines: a fresh take either way, the camera back at the start.
+    pub fn conduct_mode(&mut self, lines: bool) {
+        if let Some(c) = &self.conduct {
+            let (at, day) = (c.at, c.day);
+            self.conduct = Some(crate::conduct::Orchestra::new(&self.rules, at, day, lines));
+            self.clock.day = day;
+            self.clock.running = true;
+            self.camera.camera = Camera::new(-70.0, 37.0, self.camera.camera.zoom);
+        }
     }
 }

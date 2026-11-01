@@ -205,6 +205,8 @@ fn play(args: &[String]) -> Result<()> {
         seconds: 0.0,
         night: plan.night,
         credits_open: plan.credits_open,
+        conduct: None,
+        conduct_lines: false,
     });
     app.set_scene(&scene);
     if let Some(rows) = &plan.panel {
@@ -220,10 +222,15 @@ fn play(args: &[String]) -> Result<()> {
         let n = (secs * fps).ceil().max(1.0) as usize;
         for _ in 0..n {
             *t += secs / n as f64;
+            let t0 = std::time::Instant::now();
             if every_frame {
                 app.frame(&target.view, *t);
             } else {
                 app.advance(*t);
+            }
+            // the conductor's cue, with what its frame cost (the spike, painting-company row 199)
+            if let Some((line, true)) = app.conduct_line() {
+                println!("     t={:8.2}s day {:.2} cue: {line} (frame {:.1} ms)", *t, app.clock.day, t0.elapsed().as_secs_f64() * 1000.0);
             }
         }
     };

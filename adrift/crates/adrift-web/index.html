@@ -3,19 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Adrift</title>
+<title>Adrift Conductor</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #f4f1ea; overflow: hidden; }
+  /* the conductor spike (painting-company row 199): the globe full screen, one line of what the
+     last gesture did, a card to begin, and four controls along the foot */
+  :root { --ground: #f4f1ea; --ink: #2f3a40; --soft: #5f6a70; --card: rgba(250,248,243,.9); --rule: #c9c2b4; --on: #2f3a40; --on-ink: #f4f1ea; color-scheme: light; }
+  @media (prefers-color-scheme: dark) { :root { --ground: #0d1418; --ink: #e4e0d6; --soft: #a3aaa9; --card: rgba(18,26,31,.86); --rule: #3b474d; --on: #e4e0d6; --on-ink: #0d1418; color-scheme: dark; } }
+  html, body { margin: 0; height: 100%; background: var(--ground); overflow: hidden; }
   canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
-  #status { position: fixed; left: 0; right: 0; bottom: 18px; text-align: center; font: 15px/1.4 Georgia, serif; color: #5a5650; pointer-events: none; }
+  #status { position: fixed; left: 0; right: 0; bottom: 18px; text-align: center; font: 15px/1.4 Georgia, serif; color: var(--soft); pointer-events: none; }
+  #hud { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 12px); max-width: calc(100vw - 32px); font: italic 15px/1.35 Georgia, serif; color: var(--ink); background: var(--card); border-radius: 16px; padding: 6px 14px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud:empty { display: none; }
+  #hint { position: fixed; left: 50%; top: 58%; transform: translateX(-50%); width: min(320px, calc(100vw - 48px)); font: 16px/1.45 Georgia, serif; color: var(--ink); background: var(--card); border-radius: 14px; padding: 14px 18px; pointer-events: none; }
+  #hint b { font-weight: normal; font-style: italic; }
+  #hint p { margin: 0 0 6px; }
+  #hint p:last-child { margin: 0; color: var(--soft); font-size: 14px; }
+  [hidden] { display: none !important; }
+  #bar { position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 58px); display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 0 16px; }
+  #bar button { font: 15px Georgia, serif; padding: 8px 15px; border-radius: 18px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); }
+  #bar button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  #bar .seg { display: flex; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; }
+  #bar .seg button { border: 0; border-radius: 0; }
+  #bar .seg button.on { background: var(--on); color: var(--on-ink); }
 </style>
 </head>
 <body>
 <canvas id="adrift"></canvas>
+<div id="hud"></div>
+<div id="hint">
+  <p>Put on a song, and conduct the sea.</p>
+  <p><b>Tap</b> where it should be · <b>sweep</b> the way it should go · <b>circle</b> to make it turn · <b>rest</b> a finger to hold.</p>
+  <p>Each gesture finds, among 2048 seas that already ran, the one that did what your hand did.</p>
+</div>
+<div id="bar">
+  <div class="seg"><button id="lines" class="on">Lamps</button><button id="cloud">Cloud</button></div>
+  <button id="again">Again</button>
+  <button id="new">New take</button>
+</div>
 <div id="status"></div>
 <script type="module">
   import init from './adrift_web.js';
   init().catch(e => { document.getElementById('status').textContent = 'Adrift could not start: ' + e; console.error(e); });
+  if (location.search.includes('free')) { document.getElementById('bar').hidden = true; document.getElementById('hint').hidden = true; }
+  const go = what => window.adriftConduct && window.adriftConduct(what);
+  const mode = which => {
+    for (const id of ['lines', 'cloud']) document.getElementById(id).classList.toggle('on', id === which);
+    go(which);
+  };
+  document.getElementById('lines').onclick = () => mode('lines');
+  document.getElementById('cloud').onclick = () => mode('cloud');
+  document.getElementById('again').onclick = () => go('again');
+  document.getElementById('new').onclick = () => go('new');
 </script>
 </body>
 </html>
