@@ -20,6 +20,12 @@ impl Probe for App {
                 return Hit::Panel(id);
             }
         }
+        // the stories' marks under the date (painting-company row 199)
+        for (story, [bx, by, bw, bh]) in self.story_bounds() {
+            if (Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 }).contains(x, y) {
+                return Hit::Story(story);
+            }
+        }
         let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 });
         match App::hit(self, x, y) {
             // the float in hand lies under the finger: what matters is the water under it

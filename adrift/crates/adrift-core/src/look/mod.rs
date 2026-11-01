@@ -263,6 +263,27 @@ pub struct LookState {
     pub credits_full: Vec<String>,
     /// The page of credits is open (a tap on the credit line opens it, a tap anywhere closes it).
     pub credits_open: bool,
+    /// The stories' marks for two lamps (painting-company row 199), if two are out.
+    pub story: Option<LookStory>,
+}
+
+/// The stories' marks (painting-company row 199): one small drawing a story, two threads in the two
+/// lamps' hues whose gap is the distance between them over the story's span; a tap tells it.
+#[derive(Clone, Debug, Default)]
+pub struct LookStory {
+    pub hues: [[f32; 3]; 2],
+    /// The story told (its index in `story::Story::ALL`), if one is.
+    pub active: Option<usize>,
+    /// Which of its best takes plays (0..TAKES).
+    pub take: usize,
+    /// The playing take's real daily distance, 0..1 of the drawing's widest; empty until it plays.
+    pub curve: Vec<f32>,
+    /// How far through the span the date is, 0..1.
+    pub playhead: f32,
+    /// While a story told waits for the search: how far it has come (0..1); else negative.
+    pub searching: f32,
+    /// Seconds since the story was last told.
+    pub told: f32,
 }
 
 /// A lamp's hue by its number (palette.json › hues): amber first, then the others, each a glass
@@ -376,6 +397,7 @@ impl Look {
         // the panel of every lamp out there (R6): where each was put, and which are out
         let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
         labels.extend(self.words.panel(&rows, reading, disc, n));
+        labels.extend(self.words.story_marks(state.story.as_ref(), width, height, reading, disc, n));
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }
@@ -393,6 +415,11 @@ impl Look {
     /// (y down), after a `prepare`; Motion's probe answers a touch there. Empty until Visual draws it.
     pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
         self.words.panel_bounds.clone()
+    }
+
+    /// The stories' marks as drawn (painting-company row 199): each story and its rect in points.
+    pub fn story_bounds(&self) -> Vec<(crate::story::Story, [f32; 4])> {
+        self.words.story_bounds.clone()
     }
 
     /// Where the credit line is drawn, x, y, w, h in points (y down), after a `prepare`: a tap on it

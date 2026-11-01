@@ -37,6 +37,8 @@ pub const FILES: &[&str] = &[
     "ice-07.png", "ice-08.png", "ice-09.png", "ice-10.png", "ice-11.png", "ice-12.png",
     "land-01.jpg", "land-02.jpg", "land-03.jpg", "land-04.jpg", "land-05.jpg", "land-06.jpg",
     "land-07.jpg", "land-08.jpg", "land-09.jpg", "land-10.jpg", "land-11.jpg", "land-12.jpg",
+    // the cities' lights by night (gpu/textures.rs reads it; the web shell fetches only what is named here)
+    "night.jpg",
     // Adrift's own sheets (Truth; adrift/SOURCES.md): the wind, the eddy wander and its time
     // scale, the real drifters' runs
     "wind.png",

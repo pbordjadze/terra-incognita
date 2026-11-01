@@ -164,6 +164,28 @@ pub struct App {
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
+    /// The world every lamp lives in (painting-company row 199): 0 until a story is cast, then the
+    /// take's. A lamp's path is its flight in this world (`extend_path`'s k), the same flight its
+    /// maybe of this index takes, so a take replays exactly what the search measured.
+    pub world: u32,
+    /// The two lamps' search through the worlds and the story told for them, if two are out.
+    pub cast: Option<Cast>,
+}
+
+/// A story cast for two lamps (painting-company row 199).
+pub struct Cast {
+    /// The two lamps (the earlier first) and every world's daily distance between them.
+    pub pair: (u32, u32),
+    pub search: crate::story::Search,
+    /// The story told, and which of its best takes plays.
+    pub story: Option<crate::story::Story>,
+    pub take: usize,
+    /// The story told waits for the search to finish.
+    pub waiting: bool,
+    /// The take plays until this day, then the date rests there.
+    pub until: Option<f64>,
+    /// The seconds when the story was last told (the mark answers the finger).
+    pub told_at: f64,
 }
 
 /// Days a second while the date runs.
@@ -223,6 +245,8 @@ struct Sample {
 /// changed under its key is recomputed).
 struct Path {
     leg: Leg,
+    /// The world it is stepped in (its maybe index; 0 the lamp's own until a story is cast).
+    k: u32,
     samples: Vec<Sample>,
 }
 
@@ -342,6 +366,8 @@ impl App {
             haptic: false,
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
+            world: 0,
+            cast: None,
             panel_stand_in: None,
         })
     }
@@ -601,6 +627,7 @@ impl App {
             Intent::SetRunning { running } => self.clock.running = running,
             Intent::ToggleCredits => self.credits_open = !self.credits_open,
             Intent::ClearAll => self.clear_all(),
+            Intent::Cast { story } => self.tell(story),
             Intent::Home => {
                 self.camera.riding = None;
                 let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
@@ -752,12 +779,27 @@ impl App {
         for id in gone {
             self.take_out(id);
         }
+        // a take plays at the story's pace and rests at its end; a hand that rests the date ends it
+        if let Some(c) = self.cast.as_mut() {
+            if let Some(until) = c.until {
+                if !self.clock.running {
+                    c.until = None;
+                    self.clock.rate = RATE;
+                } else if self.clock.day + self.clock.rate * dt >= until {
+                    self.clock.day = until;
+                    self.clock.running = false;
+                    self.clock.rate = RATE;
+                    c.until = None;
+                }
+            }
+        }
         if self.clock.running {
             self.clock.day += self.clock.rate * dt;
             if !self.reduce_motion {
                 self.seconds += dt;
             }
         }
+        self.search_worlds();
         self.step_floats();
         for f in &mut self.floats {
             f.lit_for += dt;
@@ -960,15 +1002,16 @@ impl App {
 
     /// A leg's path computed to `upto` (as far as the budget allows this frame).
     fn ensure_path(&mut self, id: u32, li: usize, leg: Leg, upto: f64, budget: &mut usize) {
-        let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, samples: Vec::new() });
-        Self::extend_path(&self.rules, path, leg, 0, upto, budget);
+        let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, k: u32::MAX, samples: Vec::new() });
+        Self::extend_path(&self.rules, path, leg, self.world, upto, budget);
     }
 
     /// A path of leg `leg` for maybe `k` (0 the float itself) stepped to `upto` on the quarter-day grid.
     fn extend_path(rules: &Rules, path: &mut Path, leg: Leg, k: u32, upto: f64, budget: &mut usize) {
-        if path.leg != leg || path.samples.is_empty() {
+        if path.leg != leg || path.k != k || path.samples.is_empty() {
             let e = rules.put(leg.at, leg.day, leg.seed, k).eddy;
             path.leg = leg;
+            path.k = k;
             path.samples.clear();
             path.samples.push(Sample { day: leg.day, at: leg.at, eddy: [e.0, e.1], measured: 1.0, held: Held::No });
         }
@@ -993,7 +1036,7 @@ impl App {
         for id in chosen {
             let Some(leg) = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(day).map(|li| f.legs[li])) else { continue };
             for k in 1..=FRAME_SAMPLES {
-                let path = self.samples.entry((id, k)).or_insert_with(|| Path { leg, samples: Vec::new() });
+                let path = self.samples.entry((id, k)).or_insert_with(|| Path { leg, k: u32::MAX, samples: Vec::new() });
                 Self::extend_path(&self.rules, path, leg, k, day, &mut budget);
             }
         }
@@ -1164,6 +1207,7 @@ impl App {
             credits: crate::sea::CREDIT_LINE.to_string(),
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
             credits_open: self.credits_open,
+            story: self.look_story(),
         }
     }
 
@@ -1359,5 +1403,187 @@ impl App {
     /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.
     pub fn date_bounds(&self) -> Option<[f32; 4]> {
         self.look.date_bounds()
+    }
+}
+
+/// How long a take plays, seconds: the story's whole span told in about the time it takes to watch.
+pub const STORY_SECONDS: f64 = 16.0;
+/// Worlds searched a frame while the lamps simply drift (the search runs ahead of any story), and
+/// while a story told waits for it.
+const WORLDS_IDLE: usize = 4;
+const WORLDS_WAITING: usize = 24;
+
+/// Cast the fate (painting-company row 199): the two lamps' search through the worlds, a story
+/// told, a take played.
+impl App {
+    /// The two lamps a story is about: the last two chosen (as lamp or cloud) if two are, else the
+    /// two put last; the earlier put first.
+    pub fn pair(&self) -> Option<(u32, u32)> {
+        let mut ids: Vec<u32> = Vec::new();
+        for id in self.chosen.iter().chain(self.followed.iter()) {
+            if !ids.contains(id) && self.floats.iter().any(|f| f.id == *id) {
+                ids.push(*id);
+            }
+        }
+        if ids.len() < 2 {
+            ids = self.floats.iter().filter(|f| f.hand != Hand::Carried).map(|f| f.id).collect();
+        }
+        if ids.len() < 2 {
+            return None;
+        }
+        let (a, b) = (ids[ids.len() - 2], ids[ids.len() - 1]);
+        Some(if a < b { (a, b) } else { (b, a) })
+    }
+
+    fn last_leg(&self, id: u32) -> Option<Leg> {
+        self.floats.iter().find(|f| f.id == id).and_then(|f| f.legs().last().copied())
+    }
+
+    /// Keeps the search for the pair going a few worlds a frame (more while a story waits for it),
+    /// starts it afresh when the pair or a lamp's put changes, and plays a story told once it is done.
+    fn search_worlds(&mut self) {
+        let Some((a, b)) = self.pair() else {
+            self.cast = None;
+            return;
+        };
+        let (Some(la), Some(lb)) = (self.last_leg(a), self.last_leg(b)) else { return };
+        let fresh = match &self.cast {
+            Some(c) => c.pair != (a, b) || c.search.a != la || c.search.b != lb,
+            None => true,
+        };
+        if fresh {
+            self.cast = Some(Cast { pair: (a, b), search: crate::story::Search::new(la, lb), story: None, take: 0, waiting: false, until: None, told_at: -10.0 });
+        }
+        let c = self.cast.as_mut().unwrap();
+        if !c.search.done() {
+            c.search.advance(&self.rules, if c.waiting { WORLDS_WAITING } else { WORLDS_IDLE });
+        }
+        if c.waiting && c.search.done() {
+            c.waiting = false;
+            self.play();
+        }
+    }
+
+    /// A story told: the best world where it happened, or told again, the next of the few best.
+    fn tell(&mut self, story: crate::story::Story) {
+        let now = self.now;
+        let Some(c) = self.cast.as_mut() else { return };
+        if c.story == Some(story) && !c.waiting {
+            c.take = (c.take + 1) % crate::story::TAKES;
+        } else {
+            c.story = Some(story);
+            c.take = 0;
+        }
+        c.told_at = now;
+        if c.search.done() {
+            self.play();
+        } else {
+            c.waiting = true;
+        }
+    }
+
+    /// The take plays: every lamp into its world, the two followed as themselves, the date back to
+    /// the later put and running at the story's pace to the span's end.
+    fn play(&mut self) {
+        let Some(c) = self.cast.as_mut() else { return };
+        let Some(story) = c.story else { return };
+        let takes = c.search.takes(story);
+        let Some(&k) = takes.get(c.take) else { return };
+        let (a, b) = c.pair;
+        let t0 = c.search.t0;
+        c.until = Some(t0 + crate::story::SPAN);
+        self.world = k;
+        for id in [a, b] {
+            self.chosen.retain(|&x| x != id);
+            self.followed.retain(|&x| x != id);
+            self.followed.push(id);
+        }
+        // the camera flies to hold the whole story, both journeys from their puts to the end, and
+        // keeps still while it plays: the story reads as a picture, not a chase
+        let (la, lb) = (c.search.a, c.search.b);
+        let mut points = Vec::new();
+        for leg in [la, lb] {
+            points.extend(crate::story::path(&self.rules, leg, k, t0 + crate::story::SPAN).iter().step_by(4).map(|s| s.1));
+        }
+        self.camera.riding = None;
+        if let Some((centre, spread, _)) = crate::touch::gestures::frame_of(&points) {
+            let d = self.disc();
+            let r1 = d.r / self.camera.camera.zoom.max(1e-6);
+            let room = d.cx.min(d.cy).max(1.0);
+            let zoom = if spread >= crate::touch::motion::FRAME_WIDEST { 1.0 } else { 0.7 * room / (r1 * spread.max(0.02).sin()) };
+            let to = Camera::new(centre.lon, centre.lat, zoom.clamp(1.0, 12.0));
+            let motion = self.motion();
+            self.camera.fly_to(to, self.now, motion);
+        }
+        self.clock.day = t0;
+        self.clock.running = true;
+        self.clock.rate = crate::story::SPAN / STORY_SECONDS;
+        self.haptic = true;
+    }
+
+    /// The stories' marks as the look drew them, each its rect in points.
+    pub fn story_bounds(&self) -> Vec<(crate::story::Story, [f32; 4])> {
+        self.look.story_bounds()
+    }
+
+    /// What the stories' marks draw this frame, if two lamps are out.
+    fn look_story(&self) -> Option<crate::look::LookStory> {
+        let c = self.cast.as_ref()?;
+        let (a, b) = c.pair;
+        let day = self.clock.day;
+        if !self.floats.iter().filter(|f| f.id == a || f.id == b).all(|f| f.born(day)) {
+            return None;
+        }
+        let active = c.story.and_then(|s| crate::story::Story::ALL.iter().position(|&x| x == s));
+        let curve = match (c.story, c.waiting) {
+            (Some(s), false) if c.search.done() && self.world != 0 => {
+                let k = c.search.takes(s).get(c.take).copied().unwrap_or(0);
+                if k == self.world {
+                    // the take's own shape: its widest gap fills the drawing, but a gap under a few
+                    // hundred km stays a narrow one (together is drawn together)
+                    let d = &c.search.curves[k as usize - 1];
+                    let scale = d.iter().copied().fold(400.0f32, f32::max);
+                    d.iter().map(|x| (x / scale).min(1.0)).collect()
+                } else {
+                    Vec::new()
+                }
+            }
+            _ => Vec::new(),
+        };
+        Some(crate::look::LookStory {
+            hues: [crate::look::lamp_hue(a), crate::look::lamp_hue(b)],
+            active,
+            take: c.take,
+            curve,
+            playhead: ((day - c.search.t0) / crate::story::SPAN).clamp(0.0, 1.0) as f32,
+            searching: if c.waiting { c.search.progress() } else { -1.0 },
+            told: (self.now - c.told_at) as f32,
+        })
+    }
+}
+
+#[cfg(test)]
+mod cast_tests {
+    use super::*;
+    use crate::assets::DirAssets;
+    use std::path::{Path as FsPath, PathBuf};
+
+    /// The take replays what was ranked (painting-company row 199): a lamp stepped by the app in
+    /// world k lies, at every quarter day, exactly where the search's path in world k put it.
+    #[test]
+    fn the_lamp_in_a_world_goes_where_the_search_measured() {
+        let dir = std::env::var_os("ADRIFT_ASSETS").map(PathBuf::from).unwrap_or_else(|| FsPath::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"));
+        let rules = Rules::load(&DirAssets(dir)).unwrap();
+        let leg = Leg { at: LonLat::new(-74.0, 35.5), day: 150.3, seed: 7 };
+        for k in [0, 1, 517, 2048] {
+            let mut p = Path { leg, k: u32::MAX, samples: Vec::new() };
+            let mut budget = usize::MAX;
+            App::extend_path(&rules, &mut p, leg, k, 150.3 + 60.0, &mut budget);
+            let s = crate::story::path(&rules, leg, k, 150.3 + 60.0);
+            assert_eq!(p.samples.len(), s.len());
+            for (a, b) in p.samples.iter().zip(&s) {
+                assert_eq!((a.day, a.at), (b.0, b.1), "world {k}");
+            }
+        }
     }
 }

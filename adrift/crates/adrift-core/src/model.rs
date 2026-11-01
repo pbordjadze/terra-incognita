@@ -395,6 +395,9 @@ pub enum Intent {
     Show { float: u32, shown: Option<Shown> },
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
+    /// A story told for the two lamps (painting-company row 199): the best world where it happened
+    /// plays from their put; told again, the next of the few best.
+    Cast { story: crate::story::Story },
 }
 
 #[cfg(test)]

@@ -7,6 +7,7 @@ pub mod gpu;
 pub mod look;
 pub mod model;
 pub mod sea;
+pub mod story;
 pub mod touch;
 
 #[cfg(target_os = "ios")]

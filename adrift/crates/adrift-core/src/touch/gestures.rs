@@ -19,6 +19,8 @@ pub enum Hit {
     /// A lamp's row in the panel off the globe (R6, `App::panel_bounds()`): a tap chooses it beside
     /// the others or lets it go; a rest rides it. Never a place: nothing is put or rung through it.
     Panel(u32),
+    /// One of the stories' marks under the date (painting-company row 199): a tap casts it.
+    Story(crate::story::Story),
     Sea(LonLat),
     Land(LonLat),
     /// Off the globe's disc.
@@ -30,7 +32,7 @@ impl Hit {
     pub fn place(self) -> Option<LonLat> {
         match self {
             Hit::Float(_, p) | Hit::Sea(p) | Hit::Land(p) => Some(p),
-            Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Off => None,
+            Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Story(_) | Hit::Off => None,
         }
     }
 }
@@ -158,6 +160,8 @@ enum State {
     /// A finger down on the credit line, or anywhere while the page of credits is open: a tap
     /// toggles the page; a drag is the globe's.
     CreditsDown { id: u64, x0: f64, y0: f64 },
+    /// A finger on a story's mark: lifted within the slop it casts the story.
+    StoryDown { id: u64, x0: f64, y0: f64, story: crate::story::Story },
     /// A finger on a lamp's row in the panel (R6): a tap toggles it among the chosen, the beat
     /// rides it, a drag is the globe's.
     PanelDown { id: u64, x0: f64, y0: f64, t0: f64, float: u32, rode: bool },
@@ -221,6 +225,7 @@ impl Gestures {
             State::DateDown { scrubbing: false, .. } => "date",
             State::DateDown { scrubbing: true, .. } => "scrubbing",
             State::CreditsDown { .. } => "credits",
+            State::StoryDown { .. } => "story",
             State::PanelDown { .. } => "panel",
         }
     }
@@ -360,11 +365,12 @@ impl Gestures {
                         State::PanelDown { id: e.id, x0: e.x, y0: e.y, t0: e.t, float, rode: false }
                     }
                     Hit::Credits => State::CreditsDown { id: e.id, x0: e.x, y0: e.y },
+                    Hit::Story(story) => State::StoryDown { id: e.id, x0: e.x, y0: e.y, story },
                     Hit::Land(_) | Hit::Off => State::Down { id: e.id, x0: e.x, y0: e.y, t0: e.t },
                 };
             }
             // a second finger before the beat, or during the globe's drag: a pinch
-            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. } | State::PanelDown { id, .. }, 2) => {
+            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. } | State::StoryDown { id, .. } | State::PanelDown { id, .. }, 2) => {
                 if matches!(self.state, State::Pressing { .. } | State::Resting { .. } | State::PanelDown { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
@@ -410,7 +416,7 @@ impl Gestures {
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
             }
-            State::Down { id, x0, y0, .. } | State::CreditsDown { id, x0, y0 } if id == e.id => {
+            State::Down { id, x0, y0, .. } | State::CreditsDown { id, x0, y0 } | State::StoryDown { id, x0, y0, .. } if id == e.id => {
                 if (e.x - x0).hypot(e.y - y0) > slop {
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
@@ -642,6 +648,10 @@ impl Gestures {
                 out.intents.push(Intent::ToggleCredits);
                 self.state = State::Idle;
             }
+            State::StoryDown { id, story, .. } if id == e.id => {
+                out.intents.push(Intent::Cast { story });
+                self.state = State::Idle;
+            }
             _ => {
                 if self.fingers.is_empty() {
                     self.state = State::Idle;
@@ -659,7 +669,7 @@ impl Gestures {
             } else {
                 match probe.hit(e.x, e.y) {
                     Hit::Sea(p) | Hit::Float(_, p) => out.intents.push(Intent::Release { float, at: Some(p) }),
-                    Hit::Land(_) | Hit::Date | Hit::Credits | Hit::Panel(_) => {
+                    Hit::Land(_) | Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Story(_) => {
                         out.intents.push(Intent::Carry { float, to: from });
                         out.intents.push(Intent::Release { float, at: Some(from) });
                     }
@@ -714,7 +724,7 @@ impl Gestures {
                 }
                 self.state = State::Idle;
             }
-            State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } if id == e.id => {
+            State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } | State::StoryDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {

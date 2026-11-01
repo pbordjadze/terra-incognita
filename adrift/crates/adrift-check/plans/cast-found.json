@@ -1,0 +1,21 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "scene": { "camera": { "lon": -60.0, "lat": 35.0, "zoom": 1.3 }, "day": 150.0, "seconds": 5.0,
+             "floats": [ { "lon": -74.0, "lat": 35.5 }, { "lon": -73.8, "lat": 35.5 } ] },
+  "steps": [
+    { "advance": 2.0 },
+    { "shot": "01-two-lamps" },
+    { "intent": { "Cast": { "story": "Found" } } },
+    { "advance": 0.3 },
+    { "shot": "02-searching" },
+    { "advance": 1.5 },
+    { "shot": "03-playing" },
+    { "advance": 6.0 },
+    { "shot": "04-lost" },
+    { "advance": 10.0 },
+    { "shot": "05-found" },
+    { "intent": { "Cast": { "story": "Found" } } },
+    { "advance": 8.0 },
+    { "shot": "06-second-take-mid" }
+  ]
+}

@@ -169,6 +169,8 @@ pub struct PanelRow {
 /// points (below a phone's status bar and island).
 pub const PANEL_ROWS: usize = 10;
 pub const PANEL_TOP: f32 = 60.0;
+/// The stories' row, reading points up from the screen's foot (painting-company row 199).
+pub const STORY_ROW: f32 = 64.0;
 
 /// "8 Jun": a day as `Clock.day` counts it, on the typical year's calendar (as the date is).
 pub fn day_words(day: f64) -> String {
@@ -205,6 +207,8 @@ pub struct Words {
     pub credit_bounds: Option<[f32; 4]>,
     /// The panel's rows (R6), each lamp's id and rect in points; empty while no panel is drawn.
     pub panel_bounds: Vec<(u32, [f32; 4])>,
+    /// The stories' marks (painting-company row 199), each story and its touch rect in points.
+    pub story_bounds: Vec<(crate::story::Story, [f32; 4])>,
 }
 
 impl Words {
@@ -246,7 +250,7 @@ impl Words {
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
         let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new() }
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new(), story_bounds: Vec::new() }
     }
 
     /// The glyphs of every line this frame (`Face::layout`).
@@ -381,13 +385,99 @@ impl Words {
         out
     }
 
+    /// The stories' marks (painting-company row 199): a row of three small drawings under the date,
+    /// only while two lamps are out. Each is two threads of beads, one in each lamp's hue, left to
+    /// right the story's span, their gap the distance between the lamps: kept together, parted,
+    /// lost and found at the end. The story told is drawn in full colour; once its take plays, its
+    /// drawing becomes the take's own measured distance, lit up to the date, and a row of small beads
+    /// under it says which of the few best takes this is. No words: the drawings are the stories.
+    pub fn story_marks(&mut self, st: Option<&super::LookStory>, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool) -> Vec<GlyphInstance> {
+        self.story_bounds.clear();
+        let mut out = Vec::new();
+        let Some(st) = st else { return out };
+        // the row keeps its place whatever the camera does (a finger finds it where it was), at
+        // the screen's foot above the home indicator; the date rises above it when the globe is close
+        let row = height - STORY_ROW * reading;
+        let (mw, mh, gap) = (46.0 * reading, 16.0 * reading, 22.0 * reading);
+        let n = crate::story::Story::ALL.len() as f32;
+        let x0 = width / 2.0 - (n * mw + (n - 1.0) * gap) / 2.0;
+        let soft = if night { 0.55 } else { 0.5 };
+        let face = &self.face;
+        let dot = |out: &mut Vec<GlyphInstance>, x: f32, y: f32, size: f32, rgb: [f32; 3], a: f32| {
+            let line = Line { text: "\u{25cf}", style: Style::Regular, size, ink: [rgb[0], rgb[1], rgb[2], a], tracking: 0.0 };
+            out.extend(face.layout(&line, x, y + 0.36 * size, [0.0; 4]));
+        };
+        // over the globe (the camera close in) the row lies on a quiet card of the page's tone, as
+        // the panel does, so the beads read on land and sea alike
+        let total = n * mw + (n - 1.0) * gap;
+        let over = (0..3).any(|i| ((x0 + mw / 2.0 + i as f32 * (mw + gap) - disc[0]).powi(2) + (row - disc[1]).powi(2)).sqrt() < disc[2] + 30.0 * reading);
+        if over {
+            if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
+                let page = if night { [0.055, 0.063, 0.086, 0.78] } else { [0.957, 0.945, 0.918, 0.78] };
+                let uv = [(b.x + 2.0) / self.face.width, (b.y + 2.0) / self.face.height, (b.w - 4.0) / self.face.width, (b.h - 4.0) / self.face.height];
+                out.push(GlyphInstance { rect: [x0 - 16.0 * reading, row - 20.0 * reading, total + 32.0 * reading, 44.0 * reading], uv, ink: page, halo: [0.0; 4], anchor: [0.0; 4] });
+            }
+        }
+        let mut bounds = Vec::new();
+        for (i, story) in crate::story::Story::ALL.iter().enumerate() {
+            let left = x0 + i as f32 * (mw + gap);
+            let cx = left + mw / 2.0;
+            let active = st.active == Some(i);
+            // the finger is answered: the told mark swells and settles
+            let swell = if active { 1.0 + 0.22 * (-st.told * 5.0).exp() } else { 1.0 };
+            let (w, h) = (mw * swell, mh * swell);
+            let real = active && !st.curve.is_empty();
+            let beads = if real { 23 } else { 11 };
+            for j in 0..beads {
+                let s = j as f32 / (beads - 1) as f32;
+                let g = if real {
+                    let at = s * (st.curve.len() - 1) as f32;
+                    let (a, f) = (at.floor() as usize, at.fract());
+                    let b = (a + 1).min(st.curve.len() - 1);
+                    0.06 + 0.94 * (st.curve[a] * (1.0 - f) + st.curve[b] * f)
+                } else {
+                    story.shape(s)
+                };
+                let x = cx - w / 2.0 + s * w;
+                let alpha = if real {
+                    if s <= st.playhead + 1e-3 { 1.0 } else { 0.3 }
+                } else if active && st.searching >= 0.0 {
+                    // the search under way: the beads light as the worlds are searched, breathing
+                    if s <= st.searching { 0.6 + 0.4 * (st.told * 6.0 - s * 4.0).sin().abs() } else { 0.25 }
+                } else if active {
+                    1.0
+                } else {
+                    soft
+                };
+                let size = if real { 4.2 } else { 5.0 } * reading * swell;
+                dot(&mut out, x, row - g * h / 2.0, size, st.hues[0], alpha);
+                dot(&mut out, x, row + g * h / 2.0, size, st.hues[1], alpha);
+            }
+            if active && st.searching < 0.0 {
+                // which of the few best takes plays
+                let k = crate::story::TAKES;
+                let step = 6.0 * reading;
+                let ink = if night { [0.894, 0.925, 0.957] } else { [0.149, 0.188, 0.227] };
+                for t in 0..k {
+                    let x = cx - step * (k - 1) as f32 / 2.0 + t as f32 * step;
+                    dot(&mut out, x, row + mh / 2.0 + 10.0 * reading, if t == st.take { 4.0 } else { 3.0 } * reading, ink, if t == st.take { 0.9 } else { 0.3 });
+                }
+            }
+            // a fingertip's room round each drawing
+            bounds.push((*story, [left - gap / 2.0, row - 22.0 * reading, mw + gap, 44.0 * reading]));
+        }
+        self.story_bounds = bounds;
+        out
+    }
+
     /// The words at the foot: the date (17 pt) centred under the globe's disc (`cx, cy, r` in points)
     /// on a `width` x `height` point screen, or over the globe when the disc fills it; the note (13 pt
     /// italic) under the date; the credits (10 pt) along the screen's foot. Each in the palette's
     /// inks on a halo of what is under it: the paper below the disc, the sea over it (palette.json).
     pub fn prepare_foot(&mut self, gpu: &Gpu, date: &str, note: &str, width: f32, height: f32, reading: f32, disc: [f32; 3], night: bool, running: bool, year_day: f32, press: f32, seconds: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
-        let foot = under.min(height - 72.0 * reading);
+        // (a fingertip clear of the stories' row at the foot, when it is drawn: painting-company row 199)
+        let foot = under.min(height - (STORY_ROW + 36.0) * reading);
         let _bottom = height - 12.0 * reading;
         let (date_ink, note_ink, _credit_ink, sea_halo, paper_halo) = if night {
             ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.08, 0.10, 0.14, 0.92])
