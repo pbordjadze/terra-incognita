@@ -658,3 +658,30 @@ journeys.
 - *Lamps as text* (`App::lamps_text`, `paste_lamps`; `LAMPS_HEADER`): every leg exactly, so pasted
   on any phone (or into the check) they go on bit for bit; their ids, and so their hues, kept when
   free; the date goes to the day they were copied.
+
+## 21. R14 opens: the journey clip shows the dance (Nov 1, 17:50 UTC)
+
+Round 13's critic on the journey clip: a still wide shot, two small dots that never come near, a
+pace that doesn't adapt, a wake that fades to fragments ("the journey clip doesn't really show
+them together yet"); conducted clips better, but framed too wide and off-centre.
+
+- *Engineering* (4708322): `Intent::Rate` sets the date's pace; a journey take carries a pace
+  before each frame from `journey::pace`, so a clip's date can slow and hurry and still replay
+  exactly.
+- *Truth*: `journey::pace` from what is worth seeing (the pair's closeness and its change, turning,
+  loops); a real dancing pair for the demo and the checks (`crates/adrift-check/lamps/dance.txt`).
+- *Motion*: the clip's framing tight and centred (the span ~60% of the width, the lower third kept
+  clear), breathing as the lamps near and part; `lamp_in_clip.py` reading the trace's lamps.
+- *Visual*: a journey's whole line held in the clip; crossings that read; the marks quieter at rest.
+
+**R14 merged (Nov 1, 18:40 UTC).** Visual 121ebeb, Truth 8aad72a, Motion 1f671df. A journey clip's
+pace (`journey::pace`) weighs the pair's closeness and its change, their winding and turning, smoothed
+over two days and capped at six to one; the dancing pair (`crates/adrift-check/lamps/dance.txt`, East
+Australian Current, 3.5 turns round each other in 60 days) is the demo and the checks' pair. The clip
+frames the lamps alone (not their lines), their span and 10 km filling 60% of the width, their centre
+8% above the middle, the zoom breathing on a slower spring that leads a moving frame; Engineering
+then held a pair no closer than 60 km a side and zoom 40 (`FRAME_PAIR_MIN_KM`, `FRAME_ZOOM_MAX`), as
+at 20 km and zoom 100 the clip held the lamps and lost the dance's lines. A journey's whole line is
+held in the clip, crossings keep their hues; the marks at rest are 62% size and 55% alpha until a
+lamp is chosen. `adrift-check journey` writes the camera trace; `tools/adrift/lamp_in_clip.py`
+reads the trace's lamps (fill, centre, the lower third, out of frame).

@@ -475,7 +475,7 @@ mod tests {
         let at = |app: &App| app.floats.iter().rev().take(2).map(|f| f.at).collect::<Vec<_>>();
         assert_eq!(at(&a), at(&b), "pasted lamps go on exactly as the copied ones");
         let take = a.journey_take(4.0).expect("a journey");
-        assert_eq!(take.events.len(), 120);
+        assert_eq!(take.events.iter().filter(|e| matches!(e, crate::studio::TakeEvent::Frame { .. })).count(), 120);
         assert_eq!(take.start.floats.len(), 2);
         assert!(take.start.clock.day < a.clock.day - 5.0, "the journey starts where they were put");
         assert!(b.paste_lamps("not lamps", false) == 0);

@@ -187,7 +187,13 @@ pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate:
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;
-            let (w, a) = if follow {
+            let (w, a) = if follow && heavy > 1.0 {
+                // (a journey clip, R14: the whole journey drawn and held, the dance's shape
+                // accumulating; the newest part brightest and widest, nothing fading off the tail,
+                // and the line nearly opaque so two lamps' lines cross cleanly, each in its own hue
+                // on its own dark edge, the later over the earlier, never a muddy mix)
+                (2.3 + 1.0 * (1.0 - age), 0.82 + 0.18 * (1.0 - age).powf(2.0))
+            } else if follow {
                 (3.0 - 1.5 * age, 1.0 - 0.62 * age.powf(1.5))
             } else if heavy > 1.0 {
                 // (in a clip, R12: the tail held longer, so a take's whole line is there)

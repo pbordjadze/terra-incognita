@@ -607,8 +607,14 @@ fn journey(args: &[String]) -> Result<()> {
         .context("ffmpeg")?;
     let t0 = std::time::Instant::now();
     let mut i = 0u32;
+    // the clip's camera and each lamp, a row a frame, beside the mp4 (R14: as `play`'s export writes)
+    let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
     while let Some(px) = app.export_frame(&shot) {
         use std::io::Write;
+        if let Some((c, k)) = app.export_camera() {
+            let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
+            trace.push_str(&format!("{i},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
+        }
         ff.stdin.as_mut().unwrap().write_all(&px)?;
         if i == 0 || i + 1 == frames || i % 900 == 0 {
             let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
@@ -618,6 +624,7 @@ fn journey(args: &[String]) -> Result<()> {
     }
     drop(ff.stdin.take());
     ff.wait()?;
+    std::fs::write(out.with_extension("csv"), trace)?;
     app.export_end();
     println!("{}: {n} lamps, {i} frames {ew}x{eh} in {:.1}s", out.display(), t0.elapsed().as_secs_f64());
     Ok(())

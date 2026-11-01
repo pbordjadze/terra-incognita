@@ -5,6 +5,7 @@ pub mod app;
 pub mod assets;
 pub mod conduct;
 pub mod gpu;
+pub mod journey;
 pub mod look;
 pub mod model;
 pub mod sea;
