@@ -20,8 +20,12 @@ use crate::model::{ConductGesture, Leg, LonLat};
 use crate::sea::{Drift, Rules};
 use std::collections::VecDeque;
 
-/// The worlds a lamp chooses among.
-pub const WORLDS: u32 = 2048;
+/// The worlds a lamp chooses among: 1024, so six lamps conducted at up to 3 days a second step
+/// inside about 2 ms a frame on a phone (R11, Truth; `conduct_cost`, CONDUCTOR.md › In the app): a
+/// flight step is 0.48 us natively, assumed 2-3x slower on the phone; 1024 worlds / 5 frames a mark
+/// x 6 lamps is 1230 steps a frame, 0.59 ms natively, 1.2-1.8 ms on the phone. A gesture matches the
+/// same share of them as of the spike's 2048 (5-25%); a sweep's furthest pick is the top one, not two.
+pub const WORLDS: u32 = 1024;
 /// Quarter-day marks kept for the look back (16 days).
 pub const HISTORY: usize = 65;
 /// A tap counts the worlds within this many points of the finger as having done it.
@@ -39,12 +43,25 @@ struct Mark {
     w: Vec<W>,
 }
 
+/// A grid mark beyond the date being stepped a share at a time (`Worlds::prepare`), so a mark's
+/// cost is spread over the frames before the date reaches it instead of falling on one.
+struct Pending {
+    day: f64,
+    w: Vec<W>,
+}
+
 /// A lamp's worlds on its current leg.
 pub struct Worlds {
     pub leg: Leg,
     pub leg_index: usize,
     marks: VecDeque<Mark>,
+    pending: Option<Pending>,
 }
+
+/// A mark is prepared over this many frames (R11, Truth: at 3 days a second and 60 frames a second
+/// the date crosses a mark every 5 frames, at 2 every 7.5, so the next is ready; a late frame or a
+/// faster date finishes it in `step_to`, unbudgeted, so a replay is the same whatever the frames).
+pub const PREPARE_FRAMES: u32 = 5;
 
 /// What a cue chose: world `k` (1-based, as `Leg::world`), how many worlds did what the hand did, and
 /// which (for the look's flash).
@@ -70,33 +87,43 @@ impl Worlds {
             .collect();
         let mut marks = VecDeque::new();
         marks.push_back(Mark { day: leg.day, w });
-        Worlds { leg, leg_index, marks }
+        Worlds { leg, leg_index, marks, pending: None }
     }
 
     /// Steps every world to the first grid mark at or after `day` (unbudgeted, so a replay steps
-    /// alike), keeping `HISTORY` marks.
+    /// alike; what `prepare` already stepped is kept), keeping `HISTORY` marks.
     pub fn step_to(&mut self, rules: &Rules, day: f64) {
-        loop {
-            let last = self.marks.back().unwrap();
-            if last.day >= day - 1e-9 {
-                break;
-            }
-            let next = crate::app::grid_next(last.day);
-            let dt = next - last.day;
-            let w: Vec<W> = last
-                .w
-                .iter()
-                .enumerate()
-                .map(|(i, x)| {
-                    let s = rules.flight(Drift { at: x.at, eddy: x.eddy }, last.day, dt, self.leg.seed, i as u32 + 1);
-                    W { at: s.drift.at, eddy: s.drift.eddy }
-                })
-                .collect();
-            self.marks.push_back(Mark { day: next, w });
+        while self.marks.back().unwrap().day < day - 1e-9 {
+            self.advance(rules, usize::MAX);
+        }
+    }
+
+    /// Steps a share of the next mark beyond the date (`WORLDS / PREPARE_FRAMES` worlds), once a
+    /// frame: the same steps `step_to` would take, earlier. Returns the worlds stepped.
+    pub fn prepare(&mut self, rules: &Rules) -> usize {
+        self.advance(rules, WORLDS.div_ceil(PREPARE_FRAMES) as usize)
+    }
+
+    /// Steps up to `budget` worlds of the next mark; completes it when all are stepped.
+    fn advance(&mut self, rules: &Rules, budget: usize) -> usize {
+        let last = self.marks.back().unwrap();
+        let next = crate::app::grid_next(last.day);
+        let dt = next - last.day;
+        let p = self.pending.get_or_insert_with(|| Pending { day: next, w: Vec::with_capacity(WORLDS as usize) });
+        let from = p.w.len();
+        let to = (from + budget.min(WORLDS as usize)).min(WORLDS as usize);
+        for (i, x) in last.w[from..to].iter().enumerate() {
+            let s = rules.flight(Drift { at: x.at, eddy: x.eddy }, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
+            p.w.push(W { at: s.drift.at, eddy: s.drift.eddy });
+        }
+        if p.w.len() == WORLDS as usize {
+            let p = self.pending.take().unwrap();
+            self.marks.push_back(Mark { day: p.day, w: p.w });
             while self.marks.len() > HISTORY {
                 self.marks.pop_front();
             }
         }
+        to - from
     }
 
     /// Whether these are the worlds of leg `li` as `leg` now reads, whichever world a cue has since
@@ -429,7 +456,7 @@ mod tests {
         let places = w.places(day);
         let n = places.len();
         let mut counts = Vec::new();
-        for (i, j) in [(17usize, 4.0), (900, -9.0), (1500, 15.0)] {
+        for (i, j) in [(17usize, 4.0), (600, -9.0), (1000, 15.0)] {
             let [x, y] = flat(places[i]).unwrap();
             let c = w.choose(ConductGesture::Tap { x: x + j, y: y - j }, day, 2.0, &flat).unwrap();
             let [cx, cy] = flat(w.place(c.k, day).at).unwrap();
@@ -487,6 +514,90 @@ mod tests {
             let f = c.matches as f64 / WORLDS as f64;
             eprintln!("a circle of sense {turn:+}: the pick turned {t:+.2} rad; {:.1}% of the worlds turned a quarter or more that way", f * 100.0);
             assert!(f > 0.01 && f < 0.4);
+        }
+    }
+
+    /// What conducting costs on the CPU (release: `cargo test --release -p adrift-core conduct_cost
+    /// -- --ignored --nocapture`): a quarter-day mark of every world, and each gesture's look back.
+    #[test]
+    #[ignore]
+    fn conduct_cost() {
+        let (rules, mut w, day) = worlds(16.0);
+        let t = std::time::Instant::now();
+        let mut d = day;
+        for _ in 0..40 {
+            d += 0.25;
+            w.step_to(&rules, d);
+        }
+        let mark = t.elapsed().as_secs_f64() / 40.0;
+        eprintln!("a mark of {WORLDS} worlds: {:.2} ms ({:.0} ns a flight step)", mark * 1e3, mark / WORLDS as f64 * 1e9);
+        let pts: Vec<(f32, f32)> = w.places(d).iter().map(|p| (p.lon as f32, p.lat as f32)).collect();
+        let time = |name: &str, f: &dyn Fn(f32, f32) -> f32| {
+            let t = std::time::Instant::now();
+            let mut acc = 0.0;
+            for _ in 0..20 {
+                for &(lon, lat) in &pts {
+                    acc += f(lon, lat);
+                }
+            }
+            std::hint::black_box(acc);
+            eprintln!("  {name}: {:.0} ns", t.elapsed().as_secs_f64() / 20.0 / pts.len() as f64 * 1e9);
+        };
+        let df = d as f32;
+        time("currents", &|lon, lat| rules.currents.at(df, lon, lat).0);
+        time("wind", &|lon, lat| rules.wind.at(df, lon, lat).0);
+        time("eddy", &|lon, lat| rules.eddy.at(lon, lat).0);
+        time("eddy time", &|lon, lat| rules.eddy_time.at(lon, lat).0);
+        time("ice", &|lon, lat| rules.ice.at(df, lon, lat));
+        time("coast", &|lon, lat| rules.coast.distance(lon, lat));
+        time("world kick", &|lon, lat| crate::sea::rules::world_kick(5, df, 0.25, lon, lat).0);
+        for (name, g) in [
+            ("tap", ConductGesture::Tap { x: -1700.0, y: -1100.0 }),
+            ("sweep", ConductGesture::Sweep { dx: 0.0, dy: -160.0, secs: 0.5 }),
+            ("circle 1 s", ConductGesture::Circle { turn: 5.0, secs: 1.0 }),
+            ("circle 3 s", ConductGesture::Circle { turn: 5.0, secs: 3.0 }),
+        ] {
+            let t = std::time::Instant::now();
+            for _ in 0..10 {
+                std::hint::black_box(w.choose(g, d, 2.0, &flat));
+            }
+            eprintln!("choose {name}: {:.2} ms", t.elapsed().as_secs_f64() / 10.0 * 1e3);
+        }
+    }
+
+    /// The tempo (R11): at each date rate, what the worlds do in a stroke's half second and second
+    /// off Hatteras at the conduct plan's scale (~30 pt a degree): their spread about the mean
+    /// drift (RMS, points), the mean drift itself, how far out the sweep's 0.95 pick lies, and the
+    /// share that turned a quarter or more in the second. `--ignored --nocapture` prints the table
+    /// in CONDUCTOR.md.
+    #[test]
+    #[ignore]
+    fn the_tempo() {
+        let (_, w, day) = worlds(15.5);
+        eprintln!("rate  secs  days  drift pt  spread pt  sweep 0.95 pt  turned >= 1/4 (1 s)");
+        for rate in [1.0, 2.0, 3.0, 4.0, 6.0] {
+            for secs in [0.5, 1.0] {
+                let m = ((secs * rate * 4.0) as usize).clamp(1, HISTORY - 1);
+                let d: Vec<[f64; 2]> = (0..WORLDS as usize)
+                    .map(|k| {
+                        let (a, b) = (flat(w.place(k as u32 + 1, day).at).unwrap(), flat(w.back(m, k, day)).unwrap());
+                        [a[0] - b[0], a[1] - b[1]]
+                    })
+                    .collect();
+                let n = d.len() as f64;
+                let mean = [d.iter().map(|x| x[0]).sum::<f64>() / n, d.iter().map(|x| x[1]).sum::<f64>() / n];
+                let spread = (d.iter().map(|x| (x[0] - mean[0]).powi(2) + (x[1] - mean[1]).powi(2)).sum::<f64>() / n).sqrt();
+                let mut north: Vec<f64> = d.iter().map(|x| -(x[1] - mean[1])).collect();
+                north.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                let q95 = north[(0.95 * (n - 1.0)) as usize];
+                let turned = if secs == 1.0 {
+                    let c = w.choose(ConductGesture::Circle { turn: 5.0, secs }, day, rate, &flat).unwrap();
+                    format!("{:.0}%", c.matches as f64 / n * 100.0)
+                } else {
+                    String::new()
+                };
+                eprintln!("{rate:4}  {secs:4}  {:4.1}  {:8.0}  {spread:9.0}  {q95:13.0}  {turned}", m as f64 / 4.0, mean[0].hypot(mean[1]));
+            }
         }
     }
 }

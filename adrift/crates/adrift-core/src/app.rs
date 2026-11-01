@@ -1604,6 +1604,8 @@ impl App {
                 *w = crate::conduct::Worlds::new(&self.rules, leg, li);
             }
             w.step_to(&self.rules, day);
+            // the next mark a share at a time, so no frame steps a whole mark (Truth, R11)
+            w.prepare(&self.rules);
         }
         self.conduct.retain(|id, _| live.contains(id));
     }
