@@ -101,12 +101,23 @@ pub struct Leg {
     /// start: R11), so the continuation is the same law as one unbroken flight; None for a put.
     #[serde(default)]
     pub eddy: Option<[f32; 2]>,
+    /// The sea's law this leg was made under (R13): 0 the rules as shipped up to build 49 (no
+    /// spinning eddies), `sea::rules::LAW` the current one. A leg continues the law of the leg it
+    /// continues and a fresh put takes the current one, so a lamp saved on the phone keeps its
+    /// dance across an update. A kept state from before the field reads 0.
+    #[serde(default)]
+    pub law: u32,
 }
 
 impl Leg {
-    /// A leg put fresh: the real world, its own eddy.
+    /// A leg put fresh: the real world, its own eddy, the current law.
     pub const fn new(at: LonLat, day: f64, seed: u64) -> Leg {
-        Leg { at, day, seed, world: 0, eddy: None }
+        Leg { at, day, seed, world: 0, eddy: None, law: crate::sea::rules::LAW }
+    }
+
+    /// The same, under `law` (a leg that continues another's).
+    pub const fn under(self, law: u32) -> Leg {
+        Leg { law, ..self }
     }
 }
 
@@ -158,7 +169,8 @@ impl Float {
     /// The legs, with the one a pre-leg state implies.
     pub fn legs(&self) -> Vec<Leg> {
         if self.legs.is_empty() {
-            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed)]
+            // a kept state from before legs (and before laws): the first law
+            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed).under(0)]
         } else {
             self.legs.clone()
         }

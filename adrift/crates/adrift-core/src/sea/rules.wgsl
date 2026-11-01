@@ -17,7 +17,7 @@ struct Params {
     seed_hi: u32,
     count: u32,        // paths
     base: u32,         // the first path of this cloud in the buffer (R6: many clouds in one buffer); k = i + 1 within it
-    _pad1: u32,
+    law: u32,          // the cloud's leg's law (R13, Leg::law): 0 no spinning eddies, 1 with them
     _pad2: u32,
 };
 
@@ -365,7 +365,10 @@ fn flight(lon: f32, lat: f32, eu0: f32, ev0: f32, k: u32) -> Path {
     let gy = g.y;
     let au = exp(-secs / tt.x);
     let av = exp(-secs / tt.y);
-    let om = spin(k, day, lon, lat);
+    var om = 0.0;
+    if (params.law >= 1u) {
+        om = spin(k, day, lon, lat);
+    }
     let phi = om * dt;
     let cs = cos(phi);
     let sn = sin(phi);

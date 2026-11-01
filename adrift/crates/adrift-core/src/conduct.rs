@@ -185,7 +185,7 @@ impl Worlds {
         let from = p.w.len();
         let to = (from + budget.min(WORLDS as usize)).min(WORLDS as usize);
         for (i, x) in last.w[from..to].iter().enumerate() {
-            let s = rules.flight(Drift { at: x.at, eddy: x.eddy }, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
+            let s = rules.flight_under(self.leg.law, Drift { at: x.at, eddy: x.eddy }, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
             p.w.push(W { at: s.drift.at, eddy: s.drift.eddy });
         }
         if p.w.len() == WORLDS as usize {
@@ -261,7 +261,7 @@ impl Worlds {
                 .iter()
                 .enumerate()
                 .map(|(i, x)| {
-                    let s = rules.flight(Drift { at: x.at, eddy: x.eddy }, day, dt, self.leg.seed, i as u32 + 1);
+                    let s = rules.flight_under(self.leg.law, Drift { at: x.at, eddy: x.eddy }, day, dt, self.leg.seed, i as u32 + 1);
                     W { at: s.drift.at, eddy: s.drift.eddy }
                 })
                 .collect();
@@ -428,7 +428,7 @@ mod tests {
         while out.last().unwrap().0 < upto - 1e-9 {
             let (day, at, eddy) = *out.last().unwrap();
             let next = crate::app::grid_next(day);
-            let s = rules.flight(Drift { at, eddy }, day, next - day, leg.seed, k);
+            let s = rules.flight_under(leg.law, Drift { at, eddy }, day, next - day, leg.seed, k);
             out.push((next, s.drift.at, s.drift.eddy));
         }
         out
@@ -519,7 +519,7 @@ mod tests {
             let unbroken = flight(&rules, leg, 0, 170.0);
             for d in [153.1, 155.37, 158.2] {
                 let j = unbroken.iter().rposition(|p| p.0 <= d).unwrap();
-                let cut = Leg { at: place_on(&unbroken, d), day: d, seed: leg.seed, world: 0, eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]) };
+                let cut = Leg { at: place_on(&unbroken, d), day: d, seed: leg.seed, world: 0, eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]), law: leg.law };
                 let after = flight(&rules, cut, 0, d + 7.0);
                 let (a, b) = (place_on(&after, d + 7.0), place_on(&unbroken, d + 7.0));
                 let km = crate::sea::drifters::distance_km(a.lon as f32, a.lat as f32, b.lon as f32, b.lat as f32) as f64;

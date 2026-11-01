@@ -217,6 +217,12 @@ impl Rules {
     /// paths of floats near each other are kicked alike. Deterministic for (drift, day, dt, k); the
     /// seed is kept in the signature and no longer read (R6).
     pub fn flight(&self, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
+        self.flight_under(LAW, d, day, dt_days, seed, k)
+    }
+
+    /// `flight` under a given law (R13: a leg's own, `Leg::law`): law 0 is the flight as shipped up
+    /// to build 49, without the spinning eddies, bit for bit (`sea::tests::law_zero_is_the_old_flight`).
+    pub fn flight_under(&self, law: u32, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
         let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
         let day = day as f32;
         let dt = dt_days as f32;
@@ -234,7 +240,7 @@ impl Rules {
         let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
         let (au, av) = ((-secs / tu).exp(), (-secs / tv).exp());
         // in world k's spinning eddies the velocity turns as it decays (R12: the spinning flight)
-        let om = spin(k, day, lon, lat);
+        let om = if law >= 1 { spin(k, day, lon, lat) } else { 0.0 };
         let (ru, rv) = if om == 0.0 {
             d.eddy
         } else {
@@ -362,6 +368,10 @@ pub const WORLD_CELL: f32 = 1.0;
 pub const WORLD_SPAN: u32 = 8;
 /// The put's stream of the field, apart from the steps'.
 pub const PUT_STREAM: u32 = 0x8000_0000;
+
+/// The sea's current law (R13, `Leg::law`): 1, with the spinning eddies (R12). 0 is the law as
+/// shipped up to build 49, kept for the lamps made under it.
+pub const LAW: u32 = 1;
 
 /// The spinning eddies (R12). Drifters' daily tracks (the bundled 1979 runs) set against a
 /// random flight with no spin: their velocity's turning from day to day is mostly what such a
