@@ -180,10 +180,18 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
 /// chosen as itself (`follow`, R8) carries its whole journey, fuller and never fading below a third,
 /// so it reads as a line of its colour at any zoom. `fade` dims the whole line (0..1); `heavy` widens
 /// it (2 in a clip, R12, where the line must carry the frame).
-pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32, heavy: f32) {
+pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32, heavy: f32, rad_per_pt: f32) {
     let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), b.measured)).collect();
-    places.push((super::unit(now), path.last().map_or(1.0, |b| b.measured)));
-    let line_pts: Vec<Pt> = smooth(&places, 1, 2)
+    // (R15: steps kept a little ahead of where the lamp is drawn would send the line past the lamp
+    // and back, a hook at its head: the line is cut at the step nearest the lamp, among the last few)
+    let here = super::unit(now);
+    let d2 = |p: [f32; 3]| (p[0] - here[0]).powi(2) + (p[1] - here[1]).powi(2) + (p[2] - here[2]).powi(2);
+    let tail = places.len().saturating_sub(16);
+    if let Some(k) = (tail..places.len()).min_by(|&i, &j| d2(places[i].0).partial_cmp(&d2(places[j].0)).unwrap()) {
+        places.truncate(k + 1);
+    }
+    places.push((here, path.last().map_or(1.0, |b| b.measured)));
+    let line_pts: Vec<Pt> = round_corners(smooth(&places, 1, 2), 10.0 * heavy.sqrt() * rad_per_pt)
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;
@@ -205,4 +213,50 @@ pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate:
         })
         .collect();
     line(out, &line_pts, hue, false, night, false);
+}
+
+/// A line's sharp turns rounded at the drawing's own scale (R15): the path resampled every third of
+/// `radius` (radians on the globe: the reading points wanted over the globe's radius in points) and
+/// eased by six soft passes, ends held, so a turn tighter than about `radius` (a lamp held at a
+/// coast, turning back on itself) is drawn as a bend and not an elbow. The path data is untouched;
+/// at a closer zoom the same turn rounds less, so the line stays true where it can be seen.
+pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 3], f32, f32)> {
+    if pts.len() < 3 || !(radius > 0.0) {
+        return pts;
+    }
+    let step = radius / 3.0;
+    let dist = |a: [f32; 3], b: [f32; 3]| ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt();
+    let total: f32 = pts.windows(2).map(|w| dist(w[0].0, w[1].0)).sum();
+    // (never more than a few thousand points a line: from afar the step is coarse, close in the
+    // line is shorter on the screen than it is long)
+    let step = step.max(total / 4000.0);
+    if total < step * 3.0 {
+        return pts;
+    }
+    let mut out: Vec<([f32; 3], f32, f32)> = vec![pts[0]];
+    let mut carry = 0.0;
+    for w in pts.windows(2) {
+        let (a, b) = (w[0], w[1]);
+        let d = dist(a.0, b.0);
+        let mut t = step - carry;
+        while t < d {
+            let u = t / d;
+            out.push((norm([0, 1, 2].map(|k| a.0[k] + (b.0[k] - a.0[k]) * u)), a.1 + (b.1 - a.1) * u, a.2 + (b.2 - a.2) * u));
+            t += step;
+        }
+        carry = d - (t - step);
+    }
+    let last = *pts.last().unwrap();
+    if dist(out.last().unwrap().0, last.0) > step * 0.3 {
+        out.push(last);
+    } else {
+        *out.last_mut().unwrap() = last;
+    }
+    for _ in 0..6 {
+        let q = out.clone();
+        for i in 1..q.len() - 1 {
+            out[i].0 = norm([0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]));
+        }
+    }
+    out
 }
