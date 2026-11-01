@@ -12,7 +12,9 @@ clip and every N frames:
 - out: frames with a lamp off the frame or behind the globe;
 - fill: the lamps' horizontal span as a share of the width (the critic's aim: about 60%);
 - centre: the lamps' mean place as shares of width and height (aim: x 0.5, y a little above 0.5);
-- low: frames with a lamp in the lower third (where a platform's captions lie).
+- low: frames with a lamp in the lower third (where a platform's captions lie);
+- pan: how fast the ground slides across the screen, points a second at 30 frames a second (the
+  camera's centre moving at its zoom; R15: the critic saw hard pans at a close zoom), median and most.
 """
 import csv
 import math
@@ -52,8 +54,14 @@ def screen(row):
 def main(argv):
     every = int(argv[argv.index("--every") + 1]) if "--every" in argv else 0
     rows = list(csv.DictReader(open(argv[0])))
-    stats = {"out": 0, "low": 0, "fill": [], "cx": [], "cy": []}
+    stats = {"out": 0, "low": 0, "fill": [], "cx": [], "cy": [], "pan": []}
+    prev = None
     for n, row in enumerate(rows):
+        c = xyz(float(row["clip_lon"]), float(row["clip_lat"]))
+        if prev is not None:
+            ang = math.acos(max(-1.0, min(1.0, sum(a * b for a, b in zip(c, prev)))))
+            stats["pan"].append(ang * R1 * float(row["clip_zoom"]) * 30.0)
+        prev = c
         pts = screen(row)
         if not pts:
             continue
@@ -75,7 +83,8 @@ def main(argv):
     med = lambda v: sorted(v)[len(v) // 2]
     print(f"{len(rows)} frames: lamp out of frame in {stats['out']}, in the lower third in {stats['low']}; "
           f"fill median {med(stats['fill']):.0%} ({min(stats['fill']):.0%}..{max(stats['fill']):.0%}); "
-          f"centre median {med(stats['cx']):.2f},{med(stats['cy']):.2f} (y {min(stats['cy']):.2f}..{max(stats['cy']):.2f})")
+          f"centre median {med(stats['cx']):.2f},{med(stats['cy']):.2f} (y {min(stats['cy']):.2f}..{max(stats['cy']):.2f}); "
+          f"pan median {med(stats['pan'] or [0]):.0f} pt/s, most {max(stats['pan'] or [0]):.0f}")
     return 0
 
 
