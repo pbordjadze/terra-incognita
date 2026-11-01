@@ -28,6 +28,18 @@ pub enum CameraMove {
     /// flight's ease) just far enough to bring it within `motion::FACE_WITHIN` of the disc's radius
     /// from the centre; where it already reads well, nothing moves.
     Face { at: LonLat },
+    /// Follow the choice (R8): the camera holds what is chosen in view (the app's `riding` names
+    /// the float in front); the zoom it has now is the deepest the framing will come back to.
+    Follow { float: u32 },
+    /// What is chosen, as the camera should hold it this frame (R8): the centre of every place to
+    /// frame (`App::frame_points`) and the widest angle of any from it, radians. While the camera
+    /// follows, it turns toward the centre and zooms out (never in past where the follow began) to
+    /// hold them all within `motion::FRAME_WITHIN` of the room; a single place is the old ride.
+    Frame { centre: LonLat, spread: f64, n: usize },
+    /// Two fingers turned about each other by `angle` radians on the screen (y down, so positive
+    /// is clockwise) about their midpoint (x, y): the orb rolls about the place under the midpoint
+    /// (the screen's centre off the disc) by as much, so what the fingers hold turns with them (R8).
+    Twist { x: f64, y: f64, angle: f64 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -57,6 +69,16 @@ pub struct CameraControl {
     last_touch: f64,
     /// The disc the last move was measured in (the fling turns by it between frames).
     disc: Disc,
+    /// What to frame while following (R8): centre, spread (radians), how many places.
+    frame: Option<(LonLat, f64, usize)>,
+    /// The zoom when the follow began: the framing zooms out from it to hold everything and back in
+    /// to it, never deeper (only the hand zooms in).
+    frame_zoom: f64,
+    /// The framing's zoom spring velocity (log zoom a second).
+    zoom_v: f64,
+    /// Whether the camera followed last frame: a follow that begins (a tap's `Ride`, a `Follow`)
+    /// takes the zoom it finds as the framing's deepest.
+    was_following: bool,
 }
 
 impl CameraControl {
@@ -71,6 +93,10 @@ impl CameraControl {
             ride_seen: None,
             last_touch: f64::NEG_INFINITY,
             disc: Disc { cx: 0.0, cy: 0.0, r: 0.0 },
+            frame: None,
+            frame_zoom: 1.0,
+            zoom_v: 0.0,
+            was_following: false,
         }
     }
 
@@ -99,7 +125,21 @@ impl CameraControl {
             CameraMove::Fly { at } => self.double_tap(at, now, motion),
             CameraMove::Leave => self.riding = None,
             CameraMove::Face { at } => self.face(at, now, motion),
+            CameraMove::Follow { float } => self.riding = Some(float),
+            CameraMove::Frame { centre, spread, n } => self.frame = Some((centre, spread, n)),
+            CameraMove::Twist { x, y, angle } => self.twist(disc, x, y, angle),
         }
+    }
+
+    /// The zoom that holds places spread `spread` radians about the centre within `FRAME_WITHIN` of
+    /// the room (orthographic: a place θ from the centre lies r·sin θ out), no deeper than the follow
+    /// began, no shallower than the least.
+    fn frame_zoom_for(&self, spread: f64) -> f64 {
+        let d = self.disc;
+        let r1 = d.r / self.camera.zoom.max(1e-6);
+        let room = d.cx.min(d.cy).max(1.0);
+        let needed = if spread >= motion::FRAME_WIDEST { self.zoom_range.0 } else { motion::FRAME_WITHIN * room / (r1 * spread.sin()).max(1e-6) };
+        needed.min(self.frame_zoom.max(self.zoom_range.0)).clamp(self.zoom_range.0, self.zoom_range.1)
     }
 
     /// Turns the globe (no zoom) so `at` lies within `FACE_WITHIN` of the room from the centre:
@@ -175,6 +215,21 @@ impl CameraControl {
         }
     }
 
+    /// Rolls the orb about the place under (x, y) by a twist of the fingers (R8): a clockwise twist
+    /// on the screen turns the globe clockwise about that place, which stays where it is.
+    fn twist(&mut self, disc: &Disc, x: f64, y: f64, angle: f64) {
+        if angle == 0.0 || disc.r <= 0.0 {
+            return;
+        }
+        self.riding = None;
+        let vx = (x - disc.cx) / disc.r;
+        let vy = (disc.cy - y) / disc.r;
+        let r2 = vx * vx + vy * vy;
+        let axis = if r2 < 1.0 { [vx, vy, (1.0 - r2).sqrt()] } else { [0.0, 0.0, 1.0] };
+        // view z toward the reader: a positive turn about it is counterclockwise on the screen
+        self.camera = self.camera.turned(axis, -angle);
+    }
+
     /// Zoom by a factor about the screen's centre (the compatibility of R0's `zoom_by`).
     pub fn zoom_by(&mut self, factor: f64) {
         self.camera.zoom = (self.camera.zoom * factor).clamp(self.zoom_range.0, self.zoom_range.1);
@@ -205,6 +260,8 @@ impl CameraControl {
             _ => self.camera,
         };
         to.zoom = target_zoom;
+        // a following camera frames no deeper than the hand last asked (R8)
+        self.frame_zoom = target_zoom;
         self.fly_to(to, now, motion);
     }
 
@@ -231,6 +288,10 @@ impl CameraControl {
             self.last_touch = now;
         }
         let before = self.camera;
+        if self.riding.is_some() && !self.was_following {
+            self.frame_zoom = self.camera.zoom;
+        }
+        self.was_following = self.riding.is_some();
         if let Some(fl) = self.flight {
             let u = if fl.duration > 0.0 { ((now - fl.start) / fl.duration).min(1.0) } else { 1.0 };
             let e = motion::ease_in_out(u);
@@ -245,6 +306,24 @@ impl CameraControl {
             let disc = self.disc;
             self.turn(&disc, self.spin.0 * dt, self.spin.1 * dt);
             self.spin = (motion::fling_decay(self.spin.0, dt), motion::fling_decay(self.spin.1, dt));
+        } else if let (Some((centre, spread, n)), true) = (self.frame.filter(|f| f.2 > 1), self.riding.is_some()) {
+            // several places to hold (R8): turn toward their centre and zoom out to hold the
+            // widest within FRAME_WITHIN of the room, back in no deeper than the follow began
+            let _ = n;
+            let target_zoom = self.frame_zoom_for(spread);
+            if motion.reduce {
+                let ang = self.camera.view(centre.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                self.camera = toward_centre(&self.camera, centre, ang);
+                self.camera.zoom = target_zoom;
+            } else {
+                let ang = self.camera.view(centre.to_xyz())[2].clamp(-1.0, 1.0).acos();
+                let (left, v) = motion::spring(ang, self.ride_v, 0.0, motion::FRAME_TAU, dt);
+                self.camera = toward_centre(&self.camera, centre, ang - left.max(0.0));
+                self.ride_v = v;
+                let (lz, vz) = motion::spring(self.camera.zoom.ln(), self.zoom_v, target_zoom.ln(), motion::FRAME_TAU, dt);
+                self.camera.zoom = lz.exp().clamp(self.zoom_range.0, self.zoom_range.1);
+                self.zoom_v = vz;
+            }
         } else if let Some(p) = ride_at.filter(|_| self.riding.is_some()) {
             let px = p.to_xyz();
             if motion.reduce {
@@ -279,6 +358,8 @@ impl CameraControl {
             self.camera.lon = motion::wrap_lon(self.camera.lon - motion::IDLE_RATE * dt);
         }
         if self.riding.is_none() {
+            self.frame = None;
+            self.zoom_v = 0.0;
             self.ride_v = 0.0;
             self.ride_seen = None;
         }
@@ -444,6 +525,26 @@ mod tests {
             t += 1.0 / 60.0;
         }
         assert!(f.camera.roll.abs() > 90.0, "{:?}", f.camera);
+    }
+
+    #[test]
+    fn a_twist_rolls_the_orb_about_the_fingers_and_keeps_what_they_hold() {
+        let d = disc(1.0);
+        let mut r = rig(-30.0, 25.0, 1.0);
+        // two fingers 80 points either side of a midpoint, turned a quarter clockwise about it
+        let (mx, my) = (d.cx + 40.0, d.cy - 30.0);
+        let a = d.unproject(&r.camera, mx + 80.0, my).unwrap();
+        let mid = d.unproject(&r.camera, mx, my).unwrap();
+        let q = std::f64::consts::FRAC_PI_2;
+        for _ in 0..30 {
+            r.apply(&d, CameraMove::Twist { x: mx, y: my, angle: q / 30.0 }, 0.0, M);
+        }
+        let (p, _) = d.project(&r.camera, mid);
+        assert!((p[0] - mx).abs() < 1e-6 && (p[1] - my).abs() < 1e-6, "{p:?}");
+        // the place under the right finger has gone round below the midpoint (y down: clockwise)
+        let (p, _) = d.project(&r.camera, a);
+        assert!((p[0] - mx).abs() < 8.0 && p[1] > my + 60.0, "{p:?}");
+        assert!(r.camera.roll.abs() > 60.0, "{:?}", r.camera);
     }
 
     #[test]

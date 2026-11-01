@@ -1,5 +1,5 @@
 {
- "title": "The rim: a lamp out at the globe's edge chosen from the panel is turned inward, its cloud on the face; one already facing leaves the globe still",
+ "title": "The rim: a lamp out at the globe's edge chosen from the panel is followed, its cloud brought onto the face; a second chosen, the globe frames both clouds (R8)",
  "size": [
   393.0,
   852.0
@@ -65,14 +65,18 @@
    ]
   },
   {
-   "t": 2.5,
+   "t": 3.5,
    "expect": {
     "chosen": [
      1,
      2
     ],
-    "camera_same_as_last": true
+    "framed": 34
    }
+  },
+  {
+   "t": 3.5,
+   "shot": "both-framed"
   }
  ],
  "floats": [

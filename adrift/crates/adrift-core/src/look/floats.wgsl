@@ -138,6 +138,7 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     acc = over(acc, vec3<f32>(1.0), glass_light(n) * exp(-((h.x * 1.2) * (h.x * 1.2) + (h.y * 2.4) * (h.y * 2.4)) / (0.16 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
-    acc = over(acc, glass_rim(n), 0.45 * i.held * cover(abs(d - 1.55 * r) - 0.3 * rp()));
+    // (in its lamp's colour, R8: a lamp chosen as itself is ringed by its own light)
+    acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * cover(abs(d - 1.55 * r) - 0.35 * rp()));
     return acc;
 }

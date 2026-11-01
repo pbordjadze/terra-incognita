@@ -340,6 +340,13 @@ pub enum Hit {
     Off,
 }
 
+/// How a chosen float is shown (R8): as itself, its journey to follow, or as its cloud of maybes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Shown {
+    Lamp,
+    Cloud,
+}
+
 /// The only way touch reaches the state: Motion produces these, Engineering applies them.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Intent {
@@ -380,8 +387,12 @@ pub enum Intent {
     /// This float joins the chosen, or leaves them if it is chosen already (R6: several clouds out at
     /// once, to compare; the last chosen is in front). `Choose` makes it the only one.
     ChooseAlso { float: u32 },
-    /// The choice is let go (every chosen float).
+    /// The choice is let go (every chosen float, as lamp or as cloud).
     Unchoose,
+    /// A float is shown as itself (`Shown::Lamp`: its journey, followed), as its cloud
+    /// (`Shown::Cloud`: its maybes out, as `ChooseAlso` adds it), or neither (`None`), and comes to
+    /// the front (R8: each lamp chosen its own way, mixed freely).
+    Show { float: u32, shown: Option<Shown> },
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
 }

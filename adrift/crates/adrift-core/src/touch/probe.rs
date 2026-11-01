@@ -63,6 +63,15 @@ impl Probe for App {
     fn is_chosen(&self, id: u32) -> bool {
         self.chosen.contains(&id)
     }
+    fn shown_as(&self, id: u32) -> Option<crate::model::Shown> {
+        App::shown_as(self, id)
+    }
+    fn choices(&self) -> Vec<u32> {
+        self.followed.iter().chain(self.chosen.iter()).copied().collect()
+    }
+    fn frame_points(&self) -> Vec<LonLat> {
+        App::frame_points(self)
+    }
     fn behind(&self) -> f64 {
         App::behind(self)
     }

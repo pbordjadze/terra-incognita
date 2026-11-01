@@ -354,3 +354,48 @@ expectation be "the same as at shot X" so a rules change doesn't break a rewind 
 the check's default and warn on out-of-order step times or a tap that does nothing; give the panel
 a minimum touch height in the seam; a density outline per cloud (an offscreen pass) and a seam for
 each cloud's extent (to frame them all) are the next tools if differences must read stronger.
+
+## 15. R7 and R8 (Oct 31, 22:20 UTC)
+
+**R7** (shipped alone): a pinch rings the sea under both fingers; the second finger that turns a
+touch into a pinch rings the water where it lands, as the first did (painting-company row 196).
+
+**R8 opens: each lamp its own way.** The owner on build 41 (painting-company row 196 has the words):
+several ways to be curious (two lamps watched as themselves, four lamps, three clouds), so each
+lamp may be chosen as itself (its journey) or as its cloud (its maybes), mixed freely, at any zoom,
+picked intuitively without adding much interface; and, offered the idea, the globe turning and
+zooming to hold everything chosen at once (a single lamp is already followed). Goals, not specs.
+
+- *Motion*: how a hand picks lamp or cloud for each lamp, on the globe and on the panel, and lets
+  it go, with little or no new interface; the camera framing everything chosen, without fighting a
+  hand that is moving it.
+- *Visual*: a lamp chosen as itself made visibly chosen (its journey worth watching) without a
+  cloud; the panel saying which way each is chosen; whatever Motion's gestures need drawn.
+
+**The seams (Engineering, at the head named in the round's message).**
+- `model::Shown { Lamp, Cloud }`; `Intent::Show { float, shown: Option<Shown> }` sets how a float is
+  chosen (as itself, as its cloud, or not) and brings it to the front. `App.followed: Vec<u32>`
+  (chosen as themselves) beside `App.chosen` (as clouds); a float is in one or neither.
+  `App::shown_as(id)`. `ChooseAlso` and `Choose` still toggle and set clouds; `Unchoose` lets every
+  choice go; a float's going removes it from both.
+- `App::frame_points()`: the places to hold in view, each followed lamp's and each chosen cloud's
+  lamp and `FRAME_SAMPLES` (16) of its maybes, stepped on the CPU (same rules, same worlds) so the
+  camera can frame the clouds without reading the GPU back.
+- `LookFloat.followed`. The check: a scene's `follow: [i, ...]`; `expect.followed` (an array);
+  `expect.framed: n` (all of `frame_points` on the screen's face, at least n of them);
+  `plans/mixed-choice.json`.
+
+**R8 merged (Nov 1, 00:05 UTC).** Visual 2dbad3b, Motion c4f42fe.
+- *Motion*: one touch, three ways, on the globe and on the panel alike: a tap on a lamp brings its
+  cloud out (and follows it), a second tap folds the cloud and chooses the lamp as itself, a third
+  lets it go; a tap on the open sea lets all go; a double tap only flies in. While following, the
+  camera turns and zooms out to hold everything chosen (`frame_points`), never deeper than where the
+  follow began, and a drag or pinch takes the camera back with the choices kept. A two-finger twist
+  rolls the orb about the place under the fingers' midpoint while the spread zooms.
+- *Visual*: a lamp chosen as itself is its lit glass float ringed in its hue with its whole kept
+  journey drawn back to its put; the panel marks lamp (a ring), cloud (a glow) or neither (a dot);
+  the panel sits on a quiet card over the globe.
+- For next time, from the exit interviews: send a round's later goals as a numbered list in one
+  message (a craft read a late goal an hour late); a `play-all` that runs every plan in one process
+  with one summary line (the suite now takes over ten minutes); the framing's centre by a minimum
+  enclosing circle rather than the mean.

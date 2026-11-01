@@ -4,7 +4,7 @@
 
 use super::camera::CameraMove;
 use super::motion::{self, Motion};
-use crate::model::{Disc, Intent, LonLat, Phase, PointerEvent};
+use crate::model::{Disc, Intent, LonLat, Phase, PointerEvent, Shown};
 use std::collections::{BTreeMap, VecDeque};
 
 /// What is under a point of the screen, as the state knows it this frame.
@@ -102,6 +102,18 @@ pub trait Probe {
     fn is_chosen(&self, _id: u32) -> bool {
         false
     }
+    /// How a float is chosen (R8): as itself, as its cloud, or not.
+    fn shown_as(&self, _id: u32) -> Option<Shown> {
+        None
+    }
+    /// Every float chosen either way (R8), the front last.
+    fn choices(&self) -> Vec<u32> {
+        Vec::new()
+    }
+    /// The places that frame everything chosen (R8, `App::frame_points`).
+    fn frame_points(&self) -> Vec<LonLat> {
+        Vec::new()
+    }
     /// The days the slowest cloud out trails the date (R6, `App::behind()`): the scrub's brake.
     fn behind(&self) -> f64 {
         0.0
@@ -170,6 +182,8 @@ pub struct Gestures {
     last_shake: Option<f64>,
     /// The clock as last seen, for the shake and the flick.
     now: f64,
+    /// The lamp the last tap turned, and how it was chosen before (R8): a double tap gives it back.
+    last_cycle: Option<(u32, Option<Shown>)>,
 }
 
 impl Default for Gestures {
@@ -180,7 +194,7 @@ impl Default for Gestures {
 
 impl Gestures {
     pub fn new() -> Gestures {
-        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, date_restore: None, date_target: None, last_shake: None, now: 0.0 }
+        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, date_restore: None, date_target: None, last_shake: None, now: 0.0, last_cycle: None }
     }
 
     /// The app answers `Intent::Put` with the float it made, so the finger goes on holding it.
@@ -433,6 +447,18 @@ impl Gestures {
                 let (ax, ay) = ((prev.x + other.x) / 2.0, (prev.y + other.y) / 2.0);
                 let (bx, by) = ((e.x + other.x) / 2.0, (e.y + other.y) / 2.0);
                 out.camera.push(CameraMove::Pinch { grab: probe.hit(ax, ay).place(), ax, ay, bx, by, factor: d1 / d0 });
+                // and turned about each other: the orb rolls with them (R8), about their midpoint
+                let a0 = (prev.y - other.y).atan2(prev.x - other.x);
+                let a1 = (e.y - other.y).atan2(e.x - other.x);
+                let mut turn = a1 - a0;
+                if turn > std::f64::consts::PI {
+                    turn -= std::f64::consts::TAU;
+                } else if turn < -std::f64::consts::PI {
+                    turn += std::f64::consts::TAU;
+                }
+                if turn.abs() > 1e-9 {
+                    out.camera.push(CameraMove::Twist { x: bx, y: by, angle: turn });
+                }
                 self.state = State::Pinch { a, b, zoom0, scale: scale * d1 / d0 };
             }
             State::Three { x0, y0, done: false } => {
@@ -531,9 +557,23 @@ impl Gestures {
                     return;
                 }
                 out.intents.push(Intent::Unpress);
-                // ride it; the app toggles, so a tap on the ridden float lets the ride go (its
-                // choice, and so its maybes, stay)
-                out.intents.push(Intent::Ride { float });
+                // a tap turns the lamp to its next way of being chosen: its cloud, itself, let go;
+                // the second tap of a double tap on it gives back what the first changed, so a
+                // double tap on a lamp only flies in
+                let again = self.last_tap.is_some_and(|(t, x, y)| e.t - t <= motion::DOUBLE_TAP_S && (e.x - x).hypot(e.y - y) <= motion::DOUBLE_TAP_PT);
+                match self.last_cycle {
+                    Some((f, before)) if again && f == float => {
+                        out.intents.push(Intent::Show { float, shown: before });
+                        if before.is_some() {
+                            out.camera.push(CameraMove::Follow { float });
+                        }
+                        self.last_cycle = None;
+                    }
+                    _ => {
+                        self.last_cycle = Some((float, probe.shown_as(float)));
+                        self.cycle(float, probe, out);
+                    }
+                }
                 self.tapped(e, Some(at), out);
                 self.state = State::Idle;
             }
@@ -739,6 +779,13 @@ impl Gestures {
             }
         }
         self.settle_date(probe, &mut out);
+        // while the camera follows, what is chosen is framed (R8): every place to hold, as its
+        // centre and widest angle from it; never while a finger is down
+        if probe.riding().is_some() && self.fingers.is_empty() {
+            if let Some((centre, spread, n)) = frame_of(&probe.frame_points()) {
+                out.camera.push(CameraMove::Frame { centre, spread, n });
+            }
+        }
         out
     }
 
@@ -764,19 +811,71 @@ impl Gestures {
     /// A tap on a lamp's row: it joins the chosen, in front, or, chosen already, is let go; a lamp
     /// newly chosen out of sight or at the globe's rim is turned toward the reader (R6).
     fn panel_tap(&mut self, float: u32, probe: &dyn Probe, out: &mut Out) {
-        out.intents.push(Intent::ChooseAlso { float });
-        if !probe.is_chosen(float) {
-            if let Some(at) = probe.float_at(float) {
-                out.camera.push(CameraMove::Face { at });
+        self.cycle(float, probe, out);
+    }
+
+    /// One touch, three ways (R8): a lamp not chosen is chosen as its cloud (its maybes, the heart
+    /// of it); chosen as its cloud, the cloud folds back and the lamp is chosen as itself (its
+    /// journey, to watch); chosen as itself, it is let go. Each lamp its own way, mixed freely, the
+    /// same on the globe and on the panel; the camera follows everything chosen (`Follow`, framed
+    /// each tick), and a lamp let go hands the follow to another still chosen, if any.
+    fn cycle(&mut self, float: u32, probe: &dyn Probe, out: &mut Out) {
+        let next = match probe.shown_as(float) {
+            None => Some(Shown::Cloud),
+            Some(Shown::Cloud) => Some(Shown::Lamp),
+            Some(Shown::Lamp) => None,
+        };
+        match next {
+            // chosen as its cloud and followed: the app's `Ride` (it joins the chosen in front)
+            Some(Shown::Cloud) => out.intents.push(Intent::Ride { float }),
+            _ => out.intents.push(Intent::Show { float, shown: next }),
+        }
+        if next == Some(Shown::Lamp) {
+            out.camera.push(CameraMove::Follow { float });
+        } else if next.is_none() && probe.riding() == Some(float) {
+            match probe.choices().into_iter().filter(|&c| c != float).last() {
+                Some(other) => out.camera.push(CameraMove::Follow { float: other }),
+                None => out.camera.push(CameraMove::Leave),
             }
         }
     }
 
-    /// A rest on a lamp's row: ride it (the ride flies there and keeps it centred); resting on the
-    /// ridden one lets the ride go, as a tap on it on the globe does.
-    fn panel_rest(&mut self, float: u32, _probe: &dyn Probe, out: &mut Out) {
-        out.intents.push(Intent::Ride { float });
+    /// A rest on a lamp's row: the camera follows again (R8), framing everything chosen, after a
+    /// hand had turned it away; a lamp not chosen is chosen as its cloud first.
+    fn panel_rest(&mut self, float: u32, probe: &dyn Probe, out: &mut Out) {
+        if probe.shown_as(float).is_none() {
+            out.intents.push(Intent::Ride { float });
+        } else {
+            out.camera.push(CameraMove::Follow { float });
+        }
     }
+}
+
+/// The centre of a set of places on the sphere (their mean direction) and the widest angle of any
+/// from it, radians; None for none.
+pub fn frame_of(points: &[LonLat]) -> Option<(LonLat, f64, usize)> {
+    if points.is_empty() {
+        return None;
+    }
+    let mut c = [0.0; 3];
+    for p in points {
+        let v = p.to_xyz();
+        c = [c[0] + v[0], c[1] + v[1], c[2] + v[2]];
+    }
+    let n = (c[0] * c[0] + c[1] * c[1] + c[2] * c[2]).sqrt();
+    if n < 1e-9 {
+        // spread all round the globe: no centre holds them, so the whole globe from where it is
+        return Some((points[0], std::f64::consts::PI, points.len()));
+    }
+    let c = [c[0] / n, c[1] / n, c[2] / n];
+    let spread = points
+        .iter()
+        .map(|p| {
+            let v = p.to_xyz();
+            (v[0] * c[0] + v[1] * c[1] + v[2] * c[2]).clamp(-1.0, 1.0).acos()
+        })
+        .fold(0.0, f64::max);
+    Some((LonLat::from_xyz(c), spread, points.len()))
 }
 
 #[cfg(test)]
@@ -788,6 +887,7 @@ mod tests {
 
     struct Fake {
         chosen: RefCell<Vec<u32>>,
+        followed: RefCell<Vec<u32>>,
         day: RefCell<f64>,
         running: RefCell<bool>,
         behind: f64,
@@ -795,7 +895,7 @@ mod tests {
 
     impl Fake {
         fn new() -> Fake {
-            Fake { chosen: RefCell::new(Vec::new()), day: RefCell::new(100.0), running: RefCell::new(true), behind: 0.0 }
+            Fake { chosen: RefCell::new(Vec::new()), followed: RefCell::new(Vec::new()), day: RefCell::new(100.0), running: RefCell::new(true), behind: 0.0 }
         }
         /// Applies the intents as the app would (the parts these tests read).
         fn apply(&self, out: &Out) {
@@ -807,6 +907,21 @@ mod tests {
                             c.remove(p);
                         } else {
                             c.push(float);
+                        }
+                    }
+                    Intent::Ride { float } => {
+                        if !self.chosen.borrow().contains(&float) {
+                            self.followed.borrow_mut().retain(|&x| x != float);
+                            self.chosen.borrow_mut().push(float);
+                        }
+                    }
+                    Intent::Show { float, shown } => {
+                        self.chosen.borrow_mut().retain(|&x| x != float);
+                        self.followed.borrow_mut().retain(|&x| x != float);
+                        match shown {
+                            Some(Shown::Cloud) => self.chosen.borrow_mut().push(float),
+                            Some(Shown::Lamp) => self.followed.borrow_mut().push(float),
+                            None => {}
                         }
                     }
                     Intent::Scrub { days } => *self.day.borrow_mut() += days,
@@ -851,6 +966,15 @@ mod tests {
         fn is_chosen(&self, id: u32) -> bool {
             self.chosen.borrow().contains(&id)
         }
+        fn shown_as(&self, id: u32) -> Option<Shown> {
+            if self.chosen.borrow().contains(&id) {
+                Some(Shown::Cloud)
+            } else if self.followed.borrow().contains(&id) {
+                Some(Shown::Lamp)
+            } else {
+                None
+            }
+        }
         fn behind(&self) -> f64 {
             self.behind
         }
@@ -887,11 +1011,14 @@ mod tests {
         let b = tap(&mut g, &p, 30.0, 150.0, 1.0);
         assert_eq!(*p.chosen.borrow(), vec![1, 2]);
         for i in a.iter().chain(&b) {
-            assert!(!matches!(i, Intent::Ring { .. } | Intent::Put { .. } | Intent::Unchoose | Intent::Ride { .. }), "{i:?}");
+            assert!(!matches!(i, Intent::Ring { .. } | Intent::Put { .. } | Intent::Unchoose), "{i:?}");
         }
-        // two quick taps on one row are a toggle and back, never the globe's double tap
+        // (R8) a second tap on a row: that lamp as itself, its cloud folded; a third lets it go
         let c = tap(&mut g, &p, 30.0, 110.0, 2.0);
         assert_eq!(*p.chosen.borrow(), vec![2]);
+        assert_eq!(*p.followed.borrow(), vec![1]);
+        tap(&mut g, &p, 30.0, 110.0, 2.5);
+        assert!(p.followed.borrow().is_empty() && *p.chosen.borrow() == vec![2]);
         assert!(c.iter().all(|i| !matches!(i, Intent::Ring { .. })));
         let mut g2 = Gestures::new();
         tap(&mut g2, &p, 30.0, 190.0, 3.0);

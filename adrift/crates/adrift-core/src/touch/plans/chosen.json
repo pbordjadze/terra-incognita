@@ -1,5 +1,5 @@
 {
- "title": "Tap a float and it is chosen and ridden; pinch away and it stays chosen; tap it to let the ride go; tap the sea to unchoose",
+ "title": "Tap a float and its cloud is chosen and followed; pinch away and it stays chosen, unfollowed; tap it again and it is chosen as itself, followed; again and it is let go; tap the sea to unchoose",
  "size": [
   393.0,
   852.0
@@ -108,7 +108,10 @@
   {
    "t": 1.2,
    "expect": {
-    "chosen": 1,
+    "chosen": null,
+    "followed": [
+     1
+    ],
     "riding": 1
    }
   },
@@ -131,7 +134,8 @@
   {
    "t": 2.7,
    "expect": {
-    "chosen": 1,
+    "chosen": null,
+    "followed": [],
     "riding": null
    }
   },

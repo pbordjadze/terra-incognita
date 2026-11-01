@@ -180,6 +180,8 @@ pub struct LookFloat {
     pub chosen: bool,
     /// Its cloud is out (R6: one of `LookState.clouds`), in front or not.
     pub shown: bool,
+    /// Chosen as itself (R8): its journey followed, no cloud (`App.followed`).
+    pub followed: bool,
     /// Where it was put (its first leg's place: where it started) and on what day (`Clock.day`) (R6).
     pub origin: LonLat,
     pub put_day: f64,
@@ -324,8 +326,9 @@ impl Look {
             if f.shown {
                 continue;
             }
-            let start = f.wake.len().saturating_sub(WAKE_DAYS);
-            let mut b = wake::beads(&f.wake[start..], n, lamp_hue(f.id));
+            // (a lamp chosen as itself draws its whole kept journey, R8; the others their last days)
+            let start = if f.followed { 0 } else { f.wake.len().saturating_sub(WAKE_DAYS) };
+            let mut b = wake::beads(&f.wake[start..], n, lamp_hue(f.id), f.followed);
             if !state.truth_marks {
                 for bead in &mut b {
                     bead.measured = 1.0;
@@ -348,7 +351,7 @@ impl Look {
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: f.lit, held: (f.held || f.chosen) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: if f.followed { f.lit.max(0.85) } else { f.lit }, held: (f.held || f.chosen || f.followed) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
         if let Some((at, beat)) = state.resting {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
@@ -371,7 +374,7 @@ impl Look {
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
         // the panel of every lamp out there (R6): where each was put, and which are out
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, front: f.chosen && f.shown }).collect();
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
         labels.extend(self.words.panel(&rows, reading, disc, n));
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
