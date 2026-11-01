@@ -161,6 +161,12 @@ pub fn fling_decay(v: f64, dt: f64) -> f64 {
     v * (-FLING_DECAY * dt).exp()
 }
 
+/// How far a fling of speed 1 goes in `dt` as it decays: (1 − e^(−k·dt)) / k, so the glide's whole
+/// length is v / FLING_DECAY at any frame rate (R10).
+pub fn fling_glide(dt: f64) -> f64 {
+    (1.0 - (-FLING_DECAY * dt).exp()) / FLING_DECAY
+}
+
 /// Wraps a longitude into (-180, 180].
 pub fn wrap_lon(lon: f64) -> f64 {
     let l = (lon + 540.0).rem_euclid(360.0) - 180.0;

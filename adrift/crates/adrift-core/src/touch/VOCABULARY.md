@@ -90,7 +90,7 @@ Idle
  ├─ Down on Sea ──────────────▶ Pressing{at,t0}    emits Ring, Press
  ├─ Down on Float(id) ────────▶ Resting{id,t0}
  ├─ Down on Date ─────────────▶ DateDown{x0}       a glide still under way ends where the date is
- ├─ Down on a panel row(id) ──▶ PanelDown{id,t0}   emits PressFloat (never Ring: the panel is not the sea)
+ ├─ Down on a panel row(id) ──▶ PanelDown{id,t0}   emits PressFloat (no Ring under the finger: the panel is not the sea; R10: the tap rings at the lamp)
  ├─ Down on Land/Off ─────────▶ Down{t0}            (silent)
  └─ (Riding is a camera mode, not a state: see camera.rs)
 
@@ -319,6 +319,26 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     asks for the newest take's export again. A drag from it is the globe's; nothing on it rings the
     sea, puts a float or sets a carried one down. `plans/record-by-hand.json` (a take of a put, a
     choice and a scrub, exported: the replay ends 0.000 km from the take).
+
+32. **A mark ties to its lamp** (R10): the panel is a row of marks, one a lamp, each a 44-reading-point
+    cell abutting the next from the top left (Visual's `panel_bounds`, five across, then the next line).
+    Touch is as R8's rows: a tap cycles the lamp, a rest rides it, a drag is the globe's. The tie
+    is out in the world, not a line across the screen: a tap rings the water once at the lamp itself
+    (`Ring { at: lamp }`, never under the finger), and while a finger rests on a mark
+    `Gestures::panel_pressing_since(now)` names its lamp and how long, for the look to swell that lamp
+    (`motion::thicken`). `plans/panel-marks.json`.
+33. **The clip is framed, not captured** (R10): the clip's camera (`studio::ClipCamera`) follows the
+    take's on a critically damped spring (half-way to a step in `Framing::follow`, 0.12 s), turning in
+    rotation (over a pole as anywhere) and zooming in the zoom's log, so its speed never jumps: a pinch
+    whose events came in sparse steps comes out as one movement. The opening beat (`hold_in`, 0.8 s)
+    eases in from `open` (a tenth) wider to the take's first framing; the end beat (`hold_out`, 1.2 s)
+    carries the take camera's last drift (a fling, a ride, the idle turn) on and lets it die away over
+    `settle` (0.3 s), so the clip comes to rest instead of stopping dead. The live fling glides the
+    exact decayed distance each frame, so a take at 20 frames a second is the same as at 60.
+    `plans/take-fling-pinch-60.json` and `-20.json` (the same clip); `plans/take-and-export.json`.
+    Speed (`Intent::TakeSpeed`) has no gesture yet: every candidate would overload the record control or
+    the date with a meaning the reader can't see, and a slow-motion clip is a choice made after the
+    take, which belongs with the trim on the studio's edit surface when there is one.
 
 ## The numbers (`motion.rs`)
 

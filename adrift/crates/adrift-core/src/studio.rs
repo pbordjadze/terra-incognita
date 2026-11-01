@@ -28,30 +28,41 @@ pub const TAKES_KEPT: usize = 5;
 pub const CLIP_PPP: f64 = 3.0;
 
 /// How a clip frames itself (R10: the clip is made, not captured). The take's state is replayed
-/// exactly; what the clip shows of it is its own: a camera that follows the take's with a little lag
-/// (a pinch or fling eased, whatever the frame rate it was recorded at), a still beat before the
-/// take's first moment and an eased one after its last, the sea moving and the date held. These are
-/// the first of the studio's framing dials (Motion's to tune, by demand or in the round's brief).
+/// exactly; what the clip shows of it is its own (`ClipCamera`): a camera that follows the take's on a
+/// critically damped spring (a pinch or fling eased, whatever the frame rate it was recorded at, and no
+/// kick where a gesture starts or stops), a still beat before the take's first moment in which the
+/// camera eases in from a touch wider, and a beat after its last in which whatever drift the camera
+/// had is carried on and settles, the sea moving and the date held. The studio's framing dials
+/// (Motion's).
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Framing {
     /// Seconds of the take's opening state before its first moment (the drawn motion runs, the date
-    /// is held).
+    /// is held, the camera eases in by `open`).
     pub hold_in: f64,
-    /// Seconds after its last moment: the camera settles, touch feedback fades, the date is held.
+    /// Seconds after its last moment: the camera's drift settles, touch feedback fades, the date is
+    /// held.
     pub hold_out: f64,
-    /// The clip's camera follows the take's with this half-life, seconds (0: exactly).
+    /// The clip's camera follows the take's on a critically damped spring whose answer to a step is
+    /// half-way after this many seconds (0: exactly).
     pub follow: f64,
+    /// How much wider the opening beat begins, in the zoom's logarithm (0.1: a tenth further out),
+    /// eased in to the take's first framing by the beat's end (0: a still opening).
+    pub open: f64,
+    /// The time constant, seconds, over which the camera's drift at the take's last moment (a fling,
+    /// a ride, the idle turn, a pinch still easing) is carried on and dies away in the end beat.
+    pub settle: f64,
 }
 
 impl Default for Framing {
     fn default() -> Framing {
-        Framing { hold_in: 0.5, hold_out: 0.9, follow: 0.12 }
+        Framing { hold_in: 0.8, hold_out: 1.2, follow: 0.12, open: 0.1, settle: 0.3 }
     }
 }
 
 /// The clip's camera a step `dt` seconds on toward the take's `target`, with half-life `half`
 /// (frame-rate independent: two steps of dt/2 are one of dt). Longitude and roll the short way round,
-/// the zoom in its logarithm, so a pinch eases evenly in and out.
+/// the zoom in its logarithm. The first-order follow (R10's seam); the export uses `ClipCamera`.
 pub fn follow(cam: Camera, target: Camera, dt: f64, half: f64) -> Camera {
     if half <= 0.0 {
         return target;
@@ -64,6 +75,131 @@ pub fn follow(cam: Camera, target: Camera, dt: f64, half: f64) -> Camera {
         zoom: (cam.zoom.ln() + (target.zoom.ln() - cam.zoom.ln()) * k).exp(),
         roll: wrap(cam.roll + wrap(target.roll - cam.roll) * k),
     }
+}
+
+/// A critically damped spring's step response is half-way at 1.678 time constants.
+const HALF_TO_TAU: f64 = 1.678_346_99;
+
+/// The clip's own camera (R10, Motion): it follows the take's camera in rotation (so a turn over a pole
+/// is as smooth as anywhere) and the zoom in its logarithm, each on a critically damped spring, so its
+/// speed never jumps: a pinch recorded at 20 events a second comes out as one gesture, not steps, and a
+/// fling's start and a ride's catch are eased. It also makes the clip's two beats: the opening eases in
+/// from `Framing::open` wider; the end carries the take camera's last drift on, dying away over
+/// `Framing::settle`, so the clip comes to rest rather than stopping.
+#[derive(Clone, Copy, Debug)]
+pub struct ClipCamera {
+    pub cam: Camera,
+    /// The spring's angular velocity (world frame, radians a second) and the zoom's (log a second).
+    w: [f64; 3],
+    vz: f64,
+    /// The take camera last frame and its smoothed velocity (world frame, radians a second; log zoom a
+    /// second), measured in the clip's seconds, for the end beat.
+    seen: Option<Camera>,
+    take_w: [f64; 3],
+    take_vz: f64,
+}
+
+impl ClipCamera {
+    pub fn new(start: Camera) -> ClipCamera {
+        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0 }
+    }
+
+    /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
+    /// frame, `part` and `through` where the frame falls (`Take::clip_at`). Returns the camera to draw.
+    pub fn step(&mut self, take: Camera, part: ClipPart, through: f64, dt: f64, f: &Framing) -> Camera {
+        match part {
+            ClipPart::Before => {
+                // the opening: the take's first framing, from a touch wider, eased in (still at both ends)
+                let e = crate::touch::motion::ease_in_out(through);
+                self.cam = Camera { zoom: take.zoom * (-f.open * (1.0 - e)).exp(), ..take };
+                self.w = [0.0; 3];
+                self.vz = 0.0;
+                self.seen = Some(take);
+                self.cam
+            }
+            ClipPart::During => {
+                if let Some(prev) = self.seen.filter(|_| dt > 0.0) {
+                    // the take camera's own velocity, smoothed over a tenth of a second
+                    let r = rot_log(qmul(cam_quat(take), qconj(cam_quat(prev))));
+                    let k = 1.0 - (-dt / 0.1).exp();
+                    for i in 0..3 {
+                        self.take_w[i] += (r[i] / dt - self.take_w[i]) * k;
+                    }
+                    self.take_vz += ((take.zoom.ln() - prev.zoom.ln()) / dt - self.take_vz) * k;
+                }
+                self.seen = Some(take);
+                self.spring(take, dt, f)
+            }
+            ClipPart::After => {
+                // the end: the take's last framing, carried on by its drift as that dies away
+                let end = self.seen.unwrap_or(take);
+                let u = through * f.hold_out;
+                let carry = if f.settle > 0.0 { f.settle * (1.0 - (-u / f.settle).exp()) } else { 0.0 };
+                let turn = [self.take_w[0] * carry, self.take_w[1] * carry, self.take_w[2] * carry];
+                let q = qmul(rot_exp(turn), cam_quat(end));
+                let target = Camera::from_rotation(crate::touch::camera::quat_mat(q), end.zoom * (self.take_vz * carry).exp());
+                self.spring(target, dt, f)
+            }
+        }
+    }
+
+    fn spring(&mut self, target: Camera, dt: f64, f: &Framing) -> Camera {
+        if f.follow <= 0.0 {
+            self.cam = target;
+            return target;
+        }
+        let tau = f.follow / HALF_TO_TAU;
+        let qt = cam_quat(target);
+        // where the camera lies from the target, as a turn (world frame): cam = exp(x) · target
+        let x = rot_log(qmul(cam_quat(self.cam), qconj(qt)));
+        let mut nx = [0.0; 3];
+        for i in 0..3 {
+            let (a, v) = crate::touch::motion::spring(x[i], self.w[i], 0.0, tau, dt);
+            nx[i] = a;
+            self.w[i] = v;
+        }
+        let (lz, vz) = crate::touch::motion::spring(self.cam.zoom.ln(), self.vz, target.zoom.ln(), tau, dt);
+        self.vz = vz;
+        self.cam = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), lz.exp());
+        self.cam
+    }
+}
+
+fn cam_quat(c: Camera) -> [f64; 4] {
+    crate::touch::camera::mat_quat(c.rotation())
+}
+
+fn qmul(a: [f64; 4], b: [f64; 4]) -> [f64; 4] {
+    [
+        a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+        a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+        a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1],
+        a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0],
+    ]
+}
+
+fn qconj(q: [f64; 4]) -> [f64; 4] {
+    [q[0], -q[1], -q[2], -q[3]]
+}
+
+/// A unit quaternion as its rotation vector (axis × angle, the short way).
+fn rot_log(q: [f64; 4]) -> [f64; 3] {
+    let q = if q[0] < 0.0 { [-q[0], -q[1], -q[2], -q[3]] } else { q };
+    let s = (q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
+    if s < 1e-12 {
+        return [2.0 * q[1], 2.0 * q[2], 2.0 * q[3]];
+    }
+    let a = 2.0 * s.atan2(q[0]) / s;
+    [q[1] * a, q[2] * a, q[3] * a]
+}
+
+fn rot_exp(v: [f64; 3]) -> [f64; 4] {
+    let th = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    if th < 1e-12 {
+        return [1.0, v[0] / 2.0, v[1] / 2.0, v[2] / 2.0];
+    }
+    let (s, c) = (th / 2.0).sin_cos();
+    [c, v[0] / th * s, v[1] / th * s, v[2] / th * s]
 }
 
 /// The window of a screen `w` × `h` (any unit) that a 9:16 clip would show of it: as large as the
@@ -217,7 +353,7 @@ pub(crate) struct Replay {
     pub fps: f64,
     pub live: crate::app::Stash,
     /// The clip's own camera, following the take's (R10).
-    pub cam: Camera,
+    pub cam: ClipCamera,
     /// The drawn motion's seconds the clip has added in its held beats (the date held, the sea moving).
     pub held: f64,
 }
@@ -225,6 +361,7 @@ pub(crate) struct Replay {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::LonLat;
 
     #[test]
     fn follow_is_frame_rate_independent() {
@@ -241,12 +378,93 @@ mod tests {
     fn clip_parts() {
         let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: Camera::new(0.0, 0.0, 1.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
         let take = Take { start, events: vec![], t0: 10.0, t1: 14.0, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 0.5, framing: Framing::default() };
-        assert!((take.clip_seconds() - (0.5 + 8.0 + 0.9)).abs() < 1e-9);
+        let f = take.framing;
+        assert!((take.clip_seconds() - (f.hold_in + 8.0 + f.hold_out)).abs() < 1e-9);
         assert_eq!(take.clip_at(0.2).1, ClipPart::Before);
-        let (t, part, _) = take.clip_at(0.5 + 4.0);
+        let (t, part, _) = take.clip_at(f.hold_in + 4.0);
         assert_eq!(part, ClipPart::During);
         assert!((t - 12.0).abs() < 1e-9);
-        assert_eq!(take.clip_at(9.0).1, ClipPart::After);
-        assert!((take.clip_at(9.0).0 - 14.0).abs() < 1e-9);
+        let late = f.hold_in + 8.0 + 0.1;
+        assert_eq!(take.clip_at(late).1, ClipPart::After);
+        assert!((take.clip_at(late).0 - 14.0).abs() < 1e-9);
+    }
+
+    /// A take camera's path: still, then a pinch in sparse steps (20 events a second, the zoom jumping
+    /// at each), then a fling turning east at 40° a second until the take ends mid-fling.
+    fn take_cam(t: f64) -> Camera {
+        let zoom = if t < 0.5 { 1.2 } else if t < 1.0 { 1.2 * (1.0 + ((t - 0.5) * 20.0).floor() / 10.0) } else { 2.4 };
+        let lon = if t < 1.0 { -40.0 } else { -40.0 + 40.0 * (t - 1.0) };
+        Camera::new(lon, 20.0, zoom)
+    }
+
+    /// The clip's camera through a whole clip at `fps`: (clip seconds, camera) a frame.
+    fn run_clip(fps: f64) -> Vec<(f64, Camera)> {
+        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: take_cam(0.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
+        let take = Take { start, events: vec![], t0: 0.0, t1: 1.6, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 1.0, framing: Framing::default() };
+        let mut cc = ClipCamera::new(take.start.camera);
+        let n = (take.clip_seconds() * fps).ceil() as usize;
+        (0..n)
+            .map(|i| {
+                let tau = i as f64 / fps;
+                let (t, part, through) = take.clip_at(tau);
+                (tau, cc.step(take_cam(t), part, through, 1.0 / fps, &take.framing))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_clip_eases_in_follows_without_kicks_and_comes_to_rest() {
+        let f = Framing::default();
+        let c = run_clip(60.0);
+        // the opening: a touch wider at the first frame, the take's own framing by the beat's end
+        assert!((c[0].1.zoom - 1.2 * (-f.open).exp()).abs() < 1e-9, "{:?}", c[0].1);
+        let at = |s: f64| c.iter().find(|(t, _)| *t >= s - 1e-9).unwrap().1;
+        assert!((at(f.hold_in).zoom - 1.2).abs() < 1e-3);
+        // the pinch's steps come out smooth: the zoom's rate never changes by more than a little a frame
+        let mut worst: f64 = 0.0;
+        for w in c.windows(3) {
+            let r0 = w[1].1.zoom.ln() - w[0].1.zoom.ln();
+            let r1 = w[2].1.zoom.ln() - w[1].1.zoom.ln();
+            worst = worst.max((r1 - r0).abs());
+        }
+        // (the take's own zoom jumps by ln 1.1 ≈ 0.095 at a step; the clip's rate changes by a sliver)
+        assert!(worst < 0.004, "the zoom's rate jumped by {worst} in a frame");
+        // the fling at the take's end is carried on and dies away: still moving east just after,
+        // and at rest by the clip's last frame
+        let lon = |i: usize| c[i].1.lon;
+        let n = c.len();
+        let after = c.iter().position(|(t, _)| *t >= f.hold_in + 1.6).unwrap();
+        assert!(lon(after + 6) - lon(after) > 0.5, "the drift stopped dead");
+        let last = (lon(n - 1) - lon(n - 2)) * 60.0;
+        assert!(last.abs() < 1.5, "still turning {last}°/s at the end");
+        assert!(lon(n - 1) > take_cam(1.6).lon + 5.0, "the drift carried {}°", lon(n - 1) - take_cam(1.6).lon);
+    }
+
+    #[test]
+    fn the_clip_camera_is_the_same_at_20_and_60_fps() {
+        let a = run_clip(60.0);
+        let b = run_clip(20.0);
+        for (tau, cam) in &b {
+            let other = a.iter().min_by(|x, y| (x.0 - tau).abs().partial_cmp(&(y.0 - tau).abs()).unwrap()).unwrap().1;
+            assert!((cam.lon - other.lon).abs() < 1.0 && (cam.zoom.ln() - other.zoom.ln()).abs() < 0.03, "at {tau}: {cam:?} vs {other:?}");
+        }
+    }
+
+    #[test]
+    fn the_clip_follows_over_a_pole_without_a_swing() {
+        // a turn straight over the north pole: lon and roll flip, the picture doesn't
+        let mut cc = ClipCamera::new(Camera::new(0.0, 80.0, 2.0));
+        let mut last = cc.cam;
+        let f = Framing::default();
+        for i in 0..120 {
+            let lat = 80.0 + i as f64 * 0.2;
+            let target = if lat <= 90.0 { Camera::new(0.0, lat, 2.0) } else { Camera { lon: 180.0, lat: 180.0 - lat, zoom: 2.0, roll: 180.0 } };
+            let cam = cc.step(target, ClipPart::During, 0.0, 1.0 / 60.0, &f);
+            let d = LonLat::new(cam.lon, cam.lat).to_xyz();
+            let e = LonLat::new(last.lon, last.lat).to_xyz();
+            let step = (d[0] * e[0] + d[1] * e[1] + d[2] * e[2]).clamp(-1.0, 1.0).acos().to_degrees();
+            assert!(step < 1.0, "jumped {step}° at {cam:?}");
+            last = cam;
+        }
     }
 }
