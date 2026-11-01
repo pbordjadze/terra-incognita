@@ -431,3 +431,9 @@ round's seam: **a take is data, not pixels.**
   playing; the first timing tool (a trim, a speed); whatever "minor selection tools" the hand needs.
 - *Visual*: the exported frame clean (what of the chrome stays out of a clip), a recording's mark on
   the live screen only, whatever the export's control needs drawn.
+- *Added (07:55 UTC):* the clip is 9:16 at 1080×1920 (`studio::CLIP`): the largest 9:16 window of
+  the take's screen, centred on the globe's disc vertically, scaled by bilinear sampling. The owner
+  has handed the run over (painting-company row 199): rounds continue as before, each build judged
+  by a fresh critic session standing in for his notes, until it could be shown without a caveat;
+  presets (wind, a flat plane, more), the dials that differ between them, characters, a conductor
+  mode and the casting of fates are the road.

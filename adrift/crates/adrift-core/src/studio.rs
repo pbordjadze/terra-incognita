@@ -18,6 +18,9 @@ use serde::{Deserialize, Serialize};
 
 /// The longest take, seconds of the shell's clock (a take ends itself there).
 pub const TAKE_MAX: f64 = 60.0;
+/// The exported clip's size: 9:16, the short-form platforms' frame (a take's screen is cropped to
+/// it about the globe's centre and scaled).
+pub const CLIP: (u32, u32) = (1080, 1920);
 /// How many takes are kept (the newest last).
 pub const TAKES_KEPT: usize = 5;
 
