@@ -881,10 +881,11 @@ impl Gestures {
                 self.state = State::Idle;
             }
             // a rest on a lamp's row rides it (the finger may still be down)
-            // a rest on the record control, not recording, with a take kept: export it again
+            // a rest on the record control, not recording: the studio's menu (R13: a journey clip of
+            // the chosen lamps, the last take again, the lamps copied or pasted)
             State::RecordDown { id, x0, y0, t0, done: false } if now - t0 >= motion::BEAT => {
-                if probe.takes() > 0 && !probe.recording() {
-                    out.intents.push(Intent::Export);
+                if !probe.recording() {
+                    out.intents.push(Intent::Menu);
                 }
                 self.state = State::RecordDown { id, x0, y0, t0, done: true };
             }

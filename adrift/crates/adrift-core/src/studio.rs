@@ -481,6 +481,8 @@ pub struct Studio {
     pub takes: Vec<Take>,
     /// The reader asked to export the newest take (`Intent::Export`): the shell polls and clears it.
     pub export_wanted: bool,
+    /// The reader asked for the studio's menu (`Intent::Menu`, R13): the shell polls and clears it.
+    pub menu_wanted: bool,
     pub(crate) replay: Option<Replay>,
 }
 

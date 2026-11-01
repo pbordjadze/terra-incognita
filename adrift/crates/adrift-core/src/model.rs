@@ -429,6 +429,10 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// The studio's menu is asked for (R13: a rest on the record control): the shell polls
+    /// `App::menu_wanted` and offers what can be made (a journey clip of the chosen lamps, the last
+    /// take again, the lamps copied or pasted).
+    Menu,
     /// A conductor's cue while a take is recorded (R11): the lamp `float` (None: every lamp out)
     /// takes the world that did what the gesture did.
     Conduct { float: Option<u32>, gesture: ConductGesture },

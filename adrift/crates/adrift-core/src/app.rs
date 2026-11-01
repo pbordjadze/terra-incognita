@@ -84,6 +84,17 @@ pub struct SceneFloat {
     pub days_ago: f64,
 }
 
+/// The first line of copied lamps (R13, `App::lamps_text`).
+pub const LAMPS_HEADER: &str = "adrift lamps 1";
+
+/// Lamps copied out (R13): their exact legs and the day they were copied on.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LampsCopy {
+    pub version: u32,
+    pub day: f64,
+    pub floats: Vec<Float>,
+}
+
 /// What is kept between launches: nothing is lost (DECISIONS.md §6).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Snapshot {
@@ -552,6 +563,11 @@ impl App {
             Intent::TakeSpeed { speed } => {
                 if let Some(t) = self.studio.takes.last_mut() {
                     t.speed = speed.clamp(0.25, 2.0);
+                }
+            }
+            Intent::Menu => {
+                if self.studio.replay.is_none() {
+                    self.studio.menu_wanted = true;
                 }
             }
             Intent::Export => {
@@ -1799,6 +1815,138 @@ impl App {
             return 0;
         }
         let Some(take) = index.map_or(self.studio.takes.last(), |i| self.studio.takes.get(i)).cloned() else { return 0 };
+        self.export_begin_take(take, fps)
+    }
+
+    /// Whether the reader asked for the studio's menu since the shell last asked (R13).
+    pub fn menu_wanted(&mut self) -> bool {
+        std::mem::take(&mut self.studio.menu_wanted)
+    }
+
+    /// The lamps a journey clip or a copy takes (R13): those chosen (as lamp or cloud), else every lamp
+    /// out, by id.
+    pub fn picked_lamps(&self) -> Vec<u32> {
+        let day = self.clock.day;
+        let mut ids: Vec<u32> = self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))).map(|f| f.id).collect();
+        if ids.is_empty() {
+            ids = self.floats.iter().filter(|f| f.born(day)).map(|f| f.id).collect();
+        }
+        ids
+    }
+
+    /// A journey clip of the picked lamps (R13): no hand in it. Only those lamps, each drawn as itself
+    /// with its whole line, from the day the last of them was put to today, the date running at a pace
+    /// that fits the journey into `seconds` (a quarter of a day to four days a second; past today if the
+    /// journey is short), the clip's camera framing them as it does any take. A take with no touches,
+    /// exported like any other.
+    pub fn journey_take(&self, seconds: f64) -> Option<crate::studio::Take> {
+        let ids = self.picked_lamps();
+        if ids.is_empty() || seconds <= 0.0 {
+            return None;
+        }
+        let floats: Vec<Float> = self
+            .floats
+            .iter()
+            .filter(|f| ids.contains(&f.id))
+            .cloned()
+            .map(|mut f| {
+                f.hand = Hand::Free;
+                f.lit_for = 10.0;
+                f
+            })
+            .collect();
+        // from the day the last of them was put, so they are all out from the first frame (each drawn with
+        // its whole line, the days before included)
+        let first = floats.iter().map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
+        let span = (self.clock.day - first).max(1.0);
+        let rate = (span / seconds).clamp(0.25, 4.0);
+        let mut start = self.take_start();
+        start.clock = Clock { day: first, running: true, rate };
+        start.chosen = Vec::new();
+        start.followed = ids.clone();
+        start.riding = None;
+        start.credits_open = false;
+        // the camera starts over where they began; the clip's own framing takes it from there
+        let (mut x, mut y, mut z) = (0.0, 0.0, 0.0);
+        for f in &floats {
+            let at = f.legs().first().map_or(f.at, |l| l.at).to_xyz();
+            x += at[0];
+            y += at[1];
+            z += at[2];
+        }
+        let n = (x * x + y * y + z * z).sqrt().max(1e-9);
+        let (lat, lon) = ((y / n).asin().to_degrees(), (x / n).atan2(z / n).to_degrees());
+        start.camera = Camera::new(lon, lat, 3.0);
+        start.floats = floats;
+        let fps = 30.0;
+        let frames = (seconds * fps).ceil() as usize;
+        let events = (1..=frames).map(|i| crate::studio::TakeEvent::Frame { t: i as f64 / fps }).collect();
+        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: None })
+    }
+
+    /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
+    pub fn journey_begin(&mut self, seconds: f64, fps: f64) -> u32 {
+        if self.studio.replay.is_some() {
+            return 0;
+        }
+        match self.journey_take(seconds) {
+            Some(take) => self.export_begin_take(take, fps),
+            None => 0,
+        }
+    }
+
+    /// The picked lamps as text to copy (R13): every leg exactly, so pasted anywhere (another phone,
+    /// the check) they go on exactly as here. A first line names it.
+    pub fn lamps_text(&self) -> Option<String> {
+        let ids = self.picked_lamps();
+        if ids.is_empty() {
+            return None;
+        }
+        let floats: Vec<Float> = self.floats.iter().filter(|f| ids.contains(&f.id)).cloned().map(|mut f| {
+            f.hand = Hand::Free;
+            f.lit_for = 10.0;
+            f.wake.clear();
+            f
+        }).collect();
+        let copy = LampsCopy { version: 1, day: self.clock.day, floats };
+        Some(format!("{LAMPS_HEADER}\n{}", serde_json::to_string(&copy).ok()?))
+    }
+
+    /// Lamps pasted from `lamps_text` (R13): added as they were (their ids kept when free, so their
+    /// hues; else new ones), undoable one by one; the date is left where it is unless `go_to_day`.
+    /// How many came.
+    pub fn paste_lamps(&mut self, text: &str, go_to_day: bool) -> usize {
+        let Some(json) = text.trim_start().strip_prefix(LAMPS_HEADER) else { return 0 };
+        let Ok(copy) = serde_json::from_str::<LampsCopy>(json.trim()) else { return 0 };
+        if copy.version != 1 {
+            return 0;
+        }
+        let mut n = 0;
+        for mut f in copy.floats {
+            if self.floats.iter().any(|g| g.id == f.id) {
+                f.id = self.next_id;
+            }
+            self.next_id = self.next_id.max(f.id + 1);
+            f.hand = Hand::Free;
+            self.undo.push(Undo::Put(f.id));
+            self.floats.push(f);
+            n += 1;
+        }
+        if n > 0 {
+            self.redo.clear();
+            if go_to_day {
+                self.clock.day = copy.day;
+            }
+            self.step_floats_with(usize::MAX);
+        }
+        n
+    }
+
+    /// Begins exporting a take (R9; R13 a journey clip too).
+    pub fn export_begin_take(&mut self, take: crate::studio::Take, fps: f64) -> u32 {
+        if self.studio.replay.is_some() {
+            return 0;
+        }
         let live = Stash {
             start: self.take_start(),
             undo: self.undo.clone(),

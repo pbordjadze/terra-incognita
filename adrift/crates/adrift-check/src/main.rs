@@ -575,18 +575,67 @@ fn play(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// A journey clip of copied lamps (R13): `journey <lamps.txt> <seconds> <out.mp4>` pastes the text
+/// the app's "Copy these lamps" makes (or a phone's whole kept state, `adrift.json`, whose lamps are
+/// all taken) and exports their journey as the phone would, with first and last frames beside it.
+fn journey(args: &[String]) -> Result<()> {
+    let text = std::fs::read_to_string(&args[0]).with_context(|| args[0].clone())?;
+    let seconds: f64 = args[1].parse().context("seconds")?;
+    let out = PathBuf::from(&args[2]);
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let (_instance, gpu) = gpu()?;
+    let (w, h, ppp) = (1179u32, 2556u32, 3.0);
+    let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    let n = if text.trim_start().starts_with(adrift_core::app::LAMPS_HEADER) {
+        app.paste_lamps(&text, true)
+    } else {
+        anyhow::ensure!(app.restore(&text), "not lamps copied from Adrift, nor its kept state");
+        app.floats.len()
+    };
+    anyhow::ensure!(n > 0, "no lamps in {}", args[0]);
+    let frames = app.journey_begin(seconds, 30.0);
+    anyhow::ensure!(frames > 0, "no journey to make");
+    let (ew, eh) = app.export_size().unwrap();
+    let shot = Offscreen::new(&app.gpu, ew, eh);
+    let mut ff = std::process::Command::new("ffmpeg")
+        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20"])
+        .arg(&out)
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .context("ffmpeg")?;
+    let t0 = std::time::Instant::now();
+    let mut i = 0u32;
+    while let Some(px) = app.export_frame(&shot) {
+        use std::io::Write;
+        ff.stdin.as_mut().unwrap().write_all(&px)?;
+        if i == 0 || i + 1 == frames || i % 900 == 0 {
+            let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
+            save(&out.with_extension(format!("{i:05}.png")), ew, eh, &rgba)?;
+        }
+        i += 1;
+    }
+    drop(ff.stdin.take());
+    ff.wait()?;
+    app.export_end();
+    println!("{}: {n} lamps, {i} frames {ew}x{eh} in {:.1}s", out.display(), t0.elapsed().as_secs_f64());
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("render") if args.len() >= 3 => render(&args[1..]),
         Some("play") if args.len() >= 3 => play(&args[1..]),
+        Some("journey") if args.len() >= 4 => journey(&args[1..]),
         Some("info") => {
             let (_i, gpu) = gpu()?;
             println!("{:?}", gpu.adapter_info);
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> | info");
             std::process::exit(2);
         }
     }

@@ -276,6 +276,72 @@ pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, 
     true
 }
 
+/// Whether the studio's menu was asked for since last asked (R13), and what it can offer: how many
+/// lamps a journey clip or a copy would take (`picked`) and how many takes are kept (`takes`).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes: *mut u32) -> bool {
+    let Some(s) = shell.as_mut() else { return false };
+    if !s.app.menu_wanted() {
+        return false;
+    }
+    if let Some(p) = picked.as_mut() {
+        *p = s.app.picked_lamps().len() as u32;
+    }
+    if let Some(p) = takes.as_mut() {
+        *p = s.app.studio.takes.len() as u32;
+    }
+    true
+}
+
+/// Begins exporting a journey clip of the picked lamps, `seconds` long, at `fps` (R13); the frames
+/// to come (0: nothing to make), the video's size written to `width`, `height`. Then
+/// `adrift_export_frame` until false and `adrift_export_end`, as for a take.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_journey_begin(shell: *mut Shell, seconds: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+    let Some(s) = shell.as_mut() else { return 0 };
+    let frames = s.app.journey_begin(seconds, fps);
+    if frames == 0 {
+        return 0;
+    }
+    let (tw, th) = s.app.export_target_size().unwrap_or((2, 2));
+    s.export = Some(crate::gpu::Offscreen::new(&s.app.gpu, tw, th));
+    let (w, h) = s.app.export_size().unwrap_or((2, 2));
+    if let Some(p) = width.as_mut() {
+        *p = w;
+    }
+    if let Some(p) = height.as_mut() {
+        *p = h;
+    }
+    frames
+}
+
+/// The picked lamps as text to copy (R13), UTF-8 and NUL-terminated into `out` (at most `len`
+/// bytes); returns the bytes the whole text needs (without the NUL), 0 for no lamps. Call with a
+/// null `out` to learn the size.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_lamps_text(shell: *mut Shell, out: *mut u8, len: usize) -> usize {
+    let Some(s) = shell.as_ref() else { return 0 };
+    let Some(text) = s.app.lamps_text() else { return 0 };
+    let b = text.as_bytes();
+    if !out.is_null() && len > b.len() {
+        std::ptr::copy_nonoverlapping(b.as_ptr(), out, b.len());
+        *out.add(b.len()) = 0;
+    }
+    b.len()
+}
+
+/// Lamps pasted from copied text (R13); how many came (0: the text isn't Adrift's lamps). The date
+/// goes to the day they were copied on, so they are where they were.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_lamps_paste(shell: *mut Shell, text: *const std::os::raw::c_char) -> u32 {
+    let Some(s) = shell.as_mut() else { return 0 };
+    if text.is_null() {
+        return 0;
+    }
+    let t = std::ffi::CStr::from_ptr(text).to_string_lossy();
+    s.app.paste_lamps(&t, true) as u32
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn adrift_free(shell: *mut Shell) {
     if !shell.is_null() {

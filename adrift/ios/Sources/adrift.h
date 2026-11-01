@@ -22,4 +22,8 @@ bool adrift_panel_item(AdriftShell *shell, uint32_t i, float *rect, char *words,
 void adrift_set_song(AdriftShell *shell, const char *name);
 bool adrift_recording(AdriftShell *shell);
 bool adrift_export_song(AdriftShell *shell, double *start, double *length);
+bool adrift_menu(AdriftShell *shell, uint32_t *picked, uint32_t *takes);
+uint32_t adrift_journey_begin(AdriftShell *shell, double seconds, double fps, uint32_t *width, uint32_t *height);
+size_t adrift_lamps_text(AdriftShell *shell, uint8_t *out, size_t len);
+uint32_t adrift_lamps_paste(AdriftShell *shell, const char *text);
 void adrift_free(AdriftShell *shell);

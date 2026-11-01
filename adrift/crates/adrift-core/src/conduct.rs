@@ -454,6 +454,34 @@ mod tests {
     }
 
     #[test]
+    fn copied_lamps_go_on_the_same_and_make_a_journey() {
+        // R13: lamps copied as text and pasted into another app are the same lamps, to the bit, and a
+        // journey clip of them has its frames; the text is written for the check's `journey`
+        let (Some(mut a), Some(mut b)) = (app(), app()) else { return };
+        run(&mut a, 0.0, 1.0, |_| {});
+        run(&mut b, 0.0, 1.0, |_| {});
+        let text = a.lamps_text().expect("lamps to copy");
+        let _ = std::fs::create_dir_all("../../build/out");
+        let _ = std::fs::write("../../build/out/lamps.txt", &text);
+        b.clock.day += 300.0;
+        assert_eq!(b.paste_lamps(&text, true), 2);
+        assert_eq!(b.clock.day, a.clock.day, "the date goes to the day they were copied on");
+        // b had lamps 1 and 2 already, so the pasted ones are new ids, the same legs
+        let pasted: Vec<_> = b.floats.iter().rev().take(2).map(|f| f.legs.clone()).collect();
+        let mine: Vec<_> = a.floats.iter().rev().take(2).map(|f| f.legs.clone()).collect();
+        assert_eq!(pasted, mine);
+        run(&mut a, 1.0, 3.0, |_| {});
+        run(&mut b, 1.0, 3.0, |_| {});
+        let at = |app: &App| app.floats.iter().rev().take(2).map(|f| f.at).collect::<Vec<_>>();
+        assert_eq!(at(&a), at(&b), "pasted lamps go on exactly as the copied ones");
+        let take = a.journey_take(4.0).expect("a journey");
+        assert_eq!(take.events.len(), 120);
+        assert_eq!(take.start.floats.len(), 2);
+        assert!(take.start.clock.day < a.clock.day - 5.0, "the journey starts where they were put");
+        assert!(b.paste_lamps("not lamps", false) == 0);
+    }
+
+    #[test]
     fn a_take_start_is_invisible() {
         // the same scene run twice, once with a take begun at an off-grid moment: every frame's
         // lamps are where they would have been, to the bit, and the cut sits on the grid
