@@ -38,7 +38,9 @@ pub struct Params {
     /// The cloud's first path in the buffer (R6: many clouds share one buffer, each its own range;
     /// k is still 1..=count within the range).
     pub base: u32,
-    pub _pad: [u32; 2],
+    /// The law the cloud's leg was made under (R13, `Leg::law`).
+    pub law: u32,
+    pub _pad: u32,
 }
 
 impl Params {
@@ -54,8 +56,15 @@ impl Params {
             seed_hi: (seed >> 32) as u32,
             count,
             base: 0,
-            _pad: [0; 2],
+            law: super::rules::LAW,
+            _pad: 0,
         }
+    }
+
+    /// The same under the law of the cloud's leg (R13).
+    pub fn under(mut self, law: u32) -> Params {
+        self.law = law;
+        self
     }
 
     /// The same for the cloud whose paths begin at `base`.

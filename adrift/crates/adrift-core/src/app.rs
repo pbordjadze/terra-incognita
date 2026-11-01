@@ -628,7 +628,9 @@ impl App {
                         // a new leg from here, its own seed: the path before it stays what it was
                         let mut legs = f.legs();
                         f.seed = (f.seed ^ day.to_bits()).rotate_left(23).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-                        legs.push(Leg::new(p, day, f.seed));
+                        // set down: the law of the leg it continues (a lamp from an older build keeps its own, R13)
+                        let law = legs.last().map_or(crate::sea::rules::LAW, |l| l.law);
+                        legs.push(Leg::new(p, day, f.seed).under(law));
                         f.legs = legs;
                         let e = self.rules.put(p, day, f.seed, 0).eddy;
                         f.eddy = [e.0, e.1];
@@ -1098,7 +1100,7 @@ impl App {
                 break;
             }
             let next = grid_next(last.day);
-            let s = rules.flight(Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
+            let s = rules.flight_under(leg.law, Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
             path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
             *budget -= 1;
         }
@@ -1369,7 +1371,7 @@ impl App {
             let budget = budget;
             while reached < target - 1e-6 && steps < budget {
                 let dt = MAYBES_STEP.min(target - reached);
-                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base));
+                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base).under(leg.law));
                 reached += dt;
                 steps += 1;
                 if reached >= c.next_keep - 1e-9 || batch.len() as u32 >= crate::sea::MAX_STEPS {
@@ -1677,7 +1679,7 @@ impl App {
             let mut legs = f.legs();
             legs.truncate(li + 1);
             if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9) {
-                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy) });
+                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy), law: leg.law });
             }
             f.legs = legs;
         }
@@ -1747,7 +1749,8 @@ impl App {
             legs[li].world = choice.k;
             if cut_day > legs[li].day + 1e-9 {
                 let seed = legs[li].seed;
-                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]) });
+                let law = legs[li].law;
+                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]), law });
             }
             f.legs = legs;
             let from = f.at;
