@@ -79,6 +79,8 @@ pub fn follow(cam: Camera, target: Camera, dt: f64, half: f64) -> Camera {
 
 /// A critically damped spring's step response is half-way at 1.678 time constants.
 const HALF_TO_TAU: f64 = 1.678_346_99;
+/// The target's velocity, for the clip spring's lead, is smoothed over this many seconds (R14).
+pub const LEAD_SMOOTH: f64 = 0.25;
 /// The clip's zoom follows this many times slower than its turn (R14).
 pub const ZOOM_SLOWER: f64 = 2.0;
 
@@ -101,11 +103,18 @@ pub struct ClipCamera {
     take_vz: f64,
     /// The take's first zoom: its pinches are read against it (R12).
     zoom0: f64,
+    /// The framed target last frame and its smoothed velocity (R14), for the spring's lead.
+    last_target: Option<Camera>,
+    target_w: [f64; 3],
+    target_vz: f64,
+    /// How much of the lead is taken: all of it during the take, fading out over the end beat's
+    /// first 0.3 s (its drift is already carried on and settled there).
+    lead_scale: f64,
 }
 
 impl ClipCamera {
     pub fn new(start: Camera) -> ClipCamera {
-        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom }
+        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0 }
     }
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
@@ -123,6 +132,7 @@ impl ClipCamera {
                 self.cam
             }
             ClipPart::During => {
+                self.lead_scale = 1.0;
                 if let Some(prev) = self.seen.filter(|_| dt > 0.0) {
                     // the take camera's own velocity, smoothed over a tenth of a second
                     let r = rot_log(qmul(cam_quat(take), qconj(cam_quat(prev))));
@@ -139,6 +149,7 @@ impl ClipCamera {
                 // the end: the take's last framing, carried on by its drift as that dies away
                 let end = self.seen.unwrap_or(take);
                 let u = through * f.hold_out;
+                self.lead_scale = (1.0 - u / 0.3).max(0.0);
                 let carry = if f.settle > 0.0 { f.settle * (1.0 - (-u / f.settle).exp()) } else { 0.0 };
                 let turn = [self.take_w[0] * carry, self.take_w[1] * carry, self.take_w[2] * carry];
                 let q = qmul(rot_exp(turn), cam_quat(end));
@@ -155,6 +166,21 @@ impl ClipCamera {
         }
         let tau = f.follow / HALF_TO_TAU;
         let qt = cam_quat(target);
+        // (R14) the target's own velocity, smoothed over `LEAD_SMOOTH`: the spring aims ahead of a
+        // moving target by the lag a critically damped spring leaves at a steady speed (2τ·v), so a
+        // pair crossing the frame quickly at a close zoom stays where the frame put it
+        if let Some(prev) = self.last_target.filter(|_| dt > 0.0) {
+            let r = rot_log(qmul(qt, qconj(cam_quat(prev))));
+            let k = 1.0 - (-dt / LEAD_SMOOTH).exp();
+            for i in 0..3 {
+                self.target_w[i] += (r[i] / dt - self.target_w[i]) * k;
+            }
+            self.target_vz += ((target.zoom.ln() - prev.zoom.ln()) / dt - self.target_vz) * k;
+        }
+        self.last_target = Some(target);
+        let lead = 2.0 * tau * self.lead_scale;
+        let qt = qmul(rot_exp([self.target_w[0] * lead, self.target_w[1] * lead, self.target_w[2] * lead]), qt);
+        let target = Camera { zoom: target.zoom * (self.target_vz * lead * ZOOM_SLOWER).exp(), ..target };
         // where the camera lies from the target, as a turn (world frame): cam = exp(x) · target
         let x = rot_log(qmul(cam_quat(self.cam), qconj(qt)));
         let mut nx = [0.0; 3];
@@ -215,8 +241,12 @@ pub const FRAME_MARGIN_KM: f64 = 10.0;
 /// The least half-span, km: a lone lamp with a short line is framed so a hundred km fill 60% of the
 /// width's half, where a stroke's tens of km are tens of points.
 pub const FRAME_SPAN_MIN_KM: f64 = 100.0;
-/// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise).
-pub const FRAME_ZOOM_MAX: f64 = 40.0;
+/// The least half-span of two lamps or more, km (R14): a dancing pair 15–150 km apart is framed
+/// tighter and tighter as it nears, down to this (or `FRAME_ZOOM_MAX`).
+pub const FRAME_PAIR_MIN_KM: f64 = 20.0;
+/// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise). R14:
+/// 100 (a pair 80 km apart at 60% of the width); deeper, the coast's distance field shows its pixels.
+pub const FRAME_ZOOM_MAX: f64 = 100.0;
 /// How much of the take's own zoom (against the take's first) the clip keeps on top of the frame, in
 /// the zoom's log. 0 since R12: while conducting, the take's camera itself comes in to the lamps (the
 /// live hold), so its zoom is mostly the frame's, not the reader's pinch, and counting it doubled
@@ -283,7 +313,8 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
         c = norm([c[0] + (far[0] - c[0]) * k, c[1] + (far[1] - c[1]) * k, c[2] + (far[2] - c[2]) * k]);
     }
     let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
-    let half_span = (spread + FRAME_MARGIN_KM / EARTH_KM).max(FRAME_SPAN_MIN_KM / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
+    let least = if lamps.len() > 1 { FRAME_PAIR_MIN_KM } else { FRAME_SPAN_MIN_KM };
+    let half_span = (spread + FRAME_MARGIN_KM / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
     let zoom = (FRAME_FILL * half / (r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
     Some((crate::model::LonLat::from_xyz(c), zoom))
 }
