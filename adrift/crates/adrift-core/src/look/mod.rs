@@ -452,6 +452,9 @@ fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32
     }
 }
 
+/// The gold of a kept lamp's sign (R13): the date marker's amber deepened toward old gold.
+pub const KEPT_GOLD: [f32; 3] = [0.788, 0.635, 0.243];
+
 /// Days of wake drawn (palette.json › sizes.bead.days).
 pub const WAKE_DAYS: usize = 45;
 /// The steps a day in `LookFloat.wake` (the rules step a quarter day).
@@ -526,6 +529,12 @@ impl Look {
                 ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
             }
         }
+        // a lamp kept for good (R13): quietly, a fine gold ring close round it on the globe (live only)
+        if !state.exporting {
+            for f in state.floats.iter().filter(|f| (f.kept) && !f.shown) {
+                ring_on_globe(&mut lines, f.at, 11.0 * reading, disc, 1.0, 0.75, KEPT_GOLD, n);
+            }
+        }
         for c in &state.cues {
             cue(&mut lines, c, n, heavy);
         }
@@ -585,7 +594,7 @@ impl Look {
         }
         labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, state.song, &mut strokes));
         // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id) }).collect();
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id), kept: f.kept }).collect();
         // (while a take is made the marks step aside: the take is the globe alone, R12)
         let quiet_take = state.recording.is_some() || state.conducting;
         self.words.panel(if quiet_take { &[] } else { &rows }, reading, n, &mut strokes);
