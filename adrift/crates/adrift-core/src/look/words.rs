@@ -374,7 +374,9 @@ impl Words {
             }
             let lamp = pts.last().map_or([cx, cy, 0.0], |p| p.p);
             let up = if r.front { 1.0 } else { 0.0 } + 1.5 * r.pressed;
-            if r.shown {
+            // (by night no glow: a glowing dot on the dark read as a town's light, R12; the lamp is glass,
+            // a ring of its hue with a small spark)
+            if r.shown && !night {
                 line(strokes, &[Pt { p: lamp, w: (15.0 + 2.0 * up) * reading, a: 0.24 * quiet, hollow: 0.0 }], hue, true, true, false);
             }
             if r.followed {
@@ -385,7 +387,17 @@ impl Words {
                 }).collect();
                 line(strokes, &ring, hue, true, night, true);
             }
-            line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+            if night {
+                let rr = (4.2 + 0.6 * up) * reading;
+                let glass: Vec<Pt> = (0..24).map(|j| {
+                    let t = j as f32 / 24.0 * std::f32::consts::TAU;
+                    Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.2 * reading, a: quiet * if r.shown { 1.0 } else { 0.8 }, hollow: 0.0 }
+                }).collect();
+                line(strokes, &glass, hue, true, true, true);
+                line(strokes, &[Pt { p: lamp, w: (3.0 + 0.6 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, true, false);
+            } else {
+                line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+            }
         }
     }
 
@@ -474,7 +486,7 @@ impl Words {
     /// from the top toward the take's longest (`studio::TAKE_MAX`, 60 s), a smooth stroke (R10), the
     /// seconds beside it in small italic. Its rect, 44 reading points square whatever is drawn, goes
     /// to `record_bounds` for Motion's probe.
-    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool, strokes: &mut Vec<super::wake::StrokeInstance>) -> Vec<GlyphInstance> {
+    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool, song: bool, strokes: &mut Vec<super::wake::StrokeInstance>) -> Vec<GlyphInstance> {
         use super::wake::{line, Pt};
         let side = 44.0 * reading;
         let (x, y) = (width - 16.0 * reading - side, 52.0);
@@ -493,6 +505,16 @@ impl Words {
             }).collect()
         };
         let dot = |at: [f32; 2], w: f32, a: f32| [Pt { p: [at[0], at[1], 0.0], w, a, hollow: 0.0 }];
+        // a song opened (R12): a second, finer ring just outside the first, a record's groove, at rest
+        // and while recording; no words
+        if song {
+            let mut groove: Vec<Pt> = (0..64).map(|j| {
+                let ang = j as f32 / 64.0 * std::f32::consts::TAU;
+                Pt { p: [cx + (ring_r + 3.2 * reading) * ang.cos(), cy + (ring_r + 3.2 * reading) * ang.sin(), 0.0], w: 0.8 * reading, a: 0.4, hollow: 0.0 }
+            }).collect();
+            groove.truncate(64);
+            line(strokes, &groove, soft, true, true, true);
+        }
         // (the soft ring and the lamp by night as by day: no dark edge, they are ink, not lamps on the sea)
         match recording {
             None => {

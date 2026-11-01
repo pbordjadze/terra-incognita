@@ -178,8 +178,9 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
 /// A lamp's wake as one line: its daily places oldest first and where it is now, a ribbon that is
 /// widest and fullest at the lamp and tapers and fades with age to nothing at its oldest day. A lamp
 /// chosen as itself (`follow`, R8) carries its whole journey, fuller and never fading below a third,
-/// so it reads as a line of its colour at any zoom. `fade` dims the whole line (0..1).
-pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32) {
+/// so it reads as a line of its colour at any zoom. `fade` dims the whole line (0..1); `heavy` widens
+/// it (2 in a clip, R12, where the line must carry the frame).
+pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32, heavy: f32) {
     let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), b.measured)).collect();
     places.push((super::unit(now), path.last().map_or(1.0, |b| b.measured)));
     let line_pts: Vec<Pt> = smooth(&places, 1, 2)
@@ -188,10 +189,13 @@ pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate:
             let age = 1.0 - f;
             let (w, a) = if follow {
                 (3.0 - 1.5 * age, 1.0 - 0.62 * age.powf(1.5))
+            } else if heavy > 1.0 {
+                // (in a clip, R12: the tail held longer, so a take's whole line is there)
+                (3.2 - 2.0 * age, 0.95 * (1.0 - age).powf(0.7))
             } else {
                 (3.2 - 2.4 * age, 0.92 * (1.0 - age).powf(1.3))
             };
-            Pt { p, w, a: a * fade, hollow: if measured < 0.5 { 1.0 } else { 0.0 } }
+            Pt { p, w: w * heavy, a: a * fade, hollow: if measured < 0.5 { 1.0 } else { 0.0 } }
         })
         .collect();
     line(out, &line_pts, hue, false, night, false);
