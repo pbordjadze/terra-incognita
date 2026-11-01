@@ -42,5 +42,7 @@ pub const FILES: &[&str] = &[
     "wind.png",
     "eddy.png",
     "eddy-time.png",
+    // the wind's gusts (R10, Truth: its variance and time scale; the wind preset reads them)
+    "gusts.png",
     "drifters.bin",
 ];
