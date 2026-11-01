@@ -1677,7 +1677,7 @@ impl App {
             });
             let c = LonLat::from_xyz(sum);
             let (lat, lon) = (c.lat.to_radians(), c.lon.to_radians());
-            (1..=(crate::studio::COAST_FAR_KM / 50.0) as usize).map(|i| i as f64 * 50.0).filter(|_| !these.is_empty()).find(|km| {
+            (1..=(crate::studio::LAND_LOOK_KM / 50.0) as usize).map(|i| i as f64 * 50.0).filter(|_| !these.is_empty()).find(|km| {
                 (0..16).any(|k| {
                     let b = k as f64 * std::f64::consts::PI / 8.0;
                     let d = km / 6371.0;
@@ -1687,7 +1687,7 @@ impl App {
                 })
             })
         };
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km) }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km }
 
     }
 
