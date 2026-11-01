@@ -597,3 +597,33 @@ and add the music yourself").
   lamps when a take begins; the gestures' misreads tested.
 - *Truth*: a circle that makes a loop (a flight that can spin, honestly); a tap the lamp visibly
   obeys; the fan's runners-up; the wind preset's seam sketched for round 13.
+
+**R12 merged (Nov 1, 16:40 UTC).** Visual 8bd99b3, Truth 675e95c, Motion b97de96, and Engineering's
+seams after them (the cue's `fan` from the chooser's runners-up, the look's `fermata`, each lamp's
+place in the export's camera trace). The song's Swift built in CI's unsigned IPA (run 50).
+
+- *The clip frames the lamps* (Motion, `studio::frame`): the smallest circle round every lamp out and
+  its last six days of line, 25 km of margin, filling 60% of the clip's width; a lone lamp no wider
+  than 100 km each side; a cue on one lamp leans in toward it for four seconds, keeping the others
+  within 0.75 of the half-width. The take's zoom no longer multiplies the clip's. hold_out 1.5 s.
+  Live, while conducting, the camera comes in to the same frame (`CameraControl::hold_frame`, a
+  0.6 s spring, zoom up to 40 only then, flown back after); a two-finger move wins for three seconds.
+  A two-finger move begun by a flicking finger no longer cues a stray sweep (`SWEEP_AGE` 80 ms);
+  misreads tested at 20 and 120 Hz.
+- *The cue* (Visual, Truth): no spray: up to six runners-up (Truth's `Choice.fan`) drawn as faint
+  lines folding into the chosen while the lamp glides on its own brighter stroke; a tap no world
+  came near shows no fan. A tap now picks the world that comes nearest the finger within 1.5 days
+  (`TAP_AHEAD`), so the lamp heads toward it. A circle can pick a world that curls: 15% of each
+  world's one-degree cells spin (0.58 rad a day, 80% anticyclonic, measured from the drifters
+  against a no-spin null; `rules::spin`, CPU and GPU; `tools/adrift/data/spin.py`); with the
+  measured memory a spinning world curls a hook or half loop, 20–40 km, not a ring (rings would need
+  an eddy census).
+- *The look* (Visual): lines twice as heavy in the clip; the marks gone while recording, and a glass
+  ring with a spark by night; a fermata a slowly breathing ring at each lamp; a song a finer second
+  ring round the record control.
+
+For next round, from the exit interviews: the clip's line weight and framing fill as dials; a tiny
+export size for judging motion; `lamp_in_clip.py` reading the trace's lamps; a plan step that dumps
+lamp lines; a contact-sheet tool; real-device timing (six lamps estimated 1.6–2.4 ms a frame on the
+phone, borderline; a tap's or circle's look-ahead ~4–8 ms once at the cue); the lamps moving under
+the finger while the live camera comes in (to feel on a device); an eddy census for real rings.
