@@ -311,6 +311,9 @@ pub struct Look {
     nearest: usize,
     pub veil: veil::Veil,
     pub wake: wake::Wake,
+    /// The screen's own strokes (R10): the panel's marks, the record control's ring; drawn over the
+    /// floats, under the words.
+    pub strokes: wake::Wake,
     pub maybes: maybes::MaybesPass,
     pub silver: silver::Silver,
     pub floats: floats::Floats,
@@ -325,6 +328,7 @@ impl Look {
             nearest: 0,
             veil: veil::Veil::new(gpu, view),
             wake: wake::Wake::new(gpu, view),
+            strokes: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
             floats: floats::Floats::new(gpu, view),
@@ -336,7 +340,7 @@ impl Look {
     /// `disc` the globe's centre and radius in points (where the words sit).
     pub fn prepare(&mut self, gpu: &Gpu, state: &LookState, width: f32, height: f32, reading: f32, disc: [f32; 3]) {
         let n = state.night;
-        let mut beads = Vec::new();
+        let mut lines = Vec::new();
         for f in &state.floats {
             // (a lamp whose cloud is out is one maybe among them: no wake singles it out, R6)
             if f.shown {
@@ -344,15 +348,15 @@ impl Look {
             }
             // (a lamp chosen as itself draws its whole kept journey, R8; the others their last days)
             let start = if f.followed { 0 } else { f.wake.len().saturating_sub(WAKE_DAYS) };
-            let mut b = wake::beads(&f.wake[start..], n, lamp_hue(f.id), f.followed);
+            let mut path = f.wake[start..].to_vec();
             if !state.truth_marks {
-                for bead in &mut b {
-                    bead.measured = 1.0;
+                for b in &mut path {
+                    b.measured = 1.0;
                 }
             }
-            beads.extend(b);
+            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, 1.0);
         }
-        self.wake.prepare(gpu, &beads);
+        self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
         // silver are the front one's (its place and hue kept while it folds)
         let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front }).collect();
@@ -364,12 +368,16 @@ impl Look {
         self.veil.prepare(gpu, self.bloom_from, state.bloom, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n, self.hue);
+        // in a clip (R10) what marks a finger is out of its last frame: the held ring and a lamp's
+        // brightening (what the reader just did) settle through the last beat, eased, so the clip
+        // ends on the lamps alone; a finger resting on the sea (the press ring) is never in a clip
+        let settle = if state.exporting { let e = state.ending.clamp(0.0, 1.0); 1.0 - e * e * (3.0 - 2.0 * e) } else { 1.0 };
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: if f.followed { f.lit.max(0.85) } else { f.lit }, held: (f.held || f.chosen || f.followed) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }, held: settle * (f.held || f.chosen || f.followed) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
-        if let Some((at, beat)) = state.resting {
+        if let Some((at, beat)) = state.resting.filter(|_| !state.exporting) {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
         }
         self.floats.prepare(gpu, &fl);
@@ -392,14 +400,18 @@ impl Look {
         // an exported frame (R9) is the sea and its lamps: no panel, no date band, no credits page, no
         // record control; the date alone as a quiet caption. The live screen keeps its chrome, the
         // record control among it
+        let mut strokes = Vec::new();
         if state.exporting {
-            self.words.prepare_caption(gpu, &state.date, height, width, reading, disc, n, &labels);
+            let clip = state.clip.unwrap_or([0.0, 0.0, width, height]);
+            self.strokes.prepare(gpu, &strokes);
+            self.words.prepare_caption(gpu, &state.date, clip, reading, disc, n, state.ending, &labels);
             return;
         }
-        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n));
-        // the panel of every lamp out there (R6): where each was put, and which are out
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
-        labels.extend(self.words.panel(&rows, reading, disc, n));
+        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, &mut strokes));
+        // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at }).collect();
+        self.words.panel(&rows, reading, n, &mut strokes);
+        self.strokes.prepare(gpu, &strokes);
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
         }
@@ -424,6 +436,12 @@ impl Look {
         self.words.panel_bounds.clone()
     }
 
+    /// Each panel mark's words for the shell's VoiceOver (R10), by lamp id, in the order of
+    /// `panel_bounds`: "Lamp 2, put 8 June at 35°N 74°W, its cloud out". Nothing on the screen says them.
+    pub fn panel_words(&self) -> Vec<(u32, String)> {
+        self.words.panel_words.clone()
+    }
+
     /// Where the credit line is drawn, x, y, w, h in points (y down), after a `prepare`: a tap on it
     /// opens the page of credits (Truth's D2); the page closes on any tap.
     pub fn credit_bounds(&self) -> Option<[f32; 4]> {
@@ -435,6 +453,7 @@ impl Look {
         self.maybes.draw(rp, view_bind, maybes);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
+        self.strokes.draw(rp, view_bind);
         self.words.draw(rp, view_bind);
     }
 }

@@ -151,9 +151,9 @@ impl Face {
     }
 }
 
-/// One lamp's row in the panel (R6).
-#[derive(Clone, Copy, Debug)]
-pub struct PanelRow {
+/// One lamp's mark in the panel (R6; R10 a mark, no words).
+#[derive(Clone, Debug)]
+pub struct PanelRow<'a> {
     pub id: u32,
     pub origin: crate::model::LonLat,
     pub put_day: f64,
@@ -163,12 +163,30 @@ pub struct PanelRow {
     pub followed: bool,
     /// the one in front
     pub front: bool,
+    /// its journey so far, one place a day, oldest first (R10: the mark is its shape)
+    pub journey: &'a [super::LookBead],
+    /// where it is now
+    pub at: crate::model::LonLat,
+}
+
+/// A long day's words for the shell's VoiceOver label ("8 June").
+pub fn day_words_long(day: f64) -> String {
+    const LONG: [(&str, &str); 12] = [("Jan", "January"), ("Feb", "February"), ("Mar", "March"), ("Apr", "April"), ("May", "May"), ("Jun", "June"), ("Jul", "July"), ("Aug", "August"), ("Sep", "September"), ("Oct", "October"), ("Nov", "November"), ("Dec", "December")];
+    let short = day_words(day);
+    let mut parts = short.splitn(2, ' ');
+    let (d, m) = (parts.next().unwrap_or(""), parts.next().unwrap_or(""));
+    let m = LONG.iter().find(|(s, _)| *s == m).map_or(m, |(_, l)| l);
+    format!("{d} {m}")
 }
 
 /// The most rows the panel shows (the latest lamps), and where its first row's top lies in reading
 /// points (below a phone's status bar and island).
 pub const PANEL_ROWS: usize = 10;
 pub const PANEL_TOP: f32 = 60.0;
+/// A mark's cell in the panel, reading points square (R10: the touch target, whatever is drawn in it),
+/// and how many to a line before the next line down.
+pub const PANEL_CELL: f32 = 44.0;
+pub const PANEL_ACROSS: usize = 5;
 
 /// "8 Jun": a day as `Clock.day` counts it, on the typical year's calendar (as the date is).
 pub fn day_words(day: f64) -> String {
@@ -205,6 +223,9 @@ pub struct Words {
     pub credit_bounds: Option<[f32; 4]>,
     /// The panel's rows (R6), each lamp's id and rect in points; empty while no panel is drawn.
     pub panel_bounds: Vec<(u32, [f32; 4])>,
+    /// Each mark's words for the shell's VoiceOver, by lamp (R10: none on the screen): "Lamp 2, put 8 June
+    /// at 35°N 74°W, its cloud out".
+    pub panel_words: Vec<(u32, String)>,
     /// The record control's rect in points (R9), when the look draws one.
     pub record_bounds: Option<[f32; 4]>,
 }
@@ -248,7 +269,7 @@ impl Words {
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
         let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new(), record_bounds: None }
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new(), panel_words: Vec::new(), record_bounds: None }
     }
 
     /// The glyphs of every line this frame (`Face::layout`).
@@ -302,85 +323,68 @@ impl Words {
         out
     }
 
-    /// The panel of lamps (R6): a very small column at the screen's top left, off the globe's middle,
-    /// one row a lamp out there, oldest at the top, at most `PANEL_ROWS` (the latest). A row is the
-    /// lamp's mark in its hue (large and glowing while its cloud is out, small while not) and where
-    /// and when it was put, in small italic ("8 Jun · 35°N 74°W"): the one place that says which
-    /// lamp is which, since on the globe a lamp whose cloud is out is one maybe among them. The front
-    /// one's words in full ink. Each row's rect (the whole row, a fingertip tall) goes to
-    /// `panel_bounds`, where Motion's probe answers a touch. Words and marks only, each on a halo of
-    /// what is under it; nothing is a control that points or waits.
-    pub fn panel(&mut self, rows: &[PanelRow], reading: f32, disc: [f32; 3], night: bool) -> Vec<GlyphInstance> {
+    /// The panel of lamps (R6; R10 marks, no words): a tight row of marks at the screen's top left,
+    /// opposite the record control, one a lamp out there, oldest first, `PANEL_ACROSS` to a line, at
+    /// most `PANEL_ROWS` (the latest). A mark is its lamp's journey drawn small in its hue, the shape
+    /// its line makes on the sea, ending in the lamp itself: so a mark is told from another by its
+    /// colour and its shape, and is found on the globe by both. Its cloud out, the lamp glows; chosen
+    /// as itself, a ring round it (a float, as it is on the sea); the one in front full, the others a
+    /// shade quieter. Strokes only (`strokes`), no words: each mark's words go to `panel_words` for
+    /// VoiceOver, its cell (`PANEL_CELL` reading points square) to `panel_bounds` for Motion's probe.
+    pub fn panel(&mut self, rows: &[PanelRow], reading: f32, night: bool, strokes: &mut Vec<super::wake::StrokeInstance>) {
+        use super::wake::{line, Pt};
         self.panel_bounds.clear();
-        let mut out = Vec::new();
-        if rows.is_empty() {
-            return out;
-        }
-        let (ink, soft_ink, sea_halo, paper_halo) = if night {
-            ([0.894, 0.925, 0.957, 1.0], [0.722, 0.776, 0.831, 1.0], [0.063, 0.094, 0.157, 0.92], [0.055, 0.063, 0.086, 0.92])
-        } else {
-            ([0.149, 0.188, 0.227, 1.0], [0.243, 0.298, 0.353, 0.85], [0.761, 0.894, 0.957, 0.92], [0.96, 0.95, 0.92, 0.92])
-        };
-        // (36 points a row: a thumb picks the right lamp; Motion takes each row's rect as its target)
-        let row_h = 36.0 * reading;
+        self.panel_words.clear();
+        let cell = PANEL_CELL * reading;
         let x0 = 12.0 * reading;
         let top = PANEL_TOP * reading;
-        let size = 10.0 * reading;
         let start = rows.len().saturating_sub(PANEL_ROWS);
-        let mut widest: f32 = 0.0;
-        let mut lines = Vec::new();
+        let any_front = rows.iter().any(|r| r.front);
         for (i, r) in rows[start..].iter().enumerate() {
-            let y = top + i as f32 * row_h;
-            let mid = y + row_h / 2.0;
-            let text = format!("{} \u{b7} {}", day_words(r.put_day), place_words(r.origin));
-            let w = self.face.width(&Line { text: &text, style: Style::Italic, size, ink, tracking: 0.0 });
-            widest = widest.max(w);
-            lines.push((r, y, mid, text, w));
-        }
-        let text_x = x0 + 16.0 * reading;
-        let panel_w = (text_x - x0) + widest + 10.0 * reading;
-        // over the globe the panel lies on a quiet card of the page's tone, one for the whole column,
-        // so its words read on land and sea alike (a halo per glyph would lie as boxes at this size)
-        let n_rows = lines.len() as f32;
-        let over_globe = lines.iter().any(|(_, _, mid, _, _)| ((x0 + panel_w / 2.0 - disc[0]).powi(2) + (mid - disc[1]).powi(2)).sqrt() < disc[2] + 20.0 * reading);
-        if over_globe {
-            if let Some(b) = self.face.faces.get("regular").and_then(|f| f.glyphs.get("\u{2588}")) {
-                let page = if night { [0.055, 0.063, 0.086, 0.78] } else { [0.957, 0.945, 0.918, 0.78] };
-                let uv = [(b.x + 2.0) / self.face.width, (b.y + 2.0) / self.face.height, (b.w - 4.0) / self.face.width, (b.h - 4.0) / self.face.height];
-                out.push(GlyphInstance { rect: [x0 - 8.0 * reading, top + 4.0 * reading, panel_w + 12.0 * reading, n_rows * row_h - 8.0 * reading], uv, ink: page, halo: [0.0; 4], anchor: [0.0; 4] });
-            }
-        }
-        for (r, y, mid, text, w) in lines {
-            let inside = ((x0 + panel_w / 2.0 - disc[0]).powi(2) + (mid - disc[1]).powi(2)).sqrt() < disc[2];
-            // (over the globe no halo: at these sizes it fills the glyph's cell and would lie as a
-            // box on the land; the inks hold their contrast on the sea and the night's ground alone)
-            let halo = if inside || over_globe { [sea_halo[0], sea_halo[1], sea_halo[2], 0.0] } else { paper_halo };
+            let (cx, cy) = (x0 + ((i % PANEL_ACROSS) as f32 + 0.5) * cell, top + ((i / PANEL_ACROSS) as f32 + 0.5) * cell);
+            self.panel_bounds.push((r.id, [cx - cell / 2.0, cy - cell / 2.0, cell, cell]));
+            let how = if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" };
+            self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
             let hue = super::lamp_hue(r.id);
-            // every mark a filled lamp in its own hue, unmistakable (it is how a reader finds whose
-            // cloud is whose): larger with a soft glow of its colour while its cloud is out, a small
-            // lamp while not; the front one the largest
-            // the way it is chosen, as quietly as the rest (R8): as its cloud a larger lamp in a soft
-            // glow of its colour (a haze, as the cloud is); as itself a small lamp in a ring of its
-            // colour (a float, as it is on the sea); not chosen a small lamp alone. The front a size up
+            let quiet = if r.front || !any_front { 1.0 } else { 0.72 };
+            // the journey in the cell: its places flattened round their middle (east scaled by the
+            // latitude's cosine), smoothed as the wake is, fitted to the cell's middle with the lamp
+            // kept off its edge; a short journey stays small (at least 4 degrees fill the mark)
+            let mut places: Vec<(f32, f32)> = r.journey.iter().map(|b| (b.at.lon as f32, b.at.lat as f32)).collect();
+            places.push((r.at.lon as f32, r.at.lat as f32));
+            let (lon0, lat0) = places[places.len() - 1];
+            let flat: Vec<(f32, f32)> = places.iter().map(|&(lo, la)| (((lo - lon0 + 540.0).rem_euclid(360.0) - 180.0) * lat0.to_radians().cos(), la - lat0)).collect();
+            let (mut x_lo, mut x_hi, mut y_lo, mut y_hi) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
+            for &(x, y) in &flat {
+                x_lo = x_lo.min(x); x_hi = x_hi.max(x); y_lo = y_lo.min(y); y_hi = y_hi.max(y);
+            }
+            let span = (x_hi - x_lo).max(y_hi - y_lo).max(4.0);
+            let k = 26.0 * reading / span;
+            let (mx, my) = ((x_lo + x_hi) / 2.0, (y_lo + y_hi) / 2.0);
+            let to_screen = |x: f32, y: f32| [cx + (x - mx) * k, cy - (y - my) * k, 0.0];
+            let as3: Vec<([f32; 3], f32)> = flat.iter().map(|&(x, y)| ([x, y, 0.0], 1.0)).collect();
+            let pts: Vec<Pt> = super::wake::smooth_flat(&as3, 3, 3)
+                .into_iter()
+                .map(|(p, f)| Pt { p: to_screen(p[0], p[1]), w: (1.1 + 1.3 * f) * reading, a: quiet * (0.45 + 0.55 * f), hollow: 0.0 })
+                .collect();
+            if pts.len() > 1 {
+                line(strokes, &pts, hue, true, night, false);
+            }
+            let lamp = pts.last().map_or([cx, cy, 0.0], |p| p.p);
             let up = if r.front { 1.0 } else { 0.0 };
-            let mark_size = if r.shown { 12.0 + up } else { 8.5 + 0.5 * up } * reading;
             if r.shown {
-                let gs = mark_size * 1.7;
-                let glow = Line { text: "\u{25cf}", style: Style::Regular, size: gs, ink: [hue[0], hue[1], hue[2], 0.22], tracking: 0.0 };
-                out.extend(self.face.layout(&glow, x0 + 6.0 * reading, mid + 0.36 * gs, [0.0; 4]));
+                line(strokes, &[Pt { p: lamp, w: (15.0 + 2.0 * up) * reading, a: 0.24 * quiet, hollow: 0.0 }], hue, true, true, false);
             }
             if r.followed {
-                let rs = (16.0 + 1.5 * up) * reading;
-                let ring = Line { text: "\u{25cb}", style: Style::Regular, size: rs, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
-                out.extend(self.face.layout(&ring, x0 + 6.0 * reading, mid + 0.33 * rs, [0.0; 4]));
+                let rr = (6.5 + 0.5 * up) * reading;
+                let ring: Vec<Pt> = (0..32).map(|j| {
+                    let t = j as f32 / 32.0 * std::f32::consts::TAU;
+                    Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.3 * reading, a: quiet, hollow: 0.0 }
+                }).collect();
+                line(strokes, &ring, hue, true, night, true);
             }
-            let mark = Line { text: "\u{25cf}", style: Style::Regular, size: mark_size, ink: [hue[0], hue[1], hue[2], 1.0], tracking: 0.0 };
-            out.extend(self.face.layout(&mark, x0 + 6.0 * reading, mid + 0.36 * mark_size, [0.0; 4]));
-            let line = Line { text: &text, style: Style::Italic, size, ink: if r.front { ink } else { soft_ink }, tracking: 0.0 };
-            out.extend(self.face.layout(&line, text_x + w / 2.0, mid + 0.33 * size, halo));
-            self.panel_bounds.push((r.id, [x0 - 6.0 * reading, y, panel_w + 6.0 * reading, row_h]));
+            line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
         }
-        out
     }
 
     /// The words at the foot: the date (17 pt) centred under the globe's disc (`cx, cy, r` in points)
@@ -444,39 +448,39 @@ impl Words {
 
     /// The words of an exported frame (R9): the clip is the sea and its lamps, so the chrome stays out
     /// (the panel, the date's band with its rule and marker, the credits, the recording's mark) and only
-    /// the date is kept, a quiet caption at the foot where the date stands live (inside the clip's 9:16 window) (time passing is the
-    /// clip's story), 15 points, pale on a soft dark halo as a subtitle is. `date_bounds` keeps the
-    /// live screen's (nothing is touched in a clip).
-    pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, height: f32, width: f32, reading: f32, disc: [f32; 3], night: bool, labels: &[GlyphInstance]) {
+    /// the date is kept, a quiet caption, 15 points, pale on a soft dark halo as a subtitle is. Placed
+    /// in the clip's window (`clip`, points x, y, w, h: R10, `LookState.clip`): under the globe if it
+    /// fits there, never in the window's lowest sixth (where a phone's player lays its own words and
+    /// buttons). Through the clip's last beat (`ending`) it grows a touch quieter. `date_bounds` keeps
+    /// the live screen's (nothing is touched in a clip).
+    pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, clip: [f32; 4], reading: f32, disc: [f32; 3], night: bool, ending: f32, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
-        // inside the clip's 9:16 window (the app's `clip_window`: as large as the screen allows,
-        // centred on the globe vertically, clamped to the screen), 28 points above its foot at most
-        let wh = if height / width >= 16.0 / 9.0 { width * 16.0 / 9.0 } else { height };
-        let top = (disc[1] - wh / 2.0).clamp(0.0, (height - wh).max(0.0));
-        let foot = under.min(height - 72.0 * reading).min(top + wh - 28.0 * reading);
+        let foot = under.min(clip[1] + clip[3] * (1.0 - 1.0 / 6.0));
         // (as a film's subtitle: pale ink on a soft dark halo, which reads on sea, land and page alike;
-        // a halo of the sea's tone lay on the land as a sticker)
-        // below the globe, on the page, the page's own soft ink on a halo of the page
+        // below the globe, on the page, the page's own soft ink on a halo of the page)
         let over_globe = foot - 14.0 * reading < disc[1] + disc[2];
+        let quiet = 1.0 - 0.4 * ending.clamp(0.0, 1.0);
         let (ink, halo) = if over_globe {
-            ([0.976, 0.973, 0.957, 0.95], [0.063, 0.094, 0.157, 0.42])
+            ([0.976, 0.973, 0.957, 0.95 * quiet], [0.063, 0.094, 0.157, 0.42 * quiet])
         } else if night {
-            ([0.722, 0.776, 0.831, 0.95], [0.055, 0.063, 0.086, 0.92])
+            ([0.722, 0.776, 0.831, 0.95 * quiet], [0.055, 0.063, 0.086, 0.92 * quiet])
         } else {
-            ([0.243, 0.298, 0.353, 0.95], [0.96, 0.95, 0.92, 0.92])
+            ([0.243, 0.298, 0.353, 0.95 * quiet], [0.96, 0.95, 0.92, 0.92 * quiet])
         };
-        let mut glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 15.0 * reading, ink, tracking: 0.02 }, width / 2.0, foot, halo);
+        let mut glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 15.0 * reading, ink, tracking: 0.02 }, clip[0] + clip[2] / 2.0, foot, halo);
         glyphs.extend_from_slice(labels);
         self.prepare(gpu, &glyphs);
     }
 
     /// The record control (R9; Motion's gestures: a tap starts a take, a touch while recording ends
     /// it and exports, a rest exports the newest again), top right opposite the panel, on the live
-    /// screen only. At rest a small ring of soft ink round a small muted vermilion lamp: there, never
-    /// shouting. Recording, the lamp lit and breathing, and the ring a string of beads filling round
-    /// toward the take's longest (`studio::TAKE_MAX`, 60 s), the seconds beside it in small italic.
-    /// Its rect, 44 reading points square whatever is drawn, goes to `record_bounds` for Motion's probe.
-    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool) -> Vec<GlyphInstance> {
+    /// screen only. At rest a thin ring of soft ink round a small muted vermilion lamp: there, never
+    /// shouting. Recording, the lamp lit and breathing, and an arc of vermilion drawing round the ring
+    /// from the top toward the take's longest (`studio::TAKE_MAX`, 60 s), a smooth stroke (R10), the
+    /// seconds beside it in small italic. Its rect, 44 reading points square whatever is drawn, goes
+    /// to `record_bounds` for Motion's probe.
+    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool, strokes: &mut Vec<super::wake::StrokeInstance>) -> Vec<GlyphInstance> {
+        use super::wake::{line, Pt};
         let side = 44.0 * reading;
         let (x, y) = (width - 16.0 * reading - side, 52.0);
         self.record_bounds = Some([x, y, side, side]);
@@ -484,32 +488,35 @@ impl Words {
         let red = if night { [0.937, 0.427, 0.353] } else { [0.835, 0.322, 0.247] };
         let soft = if night { [0.722, 0.776, 0.831] } else { [0.243, 0.298, 0.353] };
         let mut out = Vec::new();
-        // a glyph centred on (px, py): the atlas's ● and ○ sit on the baseline, their middle 0.36 of
-        // the size above it
-        let dot = |out: &mut Vec<GlyphInstance>, g: &str, px: f32, py: f32, size: f32, ink: [f32; 4]| {
-            out.extend(self.face.layout(&Line { text: g, style: Style::Regular, size, ink, tracking: 0.0 }, px, py + 0.36 * size, [0.0; 4]));
+        let ring_r = 10.0 * reading;
+        let arc = |from: f32, to: f32, w: f32, a: f32| -> Vec<Pt> {
+            let n = ((to - from) * 64.0).ceil().max(2.0) as usize;
+            (0..=n).map(|i| {
+                let t = from + (to - from) * i as f32 / n as f32;
+                let ang = t * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
+                Pt { p: [cx + ring_r * ang.cos(), cy + ring_r * ang.sin(), 0.0], w, a, hollow: 0.0 }
+            }).collect()
         };
-        let ring_r = 9.0 * reading;
+        let dot = |at: [f32; 2], w: f32, a: f32| [Pt { p: [at[0], at[1], 0.0], w, a, hollow: 0.0 }];
+        // (the soft ring and the lamp by night as by day: no dark edge, they are ink, not lamps on the sea)
         match recording {
             None => {
-                dot(&mut out, "\u{25cb}", cx, cy - 0.3 * reading, 25.0 * reading, [soft[0], soft[1], soft[2], 0.45]);
-                dot(&mut out, "\u{25cf}", cx, cy, 8.0 * reading, [red[0], red[1], red[2], 0.55]);
+                let mut ring = arc(0.0, 1.0, 1.3 * reading, 0.45);
+                ring.pop();
+                line(strokes, &ring, soft, true, true, true);
+                line(strokes, &dot([cx, cy], 8.0 * reading, 0.55), red, true, true, false);
             }
             Some(secs) => {
                 let breath = 0.5 + 0.5 * (now * 2.6).sin();
                 let full = (secs / crate::studio::TAKE_MAX as f32).clamp(0.0, 1.0);
-                // the ring: 40 beads round the lamp, those the take has filled in vermilion, the rest
-                // faint, starting at the top and running clockwise
-                let n = 40;
-                for i in 0..n {
-                    let t = i as f32 / n as f32;
-                    let ang = t * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
-                    let on = t < full;
-                    let ink = if on { [red[0], red[1], red[2], 0.9] } else { [soft[0], soft[1], soft[2], 0.25] };
-                    dot(&mut out, "\u{25cf}", cx + ring_r * ang.cos(), cy + ring_r * ang.sin(), 3.2 * reading, ink);
+                let mut ring = arc(0.0, 1.0, 1.3 * reading, 0.25);
+                ring.pop();
+                line(strokes, &ring, soft, true, true, true);
+                if full > 0.0 {
+                    line(strokes, &arc(0.0, full.max(0.004), 2.4 * reading, 0.92), red, true, true, false);
                 }
-                dot(&mut out, "\u{25cf}", cx, cy, 15.0 * reading, [red[0], red[1], red[2], 0.12 + 0.14 * breath]);
-                dot(&mut out, "\u{25cf}", cx, cy, 8.5 * reading, [red[0], red[1], red[2], 0.8 + 0.2 * breath]);
+                line(strokes, &dot([cx, cy], 15.0 * reading, 0.12 + 0.14 * breath), red, true, true, false);
+                line(strokes, &dot([cx, cy], 8.5 * reading, 0.8 + 0.2 * breath), red, true, true, false);
                 let s = secs.max(0.0) as u32;
                 let text = format!("{}:{:02}", s / 60, s % 60);
                 let size = 10.5 * reading;

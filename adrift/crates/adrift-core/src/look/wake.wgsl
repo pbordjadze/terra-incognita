@@ -1,71 +1,118 @@
-// The wake: one bead a day, amber on a dark edge by day (its own light by night), newest largest,
-// fading and shrinking with age like a comet's tail; bunched where the float idled in an eddy, spread
-// where a jet carried it. Instanced quads, one a bead, in reading points, scaled down toward the
-// whole Earth so forty-five beads don't pile into a slug (CRITICS.md R0). Drawn twice, every bead's
-// edge then every bead, so beads bunched in slow water stay amber and don't brown each other's edges.
+// Strokes (R10): one continuous line through a path's points, a tapering ribbon in its lamp's hue on
+// a dark edge by day (its own light by night). The wake is one drawn line, not beads: each segment is
+// an instanced quad that keeps only its own piece of the line, cut at the bisector of the turn at each
+// end, so neighbouring pieces meet exactly (a miter) and never lie twice over each other; a fading line
+// has no darker knots at its joints. A true end has a round cap. The same strokes draw the globe's
+// wakes (points on the unit sphere, placed and hidden at the rim as every mark is) and the screen's
+// own marks (points in points: the panel's journeys and lamps, the record control's ring). Drawn twice,
+// every segment's edge then every segment, so a path crossing another keeps its colour.
 
-struct BeadIn {
-    @location(0) g: vec3<f32>,      // where the float was, that day
-    @location(1) age: f32,          // 0 the newest bead .. 1 the oldest shown
-    @location(2) night: f32,
-    @location(3) measured: f32,     // under a half the bead is hollow: the sea there is the sheet's guess
-    @location(4) hue: vec3<f32>,    // its lamp's hue
-    @location(5) follow: f32,       // 1 if its lamp is chosen as itself (R8): its whole journey, fuller
+struct StrokeIn {
+    @location(0) prev: vec4<f32>,   // xyz the point before a (a itself at a cap), w a's width (reading points)
+    @location(1) a: vec4<f32>,      // xyz, w a's alpha
+    @location(2) b: vec4<f32>,      // xyz, w b's width
+    @location(3) next: vec4<f32>,   // xyz the point after b (b itself at a cap), w b's alpha
+    @location(4) hue: vec4<f32>,    // the line's hue; w 1 for points on the screen (x, y in points), 0 on the globe
+    @location(5) flags: vec4<f32>,  // x a round cap at a, y at b, z night, w hollow (the sea was the sheet's guess)
 };
 
 struct WakeUniform {
-    layer: f32,         // 0 this draw lays the edges, 1 the beads
+    layer: f32,         // 0 this draw lays the edges, 1 the lines
     _p0: f32,
     _p1: f32,
     _p2: f32,
 };
 @group(1) @binding(0) var<uniform> W: WakeUniform;
 
-struct BeadOut {
+struct StrokeOut {
     @builtin(position) pos: vec4<f32>,
-    @location(0) local: vec2<f32>,
-    @location(1) r: f32,
-    @location(2) a: f32,
-    @location(3) night: f32,
-    @location(4) measured: f32,
-    @location(5) hue: vec3<f32>,
+    @location(0) px: vec2<f32>,
+    @location(1) @interpolate(flat) ab: vec4<f32>,      // a and b in pixels
+    @location(2) @interpolate(flat) m: vec4<f32>,       // the cut at a (its normal), the cut at b
+    @location(3) @interpolate(flat) hw: vec4<f32>,      // half widths at a and b in pixels, alphas at a and b
+    @location(4) @interpolate(flat) hue: vec4<f32>,     // rgb, night
+    @location(5) @interpolate(flat) flags: vec4<f32>,   // caps at a and b, hollow, pixels a reading point
 };
 
+fn stroke_px(g: vec3<f32>, screen: bool) -> vec3<f32> {
+    if (screen) { return vec3<f32>(g.xy * U.frame.z, 1.0); }
+    let p = place(g);
+    return p.xyz;
+}
+
+fn dir_or(v: vec2<f32>, fallback: vec2<f32>) -> vec2<f32> {
+    let l = length(v);
+    if (l > 1e-3) { return v / l; }
+    return fallback;
+}
+
 @vertex
-fn vs(@builtin(vertex_index) vi: u32, b: BeadIn) -> BeadOut {
-    let p = place(b.g);
-    let k = by_zoom(0.45, 2.5);
-    // a lamp chosen as itself (R8) carries its whole journey back to where it was put: the beads a
-    // little larger and never fading below a third, so the path reads as a line of its colour at any
-    // zoom; the others keep the comet's tail of their last days
-    let r = mix(mix(2.2, 1.2, b.age), mix(2.5, 1.1, b.age), b.follow) * rp() * k;
+fn vs(@builtin(vertex_index) vi: u32, s: StrokeIn) -> StrokeOut {
+    let screen = s.hue.w > 0.5;
+    let P = stroke_px(s.prev.xyz, screen);
+    let A = stroke_px(s.a.xyz, screen);
+    let B = stroke_px(s.b.xyz, screen);
+    let N = stroke_px(s.next.xyz, screen);
+    // on the globe the line thins toward the whole Earth, as the beads did, so a month's wake is not a slug
+    let k = select(by_zoom(0.55, 2.5), 1.0, screen);
+    let ha = 0.5 * s.prev.w * rp() * k;
+    let hb = 0.5 * s.b.w * rp() * k;
+    let d = dir_or(B.xy - A.xy, vec2<f32>(1.0, 0.0));
+    let n = vec2<f32>(-d.y, d.x);
+    let dp = dir_or(A.xy - P.xy, d);
+    let dn = dir_or(N.xy - B.xy, d);
+    let ma = dir_or(dp + d, d);
+    let mb = dir_or(d + dn, d);
+    let h = max(ha, hb) + 0.45 * U.frame.z + 1.5;
+    let cap_a = s.flags.x > 0.5;
+    let cap_b = s.flags.y > 0.5;
+    // the quad reaches past each end as far as the cut there needs (a miter), at most four widths
+    let ea = select(h * abs(dot(n, ma)) / max(dot(d, ma), 0.25), h, cap_a) + 1.0;
+    let eb = select(h * abs(dot(n, mb)) / max(dot(d, mb), 0.25), h, cap_b) + 1.0;
     let c = corner(vi % 6u);
-    var o: BeadOut;
-    o.local = c * (r + 1.0 * rp());
-    o.pos = clip(p.xy + o.local);
-    if (p.z < 0.3) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
-    o.r = r;
-    o.a = mix(pow(1.0 - b.age, 1.2) * 0.9 + 0.1, 1.0 - 0.62 * pow(b.age, 1.5), b.follow);
-    o.night = b.night;
-    o.measured = b.measured;
-    o.hue = b.hue;
+    var at = select(B.xy + d * eb, A.xy - d * ea, c.x < 0.0);
+    at = at + n * c.y * h;
+    var o: StrokeOut;
+    o.pos = clip(at);
+    if (!screen && (A.z < 0.3 || B.z < 0.3)) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
+    o.px = at;
+    o.ab = vec4<f32>(A.xy, B.xy);
+    o.m = vec4<f32>(ma, mb);
+    o.hw = vec4<f32>(ha, hb, s.a.w, s.next.w);
+    o.hue = vec4<f32>(s.hue.rgb, s.flags.z);
+    o.flags = vec4<f32>(s.flags.x, s.flags.y, s.flags.w, rp() * k);
     return o;
 }
 
 @fragment
-fn fs(i: BeadOut) -> @location(0) vec4<f32> {
-    let n = i.night;
-    let d = length(i.local);
+fn fs(i: StrokeOut) -> @location(0) vec4<f32> {
+    let A = i.ab.xy;
+    let B = i.ab.zw;
+    let len = length(B - A);
+    let d = dir_or(B - A, vec2<f32>(1.0, 0.0));
+    let n = vec2<f32>(-d.y, d.x);
+    let p = i.px;
+    let t = dot(p - A, d);
+    // only this segment's own piece: between the cut at a (kept on its side) and the cut at b (left
+    // to the next); a true end is round instead
+    if (i.flags.x < 0.5 && dot(p - A, i.m.xy) < 0.0) { return vec4<f32>(0.0); }
+    if (i.flags.y < 0.5 && dot(p - B, i.m.zw) >= 0.0) { return vec4<f32>(0.0); }
+    var dist = abs(dot(p - A, n));
+    if (i.flags.x > 0.5 && t < 0.0) { dist = length(p - A); }
+    if (i.flags.y > 0.5 && t > len) { dist = length(p - B); }
+    let f = clamp(t / max(len, 1e-3), 0.0, 1.0);
+    let hw = mix(i.hw.x, i.hw.y, f);
+    let al = mix(i.hw.z, i.hw.w, f);
+    let night = i.hue.w;
     var acc = vec4<f32>(0.0);
-    let edge = i.hue * 0.42;                                       // the bead's edge: its hue darkened, by day only
-    let bead = mix(i.hue * 0.95, i.hue, n);
-    // a hollow bead where the sea was a guess: its edge and a ring of amber, no heart
-    let hollow = step(i.measured, 0.5);
     if (W.layer < 0.5) {
-        acc = over(acc, edge, (1.0 - n) * i.a * cover(d - (i.r + 0.45 * U.frame.z)));
+        // the edge: the hue darkened, by day only
+        acc = over(acc, i.hue.rgb * 0.42, (1.0 - night) * al * al * cover(dist - (hw + 0.45 * U.frame.z)));
     } else {
-        acc = over(acc, bead, i.a * cover(d - i.r));
-        acc = over(acc, mix(vec3<f32>(0.761, 0.894, 0.957), vec3<f32>(0.063, 0.094, 0.157), n), hollow * i.a * cover(d - (i.r - 0.9 * U.frame.z * U.frame.w)));
+        acc = over(acc, mix(i.hue.rgb * 0.95, i.hue.rgb, night), al * cover(dist - hw));
+        // hollow where the sea was a guess: a pale heart down the line
+        let pale = mix(vec3<f32>(0.761, 0.894, 0.957), vec3<f32>(0.063, 0.094, 0.157), night);
+        acc = over(acc, pale, i.flags.z * al * cover(dist - max(hw - 0.9 * i.flags.w, 0.0)) * step(0.9 * i.flags.w, hw));
     }
     return acc;
 }
