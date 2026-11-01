@@ -191,7 +191,9 @@ pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate:
         places.truncate(k + 1);
     }
     places.push((here, path.last().map_or(1.0, |b| b.measured)));
-    let line_pts: Vec<Pt> = round_corners(smooth(&places, 1, 2), 10.0 * heavy * rad_per_pt)
+    // (R17: a centripetal Catmull-Rom through the steps, cut into pieces of about two reading points,
+    // so however far apart the steps are on the screen the line is a curve, never a polyline)
+    let line_pts: Vec<Pt> = round_corners(spline(&places, 1, 2.0 * rad_per_pt), 10.0 * heavy * rad_per_pt)
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;
@@ -258,5 +260,93 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
             out[i].0 = norm([0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]));
         }
     }
+    // (R17) a turn sharper than the soft passes can round (a lamp reversing within one step, its legs
+    // long and straight) is found where the heading swings past sixty degrees over a few samples, and
+    // only there the line is eased further, over about eight samples each side, so it bends through
+    // the turn instead of meeting it in a V; the even curls of a loop are below the threshold and keep
+    // their shape
+    let m = out.len();
+    if m > 8 {
+        let dir = |a: [f32; 3], b: [f32; 3]| {
+            let v = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+            let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
+            [v[0] / l, v[1] / l, v[2] / l]
+        };
+        let mut corner = vec![0.0f32; m];
+        for i in 2..m - 2 {
+            let (a, b) = (dir(out[i - 2].0, out[i].0), dir(out[i].0, out[i + 2].0));
+            let ang = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos().to_degrees();
+            corner[i] = ((ang - 60.0) / 40.0).clamp(0.0, 1.0);
+        }
+        let reach = 8isize;
+        let mut w = vec![0.0f32; m];
+        for i in 0..m {
+            for d in -reach..=reach {
+                let j = i as isize + d;
+                if j >= 0 && (j as usize) < m {
+                    w[i] = w[i].max(corner[j as usize] * (1.0 - d.unsigned_abs() as f32 / (reach as f32 + 1.0)));
+                }
+            }
+        }
+        if w.iter().any(|&x| x > 0.0) {
+            for _ in 0..16 {
+                let q = out.clone();
+                for i in 1..m - 1 {
+                    if w[i] > 0.0 {
+                        let avg = [0, 1, 2].map(|k| 0.5 * (q[i - 1].0[k] + q[i + 1].0[k]));
+                        out[i].0 = norm([0, 1, 2].map(|k| q[i].0[k] + (avg[k] - q[i].0[k]) * w[i]));
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// A path's places softened (`passes` of the light low-pass, ends held) and drawn as a centripetal
+/// Catmull-Rom curve (R17: alpha one half, which neither overshoots nor makes cusps where the steps
+/// bunch, as a float's do where it stalls), each span cut into pieces of at most `piece` (radians on
+/// the globe), so the curve stays a curve at any zoom. Returns each point, its value, and how far
+/// along the places it is, 0..1.
+pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f32; 3], f32, f32)> {
+    // the softening and the merging of near-duplicates, as `smooth` does them, with no subdivision
+    let p: Vec<([f32; 3], f32)> = smooth_with(places, passes, 1, true).into_iter().map(|(q, m, _)| (q, m)).collect();
+    let n = p.len();
+    if n < 3 {
+        return smooth_with(places, passes, 1, true);
+    }
+    let sub3 = |a: [f32; 3], b: [f32; 3]| [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    let len3 = |v: [f32; 3]| (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    let lerp = |a: [f32; 3], b: [f32; 3], ta: f32, tb: f32, t: f32| {
+        let w = if (tb - ta).abs() < 1e-12 { 0.0 } else { (t - ta) / (tb - ta) };
+        [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w]
+    };
+    let last = (n - 1) as f32;
+    let mut out = Vec::new();
+    for i in 0..n - 1 {
+        let p1 = p[i].0;
+        let p2 = p[i + 1].0;
+        // (past an end, the end reflected: the curve leaves and arrives straight)
+        let p0 = if i > 0 { p[i - 1].0 } else { sub3([2.0 * p1[0], 2.0 * p1[1], 2.0 * p1[2]], p2) };
+        let p3 = if i + 2 < n { p[i + 2].0 } else { sub3([2.0 * p2[0], 2.0 * p2[1], 2.0 * p2[2]], p1) };
+        let knot = |a: [f32; 3], b: [f32; 3]| len3(sub3(b, a)).max(1e-9).sqrt();
+        let t0 = 0.0;
+        let t1 = t0 + knot(p0, p1);
+        let t2 = t1 + knot(p1, p2);
+        let t3 = t2 + knot(p2, p3);
+        let pieces = ((len3(sub3(p2, p1)) / piece.max(1e-9)).ceil() as usize).clamp(1, 48);
+        for j in 0..pieces {
+            let u = j as f32 / pieces as f32;
+            let t = t1 + (t2 - t1) * u;
+            let a1 = lerp(p0, p1, t0, t1, t);
+            let a2 = lerp(p1, p2, t1, t2, t);
+            let a3 = lerp(p2, p3, t2, t3, t);
+            let b1 = lerp(a1, a2, t0, t2, t);
+            let b2 = lerp(a2, a3, t1, t3, t);
+            let c = lerp(b1, b2, t1, t2, t);
+            out.push((norm(c), p[i].1 + (p[i + 1].1 - p[i].1) * u, (i as f32 + u) / last));
+        }
+    }
+    out.push((p[n - 1].0, p[n - 1].1, 1.0));
     out
 }
