@@ -47,6 +47,22 @@ impl Probe for App {
             Under::Off => Hit::Off,
         }
     }
+    fn conducting(&self) -> bool {
+        App::conducting(self)
+    }
+    fn lamps_on_screen(&self) -> Vec<(u32, f64, f64)> {
+        let disc = self.disc();
+        let cam = self.camera.camera;
+        let day = self.clock.day;
+        self.floats
+            .iter()
+            .filter(|f| f.born(day) && f.hand == Hand::Free)
+            .filter_map(|f| {
+                let (p, facing) = disc.project(&cam, f.at);
+                (facing > 0.0).then_some((f.id, p[0], p[1]))
+            })
+            .collect()
+    }
     fn float_at(&self, id: u32) -> Option<LonLat> {
         self.floats.iter().find(|f| f.id == id).map(|f| f.at)
     }

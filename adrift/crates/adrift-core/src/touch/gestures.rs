@@ -4,7 +4,7 @@
 
 use super::camera::CameraMove;
 use super::motion::{self, Motion};
-use crate::model::{Disc, Intent, LonLat, Phase, PointerEvent, Shown};
+use crate::model::{ConductGesture, Disc, Intent, LonLat, Phase, PointerEvent, Shown};
 use std::collections::{BTreeMap, VecDeque};
 
 /// What is under a point of the screen, as the state knows it this frame.
@@ -129,6 +129,15 @@ pub trait Probe {
     fn recording(&self) -> bool {
         false
     }
+    /// Whether the hand conducts (R11, `App::conducting`: a take recording, or replayed for export).
+    fn conducting(&self) -> bool {
+        false
+    }
+    /// The lamps on the globe's face, their ids and screen points (R11: a conductor's gesture goes to
+    /// the lamp it starts nearest).
+    fn lamps_on_screen(&self) -> Vec<(u32, f64, f64)> {
+        Vec::new()
+    }
     /// How many takes are kept (R9).
     fn takes(&self) -> usize {
         0
@@ -183,6 +192,12 @@ enum State {
     /// A finger on the record control (R9): `done` once it has acted (the stop at touch-down, or
     /// the export after a rest), so the lift does nothing more.
     RecordDown { id: u64, x0: f64, y0: f64, t0: f64, done: bool },
+    /// One finger conducting (R11): its stroke in `Gestures::stroke`; `target` the lamp it began
+    /// nearest (None: every lamp out); `fired` once its gesture is given (a sweep at its peak speed, a
+    /// circle at three quarters of a turn), so the lift adds nothing; `fermata` once it has rested the
+    /// beat (the date held till the lift, then given back as `was_running`); `peak` the stroke's
+    /// fastest so far, points a second.
+    Conduct { id: u64, x0: f64, y0: f64, t0: f64, target: Option<u32>, fired: bool, fermata: bool, was_running: bool, peak: f64 },
 }
 
 /// The state machine. One per screen.
@@ -206,6 +221,8 @@ pub struct Gestures {
     now: f64,
     /// The lamp the last tap turned, and how it was chosen before (R8): a double tap gives it back.
     last_cycle: Option<(u32, Option<Shown>)>,
+    /// The conducting finger's stroke, (t, x, y) (R11).
+    stroke: Vec<(f64, f64, f64)>,
 }
 
 impl Default for Gestures {
@@ -216,7 +233,7 @@ impl Default for Gestures {
 
 impl Gestures {
     pub fn new() -> Gestures {
-        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, date_restore: None, date_target: None, last_shake: None, now: 0.0, last_cycle: None }
+        Gestures { state: State::Idle, fingers: BTreeMap::new(), last_tap: None, samples: VecDeque::new(), date_spin: 0.0, date_restore: None, date_target: None, last_shake: None, now: 0.0, last_cycle: None, stroke: Vec::new() }
     }
 
     /// The app answers `Intent::Put` with the float it made, so the finger goes on holding it.
@@ -245,6 +262,8 @@ impl Gestures {
             State::CreditsDown { .. } => "credits",
             State::PanelDown { .. } => "panel",
             State::RecordDown { .. } => "record",
+            State::Conduct { fermata: true, .. } => "fermata",
+            State::Conduct { .. } => "conduct",
         }
     }
 
@@ -366,6 +385,23 @@ impl Gestures {
                     self.state = State::CreditsDown { id: e.id, x0: e.x, y0: e.y };
                     return;
                 }
+                // (R11) while a take records, one finger on the globe conducts: nothing rings, is
+                // put or chosen; the record control, the date and the panel answer as ever
+                if probe.conducting() && matches!(hit, Hit::Sea(_) | Hit::Float(..) | Hit::Land(_) | Hit::Off) {
+                    self.last_tap = None;
+                    let reach = motion::CONDUCT_NEAR * probe.frame().reading;
+                    let target = probe
+                        .lamps_on_screen()
+                        .into_iter()
+                        .map(|(id, x, y)| ((x - e.x).hypot(y - e.y), id))
+                        .filter(|(d, _)| *d <= reach)
+                        .min_by(|a, b| a.0.total_cmp(&b.0))
+                        .map(|(_, id)| id);
+                    self.stroke.clear();
+                    self.stroke.push((e.t, e.x, e.y));
+                    self.state = State::Conduct { id: e.id, x0: e.x, y0: e.y, t0: e.t, target, fired: false, fermata: false, was_running: probe.running(), peak: 0.0 };
+                    return;
+                }
                 self.state = match hit {
                     Hit::Sea(at) => {
                         out.intents.push(Intent::Ring { at });
@@ -409,13 +445,17 @@ impl Gestures {
                 };
             }
             // a second finger before the beat, or during the globe's drag: a pinch
-            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. } | State::PanelDown { id, .. }, 2) => {
+            (State::Pressing { id, .. } | State::Resting { id, .. } | State::Down { id, .. } | State::Orbit { id, .. } | State::CreditsDown { id, .. } | State::PanelDown { id, .. } | State::Conduct { id, .. }, 2) => {
                 if matches!(self.state, State::Pressing { .. } | State::Resting { .. } | State::PanelDown { .. }) {
                     out.intents.push(Intent::Unpress);
                 }
+                // (R11) a conducting finger joined by a second: the camera's, and a held date given back
+                if let State::Conduct { fermata: true, was_running, .. } = self.state {
+                    out.intents.push(Intent::SetRunning { running: was_running });
+                }
                 // the second finger rings the sea where it lands too, as the first did: a pinch
-                // leaves two rings (R7)
-                if let Hit::Sea(at) = probe.hit(e.x, e.y) {
+                // leaves two rings (R7); not while conducting, where the sea answers only the cues
+                if let (Hit::Sea(at), false) = (probe.hit(e.x, e.y), probe.conducting()) {
                     out.intents.push(Intent::Ring { at });
                 }
                 self.state = State::Pinch { a: id, b: e.id, zoom0: probe.frame().zoom, scale: 1.0 };
@@ -442,6 +482,12 @@ impl Gestures {
         let Some(prev) = self.fingers.get(&e.id).copied() else { return };
         self.fingers.insert(e.id, Finger { x: e.x, y: e.y });
         let slop = Self::slop(probe);
+        if let State::Conduct { id, .. } = self.state {
+            if id == e.id {
+                self.conduct_moved(e, probe, out);
+                return;
+            }
+        }
         match self.state {
             State::Pressing { id, x0, y0, t0, .. } | State::Resting { id, x0, y0, t0, .. } if id == e.id => {
                 if (e.x - x0).hypot(e.y - y0) > slop {
@@ -585,6 +631,14 @@ impl Gestures {
     fn up(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
         if self.fingers.remove(&e.id).is_none() {
             return;
+        }
+        if let State::Conduct { id, .. } = self.state {
+            if id == e.id {
+                self.stroke.push((e.t, e.x, e.y));
+                self.conduct_up(e, probe, out);
+                self.state = State::Idle;
+                return;
+            }
         }
         match self.state {
             State::Pressing { id, t0, at, .. } if id == e.id => {
@@ -743,6 +797,13 @@ impl Gestures {
     fn cancel(&mut self, e: &PointerEvent, out: &mut Out) {
         self.fingers.remove(&e.id);
         match self.state {
+            // (R11) the system took the conducting finger: no cue, a held date given back
+            State::Conduct { id, fermata, was_running, .. } if id == e.id => {
+                if fermata {
+                    out.intents.push(Intent::SetRunning { running: was_running });
+                }
+                self.state = State::Idle;
+            }
             State::Holding { id, float, from, .. } if id == e.id => {
                 if let Some(float) = float {
                     out.intents.push(Intent::Carry { float, to: from });
@@ -806,6 +867,14 @@ impl Gestures {
         self.now = now;
         match self.state {
             State::Pressing { t0, .. } | State::Resting { t0, .. } if now - t0 >= motion::BEAT => self.rest_elapsed(probe, &mut out),
+            // (R11) a conducting finger that rests the beat without moving holds the date: a fermata
+            State::Conduct { id, x0, y0, t0, target, fired: false, fermata: false, peak, .. } if now - t0 >= motion::BEAT && self.stroke.iter().all(|&(_, x, y)| (x - x0).hypot(y - y0) <= Self::slop(probe)) => {
+                let was_running = probe.running();
+                if was_running {
+                    out.intents.push(Intent::SetRunning { running: false });
+                }
+                self.state = State::Conduct { id, x0, y0, t0, target, fired: false, fermata: true, was_running, peak };
+            }
             // a rest on the date (the finger still for the beat) opens the page of credits
             State::DateDown { t0, scrubbing: false, .. } if now - t0 >= motion::BEAT && !probe.credits_open() => {
                 out.intents.push(Intent::ToggleCredits);
@@ -873,6 +942,71 @@ impl Gestures {
         }
     }
 
+    /// A conducting finger moves (R11): a loop of three quarters of a turn is a circle, given at once;
+    /// a stroke is a sweep, given at its peak speed (the moment the hand's speed has fallen back from
+    /// its fastest), not on the lift, so the sea answers the beat as the hand makes it.
+    fn conduct_moved(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
+        let State::Conduct { id, x0, y0, t0, target, fired, fermata, was_running, mut peak } = self.state else { return };
+        let last = *self.stroke.last().unwrap();
+        self.stroke.push((e.t, e.x, e.y));
+        if fired || fermata {
+            return;
+        }
+        let reading = probe.frame().reading;
+        let (length, turn) = stroke_shape(&self.stroke, motion::STROKE_STEP * reading);
+        if turn.abs() >= motion::CIRCLE_TURN {
+            out.intents.push(Intent::Conduct { float: target, gesture: ConductGesture::Circle { turn, secs: e.t - t0 } });
+            self.state = State::Conduct { id, x0, y0, t0, target, fired: true, fermata, was_running, peak };
+            return;
+        }
+        let _ = last;
+        // the hand's speed over the last SPEED_WINDOW (so a 120 Hz finger's jitter is averaged and a
+        // 20 Hz one is read the same)
+        let n = self.stroke.len();
+        let from = (0..n - 1).rev().find(|&i| e.t - self.stroke[i].0 >= motion::SPEED_WINDOW).unwrap_or(0);
+        let (ft, fx, fy) = self.stroke[from];
+        let speed = (e.x - fx).hypot(e.y - fy) / (e.t - ft).max(1.0 / 240.0);
+        let mut fire = false;
+        if speed >= peak {
+            peak = speed;
+        } else if peak >= motion::SWEEP_PEAK * reading && speed <= motion::SWEEP_FALL * peak && length >= motion::SWEEP_LENGTH * reading && turn.abs() < motion::SWEEP_CURVE {
+            // past the peak: the stroke so far is the sweep (a stroke still curving may be a circle)
+            fire = true;
+        }
+        if fire {
+            out.intents.push(Intent::Conduct { float: target, gesture: ConductGesture::Sweep { dx: e.x - x0, dy: e.y - y0, secs: e.t - t0 } });
+        }
+        self.state = State::Conduct { id, x0, y0, t0, target, fired: fire, fermata, was_running, peak };
+    }
+
+    /// The conducting finger lifts (R11): a fermata gives the date back; a gesture not yet given is
+    /// given now (a stroke that never slowed before the lift is a sweep, a short touch a tap).
+    fn conduct_up(&mut self, e: &PointerEvent, probe: &dyn Probe, out: &mut Out) {
+        let State::Conduct { x0, y0, t0, target, fired, fermata, was_running, .. } = self.state else { return };
+        if fermata {
+            out.intents.push(Intent::SetRunning { running: was_running });
+            return;
+        }
+        if fired {
+            return;
+        }
+        let reading = probe.frame().reading;
+        let (length, turn) = stroke_shape(&self.stroke, motion::STROKE_STEP * reading);
+        let gesture = if turn.abs() >= motion::CIRCLE_TURN {
+            ConductGesture::Circle { turn, secs: e.t - t0 }
+        } else if length >= motion::SWEEP_LENGTH * reading {
+            ConductGesture::Sweep { dx: e.x - x0, dy: e.y - y0, secs: e.t - t0 }
+        } else {
+            ConductGesture::Tap { x: x0, y: y0 }
+        };
+        out.intents.push(Intent::Conduct { float: target, gesture });
+    }
+
+    /// The conducting finger's stroke so far, (t, x, y) points (R11), for the look to draw the hand.
+    pub fn conduct_stroke(&self) -> Option<&[(f64, f64, f64)]> {
+        matches!(self.state, State::Conduct { .. }).then_some(&self.stroke[..])
+    }
+
     /// A tap on a lamp's row: it joins the chosen, in front, or, chosen already, is let go; a lamp
     /// newly chosen out of sight or at the globe's rim is turned toward the reader (R6).
     /// (R10) The tap rings the water at the lamp itself, in the open sea where the reader can see it
@@ -921,6 +1055,32 @@ impl Gestures {
     }
 }
 
+/// A stroke's length and its turn, radians (in `conduct.rs`'s sense: positive clockwise as seen on a
+/// y-down screen), over its
+/// steps of at least `step` points (smaller jitters skipped, so a resting finger never turns) (R11).
+pub fn stroke_shape(pts: &[(f64, f64, f64)], step: f64) -> (f64, f64) {
+    let Some(&(_, x0, y0)) = pts.first() else { return (0.0, 0.0) };
+    let (mut length, mut turn) = (0.0, 0.0);
+    let mut prev = (x0, y0);
+    let mut last: Option<(f64, f64)> = None;
+    for &(_, x, y) in &pts[1..] {
+        let (dx, dy) = (x - prev.0, y - prev.1);
+        let d = dx.hypot(dy);
+        if d < step {
+            continue;
+        }
+        length += d;
+        if let Some((ax, ay)) = last {
+            // measured as `conduct.rs` measures a world's path on the screen (y down: positive is
+            // clockwise as seen), so a loop picks the worlds that turned the way the hand did
+            turn += (ax * dy - ay * dx).atan2(ax * dx + ay * dy);
+        }
+        last = Some((dx, dy));
+        prev = (x, y);
+    }
+    (length, turn)
+}
+
 /// The centre of a set of places on the sphere (their mean direction) and the widest angle of any
 /// from it, radians; None for none.
 pub fn frame_of(points: &[LonLat]) -> Option<(LonLat, f64, usize)> {
@@ -961,11 +1121,12 @@ mod tests {
         day: RefCell<f64>,
         running: RefCell<bool>,
         behind: f64,
+        conducting: bool,
     }
 
     impl Fake {
         fn new() -> Fake {
-            Fake { chosen: RefCell::new(Vec::new()), followed: RefCell::new(Vec::new()), day: RefCell::new(100.0), running: RefCell::new(true), behind: 0.0 }
+            Fake { chosen: RefCell::new(Vec::new()), followed: RefCell::new(Vec::new()), day: RefCell::new(100.0), running: RefCell::new(true), behind: 0.0, conducting: false }
         }
         /// Applies the intents as the app would (the parts these tests read).
         fn apply(&self, out: &Out) {
@@ -1044,6 +1205,13 @@ mod tests {
             } else {
                 None
             }
+        }
+        fn conducting(&self) -> bool {
+            self.conducting
+        }
+        fn lamps_on_screen(&self) -> Vec<(u32, f64, f64)> {
+            // two lamps on the face (the panel's stand-in rows lie at x 30, off the disc)
+            vec![(7, 150.0, 400.0), (8, 260.0, 470.0)]
         }
         fn behind(&self) -> f64 {
             self.behind
@@ -1152,5 +1320,117 @@ mod tests {
         p.apply(&g.tick(0.02 + 1.0 / 60.0, &p));
         let step = p.day() - before;
         assert!(step > 0.0 && step <= 0.2 * motion::SCRUB_RATE / 60.0 + 1e-9, "{step}");
+    }
+
+    fn conductor() -> (Gestures, Fake) {
+        let mut p = Fake::new();
+        p.conducting = true;
+        (Gestures::new(), p)
+    }
+
+    fn conducts(out: &Out) -> Vec<(Option<u32>, ConductGesture)> {
+        out.intents.iter().filter_map(|i| if let Intent::Conduct { float, gesture } = i { Some((*float, *gesture)) } else { None }).collect()
+    }
+
+    #[test]
+    fn conducting_a_tap_near_a_lamp_cues_it_and_rings_nothing() {
+        let (mut g, p) = conductor();
+        let down = g.feed(ev(Phase::Down, 160.0, 410.0, 0.0), &p);
+        assert!(down.intents.is_empty(), "{:?}", down.intents);
+        let up = g.feed(ev(Phase::Up, 161.0, 410.0, 0.1), &p);
+        assert_eq!(conducts(&up), vec![(Some(7), ConductGesture::Tap { x: 160.0, y: 410.0 })]);
+        assert!(up.intents.iter().all(|i| !matches!(i, Intent::Ring { .. } | Intent::Put { .. } | Intent::Ride { .. } | Intent::Unchoose)));
+        // open water, far from both lamps: every lamp
+        g.feed(ev(Phase::Down, 300.0, 250.0, 1.0), &p);
+        let up = g.feed(ev(Phase::Up, 300.0, 250.0, 1.1), &p);
+        assert_eq!(conducts(&up), vec![(None, ConductGesture::Tap { x: 300.0, y: 250.0 })]);
+    }
+
+    /// A stroke east, 200 points over 0.3 s, fastest half-way (a smoothstep); frames at `fps`.
+    fn stroke(g: &mut Gestures, p: &Fake, fps: f64) -> (Vec<(f64, Out)>, Out) {
+        let mut outs = Vec::new();
+        g.feed(ev(Phase::Down, 100.0, 300.0, 0.0), p);
+        let x = |t: f64| {
+            let u = (t / 0.3).min(1.0);
+            100.0 + 200.0 * u * u * (3.0 - 2.0 * u)
+        };
+        let mut t = 0.0;
+        while t < 0.4 {
+            t += 1.0 / fps;
+            outs.push((t, g.feed(ev(Phase::Move, x(t), 300.0, t), p)));
+        }
+        let up = g.feed(ev(Phase::Up, x(t), 300.0, t + 0.01), p);
+        (outs, up)
+    }
+
+    #[test]
+    fn conducting_a_sweep_is_given_at_its_peak_not_on_the_lift() {
+        for fps in [60.0, 20.0] {
+            let (mut g, p) = conductor();
+            let (outs, up) = stroke(&mut g, &p, fps);
+            let fired: Vec<_> = outs.iter().filter_map(|(t, o)| conducts(o).first().map(|c| (*t, c.1))).collect();
+            assert_eq!(fired.len(), 1, "{fps} fps: {fired:?}");
+            let (t, gesture) = fired[0];
+            // the peak is at 0.15 s; given as the hand slows from it, well before the lift (0.4 s)
+            assert!(t > 0.14 && t < 0.28, "{fps} fps: given at {t}, not near the peak");
+            match gesture {
+                ConductGesture::Sweep { dx, dy, secs } => assert!(dx > 80.0 && dy.abs() < 1.0 && (secs - t).abs() < 1e-9, "{gesture:?}"),
+                other => panic!("{other:?}"),
+            }
+            // the start (100, 300) is more than 90 points from both lamps: every lamp
+            assert!(conducts(&outs.iter().find(|(tt, _)| *tt == t).unwrap().1)[0].0.is_none());
+            assert!(conducts(&up).is_empty(), "the lift gave another: {:?}", up.intents);
+        }
+    }
+
+    #[test]
+    fn conducting_a_loop_is_a_circle_at_three_quarters_of_a_turn() {
+        let (mut g, p) = conductor();
+        g.feed(ev(Phase::Down, 260.0, 400.0, 0.0), &p);
+        let mut given = Vec::new();
+        for i in 1..=40 {
+            let a = i as f64 / 40.0 * 2.0 * std::f64::consts::PI;
+            // round (200, 400) at 60 points, clockwise as seen (y down)
+            let (x, y) = (200.0 + 60.0 * a.cos(), 400.0 + 60.0 * a.sin());
+            let o = g.feed(ev(Phase::Move, x, y, i as f64 * 0.02), &p);
+            given.extend(conducts(&o).into_iter().map(|c| (i, c)));
+        }
+        let up = g.feed(ev(Phase::Up, 260.0, 400.0, 0.9), &p);
+        assert_eq!(given.len(), 1, "{given:?}");
+        let (i, (target, gesture)) = given[0];
+        assert!((28..=32).contains(&i), "given at step {i}");
+        // it began 17 points from lamp 8's... no: (260, 400) is 70 from lamp 8 at (260, 470), 110 from 7
+        assert_eq!(target, Some(8));
+        assert!(matches!(gesture, ConductGesture::Circle { turn, .. } if turn > 4.0), "{gesture:?}");
+        assert!(conducts(&up).is_empty());
+    }
+
+    #[test]
+    fn conducting_a_rest_holds_the_date_till_the_lift() {
+        let (mut g, p) = conductor();
+        p.apply(&g.feed(ev(Phase::Down, 300.0, 250.0, 0.0), &p));
+        let o = g.tick(0.45, &p);
+        assert_eq!(o.intents, vec![Intent::SetRunning { running: false }]);
+        p.apply(&o);
+        assert_eq!(g.describe(), "fermata");
+        let up = g.feed(ev(Phase::Up, 302.0, 250.0, 2.0), &p);
+        assert_eq!(up.intents, vec![Intent::SetRunning { running: true }]);
+    }
+
+    #[test]
+    fn conducting_two_fingers_are_the_cameras_and_one_finger_never_turns_the_globe() {
+        let (mut g, p) = conductor();
+        g.feed(ev(Phase::Down, 300.0, 250.0, 0.0), &p);
+        let o = g.feed(ev(Phase::Move, 330.0, 250.0, 0.05), &p);
+        assert!(o.camera.iter().all(|m| !matches!(m, CameraMove::Drag { .. })), "{:?}", o.camera);
+        let mut b = ev(Phase::Down, 200.0, 250.0, 0.1);
+        b.id = 2;
+        let o = g.feed(b, &p);
+        assert!(o.intents.iter().all(|i| !matches!(i, Intent::Ring { .. })));
+        assert_eq!(g.describe(), "pinch");
+        // not conducting, the hand is as ever: a tap on the sea rings it
+        let (mut g, p) = (Gestures::new(), Fake::new());
+        let o = g.feed(ev(Phase::Down, 300.0, 250.0, 0.0), &p);
+        assert!(conducts(&o).is_empty());
     }
 }
