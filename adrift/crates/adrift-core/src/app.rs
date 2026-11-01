@@ -837,6 +837,16 @@ impl App {
             self.camera.riding = None;
         }
         let motion = self.motion();
+        // (R12, Motion's) while the hand conducts, the live camera frames the lamps it conducts
+        let hold = if self.conducting() {
+            let d = self.disc();
+            let r1 = d.r / self.camera.camera.zoom;
+            let half = self.width as f64 / self.ppp / 2.0;
+            crate::studio::frame(&self.lean_for(r1, half))
+        } else {
+            None
+        };
+        self.camera.hold_frame(hold, now, motion);
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
@@ -1572,6 +1582,40 @@ impl App {
         self.studio.replay.as_ref()?.take.song_in_clip()
     }
 
+    /// The lamps a conducting camera frames (R11, R12; Motion's): those a cue has touched, else every
+    /// lamp out, with the last `studio::FRAME_TRAIL` days of their lines (the path's samples, the
+    /// oldest point interpolated to the edge so the frame never steps), in a view of disc radius `r1`
+    /// at zoom 1 and half-width `half`, points.
+    pub fn lean_for(&self, r1: f64, half: f64) -> crate::studio::Lean {
+        let day = self.clock.day;
+        let out: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        let conducted: Vec<&Float> = out.iter().copied().filter(|f| f.legs().iter().any(|l| l.world != 0)).collect();
+        let these = if conducted.is_empty() { out } else { conducted };
+        let since = day - crate::studio::FRAME_TRAIL;
+        let mut trail = Vec::new();
+        for f in &these {
+            let n = f.legs().len();
+            let mut prev: Option<&Sample> = None;
+            for li in 0..n {
+                let Some(path) = self.paths.get(&(f.id, li)) else { continue };
+                for s in &path.samples {
+                    if s.day > day {
+                        break;
+                    }
+                    if s.day >= since {
+                        if let Some(p) = prev.filter(|p| p.day < since) {
+                            let fr = ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
+                            trail.push(lerp_place(p.at, s.at, fr));
+                        }
+                        trail.push(s.at);
+                    }
+                    prev = Some(s);
+                }
+            }
+        }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail, r1, half }
+    }
+
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
     /// export.
     pub fn conducting(&self) -> bool {
@@ -1850,18 +1894,11 @@ impl App {
             ClipPart::During => (1.0, 0.0),
             ClipPart::After => (1.0, through as f32),
         };
-        // what the clip leans toward (R11): the lamps a cue has touched, else every lamp out
+        // what the clip frames (R11, R12): the lamps a cue has touched, else every lamp out, and their lines
         let lamps = {
-            let day = self.clock.day;
-            let out: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
-            let conducted: Vec<LonLat> = out.iter().filter(|f| f.legs().iter().any(|l| l.world != 0)).map(|f| f.at).collect();
             let view = self.clip_view(Camera { zoom: 1.0, ..self.camera.camera });
             let (w, _) = crate::studio::CLIP;
-            crate::studio::Lean {
-                lamps: if conducted.is_empty() { out.iter().map(|f| f.at).collect() } else { conducted },
-                r1: view.disc.r,
-                half: w as f64 / crate::studio::CLIP_PPP / 2.0,
-            }
+            self.lean_for(view.disc.r, w as f64 / crate::studio::CLIP_PPP / 2.0)
         };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();

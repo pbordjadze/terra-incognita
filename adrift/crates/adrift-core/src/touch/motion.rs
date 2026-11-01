@@ -161,6 +161,11 @@ pub fn fling_decay(v: f64, dt: f64) -> f64 {
     v * (-FLING_DECAY * dt).exp()
 }
 
+/// (R12) While conducting, the live camera comes in to the lamps' frame on a spring of this time
+/// constant (seconds), and a reader's two-finger move sets the hold aside for `HOLD_AFTER` seconds.
+pub const HOLD_TAU: f64 = 0.6;
+pub const HOLD_AFTER: f64 = 3.0;
+
 /// (R11, conducting) A gesture goes to the lamp it starts within this many reading points of (the
 /// nearest), else to every lamp out ("open water conducts all").
 pub const CONDUCT_NEAR: f64 = 90.0;
