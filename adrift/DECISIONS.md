@@ -513,3 +513,29 @@ renders for before/after; a small, fast export size for judging motion; an `adri
 subcommand in place of ignored tests used as tools; a scene that shows an AirRules cloud in the real
 look before wiring; `AirMaybes` stepping many at once with keeps; contact sheets of a clip in the
 check's README (`ffmpeg -i clip.mp4 -vf "select=not(mod(n\,6)),scale=120:-1,tile=13x2" sheet.png`).
+
+## 18. R11 opens: conducting, the studio's step 2 (Nov 1, 15:00 UTC)
+
+Round 10's critic: the live app could be shown without a caveat; the clip could not ("it just
+records what I did; there's no music, and the lamp wanders off"): most of a clip is the whole globe
+with specks, a fling carries the lamp out of frame, the caption sits on the land. The Interviewer
+chose conductor mode as step 2, from the spike (`adrift-conductor-spike`, `adrift/CONDUCTOR.md`):
+individual lamps as lines, the possible seas flashed only at the cue, tap / sweep / circle / hold,
+open water conducts all, a take is its cues, the sweep fired at its peak speed. The cues are the
+clip's beat: the reader conducts to the music they hear, and the clip carries their timing.
+
+- *Engineering* (bf3a53a): **the hand conducts while a take is recorded** (and while it is replayed
+  for export): `App::conducting()`. Before and after a take the sea is the sea it was. A `Leg` names
+  its `world` (0 the real one, `k` a maybe) and may carry its `eddy`, so a cue rewrites a lamp's
+  journey since its last cue into the chosen world's path and continues from there under the same
+  law. A take's start cuts every lamp's leg where it is (`cut_legs`), so the worlds a hand chooses
+  among are short. `conduct.rs`: each lamp's 2048 worlds stepped on the CPU on its own path's grid
+  (unbudgeted, so a replay steps alike), and the spike's chooser. `Intent::Conduct { float, gesture }`
+  (`ConductGesture::{Tap, Sweep, Circle}` in screen points and seconds; `float: None` every lamp),
+  undoable. The look's `conducting` and `cues`. `plans/conduct-take.json`.
+- *Motion*: the conductor's hand (one finger conducts while conducting; two fingers move the
+  camera; the fermata by a rest); the clip keeps the lamps in frame.
+- *Visual*: the cue drawn (the seas flashed and folded into the chosen, the lamp gliding); the
+  clip's date off the land; overlapping clouds kept apart by hue; the marks by night.
+- *Truth*: `conduct.rs`'s worlds this round: honesty tested (the cue, the take's cut, the
+  chooser), the cost on the phone, the tempo.
