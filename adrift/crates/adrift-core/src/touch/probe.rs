@@ -13,6 +13,11 @@ impl Probe for App {
             Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
             None => date_band(&frame),
         };
+        // the record control (R9), before anything: the look's rect once it draws one (D: App's
+        // `record_bounds`), the stand-in corner until then
+        if super::gestures::record_spot(&frame).contains(x, y) {
+            return Hit::Record;
+        }
         // the panel off the globe (R6): its rows come before anything under them, so a touch there
         // never rings the sea, puts a float or sets one down
         for (id, [bx, by, bw, bh]) in self.panel_bounds() {
@@ -71,6 +76,12 @@ impl Probe for App {
     }
     fn frame_points(&self) -> Vec<LonLat> {
         App::frame_points(self)
+    }
+    fn recording(&self) -> bool {
+        self.studio.recording.is_some()
+    }
+    fn takes(&self) -> usize {
+        self.studio.takes.len()
     }
     fn behind(&self) -> f64 {
         App::behind(self)

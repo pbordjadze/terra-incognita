@@ -1,0 +1,230 @@
+{
+ "title": "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks again; nothing on it rings or puts",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -40.0,
+  "lat": 30.0,
+  "zoom": 1.0
+ },
+ "steps": [
+  {
+   "t": 0.2,
+   "down": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 0.25,
+   "expect": {
+    "state": "record"
+   }
+  },
+  {
+   "t": 0.28,
+   "up": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 0.35,
+   "expect": {
+    "saw": [
+     "Record"
+    ],
+    "not": [
+     "Ring",
+     "Put",
+     "Export"
+    ]
+   }
+  },
+  {
+   "t": 0.5,
+   "down": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.1,
+   "up": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.2,
+   "expect": {
+    "floats": 1,
+    "saw": [
+     "Put"
+    ]
+   }
+  },
+  {
+   "t": 1.6,
+   "down": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.68,
+   "up": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.8,
+   "expect": {
+    "chosen": [
+     1
+    ]
+   }
+  },
+  {
+   "t": 2.0,
+   "down": 0,
+   "xy": [
+    196.5,
+    638.5
+   ]
+  },
+  {
+   "t": 2.05,
+   "move": 0,
+   "xy": [
+    216.5,
+    638.5
+   ]
+  },
+  {
+   "t": 2.1,
+   "move": 0,
+   "xy": [
+    236.5,
+    638.5
+   ]
+  },
+  {
+   "t": 2.15,
+   "move": 0,
+   "xy": [
+    256.5,
+    638.5
+   ]
+  },
+  {
+   "t": 2.4499999999999997,
+   "move": 0,
+   "xy": [
+    256.5,
+    638.5
+   ]
+  },
+  {
+   "t": 2.4699999999999998,
+   "up": 0,
+   "xy": [
+    256.5,
+    638.5
+   ]
+  },
+  {
+   "t": 3.4,
+   "shot": "live-end"
+  },
+  {
+   "t": 3.5,
+   "down": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 3.55,
+   "expect": {
+    "saw": [
+     "Record",
+     "Export"
+    ],
+    "floats": 1,
+    "not": [
+     "Ring",
+     "Put"
+    ]
+   }
+  },
+  {
+   "t": 3.6,
+   "up": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 3.7,
+   "export": "clip",
+   "expect": {
+    "floats": 1
+   }
+  },
+  {
+   "t": 4.4,
+   "expect": {
+    "floats": 1
+   }
+  },
+  {
+   "t": 4.5,
+   "down": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 5.0,
+   "expect": {
+    "saw": [
+     "Export"
+    ],
+    "not": [
+     "Record",
+     "Ring"
+    ]
+   }
+  },
+  {
+   "t": 5.1,
+   "up": 0,
+   "xy": [
+    355.0,
+    74.0
+   ]
+  },
+  {
+   "t": 5.2,
+   "expect": {
+    "state": "idle",
+    "floats": 1
+   }
+  }
+ ],
+ "day": 9800.0,
+ "frames": true
+}

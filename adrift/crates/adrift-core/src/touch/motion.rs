@@ -32,6 +32,11 @@ pub const IDLE_RATE: f64 = 4.0;
 /// How far in and out the camera goes.
 pub const ZOOM_MIN: f64 = 0.8;
 pub const ZOOM_MAX: f64 = 8.0;
+/// The record control's stand-in place (R9; the look's `record_bounds` replaces it): a fingertip's
+/// square (reading points), under the status bar, in from the right edge.
+pub const RECORD_SIZE: f64 = 44.0;
+pub const RECORD_TOP: f64 = 52.0;
+pub const RECORD_EDGE: f64 = 16.0;
 /// The framing of everything chosen (R8): every place held within this share of the room (the
 /// screen's half-width) from the centre; places spread wider than `FRAME_WIDEST` (radians, about
 /// 70°) from their centre take the whole globe; the camera closes on the frame with this time
