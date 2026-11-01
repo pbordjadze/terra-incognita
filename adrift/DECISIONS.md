@@ -572,3 +572,28 @@ the lamps' screen positions in the export's camera trace; the tempo as a dial in
 studio, not a constant; a GPU pass for the cue's worlds as short streaks folding in; circles pick a
 world's stalls more than real loops (a spinning random flight would give real ones); one finger can
 no longer pan during a take, by design (two fingers do).
+
+## 19. R12 opens: conducting seen, and a song (Nov 1, 16:10 UTC)
+
+Round 11's critic: the sweep reads as the hand's doing; the rest is too small to see ("a whole
+take's work comes down to a hook a few mm long on a continent-sized map"), tap and circle read as
+the app's response, a circle makes no loop, a fermata can't be seen, the marks are chrome more
+legible than their lamps, and the clip is silent ("you have to zoom way in to see what your hand did,
+and add the music yourself").
+
+- *Engineering* (23104e6): **a song.** An audio file opened into Adrift (from Files or another app's
+  share sheet; the app takes audio documents) is kept as the song: it plays from its start whenever a
+  take begins and stops when it ends, so the reader conducts to it; the export lays it under the clip
+  from the take's first moment (after the still opening beat), fading over the last second
+  (`Take.song`, `Take::song_in_clip`, `App::set_song/recording/export_song`, `adrift_set_song`,
+  `adrift_recording`, `adrift_export_song`; the shell's `withSong` composes it with
+  AVMutableComposition and falls back to the silent clip on any failure). A clip at another speed
+  stays silent. The check: a plan's `song` (a file, or `"tone"`), muxed by ffmpeg the same way
+  (`plans/conduct-song.json`). The look's `song`. Songs from streaming services can't be opened as
+  files; a file from Files, Voice Memos or GarageBand can.
+- *Visual*: lines heavier in the clip; the cue as a fan of a few maybes collapsing into the chosen;
+  the marks hidden while recording, and quieter by night; the fermata visible; the song's quiet sign.
+- *Motion*: the clip frames the lamps (their span ~60% of its width); the live camera comes in to the
+  lamps when a take begins; the gestures' misreads tested.
+- *Truth*: a circle that makes a loop (a flight that can spin, honestly); a tap the lamp visibly
+  obeys; the fan's runners-up; the wind preset's seam sketched for round 13.
