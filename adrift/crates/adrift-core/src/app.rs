@@ -942,6 +942,12 @@ impl App {
     }
 
     /// The panel's rows as the look drew them (R6): each lamp's id and rect in points.
+    /// Each panel mark's words for VoiceOver, in `panel_bounds`'s order (R10: the marks carry no
+    /// text on screen).
+    pub fn panel_words(&self) -> Vec<(u32, String)> {
+        self.look.panel_words()
+    }
+
     pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {
         if let Some(rows) = &self.panel_stand_in {
             return rows.clone();

@@ -74,6 +74,47 @@ final class AdriftView: UIView {
         adrift_frame(shell, link.targetTimestamp)
         if adrift_take_haptic(shell) { haptic.impactOccurred() }
         if adrift_take_export(shell) { exportTake() }
+        if UIAccessibility.isVoiceOverRunning { refreshPanelElements(link.targetTimestamp) }
+    }
+
+    // ---- the panel's marks for VoiceOver (R10): the marks carry no words on screen; each is an
+    // element with its lamp's words, and activating it taps the mark
+
+    var panelChecked = 0.0
+    var panelKey = ""
+
+    func refreshPanelElements(_ t: Double) {
+        guard let shell, t - panelChecked > 0.5 else { return }
+        panelChecked = t
+        var items: [(CGRect, String)] = []
+        let n = adrift_panel_count(shell)
+        var rect = [Float](repeating: 0, count: 4)
+        var buf = [CChar](repeating: 0, count: 256)
+        for i in 0..<n {
+            guard adrift_panel_item(shell, i, &rect, &buf, buf.count) else { break }
+            items.append((CGRect(x: CGFloat(rect[0]), y: CGFloat(rect[1]), width: CGFloat(rect[2]), height: CGFloat(rect[3])), String(cString: buf)))
+        }
+        let key = items.map { "\($0.0)\($0.1)" }.joined(separator: "|")
+        guard key != panelKey else { return }
+        panelKey = key
+        accessibilityElements = items.map { item -> PanelElement in
+            let e = PanelElement(accessibilityContainer: self)
+            e.accessibilityLabel = item.1
+            e.accessibilityFrameInContainerSpace = item.0
+            e.accessibilityTraits = .button
+            e.view = self
+            return e
+        }
+    }
+
+    /// A tap at a point, as a finger would give it (VoiceOver's activation of a panel mark).
+    func tap(at p: CGPoint) {
+        guard let shell else { return }
+        let id = nextTouchId
+        nextTouchId += 1
+        let t = CACurrentMediaTime()
+        adrift_pointer(shell, id, 0, Double(p.x), Double(p.y), t)
+        adrift_pointer(shell, id, 2, Double(p.x), Double(p.y), t + 0.05)
     }
 
     // ---- the studio's export (R9): the newest take replayed offline by the library at 30 fps,
@@ -195,6 +236,16 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         w.rootViewController = AdriftController()
         w.makeKeyAndVisible()
         window = w
+        return true
+    }
+}
+
+final class PanelElement: UIAccessibilityElement {
+    weak var view: AdriftView?
+    override func accessibilityActivate() -> Bool {
+        guard let view else { return false }
+        let f = accessibilityFrameInContainerSpace
+        view.tap(at: CGPoint(x: f.midX, y: f.midY))
         return true
     }
 }

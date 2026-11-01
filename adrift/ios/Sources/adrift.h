@@ -17,4 +17,6 @@ bool adrift_take_export(AdriftShell *shell);
 uint32_t adrift_export_begin(AdriftShell *shell, double fps, uint32_t *width, uint32_t *height);
 bool adrift_export_frame(AdriftShell *shell, uint8_t *out, size_t stride);
 void adrift_export_end(AdriftShell *shell);
+uint32_t adrift_panel_count(AdriftShell *shell);
+bool adrift_panel_item(AdriftShell *shell, uint32_t i, float *rect, char *words, size_t len);
 void adrift_free(AdriftShell *shell);
