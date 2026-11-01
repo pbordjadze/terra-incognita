@@ -384,3 +384,18 @@ zooming to hold everything chosen at once (a single lamp is already followed). G
 - `LookFloat.followed`. The check: a scene's `follow: [i, ...]`; `expect.followed` (an array);
   `expect.framed: n` (all of `frame_points` on the screen's face, at least n of them);
   `plans/mixed-choice.json`.
+
+**R8 merged (Nov 1, 00:05 UTC).** Visual 2dbad3b, Motion c4f42fe.
+- *Motion*: one touch, three ways, on the globe and on the panel alike: a tap on a lamp brings its
+  cloud out (and follows it), a second tap folds the cloud and chooses the lamp as itself, a third
+  lets it go; a tap on the open sea lets all go; a double tap only flies in. While following, the
+  camera turns and zooms out to hold everything chosen (`frame_points`), never deeper than where the
+  follow began, and a drag or pinch takes the camera back with the choices kept. A two-finger twist
+  rolls the orb about the place under the fingers' midpoint while the spread zooms.
+- *Visual*: a lamp chosen as itself is its lit glass float ringed in its hue with its whole kept
+  journey drawn back to its put; the panel marks lamp (a ring), cloud (a glow) or neither (a dot);
+  the panel sits on a quiet card over the globe.
+- For next time, from the exit interviews: send a round's later goals as a numbered list in one
+  message (a craft read a late goal an hour late); a `play-all` that runs every plan in one process
+  with one summary line (the suite now takes over ten minutes); the framing's centre by a minimum
+  enclosing circle rather than the mean.
