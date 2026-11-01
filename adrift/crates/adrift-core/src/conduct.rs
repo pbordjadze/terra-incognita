@@ -26,6 +26,9 @@ use std::collections::VecDeque;
 /// x 6 lamps is 1230 steps a frame, 0.59 ms natively, 1.2-1.8 ms on the phone. A gesture matches the
 /// same share of them as of the spike's 2048 (5-25%); a sweep's furthest pick is the top one, not two.
 pub const WORLDS: u32 = 1024;
+/// The date's days a second while a take records and the hand conducts (Truth's measure, R11:
+/// at 3 a one-second stroke chooses among worlds about 35 points apart; 2 is too tight, 6 blurs).
+pub const TEMPO: f64 = 3.0;
 /// Quarter-day marks kept for the look back (16 days).
 pub const HISTORY: usize = 65;
 /// A tap counts the worlds within this many points of the finger as having done it.
@@ -368,6 +371,8 @@ mod tests {
         let t = run(&mut plain, 0.0, 0.53, |_| {});
         run(&mut taken, 0.0, 0.53, |_| {});
         taken.command(Intent::Record { on: true });
+        // a take runs at the conductor's tempo: the plain run is set to it too
+        plain.clock.rate = TEMPO;
         let day = taken.clock.day;
         assert!((day * 4.0).fract().abs() > 1e-6, "the take starts between grid marks ({day})");
         for f in &taken.floats {
@@ -397,7 +402,7 @@ mod tests {
         assert_eq!(next.world, k, "the next leg goes on in world {k}");
         // world k's unbroken flight from the leg's start: the cut is its mark, to the bit
         let rules = &app.rules;
-        let world = flight(rules, leg, k, day + 8.0);
+        let world = flight(rules, leg, k, day + 4.0 * TEMPO);
         let mark = world.iter().find(|p| (p.0 - next.day).abs() < 1e-9).expect("the cut is on world k's grid");
         assert!(next.day >= day && next.day - day < 0.25 + 1e-9);
         assert_eq!((mark.1, mark.2), (next.at, (next.eddy.unwrap()[0], next.eddy.unwrap()[1])), "the next leg starts in world {k}'s exact state");
@@ -408,7 +413,7 @@ mod tests {
             let w = place_on(&world, app.clock.day);
             worst = worst.max((f.at.lon - w.lon).abs().max((f.at.lat - w.lat).abs()));
         });
-        eprintln!("cue on day {day:.3} chose world {k} of {WORLDS}; cut at {:.2}; the lamp's worst gap from world {k}'s unbroken flight over 6 days: {worst:e} degrees", next.day);
+        eprintln!("cue on day {day:.3} chose world {k} of {WORLDS}; cut at {:.2}; the lamp's worst gap from world {k}'s unbroken flight over 3 s: {worst:e} degrees", next.day);
         assert!(worst == 0.0, "the lamp is world {k}'s path exactly");
     }
 

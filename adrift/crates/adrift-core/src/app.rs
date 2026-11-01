@@ -1679,6 +1679,8 @@ impl App {
     /// A take begins at the shell's time `now` (R9).
     fn begin_take(&mut self, now: f64) {
         self.cut_legs();
+        // the conductor's tempo while a take records (R11, Truth: CONDUCTOR.md › In the app)
+        self.clock.rate = crate::conduct::TEMPO;
         let start = self.take_start();
         self.apply_start(&start, now);
         self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default() });
@@ -1689,6 +1691,7 @@ impl App {
         if let Some(mut take) = self.studio.recording.take() {
             take.t1 = now;
             take.end = Some(self.take_start());
+            self.clock.rate = RATE;
             if take.duration() > 0.2 {
                 self.studio.takes.push(take);
                 if self.studio.takes.len() > crate::studio::TAKES_KEPT {

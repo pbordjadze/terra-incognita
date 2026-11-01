@@ -117,7 +117,7 @@ pub enum ConductGesture {
     Tap { x: f64, y: f64 },
     /// A stroke `dx, dy` points over `secs`: the world that veered most that way over that stretch.
     Sweep { dx: f64, dy: f64, secs: f64 },
-    /// A loop drawn, `turn` radians (positive anticlockwise on screen) over `secs`: the world that
+    /// A loop drawn, `turn` radians (the screen's y points down, so positive turns clockwise as seen) over `secs`: the world that
     /// turned most that way.
     Circle { turn: f64, secs: f64 },
 }
