@@ -225,6 +225,15 @@ pub struct LookState {
     /// This frame is rendered into an exported clip (R9): the screen's chrome (the date, the panel,
     /// the recording's mark) is the look's to leave out or keep.
     pub exporting: bool,
+    /// While exporting (R10): how far through the clip's still opening beat, 0..1 (1 once past it,
+    /// and always 1 live).
+    pub opening: f32,
+    /// While exporting (R10): 0 until the clip's eased last beat, then 0..1 through it (the app fades
+    /// the sea's rings with it; the look fades whatever else is touch feedback). Always 0 live.
+    pub ending: f32,
+    /// The clip's window on the screen being drawn, points x, y, w, h (R10: while exporting, the
+    /// whole screen, as the clip is drawn at its own 9:16 size; None live).
+    pub clip: Option<[f32; 4]>,
     /// How many takes are kept, the newest ready to export (R9).
     pub takes: u32,
     /// The clouds out, in the order chosen (the front one last) (R6).

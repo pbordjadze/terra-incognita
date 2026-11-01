@@ -178,6 +178,9 @@ pub struct App {
     pub studio: crate::studio::Studio,
     /// The frame being drawn goes into an exported clip (R9; the look's `exporting`).
     exporting: bool,
+    /// While exporting, how far through the clip's still opening beat (0..1, 1 once past it) and its
+    /// eased last one (0 until it, then 0..1) (R10; the look's `opening` and `ending`).
+    clip_phase: (f32, f32),
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
@@ -362,6 +365,7 @@ impl App {
             panel_stand_in: None,
             studio: Default::default(),
             exporting: false,
+            clip_phase: (1.0, 0.0),
         })
     }
 
@@ -527,6 +531,11 @@ impl App {
                         (false, true) => self.end_take(self.now),
                         _ => {}
                     }
+                }
+            }
+            Intent::TakeSpeed { speed } => {
+                if let Some(t) = self.studio.takes.last_mut() {
+                    t.speed = speed.clamp(0.25, 2.0);
                 }
             }
             Intent::Export => {
@@ -1191,6 +1200,13 @@ impl App {
             behind: self.behind() as f32,
             recording: self.studio.recording.as_ref().map(|t| (self.now - t.t0) as f32),
             exporting: self.exporting,
+            opening: if self.exporting { self.clip_phase.0 } else { 1.0 },
+            ending: if self.exporting { self.clip_phase.1 } else { 0.0 },
+            clip: if self.exporting {
+                Some([0.0, 0.0, (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32, (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32])
+            } else {
+                None
+            },
             takes: self.studio.takes.len() as u32,
             resting,
             bloom: clouds.iter().find(|c| c.front).map_or(0.0, |c| c.bloom),
@@ -1297,6 +1313,12 @@ impl App {
     /// them already, R9).
     fn render_with(&mut self, target: &wgpu::TextureView, step: bool) {
         let view = self.view();
+        self.render_view(target, view, step);
+    }
+
+    /// Draws a frame through `view`: the live screen's, or a clip's own size and camera (R10: the
+    /// clip is drawn at 9:16 with a camera of its own, not cropped from the take's screen).
+    fn render_view(&mut self, target: &wgpu::TextureView, view: View, step: bool) {
         let (ma, mb, _) = self.clock.months();
         match self.textures.set_months(&self.gpu, self.assets.as_ref(), ma, mb) {
             Ok(true) => self.ground.rebind(&self.gpu, &self.textures),
@@ -1321,19 +1343,26 @@ impl App {
         };
         let sea_ticked = (self.clock.running || !self.ripples.is_empty()) && self.seconds - self.stage_seconds >= 1.0 / 30.0 - 1e-6;
         let wanted = |s: &Stage, scale: f64, w: u32, h: u32| s.scale == scale && s.width == ((w as f64 * scale).round() as u32).max(1) && s.height == ((h as f64 * scale).round() as u32).max(1);
-        let rescaled = self.stage.as_ref().map_or(true, |s| !wanted(s, self.budget.scale, self.width, self.height));
+        let rescaled = self.stage.as_ref().map_or(true, |s| !wanted(s, self.budget.scale, view.width, view.height));
         if rescaled {
-            self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
+            self.stage = Some(self.blit.stage(&self.gpu, view.width, view.height, self.budget.scale));
         }
         if moved || sea_ticked || rescaled {
             if moved && self.budget.frame(self.last_dt) {
-                self.stage = Some(self.blit.stage(&self.gpu, self.width, self.height, self.budget.scale));
+                self.stage = Some(self.blit.stage(&self.gpu, view.width, view.height, self.budget.scale));
             }
             let stage = self.stage.as_ref().unwrap();
             let mut u = uniform;
-            u.frame = [stage.width as f32, stage.height as f32, (stage.width as f64 / self.width as f64 * self.ppp) as f32, self.reading as f32];
+            u.frame = [stage.width as f32, stage.height as f32, (stage.width as f64 / view.width as f64 * view.ppp) as f32, view.reading as f32];
             self.gpu.queue.write_buffer(&self.stage_view_buffer, 0, bytemuck::bytes_of(&u));
-            self.sea.prepare(&self.gpu, &self.ripples);
+            if self.exporting && self.clip_phase.1 > 0.0 {
+                // the clip's last beat: touch feedback fades out with it (R10)
+                let fade = 1.0 - self.clip_phase.1;
+                let rings: Vec<_> = self.ripples.iter().map(|r| crate::look::sea::Ripple { at: r.at, when: r.when, strength: r.strength * fade }).collect();
+                self.sea.prepare(&self.gpu, &rings);
+            } else {
+                self.sea.prepare(&self.gpu, &self.ripples);
+            }
             let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stage") });
             {
                 let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1361,7 +1390,7 @@ impl App {
         }
         let state = self.look_state();
         let d = view.disc;
-        self.look.prepare(&self.gpu, &state, (self.width as f64 / self.ppp) as f32, (self.height as f64 / self.ppp) as f32, self.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
+        self.look.prepare(&self.gpu, &state, (view.width as f64 / view.ppp) as f32, (view.height as f64 / view.ppp) as f32, view.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
         let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame") });
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1466,7 +1495,7 @@ impl App {
     fn begin_take(&mut self, now: f64) {
         let start = self.take_start();
         self.apply_start(&start, now);
-        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None });
+        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default() });
     }
 
     /// The take ends and is kept, the newest last (R9).
@@ -1509,9 +1538,9 @@ impl App {
         self.budget.scale = 1.0;
         self.resize(take.width, take.height, take.ppp);
         self.apply_start(&take.start, take.t0);
-        let (a, b) = take.span();
-        let frames = (((b - a) * fps).ceil() as u32).max(1);
-        self.studio.replay = Some(crate::studio::Replay { take, next_event: 0, frame: 0, frames, fps, live });
+        let frames = ((take.clip_seconds() * fps).ceil() as u32).max(1);
+        let cam = take.start.camera;
+        self.studio.replay = Some(crate::studio::Replay { take, next_event: 0, frame: 0, frames, fps, live, cam, held: 0.0 });
         frames
     }
 
@@ -1520,37 +1549,47 @@ impl App {
         self.studio.replay.as_ref().map(|_| crate::studio::CLIP)
     }
 
-    /// The part of the take's screen a clip shows: a 9:16 window as large as the screen allows,
-    /// centred on the globe's disc vertically (clamped to the screen), x, y, w, h in pixels.
-    fn clip_window(&self, w: u32, h: u32) -> (f64, f64, f64, f64) {
-        let (cw, ch) = (crate::studio::CLIP.0 as f64, crate::studio::CLIP.1 as f64);
-        let (w, h) = (w as f64, h as f64);
-        if h / w >= ch / cw {
-            let wh = w * ch / cw;
-            let cy = self.disc().cy * self.ppp;
-            let y = (cy - wh / 2.0).clamp(0.0, h - wh);
-            (0.0, y, w, wh)
-        } else {
-            let ww = h * cw / ch;
-            ((w - ww) / 2.0, 0.0, ww, h)
-        }
+    /// The pixel size an export's offscreen target needs: the clip's own (R10: drawn at its size,
+    /// not cropped).
+    pub fn export_target_size(&self) -> Option<(u32, u32)> {
+        self.export_size()
     }
 
-    /// The pixel size an export's offscreen target needs (the take's screen).
-    pub fn export_target_size(&self) -> Option<(u32, u32)> {
-        self.studio.replay.as_ref().map(|r| (r.take.width, r.take.height))
+    /// The clip's view: its own size at `studio::CLIP_PPP`, through `cam` (R10).
+    fn clip_view(&self, cam: Camera) -> View {
+        let (w, h) = crate::studio::CLIP;
+        let mut v = self.view();
+        v.width = w;
+        v.height = h;
+        v.ppp = crate::studio::CLIP_PPP;
+        v.reading = Self::reading_for(w, h, v.ppp);
+        v.camera = cam;
+        v.disc = View::layout(w, h, v.ppp, cam);
+        v
+    }
+
+    /// The live state drawn as a clip's frame would draw it (R10, for the check's `render --clip`
+    /// and a scene's look "as exported"): the clip's size and the live camera, chrome out, into a
+    /// target of `studio::CLIP`.
+    pub fn render_clip(&mut self, target: &wgpu::TextureView) {
+        let view = self.clip_view(self.camera.camera);
+        self.exporting = true;
+        self.clip_phase = (1.0, 0.0);
+        self.render_view(target, view, true);
+        self.exporting = false;
     }
 
     /// Renders the export's next frame into `target` (an `Offscreen` of `export_target_size`) and
     /// returns its pixels as BGRA rows, top down, cropped to `export_size`; None when it is done.
     pub fn export_frame(&mut self, target: &crate::gpu::Offscreen) -> Option<Vec<u8>> {
-        let t_out = {
+        use crate::studio::ClipPart;
+        let (t_out, part, through, dt) = {
             let r = self.studio.replay.as_ref()?;
             if r.frame >= r.frames {
                 return None;
             }
-            let (a, _) = r.take.span();
-            r.take.t0 + a + r.frame as f64 / r.fps
+            let (t, part, through) = r.take.clip_at(r.frame as f64 / r.fps);
+            (t, part, through, 1.0 / r.fps)
         };
         // every event up to this frame's time, fed as the shell fed them live
         loop {
@@ -1577,37 +1616,42 @@ impl App {
                 E::Intent { intent, .. } => self.intend(intent),
             }
         }
+        // the held beats: the date held, the sea's drawn motion running on (put back after the frame,
+        // so the replay's own state is exactly the take's)
+        let held = self.studio.replay.as_ref().unwrap().held;
+        let seconds = self.seconds;
+        if part != ClipPart::During {
+            let r = self.studio.replay.as_mut().unwrap();
+            r.held += dt;
+        }
+        self.seconds += held;
+        self.clip_phase = match part {
+            ClipPart::Before => (through as f32, 0.0),
+            ClipPart::During => (1.0, 0.0),
+            ClipPart::After => (1.0, through as f32),
+        };
+        let cam = {
+            let r = self.studio.replay.as_mut().unwrap();
+            let half = r.take.framing.follow;
+            if r.frame > 0 {
+                r.cam = crate::studio::follow(r.cam, self.camera.camera, dt, half);
+            }
+            r.cam
+        };
+        let view = self.clip_view(cam);
         self.haptic = false;
         self.exporting = true;
-        self.render_with(&target.view, false);
+        self.render_view(&target.view, view, false);
         self.exporting = false;
+        self.clip_phase = (1.0, 0.0);
+        self.seconds = seconds;
         let rgba = target.read(&self.gpu);
-        let (wx, wy, ww, wh) = self.clip_window(target.width, target.height);
         let r = self.studio.replay.as_mut().unwrap();
         r.frame += 1;
-        // the 9:16 window, scaled to the clip by bilinear sampling, as BGRA
-        let (cw, ch) = crate::studio::CLIP;
-        let (sw, sh) = (target.width as usize, target.height as usize);
-        let mut out = vec![0u8; (cw * ch * 4) as usize];
-        let sx = ww / cw as f64;
-        let sy = wh / ch as f64;
-        for y in 0..ch as usize {
-            let fy = (wy + (y as f64 + 0.5) * sy - 0.5).clamp(0.0, (sh - 1) as f64);
-            let (y0, ty) = (fy.floor() as usize, fy - fy.floor());
-            let y1 = (y0 + 1).min(sh - 1);
-            for x in 0..cw as usize {
-                let fx = (wx + (x as f64 + 0.5) * sx - 0.5).clamp(0.0, (sw - 1) as f64);
-                let (x0, tx) = (fx.floor() as usize, fx - fx.floor());
-                let x1 = (x0 + 1).min(sw - 1);
-                let o = (y * cw as usize + x) * 4;
-                for c in 0..4 {
-                    let p = |xx: usize, yy: usize| rgba[(yy * sw + xx) * 4 + c] as f64;
-                    let v = (p(x0, y0) * (1.0 - tx) + p(x1, y0) * tx) * (1.0 - ty) + (p(x0, y1) * (1.0 - tx) + p(x1, y1) * tx) * ty;
-                    // RGBA in, BGRA out
-                    let oc = match c { 0 => 2, 2 => 0, k => k };
-                    out[o + oc] = v.round() as u8;
-                }
-            }
+        // RGBA in, BGRA out
+        let mut out = rgba;
+        for p in out.chunks_exact_mut(4) {
+            p.swap(0, 2);
         }
         Some(out)
     }

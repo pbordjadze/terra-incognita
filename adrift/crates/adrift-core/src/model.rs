@@ -397,6 +397,9 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// The newest take's clip plays at this speed (R10: 0.5 is slow motion, the clip twice the take's
+    /// length; clamped to 0.25..2). The take itself is unchanged.
+    TakeSpeed { speed: f64 },
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
 }

@@ -73,8 +73,10 @@ fn render(args: &[String]) -> Result<()> {
     let (w, h) = size.split_once('x').context("--size WxH")?;
     let (w, h): (u32, u32) = (w.parse()?, h.parse()?);
     let ppp: f64 = arg(args, "--ppp").map(|s| s.parse()).transpose()?.unwrap_or(3.0);
+    // `--clip`: the scene drawn as an exported clip's frame (R10): 9:16 at its own size, chrome out
+    let clip = args.iter().any(|a| a == "--clip");
     let (_instance, gpu) = gpu()?;
-    let target = Offscreen::new(&gpu, w, h);
+    let target = if clip { Offscreen::new(&gpu, adrift_core::studio::CLIP.0, adrift_core::studio::CLIP.1) } else { Offscreen::new(&gpu, w, h) };
     let t0 = std::time::Instant::now();
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
     app.budget.locked = true;
@@ -82,10 +84,14 @@ fn render(args: &[String]) -> Result<()> {
     eprintln!("loaded in {:?} ({})", t0.elapsed(), app.gpu.adapter_info.name);
     app.set_scene(&scene);
     let t1 = std::time::Instant::now();
-    app.render(&target.view);
+    if clip {
+        app.render_clip(&target.view);
+    } else {
+        app.render(&target.view);
+    }
     let px = target.read(&app.gpu);
     eprintln!("drawn in {:?}; clouds behind the date by {:.2} days", t1.elapsed(), app.behind());
-    save(&out, w, h, &px)?;
+    save(&out, target.width, target.height, &px)?;
     println!("{}", out.display());
     Ok(())
 }
@@ -442,6 +448,17 @@ fn play(args: &[String]) -> Result<()> {
                     }
                 }
             }
+            // R10: whether a take is being recorded, and how many are kept
+            if let Some(want) = e.get("recording").and_then(|v| v.as_bool()) {
+                if app.studio.recording.is_some() != want {
+                    bad.push(format!("recording {} (wanted {want})", app.studio.recording.is_some()));
+                }
+            }
+            if let Some(want) = e.get("takes").and_then(|v| v.as_u64()) {
+                if app.studio.takes.len() as u64 != want {
+                    bad.push(format!("{} takes (wanted {want})", app.studio.takes.len()));
+                }
+            }
             if e.get("camera_near_float").is_some() {
                 if let Some(f) = app.floats.first() {
                     if (cam.lon - f.at.lon).abs() > 3.0 || (cam.lat - f.at.lat).abs() > 3.0 {
@@ -527,7 +544,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] | play <plan.json> <out-dir> | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | info");
             std::process::exit(2);
         }
     }
