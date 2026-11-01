@@ -447,3 +447,32 @@ lit and breathing while recording, beads filling toward the take's minute. For n
 exit interviews: one pure `clip_window` both the app and the look call; the clip's window in
 `LookState`; a render of a scene "as exported" without replaying a take; a slow-motion export (the
 replay's times scaled); the progress ring as an arc, not glyphs.
+
+## 17. R10 opens: the clip made, not captured (Nov 1, 08:55 UTC)
+
+A fresh critic, standing in for the owner, judged round 9's clip "just a screen recording": the
+phone's view cropped (the globe cut, paper in the corners), a lurching pinch, a tap's ring on the
+water in the last frame, an abrupt end, one journey a ribbon and another scattered beads; and the
+live panel a column of dates and coordinates read before the ocean. Round 10 makes the clip a made
+thing; the next preset's truth (the wind) starts beside it, so next round's preset seam is shaped by
+something real.
+
+- *Engineering* (b513cae): the clip is drawn at its own size (`studio::CLIP`, 1080×1920 at
+  `CLIP_PPP` 3, i.e. 360×640 points) through a view of its own (`App::clip_view`, `render_view`),
+  not cropped from the take's screen. Its camera follows the take's (`studio::follow`, a half-life,
+  frame-rate independent, the zoom in its logarithm). Every take carries `Framing { hold_in, hold_out,
+  follow }`: a still beat before the take's first moment and an eased one after its last, the date
+  held and the sea's drawn seconds running (added to the drawn state for the frame only, so the
+  replay ends exactly where the take did). `Take::clip_seconds`, `Take::clip_at`; the look's
+  `opening`, `ending`, `clip`; the sea's rings fade with `ending`. `Take.speed` and
+  `Intent::TakeSpeed` (a slow-motion clip: the replay's times scaled). `studio::clip_window` is one
+  pure function. The check: `render --clip` (a scene as a clip's frame, no replay), plan expects
+  `recording` and `takes`.
+- *Visual*: every journey one continuous line; the panel cut to tight coloured marks tied to their
+  lamps (its words to VoiceOver); the clip's look (touch feedback out by its end, the caption by
+  `clip`, the last beat eased); the progress ring an arc.
+- *Motion*: the clip's framing (this round it owns `Framing` and `follow`); the live pinch
+  frame-rate independent; the panel marks' touch; whether a gesture earns the speed.
+- *Truth*: the wind's rules (a step on the month's wind with measured variability, CPU and GPU), what
+  differs between the two media written down as the first dials (`sea/MEDIA.md`), a picture of wind
+  paths without the app.
