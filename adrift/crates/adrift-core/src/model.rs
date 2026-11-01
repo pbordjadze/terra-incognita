@@ -445,6 +445,9 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// The date's pace, days a second (R14: a journey clip's pace varies, slowing where its lamps do
+    /// something worth seeing; recorded in its take as intents).
+    Rate { days_per_second: f64 },
     /// The studio's menu is asked for (R13: a rest on the record control): the shell polls
     /// `App::menu_wanted` and offers what can be made (a journey clip of the chosen lamps, the last
     /// take again, the lamps copied or pasted).

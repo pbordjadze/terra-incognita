@@ -565,6 +565,7 @@ impl App {
                     t.speed = speed.clamp(0.25, 2.0);
                 }
             }
+            Intent::Rate { days_per_second } => self.clock.rate = days_per_second.clamp(0.01, 60.0),
             Intent::Menu => {
                 if self.studio.replay.is_none() {
                     self.studio.menu_wanted = true;
@@ -1872,6 +1873,11 @@ impl App {
         let first = floats.iter().map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
         let span = (self.clock.day - first).max(1.0);
         let rate = (span / seconds).clamp(0.25, 4.0);
+        let fps = 30.0;
+        let frames = (seconds * fps).ceil() as usize;
+        // the day each frame shows (R14, `journey::pace`: where the lamps do something worth seeing,
+        // the date slows; elsewhere it hurries), as a pace before each frame
+        let days = crate::journey::pace(&self.rules, &floats, first, first + rate * seconds, frames, fps);
         let mut start = self.take_start();
         start.clock = Clock { day: first, running: true, rate };
         start.chosen = Vec::new();
@@ -1890,9 +1896,16 @@ impl App {
         let (lat, lon) = ((y / n).asin().to_degrees(), (x / n).atan2(z / n).to_degrees());
         start.camera = Camera::new(lon, lat, 3.0);
         start.floats = floats;
-        let fps = 30.0;
-        let frames = (seconds * fps).ceil() as usize;
-        let events = (1..=frames).map(|i| crate::studio::TakeEvent::Frame { t: i as f64 / fps }).collect();
+        let mut events = Vec::with_capacity(frames * 2);
+        let mut last = first;
+        for i in 1..=frames {
+            let t = i as f64 / fps;
+            let day = days.get(i - 1).copied().unwrap_or(last);
+            let pace = ((day - last) * fps).max(0.0);
+            events.push(crate::studio::TakeEvent::Intent { t: t - 0.5 / fps, intent: Intent::Rate { days_per_second: pace } });
+            events.push(crate::studio::TakeEvent::Frame { t });
+            last = day;
+        }
         Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: None })
     }
 
