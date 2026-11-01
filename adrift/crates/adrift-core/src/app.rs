@@ -1687,7 +1687,26 @@ impl App {
                 })
             })
         };
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km }
+        // (R18) beyond that, coarser rings to `OPEN_LOOK_KM` for a journey's establishing opening
+        let land_far_km = land_km.or_else(|| {
+            let sum = these.iter().fold([0.0; 3], |a, f| {
+                let v = f.at.to_xyz();
+                [a[0] + v[0], a[1] + v[1], a[2] + v[2]]
+            });
+            let c = LonLat::from_xyz(sum);
+            let (lat, lon) = (c.lat.to_radians(), c.lon.to_radians());
+            let first = crate::studio::LAND_LOOK_KM + 100.0;
+            (0..).map(|i| first + i as f64 * 100.0).take_while(|km| *km <= crate::studio::OPEN_LOOK_KM).filter(|_| !these.is_empty()).find(|km| {
+                (0..48).any(|k| {
+                    let b = k as f64 * std::f64::consts::PI / 24.0;
+                    let d = km / 6371.0;
+                    let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
+                    let lon2 = lon + (b.sin() * d.sin() * lat.cos()).atan2(d.cos() - lat.sin() * lat2.sin());
+                    self.rules.coast.is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+                })
+            })
+        });
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km }
 
     }
 
