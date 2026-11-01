@@ -627,3 +627,34 @@ export size for judging motion; `lamp_in_clip.py` reading the trace's lamps; a p
 lamp lines; a contact-sheet tool; real-device timing (six lamps estimated 1.6–2.4 ms a frame on the
 phone, borderline; a tap's or circle's look-ahead ~4–8 ms once at the cue); the lamps moving under
 the finger while the live camera comes in (to feel on a device); an eddy census for real rings.
+
+## 20. R13: two lamps he loved, kept and made into a clip (Nov 1, 17:00 UTC)
+
+The owner had two lamps on his phone, blue and purple, whose journeys danced together, and wanted a
+four-minute edit of them to a song; recording just those two by hand was hard, and he asked whether
+the panel's rows identified them (they don't: a rounded date and degree is a hundred kilometres) and
+whether he could keep a single lamp for good. Round 12's build was held back from `main` until this
+was in, because its spin had changed every lamp's own path: his two would have come back on other
+journeys.
+
+- *A lamp keeps its law* (Truth, 7b00639): `Leg.law` (0, the default and every leg kept before
+  this, is the flight as shipped up to build 49, without the spin; `sea::rules::LAW` 1 is today's);
+  a fresh put takes today's law; a set-down, a take's cut and a cue's cut continue their leg's. The
+  lamp's path, the worlds and the GPU maybes honour it. Law 0 is pinned to the old flight bit for bit
+  by a digest of 28 paths of 80 steps; a build-46 kept state loads as law 0. Between build 46 and
+  then only an exact fast path changed in the sea.
+- *The studio's menu* (Engineering): a rest on the record control (it used to export the last take
+  again) opens a native menu: a clip of the chosen lamps' journey (30 s to 5 min), the last take
+  again, keep these lamps / let them go, copy these lamps, paste lamps (when the clipboard holds
+  some). No new control; the menu appears only when asked for.
+- *The journey clip* (`App::journey_take`): a take with no hand in it: only the picked lamps (the
+  chosen; else the kept; else every lamp out), each drawn as itself with its whole line, from the day
+  the last of them was put to today, the date at a pace that fits the length (0.25–4 days a second;
+  past today when the journey is short), framed by the clip's camera, rendered offline at full
+  quality with a progress bar, silent (a song is added in the editor). `adrift-check journey
+  <lamps.txt> <seconds> <out.mp4>` makes the same clip from copied lamps or a phone's kept state.
+- *Kept lamps* (`Float.kept`): a clear-all, its undo and its redo leave them; the kept state stores
+  them; the look marks them.
+- *Lamps as text* (`App::lamps_text`, `paste_lamps`; `LAMPS_HEADER`): every leg exactly, so pasted
+  on any phone (or into the check) they go on bit for bit; their ids, and so their hues, kept when
+  free; the date goes to the day they were copied.
