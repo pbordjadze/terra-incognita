@@ -1,6 +1,7 @@
 //! The sea as the rules read it (Truth's module: `adrift/DECISIONS.md` §2). The data sheets in
 //! `adrift/data` (`sheets`), where a float goes in a step (`rules`, mirrored on the GPU by
-//! `rules.wgsl`), and the real drifters it is measured against (`drifters`). What is measured and
+//! `rules.wgsl`), the wind's things (`wind`, mirrored by `wind.wgsl`; the second medium,
+//! `MEDIA.md`), and the real drifters it is measured against (`drifters`). What is measured and
 //! what is drawn, with the credit owed, is `adrift/SOURCES.md`.
 //!
 //! **The honest reading of the date.** Every sheet is a climatology: a typical year, not a given
@@ -12,13 +13,17 @@ pub mod drifters;
 pub mod gpu;
 pub mod rules;
 pub mod sheets;
+pub mod wind;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod wind_tests;
 
 pub use drifters::{Drifters, Nearest, Run, Track};
 pub use gpu::{GpuPath, Keep, Maybes, Params, MAX_STEPS};
 pub use rules::{Drift, Flight, Put, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
+pub use wind::{Air, AirMaybes, AirParams, AirRules, Aloft, Gusts, Weather};
 
 /// What the foot says of where the sea comes from: one line, and the full credits behind it
 /// (`adrift/SOURCES.md` › Credit owed; the GDP's licence asks for its sentence whole).
@@ -35,3 +40,6 @@ pub const CREDITS: &[&str] = &[
 
 /// The GPU mirror of `Rules::step`, for the maybes by the thousand.
 pub const RULES_WGSL: &str = include_str!("rules.wgsl");
+
+/// The GPU mirror of `AirRules::step` (the wind's things).
+pub const WIND_WGSL: &str = include_str!("wind.wgsl");
