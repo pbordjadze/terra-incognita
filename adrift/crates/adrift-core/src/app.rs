@@ -164,6 +164,9 @@ pub struct App {
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
+    /// Together (painting-company row 199; `together.rs`): when set, the clock is the wall's, one
+    /// lamp a day, set and let go, among everyone else's.
+    pub together: Option<crate::together::Together>,
 }
 
 /// Days a second while the date runs.
@@ -243,7 +246,7 @@ fn grid_next(t: f64) -> f64 {
 }
 
 /// A place between two samples, the longitude the short way round.
-fn lerp_place(a: LonLat, b: LonLat, f: f64) -> LonLat {
+pub(crate) fn lerp_place(a: LonLat, b: LonLat, f: f64) -> LonLat {
     let mut dlon = b.lon - a.lon;
     if dlon > 180.0 {
         dlon -= 360.0;
@@ -343,6 +346,7 @@ impl App {
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
             panel_stand_in: None,
+            together: None,
         })
     }
 
@@ -375,6 +379,7 @@ impl App {
             clock: self.clock,
             rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
             night: if self.night { 1.0 } else { 0.0 },
+            hush: if self.together.is_some() { 0.88 } else { 0.0 },
         }
     }
 
@@ -413,6 +418,9 @@ impl App {
     }
 
     pub fn pointer(&mut self, ev: PointerEvent) {
+        if self.together.is_some() {
+            self.together_pointer(ev);
+        }
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.feed(ev, &*self);
         self.gestures = gestures;
@@ -460,6 +468,9 @@ impl App {
         };
         if self.seen.last() != Some(&name) {
             self.seen.push(name);
+        }
+        if self.together.is_some() && !self.together_allows(&intent) {
+            return;
         }
         let day = self.clock.day;
         match intent {
@@ -752,13 +763,23 @@ impl App {
         for id in gone {
             self.take_out(id);
         }
-        if self.clock.running {
+        if let Some(t) = &mut self.together {
+            t.tick(dt);
+            self.clock.running = true;
+            self.clock.day = t.day();
+            if !self.reduce_motion {
+                self.seconds += dt;
+            }
+        } else if self.clock.running {
             self.clock.day += self.clock.rate * dt;
             if !self.reduce_motion {
                 self.seconds += dt;
             }
         }
         self.step_floats();
+        if self.together.is_some() {
+            self.together_advance(now, dt);
+        }
         for f in &mut self.floats {
             f.lit_for += dt;
         }
@@ -1164,6 +1185,13 @@ impl App {
             credits: crate::sea::CREDIT_LINE.to_string(),
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
             credits_open: self.credits_open,
+            together: self.together.is_some(),
+            others: self.together.as_ref().map_or(Vec::new(), |t| t.lamps(self.clock.day, self.seconds)),
+            forming: self.together.as_ref().and_then(|t| t.forming).map(|(at, since)| {
+                let k = ((self.now - since) / crate::together::FORM).clamp(0.0, 1.0);
+                let held = (self.now - since - crate::together::FORM).max(0.0);
+                (at, if k < 1.0 { k.sqrt() as f32 } else { 1.0 }, (0.75 + 0.25 * (held * 2.4).cos()) as f32)
+            }),
         }
     }
 
@@ -1359,5 +1387,154 @@ impl App {
     /// Where the date is drawn, if the look has drawn it (x, y, w, h in points): Motion's date band.
     pub fn date_bounds(&self) -> Option<[f32; 4]> {
         self.look.date_bounds()
+    }
+}
+
+/// Together (painting-company row 199; the rules are `together.rs`'s header).
+impl App {
+    /// Turns the mode on: the wall's day and the local offset (days), and the days already let pass.
+    /// Call after `restore`, so the camera can open on your newest lamp.
+    pub fn set_together(&mut self, wall_day: f64, tz_days: f64, skip: f64) {
+        let t = crate::together::Together::new(wall_day, tz_days, skip.max(0.0));
+        self.clock.day = t.day();
+        self.clock.running = true;
+        self.together = Some(t);
+        self.night = true;
+        self.chosen.clear();
+        self.followed.clear();
+        self.camera.riding = None;
+        let newest = self.floats.iter().max_by(|a, b| a.put_day.partial_cmp(&b.put_day).unwrap()).map(|f| f.legs.first().map_or(f.at, |l| l.at));
+        let mut cam = self.camera.camera;
+        if let Some(at) = newest {
+            // (open on the whole Earth over where your lamp was set; the approach follows it to where it is now)
+            cam = Camera::new(at.lon, at.lat.clamp(-60.0, 60.0), 1.0);
+        } else {
+            cam.zoom = 1.0;
+        }
+        self.camera = CameraControl::new(cam);
+    }
+
+    /// The wall's day (days since 2000-01-01 UTC) and the local offset, each frame from the shell.
+    pub fn set_wall(&mut self, wall_day: f64, tz_days: f64) {
+        if let Some(t) = &mut self.together {
+            t.wall_day = wall_day;
+            t.tz_days = tz_days;
+        }
+    }
+
+    /// The days let pass so far (the shell keeps them).
+    pub fn together_skip(&self) -> f64 {
+        self.together.as_ref().map_or(0.0, |t| t.skip)
+    }
+
+    /// Whether the day's lamp is still to be set.
+    pub fn lamp_ready(&self) -> bool {
+        self.together.as_ref().map_or(false, |t| t.lamp_ready(self.floats.iter().map(|f| f.put_day)))
+    }
+
+    /// Let time pass (the hidden rest's effect; a key for the desktop).
+    pub fn pass_time(&mut self, on: bool) {
+        if let Some(t) = &mut self.together {
+            t.pass_time(on);
+        }
+    }
+
+    /// What Together lets through: a ring, home, the credits, and the day's lamp; nothing that would
+    /// hold, carry, undo, take out, scrub or choose. A `Put` begins the lamp's gathering instead.
+    fn together_allows(&mut self, intent: &Intent) -> bool {
+        let ready = self.lamp_ready();
+        match *intent {
+            Intent::Ring { .. } | Intent::Home | Intent::Unpress | Intent::ToggleCredits => true,
+            Intent::Press { at, .. } => ready && matches!(self.rules.may_put(at), crate::sea::Put::Sea | crate::sea::Put::Guess),
+            Intent::Put { at } => {
+                self.pressing = None;
+                let now = self.now;
+                if ready && matches!(self.rules.may_put(at), crate::sea::Put::Sea | crate::sea::Put::Guess) {
+                    if let Some(t) = &mut self.together {
+                        t.forming = Some((at, now - crate::touch::motion::BEAT));
+                    }
+                }
+                false
+            }
+            _ => false,
+        }
+    }
+
+    /// The hidden rest: a still hand lets time pass while it stays (two fingers anywhere, or one on
+    /// the dark off the globe).
+    fn together_pointer(&mut self, ev: PointerEvent) {
+        let slop = crate::touch::motion::SLOP * self.reading;
+        let off = matches!(self.hit(ev.x, ev.y), Hit::Off);
+        let Some(t) = &mut self.together else { return };
+        match ev.phase {
+            Phase::Down => {
+                t.fingers.insert(ev.id, (ev.x, ev.y, ev.t, off));
+            }
+            Phase::Move => {
+                if let Some(&(x, y, _, _)) = t.fingers.get(&ev.id) {
+                    if (ev.x - x).hypot(ev.y - y) > slop * 1.5 {
+                        t.stirred = true;
+                    }
+                }
+            }
+            Phase::Up | Phase::Cancel => {
+                t.fingers.remove(&ev.id);
+                if t.fingers.is_empty() {
+                    t.stirred = false;
+                }
+            }
+        }
+        let still = !t.stirred && (t.fingers.len() == 2 || (t.fingers.len() == 1 && t.fingers.values().all(|f| f.3)));
+        if !still {
+            t.pass_time(false);
+        }
+    }
+
+    /// Every frame in Together: the opening's approach, the rest off the globe, the lamp gathering
+    /// and let go, and everyone else's lamps brought to the day.
+    fn together_advance(&mut self, now: f64, dt: f64) {
+        let Some(mut t) = self.together.take() else { return };
+        let motion = self.motion();
+        let opened = *t.opened.get_or_insert(now);
+        if !t.flew && now - opened > 1.4 {
+            t.flew = true;
+            if let Some(f) = self.floats.iter().filter(|f| f.born(self.clock.day)).max_by(|a, b| a.put_day.partial_cmp(&b.put_day).unwrap()) {
+                if !self.gestures.touching() {
+                    self.camera.fly_to_over(Camera::new(f.at.lon, f.at.lat, 2.6), now, 3.2, motion);
+                }
+            }
+        }
+        let still = !t.stirred && (t.fingers.len() == 2 || (t.fingers.len() == 1 && t.fingers.values().all(|f| f.3)));
+        let since = t.fingers.values().map(|f| f.2).fold(f64::NEG_INFINITY, f64::max);
+        if still && now - since >= crate::together::SKIP_AFTER {
+            t.pass_time(true);
+        }
+        if let Some((at, since)) = t.forming {
+            let state = self.gestures.describe();
+            let formed = now - since >= crate::together::FORM;
+            let lifted = state != "holding" && state != "carrying";
+            if (state == "carrying" && !formed) || (lifted && !formed) || !t.lamp_ready(self.floats.iter().map(|f| f.put_day)) {
+                t.forming = None;
+            } else if lifted && formed {
+                t.forming = None;
+                // let go: the lamp is on the sea, and no one holds it now
+                let id = self.put(at);
+                if let Some(f) = self.floats.iter_mut().find(|f| f.id == id) {
+                    f.hand = Hand::Free;
+                    f.lit_for = 0.0;
+                }
+                self.haptic = true;
+                self.seen.push("Put".to_string());
+                self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 });
+            }
+        }
+        let mine: Vec<(u32, LonLat)> = self.floats.iter().filter(|f| f.born(self.clock.day)).map(|f| (f.id, f.at)).collect();
+        let met = t.advance(&self.rules, self.clock.day, self.seconds, dt, &mine);
+        for (id, _) in met {
+            if let Some(f) = self.floats.iter_mut().find(|f| f.id == id) {
+                f.lit_for = 0.0;
+            }
+        }
+        self.together = Some(t);
     }
 }

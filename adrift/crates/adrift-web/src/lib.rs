@@ -21,6 +21,13 @@ async fn fetch(window: &web_sys::Window, url: &str) -> Result<Vec<u8>, JsValue> 
     Ok(js_sys::Uint8Array::new(&buf).to_vec())
 }
 
+/// The wall's day: days since 2000-01-01 00:00 UTC; and the local offset from UTC, in days.
+fn wall() -> (f64, f64) {
+    let ms = js_sys::Date::now();
+    let tz = -js_sys::Date::new(&JsValue::from_f64(ms)).get_timezone_offset() / 1440.0;
+    (ms / 86_400_000.0 - 10_957.0, tz)
+}
+
 fn status(document: &web_sys::Document, text: &str) {
     if let Some(el) = document.get_element_by_id("status") {
         el.set_text_content(Some(text));
@@ -84,13 +91,24 @@ pub async fn start() -> Result<(), JsValue> {
     let app = App::new(gpu, Box::new(MemoryAssets(files)), w, h, dpr).map_err(|e| JsValue::from_str(&e.to_string()))?;
     status(&document, "");
     let mut app = app;
+    // Together (painting-company row 199): the page says so (`data-mode="together"` on <html> or the canvas); its
+    // state is kept under its own key, with the days let pass
+    // (on the canvas too: a host that wraps the page in its own <html> keeps the canvas's attributes)
+    let together = document.document_element().and_then(|e| e.get_attribute("data-mode")).as_deref() == Some("together")
+        || canvas.get_attribute("data-mode").as_deref() == Some("together");
+    let key = if together { "adrift-together" } else { "adrift" };
     if let Ok(Some(store)) = window.local_storage() {
-        if let Ok(Some(json)) = store.get_item("adrift") {
+        if let Ok(Some(json)) = store.get_item(key) {
             app.restore(&json);
         }
     }
     if let Ok(Some(mq)) = window.match_media("(prefers-color-scheme: dark)") {
         app.night = mq.matches();
+    }
+    if together {
+        let skip = window.local_storage().ok().flatten().and_then(|s| s.get_item("adrift-together-skip").ok().flatten()).and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0);
+        let (day, tz) = wall();
+        app.set_together(day, tz, skip);
     }
     let app = Rc::new(RefCell::new(app));
     {
@@ -99,7 +117,11 @@ pub async fn start() -> Result<(), JsValue> {
         let w = window.clone();
         let keep = Closure::<dyn FnMut()>::new(move || {
             if let Ok(Some(store)) = w.local_storage() {
-                let _ = store.set_item("adrift", &a.borrow().snapshot());
+                let app = a.borrow();
+                let _ = store.set_item(key, &app.snapshot());
+                if app.together.is_some() {
+                    let _ = store.set_item("adrift-together-skip", &format!("{}", app.together_skip()));
+                }
             }
         });
         document.add_event_listener_with_callback("visibilitychange", keep.as_ref().unchecked_ref())?;
@@ -140,6 +162,10 @@ pub async fn start() -> Result<(), JsValue> {
         let a = app.clone();
         let key = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
             let k = e.key().to_lowercase();
+            // (Together: holding '.' lets the days pass, as two still fingers do)
+            if k == "." && !e.repeat() {
+                a.borrow_mut().pass_time(true);
+            }
             // without a modifier: h or 0 flies home, Backspace or Delete clears the sea (undoable)
             if !(e.meta_key() || e.ctrl_key() || e.alt_key()) {
                 match k.as_str() {
@@ -162,6 +188,14 @@ pub async fn start() -> Result<(), JsValue> {
         });
         window.add_event_listener_with_callback("keydown", key.as_ref().unchecked_ref())?;
         key.forget();
+        let a = app.clone();
+        let up = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
+            if e.key() == "." {
+                a.borrow_mut().pass_time(false);
+            }
+        });
+        window.add_event_listener_with_callback("keyup", up.as_ref().unchecked_ref())?;
+        up.forget();
     }
 
     // the frame loop
@@ -189,12 +223,22 @@ pub async fn start() -> Result<(), JsValue> {
         if let Ok(frame) = surface.get_current_texture() {
             let view = frame.texture.create_view(&Default::default());
             let t = now(&perf2);
+            let (day, tz) = wall();
+            app2.borrow_mut().set_wall(day, tz);
             app2.borrow_mut().frame(&view, t);
             frame.present();
             // the frame's cost, every five seconds, in the console
             if t - stats_at >= 5.0 {
                 stats_at = t;
                 web_sys::console::log_1(&app2.borrow_mut().stats().into());
+                // (Together keeps its state every few seconds too: a phone may close the page unasked)
+                if together {
+                    if let Ok(Some(store)) = window2.local_storage() {
+                        let app = app2.borrow();
+                        let _ = store.set_item(key, &app.snapshot());
+                        let _ = store.set_item("adrift-together-skip", &format!("{}", app.together_skip()));
+                    }
+                }
             }
         }
         window2.request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref()).unwrap();

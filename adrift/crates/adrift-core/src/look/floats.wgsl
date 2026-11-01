@@ -39,7 +39,8 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     let p = place(f.g);
     let r = float_radius();
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
-    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, 2.4 * r);
+    // (the lit glow reaches past 3 r: the quad must too, or its square shows; Together's lamp stays lit)
+    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, 3.6 * r);
     let c = corner(vi % 6u);
     var o: FloatOut;
     o.local = c * reach;

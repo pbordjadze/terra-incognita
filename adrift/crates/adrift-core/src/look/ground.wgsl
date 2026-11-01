@@ -67,14 +67,16 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let ice = mix(textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.y), 0.0).r,
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
     // the Earth's lights (NASA's Black Marble, Terra's sheet), sampled before any pixel leaves
-    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
+    // (let down by U.pad.y: in Together the sea's lamps are the lights, and the land keeps a trace)
+    let hush = 1.0 - U.pad.y;
+    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r * hush;
     // and their glow, as a long exposure from orbit sees it (R6): the same sheet read a few mips
     // coarser than the pixel's own, a near halo and a wide one, so a city sits in a pool of its own
     // light that spills a little over its coast; drawn from the measured lights, never invented
     let ldims = vec2f(textureDimensions(lightsTex));
     let lod0 = log2(max(max(length(gr.dx * ldims), length(gr.dy * ldims)), 1e-4));
-    let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r;
-    let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r;
+    let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r * hush;
+    let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r * hush;
     if (rr >= 1.0) { return vec4f(page, 1.0); }
 
     // the land: the month's picture, shaded from the north-west

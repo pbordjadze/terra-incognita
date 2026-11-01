@@ -276,6 +276,17 @@ impl CameraControl {
         }
     }
 
+    /// A flight of `duration` seconds (Together's slow approach to your lamp on opening).
+    pub fn fly_to_over(&mut self, to: Camera, now: f64, duration: f64, motion: Motion) {
+        self.spin = (0.0, 0.0);
+        if motion.reduce || duration <= 0.0 {
+            self.camera = to;
+            self.flight = None;
+        } else {
+            self.flight = Some(Flight { from: self.camera, to, start: now, duration });
+        }
+    }
+
     // --- every frame ---
 
     /// Advances the camera's own motion: a flight, a fling, the ride (given where the ridden float

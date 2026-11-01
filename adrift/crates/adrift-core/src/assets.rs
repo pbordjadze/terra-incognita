@@ -43,4 +43,6 @@ pub const FILES: &[&str] = &[
     "eddy.png",
     "eddy-time.png",
     "drifters.bin",
+    // the Earth's lights by night (the ground's night palette, R6; the web shell fetches only this list)
+    "night.jpg",
 ];

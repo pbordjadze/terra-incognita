@@ -6,6 +6,7 @@
 
 pub mod floats;
 pub mod ground;
+pub mod lamps;
 pub mod maybes;
 pub mod sea;
 pub mod silver;
@@ -263,6 +264,12 @@ pub struct LookState {
     pub credits_full: Vec<String>,
     /// The page of credits is open (a tap on the credit line opens it, a tap anywhere closes it).
     pub credits_open: bool,
+    /// Together (painting-company row 199): no date, no panel; everyone else's lamps; the day's
+    /// lamp gathering under a still finger (where, 0..1 through `together::FORM`, and once formed
+    /// how it breathes).
+    pub together: bool,
+    pub others: Vec<crate::together::OtherLamp>,
+    pub forming: Option<(LonLat, f32, f32)>,
 }
 
 /// A lamp's hue by its number (palette.json › hues): amber first, then the others, each a glass
@@ -299,6 +306,7 @@ pub struct Look {
     pub silver: silver::Silver,
     pub floats: floats::Floats,
     pub words: words::Words,
+    pub lamps: lamps::Lamps,
 }
 
 impl Look {
@@ -313,6 +321,7 @@ impl Look {
             silver: silver::Silver::new(gpu, view),
             floats: floats::Floats::new(gpu, view),
             words: words::Words::new(gpu, view),
+            lamps: lamps::Lamps::new(gpu, view),
         }
     }
 
@@ -353,6 +362,16 @@ impl Look {
             .iter()
             .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: if f.followed { f.lit.max(0.85) } else { f.lit }, held: (f.held || f.chosen || f.followed) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
+        self.lamps.prepare(gpu, &state.others);
+        if let Some((at, k, breath)) = state.forming {
+            // the day's lamp gathering: the ring draws in over the rest, then the lamp lights and breathes
+            let hue = lamp_hue(state.floats.iter().map(|f| f.id).max().unwrap_or(0) + 1);
+            if k < 1.0 {
+                fl.push(floats::FloatInstance { g: unit(at), beat: (k * 0.999).clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue, speck: 0.0 });
+            } else {
+                fl.push(floats::FloatInstance { g: unit(at), beat: 1.0, lit: breath, held: 0.0, night: n as u8 as f32, measured: 1.0, hue, speck: 0.0 });
+            }
+        }
         if let Some((at, beat)) = state.resting {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
         }
@@ -374,6 +393,17 @@ impl Look {
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
         // the panel of every lamp out there (R6): where each was put, and which are out
+        if state.together {
+            // (Together: nothing on the screen but the sea and its lamps; the credits page only)
+            if state.credits_open {
+                labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
+            }
+            self.words.date_bounds = None;
+            self.words.credit_bounds = None;
+            self.words.panel_bounds.clear();
+            self.words.prepare(gpu, &labels);
+            return;
+        }
         let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
         labels.extend(self.words.panel(&rows, reading, disc, n));
         if state.credits_open {
@@ -403,6 +433,7 @@ impl Look {
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes) {
         self.wake.draw(rp, view_bind);
+        self.lamps.draw(rp, view_bind);
         self.maybes.draw(rp, view_bind, maybes);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);

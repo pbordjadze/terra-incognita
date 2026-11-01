@@ -467,11 +467,132 @@ fn play(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// Together (painting-company row 199), played headless: the sea opened, the day's lamp gathered
+/// under a still finger and let go, a second lamp refused, the days let pass by a rest off the globe,
+/// the whole Earth, and the next day's visit restored from the kept state. Screenshots in order.
+///
+///     cargo run --release -p adrift-check -- together build/out/together [--size 1179x2556] [--ppp 3]
+fn together(args: &[String]) -> Result<()> {
+    let out = PathBuf::from(&args[0]);
+    std::fs::create_dir_all(&out)?;
+    let size = arg(args, "--size").unwrap_or_else(|| "1179x2556".into());
+    let (w, h) = size.split_once('x').context("--size WxH")?;
+    let (w, h): (u32, u32) = (w.parse()?, h.parse()?);
+    let ppp: f64 = arg(args, "--ppp").map(|s| s.parse()).transpose()?.unwrap_or(3.0);
+    let (_instance, gpu0) = gpu()?;
+    let target = Offscreen::new(&gpu0, w, h);
+    let mut app = App::new(gpu0, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    app.budget.locked = true;
+    app.budget.scale = 1.0;
+    // 1 November 2026, 20:00 UTC, in Eastern time
+    let wall = 9801.0 + 20.0 / 24.0;
+    let tz = -5.0 / 24.0;
+    app.set_together(wall, tz, 0.0);
+    let (pw, ph) = (w as f64 / ppp, h as f64 / ppp);
+    let mut t = 0.0f64;
+    let shot = |app: &mut App, name: &str| -> Result<()> {
+        app.render(&target.view);
+        let px = target.read(&app.gpu);
+        save(&out.join(format!("{name}.png")), w, h, &px)?;
+        println!("{name}: day {:.3}, {} lamps of others, {} yours, lamp ready {}, gestures {}", app.clock.day, app.together.as_ref().map_or(0, |x| x.count(app.clock.day)), app.floats.len(), app.lamp_ready(), app.gesture_state());
+        Ok(())
+    };
+    let run = |app: &mut App, t: &mut f64, secs: f64| {
+        let n = (secs * 30.0).ceil().max(1.0) as usize;
+        for _ in 0..n {
+            *t += secs / n as f64;
+            app.advance(*t);
+        }
+    };
+    let t0 = std::time::Instant::now();
+    app.advance(t);
+    eprintln!("the others brought to the day in {:?}", t0.elapsed());
+    run(&mut app, &mut t, 1.0);
+    shot(&mut app, "01-open")?;
+    // close in on the Bay of Biscay's mouth, the place to set the lamp
+    app.camera.camera = adrift_core::Camera::new(-12.0, 44.0, 3.0);
+    run(&mut app, &mut t, 0.5);
+    shot(&mut app, "02-close")?;
+    let (cx, cy) = (pw / 2.0, ph / 2.0);
+    let finger = |app: &mut App, phase: Phase, t: f64, x: f64, y: f64| app.pointer(PointerEvent { id: 1, phase, x, y, t });
+    finger(&mut app, Phase::Down, t, cx, cy);
+    run(&mut app, &mut t, 0.3);
+    shot(&mut app, "03-rest-0.3s")?;
+    run(&mut app, &mut t, 1.0);
+    shot(&mut app, "04-rest-1.3s")?;
+    run(&mut app, &mut t, 1.4);
+    shot(&mut app, "05-formed")?;
+    finger(&mut app, Phase::Up, t, cx, cy);
+    run(&mut app, &mut t, 0.15);
+    shot(&mut app, "06-let-go")?;
+    run(&mut app, &mut t, 2.0);
+    shot(&mut app, "07-on-the-sea")?;
+    // a second lamp the same day: the ring answers, nothing gathers
+    finger(&mut app, Phase::Down, t, cx + 60.0, cy + 80.0);
+    run(&mut app, &mut t, 3.0);
+    shot(&mut app, "08-no-second-lamp")?;
+    finger(&mut app, Phase::Up, t, cx + 60.0, cy + 80.0);
+    // two fingers resting still let the days pass
+    run(&mut app, &mut t, 1.0);
+    let day0 = app.clock.day;
+    let two = |app: &mut App, phase: Phase, t: f64| {
+        app.pointer(PointerEvent { id: 2, phase, x: cx - 50.0, y: cy + 150.0, t });
+        app.pointer(PointerEvent { id: 3, phase, x: cx + 50.0, y: cy + 150.0, t: t + 0.03 });
+    };
+    two(&mut app, Phase::Down, t);
+    run(&mut app, &mut t, 4.0);
+    shot(&mut app, "09-days-passing")?;
+    if let Some((at, toward, glow)) = app.together.as_ref().and_then(|x| x.brightest(app.clock.day)) {
+        println!("meetings glowing: {}; the brightest at {:.2},{:.2} toward {:.2},{:.2} ({:.0} km), glow {glow:.2}", app.together.as_ref().unwrap().glowing(), at.lon, at.lat, toward.lon, toward.lat, at.distance_m(toward) / 1000.0);
+        let keep = app.camera.camera;
+        app.camera.camera = adrift_core::Camera::new(at.lon, at.lat, 8.0);
+        app.render(&target.view);
+        let px = target.read(&app.gpu);
+        save(&out.join("09b-meeting.png"), w, h, &px)?;
+        app.camera.camera = keep;
+    }
+    run(&mut app, &mut t, 8.0);
+    two(&mut app, Phase::Up, t);
+    run(&mut app, &mut t, 2.0);
+    shot(&mut app, "10-days-passed")?;
+    eprintln!("days let pass: {:.2}", app.clock.day - day0);
+    app.camera.camera = adrift_core::Camera::new(-30.0, 30.0, 1.0);
+    run(&mut app, &mut t, 0.5);
+    shot(&mut app, "11-whole-earth")?;
+    app.camera.camera = adrift_core::Camera::new(120.0, 20.0, 1.0);
+    run(&mut app, &mut t, 0.5);
+    shot(&mut app, "12-whole-earth-pacific")?;
+    // the next visit: kept state restored on a new day
+    let kept = app.snapshot();
+    let skip = app.together_skip();
+    let ready_after = app.lamp_ready();
+    let (_i2, gpu2) = gpu()?;
+    let target2 = &Offscreen::new(&gpu2, w, h);
+    let mut next = App::new(gpu2, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    next.budget.locked = true;
+    next.budget.scale = 1.0;
+    next.restore(&kept);
+    next.set_together(wall + 1.0, tz, skip);
+    let mut t2 = 0.0;
+    run(&mut next, &mut t2, 0.5);
+    next.render(&target2.view);
+    let _ = target2.read(&next.gpu);
+    run(&mut next, &mut t2, 5.0);
+    next.render(&target2.view);
+    let px = target2.read(&next.gpu);
+    save(&out.join("13-next-visit.png"), w, h, &px)?;
+    let f = &next.floats[0];
+    let moved = f.legs[0].at.distance_m(f.at) / 1000.0;
+    println!("13-next-visit: day {:.3}, your lamp {:.1} km from where it was set, lamp ready {} (before the restore {})", next.clock.day, moved, next.lamp_ready(), ready_after);
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("render") if args.len() >= 3 => render(&args[1..]),
         Some("play") if args.len() >= 3 => play(&args[1..]),
+        Some("together") if args.len() >= 2 => together(&args[1..]),
         Some("info") => {
             let (_i, gpu) = gpu()?;
             println!("{:?}", gpu.adapter_info);

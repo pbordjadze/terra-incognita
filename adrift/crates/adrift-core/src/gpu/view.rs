@@ -22,6 +22,8 @@ pub struct View {
     pub rest: f32,
     /// 1 by night (the system's dark appearance, or a scene's).
     pub night: f32,
+    /// How far the land's lights are let down, 0..1 (Together: the sea's lamps are the lights).
+    pub hush: f32,
 }
 
 impl View {
@@ -44,7 +46,7 @@ impl View {
             rot2: [m[2][0] as f32, m[2][1] as f32, m[2][2] as f32, 0.0],
             time: [self.seconds as f32, ma as f32, mb as f32, mix as f32],
             tone: [1.0, if self.clock.running { 1.0 } else { 0.0 }, self.seconds as f32, self.rest],
-            _pad: [self.night, 0.0, 0.0, 0.0],
+            _pad: [self.night, self.hush, 0.0, 0.0],
         }
     }
 }
@@ -79,6 +81,6 @@ struct View {
     rot2: vec4f,
     time: vec4f,    // seconds; this month (0 = January), the next, how far between
     tone: vec4f,    // x how much shows; y 1 while the date runs; z the drawn motion's seconds; w the sea's rest
-    pad: vec4f,     // x 1 by night
+    pad: vec4f,     // x 1 by night; y how far the land's lights are let down
 };
 "#;
