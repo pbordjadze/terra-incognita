@@ -66,8 +66,8 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) k: u32, m: Maybe)
         let other = vec3<f32>(cos(qa) * sin(qo), sin(qa), cos(qa) * cos(qo));
         let km = acos(clamp(dot(own, other), -1.0, 1.0)) * 6371.0;
         together = 1.0 - smoothstep(25.0, 160.0, km);
-        // (from afar, where a self is a soft kernel of the field, the pair's hues simply mix)
-        hue = mix(hue, 0.5 * (M.hue.rgb + M.partner_hue.rgb), together * field);
+        // (R11: never mixed: two clouds over one sea keep their own hues, speck by speck, so orange
+        // and blue read as two clouds side by side and not one brown speckle)
     }
     o.together = together;
     o.hue = hue;
@@ -100,7 +100,7 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     // cooled toward the glass's own pale, as light in water is, while the towns are warm embers
     let cool = vec3<f32>(0.70, 0.90, 1.0);
     let night_hue = mix(i.hue, cool, 0.62);
-    let speck = mix(mix(i.hue, vec3<f32>(1.0), mix(0.72, 0.35, field)), mix(night_hue, vec3<f32>(1.0), mix(0.25, 0.10, field)), n);
+    let speck = mix(mix(i.hue, vec3<f32>(1.0), mix(0.72, 0.18, field)), mix(night_hue, vec3<f32>(1.0), mix(0.25, 0.10, field)), n);
     let soft = exp(-d * d / (0.45 * i.r * i.r));
     // (a low alpha a kernel, so the field is a density: pale where one self passed, the lamp's own
     // colour where many did)

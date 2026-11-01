@@ -328,6 +328,94 @@ pub fn lamp_hue(id: u32) -> [f32; 3] {
     HUES[((id.max(1) - 1) % 8) as usize]
 }
 
+fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
+    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
+fn slerpish(a: [f32; 3], b: [f32; 3], t: f32) -> [f32; 3] {
+    let v = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-9);
+    [v[0] / l, v[1] / l, v[2] / l]
+}
+
+/// A cue's beats (R11), in seconds since it: the worlds flash in, hold, then fold into the chosen;
+/// the lamp glides from where it was to where the chosen world has it (a look-only ease: the state
+/// jumped); a stroke of its hue marks the glide and fades; a ring spreads where it lands.
+const CUE_FOLD: (f32, f32) = (0.15, 0.8);
+const CUE_GLIDE: (f32, f32) = (0.1, 0.75);
+
+/// Where a conducted lamp is drawn: gliding from its old place to its new.
+fn glide(c: &LookCue) -> [f32; 3] {
+    slerpish(unit(c.from), unit(c.at), smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age))
+}
+
+/// A thin ring on the globe round `at`, `radius` points across the screen (at the globe's scale).
+fn ring_on_globe(out: &mut Vec<wake::StrokeInstance>, at: LonLat, radius: f32, disc: [f32; 3], w: f32, a: f32, hue: [f32; 3], night: bool) {
+    let ang = radius / disc[2].max(1.0);
+    let c = unit(at);
+    let up = if c[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+    let e1 = { let v = [up[1] * c[2] - up[2] * c[1], up[2] * c[0] - up[0] * c[2], up[0] * c[1] - up[1] * c[0]]; let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt(); [v[0] / l, v[1] / l, v[2] / l] };
+    let e2 = [c[1] * e1[2] - c[2] * e1[1], c[2] * e1[0] - c[0] * e1[2], c[0] * e1[1] - c[1] * e1[0]];
+    let (ca, sa) = (ang.cos(), ang.sin());
+    let ring: Vec<wake::Pt> = (0..48).map(|j| {
+        let th = j as f32 / 48.0 * std::f32::consts::TAU;
+        let (x, y) = (th.cos() * sa, th.sin() * sa);
+        wake::Pt { p: [c[0] * ca + e1[0] * x + e2[0] * y, c[1] * ca + e1[1] * x + e2[1] * y, c[2] * ca + e1[2] * x + e2[2] * y], w, a, hollow: 0.0 }
+    }).collect();
+    wake::line(out, &ring, hue, false, night, true);
+}
+
+/// A cue drawn (R11): every possible sea at the cue flashed as a speck of the lamp's hue (the ones
+/// that did what the hand did brighter and larger), all folding into the chosen place; the lamp's
+/// glide marked by a stroke; a ring where it lands. Over in about a second and a half.
+fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, reading: f32, disc: [f32; 3]) {
+    let hue = lamp_hue(c.id);
+    let at = unit(c.at);
+    let flash = smooth01(0.0, 0.08, c.age);
+    let pale = if night { [0.55 + 0.45 * hue[0], 0.55 + 0.45 * hue[1], 0.55 + 0.45 * hue[2]] } else { [0.45 + 0.55 * hue[0], 0.45 + 0.55 * hue[1], 0.45 + 0.55 * hue[2]] };
+    let fold = smooth01(CUE_FOLD.0, CUE_FOLD.1, c.age);
+    if fold < 1.0 {
+        let gone = 1.0 - fold * fold;
+        let mut near = vec![false; c.worlds.len()];
+        for &k in &c.near {
+            if let Some(x) = near.get_mut(k as usize - 1) {
+                *x = true;
+            }
+        }
+        // (the others first, the near ones over them)
+        for pass in [false, true] {
+            for (i, w) in c.worlds.iter().enumerate() {
+                if near[i] != pass {
+                    continue;
+                }
+                let p = slerpish(unit(*w), at, fold);
+                // (the others a pale haze of the hue, so two thousand together are a breath and not a
+                // blot; the near ones the lamp's own colour, the hand's choice among them)
+                let (wd, a, h) = if pass { (2.4, 0.95, hue) } else { (1.8, 0.26, pale) };
+                wake::line(out, &[wake::Pt { p, w: wd, a: a * flash * gone, hollow: 0.0 }], h, false, night || !pass, false);
+            }
+        }
+    }
+    // the hand's stroke: from where the lamp was to where it glides, bright, then fading
+    let g = smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age);
+    let stroke_a = 0.9 * (1.0 - smooth01(0.75, 1.5, c.age));
+    if g > 0.0 && stroke_a > 0.0 {
+        let from = unit(c.from);
+        let pts: Vec<wake::Pt> = (0..=16).map(|j| {
+            let t = g * j as f32 / 16.0;
+            wake::Pt { p: slerpish(from, at, t), w: 1.0 + 1.8 * (j as f32 / 16.0), a: stroke_a * (0.3 + 0.7 * j as f32 / 16.0), hollow: 0.0 }
+        }).collect();
+        wake::line(out, &pts, hue, false, night, false);
+    }
+    // where it lands, a ring spreading once
+    let t = ((c.age - CUE_GLIDE.1) / 0.9).clamp(0.0, 1.0);
+    if c.age > CUE_GLIDE.1 && t < 1.0 {
+        let ease = 1.0 - (1.0 - t).powi(3);
+        ring_on_globe(out, c.at, (7.0 + 26.0 * ease) * reading, disc, 2.0 - 1.0 * t, 0.8 * (1.0 - t).powf(1.5), hue, night);
+    }
+}
+
 /// Days of wake drawn (palette.json › sizes.bead.days).
 pub const WAKE_DAYS: usize = 45;
 /// The steps a day in `LookFloat.wake` (the rules step a quarter day).
@@ -386,7 +474,12 @@ impl Look {
                     b.measured = 1.0;
                 }
             }
-            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, 1.0);
+            // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
+            let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade);
+        }
+        for c in &state.cues {
+            cue(&mut lines, c, n, reading, disc);
         }
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
@@ -410,7 +503,7 @@ impl Look {
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
+            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting) {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
@@ -454,18 +547,7 @@ impl Look {
                 continue;
             }
             let ease = 1.0 - (1.0 - t).powi(3);
-            let ang = (9.0 + 34.0 * ease) * reading / disc[2].max(1.0);
-            let c = unit(at);
-            let up = if c[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
-            let e1 = { let v = [up[1] * c[2] - up[2] * c[1], up[2] * c[0] - up[0] * c[2], up[0] * c[1] - up[1] * c[0]]; let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt(); [v[0] / l, v[1] / l, v[2] / l] };
-            let e2 = [c[1] * e1[2] - c[2] * e1[1], c[2] * e1[0] - c[0] * e1[2], c[0] * e1[1] - c[1] * e1[0]];
-            let (ca, sa) = (ang.cos(), ang.sin());
-            let ring: Vec<wake::Pt> = (0..48).map(|j| {
-                let th = j as f32 / 48.0 * std::f32::consts::TAU;
-                let (x, y) = (th.cos() * sa, th.sin() * sa);
-                wake::Pt { p: [c[0] * ca + e1[0] * x + e2[0] * y, c[1] * ca + e1[1] * x + e2[1] * y, c[2] * ca + e1[2] * x + e2[2] * y], w: 2.2 - 1.2 * t, a: 0.85 * (1.0 - t).powf(1.5), hollow: 0.0 }
-            }).collect();
-            wake::line(&mut strokes, &ring, lamp_hue(id), false, n, true);
+            ring_on_globe(&mut strokes, at, (9.0 + 34.0 * ease) * reading, disc, 2.2 - 1.2 * t, 0.85 * (1.0 - t).powf(1.5), lamp_hue(id), n);
         }
         self.strokes.prepare(gpu, &strokes);
         if state.credits_open {

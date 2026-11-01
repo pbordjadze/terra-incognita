@@ -450,26 +450,19 @@ impl Words {
 
     /// The words of an exported frame (R9): the clip is the sea and its lamps, so the chrome stays out
     /// (the panel, the date's band with its rule and marker, the credits, the recording's mark) and only
-    /// the date is kept, a quiet caption, 15 points, pale on a soft dark halo as a subtitle is. Placed
-    /// in the clip's window (`clip`, points x, y, w, h: R10, `LookState.clip`): under the globe if it
-    /// fits there, never in the window's lowest sixth (where a phone's player lays its own words and
-    /// buttons). Through the clip's last beat (`ending`) it grows a touch quieter. `date_bounds` keeps
-    /// the live screen's (nothing is touched in a clip).
+    /// the date is kept, a quiet caption, 15 points, on the paper under the globe in the clip's window
+    /// (`clip`, points x, y, w, h), or not at all when the globe fills the clip (R11). Through the clip's
+    /// last beat (`ending`) it grows a touch quieter. `date_bounds` keeps the live screen's.
     pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, clip: [f32; 4], reading: f32, disc: [f32; 3], night: bool, ending: f32, labels: &[GlyphInstance]) {
-        let under = disc[1] + disc[2] + 40.0 * reading;
-        let foot = under.min(clip[1] + clip[3] * (1.0 - 1.0 / 6.0));
-        // (as a film's subtitle: pale ink on a soft dark halo, which reads on sea, land and page alike;
-        // below the globe, on the page, the page's own soft ink on a halo of the page)
-        let over_globe = foot - 14.0 * reading < disc[1] + disc[2];
+        // on the paper under the globe, or not at all (R11): over the globe it lay on the land or the
+        // sea as a sticker; a close clip is the sea alone and its story is the lamps
+        let foot = disc[1] + disc[2] + 30.0 * reading;
         let quiet = 1.0 - 0.25 * ending.clamp(0.0, 1.0);
-        let (ink, halo) = if over_globe {
-            ([0.976, 0.973, 0.957, 0.95 * quiet], [0.063, 0.094, 0.157, 0.42 * quiet])
-        } else if night {
-            ([0.722, 0.776, 0.831, 0.95 * quiet], [0.055, 0.063, 0.086, 0.92 * quiet])
-        } else {
-            ([0.243, 0.298, 0.353, 0.95 * quiet], [0.96, 0.95, 0.92, 0.92 * quiet])
-        };
-        let mut glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 15.0 * reading, ink, tracking: 0.02 }, clip[0] + clip[2] / 2.0, foot, halo);
+        let mut glyphs = Vec::new();
+        if foot + 6.0 * reading <= clip[1] + clip[3] - 10.0 * reading {
+            let (ink, halo) = if night { ([0.722, 0.776, 0.831, 0.95 * quiet], [0.055, 0.063, 0.086, 0.92 * quiet]) } else { ([0.243, 0.298, 0.353, 0.95 * quiet], [0.96, 0.95, 0.92, 0.92 * quiet]) };
+            glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 15.0 * reading, ink, tracking: 0.02 }, clip[0] + clip[2] / 2.0, foot, halo);
+        }
         glyphs.extend_from_slice(labels);
         self.prepare(gpu, &glyphs);
     }
