@@ -1214,6 +1214,15 @@ impl App {
             exporting: self.exporting,
             opening: if self.exporting { self.clip_phase.0 } else { 1.0 },
             ending: if self.exporting { self.clip_phase.1 } else { 0.0 },
+            lamp_rings: if self.exporting {
+                Vec::new()
+            } else {
+                // (a ring within a few km of a lamp: a tap on it or on its mark)
+                self.ripples
+                    .iter()
+                    .filter_map(|r| self.floats.iter().filter(|f| f.born(self.clock.day)).find(|f| f.at.distance_m(r.at) < 30_000.0).map(|f| (f.id, f.at, (self.seconds - r.when) as f32)))
+                    .collect()
+            },
             panel_press: self.gestures.panel_pressing_since(self.now).map(|(id, secs)| (id, crate::touch::motion::thicken(secs) as f32)),
             clip: if self.exporting {
                 Some([0.0, 0.0, (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32, (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32])
