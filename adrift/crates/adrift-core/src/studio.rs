@@ -399,9 +399,9 @@ pub const COAST_FAR_KM: f64 = 450.0;
 
 /// How far to look for land, km (R17), and how the clip shows it: the nearest coast at `COAST_SEEN`
 /// of the half-width, but never more than `COAST_PULL` times wider than the pair's own frame.
-pub const LAND_LOOK_KM: f64 = 1000.0;
+pub const LAND_LOOK_KM: f64 = 500.0;
 pub const COAST_SEEN: f64 = 0.9;
-pub const COAST_PULL: f64 = 2.5;
+pub const COAST_PULL: f64 = 1.4;
 
 /// The centre of the lamps' smallest circle (their mean direction for two).
 pub fn lamps_centre(lamps: &[crate::model::LonLat]) -> Option<crate::model::LonLat> {
@@ -523,7 +523,7 @@ pub const JOURNEY_HOLD_OUT: f64 = 2.5;
 /// and height (above and below its middle, after the lift): clear of the edges and the lower third.
 pub const HOLD_X: f64 = 0.42;
 pub const HOLD_UP: f64 = 0.44;
-pub const HOLD_DOWN: f64 = 0.4;
+pub const HOLD_DOWN: f64 = 0.25;
 
 /// A journey's braid is held from this share of its During part, eased over `BRAID_EASE` (R16).
 pub const BRAID_FROM: f64 = 0.6;
