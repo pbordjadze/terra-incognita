@@ -685,3 +685,29 @@ at 20 km and zoom 100 the clip held the lamps and lost the dance's lines. A jour
 held in the clip, crossings keep their hues; the marks at rest are 62% size and 55% alpha until a
 lamp is chosen. `adrift-check journey` writes the camera trace; `tools/adrift/lamp_in_clip.py`
 reads the trace's lamps (fill, centre, the lower third, out of frame).
+
+## 22. R15 opens: the whole clip a dance (Nov 1, 19:00 UTC)
+
+Round 14's critic: the dance clip's last third is the edit ("two colours braiding and looping,
+almost romantic"), the first two thirds a camera chasing two lamps apart along a coast, their lines
+off the frame, sharp elbows where a lamp meets the coast, a still opening and an ending that stops
+mid-stroke ("skip to the end, that's where they dance"). Colours: a clip keeps each lamp's id, and
+its hue is its id's, so the reader's blue and purple stay blue and purple.
+
+- *Motion*: framing that holds the pair and their recent lines, pulling back rather than panning;
+  a wider opening easing in; an ending that pulls out to the dance's shape; the hand take framed as
+  the journey is.
+- *Truth*: a bolder pace, so the clip's time goes where the dance is; the coast hold's motion smooth
+  where it is the path's own; a demo pair whose dance starts early.
+- *Visual*: no hard elbows in the drawn line; a lively first beat; the marks no longer chrome.
+
+**R15 merged (Nov 1, 19:20 UTC).** Truth 478fb70, Visual 9a0d7bb, Motion e80e4d5. The coast lets a
+lamp slide (law 2, `Rules::slide`: the step's and the eddy's along-shore part kept; laws 0 and 1
+pinned by digests, so every lamp kept before goes on as it did). The pace bolder (`PACE_RANGE` 20,
+winding and turning weighted most, eased over a second of clip time). `lamps/dance-early.txt`, an
+Agulhas pair that braids from its first days, the demo. Lines resampled and eased so a tight turn
+draws as a bend, ending at the lamp. A clip's first beat breathes (the lamps' glow, the date fading
+in). The marks draw nothing at rest (their cells, words and press-to-reveal kept). The clip frames
+the pair and their last 15 days of line, its centre on a slow spring and its zoom held so every lamp
+and line stays clear of the edges and the lower third: it pulls back rather than pans; it opens three
+times wider and eases in over 2.4 s; a journey's end beat (2.5 s) pulls out to the whole lines.

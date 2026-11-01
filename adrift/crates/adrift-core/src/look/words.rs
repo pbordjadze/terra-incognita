@@ -344,16 +344,19 @@ impl Words {
         let top = PANEL_TOP * reading;
         let start = rows.len().saturating_sub(PANEL_ROWS);
         let any_front = rows.iter().any(|r| r.front);
-        // at rest (R14: nothing chosen, nothing pressed) the marks are small and faint, a quiet note
-        // in the corner rather than chrome; a lamp chosen, followed or pressed brings them up whole.
-        // The touch cells stay full size, so they are as easy to find by touch
+        // a lamp chosen, followed, its cloud out or a mark pressed brings the marks up whole
         let awake = rows.iter().any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
-        let (k_size, k_alpha) = if awake { (1.0, 1.0) } else { (0.62, 0.55) };
+        // (R15: at rest nothing at all is drawn: the corner is the globe's; a touch on a mark's cell
+        // still answers, presses it into view, and chooses its lamp, and VoiceOver reads every mark)
+        let (k_size, k_alpha) = (1.0, 1.0);
         for (i, r) in rows[start..].iter().enumerate() {
             let (cx, cy) = (x0 + ((i % PANEL_ACROSS) as f32 + 0.5) * cell, top + ((i / PANEL_ACROSS) as f32 + 0.5) * cell);
             self.panel_bounds.push((r.id, [cx - cell / 2.0, cy - cell / 2.0, cell, cell]));
             let how = format!("{}{}", if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" }, if r.kept { ", kept" } else { "" });
             self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
+            if !awake {
+                continue;
+            }
             let hue = super::lamp_hue(r.id);
             let quiet = k_alpha * if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
             // the journey in the cell: its places flattened round their middle (east scaled by the
@@ -478,11 +481,13 @@ impl Words {
     /// the date is kept, a quiet caption, 15 points, on the paper under the globe in the clip's window
     /// (`clip`, points x, y, w, h), or not at all when the globe fills the clip (R11). Through the clip's
     /// last beat (`ending`) it grows a touch quieter. `date_bounds` keeps the live screen's.
-    pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, clip: [f32; 4], reading: f32, disc: [f32; 3], night: bool, ending: f32, labels: &[GlyphInstance]) {
+    pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, clip: [f32; 4], reading: f32, disc: [f32; 3], night: bool, ending: f32, opening: f32, labels: &[GlyphInstance]) {
         // on the paper under the globe, or not at all (R11): over the globe it lay on the land or the
         // sea as a sticker; a close clip is the sea alone and its story is the lamps
         let foot = disc[1] + disc[2] + 30.0 * reading;
-        let quiet = 1.0 - 0.25 * ending.clamp(0.0, 1.0);
+        // (fading in through the clip's opening beat, R15, and a touch quieter through its last)
+        let o = opening.clamp(0.0, 1.0);
+        let quiet = (1.0 - 0.25 * ending.clamp(0.0, 1.0)) * o * o * (3.0 - 2.0 * o);
         let mut glyphs = Vec::new();
         if foot + 6.0 * reading <= clip[1] + clip[3] - 10.0 * reading {
             let (ink, halo) = if night { ([0.722, 0.776, 0.831, 0.95 * quiet], [0.055, 0.063, 0.086, 0.92 * quiet]) } else { ([0.243, 0.298, 0.353, 0.95 * quiet], [0.96, 0.95, 0.92, 0.92 * quiet]) };

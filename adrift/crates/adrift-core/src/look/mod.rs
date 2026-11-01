@@ -518,7 +518,7 @@ impl Look {
             }
             // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
             let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
-            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy);
+            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy, 1.0 / disc[2].max(1.0));
         }
         // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
         // holds its breath, a thin ring of its hue drawn in close and swelling slowly, so the hold is
@@ -554,13 +554,16 @@ impl Look {
         // brightening (what the reader just did) settle through the last beat, eased, so the clip
         // ends on the lamps alone; a finger resting on the sea (the press ring) is never in a clip
         let settle = if state.exporting { let e = state.ending.clamp(0.0, 1.0); 1.0 - e * e * (3.0 - 2.0 * e) } else { 1.0 };
+        // the clip's first beat (R15): the lamps' glow breathes in and out once through the still
+        // opening, so the first second already moves
+        let breathe_in = if state.exporting && state.opening < 1.0 { (state.opening.clamp(0.0, 1.0) * std::f32::consts::PI).sin() } else { 0.0 };
         // a finger resting on a lamp's panel mark (R10): the lamp answers on the globe, lit and ringed
         // as the rest thickens, so the mark is found on the sea
         let pressed = |id: u32| if state.exporting { 0.0 } else { state.panel_press.filter(|p| p.0 == id).map_or(0.0, |p| 0.35 + 0.65 * p.1.clamp(0.0, 1.0)) };
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
+            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting) {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
@@ -589,7 +592,7 @@ impl Look {
         if state.exporting {
             let clip = state.clip.unwrap_or([0.0, 0.0, width, height]);
             self.strokes.prepare(gpu, &strokes);
-            self.words.prepare_caption(gpu, &state.date, clip, reading, disc, n, state.ending, &labels);
+            self.words.prepare_caption(gpu, &state.date, clip, reading, disc, n, state.ending, state.opening, &labels);
             return;
         }
         labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, state.song, &mut strokes));

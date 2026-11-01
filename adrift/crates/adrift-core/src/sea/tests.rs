@@ -901,11 +901,11 @@ fn law_zero_is_the_old_flight() {
 #[test]
 fn the_current_law_spins() {
     let r = rules();
-    assert_eq!(super::rules::LAW, 1);
+    assert_eq!(super::rules::LAW, 2);
     assert_ne!(law_digest(&r, 1), LAW_ZERO_GOLDEN, "law 1 has the spinning eddies");
     let d = r.put(LonLat { lon: -40.0, lat: 38.0 }, 100.0, 3, 5);
     for k in 0..64 {
-        let (a, b) = (r.flight(d, 100.0, 0.25, 3, k).drift, r.flight_under(1, d, 100.0, 0.25, 3, k).drift);
+        let (a, b) = (r.flight(d, 100.0, 0.25, 3, k).drift, r.flight_under(super::rules::LAW, d, 100.0, 0.25, 3, k).drift);
         assert_eq!(a, b);
     }
 }
@@ -934,9 +934,9 @@ fn the_gpu_keeps_the_law() {
     let textures = Textures::load(&gpu, &assets, 6).unwrap();
     let r = rules();
     let n = 512u32;
-    let start = LonLat { lon: -40.0, lat: 38.0 };
     let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
-    for law in [0u32, 1] {
+    // the open sea, and beside the coast where the dance's lamp met it (law 2's slide)
+    for (start, law) in [(-40.0, 38.0), (152.95, -32.0)].into_iter().flat_map(|(lon, lat)| [0u32, 1, 2].map(|l| (LonLat { lon, lat }, l))) {
         let mut cpu: Vec<Drift> = (1..=n).map(|k| r.put(start, JULY, 0, k)).collect();
         maybes.seed(&gpu, &cpu.iter().map(|d| GpuPath { lon: d.at.lon as f32, lat: d.at.lat as f32, eddy_u: d.eddy.0, eddy_v: d.eddy.1, ..Default::default() }).collect::<Vec<_>>());
         let mut day = JULY;
@@ -949,7 +949,40 @@ fn the_gpu_keeps_the_law() {
         }
         let g = maybes.read(&gpu, n);
         let worst = cpu.iter().zip(&g).map(|(c, p)| distance_km(c.at.lon as f32, c.at.lat as f32, p.lon, p.lat)).fold(0.0f32, f32::max);
-        eprintln!("law {law}: the GPU's maybes within {worst:.4} km of the CPU's after 4 days");
+        eprintln!("law {law} from {start:?}: the GPU's maybes within {worst:.4} km of the CPU's after 4 days");
         assert!(worst < 0.5);
     }
+}
+
+/// R15: the lamps made under law 1 (builds 50 to 5x) keep it, bit for bit: pinned digests of the
+/// flight and of paths along coasts, computed before law 2 was written.
+#[test]
+fn law_one_is_kept() {
+    let r = rules();
+    assert_eq!(law_digest(&r, 1), 0x4efb_5708_0c88_3b44);
+    assert_eq!(coast_digest(&r, 1), 0xdbf7_a53c_9fc6_970d);
+    assert_ne!(coast_digest(&r, 2), 0xdbf7_a53c_9fc6_970d, "law 2's coast is another");
+}
+
+/// A digest of paths along coasts (the dance's lamps and others put near shores), under `law`: every
+/// mark of 60 days on the quarter-day grid. Pins the coast's handling for each law.
+fn coast_digest(r: &Rules, law: u32) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut eat = |x: u64| {
+        h ^= x;
+        h = h.wrapping_mul(0x100_0000_01b3);
+    };
+    let day0 = 9131.0 + 11.0 * 30.44 + 1.0;
+    for (lon, lat) in [(156.75, -29.0), (157.15, -29.0), (-75.3, 35.0), (-9.6, 38.6), (151.5, -33.5)] {
+        let mut d = r.put(LonLat { lon, lat }, day0, 1, 0);
+        let mut day = day0;
+        while day < day0 + 60.0 {
+            let next = crate::app::grid_next(day);
+            d = r.flight_under(law, d, day, next - day, 1, 0).drift;
+            day = next;
+            eat(d.at.lon.to_bits());
+            eat(d.at.lat.to_bits());
+        }
+    }
+    h
 }
