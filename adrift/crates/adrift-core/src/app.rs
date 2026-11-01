@@ -1656,7 +1656,7 @@ impl App {
         let mut before = Vec::new();
         for id in targets {
             let Some(w) = self.conduct.get(&id) else { continue };
-            let Some(choice) = w.choose(gesture, day, self.clock.rate, &project) else { continue };
+            let Some(choice) = w.choose(&self.rules, gesture, day, self.clock.rate, &project) else { continue };
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
             let li = w.leg_index;

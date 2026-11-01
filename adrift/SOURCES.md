@@ -242,6 +242,25 @@ often loop in coherent rings. A spinning random flight (Veneziani, Griffa, Reyno
 2004: the OU velocity rotated at a measured rate) would turn the stalls into loops. Worth
 measuring the spin from the drifters' tracks the way `eddy.py` measures T.
 
+## The spinning eddies (R12)
+
+| | Measured (the record) | Drawn (our choices) |
+| --- | --- | --- |
+| That drifters loop | the bundled drifters' daily tracks (1979 runs), their velocity less a 15-day running mean, in 10-day windows: 41% turn consistently (lag-a-day rotation coherence over 0.7, more than 0.25 rad a day) at a median 0.58 rad a day (a loop in 11 days), two in three anticyclonic | |
+| How much of that is chance | the same statistic on a plain random flight (T = 3 days, no spin, sampled daily) gives 39%, half each sense: most of the measured "looping" is the wander's chance turning; the anticyclonic excess (65% against 50%) is the signal | a share of the sea, `SPIN_SHARE` 15% of world k's 1° cells (each drawn afresh every 30 days at its own phase), is an eddy spinning at 0.58 rad a day, 80% of them anticyclonic: rough, from the excess, and said so |
+| The flight in one | | Veneziani et al. (2004)'s spinning random flight: the eddy velocity turns at the spin as it decays, at the measured variance (loopers in the record run only a fifth faster than the rest), so a float there curls, and its spread is less (K / (1 + (Omega T)^2)). The other 85% of the sea is unchanged, and every spread and record test still passes |
+
+**What it shows, and what it can't.** With the measured memory (T about 3 days) against the spin
+(Omega T about 1.6) the velocity forgets before it closes a circle. A spinning world curls (a hook
+or a half loop over a week) rather than tracing rings, and in a jet (the Gulf Stream at 1 m/s) the
+curl is a wiggle on the drift. A circle cue picks such a world, of the circle's sense
+(`conduct::tests::a_circle_picks_a_world_that_loops_that_way`: in the open Atlantic both senses'
+picks are spinning worlds, curling on beyond 97% of the worlds for six days after the cue;
+`tools/adrift/data/critics/r12/circle-cue.png`). The curl is 20 to 40 km across, a few points to a
+dozen at a take's zoom. Big visible loops are Gulf Stream rings and the like (100 km, orbits near
+1 m/s): coherent eddies the regional statistics average away. They would need a census of them
+(e.g. Chelton's eddy atlas, which tracks each eddy's centre, radius and speed), not more dice.
+
 ## Whales (not in the app; what it would take)
 
 Whales could inhabit Adrift honestly only as the silver drifter does: real tagged animals, drawn
