@@ -442,6 +442,85 @@ impl Words {
         self.prepare(gpu, &glyphs);
     }
 
+    /// The words of an exported frame (R9): the clip is the sea and its lamps, so the chrome stays out
+    /// (the panel, the date's band with its rule and marker, the credits, the recording's mark) and only
+    /// the date is kept, a quiet caption at the foot where the date stands live (inside the clip's 9:16 window) (time passing is the
+    /// clip's story), 15 points, pale on a soft dark halo as a subtitle is. `date_bounds` keeps the
+    /// live screen's (nothing is touched in a clip).
+    pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, height: f32, width: f32, reading: f32, disc: [f32; 3], night: bool, labels: &[GlyphInstance]) {
+        let under = disc[1] + disc[2] + 40.0 * reading;
+        // inside the clip's 9:16 window (the app's `clip_window`: as large as the screen allows,
+        // centred on the globe vertically, clamped to the screen), 28 points above its foot at most
+        let wh = if height / width >= 16.0 / 9.0 { width * 16.0 / 9.0 } else { height };
+        let top = (disc[1] - wh / 2.0).clamp(0.0, (height - wh).max(0.0));
+        let foot = under.min(height - 72.0 * reading).min(top + wh - 28.0 * reading);
+        // (as a film's subtitle: pale ink on a soft dark halo, which reads on sea, land and page alike;
+        // a halo of the sea's tone lay on the land as a sticker)
+        // below the globe, on the page, the page's own soft ink on a halo of the page
+        let over_globe = foot - 14.0 * reading < disc[1] + disc[2];
+        let (ink, halo) = if over_globe {
+            ([0.976, 0.973, 0.957, 0.95], [0.063, 0.094, 0.157, 0.42])
+        } else if night {
+            ([0.722, 0.776, 0.831, 0.95], [0.055, 0.063, 0.086, 0.92])
+        } else {
+            ([0.243, 0.298, 0.353, 0.95], [0.96, 0.95, 0.92, 0.92])
+        };
+        let mut glyphs = self.face.layout(&Line { text: date, style: Style::Regular, size: 15.0 * reading, ink, tracking: 0.02 }, width / 2.0, foot, halo);
+        glyphs.extend_from_slice(labels);
+        self.prepare(gpu, &glyphs);
+    }
+
+    /// The record control (R9; Motion's gestures: a tap starts a take, a touch while recording ends
+    /// it and exports, a rest exports the newest again), top right opposite the panel, on the live
+    /// screen only. At rest a small ring of soft ink round a small muted vermilion lamp: there, never
+    /// shouting. Recording, the lamp lit and breathing, and the ring a string of beads filling round
+    /// toward the take's longest (`studio::TAKE_MAX`, 60 s), the seconds beside it in small italic.
+    /// Its rect, 44 reading points square whatever is drawn, goes to `record_bounds` for Motion's probe.
+    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool) -> Vec<GlyphInstance> {
+        let side = 44.0 * reading;
+        let (x, y) = (width - 16.0 * reading - side, 52.0);
+        self.record_bounds = Some([x, y, side, side]);
+        let (cx, cy) = (x + side / 2.0, y + side / 2.0);
+        let red = if night { [0.937, 0.427, 0.353] } else { [0.835, 0.322, 0.247] };
+        let soft = if night { [0.722, 0.776, 0.831] } else { [0.243, 0.298, 0.353] };
+        let mut out = Vec::new();
+        // a glyph centred on (px, py): the atlas's ● and ○ sit on the baseline, their middle 0.36 of
+        // the size above it
+        let dot = |out: &mut Vec<GlyphInstance>, g: &str, px: f32, py: f32, size: f32, ink: [f32; 4]| {
+            out.extend(self.face.layout(&Line { text: g, style: Style::Regular, size, ink, tracking: 0.0 }, px, py + 0.36 * size, [0.0; 4]));
+        };
+        let ring_r = 9.0 * reading;
+        match recording {
+            None => {
+                dot(&mut out, "\u{25cb}", cx, cy - 0.3 * reading, 25.0 * reading, [soft[0], soft[1], soft[2], 0.45]);
+                dot(&mut out, "\u{25cf}", cx, cy, 8.0 * reading, [red[0], red[1], red[2], 0.55]);
+            }
+            Some(secs) => {
+                let breath = 0.5 + 0.5 * (now * 2.6).sin();
+                let full = (secs / crate::studio::TAKE_MAX as f32).clamp(0.0, 1.0);
+                // the ring: 40 beads round the lamp, those the take has filled in vermilion, the rest
+                // faint, starting at the top and running clockwise
+                let n = 40;
+                for i in 0..n {
+                    let t = i as f32 / n as f32;
+                    let ang = t * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
+                    let on = t < full;
+                    let ink = if on { [red[0], red[1], red[2], 0.9] } else { [soft[0], soft[1], soft[2], 0.25] };
+                    dot(&mut out, "\u{25cf}", cx + ring_r * ang.cos(), cy + ring_r * ang.sin(), 3.2 * reading, ink);
+                }
+                dot(&mut out, "\u{25cf}", cx, cy, 15.0 * reading, [red[0], red[1], red[2], 0.12 + 0.14 * breath]);
+                dot(&mut out, "\u{25cf}", cx, cy, 8.5 * reading, [red[0], red[1], red[2], 0.8 + 0.2 * breath]);
+                let s = secs.max(0.0) as u32;
+                let text = format!("{}:{:02}", s / 60, s % 60);
+                let size = 10.5 * reading;
+                let line = Line { text: &text, style: Style::Italic, size, ink: [soft[0], soft[1], soft[2], 0.9], tracking: 0.0 };
+                let tw = self.face.width(&line);
+                out.extend(self.face.layout(&line, x - 2.0 * reading - tw / 2.0, cy + 0.33 * size, [0.0; 4]));
+            }
+        }
+        out
+    }
+
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {
         if self.instances.count == 0 { return; }
         pass.set_pipeline(&self.pipeline);

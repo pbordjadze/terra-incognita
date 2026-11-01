@@ -139,3 +139,19 @@ and `look_state()`:
   column lies on one quiet card of the page's tone (a halo per glyph lay as boxes at this size).
 - Studies: `studies/r8-cloud-lamp-neither{,-night}-phone-half.png` (one of each, two followed),
   `studies/r8-two-lamps-followed-before-after-phone.png`; scenes `scenes/r8-*.json`.
+
+## R9: the studio's first tool, a take and its clip
+
+- **The clip** (`LookState.exporting`): the sea and its lamps, nothing of the screen's chrome (no
+  panel, no date band, no credits page, no record control); the date alone, 15 points at the foot
+  where it stands live, since time passing is a clip's story. Over the globe it is pale on a soft dark
+  halo, as a film's subtitle (a halo of the sea's tone lay on the land as a sticker); on the page, the
+  page's own ink (`Words::prepare_caption`).
+- **The record control** (`Words::record_control`, Motion's gestures): top right, opposite the panel,
+  its rect 44 reading points square at y 52 in `record_bounds`. At rest a small soft ring round a
+  muted vermilion lamp; recording, the lamp lit and breathing and a ring of forty beads filling
+  clockwise toward the take's longest (`studio::TAKE_MAX`), the seconds beside it in small italic.
+  Never in a clip.
+- Studies: `studies/r9-live-recording-vs-clip-phone-half.png` (the live screen at the take's end, and
+  the clip's last frame, 9:16, its caption inside the window), `studies/r9-record-control-idle-recording-phone.png`; the plan is
+  `adrift-check/plans/take-and-export.json`.
