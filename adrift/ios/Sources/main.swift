@@ -44,6 +44,7 @@ final class AdriftView: UIView {
         adrift_set_night(shell, traitCollection.userInterfaceStyle == .dark)
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("adrift.json").path
         docs.withCString { adrift_store(shell, $0) }
+        restoreSong()
         NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
             if let shell = self?.shell { adrift_pause(shell) }
         }
@@ -74,7 +75,96 @@ final class AdriftView: UIView {
         adrift_frame(shell, link.targetTimestamp)
         if adrift_take_haptic(shell) { haptic.impactOccurred() }
         if adrift_take_export(shell) { exportTake() }
+        var picked: UInt32 = 0, takes: UInt32 = 0, chosen: UInt32 = 0, kept: UInt32 = 0
+        if adrift_menu(shell, &picked, &takes, &chosen, &kept), !exporting { studioMenu(picked: picked, takes: takes, chosen: chosen, kept: kept) }
+        let recording = adrift_recording(shell)
+        if recording != wasRecording { wasRecording = recording; songFollows(recording) }
         if UIAccessibility.isVoiceOverRunning { refreshPanelElements(link.targetTimestamp) }
+    }
+
+    // ---- the song (R12): an audio file opened into Adrift (from Files, or another app's share sheet)
+    // plays from its start whenever a take begins and stops when it ends; the export lays it under
+    // the clip from the take's first moment, fading over the clip's last beat. Kept between launches.
+
+    var wasRecording = false
+    var song: AVAudioPlayer?
+    var songURL: URL?
+
+    static var songDir: URL { FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("song", isDirectory: true) }
+
+    /// Takes the file as the song, copying it in; a file that won't play is let go.
+    func setSong(_ url: URL) {
+        let fm = FileManager.default
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        try? fm.removeItem(at: Self.songDir)
+        try? fm.createDirectory(at: Self.songDir, withIntermediateDirectories: true)
+        let dest = Self.songDir.appendingPathComponent(url.lastPathComponent)
+        do { try fm.copyItem(at: url, to: dest) } catch { NSLog("adrift: song not copied: \(error)"); return }
+        loadSong(dest)
+    }
+
+    func loadSong(_ url: URL) {
+        guard let player = try? AVAudioPlayer(contentsOf: url) else { NSLog("adrift: song won't play"); return }
+        player.prepareToPlay()
+        song = player
+        songURL = url
+        if let shell { url.deletingPathExtension().lastPathComponent.withCString { adrift_set_song(shell, $0) } }
+    }
+
+    /// The song kept from before, if any.
+    func restoreSong() {
+        let files = (try? FileManager.default.contentsOfDirectory(at: Self.songDir, includingPropertiesForKeys: nil)) ?? []
+        if let first = files.first { loadSong(first) }
+    }
+
+    func songFollows(_ recording: Bool) {
+        guard let song else { return }
+        if recording {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try? AVAudioSession.sharedInstance().setActive(true)
+            song.currentTime = 0
+            song.play()
+        } else {
+            song.stop()
+        }
+    }
+
+    /// The written clip with the song laid under it from `start` for `length` seconds, fading over the
+    /// last second; calls back with the new file, or the clip as it was if anything fails.
+    func withSong(_ clip: URL, start: Double, length: Double, done: @escaping (URL) -> Void) {
+        guard let songURL else { done(clip); return }
+        let comp = AVMutableComposition()
+        let video = AVURLAsset(url: clip)
+        let audio = AVURLAsset(url: songURL)
+        guard let vt = video.tracks(withMediaType: .video).first,
+              let at = audio.tracks(withMediaType: .audio).first,
+              let cv = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
+              let ca = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        else { done(clip); return }
+        let scale: CMTimeScale = 600
+        let videoRange = CMTimeRange(start: .zero, duration: video.duration)
+        let songLength = min(length, audio.duration.seconds)
+        do {
+            try cv.insertTimeRange(videoRange, of: vt, at: .zero)
+            if songLength > 0 {
+                try ca.insertTimeRange(CMTimeRange(start: .zero, duration: CMTime(seconds: songLength, preferredTimescale: scale)), of: at, at: CMTime(seconds: start, preferredTimescale: scale))
+            }
+        } catch { done(clip); return }
+        let mix = AVMutableAudioMix()
+        let params = AVMutableAudioMixInputParameters(track: ca)
+        let fade = min(1.0, songLength)
+        params.setVolumeRamp(fromStartVolume: 1, toEndVolume: 0, timeRange: CMTimeRange(start: CMTime(seconds: start + songLength - fade, preferredTimescale: scale), duration: CMTime(seconds: fade, preferredTimescale: scale)))
+        mix.inputParameters = [params]
+        let out = clip.deletingPathExtension().appendingPathExtension("song.mp4")
+        try? FileManager.default.removeItem(at: out)
+        guard let session = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else { done(clip); return }
+        session.outputURL = out
+        session.outputFileType = .mp4
+        session.audioMix = mix
+        session.exportAsynchronously {
+            DispatchQueue.main.async { done(session.status == .completed ? out : clip) }
+        }
     }
 
     // ---- the panel's marks for VoiceOver (R10): the marks carry no words on screen; each is an
@@ -122,11 +212,74 @@ final class AdriftView: UIView {
 
     var exporting = false
     let spinner = UIActivityIndicatorView(style: .large)
+    let progress = UIProgressView(progressViewStyle: .default)
 
-    func exportTake() {
+    // ---- the studio's menu (R13): a rest on the record control offers what can be made. A journey
+    // clip of the chosen lamps (or every lamp out) at a length picked here, made with no hand in it;
+    // the last take again; the lamps copied as text (exact: pasted on any phone they go on the same)
+    // or pasted back.
+
+    func studioMenu(picked: UInt32, takes: UInt32, chosen: UInt32, kept: UInt32) {
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        let lamps = picked == 1 ? "this lamp" : "these \(picked) lamps"
+        if picked > 0 {
+            sheet.addAction(UIAlertAction(title: "A clip of \(lamps)' journey", style: .default) { [weak self] _ in self?.journeyLengths() })
+        }
+        if takes > 0 {
+            sheet.addAction(UIAlertAction(title: "The last take again", style: .default) { [weak self] _ in self?.exportTake() })
+        }
+        // a lamp kept for good stays through a clear-all and every update (R13)
+        let these = chosen == 1 ? "this lamp" : "these \(chosen) lamps"
+        if chosen > 0 && kept < chosen {
+            sheet.addAction(UIAlertAction(title: "Keep \(these)", style: .default) { [weak self] _ in if let s = self?.shell { _ = adrift_keep(s, true) } })
+        } else if chosen > 0 {
+            sheet.addAction(UIAlertAction(title: "Let \(these) go", style: .default) { [weak self] _ in if let s = self?.shell { _ = adrift_keep(s, false) } })
+        }
+        if picked > 0 {
+            sheet.addAction(UIAlertAction(title: "Copy \(lamps)", style: .default) { [weak self] _ in self?.copyLamps() })
+        }
+        if UIPasteboard.general.string?.hasPrefix("adrift lamps") == true {
+            sheet.addAction(UIAlertAction(title: "Paste lamps", style: .default) { [weak self] _ in self?.pasteLamps() })
+        }
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(sheet)
+    }
+
+    func journeyLengths() {
+        let sheet = UIAlertController(title: "How long?", message: nil, preferredStyle: .actionSheet)
+        for (title, secs) in [("30 seconds", 30.0), ("1 minute", 60.0), ("2 minutes", 120.0), ("4 minutes", 240.0), ("5 minutes", 300.0)] {
+            sheet.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in self?.exportTake(journey: secs) })
+        }
+        sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(sheet)
+    }
+
+    func copyLamps() {
+        guard let shell else { return }
+        let n = adrift_lamps_text(shell, nil, 0)
+        guard n > 0 else { return }
+        var buf = [UInt8](repeating: 0, count: n + 1)
+        _ = adrift_lamps_text(shell, &buf, buf.count)
+        UIPasteboard.general.string = String(decoding: buf[0..<n], as: UTF8.self)
+    }
+
+    func pasteLamps() {
+        guard let shell, let text = UIPasteboard.general.string else { return }
+        _ = text.withCString { adrift_lamps_paste(shell, $0) }
+    }
+
+    func present(_ sheet: UIAlertController) {
+        // on the iPad it points at the record control (top right)
+        sheet.popoverPresentationController?.sourceView = self
+        sheet.popoverPresentationController?.sourceRect = CGRect(x: bounds.maxX - 44, y: 40, width: 1, height: 1)
+        window?.rootViewController?.present(sheet, animated: true)
+    }
+
+    /// Exports the newest take, or (R13) a journey clip of the picked lamps `journey` seconds long.
+    func exportTake(journey: Double? = nil) {
         guard let shell, !exporting else { return }
         var w: UInt32 = 0, h: UInt32 = 0
-        let frames = adrift_export_begin(shell, 30, &w, &h)
+        let frames = journey.map { adrift_journey_begin(shell, $0, 30, &w, &h) } ?? adrift_export_begin(shell, 30, &w, &h)
         guard frames > 0 else { return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Adrift-\(Int(Date().timeIntervalSince1970)).mp4")
         try? FileManager.default.removeItem(at: url)
@@ -151,18 +304,33 @@ final class AdriftView: UIView {
         spinner.center = CGPoint(x: bounds.midX, y: bounds.midY)
         addSubview(spinner)
         spinner.startAnimating()
+        // a long clip shows how far it has come (R13)
+        progress.frame = CGRect(x: bounds.midX - 80, y: bounds.midY + 34, width: 160, height: 4)
+        progress.progress = 0
+        progress.trackTintColor = UIColor.black.withAlphaComponent(0.08)
+        progress.progressTintColor = UIColor(red: 0.72, green: 0.42, blue: 0.32, alpha: 1)
+        if frames > 300 { addSubview(progress) }
         var index: Int64 = 0
         func finish() {
             input.markAsFinished()
             writer.finishWriting { [weak self] in
                 DispatchQueue.main.async {
                     guard let self, let shell = self.shell else { return }
+                    var songStart = 0.0, songLength = 0.0
+                    let hasSong = adrift_export_song(shell, &songStart, &songLength)
                     adrift_export_end(shell)
                     self.spinner.stopAnimating()
                     self.spinner.removeFromSuperview()
+                    self.progress.removeFromSuperview()
                     self.exporting = false
                     self.link?.isPaused = false
-                    if writer.status == .completed { self.share(url) } else { NSLog("adrift: export failed: \(String(describing: writer.error))") }
+                    if writer.status == .completed {
+                        if hasSong && self.song != nil {
+                            self.withSong(url, start: songStart, length: songLength) { self.share($0) }
+                        } else {
+                            self.share(url)
+                        }
+                    } else { NSLog("adrift: export failed: \(String(describing: writer.error))") }
                 }
             }
         }
@@ -181,6 +349,7 @@ final class AdriftView: UIView {
                 if !ok { finish(); return }
                 adaptor.append(pb, withPresentationTime: CMTime(value: index, timescale: 30))
                 index += 1
+                self.progress.progress = Float(index) / Float(max(frames, 1))
             }
             DispatchQueue.main.async { step() }
         }
@@ -236,6 +405,13 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         w.rootViewController = AdriftController()
         w.makeKeyAndVisible()
         window = w
+        return true
+    }
+
+    /// An audio file opened in Adrift becomes the song takes are conducted to (R12).
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        guard let view = window?.rootViewController?.view as? AdriftView else { return false }
+        view.setSong(url)
         return true
     }
 }

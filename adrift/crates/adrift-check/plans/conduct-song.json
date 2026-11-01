@@ -1,0 +1,109 @@
+{
+ "title": "R12: a take conducted to a song (a test tone) by intents, exported with the song under the clip from the take's first moment",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -66.0,
+  "lat": 35.0,
+  "zoom": 3.0
+ },
+ "day": 160.0,
+ "floats": [
+  {
+   "lon": -72.0,
+   "lat": 35.0,
+   "days_ago": 10
+  },
+  {
+   "lon": -62.0,
+   "lat": 37.0,
+   "days_ago": 6
+  }
+ ],
+ "steps": [
+  {
+   "t": 0.3,
+   "record": true,
+   "expect": {
+    "recording": true
+   }
+  },
+  {
+   "t": 1.5,
+   "shot": "before"
+  },
+  {
+   "t": 1.5,
+   "intent": {
+    "Conduct": {
+     "float": 1,
+     "gesture": {
+      "Tap": {
+       "x": 150.0,
+       "y": 380.0
+      }
+     }
+    }
+   }
+  },
+  {
+   "t": 1.6,
+   "shot": "tap"
+  },
+  {
+   "t": 3.0,
+   "intent": {
+    "Conduct": {
+     "float": null,
+     "gesture": {
+      "Sweep": {
+       "dx": 0.0,
+       "dy": -160.0,
+       "secs": 0.4
+      }
+     }
+    }
+   }
+  },
+  {
+   "t": 3.1,
+   "shot": "sweep"
+  },
+  {
+   "t": 4.5,
+   "intent": {
+    "Conduct": {
+     "float": 2,
+     "gesture": {
+      "Circle": {
+       "turn": 5.0,
+       "secs": 1.0
+      }
+     }
+    }
+   }
+  },
+  {
+   "t": 6.0,
+   "shot": "after"
+  },
+  {
+   "t": 6.0,
+   "record": false,
+   "expect": {
+    "recording": false,
+    "takes": 1
+   }
+  },
+  {
+   "t": 6.1,
+   "export": "clip",
+   "expect": {
+    "floats": 2
+   }
+  }
+ ],
+ "song": "tone"
+}

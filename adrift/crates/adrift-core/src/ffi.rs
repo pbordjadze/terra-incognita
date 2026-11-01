@@ -245,6 +245,116 @@ pub unsafe extern "C" fn adrift_panel_item(shell: *mut Shell, i: u32, rect: *mut
     true
 }
 
+/// The song the shell plays from its start while a take records (R12), by a name (UTF-8,
+/// NUL-terminated), or none (null).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_set_song(shell: *mut Shell, name: *const std::os::raw::c_char) {
+    let Some(s) = shell.as_mut() else { return };
+    let name = if name.is_null() { None } else { Some(std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned()) };
+    s.app.set_song(name);
+}
+
+/// Whether a take is being recorded now (R12: the shell starts its song when this turns true and
+/// stops it when it turns false).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_recording(shell: *mut Shell) -> bool {
+    shell.as_ref().is_some_and(|s| s.app.recording())
+}
+
+/// While exporting: whether the take had a song, and if so where it begins in the clip and how long
+/// it runs, seconds, written to `start` and `length` (R12).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, length: *mut f64) -> bool {
+    let Some(s) = shell.as_ref() else { return false };
+    let Some((a, n)) = s.app.export_song() else { return false };
+    if let Some(p) = start.as_mut() {
+        *p = a;
+    }
+    if let Some(p) = length.as_mut() {
+        *p = n;
+    }
+    true
+}
+
+/// Whether the studio's menu was asked for since last asked (R13), and what it can offer: how many
+/// lamps a journey clip or a copy would take (`picked`) and how many takes are kept (`takes`).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes: *mut u32, chosen: *mut u32, kept: *mut u32) -> bool {
+    let Some(s) = shell.as_mut() else { return false };
+    if !s.app.menu_wanted() {
+        return false;
+    }
+    let (c, k) = s.app.chosen_kept();
+    if let Some(p) = chosen.as_mut() {
+        *p = c as u32;
+    }
+    if let Some(p) = kept.as_mut() {
+        *p = k as u32;
+    }
+    if let Some(p) = picked.as_mut() {
+        *p = s.app.picked_lamps().len() as u32;
+    }
+    if let Some(p) = takes.as_mut() {
+        *p = s.app.studio.takes.len() as u32;
+    }
+    true
+}
+
+/// The chosen lamps kept for good (`on`) or let go (R13); how many changed.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_keep(shell: *mut Shell, on: bool) -> u32 {
+    shell.as_mut().map_or(0, |s| s.app.keep_chosen(on) as u32)
+}
+
+/// Begins exporting a journey clip of the picked lamps, `seconds` long, at `fps` (R13); the frames
+/// to come (0: nothing to make), the video's size written to `width`, `height`. Then
+/// `adrift_export_frame` until false and `adrift_export_end`, as for a take.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_journey_begin(shell: *mut Shell, seconds: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+    let Some(s) = shell.as_mut() else { return 0 };
+    let frames = s.app.journey_begin(seconds, fps);
+    if frames == 0 {
+        return 0;
+    }
+    let (tw, th) = s.app.export_target_size().unwrap_or((2, 2));
+    s.export = Some(crate::gpu::Offscreen::new(&s.app.gpu, tw, th));
+    let (w, h) = s.app.export_size().unwrap_or((2, 2));
+    if let Some(p) = width.as_mut() {
+        *p = w;
+    }
+    if let Some(p) = height.as_mut() {
+        *p = h;
+    }
+    frames
+}
+
+/// The picked lamps as text to copy (R13), UTF-8 and NUL-terminated into `out` (at most `len`
+/// bytes); returns the bytes the whole text needs (without the NUL), 0 for no lamps. Call with a
+/// null `out` to learn the size.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_lamps_text(shell: *mut Shell, out: *mut u8, len: usize) -> usize {
+    let Some(s) = shell.as_ref() else { return 0 };
+    let Some(text) = s.app.lamps_text() else { return 0 };
+    let b = text.as_bytes();
+    if !out.is_null() && len > b.len() {
+        std::ptr::copy_nonoverlapping(b.as_ptr(), out, b.len());
+        *out.add(b.len()) = 0;
+    }
+    b.len()
+}
+
+/// Lamps pasted from copied text (R13); how many came (0: the text isn't Adrift's lamps). The date
+/// goes to the day they were copied on, so they are where they were.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_lamps_paste(shell: *mut Shell, text: *const std::os::raw::c_char) -> u32 {
+    let Some(s) = shell.as_mut() else { return 0 };
+    if text.is_null() {
+        return 0;
+    }
+    let t = std::ffi::CStr::from_ptr(text).to_string_lossy();
+    s.app.paste_lamps(&t, true) as u32
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn adrift_free(shell: *mut Shell) {
     if !shell.is_null() {

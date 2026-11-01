@@ -170,6 +170,8 @@ pub fn unit(at: LonLat) -> [f32; 3] {
 pub struct LookFloat {
     /// The app's id (1, 2, 3…): a hue per lamp can hang on it (R5).
     pub id: u32,
+    /// Kept for good (R13): its mark shows it.
+    pub kept: bool,
     pub at: LonLat,
     /// 1 while it is what the reader just did, fading to 0 in time (the app's `lit_for` against the beat).
     pub lit: f32,
@@ -240,6 +242,11 @@ pub struct LookState {
     pub panel_press: Option<(u32, f32)>,
     /// A take is being recorded or replayed, so the hand conducts (R11).
     pub conducting: bool,
+    /// The shell has a song that plays from its start when a take begins (R12).
+    pub song: bool,
+    /// A finger rests and holds the date while the hand conducts (R12, Motion's `Gestures::fermata`;
+    /// a pause from the date's band is not a fermata).
+    pub fermata: bool,
     /// The cues of the last two seconds (R11): the look flashes the worlds a lamp chose among and
     /// folds them into the chosen one.
     pub cues: Vec<LookCue>,
@@ -310,6 +317,9 @@ pub struct LookCue {
     pub chosen: u32,
     pub at: LonLat,
     pub from: LonLat,
+    /// The runners-up the chooser names (Truth, R12: up to six, spread round the pick), their places at
+    /// the cue: the fan that folds into the chosen.
+    pub fan: Vec<LonLat>,
     /// Seconds since the cue (the drawn motion's clock).
     pub age: f32,
 }
@@ -342,7 +352,7 @@ fn slerpish(a: [f32; 3], b: [f32; 3], t: f32) -> [f32; 3] {
 /// A cue's beats (R11), in seconds since it: the worlds flash in, hold, then fold into the chosen;
 /// the lamp glides from where it was to where the chosen world has it (a look-only ease: the state
 /// jumped); a stroke of its hue marks the glide and fades; a ring spreads where it lands.
-const CUE_FOLD: (f32, f32) = (0.15, 0.8);
+const CUE_FOLD: (f32, f32) = (0.3, 0.85);
 const CUE_GLIDE: (f32, f32) = (0.1, 0.75);
 
 /// Where a conducted lamp is drawn: gliding from its old place to its new.
@@ -366,55 +376,84 @@ fn ring_on_globe(out: &mut Vec<wake::StrokeInstance>, at: LonLat, radius: f32, d
     wake::line(out, &ring, hue, false, night, true);
 }
 
-/// A cue drawn (R11): every possible sea at the cue flashed as a speck of the lamp's hue (the ones
-/// that did what the hand did brighter and larger), all folding into the chosen place; the lamp's
-/// glide marked by a stroke; a ring where it lands. Over in about a second and a half.
-fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, reading: f32, disc: [f32; 3]) {
+/// The few maybes a cue shows (R12): up to `n` of the worlds that did what the hand did (all the
+/// worlds if too few did), one in each sector of bearing round the chosen place, the one nearest the
+/// sector's middle distance, so the fan is spread and none is a stray.
+fn fan(c: &LookCue, n: usize) -> Vec<[f32; 3]> {
+    // the chooser's own runners-up when it names them (Truth, R12)
+    if !c.fan.is_empty() {
+        return c.fan.iter().map(|p| unit(*p)).collect();
+    }
+    // a tap no world came near shows no fan, only the lamp's own stroke
+    if c.near.is_empty() {
+        return Vec::new();
+    }
+    let at = unit(c.at);
+    let pool: Vec<usize> = c.near.iter().filter(|&&k| k != c.chosen && k >= 1 && (k as usize) <= c.worlds.len()).map(|&k| k as usize - 1).collect();
+    // a tangent frame at the chosen place
+    let up = if at[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+    let cross = |a: [f32; 3], b: [f32; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    let e1 = cross(up, at);
+    let e2 = cross(at, e1);
+    let mut sectors: Vec<Vec<(f32, [f32; 3])>> = vec![Vec::new(); n];
+    for i in pool {
+        let p = unit(c.worlds[i]);
+        let (x, y) = (dot(p, e1), dot(p, e2));
+        let d = (x * x + y * y).sqrt();
+        if d < 1e-7 {
+            continue;
+        }
+        let s = (((y.atan2(x) / std::f32::consts::TAU + 1.0).fract()) * n as f32) as usize % n;
+        sectors[s].push((d, p));
+    }
+    sectors
+        .into_iter()
+        .filter(|v| !v.is_empty())
+        .map(|mut v| {
+            v.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+            v[v.len() / 2].1
+        })
+        .collect()
+}
+
+/// A cue drawn (R12: the lamp obeying, not the app answering): a brief fan of the maybes the hand
+/// chose among, faint lines of the lamp's hue from where it was to where each would have it, which
+/// fold into the one chosen as the lamp glides there along its own brighter stroke. No spray, no
+/// ring: the bend in the lamp's line is the answer. Over in about a second.
+fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32) {
     let hue = lamp_hue(c.id);
     let at = unit(c.at);
-    let flash = smooth01(0.0, 0.08, c.age);
-    let pale = if night { [0.55 + 0.45 * hue[0], 0.55 + 0.45 * hue[1], 0.55 + 0.45 * hue[2]] } else { [0.45 + 0.55 * hue[0], 0.45 + 0.55 * hue[1], 0.45 + 0.55 * hue[2]] };
+    let from = unit(c.from);
+    let flash = smooth01(0.0, 0.1, c.age);
     let fold = smooth01(CUE_FOLD.0, CUE_FOLD.1, c.age);
     if fold < 1.0 {
-        let gone = 1.0 - fold * fold;
-        let mut near = vec![false; c.worlds.len()];
-        for &k in &c.near {
-            if let Some(x) = near.get_mut(k as usize - 1) {
-                *x = true;
-            }
-        }
-        // (the others first, the near ones over them)
-        for pass in [false, true] {
-            for (i, w) in c.worlds.iter().enumerate() {
-                if near[i] != pass {
-                    continue;
-                }
-                let p = slerpish(unit(*w), at, fold);
-                // (the others a pale haze of the hue, so two thousand together are a breath and not a
-                // blot; the near ones the lamp's own colour, the hand's choice among them)
-                let (wd, a, h) = if pass { (2.4, 0.95, hue) } else { (1.8, 0.26, pale) };
-                wake::line(out, &[wake::Pt { p, w: wd, a: a * flash * gone, hollow: 0.0 }], h, false, night || !pass, false);
-            }
+        let gone = (1.0 - fold).powf(0.7);
+        for p in fan(c, 7) {
+            let end = slerpish(p, at, fold);
+            let pts: Vec<wake::Pt> = (0..=12).map(|j| {
+                let t = j as f32 / 12.0;
+                wake::Pt { p: slerpish(from, end, t), w: (0.8 + 0.9 * t) * heavy, a: 0.5 * flash * gone * (0.25 + 0.75 * t), hollow: 0.0 }
+            }).collect();
+            wake::line(out, &pts, hue, false, night, false);
+            wake::line(out, &[wake::Pt { p: end, w: 4.0 * heavy, a: 0.55 * flash * gone, hollow: 0.0 }], hue, false, night, false);
         }
     }
-    // the hand's stroke: from where the lamp was to where it glides, bright, then fading
+    // the chosen: the lamp's own stroke from where it was to where it glides, bright, then fading into
+    // its line
     let g = smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age);
-    let stroke_a = 0.9 * (1.0 - smooth01(0.75, 1.5, c.age));
+    let stroke_a = 0.95 * (1.0 - smooth01(0.8, 1.4, c.age));
     if g > 0.0 && stroke_a > 0.0 {
-        let from = unit(c.from);
         let pts: Vec<wake::Pt> = (0..=16).map(|j| {
             let t = g * j as f32 / 16.0;
-            wake::Pt { p: slerpish(from, at, t), w: 1.0 + 1.8 * (j as f32 / 16.0), a: stroke_a * (0.3 + 0.7 * j as f32 / 16.0), hollow: 0.0 }
+            wake::Pt { p: slerpish(from, at, t), w: (1.4 + 1.8 * (j as f32 / 16.0)) * heavy, a: stroke_a * (0.4 + 0.6 * j as f32 / 16.0), hollow: 0.0 }
         }).collect();
         wake::line(out, &pts, hue, false, night, false);
     }
-    // where it lands, a ring spreading once
-    let t = ((c.age - CUE_GLIDE.1) / 0.9).clamp(0.0, 1.0);
-    if c.age > CUE_GLIDE.1 && t < 1.0 {
-        let ease = 1.0 - (1.0 - t).powi(3);
-        ring_on_globe(out, c.at, (7.0 + 26.0 * ease) * reading, disc, 2.0 - 1.0 * t, 0.8 * (1.0 - t).powf(1.5), hue, night);
-    }
 }
+
+/// The gold of a kept lamp's sign (R13): the date marker's amber deepened toward old gold.
+pub const KEPT_GOLD: [f32; 3] = [0.788, 0.635, 0.243];
 
 /// Days of wake drawn (palette.json › sizes.bead.days).
 pub const WAKE_DAYS: usize = 45;
@@ -460,6 +499,9 @@ impl Look {
     /// `disc` the globe's centre and radius in points (where the words sit).
     pub fn prepare(&mut self, gpu: &Gpu, state: &LookState, width: f32, height: f32, reading: f32, disc: [f32; 3]) {
         let n = state.night;
+        // in a clip the lines carry it (R12): heavier and fuller than live, so the stochastic line
+        // wins over the map
+        let heavy = if state.exporting { 2.0 } else { 1.0 };
         let mut lines = Vec::new();
         for f in &state.floats {
             // (a lamp whose cloud is out is one maybe among them: no wake singles it out, R6)
@@ -476,10 +518,25 @@ impl Look {
             }
             // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
             let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
-            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade);
+            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy);
+        }
+        // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
+        // holds its breath, a thin ring of its hue drawn in close and swelling slowly, so the hold is
+        // seen; it lets go as the date runs again
+        if state.fermata {
+            let breath = 0.5 + 0.5 * (state.seconds * 1.6).sin();
+            for f in state.floats.iter().filter(|f| !f.shown) {
+                ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
+            }
+        }
+        // a lamp kept for good (R13): quietly, a fine gold ring close round it on the globe (live only)
+        if !state.exporting {
+            for f in state.floats.iter().filter(|f| (f.kept) && !f.shown) {
+                ring_on_globe(&mut lines, f.at, 11.0 * reading, disc, 1.0, 0.75, KEPT_GOLD, n);
+            }
         }
         for c in &state.cues {
-            cue(&mut lines, c, n, reading, disc);
+            cue(&mut lines, c, n, heavy);
         }
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
@@ -535,10 +592,12 @@ impl Look {
             self.words.prepare_caption(gpu, &state.date, clip, reading, disc, n, state.ending, &labels);
             return;
         }
-        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, &mut strokes));
+        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, state.song, &mut strokes));
         // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id) }).collect();
-        self.words.panel(&rows, reading, n, &mut strokes);
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id), kept: f.kept }).collect();
+        // (while a take is made the marks step aside: the take is the globe alone, R12)
+        let quiet_take = state.recording.is_some() || state.conducting;
+        self.words.panel(if quiet_take { &[] } else { &rows }, reading, n, &mut strokes);
         // a ring at a lamp (R10), over the maybes: a thin circle of its hue spreading
         // from the lamp over a second and fading as it goes
         for &(id, at, age) in &state.lamp_rings {

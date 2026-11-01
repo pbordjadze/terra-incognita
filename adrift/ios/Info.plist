@@ -29,6 +29,16 @@
   <key>UIViewControllerBasedStatusBarAppearance</key><true/>
   <key>UISupportedInterfaceOrientations</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
   <key>UISupportedInterfaceOrientations~ipad</key><array><string>UIInterfaceOrientationPortrait</string><string>UIInterfaceOrientationPortraitUpsideDown</string><string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string></array>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key><string>Song</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Alternate</string>
+      <key>LSItemContentTypes</key><array><string>public.audio</string></array>
+    </dict>
+  </array>
+  <key>LSSupportsOpeningDocumentsInPlace</key><false/>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
   <key>NSPhotoLibraryAddUsageDescription</key><string>Adrift saves the clips you export to your photos.</string>
 </dict>

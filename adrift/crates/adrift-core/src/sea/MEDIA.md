@@ -89,3 +89,33 @@ property).
 
 The flat plane (a later preset) fits the same machine: an analytic mean field (a vortex, a
 shear), the wander's sigma and T as plain numbers, a lattice in plane units, no holds.
+
+## The wind preset's seam (sketch for round 13)
+
+What the wind needs that the sea's lamps don't, so `Preset` can hold both without a branch at every
+call:
+
+- **The rules behind a trait, not `Rules`.** Both media answer the same few calls. `put(at, day, k)`
+  is `Rules::put` or `AirRules::rise`. `step(state, day, dt, seed, k)` is `Rules::flight` or
+  `AirRules::step`. `velocity(state, day)` drives the glide. A state carries a place, the wander's
+  velocity and a status: the sea's `Held` {No, Coast, Ice}, the air's `Aloft` {Flying, Land, Sea}.
+  `conduct::Worlds` already only needs put and step: make it generic over the medium, and
+  conducting works for seeds unchanged.
+- **The GPU maybes per medium.** `Maybes` (`rules.wgsl`, bindings: currents, wind, eddy, ice,
+  coast, eddy time) and `AirMaybes` (`wind.wgsl`: wind, gusts, coast) share `GpuPath` and the
+  params' layout up to their medium's fields. The seam picks the pipeline; the look reads the same
+  buffer.
+- **Where a thing may be put.** The sea refuses land and unrecorded water (`Rules::may_put`). The
+  wind takes anywhere. `Preset::may_put(at) -> Put`.
+- **The ending.** A lamp never ends (it is held, and freed). A seed comes down: the look needs
+  "down on land / on the sea" (`Aloft`), and the take may hand a seed that came down on the sea to
+  the sea's rules as a lamp (`Rules::put` at its place and day). That's the one cross-medium call.
+- **The clock.** The wind runs about 20x faster: its default pace and its conducting tempo are
+  the medium's (about 0.3 days a second, against the sea's 2 free and 3 conducting). The step stays
+  a quarter day in both (the worlds' grid); the wind's line is drawn as a spline through the steps.
+- **The dials** (table above) as one struct the preset owns: wander, memory, kinship (cell,
+  share), lifetime (the wind's fall and washout; the sea: none), trail. Each scales one field the
+  rules already read (`Rules.wander`, `AirRules.gust`, `fall`, `washout`), so a dial is a field set
+  on the medium's rules at a take's start and recorded in the take.
+- **Sheets.** The wind's `gusts.png` and its `wind.png` are already in FILES. Nothing more to
+  bundle.

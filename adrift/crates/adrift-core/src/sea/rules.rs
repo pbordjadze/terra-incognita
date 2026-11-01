@@ -217,6 +217,12 @@ impl Rules {
     /// paths of floats near each other are kicked alike. Deterministic for (drift, day, dt, k); the
     /// seed is kept in the signature and no longer read (R6).
     pub fn flight(&self, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
+        self.flight_under(LAW, d, day, dt_days, seed, k)
+    }
+
+    /// `flight` under a given law (R13: a leg's own, `Leg::law`): law 0 is the flight as shipped up
+    /// to build 49, without the spinning eddies, bit for bit (`sea::tests::law_zero_is_the_old_flight`).
+    pub fn flight_under(&self, law: u32, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
         let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
         let day = day as f32;
         let dt = dt_days as f32;
@@ -233,8 +239,17 @@ impl Rules {
         let (gx, gy) = world_kick(k, day, dt, lon, lat);
         let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
         let (au, av) = ((-secs / tu).exp(), (-secs / tv).exp());
-        let eu = d.eddy.0 * au + gx * (ku / tu * (1.0 - au * au)).sqrt() * self.wander;
-        let ev = d.eddy.1 * av + gy * (kv / tv * (1.0 - av * av)).sqrt() * self.wander;
+        // in world k's spinning eddies the velocity turns as it decays (R12: the spinning flight)
+        let om = if law >= 1 { spin(k, day, lon, lat) } else { 0.0 };
+        let (ru, rv) = if om == 0.0 {
+            d.eddy
+        } else {
+            let phi = om * dt;
+            let (c, s) = (phi.cos(), phi.sin());
+            (d.eddy.0 * c - d.eddy.1 * s, d.eddy.0 * s + d.eddy.1 * c)
+        };
+        let eu = ru * au + gx * (ku / tu * (1.0 - au * au)).sqrt() * self.wander;
+        let ev = rv * av + gy * (kv / tv * (1.0 - av * av)).sqrt() * self.wander;
         let dx = (u + self.leeway * wu + eu) * secs;
         let dy = (v + self.leeway * wv + ev) * secs;
         let coslat = (lat.to_radians()).cos().max(0.01);
@@ -353,6 +368,54 @@ pub const WORLD_CELL: f32 = 1.0;
 pub const WORLD_SPAN: u32 = 8;
 /// The put's stream of the field, apart from the steps'.
 pub const PUT_STREAM: u32 = 0x8000_0000;
+
+/// The sea's current law (R13, `Leg::law`): 1, with the spinning eddies (R12). 0 is the law as
+/// shipped up to build 49, kept for the lamps made under it.
+pub const LAW: u32 = 1;
+
+/// The spinning eddies (R12). Drifters' daily tracks (the bundled 1979 runs) set against a
+/// random flight with no spin: their velocity's turning from day to day is mostly what such a
+/// flight shows by chance (41% of 10-day windows turn consistently, against 39% for the plain
+/// flight), but two in three that do are anticyclonic where chance gives one in two: some share
+/// of the sea, roughly a tenth to a fifth, is a coherent eddy that carries a drifter round. Those
+/// are drawn here: world k's sea on a lattice `SPIN_CELL` wide (an eddy's width) has, in a share
+/// `SPIN_SHARE` of its cells, an eddy spinning at `SPIN_RATE` (the measured loopers' median, a loop
+/// in eleven days), anticyclonic in `SPIN_ANTICYCLONIC` of them (clockwise in the north); each cell
+/// is drawn afresh every `SPIN_EPOCH` days, at its own phase (an eddy's life). The flight's
+/// velocity turns at that rate as it decays: Veneziani, Griffa, Reynolds and Mariano (2004)'s
+/// spinning random flight. A float carried by one loops (where the eddy outruns the mean current:
+/// in a jet it wiggles instead) at the measured speed (the drifters' loopers run only a fifth
+/// faster than the rest); its spread there is less, K / (1 + (Omega T)^2), as loopers' is.
+/// `adrift/SOURCES.md` › The spinning eddies.
+pub const SPIN_CELL: f32 = 1.0;
+pub const SPIN_SHARE: f32 = 0.15;
+pub const SPIN_RATE: f32 = 0.58;
+pub const SPIN_ANTICYCLONIC: f32 = 0.8;
+pub const SPIN_EPOCH: f32 = 30.0;
+pub const SPIN_STREAM: u32 = 0x5b17_0000;
+
+/// World k's eddy spin at (lon, lat) on `day`, radians a day (positive anticlockwise; 0 where its
+/// sea does not spin).
+#[inline]
+pub fn spin(k: u32, day: f32, lon: f32, lat: f32) -> f32 {
+    let n = (360.0 / SPIN_CELL) as i32;
+    let ix = (((lon + 180.0) / SPIN_CELL).floor() as i32).rem_euclid(n) as u32;
+    let iy = ((lat + 90.0) / SPIN_CELL).floor() as i32 as u32;
+    let node = mix(mix(mix(k ^ SPIN_STREAM) ^ ix) ^ iy);
+    let phase = (node >> 8) as f32 / 16_777_216.0 * SPIN_EPOCH;
+    let epoch = ((day + phase) / SPIN_EPOCH).floor() as i32;
+    let h = mix(node ^ epoch as u32);
+    if ((h >> 8) as f32 / 16_777_216.0) >= SPIN_SHARE {
+        return 0.0;
+    }
+    let anti = ((mix(h ^ 0x0a17_c1c1) >> 8) as f32 / 16_777_216.0) < SPIN_ANTICYCLONIC;
+    let north = if lat >= 0.0 { 1.0 } else { -1.0 };
+    if anti {
+        -north * SPIN_RATE
+    } else {
+        north * SPIN_RATE
+    }
+}
 
 /// The quarter day `day` falls in.
 #[inline]

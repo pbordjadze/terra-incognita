@@ -863,3 +863,93 @@ fn no_ice_nearer_the_equator() {
         }
     }
 }
+
+/// The law-0 digest: every step of 28 paths (7 places x 4 worlds, 20 days a quarter day at a time)
+/// under the flight as shipped up to build 49, computed by that code (commit 77a693b) and pinned.
+const LAW_ZERO_GOLDEN: u64 = 0x6921_f0d5_a9ea_3ff6;
+
+fn law_digest(r: &Rules, law: u32) -> u64 {
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    let mut eat = |x: u64| {
+        h ^= x;
+        h = h.wrapping_mul(0x100_0000_01b3);
+    };
+    for (i, (lon, lat)) in [(-72.0, 35.0), (-40.0, 38.0), (-20.0, -30.0), (60.0, -45.0), (150.0, 35.0), (-150.0, 20.0), (5.0, 75.0)].into_iter().enumerate() {
+        for k in [0u32, 1, 7, 300] {
+            let mut d = r.put(LonLat { lon, lat }, 100.0, i as u64, k);
+            let mut day = 100.0;
+            for _ in 0..80 {
+                d = r.flight_under(law, d, day, 0.25, i as u64, k).drift;
+                day += 0.25;
+                eat(d.at.lon.to_bits());
+                eat(d.at.lat.to_bits());
+                eat(d.eddy.0.to_bits() as u64);
+                eat(d.eddy.1.to_bits() as u64);
+            }
+        }
+    }
+    h
+}
+
+/// R13: a lamp made under the old law keeps it, bit for bit.
+#[test]
+fn law_zero_is_the_old_flight() {
+    assert_eq!(law_digest(&rules(), 0), LAW_ZERO_GOLDEN, "law 0 must step exactly as build 49 and before did");
+}
+
+/// R13: the current law spins, and is what `flight` steps.
+#[test]
+fn the_current_law_spins() {
+    let r = rules();
+    assert_eq!(super::rules::LAW, 1);
+    assert_ne!(law_digest(&r, 1), LAW_ZERO_GOLDEN, "law 1 has the spinning eddies");
+    let d = r.put(LonLat { lon: -40.0, lat: 38.0 }, 100.0, 3, 5);
+    for k in 0..64 {
+        let (a, b) = (r.flight(d, 100.0, 0.25, 3, k).drift, r.flight_under(1, d, 100.0, 0.25, 3, k).drift);
+        assert_eq!(a, b);
+    }
+}
+
+/// R13: a lamp as build 46 saved it (legs with only at, day, seed; or no legs at all) reads as law 0.
+#[test]
+fn a_build_46_snapshot_loads_under_the_old_law() {
+    let leg: crate::model::Leg = serde_json::from_str(r#"{"at": {"lon": -72.0, "lat": 35.0}, "day": 150.25, "seed": 12345}"#).unwrap();
+    assert_eq!((leg.law, leg.world, leg.eddy), (0, 0, None));
+    let f: crate::model::Float = serde_json::from_str(
+        r#"{"id": 1, "at": {"lon": -70.0, "lat": 36.0}, "put_day": 150.25, "seed": 12345, "held": "No", "hand": "Free", "wake": [], "lit_for": 0.0}"#,
+    )
+    .unwrap();
+    assert_eq!(f.legs()[0].law, 0, "a float from before legs is under the old law");
+    assert_eq!(crate::model::Leg::new(LonLat { lon: 0.0, lat: 0.0 }, 0.0, 0).law, super::rules::LAW, "a fresh put takes the current law");
+}
+
+/// R13: the GPU's maybes honour a cloud's law (Params::under), as the CPU does.
+#[test]
+fn the_gpu_keeps_the_law() {
+    use crate::gpu::{Gpu, Textures};
+    use super::gpu::{GpuPath, Maybes, Params};
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let Ok(gpu) = pollster_block(Gpu::new(&instance, None)) else { return };
+    let assets = DirAssets(assets());
+    let textures = Textures::load(&gpu, &assets, 6).unwrap();
+    let r = rules();
+    let n = 512u32;
+    let start = LonLat { lon: -40.0, lat: 38.0 };
+    let maybes = Maybes::new(&gpu, &assets, &textures, n).unwrap();
+    for law in [0u32, 1] {
+        let mut cpu: Vec<Drift> = (1..=n).map(|k| r.put(start, JULY, 0, k)).collect();
+        maybes.seed(&gpu, &cpu.iter().map(|d| GpuPath { lon: d.at.lon as f32, lat: d.at.lat as f32, eddy_u: d.eddy.0, eddy_v: d.eddy.1, ..Default::default() }).collect::<Vec<_>>());
+        let mut day = JULY;
+        for _ in 0..16 {
+            maybes.step(&gpu, Params::new(&r, day, 0.25, 0, n).under(law), true);
+            for (i, d) in cpu.iter_mut().enumerate() {
+                *d = r.flight_under(law, *d, day, 0.25, 0, i as u32 + 1).drift;
+            }
+            day += 0.25;
+        }
+        let g = maybes.read(&gpu, n);
+        let worst = cpu.iter().zip(&g).map(|(c, p)| distance_km(c.at.lon as f32, c.at.lat as f32, p.lon, p.lat)).fold(0.0f32, f32::max);
+        eprintln!("law {law}: the GPU's maybes within {worst:.4} km of the CPU's after 4 days");
+        assert!(worst < 0.5);
+    }
+}

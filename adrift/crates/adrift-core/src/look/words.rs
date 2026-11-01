@@ -169,6 +169,8 @@ pub struct PanelRow<'a> {
     pub at: crate::model::LonLat,
     /// a finger rests on its mark (0 none, else 0.35..1 as the rest thickens): the mark brightens
     pub pressed: f32,
+    /// kept for good (R13): a small gold pin under its lamp
+    pub kept: bool,
 }
 
 /// A long day's words for the shell's VoiceOver label ("8 June").
@@ -345,7 +347,7 @@ impl Words {
         for (i, r) in rows[start..].iter().enumerate() {
             let (cx, cy) = (x0 + ((i % PANEL_ACROSS) as f32 + 0.5) * cell, top + ((i / PANEL_ACROSS) as f32 + 0.5) * cell);
             self.panel_bounds.push((r.id, [cx - cell / 2.0, cy - cell / 2.0, cell, cell]));
-            let how = if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" };
+            let how = format!("{}{}", if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" }, if r.kept { ", kept" } else { "" });
             self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
             let hue = super::lamp_hue(r.id);
             let quiet = if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
@@ -374,7 +376,9 @@ impl Words {
             }
             let lamp = pts.last().map_or([cx, cy, 0.0], |p| p.p);
             let up = if r.front { 1.0 } else { 0.0 } + 1.5 * r.pressed;
-            if r.shown {
+            // (by night no glow: a glowing dot on the dark read as a town's light, R12; the lamp is glass,
+            // a ring of its hue with a small spark)
+            if r.shown && !night {
                 line(strokes, &[Pt { p: lamp, w: (15.0 + 2.0 * up) * reading, a: 0.24 * quiet, hollow: 0.0 }], hue, true, true, false);
             }
             if r.followed {
@@ -385,7 +389,23 @@ impl Words {
                 }).collect();
                 line(strokes, &ring, hue, true, night, true);
             }
-            line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+            // kept for good (R13): a small gold pin under the lamp, a dot on a short stem, no words
+            if r.kept {
+                let (px, py) = (lamp[0], lamp[1] + 7.5 * reading);
+                line(strokes, &[Pt { p: [px, py - 2.0 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }, Pt { p: [px, py + 1.5 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }], super::KEPT_GOLD, true, true, false);
+                line(strokes, &[Pt { p: [px, py + 2.6 * reading, 0.0], w: 2.8 * reading, a: 1.0, hollow: 0.0 }], super::KEPT_GOLD, true, night, false);
+            }
+            if night {
+                let rr = (4.2 + 0.6 * up) * reading;
+                let glass: Vec<Pt> = (0..24).map(|j| {
+                    let t = j as f32 / 24.0 * std::f32::consts::TAU;
+                    Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.2 * reading, a: quiet * if r.shown { 1.0 } else { 0.8 }, hollow: 0.0 }
+                }).collect();
+                line(strokes, &glass, hue, true, true, true);
+                line(strokes, &[Pt { p: lamp, w: (3.0 + 0.6 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, true, false);
+            } else {
+                line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+            }
         }
     }
 
@@ -474,7 +494,7 @@ impl Words {
     /// from the top toward the take's longest (`studio::TAKE_MAX`, 60 s), a smooth stroke (R10), the
     /// seconds beside it in small italic. Its rect, 44 reading points square whatever is drawn, goes
     /// to `record_bounds` for Motion's probe.
-    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool, strokes: &mut Vec<super::wake::StrokeInstance>) -> Vec<GlyphInstance> {
+    pub fn record_control(&mut self, recording: Option<f32>, now: f32, width: f32, reading: f32, night: bool, song: bool, strokes: &mut Vec<super::wake::StrokeInstance>) -> Vec<GlyphInstance> {
         use super::wake::{line, Pt};
         let side = 44.0 * reading;
         let (x, y) = (width - 16.0 * reading - side, 52.0);
@@ -493,6 +513,16 @@ impl Words {
             }).collect()
         };
         let dot = |at: [f32; 2], w: f32, a: f32| [Pt { p: [at[0], at[1], 0.0], w, a, hollow: 0.0 }];
+        // a song opened (R12): a second, finer ring just outside the first, a record's groove, at rest
+        // and while recording; no words
+        if song {
+            let mut groove: Vec<Pt> = (0..64).map(|j| {
+                let ang = j as f32 / 64.0 * std::f32::consts::TAU;
+                Pt { p: [cx + (ring_r + 3.2 * reading) * ang.cos(), cy + (ring_r + 3.2 * reading) * ang.sin(), 0.0], w: 0.8 * reading, a: 0.4, hollow: 0.0 }
+            }).collect();
+            groove.truncate(64);
+            line(strokes, &groove, soft, true, true, true);
+        }
         // (the soft ring and the lamp by night as by day: no dark edge, they are ink, not lamps on the sea)
         match recording {
             None => {

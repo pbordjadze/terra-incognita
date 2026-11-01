@@ -1,5 +1,5 @@
 {
- "title": "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks again; nothing on it rings or puts (R11: the lamp is put and chosen before the take, as one finger conducts during it)",
+ "title": "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks for the studio's menu (R13); nothing on it rings or puts (R11: the lamp is put and chosen before the take, as one finger conducts during it)",
  "size": [
   393.0,
   852.0
@@ -201,11 +201,12 @@
    "t": 6.4,
    "expect": {
     "saw": [
-     "Export"
+     "Menu"
     ],
     "not": [
      "Record",
-     "Ring"
+     "Ring",
+     "Export"
     ]
    }
   },

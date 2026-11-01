@@ -101,12 +101,23 @@ pub struct Leg {
     /// start: R11), so the continuation is the same law as one unbroken flight; None for a put.
     #[serde(default)]
     pub eddy: Option<[f32; 2]>,
+    /// The sea's law this leg was made under (R13): 0 the rules as shipped up to build 49 (no
+    /// spinning eddies), `sea::rules::LAW` the current one. A leg continues the law of the leg it
+    /// continues and a fresh put takes the current one, so a lamp saved on the phone keeps its
+    /// dance across an update. A kept state from before the field reads 0.
+    #[serde(default)]
+    pub law: u32,
 }
 
 impl Leg {
-    /// A leg put fresh: the real world, its own eddy.
+    /// A leg put fresh: the real world, its own eddy, the current law.
     pub const fn new(at: LonLat, day: f64, seed: u64) -> Leg {
-        Leg { at, day, seed, world: 0, eddy: None }
+        Leg { at, day, seed, world: 0, eddy: None, law: crate::sea::rules::LAW }
+    }
+
+    /// The same, under `law` (a leg that continues another's).
+    pub const fn under(self, law: u32) -> Leg {
+        Leg { law, ..self }
     }
 }
 
@@ -141,6 +152,10 @@ pub struct Float {
     pub measured: f32,
     /// One bead a day, oldest first, since it was put or last set down.
     pub wake: Vec<Bead>,
+    /// Kept for good (R13): a clear-all leaves it, and a journey clip or a copy takes the kept lamps
+    /// when none is chosen.
+    #[serde(default)]
+    pub kept: bool,
     /// The same journey at every step of its path (the quarter-day grid), oldest first, ending at
     /// the step before now (R10: the line the look draws runs through the real steps, the eddy's
     /// stalls and turns, not a day's chords). Rebuilt with the wake; never stored.
@@ -158,7 +173,8 @@ impl Float {
     /// The legs, with the one a pre-leg state implies.
     pub fn legs(&self) -> Vec<Leg> {
         if self.legs.is_empty() {
-            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed)]
+            // a kept state from before legs (and before laws): the first law
+            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed).under(0)]
         } else {
             self.legs.clone()
         }
@@ -429,6 +445,10 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// The studio's menu is asked for (R13: a rest on the record control): the shell polls
+    /// `App::menu_wanted` and offers what can be made (a journey clip of the chosen lamps, the last
+    /// take again, the lamps copied or pasted).
+    Menu,
     /// A conductor's cue while a take is recorded (R11): the lamp `float` (None: every lamp out)
     /// takes the world that did what the gesture did.
     Conduct { float: Option<u32>, gesture: ConductGesture },

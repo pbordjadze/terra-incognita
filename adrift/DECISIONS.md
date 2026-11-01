@@ -572,3 +572,89 @@ the lamps' screen positions in the export's camera trace; the tempo as a dial in
 studio, not a constant; a GPU pass for the cue's worlds as short streaks folding in; circles pick a
 world's stalls more than real loops (a spinning random flight would give real ones); one finger can
 no longer pan during a take, by design (two fingers do).
+
+## 19. R12 opens: conducting seen, and a song (Nov 1, 16:10 UTC)
+
+Round 11's critic: the sweep reads as the hand's doing; the rest is too small to see ("a whole
+take's work comes down to a hook a few mm long on a continent-sized map"), tap and circle read as
+the app's response, a circle makes no loop, a fermata can't be seen, the marks are chrome more
+legible than their lamps, and the clip is silent ("you have to zoom way in to see what your hand did,
+and add the music yourself").
+
+- *Engineering* (23104e6): **a song.** An audio file opened into Adrift (from Files or another app's
+  share sheet; the app takes audio documents) is kept as the song: it plays from its start whenever a
+  take begins and stops when it ends, so the reader conducts to it; the export lays it under the clip
+  from the take's first moment (after the still opening beat), fading over the last second
+  (`Take.song`, `Take::song_in_clip`, `App::set_song/recording/export_song`, `adrift_set_song`,
+  `adrift_recording`, `adrift_export_song`; the shell's `withSong` composes it with
+  AVMutableComposition and falls back to the silent clip on any failure). A clip at another speed
+  stays silent. The check: a plan's `song` (a file, or `"tone"`), muxed by ffmpeg the same way
+  (`plans/conduct-song.json`). The look's `song`. Songs from streaming services can't be opened as
+  files; a file from Files, Voice Memos or GarageBand can.
+- *Visual*: lines heavier in the clip; the cue as a fan of a few maybes collapsing into the chosen;
+  the marks hidden while recording, and quieter by night; the fermata visible; the song's quiet sign.
+- *Motion*: the clip frames the lamps (their span ~60% of its width); the live camera comes in to the
+  lamps when a take begins; the gestures' misreads tested.
+- *Truth*: a circle that makes a loop (a flight that can spin, honestly); a tap the lamp visibly
+  obeys; the fan's runners-up; the wind preset's seam sketched for round 13.
+
+**R12 merged (Nov 1, 16:40 UTC).** Visual 8bd99b3, Truth 675e95c, Motion b97de96, and Engineering's
+seams after them (the cue's `fan` from the chooser's runners-up, the look's `fermata`, each lamp's
+place in the export's camera trace). The song's Swift built in CI's unsigned IPA (run 50).
+
+- *The clip frames the lamps* (Motion, `studio::frame`): the smallest circle round every lamp out and
+  its last six days of line, 25 km of margin, filling 60% of the clip's width; a lone lamp no wider
+  than 100 km each side; a cue on one lamp leans in toward it for four seconds, keeping the others
+  within 0.75 of the half-width. The take's zoom no longer multiplies the clip's. hold_out 1.5 s.
+  Live, while conducting, the camera comes in to the same frame (`CameraControl::hold_frame`, a
+  0.6 s spring, zoom up to 40 only then, flown back after); a two-finger move wins for three seconds.
+  A two-finger move begun by a flicking finger no longer cues a stray sweep (`SWEEP_AGE` 80 ms);
+  misreads tested at 20 and 120 Hz.
+- *The cue* (Visual, Truth): no spray: up to six runners-up (Truth's `Choice.fan`) drawn as faint
+  lines folding into the chosen while the lamp glides on its own brighter stroke; a tap no world
+  came near shows no fan. A tap now picks the world that comes nearest the finger within 1.5 days
+  (`TAP_AHEAD`), so the lamp heads toward it. A circle can pick a world that curls: 15% of each
+  world's one-degree cells spin (0.58 rad a day, 80% anticyclonic, measured from the drifters
+  against a no-spin null; `rules::spin`, CPU and GPU; `tools/adrift/data/spin.py`); with the
+  measured memory a spinning world curls a hook or half loop, 20–40 km, not a ring (rings would need
+  an eddy census).
+- *The look* (Visual): lines twice as heavy in the clip; the marks gone while recording, and a glass
+  ring with a spark by night; a fermata a slowly breathing ring at each lamp; a song a finer second
+  ring round the record control.
+
+For next round, from the exit interviews: the clip's line weight and framing fill as dials; a tiny
+export size for judging motion; `lamp_in_clip.py` reading the trace's lamps; a plan step that dumps
+lamp lines; a contact-sheet tool; real-device timing (six lamps estimated 1.6–2.4 ms a frame on the
+phone, borderline; a tap's or circle's look-ahead ~4–8 ms once at the cue); the lamps moving under
+the finger while the live camera comes in (to feel on a device); an eddy census for real rings.
+
+## 20. R13: two lamps he loved, kept and made into a clip (Nov 1, 17:00 UTC)
+
+The owner had two lamps on his phone, blue and purple, whose journeys danced together, and wanted a
+four-minute edit of them to a song; recording just those two by hand was hard, and he asked whether
+the panel's rows identified them (they don't: a rounded date and degree is a hundred kilometres) and
+whether he could keep a single lamp for good. Round 12's build was held back from `main` until this
+was in, because its spin had changed every lamp's own path: his two would have come back on other
+journeys.
+
+- *A lamp keeps its law* (Truth, 7b00639): `Leg.law` (0, the default and every leg kept before
+  this, is the flight as shipped up to build 49, without the spin; `sea::rules::LAW` 1 is today's);
+  a fresh put takes today's law; a set-down, a take's cut and a cue's cut continue their leg's. The
+  lamp's path, the worlds and the GPU maybes honour it. Law 0 is pinned to the old flight bit for bit
+  by a digest of 28 paths of 80 steps; a build-46 kept state loads as law 0. Between build 46 and
+  then only an exact fast path changed in the sea.
+- *The studio's menu* (Engineering): a rest on the record control (it used to export the last take
+  again) opens a native menu: a clip of the chosen lamps' journey (30 s to 5 min), the last take
+  again, keep these lamps / let them go, copy these lamps, paste lamps (when the clipboard holds
+  some). No new control; the menu appears only when asked for.
+- *The journey clip* (`App::journey_take`): a take with no hand in it: only the picked lamps (the
+  chosen; else the kept; else every lamp out), each drawn as itself with its whole line, from the day
+  the last of them was put to today, the date at a pace that fits the length (0.25–4 days a second;
+  past today when the journey is short), framed by the clip's camera, rendered offline at full
+  quality with a progress bar, silent (a song is added in the editor). `adrift-check journey
+  <lamps.txt> <seconds> <out.mp4>` makes the same clip from copied lamps or a phone's kept state.
+- *Kept lamps* (`Float.kept`): a clear-all, its undo and its redo leave them; the kept state stores
+  them; the look marks them.
+- *Lamps as text* (`App::lamps_text`, `paste_lamps`; `LAMPS_HEADER`): every leg exactly, so pasted
+  on any phone (or into the check) they go on bit for bit; their ids, and so their hues, kept when
+  free; the date goes to the day they were copied.

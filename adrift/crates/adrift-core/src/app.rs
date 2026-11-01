@@ -84,6 +84,17 @@ pub struct SceneFloat {
     pub days_ago: f64,
 }
 
+/// The first line of copied lamps (R13, `App::lamps_text`).
+pub const LAMPS_HEADER: &str = "adrift lamps 1";
+
+/// Lamps copied out (R13): their exact legs and the day they were copied on.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LampsCopy {
+    pub version: u32,
+    pub day: f64,
+    pub floats: Vec<Float>,
+}
+
 /// What is kept between launches: nothing is lost (DECISIONS.md §6).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Snapshot {
@@ -185,8 +196,13 @@ pub struct App {
     clip_phase: (f32, f32),
     /// Each lamp's worlds while the hand conducts (R11, `conduct.rs`), by lamp id.
     conduct: std::collections::HashMap<u32, crate::conduct::Worlds>,
+    /// The song the shell has, by name (R12): it plays from its start while a take records.
+    song: Option<String>,
     /// The cues of the last seconds, for the look (R11).
     cues: Vec<(crate::look::LookCue, f64)>,
+    /// The last cue's lamp (None: every lamp) and its drawn second (R12, Motion's: the clip pushes in on
+    /// a lamp cued alone, then eases back to them all).
+    last_cue: Option<(Option<u32>, f64)>,
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
@@ -373,7 +389,9 @@ impl App {
             exporting: false,
             clip_phase: (1.0, 0.0),
             conduct: Default::default(),
+            song: None,
             cues: Vec::new(),
+            last_cue: None,
         })
     }
 
@@ -547,6 +565,11 @@ impl App {
                     t.speed = speed.clamp(0.25, 2.0);
                 }
             }
+            Intent::Menu => {
+                if self.studio.replay.is_none() {
+                    self.studio.menu_wanted = true;
+                }
+            }
             Intent::Export => {
                 if self.studio.replay.is_none() && !self.studio.takes.is_empty() {
                     self.studio.export_wanted = true;
@@ -605,7 +628,9 @@ impl App {
                         // a new leg from here, its own seed: the path before it stays what it was
                         let mut legs = f.legs();
                         f.seed = (f.seed ^ day.to_bits()).rotate_left(23).wrapping_mul(0x9E37_79B9_7F4A_7C15);
-                        legs.push(Leg::new(p, day, f.seed));
+                        // set down: the law of the leg it continues (a lamp from an older build keeps its own, R13)
+                        let law = legs.last().map_or(crate::sea::rules::LAW, |l| l.law);
+                        legs.push(Leg::new(p, day, f.seed).under(law));
                         f.legs = legs;
                         let e = self.rules.put(p, day, f.seed, 0).eddy;
                         f.eddy = [e.0, e.1];
@@ -671,7 +696,7 @@ impl App {
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed)] });
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), kept: false, trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed)] });
         id
     }
 
@@ -698,7 +723,12 @@ impl App {
         if self.floats.is_empty() {
             return;
         }
-        let mut gone = std::mem::take(&mut self.floats);
+        // the kept lamps stay (R13)
+        let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+        self.floats = kept;
+        if gone.is_empty() {
+            return;
+        }
         for f in &mut gone {
             f.hand = Hand::Free;
         }
@@ -754,7 +784,8 @@ impl App {
     fn redo(&mut self) {
         match self.redo.pop() {
             Some(Undo::Cleared(_)) => {
-                let mut gone = std::mem::take(&mut self.floats);
+                let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+                self.floats = kept;
                 for f in &mut gone {
                     f.hand = Hand::Free;
                 }
@@ -834,6 +865,16 @@ impl App {
             self.camera.riding = None;
         }
         let motion = self.motion();
+        // (R12, Motion's) while the hand conducts, the live camera frames the lamps it conducts
+        let hold = if self.conducting() {
+            let d = self.disc();
+            let r1 = d.r / self.camera.camera.zoom;
+            let half = self.width as f64 / self.ppp / 2.0;
+            crate::studio::frame(&self.lean_for(r1, half, false))
+        } else {
+            None
+        };
+        self.camera.hold_frame(hold, now, motion);
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
@@ -1065,7 +1106,7 @@ impl App {
                 break;
             }
             let next = grid_next(last.day);
-            let s = rules.flight(Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
+            let s = rules.flight_under(leg.law, Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
             path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
             *budget -= 1;
         }
@@ -1229,7 +1270,7 @@ impl App {
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
                     let first = f.legs.first().copied().unwrap_or(Leg::new(f.at, f.put_day, f.seed));
-                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
+                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured, kept: f.kept }
                 })
                 .collect(),
             behind: self.behind() as f32,
@@ -1247,6 +1288,8 @@ impl App {
                     .collect()
             },
             conducting: self.conducting(),
+            song: self.song.is_some(),
+            fermata: self.conducting() && self.gestures.fermata(),
             cues: self.cues.iter().map(|(c, when)| {
                 let mut c = c.clone();
                 c.age = (self.seconds - when) as f32;
@@ -1334,7 +1377,7 @@ impl App {
             let budget = budget;
             while reached < target - 1e-6 && steps < budget {
                 let dt = MAYBES_STEP.min(target - reached);
-                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base));
+                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base).under(leg.law));
                 reached += dt;
                 steps += 1;
                 if reached >= c.next_keep - 1e-9 || batch.len() as u32 >= crate::sea::MAX_STEPS {
@@ -1530,6 +1573,7 @@ impl App {
         self.ripples.clear();
         self.conduct.clear();
         self.cues.clear();
+        self.last_cue = None;
         self.pressing = None;
         self.pressing_float = None;
         self.last_t = Some(now);
@@ -1545,6 +1589,70 @@ impl App {
         }
         self.bloom = if self.shown().is_some() { 1.0 } else { 0.0 };
         self.step_clouds(usize::MAX);
+    }
+
+    /// The song the shell plays from its start while a take records (R12), by name; None for none.
+    pub fn set_song(&mut self, name: Option<String>) {
+        self.song = name;
+    }
+
+    /// The song's name, if the shell has one.
+    pub fn song(&self) -> Option<&str> {
+        self.song.as_deref()
+    }
+
+    /// Whether a take is being recorded now (the shell starts and stops the song by it).
+    pub fn recording(&self) -> bool {
+        self.studio.recording.is_some()
+    }
+
+    /// While exporting, where the take's song begins in the clip and how long it runs, seconds
+    /// (R12); None without a song or at another speed.
+    pub fn export_song(&self) -> Option<(f64, f64)> {
+        self.studio.replay.as_ref()?.take.song_in_clip()
+    }
+
+    /// The lamps a conducting camera frames (R11, R12; Motion's): those a cue has touched, else every
+    /// lamp out, with the last `studio::FRAME_TRAIL` days of their lines (the path's samples, the
+    /// oldest point interpolated to the edge so the frame never steps), in a view of disc radius `r1`
+    /// at zoom 1 and half-width `half`, points.
+    pub fn lean_for(&self, r1: f64, half: f64, focus: bool) -> crate::studio::Lean {
+        let day = self.clock.day;
+        let these: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        let lines = |fs: &[&Float]| {
+            let since = day - crate::studio::FRAME_TRAIL;
+            let mut trail = Vec::new();
+            for f in fs {
+                let mut prev: Option<&Sample> = None;
+                for li in 0..f.legs().len() {
+                    let Some(path) = self.paths.get(&(f.id, li)) else { continue };
+                    for s in &path.samples {
+                        if s.day > day {
+                            break;
+                        }
+                        if s.day >= since {
+                            if let Some(p) = prev.filter(|p| p.day < since) {
+                                let fr = ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
+                                trail.push(lerp_place(p.at, s.at, fr));
+                            }
+                            trail.push(s.at);
+                        }
+                        prev = Some(s);
+                    }
+                }
+            }
+            trail
+        };
+        // (R12) a lamp cued alone, among others: the clip leans in on it, then back to them all
+        let focus = match self.last_cue.filter(|_| focus && these.len() > 1) {
+            Some((Some(id), when)) => these.iter().find(|f| f.id == id).map(|f| {
+                let w = crate::studio::focus_weight(self.seconds - when);
+                (vec![f.at], lines(&[*f]), w)
+            }),
+            _ => None,
+        }
+        .filter(|(_, _, w)| *w > 0.0);
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus }
     }
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
@@ -1577,7 +1685,7 @@ impl App {
             let mut legs = f.legs();
             legs.truncate(li + 1);
             if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9) {
-                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy) });
+                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy), law: leg.law });
             }
             f.legs = legs;
         }
@@ -1616,6 +1724,7 @@ impl App {
         if !self.conducting() {
             return;
         }
+        self.last_cue = Some((float, self.seconds));
         self.step_worlds();
         let day = self.clock.day;
         let disc = self.disc();
@@ -1631,9 +1740,10 @@ impl App {
         let mut before = Vec::new();
         for id in targets {
             let Some(w) = self.conduct.get(&id) else { continue };
-            let Some(choice) = w.choose(gesture, day, self.clock.rate, &project) else { continue };
+            let Some(choice) = w.choose(&self.rules, gesture, day, self.clock.rate, &project) else { continue };
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
+            let fan: Vec<LonLat> = choice.fan.iter().map(|k| w.place(*k, day).at).collect();
             let li = w.leg_index;
             // the leg becomes world k to the next grid mark, and the next leg begins there with world
             // k's exact state, still in world k: the lamp's path is that world's, bit for bit (Truth)
@@ -1645,14 +1755,15 @@ impl App {
             legs[li].world = choice.k;
             if cut_day > legs[li].day + 1e-9 {
                 let seed = legs[li].seed;
-                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]) });
+                let law = legs[li].law;
+                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]), law });
             }
             f.legs = legs;
             let from = f.at;
             f.at = chosen.at;
             f.eddy = [chosen.eddy.0, chosen.eddy.1];
             f.lit_for = 0.0;
-            let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, age: 0.0 };
+            let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, fan, age: 0.0 };
             self.cues.push((cue, self.seconds));
         }
         if !before.is_empty() {
@@ -1683,7 +1794,7 @@ impl App {
         self.clock.rate = crate::conduct::TEMPO;
         let start = self.take_start();
         self.apply_start(&start, now);
-        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default() });
+        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: self.song.clone() });
     }
 
     /// The take ends and is kept, the newest last (R9).
@@ -1713,6 +1824,159 @@ impl App {
             return 0;
         }
         let Some(take) = index.map_or(self.studio.takes.last(), |i| self.studio.takes.get(i)).cloned() else { return 0 };
+        self.export_begin_take(take, fps)
+    }
+
+    /// Whether the reader asked for the studio's menu since the shell last asked (R13).
+    pub fn menu_wanted(&mut self) -> bool {
+        std::mem::take(&mut self.studio.menu_wanted)
+    }
+
+    /// The lamps a journey clip or a copy takes (R13): those chosen (as lamp or cloud), else every lamp
+    /// out, by id.
+    pub fn picked_lamps(&self) -> Vec<u32> {
+        let day = self.clock.day;
+        let mut ids: Vec<u32> = self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))).map(|f| f.id).collect();
+        if ids.is_empty() {
+            ids = self.floats.iter().filter(|f| f.born(day) && f.kept).map(|f| f.id).collect();
+        }
+        if ids.is_empty() {
+            ids = self.floats.iter().filter(|f| f.born(day)).map(|f| f.id).collect();
+        }
+        ids
+    }
+
+    /// A journey clip of the picked lamps (R13): no hand in it. Only those lamps, each drawn as itself
+    /// with its whole line, from the day the last of them was put to today, the date running at a pace
+    /// that fits the journey into `seconds` (a quarter of a day to four days a second; past today if the
+    /// journey is short), the clip's camera framing them as it does any take. A take with no touches,
+    /// exported like any other.
+    pub fn journey_take(&self, seconds: f64) -> Option<crate::studio::Take> {
+        let ids = self.picked_lamps();
+        if ids.is_empty() || seconds <= 0.0 {
+            return None;
+        }
+        let floats: Vec<Float> = self
+            .floats
+            .iter()
+            .filter(|f| ids.contains(&f.id))
+            .cloned()
+            .map(|mut f| {
+                f.hand = Hand::Free;
+                f.lit_for = 10.0;
+                f
+            })
+            .collect();
+        // from the day the last of them was put, so they are all out from the first frame (each drawn with
+        // its whole line, the days before included)
+        let first = floats.iter().map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
+        let span = (self.clock.day - first).max(1.0);
+        let rate = (span / seconds).clamp(0.25, 4.0);
+        let mut start = self.take_start();
+        start.clock = Clock { day: first, running: true, rate };
+        start.chosen = Vec::new();
+        start.followed = ids.clone();
+        start.riding = None;
+        start.credits_open = false;
+        // the camera starts over where they began; the clip's own framing takes it from there
+        let (mut x, mut y, mut z) = (0.0, 0.0, 0.0);
+        for f in &floats {
+            let at = f.legs().first().map_or(f.at, |l| l.at).to_xyz();
+            x += at[0];
+            y += at[1];
+            z += at[2];
+        }
+        let n = (x * x + y * y + z * z).sqrt().max(1e-9);
+        let (lat, lon) = ((y / n).asin().to_degrees(), (x / n).atan2(z / n).to_degrees());
+        start.camera = Camera::new(lon, lat, 3.0);
+        start.floats = floats;
+        let fps = 30.0;
+        let frames = (seconds * fps).ceil() as usize;
+        let events = (1..=frames).map(|i| crate::studio::TakeEvent::Frame { t: i as f64 / fps }).collect();
+        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: None })
+    }
+
+    /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
+    pub fn journey_begin(&mut self, seconds: f64, fps: f64) -> u32 {
+        if self.studio.replay.is_some() {
+            return 0;
+        }
+        match self.journey_take(seconds) {
+            Some(take) => self.export_begin_take(take, fps),
+            None => 0,
+        }
+    }
+
+    /// The chosen lamps (as lamp or cloud) kept for good, or let go (R13); how many changed.
+    pub fn keep_chosen(&mut self, on: bool) -> usize {
+        let mut n = 0;
+        for f in &mut self.floats {
+            if (self.chosen.contains(&f.id) || self.followed.contains(&f.id)) && f.kept != on {
+                f.kept = on;
+                n += 1;
+            }
+        }
+        n
+    }
+
+    /// Of the chosen lamps: how many there are and how many are kept (R13, the menu's offer).
+    pub fn chosen_kept(&self) -> (usize, usize) {
+        let chosen: Vec<&Float> = self.floats.iter().filter(|f| self.chosen.contains(&f.id) || self.followed.contains(&f.id)).collect();
+        (chosen.len(), chosen.iter().filter(|f| f.kept).count())
+    }
+
+    /// The picked lamps as text to copy (R13): every leg exactly, so pasted anywhere (another phone,
+    /// the check) they go on exactly as here. A first line names it.
+    pub fn lamps_text(&self) -> Option<String> {
+        let ids = self.picked_lamps();
+        if ids.is_empty() {
+            return None;
+        }
+        let floats: Vec<Float> = self.floats.iter().filter(|f| ids.contains(&f.id)).cloned().map(|mut f| {
+            f.hand = Hand::Free;
+            f.lit_for = 10.0;
+            f.wake.clear();
+            f
+        }).collect();
+        let copy = LampsCopy { version: 1, day: self.clock.day, floats };
+        Some(format!("{LAMPS_HEADER}\n{}", serde_json::to_string(&copy).ok()?))
+    }
+
+    /// Lamps pasted from `lamps_text` (R13): added as they were (their ids kept when free, so their
+    /// hues; else new ones), undoable one by one; the date is left where it is unless `go_to_day`.
+    /// How many came.
+    pub fn paste_lamps(&mut self, text: &str, go_to_day: bool) -> usize {
+        let Some(json) = text.trim_start().strip_prefix(LAMPS_HEADER) else { return 0 };
+        let Ok(copy) = serde_json::from_str::<LampsCopy>(json.trim()) else { return 0 };
+        if copy.version != 1 {
+            return 0;
+        }
+        let mut n = 0;
+        for mut f in copy.floats {
+            if self.floats.iter().any(|g| g.id == f.id) {
+                f.id = self.next_id;
+            }
+            self.next_id = self.next_id.max(f.id + 1);
+            f.hand = Hand::Free;
+            self.undo.push(Undo::Put(f.id));
+            self.floats.push(f);
+            n += 1;
+        }
+        if n > 0 {
+            self.redo.clear();
+            if go_to_day {
+                self.clock.day = copy.day;
+            }
+            self.step_floats_with(usize::MAX);
+        }
+        n
+    }
+
+    /// Begins exporting a take (R9; R13 a journey clip too).
+    pub fn export_begin_take(&mut self, take: crate::studio::Take, fps: f64) -> u32 {
+        if self.studio.replay.is_some() {
+            return 0;
+        }
         let live = Stash {
             start: self.take_start(),
             undo: self.undo.clone(),
@@ -1825,18 +2089,11 @@ impl App {
             ClipPart::During => (1.0, 0.0),
             ClipPart::After => (1.0, through as f32),
         };
-        // what the clip leans toward (R11): the lamps a cue has touched, else every lamp out
+        // what the clip frames (R11, R12): the lamps a cue has touched, else every lamp out, and their lines
         let lamps = {
-            let day = self.clock.day;
-            let out: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
-            let conducted: Vec<LonLat> = out.iter().filter(|f| f.legs().iter().any(|l| l.world != 0)).map(|f| f.at).collect();
             let view = self.clip_view(Camera { zoom: 1.0, ..self.camera.camera });
             let (w, _) = crate::studio::CLIP;
-            crate::studio::Lean {
-                lamps: if conducted.is_empty() { out.iter().map(|f| f.at).collect() } else { conducted },
-                r1: view.disc.r,
-                half: w as f64 / crate::studio::CLIP_PPP / 2.0,
-            }
+            self.lean_for(view.disc.r, w as f64 / crate::studio::CLIP_PPP / 2.0, true)
         };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();

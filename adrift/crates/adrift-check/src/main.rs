@@ -132,6 +132,10 @@ struct Plan {
     /// struggling phone (R10, Motion).
     #[serde(default = "default_fps")]
     fps: f64,
+    /// A song the takes are conducted to (R12): a path to an audio file, or "tone" (a test tone);
+    /// an export lays it under the clip from the take's first moment, as the device does.
+    #[serde(default)]
+    song: Option<String>,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -225,6 +229,9 @@ fn play(args: &[String]) -> Result<()> {
         credits_open: plan.credits_open,
     });
     app.set_scene(&scene);
+    if let Some(song) = &plan.song {
+        app.set_song(Some(song.clone()));
+    }
     if let Some(rows) = &plan.panel {
         app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
     }
@@ -496,11 +503,13 @@ fn play(args: &[String]) -> Result<()> {
             let t_export = std::time::Instant::now();
             let mut n = 0u32;
             let mut last = Vec::new();
-            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll\n");
+            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
             while let Some(px) = app.export_frame(&shot) {
                 use std::io::Write;
                 if let Some((c, k)) = app.export_camera() {
-                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll));
+                    // each lamp out: id:lon:lat, space-separated (R12: lamps in frame becomes a number)
+                    let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
+                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
                 }
                 ff.stdin.as_mut().unwrap().write_all(&px)?;
                 if n == 0 || n + 1 == frames {
@@ -515,6 +524,26 @@ fn play(args: &[String]) -> Result<()> {
             std::fs::write(out.join(format!("{name}-camera.csv")), trace)?;
             drop(ff.stdin.take());
             ff.wait()?;
+            // the song under the clip, from the take's first moment, fading over its last second (R12)
+            if let (Some(song), Some((start, len))) = (&plan.song, app.export_song()) {
+                let silent = out.join(format!("{name}-silent.mp4"));
+                std::fs::rename(&mp4, &silent)?;
+                let mut cmd = std::process::Command::new("ffmpeg");
+                cmd.args(["-loglevel", "error", "-y", "-i"]).arg(&silent);
+                if song == "tone" {
+                    cmd.args(["-f", "lavfi", "-i", &format!("sine=frequency=330:duration={len}")]);
+                } else {
+                    cmd.arg("-i").arg(song);
+                }
+                let ms = (start * 1000.0).round() as u64;
+                let fade = (len - 1.0).max(0.0);
+                cmd.args(["-filter_complex", &format!("[1:a]atrim=0:{len},adelay={ms}|{ms},afade=t=out:st={:.3}:d=1[a]", start + fade), "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-t", &format!("{:.3}", start + len)]);
+                let ok = cmd.arg(&mp4).status().context("ffmpeg (song)")?.success();
+                anyhow::ensure!(ok, "export {name}: the song could not be laid under the clip");
+                let line = format!("{i:3} t={t:7.2}s export {name}: the song from {start:.2} s for {len:.2} s\n");
+                print!("{line}");
+                log.push_str(&line);
+            }
             let drift = app.export_drift();
             app.export_end();
             let line = format!("{i:3} t={t:7.2}s export {name}: {n} frames {ew}x{eh} in {:.1}s, the replay ends {} from the take\n", t_export.elapsed().as_secs_f64(), drift.map_or("(no end recorded)".to_string(), |d| format!("{d:.3} km")));
@@ -546,18 +575,67 @@ fn play(args: &[String]) -> Result<()> {
     Ok(())
 }
 
+/// A journey clip of copied lamps (R13): `journey <lamps.txt> <seconds> <out.mp4>` pastes the text
+/// the app's "Copy these lamps" makes (or a phone's whole kept state, `adrift.json`, whose lamps are
+/// all taken) and exports their journey as the phone would, with first and last frames beside it.
+fn journey(args: &[String]) -> Result<()> {
+    let text = std::fs::read_to_string(&args[0]).with_context(|| args[0].clone())?;
+    let seconds: f64 = args[1].parse().context("seconds")?;
+    let out = PathBuf::from(&args[2]);
+    if let Some(dir) = out.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let (_instance, gpu) = gpu()?;
+    let (w, h, ppp) = (1179u32, 2556u32, 3.0);
+    let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    let n = if text.trim_start().starts_with(adrift_core::app::LAMPS_HEADER) {
+        app.paste_lamps(&text, true)
+    } else {
+        anyhow::ensure!(app.restore(&text), "not lamps copied from Adrift, nor its kept state");
+        app.floats.len()
+    };
+    anyhow::ensure!(n > 0, "no lamps in {}", args[0]);
+    let frames = app.journey_begin(seconds, 30.0);
+    anyhow::ensure!(frames > 0, "no journey to make");
+    let (ew, eh) = app.export_size().unwrap();
+    let shot = Offscreen::new(&app.gpu, ew, eh);
+    let mut ff = std::process::Command::new("ffmpeg")
+        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20"])
+        .arg(&out)
+        .stdin(std::process::Stdio::piped())
+        .spawn()
+        .context("ffmpeg")?;
+    let t0 = std::time::Instant::now();
+    let mut i = 0u32;
+    while let Some(px) = app.export_frame(&shot) {
+        use std::io::Write;
+        ff.stdin.as_mut().unwrap().write_all(&px)?;
+        if i == 0 || i + 1 == frames || i % 900 == 0 {
+            let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
+            save(&out.with_extension(format!("{i:05}.png")), ew, eh, &rgba)?;
+        }
+        i += 1;
+    }
+    drop(ff.stdin.take());
+    ff.wait()?;
+    app.export_end();
+    println!("{}: {n} lamps, {i} frames {ew}x{eh} in {:.1}s", out.display(), t0.elapsed().as_secs_f64());
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("render") if args.len() >= 3 => render(&args[1..]),
         Some("play") if args.len() >= 3 => play(&args[1..]),
+        Some("journey") if args.len() >= 4 => journey(&args[1..]),
         Some("info") => {
             let (_i, gpu) = gpu()?;
             println!("{:?}", gpu.adapter_info);
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> | info");
             std::process::exit(2);
         }
     }
