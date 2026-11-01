@@ -1632,11 +1632,17 @@ impl App {
                             break;
                         }
                         if s.day >= since {
+                            // (R15) weighted: the newest days whole, older ones drawn in toward the lamp
+                            let near = |at: LonLat, d: f64| {
+                                let age = day - d;
+                                let w = if age <= crate::studio::FRAME_TRAIL_FULL { 1.0 } else { 1.0 - 0.5 * (age - crate::studio::FRAME_TRAIL_FULL) / (crate::studio::FRAME_TRAIL - crate::studio::FRAME_TRAIL_FULL) };
+                                lerp_place(f.at, at, w.clamp(0.5, 1.0))
+                            };
                             if let Some(p) = prev.filter(|p| p.day < since) {
                                 let fr = ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
-                                trail.push(lerp_place(p.at, s.at, fr));
+                                trail.push(near(lerp_place(p.at, s.at, fr), since));
                             }
-                            trail.push(s.at);
+                            trail.push(near(s.at, s.day));
                         }
                         prev = Some(s);
                     }
@@ -1653,7 +1659,17 @@ impl App {
             _ => None,
         }
         .filter(|(_, _, w)| *w > 0.0);
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus }
+        // (R15) the whole lines since the take began, every quarter day, for the end beat's pull-out
+        let mut whole = Vec::new();
+        if let Some(from) = self.studio.replay.as_ref().map(|r| r.take.start.clock.day).or(self.studio.recording.as_ref().map(|r| r.start.clock.day)) {
+            for f in &these {
+                for li in 0..f.legs().len() {
+                    let Some(path) = self.paths.get(&(f.id, li)) else { continue };
+                    whole.extend(path.samples.iter().filter(|s| s.day >= from && s.day <= day).map(|s| s.at));
+                }
+            }
+        }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole }
     }
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
@@ -1906,7 +1922,7 @@ impl App {
             events.push(crate::studio::TakeEvent::Frame { t });
             last = day;
         }
-        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: None })
+        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing { hold_out: crate::studio::JOURNEY_HOLD_OUT, ..Default::default() }, song: None })
     }
 
     /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
