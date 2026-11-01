@@ -1539,7 +1539,7 @@ impl App {
         self.resize(take.width, take.height, take.ppp);
         self.apply_start(&take.start, take.t0);
         let frames = ((take.clip_seconds() * fps).ceil() as u32).max(1);
-        let cam = take.start.camera;
+        let cam = crate::studio::ClipCamera::new(take.start.camera);
         self.studio.replay = Some(crate::studio::Replay { take, next_event: 0, frame: 0, frames, fps, live, cam, held: 0.0 });
         frames
     }
@@ -1632,11 +1632,8 @@ impl App {
         };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();
-            let half = r.take.framing.follow;
-            if r.frame > 0 {
-                r.cam = crate::studio::follow(r.cam, self.camera.camera, dt, half);
-            }
-            r.cam
+            let framing = r.take.framing;
+            r.cam.step(self.camera.camera, part, through, dt, &framing)
         };
         let view = self.clip_view(cam);
         self.haptic = false;

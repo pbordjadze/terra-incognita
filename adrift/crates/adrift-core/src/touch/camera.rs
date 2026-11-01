@@ -304,7 +304,10 @@ impl CameraControl {
             }
         } else if !touching && self.spin.0.abs() + self.spin.1.abs() > motion::FLING_REST {
             let disc = self.disc;
-            self.turn(&disc, self.spin.0 * dt, self.spin.1 * dt);
+            // the exact distance a decaying fling covers in dt (R10: the same glide at 20 frames a
+            // second as at 120; a step of spin·dt overshoots more the coarser the frames)
+            let along = motion::fling_glide(dt);
+            self.turn(&disc, self.spin.0 * along, self.spin.1 * along);
             self.spin = (motion::fling_decay(self.spin.0, dt), motion::fling_decay(self.spin.1, dt));
         } else if let (Some((centre, spread, n)), true) = (self.frame.filter(|f| f.2 > 1), self.riding.is_some()) {
             // several places to hold (R8): turn toward their centre and zoom out to hold the
@@ -401,7 +404,7 @@ fn toward_centre(cam: &Camera, at: LonLat, angle: f64) -> Camera {
 }
 
 /// A rotation (columns) as a unit quaternion (w, x, y, z).
-fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
+pub(crate) fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
     // m[i][j] = row i, column j = c[j][i]
     let m = |i: usize, j: usize| c[j][i];
     let tr = m(0, 0) + m(1, 1) + m(2, 2);
@@ -423,7 +426,7 @@ fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
 }
 
 /// A unit quaternion as a rotation (columns).
-fn quat_mat(q: [f64; 4]) -> [[f64; 3]; 3] {
+pub(crate) fn quat_mat(q: [f64; 4]) -> [[f64; 3]; 3] {
     let [w, x, y, z] = q;
     let r = [
         [1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - w * z), 2.0 * (x * z + w * y)],
@@ -619,6 +622,28 @@ mod tests {
         let mut q = rig(0.0, 0.0, 1.0);
         q.apply(&d, CameraMove::Fling { vx: 600.0, vy: 0.0 }, 0.0, R);
         assert!(!q.tick(0.01, 0.01, None, true, false, R));
+    }
+
+    #[test]
+    fn a_fling_glides_as_far_at_20_frames_a_second_as_at_120() {
+        // (R10: a take recorded on a struggling phone exports the same glide)
+        let d = disc(1.0);
+        let glide = |fps: f64| {
+            let mut r = rig(0.0, 0.0, 1.0);
+            r.apply(&d, CameraMove::Fling { vx: 600.0, vy: 0.0 }, 0.0, M);
+            let mut t = 0.0;
+            let mut at_half = None;
+            while r.tick(t, 1.0 / fps, None, true, false, M) && t < 5.0 {
+                t += 1.0 / fps;
+                if at_half.is_none() && t >= 0.5 - 1e-9 {
+                    at_half = Some(r.camera.lon);
+                }
+            }
+            (at_half.unwrap(), r.camera.lon)
+        };
+        let (h20, e20) = glide(20.0);
+        let (h120, e120) = glide(120.0);
+        assert!((h20 - h120).abs() < 0.6 && (e20 - e120).abs() < 0.3, "half-way {h20} vs {h120}, rest {e20} vs {e120}");
     }
 
     #[test]
