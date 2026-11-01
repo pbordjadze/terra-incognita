@@ -238,6 +238,10 @@ pub struct LookState {
     /// The lamp whose panel mark a finger rests on, and how far its rest has thickened, 0..1 (R10:
     /// the lamp swells while its mark is pressed; from Motion's `Gestures::panel_pressing_since`).
     pub panel_press: Option<(u32, f32)>,
+    /// A ring on the water at a lamp (R10: a tap on its mark or on it): the lamp's
+    /// id, where, and seconds since. The sea draws every ring under the maybes; these are drawn again
+    /// over them, in the lamp's hue, so a ring at a lamp is not lost in its own cloud and says whose it is.
+    pub lamp_rings: Vec<(u32, LonLat, f32)>,
     /// How many takes are kept, the newest ready to export (R9).
     pub takes: u32,
     /// The clouds out, in the order chosen (the front one last) (R6).
@@ -420,6 +424,27 @@ impl Look {
         // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
         let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id) }).collect();
         self.words.panel(&rows, reading, n, &mut strokes);
+        // a ring at a lamp (R10), over the maybes: a thin circle of its hue spreading
+        // from the lamp over a second and fading as it goes
+        for &(id, at, age) in &state.lamp_rings {
+            let t = (age / 1.2).clamp(0.0, 1.0);
+            if t >= 1.0 {
+                continue;
+            }
+            let ease = 1.0 - (1.0 - t).powi(3);
+            let ang = (9.0 + 34.0 * ease) * reading / disc[2].max(1.0);
+            let c = unit(at);
+            let up = if c[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
+            let e1 = { let v = [up[1] * c[2] - up[2] * c[1], up[2] * c[0] - up[0] * c[2], up[0] * c[1] - up[1] * c[0]]; let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt(); [v[0] / l, v[1] / l, v[2] / l] };
+            let e2 = [c[1] * e1[2] - c[2] * e1[1], c[2] * e1[0] - c[0] * e1[2], c[0] * e1[1] - c[1] * e1[0]];
+            let (ca, sa) = (ang.cos(), ang.sin());
+            let ring: Vec<wake::Pt> = (0..48).map(|j| {
+                let th = j as f32 / 48.0 * std::f32::consts::TAU;
+                let (x, y) = (th.cos() * sa, th.sin() * sa);
+                wake::Pt { p: [c[0] * ca + e1[0] * x + e2[0] * y, c[1] * ca + e1[1] * x + e2[1] * y, c[2] * ca + e1[2] * x + e2[2] * y], w: 2.2 - 1.2 * t, a: 0.85 * (1.0 - t).powf(1.5), hollow: 0.0 }
+            }).collect();
+            wake::line(&mut strokes, &ring, lamp_hue(id), false, n, true);
+        }
         self.strokes.prepare(gpu, &strokes);
         if state.credits_open {
             labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
