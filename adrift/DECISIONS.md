@@ -658,3 +658,18 @@ journeys.
 - *Lamps as text* (`App::lamps_text`, `paste_lamps`; `LAMPS_HEADER`): every leg exactly, so pasted
   on any phone (or into the check) they go on bit for bit; their ids, and so their hues, kept when
   free; the date goes to the day they were copied.
+
+## 21. R14 opens: the journey clip shows the dance (Nov 1, 17:50 UTC)
+
+Round 13's critic on the journey clip: a still wide shot, two small dots that never come near, a
+pace that doesn't adapt, a wake that fades to fragments ("the journey clip doesn't really show
+them together yet"); conducted clips better, but framed too wide and off-centre.
+
+- *Engineering* (4708322): `Intent::Rate` sets the date's pace; a journey take carries a pace
+  before each frame from `journey::pace`, so a clip's date can slow and hurry and still replay
+  exactly.
+- *Truth*: `journey::pace` from what is worth seeing (the pair's closeness and its change, turning,
+  loops); a real dancing pair for the demo and the checks (`crates/adrift-check/lamps/dance.txt`).
+- *Motion*: the clip's framing tight and centred (the span ~60% of the width, the lower third kept
+  clear), breathing as the lamps near and part; `lamp_in_clip.py` reading the trace's lamps.
+- *Visual*: a journey's whole line held in the clip; crossings that read; the marks quieter at rest.
