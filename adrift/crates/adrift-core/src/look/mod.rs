@@ -380,6 +380,14 @@ impl Look {
             let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
+        // an exported frame (R9) is the sea and its lamps: no panel, no date band, no credits page, no
+        // record control; the date alone as a quiet caption. The live screen keeps its chrome, the
+        // record control among it
+        if state.exporting {
+            self.words.prepare_caption(gpu, &state.date, height, width, reading, disc, n, &labels);
+            return;
+        }
+        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n));
         // the panel of every lamp out there (R6): where each was put, and which are out
         let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
         labels.extend(self.words.panel(&rows, reading, disc, n));
