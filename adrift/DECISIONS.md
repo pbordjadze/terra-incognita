@@ -476,3 +476,40 @@ something real.
 - *Truth*: the wind's rules (a step on the month's wind with measured variability, CPU and GPU), what
   differs between the two media written down as the first dials (`sea/MEDIA.md`), a picture of wind
   paths without the app.
+
+**R10 merged (Nov 1, 09:20 UTC).** Visual 3944269, Motion df06f56, Truth 83db8af, and Engineering's
+seams after them (a float's `trail` at every quarter-day step, the look's `panel_press`, the panel's
+words for VoiceOver through `adrift_panel_count`/`adrift_panel_item`, the export's camera trace
+`<name>-camera.csv`, `gusts.png` among the loaded files).
+
+- *The clip*: drawn at 9:16 through `studio::ClipCamera` (Motion): a critically damped follow in
+  rotation and log zoom, an opening beat of 0.8 s easing in from a tenth wider, an end beat of 1.2 s
+  carrying the take's last drift on and settling (`Framing.open`, `.settle`). The press ring is never
+  in a clip; a held lamp's ring and glow settle through the end beat; the caption sits by `clip`,
+  quieter at the end. A live fling glides the same decayed distance at any frame rate; the plans
+  `take-fling-pinch-20/-60` export the same clip from takes recorded at 20 and 60 fps.
+- *Journeys*: every wake one tapering stroke through the quarter-day steps (the eddy's real stalls
+  and loops, which Truth confirmed), round caps, no beads. The stroke tool (`look/wake.rs`: `line`,
+  `smooth`) draws screen marks too.
+- *The panel*: a row of marks top left, no words: each lamp's journey drawn small in its hue, ending
+  in its lamp (a glow if its cloud is out, a ring if followed); 44-point cells. A tap rings the sea at
+  the lamp; a rest swells the lamp. VoiceOver reads each mark's words.
+- *The record control*: its progress an arc.
+- *Speed*: no gesture yet (Motion, `touch/VOCABULARY.md` § 33): every candidate gives the record
+  control or the date a hidden second meaning; it waits for an edit surface with the trim.
+- *The wind* (Truth, not yet in the app): `sea/wind.rs` `AirRules` and `wind.wgsl` (`AirMaybes`, the
+  GPU within 6 m of the CPU): the month's 10 m wind plus a gust remembered for about a day, its
+  variance and time scale measured from five years of six-hourly reanalysis (`gusts.png`,
+  `tools/adrift/data/weather.py`); the weather shared by a world on a 15°×8° lattice; things come
+  down by rain-out or settling. Ten-day spreads against real paths: median ratio 1.04.
+  `sea/MEDIA.md` sets out the two media as one machine (a mean field, a remembered wander shared by a
+  world, stops) and proposes the studio's first dials: pace, wander, memory, kinship (cell and
+  share), lifetime, holds, trail. `tools/adrift/data/wind_paths.py` draws wind paths without the app.
+
+For next round, from the exit interviews: the preset seam from `MEDIA.md` (the wind preset wired,
+its lifetime dial defaulting to about four times the measured life, which is short for a clip); a
+tap's ring drawn above a lamp's cloud; `render` overrides (`--zoom`, `--day`) and committed baseline
+renders for before/after; a small, fast export size for judging motion; an `adrift-check rules`
+subcommand in place of ignored tests used as tools; a scene that shows an AirRules cloud in the real
+look before wiring; `AirMaybes` stepping many at once with keeps; contact sheets of a clip in the
+check's README (`ffmpeg -i clip.mp4 -vf "select=not(mod(n\,6)),scale=120:-1,tile=13x2" sheet.png`).
