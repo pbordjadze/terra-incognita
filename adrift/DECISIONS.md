@@ -685,3 +685,18 @@ at 20 km and zoom 100 the clip held the lamps and lost the dance's lines. A jour
 held in the clip, crossings keep their hues; the marks at rest are 62% size and 55% alpha until a
 lamp is chosen. `adrift-check journey` writes the camera trace; `tools/adrift/lamp_in_clip.py`
 reads the trace's lamps (fill, centre, the lower third, out of frame).
+
+## 22. R15 opens: the whole clip a dance (Nov 1, 19:00 UTC)
+
+Round 14's critic: the dance clip's last third is the edit ("two colours braiding and looping,
+almost romantic"), the first two thirds a camera chasing two lamps apart along a coast, their lines
+off the frame, sharp elbows where a lamp meets the coast, a still opening and an ending that stops
+mid-stroke ("skip to the end, that's where they dance"). Colours: a clip keeps each lamp's id, and
+its hue is its id's, so the reader's blue and purple stay blue and purple.
+
+- *Motion*: framing that holds the pair and their recent lines, pulling back rather than panning;
+  a wider opening easing in; an ending that pulls out to the dance's shape; the hand take framed as
+  the journey is.
+- *Truth*: a bolder pace, so the clip's time goes where the dance is; the coast hold's motion smooth
+  where it is the path's own; a demo pair whose dance starts early.
+- *Visual*: no hard elbows in the drawn line; a lively first beat; the marks no longer chrome.
