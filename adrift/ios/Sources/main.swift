@@ -75,8 +75,8 @@ final class AdriftView: UIView {
         adrift_frame(shell, link.targetTimestamp)
         if adrift_take_haptic(shell) { haptic.impactOccurred() }
         if adrift_take_export(shell) { exportTake() }
-        var picked: UInt32 = 0, takes: UInt32 = 0
-        if adrift_menu(shell, &picked, &takes), !exporting { studioMenu(picked: picked, takes: takes) }
+        var picked: UInt32 = 0, takes: UInt32 = 0, chosen: UInt32 = 0, kept: UInt32 = 0
+        if adrift_menu(shell, &picked, &takes, &chosen, &kept), !exporting { studioMenu(picked: picked, takes: takes, chosen: chosen, kept: kept) }
         let recording = adrift_recording(shell)
         if recording != wasRecording { wasRecording = recording; songFollows(recording) }
         if UIAccessibility.isVoiceOverRunning { refreshPanelElements(link.targetTimestamp) }
@@ -219,7 +219,7 @@ final class AdriftView: UIView {
     // the last take again; the lamps copied as text (exact: pasted on any phone they go on the same)
     // or pasted back.
 
-    func studioMenu(picked: UInt32, takes: UInt32) {
+    func studioMenu(picked: UInt32, takes: UInt32, chosen: UInt32, kept: UInt32) {
         let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         let lamps = picked == 1 ? "this lamp" : "these \(picked) lamps"
         if picked > 0 {
@@ -227,6 +227,13 @@ final class AdriftView: UIView {
         }
         if takes > 0 {
             sheet.addAction(UIAlertAction(title: "The last take again", style: .default) { [weak self] _ in self?.exportTake() })
+        }
+        // a lamp kept for good stays through a clear-all and every update (R13)
+        let these = chosen == 1 ? "this lamp" : "these \(chosen) lamps"
+        if chosen > 0 && kept < chosen {
+            sheet.addAction(UIAlertAction(title: "Keep \(these)", style: .default) { [weak self] _ in if let s = self?.shell { _ = adrift_keep(s, true) } })
+        } else if chosen > 0 {
+            sheet.addAction(UIAlertAction(title: "Let \(these) go", style: .default) { [weak self] _ in if let s = self?.shell { _ = adrift_keep(s, false) } })
         }
         if picked > 0 {
             sheet.addAction(UIAlertAction(title: "Copy \(lamps)", style: .default) { [weak self] _ in self?.copyLamps() })

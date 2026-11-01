@@ -170,6 +170,8 @@ pub fn unit(at: LonLat) -> [f32; 3] {
 pub struct LookFloat {
     /// The app's id (1, 2, 3…): a hue per lamp can hang on it (R5).
     pub id: u32,
+    /// Kept for good (R13): its mark shows it.
+    pub kept: bool,
     pub at: LonLat,
     /// 1 while it is what the reader just did, fading to 0 in time (the app's `lit_for` against the beat).
     pub lit: f32,

@@ -279,10 +279,17 @@ pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, 
 /// Whether the studio's menu was asked for since last asked (R13), and what it can offer: how many
 /// lamps a journey clip or a copy would take (`picked`) and how many takes are kept (`takes`).
 #[no_mangle]
-pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes: *mut u32) -> bool {
+pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes: *mut u32, chosen: *mut u32, kept: *mut u32) -> bool {
     let Some(s) = shell.as_mut() else { return false };
     if !s.app.menu_wanted() {
         return false;
+    }
+    let (c, k) = s.app.chosen_kept();
+    if let Some(p) = chosen.as_mut() {
+        *p = c as u32;
+    }
+    if let Some(p) = kept.as_mut() {
+        *p = k as u32;
     }
     if let Some(p) = picked.as_mut() {
         *p = s.app.picked_lamps().len() as u32;
@@ -291,6 +298,12 @@ pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes:
         *p = s.app.studio.takes.len() as u32;
     }
     true
+}
+
+/// The chosen lamps kept for good (`on`) or let go (R13); how many changed.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_keep(shell: *mut Shell, on: bool) -> u32 {
+    shell.as_mut().map_or(0, |s| s.app.keep_chosen(on) as u32)
 }
 
 /// Begins exporting a journey clip of the picked lamps, `seconds` long, at `fps` (R13); the frames

@@ -696,7 +696,7 @@ impl App {
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed)] });
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), kept: false, trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed)] });
         id
     }
 
@@ -723,7 +723,12 @@ impl App {
         if self.floats.is_empty() {
             return;
         }
-        let mut gone = std::mem::take(&mut self.floats);
+        // the kept lamps stay (R13)
+        let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+        self.floats = kept;
+        if gone.is_empty() {
+            return;
+        }
         for f in &mut gone {
             f.hand = Hand::Free;
         }
@@ -779,7 +784,8 @@ impl App {
     fn redo(&mut self) {
         match self.redo.pop() {
             Some(Undo::Cleared(_)) => {
-                let mut gone = std::mem::take(&mut self.floats);
+                let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+                self.floats = kept;
                 for f in &mut gone {
                     f.hand = Hand::Free;
                 }
@@ -1264,7 +1270,7 @@ impl App {
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
                     let first = f.legs.first().copied().unwrap_or(Leg::new(f.at, f.put_day, f.seed));
-                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
+                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured, kept: f.kept }
                 })
                 .collect(),
             behind: self.behind() as f32,
@@ -1832,6 +1838,9 @@ impl App {
         let day = self.clock.day;
         let mut ids: Vec<u32> = self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))).map(|f| f.id).collect();
         if ids.is_empty() {
+            ids = self.floats.iter().filter(|f| f.born(day) && f.kept).map(|f| f.id).collect();
+        }
+        if ids.is_empty() {
             ids = self.floats.iter().filter(|f| f.born(day)).map(|f| f.id).collect();
         }
         ids
@@ -1896,6 +1905,24 @@ impl App {
             Some(take) => self.export_begin_take(take, fps),
             None => 0,
         }
+    }
+
+    /// The chosen lamps (as lamp or cloud) kept for good, or let go (R13); how many changed.
+    pub fn keep_chosen(&mut self, on: bool) -> usize {
+        let mut n = 0;
+        for f in &mut self.floats {
+            if (self.chosen.contains(&f.id) || self.followed.contains(&f.id)) && f.kept != on {
+                f.kept = on;
+                n += 1;
+            }
+        }
+        n
+    }
+
+    /// Of the chosen lamps: how many there are and how many are kept (R13, the menu's offer).
+    pub fn chosen_kept(&self) -> (usize, usize) {
+        let chosen: Vec<&Float> = self.floats.iter().filter(|f| self.chosen.contains(&f.id) || self.followed.contains(&f.id)).collect();
+        (chosen.len(), chosen.iter().filter(|f| f.kept).count())
     }
 
     /// The picked lamps as text to copy (R13): every leg exactly, so pasted anywhere (another phone,

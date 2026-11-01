@@ -482,6 +482,26 @@ mod tests {
     }
 
     #[test]
+    fn a_kept_lamp_survives_a_clear_and_is_picked() {
+        // R13: a lamp kept for good stays through a clear-all (and its undo and redo), and is what a
+        // journey or a copy takes when none is chosen
+        let Some(mut app) = app() else { return };
+        run(&mut app, 0.0, 0.2, |_| {});
+        app.command(Intent::Choose { float: 1 });
+        assert_eq!(app.keep_chosen(true), 1);
+        app.command(Intent::Unchoose);
+        app.command(Intent::ClearAll);
+        assert_eq!(app.floats.iter().map(|f| f.id).collect::<Vec<_>>(), vec![1]);
+        assert_eq!(app.picked_lamps(), vec![1]);
+        app.command(Intent::Undo);
+        assert_eq!(app.floats.len(), 2);
+        app.command(Intent::Redo);
+        assert_eq!(app.floats.iter().map(|f| f.id).collect::<Vec<_>>(), vec![1]);
+        let kept: crate::app::Snapshot = serde_json::from_str(&app.snapshot()).unwrap();
+        assert!(kept.floats[0].kept, "kept in the stored state");
+    }
+
+    #[test]
     fn a_take_start_is_invisible() {
         // the same scene run twice, once with a take begun at an off-grid moment: every frame's
         // lamps are where they would have been, to the bit, and the cut sits on the grid
