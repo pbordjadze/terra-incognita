@@ -722,3 +722,14 @@ rounded over ~20 reading points in a clip; magnified land eases to its broad col
 shading still steps past zoom ~20). Motion a65fde2: a journey's last third eases to hold the whole
 braid since the clip began, opening rather than panning; the zoom capped at 20 within 250 km of land,
 easing to 40 beyond 450 km.
+
+## 24. R17: centred, only pulling out, no corners (Nov 1, 21:30 UTC)
+
+Round 16's critic: the dance clip passes ("he'd post it nearly as is"; its ending "the best frame in
+the build"); the early pair's clip doesn't (the pair high with half the frame empty, V-corners, no
+land); a dip in at the dance's start. Motion 5d38cc8: the pair centred a touch below the middle, a
+journey that starts at its closest and only eases out, land within reach pulled into view. Visual
+7b09e31: a clip's line a centripetal spline through ~2-point pieces, a reversal within a step eased
+over a few samples each side. Engineering after them: `HOLD_DOWN` 0.25 (the lamps off the lower
+third's edge in the braid), `COAST_PULL` 1.4 and `LAND_LOOK_KM` 500 (at 2.5 and 1000 the early pair
+shrank to a tenth of the frame to show a coast).
