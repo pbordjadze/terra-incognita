@@ -733,3 +733,13 @@ journey that starts at its closest and only eases out, land within reach pulled 
 over a few samples each side. Engineering after them: `HOLD_DOWN` 0.25 (the lamps off the lower
 third's edge in the braid), `COAST_PULL` 1.4 and `LAND_LOOK_KM` 500 (at 2.5 and 1000 the early pair
 shrank to a tenth of the frame to show a coast).
+
+## 25. R18: a place to start from (Nov 1, 23:10 UTC)
+
+Round 17's critic: the dance clip passes without a caveat ("it has an arc: together, apart,
+together, against a coastline"); the app's caveat "the open-ocean ones look a bit empty": faceted
+streamlines close in, a still first frame, no place. Visual 5de935c: the stream function read as a
+Catmull-Rom surface through 16 texels (still interpolating the measured values), so the streamlines
+curve smoothly close in (32 texel loads a pixel in the sea pass, from 8: watch the device). Motion
+fc72f33: a journey's first frame wide enough to show the nearest coast (to 3000 km) or the globe,
+easing in to the pair over 2.4 s, then only pulling out.
