@@ -153,5 +153,5 @@ and `look_state()`:
   clockwise toward the take's longest (`studio::TAKE_MAX`), the seconds beside it in small italic.
   Never in a clip.
 - Studies: `studies/r9-live-recording-vs-clip-phone-half.png` (the live screen at the take's end, and
-  the clip's last frame), `studies/r9-record-control-idle-recording-phone.png`; the plan is
+  the clip's last frame, 9:16, its caption inside the window), `studies/r9-record-control-idle-recording-phone.png`; the plan is
   `adrift-check/plans/take-and-export.json`.

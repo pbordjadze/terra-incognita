@@ -444,12 +444,16 @@ impl Words {
 
     /// The words of an exported frame (R9): the clip is the sea and its lamps, so the chrome stays out
     /// (the panel, the date's band with its rule and marker, the credits, the recording's mark) and only
-    /// the date is kept, a quiet caption at the foot where the date stands live (time passing is the
+    /// the date is kept, a quiet caption at the foot where the date stands live (inside the clip's 9:16 window) (time passing is the
     /// clip's story), 15 points, pale on a soft dark halo as a subtitle is. `date_bounds` keeps the
     /// live screen's (nothing is touched in a clip).
     pub fn prepare_caption(&mut self, gpu: &Gpu, date: &str, height: f32, width: f32, reading: f32, disc: [f32; 3], night: bool, labels: &[GlyphInstance]) {
         let under = disc[1] + disc[2] + 40.0 * reading;
-        let foot = under.min(height - 72.0 * reading);
+        // inside the clip's 9:16 window (the app's `clip_window`: as large as the screen allows,
+        // centred on the globe vertically, clamped to the screen), 28 points above its foot at most
+        let wh = if height / width >= 16.0 / 9.0 { width * 16.0 / 9.0 } else { height };
+        let top = (disc[1] - wh / 2.0).clamp(0.0, (height - wh).max(0.0));
+        let foot = under.min(height - 72.0 * reading).min(top + wh - 28.0 * reading);
         // (as a film's subtitle: pale ink on a soft dark halo, which reads on sea, land and page alike;
         // a halo of the sea's tone lay on the land as a sticker)
         // below the globe, on the page, the page's own soft ink on a halo of the page
