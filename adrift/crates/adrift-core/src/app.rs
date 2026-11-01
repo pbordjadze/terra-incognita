@@ -1669,7 +1669,26 @@ impl App {
                 }
             }
         }
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole }
+        // (R16) the nearest land to the lamps' centre, on rings every 50 km to the far edge, eight bearings
+        let land_km = {
+            let sum = these.iter().fold([0.0; 3], |a, f| {
+                let v = f.at.to_xyz();
+                [a[0] + v[0], a[1] + v[1], a[2] + v[2]]
+            });
+            let c = LonLat::from_xyz(sum);
+            let (lat, lon) = (c.lat.to_radians(), c.lon.to_radians());
+            (1..=(crate::studio::COAST_FAR_KM / 50.0) as usize).map(|i| i as f64 * 50.0).filter(|_| !these.is_empty()).find(|km| {
+                (0..16).any(|k| {
+                    let b = k as f64 * std::f64::consts::PI / 8.0;
+                    let d = km / 6371.0;
+                    let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
+                    let lon2 = lon + (b.sin() * d.sin() * lat.cos()).atan2(d.cos() - lat.sin() * lat2.sin());
+                    self.rules.coast.is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+                })
+            })
+        };
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km) }
+
     }
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its

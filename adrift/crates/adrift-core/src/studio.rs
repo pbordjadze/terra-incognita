@@ -327,6 +327,9 @@ pub struct Lean {
     /// The lamps' whole lines since the take began, each point with its day (R15), for the end beat's
     /// pull-out to the shape and (R16) a journey's braid held through its last third.
     pub whole: Vec<(f64, crate::model::LonLat)>,
+    /// (R16) The closest the frame may come for the land near the lamps (`coast_cap`): `FRAME_ZOOM_COAST`
+    /// near a coast, where the sea's shelf shading still looks right, `FRAME_ZOOM_MAX` out at sea.
+    pub zoom_cap: f64,
 }
 
 /// How far the clip leans in on a lamp cued alone, `age` seconds after the cue (R12): in over half a
@@ -368,6 +371,24 @@ pub const FRAME_PAIR_MIN_KM: f64 = 60.0;
 /// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise). R14:
 /// 100 (a pair 80 km apart at 60% of the width); deeper, the coast's distance field shows its pixels.
 pub const FRAME_ZOOM_MAX: f64 = 40.0;
+/// Near a coast the frame comes no closer than this (R16, Visual: the shallow shelf's shading shows
+/// its raster's steps above about 20); open water keeps `FRAME_ZOOM_MAX`.
+pub const FRAME_ZOOM_COAST: f64 = 20.0;
+/// The cap eases from `FRAME_ZOOM_COAST` with land within `COAST_NEAR_KM` of the lamps' centre to
+/// `FRAME_ZOOM_MAX` with none within `COAST_FAR_KM`, so it never flips as a pair runs along a coast.
+pub const COAST_NEAR_KM: f64 = 250.0;
+pub const COAST_FAR_KM: f64 = 450.0;
+
+/// The zoom cap for land `km` from the lamps (None: none within `COAST_FAR_KM`).
+pub fn coast_cap(km: Option<f64>) -> f64 {
+    match km {
+        None => FRAME_ZOOM_MAX,
+        Some(d) => {
+            let x = ((d - COAST_NEAR_KM) / (COAST_FAR_KM - COAST_NEAR_KM)).clamp(0.0, 1.0);
+            FRAME_ZOOM_COAST + (FRAME_ZOOM_MAX - FRAME_ZOOM_COAST) * x * x * (3.0 - 2.0 * x)
+        }
+    }
+}
 /// How much of the take's own zoom (against the take's first) the clip keeps on top of the frame, in
 /// the zoom's log. 0 since R12: while conducting, the take's camera itself comes in to the lamps (the
 /// live hold), so its zoom is mostly the frame's, not the reader's pinch, and counting it doubled
@@ -379,10 +400,11 @@ const EARTH_KM: f64 = 6371.0;
 /// and their lines (Bădoiu–Clarkson, on the sphere), the zoom at which that circle and its margin fill
 /// `FRAME_FILL` of the width. None without lamps.
 pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
-    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half)?;
+    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
+    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap)?;
     match &l.focus {
         Some((lamps, trail, w)) if *w > 0.0 => {
-            let one = frame_of(lamps, trail, l.r1, l.half)?;
+            let one = frame_of(lamps, trail, l.r1, l.half, cap)?;
             // the zoom in its log; the centre at least as far toward the lamp as keeps it no further
             // out on the screen than it lay in the frame of them all (the zoom grows faster than a
             // plain blend of centres would follow)
@@ -415,7 +437,7 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     }
 }
 
-fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64) -> Option<(crate::model::LonLat, f64)> {
+fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64) -> Option<(crate::model::LonLat, f64)> {
     if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
@@ -437,7 +459,7 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
     let least = if lamps.len() > 1 { FRAME_PAIR_MIN_KM } else { FRAME_SPAN_MIN_KM };
     let half_span = (spread + FRAME_MARGIN_KM / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
     let zoom = (FRAME_FILL * half / (r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
-    Some((crate::model::LonLat::from_xyz(c), zoom))
+    Some((crate::model::LonLat::from_xyz(c), zoom.min(cap)))
 }
 
 /// The clip's camera: the lamps framed (`frame`), the take's own pinch kept by half against its first
@@ -864,11 +886,11 @@ mod tests {
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;
         // a lone lamp, a short line: close enough that 40 km is plainly visible (≥ 30 points)
-        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![] };
+        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0 };
         let (c, z) = frame(&lone).unwrap();
         assert!(40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2, "{c:?} {z}");
         // two lamps a thousand km apart: their span (with the margin) fills 60% of the width
-        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![] };
+        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0 };
         let (c, z) = frame(&two).unwrap();
         let cam = Camera::new(c.lon, c.lat, z);
         let reach = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z }).fold(0.0, f64::max);
@@ -906,7 +928,7 @@ mod tests {
 
     #[test]
     fn the_clip_puts_the_lamps_centre_a_little_above_the_middle_and_fills_six_tenths() {
-        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![] };
+        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0 };
         for roll in [0.0, 40.0] {
             let cam = lean(Camera { roll, ..Camera::new(-50.0, 20.0, 1.0) }, &two, 1.0);
             let r = 166.0 * cam.zoom;
@@ -929,7 +951,7 @@ mod tests {
             let d = d as f64;
             [(d, LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1)), (d, LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1))]
         }).collect();
-        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole };
+        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0 };
         // a wide floor: all of it
         let all = braid_lean(&l, 2.0);
         assert_eq!(all.trail.len(), 42);
