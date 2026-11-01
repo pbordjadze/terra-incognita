@@ -437,3 +437,13 @@ round's seam: **a take is data, not pixels.**
   by a fresh critic session standing in for his notes, until it could be shown without a caveat;
   presets (wind, a flat plane, more), the dials that differ between them, characters, a conductor
   mode and the casting of fates are the road.
+
+**R9 merged (Nov 1, 08:30 UTC).** Motion 981667a, Visual 8dd1493. One control at the top right
+records: a tap begins a take; while recording, a touch ends it and exports at once (the touch that
+stops is not in the clip, which ends on the last thing the hand meant); a rest on it re-exports the
+newest take. The clip is clean (no panel, no date band, no credits, no control), the date a quiet
+caption inside the 9:16 window. The live screen shows the control as a ring round a small lamp,
+lit and breathing while recording, beads filling toward the take's minute. For next time, from the
+exit interviews: one pure `clip_window` both the app and the look call; the clip's window in
+`LookState`; a render of a scene "as exported" without replaying a take; a slow-motion export (the
+replay's times scaled); the progress ring as an arc, not glyphs.
