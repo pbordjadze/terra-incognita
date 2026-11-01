@@ -9,10 +9,12 @@ use crate::model::Float;
 use crate::sea::Rules;
 
 /// How much slower the date may run where the lamps are worth seeing than where they only travel.
-pub const PACE_RANGE: f64 = 6.0;
-/// The interest is smoothed over this many days (a Gaussian's sigma), so the pace never lurches:
-/// the clip's camera follows it.
-pub const PACE_SMOOTH: f64 = 2.0;
+pub const PACE_RANGE: f64 = 20.0;
+/// The interest is smoothed over this many days (a Gaussian's sigma) before it is spent.
+pub const PACE_SMOOTH: f64 = 1.0;
+/// The pace itself (its logarithm) is then smoothed over this many seconds of the clip, so even a
+/// twentyfold change eases in and out: the clip's camera follows it (R15).
+pub const PACE_EASE: f64 = 1.0;
 /// A pair this close (km) counts as near (the interest of closeness falls off as exp(-d / NEAR_KM)).
 pub const NEAR_KM: f64 = 60.0;
 
@@ -50,7 +52,29 @@ pub fn pace(rules: &Rules, floats: &[Float], from: f64, to: f64, frames: usize, 
         let day = from + (j as f64 + frac) * step;
         out.push(if f == frames { to } else { day.min(to) });
     }
-    // never back (rounding)
+    // the pace eased in the clip's own time: its logarithm smoothed over PACE_EASE seconds, then
+    // rescaled so the frames still end on `to`
+    let per: Vec<f64> = std::iter::once(out[0] - from).chain(out.windows(2).map(|w| w[1] - w[0])).map(|p| p.max(1e-9).ln()).collect();
+    let sigma = (PACE_EASE * _fps).max(1.0);
+    let reach = (3.0 * sigma).ceil() as isize;
+    let eased: Vec<f64> = (0..per.len() as isize)
+        .map(|i| {
+            let (mut s, mut n) = (0.0, 0.0);
+            for k in -reach..=reach {
+                let w = (-0.5 * (k as f64 / sigma).powi(2)).exp();
+                s += w * per[(i + k).clamp(0, per.len() as isize - 1) as usize];
+                n += w;
+            }
+            (s / n).exp()
+        })
+        .collect();
+    let scale = (to - from) / eased.iter().sum::<f64>();
+    let mut day = from;
+    let mut out: Vec<f64> = eased.iter().map(|p| {
+        day += p * scale;
+        day
+    }).collect();
+    *out.last_mut().unwrap() = to;
     for i in 1..out.len() {
         if out[i] < out[i - 1] {
             out[i] = out[i - 1];
@@ -115,14 +139,26 @@ pub fn interest(rules: &Rules, floats: &[Float], from: f64, to: f64) -> Vec<f64>
             terms[3][i] += turn * lens[i - 1].min(lens[i]);
         }
     }
-    // each term by its own mean, so none drowns the others; plain travel weighs 1
-    let mut w = vec![1.0; marks];
-    for t in &terms {
+    // each term by its own mean, so none drowns the others, the dance's own (closeness, the line's
+    // winding) weighed most; the mix grows as its square, so the dance takes most of the clip and
+    // plain travel (weighing 1) passes quickly (R15: the critic's "the real dance arrives late")
+    let weights = [0.3, 0.3, 2.0, 1.5];
+    let mut x = vec![0.0; marks];
+    let total_w: f64 = weights.iter().sum();
+    for (t, wt) in terms.iter().zip(weights) {
         let mean = t.iter().sum::<f64>() / marks as f64;
         if mean > 1e-12 {
             for i in 0..marks {
-                w[i] += t[i] / mean;
+                x[i] += wt * t[i] / mean / total_w;
             }
+        }
+    }
+    let w: Vec<f64> = x.iter().map(|v| 1.0 + 3.0 * v * v).collect();
+    if std::env::var_os("ADRIFT_PACE_DEBUG").is_some() {
+        for b in 0..(marks / 20) {
+            let r = b * 20..(b + 1) * 20;
+            let m = |t: &Vec<f64>| t[r.clone()].iter().sum::<f64>() / 20.0 / (t.iter().sum::<f64>() / marks as f64).max(1e-12);
+            eprintln!("days {:5.1}: close {:.2} dchange {:.2} wind {:.2} turn {:.2}", b as f64 * 20.0 * step, m(&terms[0]), m(&terms[1]), m(&terms[2]), m(&terms[3]));
         }
     }
     // smoothed (a Gaussian of PACE_SMOOTH days), then held within PACE_RANGE of its least
@@ -187,7 +223,7 @@ mod tests {
         std::env::var_os("ADRIFT_ASSETS").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"))
     }
 
-    pub(super) fn rules() -> Rules {
+    pub(crate) fn rules() -> Rules {
         Rules::load(&DirAssets(assets())).unwrap()
     }
 
@@ -259,7 +295,8 @@ mod tests {
                                 continue;
                             }
                             let (fa, fb) = (lamp(1, a, day0, 1), lamp(2, b, day0, 2));
-                            let (pa, pb) = (path(&r, &fa, day0 + 60.0), path(&r, &fb, day0 + 60.0));
+                            let span: f64 = std::env::var("DANCE_DAYS").ok().and_then(|v| v.parse().ok()).unwrap_or(60.0);
+                            let (pa, pb) = (path(&r, &fa, day0 + span), path(&r, &fb, day0 + span));
                             let (w, near, closest) = dance(&pa, &pb);
                             let score = w.abs() * near;
                             best.push((score, format!("{name} {w:+.1} rad, near {:.0}%, closest {closest:.0} km", near * 100.0), a, b, day0));
@@ -280,9 +317,14 @@ mod tests {
     /// Australian Current's eddies off New South Wales on a typical 1 December, whose line wound three
     /// and a half turns round them in 60 days, 15-150 km apart nine tenths of the time. The copied-lamps
     /// text of them, the date 60 days on: `adrift-check/lamps/dance.txt` (ADRIFT_DANCE_OUT writes it).
-    pub(super) fn the_dance() -> (Vec<Float>, f64) {
+    pub(crate) fn the_dance() -> (Vec<Float>, f64) {
         let day0 = 9131.0 + 11.0 * 30.44 + 1.0; // as the search reckoned it
-        (vec![lamp(1, LonLat { lon: 156.75, lat: -29.0 }, day0, 1), lamp(2, LonLat { lon: 157.15, lat: -29.0 }, day0, 2)], day0 + 60.0)
+        // made under law 1 (R14's), as dance.txt holds them: a lamp keeps its law (R13)
+        let mut f = vec![lamp(1, LonLat { lon: 156.75, lat: -29.0 }, day0, 1), lamp(2, LonLat { lon: 157.15, lat: -29.0 }, day0, 2)];
+        for l in &mut f {
+            l.legs = l.legs.iter().map(|g| g.under(1)).collect();
+        }
+        (f, day0 + 60.0)
     }
 
     #[test]
@@ -329,9 +371,16 @@ mod tests {
             "the dance in 30 s: {:.2}-{:.2} days a second; nearest tenth of frames at {:.2}, farthest at {:.2}; the most a frame's pace changes: {:.1}%",
             lo * fps, hi * fps, near * fps, far * fps, lurch * 100.0
         );
-        assert!(hi / lo <= PACE_RANGE * 1.05 && hi / lo > 1.5, "the pace varies, within its range");
+        // the run apart along the coast (days 10-35, 42% of the days, where the critic saw a camera
+        // chasing two lamps) passes quickly; the tangle before it and the loops after take the clip
+        let coast = days.iter().filter(|d| **d > from + 10.0 && **d < from + 35.0).count() as f64 / frames as f64;
+        eprintln!("the run along the coast (days 10-35) takes {:.0}% of the clip", coast * 100.0);
+        assert!(hi / lo <= PACE_RANGE * 1.05 && hi / lo > 3.0, "the pace varies boldly, within its range");
         assert!(lurch < 0.05, "no lurch: under 5% from one frame to the next");
-        assert!(near < far * 0.8, "slower where the pair is near");
+        assert!(near < far * 0.5, "much slower where the pair is near");
+        // honest about it: the measure finds winding and changing distance along the coast too, so
+        // it passes only a little quicker than its share of the days (37% of the clip for 42%)
+        assert!(coast < 0.40, "the run along the coast passes quicker than its share of the days");
     }
 
     #[test]
@@ -341,5 +390,26 @@ mod tests {
         let days = pace(&r, &f, 9131.0, 9191.0, 300, 30.0);
         assert!(days.windows(2).all(|w| w[1] >= w[0]));
         assert_eq!(*days.last().unwrap(), 9191.0);
+    }
+
+    /// An early dance for the demo (R15, `find_a_dancing_pair` over 30 days under law 2): two lamps
+    /// put 40 km apart in the Agulhas retroflection's eddies south of Cape Town on a typical 2
+    /// September, whose line winds two and a half turns in their first 30 days, 15-150 km apart nine
+    /// tenths of the time. `adrift-check/lamps/dance-early.txt` (ADRIFT_DANCE_EARLY_OUT writes it).
+    #[test]
+    fn the_early_dance_dances_from_the_start() {
+        let r = rules();
+        let day0 = 9131.0 + 8.0 * 30.44 + 1.0;
+        let f = vec![lamp(1, LonLat { lon: 18.75, lat: -42.0 }, day0, 1), lamp(2, LonLat { lon: 18.75, lat: -41.6 }, day0, 2)];
+        let to = day0 + 30.0;
+        let (a, b) = (path(&r, &f[0], to), path(&r, &f[1], to));
+        let (w, near, closest) = dance(&a, &b);
+        eprintln!("the early dance: the line wound {w:+.1} rad in 30 days, 15-150 km apart {:.0}% of the time, closest {closest:.0} km", near * 100.0);
+        assert!(w.abs() > 4.0 * std::f64::consts::PI && near > 0.8);
+        assert_eq!(f[0].legs[0].law, crate::sea::rules::LAW);
+        if let Some(out) = std::env::var_os("ADRIFT_DANCE_EARLY_OUT") {
+            let copy = crate::app::LampsCopy { version: 1, day: to, floats: f };
+            std::fs::write(out, format!("{}\n{}\n", crate::app::LAMPS_HEADER, serde_json::to_string(&copy).unwrap())).unwrap();
+        }
     }
 }
