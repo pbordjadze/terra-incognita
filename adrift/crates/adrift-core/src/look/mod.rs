@@ -238,6 +238,11 @@ pub struct LookState {
     /// The lamp whose panel mark a finger rests on, and how far its rest has thickened, 0..1 (R10:
     /// the lamp swells while its mark is pressed; from Motion's `Gestures::panel_pressing_since`).
     pub panel_press: Option<(u32, f32)>,
+    /// A take is being recorded or replayed, so the hand conducts (R11).
+    pub conducting: bool,
+    /// The cues of the last two seconds (R11): the look flashes the worlds a lamp chose among and
+    /// folds them into the chosen one.
+    pub cues: Vec<LookCue>,
     /// A ring on the water at a lamp (R10: a tap on its mark or on it): the lamp's
     /// id, where, and seconds since. The sea draws every ring under the maybes; these are drawn again
     /// over them, in the lamp's hue, so a ring at a lamp is not lost in its own cloud and says whose it is.
@@ -292,6 +297,23 @@ pub struct LookState {
 /// A lamp's hue by its number (palette.json › hues): amber first, then the others, each a glass
 /// lamp's colour that tells its cloud, wake and silver from another's; each next one far round the
 /// wheel from the last, so two lamps put one after the other are told apart at a glance (R6).
+/// One conductor's cue, as the look draws it (R11).
+#[derive(Clone, Debug)]
+pub struct LookCue {
+    /// The lamp.
+    pub id: u32,
+    /// Every world's place at the cue (`conduct::WORLDS`, in world order).
+    pub worlds: Vec<LonLat>,
+    /// The worlds that did what the hand did (1-based world numbers).
+    pub near: Vec<u32>,
+    /// The world chosen (1-based) and the lamp's place in it, and where the lamp was before.
+    pub chosen: u32,
+    pub at: LonLat,
+    pub from: LonLat,
+    /// Seconds since the cue (the drawn motion's clock).
+    pub age: f32,
+}
+
 pub fn lamp_hue(id: u32) -> [f32; 3] {
     const HUES: [[f32; 3]; 8] = [
         [0.957, 0.647, 0.165],   // amber
