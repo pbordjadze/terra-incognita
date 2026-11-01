@@ -373,6 +373,13 @@ fn play(args: &[String]) -> Result<()> {
                     bad.push(format!("followed {:?} not {c}", app.followed));
                 }
             }
+            if let Some(n) = e.get("clouds").and_then(|v| v.as_u64()) {
+                // how many clouds are out (R8: a lamp chosen as itself shows none, ridden or not)
+                let out = app.shown_ids().len() as u64;
+                if out != n {
+                    bad.push(format!("{out} clouds out, not {n}"));
+                }
+            }
             if let Some(n) = e.get("framed").and_then(|v| v.as_u64()) {
                 // every place `frame_points` names is on the globe's face (R8: the camera frames the chosen)
                 let disc = app.disc();

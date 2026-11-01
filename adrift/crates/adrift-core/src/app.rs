@@ -583,9 +583,15 @@ impl App {
                     self.camera.riding = None;
                 } else if self.floats.iter().any(|f| f.id == float) {
                     self.camera.riding = Some(float);
-                    // it joins the chosen, in front (R6: the others stay out)
-                    self.chosen.retain(|&c| c != float);
-                    self.chosen.push(float);
+                    // it joins the chosen, in front (R6: the others stay out); one chosen as itself
+                    // stays so, followed without a cloud (R8)
+                    if self.followed.contains(&float) {
+                        self.followed.retain(|&c| c != float);
+                        self.followed.push(float);
+                    } else {
+                        self.chosen.retain(|&c| c != float);
+                        self.chosen.push(float);
+                    }
                     if let Some(f) = self.floats.iter_mut().find(|f| f.id == float) {
                         f.lit_for = 0.0;
                     }
@@ -823,7 +829,7 @@ impl App {
             .find(|f| f.hand == Hand::Held)
             .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
             .or_else(|| self.chosen.last().copied().and_then(by_id))
-            .or_else(|| if SHOW_RIDDEN { self.camera.riding.and_then(by_id) } else { None })
+            .or_else(|| if SHOW_RIDDEN { self.camera.riding.filter(|id| !self.followed.contains(id)).and_then(by_id) } else { None })
     }
 
     /// Every float whose cloud is out (R6), the front one last: the chosen in order, the ridden, the
@@ -836,7 +842,8 @@ impl App {
         };
         if SHOW_RIDDEN {
             if let Some(id) = self.camera.riding {
-                if !ids.contains(&id) {
+                // (a ridden float chosen as itself shows no cloud: R8)
+                if !ids.contains(&id) && !self.followed.contains(&id) {
                     ids.push(id);
                 }
             }
