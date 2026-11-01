@@ -21,6 +21,8 @@ pub struct Stash {
     size: (u32, u32, f64),
     recording: Option<crate::studio::Take>,
     now: f64,
+    /// How many intents had been seen (the replay's own are dropped after: Motion's R9 note).
+    seen: usize,
 }
 
 /// What the reader has done, to take back.
@@ -1501,6 +1503,7 @@ impl App {
             size: (self.width, self.height, self.ppp),
             recording: self.studio.recording.take(),
             now: self.now,
+            seen: self.seen.len(),
         };
         self.budget.locked = true;
         self.budget.scale = 1.0;
@@ -1659,6 +1662,7 @@ impl App {
         self.budget.locked = live.budget.0;
         self.budget.scale = live.budget.1;
         self.studio.recording = live.recording;
+        self.seen.truncate(live.seen);
         self.haptic = false;
     }
 
