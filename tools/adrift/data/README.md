@@ -10,6 +10,8 @@ netCDF4, and about 1.5 GB in a cache directory (the drifters' tracks, a year a f
     python3 tools/adrift/data/wind.py $C         # wind.png
     python3 tools/adrift/data/eddy.py $C         # eddy.png, eddy-time.png, eddy-time.json (fetches 8 years of tracks)
     python3 tools/adrift/data/drifters.py $C     # drifters.bin, drifters.json
+    python3 tools/adrift/data/weather.py $C      # gusts.png, weather.json (five years of six-hourly winds, ~500 MB)
+    python3 tools/adrift/data/wind_paths.py out/ 7   # draws things on the wind and their maybes for July (runs the rules)
     python3 tools/adrift/data/look.py out/ 7     # draws every sheet the rules read, for July, to look at
 
 Each builder's docstring is its sheet's layout and source; `sheets.py` is what they share (the

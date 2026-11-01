@@ -223,3 +223,57 @@ fn block<F: std::future::Future>(f: F) -> F::Output {
         std::thread::yield_now();
     }
 }
+
+/// The wind's paths for a picture (`tools/adrift/data/wind_paths.py` runs this and draws them):
+/// a few dozen things lifted over the globe on the 1st of a typical month, each world k = 0
+/// (its path) and k = 1..n (its maybes), every quarter day for `days`, written as JSON to
+/// ADRIFT_WIND_OUT. ADRIFT_WIND_MONTH (1-12, default 7), ADRIFT_WIND_MAYBES (default 12),
+/// ADRIFT_WIND_DAYS (default 30), ADRIFT_WIND_ALOFT=1 keeps every thing up (no settling, no rain).
+#[test]
+#[ignore]
+fn wind_paths_for_the_picture() {
+    let Some(out) = std::env::var_os("ADRIFT_WIND_OUT") else { return };
+    let env = |k: &str, d: f64| std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d);
+    let month = env("ADRIFT_WIND_MONTH", 7.0) as usize;
+    let n = env("ADRIFT_WIND_MAYBES", 12.0) as u32;
+    let days = env("ADRIFT_WIND_DAYS", 30.0);
+    let mut r = air();
+    if env("ADRIFT_WIND_ALOFT", 0.0) > 0.0 {
+        r.fall = 0.0;
+        r.washout = 0.0;
+    }
+    let day0 = MONTH_START[month.clamp(1, 12) - 1];
+    let mut things = Vec::new();
+    for (i, lat) in (-50..=70).step_by(20).enumerate() {
+        for lon in (-180..180).step_by(40) {
+            let from = LonLat { lon: lon as f64 + 20.0 * (i % 2) as f64 + 7.0, lat: lat as f64 + 3.0 };
+            let id = things.len() as u64;
+            let paths: Vec<serde_json::Value> = (0..=n)
+                .map(|k| {
+                    let p = r.path(from, day0, day0 + days, 0.25, id, k);
+                    let up = p.iter().take_while(|a| a.aloft == Aloft::Flying).count();
+                    let end = p[(up).min(p.len() - 1)];
+                    serde_json::json!({
+                        "k": k,
+                        "points": p[..(up + 1).min(p.len())].iter().map(|a| [(a.at.lon * 100.0).round() / 100.0, (a.at.lat * 100.0).round() / 100.0]).collect::<Vec<_>>(),
+                        "down": match end.aloft { Aloft::Flying => "aloft", Aloft::Land => "land", Aloft::Sea => "sea" },
+                    })
+                })
+                .collect();
+            things.push(serde_json::json!({ "from": [from.lon, from.lat], "paths": paths }));
+        }
+    }
+    let doc = serde_json::json!({ "month": month, "days": days, "dt": 0.25, "things": things });
+    std::fs::write(out, serde_json::to_string(&doc).unwrap()).unwrap();
+}
+
+#[test]
+fn the_air_crosses_the_pole() {
+    use super::wind::great_circle;
+    // 300 km north from 89N on the prime meridian comes down the 180th meridian at about 88.3N
+    let (lon, lat) = great_circle(0.0, 89.0, 0.0, 300_000.0);
+    assert!((lon.abs() - 180.0).abs() < 0.01 && (lat - 88.30).abs() < 0.01, "{lon} {lat}");
+    // and the plain step it hands over to at 75 degrees agrees with the great circle to metres
+    let (a, b) = (great_circle(10.0, 74.999, 20_000.0, 10_000.0), great_circle(10.0, 75.001, 20_000.0, 10_000.0));
+    assert!((a.0 - b.0).abs() < 0.01 && (a.1 - b.1 - (-0.002)).abs() < 0.01, "{a:?} {b:?}");
+}

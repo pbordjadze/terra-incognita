@@ -12,7 +12,7 @@ time; everything is bundled.
 | --- | --- | --- |
 | The current | the month's mean near-surface current in each half-degree cell, from the drifters' climatology (`currents.png`); the stream function solved from it (`stream.png`) | a float moves with the cell's mean current, interpolated between cells and between months by the day of the year |
 | The eddy wander | the drifters' velocity variance about that mean, cell by cell, and their Lagrangian integral time scale, measured here from their tracks in 10° boxes (`eddy.png`, `eddy-time.png`, `eddy-time.json`) | a random flight: the float carries an eddy velocity that decays over the measured time scale and is kicked so its variance stays the measured K / T, so a float keeps its way for a few days as a drifter does and the cloud of its maybes spreads as 2 K t beyond that (Taylor 1921); a float is put with a first velocity drawn from that same measured variance (the water is already moving), and each maybe with its own. The kicks are not each path's own dice but a world's: world k is one random eddy field, shared by every float's k-th path (below: The worlds); deterministic, so a path can be replayed. (`Rules::step` is the plainer random walk, the same spread without the memory.) |
-| The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below) |
+| The wind | the month's mean 10 m wind in each degree cell (`wind.png`) | a float's leeway: 3% of that wind, downwind (below); the wind preset's things ride all of it, with measured gusts (below: The wind) |
 | The coast | the globe's own signed distance to the shore (Terra's `geo.png`) | a float that steps onto land is put back at the water's edge, one of the coast's own pixels (about 10 km) off, and held there |
 | Where it may be put | how far the nearest drifter-measured cell is, by month (the currents sheet's B; `Rules::record`) | anywhere the mask shows water; where no drifter went the float rides the smoothed-in current and wander, plausibly (below: Where a float may be put) |
 | Between steps | | the drawn float glides along its velocity (`Rules::glide`) between its quarter-day steps, so it runs rather than ticks |
@@ -206,6 +206,41 @@ each axis over 160 seeds, its rank is uniform at Hatteras, the Sargasso and the 
 lattice nodes a quarter day, about the hashing the twelve-uniform draws took; 8 clouds of 2048
 paths at 24 half-day steps cost the same on the software GPU as before (95 ms against 95 to 104
 ms, about 240 ns a path-step on llvmpipe; `sea::tests::gpu_step_cost`, a tool).
+
+## The wind (R10, the second medium: things on the wind)
+
+The wind preset's things (a pollen grain, a down seed) are carried by `sea::wind::AirRules`
+(mirrored by `wind.wgsl`; the machine is the sea's flight, `sea/MEDIA.md`).
+
+| | Measured (the record) | Drawn (our choices) |
+| --- | --- | --- |
+| The mean wind | the month's mean 10 m wind, NCEP/NCAR Reanalysis 1, 1991–2020 (`wind.png`, as the sea's leeway reads it) | a thing rides all of it (carry 1); one lifted a kilometre up would ride a faster wind than the 10 m one |
+| The gusts | the 10 m wind's standard deviation about each year-month's own mean, east and north, over five years of six-hourly reanalysis (2016–2020), by month and degree cell; and their integral time scale (the anomaly's autocorrelation summed to its first zero) (`gusts.png` R, G, B; `tools/adrift/data/weather.py`) | an Ornstein-Uhlenbeck gust velocity with that variance and time scale; the time scale is the fixed point's (Eulerian), used for the moving thing's (Lagrangian). The 10-day spread that results is held to real paths (below), and agrees |
+| The weather's width | the distance at which the anomaly's correlation falls to 1/e: 600–1100 km east, 500–800 km north, by latitude band (`weather.json` › scale) | world k's gust field on a lattice 15° east by 8° north (`wind::AIR_CELL`), bilinear between nodes, fresh each quarter day: roughly that width at low and middle latitudes, narrower in kilometres toward the poles (a lattice in degrees) |
+| Rain | the month's mean precipitation rate, reanalysis 1991–2020 (`gusts.png` A) | rain-out at 0.36 per day per mm/day: a below-cloud scavenging coefficient of 1e-4 /s at 1 mm/h for coarse particles, linear in the rate (heavy tropical showers wash out less per millimetre than this says, so it is harsh there); one shower falls on every thing within 2.5° (`RAIN_CELL`), in world k |
+| Settling | a birch pollen grain falls at about 2 cm/s (1.2–3 cm/s measured) | it comes down at 0.86 a day: that speed through a kilometre-deep mixed layer by day, nothing by night (the air above the night's shallow layer is cut off from the ground). The thing's own dice, not the world's |
+| The coast, mountains | the coast sheet says where a thing came down (land or sea) | nothing stops a thing in flight; mountains are only in the 10 m wind itself (the reanalysis's own smoothed terrain) |
+| Near the poles | | a step moves along the great circle beyond 75° of latitude (it crosses the pole), and in degrees nearer the equator, as the sea's step does |
+
+**Held to the record** (`cargo test -p adrift-core wind_tests`): from 336 starts over the globe (1344 start-months) in
+January, April, July and October, the maybes' 10-day spread (80 worlds each, no settling) against the
+spread of ten real 10-day paths through the reanalysis's six-hourly wind from the same starts
+(each year's 1st and 15th, 2016–2020; `weather.json` › paths): median ratio 1.04, 10th–90th
+percentile 0.73–1.54. The cloud's middle lands within 0.42 of the real spread of the real paths'
+middle (median). Two things lifted 40 km apart are 58 km apart after three days in one world and
+1530 km in two. A typical July's flight: 1.06 days from the Sahara, 0.1 day from the western
+Pacific's warm pool (rain).
+
+**What it cannot say.** A thing's real path on a real day: the weather is drawn, a world's, with
+the measured statistics. The time scale is a fixed point's. Lofting (convection carrying a seed a
+kilometre up, where the wind is faster and the settling slower) is not modelled; the lifetime
+dial stands in for it. Pollen is measured; a balloon or ash would ride other winds.
+
+**Later, for the sea** (Visual's zigzag question, R10): a Gulf Stream lamp's wander stalls and
+doubles back (the random flight's velocity wanders through zero), where real drifters there more
+often loop in coherent rings. A spinning random flight (Veneziani, Griffa, Reynolds and Mariano
+2004: the OU velocity rotated at a measured rate) would turn the stalls into loops. Worth
+measuring the spin from the drifters' tracks the way `eddy.py` measures T.
 
 ## Whales (not in the app; what it would take)
 

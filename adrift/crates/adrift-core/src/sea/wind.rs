@@ -183,9 +183,7 @@ impl AirRules {
         let gv = a.gust.1 * al + gy * w.sigma.1 * kick;
         let dx = (self.carry * wu + gu) * secs;
         let dy = (self.carry * wv + gv) * secs;
-        let coslat = (lat.to_radians()).cos().max(0.01);
-        let nlon = wrap(lon + (dx / (EARTH_RADIUS * coslat)).to_degrees());
-        let nlat = (lat + (dy / EARTH_RADIUS).to_degrees()).clamp(-89.5, 89.5);
+        let (nlon, nlat) = great_circle(lon, lat, dx, dy);
         let at = LonLat { lon: nlon as f64, lat: nlat as f64 };
         let down = air_rain(k, day, dt, lon, lat, self.washout * w.rain)
             || uniform(hash_seed(seed, k, day.to_bits()), 0) < 1.0 - (-self.fall * dt).exp();
@@ -227,6 +225,35 @@ impl AirRules {
         }
         out
     }
+}
+
+/// Where a move of (dx east, dy north) metres from (lon, lat) lands, along the great circle that
+/// sets off that way: the air crosses the pole, where a step in degrees would spin round it. Within
+/// 75 degrees of the equator the plain step in degrees (the sea's), which differs from the great
+/// circle by metres there and needs no inverse trigonometry (the GPU's asin and atan2 are coarse).
+#[inline]
+pub fn great_circle(lon: f32, lat: f32, dx: f32, dy: f32) -> (f32, f32) {
+    if lat.abs() < 75.0 {
+        let coslat = lat.to_radians().cos();
+        return (wrap(lon + (dx / (EARTH_RADIUS * coslat)).to_degrees()), lat + (dy / EARTH_RADIUS).to_degrees());
+    }
+    let d = (dx * dx + dy * dy).sqrt() / EARTH_RADIUS;
+    if d < 1e-9 {
+        return (lon, lat);
+    }
+    // the unit vector, its east and north, carried d radians along e sin(th) + n cos(th)
+    let (p, l) = (lat.to_radians(), lon.to_radians());
+    let (sp, cp, sl, cl) = (p.sin(), p.cos(), l.sin(), l.cos());
+    let (ex, ey) = (dx / (d * EARTH_RADIUS), dy / (d * EARTH_RADIUS));
+    let (cd, sd) = (d.cos(), d.sin());
+    let tx = -sl * ex - sp * cl * ey;
+    let ty = cl * ex - sp * sl * ey;
+    let tz = cp * ey;
+    let x = cp * cl * cd + tx * sd;
+    let y = cp * sl * cd + ty * sd;
+    let z = sp * cd + tz * sd;
+    let (p2, l2) = (z.atan2((x * x + y * y).sqrt()), y.atan2(x));
+    (wrap(l2.to_degrees()), p2.to_degrees().clamp(-89.9, 89.9))
 }
 
 /// The quarter day `day` falls in.

@@ -221,6 +221,37 @@ fn coast_distance(lon: f32, lat: f32) -> f32 {
     return (v.y - 128.0) * 2.0;
 }
 
+// wind.rs: great_circle
+fn great_circle(lon: f32, lat: f32, dx: f32, dy: f32) -> vec2<f32> {
+    if (abs(lat) < 75.0) {
+        let coslat = cos(lat * PI / 180.0);
+        return vec2<f32>(wrap(lon + dx / (EARTH_RADIUS * coslat) * 180.0 / PI), lat + dy / EARTH_RADIUS * 180.0 / PI);
+    }
+    let d = sqrt(dx * dx + dy * dy) / EARTH_RADIUS;
+    if (d < 1e-9) {
+        return vec2<f32>(lon, lat);
+    }
+    let p = lat * PI / 180.0;
+    let l = lon * PI / 180.0;
+    let sp = sin(p);
+    let cp = cos(p);
+    let sl = sin(l);
+    let cl = cos(l);
+    let ex = dx / (d * EARTH_RADIUS);
+    let ey = dy / (d * EARTH_RADIUS);
+    let cd = cos(d);
+    let sd = sin(d);
+    let tx = -sl * ex - sp * cl * ey;
+    let ty = cl * ex - sp * sl * ey;
+    let tz = cp * ey;
+    let x = cp * cl * cd + tx * sd;
+    let y = cp * sl * cd + ty * sd;
+    let z = sp * cd + tz * sd;
+    let p2 = atan2(z, sqrt(x * x + y * y));
+    let l2 = atan2(y, x);
+    return vec2<f32>(wrap(l2 * 180.0 / PI), clamp(p2 * 180.0 / PI, -89.9, 89.9));
+}
+
 fn step(p: Path, k: u32) -> Path {
     if (p.held != 0u) {
         return p;
@@ -240,9 +271,9 @@ fn step(p: Path, k: u32) -> Path {
     let gv = p.gust_v * al + g.y * w.sigma.y * kick;
     let dx = (params.carry * wv.x + gu) * secs;
     let dy = (params.carry * wv.y + gv) * secs;
-    let coslat = max(cos(lat * PI / 180.0), 0.01);
-    let nlon = wrap(lon + dx / (EARTH_RADIUS * coslat) * 180.0 / PI);
-    let nlat = clamp(lat + dy / EARTH_RADIUS * 180.0 / PI, -89.5, 89.5);
+    let to = great_circle(lon, lat, dx, dy);
+    let nlon = to.x;
+    let nlat = to.y;
     let fall = draw(hash_seed(params.seed_lo, params.seed_hi, k, bitcast<u32>(day)), 0u) < 1.0 - exp(-params.fall * dt);
     let down = air_rain(k, day, dt, lon, lat, params.washout * w.rain) || fall;
     if (!down) {
