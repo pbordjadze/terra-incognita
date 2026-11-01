@@ -169,6 +169,8 @@ pub struct PanelRow<'a> {
     pub at: crate::model::LonLat,
     /// a finger rests on its mark (0 none, else 0.35..1 as the rest thickens): the mark brightens
     pub pressed: f32,
+    /// kept for good (R13): a small gold pin under its lamp
+    pub kept: bool,
 }
 
 /// A long day's words for the shell's VoiceOver label ("8 June").
@@ -345,7 +347,7 @@ impl Words {
         for (i, r) in rows[start..].iter().enumerate() {
             let (cx, cy) = (x0 + ((i % PANEL_ACROSS) as f32 + 0.5) * cell, top + ((i / PANEL_ACROSS) as f32 + 0.5) * cell);
             self.panel_bounds.push((r.id, [cx - cell / 2.0, cy - cell / 2.0, cell, cell]));
-            let how = if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" };
+            let how = format!("{}{}", if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" }, if r.kept { ", kept" } else { "" });
             self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
             let hue = super::lamp_hue(r.id);
             let quiet = if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
@@ -386,6 +388,12 @@ impl Words {
                     Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.3 * reading, a: quiet, hollow: 0.0 }
                 }).collect();
                 line(strokes, &ring, hue, true, night, true);
+            }
+            // kept for good (R13): a small gold pin under the lamp, a dot on a short stem, no words
+            if r.kept {
+                let (px, py) = (lamp[0], lamp[1] + 7.5 * reading);
+                line(strokes, &[Pt { p: [px, py - 2.0 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }, Pt { p: [px, py + 1.5 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }], super::KEPT_GOLD, true, true, false);
+                line(strokes, &[Pt { p: [px, py + 2.6 * reading, 0.0], w: 2.8 * reading, a: 1.0, hollow: 0.0 }], super::KEPT_GOLD, true, night, false);
             }
             if night {
                 let rr = (4.2 + 0.6 * up) * reading;
