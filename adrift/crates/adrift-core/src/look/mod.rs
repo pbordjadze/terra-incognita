@@ -375,11 +375,16 @@ fn ring_on_globe(out: &mut Vec<wake::StrokeInstance>, at: LonLat, radius: f32, d
 /// worlds if too few did), one in each sector of bearing round the chosen place, the one nearest the
 /// sector's middle distance, so the fan is spread and none is a stray.
 fn fan(c: &LookCue, n: usize) -> Vec<[f32; 3]> {
-    let at = unit(c.at);
-    let mut pool: Vec<usize> = c.near.iter().filter(|&&k| k != c.chosen && k >= 1 && (k as usize) <= c.worlds.len()).map(|&k| k as usize - 1).collect();
-    if pool.len() < 3 {
-        pool = (0..c.worlds.len()).filter(|&i| i + 1 != c.chosen as usize).collect();
+    // the chooser's own runners-up when it names them (Truth, R12)
+    if !c.fan.is_empty() {
+        return c.fan.iter().map(|p| unit(*p)).collect();
     }
+    // a tap no world came near shows no fan, only the lamp's own stroke
+    if c.near.is_empty() {
+        return Vec::new();
+    }
+    let at = unit(c.at);
+    let pool: Vec<usize> = c.near.iter().filter(|&&k| k != c.chosen && k >= 1 && (k as usize) <= c.worlds.len()).map(|&k| k as usize - 1).collect();
     // a tangent frame at the chosen place
     let up = if at[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
     let cross = |a: [f32; 3], b: [f32; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
