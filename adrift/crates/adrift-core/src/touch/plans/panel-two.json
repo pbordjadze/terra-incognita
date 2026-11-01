@@ -1,5 +1,5 @@
 {
- "title": "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and it is chosen as itself, the other still a cloud; a drag turns away, a rest on a row frames both again; nothing on the panel rings or puts",
+ "title": "The panel: tap two lamps' rows and both clouds are out; scrub them forward and back together; tap one row again and it is chosen as itself, the other still a cloud; a drag turns away, a rest on a row frames both again; a mark's tap rings the sea at its lamp (R10), nothing on the panel puts",
  "size": [
   393.0,
   852.0
@@ -34,7 +34,6 @@
     ],
     "riding": 1,
     "not": [
-     "Ring",
      "Press",
      "Put"
     ]
@@ -65,7 +64,6 @@
     ],
     "floats": 2,
     "not": [
-     "Ring",
      "Put",
      "Unchoose"
     ]

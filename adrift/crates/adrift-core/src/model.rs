@@ -114,6 +114,11 @@ pub struct Float {
     pub measured: f32,
     /// One bead a day, oldest first, since it was put or last set down.
     pub wake: Vec<Bead>,
+    /// The same journey at every step of its path (the quarter-day grid), oldest first, ending at
+    /// the step before now (R10: the line the look draws runs through the real steps, the eddy's
+    /// stalls and turns, not a day's chords). Rebuilt with the wake; never stored.
+    #[serde(skip)]
+    pub trail: Vec<Bead>,
     /// The seconds since the reader last touched it (what was just done stays lit).
     pub lit_for: f64,
     /// Its legs, oldest first (R5); empty in a kept state from before legs, which `legs()` reads as
@@ -397,6 +402,9 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// The newest take's clip plays at this speed (R10: 0.5 is slow motion, the clip twice the take's
+    /// length; clamped to 0.25..2). The take itself is unchanged.
+    TakeSpeed { speed: f64 },
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
 }

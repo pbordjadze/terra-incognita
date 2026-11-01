@@ -73,8 +73,10 @@ fn render(args: &[String]) -> Result<()> {
     let (w, h) = size.split_once('x').context("--size WxH")?;
     let (w, h): (u32, u32) = (w.parse()?, h.parse()?);
     let ppp: f64 = arg(args, "--ppp").map(|s| s.parse()).transpose()?.unwrap_or(3.0);
+    // `--clip`: the scene drawn as an exported clip's frame (R10): 9:16 at its own size, chrome out
+    let clip = args.iter().any(|a| a == "--clip");
     let (_instance, gpu) = gpu()?;
-    let target = Offscreen::new(&gpu, w, h);
+    let target = if clip { Offscreen::new(&gpu, adrift_core::studio::CLIP.0, adrift_core::studio::CLIP.1) } else { Offscreen::new(&gpu, w, h) };
     let t0 = std::time::Instant::now();
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
     app.budget.locked = true;
@@ -82,10 +84,14 @@ fn render(args: &[String]) -> Result<()> {
     eprintln!("loaded in {:?} ({})", t0.elapsed(), app.gpu.adapter_info.name);
     app.set_scene(&scene);
     let t1 = std::time::Instant::now();
-    app.render(&target.view);
+    if clip {
+        app.render_clip(&target.view);
+    } else {
+        app.render(&target.view);
+    }
     let px = target.read(&app.gpu);
     eprintln!("drawn in {:?}; clouds behind the date by {:.2} days", t1.elapsed(), app.behind());
-    save(&out, w, h, &px)?;
+    save(&out, target.width, target.height, &px)?;
     println!("{}", out.display());
     Ok(())
 }
@@ -122,6 +128,10 @@ struct Plan {
     /// frame is drawn, so a plan that reads `behind()` needs it; slower on the software driver.
     #[serde(default)]
     frames: bool,
+    /// The shell's frame rate, frames a second (default 60): a plan at 20 shows a take recorded on a
+    /// struggling phone (R10, Motion).
+    #[serde(default = "default_fps")]
+    fps: f64,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -129,6 +139,9 @@ fn default_size() -> [f64; 2] {
 }
 fn default_ppp() -> f64 {
     3.0
+}
+fn default_fps() -> f64 {
+    60.0
 }
 
 /// A finger's place: screen points `[x, y]` (Engineering's plans) or a finger id whose place is the
@@ -216,7 +229,7 @@ fn play(args: &[String]) -> Result<()> {
         app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
     }
     let mut t = 0.0;
-    let fps = 60.0;
+    let fps = plan.fps;
     app.frame(&target.view, t);
     let mut log = String::new();
     let mut failed = 0;
@@ -442,6 +455,17 @@ fn play(args: &[String]) -> Result<()> {
                     }
                 }
             }
+            // R10: whether a take is being recorded, and how many are kept
+            if let Some(want) = e.get("recording").and_then(|v| v.as_bool()) {
+                if app.studio.recording.is_some() != want {
+                    bad.push(format!("recording {} (wanted {want})", app.studio.recording.is_some()));
+                }
+            }
+            if let Some(want) = e.get("takes").and_then(|v| v.as_u64()) {
+                if app.studio.takes.len() as u64 != want {
+                    bad.push(format!("{} takes (wanted {want})", app.studio.takes.len()));
+                }
+            }
             if e.get("camera_near_float").is_some() {
                 if let Some(f) = app.floats.first() {
                     if (cam.lon - f.at.lon).abs() > 3.0 || (cam.lat - f.at.lat).abs() > 3.0 {
@@ -472,8 +496,12 @@ fn play(args: &[String]) -> Result<()> {
             let t_export = std::time::Instant::now();
             let mut n = 0u32;
             let mut last = Vec::new();
+            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll\n");
             while let Some(px) = app.export_frame(&shot) {
                 use std::io::Write;
+                if let Some((c, k)) = app.export_camera() {
+                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll));
+                }
                 ff.stdin.as_mut().unwrap().write_all(&px)?;
                 if n == 0 || n + 1 == frames {
                     let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
@@ -483,6 +511,8 @@ fn play(args: &[String]) -> Result<()> {
                 n += 1;
             }
             drop(last);
+            // the clip's camera, frame by frame, beside the take's (R10)
+            std::fs::write(out.join(format!("{name}-camera.csv")), trace)?;
             drop(ff.stdin.take());
             ff.wait()?;
             let drift = app.export_drift();
@@ -527,7 +557,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] | play <plan.json> <out-dir> | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | info");
             std::process::exit(2);
         }
     }

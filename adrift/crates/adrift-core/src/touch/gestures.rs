@@ -266,6 +266,16 @@ impl Gestures {
         }
     }
 
+    /// The lamp whose mark in the panel a finger is on and how long it has been there (R10), for the
+    /// look to swell that lamp out on the sea while its mark is pressed (`motion::thicken`); None when
+    /// no finger is on a mark, or the finger has turned into a drag of the globe.
+    pub fn panel_pressing_since(&self, now: f64) -> Option<(u32, f64)> {
+        match self.state {
+            State::PanelDown { t0, float, rode: false, .. } => Some((float, now - t0)),
+            _ => None,
+        }
+    }
+
     /// The float in hand, if any.
     pub fn is_holding(&self) -> Option<u32> {
         match self.state {
@@ -865,7 +875,12 @@ impl Gestures {
 
     /// A tap on a lamp's row: it joins the chosen, in front, or, chosen already, is let go; a lamp
     /// newly chosen out of sight or at the globe's rim is turned toward the reader (R6).
+    /// (R10) The tap rings the water at the lamp itself, in the open sea where the reader can see it
+    /// answer: the tie between a mark at the screen's corner and its lamp out in the world.
     fn panel_tap(&mut self, float: u32, probe: &dyn Probe, out: &mut Out) {
+        if let Some(at) = probe.float_at(float) {
+            out.intents.push(Intent::Ring { at });
+        }
         self.cycle(float, probe, out);
     }
 
@@ -1060,21 +1075,25 @@ mod tests {
     }
 
     #[test]
-    fn panel_rows_choose_two_and_let_one_go_and_never_ring() {
+    fn panel_marks_choose_two_and_let_one_go_and_ring_at_their_lamps() {
         let (mut g, p) = (Gestures::new(), Fake::new());
         let a = tap(&mut g, &p, 30.0, 110.0, 0.0);
         let b = tap(&mut g, &p, 30.0, 150.0, 1.0);
         assert_eq!(*p.chosen.borrow(), vec![1, 2]);
         for i in a.iter().chain(&b) {
-            assert!(!matches!(i, Intent::Ring { .. } | Intent::Put { .. } | Intent::Unchoose), "{i:?}");
+            assert!(!matches!(i, Intent::Put { .. } | Intent::Unchoose), "{i:?}");
         }
+        // (R10) each tap rings the water once, at its own lamp, never under the finger
+        let rings = |v: &[Intent]| v.iter().filter_map(|i| if let Intent::Ring { at } = i { Some(*at) } else { None }).collect::<Vec<_>>();
+        assert_eq!(rings(&a), vec![p.float_at(1).unwrap()]);
+        assert_eq!(rings(&b), vec![p.float_at(2).unwrap()]);
         // (R8) a second tap on a row: that lamp as itself, its cloud folded; a third lets it go
         let c = tap(&mut g, &p, 30.0, 110.0, 2.0);
         assert_eq!(*p.chosen.borrow(), vec![2]);
         assert_eq!(*p.followed.borrow(), vec![1]);
         tap(&mut g, &p, 30.0, 110.0, 2.5);
         assert!(p.followed.borrow().is_empty() && *p.chosen.borrow() == vec![2]);
-        assert!(c.iter().all(|i| !matches!(i, Intent::Ring { .. })));
+        assert_eq!(rings(&c).len(), 1);
         let mut g2 = Gestures::new();
         tap(&mut g2, &p, 30.0, 190.0, 3.0);
         let out = g2.feed(ev(Phase::Down, 30.0, 190.0, 3.2), &p);
@@ -1085,8 +1104,11 @@ mod tests {
     fn a_rest_on_a_row_rides_it_once() {
         let (mut g, p) = (Gestures::new(), Fake::new());
         p.apply(&g.feed(ev(Phase::Down, 30.0, 150.0, 0.0), &p));
+        // (R10) while the finger rests on the mark, its lamp is the one pressed, for the look's swell
+        assert_eq!(g.panel_pressing_since(0.25), Some((2, 0.25)));
         let out = g.tick(0.5, &p);
         assert!(out.intents.contains(&Intent::Ride { float: 2 }), "{:?}", out.intents);
+        assert_eq!(g.panel_pressing_since(0.55), None);
         assert!(g.tick(0.6, &p).intents.iter().all(|i| !matches!(i, Intent::Ride { .. })));
         let up = g.feed(ev(Phase::Up, 30.0, 150.0, 0.7), &p);
         assert!(up.intents.is_empty(), "{:?}", up.intents);

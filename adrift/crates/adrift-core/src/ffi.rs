@@ -216,6 +216,35 @@ pub unsafe extern "C" fn adrift_export_end(shell: *mut Shell) {
     s.export = None;
 }
 
+/// The panel's marks for VoiceOver (R10): how many there are now.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_panel_count(shell: *mut Shell) -> u32 {
+    match shell.as_ref() {
+        Some(s) => s.app.panel_bounds().len() as u32,
+        None => 0,
+    }
+}
+
+/// The panel's `i`th mark: its rect in points written to `rect` (x, y, w, h) and its words, UTF-8 and
+/// NUL-terminated, into `words` (at most `len` bytes). False past the last.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_panel_item(shell: *mut Shell, i: u32, rect: *mut f32, words: *mut u8, len: usize) -> bool {
+    let Some(s) = shell.as_ref() else { return false };
+    let bounds = s.app.panel_bounds();
+    let Some((id, r)) = bounds.get(i as usize) else { return false };
+    if !rect.is_null() {
+        std::ptr::copy_nonoverlapping(r.as_ptr(), rect, 4);
+    }
+    if !words.is_null() && len > 0 {
+        let text = s.app.panel_words().into_iter().find(|(w, _)| w == id).map(|(_, t)| t).unwrap_or_else(|| format!("Lamp {id}"));
+        let b = text.as_bytes();
+        let n = b.len().min(len - 1);
+        std::ptr::copy_nonoverlapping(b.as_ptr(), words, n);
+        *words.add(n) = 0;
+    }
+    true
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn adrift_free(shell: *mut Shell) {
     if !shell.is_null() {

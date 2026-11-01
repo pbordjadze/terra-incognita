@@ -36,7 +36,8 @@
     "drifters.bin": "adrift/data/drifters.bin",
     "LibertinusSerif-Regular.otf": "Globe/fonts/LibertinusSerif-Regular.otf",
     "LibertinusSerif-Italic.otf": "Globe/fonts/LibertinusSerif-Italic.otf",
-    "night.jpg": "Globe/ground/night.jpg"
+    "night.jpg": "Globe/ground/night.jpg",
+    "gusts.png": "adrift/data/gusts.png"
   },
   "sheets": {
     "eddy": {
@@ -181,6 +182,24 @@
       ],
       "source": "NOAA GDP 6-hourly interpolated trajectories (Lumpkin and Centurioni, doi:10.25921/7ntx-z961), CC BY 4.0",
       "credit": "This study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html"
+    },
+    "gusts": {
+      "what": "the 10 m wind's weather about its monthly mean: sigma_u in R, sigma_v in G, the gusts' integral time scale in B, the month's mean rain in A",
+      "cells": [
+        360,
+        180
+      ],
+      "tiles": [
+        4,
+        3
+      ],
+      "border": 1,
+      "decode": "R, G: (byte / 255)^2 * 12 m/s; B: byte / 255 * 5 days; A: (byte / 255)^2 * 25 mm/day",
+      "source": "NCEP/NCAR Reanalysis 1, 10 m wind four times daily 2016-2020; monthly mean precipitation rate 1991-2020 (NOAA PSL)",
+      "credit": "NCEP/NCAR Reanalysis 1 data provided by the NOAA PSL, Boulder, Colorado, USA",
+      "width": 1448,
+      "height": 546,
+      "file": "gusts.png"
     }
   }
 }
