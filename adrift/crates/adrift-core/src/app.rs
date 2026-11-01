@@ -1659,6 +1659,7 @@ impl App {
             let Some(choice) = w.choose(&self.rules, gesture, day, self.clock.rate, &project) else { continue };
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
+            let fan: Vec<LonLat> = choice.fan.iter().map(|k| w.place(*k, day).at).collect();
             let li = w.leg_index;
             // the leg becomes world k to the next grid mark, and the next leg begins there with world
             // k's exact state, still in world k: the lamp's path is that world's, bit for bit (Truth)
@@ -1677,7 +1678,7 @@ impl App {
             f.at = chosen.at;
             f.eddy = [chosen.eddy.0, chosen.eddy.1];
             f.lit_for = 0.0;
-            let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, age: 0.0 };
+            let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, fan, age: 0.0 };
             self.cues.push((cue, self.seconds));
         }
         if !before.is_empty() {

@@ -312,6 +312,9 @@ pub struct LookCue {
     pub chosen: u32,
     pub at: LonLat,
     pub from: LonLat,
+    /// The runners-up the chooser names (Truth, R12: up to six, spread round the pick), their places at
+    /// the cue: the fan that folds into the chosen.
+    pub fan: Vec<LonLat>,
     /// Seconds since the cue (the drawn motion's clock).
     pub age: f32,
 }
