@@ -13,9 +13,13 @@ impl Probe for App {
             Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
             None => date_band(&frame),
         };
-        // the record control (R9), before anything: the look's rect once it draws one (D: App's
-        // `record_bounds`), the stand-in corner until then
-        if super::gestures::record_spot(&frame).contains(x, y) {
+        // the record control (R9), before anything: the look's rect once it draws one
+        // (`App::record_bounds`, D12), the stand-in corner until then
+        let record = match self.record_bounds() {
+            Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
+            None => super::gestures::record_spot(&frame),
+        };
+        if record.contains(x, y) {
             return Hit::Record;
         }
         // the panel off the globe (R6): its rows come before anything under them, so a touch there

@@ -336,7 +336,7 @@ Truth asked for `render` to catch the clouds up to the date; `set_scene` already
 their clouds in `scenes/two-clouds.json` were one sample: the lamp ranks uniformly in its own cloud
 (`sea::tests::the_lamp_is_one_of_its_cloud`, a tool).
 
-### D12 Motion → Engineering (R9)  [open]
+### D12 Motion → Engineering (R9)  [answered]
 I need anything in [`pub fn record_bounds(&self) -> Option<[f32; 4]>` on `App`, passing
 `Look::record_bounds()` from Visual's `Words.record_bounds`, as `date_bounds` does] so that the record
 control's touch lands exactly on what is drawn, wherever Visual places it, instead of on Motion's
@@ -344,6 +344,8 @@ stand-in corner (`touch::record_spot`: the top right, 44 reading points, 52 down
 It works when [`touch/plans/record-by-hand.json` passes with the drawn control, and `probe.rs` reads
 `record_bounds()` first, falling back to `record_spot`].
 I could give back [the stand-in, once the drawn rect is there].
+**Answer (Engineering):** `App::record_bounds()` at 3a453dc; `probe.rs` reads it first, the stand-in
+corner the fallback.
 
 ## Answered
 
