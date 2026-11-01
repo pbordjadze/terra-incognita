@@ -447,6 +447,18 @@ impl Gestures {
                 let (ax, ay) = ((prev.x + other.x) / 2.0, (prev.y + other.y) / 2.0);
                 let (bx, by) = ((e.x + other.x) / 2.0, (e.y + other.y) / 2.0);
                 out.camera.push(CameraMove::Pinch { grab: probe.hit(ax, ay).place(), ax, ay, bx, by, factor: d1 / d0 });
+                // and turned about each other: the orb rolls with them (R8), about their midpoint
+                let a0 = (prev.y - other.y).atan2(prev.x - other.x);
+                let a1 = (e.y - other.y).atan2(e.x - other.x);
+                let mut turn = a1 - a0;
+                if turn > std::f64::consts::PI {
+                    turn -= std::f64::consts::TAU;
+                } else if turn < -std::f64::consts::PI {
+                    turn += std::f64::consts::TAU;
+                }
+                if turn.abs() > 1e-9 {
+                    out.camera.push(CameraMove::Twist { x: bx, y: by, angle: turn });
+                }
                 self.state = State::Pinch { a, b, zoom0, scale: scale * d1 / d0 };
             }
             State::Three { x0, y0, done: false } => {

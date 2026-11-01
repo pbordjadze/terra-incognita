@@ -11,7 +11,7 @@ absolute times, `expect`s it fails on). They run on the real globe: land in them
 Sizes are points on a phone (393 x 852, the check's default at three pixels a point). Floats are
 numbered from 1 in the order listed; a put float takes the next number.
 """
-import json, os
+import json, math, os
 
 OUT = os.path.join(os.path.dirname(__file__), "../../adrift/crates/adrift-core/src/touch/plans")
 W, H = 393.0, 852.0
@@ -440,7 +440,31 @@ plan("four-two-ways", "Four lamps, two as clouds and two as themselves, chosen b
 ], floats=FOUR, day=9800.0, camera={"lon": -40.0, "lat": 25.0, "zoom": 1.6}, frames=True,
    panel=[[i + 1] + row(i) for i in range(4)])
 
-for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole", "four-two-ways"):
+# R8: two fingers twist the orb. Both land on the sea (both ring, R7), turn a quarter clockwise
+# about their midpoint, spreading a little: the globe rolls with them and zooms; Home sets it upright.
+def twist_steps(t0, cx, cy, r0, r1, turn, n=12, dt=0.03):
+    steps = [ev(t0, "down", 0, xy=[cx - r0, cy]), ev(t0 + 0.02, "down", 1, xy=[cx + r0, cy])]
+    for i in range(1, n + 1):
+        a = turn * i / n
+        r = r0 + (r1 - r0) * i / n
+        t = t0 + 0.02 + dt * i
+        steps.append(ev(t, "move", 0, xy=[round(cx - r * math.cos(a), 1), round(cy - r * math.sin(a), 1)]))
+        steps.append(ev(t + 0.005, "move", 1, xy=[round(cx + r * math.cos(a), 1), round(cy + r * math.sin(a), 1)]))
+    t = t0 + 0.02 + dt * n + 0.05
+    a = turn
+    steps.append(ev(t, "up", 0, xy=[round(cx - r1 * math.cos(a), 1), round(cy - r1 * math.sin(a), 1)]))
+    steps.append(ev(t + 0.02, "up", 1, xy=[round(cx + r1 * math.cos(a), 1), round(cy + r1 * math.sin(a), 1)]))
+    return steps
+plan("twist", "Two fingers twist the globe: both ring the sea where they land, a quarter turn clockwise rolls the orb with them while the spread zooms; Home sets it upright", [
+    shot(0.0, "before"),
+    *twist_steps(0.1, W / 2, H / 2, 50.0, 70.0, math.pi / 2),
+    expect(0.15, saw=["Ring"], state="pinch", floats=0),
+    shot(0.3, "turning"),
+    expect(0.7, state="idle", camera_moved=True, zoom_gt=1.3, floats=0, not_=["Put"]), shot(0.7, "turned"),
+    {"t": 1.0, "key": "home"}, expect(2.0, camera={"lon": -30.0, "lat": 25.0}), shot(2.0, "home"),
+])
+
+for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole", "four-two-ways", "twist"):
     PLANS[name]["steps"].sort(key=lambda st: st["t"])    # played in order of time (a stable sort)
 
 os.makedirs(OUT, exist_ok=True)

@@ -36,6 +36,10 @@ pub enum CameraMove {
     /// follows, it turns toward the centre and zooms out (never in past where the follow began) to
     /// hold them all within `motion::FRAME_WITHIN` of the room; a single place is the old ride.
     Frame { centre: LonLat, spread: f64, n: usize },
+    /// Two fingers turned about each other by `angle` radians on the screen (y down, so positive
+    /// is clockwise) about their midpoint (x, y): the orb rolls about the place under the midpoint
+    /// (the screen's centre off the disc) by as much, so what the fingers hold turns with them (R8).
+    Twist { x: f64, y: f64, angle: f64 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -123,6 +127,7 @@ impl CameraControl {
             CameraMove::Face { at } => self.face(at, now, motion),
             CameraMove::Follow { float } => self.riding = Some(float),
             CameraMove::Frame { centre, spread, n } => self.frame = Some((centre, spread, n)),
+            CameraMove::Twist { x, y, angle } => self.twist(disc, x, y, angle),
         }
     }
 
@@ -208,6 +213,21 @@ impl CameraControl {
             Some(g) => self.turn_to(&grown, g, bx, by, bx - ax, by - ay),
             None => self.turn(&grown, bx - ax, by - ay),
         }
+    }
+
+    /// Rolls the orb about the place under (x, y) by a twist of the fingers (R8): a clockwise twist
+    /// on the screen turns the globe clockwise about that place, which stays where it is.
+    fn twist(&mut self, disc: &Disc, x: f64, y: f64, angle: f64) {
+        if angle == 0.0 || disc.r <= 0.0 {
+            return;
+        }
+        self.riding = None;
+        let vx = (x - disc.cx) / disc.r;
+        let vy = (disc.cy - y) / disc.r;
+        let r2 = vx * vx + vy * vy;
+        let axis = if r2 < 1.0 { [vx, vy, (1.0 - r2).sqrt()] } else { [0.0, 0.0, 1.0] };
+        // view z toward the reader: a positive turn about it is counterclockwise on the screen
+        self.camera = self.camera.turned(axis, -angle);
     }
 
     /// Zoom by a factor about the screen's centre (the compatibility of R0's `zoom_by`).
@@ -505,6 +525,26 @@ mod tests {
             t += 1.0 / 60.0;
         }
         assert!(f.camera.roll.abs() > 90.0, "{:?}", f.camera);
+    }
+
+    #[test]
+    fn a_twist_rolls_the_orb_about_the_fingers_and_keeps_what_they_hold() {
+        let d = disc(1.0);
+        let mut r = rig(-30.0, 25.0, 1.0);
+        // two fingers 80 points either side of a midpoint, turned a quarter clockwise about it
+        let (mx, my) = (d.cx + 40.0, d.cy - 30.0);
+        let a = d.unproject(&r.camera, mx + 80.0, my).unwrap();
+        let mid = d.unproject(&r.camera, mx, my).unwrap();
+        let q = std::f64::consts::FRAC_PI_2;
+        for _ in 0..30 {
+            r.apply(&d, CameraMove::Twist { x: mx, y: my, angle: q / 30.0 }, 0.0, M);
+        }
+        let (p, _) = d.project(&r.camera, mid);
+        assert!((p[0] - mx).abs() < 1e-6 && (p[1] - my).abs() < 1e-6, "{p:?}");
+        // the place under the right finger has gone round below the midpoint (y down: clockwise)
+        let (p, _) = d.project(&r.camera, a);
+        assert!((p[0] - mx).abs() < 8.0 && p[1] > my + 60.0, "{p:?}");
+        assert!(r.camera.roll.abs() > 60.0, "{:?}", r.camera);
     }
 
     #[test]
