@@ -93,6 +93,33 @@ pub struct Leg {
     pub at: LonLat,
     pub day: f64,
     pub seed: u64,
+    /// Which of the sea's worlds this leg's path is (R11: 0 the real one, `k` the maybe a conductor's
+    /// cue chose; `conduct.rs`).
+    #[serde(default)]
+    pub world: u32,
+    /// The eddy velocity it starts with when it continues a flight (a conductor's cue, a take's
+    /// start: R11), so the continuation is the same law as one unbroken flight; None for a put.
+    #[serde(default)]
+    pub eddy: Option<[f32; 2]>,
+}
+
+impl Leg {
+    /// A leg put fresh: the real world, its own eddy.
+    pub const fn new(at: LonLat, day: f64, seed: u64) -> Leg {
+        Leg { at, day, seed, world: 0, eddy: None }
+    }
+}
+
+/// A conductor's gesture (R11, `conduct.rs`), in screen points and the hand's seconds.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ConductGesture {
+    /// A tap at a point: the world drawn nearest it.
+    Tap { x: f64, y: f64 },
+    /// A stroke `dx, dy` points over `secs`: the world that veered most that way over that stretch.
+    Sweep { dx: f64, dy: f64, secs: f64 },
+    /// A loop drawn, `turn` radians (the screen's y points down, so positive turns clockwise as seen) over `secs`: the world that
+    /// turned most that way.
+    Circle { turn: f64, secs: f64 },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -131,7 +158,7 @@ impl Float {
     /// The legs, with the one a pre-leg state implies.
     pub fn legs(&self) -> Vec<Leg> {
         if self.legs.is_empty() {
-            vec![Leg { at: self.wake.first().map_or(self.at, |b| b.at), day: self.put_day, seed: self.seed }]
+            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed)]
         } else {
             self.legs.clone()
         }
@@ -402,6 +429,9 @@ pub enum Intent {
     Record { on: bool },
     /// The newest take is to be exported as a video: the shell polls `App::take_export_wanted`.
     Export,
+    /// A conductor's cue while a take is recorded (R11): the lamp `float` (None: every lamp out)
+    /// takes the world that did what the gesture did.
+    Conduct { float: Option<u32>, gesture: ConductGesture },
     /// The newest take's clip plays at this speed (R10: 0.5 is slow motion, the clip twice the take's
     /// length; clamped to 0.25..2). The take itself is unchanged.
     TakeSpeed { speed: f64 },

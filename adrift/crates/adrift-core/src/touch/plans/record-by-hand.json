@@ -1,5 +1,5 @@
 {
- "title": "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks again; nothing on it rings or puts",
+ "title": "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks again; nothing on it rings or puts (R11: the lamp is put and chosen before the take, as one finger conducts during it)",
  "size": [
   393.0,
   852.0
@@ -11,7 +11,56 @@
  },
  "steps": [
   {
-   "t": 0.2,
+   "t": 0.1,
+   "down": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 0.7,
+   "up": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 0.8,
+   "expect": {
+    "floats": 1,
+    "saw": [
+     "Put"
+    ]
+   }
+  },
+  {
+   "t": 1.2,
+   "down": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.28,
+   "up": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.4,
+   "expect": {
+    "chosen": [
+     1
+    ]
+   }
+  },
+  {
+   "t": 1.6,
    "down": 0,
    "xy": [
     355.0,
@@ -19,13 +68,13 @@
    ]
   },
   {
-   "t": 0.25,
+   "t": 1.65,
    "expect": {
     "state": "record"
    }
   },
   {
-   "t": 0.28,
+   "t": 1.68,
    "up": 0,
    "xy": [
     355.0,
@@ -33,7 +82,7 @@
    ]
   },
   {
-   "t": 0.35,
+   "t": 1.75,
    "expect": {
     "saw": [
      "Record"
@@ -46,56 +95,7 @@
    }
   },
   {
-   "t": 0.5,
-   "down": 0,
-   "at": [
-    -40.0,
-    32.0
-   ]
-  },
-  {
-   "t": 1.1,
-   "up": 0,
-   "at": [
-    -40.0,
-    32.0
-   ]
-  },
-  {
-   "t": 1.2,
-   "expect": {
-    "floats": 1,
-    "saw": [
-     "Put"
-    ]
-   }
-  },
-  {
-   "t": 1.6,
-   "down": 0,
-   "at": [
-    -40.0,
-    32.0
-   ]
-  },
-  {
-   "t": 1.68,
-   "up": 0,
-   "at": [
-    -40.0,
-    32.0
-   ]
-  },
-  {
-   "t": 1.8,
-   "expect": {
-    "chosen": [
-     1
-    ]
-   }
-  },
-  {
-   "t": 2.0,
+   "t": 3.4,
    "down": 0,
    "xy": [
     196.5,
@@ -103,7 +103,7 @@
    ]
   },
   {
-   "t": 2.05,
+   "t": 3.45,
    "move": 0,
    "xy": [
     216.5,
@@ -111,7 +111,7 @@
    ]
   },
   {
-   "t": 2.1,
+   "t": 3.5,
    "move": 0,
    "xy": [
     236.5,
@@ -119,7 +119,7 @@
    ]
   },
   {
-   "t": 2.15,
+   "t": 3.55,
    "move": 0,
    "xy": [
     256.5,
@@ -127,7 +127,7 @@
    ]
   },
   {
-   "t": 2.4499999999999997,
+   "t": 3.85,
    "move": 0,
    "xy": [
     256.5,
@@ -135,7 +135,7 @@
    ]
   },
   {
-   "t": 2.4699999999999998,
+   "t": 3.87,
    "up": 0,
    "xy": [
     256.5,
@@ -143,11 +143,11 @@
    ]
   },
   {
-   "t": 3.4,
+   "t": 4.8,
    "shot": "live-end"
   },
   {
-   "t": 3.5,
+   "t": 4.9,
    "down": 0,
    "xy": [
     355.0,
@@ -155,7 +155,7 @@
    ]
   },
   {
-   "t": 3.55,
+   "t": 4.95,
    "expect": {
     "saw": [
      "Record",
@@ -169,7 +169,7 @@
    }
   },
   {
-   "t": 3.6,
+   "t": 5.0,
    "up": 0,
    "xy": [
     355.0,
@@ -177,20 +177,20 @@
    ]
   },
   {
-   "t": 3.7,
+   "t": 5.1,
    "export": "clip",
    "expect": {
     "floats": 1
    }
   },
   {
-   "t": 4.4,
+   "t": 5.8,
    "expect": {
     "floats": 1
    }
   },
   {
-   "t": 4.5,
+   "t": 5.9,
    "down": 0,
    "xy": [
     355.0,
@@ -198,7 +198,7 @@
    ]
   },
   {
-   "t": 5.0,
+   "t": 6.4,
    "expect": {
     "saw": [
      "Export"
@@ -210,7 +210,7 @@
    }
   },
   {
-   "t": 5.1,
+   "t": 6.5,
    "up": 0,
    "xy": [
     355.0,
@@ -218,7 +218,7 @@
    ]
   },
   {
-   "t": 5.2,
+   "t": 6.6,
    "expect": {
     "state": "idle",
     "floats": 1

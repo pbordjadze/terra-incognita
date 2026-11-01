@@ -106,7 +106,8 @@ impl ClipCamera {
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
     /// frame, `part` and `through` where the frame falls (`Take::clip_at`). Returns the camera to draw.
-    pub fn step(&mut self, take: Camera, part: ClipPart, through: f64, dt: f64, f: &Framing) -> Camera {
+    pub fn step(&mut self, take: Camera, part: ClipPart, through: f64, dt: f64, f: &Framing, lamps: &Lean) -> Camera {
+        let take = lean(take, lamps);
         match part {
             ClipPart::Before => {
                 // the opening: the take's first framing, from a touch wider, eased in (still at both ends)
@@ -163,6 +164,82 @@ impl ClipCamera {
         self.cam = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), lz.exp());
         self.cam
     }
+}
+
+/// What the clip's camera leans toward (R11): the lamps that matter, and the clip's room, points: the
+/// disc's radius at zoom 1 and the half-width a lamp must lie within.
+#[derive(Clone, Debug, Default)]
+pub struct Lean {
+    pub lamps: Vec<crate::model::LonLat>,
+    pub r1: f64,
+    pub half: f64,
+}
+
+/// A lamp is held within this share of the clip's half-width (room for its line and glow).
+pub const LEAN_FIT: f64 = 0.72;
+/// The clip leans at least this far from the take's centre toward the lamps' (more only to hold them).
+pub const LEAN_TOWARD: f64 = 0.35;
+/// Lamps that would be specks bring the clip in until their spread fills this share of what would
+/// just hold them (about half the frame's width), up to `LEAN_IN` (never so far that one leaves).
+pub const LEAN_FILL: f64 = 0.55;
+pub const LEAN_IN: f64 = 5.0;
+/// How far toward that the clip comes in, in the zoom's log (so the reader's own pinch still reads in
+/// the clip: a take at the whole globe comes a good way in, not all the way).
+pub const LEAN_PULL: f64 = 0.6;
+
+/// The take's camera leaned toward the lamps (R11; the round-10 critic: a fling carried the lamp out
+/// of the clip and most frames were the whole globe with lamps as specks). The centre turns from the
+/// take's toward the lamps' centre by `LEAN_TOWARD`, further (up to all the way) as far as it takes to
+/// hold every lamp within `LEAN_FIT` of the half-width; the zoom is the take's, raised toward
+/// `LEAN_FILL` of the frame (at most `LEAN_IN`) when the lamps would be specks and lowered when the take is too close to hold them. The
+/// roll is the take's. Continuous in the take's camera, so the spring after it never sees a jump.
+pub fn lean(take: Camera, l: &Lean) -> Camera {
+    if l.lamps.is_empty() || l.r1 <= 0.0 || l.half <= 0.0 {
+        return take;
+    }
+    let pts: Vec<[f64; 3]> = l.lamps.iter().map(|p| p.to_xyz()).collect();
+    let sum = pts.iter().fold([0.0; 3], |a, p| [a[0] + p[0], a[1] + p[1], a[2] + p[2]]);
+    let n = (sum[0] * sum[0] + sum[1] * sum[1] + sum[2] * sum[2]).sqrt();
+    if n < 1e-9 {
+        return take;
+    }
+    let c = [sum[0] / n, sum[1] / n, sum[2] / n];
+    let dot = |a: [f64; 3], b: [f64; 3]| (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
+    let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
+    // the zoom that holds the lamps' spread about their centre within the fit
+    let room = LEAN_FIT * l.half / l.r1;
+    let fit = if spread < std::f64::consts::FRAC_PI_2 { room / spread.sin().max(1e-3) } else { room };
+    let near = (fit * LEAN_FILL).min(LEAN_IN);
+    let fit = fit.clamp(crate::touch::motion::ZOOM_MIN, crate::touch::motion::ZOOM_MAX);
+    let near = near.min(fit);
+    let zoom = if take.zoom < near { (take.zoom.ln() + LEAN_PULL * (near.ln() - take.zoom.ln())).exp() } else { take.zoom.min(fit) };
+    // the centre: from the take's toward the lamps', as far as holds them (bisected: the furthest lamp
+    // from a centre part-way shrinks as the share grows)
+    let t0 = crate::model::LonLat::new(take.lon, take.lat).to_xyz();
+    let at = |w: f64| {
+        let v = [t0[0] + (c[0] - t0[0]) * w, t0[1] + (c[1] - t0[1]) * w, t0[2] + (c[2] - t0[2]) * w];
+        let m = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-9);
+        [v[0] / m, v[1] / m, v[2] / m]
+    };
+    let holds = |w: f64| {
+        let v = at(w);
+        pts.iter().all(|p| {
+            let d = dot(*p, v);
+            d > 0.0 && (1.0 - d * d).sqrt() * l.r1 * zoom <= l.half * LEAN_FIT * 1.05
+        })
+    };
+    let w = if holds(LEAN_TOWARD) {
+        LEAN_TOWARD
+    } else {
+        let (mut lo, mut hi) = (LEAN_TOWARD, 1.0);
+        for _ in 0..12 {
+            let mid = (lo + hi) / 2.0;
+            if holds(mid) { hi = mid } else { lo = mid }
+        }
+        hi
+    };
+    let centre = crate::model::LonLat::from_xyz(at(w));
+    Camera { lon: centre.lon, lat: centre.lat, zoom, roll: take.roll }
 }
 
 fn cam_quat(c: Camera) -> [f64; 4] {
@@ -407,7 +484,7 @@ mod tests {
             .map(|i| {
                 let tau = i as f64 / fps;
                 let (t, part, through) = take.clip_at(tau);
-                (tau, cc.step(take_cam(t), part, through, 1.0 / fps, &take.framing))
+                (tau, cc.step(take_cam(t), part, through, 1.0 / fps, &take.framing, &Lean::default()))
             })
             .collect()
     }
@@ -459,12 +536,42 @@ mod tests {
         for i in 0..120 {
             let lat = 80.0 + i as f64 * 0.2;
             let target = if lat <= 90.0 { Camera::new(0.0, lat, 2.0) } else { Camera { lon: 180.0, lat: 180.0 - lat, zoom: 2.0, roll: 180.0 } };
-            let cam = cc.step(target, ClipPart::During, 0.0, 1.0 / 60.0, &f);
+            let cam = cc.step(target, ClipPart::During, 0.0, 1.0 / 60.0, &f, &Lean::default());
             let d = LonLat::new(cam.lon, cam.lat).to_xyz();
             let e = LonLat::new(last.lon, last.lat).to_xyz();
             let step = (d[0] * e[0] + d[1] * e[1] + d[2] * e[2]).clamp(-1.0, 1.0).acos().to_degrees();
             assert!(step < 1.0, "jumped {step}° at {cam:?}");
             last = cam;
         }
+    }
+
+    #[test]
+    fn the_clip_leans_to_hold_its_lamps_and_comes_closer_to_specks() {
+        let room = Lean { lamps: vec![LonLat::new(-60.0, 32.0), LonLat::new(-55.0, 30.0)], r1: 166.0, half: 180.0 };
+        let in_frame = |cam: Camera| {
+            room.lamps.iter().all(|p| {
+                let v = cam.view(p.to_xyz());
+                v[2] > 0.0 && (v[0] * v[0] + v[1] * v[1]).sqrt() * room.r1 * cam.zoom <= room.half * 0.8
+            })
+        };
+        // the whole globe, lamps as specks: closer in, the lamps held
+        let wide = lean(Camera::new(-40.0, 20.0, 1.0), &room);
+        assert!(wide.zoom > 2.0 && in_frame(wide), "{wide:?}");
+        // a fling has carried the take's camera to the Pacific: the clip still holds the lamps
+        let far = lean(Camera::new(-130.0, 10.0, 1.3), &room);
+        assert!(in_frame(far), "{far:?}");
+        // pinched in deep on open water away from them: the clip turns to hold them
+        let deep = lean(Camera::new(-45.0, 22.0, 8.0), &room);
+        assert!(in_frame(deep), "{deep:?}");
+        // lamps far apart, pinched in: back out just enough to hold both
+        let apart = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-30.0, 20.0)], ..room.clone() };
+        let wide2 = lean(Camera::new(-50.0, 28.0, 4.0), &apart);
+        assert!(wide2.zoom < 2.6 && apart.lamps.iter().all(|p| { let v = wide2.view(p.to_xyz()); v[2] > 0.0 && (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * wide2.zoom <= 180.0 * 0.8 }), "{wide2:?}");
+        // continuous: a small move of the take's camera is a small move of the clip's
+        let a = lean(Camera::new(-100.0, 10.0, 1.3), &room);
+        let b = lean(Camera::new(-100.2, 10.0, 1.3), &room);
+        assert!((a.lon - b.lon).abs() < 0.3 && (a.zoom - b.zoom).abs() < 0.01, "{a:?} {b:?}");
+        // no lamps: the take's own
+        assert_eq!(lean(Camera::new(-100.0, 10.0, 1.3), &Lean::default()), Camera::new(-100.0, 10.0, 1.3));
     }
 }

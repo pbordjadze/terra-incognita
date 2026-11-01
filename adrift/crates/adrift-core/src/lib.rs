@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod assets;
+pub mod conduct;
 pub mod gpu;
 pub mod look;
 pub mod model;

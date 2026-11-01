@@ -1,26 +1,144 @@
 {
- "title": "R9: a take recorded live (a float put by a rest, another chosen by a tap, the date scrubbed sixty days, a pinch) and exported at 30 fps; the replay must end where the take did",
- "size": [393.0, 852.0],
- "camera": {"lon": -50.0, "lat": 30.0, "zoom": 1.6},
+ "title": "R9: a take recorded live (R11: a float put by a rest and another chosen by a tap before it, as one finger conducts during it; the date scrubbed sixty days, a pinch) and exported at 30 fps; the replay must end where the take did",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "camera": {
+  "lon": -50.0,
+  "lat": 30.0,
+  "zoom": 1.6
+ },
  "day": 200.0,
- "floats": [{"lon": -74.0, "lat": 34.5, "days_ago": 20}],
+ "floats": [
+  {
+   "lon": -74.0,
+   "lat": 34.5,
+   "days_ago": 20
+  }
+ ],
  "steps": [
-  {"t": 0.3, "record": true},
-  {"t": 0.5, "down": 0, "at": [-40.0, 32.0]},
-  {"t": 1.1, "up": 0, "at": [-40.0, 32.0]},
-  {"t": 1.6, "down": 0, "at": [-74.0, 34.5]},
-  {"t": 1.68, "up": 0, "at": [-74.0, 34.5]},
-  {"t": 2.2, "scrub": [60.0, 2.0]},
-  {"t": 4.6, "down": 1, "xy": [150.0, 420.0]},
-  {"t": 4.6, "down": 2, "xy": [240.0, 420.0]},
-  {"t": 4.8, "move": 1, "xy": [120.0, 420.0]},
-  {"t": 4.8, "move": 2, "xy": [270.0, 420.0]},
-  {"t": 5.0, "move": 1, "xy": [100.0, 420.0]},
-  {"t": 5.0, "move": 2, "xy": [290.0, 420.0]},
-  {"t": 5.1, "up": 1, "xy": [100.0, 420.0]},
-  {"t": 5.1, "up": 2, "xy": [290.0, 420.0]},
-  {"t": 6.0, "shot": "live-end"},
-  {"t": 6.0, "record": false},
-  {"t": 6.1, "export": "clip", "expect": {"floats": 2}}
+  {
+   "t": 0.5,
+   "down": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.1,
+   "up": 0,
+   "at": [
+    -40.0,
+    32.0
+   ]
+  },
+  {
+   "t": 1.6,
+   "down": 0,
+   "at": [
+    -74.0,
+    34.5
+   ]
+  },
+  {
+   "t": 1.68,
+   "up": 0,
+   "at": [
+    -74.0,
+    34.5
+   ]
+  },
+  {
+   "t": 1.75,
+   "record": true
+  },
+  {
+   "t": 2.2,
+   "scrub": [
+    60.0,
+    2.0
+   ]
+  },
+  {
+   "t": 4.6,
+   "down": 1,
+   "xy": [
+    150.0,
+    420.0
+   ]
+  },
+  {
+   "t": 4.6,
+   "down": 2,
+   "xy": [
+    240.0,
+    420.0
+   ]
+  },
+  {
+   "t": 4.8,
+   "move": 1,
+   "xy": [
+    120.0,
+    420.0
+   ]
+  },
+  {
+   "t": 4.8,
+   "move": 2,
+   "xy": [
+    270.0,
+    420.0
+   ]
+  },
+  {
+   "t": 5.0,
+   "move": 1,
+   "xy": [
+    100.0,
+    420.0
+   ]
+  },
+  {
+   "t": 5.0,
+   "move": 2,
+   "xy": [
+    290.0,
+    420.0
+   ]
+  },
+  {
+   "t": 5.1,
+   "up": 1,
+   "xy": [
+    100.0,
+    420.0
+   ]
+  },
+  {
+   "t": 5.1,
+   "up": 2,
+   "xy": [
+    290.0,
+    420.0
+   ]
+  },
+  {
+   "t": 6.0,
+   "shot": "live-end"
+  },
+  {
+   "t": 6.0,
+   "record": false
+  },
+  {
+   "t": 6.1,
+   "export": "clip",
+   "expect": {
+    "floats": 2
+   }
+  }
  ]
 }

@@ -848,3 +848,18 @@ fn a_lamps_line_at_a_quarter_day_and_a_day() {
         eprintln!("day {:2}: {:7.2} {:6.2} {:?}", i / 4, p.0.lon, p.0.lat, p.1);
     }
 }
+
+/// The ice's fast path is exact: no month's sheet has ice nearer the equator than `Ice::ICE_FREE`
+/// plus a pixel, so the skipped bilinear read would have been 0 (R11).
+#[test]
+fn no_ice_nearer_the_equator() {
+    let r = rules();
+    for (m, s) in r.ice.0.iter().enumerate() {
+        for y in 0..s.height {
+            let lat = 90.0 - (y as f32 + 0.5) / s.height as f32 * 180.0;
+            if lat.abs() < super::Ice::ICE_FREE + 0.25 {
+                assert!((0..s.width).all(|x| s.at(x, y, 0) == 0.0), "ice in month {} at {lat}", m + 1);
+            }
+        }
+    }
+}

@@ -340,6 +340,38 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     the date with a meaning the reader can't see, and a slow-motion clip is a choice made after the
     take, which belongs with the trim on the studio's edit surface when there is one.
 
+34. **The conductor's hand** (R11, step 2 of the studio): while the app conducts (`Probe::conducting`,
+    `App::conducting`: a take recording, or replayed for its export, so the replay reads the same
+    hand), one finger on the globe conducts instead of ringing, putting, choosing or turning:
+    - **tap** (a touch that never draws `SWEEP_LENGTH`): `Conduct { Tap { x, y } }` at the lift, at
+      the touch's point;
+    - **sweep** (a stroke): `Conduct { Sweep { dx, dy, secs } }` the moment the hand's speed (read over
+      `SPEED_WINDOW`, 40 ms, so 20 and 120 events a second agree) has fallen to `SWEEP_FALL` (0.8) of
+      its fastest, once that was at least `SWEEP_PEAK` (160 reading pt/s): the beat is struck at the
+      peak, not on the lift; `dx, dy, secs` the stroke so far. A stroke still curving past
+      `SWEEP_CURVE` may be a loop and gives no sweep mid-way; one that never slowed is given at the
+      lift;
+    - **circle** (a loop): `Conduct { Circle { turn, secs } }` the moment it has turned `CIRCLE_TURN`
+      (¾ of a turn), `turn` in `conduct.rs`'s own on-screen sense (the raw y-down cross: positive is
+      clockwise as seen), so the hand's loop picks worlds that looped the same way;
+    - **rest** (still for the beat): a fermata, `SetRunning { false }`, given back as it was at the
+      lift (`describe()` reads "fermata").
+    One gesture a touch. It goes to the lamp the touch began within `CONDUCT_NEAR` (90 reading pt) of,
+    the nearest, else to every lamp out (`float: None`: open water conducts all). Two fingers are the
+    camera's as ever (pan, pinch, twist), and ring nothing while conducting. The record control, the
+    date and the panel's marks answer as ever. `Gestures::conduct_stroke()` gives the stroke so far.
+    `plans/conduct-by-hand.json` (a tap, a sweep given while the finger is still down, a circle
+    given before the loop closes, a fermata; exported, 0.000 km).
+35. **The clip holds its lamps** (R11): before its spring, the clip's camera leans the take's
+    (`studio::lean`): the centre turns from the take's toward the lamps' (the lamps a cue has
+    touched, else every lamp out) by `LEAN_TOWARD` (0.35), further as far as it takes to hold every
+    lamp within `LEAN_FIT` (0.72) of the clip's half-width; the zoom is the take's, raised until the
+    lamps' spread fills `LEAN_FILL` of the frame (at most `LEAN_IN`, 5) when they would be specks,
+    lowered when the take is too close to hold them all. A fling away from the lamps leans back as
+    it settles. The live camera does not lean while conducting: it is the reader's, and two fingers
+    move it. `plans/take-fling-away.json` with `tools/adrift/lamp_in_clip.py` (the take loses the
+    lamp, the clip does not).
+
 ## The numbers (`motion.rs`)
 
 | | | why |
