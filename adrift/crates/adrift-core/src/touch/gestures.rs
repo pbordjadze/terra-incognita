@@ -969,7 +969,7 @@ impl Gestures {
         let mut fire = false;
         if speed >= peak {
             peak = speed;
-        } else if peak >= motion::SWEEP_PEAK * reading && speed <= motion::SWEEP_FALL * peak && length >= motion::SWEEP_LENGTH * reading && turn.abs() < motion::SWEEP_CURVE {
+        } else if peak >= motion::SWEEP_PEAK * reading && speed <= motion::SWEEP_FALL * peak && length >= motion::SWEEP_LENGTH * reading && turn.abs() < motion::SWEEP_CURVE && e.t - t0 >= motion::SWEEP_AGE {
             // past the peak: the stroke so far is the sweep (a stroke still curving may be a circle)
             fire = true;
         }
@@ -1000,6 +1000,12 @@ impl Gestures {
             ConductGesture::Tap { x: x0, y: y0 }
         };
         out.intents.push(Intent::Conduct { float: target, gesture });
+    }
+
+    /// Whether a conducting finger is resting and holding the date (R12, a fermata), for the look: a
+    /// paused date while conducting may also be a tap on the date band, which this is not.
+    pub fn fermata(&self) -> bool {
+        matches!(self.state, State::Conduct { fermata: true, .. })
     }
 
     /// The conducting finger's stroke so far, (t, x, y) points (R11), for the look to draw the hand.
@@ -1413,6 +1419,7 @@ mod tests {
         assert_eq!(o.intents, vec![Intent::SetRunning { running: false }]);
         p.apply(&o);
         assert_eq!(g.describe(), "fermata");
+        assert!(g.fermata());
         let up = g.feed(ev(Phase::Up, 302.0, 250.0, 2.0), &p);
         assert_eq!(up.intents, vec![Intent::SetRunning { running: true }]);
     }
@@ -1432,5 +1439,115 @@ mod tests {
         let (mut g, p) = (Gestures::new(), Fake::new());
         let o = g.feed(ev(Phase::Down, 300.0, 250.0, 0.0), &p);
         assert!(conducts(&o).is_empty());
+    }
+
+    /// Feeds one finger along `path(u)`, u 0..1 over `secs`, at `hz` events a second; returns every
+    /// Conduct given with the time it came, and the lift's.
+    fn draw(g: &mut Gestures, p: &Fake, t0: f64, secs: f64, hz: f64, path: impl Fn(f64) -> (f64, f64)) -> (Vec<(f64, (Option<u32>, ConductGesture))>, Vec<(Option<u32>, ConductGesture)>) {
+        let (x0, y0) = path(0.0);
+        let mut got = Vec::new();
+        got.extend(conducts(&g.feed(ev(Phase::Down, x0, y0, t0), p)).into_iter().map(|c| (t0, c)));
+        let n = (secs * hz).ceil() as usize;
+        for i in 1..=n {
+            let t = t0 + secs * i as f64 / n as f64;
+            let (x, y) = path(i as f64 / n as f64);
+            got.extend(conducts(&g.feed(ev(Phase::Move, x, y, t), p)).into_iter().map(|c| (t, c)));
+            got.extend(conducts(&g.tick(t, p)).into_iter().map(|c| (t, c)));
+        }
+        let (x, y) = path(1.0);
+        let up = conducts(&g.feed(ev(Phase::Up, x, y, t0 + secs + 0.01), p));
+        (got, up)
+    }
+
+    fn kind(g: &ConductGesture) -> &'static str {
+        match g {
+            ConductGesture::Tap { .. } => "tap",
+            ConductGesture::Sweep { .. } => "sweep",
+            ConductGesture::Circle { .. } => "circle",
+        }
+    }
+
+    /// Exactly one gesture of `want` for the whole touch.
+    fn one(got: &[(f64, (Option<u32>, ConductGesture))], up: &[(Option<u32>, ConductGesture)], want: &str, what: &str) {
+        let all: Vec<&ConductGesture> = got.iter().map(|g| &g.1 .1).chain(up.iter().map(|g| &g.1)).collect();
+        assert_eq!(all.len(), 1, "{what}: {all:?}");
+        assert_eq!(kind(all[0]), want, "{what}: {all:?}");
+    }
+
+    #[test]
+    fn conducting_plausible_touches_are_read_as_meant_at_120_and_20_events_a_second() {
+        use std::f64::consts::PI;
+        for hz in [120.0, 20.0] {
+            // a sloppy tap: the finger rolls 12 points in a tenth of a second
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 0.1, hz, |u| (300.0 + 12.0 * u, 250.0 + 4.0 * u));
+            one(&got, &up, "tap", &format!("sloppy tap {hz}"));
+            // a quick sloppy tap: 18 points in 50 ms (360 pt/s, but too short to be a stroke)
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 0.05, hz, |u| (300.0 + 18.0 * u, 250.0));
+            one(&got, &up, "tap", &format!("quick sloppy tap {hz}"));
+            // a slow sweep: 120 points over a second, never fast (given at the lift)
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 1.0, hz, |u| (100.0 + 120.0 * u, 300.0 - 10.0 * u));
+            one(&got, &up, "sweep", &format!("slow sweep {hz}"));
+            // a sweep ending in a curl (the hand turning back as it slows): still a sweep, given at its peak
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 0.5, hz, |u| {
+                let a = (u * 1.4).min(1.0);
+                let s = a * a * (3.0 - 2.0 * a);
+                let curl = ((u - 0.7).max(0.0) / 0.3) * PI * 0.6;
+                (100.0 + 180.0 * s + 20.0 * curl.sin(), 300.0 - 20.0 * (1.0 - curl.cos()))
+            });
+            one(&got, &up, "sweep", &format!("sweep with a curl {hz}"));
+            assert!(up.is_empty(), "given at the lift, not the peak");
+            // a small circle: 20 points across, half a second
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 0.5, hz, |u| (300.0 + 20.0 * (2.0 * PI * u).cos(), 250.0 + 20.0 * (2.0 * PI * u).sin()));
+            one(&got, &up, "circle", &format!("small circle {hz}"));
+            // a lopsided loop, an ellipse 60 by 25, uneven speed
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 0.7, hz, |u| (300.0 + 60.0 * (2.0 * PI * u).cos(), 250.0 - 25.0 * (2.0 * PI * u).sin()));
+            one(&got, &up, "circle", &format!("ellipse {hz}"));
+            if let ConductGesture::Circle { turn, .. } = got[0].1 .1 {
+                // drawn anticlockwise as seen (y down, the sine negated): negative in the seam's sense
+                assert!(turn < 0.0, "{turn}");
+            }
+            // a slow loop, two seconds, given at three quarters
+            let (mut g, p) = conductor();
+            let (got, up) = draw(&mut g, &p, 0.0, 2.0, hz, |u| (300.0 + 50.0 * (2.0 * PI * u).cos(), 250.0 + 50.0 * (2.0 * PI * u).sin()));
+            one(&got, &up, "circle", &format!("slow loop {hz}"));
+            assert!(got[0].0 > 1.3 && got[0].0 < 1.75, "given at {}", got[0].0);
+        }
+    }
+
+    #[test]
+    fn conducting_a_two_finger_move_that_starts_as_one_finger_cues_nothing() {
+        // the first finger lands and flicks 36 points, slowing, before the second lands 70 ms later
+        // (past its peak by 33 ms: without the stroke's least age it would have cued a sweep)
+        let (mut g, p) = conductor();
+        let mut got = Vec::new();
+        got.extend(conducts(&g.feed(ev(Phase::Down, 200.0, 300.0, 0.0), &p)));
+        let mut x = 200.0;
+        for i in 1..=8 {
+            let t = i as f64 / 120.0;
+            x += 9.0 - i as f64;
+            got.extend(conducts(&g.feed(ev(Phase::Move, x, 300.0, t), &p)));
+        }
+        let mut b = ev(Phase::Down, 300.0, 380.0, 0.07);
+        b.id = 2;
+        got.extend(conducts(&g.feed(b, &p)));
+        assert_eq!(g.describe(), "pinch");
+        for i in 1..=20 {
+            let t = 0.07 + i as f64 / 120.0;
+            got.extend(conducts(&g.feed(ev(Phase::Move, 240.0 + 3.0 * i as f64, 300.0, t), &p)));
+            let mut m = ev(Phase::Move, 300.0 + 3.0 * i as f64, 380.0, t);
+            m.id = 2;
+            got.extend(conducts(&g.feed(m, &p)));
+        }
+        got.extend(conducts(&g.feed(ev(Phase::Up, 300.0, 300.0, 0.3), &p)));
+        let mut u = ev(Phase::Up, 360.0, 380.0, 0.31);
+        u.id = 2;
+        got.extend(conducts(&g.feed(u, &p)));
+        assert!(got.is_empty(), "a camera move cued {got:?}");
     }
 }

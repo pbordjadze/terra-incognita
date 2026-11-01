@@ -189,6 +189,9 @@ pub struct App {
     song: Option<String>,
     /// The cues of the last seconds, for the look (R11).
     cues: Vec<(crate::look::LookCue, f64)>,
+    /// The last cue's lamp (None: every lamp) and its drawn second (R12, Motion's: the clip pushes in on
+    /// a lamp cued alone, then eases back to them all).
+    last_cue: Option<(Option<u32>, f64)>,
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
@@ -377,6 +380,7 @@ impl App {
             conduct: Default::default(),
             song: None,
             cues: Vec::new(),
+            last_cue: None,
         })
     }
 
@@ -837,6 +841,16 @@ impl App {
             self.camera.riding = None;
         }
         let motion = self.motion();
+        // (R12, Motion's) while the hand conducts, the live camera frames the lamps it conducts
+        let hold = if self.conducting() {
+            let d = self.disc();
+            let r1 = d.r / self.camera.camera.zoom;
+            let half = self.width as f64 / self.ppp / 2.0;
+            crate::studio::frame(&self.lean_for(r1, half, false))
+        } else {
+            None
+        };
+        self.camera.hold_frame(hold, now, motion);
         self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
@@ -1534,6 +1548,7 @@ impl App {
         self.ripples.clear();
         self.conduct.clear();
         self.cues.clear();
+        self.last_cue = None;
         self.pressing = None;
         self.pressing_float = None;
         self.last_t = Some(now);
@@ -1570,6 +1585,49 @@ impl App {
     /// (R12); None without a song or at another speed.
     pub fn export_song(&self) -> Option<(f64, f64)> {
         self.studio.replay.as_ref()?.take.song_in_clip()
+    }
+
+    /// The lamps a conducting camera frames (R11, R12; Motion's): those a cue has touched, else every
+    /// lamp out, with the last `studio::FRAME_TRAIL` days of their lines (the path's samples, the
+    /// oldest point interpolated to the edge so the frame never steps), in a view of disc radius `r1`
+    /// at zoom 1 and half-width `half`, points.
+    pub fn lean_for(&self, r1: f64, half: f64, focus: bool) -> crate::studio::Lean {
+        let day = self.clock.day;
+        let these: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        let lines = |fs: &[&Float]| {
+            let since = day - crate::studio::FRAME_TRAIL;
+            let mut trail = Vec::new();
+            for f in fs {
+                let mut prev: Option<&Sample> = None;
+                for li in 0..f.legs().len() {
+                    let Some(path) = self.paths.get(&(f.id, li)) else { continue };
+                    for s in &path.samples {
+                        if s.day > day {
+                            break;
+                        }
+                        if s.day >= since {
+                            if let Some(p) = prev.filter(|p| p.day < since) {
+                                let fr = ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
+                                trail.push(lerp_place(p.at, s.at, fr));
+                            }
+                            trail.push(s.at);
+                        }
+                        prev = Some(s);
+                    }
+                }
+            }
+            trail
+        };
+        // (R12) a lamp cued alone, among others: the clip leans in on it, then back to them all
+        let focus = match self.last_cue.filter(|_| focus && these.len() > 1) {
+            Some((Some(id), when)) => these.iter().find(|f| f.id == id).map(|f| {
+                let w = crate::studio::focus_weight(self.seconds - when);
+                (vec![f.at], lines(&[*f]), w)
+            }),
+            _ => None,
+        }
+        .filter(|(_, _, w)| *w > 0.0);
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus }
     }
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
@@ -1641,6 +1699,7 @@ impl App {
         if !self.conducting() {
             return;
         }
+        self.last_cue = Some((float, self.seconds));
         self.step_worlds();
         let day = self.clock.day;
         let disc = self.disc();
@@ -1851,18 +1910,11 @@ impl App {
             ClipPart::During => (1.0, 0.0),
             ClipPart::After => (1.0, through as f32),
         };
-        // what the clip leans toward (R11): the lamps a cue has touched, else every lamp out
+        // what the clip frames (R11, R12): the lamps a cue has touched, else every lamp out, and their lines
         let lamps = {
-            let day = self.clock.day;
-            let out: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
-            let conducted: Vec<LonLat> = out.iter().filter(|f| f.legs().iter().any(|l| l.world != 0)).map(|f| f.at).collect();
             let view = self.clip_view(Camera { zoom: 1.0, ..self.camera.camera });
             let (w, _) = crate::studio::CLIP;
-            crate::studio::Lean {
-                lamps: if conducted.is_empty() { out.iter().map(|f| f.at).collect() } else { conducted },
-                r1: view.disc.r,
-                half: w as f64 / crate::studio::CLIP_PPP / 2.0,
-            }
+            self.lean_for(view.disc.r, w as f64 / crate::studio::CLIP_PPP / 2.0, true)
         };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();

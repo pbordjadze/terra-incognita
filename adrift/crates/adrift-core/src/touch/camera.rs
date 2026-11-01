@@ -79,6 +79,12 @@ pub struct CameraControl {
     /// Whether the camera followed last frame: a follow that begins (a tap's `Ride`, a `Follow`)
     /// takes the zoom it finds as the framing's deepest.
     was_following: bool,
+    /// While the hand conducts (R12): the lamps' frame to come in to and hold (centre, zoom), and the
+    /// spring's velocities; the reader's own camera move (`reader_moved`) wins for `HOLD_AFTER`.
+    hold: Option<(LonLat, f64)>,
+    hold_v: f64,
+    hold_zv: f64,
+    reader_moved: f64,
 }
 
 impl CameraControl {
@@ -97,6 +103,10 @@ impl CameraControl {
             frame_zoom: 1.0,
             zoom_v: 0.0,
             was_following: false,
+            hold: None,
+            hold_v: 0.0,
+            hold_zv: 0.0,
+            reader_moved: f64::NEG_INFINITY,
         }
     }
 
@@ -105,9 +115,38 @@ impl CameraControl {
         self.flight.is_some() || self.spin.0.abs() + self.spin.1.abs() > motion::FLING_REST || self.riding.is_some()
     }
 
+    /// While the hand conducts (R12), the frame that holds the lamps (`studio::frame` for this screen):
+    /// the camera comes in to it on a spring and keeps it as they move, deeper than the hand's own zoom
+    /// may go (to `studio::FRAME_ZOOM_MAX`); a pinch, pan or twist of two fingers wins, and the hold
+    /// resumes `HOLD_AFTER` after the reader's last move. None ends it: the zoom range is the hand's
+    /// again, the camera flown back within it if it was deeper.
+    pub fn hold_frame(&mut self, target: Option<(LonLat, f64)>, now: f64, motion: Motion) {
+        match target {
+            Some(t) => {
+                self.zoom_range.1 = crate::studio::FRAME_ZOOM_MAX;
+                self.hold = Some(t);
+            }
+            None if self.hold.is_some() => {
+                self.hold = None;
+                self.hold_v = 0.0;
+                self.hold_zv = 0.0;
+                self.zoom_range.1 = motion::ZOOM_MAX;
+                if self.camera.zoom > motion::ZOOM_MAX {
+                    self.fly_to(Camera { zoom: motion::ZOOM_MAX, ..self.camera }, now, motion);
+                }
+            }
+            None => {}
+        }
+    }
+
     /// Carries out one move against the disc as drawn.
     pub fn apply(&mut self, disc: &Disc, m: CameraMove, now: f64, motion: Motion) {
         self.disc = *disc;
+        if matches!(m, CameraMove::Drag { .. } | CameraMove::Pinch { .. } | CameraMove::Twist { .. } | CameraMove::Fling { .. } | CameraMove::Fly { .. }) {
+            self.reader_moved = now;
+            self.hold_v = 0.0;
+            self.hold_zv = 0.0;
+        }
         match m {
             CameraMove::Stop => self.stop_at(now),
             CameraMove::Drag { grab, x, y, dx, dy } => {
@@ -309,6 +348,15 @@ impl CameraControl {
             let along = motion::fling_glide(dt);
             self.turn(&disc, self.spin.0 * along, self.spin.1 * along);
             self.spin = (motion::fling_decay(self.spin.0, dt), motion::fling_decay(self.spin.1, dt));
+        } else if let Some((centre, zoom)) = self.hold.filter(|_| !touching && !motion.reduce && now - self.reader_moved > motion::HOLD_AFTER) {
+            // (R12) conducting: in to the lamps' frame and held there, gently (a ride is set aside)
+            let ang = self.camera.view(centre.to_xyz())[2].clamp(-1.0, 1.0).acos();
+            let (left, v) = motion::spring(ang, self.hold_v, 0.0, motion::HOLD_TAU, dt);
+            self.camera = toward_centre(&self.camera, centre, ang - left.max(0.0));
+            self.hold_v = v;
+            let (lz, vz) = motion::spring(self.camera.zoom.ln(), self.hold_zv, zoom.ln(), motion::HOLD_TAU, dt);
+            self.camera.zoom = lz.exp().clamp(self.zoom_range.0, self.zoom_range.1);
+            self.hold_zv = vz;
         } else if let (Some((centre, spread, n)), true) = (self.frame.filter(|f| f.2 > 1), self.riding.is_some()) {
             // several places to hold (R8): turn toward their centre and zoom out to hold the
             // widest within FRAME_WITHIN of the room, back in no deeper than the follow began
