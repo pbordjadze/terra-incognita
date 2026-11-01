@@ -167,6 +167,8 @@ pub struct PanelRow<'a> {
     pub journey: &'a [super::LookBead],
     /// where it is now
     pub at: crate::model::LonLat,
+    /// a finger rests on its mark (0 none, else 0.35..1 as the rest thickens): the mark brightens
+    pub pressed: f32,
 }
 
 /// A long day's words for the shell's VoiceOver label ("8 June").
@@ -346,11 +348,11 @@ impl Words {
             let how = if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" };
             self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
             let hue = super::lamp_hue(r.id);
-            let quiet = if r.front || !any_front { 1.0 } else { 0.72 };
+            let quiet = if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
             // the journey in the cell: its places flattened round their middle (east scaled by the
             // latitude's cosine), smoothed as the wake is, fitted to the cell's middle with the lamp
             // kept off its edge; a short journey stays small (at least 4 degrees fill the mark)
-            let mut places: Vec<(f32, f32)> = r.journey.iter().map(|b| (b.at.lon as f32, b.at.lat as f32)).collect();
+            let mut places: Vec<(f32, f32)> = r.journey.iter().step_by(super::STEPS_A_DAY).map(|b| (b.at.lon as f32, b.at.lat as f32)).collect();
             places.push((r.at.lon as f32, r.at.lat as f32));
             let (lon0, lat0) = places[places.len() - 1];
             let flat: Vec<(f32, f32)> = places.iter().map(|&(lo, la)| (((lo - lon0 + 540.0).rem_euclid(360.0) - 180.0) * lat0.to_radians().cos(), la - lat0)).collect();
@@ -371,7 +373,7 @@ impl Words {
                 line(strokes, &pts, hue, true, night, false);
             }
             let lamp = pts.last().map_or([cx, cy, 0.0], |p| p.p);
-            let up = if r.front { 1.0 } else { 0.0 };
+            let up = if r.front { 1.0 } else { 0.0 } + 1.5 * r.pressed;
             if r.shown {
                 line(strokes, &[Pt { p: lamp, w: (15.0 + 2.0 * up) * reading, a: 0.24 * quiet, hollow: 0.0 }], hue, true, true, false);
             }
