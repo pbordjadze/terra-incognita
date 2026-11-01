@@ -182,7 +182,7 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
 pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32) {
     let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), b.measured)).collect();
     places.push((super::unit(now), path.last().map_or(1.0, |b| b.measured)));
-    let line_pts: Vec<Pt> = smooth(&places, 2, 6)
+    let line_pts: Vec<Pt> = smooth(&places, 4, 8)
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;

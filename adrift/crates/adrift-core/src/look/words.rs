@@ -459,7 +459,7 @@ impl Words {
         // (as a film's subtitle: pale ink on a soft dark halo, which reads on sea, land and page alike;
         // below the globe, on the page, the page's own soft ink on a halo of the page)
         let over_globe = foot - 14.0 * reading < disc[1] + disc[2];
-        let quiet = 1.0 - 0.4 * ending.clamp(0.0, 1.0);
+        let quiet = 1.0 - 0.25 * ending.clamp(0.0, 1.0);
         let (ink, halo) = if over_globe {
             ([0.976, 0.973, 0.957, 0.95 * quiet], [0.063, 0.094, 0.157, 0.42 * quiet])
         } else if night {
