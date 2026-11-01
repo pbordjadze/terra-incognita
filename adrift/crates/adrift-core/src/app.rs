@@ -1512,9 +1512,25 @@ impl App {
         frames
     }
 
-    /// The export's size in pixels: the take's screen, cropped to even sides (a video's need).
+    /// The export's size in pixels: the clip's 9:16 (`studio::CLIP`).
     pub fn export_size(&self) -> Option<(u32, u32)> {
-        self.studio.replay.as_ref().map(|r| (r.take.width & !1, r.take.height & !1))
+        self.studio.replay.as_ref().map(|_| crate::studio::CLIP)
+    }
+
+    /// The part of the take's screen a clip shows: a 9:16 window as large as the screen allows,
+    /// centred on the globe's disc vertically (clamped to the screen), x, y, w, h in pixels.
+    fn clip_window(&self, w: u32, h: u32) -> (f64, f64, f64, f64) {
+        let (cw, ch) = (crate::studio::CLIP.0 as f64, crate::studio::CLIP.1 as f64);
+        let (w, h) = (w as f64, h as f64);
+        if h / w >= ch / cw {
+            let wh = w * ch / cw;
+            let cy = self.disc().cy * self.ppp;
+            let y = (cy - wh / 2.0).clamp(0.0, h - wh);
+            (0.0, y, w, wh)
+        } else {
+            let ww = h * cw / ch;
+            ((w - ww) / 2.0, 0.0, ww, h)
+        }
     }
 
     /// The pixel size an export's offscreen target needs (the take's screen).
@@ -1563,14 +1579,31 @@ impl App {
         self.render_with(&target.view, false);
         self.exporting = false;
         let rgba = target.read(&self.gpu);
+        let (wx, wy, ww, wh) = self.clip_window(target.width, target.height);
         let r = self.studio.replay.as_mut().unwrap();
         r.frame += 1;
-        let (w, h) = (r.take.width & !1, r.take.height & !1);
-        let mut out = Vec::with_capacity((w * h * 4) as usize);
-        for y in 0..h {
-            let row = &rgba[(y * target.width * 4) as usize..((y * target.width + w) * 4) as usize];
-            for px in row.chunks_exact(4) {
-                out.extend_from_slice(&[px[2], px[1], px[0], px[3]]);
+        // the 9:16 window, scaled to the clip by bilinear sampling, as BGRA
+        let (cw, ch) = crate::studio::CLIP;
+        let (sw, sh) = (target.width as usize, target.height as usize);
+        let mut out = vec![0u8; (cw * ch * 4) as usize];
+        let sx = ww / cw as f64;
+        let sy = wh / ch as f64;
+        for y in 0..ch as usize {
+            let fy = (wy + (y as f64 + 0.5) * sy - 0.5).clamp(0.0, (sh - 1) as f64);
+            let (y0, ty) = (fy.floor() as usize, fy - fy.floor());
+            let y1 = (y0 + 1).min(sh - 1);
+            for x in 0..cw as usize {
+                let fx = (wx + (x as f64 + 0.5) * sx - 0.5).clamp(0.0, (sw - 1) as f64);
+                let (x0, tx) = (fx.floor() as usize, fx - fx.floor());
+                let x1 = (x0 + 1).min(sw - 1);
+                let o = (y * cw as usize + x) * 4;
+                for c in 0..4 {
+                    let p = |xx: usize, yy: usize| rgba[(yy * sw + xx) * 4 + c] as f64;
+                    let v = (p(x0, y0) * (1.0 - tx) + p(x1, y0) * tx) * (1.0 - ty) + (p(x0, y1) * (1.0 - tx) + p(x1, y1) * tx) * ty;
+                    // RGBA in, BGRA out
+                    let oc = match c { 0 => 2, 2 => 0, k => k };
+                    out[o + oc] = v.round() as u8;
+                }
             }
         }
         Some(out)
