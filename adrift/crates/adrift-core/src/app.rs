@@ -1265,6 +1265,7 @@ impl App {
             },
             conducting: self.conducting(),
             song: self.song.is_some(),
+            fermata: self.conducting() && self.gestures.fermata(),
             cues: self.cues.iter().map(|(c, when)| {
                 let mut c = c.clone();
                 c.age = (self.seconds - when) as f32;

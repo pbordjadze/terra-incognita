@@ -503,11 +503,13 @@ fn play(args: &[String]) -> Result<()> {
             let t_export = std::time::Instant::now();
             let mut n = 0u32;
             let mut last = Vec::new();
-            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll\n");
+            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
             while let Some(px) = app.export_frame(&shot) {
                 use std::io::Write;
                 if let Some((c, k)) = app.export_camera() {
-                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll));
+                    // each lamp out: id:lon:lat, space-separated (R12: lamps in frame becomes a number)
+                    let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
+                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
                 }
                 ff.stdin.as_mut().unwrap().write_all(&px)?;
                 if n == 0 || n + 1 == frames {

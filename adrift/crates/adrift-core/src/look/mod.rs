@@ -242,6 +242,9 @@ pub struct LookState {
     pub conducting: bool,
     /// The shell has a song that plays from its start when a take begins (R12).
     pub song: bool,
+    /// A finger rests and holds the date while the hand conducts (R12, Motion's `Gestures::fermata`;
+    /// a pause from the date's band is not a fermata).
+    pub fermata: bool,
     /// The cues of the last two seconds (R11): the look flashes the worlds a lamp chose among and
     /// folds them into the chosen one.
     pub cues: Vec<LookCue>,
@@ -515,7 +518,7 @@ impl Look {
         // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
         // holds its breath, a thin ring of its hue drawn in close and swelling slowly, so the hold is
         // seen; it lets go as the date runs again
-        if state.conducting && !state.date_running {
+        if state.fermata {
             let breath = 0.5 + 0.5 * (state.seconds * 1.6).sin();
             for f in state.floats.iter().filter(|f| !f.shown) {
                 ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
