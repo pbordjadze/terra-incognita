@@ -161,6 +161,25 @@ pub fn fling_decay(v: f64, dt: f64) -> f64 {
     v * (-FLING_DECAY * dt).exp()
 }
 
+/// (R11, conducting) A gesture goes to the lamp it starts within this many reading points of (the
+/// nearest), else to every lamp out ("open water conducts all").
+pub const CONDUCT_NEAR: f64 = 90.0;
+/// A stroke's steps shorter than this (reading points) are jitter, not drawing: they add no length
+/// or turn.
+pub const STROKE_STEP: f64 = 4.0;
+/// A loop of three quarters of a turn is a circle, given the moment it closes that far.
+pub const CIRCLE_TURN: f64 = 1.5 * std::f64::consts::PI;
+/// A stroke is a sweep once it is this long (reading points); shorter, its lift is a tap.
+pub const SWEEP_LENGTH: f64 = 24.0;
+/// A sweep is given at its peak: once the hand has gone at least this fast (reading points a second)
+/// and its speed has fallen to `SWEEP_FALL` of its fastest, the beat has been struck.
+pub const SWEEP_PEAK: f64 = 160.0;
+pub const SWEEP_FALL: f64 = 0.8;
+/// The hand's speed is read over this many seconds of its stroke.
+pub const SPEED_WINDOW: f64 = 0.04;
+/// A stroke that has curved this far (radians) may become a circle: no sweep is given mid-stroke.
+pub const SWEEP_CURVE: f64 = 1.2;
+
 /// How far a fling of speed 1 goes in `dt` as it decays: (1 − e^(−k·dt)) / k, so the glide's whole
 /// length is v / FLING_DECAY at any frame rate (R10).
 pub fn fling_glide(dt: f64) -> f64 {

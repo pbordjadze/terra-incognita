@@ -1825,10 +1825,23 @@ impl App {
             ClipPart::During => (1.0, 0.0),
             ClipPart::After => (1.0, through as f32),
         };
+        // what the clip leans toward (R11): the lamps a cue has touched, else every lamp out
+        let lamps = {
+            let day = self.clock.day;
+            let out: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+            let conducted: Vec<LonLat> = out.iter().filter(|f| f.legs().iter().any(|l| l.world != 0)).map(|f| f.at).collect();
+            let view = self.clip_view(Camera { zoom: 1.0, ..self.camera.camera });
+            let (w, _) = crate::studio::CLIP;
+            crate::studio::Lean {
+                lamps: if conducted.is_empty() { out.iter().map(|f| f.at).collect() } else { conducted },
+                r1: view.disc.r,
+                half: w as f64 / crate::studio::CLIP_PPP / 2.0,
+            }
+        };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();
             let framing = r.take.framing;
-            r.cam.step(self.camera.camera, part, through, dt, &framing)
+            r.cam.step(self.camera.camera, part, through, dt, &framing, &lamps)
         };
         let view = self.clip_view(cam);
         self.haptic = false;
