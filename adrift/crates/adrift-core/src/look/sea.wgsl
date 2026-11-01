@@ -33,13 +33,26 @@ fn streamTexel(t: vec2i) -> f32 {
     let b = floor(textureLoad(stream, t, 0).rg * 255.0 + 0.5);
     return (b.x * 256.0 + b.y) / 65535.0 * 0.4 - 0.2;
 }
+// (R18: read as a Catmull-Rom surface through sixteen texels, not bilinear through four: bilinear's
+// contours turn a corner at every texel's edge, which a clip close in magnifies into faceted lines;
+// the cubic still passes through every texel's value and its contours are smooth curves)
+fn crWeights(f: f32) -> vec4f {
+    return vec4f(f * (-0.5 + f * (1.0 - 0.5 * f)), 1.0 + f * f * (-2.5 + 1.5 * f), f * (0.5 + f * (2.0 - 1.5 * f)), f * f * (-0.5 + 0.5 * f));
+}
 fn streamAt(m: f32, uv: vec2f) -> f32 {
     let p = uv * vec2f(720.0, 360.0) + 0.5;
     let i = floor(p); let f = p - i;
     let t = vec2i(tileOf(m) + i);
-    let a = streamTexel(t); let b = streamTexel(t + vec2i(1, 0));
-    let c = streamTexel(t + vec2i(0, 1)); let d = streamTexel(t + vec2i(1, 1));
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    let wx = crWeights(f.x); let wy = crWeights(f.y);
+    // (each read kept inside this month's tile, its one-texel border included)
+    let lo = vec2i(tileOf(m)); let hi = lo + vec2i(721, 361);
+    var acc = 0.0;
+    for (var y = -1; y <= 2; y++) {
+        let row = wx.x * streamTexel(clamp(t + vec2i(-1, y), lo, hi)) + wx.y * streamTexel(clamp(t + vec2i(0, y), lo, hi))
+                + wx.z * streamTexel(clamp(t + vec2i(1, y), lo, hi)) + wx.w * streamTexel(clamp(t + vec2i(2, y), lo, hi));
+        acc += row * wy[y + 1];
+    }
+    return acc;
 }
 
 // the distance in pixels from a contour of q (one a unit; fw is fwidth(q)), and how much of the set
