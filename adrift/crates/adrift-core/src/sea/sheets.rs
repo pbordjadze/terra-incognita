@@ -237,8 +237,17 @@ impl Ice {
         top * (1.0 - ty) + bottom * ty
     }
 
+    /// Nearer the equator than this no month's sheet holds any ice (the nearest is the Bohai's, a
+    /// pixel centred at 37.875 N), so the bilinear read is exactly 0 and is skipped (R11: a quarter
+    /// of a flight step's cost; `sea::tests::no_ice_nearer_the_equator`). The GPU reads it anyway,
+    /// to the same 0.
+    pub const ICE_FREE: f32 = 37.0;
+
     /// The concentration 0..1 at the day's mix of months.
     pub fn at(&self, day: f32, lon: f32, lat: f32) -> f32 {
+        if lat.abs() < Self::ICE_FREE {
+            return 0.0;
+        }
         let (a, b, t) = months(day);
         (self.month(a, lon, lat) * (1.0 - t) + self.month(b, lon, lat) * t) / 255.0
     }
