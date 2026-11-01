@@ -344,13 +344,18 @@ impl Words {
         let top = PANEL_TOP * reading;
         let start = rows.len().saturating_sub(PANEL_ROWS);
         let any_front = rows.iter().any(|r| r.front);
+        // at rest (R14: nothing chosen, nothing pressed) the marks are small and faint, a quiet note
+        // in the corner rather than chrome; a lamp chosen, followed or pressed brings them up whole.
+        // The touch cells stay full size, so they are as easy to find by touch
+        let awake = rows.iter().any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
+        let (k_size, k_alpha) = if awake { (1.0, 1.0) } else { (0.62, 0.55) };
         for (i, r) in rows[start..].iter().enumerate() {
             let (cx, cy) = (x0 + ((i % PANEL_ACROSS) as f32 + 0.5) * cell, top + ((i / PANEL_ACROSS) as f32 + 0.5) * cell);
             self.panel_bounds.push((r.id, [cx - cell / 2.0, cy - cell / 2.0, cell, cell]));
             let how = format!("{}{}", if r.followed { ", followed" } else if r.shown { ", its cloud out" } else { "" }, if r.kept { ", kept" } else { "" });
             self.panel_words.push((r.id, format!("Lamp {}, put {} at {}{}", r.id, day_words_long(r.put_day), place_words(r.origin), how)));
             let hue = super::lamp_hue(r.id);
-            let quiet = if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
+            let quiet = k_alpha * if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
             // the journey in the cell: its places flattened round their middle (east scaled by the
             // latitude's cosine), smoothed as the wake is, fitted to the cell's middle with the lamp
             // kept off its edge; a short journey stays small (at least 4 degrees fill the mark)
@@ -363,13 +368,13 @@ impl Words {
                 x_lo = x_lo.min(x); x_hi = x_hi.max(x); y_lo = y_lo.min(y); y_hi = y_hi.max(y);
             }
             let span = (x_hi - x_lo).max(y_hi - y_lo).max(4.0);
-            let k = 26.0 * reading / span;
+            let k = 26.0 * k_size * reading / span;
             let (mx, my) = ((x_lo + x_hi) / 2.0, (y_lo + y_hi) / 2.0);
             let to_screen = |x: f32, y: f32| [cx + (x - mx) * k, cy - (y - my) * k, 0.0];
             let as3: Vec<([f32; 3], f32)> = flat.iter().map(|&(x, y)| ([x, y, 0.0], 1.0)).collect();
             let pts: Vec<Pt> = super::wake::smooth_flat(&as3, 3, 3)
                 .into_iter()
-                .map(|(p, f)| Pt { p: to_screen(p[0], p[1]), w: (1.1 + 1.3 * f) * reading, a: quiet * (0.45 + 0.55 * f), hollow: 0.0 })
+                .map(|(p, f)| Pt { p: to_screen(p[0], p[1]), w: (1.1 + 1.3 * f) * k_size.sqrt() * reading, a: quiet * (0.45 + 0.55 * f), hollow: 0.0 })
                 .collect();
             if pts.len() > 1 {
                 line(strokes, &pts, hue, true, night, false);
@@ -404,7 +409,7 @@ impl Words {
                 line(strokes, &glass, hue, true, true, true);
                 line(strokes, &[Pt { p: lamp, w: (3.0 + 0.6 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, true, false);
             } else {
-                line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+                line(strokes, &[Pt { p: lamp, w: (6.5 + 1.5 * up) * k_size * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
             }
         }
     }
