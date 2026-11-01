@@ -539,3 +539,36 @@ clip's beat: the reader conducts to the music they hear, and the clip carries th
   clip's date off the land; overlapping clouds kept apart by hue; the marks by night.
 - *Truth*: `conduct.rs`'s worlds this round: honesty tested (the cue, the take's cut, the
   chooser), the cost on the phone, the tempo.
+
+**R11 merged (Nov 1, 15:20 UTC).** Visual 4672625, Truth f750b14, Motion c58a55b, and Engineering's
+tempo after them.
+
+- *The hand* (Motion): only while `conducting()` (the probe asks the app, so an export's replay
+  conducts alike). One finger: a tap is a Tap at its lift; a stroke is a Sweep fired mid-stroke when
+  its speed (a 40 ms window) falls to 0.8 of its peak, at least 160 points a second; a loop of three
+  quarters of a turn is a Circle; a rest of a beat is a fermata (the date held until the lift). The
+  target is the lamp within 90 points of the touch's start, else every lamp. One finger no longer
+  rings, puts, chooses or turns the globe while a take records; two fingers move the camera. The
+  record control, the date and the marks are unchanged.
+- *The clip keeps its lamps* (Motion): `studio::lean` before `ClipCamera`'s spring leans the clip's
+  centre toward the lamps (the conducted first) as far as holds them within 0.72 of the half-width,
+  and in toward specks; `take-fling-away.json` and `tools/adrift/lamp_in_clip.py`: the take loses its
+  lamp in 115 of 160 frames, the clip in none.
+- *The cue drawn* (Visual): all the worlds flash in the lamp's hue (the ones that did what the hand
+  did in full colour), fold into the chosen over 0.15–0.8 s; the lamp glides from where it was; a ring
+  where it lands; its rewritten line comes in as the worlds fold. The clip's date on the paper under
+  the globe, or none when the globe fills the clip. Overlapping clouds keep their hues.
+- *Honest and cheap* (Truth): cues and the take's cut land on the next quarter-day mark with the
+  exact sample state, so a take's start changes no frame and a conducted lamp is its world to the
+  bit (tests). 1024 worlds, stepped a share a frame (`Worlds::prepare`): six lamps ~0.6 ms a frame
+  natively, an estimated 1.2–1.8 ms on the phone. Matches: sweep 14–19%, circle 13–16%.
+  `adrift/CONDUCTOR.md` › In the app.
+- *The tempo* (Engineering, on Truth's measure): `conduct::TEMPO`, 3 days a second while a take
+  records; the free rate (2) comes back at its end.
+
+For next round, from the exit interviews: the marks by night (the lit one reads as a city light); a
+plan option for shots every N seconds with a crop, and a short gif of a cue at the speed it is felt;
+the lamps' screen positions in the export's camera trace; the tempo as a dial in the clock or the
+studio, not a constant; a GPU pass for the cue's worlds as short streaks folding in; circles pick a
+world's stalls more than real loops (a spinning random flight would give real ones); one finger can
+no longer pan during a take, by design (two fingers do).
