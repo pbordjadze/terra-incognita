@@ -700,3 +700,14 @@ its hue is its id's, so the reader's blue and purple stay blue and purple.
 - *Truth*: a bolder pace, so the clip's time goes where the dance is; the coast hold's motion smooth
   where it is the path's own; a demo pair whose dance starts early.
 - *Visual*: no hard elbows in the drawn line; a lively first beat; the marks no longer chrome.
+
+**R15 merged (Nov 1, 19:20 UTC).** Truth 478fb70, Visual 9a0d7bb, Motion e80e4d5. The coast lets a
+lamp slide (law 2, `Rules::slide`: the step's and the eddy's along-shore part kept; laws 0 and 1
+pinned by digests, so every lamp kept before goes on as it did). The pace bolder (`PACE_RANGE` 20,
+winding and turning weighted most, eased over a second of clip time). `lamps/dance-early.txt`, an
+Agulhas pair that braids from its first days, the demo. Lines resampled and eased so a tight turn
+draws as a bend, ending at the lamp. A clip's first beat breathes (the lamps' glow, the date fading
+in). The marks draw nothing at rest (their cells, words and press-to-reveal kept). The clip frames
+the pair and their last 15 days of line, its centre on a slow spring and its zoom held so every lamp
+and line stays clear of the edges and the lower third: it pulls back rather than pans; it opens three
+times wider and eases in over 2.4 s; a journey's end beat (2.5 s) pulls out to the whole lines.
