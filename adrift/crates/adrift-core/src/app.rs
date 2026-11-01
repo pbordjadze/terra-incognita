@@ -1214,7 +1214,7 @@ impl App {
             exporting: self.exporting,
             opening: if self.exporting { self.clip_phase.0 } else { 1.0 },
             ending: if self.exporting { self.clip_phase.1 } else { 0.0 },
-            panel_press: None,
+            panel_press: self.gestures.panel_pressing_since(self.now).map(|(id, secs)| (id, crate::touch::motion::thicken(secs) as f32)),
             clip: if self.exporting {
                 Some([0.0, 0.0, (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32, (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32])
             } else {
