@@ -496,8 +496,12 @@ fn play(args: &[String]) -> Result<()> {
             let t_export = std::time::Instant::now();
             let mut n = 0u32;
             let mut last = Vec::new();
+            let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll\n");
             while let Some(px) = app.export_frame(&shot) {
                 use std::io::Write;
+                if let Some((c, k)) = app.export_camera() {
+                    trace.push_str(&format!("{n},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll));
+                }
                 ff.stdin.as_mut().unwrap().write_all(&px)?;
                 if n == 0 || n + 1 == frames {
                     let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
@@ -507,6 +511,8 @@ fn play(args: &[String]) -> Result<()> {
                 n += 1;
             }
             drop(last);
+            // the clip's camera, frame by frame, beside the take's (R10)
+            std::fs::write(out.join(format!("{name}-camera.csv")), trace)?;
             drop(ff.stdin.take());
             ff.wait()?;
             let drift = app.export_drift();

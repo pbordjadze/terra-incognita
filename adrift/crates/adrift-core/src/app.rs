@@ -1557,6 +1557,12 @@ impl App {
         frames
     }
 
+    /// The clip's camera for the frame last exported, and the take's camera it follows (R10: the check
+    /// writes them to a trace, so a lurch can be plotted rather than eyed).
+    pub fn export_camera(&self) -> Option<(Camera, Camera)> {
+        self.studio.replay.as_ref().map(|r| (r.cam.cam, self.camera.camera))
+    }
+
     /// The export's size in pixels: the clip's 9:16 (`studio::CLIP`).
     pub fn export_size(&self) -> Option<(u32, u32)> {
         self.studio.replay.as_ref().map(|_| crate::studio::CLIP)
