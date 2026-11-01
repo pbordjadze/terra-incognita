@@ -122,7 +122,7 @@ fn norm(v: [f32; 3]) -> [f32; 3] {
 
 /// A path's places softened and smoothed into one drawn line: the day-to-day wander of an eddy (real,
 /// Truth's rules) eased by a light low-pass with the ends held (so the line still starts where the
-/// path did and ends at its lamp), then a Catmull-Rom curve through what remains, `sub` points a day.
+/// path did and ends at its lamp), then a Catmull-Rom curve through what remains, `sub` points a step.
 /// Each place carries a value (its measuredness) that is smoothed along with it.
 pub fn smooth(places: &[([f32; 3], f32)], passes: usize, sub: usize) -> Vec<([f32; 3], f32, f32)> {
     smooth_with(places, passes, sub, true)
@@ -182,7 +182,7 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
 pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32) {
     let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), b.measured)).collect();
     places.push((super::unit(now), path.last().map_or(1.0, |b| b.measured)));
-    let line_pts: Vec<Pt> = smooth(&places, 4, 8)
+    let line_pts: Vec<Pt> = smooth(&places, 1, 2)
         .into_iter()
         .map(|(p, measured, f)| {
             let age = 1.0 - f;

@@ -1206,7 +1206,7 @@ impl App {
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
                     let first = f.legs.first().copied().unwrap_or(Leg { at: f.at, day: f.put_day, seed: f.seed });
-                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.wake.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
+                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured }
                 })
                 .collect(),
             behind: self.behind() as f32,

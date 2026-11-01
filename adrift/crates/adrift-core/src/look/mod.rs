@@ -185,7 +185,8 @@ pub struct LookFloat {
     /// Where it was put (its first leg's place: where it started) and on what day (`Clock.day`) (R6).
     pub origin: LonLat,
     pub put_day: f64,
-    /// One bead a day, oldest first (the last `WAKE_DAYS` are drawn).
+    /// Its path at every step, `STEPS_A_DAY` a day, oldest first (R10: the app's `Float.trail`; the
+    /// last `WAKE_DAYS` days are drawn).
     pub wake: Vec<LookBead>,
     /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
     /// dashed, so nothing claims the current where no drifter went.
@@ -303,6 +304,8 @@ pub fn lamp_hue(id: u32) -> [f32; 3] {
 
 /// Days of wake drawn (palette.json › sizes.bead.days).
 pub const WAKE_DAYS: usize = 45;
+/// The steps a day in `LookFloat.wake` (the rules step a quarter day).
+pub const STEPS_A_DAY: usize = 4;
 
 /// The marks on the sea, in their draw order, behind one `prepare` and one `draw`.
 pub struct Look {
@@ -350,7 +353,7 @@ impl Look {
                 continue;
             }
             // (a lamp chosen as itself draws its whole kept journey, R8; the others their last days)
-            let start = if f.followed { 0 } else { f.wake.len().saturating_sub(WAKE_DAYS) };
+            let start = if f.followed { 0 } else { f.wake.len().saturating_sub(WAKE_DAYS * STEPS_A_DAY) };
             let mut path = f.wake[start..].to_vec();
             if !state.truth_marks {
                 for b in &mut path {
@@ -375,10 +378,13 @@ impl Look {
         // brightening (what the reader just did) settle through the last beat, eased, so the clip
         // ends on the lamps alone; a finger resting on the sea (the press ring) is never in a clip
         let settle = if state.exporting { let e = state.ending.clamp(0.0, 1.0); 1.0 - e * e * (3.0 - 2.0 * e) } else { 1.0 };
+        // a finger resting on a lamp's panel mark (R10): the lamp answers on the globe, lit and ringed
+        // as the rest thickens, so the mark is found on the sea
+        let pressed = |id: u32| if state.exporting { 0.0 } else { state.panel_press.filter(|p| p.0 == id).map_or(0.0, |p| 0.35 + 0.65 * p.1.clamp(0.0, 1.0)) };
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }, held: settle * (f.held || f.chosen || f.followed) as u8 as f32, night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
+            .map(|f| floats::FloatInstance { g: unit(f.at), beat: 1.0, lit: settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)) })
             .collect();
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting) {
             fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0 });
@@ -412,7 +418,7 @@ impl Look {
         }
         labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, &mut strokes));
         // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at }).collect();
+        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id) }).collect();
         self.words.panel(&rows, reading, n, &mut strokes);
         self.strokes.prepare(gpu, &strokes);
         if state.credits_open {
