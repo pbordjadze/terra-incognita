@@ -220,6 +220,13 @@ pub struct LookCloud {
 #[derive(Clone, Debug, Default)]
 pub struct LookState {
     pub floats: Vec<LookFloat>,
+    /// A take is being recorded, and for how many seconds (R9).
+    pub recording: Option<f32>,
+    /// This frame is rendered into an exported clip (R9): the screen's chrome (the date, the panel,
+    /// the recording's mark) is the look's to leave out or keep.
+    pub exporting: bool,
+    /// How many takes are kept, the newest ready to export (R9).
+    pub takes: u32,
     /// The clouds out, in the order chosen (the front one last) (R6).
     pub clouds: Vec<LookCloud>,
     /// The days the clouds are still behind the date, the most of any (0 when they have caught up):
@@ -373,6 +380,14 @@ impl Look {
             let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
             labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
         }
+        // an exported frame (R9) is the sea and its lamps: no panel, no date band, no credits page, no
+        // record control; the date alone as a quiet caption. The live screen keeps its chrome, the
+        // record control among it
+        if state.exporting {
+            self.words.prepare_caption(gpu, &state.date, height, width, reading, disc, n, &labels);
+            return;
+        }
+        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n));
         // the panel of every lamp out there (R6): where each was put, and which are out
         let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed) }).collect();
         labels.extend(self.words.panel(&rows, reading, disc, n));
@@ -387,6 +402,11 @@ impl Look {
     /// scrub and pause gestures probe (touch/VOCABULARY.md); the only chrome there is.
     pub fn date_bounds(&self) -> Option<[f32; 4]> {
         self.words.date_bounds
+    }
+
+    /// The record control's rect, x, y, w, h in points, if the look draws one (R9; Motion's probe).
+    pub fn record_bounds(&self) -> Option<[f32; 4]> {
+        self.words.record_bounds
     }
 
     /// The panel's rows, if the look draws one (R6): each lamp's id and its rect, x, y, w, h in points

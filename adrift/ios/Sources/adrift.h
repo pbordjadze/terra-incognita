@@ -1,6 +1,7 @@
 // The C ABI of adrift-core (crates/adrift-core/src/ffi.rs).
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 typedef struct AdriftShell AdriftShell;
 AdriftShell *adrift_new(void *layer, uint32_t width, uint32_t height, double scale, const char *assets);
 void adrift_resize(AdriftShell *shell, uint32_t width, uint32_t height, double scale);
@@ -12,4 +13,8 @@ void adrift_store(AdriftShell *shell, const char *path);
 void adrift_pause(AdriftShell *shell);
 void adrift_set_night(AdriftShell *shell, bool on);
 void adrift_set_reduce_motion(AdriftShell *shell, bool on);
+bool adrift_take_export(AdriftShell *shell);
+uint32_t adrift_export_begin(AdriftShell *shell, double fps, uint32_t *width, uint32_t *height);
+bool adrift_export_frame(AdriftShell *shell, uint8_t *out, size_t stride);
+void adrift_export_end(AdriftShell *shell);
 void adrift_free(AdriftShell *shell);

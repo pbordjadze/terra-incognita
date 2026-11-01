@@ -19,6 +19,9 @@ pub enum Hit {
     /// A lamp's row in the panel off the globe (R6, `App::panel_bounds()`): a tap chooses it beside
     /// the others or lets it go; a rest rides it. Never a place: nothing is put or rung through it.
     Panel(u32),
+    /// The studio's record control (R9): a tap starts a take; while recording, a touch stops it at
+    /// touch-down and exports it; a rest on it exports the newest take again. Never a place.
+    Record,
     Sea(LonLat),
     Land(LonLat),
     /// Off the globe's disc.
@@ -30,13 +33,13 @@ impl Hit {
     pub fn place(self) -> Option<LonLat> {
         match self {
             Hit::Float(_, p) | Hit::Sea(p) | Hit::Land(p) => Some(p),
-            Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Off => None,
+            Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Record | Hit::Off => None,
         }
     }
 }
 
 /// Keys the shells forward (the web build; a hardware keyboard).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Key {
     Undo,
     Redo,
@@ -83,6 +86,14 @@ pub fn date_band(frame: &Frame) -> Rect {
     Rect { x: (frame.width - w) / 2.0, y: baseline - 10.0 - motion::DATE_BAND / 2.0, w, h: motion::DATE_BAND }
 }
 
+/// Where the record control lives until the look says exactly (R9): the top right corner, opposite
+/// the panel, `RECORD_SIZE` reading points square, `RECORD_TOP` points down (under the status bar)
+/// and `RECORD_EDGE` in from the right.
+pub fn record_spot(frame: &Frame) -> Rect {
+    let s = motion::RECORD_SIZE * frame.reading;
+    Rect { x: frame.width - motion::RECORD_EDGE - s, y: motion::RECORD_TOP, w: s, h: s }
+}
+
 /// The questions `Gestures` asks of the state. The app answers them from the state and the camera
 /// as drawn this frame (touch/probe.rs).
 pub trait Probe {
@@ -113,6 +124,14 @@ pub trait Probe {
     /// The places that frame everything chosen (R8, `App::frame_points`).
     fn frame_points(&self) -> Vec<LonLat> {
         Vec::new()
+    }
+    /// A take is being recorded (R9).
+    fn recording(&self) -> bool {
+        false
+    }
+    /// How many takes are kept (R9).
+    fn takes(&self) -> usize {
+        0
     }
     /// The days the slowest cloud out trails the date (R6, `App::behind()`): the scrub's brake.
     fn behind(&self) -> f64 {
@@ -161,6 +180,9 @@ enum State {
     /// A finger on a lamp's row in the panel (R6): a tap toggles it among the chosen, the beat
     /// rides it, a drag is the globe's.
     PanelDown { id: u64, x0: f64, y0: f64, t0: f64, float: u32, rode: bool },
+    /// A finger on the record control (R9): `done` once it has acted (the stop at touch-down, or
+    /// the export after a rest), so the lift does nothing more.
+    RecordDown { id: u64, x0: f64, y0: f64, t0: f64, done: bool },
 }
 
 /// The state machine. One per screen.
@@ -222,6 +244,7 @@ impl Gestures {
             State::DateDown { scrubbing: true, .. } => "scrubbing",
             State::CreditsDown { .. } => "credits",
             State::PanelDown { .. } => "panel",
+            State::RecordDown { .. } => "record",
         }
     }
 
@@ -353,6 +376,18 @@ impl Gestures {
                         }
                         State::DateDown { id: e.id, x0: e.x, t0: e.t, day: probe.day(), scrubbing: false, was_running }
                     }
+                    Hit::Record => {
+                        self.last_tap = None;
+                        if probe.recording() {
+                            // the take ends at this touch-down, so the touch that stops it is not
+                            // in it, and the clip is asked for at once (the share sheet follows)
+                            out.intents.push(Intent::Record { on: false });
+                            out.intents.push(Intent::Export);
+                            State::RecordDown { id: e.id, x0: e.x, y0: e.y, t0: e.t, done: true }
+                        } else {
+                            State::RecordDown { id: e.id, x0: e.x, y0: e.y, t0: e.t, done: false }
+                        }
+                    }
                     Hit::Panel(float) => {
                         // the row's cloud shows while the finger is on it, as a float's does
                         out.intents.push(Intent::PressFloat { float, since: e.t });
@@ -411,6 +446,11 @@ impl Gestures {
                 }
             }
             State::Down { id, x0, y0, .. } | State::CreditsDown { id, x0, y0 } if id == e.id => {
+                if (e.x - x0).hypot(e.y - y0) > slop {
+                    self.begin_orbit(id, x0, y0, e, probe, out);
+                }
+            }
+            State::RecordDown { id, x0, y0, done: false, .. } if id == e.id => {
                 if (e.x - x0).hypot(e.y - y0) > slop {
                     self.begin_orbit(id, x0, y0, e, probe, out);
                 }
@@ -628,6 +668,14 @@ impl Gestures {
                 self.state = State::Idle;
             }
             State::PanelDown { id, rode: true, .. } if id == e.id => self.state = State::Idle,
+            State::RecordDown { id, t0, done, .. } if id == e.id => {
+                // a tap starts a take (the touch that starts it is not in it either: the take
+                // begins at the lift)
+                if !done && e.t - t0 < motion::BEAT {
+                    out.intents.push(Intent::Record { on: true });
+                }
+                self.state = State::Idle;
+            }
             State::PanelDown { id, t0, float, .. } if id == e.id => {
                 out.intents.push(Intent::Unpress);
                 if e.t - t0 >= motion::BEAT {
@@ -659,7 +707,7 @@ impl Gestures {
             } else {
                 match probe.hit(e.x, e.y) {
                     Hit::Sea(p) | Hit::Float(_, p) => out.intents.push(Intent::Release { float, at: Some(p) }),
-                    Hit::Land(_) | Hit::Date | Hit::Credits | Hit::Panel(_) => {
+                    Hit::Land(_) | Hit::Date | Hit::Credits | Hit::Panel(_) | Hit::Record => {
                         out.intents.push(Intent::Carry { float, to: from });
                         out.intents.push(Intent::Release { float, at: Some(from) });
                     }
@@ -714,7 +762,7 @@ impl Gestures {
                 }
                 self.state = State::Idle;
             }
-            State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } if id == e.id => {
+            State::Down { id, .. } | State::Orbit { id, .. } | State::DateDown { id, .. } | State::CreditsDown { id, .. } | State::RecordDown { id, .. } if id == e.id => {
                 self.state = State::Idle;
             }
             _ => {
@@ -754,6 +802,13 @@ impl Gestures {
                 self.state = State::Idle;
             }
             // a rest on a lamp's row rides it (the finger may still be down)
+            // a rest on the record control, not recording, with a take kept: export it again
+            State::RecordDown { id, x0, y0, t0, done: false } if now - t0 >= motion::BEAT => {
+                if probe.takes() > 0 && !probe.recording() {
+                    out.intents.push(Intent::Export);
+                }
+                self.state = State::RecordDown { id, x0, y0, t0, done: true };
+            }
             State::PanelDown { id, x0, y0, t0, float, rode: false } if now - t0 >= motion::BEAT => {
                 out.intents.push(Intent::Unpress);
                 self.panel_rest(float, probe, &mut out);

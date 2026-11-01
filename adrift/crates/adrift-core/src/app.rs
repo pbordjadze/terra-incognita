@@ -12,6 +12,19 @@ use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
 use serde::{Deserialize, Serialize};
 
+/// What an export puts aside of the live app, to put back (R9).
+pub struct Stash {
+    pub(crate) start: crate::studio::TakeStart,
+    undo: Vec<Undo>,
+    redo: Vec<Undo>,
+    budget: (bool, f64),
+    size: (u32, u32, f64),
+    recording: Option<crate::studio::Take>,
+    now: f64,
+    /// How many intents had been seen (the replay's own are dropped after: Motion's R9 note).
+    seen: usize,
+}
+
 /// What the reader has done, to take back.
 #[derive(Clone, Debug)]
 enum Undo {
@@ -161,6 +174,10 @@ pub struct App {
     frames: (u32, f64, f64, u32),
     /// The page of credits is open (Visual's D6; opened and closed by `Intent::ToggleCredits`).
     pub credits_open: bool,
+    /// The studio (R9): the take being recorded, the takes kept, an export under way.
+    pub studio: crate::studio::Studio,
+    /// The frame being drawn goes into an exported clip (R9; the look's `exporting`).
+    exporting: bool,
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
@@ -343,6 +360,8 @@ impl App {
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
             panel_stand_in: None,
+            studio: Default::default(),
+            exporting: false,
         })
     }
 
@@ -413,6 +432,7 @@ impl App {
     }
 
     pub fn pointer(&mut self, ev: PointerEvent) {
+        self.record(crate::studio::TakeEvent::Pointer(ev));
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.feed(ev, &*self);
         self.gestures = gestures;
@@ -421,12 +441,14 @@ impl App {
 
     /// A key the shell forwards (the web build, a hardware keyboard).
     pub fn key(&mut self, key: Key) {
+        self.record(crate::studio::TakeEvent::Key { t: self.now, key });
         let out = self.gestures.key(key);
         self.apply(out, self.now);
     }
 
     /// A wheel or trackpad pinch: zoom by `factor` about the point.
     pub fn wheel(&mut self, x: f64, y: f64, factor: f64) {
+        self.record(crate::studio::TakeEvent::Wheel { t: self.now, x, y, factor });
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.wheel(x, y, factor, &*self);
         self.gestures = gestures;
@@ -435,6 +457,7 @@ impl App {
 
     /// The device was shaken: undo.
     pub fn shaken(&mut self) {
+        self.record(crate::studio::TakeEvent::Shake { t: self.now });
         let out = self.gestures.shaken();
         self.apply(out, self.now);
     }
@@ -495,6 +518,20 @@ impl App {
                 } else if self.floats.iter().any(|f| f.id == float) {
                     self.followed.retain(|&c| c != float);
                     self.chosen.push(float);
+                }
+            }
+            Intent::Record { on } => {
+                if self.studio.replay.is_none() {
+                    match (on, self.studio.recording.is_some()) {
+                        (true, false) => self.begin_take(self.now),
+                        (false, true) => self.end_take(self.now),
+                        _ => {}
+                    }
+                }
+            }
+            Intent::Export => {
+                if self.studio.replay.is_none() && !self.studio.takes.is_empty() {
+                    self.studio.export_wanted = true;
                 }
             }
             Intent::Unchoose => {
@@ -730,6 +767,7 @@ impl App {
 
     /// Time passes: `now` in the shell's seconds.
     pub fn advance(&mut self, now: f64) {
+        self.record(crate::studio::TakeEvent::Frame { t: now });
         let dt = match self.last_t {
             Some(t) => (now - t).clamp(0.0, 0.25),
             None => 0.0,
@@ -887,6 +925,11 @@ impl App {
     pub fn behind(&self) -> f64 {
         let day = self.clock.day;
         self.clouds.iter().filter(|c| c.wanted && c.reached.is_finite()).map(|c| (day.max(c.leg.day) - c.reached).abs()).fold(0.0, f64::max)
+    }
+
+    /// The record control's rect as the look drew it (R9; Motion's probe), x, y, w, h in points.
+    pub fn record_bounds(&self) -> Option<[f32; 4]> {
+        self.look.record_bounds()
     }
 
     /// The panel's rows as the look drew them (R6): each lamp's id and rect in points.
@@ -1146,6 +1189,9 @@ impl App {
                 })
                 .collect(),
             behind: self.behind() as f32,
+            recording: self.studio.recording.as_ref().map(|t| (self.now - t.t0) as f32),
+            exporting: self.exporting,
+            takes: self.studio.takes.len() as u32,
             resting,
             bloom: clouds.iter().find(|c| c.front).map_or(0.0, |c| c.bloom),
             clouds,
@@ -1244,6 +1290,12 @@ impl App {
 
     /// Draws a frame into `target`.
     pub fn render(&mut self, target: &wgpu::TextureView) {
+        self.render_with(target, true);
+    }
+
+    /// Draws a frame; `step` lets the clouds take their frame's steps first (a replay has stepped
+    /// them already, R9).
+    fn render_with(&mut self, target: &wgpu::TextureView, step: bool) {
         let view = self.view();
         let (ma, mb, _) = self.clock.months();
         match self.textures.set_months(&self.gpu, self.assets.as_ref(), ma, mb) {
@@ -1304,7 +1356,9 @@ impl App {
             self.stage_seconds = self.seconds;
             self.frames.3 += 1;
         }
-        self.step_clouds(MAYBES_BUDGET);
+        if step {
+            self.step_clouds(MAYBES_BUDGET);
+        }
         let state = self.look_state();
         let d = view.disc;
         self.look.prepare(&self.gpu, &state, (self.width as f64 / self.ppp) as f32, (self.height as f64 / self.ppp) as f32, self.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
@@ -1330,8 +1384,286 @@ impl App {
 
     /// A frame: time passes, then it is drawn.
     pub fn frame(&mut self, target: &wgpu::TextureView, now: f64) {
+        if let Some(take) = &self.studio.recording {
+            if now - take.t0 >= crate::studio::TAKE_MAX {
+                self.end_take(now);
+            }
+        }
         self.advance(now);
         self.render(target);
+    }
+
+    /// An intent from outside the touch (the checks, a shell's button): applied, and recorded in a
+    /// take as it runs (R9).
+    pub fn command(&mut self, intent: Intent) {
+        self.record(crate::studio::TakeEvent::Intent { t: self.now, intent });
+        self.intend(intent);
+    }
+
+    fn record(&mut self, ev: crate::studio::TakeEvent) {
+        if self.studio.replay.is_none() {
+            if let Some(take) = &mut self.studio.recording {
+                take.events.push(ev);
+            }
+        }
+    }
+
+    /// The state a take starts from (R9).
+    fn take_start(&self) -> crate::studio::TakeStart {
+        crate::studio::TakeStart {
+            floats: self.floats.clone(),
+            next_id: self.next_id,
+            clock: self.clock,
+            camera: self.camera.camera,
+            chosen: self.chosen.clone(),
+            followed: self.followed.clone(),
+            riding: self.camera.riding,
+            seconds: self.seconds,
+            night: self.night,
+            reduce_motion: self.reduce_motion,
+            credits_open: self.credits_open,
+        }
+    }
+
+    /// Puts the app at a take's start, at the shell's time `now`, and resets to rest what the start
+    /// doesn't hold (the camera's inertia, the gestures, the ripples; the clouds caught up and
+    /// bloomed), so a live take and its replay begin alike.
+    fn apply_start(&mut self, s: &crate::studio::TakeStart, now: f64) {
+        self.floats = s.floats.clone();
+        for f in &mut self.floats {
+            f.hand = Hand::Free;
+        }
+        self.next_id = s.next_id;
+        self.clock = s.clock;
+        self.camera = CameraControl::new(s.camera);
+        self.camera.riding = s.riding;
+        self.chosen = s.chosen.clone();
+        self.followed = s.followed.clone();
+        self.seconds = s.seconds;
+        self.night = s.night;
+        self.reduce_motion = s.reduce_motion;
+        self.credits_open = s.credits_open;
+        self.gestures = Gestures::new();
+        self.ripples.clear();
+        self.pressing = None;
+        self.pressing_float = None;
+        self.last_t = Some(now);
+        self.now = now;
+        self.rest = if self.clock.running { 0.0 } else { 1.0 };
+        self.step_floats_with(usize::MAX);
+        self.samples.clear();
+        self.step_samples(usize::MAX);
+        self.clouds.clear();
+        self.open_clouds();
+        for c in &mut self.clouds {
+            c.bloom = 1.0;
+        }
+        self.bloom = if self.shown().is_some() { 1.0 } else { 0.0 };
+        self.step_clouds(usize::MAX);
+    }
+
+    /// A take begins at the shell's time `now` (R9).
+    fn begin_take(&mut self, now: f64) {
+        let start = self.take_start();
+        self.apply_start(&start, now);
+        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None });
+    }
+
+    /// The take ends and is kept, the newest last (R9).
+    fn end_take(&mut self, now: f64) {
+        if let Some(mut take) = self.studio.recording.take() {
+            take.t1 = now;
+            take.end = Some(self.take_start());
+            if take.duration() > 0.2 {
+                self.studio.takes.push(take);
+                if self.studio.takes.len() > crate::studio::TAKES_KEPT {
+                    self.studio.takes.remove(0);
+                }
+            }
+        }
+    }
+
+    /// Whether the reader asked to export the newest take since the shell last asked (R9).
+    pub fn take_export_wanted(&mut self) -> bool {
+        std::mem::take(&mut self.studio.export_wanted)
+    }
+
+    /// Begins exporting the newest take (or `index`) at `fps`: the live state is put aside and the
+    /// app set to the take's start and size. Returns the frames to come, 0 if there is no take.
+    pub fn export_begin(&mut self, index: Option<usize>, fps: f64) -> u32 {
+        if self.studio.replay.is_some() {
+            return 0;
+        }
+        let Some(take) = index.map_or(self.studio.takes.last(), |i| self.studio.takes.get(i)).cloned() else { return 0 };
+        let live = Stash {
+            start: self.take_start(),
+            undo: self.undo.clone(),
+            redo: self.redo.clone(),
+            budget: (self.budget.locked, self.budget.scale),
+            size: (self.width, self.height, self.ppp),
+            recording: self.studio.recording.take(),
+            now: self.now,
+            seen: self.seen.len(),
+        };
+        self.budget.locked = true;
+        self.budget.scale = 1.0;
+        self.resize(take.width, take.height, take.ppp);
+        self.apply_start(&take.start, take.t0);
+        let (a, b) = take.span();
+        let frames = (((b - a) * fps).ceil() as u32).max(1);
+        self.studio.replay = Some(crate::studio::Replay { take, next_event: 0, frame: 0, frames, fps, live });
+        frames
+    }
+
+    /// The export's size in pixels: the clip's 9:16 (`studio::CLIP`).
+    pub fn export_size(&self) -> Option<(u32, u32)> {
+        self.studio.replay.as_ref().map(|_| crate::studio::CLIP)
+    }
+
+    /// The part of the take's screen a clip shows: a 9:16 window as large as the screen allows,
+    /// centred on the globe's disc vertically (clamped to the screen), x, y, w, h in pixels.
+    fn clip_window(&self, w: u32, h: u32) -> (f64, f64, f64, f64) {
+        let (cw, ch) = (crate::studio::CLIP.0 as f64, crate::studio::CLIP.1 as f64);
+        let (w, h) = (w as f64, h as f64);
+        if h / w >= ch / cw {
+            let wh = w * ch / cw;
+            let cy = self.disc().cy * self.ppp;
+            let y = (cy - wh / 2.0).clamp(0.0, h - wh);
+            (0.0, y, w, wh)
+        } else {
+            let ww = h * cw / ch;
+            ((w - ww) / 2.0, 0.0, ww, h)
+        }
+    }
+
+    /// The pixel size an export's offscreen target needs (the take's screen).
+    pub fn export_target_size(&self) -> Option<(u32, u32)> {
+        self.studio.replay.as_ref().map(|r| (r.take.width, r.take.height))
+    }
+
+    /// Renders the export's next frame into `target` (an `Offscreen` of `export_target_size`) and
+    /// returns its pixels as BGRA rows, top down, cropped to `export_size`; None when it is done.
+    pub fn export_frame(&mut self, target: &crate::gpu::Offscreen) -> Option<Vec<u8>> {
+        let t_out = {
+            let r = self.studio.replay.as_ref()?;
+            if r.frame >= r.frames {
+                return None;
+            }
+            let (a, _) = r.take.span();
+            r.take.t0 + a + r.frame as f64 / r.fps
+        };
+        // every event up to this frame's time, fed as the shell fed them live
+        loop {
+            let ev = {
+                let r = self.studio.replay.as_mut().unwrap();
+                match r.take.events.get(r.next_event) {
+                    Some(e) if e.t() <= t_out + 1e-9 => {
+                        r.next_event += 1;
+                        e.clone()
+                    }
+                    _ => break,
+                }
+            };
+            use crate::studio::TakeEvent as E;
+            match ev {
+                E::Frame { t } => {
+                    self.advance(t);
+                    self.step_clouds(MAYBES_BUDGET);
+                }
+                E::Pointer(p) => self.pointer(p),
+                E::Wheel { x, y, factor, .. } => self.wheel(x, y, factor),
+                E::Key { key, .. } => self.key(key),
+                E::Shake { .. } => self.shaken(),
+                E::Intent { intent, .. } => self.intend(intent),
+            }
+        }
+        self.haptic = false;
+        self.exporting = true;
+        self.render_with(&target.view, false);
+        self.exporting = false;
+        let rgba = target.read(&self.gpu);
+        let (wx, wy, ww, wh) = self.clip_window(target.width, target.height);
+        let r = self.studio.replay.as_mut().unwrap();
+        r.frame += 1;
+        // the 9:16 window, scaled to the clip by bilinear sampling, as BGRA
+        let (cw, ch) = crate::studio::CLIP;
+        let (sw, sh) = (target.width as usize, target.height as usize);
+        let mut out = vec![0u8; (cw * ch * 4) as usize];
+        let sx = ww / cw as f64;
+        let sy = wh / ch as f64;
+        for y in 0..ch as usize {
+            let fy = (wy + (y as f64 + 0.5) * sy - 0.5).clamp(0.0, (sh - 1) as f64);
+            let (y0, ty) = (fy.floor() as usize, fy - fy.floor());
+            let y1 = (y0 + 1).min(sh - 1);
+            for x in 0..cw as usize {
+                let fx = (wx + (x as f64 + 0.5) * sx - 0.5).clamp(0.0, (sw - 1) as f64);
+                let (x0, tx) = (fx.floor() as usize, fx - fx.floor());
+                let x1 = (x0 + 1).min(sw - 1);
+                let o = (y * cw as usize + x) * 4;
+                for c in 0..4 {
+                    let p = |xx: usize, yy: usize| rgba[(yy * sw + xx) * 4 + c] as f64;
+                    let v = (p(x0, y0) * (1.0 - tx) + p(x1, y0) * tx) * (1.0 - ty) + (p(x0, y1) * (1.0 - tx) + p(x1, y1) * tx) * ty;
+                    // RGBA in, BGRA out
+                    let oc = match c { 0 => 2, 2 => 0, k => k };
+                    out[o + oc] = v.round() as u8;
+                }
+            }
+        }
+        Some(out)
+    }
+
+    /// Feeds the export's remaining events and says how far the replay ended from where the take
+    /// did: the most any float, or the camera's centre, is apart, in km (R9: the check of
+    /// determinism; 0 when the replay is exact). None without an export or a recorded end.
+    pub fn export_drift(&mut self) -> Option<f64> {
+        loop {
+            let ev = {
+                let r = self.studio.replay.as_mut()?;
+                match r.take.events.get(r.next_event) {
+                    Some(e) => {
+                        r.next_event += 1;
+                        e.clone()
+                    }
+                    None => break,
+                }
+            };
+            use crate::studio::TakeEvent as E;
+            match ev {
+                E::Frame { t } => {
+                    self.advance(t);
+                    self.step_clouds(MAYBES_BUDGET);
+                }
+                E::Pointer(p) => self.pointer(p),
+                E::Wheel { x, y, factor, .. } => self.wheel(x, y, factor),
+                E::Key { key, .. } => self.key(key),
+                E::Shake { .. } => self.shaken(),
+                E::Intent { intent, .. } => self.intend(intent),
+            }
+        }
+        let end = self.studio.replay.as_ref()?.take.end.clone()?;
+        let mut worst = LonLat::new(end.camera.lon, end.camera.lat).distance_m(LonLat::new(self.camera.camera.lon, self.camera.camera.lat));
+        if end.floats.len() != self.floats.len() {
+            return Some(f64::INFINITY);
+        }
+        for (a, b) in end.floats.iter().zip(&self.floats) {
+            worst = worst.max(a.at.distance_m(b.at));
+        }
+        Some(worst / 1000.0)
+    }
+
+    /// Ends an export: the live state put back as it was (R9).
+    pub fn export_end(&mut self) {
+        let Some(r) = self.studio.replay.take() else { return };
+        let live = r.live;
+        self.resize(live.size.0, live.size.1, live.size.2);
+        self.apply_start(&live.start, live.now);
+        self.undo = live.undo;
+        self.redo = live.redo;
+        self.budget.locked = live.budget.0;
+        self.budget.scale = live.budget.1;
+        self.studio.recording = live.recording;
+        self.seen.truncate(live.seen);
+        self.haptic = false;
     }
 
     /// The frames since last asked, as one line for a log: how many, the mean and the worst interval

@@ -161,6 +161,11 @@ struct Step {
     tick: Option<f64>,
     shot: Option<String>,
     intent: Option<adrift_core::Intent>,
+    /// A take begins (true) or ends (false) (R9).
+    record: Option<bool>,
+    /// The newest take exported to `<out>/<name>.mp4` at 30 frames a second (ffmpeg), its first and
+    /// last frames as PNGs, and the replay's drift from the take's end checked (R9).
+    export: Option<String>,
     /// A measured scrub (R5): `[days, seconds]`, the date dragged by `days` over `seconds` at 60
     /// frames a second, every frame drawn, the CPU cost of the state and of the frame logged.
     scrub: Option<[f64; 2]>,
@@ -245,15 +250,18 @@ fn play(args: &[String]) -> Result<()> {
                 app.pointer(PointerEvent { id, phase, x, y, t });
             }
         }
+        if let Some(on) = s.record {
+            app.command(adrift_core::Intent::Record { on });
+        }
         if let Some(intent) = s.intent {
-            app.intend(intent);
+            app.command(intent);
         }
         if let Some([days, secs]) = s.scrub {
             let n = (secs * fps).ceil().max(1.0) as usize;
             let (mut a_sum, mut a_worst, mut f_sum, mut f_worst) = (0.0f64, 0.0f64, 0.0f64, 0.0f64);
             for _ in 0..n {
                 t += secs / n as f64;
-                app.intend(adrift_core::Intent::Scrub { days: days / n as f64 });
+                app.command(adrift_core::Intent::Scrub { days: days / n as f64 });
                 let t0 = std::time::Instant::now();
                 app.advance(t);
                 let a = t0.elapsed().as_secs_f64() * 1000.0;
@@ -447,6 +455,47 @@ fn play(args: &[String]) -> Result<()> {
             let line = if bad.is_empty() { format!("{i:3} t={t:7.2}s expect ok\n") } else { failed += 1; format!("{i:3} t={t:7.2}s EXPECT FAILED: {}\n", bad.join("; ")) };
             print!("{line}");
             log.push_str(&line);
+        }
+        if let Some(name) = &s.export {
+            let frames = app.export_begin(None, 30.0);
+            anyhow::ensure!(frames > 0, "export {name}: no take");
+            let (tw, th) = app.export_target_size().unwrap();
+            let (ew, eh) = app.export_size().unwrap();
+            let shot = Offscreen::new(&app.gpu, tw, th);
+            let mp4 = out.join(format!("{name}.mp4"));
+            let mut ff = std::process::Command::new("ffmpeg")
+                .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20"])
+                .arg(&mp4)
+                .stdin(std::process::Stdio::piped())
+                .spawn()
+                .context("ffmpeg")?;
+            let t_export = std::time::Instant::now();
+            let mut n = 0u32;
+            let mut last = Vec::new();
+            while let Some(px) = app.export_frame(&shot) {
+                use std::io::Write;
+                ff.stdin.as_mut().unwrap().write_all(&px)?;
+                if n == 0 || n + 1 == frames {
+                    let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
+                    save(&out.join(format!("{name}-{}.png", if n == 0 { "first" } else { "last" })), ew, eh, &rgba)?;
+                }
+                last = px;
+                n += 1;
+            }
+            drop(last);
+            drop(ff.stdin.take());
+            ff.wait()?;
+            let drift = app.export_drift();
+            app.export_end();
+            let line = format!("{i:3} t={t:7.2}s export {name}: {n} frames {ew}x{eh} in {:.1}s, the replay ends {} from the take\n", t_export.elapsed().as_secs_f64(), drift.map_or("(no end recorded)".to_string(), |d| format!("{d:.3} km")));
+            print!("{line}");
+            log.push_str(&line);
+            if drift.map_or(true, |d| d > 0.5) {
+                failed += 1;
+                let line = format!("{i:3} t={t:7.2}s EXPECT FAILED: the replay drifted from the take\n");
+                print!("{line}");
+                log.push_str(&line);
+            }
         }
         if let Some(name) = &s.shot {
             app.frame(&target.view, t);

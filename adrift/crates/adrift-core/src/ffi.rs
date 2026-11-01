@@ -14,6 +14,8 @@ pub struct Shell {
     store: Option<std::path::PathBuf>,
     /// When the frame stats were last printed.
     stats_at: f64,
+    /// The offscreen target of an export under way (R9).
+    export: Option<crate::gpu::Offscreen>,
 }
 
 /// Makes the app over a CAMetalLayer. `scale` is the screen's pixels a point; `assets` the bundle's
@@ -54,7 +56,7 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
             return std::ptr::null_mut();
         }
     };
-    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0 }))
+    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0, export: None }))
 }
 
 #[no_mangle]
@@ -158,6 +160,60 @@ pub unsafe extern "C" fn adrift_set_reduce_motion(shell: *mut Shell, on: bool) {
     if let Some(s) = shell.as_mut() {
         s.app.reduce_motion = on;
     }
+}
+
+/// Whether the reader asked to export the newest take since the shell last asked (R9); cleared by
+/// the asking. The shell then runs `adrift_export_begin`, `_frame` until false, `_end`.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_take_export(shell: *mut Shell) -> bool {
+    match shell.as_mut() {
+        Some(s) => s.app.take_export_wanted(),
+        None => false,
+    }
+}
+
+/// Begins exporting the newest take at `fps`: the frames to come (0: nothing to export), and the
+/// video's size in pixels written to `width`, `height` (even sides).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_export_begin(shell: *mut Shell, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+    let Some(s) = shell.as_mut() else { return 0 };
+    let frames = s.app.export_begin(None, fps);
+    if frames == 0 {
+        return 0;
+    }
+    let (tw, th) = s.app.export_target_size().unwrap_or((2, 2));
+    s.export = Some(crate::gpu::Offscreen::new(&s.app.gpu, tw, th));
+    let (w, h) = s.app.export_size().unwrap_or((2, 2));
+    if let Some(p) = width.as_mut() {
+        *p = w;
+    }
+    if let Some(p) = height.as_mut() {
+        *p = h;
+    }
+    frames
+}
+
+/// Renders the export's next frame into `out`: BGRA, rows top down, `stride` bytes apart (a
+/// CVPixelBuffer's bytes per row). False when the export is done.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_export_frame(shell: *mut Shell, out: *mut u8, stride: usize) -> bool {
+    let Some(s) = shell.as_mut() else { return false };
+    let Some(target) = s.export.as_ref() else { return false };
+    let Some((w, h)) = s.app.export_size() else { return false };
+    let Some(px) = s.app.export_frame(target) else { return false };
+    let row = w as usize * 4;
+    for y in 0..h as usize {
+        std::ptr::copy_nonoverlapping(px.as_ptr().add(y * row), out.add(y * stride), row);
+    }
+    true
+}
+
+/// Ends an export: the live app put back as it was.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_export_end(shell: *mut Shell) {
+    let Some(s) = shell.as_mut() else { return };
+    s.app.export_end();
+    s.export = None;
 }
 
 #[no_mangle]
