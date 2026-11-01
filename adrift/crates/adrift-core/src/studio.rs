@@ -79,6 +79,8 @@ pub fn follow(cam: Camera, target: Camera, dt: f64, half: f64) -> Camera {
 
 /// A critically damped spring's step response is half-way at 1.678 time constants.
 const HALF_TO_TAU: f64 = 1.678_346_99;
+/// The clip's zoom follows this many times slower than its turn (R14).
+pub const ZOOM_SLOWER: f64 = 2.0;
 
 /// The clip's own camera (R10, Motion): it follows the take's camera in rotation (so a turn over a pole
 /// is as smooth as anywhere) and the zoom in its logarithm, each on a critically damped spring, so its
@@ -161,7 +163,9 @@ impl ClipCamera {
             nx[i] = a;
             self.w[i] = v;
         }
-        let (lz, vz) = crate::touch::motion::spring(self.cam.zoom.ln(), self.vz, target.zoom.ln(), tau, dt);
+        // (R14) the zoom breathes on a spring twice as slow: as a pair nears or parts the frame closes
+        // and opens calmly, whatever the journey's pace
+        let (lz, vz) = crate::touch::motion::spring(self.cam.zoom.ln(), self.vz, target.zoom.ln(), tau * ZOOM_SLOWER, dt);
         self.vz = vz;
         self.cam = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), lz.exp());
         self.cam
@@ -197,13 +201,17 @@ pub const FOCUS_MAX: f64 = 0.6;
 /// The lean on a cued lamp stops where any lamp out would pass this share of the half-width.
 pub const FOCUS_HOLD: f64 = 0.75;
 
-/// The lamps' span, their recent lines and a margin, fills this share of the view's width (R12: the
-/// round-11 critic; at zoom 3 a whole take's conducting was a hook a few millimetres long).
+/// The lamps' span and a margin fills this share of the view's width (R12: the round-11 critic; at
+/// zoom 3 a whole take's conducting was a hook a few millimetres long. R14: the lamps' own span, not
+/// their lines', which pulled the frame back along their wakes and left them at its top edge).
 pub const FRAME_FILL: f64 = 0.6;
+/// The clip lifts the lamps' centre this share of its height above its middle (R14), so the lower
+/// third, where a platform lays its captions, stays clear without the frame being mostly empty sea.
+pub const FRAME_LIFT: f64 = 0.08;
 /// Days of each lamp's line the frame holds.
 pub const FRAME_TRAIL: f64 = 6.0;
 /// Km of margin round the span (the cue's fan, the lamp's glow).
-pub const FRAME_MARGIN_KM: f64 = 25.0;
+pub const FRAME_MARGIN_KM: f64 = 10.0;
 /// The least half-span, km: a lone lamp with a short line is framed so a hundred km fill 60% of the
 /// width's half, where a stroke's tens of km are tens of points.
 pub const FRAME_SPAN_MIN_KM: f64 = 100.0;
@@ -260,7 +268,9 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
     if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
-    let pts: Vec<[f64; 3]> = lamps.iter().chain(trail).map(|p| p.to_xyz()).collect();
+    // (R14) the lamps alone: their lines run off behind them as they will
+    let _ = trail;
+    let pts: Vec<[f64; 3]> = lamps.iter().map(|p| p.to_xyz()).collect();
     let dot = |a: [f64; 3], b: [f64; 3]| (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
     let norm = |v: [f64; 3]| {
         let m = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
@@ -286,9 +296,22 @@ pub fn lean(take: Camera, l: &Lean, zoom0: f64) -> Camera {
         None => take,
         Some((c, z)) => {
             let pinch = (take.zoom / zoom0.max(1e-6)).powf(FRAME_PINCH);
-            Camera { lon: c.lon, lat: c.lat, zoom: (z * pinch).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX), roll: take.roll }
+            let zoom = (z * pinch).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
+            lifted(Camera { lon: c.lon, lat: c.lat, zoom, roll: take.roll }, l)
         }
     }
+}
+
+/// The camera turned about the screen's horizontal so what lay at its centre lies `FRAME_LIFT` of the
+/// clip's height above it (R14), whatever the roll. The clip is 9:16: its height is `half` × 32/9.
+fn lifted(cam: Camera, l: &Lean) -> Camera {
+    let up = FRAME_LIFT * l.half * 2.0 * 16.0 / 9.0;
+    let r = l.r1 * cam.zoom;
+    if r <= up {
+        return cam;
+    }
+    // a turn about view x by -asin(up / r) carries the centre's point up the screen by `up`
+    cam.turned([1.0, 0.0, 0.0], -(up / r).asin())
 }
 
 fn cam_quat(c: Camera) -> [f64; 4] {
@@ -653,5 +676,23 @@ mod tests {
             last = now;
         }
         assert!((last.1 / z - 1.0).abs() < 1e-6, "not back out to both: {last:?}");
+    }
+
+    #[test]
+    fn the_clip_puts_the_lamps_centre_a_little_above_the_middle_and_fills_six_tenths() {
+        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![LonLat::new(-70.0, 31.0)], r1: 166.0, half: 180.0, focus: None };
+        for roll in [0.0, 40.0] {
+            let cam = lean(Camera { roll, ..Camera::new(-50.0, 20.0, 1.0) }, &two, 1.0);
+            let r = 166.0 * cam.zoom;
+            let pts: Vec<(f64, f64)> = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (180.0 + r * v[0], 320.0 - r * v[1]) }).collect();
+            let (mx, my) = ((pts[0].0 + pts[1].0) / 2.0, (pts[0].1 + pts[1].1) / 2.0);
+            let span = ((pts[0].0 - pts[1].0).powi(2) + (pts[0].1 - pts[1].1).powi(2)).sqrt();
+            assert!((my - (320.0 - FRAME_LIFT * 640.0)).abs() < 3.0, "roll {roll}: centre at y {my}");
+            if roll == 0.0 {
+                assert!((mx - 180.0).abs() < 3.0, "centre at x {mx}");
+            }
+            // the span, less the margin, about 60% of the width (the line behind does not pull it)
+            assert!(span > 0.5 * 360.0 && span < 0.62 * 360.0, "span {span}");
+        }
     }
 }
