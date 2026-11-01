@@ -396,6 +396,11 @@ impl Look {
         self.words.date_bounds
     }
 
+    /// The record control's rect, x, y, w, h in points, if the look draws one (R9; Motion's probe).
+    pub fn record_bounds(&self) -> Option<[f32; 4]> {
+        self.words.record_bounds
+    }
+
     /// The panel's rows, if the look draws one (R6): each lamp's id and its rect, x, y, w, h in points
     /// (y down), after a `prepare`; Motion's probe answers a touch there. Empty until Visual draws it.
     pub fn panel_bounds(&self) -> Vec<(u32, [f32; 4])> {

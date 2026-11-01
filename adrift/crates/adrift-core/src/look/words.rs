@@ -205,6 +205,8 @@ pub struct Words {
     pub credit_bounds: Option<[f32; 4]>,
     /// The panel's rows (R6), each lamp's id and rect in points; empty while no panel is drawn.
     pub panel_bounds: Vec<(u32, [f32; 4])>,
+    /// The record control's rect in points (R9), when the look draws one.
+    pub record_bounds: Option<[f32; 4]>,
 }
 
 impl Words {
@@ -246,7 +248,7 @@ impl Words {
         let (b0, g0) = make("words halos");
         let (b1, g1) = make("words inks");
         let pipeline = mark_pipeline(gpu, "words", &module, LAYOUT, view, Some(&layout));
-        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new() }
+        Self { pipeline, instances: Instances::new(gpu, "words", 256), buffers: [b0, b1], groups: [g0, g1], face, date_bounds: None, credit_bounds: None, panel_bounds: Vec::new(), record_bounds: None }
     }
 
     /// The glyphs of every line this frame (`Face::layout`).
