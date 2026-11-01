@@ -464,7 +464,25 @@ plan("twist", "Two fingers twist the globe: both ring the sea where they land, a
     {"t": 1.0, "key": "home"}, expect(2.0, camera={"lon": -30.0, "lat": 25.0}), shot(2.0, "home"),
 ])
 
-for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole", "four-two-ways", "twist"):
+# R9: the studio's record control, by hand. The stand-in corner (touch/motion.rs RECORD_*) until
+# the look draws its own: a tap starts a take; a rest puts a float, a tap chooses it, the date is
+# scrubbed; a touch on the control ends the take at touch-down and asks for the export; the check
+# exports it (the replay must end where the take did); a rest on the control exports it again.
+REC = [W - 16.0 - 22.0, 52.0 + 22.0]
+plan("record-by-hand", "The record control: a tap starts a take, play goes on as ever, a touch on it ends the take at touch-down and asks for the clip; a rest on it asks again; nothing on it rings or puts", [
+    ev(0.2, "down", 0, xy=REC), expect(0.25, state="record"), ev(0.28, "up", 0, xy=REC), expect(0.35, saw=["Record"], not_=["Ring", "Put", "Export"]),
+    ev(0.5, "down", 0, at=[-40.0, 32.0]), ev(1.1, "up", 0, at=[-40.0, 32.0]), expect(1.2, floats=1, saw=["Put"]),
+    ev(1.6, "down", 0, at=[-40.0, 32.0]), ev(1.68, "up", 0, at=[-40.0, 32.0]), expect(1.8, chosen=[1]),
+    *scrub(2.0, 0, [20, 40, 60], dt=0.05, rest=0.3),
+    shot(3.4, "live-end"),
+    ev(3.5, "down", 0, xy=REC), expect(3.55, saw=["Record", "Export"], not_=["Ring", "Put"], floats=1), ev(3.6, "up", 0, xy=REC),
+    {"t": 3.7, "export": "clip", "expect": {"floats": 1}},
+    expect(4.4, floats=1),                                  # (clears the intents the export's replay saw)
+    ev(4.5, "down", 0, xy=REC), expect(5.0, saw=["Export"], not_=["Record", "Ring"]), ev(5.1, "up", 0, xy=REC),
+    expect(5.2, state="idle", floats=1),
+], camera={"lon": -40.0, "lat": 30.0, "zoom": 1.0}, day=9800.0, frames=True)
+
+for name in ("panel-two", "choose-two-on-globe", "scrub-limit", "panel-rim", "over-the-pole", "four-two-ways", "twist", "record-by-hand"):
     PLANS[name]["steps"].sort(key=lambda st: st["t"])    # played in order of time (a stable sort)
 
 os.makedirs(OUT, exist_ok=True)

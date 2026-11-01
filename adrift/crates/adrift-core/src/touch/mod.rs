@@ -15,5 +15,5 @@ pub mod motion;
 pub mod probe;
 
 pub use camera::{CameraControl, CameraMove};
-pub use gestures::{date_band, Frame, Gestures, Hit, Key, Out, Probe, Rect};
+pub use gestures::{date_band, record_spot, Frame, Gestures, Hit, Key, Out, Probe, Rect};
 pub use motion::Motion;

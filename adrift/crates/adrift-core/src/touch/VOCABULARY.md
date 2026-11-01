@@ -310,6 +310,16 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
     land (R7). Clockwise on the screen turns the globe clockwise. Home sets it upright.
     `plans/twist.json`.
 
+31. **A take by hand** (R9, the studio's first tool): one small control in the top right
+    (`Hit::Record`, before anything else under it). A tap starts a take at its lift, so the touch
+    that starts it is not in it; play goes on as ever. While recording, a touch on it ends the take
+    at touch-down, so the touch that stops it is not in the clip either (the first timing tool,
+    free: a take is exactly the play between the two touches), and asks for the export at once
+    (`Record { on: false }` then `Export`: the share sheet follows). Not recording, a rest on it
+    asks for the newest take's export again. A drag from it is the globe's; nothing on it rings the
+    sea, puts a float or sets a carried one down. `plans/record-by-hand.json` (a take of a put, a
+    choice and a scrub, exported: the replay ends 0.000 km from the take).
+
 ## The numbers (`motion.rs`)
 
 | | | why |
@@ -333,4 +343,5 @@ on a failed expectation; `tools/adrift/touch-play.sh` plays them all. Their land
 | `SCRUB_TAU`, `SCRUB_FLOOR` | 0.03 s, 60 days/s | a gap closed at its size over τ, never slower than the floor: no creep at the end |
 | `SCRUB_LEAD` | 24 days | the clouds this far behind slow the date to a fifth (from a quarter of it) |
 | `FRAME_WITHIN`, `FRAME_WIDEST`, `FRAME_TAU` | 0.8 of the room, 70°, 0.45 s | everything chosen held this near the centre; wider than 70° about its centre takes the whole globe; the frame breathes on a slower spring than the ride (R8) |
+| `RECORD_SIZE`, `RECORD_TOP`, `RECORD_EDGE` | 44 reading pt, 52 pt, 16 pt | the record control's stand-in square in the top right until the look draws it (R9) |
 | `FACE_WITHIN` | 0.55 of the room | a lamp chosen from the panel is brought this near the centre: its cloud on the face, not the limb |
