@@ -10,22 +10,75 @@ use crate::sea::Rules;
 
 /// How much slower the date may run where the lamps are worth seeing than where they only travel.
 pub const PACE_RANGE: f64 = 20.0;
-/// The interest is smoothed over this many days (a Gaussian's sigma) before it is spent.
-pub const PACE_SMOOTH: f64 = 1.0;
+/// The visible change is smoothed over this many days (a Gaussian's sigma) before it is spent.
+pub const PACE_SMOOTH: f64 = 0.5;
 /// The pace itself (its logarithm) is then smoothed over this many seconds of the clip, so even a
-/// twentyfold change eases in and out: the clip's camera follows it (R15).
-pub const PACE_EASE: f64 = 1.0;
+/// twentyfold change eases in and out: the clip's camera follows it (R15; R16 half a second).
+pub const PACE_EASE: f64 = 0.5;
+/// The weight of a mark where nothing moves on the screen, against the journey's mean visible change
+/// (1): small, so a hover passes quickly but the date never leaps.
+pub const VISIBLE_FLOOR: f64 = 0.1;
+/// The frame's least scale (km): the clip's camera frames the lamps, but never closer than this.
+pub const FRAME_KM: f64 = 80.0;
+
+/// What moves on the screen between marks (R16): for each mark after the first, the lamps' motion
+/// relative to each other (each pair's separation vector's change) and each lamp's bend (its turn
+/// times its shorter step either side), in km, over the frame's scale there (the lamps' spread, at
+/// least `FRAME_KM`), so it is the change the clip's camera, which follows and frames them, shows.
+/// `places[l][i]` is lamp l at mark i. The first mark's value is the second's.
+pub fn visible_series(places: &[Vec<crate::model::LonLat>]) -> Vec<f64> {
+    use crate::model::LonLat;
+    let marks = places.first().map_or(0, |p| p.len());
+    if marks < 2 {
+        return vec![0.0; marks];
+    }
+    // a local east-north vector from a to b, km
+    let vec = |a: LonLat, b: LonLat| {
+        let c = ((a.lat + b.lat) / 2.0).to_radians().cos();
+        (((b.lon - a.lon + 540.0).rem_euclid(360.0) - 180.0).to_radians() * c * 6371.0, (b.lat - a.lat).to_radians() * 6371.0)
+    };
+    let mut out = vec![0.0; marks];
+    for i in 1..marks {
+        // the frame's scale: the lamps' greatest separation, at least FRAME_KM
+        let mut scale = FRAME_KM;
+        for a in 0..places.len() {
+            for b in a + 1..places.len() {
+                let d = vec(places[a][i], places[b][i]);
+                scale = scale.max(d.0.hypot(d.1));
+            }
+        }
+        let mut change = 0.0;
+        for a in 0..places.len() {
+            for b in a + 1..places.len() {
+                let (d0, d1) = (vec(places[a][i - 1], places[b][i - 1]), vec(places[a][i], places[b][i]));
+                change += (d1.0 - d0.0).hypot(d1.1 - d0.1);
+            }
+            if i >= 2 {
+                let (u, w) = (vec(places[a][i - 2], places[a][i - 1]), vec(places[a][i - 1], places[a][i]));
+                let (lu, lw) = (u.0.hypot(u.1), w.0.hypot(w.1));
+                if lu > 1e-9 && lw > 1e-9 {
+                    let turn = (u.0 * w.1 - u.1 * w.0).atan2(u.0 * w.0 + u.1 * w.1).abs();
+                    change += turn * lu.min(lw);
+                }
+            }
+        }
+        out[i] = change / scale;
+    }
+    out[0] = out[1];
+    out
+}
+
 /// A pair this close (km) counts as near (the interest of closeness falls off as exp(-d / NEAR_KM)).
 pub const NEAR_KM: f64 = 60.0;
 
 /// The day each of `frames` frames (at `fps`) shows, from `from` (the frame before the first) to `to`,
-/// never going back (R14, Truth). Time is spent where the lamps are worth seeing: each quarter-day
-/// mark of their own paths (`path`, each leg under its law) is weighed by how near the pairs are,
-/// how fast their distance changes, how far the line between each pair winds, and how much each lamp
-/// turns (a turn weighed by the steps either side of it, so a stall's flips count for little). Each
-/// term is scaled by its own mean over the journey, so none drowns the others; the sum, plus one for
-/// plain travel, is smoothed over `PACE_SMOOTH` days and held within `PACE_RANGE`; the frames are
-/// spaced evenly in that weight, so the date slows where it is high. Deterministic.
+/// never going back (R14, Truth; R16 what moves on the screen). Time is spent where the screen
+/// changes: each quarter-day mark of the lamps' own paths (`path`, each leg under its law) is weighed
+/// by its visible change (`visible_series`: their motion relative to each other and each line's bend,
+/// at the frame's scale), plus a small floor, smoothed over `PACE_SMOOTH` days and held within
+/// `PACE_RANGE`; the frames are spaced evenly in that weight and the pace eased over `PACE_EASE`
+/// seconds of clip. So a hover, or a run side by side, passes quickly, and braiding and looping take
+/// the clip. Deterministic.
 pub fn pace(rules: &Rules, floats: &[Float], from: f64, to: f64, frames: usize, _fps: f64) -> Vec<f64> {
     let frames = frames.max(1);
     if !(to > from) {
@@ -96,71 +149,12 @@ pub fn interest(rules: &Rules, floats: &[Float], from: f64, to: f64) -> Vec<f64>
             (0..marks).map(|i| place_on(&p, from + i as f64 * step)).collect()
         })
         .collect();
-    let km = |a: crate::model::LonLat, b: crate::model::LonLat| crate::sea::drifters::distance_km(a.lon as f32, a.lat as f32, b.lon as f32, b.lat as f32) as f64;
-    let mut terms = vec![vec![0.0; marks]; 4];
-    // the pairs: closeness, the distance's rate of change, the line's winding
-    for a in 0..places.len() {
-        for b in a + 1..places.len() {
-            let mut last_ang: Option<f64> = None;
-            for i in 0..marks {
-                let (p, q) = (places[a][i], places[b][i]);
-                let d = km(p, q);
-                terms[0][i] += (-d / NEAR_KM).exp();
-                if i > 0 {
-                    terms[1][i] += (d - km(places[a][i - 1], places[b][i - 1])).abs() / (1.0 + d / NEAR_KM);
-                }
-                let dx = ((q.lon - p.lon + 540.0).rem_euclid(360.0) - 180.0) * p.lat.to_radians().cos();
-                let ang = (q.lat - p.lat).atan2(dx);
-                if let Some(l) = last_ang {
-                    let turn = ((ang - l + 3.0 * std::f64::consts::PI).rem_euclid(2.0 * std::f64::consts::PI) - std::f64::consts::PI).abs();
-                    // a winding counts by how near they are (far apart, the line's angle means little)
-                    terms[2][i] += turn * (-d / (2.0 * NEAR_KM)).exp();
-                }
-                last_ang = Some(ang);
-            }
-        }
-    }
-    // each lamp's turning, weighed by the steps either side against its median step
-    for p in &places {
-        let steps: Vec<(f64, f64)> = p.windows(2).map(|w| (((w[1].lon - w[0].lon + 540.0).rem_euclid(360.0) - 180.0) * w[0].lat.to_radians().cos(), w[1].lat - w[0].lat)).collect();
-        let mut lens: Vec<f64> = steps.iter().map(|s| s.0.hypot(s.1)).collect();
-        let mut sorted = lens.clone();
-        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let med = sorted.get(sorted.len() / 2).copied().unwrap_or(0.0).max(1e-9);
-        for l in lens.iter_mut() {
-            *l = (*l / med).min(1.0);
-        }
-        for i in 1..steps.len() {
-            let (u, v) = (steps[i - 1], steps[i]);
-            if u.0.hypot(u.1) < 1e-12 || v.0.hypot(v.1) < 1e-12 {
-                continue;
-            }
-            let turn = (u.0 * v.1 - u.1 * v.0).atan2(u.0 * v.0 + u.1 * v.1).abs();
-            terms[3][i] += turn * lens[i - 1].min(lens[i]);
-        }
-    }
-    // each term by its own mean, so none drowns the others, the dance's own (closeness, the line's
-    // winding) weighed most; the mix grows as its square, so the dance takes most of the clip and
-    // plain travel (weighing 1) passes quickly (R15: the critic's "the real dance arrives late")
-    let weights = [0.3, 0.3, 2.0, 1.5];
-    let mut x = vec![0.0; marks];
-    let total_w: f64 = weights.iter().sum();
-    for (t, wt) in terms.iter().zip(weights) {
-        let mean = t.iter().sum::<f64>() / marks as f64;
-        if mean > 1e-12 {
-            for i in 0..marks {
-                x[i] += wt * t[i] / mean / total_w;
-            }
-        }
-    }
-    let w: Vec<f64> = x.iter().map(|v| 1.0 + 3.0 * v * v).collect();
-    if std::env::var_os("ADRIFT_PACE_DEBUG").is_some() {
-        for b in 0..(marks / 20) {
-            let r = b * 20..(b + 1) * 20;
-            let m = |t: &Vec<f64>| t[r.clone()].iter().sum::<f64>() / 20.0 / (t.iter().sum::<f64>() / marks as f64).max(1e-12);
-            eprintln!("days {:5.1}: close {:.2} dchange {:.2} wind {:.2} turn {:.2}", b as f64 * 20.0 * step, m(&terms[0]), m(&terms[1]), m(&terms[2]), m(&terms[3]));
-        }
-    }
+    // what moves on the screen at each mark (R16): the clip's camera follows the lamps, so what is
+    // seen is their motion relative to each other and the bending of each line, at the frame's scale
+    let v = visible_series(&places);
+    let mean = (v.iter().sum::<f64>() / marks as f64).max(1e-12);
+    // time goes where the screen changes: a hover passes quickly, braiding and looping take the clip
+    let w: Vec<f64> = v.iter().map(|x| VISIBLE_FLOOR + x / mean).collect();
     // smoothed (a Gaussian of PACE_SMOOTH days), then held within PACE_RANGE of its least
     let sigma = (PACE_SMOOTH / step).max(1.0);
     let reach = (3.0 * sigma).ceil() as isize;
@@ -176,8 +170,8 @@ pub fn interest(rules: &Rules, floats: &[Float], from: f64, to: f64) -> Vec<f64>
             s / n
         })
         .collect();
-    let least = smooth.iter().cloned().fold(f64::INFINITY, f64::min).max(1e-9);
-    smooth.iter().map(|x| x.min(least * PACE_RANGE)).collect()
+    let most = smooth.iter().cloned().fold(0.0, f64::max).max(1e-9);
+    smooth.iter().map(|x| x.max(most / PACE_RANGE)).collect()
 }
 
 /// A path's place on `day`, between its marks.
@@ -341,46 +335,63 @@ mod tests {
         }
     }
 
+    /// The share of a clip's frames in which the screen barely changes (visible change under a quarter
+    /// of the clip's median), with each frame's day from `days`.
+    fn still_share(r: &Rules, f: &[Float], from: f64, to: f64, days: &[f64]) -> f64 {
+        let paths: Vec<_> = f.iter().map(|l| path(r, l, to + 0.25)).collect();
+        let places: Vec<Vec<LonLat>> = paths.iter().map(|p| std::iter::once(from).chain(days.iter().copied()).map(|d| super::place_on(p, d)).collect()).collect();
+        let v = visible_series(&places);
+        let mut sorted = v.clone();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let median = sorted[sorted.len() / 2];
+        v.iter().filter(|x| **x < 0.25 * median).count() as f64 / v.len() as f64
+    }
+
+    fn early() -> (Vec<Float>, f64, f64) {
+        let day0 = 9131.0 + 8.0 * 30.44 + 1.0;
+        (vec![lamp(1, LonLat { lon: 18.75, lat: -42.0 }, day0, 1), lamp(2, LonLat { lon: 18.75, lat: -41.6 }, day0, 2)], day0, day0 + 30.0)
+    }
+
     #[test]
-    fn the_pace_lingers_where_the_lamps_dance() {
+    fn the_pace_spends_time_where_the_screen_changes() {
         let r = rules();
-        let (f, to) = the_dance();
-        let from = f[0].put_day;
-        let (frames, fps) = (900usize, 30.0);
-        let days = pace(&r, &f, from, to, frames, fps);
-        assert_eq!(days.len(), frames);
-        assert_eq!(*days.last().unwrap(), to, "it ends on the last day");
-        assert!(days.windows(2).all(|w| w[1] >= w[0]) && days[0] > from, "never back");
-        assert_eq!(days, pace(&r, &f, from, to, frames, fps), "deterministic");
-        let per: Vec<f64> = std::iter::once(days[0] - from).chain(days.windows(2).map(|w| w[1] - w[0])).collect();
-        let (lo, hi) = per.iter().fold((f64::INFINITY, 0.0f64), |(a, b), x| (a.min(*x), b.max(*x)));
-        // smooth: the pace changes by little from frame to frame
-        let lurch = per.windows(2).map(|w| (w[1] - w[0]).abs() / w[0].max(1e-12)).fold(0.0, f64::max);
-        // slower where they are near: the pace at their nearest marks against the pace at their farthest
-        let (a, b) = (path(&r, &f[0], to), path(&r, &f[1], to));
-        let dist = |day: f64| {
-            let (p, q) = (super::place_on(&a, day), super::place_on(&b, day));
-            distance_km(p.lon as f32, p.lat as f32, q.lon as f32, q.lat as f32) as f64
-        };
-        let mut by: Vec<(f64, f64)> = days.iter().zip(&per).map(|(d, p)| (dist(*d), *p)).collect();
-        by.sort_by(|x, y| x.0.partial_cmp(&y.0).unwrap());
-        let tenth = by.len() / 10;
-        let near = by[..tenth].iter().map(|x| x.1).sum::<f64>() / tenth as f64;
-        let far = by[by.len() - tenth..].iter().map(|x| x.1).sum::<f64>() / tenth as f64;
-        eprintln!(
-            "the dance in 30 s: {:.2}-{:.2} days a second; nearest tenth of frames at {:.2}, farthest at {:.2}; the most a frame's pace changes: {:.1}%",
-            lo * fps, hi * fps, near * fps, far * fps, lurch * 100.0
-        );
-        // the run apart along the coast (days 10-35, 42% of the days, where the critic saw a camera
-        // chasing two lamps) passes quickly; the tangle before it and the loops after take the clip
-        let coast = days.iter().filter(|d| **d > from + 10.0 && **d < from + 35.0).count() as f64 / frames as f64;
-        eprintln!("the run along the coast (days 10-35) takes {:.0}% of the clip", coast * 100.0);
-        assert!(hi / lo <= PACE_RANGE * 1.05 && hi / lo > 3.0, "the pace varies boldly, within its range");
-        assert!(lurch < 0.05, "no lurch: under 5% from one frame to the next");
-        assert!(near < far * 0.5, "much slower where the pair is near");
-        // honest about it: the measure finds winding and changing distance along the coast too, so
-        // it passes only a little quicker than its share of the days (37% of the clip for 42%)
-        assert!(coast < 0.40, "the run along the coast passes quicker than its share of the days");
+        let (dance, dance_to) = the_dance();
+        let (e, e_from, e_to) = early();
+        for (name, f, from, to) in [("dance", dance.clone(), dance[0].put_day, dance_to), ("early", e, e_from, e_to)] {
+            let (frames, fps) = (900usize, 30.0);
+            let days = pace(&r, &f, from, to, frames, fps);
+            assert_eq!(days.len(), frames);
+            assert_eq!(*days.last().unwrap(), to, "it ends on the last day");
+            assert!(days.windows(2).all(|w| w[1] >= w[0]) && days[0] > from, "never back");
+            assert_eq!(days, pace(&r, &f, from, to, frames, fps), "deterministic");
+            let per: Vec<f64> = std::iter::once(days[0] - from).chain(days.windows(2).map(|w| w[1] - w[0])).collect();
+            let (lo, hi) = per.iter().fold((f64::INFINITY, 0.0f64), |(a, b), x| (a.min(*x), b.max(*x)));
+            let lurch = per.windows(2).map(|w| (w[1] - w[0]).abs() / w[0].max(1e-12)).fold(0.0, f64::max);
+            let even: Vec<f64> = (1..=frames).map(|i| from + (to - from) * i as f64 / frames as f64).collect();
+            let (still, still_even) = (still_share(&r, &f, from, to, &days), still_share(&r, &f, from, to, &even));
+            // the middle third of the clip: how many days it covers, against an even pace's third
+            let middle = days[frames * 2 / 3] - days[frames / 3];
+            // the stillest two seconds: the least visible change over 60 frames, against the median 60
+            let stillest = |d: &[f64]| {
+                let paths: Vec<_> = f.iter().map(|l| path(&r, l, to + 0.25)).collect();
+                let places: Vec<Vec<LonLat>> = paths.iter().map(|p| std::iter::once(from).chain(d.iter().copied()).map(|x| super::place_on(p, x)).collect()).collect();
+                let v = visible_series(&places);
+                let sums: Vec<f64> = v.windows(60).map(|w| w.iter().sum::<f64>()).collect();
+                let mut s2 = sums.clone();
+                s2.sort_by(|a, b| a.partial_cmp(b).unwrap());
+                s2[0] / s2[s2.len() / 2]
+            };
+            // (R15's pace, measured the same way when this was written: 0.08 for the dance, 0.23 for early)
+            let (s_now, s_even) = (stillest(&days), stillest(&even));
+            eprintln!("{name}: stillest 2 s against the median 2 s: this pace {s_now:.2}, even {s_even:.2}");
+            eprintln!(
+                "{name} in 30 s: {:.2}-{:.2} days a second, the most a frame's pace changes {:.1}%; still frames {:.0}% (even pace {:.0}%); the clip's middle third covers {:.1} days (even {:.1})",
+                lo * fps, hi * fps, lurch * 100.0, still * 100.0, still_even * 100.0, middle, (to - from) / 3.0
+            );
+            assert!(lurch < 0.05, "no lurch");
+            assert!(still < still_even * 0.6 && still < 0.05, "{name}: fewer frames where nothing moves on the screen");
+            assert!(s_now > 0.55 && s_now > s_even * 1.3, "{name}: no dead air: the stillest two seconds still move");
+        }
     }
 
     #[test]
@@ -399,9 +410,7 @@ mod tests {
     #[test]
     fn the_early_dance_dances_from_the_start() {
         let r = rules();
-        let day0 = 9131.0 + 8.0 * 30.44 + 1.0;
-        let f = vec![lamp(1, LonLat { lon: 18.75, lat: -42.0 }, day0, 1), lamp(2, LonLat { lon: 18.75, lat: -41.6 }, day0, 2)];
-        let to = day0 + 30.0;
+        let (f, _, to) = early();
         let (a, b) = (path(&r, &f[0], to), path(&r, &f[1], to));
         let (w, near, closest) = dance(&a, &b);
         eprintln!("the early dance: the line wound {w:+.1} rad in 30 days, 15-150 km apart {:.0}% of the time, closest {closest:.0} km", near * 100.0);
