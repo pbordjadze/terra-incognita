@@ -243,10 +243,10 @@ pub const FRAME_MARGIN_KM: f64 = 10.0;
 pub const FRAME_SPAN_MIN_KM: f64 = 100.0;
 /// The least half-span of two lamps or more, km (R14): a dancing pair 15–150 km apart is framed
 /// tighter and tighter as it nears, down to this (or `FRAME_ZOOM_MAX`).
-pub const FRAME_PAIR_MIN_KM: f64 = 20.0;
+pub const FRAME_PAIR_MIN_KM: f64 = 60.0;
 /// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise). R14:
 /// 100 (a pair 80 km apart at 60% of the width); deeper, the coast's distance field shows its pixels.
-pub const FRAME_ZOOM_MAX: f64 = 100.0;
+pub const FRAME_ZOOM_MAX: f64 = 40.0;
 /// How much of the take's own zoom (against the take's first) the clip keeps on top of the frame, in
 /// the zoom's log. 0 since R12: while conducting, the take's camera itself comes in to the lamps (the
 /// live hold), so its zoom is mostly the frame's, not the reader's pinch, and counting it doubled
