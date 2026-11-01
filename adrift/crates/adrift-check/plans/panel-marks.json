@@ -1,0 +1,21 @@
+{
+ "title": "R10: the panel as marks, 44-point cells abutting from the top left (Visual's geometry, held as a stand-in): a tap on a mark chooses its lamp and rings the water at the lamp, never under the finger; a rest on the next rides it; a drag that starts on a mark turns the globe and chooses nothing",
+ "size": [393.0, 852.0],
+ "camera": {"lon": -55.0, "lat": 30.0, "zoom": 1.6},
+ "day": 200.0,
+ "floats": [{"lon": -70.0, "lat": 36.0, "days_ago": 25}, {"lon": -40.0, "lat": 28.0, "days_ago": 12}],
+ "panel": [[1, 12.0, 60.0, 44.0, 44.0], [2, 56.0, 60.0, 44.0, 44.0]],
+ "steps": [
+  {"t": 0.5, "down": [34.0, 82.0], "id": 1},
+  {"t": 0.6, "up": [34.0, 82.0], "id": 1},
+  {"t": 0.75, "shot": "tap-rings-lamp-1", "expect": {"chosen": [1], "saw": ["Ring", "Ride"], "not": ["Put", "Unchoose"]}},
+  {"t": 1.5, "down": [99.0, 103.0], "id": 1},
+  {"t": 2.1, "up": [99.0, 103.0], "id": 1, "expect": {"chosen": [1, 2], "riding": 2}},
+  {"t": 3.0, "down": [56.0, 70.0], "id": 1},
+  {"t": 3.05, "move": [80.0, 90.0], "id": 1},
+  {"t": 3.1, "move": [120.0, 120.0], "id": 1},
+  {"t": 3.2, "move": [160.0, 150.0], "id": 1},
+  {"t": 3.25, "up": [160.0, 150.0], "id": 1},
+  {"t": 3.6, "shot": "drag-from-mark", "expect": {"chosen": [1, 2], "riding": null, "floats": 2, "not": ["Put", "Unchoose"]}}
+ ]
+}

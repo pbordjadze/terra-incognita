@@ -128,6 +128,10 @@ struct Plan {
     /// frame is drawn, so a plan that reads `behind()` needs it; slower on the software driver.
     #[serde(default)]
     frames: bool,
+    /// The shell's frame rate, frames a second (default 60): a plan at 20 shows a take recorded on a
+    /// struggling phone (R10, Motion).
+    #[serde(default = "default_fps")]
+    fps: f64,
     steps: Vec<Step>,
 }
 fn default_size() -> [f64; 2] {
@@ -135,6 +139,9 @@ fn default_size() -> [f64; 2] {
 }
 fn default_ppp() -> f64 {
     3.0
+}
+fn default_fps() -> f64 {
+    60.0
 }
 
 /// A finger's place: screen points `[x, y]` (Engineering's plans) or a finger id whose place is the
@@ -222,7 +229,7 @@ fn play(args: &[String]) -> Result<()> {
         app.panel_stand_in = Some(rows.iter().map(|r| (r[0] as u32, [r[1] as f32, r[2] as f32, r[3] as f32, r[4] as f32])).collect());
     }
     let mut t = 0.0;
-    let fps = 60.0;
+    let fps = plan.fps;
     app.frame(&target.view, t);
     let mut log = String::new();
     let mut failed = 0;
