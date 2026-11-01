@@ -234,6 +234,9 @@ pub struct LookState {
     /// The clip's window on the screen being drawn, points x, y, w, h (R10: while exporting, the
     /// whole screen, as the clip is drawn at its own 9:16 size; None live).
     pub clip: Option<[f32; 4]>,
+    /// The lamp whose panel mark a finger rests on, and how far its rest has thickened, 0..1 (R10:
+    /// the lamp swells while its mark is pressed; from Motion's `Gestures::panel_pressing_since`).
+    pub panel_press: Option<(u32, f32)>,
     /// How many takes are kept, the newest ready to export (R9).
     pub takes: u32,
     /// The clouds out, in the order chosen (the front one last) (R6).

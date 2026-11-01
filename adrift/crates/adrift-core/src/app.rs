@@ -662,7 +662,7 @@ impl App {
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), lit_for: 0.0, legs: vec![Leg { at, day: self.clock.day, seed }] });
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), trail: Vec::new(), lit_for: 0.0, legs: vec![Leg { at, day: self.clock.day, seed }] });
         id
     }
 
@@ -996,6 +996,7 @@ impl App {
             f.held = a.held;
             // the wake: a bead at every day mark of every leg up to now
             f.wake.clear();
+            f.trail.clear();
             for i in 0..=li {
                 let until = if i < li { f.legs[i + 1].day } else { day };
                 if let Some(p) = self.paths.get(&(f.id, i)) {
@@ -1006,11 +1007,16 @@ impl App {
                         if s.day.fract() == 0.0 {
                             f.wake.push(Bead { at: s.at, day: s.day, measured: s.measured });
                         }
+                        f.trail.push(Bead { at: s.at, day: s.day, measured: s.measured });
                     }
                 }
             }
             if f.wake.len() > WAKE_MAX {
                 f.wake.drain(0..f.wake.len() - WAKE_MAX);
+            }
+            if let Some(first) = f.wake.first().map(|b| b.day) {
+                let cut = f.trail.iter().position(|b| b.day >= first - 1e-9).unwrap_or(0);
+                f.trail.drain(0..cut);
             }
         }
         self.floats = floats;
@@ -1208,6 +1214,7 @@ impl App {
             exporting: self.exporting,
             opening: if self.exporting { self.clip_phase.0 } else { 1.0 },
             ending: if self.exporting { self.clip_phase.1 } else { 0.0 },
+            panel_press: None,
             clip: if self.exporting {
                 Some([0.0, 0.0, (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32, (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32])
             } else {
