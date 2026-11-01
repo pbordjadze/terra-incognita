@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # Adrift's GPU runner: on a machine with a real GPU (Vulkan), checks out a named branch of this
 # repository, runs only the repository's own checks (tests, every scene rendered, every plan
-# played, the measured scrubs' frame timings), and pushes what they produced to a results branch,
-# `gpu-results/<branch>`, as one commit of PNGs, mp4s and logs. Nothing else runs: no network beyond
-# git, no code but the repo's own.
+# played, the measured scrubs' frame timings, the take's export), and prints one compact text
+# summary at the end (between `== SUMMARY` and `== END`), which is what a runner session sends back:
+# pass/fail, the GPU, and the frame timings. The PNGs and mp4s stay in <workdir>/out/<branch>.
+# Nothing else runs: no network beyond git fetch, no code but the repo's own.
 #
-#     bash tools/adrift/gpu-runner.sh <branch> [workdir]       # one run
-#     bash tools/adrift/gpu-runner.sh --watch [workdir]         # every minute: any branch whose head
-#                                                                # changed since its last results
-#                                                                # among gpu-request/* is run
-#
-# A conductor asks for a run by pushing (or moving) `gpu-request/<anything>` to the commit it wants
-# measured; the results land on `gpu-results/<anything>` with that commit's sha in the message.
+#     bash tools/adrift/gpu-runner.sh <branch> [workdir]       # one run, the summary at the end
+#     GPU_RUNNER_PUSH=1 bash tools/adrift/gpu-runner.sh <branch> # also push the results to
+#                                                                # gpu-results/<branch> (needs push access)
+#     bash tools/adrift/gpu-runner.sh --watch [workdir]         # every minute: run any changed
+#                                                                # gpu-request/* branch
 # Needs: git with push access to origin, rustup (stable), ffmpeg, python3 with Pillow, a Vulkan GPU
 # driver. The software driver works too (it is what CI uses), only slower: set ADRIFT_SOFTWARE=1 to
 # install it with tools/adrift/linux-setup.sh.
@@ -62,7 +61,18 @@ for p in pathlib.Path(sys.argv[1]).rglob("*.png"):
     if im.width > 800:
         im.resize((im.width // 2, im.height // 2)).save(p)
 PY
-  # one commit on gpu-results/<name>, its parent the previous results if any
+  # the summary: what a runner session sends back as text
+  {
+    echo "== SUMMARY $branch $sha"
+    grep -E "deviceName|driverName" "$out/run.log" | head -2 | sed 's/^ *//'
+    grep -E "test result" "$out/run.log" | head -1
+    echo "plans: $(grep -c '^ok ' "$out/run.log") ok, $(grep -c '^FAIL ' "$out/run.log") failed"
+    grep '^FAIL ' "$out/run.log" || true
+    grep -hE "scrub .* frames|export " "$out/run.log" | sed 's/^ *[0-9]* t= *[0-9.]*s //' || true
+    echo "== END"
+  } | tee "$out/summary.txt"
+  [ "${GPU_RUNNER_PUSH:-0}" = 1 ] || return 0
+  # one commit on gpu-results/<name>
   local res="$WORK/results"
   rm -rf "$res"; git -C "$src" worktree prune
   git -C "$src" worktree add -q --detach "$res" HEAD
