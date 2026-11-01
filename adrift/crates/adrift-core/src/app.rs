@@ -1665,7 +1665,7 @@ impl App {
             for f in &these {
                 for li in 0..f.legs().len() {
                     let Some(path) = self.paths.get(&(f.id, li)) else { continue };
-                    whole.extend(path.samples.iter().filter(|s| s.day >= from && s.day <= day).map(|s| s.at));
+                    whole.extend(path.samples.iter().filter(|s| s.day >= from && s.day <= day).map(|s| (s.day, s.at)));
                 }
             }
         }
@@ -1922,7 +1922,7 @@ impl App {
             events.push(crate::studio::TakeEvent::Frame { t });
             last = day;
         }
-        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing { hold_out: crate::studio::JOURNEY_HOLD_OUT, ..Default::default() }, song: None })
+        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing { hold_out: crate::studio::JOURNEY_HOLD_OUT, braid: true, ..Default::default() }, song: None })
     }
 
     /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.

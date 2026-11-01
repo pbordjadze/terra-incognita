@@ -52,11 +52,15 @@ pub struct Framing {
     /// The time constant, seconds, over which the camera's drift at the take's last moment (a fling,
     /// a ride, the idle turn, a pinch still easing) is carried on and dies away in the end beat.
     pub settle: f64,
+    /// (R16) A journey clip: through its last third the frame holds the whole braid, both lines since
+    /// the clip began (or their most recent part, if all of it would be wider than the opening).
+    #[serde(default)]
+    pub braid: bool,
 }
 
 impl Default for Framing {
     fn default() -> Framing {
-        Framing { hold_in: 0.8, hold_out: 1.5, follow: 0.3, open: 0.1, settle: 0.3 }
+        Framing { hold_in: 0.8, hold_out: 1.5, follow: 0.3, open: 0.1, settle: 0.3, braid: false }
     }
 }
 
@@ -117,11 +121,13 @@ pub struct ClipCamera {
     fw: [f64; 3],
     fzv: f64,
     end_from: Option<(crate::model::LonLat, f64)>,
+    /// The opening's widest zoom (R16): the braid is never framed wider than the clip began.
+    open_zoom: Option<f64>,
 }
 
 impl ClipCamera {
     pub fn new(start: Camera) -> ClipCamera {
-        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None }
+        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None }
     }
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
@@ -185,7 +191,7 @@ impl ClipCamera {
         let (c, z) = match part {
             ClipPart::After => {
                 let from = *self.end_from.get_or_insert((c, z));
-                let whole = Lean { trail: l.trail.iter().chain(&l.whole).copied().collect(), focus: None, whole: Vec::new(), ..l.clone() };
+                let whole = Lean { trail: l.trail.iter().copied().chain(l.whole.iter().map(|w| w.1)).collect(), focus: None, whole: Vec::new(), ..l.clone() };
                 let (cw, zw) = frame(&whole).unwrap_or((c, z));
                 // never closer than where it was: the end opens out to the shape, it does not dive in
                 let zw = zw.min(from.1);
@@ -199,6 +205,24 @@ impl ClipCamera {
                 (c, z)
             }
         };
+        // (R16) a journey's last third: the frame eases over to the braid, its whole lines
+        let wb = match part {
+            ClipPart::During if f.braid => {
+                let x = ((through - BRAID_FROM) / BRAID_EASE).clamp(0.0, 1.0);
+                x * x * (3.0 - 2.0 * x)
+            }
+            _ => 0.0,
+        };
+        let braid = if wb > 0.0 { self.open_zoom.map(|open| braid_lean(l, open / BRAID_WIDER)) } else { None };
+        let (c, z) = match &braid {
+            Some(lb) => {
+                let (cb, zb) = frame(lb).unwrap_or((c, z));
+                let (a, b) = (c.to_xyz(), cb.to_xyz());
+                let v = [a[0] + (b[0] - a[0]) * wb, a[1] + (b[1] - a[1]) * wb, a[2] + (b[2] - a[2]) * wb];
+                (crate::model::LonLat::from_xyz(v), (z.ln() + (zb.ln() - z.ln()) * wb).exp())
+            }
+            None => (c, z),
+        };
         // (the end beat's pull-out is its own: the frame's last, then the shape)
         if part != ClipPart::After {
             self.end_from = Some((c, z));
@@ -206,6 +230,9 @@ impl ClipCamera {
         // opening `OPEN_WIDE` wider, but no wider than `OPEN_LEAST` (a close pair opens on its coast, a
         // pair already at a regional scale on its region, not the hemisphere)
         let wide = (z / OPEN_WIDE).max(z.min(OPEN_LEAST));
+        if self.open_zoom.is_none() {
+            self.open_zoom = Some(wide);
+        }
         let e = crate::touch::motion::ease_in_out(t / OPEN_SECS);
         let target = Camera { lon: c.lon, lat: c.lat, zoom: (wide.ln() + (z.ln() - wide.ln()) * e).exp(), roll: take.roll };
         let fc = match self.fc {
@@ -230,7 +257,11 @@ impl ClipCamera {
         }
         let moved = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), fc.zoom);
         // the zoom: the frame's, but no deeper than holds them all from where the centre now is
-        let hold = hold_zoom(moved, l);
+        let hold = match &braid {
+            // the braid's points held as the frame eases over to them, so the zoom opens with the ease
+            Some(lb) => (hold_zoom(moved, l).ln() * (1.0 - wb) + hold_zoom(moved, lb).ln() * wb).exp(),
+            None => hold_zoom(moved, l),
+        };
         let want = target.zoom.min(hold);
         let half = if want < moved.zoom { ZOOM_OUT_HALF } else { ZOOM_IN_HALF };
         let (lz, vz) = crate::touch::motion::spring(moved.zoom.ln(), self.fzv, want.ln(), half / HALF_TO_TAU, dt);
@@ -293,8 +324,9 @@ pub struct Lean {
     pub half: f64,
     /// A lamp just cued alone (R12): its place, its line, and how far the frame leans in on it, 0..1.
     pub focus: Option<(Vec<crate::model::LonLat>, Vec<crate::model::LonLat>, f64)>,
-    /// The lamps' whole lines since the take began (R15), for the end beat's pull-out to the shape.
-    pub whole: Vec<crate::model::LonLat>,
+    /// The lamps' whole lines since the take began, each point with its day (R15), for the end beat's
+    /// pull-out to the shape and (R16) a journey's braid held through its last third.
+    pub whole: Vec<(f64, crate::model::LonLat)>,
 }
 
 /// How far the clip leans in on a lamp cued alone, `age` seconds after the cue (R12): in over half a
@@ -441,6 +473,35 @@ pub const JOURNEY_HOLD_OUT: f64 = 2.5;
 pub const HOLD_X: f64 = 0.42;
 pub const HOLD_UP: f64 = 0.44;
 pub const HOLD_DOWN: f64 = 0.15;
+
+/// A journey's braid is held from this share of its During part, eased over `BRAID_EASE` (R16).
+pub const BRAID_FROM: f64 = 0.6;
+pub const BRAID_EASE: f64 = 0.12;
+/// The braid may frame up to this many times wider than the opening (R16: the dance's whole braid since
+/// the clip began wants about zoom 8 against an opening of 13; the end's pull-out goes wider still).
+pub const BRAID_WIDER: f64 = 2.0;
+
+/// The lamps with their whole lines since the clip began, or, if all of them would frame wider than
+/// `floor` (the opening's zoom), their most recent part that frames no wider (R16).
+pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
+    let with = |from: f64| Lean { trail: l.trail.iter().copied().chain(l.whole.iter().filter(|w| w.0 >= from).map(|w| w.1)).collect(), focus: None, whole: Vec::new(), ..l.clone() };
+    let first = l.whole.iter().map(|w| w.0).fold(f64::INFINITY, f64::min);
+    let last = l.whole.iter().map(|w| w.0).fold(f64::NEG_INFINITY, f64::max);
+    if !first.is_finite() {
+        return l.clone();
+    }
+    let fits = |from: f64| frame(&with(from)).map_or(true, |(_, z)| z >= floor * 0.999);
+    if fits(first) {
+        return with(first);
+    }
+    // the earliest day from which the lines still frame within the floor (closer as the day is later)
+    let (mut lo, mut hi) = (first, last);
+    for _ in 0..12 {
+        let mid = (lo + hi) / 2.0;
+        if fits(mid) { hi = mid } else { lo = mid }
+    }
+    with(hi)
+}
 
 /// The deepest zoom at which, from `cam`'s centre (before the lift), every lamp and its weighted line
 /// lie within the hold box (R15).
@@ -859,5 +920,23 @@ mod tests {
             // the span, less the margin, about 60% of the width
             assert!(span > 0.5 * 360.0 && span < 0.62 * 360.0, "span {span}");
         }
+    }
+
+    #[test]
+    fn the_braid_is_held_whole_when_it_fits_and_its_recent_part_when_not() {
+        // two lamps near (153, -29), their lines since day 0 running 1° a day south-west, 20 days
+        let whole: Vec<(f64, LonLat)> = (0..=20).flat_map(|d| {
+            let d = d as f64;
+            [(d, LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1)), (d, LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1))]
+        }).collect();
+        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole };
+        // a wide floor: all of it
+        let all = braid_lean(&l, 2.0);
+        assert_eq!(all.trail.len(), 42);
+        // a close floor: only the recent part, framed no wider than the floor
+        let floor = (frame(&all).unwrap().1 * 1.5).min(FRAME_ZOOM_MAX * 0.8);
+        let part = braid_lean(&l, floor);
+        assert!(part.trail.len() < 42 && part.trail.len() >= 2, "{}", part.trail.len());
+        assert!(frame(&part).unwrap().1 >= floor * 0.99, "{:?}", frame(&part));
     }
 }
