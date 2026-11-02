@@ -1034,6 +1034,28 @@ mod tests {
         }
     }
 
+    /// (R21) Seeds are framed at the wind's scale; lamps exactly as before (scale unset and 1 alike).
+    #[test]
+    fn seeds_are_framed_at_the_winds_scale_and_lamps_as_ever() {
+        let lean = |lamps: Vec<LonLat>, scale: f64| Lean { lamps, trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale };
+        let pair = vec![LonLat::new(-20.0, 45.0), LonLat::new(-19.5, 45.0)];
+        let lone = vec![LonLat::new(-20.0, 45.0)];
+        for p in [&pair, &lone] {
+            assert_eq!(frame(&lean(p.clone(), 0.0)), frame(&lean(p.clone(), 1.0)), "a lamp's frame is the same, the scale unset or 1");
+        }
+        // a seed pair 40 km apart: its least span is the wind's (300 km), so the frame is ~5x wider
+        let (_, zl) = frame(&lean(pair.clone(), 1.0)).unwrap();
+        let (_, zs) = frame(&lean(pair.clone(), WIND_SCALE)).unwrap();
+        let half_km = |z: f64| 180.0 * EARTH_KM / (166.0 * z);
+        assert!(zs < zl && half_km(zs) > 0.9 * WIND_SCALE * FRAME_PAIR_MIN_KM / FRAME_FILL, "lamps zoom {zl:.1}, seeds {zs:.1}");
+        // two seeds 1500 km apart fill the frame as two lamps 1500 km apart do: their own span wins (the
+        // margin, 50 km for a seed against 10, is all that differs)
+        let far = vec![LonLat::new(-30.0, 45.0), LonLat::new(-11.0, 45.0)];
+        let (_, a) = frame(&lean(far.clone(), 1.0)).unwrap();
+        let (_, b) = frame(&lean(far, WIND_SCALE)).unwrap();
+        assert!((b / a - 1.0).abs() < 0.08, "{a} {b}");
+    }
+
     #[test]
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;

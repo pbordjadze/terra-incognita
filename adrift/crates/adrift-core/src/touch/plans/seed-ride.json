@@ -1,0 +1,89 @@
+{
+ "title": "R21, the wind: ride a seed in a January gale off Biscay (~1000 km a day) until it comes down in Spain: the camera turns smoothly with it, holding the seed and its maybes still aloft (R8; maybes come down drop out of the frame), the seed in view throughout (shots)",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "medium": "Wind",
+ "day": 9132.0,
+ "camera": {
+  "lon": -20.0,
+  "lat": 45.0,
+  "zoom": 4.0
+ },
+ "floats": [
+  {
+   "lon": -20.0,
+   "lat": 45.0
+  }
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -20.0,
+    45.0
+   ]
+  },
+  {
+   "t": 0.08,
+   "up": 0,
+   "at": [
+    -20.0,
+    45.0
+   ]
+  },
+  {
+   "t": 0.1,
+   "expect": {
+    "saw": [
+     "Ride"
+    ],
+    "riding": 1
+   }
+  },
+  {
+   "t": 1.0,
+   "shot": "catching-up"
+  },
+  {
+   "t": 2.0,
+   "expect": {
+    "riding": 1
+   }
+  },
+  {
+   "t": 3.0,
+   "shot": "riding"
+  },
+  {
+   "t": 3.0,
+   "expect": {
+    "riding": 1
+   }
+  },
+  {
+   "t": 5.0,
+   "expect": {
+    "riding": 1
+   }
+  },
+  {
+   "t": 5.0,
+   "shot": "come-down"
+  },
+  {
+   "t": 5.1,
+   "expect": {
+    "riding": 1,
+    "float": {
+     "id": 1,
+     "lon": -2.0,
+     "lat": 42.4,
+     "tol": 0.3
+    }
+   }
+  }
+ ]
+}

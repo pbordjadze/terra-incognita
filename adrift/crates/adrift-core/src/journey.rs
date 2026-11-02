@@ -453,4 +453,69 @@ mod tests {
             std::fs::write(out, format!("{}\n{}\n", crate::app::LAMPS_HEADER, serde_json::to_string(&copy).unwrap())).unwrap();
         }
     }
+
+    /// A seed as a fresh lift makes it (R21).
+    pub(super) fn seed(id: u32, at: LonLat, day: f64, seed: u64) -> Float {
+        let mut f = lamp(id, at, day, seed);
+        f.legs = f.legs.iter().map(|l| l.on(crate::model::Medium::Wind)).collect();
+        f
+    }
+
+    /// (R21) Where seeds fly far: pairs lifted 40 km apart over a grid, each month, ranked by how far
+    /// the pair went before both came down. `cargo test --release -p adrift-core find_a_seed_flight -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn find_a_seed_flight() {
+        let r = rules();
+        let mut best = Vec::new();
+        for month in [0.0, 3.0, 6.0, 9.0] {
+            let day0 = 9131.0 + month * 30.44 + 1.0;
+            for lon in (-120..=20).step_by(10) {
+                for lat in (25..=55).step_by(10) {
+                    let a = LonLat::new(lon as f64, lat as f64);
+                    let b = LonLat::new(lon as f64 + 0.5, lat as f64);
+                    let f = [seed(1, a, day0, 1), seed(2, b, day0, 2)];
+                    let (pa, pb) = (path_held(r, &f[0], day0 + 6.0), path_held(r, &f[1], day0 + 6.0));
+                    let down = all_down(r, &f, day0 + 6.0).unwrap_or(day0 + 6.0) - day0;
+                    let (ea, eb) = (pa.last().unwrap(), pb.last().unwrap());
+                    let d = |p: LonLat, q: LonLat| distance_km(p.lon as f32, p.lat as f32, q.lon as f32, q.lat as f32) as f64;
+                    let km = d(a, ea.1).min(d(b, eb.1));
+                    let apart = d(ea.1, eb.1);
+                    best.push((km, format!("{lon},{lat} month {month}: {km:.0} km, apart {apart:.0} km at the end, down by {down:.2} d ({:?} {:?})", ea.2, eb.2)));
+                }
+            }
+        }
+        best.sort_by(|x, y| y.0.partial_cmp(&x.0).unwrap());
+        for b in best.iter().take(10) {
+            eprintln!("{}", b.1);
+        }
+        let n = best.len();
+        eprintln!("median: {}", best[n / 2].1);
+    }
+
+    /// (R21) A journey of seeds: each by the wind's rules (not the sea's, as before the seam's fix), so
+    /// the gale pair off Biscay crosses to Spain; it ends when the last comes down (`all_down`), a lamp
+    /// never does; and its pace runs on, never back, to the last day.
+    #[test]
+    fn a_journey_of_seeds_flies_by_the_wind_and_ends_when_they_are_down() {
+        let r = rules();
+        let day0 = 9132.0;
+        let f = vec![seed(1, LonLat::new(-20.0, 45.0), day0, 1), seed(2, LonLat::new(-19.5, 45.0), day0, 2)];
+        let p = path_held(r, &f[0], day0 + 4.0);
+        let (_, end, held) = *p.last().unwrap();
+        let km = distance_km(-20.0, 45.0, end.lon as f32, end.lat as f32);
+        assert!(km > 1000.0 && held.down(), "the gale seed went {km:.0} km and came down ({held:?})");
+        let down = all_down(r, &f, day0 + 4.0).expect("both down within four days");
+        assert!(down > day0 + 0.5 && down < day0 + 3.0, "down by {:.2} d", down - day0);
+        // nothing moves after: the path's places past `down` are where it came down
+        let q = path(r, &f[1], day0 + 4.0);
+        let after: Vec<_> = q.iter().filter(|m| m.0 >= down).map(|m| m.1).collect();
+        assert!(after.windows(2).all(|w| w[0] == w[1]));
+        // a lamp never ends; nor does a mix of a lamp and seeds
+        let l = lamp(3, LonLat::new(-30.0, 40.0), day0, 3);
+        assert_eq!(all_down(r, &[l.clone()], day0 + 4.0), None);
+        assert_eq!(all_down(r, &[f[0].clone(), l], day0 + 4.0), None);
+        let days = pace(r, &f, day0, down, 300, 30.0);
+        assert!(days.windows(2).all(|w| w[1] >= w[0]) && *days.last().unwrap() == down);
+    }
 }

@@ -1179,6 +1179,11 @@ impl App {
             }
             let k = p.samples.partition_point(|s| s.day <= day + 1e-9).saturating_sub(1);
             let a = p.samples[k];
+            // (R21, Motion) a seed's maybe come down is done: the frame follows what still flies (the
+            // wind's maybes mostly come down within hours near the start, and held a ride back there)
+            if a.held.down() {
+                continue;
+            }
             out.push(match p.samples.get(k + 1) {
                 Some(b) => lerp_place(a.at, b.at, ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0)),
                 None => a.at,
