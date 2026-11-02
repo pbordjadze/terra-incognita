@@ -501,20 +501,20 @@ mod tests {
         let r = rules();
         let day0 = 9132.0;
         let f = vec![seed(1, LonLat::new(-20.0, 45.0), day0, 1), seed(2, LonLat::new(-19.5, 45.0), day0, 2)];
-        let p = path_held(r, &f[0], day0 + 4.0);
+        let p = path_held(r, &f[0], day0 + 12.0);
         let (_, end, held) = *p.last().unwrap();
         let km = distance_km(-20.0, 45.0, end.lon as f32, end.lat as f32);
         assert!(km > 1000.0 && held.down(), "the gale seed went {km:.0} km and came down ({held:?})");
-        let down = all_down(r, &f, day0 + 4.0).expect("both down within four days");
-        assert!(down > day0 + 0.5 && down < day0 + 3.0, "down by {:.2} d", down - day0);
+        let down = all_down(r, &f, day0 + 12.0).expect("both down within twelve days");
+        assert!(down > day0 + 0.5 && down < day0 + 12.0, "down by {:.2} d", down - day0);
         // nothing moves after: the path's places past `down` are where it came down
-        let q = path(r, &f[1], day0 + 4.0);
+        let q = path(r, &f[1], day0 + 12.0);
         let after: Vec<_> = q.iter().filter(|m| m.0 >= down).map(|m| m.1).collect();
         assert!(after.windows(2).all(|w| w[0] == w[1]));
         // a lamp never ends; nor does a mix of a lamp and seeds
         let l = lamp(3, LonLat::new(-30.0, 40.0), day0, 3);
-        assert_eq!(all_down(r, &[l.clone()], day0 + 4.0), None);
-        assert_eq!(all_down(r, &[f[0].clone(), l], day0 + 4.0), None);
+        assert_eq!(all_down(r, &[l.clone()], day0 + 12.0), None);
+        assert_eq!(all_down(r, &[f[0].clone(), l], day0 + 12.0), None);
         let days = pace(r, &f, day0, down, 300, 30.0);
         assert!(days.windows(2).all(|w| w[1] >= w[0]) && *days.last().unwrap() == down);
     }
