@@ -764,3 +764,44 @@ then ride its southern end, in the lower third more often: a trade the critic ju
 5e8c7c2: in a clip each lamp's head a glass float 30% larger, a breathing glow of its hue on the
 water, a glint with a small sparkle. Still to build, from the critic: a way to trim a journey's end
 (the editing surface, with the speed and the trim of takes).
+
+## 28. R21: seeds on the wind, the studio's second preset (Nov 2, 02:30 UTC)
+
+Round 20's critic: the camera loses the dance from ~15 s (the whole-trail hold pulls back to the
+Tasman, the pair a speck for the last 15 s) and the blue lamp sinks into the sea's blue. The clip was
+called done after one small fix; the round's work is the run's plan (b): the wind's preset.
+
+- *Engineering* (5af1913, the seam): `Leg.medium` (`model::Medium::{Sea, Wind}`, Sea left out of
+  copied lamps, so every lamp's text and path is unchanged to the bit), `Held::Landed` / `Ditched`
+  (a seed come down, for good; never cut into a new leg), `Intent::Medium` (what a put makes; kept in
+  the snapshot and a take's start; the free pace and the conductor's tempo become the medium's:
+  `App::free_rate`, `App::tempo`). `sea::medium::MediumRules`: put, flight (with the previous
+  `Held`), velocity, may_put, answered by `Rules` and `AirRules`; `Media::of(medium)`. Paths,
+  `conduct::Worlds` (generic), cues and the take's cut dispatch by the leg's medium. The wind shares
+  the sea's wind and coast sheets (`Sheet.bytes` an `Arc`). With the wind's preset land answers the
+  hit test as open. The iOS studio menu offers "Seeds on the wind" / "Lamps on the sea"; the web takes
+  `?wind`. `plans/wind-seeds.json`.
+- *Truth* (05a72ab): the wind's GPU cloud (`Maybes.air` over the same paths buffer: seed_at,
+  step_many, keeps; a seed's cloud agrees with its CPU paths to 3 m, no fate differs in 9216); the
+  preset's seed is a seed lofted (`AirRules::LIFE` 4: median 2–2.25 days aloft, ~7 s at 0.3 days a
+  second; pollen measured 0.25–0.5); `AIR_RATE` 0.3 and `AIR_TEMPO` 0.45 measured and kept (a 1 s
+  stroke spreads a seed's worlds 40 points against the sea's 34; sweeps match 17–19% of seeds up);
+  the chooser never picks a world come down, and the wind's look-aheads (`AIR_TAP_AHEAD` 0.25 d,
+  `AIR_CIRCLE_AHEAD` 0.5 d).
+- *Visual* (853810d): a seed is a dandelion pappus from above (17 filaments of its hue round a dark
+  seed, turning slowly, a shadow set off by its height; by night its own light), its line an airy
+  spline since the lift, a quiet coming-down (a mark on land, one ring on the sea); the wind cloud in
+  that look (flying a wash, landed marks, ditched rings). Wind streamlines on the ground skipped on
+  purpose (they would muddy the currents; the seeds' lines are the wind seen). Cool hues (sky, lilac,
+  mint) get a pale halo on their lines and a pale ring round the head, so a blue lamp no longer sinks
+  into the sea; warm hues unchanged.
+- *Motion* (bcb03f0): a seed set down over land; journeys of seeds by the wind's rules (the seam's
+  `journey::pace` stepped them by the sea's: fixed), ending when the last comes down; the clip frame
+  reads the medium (`Lean.scale`); seed plans. The critic's framing (the pair at 40–60% of the width,
+  `PAIR_LEAST`, the zoom allowed back in): the zoom now returns (dance 10 → 28 where R20 held 5.6),
+  but the pair's measured share is still short of the band (see ROUNDS).
+
+Next, from the exit interviews: a seed come down on the sea becoming a lamp (the one cross-medium
+call); the dials that differ (lifetime, memory, kinship, wander, trail) recorded in a take; a seed
+in the panel's marks (it draws as a lamp mark there); `GpuPath.measured` means rain for wind clouds
+(a per-medium meaning on one field).
