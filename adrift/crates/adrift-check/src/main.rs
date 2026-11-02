@@ -121,6 +121,9 @@ struct Plan {
     /// The page of credits open from the start.
     #[serde(default)]
     credits_open: bool,
+    /// What the plan's floats are and what its puts make (R21): "Sea" (lamps) or "Wind" (seeds).
+    #[serde(default)]
+    medium: adrift_core::Medium,
     /// The panel's rows held fixed, `[[id, x, y, w, h], ...]` in points, whatever the look draws
     /// (Motion's D11, R6).
     panel: Option<Vec<[f64; 5]>>,
@@ -227,6 +230,7 @@ fn play(args: &[String]) -> Result<()> {
         seconds: 0.0,
         night: plan.night,
         credits_open: plan.credits_open,
+        medium: plan.medium,
     });
     app.set_scene(&scene);
     if let Some(song) = &plan.song {

@@ -8,7 +8,7 @@ use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
 use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookCloud, LookFloat, LookState, SeaPass};
 use crate::model::*;
-use crate::sea::{Drift, Drifters, GpuPath, Maybes, Params, Rules};
+use crate::sea::{AirRules, Drift, Drifters, GpuPath, Maybes, Media, MediumRules, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
 use serde::{Deserialize, Serialize};
 
@@ -70,6 +70,9 @@ pub struct Scene {
     /// The night palette (the system's dark appearance).
     #[serde(default)]
     pub night: bool,
+    /// What the scene's floats are and what a put makes (R21): lamps on the sea or seeds on the wind.
+    #[serde(default)]
+    pub medium: Medium,
 }
 fn yes() -> bool {
     true
@@ -104,6 +107,9 @@ pub struct Snapshot {
     pub day: f64,
     pub running: bool,
     pub camera: Camera,
+    /// What a put makes (R21).
+    #[serde(default)]
+    pub medium: Medium,
 }
 
 pub struct App {
@@ -111,6 +117,10 @@ pub struct App {
     assets: Box<dyn Assets>,
     textures: Textures,
     pub rules: Rules,
+    /// The wind's rules (R21, the wind preset): seeds and balloons, sharing the sea's wind and coast.
+    pub air: AirRules,
+    /// What a put makes (R21, `Intent::Medium`): a lamp on the sea, or a seed on the wind.
+    pub medium: Medium,
     /// The real drifters' runs (Truth): the nearest rises in silver beside a held float.
     pub drifters: Drifters,
     view_buffer: wgpu::Buffer,
@@ -210,6 +220,9 @@ pub struct App {
 
 /// Days a second while the date runs.
 pub const RATE: f64 = 2.0;
+/// Days a second while the date runs with the wind's preset (R21; `sea/MEDIA.md` › The clock: the
+/// wind is about 20x the sea's pace, so a seed's day of flight takes about 3 s).
+pub const AIR_RATE: f64 = 0.3;
 /// The longest step a float takes at once (a quarter day: the fastest currents cross less than a cell).
 const SUBSTEP: f64 = 0.25;
 /// Beads kept in a wake.
@@ -306,6 +319,7 @@ impl App {
         let clock = Clock { day: 0.0, running: true, rate: RATE };
         let textures = Textures::load(&gpu, assets.as_ref(), clock.months().0)?;
         let rules = Rules::load(assets.as_ref())?;
+        let air = AirRules::sharing(&rules, assets.as_ref())?;
         let drifters = Drifters::parse(&assets.read("drifters.bin")?).map_err(|e| anyhow::anyhow!("drifters.bin: {e}"))?;
         let view_layout = crate::look::view_layout(&gpu);
         let make_view = |label: &str| {
@@ -336,6 +350,8 @@ impl App {
             assets,
             textures,
             rules,
+            air,
+            medium: Medium::Sea,
             drifters,
             view_buffer,
             view_bind,
@@ -455,7 +471,8 @@ impl App {
             return Hit::Float(id, place.unwrap_or(at));
         }
         match place {
-            Some(p) if self.rules.coast.is_land(p) => Hit::Land(p),
+            // with the wind's preset every place is open: a seed is lifted from land as from the sea (R21)
+            Some(p) if self.medium == Medium::Sea && self.rules.coast.is_land(p) => Hit::Land(p),
             Some(p) => Hit::Sea(p),
             None => Hit::Off,
         }
@@ -631,9 +648,10 @@ impl App {
                         f.seed = (f.seed ^ day.to_bits()).rotate_left(23).wrapping_mul(0x9E37_79B9_7F4A_7C15);
                         // set down: the law of the leg it continues (a lamp from an older build keeps its own, R13)
                         let law = legs.last().map_or(crate::sea::rules::LAW, |l| l.law);
-                        legs.push(Leg::new(p, day, f.seed).under(law));
+                        let medium = legs.last().map_or(Medium::Sea, |l| l.medium);
+                        legs.push(Leg::new(p, day, f.seed).under(law).on(medium));
                         f.legs = legs;
-                        let e = self.rules.put(p, day, f.seed, 0).eddy;
+                        let e = Media { sea: &self.rules, air: &self.air }.of(medium).put(p, day, f.seed, 0).eddy;
                         f.eddy = [e.0, e.1];
                         self.redo.clear();
                         self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
@@ -682,6 +700,10 @@ impl App {
             Intent::SetRunning { running } => self.clock.running = running,
             Intent::ToggleCredits => self.credits_open = !self.credits_open,
             Intent::ClearAll => self.clear_all(),
+            Intent::Medium { medium } => {
+                self.medium = medium;
+                self.clock.rate = if self.conducting() { self.tempo() } else { self.free_rate() };
+            }
             Intent::Home => {
                 self.camera.riding = None;
                 let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
@@ -696,8 +718,9 @@ impl App {
         let seed = (self.clock.day.to_bits() ^ (id as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)).rotate_left(17);
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
-        let e = self.rules.put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), kept: false, trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed)] });
+        // (a seed on the wind takes the gust world 0's air has there: R21)
+        let e = self.media().of(self.medium).put(at, self.clock.day, seed, 0).eddy;
+        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), kept: false, trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed).on(self.medium)] });
         id
     }
 
@@ -964,7 +987,9 @@ impl App {
             front(&mut ids, f.id);
         }
         let day = self.clock.day;
-        ids.retain(|id| self.floats.iter().any(|f| f.id == *id && f.born(day)));
+        // (R21) a seed on the wind has no GPU cloud yet: the sea's maybes would step it by the sea's
+        // rules. Truth's `AirMaybes` into the same buffer is the next seam; until then it shows none.
+        ids.retain(|id| self.floats.iter().any(|f| f.id == *id && f.born(day) && f.leg_at(day).map_or(true, |li| f.legs()[li].medium == Medium::Sea)));
         if ids.len() > MAX_CLOUDS {
             ids.drain(0..ids.len() - MAX_CLOUDS);
         }
@@ -1087,11 +1112,11 @@ impl App {
     /// A leg's path computed to `upto` (as far as the budget allows this frame).
     fn ensure_path(&mut self, id: u32, li: usize, leg: Leg, upto: f64, budget: &mut usize) {
         let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, samples: Vec::new() });
-        Self::extend_path(&self.rules, path, leg, leg.world, upto, budget);
+        Self::extend_path(Media { sea: &self.rules, air: &self.air }.of(leg.medium), path, leg, leg.world, upto, budget);
     }
 
     /// A path of leg `leg` for maybe `k` (0 the float itself) stepped to `upto` on the quarter-day grid.
-    fn extend_path(rules: &Rules, path: &mut Path, leg: Leg, k: u32, upto: f64, budget: &mut usize) {
+    fn extend_path(rules: &dyn MediumRules, path: &mut Path, leg: Leg, k: u32, upto: f64, budget: &mut usize) {
         if path.leg != leg || path.samples.is_empty() {
             let e = match leg.eddy {
                 Some(e) => (e[0], e[1]),
@@ -1107,7 +1132,7 @@ impl App {
                 break;
             }
             let next = grid_next(last.day);
-            let s = rules.flight_under(leg.law, Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.day, next - last.day, leg.seed, k);
+            let s = rules.flight(leg.law, Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.held, last.day, next - last.day, leg.seed, k);
             path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
             *budget -= 1;
         }
@@ -1123,7 +1148,7 @@ impl App {
             let Some(leg) = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(day).map(|li| f.legs[li])) else { continue };
             for k in 1..=FRAME_SAMPLES {
                 let path = self.samples.entry((id, k)).or_insert_with(|| Path { leg, samples: Vec::new() });
-                Self::extend_path(&self.rules, path, leg, k, day, &mut budget);
+                Self::extend_path(Media { sea: &self.rules, air: &self.air }.of(leg.medium), path, leg, k, day, &mut budget);
             }
         }
     }
@@ -1179,7 +1204,7 @@ impl App {
             f.hand = Hand::Free;
             f.lit_for = 10.0;
         }
-        serde_json::to_string(&Snapshot { version: 1, floats, next_id: self.next_id, day: self.clock.day, running: self.clock.running, camera: self.camera.camera }).unwrap_or_default()
+        serde_json::to_string(&Snapshot { version: 1, floats, next_id: self.next_id, day: self.clock.day, running: self.clock.running, camera: self.camera.camera, medium: self.medium }).unwrap_or_default()
     }
 
     /// Takes a kept state back; a state that can't be read is ignored.
@@ -1192,6 +1217,8 @@ impl App {
         self.next_id = s.next_id.max(self.floats.iter().map(|f| f.id + 1).max().unwrap_or(1));
         self.clock.day = s.day;
         self.clock.running = s.running;
+        self.medium = s.medium;
+        self.clock.rate = self.free_rate();
         self.camera = CameraControl::new(s.camera);
         self.undo.clear();
         self.redo.clear();
@@ -1210,7 +1237,8 @@ impl App {
         self.ripples.clear();
         self.camera = CameraControl::new(scene.camera);
         self.gestures = Gestures::new();
-        self.clock = Clock { day: scene.day, running: scene.running, rate: RATE };
+        self.medium = scene.medium;
+        self.clock = Clock { day: scene.day, running: scene.running, rate: self.free_rate() };
         self.seconds = scene.seconds;
         self.night = scene.night;
         self.credits_open = scene.credits_open;
@@ -1549,6 +1577,7 @@ impl App {
             night: self.night,
             reduce_motion: self.reduce_motion,
             credits_open: self.credits_open,
+            medium: self.medium,
         }
     }
 
@@ -1570,6 +1599,7 @@ impl App {
         self.night = s.night;
         self.reduce_motion = s.reduce_motion;
         self.credits_open = s.credits_open;
+        self.medium = s.medium;
         self.gestures = Gestures::new();
         self.ripples.clear();
         self.conduct.clear();
@@ -1712,6 +1742,28 @@ impl App {
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
     /// export.
+    /// Both media's rules (R21).
+    pub fn media(&self) -> Media<'_> {
+        Media { sea: &self.rules, air: &self.air }
+    }
+
+    /// The date's free pace for the preset (R21): the sea's `RATE`, the wind's `AIR_RATE`.
+    pub fn free_rate(&self) -> f64 {
+        match self.medium {
+            Medium::Sea => RATE,
+            Medium::Wind => AIR_RATE,
+        }
+    }
+
+    /// The conductor's tempo for the preset (R21): the sea's `conduct::TEMPO`, the wind's
+    /// `conduct::AIR_TEMPO`.
+    pub fn tempo(&self) -> f64 {
+        match self.medium {
+            Medium::Sea => crate::conduct::TEMPO,
+            Medium::Wind => crate::conduct::AIR_TEMPO,
+        }
+    }
+
     pub fn conducting(&self) -> bool {
         self.studio.recording.is_some() || self.studio.replay.is_some()
     }
@@ -1739,8 +1791,9 @@ impl App {
             let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else { continue };
             let mut legs = f.legs();
             legs.truncate(li + 1);
-            if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9) {
-                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy), law: leg.law });
+            // (a seed come down is not cut: it stays where it came down, R21)
+            if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9 && !s.held.down()) {
+                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy), law: leg.law, medium: leg.medium });
             }
             f.legs = legs;
         }
@@ -1762,13 +1815,14 @@ impl App {
             let legs = f.legs();
             let leg = legs[li];
             live.push(f.id);
-            let w = self.conduct.entry(f.id).or_insert_with(|| crate::conduct::Worlds::new(&self.rules, leg, li));
+            let rules = Media { sea: &self.rules, air: &self.air }.of(leg.medium);
+            let w = self.conduct.entry(f.id).or_insert_with(|| crate::conduct::Worlds::new(rules, leg, li));
             if !w.serves(&leg, li) {
-                *w = crate::conduct::Worlds::new(&self.rules, leg, li);
+                *w = crate::conduct::Worlds::new(rules, leg, li);
             }
-            w.step_to(&self.rules, day);
+            w.step_to(rules, day);
             // the next mark a share at a time, so no frame steps a whole mark (Truth, R11)
-            w.prepare(&self.rules);
+            w.prepare(rules);
         }
         self.conduct.retain(|id, _| live.contains(id));
     }
@@ -1795,7 +1849,8 @@ impl App {
         let mut before = Vec::new();
         for id in targets {
             let Some(w) = self.conduct.get(&id) else { continue };
-            let Some(choice) = w.choose(&self.rules, gesture, day, self.clock.rate, &project) else { continue };
+            let rules = Media { sea: &self.rules, air: &self.air }.of(w.leg.medium);
+            let Some(choice) = w.choose(rules, gesture, day, self.clock.rate, &project) else { continue };
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
             let fan: Vec<LonLat> = choice.fan.iter().map(|k| w.place(*k, day).at).collect();
@@ -1808,10 +1863,11 @@ impl App {
             let mut legs = f.legs();
             legs.truncate(li + 1);
             legs[li].world = choice.k;
-            if cut_day > legs[li].day + 1e-9 {
+            // (world k's seed come down by the mark stays down: its leg runs on, no new one, R21)
+            if cut_day > legs[li].day + 1e-9 && !cut.held.down() {
                 let seed = legs[li].seed;
                 let law = legs[li].law;
-                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]), law });
+                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]), law, medium: legs[li].medium });
             }
             f.legs = legs;
             let from = f.at;
@@ -1846,7 +1902,7 @@ impl App {
     fn begin_take(&mut self, now: f64) {
         self.cut_legs();
         // the conductor's tempo while a take records (R11, Truth: CONDUCTOR.md › In the app)
-        self.clock.rate = crate::conduct::TEMPO;
+        self.clock.rate = self.tempo();
         let start = self.take_start();
         self.apply_start(&start, now);
         self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: self.song.clone() });
@@ -1857,7 +1913,7 @@ impl App {
         if let Some(mut take) = self.studio.recording.take() {
             take.t1 = now;
             take.end = Some(self.take_start());
-            self.clock.rate = RATE;
+            self.clock.rate = self.free_rate();
             if take.duration() > 0.2 {
                 self.studio.takes.push(take);
                 if self.studio.takes.len() > crate::studio::TAKES_KEPT {

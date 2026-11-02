@@ -241,6 +241,11 @@ final class AdriftView: UIView {
         if UIPasteboard.general.string?.hasPrefix("adrift lamps") == true {
             sheet.addAction(UIAlertAction(title: "Paste lamps", style: .default) { [weak self] _ in self?.pasteLamps() })
         }
+        // the preset (R21): what a put makes from now on; things already out keep their own
+        if let shell {
+            let wind = adrift_medium(shell) == 1
+            sheet.addAction(UIAlertAction(title: wind ? "Lamps on the sea" : "Seeds on the wind", style: .default) { [weak self] _ in if let s = self?.shell { adrift_set_medium(s, wind ? 0 : 1) } })
+        }
         sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(sheet)
     }

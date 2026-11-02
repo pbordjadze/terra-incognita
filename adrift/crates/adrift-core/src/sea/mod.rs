@@ -11,6 +11,7 @@
 
 pub mod drifters;
 pub mod gpu;
+pub mod medium;
 pub mod rules;
 pub mod sheets;
 pub mod wind;
@@ -20,6 +21,7 @@ mod tests;
 mod wind_tests;
 
 pub use drifters::{Drifters, Nearest, Run, Track};
+pub use medium::{Media, MediumRules};
 pub use gpu::{GpuPath, Keep, Maybes, Params, MAX_STEPS};
 pub use rules::{Drift, Flight, Put, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};

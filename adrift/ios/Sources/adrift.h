@@ -24,6 +24,8 @@ bool adrift_recording(AdriftShell *shell);
 bool adrift_export_song(AdriftShell *shell, double *start, double *length);
 bool adrift_menu(AdriftShell *shell, uint32_t *picked, uint32_t *takes, uint32_t *chosen, uint32_t *kept);
 uint32_t adrift_keep(AdriftShell *shell, bool on);
+uint32_t adrift_medium(AdriftShell *shell);
+void adrift_set_medium(AdriftShell *shell, uint32_t medium);
 uint32_t adrift_journey_begin(AdriftShell *shell, double seconds, double fps, uint32_t *width, uint32_t *height);
 size_t adrift_lamps_text(AdriftShell *shell, uint8_t *out, size_t len);
 uint32_t adrift_lamps_paste(AdriftShell *shell, const char *text);

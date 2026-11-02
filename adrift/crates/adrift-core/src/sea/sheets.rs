@@ -13,18 +13,20 @@ use crate::assets::Assets;
 use crate::gpu::textures::decode;
 
 /// A decoded sheet: 8-bit channels, rows north to south.
+#[derive(Clone)]
 pub struct Sheet {
     pub width: usize,
     pub height: usize,
     pub channels: usize,
-    pub bytes: Vec<u8>,
+    /// Shared (R21): the sea's rules and the wind's read the same coast and wind sheets.
+    pub bytes: std::sync::Arc<[u8]>,
 }
 
 impl Sheet {
     /// Decoded with four channels (grey and RGB widened), or one when `grey`.
     pub fn load(assets: &dyn Assets, name: &str, grey: bool) -> anyhow::Result<Sheet> {
         let p = decode(&assets.read(name)?, if grey { 1 } else { 4 })?;
-        Ok(Sheet { width: p.width as usize, height: p.height as usize, channels: p.channels as usize, bytes: p.data })
+        Ok(Sheet { width: p.width as usize, height: p.height as usize, channels: p.channels as usize, bytes: p.data.into() })
     }
 
     #[inline]
@@ -35,6 +37,7 @@ impl Sheet {
 
 /// A sheet of month tiles: `cells` across and down a tile, a one-cell border round each, laid
 /// `tiles` across and down.
+#[derive(Clone)]
 pub struct Tiled {
     pub sheet: Sheet,
     pub cells: (usize, usize),
@@ -148,6 +151,7 @@ impl Currents {
 }
 
 /// The wind sheet: R, G the 10 m wind, 128 + 127 w / 16 m/s.
+#[derive(Clone)]
 pub struct Wind(pub Tiled);
 
 impl Wind {
@@ -255,6 +259,7 @@ impl Ice {
 
 /// The coast, Terra's `geo.png`: R the fine signed distance (128 + 8 d, |d| <= 16 px), G the
 /// coarse (128 + d / 2), land positive, in pixels of 360 / 4096 degrees; no border.
+#[derive(Clone)]
 pub struct Coast(pub Sheet);
 
 impl Coast {

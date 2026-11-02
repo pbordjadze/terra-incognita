@@ -153,6 +153,11 @@ impl AirRules {
         })
     }
 
+    /// The wind's rules reading the sea's own wind and coast sheets (R21: one copy of each).
+    pub fn sharing(sea: &super::Rules, assets: &dyn Assets) -> anyhow::Result<AirRules> {
+        Ok(AirRules { wind: sea.wind.clone(), gusts: Gusts::load(assets)?, coast: sea.coast.clone(), carry: 1.0, gust: 1.0, fall: Self::FALL, washout: Self::WASHOUT })
+    }
+
     /// A thing as it is lifted at `at` on `day`: with the gust world k's air has there at that
     /// moment (a Gaussian of the measured variance), so the cloud is right from the first hour.
     pub fn rise(&self, at: LonLat, day: f64, k: u32) -> Air {

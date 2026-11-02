@@ -16,8 +16,8 @@
 //! (`Leg::eddy`), so the continuation is the same law as one unbroken flight. A take replays its
 //! inputs, so a conducted take exports exactly as it was conducted.
 
-use crate::model::{ConductGesture, Leg, LonLat};
-use crate::sea::{Drift, Rules};
+use crate::model::{ConductGesture, Held, Leg, LonLat};
+use crate::sea::{Drift, MediumRules};
 use std::collections::VecDeque;
 
 /// The worlds a lamp chooses among: 1024, so six lamps conducted at up to 3 days a second step
@@ -29,6 +29,9 @@ pub const WORLDS: u32 = 1024;
 /// The date's days a second while a take records and the hand conducts (Truth's measure, R11:
 /// at 3 a one-second stroke chooses among worlds about 35 points apart; 2 is too tight, 6 blurs).
 pub const TEMPO: f64 = 3.0;
+/// The tempo with the wind's preset (R21; Truth to measure as R11 measured the sea's): the free
+/// `AIR_RATE` x 1.5, as the sea's 3 is its 2 x 1.5.
+pub const AIR_TEMPO: f64 = 0.45;
 /// Quarter-day marks kept for the look back (16 days).
 pub const HISTORY: usize = 65;
 /// A tap counts the worlds within this many points of the finger as having done it.
@@ -38,6 +41,8 @@ pub const TAP_NEAR: f64 = 24.0;
 pub struct W {
     pub at: LonLat,
     pub eddy: (f32, f32),
+    /// What holds it (R21: a seed come down stays down).
+    pub held: Held,
 }
 
 /// One quarter-day mark of every world.
@@ -147,14 +152,14 @@ pub fn looping(pts: &[[f64; 2]]) -> f64 {
 impl Worlds {
     /// A leg's worlds at its start: its place, each world's first eddy as the lamp's own path takes it
     /// (`Leg::eddy` when the leg carries one, else the world's own put).
-    pub fn new(rules: &Rules, leg: Leg, leg_index: usize) -> Worlds {
+    pub fn new(rules: &dyn MediumRules, leg: Leg, leg_index: usize) -> Worlds {
         let w = (1..=WORLDS)
             .map(|k| {
                 let e = match leg.eddy {
                     Some(e) => (e[0], e[1]),
                     None => rules.put(leg.at, leg.day, leg.seed, k).eddy,
                 };
-                W { at: leg.at, eddy: e }
+                W { at: leg.at, eddy: e, held: Held::No }
             })
             .collect();
         let mut marks = VecDeque::new();
@@ -164,7 +169,7 @@ impl Worlds {
 
     /// Steps every world to the first grid mark at or after `day` (unbudgeted, so a replay steps
     /// alike; what `prepare` already stepped is kept), keeping `HISTORY` marks.
-    pub fn step_to(&mut self, rules: &Rules, day: f64) {
+    pub fn step_to(&mut self, rules: &dyn MediumRules, day: f64) {
         while self.marks.back().unwrap().day < day - 1e-9 {
             self.advance(rules, usize::MAX);
         }
@@ -172,12 +177,12 @@ impl Worlds {
 
     /// Steps a share of the next mark beyond the date (`WORLDS / PREPARE_FRAMES` worlds), once a
     /// frame: the same steps `step_to` would take, earlier. Returns the worlds stepped.
-    pub fn prepare(&mut self, rules: &Rules) -> usize {
+    pub fn prepare(&mut self, rules: &dyn MediumRules) -> usize {
         self.advance(rules, WORLDS.div_ceil(PREPARE_FRAMES) as usize)
     }
 
     /// Steps up to `budget` worlds of the next mark; completes it when all are stepped.
-    fn advance(&mut self, rules: &Rules, budget: usize) -> usize {
+    fn advance(&mut self, rules: &dyn MediumRules, budget: usize) -> usize {
         let last = self.marks.back().unwrap();
         let next = crate::app::grid_next(last.day);
         let dt = next - last.day;
@@ -185,8 +190,8 @@ impl Worlds {
         let from = p.w.len();
         let to = (from + budget.min(WORLDS as usize)).min(WORLDS as usize);
         for (i, x) in last.w[from..to].iter().enumerate() {
-            let s = rules.flight_under(self.leg.law, Drift { at: x.at, eddy: x.eddy }, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
-            p.w.push(W { at: s.drift.at, eddy: s.drift.eddy });
+            let s = rules.flight(self.leg.law, Drift { at: x.at, eddy: x.eddy }, x.held, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
+            p.w.push(W { at: s.drift.at, eddy: s.drift.eddy, held: s.held });
         }
         if p.w.len() == WORLDS as usize {
             let p = self.pending.take().unwrap();
@@ -230,7 +235,7 @@ impl Worlds {
         match self.marks.get(i + 1) {
             Some(b) if b.day > a.day => {
                 let f = ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0);
-                W { at: crate::app::lerp_place(wa.at, b.w[(k - 1) as usize].at, f), eddy: wa.eddy }
+                W { at: crate::app::lerp_place(wa.at, b.w[(k - 1) as usize].at, f), eddy: wa.eddy, held: wa.held }
             }
             _ => wa,
         }
@@ -250,7 +255,7 @@ impl Worlds {
 
     /// Every world's places at the next `n` quarter-day marks after the newest kept one (computed
     /// on demand, unbudgeted, so a replay sees the same: R12, a tap and a circle look ahead).
-    pub fn ahead(&self, rules: &Rules, n: usize) -> Vec<Vec<W>> {
+    pub fn ahead(&self, rules: &dyn MediumRules, n: usize) -> Vec<Vec<W>> {
         let mut out: Vec<Vec<W>> = Vec::with_capacity(n);
         let mut day = self.marks.back().unwrap().day;
         let mut cur: Vec<W> = self.marks.back().unwrap().w.clone();
@@ -261,8 +266,8 @@ impl Worlds {
                 .iter()
                 .enumerate()
                 .map(|(i, x)| {
-                    let s = rules.flight_under(self.leg.law, Drift { at: x.at, eddy: x.eddy }, day, dt, self.leg.seed, i as u32 + 1);
-                    W { at: s.drift.at, eddy: s.drift.eddy }
+                    let s = rules.flight(self.leg.law, Drift { at: x.at, eddy: x.eddy }, x.held, day, dt, self.leg.seed, i as u32 + 1);
+                    W { at: s.drift.at, eddy: s.drift.eddy, held: s.held }
                 })
                 .collect();
             day = next;
@@ -276,7 +281,7 @@ impl Worlds {
     /// A tap and a circle also look ahead (`TAP_AHEAD`, `CIRCLE_AHEAD` days, the worlds' own
     /// future steps, `rules`): the world chosen is the one that will reach the finger, or that is
     /// looping that way, so the lamp is seen to obey after the cue, not only to have obeyed.
-    pub fn choose(&self, rules: &Rules, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
+    pub fn choose(&self, rules: &dyn MediumRules, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
         let n = WORLDS as usize;
         let now: Vec<Option<[f64; 2]>> = (1..=WORLDS).map(|k| project(self.place(k, day).at)).collect();
         let marks_for = |secs: f64, least: usize| ((secs * rate * 4.0).round() as usize).clamp(least, HISTORY - 1);
@@ -371,6 +376,7 @@ impl Worlds {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sea::Rules;
     use crate::app::{lerp_place, App, Scene};
     use crate::assets::DirAssets;
     use crate::gpu::Gpu;
@@ -556,6 +562,74 @@ mod tests {
         assert!(worst == 0.0, "the lamp is world {k}'s path exactly");
     }
 
+    /// R21, the preset seam: with the wind's preset a put lifts a seed (from land too), which flies at
+    /// the wind's pace, and conducting it rewrites its leg to a world of the wind's own rules, bit for
+    /// bit; a lamp already out stays the sea's.
+    #[test]
+    fn a_seed_on_the_wind_is_conducted_by_the_winds_rules() {
+        use crate::model::Medium;
+        use crate::sea::MediumRules;
+        let Some(mut app) = app() else { return };
+        // a lamp from the scene (the sea's), then the wind's preset and a seed lifted over the Carolinas
+        app.command(Intent::Medium { medium: Medium::Wind });
+        assert_eq!(app.clock.rate, crate::app::AIR_RATE);
+        let land = LonLat::new(-79.0, 35.5);
+        assert!(app.rules.coast.is_land(land));
+        app.command(Intent::Put { at: land });
+        app.command(Intent::Release { float: app.floats.last().unwrap().id, at: None });
+        let seed_id = app.floats.last().unwrap().id;
+        if let Some(f) = app.floats.iter_mut().find(|f| f.id == seed_id) {
+            f.hand = crate::model::Hand::Free;
+        }
+        assert!(app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.iter().all(|l| l.medium == Medium::Wind));
+        assert!(app.floats[0].legs.iter().all(|l| l.medium == Medium::Sea), "the lamp stays the sea's");
+        let t = run(&mut app, 0.0, 2.0, |_| {});
+        let f = app.floats.iter().find(|f| f.id == seed_id).unwrap();
+        let km = f.at.distance_m(land) / 1000.0;
+        eprintln!("a seed lifted at {land:?}: after {:.2} days {km:.0} km, {:?}", app.clock.day - f.put_day, f.held);
+        assert!(km > 20.0, "the seed went with the wind: {km} km");
+        // conducted: its leg becomes world k of the wind's rules
+        app.command(Intent::Record { on: true });
+        assert_eq!(app.clock.rate, AIR_TEMPO);
+        let t = run(&mut app, t, t + 1.5, |_| {});
+        let before = app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.clone();
+        app.command(Intent::Conduct { float: Some(seed_id), gesture: ConductGesture::Sweep { dx: 160.0, dy: 0.0, secs: 0.4 } });
+        let legs = app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.clone();
+        let li = before.len() - 1;
+        let leg = legs[li];
+        let k = leg.world;
+        assert!(k >= 1 && leg.medium == Medium::Wind, "the cue chose a world of the wind: {legs:?}");
+        // world k's unbroken flight by the wind's rules, from the leg's start
+        let air = &app.air;
+        let mut d = match leg.eddy {
+            Some(e) => crate::sea::Drift { at: leg.at, eddy: (e[0], e[1]) },
+            None => air.put(leg.at, leg.day, leg.seed, k),
+        };
+        let (mut day, mut held) = (leg.day, crate::model::Held::No);
+        let mut world = vec![(day, d.at)];
+        while day < leg.day + 3.0 {
+            let next = crate::app::grid_next(day);
+            let s = air.flight(leg.law, d, held, day, next - day, leg.seed, k);
+            d = s.drift;
+            held = s.held;
+            day = next;
+            world.push((day, d.at));
+        }
+        let mut worst = 0.0f64;
+        run(&mut app, t, t + 2.0, |app| {
+            let f = app.floats.iter().find(|f| f.id == seed_id).unwrap();
+            let w = world.iter().rposition(|p| p.0 <= app.clock.day + 1e-9).map(|i| match world.get(i + 1) {
+                Some(b) => lerp_place(world[i].1, b.1, ((app.clock.day - world[i].0) / (b.0 - world[i].0)).clamp(0.0, 1.0)),
+                None => world[i].1,
+            });
+            if let Some(w) = w {
+                worst = worst.max((f.at.lon - w.lon).abs().max((f.at.lat - w.lat).abs()));
+            }
+        });
+        eprintln!("the seed's cue chose world {k}; its worst gap from world {k}'s flight on the wind: {worst:e} degrees");
+        assert!(worst < 1e-9, "the seed is world {k}'s path on the wind");
+    }
+
     /// What the old off-grid cut (a leg begun at the lamp's interpolated place and its last mark's
     /// eddy) did to a lamp: printed, for CONDUCTOR.md.
     #[test]
@@ -567,7 +641,7 @@ mod tests {
             let unbroken = flight(&rules, leg, 0, 170.0);
             for d in [153.1, 155.37, 158.2] {
                 let j = unbroken.iter().rposition(|p| p.0 <= d).unwrap();
-                let cut = Leg { at: place_on(&unbroken, d), day: d, seed: leg.seed, world: 0, eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]), law: leg.law };
+                let cut = Leg { at: place_on(&unbroken, d), day: d, seed: leg.seed, world: 0, eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]), law: leg.law, medium: leg.medium };
                 let after = flight(&rules, cut, 0, d + 7.0);
                 let (a, b) = (place_on(&after, d + 7.0), place_on(&unbroken, d + 7.0));
                 let km = crate::sea::drifters::distance_km(a.lon as f32, a.lat as f32, b.lon as f32, b.lat as f32) as f64;

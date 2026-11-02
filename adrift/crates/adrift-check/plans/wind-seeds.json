@@ -1,0 +1,20 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "medium": "Wind",
+  "scene": { "camera": { "lon": -80.0, "lat": 38.0, "zoom": 2.2 }, "day": 120.0, "seconds": 5.0, "medium": "Wind" },
+  "steps": [
+    { "shot": "01-empty" },
+    { "down": [150, 420], "id": 1 },
+    { "advance": 0.8 },
+    { "shot": "02-seed-lifted-over-land" },
+    { "up": [150, 420], "id": 1 },
+    { "down": [260, 380], "id": 2 },
+    { "advance": 0.8 },
+    { "up": [260, 380], "id": 2 },
+    { "advance": 3.0 },
+    { "shot": "03-on-the-wind-a-day" },
+    { "advance": 6.0 },
+    { "shot": "04-three-days" },
+    { "expect": { "saw": ["Put"] } }
+  ]
+}
