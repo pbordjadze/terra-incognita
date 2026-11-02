@@ -358,7 +358,9 @@ impl Words {
                 continue;
             }
             let hue = super::lamp_hue(r.id);
-            let quiet = k_alpha * if r.front || !any_front || r.pressed > 0.0 { 1.0 } else { 0.72 };
+            // (R21: a lamp not chosen steps well back while any is, so the chosen read at a glance)
+            let any_chosen = rows.iter().any(|q| q.shown || q.followed);
+            let quiet = k_alpha * if r.pressed > 0.0 || (!any_chosen && (r.front || !any_front)) { 1.0 } else if r.shown || r.followed { if r.front || !any_front { 1.0 } else { 0.85 } } else { 0.4 };
             // the journey in the cell: its places flattened round their middle (east scaled by the
             // latitude's cosine), smoothed as the wake is, fitted to the cell's middle with the lamp
             // kept off its edge; a short journey stays small (at least 4 degrees fill the mark)
@@ -386,14 +388,20 @@ impl Words {
             let up = if r.front { 1.0 } else { 0.0 } + 1.5 * r.pressed;
             // (by night no glow: a glowing dot on the dark read as a town's light, R12; the lamp is glass,
             // a ring of its hue with a small spark)
-            if r.shown && !night {
-                line(strokes, &[Pt { p: lamp, w: (15.0 + 2.0 * up) * reading, a: 0.24 * quiet, hollow: 0.0 }], hue, true, true, false);
+            // how it is chosen (R21), the same signs as on the globe: as its cloud a ring of dots of its
+            // hue (its maybes), as itself a solid ring of its hue (its own line)
+            if r.shown {
+                let rr = (7.5 + 0.5 * up) * reading;
+                for j in 0..10 {
+                    let t = j as f32 / 10.0 * std::f32::consts::TAU - std::f32::consts::FRAC_PI_2;
+                    line(strokes, &[Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 2.0 * reading, a: quiet, hollow: 0.0 }], hue, true, night, false);
+                }
             }
             if r.followed {
                 let rr = (6.5 + 0.5 * up) * reading;
                 let ring: Vec<Pt> = (0..32).map(|j| {
                     let t = j as f32 / 32.0 * std::f32::consts::TAU;
-                    Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.3 * reading, a: quiet, hollow: 0.0 }
+                    Pt { p: [lamp[0] + rr * t.cos(), lamp[1] + rr * t.sin(), 0.0], w: 1.8 * reading, a: quiet, hollow: 0.0 }
                 }).collect();
                 line(strokes, &ring, hue, true, night, true);
             }

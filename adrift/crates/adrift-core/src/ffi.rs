@@ -300,6 +300,24 @@ pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes:
     true
 }
 
+/// What a put makes (R21): 0 a lamp on the sea, 1 a seed on the wind.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_medium(shell: *mut Shell) -> u32 {
+    shell.as_mut().map_or(0, |s| match s.app.medium {
+        crate::model::Medium::Sea => 0,
+        crate::model::Medium::Wind => 1,
+    })
+}
+
+/// Sets what a put makes (R21; 0 the sea, 1 the wind), as an intent (a take records it).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_set_medium(shell: *mut Shell, medium: u32) {
+    if let Some(s) = shell.as_mut() {
+        let medium = if medium == 1 { crate::model::Medium::Wind } else { crate::model::Medium::Sea };
+        s.app.command(crate::model::Intent::Medium { medium });
+    }
+}
+
 /// The chosen lamps kept for good (`on`) or let go (R13); how many changed.
 #[no_mangle]
 pub unsafe extern "C" fn adrift_keep(shell: *mut Shell, on: bool) -> u32 {

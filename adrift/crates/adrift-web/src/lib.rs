@@ -89,6 +89,10 @@ pub async fn start() -> Result<(), JsValue> {
             app.restore(&json);
         }
     }
+    // `?wind` opens with the wind's preset (R21): a put lifts a seed, anywhere, land too
+    if window.location().search().map_or(false, |q| q.contains("wind")) {
+        app.command(adrift_core::Intent::Medium { medium: adrift_core::Medium::Wind });
+    }
     if let Ok(Some(mq)) = window.match_media("(prefers-color-scheme: dark)") {
         app.night = mq.matches();
     }

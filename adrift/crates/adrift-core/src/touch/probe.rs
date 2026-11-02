@@ -3,7 +3,7 @@
 use super::gestures::{date_band, Frame, Hit, Probe, Rect};
 use super::motion::Motion;
 use crate::app::App;
-use crate::model::{Hand, Hit as Under, LonLat};
+use crate::model::{Hand, Hit as Under, LonLat, Medium};
 
 impl Probe for App {
     fn hit(&self, x: f64, y: f64) -> Hit {
@@ -32,8 +32,10 @@ impl Probe for App {
         let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 });
         match App::hit(self, x, y) {
             // the float in hand lies under the finger: what matters is the water under it
+            // (R21) a seed on the wind is set down over land as over the sea: only a lamp's water matters
             Under::Float(id, p) if self.floats.iter().any(|f| f.id == id && f.hand == Hand::Carried) => {
-                if self.rules.coast.is_land(p) {
+                let lamp = self.floats.iter().find(|f| f.id == id).map_or(true, |f| f.legs().last().map_or(true, |l| l.medium == Medium::Sea));
+                if lamp && self.rules.coast.is_land(p) {
                     Hit::Land(p)
                 } else {
                     Hit::Sea(p)

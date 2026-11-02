@@ -1,0 +1,99 @@
+{
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "medium": "Wind",
+ "scene": {
+  "camera": {
+   "lon": -74.0,
+   "lat": 38.5,
+   "zoom": 4.0
+  },
+  "day": 120.0,
+  "seconds": 5.0,
+  "medium": "Wind",
+  "night": true
+ },
+ "steps": [
+  {
+   "down": [
+    140,
+    400
+   ],
+   "id": 1
+  },
+  {
+   "advance": 0.35
+  },
+  {
+   "advance": 0.45
+  },
+  {
+   "up": [
+    140,
+    400
+   ],
+   "id": 1
+  },
+  {
+   "down": [
+    230,
+    470
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.8
+  },
+  {
+   "up": [
+    230,
+    470
+   ],
+   "id": 2
+  },
+  {
+   "down": [
+    180,
+    330
+   ],
+   "id": 3
+  },
+  {
+   "advance": 0.8
+  },
+  {
+   "up": [
+    180,
+    330
+   ],
+   "id": 3
+  },
+  {
+   "shot": "02-three-lifted"
+  },
+  {
+   "advance": 1.0
+  },
+  {
+   "shot": "03-on-the-wind"
+  },
+  {
+   "advance": 1.0
+  },
+  {
+   "advance": 2.0
+  },
+  {
+   "shot": "05-coming-down"
+  },
+  {
+   "advance": 4.0
+  },
+  {
+   "shot": "06-down"
+  }
+ ]
+}

@@ -1,0 +1,5 @@
+{
+  "_": "Lamps over the open sea, every hue, the cool ones (2 sky, 6 lilac: a blue and a purple pair) beside the warm ones (R21: the cool hues' pale edge against the sea's blue). adrift-check render adrift/crates/adrift-core/src/look/plans/cool-pair.json <out.png>.",
+  "camera": { "lon": -55.0, "lat": 36.0, "zoom": 3.0 }, "day": 200.0, "seconds": 12.0,
+  "floats": [ { "lon": -60.0, "lat": 39.5, "days_ago": 20 }, { "lon": -57.0, "lat": 35.0, "days_ago": 25 }, { "lon": -50.0, "lat": 39.0, "days_ago": 15 }, { "lon": -61.0, "lat": 32.5, "days_ago": 20 }, { "lon": -49.0, "lat": 33.5, "days_ago": 20 }, { "lon": -54.0, "lat": 35.5, "days_ago": 25 } ]
+}

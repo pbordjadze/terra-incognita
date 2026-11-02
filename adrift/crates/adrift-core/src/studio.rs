@@ -415,6 +415,31 @@ pub struct Lean {
     pub land_km: Option<f64>,
     /// (R18) The nearest land within `OPEN_LOOK_KM`, for a journey's establishing opening.
     pub land_far_km: Option<f64>,
+    /// (R21) The scale of what carries the things framed, against the sea's: 1 (or 0, unset) for
+    /// lamps, `WIND_SCALE` when every thing framed is a seed on the wind. The frame's least spans and
+    /// margin are km at the sea's scale, multiplied by it, so a seed is framed at the wind's scale.
+    pub scale: f64,
+}
+
+/// (R21) How much wider the wind's things are framed than the sea's: the frame's least spans and
+/// margin in km times this. The wind runs about 20x the sea in km and is shown at about a seventh of
+/// its pace (`AIR_RATE` 0.3 against 2 days a second), so a seed crosses about 3x a lamp's km a second
+/// of clip; framed 5x wider, it moves on the screen a little slower than a lamp, and a pair's spread
+/// over its life (~300-1500 km) fills the frame as a dancing pair's 15-150 km do (`sea/MEDIA.md`: the
+/// memory length 7x, the spread in a day ~8x).
+pub const WIND_SCALE: f64 = 5.0;
+/// (R21) The days of line the frame holds, against the sea's, for seeds: a seed's memory is a third
+/// of a lamp's, its whole life about a day (`sea/MEDIA.md` › trail ~3 T): `FRAME_TRAIL` × this.
+pub const WIND_TRAIL: f64 = 0.2;
+/// (R21) A seed come down is framed for this many days after (about a second of clip at the wind's
+/// pace), then let go, so the frame follows what still flies; with every one down, they all are.
+pub const DOWN_FRAMED_DAYS: f64 = 0.3;
+
+impl Lean {
+    /// The medium's scale (1 for the sea, when unset).
+    pub fn scale(&self) -> f64 {
+        if self.scale > 0.0 { self.scale } else { 1.0 }
+    }
 }
 
 /// How far the clip leans in on a lamp cued alone, `age` seconds after the cue (R12): in over half a
@@ -484,7 +509,7 @@ pub const COAST_PULL: f64 = 1.4;
 
 /// The centre of the lamps' smallest circle (their mean direction for two).
 pub fn lamps_centre(lamps: &[crate::model::LonLat]) -> Option<crate::model::LonLat> {
-    frame_of(lamps, &[], 166.0, 180.0, FRAME_ZOOM_MAX).map(|f| f.0)
+    frame_of(lamps, &[], 166.0, 180.0, FRAME_ZOOM_MAX, 1.0).map(|f| f.0)
 }
 
 /// The zoom cap for land `km` from the lamps (None: none within `COAST_FAR_KM`).
@@ -510,10 +535,10 @@ const EARTH_KM: f64 = 6371.0;
 /// `FRAME_FILL` of the width. None without lamps.
 pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
-    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap)?;
+    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap, l.scale())?;
     match &l.focus {
         Some((lamps, trail, w)) if *w > 0.0 => {
-            let one = frame_of(lamps, trail, l.r1, l.half, cap)?;
+            let one = frame_of(lamps, trail, l.r1, l.half, cap, l.scale())?;
             // the zoom in its log; the centre at least as far toward the lamp as keeps it no further
             // out on the screen than it lay in the frame of them all (the zoom grows faster than a
             // plain blend of centres would follow)
@@ -546,7 +571,7 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     }
 }
 
-fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64) -> Option<(crate::model::LonLat, f64)> {
+fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64, scale: f64) -> Option<(crate::model::LonLat, f64)> {
     if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
@@ -565,8 +590,9 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
         c = norm([c[0] + (far[0] - c[0]) * k, c[1] + (far[1] - c[1]) * k, c[2] + (far[2] - c[2]) * k]);
     }
     let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
-    let least = if lamps.len() > 1 { FRAME_PAIR_MIN_KM } else { FRAME_SPAN_MIN_KM };
-    let half_span = (spread + FRAME_MARGIN_KM / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
+    // (R21) at the medium's scale: a seed's least span and margin are the wind's
+    let least = scale * if lamps.len() > 1 { FRAME_PAIR_MIN_KM } else { FRAME_SPAN_MIN_KM };
+    let half_span = (spread + scale * FRAME_MARGIN_KM / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
     let zoom = (FRAME_FILL * half / (r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
     Some((crate::model::LonLat::from_xyz(c), zoom.min(cap)))
 }
@@ -752,6 +778,9 @@ pub struct TakeStart {
     pub night: bool,
     pub reduce_motion: bool,
     pub credits_open: bool,
+    /// What a put makes (R21): the take's preset.
+    #[serde(default)]
+    pub medium: crate::model::Medium,
 }
 
 /// One thing the shell fed the app during a take, at the shell's time `t`.
@@ -913,7 +942,7 @@ mod tests {
 
     #[test]
     fn clip_parts() {
-        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: Camera::new(0.0, 0.0, 1.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
+        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: Camera::new(0.0, 0.0, 1.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false, medium: Default::default() };
         let take = Take { start, events: vec![], t0: 10.0, t1: 14.0, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 0.5, framing: Framing::default(), song: None };
         let f = take.framing;
         assert!((take.clip_seconds() - (f.hold_in + 8.0 + f.hold_out)).abs() < 1e-9);
@@ -936,7 +965,7 @@ mod tests {
 
     /// The clip's camera through a whole clip at `fps`: (clip seconds, camera) a frame.
     fn run_clip(fps: f64) -> Vec<(f64, Camera)> {
-        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: take_cam(0.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false };
+        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: take_cam(0.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false, medium: Default::default() };
         let take = Take { start, events: vec![], t0: 0.0, t1: 1.6, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 1.0, framing: Framing::default(), song: None };
         let mut cc = ClipCamera::new(take.start.camera);
         let n = (take.clip_seconds() * fps).ceil() as usize;
@@ -1005,15 +1034,37 @@ mod tests {
         }
     }
 
+    /// (R21) Seeds are framed at the wind's scale; lamps exactly as before (scale unset and 1 alike).
+    #[test]
+    fn seeds_are_framed_at_the_winds_scale_and_lamps_as_ever() {
+        let lean = |lamps: Vec<LonLat>, scale: f64| Lean { lamps, trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale };
+        let pair = vec![LonLat::new(-20.0, 45.0), LonLat::new(-19.5, 45.0)];
+        let lone = vec![LonLat::new(-20.0, 45.0)];
+        for p in [&pair, &lone] {
+            assert_eq!(frame(&lean(p.clone(), 0.0)), frame(&lean(p.clone(), 1.0)), "a lamp's frame is the same, the scale unset or 1");
+        }
+        // a seed pair 40 km apart: its least span is the wind's (300 km), so the frame is ~5x wider
+        let (_, zl) = frame(&lean(pair.clone(), 1.0)).unwrap();
+        let (_, zs) = frame(&lean(pair.clone(), WIND_SCALE)).unwrap();
+        let half_km = |z: f64| 180.0 * EARTH_KM / (166.0 * z);
+        assert!(zs < zl && half_km(zs) > 0.9 * WIND_SCALE * FRAME_PAIR_MIN_KM / FRAME_FILL, "lamps zoom {zl:.1}, seeds {zs:.1}");
+        // two seeds 1500 km apart fill the frame as two lamps 1500 km apart do: their own span wins (the
+        // margin, 50 km for a seed against 10, is all that differs)
+        let far = vec![LonLat::new(-30.0, 45.0), LonLat::new(-11.0, 45.0)];
+        let (_, a) = frame(&lean(far.clone(), 1.0)).unwrap();
+        let (_, b) = frame(&lean(far, WIND_SCALE)).unwrap();
+        assert!((b / a - 1.0).abs() < 0.08, "{a} {b}");
+    }
+
     #[test]
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;
         // a lone lamp, a short line: close enough that 40 km is plainly visible (≥ 30 points)
-        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None };
+        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
         let (c, z) = frame(&lone).unwrap();
         assert!(40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2, "{c:?} {z}");
         // two lamps a thousand km apart: their span (with the margin) fills 60% of the width
-        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None };
+        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
         let (c, z) = frame(&two).unwrap();
         let cam = Camera::new(c.lon, c.lat, z);
         let reach = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z }).fold(0.0, f64::max);
@@ -1051,7 +1102,7 @@ mod tests {
 
     #[test]
     fn the_clip_puts_the_lamps_centre_a_little_above_the_middle_and_fills_six_tenths() {
-        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None };
+        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
         for roll in [0.0, 40.0] {
             let cam = lean(Camera { roll, ..Camera::new(-50.0, 20.0, 1.0) }, &two, 1.0);
             let r = 166.0 * cam.zoom;
@@ -1074,7 +1125,7 @@ mod tests {
             let d = d as f64;
             [(d, LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1)), (d, LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1))]
         }).collect();
-        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0, land_km: None, land_far_km: None };
+        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
         // a wide floor: all of it
         let all = braid_lean(&l, 2.0);
         assert_eq!(all.trail.len(), 42);
@@ -1107,6 +1158,7 @@ mod tests {
                 zoom_cap: if i > 40 { 20.0 } else { FRAME_ZOOM_OPEN_SEA },
                 land_km: if i > 40 { Some(300.0) } else { None },
                 land_far_km: Some(400.0),
+                scale: 0.0,
             };
             let part = if t < f.hold_in { ClipPart::Before } else if i < 270 { ClipPart::During } else { ClipPart::After };
             let through = if part == ClipPart::After { (i - 270) as f64 / 30.0 / f.hold_out } else { (t / 9.0).min(1.0) };

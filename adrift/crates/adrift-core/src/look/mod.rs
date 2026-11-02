@@ -8,6 +8,7 @@ pub mod floats;
 pub mod ground;
 pub mod maybes;
 pub mod sea;
+pub mod seeds;
 pub mod silver;
 pub mod veil;
 pub mod sprites;
@@ -16,7 +17,7 @@ pub mod words;
 
 use crate::gpu::view::VIEW_WGSL;
 use crate::gpu::Gpu;
-use crate::model::LonLat;
+use crate::model::{Held, LonLat, Medium};
 use bytemuck::Pod;
 
 pub const COMMON_WGSL: &str = include_str!("common.wgsl");
@@ -193,6 +194,13 @@ pub struct LookFloat {
     /// How measured the sea is where it rides now (0..1, Truth's rules): under a half the rim is
     /// dashed, so nothing claims the current where no drifter went.
     pub measured: f32,
+    /// What carries it now (R21: its leg's medium): a lamp on the sea, or a seed on the wind, drawn
+    /// by `seeds` with its airy line. For a seed `at` is its head on its line's spline (the glide).
+    pub medium: Medium,
+    /// A seed's coming down (R21): how (`Held::Landed`, `Held::Ditched`; `Held::No` while it flies on)
+    /// and the date's days since it touched (negative through its last step, as it sinks to it).
+    pub down: Held,
+    pub down_days: f32,
 }
 
 /// One bead of a wake as the look sees it.
@@ -217,6 +225,8 @@ pub struct LookCloud {
     pub bloom: f32,
     /// The one in front (the last chosen, or the one under the finger): its silver and its veil.
     pub front: bool,
+    /// A seed's cloud on the wind (R21: its leg's medium).
+    pub wind: bool,
 }
 
 /// Everything the marks draw this frame. The app fills it from its state; the look reads nothing else.
@@ -277,6 +287,8 @@ pub struct LookState {
     pub drifter_nearest: Option<usize>,
     /// The night palette.
     pub night: bool,
+    /// What a put makes now is a seed on the wind (R21: `App.medium == Wind`, the wind's preset).
+    pub wind: bool,
     /// The date as words ("14 October").
     pub date: String,
     /// A note under it, in italic ("a typical year, by the drifters' record"); empty for none.
@@ -336,6 +348,12 @@ pub fn lamp_hue(id: u32) -> [f32; 3] {
         [0.949, 0.812, 0.227],   // gold
     ];
     HUES[((id.max(1) - 1) % 8) as usize]
+}
+
+/// A lamp not chosen while another is (as itself or as its cloud), live (R21): it steps back, so the
+/// chosen read at a glance; a finger's hold or a press brings it forward.
+fn step_back(state: &LookState, f: &LookFloat) -> bool {
+    !state.exporting && !(f.followed || f.shown || f.held || f.chosen) && state.floats.iter().any(|g| g.followed || g.shown) && state.panel_press.map_or(true, |p| p.0 != f.id)
 }
 
 fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
@@ -470,6 +488,10 @@ pub struct Look {
     nearest: usize,
     pub veil: veil::Veil,
     pub wake: wake::Wake,
+    /// The wind's lines (R21): light, feathered, drawn over the wakes.
+    pub air: wake::Wake,
+    /// The things on the wind (R21), drawn over the floats.
+    pub seeds: seeds::Seeds,
     /// The screen's own strokes (R10): the panel's marks, the record control's ring; drawn over the
     /// floats, under the words.
     pub strokes: wake::Wake,
@@ -487,6 +509,8 @@ impl Look {
             nearest: 0,
             veil: veil::Veil::new(gpu, view),
             wake: wake::Wake::new(gpu, view),
+            air: wake::Wake::airy(gpu, view),
+            seeds: seeds::Seeds::new(gpu, view),
             strokes: wake::Wake::new(gpu, view),
             maybes: maybes::MaybesPass::new(gpu, view),
             silver: silver::Silver::new(gpu, view),
@@ -503,7 +527,16 @@ impl Look {
         // wins over the map
         let heavy = if state.exporting { 2.0 } else { 1.0 };
         let mut lines = Vec::new();
-        for f in &state.floats {
+        let mut air = Vec::new();
+        for f in state.floats.iter().filter(|f| f.medium == Medium::Wind) {
+            // a seed's whole flight (R21), light; once down its line goes quiet but stays its journey
+            let quiet = if f.down.down() { 1.0 - 0.5 * smooth01(0.0, seeds::SETTLE_DAYS + seeds::FADE_DAYS, f.down_days) } else { 1.0 };
+            let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            let at = state.cues.iter().rev().find(|c| c.id == f.id).map_or(f.at, |c| crate::model::LonLat::from_xyz(glide(c).map(|x| x as f64)));
+            wake::air_line(&mut air, &f.wake, at, n, lamp_hue(f.id), quiet * fade, heavy, 1.0 / disc[2].max(1.0));
+        }
+        self.air.prepare(gpu, &air);
+        for f in state.floats.iter().filter(|f| f.medium == Medium::Sea) {
             // (a lamp whose cloud is out is one maybe among them: no wake singles it out, R6)
             if f.shown {
                 continue;
@@ -518,6 +551,7 @@ impl Look {
             }
             // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
             let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            let fade = fade * if step_back(state, f) { 0.45 } else { 1.0 };
             wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy, 1.0 / disc[2].max(1.0));
         }
         // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
@@ -529,19 +563,14 @@ impl Look {
                 ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
             }
         }
-        // a lamp kept for good (R13): quietly, a fine gold ring close round it on the globe (live only)
-        if !state.exporting {
-            for f in state.floats.iter().filter(|f| (f.kept) && !f.shown) {
-                ring_on_globe(&mut lines, f.at, 11.0 * reading, disc, 1.0, 0.75, KEPT_GOLD, n);
-            }
-        }
+        // (a lamp kept for good is a gold bead at its shoulder, R21, drawn with the glass: floats.wgsl)
         for c in &state.cues {
             cue(&mut lines, c, n, heavy);
         }
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
         // silver are the front one's (its place and hue kept while it folds)
-        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front }).collect();
+        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front, wind: c.wind }).collect();
         self.maybes.prepare(gpu, &draws, n);
         if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);
@@ -560,13 +589,42 @@ impl Look {
         // a finger resting on a lamp's panel mark (R10): the lamp answers on the globe, lit and ringed
         // as the rest thickens, so the mark is found on the sea
         let pressed = |id: u32| if state.exporting { 0.0 } else { state.panel_press.filter(|p| p.0 == id).map_or(0.0, |p| 0.35 + 0.65 * p.1.clamp(0.0, 1.0)) };
+        let mut sd: Vec<seeds::SeedInstance> = state
+            .floats
+            .iter()
+            .filter(|f| f.medium == Medium::Wind)
+            .map(|f| {
+                let lift = if f.down.down() || f.down_days < 0.0 { 1.0 - smooth01(-0.2, seeds::SETTLE_DAYS, f.down_days) } else { 1.0 };
+                let after = if f.down.down() { ((f.down_days - seeds::SETTLE_DAYS) / seeds::FADE_DAYS).clamp(0.0, 1.0) } else { 0.0 };
+                let down = match f.down { Held::Landed => 1.0, Held::Ditched => 2.0, _ => 0.0 };
+                seeds::SeedInstance {
+                    g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)),
+                    beat: 1.0,
+                    hue: lamp_hue(f.id),
+                    night: n as u8 as f32,
+                    lift,
+                    down,
+                    after,
+                    spin: (f.id as f32 * 2.39996).rem_euclid(std::f32::consts::TAU),
+                    lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in),
+                    held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)),
+                    head: state.exporting as u8 as f32,
+                    _pad: 0.0,
+                }
+            })
+            .collect();
         let mut fl: Vec<floats::FloatInstance> = state
             .floats
             .iter()
-            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)), head: state.exporting as u8 as f32 })
+            .filter(|f| f.medium == Medium::Sea)
+            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)), head: state.exporting as u8 as f32, mode: if state.exporting { 0.0 } else if f.followed { 1.0 } else if f.shown { 2.0 } else { 0.0 }, quiet: (step_back(state, f)) as u8 as f32, kept: (f.kept && !state.exporting) as u8 as f32, _pad: 0.0 })
             .collect();
-        if let Some((at, beat)) = state.resting.filter(|_| !state.exporting) {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0, head: 0.0 });
+        if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && state.wind) {
+            sd.push(seeds::SeedInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), hue: lamp_hue(state.floats.len() as u32 + 1), night: n as u8 as f32, lift: 1.0, down: 0.0, after: 0.0, spin: ((state.floats.len() as u32 + 1) as f32 * 2.39996).rem_euclid(std::f32::consts::TAU), lit: 0.0, held: 0.0, head: 0.0, _pad: 0.0 });
+        }
+        self.seeds.prepare(gpu, &sd);
+        if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && !state.wind) {
+            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0, head: 0.0, mode: 0.0, quiet: 0.0, kept: 0.0, _pad: 0.0 });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
@@ -650,9 +708,11 @@ impl Look {
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes) {
         self.wake.draw(rp, view_bind);
+        self.air.draw(rp, view_bind);
         self.maybes.draw(rp, view_bind, maybes);
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
+        self.seeds.draw(rp, view_bind);
         self.strokes.draw(rp, view_bind);
         self.words.draw(rp, view_bind);
     }

@@ -34,7 +34,9 @@ const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
 pub struct WakeUniform {
     /// 0 this draw lays the edges, 1 the lines
     pub layer: f32,
-    pub _pad: [f32; 3],
+    /// 1 a wind line (R21): no edge, paler, feathered
+    pub airy: f32,
+    pub _pad: [f32; 2],
 }
 
 pub struct Wake {
@@ -46,10 +48,19 @@ pub struct Wake {
 
 impl Wake {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        Self::with(gpu, view, false)
+    }
+
+    /// The wind's lines (R21): the same strokes drawn light and feathered, with no dark edge.
+    pub fn airy(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
+        Self::with(gpu, view, true)
+    }
+
+    fn with(gpu: &Gpu, view: &wgpu::BindGroupLayout, airy: bool) -> Self {
         let module = gpu.shader("wake", &marks_wgsl(include_str!("wake.wgsl")));
         let uniforms = [Uniform::new(gpu, "wake edges"), Uniform::new(gpu, "wake lines")];
         for (i, u) in uniforms.iter().enumerate() {
-            u.write(gpu, &WakeUniform { layer: i as f32, _pad: [0.0; 3] });
+            u.write(gpu, &WakeUniform { layer: i as f32, airy: airy as u8 as f32, _pad: [0.0; 2] });
         }
         Self { pipeline: mark_pipeline(gpu, "wake", &module, LAYOUT, view, Some(&uniforms[0].layout)), instances: Instances::new(gpu, "wake", 1024), uniforms }
     }
@@ -349,4 +360,23 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
     }
     out.push((p[n - 1].0, p[n - 1].1, 1.0));
     out
+}
+
+/// A thing on the wind's line (R21): its whole flight since it was lifted, a centripetal Catmull-Rom
+/// through its true steps (no softening: its kinks are the wind's, 0.7 sigma a step) to its head on
+/// the same curve; long and light, a wind line not a wake: thin, widest at the head, fading along its
+/// length but never to nothing within its short life. Drawn by the airy strokes (`Wake::airy`). `fade`
+/// dims it (a seed come down lets its line go quiet).
+pub fn air_line(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], head: crate::model::LonLat, night: bool, hue: [f32; 3], fade: f32, heavy: f32, rad_per_pt: f32) {
+    let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), 1.0)).collect();
+    places.push((super::unit(head), 1.0));
+    let pts: Vec<Pt> = spline(&places, 0, 2.0 * rad_per_pt)
+        .into_iter()
+        .map(|(p, _, f)| {
+            let age = 1.0 - f;
+            let (w, a) = (2.0 - 1.2 * age, 0.85 * (1.0 - 0.75 * age.powf(0.8)));
+            Pt { p, w: w * heavy.sqrt(), a: a * fade, hollow: 0.0 }
+        })
+        .collect();
+    line(out, &pts, hue, false, night, false);
 }

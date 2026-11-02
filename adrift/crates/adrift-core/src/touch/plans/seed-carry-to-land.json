@@ -1,0 +1,98 @@
+{
+ "title": "R21, the wind: a seed carried from the sea and let go over land is set down there (a lamp goes back: carry-to-land)",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "medium": "Wind",
+ "day": 9252.0,
+ "camera": {
+  "lon": -75.0,
+  "lat": 36.0,
+  "zoom": 2.0
+ },
+ "floats": [
+  {
+   "lon": -66.0,
+   "lat": 34.0
+  }
+ ],
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -66.0,
+    34.0
+   ]
+  },
+  {
+   "t": 0.5,
+   "expect": {
+    "saw": [
+     "Hold"
+    ]
+   }
+  },
+  {
+   "t": 0.6,
+   "move": 0,
+   "at": [
+    -72.0,
+    36.0
+   ]
+  },
+  {
+   "t": 0.7,
+   "move": 0,
+   "at": [
+    -84.0,
+    37.0
+   ]
+  },
+  {
+   "t": 0.75,
+   "expect": {
+    "saw": [
+     "Carry"
+    ],
+    "state": "carrying"
+   }
+  },
+  {
+   "t": 0.78,
+   "shot": "carried-over-land"
+  },
+  {
+   "t": 0.8,
+   "up": 0,
+   "at": [
+    -84.0,
+    37.0
+   ]
+  },
+  {
+   "t": 0.85,
+   "expect": {
+    "floats": 1,
+    "saw": [
+     "Release"
+    ],
+    "not": [
+     "ReleaseBack"
+    ],
+    "float": {
+     "id": 1,
+     "lon": -84.0,
+     "lat": 37.0,
+     "tol": 0.4
+    },
+    "held": null
+   }
+  },
+  {
+   "t": 2.0,
+   "shot": "set-down-over-land"
+  }
+ ]
+}

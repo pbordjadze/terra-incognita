@@ -58,6 +58,33 @@ pub enum Held {
     Coast,
     /// Frozen in: sea ice holds it till the ice retreats.
     Ice,
+    /// A thing on the wind come down on land (R21: settled out of the air or rained out); it stays.
+    Landed,
+    /// A thing on the wind come down on the sea (R21); it stays (the sea may take it, a later round).
+    Ditched,
+}
+
+impl Held {
+    /// A thing on the wind that has come down (it moves no more).
+    pub fn down(self) -> bool {
+        matches!(self, Held::Landed | Held::Ditched)
+    }
+}
+
+/// What carries a thing (R21, the studio's presets; `sea/MEDIA.md`): the sea's current (a glass
+/// float, a lamp) or the wind (a seed lifted from anywhere, land too). Each leg names its own, so
+/// lamps and seeds share a stage and a take; a leg continues the medium of the leg it continues.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Medium {
+    #[default]
+    Sea,
+    Wind,
+}
+
+impl Medium {
+    pub fn is_sea(&self) -> bool {
+        *self == Medium::Sea
+    }
 }
 
 /// What the reader is doing to a float, if anything.
@@ -107,17 +134,26 @@ pub struct Leg {
     /// dance across an update. A kept state from before the field reads 0.
     #[serde(default)]
     pub law: u32,
+    /// What carries it (R21): the sea (left out of copied lamps, so a lamp's text is unchanged) or
+    /// the wind. `eddy` is then the wind's gust it carries.
+    #[serde(default, skip_serializing_if = "Medium::is_sea")]
+    pub medium: Medium,
 }
 
 impl Leg {
-    /// A leg put fresh: the real world, its own eddy, the current law.
+    /// A leg put fresh: the real world, its own eddy, the current law, on the sea.
     pub const fn new(at: LonLat, day: f64, seed: u64) -> Leg {
-        Leg { at, day, seed, world: 0, eddy: None, law: crate::sea::rules::LAW }
+        Leg { at, day, seed, world: 0, eddy: None, law: crate::sea::rules::LAW, medium: Medium::Sea }
     }
 
     /// The same, under `law` (a leg that continues another's).
     pub const fn under(self, law: u32) -> Leg {
         Leg { law, ..self }
+    }
+
+    /// The same, carried by `medium`.
+    pub const fn on(self, medium: Medium) -> Leg {
+        Leg { medium, ..self }
     }
 }
 
@@ -460,6 +496,10 @@ pub enum Intent {
     TakeSpeed { speed: f64 },
     /// The camera returns to the opening view (the whole Earth; the ride ends) (R4).
     Home,
+    /// What a put makes from now on (R21, the studio's preset): a lamp on the sea or a seed on the
+    /// wind. The date's free pace becomes the medium's (`App::free_rate`). Things already out keep
+    /// their own medium.
+    Medium { medium: Medium },
 }
 
 #[cfg(test)]
