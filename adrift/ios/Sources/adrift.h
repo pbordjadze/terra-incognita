@@ -27,6 +27,7 @@ uint32_t adrift_keep(AdriftShell *shell, bool on);
 uint32_t adrift_medium(AdriftShell *shell);
 void adrift_set_medium(AdriftShell *shell, uint32_t medium);
 uint32_t adrift_journey_begin(AdriftShell *shell, double seconds, double fps, uint32_t *width, uint32_t *height);
+uint32_t adrift_journey_begin_edit(AdriftShell *shell, double seconds, double from, double to, double pace, double fps, uint32_t *width, uint32_t *height);
 size_t adrift_lamps_text(AdriftShell *shell, uint8_t *out, size_t len);
 uint32_t adrift_lamps_paste(AdriftShell *shell, const char *text);
 void adrift_free(AdriftShell *shell);

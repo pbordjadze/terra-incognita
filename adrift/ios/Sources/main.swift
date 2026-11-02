@@ -259,6 +259,9 @@ final class AdriftView: UIView {
         present(sheet)
     }
 
+    /// The export's frame rate (R22): TikTok's ceiling.
+    static let exportFps: Double = 60
+
     func journeyLengths() {
         let sheet = UIAlertController(title: "How long?", message: nil, preferredStyle: .actionSheet)
         for (title, secs) in [("30 seconds", 30.0), ("1 minute", 60.0), ("2 minutes", 120.0), ("4 minutes", 240.0), ("5 minutes", 300.0)] {
@@ -293,19 +296,19 @@ final class AdriftView: UIView {
     func exportTake(journey: Double? = nil) {
         guard let shell, !exporting else { return }
         var w: UInt32 = 0, h: UInt32 = 0
-        let frames = journey.map { adrift_journey_begin(shell, $0, 30, &w, &h) } ?? adrift_export_begin(shell, 30, &w, &h)
+        let frames = journey.map { adrift_journey_begin(shell, $0, Self.exportFps, &w, &h) } ?? adrift_export_begin(shell, Self.exportFps, &w, &h)
         guard frames > 0 else { return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Adrift-\(Int(Date().timeIntervalSince1970)).mp4")
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mp4) else { adrift_export_end(shell); return }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            // (R21) HEVC at 1.2 Mbit/s: a 4-minute 1080x1920 clip is about 42 MB, 5 minutes about 52 (12 Mbit/s
-            // H.264 made ~360 MB; 2 Mbit/s ~88 MB for 5 minutes); the map's broad flat tones and thin lines
-            // hold up at this rate (the check's ffmpeg encodes alike: 10.4 MB a minute by night)
+            // (R22) a master for TikTok: 60 frames a second (its ceiling) and HEVC at 12 Mbit/s, so its
+            // re-encode starts from a clean source; about 90 MB a minute, kept as is (the check's
+            // ffmpeg encodes alike; tools/adrift/tiktok.sh re-encodes it roughly as TikTok does)
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(w),
             AVVideoHeightKey: Int(h),
-            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 1_200_000, AVVideoExpectedSourceFrameRateKey: 30, AVVideoMaxKeyFrameIntervalKey: 60],
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 12_000_000, AVVideoExpectedSourceFrameRateKey: Int(Self.exportFps), AVVideoMaxKeyFrameIntervalKey: 120],
         ])
         input.expectsMediaDataInRealTime = false
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
@@ -364,7 +367,7 @@ final class AdriftView: UIView {
                 let ok = adrift_export_frame(shell, base, CVPixelBufferGetBytesPerRow(pb))
                 CVPixelBufferUnlockBaseAddress(pb, [])
                 if !ok { finish(); return }
-                adaptor.append(pb, withPresentationTime: CMTime(value: index, timescale: 30))
+                adaptor.append(pb, withPresentationTime: CMTime(value: index, timescale: CMTimeScale(Self.exportFps)))
                 index += 1
                 self.progress.progress = Float(index) / Float(max(frames, 1))
             }

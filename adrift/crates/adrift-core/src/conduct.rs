@@ -502,7 +502,7 @@ mod tests {
         let at = |app: &App| app.floats.iter().rev().take(2).map(|f| f.at).collect::<Vec<_>>();
         assert_eq!(at(&a), at(&b), "pasted lamps go on exactly as the copied ones");
         let take = a.journey_take(4.0).expect("a journey");
-        assert_eq!(take.events.iter().filter(|e| matches!(e, crate::studio::TakeEvent::Frame { .. })).count(), 120);
+        assert_eq!(take.events.iter().filter(|e| matches!(e, crate::studio::TakeEvent::Frame { .. })).count(), (4.0 * crate::app::JOURNEY_FPS) as usize);
         assert_eq!(take.start.floats.len(), 2);
         assert!(take.start.clock.day < a.clock.day - 5.0, "the journey starts where they were put");
         assert!(b.paste_lamps("not lamps", false) == 0);
@@ -523,7 +523,7 @@ mod tests {
             let mut paces = Vec::new();
             for e in &take.events {
                 if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
-                    day += days_per_second / 30.0;
+                    day += days_per_second / crate::app::JOURNEY_FPS;
                     paces.push(*days_per_second);
                 }
             }
@@ -532,6 +532,32 @@ mod tests {
             assert!(day >= now - 1e-6, "the clip ends at {day:.1}, before the app's date {now:.1}");
             assert!((mean - crate::app::RATE).abs() < 0.05, "the journey's mean pace is the app's: {mean}");
         }
+    }
+
+    /// R22, the edit view's model: an edit's first and last days are the clip's, its pace follows
+    /// from them and the length; a pace alone sets the days covered; a start before the lamps were
+    /// all out begins when they were.
+    #[test]
+    fn a_journey_edit_sets_its_days_and_pace() {
+        use crate::app::{JourneyEdit, JOURNEY_FPS};
+        let Some(mut app) = app() else { return };
+        run(&mut app, 0.0, 0.5, |_| {});
+        let span = |take: &crate::studio::Take| {
+            let mut day = take.start.clock.day;
+            for e in &take.events {
+                if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+                    day += days_per_second / JOURNEY_FPS;
+                }
+            }
+            (take.start.clock.day, day)
+        };
+        let now = app.clock.day;
+        let (a, b) = span(&app.journey_take_edit(&JourneyEdit { seconds: 20.0, from: Some(now - 3.0), to: Some(now + 37.0), pace: None }).unwrap());
+        assert!((a - (now - 3.0)).abs() < 1e-9 && (b - (now + 37.0)).abs() < 1e-6, "{a} {b}");
+        let (a, b) = span(&app.journey_take_edit(&JourneyEdit { seconds: 10.0, from: Some(now), to: None, pace: Some(5.0) }).unwrap());
+        assert!((a - now).abs() < 1e-9 && (b - (now + 50.0)).abs() < 1e-6, "{a} {b}");
+        let (a, _) = span(&app.journey_take_edit(&JourneyEdit { seconds: 10.0, from: Some(0.0), to: None, pace: None }).unwrap());
+        assert!((a - 154.0).abs() < 1.0, "begins when the lamps were all out: {a}");
     }
 
     #[test]

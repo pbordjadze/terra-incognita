@@ -329,8 +329,17 @@ pub unsafe extern "C" fn adrift_keep(shell: *mut Shell, on: bool) -> u32 {
 /// `adrift_export_frame` until false and `adrift_export_end`, as for a take.
 #[no_mangle]
 pub unsafe extern "C" fn adrift_journey_begin(shell: *mut Shell, seconds: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+    adrift_journey_begin_edit(shell, seconds, f64::NAN, f64::NAN, f64::NAN, fps, width, height)
+}
+
+/// Begins exporting a journey clip as the edit view sets it (R22): its first and last days and its
+/// pace (days a second), each NaN for the app's own choice; the frames to come, the size as above.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_journey_begin_edit(shell: *mut Shell, seconds: f64, from: f64, to: f64, pace: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
     let Some(s) = shell.as_mut() else { return 0 };
-    let frames = s.app.journey_begin(seconds, fps);
+    let some = |x: f64| (!x.is_nan()).then_some(x);
+    let edit = crate::app::JourneyEdit { seconds, from: some(from), to: some(to), pace: some(pace) };
+    let frames = s.app.journey_begin_edit(&edit, fps);
     if frames == 0 {
         return 0;
     }

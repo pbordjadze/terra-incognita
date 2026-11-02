@@ -604,13 +604,20 @@ fn journey(args: &[String]) -> Result<()> {
         app.floats.len()
     };
     anyhow::ensure!(n > 0, "no lamps in {}", args[0]);
-    let frames = app.journey_begin(seconds, 30.0);
+    // (R22) the edit's days and pace (`--from-day`, `--to-day`, `--pace`; days since 2000 and days a
+    // second), the export's rate (`--fps`, 60 as the phone) and the master's bitrate (`--bitrate`, as
+    // ffmpeg takes it; 12M as the phone)
+    let num = |name: &str| arg(args, name).and_then(|v| v.parse::<f64>().ok());
+    let edit = adrift_core::app::JourneyEdit { seconds, from: num("--from-day"), to: num("--to-day"), pace: num("--pace") };
+    let fps = num("--fps").unwrap_or(60.0);
+    let bitrate = arg(args, "--bitrate").unwrap_or_else(|| "12M".to_string());
+    let frames = app.journey_begin_edit(&edit, fps);
     anyhow::ensure!(frames > 0, "no journey to make");
     let day0 = app.clock.day;
     let (ew, eh) = app.export_size().unwrap();
     let shot = Offscreen::new(&app.gpu, ew, eh);
     let mut ff = std::process::Command::new("ffmpeg")
-        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "1200k", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
+        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", &format!("{fps}"), "-i", "-", "-c:v", "libx265", "-b:v", &bitrate, "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
         .arg(&out)
         .stdin(std::process::Stdio::piped())
         .spawn()
@@ -658,7 +665,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] [--fps 60] [--bitrate 12M] [--from-day D] [--to-day D] [--pace P] | info");
             std::process::exit(2);
         }
     }
