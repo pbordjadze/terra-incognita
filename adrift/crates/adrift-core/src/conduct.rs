@@ -508,6 +508,32 @@ mod tests {
         assert!(b.paste_lamps("not lamps", false) == 0);
     }
 
+    /// R21 (the owner's report): a journey clip reaches the date the app shows when it is made, at the
+    /// app's own pace, and runs on past it; for lamps a few days old and lamps a thousand days old, a
+    /// short clip and a long one.
+    #[test]
+    fn a_journey_reaches_the_apps_date_and_goes_on() {
+        let Some(mut app) = app() else { return };
+        run(&mut app, 0.0, 0.5, |_| {});
+        for (extra, secs) in [(0.0, 4.0), (0.0, 240.0), (1000.0, 30.0), (1000.0, 240.0)] {
+            app.clock.day += extra;
+            let now = app.clock.day;
+            let take = app.journey_take(secs).expect("a journey");
+            let mut day = take.start.clock.day;
+            let mut paces = Vec::new();
+            for e in &take.events {
+                if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+                    day += days_per_second / 30.0;
+                    paces.push(*days_per_second);
+                }
+            }
+            let mean = (day - take.start.clock.day) / secs;
+            eprintln!("lamps {:.0} days old, a {secs} s clip: day {:.1} -> {day:.1} (the app's date {now:.1}), {mean:.2} days a second", now - 154.0, take.start.clock.day);
+            assert!(day >= now - 1e-6, "the clip ends at {day:.1}, before the app's date {now:.1}");
+            assert!((mean - crate::app::RATE).abs() < 0.05, "the journey's mean pace is the app's: {mean}");
+        }
+    }
+
     #[test]
     fn a_kept_lamp_survives_a_clear_and_is_picked() {
         // R13: a lamp kept for good stays through a clear-all (and its undo and redo), and is what a

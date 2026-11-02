@@ -220,6 +220,8 @@ pub struct App {
 
 /// Days a second while the date runs.
 pub const RATE: f64 = 2.0;
+/// How far through a journey clip it reaches the app's date (R21): the rest runs on past it.
+pub const JOURNEY_ARRIVES: f64 = 0.8;
 /// Days a second while the date runs with the wind's preset (R21; measured by Truth, SOURCES.md ›
 /// The wind's preset): a seed crosses a cloud framed 100 pt in RMS radius at about 25 pt a second,
 /// as a lamp does at the sea's `RATE`, and the preset's seed (`AirRules::LIFE`) stays up about 7 s.
@@ -2120,6 +2122,9 @@ impl App {
         // clip of a 214-day pair crawled at 0.9 days a second and stopped at today). Paths past today are
         // the same pure function of the legs and the rules. Seeds end when the last comes down.
         let rate = if wind { AIR_RATE } else { RATE };
+        // it arrives at the app's date (where the reader sees the lamps as he makes it) 80% of the way
+        // through and goes on past it: from the later put, or from as far back as the clip has room for
+        let first = if wind { first } else { first.max(self.clock.day - rate * seconds * JOURNEY_ARRIVES) };
         let mut to = first + rate * seconds;
         if wind {
             if let Some(d) = crate::journey::all_down(self.media(), &floats, to) {
