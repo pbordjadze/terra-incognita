@@ -116,7 +116,11 @@ fn fs(i: StrokeOut) -> @location(0) vec4<f32> {
         return over(acc, mix(i.hue.rgb * 0.92, mix(i.hue.rgb, vec3<f32>(1.0), 0.15), night), al * soft);
     }
     if (W.layer < 0.5) {
-        // the edge: the hue darkened, by day only
+        // the edge: the hue darkened, by day only; for a cool hue (R21) a pale halo outside it, so a
+        // blue or a purple line stays its own against the sea's blue (warm hues keep the dark edge alone)
+        let halo = coolness(i.hue.rgb) * (1.0 - night) * 0.9 * al;
+        let hr = hw + 0.45 * U.frame.z + max(1.4 * U.frame.z, 0.3 * hw);
+        acc = over(acc, vec3<f32>(0.97, 0.985, 1.0), halo * (1.0 - smoothstep(hr - 0.8 * U.frame.z, hr + 0.6 * U.frame.z, dist)));
         acc = over(acc, i.hue.rgb * 0.42, (1.0 - night) * al * al * cover(dist - (hw + 0.45 * U.frame.z)));
     } else {
         acc = over(acc, mix(i.hue.rgb * 0.95, i.hue.rgb, night), al * cover(dist - hw));

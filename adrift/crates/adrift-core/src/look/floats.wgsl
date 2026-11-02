@@ -129,6 +129,8 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, hue, i.head * 0.30 * breath * exp(-d * d / (2.6 * 2.6 * r * r)));
     acc = over(acc, hue, lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
     acc = over(acc, hue, lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
+    // a cool hue's pale ring round the glass (R21), so a blue or purple lamp stands off the sea's blue
+    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
     // the glass, the lamp, its core
     let gb = glass_body(n);
     acc = over(acc, gb.rgb, gb.a * cover(d - r));
