@@ -209,7 +209,9 @@ impl ClipCamera {
                 let (cw, zw) = frame(&whole).unwrap_or((c, z));
                 // never closer than where it was: the end opens out to the shape, it does not dive in
                 let zw = zw.min(from.1);
-                let e = crate::touch::motion::ease_in_out(through);
+                // (R19) the pull-out takes the first `END_PULL` seconds of the end beat; the rest holds
+                // still on the shape, so it reads as an ending
+                let e = crate::touch::motion::ease_in_out((through * f.hold_out / END_PULL).min(1.0));
                 let (a, b) = (from.0.to_xyz(), cw.to_xyz());
                 let v = [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e];
                 (crate::model::LonLat::from_xyz(v), (from.1.ln() + (zw.ln() - from.1.ln()) * e).exp())
@@ -269,6 +271,7 @@ impl ClipCamera {
             Some(fc) if part != ClipPart::Before => fc,
             _ => {
                 // the opening beat: the frame itself, the camera still, widening less as it eases
+                let target = limit(self.fc, target, dt, l);
                 self.fc = Some(target);
                 self.fw = [0.0; 3];
                 self.fzv = 0.0;
@@ -303,7 +306,7 @@ impl ClipCamera {
         // (R18) the opening's ease is the zoom itself (a spring after it would still be coming in when
         // the outward-only rule began, and stop short); after it, outward only
         let zoom = if opening { target.zoom.min(hold * 1.12) } else if f.braid { zoom.min(fc.zoom) } else { zoom };
-        let fc = Camera { zoom, ..moved };
+        let fc = limit(Some(fc), Camera { zoom, ..moved }, dt, l);
         self.fc = Some(fc);
         Some(lifted(fc, l))
     }
@@ -408,7 +411,12 @@ pub const FRAME_SPAN_MIN_KM: f64 = 100.0;
 pub const FRAME_PAIR_MIN_KM: f64 = 60.0;
 /// The deepest the frame comes in (the reader's own pinch stops at `motion::ZOOM_MAX` otherwise). R14:
 /// 100 (a pair 80 km apart at 60% of the width); deeper, the coast's distance field shows its pixels.
-pub const FRAME_ZOOM_MAX: f64 = 40.0;
+pub const FRAME_ZOOM_MAX: f64 = 70.0;
+/// (R19) Within `LAND_LOOK_KM` of land the frame comes no closer than this (R14-R18's 40); in open
+/// sea, beyond it, up to `FRAME_ZOOM_OPEN_SEA`, so a far-out pair's paths fill about 60% of the width
+/// (the coast's shelf shading that limits it is not in view).
+pub const FRAME_ZOOM_NEAR: f64 = 40.0;
+pub const FRAME_ZOOM_OPEN_SEA: f64 = 70.0;
 /// Near a coast the frame comes no closer than this (R16, Visual: the shallow shelf's shading shows
 /// its raster's steps above about 20); open water keeps `FRAME_ZOOM_MAX`.
 pub const FRAME_ZOOM_COAST: f64 = 20.0;
@@ -438,10 +446,11 @@ pub fn lamps_centre(lamps: &[crate::model::LonLat]) -> Option<crate::model::LonL
 /// The zoom cap for land `km` from the lamps (None: none within `COAST_FAR_KM`).
 pub fn coast_cap(km: Option<f64>) -> f64 {
     match km {
-        None => FRAME_ZOOM_MAX,
+        // (R19) no land within `LAND_LOOK_KM`: open sea, where the paths may fill the frame
+        None => FRAME_ZOOM_OPEN_SEA,
         Some(d) => {
             let x = ((d - COAST_NEAR_KM) / (COAST_FAR_KM - COAST_NEAR_KM)).clamp(0.0, 1.0);
-            FRAME_ZOOM_COAST + (FRAME_ZOOM_MAX - FRAME_ZOOM_COAST) * x * x * (3.0 - 2.0 * x)
+            FRAME_ZOOM_COAST + (FRAME_ZOOM_NEAR - FRAME_ZOOM_COAST) * x * x * (3.0 - 2.0 * x)
         }
     }
 }
@@ -541,16 +550,42 @@ pub const ZOOM_IN_HALF: f64 = 0.9;
 /// The opening starts this many times wider, the place readable, easing in over `OPEN_SECS` of the
 /// clip (R15).
 pub const OPEN_WIDE: f64 = 3.0;
-pub const OPEN_SECS: f64 = 2.4;
+pub const OPEN_SECS: f64 = 3.0;
 /// The opening widens no further than this zoom unless the frame itself is wider.
 pub const OPEN_LEAST: f64 = 6.0;
 /// A journey clip's end beat: long enough for the pull-out to the dance's whole shape to land (R15).
-pub const JOURNEY_HOLD_OUT: f64 = 2.5;
+pub const JOURNEY_HOLD_OUT: f64 = 3.2;
 /// The box every lamp and its newest line keep within, as shares of the clip's width (either side)
 /// and height (above and below its middle, after the lift): clear of the edges and the lower third.
 pub const HOLD_X: f64 = 0.42;
 pub const HOLD_UP: f64 = 0.44;
 pub const HOLD_DOWN: f64 = 0.25;
+
+/// (R19) However the frame's aims change (a coast coming into reach, the opening handing over, a
+/// cue), the clip's camera moves no faster than this: its zoom by `ZOOM_RATE` in the log a second
+/// (1.8% a frame at 30 frames a second), its centre by `PAN_RATE` points a second across the screen.
+pub const ZOOM_RATE: f64 = 0.55;
+pub const PAN_RATE: f64 = 120.0;
+/// A journey's end beat pulls out over this many seconds and holds still for the rest.
+pub const END_PULL: f64 = 2.0;
+
+/// `next` held within `ZOOM_RATE` and `PAN_RATE` of `prev` over `dt` (R19: the critic found a 21% zoom
+/// step in one frame where the opening handed over).
+pub fn limit(prev: Option<Camera>, next: Camera, dt: f64, l: &Lean) -> Camera {
+    let Some(prev) = prev else { return next };
+    if dt <= 0.0 {
+        return prev;
+    }
+    let dz = (next.zoom / prev.zoom).ln().clamp(-ZOOM_RATE * dt, ZOOM_RATE * dt);
+    let zoom = prev.zoom * dz.exp();
+    let (qa, qb) = (cam_quat(Camera { zoom: 1.0, ..prev }), cam_quat(Camera { zoom: 1.0, ..next }));
+    let r = rot_log(qmul(qb, qconj(qa)));
+    let ang = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
+    let most = PAN_RATE * dt / (l.r1.max(1.0) * zoom);
+    let k = if ang > most { most / ang } else { 1.0 };
+    let q = qmul(rot_exp([r[0] * k, r[1] * k, r[2] * k]), qa);
+    Camera::from_rotation(crate::touch::camera::quat_mat(q), zoom)
+}
 
 /// A journey's braid is held from this share of its During part, eased over `BRAID_EASE` (R16).
 pub const BRAID_FROM: f64 = 0.6;
@@ -1016,5 +1051,38 @@ mod tests {
         let part = braid_lean(&l, floor);
         assert!(part.trail.len() < 42 && part.trail.len() >= 2, "{}", part.trail.len());
         assert!(frame(&part).unwrap().1 >= floor * 0.99, "{:?}", frame(&part));
+    }
+
+    #[test]
+    fn the_clip_camera_never_steps_faster_than_its_limits_whatever_the_frame_asks() {
+        // a pair whose framing jumps: a coast comes into reach mid-way (the cap and the pull change at
+        // once), the lamps jump a degree (a cue), and the opening hands over to the follow
+        let mut cc = ClipCamera::new(Camera::new(150.0, -30.0, 1.0));
+        let f = Framing { braid: true, hold_out: JOURNEY_HOLD_OUT, ..Framing::default() };
+        let mut last: Option<Camera> = None;
+        let fps = 30.0;
+        for i in 0..300 {
+            let t = i as f64 / fps;
+            let jump = if i > 150 { 1.0 } else { 0.0 };
+            let l = Lean {
+                lamps: vec![LonLat::new(156.7 + jump, -29.0), LonLat::new(157.1 + jump, -29.0)],
+                trail: vec![LonLat::new(156.5, -28.9)],
+                r1: 166.0,
+                half: 180.0,
+                focus: None,
+                whole: vec![(0.0, LonLat::new(156.0, -28.0))],
+                zoom_cap: if i > 40 { 20.0 } else { FRAME_ZOOM_OPEN_SEA },
+                land_km: if i > 40 { Some(300.0) } else { None },
+                land_far_km: Some(400.0),
+            };
+            let part = if t < f.hold_in { ClipPart::Before } else if i < 270 { ClipPart::During } else { ClipPart::After };
+            let through = if part == ClipPart::After { (i - 270) as f64 / 30.0 / f.hold_out } else { (t / 9.0).min(1.0) };
+            let cam = cc.step(Camera::new(150.0, -30.0, 1.0), part, through, 1.0 / fps, &f, &l);
+            if let Some(p) = last {
+                let dz = (cam.zoom / p.zoom).ln().abs();
+                assert!(dz <= ZOOM_RATE / fps + 1e-6, "frame {i}: the zoom stepped {:.1}%", dz * 100.0);
+            }
+            last = Some(cam);
+        }
     }
 }

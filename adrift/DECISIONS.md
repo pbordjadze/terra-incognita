@@ -743,3 +743,12 @@ Catmull-Rom surface through 16 texels (still interpolating the measured values),
 curve smoothly close in (32 texel loads a pixel in the sea pass, from 8: watch the device). Motion
 fc72f33: a journey's first frame wide enough to show the nearest coast (to 3000 km) or the globe,
 easing in to the pair over 2.4 s, then only pulling out.
+
+## 26. R19: no pop (Nov 2, 00:20 UTC)
+
+Round 18's critic: the dance clip postable once a camera pop is gone (zoom +21% in one frame ~1.3 s
+in, where the opening's ease handed over to the following frame); the early clip's pair too small
+mid-sea, its ending cut off. Motion 64e0113: a final limiter on the clip camera (zoom ≤ 0.55 a
+second in its log, 1.8% a frame; pan ≤ 120 points a second), tested, and `lamp_in_clip.py
+--max-step`; open sea (no land within 500 km) frames to zoom 70 (`FRAME_ZOOM_MAX`; 40 near land,
+`FRAME_ZOOM_NEAR`); a journey's end beat 3.2 s, a 2 s pull-out then held.
