@@ -94,7 +94,7 @@ pub const ZOOM_SLOWER: f64 = 2.0;
 /// fling's start and a ride's catch are eased. It also makes the clip's two beats: the opening eases in
 /// from `Framing::open` wider; the end carries the take camera's last drift on, dying away over
 /// `Framing::settle`, so the clip comes to rest rather than stopping.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct ClipCamera {
     pub cam: Camera,
     /// The spring's angular velocity (world frame, radians a second) and the zoom's (log a second).
@@ -129,11 +129,23 @@ pub struct ClipCamera {
     /// world frame), so the rates themselves ease in and out.
     lim_vz: f64,
     lim_w: [f64; 3],
+    /// (R22) A journey's pair: its centre last frame and that centre's smoothed angular velocity
+    /// (world frame, radians a second), for the pan's lead and its limits in the pair's own frame.
+    last_c: Option<crate::model::LonLat>,
+    cv: [f64; 3],
+    /// (R22) The zoom the frame wants last frame and its smoothed rate (log a second), for the zoom's
+    /// lead as a pair parts.
+    last_want: Option<f64>,
+    want_rate: f64,
+    /// (R22) Each lamp's place last frame and its smoothed velocity (unit-sphere xyz a second): the
+    /// frame holds where each will be `LAMP_LEAD` seconds on.
+    lamp_prev: Vec<[f64; 3]>,
+    lamp_v: Vec<[f64; 3]>,
 }
 
 impl ClipCamera {
     pub fn new(start: Camera) -> ClipCamera {
-        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None, establish: None, lim_vz: 0.0, lim_w: [0.0; 3] }
+        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None, establish: None, lim_vz: 0.0, lim_w: [0.0; 3], last_c: None, cv: [0.0; 3], last_want: None, want_rate: 0.0, lamp_prev: Vec::new(), lamp_v: Vec::new() }
     }
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
@@ -193,13 +205,60 @@ impl ClipCamera {
     /// lines. The result lifted (`lifted`) so the lower third stays clear.
     #[allow(clippy::too_many_arguments)]
     fn framed(&mut self, take: Camera, part: ClipPart, through: f64, t: f64, dt: f64, f: &Framing, l: &Lean) -> Option<Camera> {
+        // (R22) a journey frames the pair and its last few days of line, as close as the coast in view
+        // allows (`journey_lean`), coming in as they close and pulling out as they part; the braid's
+        // whole shape is the end beat's
+        let journey = f.braid;
+        let mut jl;
+        let l: &Lean = if journey {
+            jl = journey_lean(l);
+            // (R22) where each lamp will be `LAMP_LEAD` seconds on, held in the frame too, so the
+            // limited camera pulls out and pans ahead of a pair that parts or runs, not after it
+            let now: Vec<[f64; 3]> = jl.lamps.iter().map(|p| p.to_xyz()).collect();
+            if now.len() != self.lamp_prev.len() || dt <= 0.0 {
+                self.lamp_v = vec![[0.0; 3]; now.len()];
+            } else {
+                let k = 1.0 - (-dt / LAMP_SMOOTH).exp();
+                for (i, (a, b)) in self.lamp_prev.iter().zip(&now).enumerate() {
+                    for j in 0..3 {
+                        self.lamp_v[i][j] += ((b[j] - a[j]) / dt - self.lamp_v[i][j]) * k;
+                    }
+                }
+            }
+            // against the pair's mean motion: their parting and closing (their run together is the
+            // pan's own lead)
+            let n = self.lamp_v.len().max(1) as f64;
+            let m = self.lamp_v.iter().fold([0.0; 3], |a, v| [a[0] + v[0] / n, a[1] + v[1] / n, a[2] + v[2] / n]);
+            for (p, v) in now.iter().zip(&self.lamp_v) {
+                let d = [(v[0] - m[0]) * LAMP_LEAD, (v[1] - m[1]) * LAMP_LEAD, (v[2] - m[2]) * LAMP_LEAD];
+                jl.trail.push(crate::model::LonLat::from_xyz([p[0] + d[0], p[1] + d[1], p[2] + d[2]]));
+            }
+            self.lamp_prev = now;
+            &jl
+        } else {
+            l
+        };
         let (c, z) = frame(l)?;
         // (R17) centred on the pair itself (its bounding circle's centre), the lines held by the hold
         // box from there rather than pulling the pair to the frame's edge
         let c = if l.focus.is_none() { lamps_centre(&l.lamps).unwrap_or(c) } else { c };
+        // (R22) the pair's centre's own turn (as the camera's quaternions turn, so it composes with them),
+        // smoothed over `PAIR_SMOOTH`
+        if journey {
+            let qc = cam_quat(Camera { lon: c.lon, lat: c.lat, zoom: 1.0, roll: take.roll });
+            if let Some(p) = self.last_c.filter(|_| dt > 0.0) {
+                let r = rot_log(qmul(qc, qconj(cam_quat(Camera { lon: p.lon, lat: p.lat, zoom: 1.0, roll: take.roll }))));
+                let k = 1.0 - (-dt / PAIR_SMOOTH).exp();
+                for i in 0..3 {
+                    self.cv[i] += (r[i] / dt - self.cv[i]) * k;
+                }
+            }
+            self.last_c = Some(c);
+        }
         // (R17) in open sea, out far enough that the nearest coast is in view, when it is within
-        // `COAST_PULL` of the pair's own scale (gently: never further, so the pair stays readable)
-        let z = match l.land_km {
+        // `COAST_PULL` of the pair's own scale (gently: never further, so the pair stays readable).
+        // (R22) Not in a journey: there the pair is the picture, its coast the opening's and the end's
+        let z = match l.land_km.filter(|_| !journey) {
             Some(d) => {
                 let see = COAST_SEEN * l.half / (l.r1 * (d / 6371.0).sin().max(1e-6));
                 if see < z { z.min(see.max(z / COAST_PULL)) } else { z }
@@ -227,7 +286,7 @@ impl ClipCamera {
         };
         // (R16) a journey's last third: the frame eases over to the braid, its whole lines
         let wb = match part {
-            ClipPart::During if f.braid => {
+            ClipPart::During if f.braid && JOURNEY_BRAID => {
                 // (R20) from just after the opening, not only the last third: the trail since the
                 // clip began (or its recent part) held in frame through the middle too
                 let ss = |x: f64| {
@@ -287,9 +346,11 @@ impl ClipCamera {
                 return Some(lifted(target, l));
             }
         };
-        // the centre, slowly
+        // the centre, slowly; (R22) in a journey aimed ahead of the pair by the lag the spring leaves
+        // at its speed (2τ·v), so a pair running at a close zoom stays where the frame put it
         let tau = PAN_HALF / HALF_TO_TAU;
         let qt = cam_quat(Camera { zoom: 1.0, ..target });
+        let qt = if journey { qmul(rot_exp([self.cv[0] * 2.0 * tau, self.cv[1] * 2.0 * tau, self.cv[2] * 2.0 * tau]), qt) } else { qt };
         let x = rot_log(qmul(cam_quat(Camera { zoom: 1.0, ..fc }), qconj(qt)));
         let mut nx = [0.0; 3];
         for i in 0..3 {
@@ -304,18 +365,37 @@ impl ClipCamera {
             Some(lb) => (hold_zoom(moved, l).ln() * (1.0 - wb) + hold_zoom(moved, lb).ln() * wb).exp(),
             None => hold_zoom(moved, l),
         };
+        // (R22) and from where the camera is: in a journey the limited pan may trail the spring's aim
+        // behind a pair that runs at a close zoom, so the box is held from both
+        let hold = if journey { hold.min(hold_zoom(Camera { zoom: fc.zoom, ..fc }, l)) } else { hold };
         let want = target.zoom.min(hold);
-        // (R17) a journey's zoom never comes back in: it eases outward only
-        let want = if f.braid && !opening { want.min(self.fc.map_or(want, |c| c.zoom)) } else { want };
-        let half = if want < moved.zoom { ZOOM_OUT_HALF } else { ZOOM_IN_HALF };
+        // (R17-R21 a journey's zoom eased outward only; R22: it comes back in as the pair closes, and
+        // pulls out ahead of a pair that parts by how fast its frame has been widening, `ZOOM_LEAD`
+        // seconds of it, so the limited zoom isn't outrun)
+        let lead = if journey && !opening {
+            if let Some(p) = self.last_want.filter(|_| dt > 0.0) {
+                let k = 1.0 - (-dt / PAIR_SMOOTH).exp();
+                self.want_rate += ((want / p).ln() / dt - self.want_rate) * k;
+            }
+            self.last_want = Some(want);
+            (self.want_rate.min(0.0) * ZOOM_LEAD).exp()
+        } else {
+            1.0
+        };
+        let (want, hold) = (want * lead, hold * lead);
+        if journey && std::env::var_os("ADRIFT_CAM_DEBUG").is_some() && (t * 60.0).round() as i64 % 30 == 0 {
+            eprintln!("cam t {t:.1} frame {:.1} cap {:.1} target {:.1} hold {:.1} lead {lead:.2} want {want:.1} now {:.1}", z, l.zoom_cap, target.zoom, hold, moved.zoom);
+        }
+        let half = if want < moved.zoom { ZOOM_OUT_HALF } else if journey { JOURNEY_IN_HALF } else { ZOOM_IN_HALF };
         let (lz, vz) = crate::touch::motion::spring(moved.zoom.ln(), self.fzv, want.ln(), half / HALF_TO_TAU, dt);
         self.fzv = vz;
         // a lamp never leaves: past the hold by more than a little, the zoom is held there
         let zoom = lz.exp().min(hold * 1.12);
         // (R18) the opening's ease is the zoom itself (a spring after it would still be coming in when
         // the outward-only rule began, and stop short); after it, outward only
-        let zoom = if opening { target.zoom.min(hold * 1.12) } else if f.braid { zoom.min(fc.zoom) } else { zoom };
-        let fc = self.limit(Some(fc), Camera { zoom, ..moved }, dt, l);
+        let zoom = if opening { target.zoom.min(hold * 1.12) } else { zoom };
+        let base = if journey { self.cv } else { [0.0; 3] };
+        let fc = self.limit_moving(Some(fc), Camera { zoom, ..moved }, dt, l, base);
         self.fc = Some(fc);
         Some(lifted(fc, l))
     }
@@ -325,6 +405,14 @@ impl ClipCamera {
     /// the opening's constant zoom rate stop dead in one frame): each eases in, and brakes in time to
     /// arrive without overshooting (its speed no more than `sqrt(2·accel·distance)`).
     fn limit(&mut self, prev: Option<Camera>, next: Camera, dt: f64, l: &Lean) -> Camera {
+        self.limit_moving(prev, next, dt, l, [0.0; 3])
+    }
+
+    /// (R22) `limit` in a frame turning at `base` (radians a second, world frame): the pan's speed and
+    /// its change are limited relative to the pair's own motion, so at a close zoom the camera keeps up
+    /// with a pair that runs (the ground slides as fast as the pair goes) while anything else it does is
+    /// as eased as ever. `base` is itself smoothed (`PAIR_SMOOTH`), so the camera never jerks with it.
+    fn limit_moving(&mut self, prev: Option<Camera>, next: Camera, dt: f64, l: &Lean, base: [f64; 3]) -> Camera {
         let Some(prev) = prev else { return next };
         if dt <= 0.0 {
             return prev;
@@ -339,11 +427,13 @@ impl ClipCamera {
         // the turn, as a vector (world frame), its limits in screen points at this zoom
         let scale = l.r1.max(1.0) * zoom;
         let (qa, qb) = (cam_quat(Camera { zoom: 1.0, ..prev }), cam_quat(Camera { zoom: 1.0, ..next }));
-        let r = rot_log(qmul(qb, qconj(qa)));
+        // what is left to turn once the frame's own turn over this step is taken out
+        let qa_moved = qmul(rot_exp([base[0] * dt, base[1] * dt, base[2] * dt]), qa);
+        let r = rot_log(qmul(qb, qconj(qa_moved)));
         let ang = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
         let (rate, accel) = (PAN_RATE / scale, PAN_ACCEL / scale);
         let speed = if ang > 1e-12 { (ang / dt).min((2.0 * accel * ang).sqrt()).min(rate) } else { 0.0 };
-        let want = if ang > 1e-12 { [r[0] / ang * speed, r[1] / ang * speed, r[2] / ang * speed] } else { [0.0; 3] };
+        let want = if ang > 1e-12 { [r[0] / ang * speed + base[0], r[1] / ang * speed + base[1], r[2] / ang * speed + base[2]] } else { base };
         let dv = [want[0] - self.lim_w[0], want[1] - self.lim_w[1], want[2] - self.lim_w[2]];
         let dvn = (dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]).sqrt();
         let k = if dvn > accel * dt { accel * dt / dvn } else { 1.0 };
@@ -419,6 +509,9 @@ pub struct Lean {
     /// lamps, `WIND_SCALE` when every thing framed is a seed on the wind. The frame's least spans and
     /// margin are km at the sea's scale, multiplied by it, so a seed is framed at the wind's scale.
     pub scale: f64,
+    /// (R22) Framed for a journey (`journey_lean`): the pair closer (`JOURNEY_FILL`,
+    /// `JOURNEY_PAIR_MIN_KM`, `JOURNEY_MARGIN_KM`) and as deep as `JOURNEY_ZOOM_MAX`.
+    pub journey: bool,
 }
 
 /// (R21) How much wider the wind's things are framed than the sea's: the frame's least spans and
@@ -436,6 +529,12 @@ pub const WIND_TRAIL: f64 = 0.2;
 pub const DOWN_FRAMED_DAYS: f64 = 0.3;
 
 impl Lean {
+    /// The deepest the frame may come: `FRAME_ZOOM_MAX`, or (R22) a journey's cap where that is
+    /// deeper (`journey_lean`).
+    pub fn deepest(&self) -> f64 {
+        if self.journey { JOURNEY_ZOOM_MAX } else { FRAME_ZOOM_MAX }
+    }
+
     /// The medium's scale (1 for the sea, when unset).
     pub fn scale(&self) -> f64 {
         if self.scale > 0.0 { self.scale } else { 1.0 }
@@ -507,9 +606,72 @@ pub const OPEN_LEAST_WIDER: f64 = 1.6;
 pub const COAST_SEEN: f64 = 0.9;
 pub const COAST_PULL: f64 = 1.4;
 
+/// (R22) A journey frames its pair with this many days of their lines (the frame of R15-R21 held 15,
+/// and R20's braid every day since the clip began: the pair a speck by the dance's middle).
+pub const JOURNEY_TRAIL_DAYS: f64 = 0.5;
+/// (R22) The deepest a journey's frame comes in open water (or with the coast out of view), and the
+/// least half-span of its pair, km: a pair 30 km apart still a third of the width.
+pub const JOURNEY_ZOOM_MAX: f64 = 160.0;
+pub const JOURNEY_PAIR_MIN_KM: f64 = 15.0;
+/// (R22) A journey's pair fills this share of the width (the frame's circle round it), with this
+/// margin, km; and its zoom comes in with this half-life, seconds (`ZOOM_IN_HALF` elsewhere).
+pub const JOURNEY_FILL: f64 = 0.75;
+pub const JOURNEY_MARGIN_KM: f64 = 5.0;
+pub const JOURNEY_IN_HALF: f64 = 0.5;
+/// (R22) The coast counts as out of view when it lies beyond the clip's half-diagonal by this much
+/// (the frame's centre is the pair's, the lift and the lag move it a little).
+pub const COAST_OUT_MARGIN: f64 = 1.1;
+/// (R22) Below the zoom at which the coast leaves the view, the cap eases from the coast's
+/// (`coast_cap`) to that zoom over this factor of zoom, so the frame never jumps across it.
+pub const COAST_OUT_EASE: f64 = 1.6;
+/// (R22) With the coast in view a journey comes no closer than this (`FRAME_ZOOM_COAST`'s 20 kept the
+/// dance near Victoria a speck; at 30 the coast's edge still reads clean on the device's clip, its
+/// steps showing from about 40), easing to `FRAME_ZOOM_NEAR` with the coast further off as ever.
+pub const JOURNEY_ZOOM_COAST: f64 = 30.0;
+/// (R20's braid held through a journey's middle; R22: off, the pair framed instead)
+pub const JOURNEY_BRAID: bool = false;
+/// (R22) A journey's frame holds each lamp where it will be this many seconds on (its velocity smoothed
+/// over `LAMP_SMOOTH`).
+pub const LAMP_LEAD: f64 = 0.8;
+pub const LAMP_SMOOTH: f64 = 0.2;
+/// (R22) A journey's zoom pulls out this many seconds ahead of a parting pair's frame.
+pub const ZOOM_LEAD: f64 = 1.0;
+/// (R22) The pair's centre's velocity is smoothed over this many seconds for the pan's lead and limits.
+pub const PAIR_SMOOTH: f64 = 0.5;
+
+/// (R22) What a journey frames: the pair and its last `JOURNEY_TRAIL_DAYS` of line (from `whole`), its
+/// cap the coast's only while the coast is in view (`journey_cap`).
+pub fn journey_lean(l: &Lean) -> Lean {
+    let last = l.whole.iter().map(|w| w.0).fold(f64::NEG_INFINITY, f64::max);
+    let trail = if last.is_finite() { l.whole.iter().filter(|w| w.0 >= last - JOURNEY_TRAIL_DAYS).map(|w| w.1).collect() } else { l.trail.clone() };
+    let mut j = Lean { trail, focus: None, journey: true, ..l.clone() };
+    j.zoom_cap = JOURNEY_ZOOM_MAX;
+    if let Some(d) = l.land_km {
+        // the frame as close as it would come with no coast near, and the zoom at which the coast
+        // leaves the view from there
+        if let Some((_, open)) = frame(&j) {
+            let diag = (l.half * l.half * (1.0 + (16.0f64 / 9.0).powi(2))).sqrt();
+            let out = COAST_OUT_MARGIN * diag / (l.r1 * (d / EARTH_KM).sin().max(1e-6));
+            let near = coast_cap(Some(d)).max(JOURNEY_ZOOM_COAST);
+            j.zoom_cap = if open >= out {
+                JOURNEY_ZOOM_MAX
+            } else if open <= out / COAST_OUT_EASE {
+                near
+            } else {
+                // eased, in the zoom's log, from the coast's cap to where the coast is out of view
+                let x = (open / out).ln() / COAST_OUT_EASE.ln() + 1.0;
+                let x = x * x * (3.0 - 2.0 * x);
+                (near.ln() + (out.min(JOURNEY_ZOOM_MAX).max(near).ln() - near.ln()) * x).exp()
+            }
+            .max(FRAME_ZOOM_MAX.min(near));
+        }
+    }
+    j
+}
+
 /// The centre of the lamps' smallest circle (their mean direction for two).
 pub fn lamps_centre(lamps: &[crate::model::LonLat]) -> Option<crate::model::LonLat> {
-    frame_of(lamps, &[], 166.0, 180.0, FRAME_ZOOM_MAX, 1.0).map(|f| f.0)
+    frame_of(lamps, &[], 166.0, 180.0, FRAME_ZOOM_MAX, 1.0, false).map(|f| f.0)
 }
 
 /// The zoom cap for land `km` from the lamps (None: none within `COAST_FAR_KM`).
@@ -534,11 +696,11 @@ const EARTH_KM: f64 = 6371.0;
 /// and their lines (Bădoiu–Clarkson, on the sphere), the zoom at which that circle and its margin fill
 /// `FRAME_FILL` of the width. None without lamps.
 pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
-    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
-    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap, l.scale())?;
+    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(l.deepest()) } else { l.deepest() };
+    let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap, l.scale(), l.journey)?;
     match &l.focus {
         Some((lamps, trail, w)) if *w > 0.0 => {
-            let one = frame_of(lamps, trail, l.r1, l.half, cap, l.scale())?;
+            let one = frame_of(lamps, trail, l.r1, l.half, cap, l.scale(), l.journey)?;
             // the zoom in its log; the centre at least as far toward the lamp as keeps it no further
             // out on the screen than it lay in the frame of them all (the zoom grows faster than a
             // plain blend of centres would follow)
@@ -571,7 +733,8 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     }
 }
 
-fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64, scale: f64) -> Option<(crate::model::LonLat, f64)> {
+#[allow(clippy::too_many_arguments)]
+fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64, scale: f64, journey: bool) -> Option<(crate::model::LonLat, f64)> {
     if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
@@ -591,10 +754,13 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
     }
     let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
     // (R21) at the medium's scale: a seed's least span and margin are the wind's
-    let least = scale * if lamps.len() > 1 { FRAME_PAIR_MIN_KM } else { FRAME_SPAN_MIN_KM };
-    let half_span = (spread + scale * FRAME_MARGIN_KM / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
-    let zoom = (FRAME_FILL * half / (r1 * half_span.sin())).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
-    Some((crate::model::LonLat::from_xyz(c), zoom.min(cap)))
+    // (R22) a journey's pair may come closer (`JOURNEY_PAIR_MIN_KM`, carried as a cap above
+    // `FRAME_ZOOM_MAX`)
+    let (pair_min, margin, fill) = if journey { (JOURNEY_PAIR_MIN_KM, JOURNEY_MARGIN_KM, JOURNEY_FILL) } else { (FRAME_PAIR_MIN_KM, FRAME_MARGIN_KM, FRAME_FILL) };
+    let least = scale * if lamps.len() > 1 { pair_min } else { FRAME_SPAN_MIN_KM };
+    let half_span = (spread + scale * margin / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
+    let zoom = (fill * half / (r1 * half_span.sin())).max(crate::touch::motion::ZOOM_MIN);
+    Some((crate::model::LonLat::from_xyz(c), zoom.min(cap.max(crate::touch::motion::ZOOM_MIN))))
 }
 
 /// The clip's camera: the lamps framed (`frame`), the take's own pinch kept by half against its first
@@ -696,7 +862,7 @@ pub fn hold_zoom(cam: Camera, l: &Lean) -> f64 {
             r = r.min((HOLD_DOWN * h + up) / -v[1]);
         }
     }
-    (r / l.r1).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX)
+    (r / l.r1).clamp(crate::touch::motion::ZOOM_MIN, l.deepest())
 }
 
 /// The camera turned about the screen's horizontal so what lay at its centre lies `FRAME_LIFT` of the
@@ -1037,7 +1203,7 @@ mod tests {
     /// (R21) Seeds are framed at the wind's scale; lamps exactly as before (scale unset and 1 alike).
     #[test]
     fn seeds_are_framed_at_the_winds_scale_and_lamps_as_ever() {
-        let lean = |lamps: Vec<LonLat>, scale: f64| Lean { lamps, trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale };
+        let lean = |lamps: Vec<LonLat>, scale: f64| Lean { lamps, trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale, journey: false };
         let pair = vec![LonLat::new(-20.0, 45.0), LonLat::new(-19.5, 45.0)];
         let lone = vec![LonLat::new(-20.0, 45.0)];
         for p in [&pair, &lone] {
@@ -1060,11 +1226,11 @@ mod tests {
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;
         // a lone lamp, a short line: close enough that 40 km is plainly visible (≥ 30 points)
-        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
+        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
         let (c, z) = frame(&lone).unwrap();
         assert!(40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2, "{c:?} {z}");
         // two lamps a thousand km apart: their span (with the margin) fills 60% of the width
-        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
+        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
         let (c, z) = frame(&two).unwrap();
         let cam = Camera::new(c.lon, c.lat, z);
         let reach = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z }).fold(0.0, f64::max);
@@ -1102,7 +1268,7 @@ mod tests {
 
     #[test]
     fn the_clip_puts_the_lamps_centre_a_little_above_the_middle_and_fills_six_tenths() {
-        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
+        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
         for roll in [0.0, 40.0] {
             let cam = lean(Camera { roll, ..Camera::new(-50.0, 20.0, 1.0) }, &two, 1.0);
             let r = 166.0 * cam.zoom;
@@ -1125,7 +1291,7 @@ mod tests {
             let d = d as f64;
             [(d, LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1)), (d, LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1))]
         }).collect();
-        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0 };
+        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
         // a wide floor: all of it
         let all = braid_lean(&l, 2.0);
         assert_eq!(all.trail.len(), 42);

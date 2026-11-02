@@ -204,6 +204,9 @@ pub struct App {
     pub studio: crate::studio::Studio,
     /// The frame being drawn goes into an exported clip (R9; the look's `exporting`).
     exporting: bool,
+    /// (R22, Motion) The check's `--camera-only`: an export steps its replay and camera but draws
+    /// nothing (`export_frame` returns an empty frame), so a journey's framing is measured in seconds.
+    pub export_dry: bool,
     /// While exporting, how far through the clip's still opening beat (0..1, 1 once past it) and its
     /// eased last one (0 until it, then 0..1) (R10; the look's `opening` and `ending`).
     clip_phase: (f32, f32),
@@ -426,6 +429,7 @@ impl App {
             panel_stand_in: None,
             studio: Default::default(),
             exporting: false,
+            export_dry: false,
             clip_phase: (1.0, 0.0),
             conduct: Default::default(),
             song: None,
@@ -1893,7 +1897,7 @@ impl App {
                 })
             })
         });
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 } }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 }, journey: false }
 
     }
 
@@ -2430,6 +2434,11 @@ impl App {
             let framing = r.take.framing;
             r.cam.step(self.camera.camera, part, through, dt, &framing, &lamps)
         };
+        if self.export_dry {
+            self.seconds = seconds;
+            self.studio.replay.as_mut().unwrap().frame += 1;
+            return Some(Vec::new());
+        }
         let view = self.clip_view(cam);
         self.haptic = false;
         self.exporting = true;
