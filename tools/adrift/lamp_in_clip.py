@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How an exported clip frames its lamps (R11, R14; Motion).
 
-    python3 tools/adrift/lamp_in_clip.py <clip-camera.csv> [--every N]
+    python3 tools/adrift/lamp_in_clip.py <clip-camera.csv> [--every N] [--max-step 0.02]
 
 Reads the camera trace an export writes (`adrift-check play` beside its mp4 as `<name>-camera.csv`,
 `adrift-check journey` as `<out>.csv`): a row a frame with the clip's camera and every lamp out
@@ -14,7 +14,9 @@ clip and every N frames:
 - centre: the lamps' mean place as shares of width and height (aim: x 0.5, y a little above 0.5);
 - low: frames with a lamp in the lower third (where a platform's captions lie);
 - pan: how fast the ground slides across the screen, points a second at 30 frames a second (the
-  camera's centre moving at its zoom; R15: the critic saw hard pans at a close zoom), median and most.
+  camera's centre moving at its zoom; R15: the critic saw hard pans at a close zoom), median and most;
+- step: the largest frame-to-frame change of the zoom, in its log (R19: the critic found a 21% pop);
+  with `--max-step S` the script fails (exit 2) if any frame steps more than S.
 """
 import csv
 import math
@@ -56,12 +58,18 @@ def main(argv):
     rows = list(csv.DictReader(open(argv[0])))
     stats = {"out": 0, "low": 0, "fill": [], "cx": [], "cy": [], "pan": []}
     prev = None
+    max_step = float(argv[argv.index("--max-step") + 1]) if "--max-step" in argv else None
+    step, step_at, last_zoom = 0.0, 0, None
     for n, row in enumerate(rows):
         c = xyz(float(row["clip_lon"]), float(row["clip_lat"]))
         if prev is not None:
             ang = math.acos(max(-1.0, min(1.0, sum(a * b for a, b in zip(c, prev)))))
             stats["pan"].append(ang * R1 * float(row["clip_zoom"]) * 30.0)
         prev = c
+        z = float(row["clip_zoom"])
+        if last_zoom is not None and abs(math.log(z / last_zoom)) > step:
+            step, step_at = abs(math.log(z / last_zoom)), n
+        last_zoom = z
         pts = screen(row)
         if not pts:
             continue
@@ -84,7 +92,11 @@ def main(argv):
     print(f"{len(rows)} frames: lamp out of frame in {stats['out']}, in the lower third in {stats['low']}; "
           f"fill median {med(stats['fill']):.0%} ({min(stats['fill']):.0%}..{max(stats['fill']):.0%}); "
           f"centre median {med(stats['cx']):.2f},{med(stats['cy']):.2f} (y {min(stats['cy']):.2f}..{max(stats['cy']):.2f}); "
-          f"pan median {med(stats['pan'] or [0]):.0f} pt/s, most {max(stats['pan'] or [0]):.0f}")
+          f"pan median {med(stats['pan'] or [0]):.0f} pt/s, most {max(stats['pan'] or [0]):.0f}; "
+          f"largest zoom step {step:.1%} at frame {step_at}")
+    if max_step is not None and step > max_step:
+        print(f"FAIL: a zoom step of {step:.1%} exceeds {max_step:.1%}")
+        return 2
     return 0
 
 
