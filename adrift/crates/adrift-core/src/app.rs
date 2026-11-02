@@ -1649,9 +1649,32 @@ impl App {
     /// at zoom 1 and half-width `half`, points.
     pub fn lean_for(&self, r1: f64, half: f64, focus: bool) -> crate::studio::Lean {
         let day = self.clock.day;
-        let these: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        let all: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        // (R21) a thing's medium now, and the day a seed came down (None aloft, or a lamp)
+        let medium = |f: &Float| f.leg_at(day).map_or(Medium::Sea, |li| f.legs()[li].medium);
+        let down_since = |f: &Float| -> Option<f64> {
+            if !f.held.down() {
+                return None;
+            }
+            let li = f.leg_at(day)?;
+            let path = self.paths.get(&(f.id, li))?;
+            let upto = path.samples.partition_point(|s| s.day <= day + 1e-9);
+            path.samples[..upto].iter().rev().take_while(|s| s.held.down()).last().map(|s| s.day)
+        };
+        // a seed down for more than `DOWN_FRAMED_DAYS` is let go of while any other still flies
+        let these: Vec<&Float> = {
+            let up: Vec<&Float> = all.iter().copied().filter(|f| down_since(f).map_or(true, |d| day - d <= crate::studio::DOWN_FRAMED_DAYS)).collect();
+            if up.is_empty() { all.clone() } else { up }
+        };
+        let wind = !these.is_empty() && these.iter().all(|f| medium(f) == Medium::Wind);
+        // (R21) the days of line held: a seed's are the wind's, shorter
+        let (trail_days, trail_full) = if wind {
+            (crate::studio::FRAME_TRAIL * crate::studio::WIND_TRAIL, crate::studio::FRAME_TRAIL_FULL * crate::studio::WIND_TRAIL)
+        } else {
+            (crate::studio::FRAME_TRAIL, crate::studio::FRAME_TRAIL_FULL)
+        };
         let lines = |fs: &[&Float]| {
-            let since = day - crate::studio::FRAME_TRAIL;
+            let since = day - trail_days;
             let mut trail = Vec::new();
             for f in fs {
                 let mut prev: Option<&Sample> = None;
@@ -1665,7 +1688,7 @@ impl App {
                             // (R15) weighted: the newest days whole, older ones drawn in toward the lamp
                             let near = |at: LonLat, d: f64| {
                                 let age = day - d;
-                                let w = if age <= crate::studio::FRAME_TRAIL_FULL { 1.0 } else { 1.0 - 0.5 * (age - crate::studio::FRAME_TRAIL_FULL) / (crate::studio::FRAME_TRAIL - crate::studio::FRAME_TRAIL_FULL) };
+                                let w = if age <= trail_full { 1.0 } else { 1.0 - 0.5 * (age - trail_full) / (trail_days - trail_full) };
                                 lerp_place(f.at, at, w.clamp(0.5, 1.0))
                             };
                             if let Some(p) = prev.filter(|p| p.day < since) {
@@ -1736,7 +1759,7 @@ impl App {
                 })
             })
         });
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 } }
 
     }
 
@@ -1981,13 +2004,18 @@ impl App {
         // from the day the last of them was put, so they are all out from the first frame (each drawn with
         // its whole line, the days before included)
         let first = floats.iter().map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
-        let span = (self.clock.day - first).max(1.0);
-        let rate = (span / seconds).clamp(0.25, 4.0);
+        // (R21, Motion) a journey of seeds ends when the last of them has come down (`journey::all_down`):
+        // its end beat begins there, not on days of still seeds; its pace's range is the wind's
+        let wind = floats.iter().all(|f| f.legs().last().is_some_and(|l| l.medium == Medium::Wind));
+        let today = crate::journey::all_down(self.media(), &floats, self.clock.day).map_or(self.clock.day, |d| d.min(self.clock.day));
+        let air = if wind { AIR_RATE / RATE } else { 1.0 };
+        let span = (today - first).max(air);
+        let rate = (span / seconds).clamp(0.25 * air, 4.0 * air);
         let fps = 30.0;
         let frames = (seconds * fps).ceil() as usize;
         // the day each frame shows (R14, `journey::pace`: where the lamps do something worth seeing,
         // the date slows; elsewhere it hurries), as a pace before each frame
-        let days = crate::journey::pace(&self.rules, &floats, first, first + rate * seconds, frames, fps);
+        let days = crate::journey::pace(self.media(), &floats, first, first + rate * seconds, frames, fps);
         let mut start = self.take_start();
         start.clock = Clock { day: first, running: true, rate };
         start.chosen = Vec::new();
