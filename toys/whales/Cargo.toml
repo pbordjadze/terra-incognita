@@ -1,0 +1,22 @@
+[package]
+name = "whales"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Whales (a working title): two whales singing as they travel the real oceans."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "whales-check"
+path = "src/bin/check.rs"
