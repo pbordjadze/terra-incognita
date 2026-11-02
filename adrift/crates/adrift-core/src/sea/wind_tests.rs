@@ -362,14 +362,14 @@ fn the_winds_tempo() {
                 let sweep = w.choose(rules, ConductGesture::Sweep { dx: 0.0, dy: -160.0, secs }, day, rate, &flat).unwrap();
                 let turned = if secs == 1.0 {
                     let c = w.choose(rules, ConductGesture::Circle { turn: 5.0, secs }, day, rate, &flat).unwrap();
-                    format!("{:.0}%", c.matches as f64 / WORLDS as f64 * 100.0)
+                    format!("{:.0}%", c.matches as f64 / n * 100.0)
                 } else {
                     String::new()
                 };
                 eprintln!(
                     "  {rate:4}  {secs:4}  {m:5}  {:8.0}  {spread:9.0}  {q95:13.0}  {:12.0}%  {turned}",
                     mean[0].hypot(mean[1]),
-                    sweep.matches as f64 / WORLDS as f64 * 100.0
+                    sweep.matches as f64 / n * 100.0
                 );
             }
         }
@@ -377,12 +377,15 @@ fn the_winds_tempo() {
 }
 
 /// Conducting on the wind (R21): the chooser's tap, sweep and circle at the wind's tempo, seeds
-/// lifted over Indiana in May at the preset's lifetime, 1.5 days out, framed as `the_winds_tempo`
-/// frames them (the cloud's RMS radius 100 pt). What each picks, whether its pick is still up, and
-/// the share that matched (the sea's: tap a handful to a third, sweep 14–19%, circle 13–16%).
+/// lifted over Indiana and off Virginia in May at the preset's lifetime, 1.5 days out, framed as
+/// `the_winds_tempo` frames them (the cloud's RMS radius 100 pt). No pick is a seed come down (the
+/// first measure picked one for a sweep against the drift, "matching" 49%: the down seeds stood
+/// still), a tap reaches the finger, a sweep's pick moved the stroke's way, and the shares matched
+/// are the sea's (tap a handful to a third, sweep 14–19%, circle 13–16% there). A circle's pick:
+/// how far it turns the circle's way in the day after the cue, against the median world's.
 #[test]
 fn conducting_on_the_wind() {
-    use crate::conduct::{looping, Worlds, AIR_TEMPO, WORLDS};
+    use crate::conduct::{looping, Worlds, AIR_TEMPO, TAP_NEAR, WORLDS};
     use crate::model::{ConductGesture, Held, Leg, Medium};
     let wind = air().preset();
     for (name, at) in [("Indiana", LonLat { lon: -86.0, lat: 40.0 }), ("off Virginia", LonLat { lon: -74.0, lat: 37.0 })] {
@@ -399,29 +402,38 @@ fn conducting_on_the_wind() {
         let rms = (pts.iter().map(|p| ((p.lon - clon) * c).powi(2) + (p.lat - clat).powi(2)).sum::<f64>() / n).sqrt();
         let scale = 100.0 / rms;
         let flat = move |p: LonLat| Some([(p.lon - clon) * c * scale, -(p.lat - clat) * scale]);
+        let share = |m: u32| m as f64 / n * 100.0;
         let mut report = format!("{name}: {:.0}% up;", n / WORLDS as f64 * 100.0);
-        let mut down_picks = 0;
-        // taps on up worlds' places
         for &k in [ups[3], ups[ups.len() / 2], ups[ups.len() - 2]].iter() {
             let [x, y] = flat(w.place(k, day).at).unwrap();
             let ch = w.choose(&wind, ConductGesture::Tap { x, y }, day, AIR_TEMPO, &flat).unwrap();
-            down_picks += !up(ch.k) as u32;
+            assert!(up(ch.k), "a tap picks a seed still up");
+            let [px, py] = flat(w.place(ch.k, day).at).unwrap();
+            assert!((px - x).hypot(py - y) < TAP_NEAR, "the tap's pick is under the finger");
             report += &format!(" tap {} matched,", ch.matches);
         }
         for (dx, dy) in [(0.0, -160.0), (160.0, 0.0), (0.0, 160.0), (-160.0, 0.0)] {
             let ch = w.choose(&wind, ConductGesture::Sweep { dx, dy, secs: 0.6 }, day, AIR_TEMPO, &flat).unwrap();
-            down_picks += !up(ch.k) as u32;
-            report += &format!(" sweep ({dx},{dy}) {:.0}%{},", ch.matches as f64 / WORLDS as f64 * 100.0, if up(ch.k) { "" } else { " DOWN" });
+            assert!(up(ch.k), "a sweep picks a seed still up");
+            let f = share(ch.matches);
+            report += &format!(" sweep ({dx},{dy}) {f:.0}%,");
+            assert!(f > 3.0 && f < 40.0, "a sweep matches the sea's share, not the down seeds: {f:.0}%");
         }
         for turn in [5.0, -5.0] {
             let ch = w.choose(&wind, ConductGesture::Circle { turn, secs: 1.0 }, day, AIR_TEMPO, &flat).unwrap();
-            down_picks += !up(ch.k) as u32;
-            let ahead = w.ahead(&wind, 8);
-            let after: Vec<[f64; 2]> = ahead.iter().map(|m| flat(m[ch.k as usize - 1].at).unwrap()).collect();
+            assert!(up(ch.k), "a circle picks a seed still up");
+            let ahead = w.ahead(&wind, 4);
+            let turned = |k: u32| {
+                let mut p = vec![flat(w.place(k, day).at).unwrap()];
+                p.extend(ahead.iter().take_while(|m| m[k as usize - 1].held == Held::No).map(|m| flat(m[k as usize - 1].at).unwrap()));
+                looping(&p) * turn.signum()
+            };
+            let mut all: Vec<f64> = ups.iter().map(|&k| turned(k)).collect();
+            all.sort_by(|a, b| a.partial_cmp(b).unwrap());
             let stays = ahead.iter().filter(|m| m[ch.k as usize - 1].held == Held::No).count();
-            report += &format!(" circle {turn:+} {:.0}% (the pick turns {:+.2} rad in the 2 days after, up {stays}/8 marks){},", ch.matches as f64 / WORLDS as f64 * 100.0, looping(&after), if up(ch.k) { "" } else { " DOWN" });
+            report += &format!(" circle {turn:+} {:.0}% (the pick turns {:+.2} rad its way in the day after, the median world {:+.2}; up {stays}/4 marks),", share(ch.matches), turned(ch.k), all[all.len() / 2]);
         }
-        eprintln!("{report} {down_picks} picks down");
+        eprintln!("{report}");
     }
 }
 

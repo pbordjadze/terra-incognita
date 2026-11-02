@@ -261,12 +261,15 @@ when it comes down (the CPU's and the GPU's alike), at most once a mark.
 framed 100 pt in RMS radius, the sea's lamp off Hatteras 15.5 days out, seeds over Indiana and off
 Virginia in May 1.5 days out):
 
-| | spread of the worlds in a 1 s stroke | in a 0.5 s stroke | turned a quarter (1 s circle) | sweep matched |
+| | spread of the worlds in a 1 s stroke | in a 0.5 s stroke | turned a quarter (1 s circle) | sweep matched (1 s) |
 | --- | --- | --- | --- | --- |
-| Sea at 3 (its tempo) | 34 pt | 19 pt | 6% | 12–13% |
-| Wind at 0.45 (`AIR_TEMPO`) | 40–41 pt | 21–22 pt | 7–8% | 10–12% |
-| Wind at 0.8 | 57 pt | 40–41 pt | 7–8% | 11–13% |
-| Wind at 1.2 | 86–87 pt | 40–41 pt | 9% | 12–14% |
+| Sea at 3 (its tempo) | 34 pt | 19 pt | 6% | 12% |
+| Wind at 0.45 (`AIR_TEMPO`) | 40–41 pt | 21–22 pt | 5–9% | 17–19% |
+| Wind at 0.8 | 57 pt | 40–41 pt | 5–9% | 16–17% |
+| Wind at 1.2 | 86–87 pt | 40–41 pt | 8–11% | 17–18% |
+
+(The wind's shares are of the seeds still up: 36% of them over Indiana at 1.5 days, 56% off
+Virginia, 15% over Indiana at 3 days.)
 
 So the first guesses hold: at 0.45 a stroke spreads the seeds' worlds as the sea's tempo spreads
 the lamps', and the free pace 0.3 (`AIR_RATE`, the same 2:3 as the sea's 2 to 3) moves a seed about
@@ -275,11 +278,19 @@ stroke spans 87 pt, most of the cloud). The wind's tempo is coarse where the sea
 quarter-day mark is 0.55 s at 0.45 and spreads the worlds 22 pt (the sea's: 3 pt), because a seed's
 cloud is young (a few marks old) and a mark is a large share of its life.
 
-**What the chooser does on the wind** (`conducting_on_the_wind`). A tap and a sweep do what they
-do on the sea, among the seeds still up. A circle has no spinning law to find in the air: what it
-picks is a world whose gust happened to turn over the stroke's day, and since the gust's memory is
-about a day (the sea's eddy: three), the turn rarely goes on after the cue: it reads as a swerve,
-not a loop.
+**What the chooser does on the wind** (`conducting_on_the_wind`, at `AIR_TEMPO`). The first
+measure found it choosing seeds that had come down: off Virginia a sweep against the drift picked
+one and "matched" 49%, the down seeds having stood still while the rest blew east; circle picks
+came down within a mark or two. Now a seed come down is no world to choose, and a world's look
+ahead ends where it lands (`Worlds::choose`, R21; the sea's worlds are never down, so its choices
+are unchanged). Then: a tap's pick is under the finger, 8–40 seeds matched; a sweep matches 14–21%
+of the seeds up (the sea's 14–19%). The look-aheads are the sea's seconds of clip at the wind's
+tempo, on whole marks (`AIR_TAP_AHEAD` one mark, `AIR_CIRCLE_AHEAD` two). A circle has no spinning
+law to find in the air: it picks a seed whose gust turned the circle's way over the stroke's day.
+The turn does go on after the cue: the pick turns 0.4–3.0 rad its way in the next day (2.2 s),
+where the median seed turns none. Over a day it reads as a swerve or a hook, not a lamp's loop
+(the gust remembers about a day, the sea's eddy three), and a pick may still come down soon after
+(one in four came down within half a day).
 
 **Later, for the sea** (Visual's zigzag question, R10): a Gulf Stream lamp's wander stalls and
 doubles back (the random flight's velocity wanders through zero), where real drifters there more

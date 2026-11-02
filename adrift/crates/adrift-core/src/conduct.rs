@@ -93,6 +93,12 @@ pub const FAN: usize = 6;
 pub const TAP_AHEAD: f64 = 1.5;
 /// Days a circle looks ahead: the world looping that way through the stroke and after it.
 pub const CIRCLE_AHEAD: f64 = 2.0;
+/// The wind's look-aheads (R21, Truth): the sea's seconds of clip at the wind's tempo, on whole
+/// quarter-day marks. A tap's 0.5 s is 0.23 days at `AIR_TEMPO`: one mark (0.55 s). A circle's 0.67 s
+/// is 0.3 days: two marks (1.1 s), the fewest whose turn can be seen to go on after the cue. The
+/// sea's 1.5 and 2 days would look 3–4 s ahead, past most seeds' landing.
+pub const AIR_TAP_AHEAD: f64 = 0.25;
+pub const AIR_CIRCLE_AHEAD: f64 = 0.5;
 
 /// The pick from scored worlds (higher better) at quantile `q` (1: the best), with the fan.
 fn finish(mut scored: Vec<(f64, usize)>, q: f64, near: Vec<u32>) -> Option<Choice> {
@@ -280,24 +286,36 @@ impl Worlds {
 
     /// The world that did what the hand did on `day`. `project` puts a place on the screen (None
     /// when it faces away); `rate` is the date's days a second (a stroke's seconds become days).
-    /// A tap and a circle also look ahead (`TAP_AHEAD`, `CIRCLE_AHEAD` days, the worlds' own
+    /// A tap and a circle also look ahead (`TAP_AHEAD`, `CIRCLE_AHEAD` days on the sea, `AIR_` on the wind; the worlds' own
     /// future steps, `rules`): the world chosen is the one that will reach the finger, or that is
     /// looping that way, so the lamp is seen to obey after the cue, not only to have obeyed.
     pub fn choose(&self, rules: &dyn MediumRules, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
         let n = WORLDS as usize;
-        let now: Vec<Option<[f64; 2]>> = (1..=WORLDS).map(|k| project(self.place(k, day).at)).collect();
+        // (R21, Truth) a seed come down is no world to choose: it neither went the hand's way nor
+        // can be followed, so it is left out of the scores and the matches (no sea world is ever
+        // down, so the sea's choices are unchanged), and a world's look ahead ends where it comes down
+        let up: Vec<bool> = (1..=WORLDS).map(|k| !self.place(k, day).held.down()).collect();
+        let now: Vec<Option<[f64; 2]>> = (1..=WORLDS).map(|k| if up[k as usize - 1] { project(self.place(k, day).at) } else { None }).collect();
+        let (tap_ahead, circle_ahead) = match self.leg.medium {
+            crate::model::Medium::Sea => (TAP_AHEAD, CIRCLE_AHEAD),
+            crate::model::Medium::Wind => (AIR_TAP_AHEAD, AIR_CIRCLE_AHEAD),
+        };
         let marks_for = |secs: f64, least: usize| ((secs * rate * 4.0).round() as usize).clamp(least, HISTORY - 1);
         // the marks after the newest kept one (which is at or just after `day`)
         let newest = self.marks.len() - 1;
         match g {
             ConductGesture::Tap { x, y } => {
-                let ahead = self.ahead(rules, (TAP_AHEAD * 4.0) as usize);
+                let ahead = self.ahead(rules, (tap_ahead * 4.0) as usize);
                 let mut scored = Vec::new();
                 let mut near = Vec::new();
                 for k in 0..n {
+                    if !up[k] {
+                        continue;
+                    }
                     // the nearest the world comes to the finger, from now through the look ahead
                     let mut best = f64::INFINITY;
-                    let pts = now[k].into_iter().chain(std::iter::once(project(self.marks[newest].w[k].at)).flatten()).chain(ahead.iter().filter_map(|m| project(m[k].at)));
+                    let newest_up = !self.marks[newest].w[k].held.down();
+                    let pts = now[k].into_iter().chain(std::iter::once(project(self.marks[newest].w[k].at)).flatten().filter(|_| newest_up)).chain(ahead.iter().take_while(|m| newest_up && !m[k].held.down()).filter_map(|m| project(m[k].at)));
                     for [sx, sy] in pts {
                         best = best.min((sx - x).hypot(sy - y));
                     }
@@ -347,18 +365,19 @@ impl Worlds {
             }
             ConductGesture::Circle { turn, secs } => {
                 let m = marks_for(secs, 4);
-                let ahead = self.ahead(rules, (CIRCLE_AHEAD * 4.0) as usize);
+                let ahead = self.ahead(rules, (circle_ahead * 4.0) as usize);
                 let sense = turn.signum();
                 let mut scored = Vec::new();
                 let mut near = Vec::new();
                 for k in 0..n {
+                    if !up[k] {
+                        continue;
+                    }
                     // the world's path over the stroke's look back and the look ahead, a mark apart
                     let mut pts: Vec<[f64; 2]> = (1..=m).rev().filter_map(|b| project(self.back(b, k, day))).collect();
                     pts.extend(project(self.marks[self.at_or_before(day)].w[k].at));
-                    for i in self.at_or_before(day) + 1..self.marks.len() {
-                        pts.extend(project(self.marks[i].w[k].at));
-                    }
-                    pts.extend(ahead.iter().filter_map(|mk| project(mk[k].at)));
+                    let later = self.marks.range(self.at_or_before(day) + 1..).map(|mk| &mk.w[k]).chain(ahead.iter().map(|mk| &mk[k]));
+                    pts.extend(later.take_while(|w| !w.held.down()).filter_map(|w| project(w.at)));
                     let s = looping(&pts) * sense;
                     if s > std::f64::consts::FRAC_PI_2 {
                         near.push(k as u32 + 1);
