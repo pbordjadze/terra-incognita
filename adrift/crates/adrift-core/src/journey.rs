@@ -6,7 +6,7 @@
 //! each frame shows; the take carries it as a pace before each frame, so it replays exactly.
 
 use crate::model::Float;
-use crate::sea::Rules;
+use crate::sea::Media;
 
 /// How much slower the date may run where the lamps are worth seeing than where they only travel.
 pub const PACE_RANGE: f64 = 20.0;
@@ -79,12 +79,12 @@ pub const NEAR_KM: f64 = 60.0;
 /// `PACE_RANGE`; the frames are spaced evenly in that weight and the pace eased over `PACE_EASE`
 /// seconds of clip. So a hover, or a run side by side, passes quickly, and braiding and looping take
 /// the clip. Deterministic.
-pub fn pace(rules: &Rules, floats: &[Float], from: f64, to: f64, frames: usize, _fps: f64) -> Vec<f64> {
+pub fn pace(media: Media<'_>, floats: &[Float], from: f64, to: f64, frames: usize, _fps: f64) -> Vec<f64> {
     let frames = frames.max(1);
     if !(to > from) {
         return vec![from; frames];
     }
-    let w = interest(rules, floats, from, to);
+    let w = interest(media, floats, from, to);
     let marks = w.len();
     // the weight's running integral over the marks (a quarter day each, the last part one shorter)
     let step = (to - from) / (marks - 1).max(1) as f64;
@@ -138,14 +138,14 @@ pub fn pace(rules: &Rules, floats: &[Float], from: f64, to: f64, frames: usize, 
 
 /// The weight of each of the journey's marks (from `from` to `to`, `step` apart, about a quarter
 /// day): 1 for plain travel, more where the lamps are worth seeing, smoothed and held in range.
-pub fn interest(rules: &Rules, floats: &[Float], from: f64, to: f64) -> Vec<f64> {
+pub fn interest(media: Media<'_>, floats: &[Float], from: f64, to: f64) -> Vec<f64> {
     let marks = (((to - from) / 0.25).ceil() as usize).max(1) + 1;
     let step = (to - from) / (marks - 1) as f64;
     // each lamp's place at every mark, from its own path
     let places: Vec<Vec<crate::model::LonLat>> = floats
         .iter()
         .map(|f| {
-            let p = path(rules, f, to + 0.25);
+            let p = path(media, f, to + 0.25);
             (0..marks).map(|i| place_on(&p, from + i as f64 * step)).collect()
         })
         .collect();
@@ -183,26 +183,56 @@ fn place_on(p: &[(f64, crate::model::LonLat)], day: f64) -> crate::model::LonLat
     }
 }
 
-/// A lamp's own path (its legs, each under its own law and world), every quarter-day mark from its
-/// first leg to `to`: (day, place). The lamp's path as the App computes it (`App::extend_path`).
-pub fn path(rules: &Rules, f: &Float, to: f64) -> Vec<(f64, crate::model::LonLat)> {
+/// A lamp's own path (its legs, each under its own law and world, and (R21) carried by its own
+/// medium: a seed by the wind's rules), every quarter-day mark from its first leg to `to`: (day,
+/// place). The lamp's path as the App computes it (`App::extend_path`). A seed come down stays where
+/// it came down.
+pub fn path(media: Media<'_>, f: &Float, to: f64) -> Vec<(f64, crate::model::LonLat)> {
+    path_held(media, f, to).into_iter().map(|(d, at, _)| (d, at)).collect()
+}
+
+/// `path`, each mark with what holds it then (R21: a seed's `Held::Landed` or `Held::Ditched`).
+pub fn path_held(media: Media<'_>, f: &Float, to: f64) -> Vec<(f64, crate::model::LonLat, crate::model::Held)> {
+    use crate::model::Held;
     use crate::sea::Drift;
     let legs = f.legs();
     let mut out = Vec::new();
     for (i, leg) in legs.iter().enumerate() {
+        let rules = media.of(leg.medium);
         let until = legs.get(i + 1).map_or(to, |l| l.day);
         let e = leg.eddy.map(|e| (e[0], e[1])).unwrap_or_else(|| rules.put(leg.at, leg.day, leg.seed, leg.world).eddy);
         let mut d = Drift { at: leg.at, eddy: e };
+        let mut held = Held::No;
         let mut day = leg.day;
-        out.push((day, d.at));
+        out.push((day, d.at, held));
         while day < until - 1e-9 {
             let next = crate::app::grid_next(day);
-            d = rules.flight_under(leg.law, d, day, next - day, leg.seed, leg.world).drift;
+            let s = rules.flight(leg.law, d, held, day, next - day, leg.seed, leg.world);
+            d = s.drift;
+            // (the sea's holds free again; a seed's coming down is for good)
+            held = if held.down() { held } else { s.held };
             day = next;
-            out.push((day, d.at));
+            out.push((day, d.at, held));
         }
     }
     out
+}
+
+/// (R21) The day the last of `floats` came down, if every one is a seed come down by `to` (a lamp, or
+/// a seed still aloft, never ends): a journey of seeds ends there, and its end beat begins.
+pub fn all_down(media: Media<'_>, floats: &[Float], to: f64) -> Option<f64> {
+    let mut last = f64::NEG_INFINITY;
+    for f in floats {
+        let p = path_held(media, f, to);
+        let (_, _, held) = *p.last()?;
+        if !held.down() {
+            return None;
+        }
+        // the first mark of the stretch it has stayed down since
+        let down = p.iter().rev().take_while(|m| m.2.down()).last().map_or(to, |m| m.0);
+        last = last.max(down);
+    }
+    last.is_finite().then_some(last)
 }
 
 #[cfg(test)]
@@ -217,8 +247,10 @@ mod tests {
         std::env::var_os("ADRIFT_ASSETS").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"))
     }
 
-    pub(crate) fn rules() -> Rules {
-        Rules::load(&DirAssets(assets())).unwrap()
+    pub(crate) fn rules() -> Media<'static> {
+        let sea: &'static crate::sea::Rules = Box::leak(Box::new(crate::sea::Rules::load(&DirAssets(assets())).unwrap()));
+        let air = Box::leak(Box::new(crate::sea::AirRules::sharing(sea, &DirAssets(assets())).unwrap()));
+        Media { sea, air }
     }
 
     /// A lamp as a fresh put makes it (the current law).
@@ -279,18 +311,18 @@ mod tests {
                     let mut lat = la0;
                     while lat < la1 {
                         let a = LonLat { lon, lat };
-                        if !r.coast.is_sea(a.lon as f32, a.lat as f32) {
+                        if !r.sea.coast.is_sea(a.lon as f32, a.lat as f32) {
                             lat += 0.75;
                             continue;
                         }
                         for (dx, dy) in [(0.4, 0.0), (0.0, 0.4), (0.3, 0.3), (0.6, -0.2)] {
                             let b = LonLat { lon: lon + dx, lat: lat + dy };
-                            if !r.coast.is_sea(b.lon as f32, b.lat as f32) {
+                            if !r.sea.coast.is_sea(b.lon as f32, b.lat as f32) {
                                 continue;
                             }
                             let (fa, fb) = (lamp(1, a, day0, 1), lamp(2, b, day0, 2));
                             let span: f64 = std::env::var("DANCE_DAYS").ok().and_then(|v| v.parse().ok()).unwrap_or(60.0);
-                            let (pa, pb) = (path(&r, &fa, day0 + span), path(&r, &fb, day0 + span));
+                            let (pa, pb) = (path(r, &fa, day0 + span), path(r, &fb, day0 + span));
                             let (w, near, closest) = dance(&pa, &pb);
                             let score = w.abs() * near;
                             best.push((score, format!("{name} {w:+.1} rad, near {:.0}%, closest {closest:.0} km", near * 100.0), a, b, day0));
@@ -325,7 +357,7 @@ mod tests {
     fn the_dance_dances() {
         let r = rules();
         let (f, to) = the_dance();
-        let (a, b) = (path(&r, &f[0], to), path(&r, &f[1], to));
+        let (a, b) = (path(r, &f[0], to), path(r, &f[1], to));
         let (w, near, closest) = dance(&a, &b);
         eprintln!("the dance: the line between them wound {w:+.1} rad in 60 days, 15-150 km apart {:.0}% of the time, closest {closest:.0} km", near * 100.0);
         assert!(w.abs() > 4.0 * std::f64::consts::PI && near > 0.8);
@@ -337,7 +369,7 @@ mod tests {
 
     /// The share of a clip's frames in which the screen barely changes (visible change under a quarter
     /// of the clip's median), with each frame's day from `days`.
-    fn still_share(r: &Rules, f: &[Float], from: f64, to: f64, days: &[f64]) -> f64 {
+    fn still_share(r: Media<'_>, f: &[Float], from: f64, to: f64, days: &[f64]) -> f64 {
         let paths: Vec<_> = f.iter().map(|l| path(r, l, to + 0.25)).collect();
         let places: Vec<Vec<LonLat>> = paths.iter().map(|p| std::iter::once(from).chain(days.iter().copied()).map(|d| super::place_on(p, d)).collect()).collect();
         let v = visible_series(&places);
@@ -359,21 +391,21 @@ mod tests {
         let (e, e_from, e_to) = early();
         for (name, f, from, to) in [("dance", dance.clone(), dance[0].put_day, dance_to), ("early", e, e_from, e_to)] {
             let (frames, fps) = (900usize, 30.0);
-            let days = pace(&r, &f, from, to, frames, fps);
+            let days = pace(r, &f, from, to, frames, fps);
             assert_eq!(days.len(), frames);
             assert_eq!(*days.last().unwrap(), to, "it ends on the last day");
             assert!(days.windows(2).all(|w| w[1] >= w[0]) && days[0] > from, "never back");
-            assert_eq!(days, pace(&r, &f, from, to, frames, fps), "deterministic");
+            assert_eq!(days, pace(r, &f, from, to, frames, fps), "deterministic");
             let per: Vec<f64> = std::iter::once(days[0] - from).chain(days.windows(2).map(|w| w[1] - w[0])).collect();
             let (lo, hi) = per.iter().fold((f64::INFINITY, 0.0f64), |(a, b), x| (a.min(*x), b.max(*x)));
             let lurch = per.windows(2).map(|w| (w[1] - w[0]).abs() / w[0].max(1e-12)).fold(0.0, f64::max);
             let even: Vec<f64> = (1..=frames).map(|i| from + (to - from) * i as f64 / frames as f64).collect();
-            let (still, still_even) = (still_share(&r, &f, from, to, &days), still_share(&r, &f, from, to, &even));
+            let (still, still_even) = (still_share(r, &f, from, to, &days), still_share(r, &f, from, to, &even));
             // the middle third of the clip: how many days it covers, against an even pace's third
             let middle = days[frames * 2 / 3] - days[frames / 3];
             // the stillest two seconds: the least visible change over 60 frames, against the median 60
             let stillest = |d: &[f64]| {
-                let paths: Vec<_> = f.iter().map(|l| path(&r, l, to + 0.25)).collect();
+                let paths: Vec<_> = f.iter().map(|l| path(r, l, to + 0.25)).collect();
                 let places: Vec<Vec<LonLat>> = paths.iter().map(|p| std::iter::once(from).chain(d.iter().copied()).map(|x| super::place_on(p, x)).collect()).collect();
                 let v = visible_series(&places);
                 let sums: Vec<f64> = v.windows(60).map(|w| w.iter().sum::<f64>()).collect();
@@ -398,7 +430,7 @@ mod tests {
     fn one_plain_lamp_runs_near_evenly() {
         let r = rules();
         let f = vec![lamp(1, LonLat { lon: -30.0, lat: 20.0 }, 9131.0, 1)];
-        let days = pace(&r, &f, 9131.0, 9191.0, 300, 30.0);
+        let days = pace(r, &f, 9131.0, 9191.0, 300, 30.0);
         assert!(days.windows(2).all(|w| w[1] >= w[0]));
         assert_eq!(*days.last().unwrap(), 9191.0);
     }
@@ -411,7 +443,7 @@ mod tests {
     fn the_early_dance_dances_from_the_start() {
         let r = rules();
         let (f, _, to) = early();
-        let (a, b) = (path(&r, &f[0], to), path(&r, &f[1], to));
+        let (a, b) = (path(r, &f[0], to), path(r, &f[1], to));
         let (w, near, closest) = dance(&a, &b);
         eprintln!("the early dance: the line wound {w:+.1} rad in 30 days, 15-150 km apart {:.0}% of the time, closest {closest:.0} km", near * 100.0);
         assert!(w.abs() > 4.0 * std::f64::consts::PI && near > 0.8);
@@ -420,5 +452,70 @@ mod tests {
             let copy = crate::app::LampsCopy { version: 1, day: to, floats: f };
             std::fs::write(out, format!("{}\n{}\n", crate::app::LAMPS_HEADER, serde_json::to_string(&copy).unwrap())).unwrap();
         }
+    }
+
+    /// A seed as a fresh lift makes it (R21).
+    pub(super) fn seed(id: u32, at: LonLat, day: f64, seed: u64) -> Float {
+        let mut f = lamp(id, at, day, seed);
+        f.legs = f.legs.iter().map(|l| l.on(crate::model::Medium::Wind)).collect();
+        f
+    }
+
+    /// (R21) Where seeds fly far: pairs lifted 40 km apart over a grid, each month, ranked by how far
+    /// the pair went before both came down. `cargo test --release -p adrift-core find_a_seed_flight -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn find_a_seed_flight() {
+        let r = rules();
+        let mut best = Vec::new();
+        for month in [0.0, 3.0, 6.0, 9.0] {
+            let day0 = 9131.0 + month * 30.44 + 1.0;
+            for lon in (-120..=20).step_by(10) {
+                for lat in (25..=55).step_by(10) {
+                    let a = LonLat::new(lon as f64, lat as f64);
+                    let b = LonLat::new(lon as f64 + 0.5, lat as f64);
+                    let f = [seed(1, a, day0, 1), seed(2, b, day0, 2)];
+                    let (pa, pb) = (path_held(r, &f[0], day0 + 6.0), path_held(r, &f[1], day0 + 6.0));
+                    let down = all_down(r, &f, day0 + 6.0).unwrap_or(day0 + 6.0) - day0;
+                    let (ea, eb) = (pa.last().unwrap(), pb.last().unwrap());
+                    let d = |p: LonLat, q: LonLat| distance_km(p.lon as f32, p.lat as f32, q.lon as f32, q.lat as f32) as f64;
+                    let km = d(a, ea.1).min(d(b, eb.1));
+                    let apart = d(ea.1, eb.1);
+                    best.push((km, format!("{lon},{lat} month {month}: {km:.0} km, apart {apart:.0} km at the end, down by {down:.2} d ({:?} {:?})", ea.2, eb.2)));
+                }
+            }
+        }
+        best.sort_by(|x, y| y.0.partial_cmp(&x.0).unwrap());
+        for b in best.iter().take(10) {
+            eprintln!("{}", b.1);
+        }
+        let n = best.len();
+        eprintln!("median: {}", best[n / 2].1);
+    }
+
+    /// (R21) A journey of seeds: each by the wind's rules (not the sea's, as before the seam's fix), so
+    /// the gale pair off Biscay crosses to Spain; it ends when the last comes down (`all_down`), a lamp
+    /// never does; and its pace runs on, never back, to the last day.
+    #[test]
+    fn a_journey_of_seeds_flies_by_the_wind_and_ends_when_they_are_down() {
+        let r = rules();
+        let day0 = 9132.0;
+        let f = vec![seed(1, LonLat::new(-20.0, 45.0), day0, 1), seed(2, LonLat::new(-19.5, 45.0), day0, 2)];
+        let p = path_held(r, &f[0], day0 + 12.0);
+        let (_, end, held) = *p.last().unwrap();
+        let km = distance_km(-20.0, 45.0, end.lon as f32, end.lat as f32);
+        assert!(km > 1000.0 && held.down(), "the gale seed went {km:.0} km and came down ({held:?})");
+        let down = all_down(r, &f, day0 + 12.0).expect("both down within twelve days");
+        assert!(down > day0 + 0.5 && down < day0 + 12.0, "down by {:.2} d", down - day0);
+        // nothing moves after: the path's places past `down` are where it came down
+        let q = path(r, &f[1], day0 + 12.0);
+        let after: Vec<_> = q.iter().filter(|m| m.0 >= down).map(|m| m.1).collect();
+        assert!(after.windows(2).all(|w| w[0] == w[1]));
+        // a lamp never ends; nor does a mix of a lamp and seeds
+        let l = lamp(3, LonLat::new(-30.0, 40.0), day0, 3);
+        assert_eq!(all_down(r, &[l.clone()], day0 + 12.0), None);
+        assert_eq!(all_down(r, &[f[0].clone(), l], day0 + 12.0), None);
+        let days = pace(r, &f, day0, down, 300, 30.0);
+        assert!(days.windows(2).all(|w| w[1] >= w[0]) && *days.last().unwrap() == down);
     }
 }

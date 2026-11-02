@@ -1,0 +1,68 @@
+{
+ "title": "R21, the wind: rest a beat on land and a seed is lifted there; let go and the wind has it",
+ "size": [
+  393.0,
+  852.0
+ ],
+ "medium": "Wind",
+ "day": 9252.0,
+ "camera": {
+  "lon": -95.0,
+  "lat": 40.0,
+  "zoom": 3.0
+ },
+ "steps": [
+  {
+   "t": 0.0,
+   "down": 0,
+   "at": [
+    -95.0,
+    40.0
+   ]
+  },
+  {
+   "t": 0.2,
+   "shot": "thickening-on-land"
+  },
+  {
+   "t": 0.45,
+   "expect": {
+    "floats": 1,
+    "state": "holding",
+    "saw": [
+     "Put"
+    ],
+    "held": 1
+   }
+  },
+  {
+   "t": 0.6,
+   "up": 0,
+   "at": [
+    -95.0,
+    40.0
+   ]
+  },
+  {
+   "t": 0.7,
+   "expect": {
+    "floats": 1,
+    "state": "idle",
+    "saw": [
+     "Release"
+    ],
+    "held": null,
+    "float": {
+     "id": 1,
+     "lon": -95.0,
+     "lat": 40.0,
+     "tol": 0.5
+    }
+   }
+  },
+  {
+   "t": 1.5,
+   "shot": "aloft"
+  }
+ ]
+}

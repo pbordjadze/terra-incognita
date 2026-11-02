@@ -1,0 +1,2 @@
+adrift lamps 1
+{"version":1,"day":9136.0,"floats":[{"id":1,"at":{"lon":-20,"lat":45},"put_day":9132.0,"seed":1,"held":"No","hand":"Free","eddy":[0.0,0.0],"measured":1.0,"wake":[],"kept":true,"lit_for":10.0,"legs":[{"at":{"lon":-20,"lat":45},"day":9132.0,"seed":1,"world":0,"eddy":null,"law":1,"medium":"Wind"}]},{"id":2,"at":{"lon":-19.5,"lat":45},"put_day":9132.0,"seed":2,"held":"No","hand":"Free","eddy":[0.0,0.0],"measured":1.0,"wake":[],"kept":true,"lit_for":10.0,"legs":[{"at":{"lon":-19.5,"lat":45},"day":9132.0,"seed":2,"world":0,"eddy":null,"law":1,"medium":"Wind"}]}]}
