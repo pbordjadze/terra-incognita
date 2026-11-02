@@ -112,12 +112,15 @@ fn contour(q: f32, fw: f32) -> vec2f {
     let sparse = contour(psi / (2.0 * delta), fwPsi / (2.0 * delta));
     var dense = contour(psi / delta, fwPsi / delta);
     dense.y *= smoothstep(0.0, 0.6, 1.0 - blend);
-    let lineW = 0.75 * uPx * reading; let haloW = 4.0 * uPx * reading;
+    // (R22, a clip only: U.pad.y) the lines a touch heavier and brighter, so a re-encode's halved
+    // colour resolution and its quantising don't dissolve them into the sea
+    let ex = U.pad.y;
+    let lineW = mix(0.75, 1.15, ex) * uPx * reading; let haloW = 4.0 * uPx * reading;
     let core = max(sparse.y * (1.0 - smoothstep(lineW * 0.5, lineW * 0.5 + 1.0, sparse.x)),
                    dense.y * (1.0 - smoothstep(lineW * 0.5, lineW * 0.5 + 1.0, dense.x)));
     let halo = max(sparse.y * exp(-sparse.x * sparse.x / (haloW * haloW)), dense.y * exp(-dense.x * dense.x / (haloW * haloW)));
     let running = smoothstep(0.04, 0.40, speed) * measured;
-    acc = over(acc, mix(vec3f(0.20, 0.42, 0.62), vec3f(0.62, 0.74, 0.86), U.pad.x), mix(0.22, 0.30, U.pad.x) * core * running * water);
+    acc = over(acc, mix(vec3f(0.20, 0.42, 0.62), vec3f(0.62, 0.74, 0.86), U.pad.x), mix(0.22, 0.30, U.pad.x) * mix(1.0, 1.45, ex) * core * running * water);
 
     // -- light running along them: noise carried by the current, each bright place trailing a tail
     // upstream, so a still picture shows which way the water goes
@@ -149,10 +152,13 @@ fn contour(q: f32, fw: f32) -> vec2f {
     // close in the light's bands were the brightest thing on the sea (the owner's screenshot at zoom 6):
     // from zoom 4 they thin to a third, so a lamp and its cloud are what the eye finds
     glow *= mix(1.0, 0.35, smoothstep(4.0, 6.5, zoom));
-    acc = over(acc, vec3f(0.96, 0.99, 1.0), (0.24 * halo + 0.6 * core) * glow * water);
+    // (a clip: the light along the lines kept on the lines and calmer off them, where its soft noise
+    // moving every frame is the bits a re-encode spends and turns to mush)
+    acc = over(acc, vec3f(0.96, 0.99, 1.0), (mix(0.24, 0.12, ex) * halo + mix(0.6, 0.7, ex) * core) * glow * water);
 
     // -- close in, the wind on the water: patches of glitter drifting slowly
-    let near = smoothstep(2.6, 4.2, zoom) * U.tone.y * (1.0 - U.tone.w);
+    // (a clip: no glitter; a point-sized flash a frame is noise to an encoder and gone after it)
+    let near = smoothstep(2.6, 4.2, zoom) * U.tone.y * (1.0 - U.tone.w) * (1.0 - ex);
     if (near > 0.0) {
         let gusts = smoothstep(-0.4, 1.1, gnoise(g * R / (420.0 * reading) + vec3f(0.0, tm * 0.02, tm * 0.03)) / 0.185);
         let cell = 15.0 * reading;

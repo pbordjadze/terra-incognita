@@ -204,6 +204,9 @@ pub struct App {
     pub studio: crate::studio::Studio,
     /// The frame being drawn goes into an exported clip (R9; the look's `exporting`).
     exporting: bool,
+    /// (R22, Motion) The check's `--camera-only`: an export steps its replay and camera but draws
+    /// nothing (`export_frame` returns an empty frame), so a journey's framing is measured in seconds.
+    pub export_dry: bool,
     /// While exporting, how far through the clip's still opening beat (0..1, 1 once past it) and its
     /// eased last one (0 until it, then 0..1) (R10; the look's `opening` and `ending`).
     clip_phase: (f32, f32),
@@ -223,6 +226,23 @@ pub struct App {
 
 /// Days a second while the date runs.
 pub const RATE: f64 = 2.0;
+/// What a journey clip shows, as the edit view sets it (R22; `App::journey_take_edit`). `None` is the
+/// app's own choice; `seconds` is the clip's length (its opening and end beats are added).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct JourneyEdit {
+    pub seconds: f64,
+    /// The first day shown (never before the lamps are all out).
+    pub from: Option<f64>,
+    /// The last day shown.
+    pub to: Option<f64>,
+    /// Days a second (when the days don't both fix it).
+    pub pace: Option<f64>,
+}
+
+/// The rate a journey's pace is written at (R22: the export is 60 frames a second, TikTok's ceiling;
+/// the pace's intents at 60 a second serve any export rate).
+pub const JOURNEY_FPS: f64 = 60.0;
+
 /// How far through a journey clip it reaches the app's date (R21): the rest runs on past it.
 pub const JOURNEY_ARRIVES: f64 = 0.8;
 /// Days a second while the date runs with the wind's preset (R21; measured by Truth, SOURCES.md ›
@@ -409,6 +429,7 @@ impl App {
             panel_stand_in: None,
             studio: Default::default(),
             exporting: false,
+            export_dry: false,
             clip_phase: (1.0, 0.0),
             conduct: Default::default(),
             song: None,
@@ -446,6 +467,7 @@ impl App {
             clock: self.clock,
             rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
             night: if self.night { 1.0 } else { 0.0 },
+            export: 0.0,
         }
     }
 
@@ -1876,7 +1898,7 @@ impl App {
                 })
             })
         });
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 } }
+        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 }, journey: false }
 
     }
 
@@ -2103,7 +2125,15 @@ impl App {
     /// journey is short), the clip's camera framing them as it does any take. A take with no touches,
     /// exported like any other.
     pub fn journey_take(&self, seconds: f64) -> Option<crate::studio::Take> {
+        self.journey_take_edit(&JourneyEdit { seconds, ..Default::default() })
+    }
+
+    /// The picked lamps' journey as an edit sets it (R22, the edit view's model): its first and last
+    /// days, its pace, its length. What an edit leaves out is the app's own choice (R21: from the
+    /// later put or as far back as reaches the app's date 80% through, at the medium's pace).
+    pub fn journey_take_edit(&self, edit: &JourneyEdit) -> Option<crate::studio::Take> {
         let ids = self.picked_lamps();
+        let seconds = edit.seconds;
         if ids.is_empty() || seconds <= 0.0 {
             return None;
         }
@@ -2129,17 +2159,38 @@ impl App {
         // slower one (before, the span from the put to today was stretched over the clip, so a 4-minute
         // clip of a 214-day pair crawled at 0.9 days a second and stopped at today). Paths past today are
         // the same pure function of the legs and the rules. Seeds end when the last comes down.
-        let rate = if wind { AIR_RATE } else { RATE };
+        let born = first;
+        let mut rate = edit.pace.unwrap_or(if wind { AIR_RATE } else { RATE }).clamp(0.01, 60.0);
         // it arrives at the app's date (where the reader sees the lamps as he makes it) 80% of the way
         // through and goes on past it: from the later put, or from as far back as the clip has room for
-        let first = if wind { first } else { first.max(self.clock.day - rate * seconds * JOURNEY_ARRIVES) };
+        let mut first = if wind { first } else { first.max(self.clock.day - rate * seconds * JOURNEY_ARRIVES) };
         let mut to = first + rate * seconds;
         if wind {
             if let Some(d) = crate::journey::all_down(self.media(), &floats, to) {
                 to = d.max(first + rate);
             }
         }
-        let fps = 30.0;
+        // (R22) an edit's days: both set, the pace follows from them and the length (the edit view's
+        // two handles); one set, the other follows from the pace; never before the lamps were all out
+        match (edit.from, edit.to) {
+            (Some(a), Some(b)) => {
+                first = a.max(born);
+                to = b.max(first + 0.25);
+                rate = (to - first) / seconds;
+            }
+            (Some(a), None) => {
+                first = a.max(born);
+                to = first + rate * seconds;
+            }
+            (None, Some(b)) => {
+                to = b.max(born + 0.25);
+                first = (to - rate * seconds).max(born);
+                rate = (to - first) / seconds;
+            }
+            (None, None) => {}
+        }
+        let _ = rate;
+        let fps = JOURNEY_FPS;
         let frames = (seconds * fps).ceil() as usize;
         // the day each frame shows (R14, `journey::pace`: where the lamps do something worth seeing,
         // the date slows; elsewhere it hurries; its mean is the normal pace), as a pace before each frame
@@ -2177,10 +2228,15 @@ impl App {
 
     /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
     pub fn journey_begin(&mut self, seconds: f64, fps: f64) -> u32 {
+        self.journey_begin_edit(&JourneyEdit { seconds, ..Default::default() }, fps)
+    }
+
+    /// Begins exporting a journey clip as an edit sets it (R22); the frames to come.
+    pub fn journey_begin_edit(&mut self, edit: &JourneyEdit, fps: f64) -> u32 {
         if self.studio.replay.is_some() {
             return 0;
         }
-        match self.journey_take(seconds) {
+        match self.journey_take_edit(edit) {
             Some(take) => self.export_begin_take(take, fps),
             None => 0,
         }
@@ -2303,6 +2359,8 @@ impl App {
         v.reading = Self::reading_for(w, h, v.ppp);
         v.camera = cam;
         v.disc = View::layout(w, h, v.ppp, cam);
+        // (R22) a clip's frame: the sea and ground passes may tune it for the platform's re-encode
+        v.export = 1.0;
         v
     }
 
@@ -2379,6 +2437,11 @@ impl App {
             let framing = r.take.framing;
             r.cam.step(self.camera.camera, part, through, dt, &framing, &lamps)
         };
+        if self.export_dry {
+            self.seconds = seconds;
+            self.studio.replay.as_mut().unwrap().frame += 1;
+            return Some(Vec::new());
+        }
         let view = self.clip_view(cam);
         self.haptic = false;
         self.exporting = true;

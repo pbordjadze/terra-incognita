@@ -405,11 +405,15 @@ impl Words {
                 }).collect();
                 line(strokes, &ring, hue, true, night, true);
             }
-            // kept for good (R13): a small gold pin under the lamp, a dot on a short stem, no words
+            // kept for good (R13; R22 a gold star at the shoulder, as on the globe: a pin was a dot
+            // among dots): two tapered strokes crossed, a four-pointed sparkle
             if r.kept {
-                let (px, py) = (lamp[0], lamp[1] + 7.5 * reading);
-                line(strokes, &[Pt { p: [px, py - 2.0 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }, Pt { p: [px, py + 1.5 * reading, 0.0], w: 0.9 * reading, a: 0.9, hollow: 0.0 }], super::KEPT_GOLD, true, true, false);
-                line(strokes, &[Pt { p: [px, py + 2.6 * reading, 0.0], w: 2.8 * reading, a: 1.0, hollow: 0.0 }], super::KEPT_GOLD, true, night, false);
+                let (px, py) = (lamp[0] + 8.0 * reading, lamp[1] - 8.0 * reading);
+                let s = 6.0 * reading;
+                for (dx, dy) in [(0.0, 1.0), (1.0, 0.0)] {
+                    let pts = [-1.0f32, -0.45, 0.0, 0.45, 1.0].map(|t| Pt { p: [px + dx * s * t, py + dy * s * t, 0.0], w: (0.35 + 2.6 * (1.0 - t.abs()).powf(1.6)) * reading, a: 1.0, hollow: 0.0 });
+                    line(strokes, &pts, [0.93, 0.74, 0.22], true, night, false);
+                }
             }
             if night {
                 let rr = (4.2 + 0.6 * up) * reading;
