@@ -29,8 +29,10 @@ pub const WORLDS: u32 = 1024;
 /// The date's days a second while a take records and the hand conducts (Truth's measure, R11:
 /// at 3 a one-second stroke chooses among worlds about 35 points apart; 2 is too tight, 6 blurs).
 pub const TEMPO: f64 = 3.0;
-/// The tempo with the wind's preset (R21; Truth to measure as R11 measured the sea's): the free
-/// `AIR_RATE` x 1.5, as the sea's 3 is its 2 x 1.5.
+/// The tempo with the wind's preset (R21, measured by Truth as R11 measured the sea's:
+/// `sea::wind_tests::the_winds_tempo`, SOURCES.md › The wind's preset): a 1 s stroke spreads the
+/// seeds' worlds 40 pt across a cloud of 100 pt RMS radius, the sea's 34 at `TEMPO`; 0.8 is 57, 1.2
+/// blurs (87). The free `AIR_RATE` x 1.5, as the sea's 3 is its 2 x 1.5.
 pub const AIR_TEMPO: f64 = 0.45;
 /// Quarter-day marks kept for the look back (16 days).
 pub const HISTORY: usize = 65;

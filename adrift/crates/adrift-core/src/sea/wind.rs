@@ -140,6 +140,9 @@ pub struct AirRules {
 impl AirRules {
     pub const FALL: f32 = 0.86;
     pub const WASHOUT: f32 = 0.36;
+    /// The preset's lifetime dial (`sea/MEDIA.md` › The dials: lifetime): a seed lives this many
+    /// times as long as birch pollen near the ground does (chosen; SOURCES.md says why).
+    pub const LIFE: f32 = 4.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<AirRules> {
         Ok(AirRules {
@@ -153,9 +156,17 @@ impl AirRules {
         })
     }
 
-    /// The wind's rules reading the sea's own wind and coast sheets (R21: one copy of each).
+    /// The preset's rules (R21, Truth; `adrift/SOURCES.md` › The wind's preset): the measured
+    /// weather and wind, with a seed's life `LIFE` times the measured one (fall and washout both
+    /// divided by it), so a seed stays up about five days instead of one: chosen, not measured.
+    pub fn preset(&self) -> AirRules {
+        AirRules { wind: self.wind.clone(), gusts: Gusts(self.gusts.0.clone()), coast: self.coast.clone(), carry: self.carry, gust: self.gust, fall: Self::FALL / Self::LIFE, washout: Self::WASHOUT / Self::LIFE }
+    }
+
+    /// The app's wind (R21): the preset's rules (`preset`, a seed's life `LIFE` times the measured)
+    /// reading the sea's own wind and coast sheets (one copy of each).
     pub fn sharing(sea: &super::Rules, assets: &dyn Assets) -> anyhow::Result<AirRules> {
-        Ok(AirRules { wind: sea.wind.clone(), gusts: Gusts::load(assets)?, coast: sea.coast.clone(), carry: 1.0, gust: 1.0, fall: Self::FALL, washout: Self::WASHOUT })
+        Ok(AirRules { wind: sea.wind.clone(), gusts: Gusts::load(assets)?, coast: sea.coast.clone(), carry: 1.0, gust: 1.0, fall: Self::FALL / Self::LIFE, washout: Self::WASHOUT / Self::LIFE })
     }
 
     /// A thing as it is lifted at `at` on `day`: with the gust world k's air has there at that
@@ -377,23 +388,83 @@ pub fn gpu_path(a: &Air) -> super::GpuPath {
     super::GpuPath { lon: a.at.lon as f32, lat: a.at.lat as f32, held: a.aloft.code(), measured: 0.0, eddy_u: a.gust.0, eddy_v: a.gust.1 }
 }
 
-/// The wind's maybes on the GPU: `wind.wgsl` as a compute pass over a buffer of paths, one step a
-/// dispatch (the sea's `Maybes`, plainer: the preset seam can grow it to `step_many` and keeps).
+/// The steps a wind cloud takes from `reached` toward `target` (R21, Truth): on the quarter-day
+/// grid, as a seed's own path and its CPU samples step (`App::extend_path`: the first to the next
+/// mark, then a quarter day each), at most `max`. A step never ends between
+/// marks: one that did would read the same quarter day's weather on the next (`air_span`), and its
+/// kicks would add up as one, too big. Each step with the day it reaches.
+pub fn grid_steps(rules: &AirRules, reached: f64, target: f64, seed: u64, count: u32, base: u32, max: usize) -> Vec<(AirParams, f64)> {
+    let mut out = Vec::new();
+    let mut day = reached;
+    while out.len() < max {
+        let next = crate::app::grid_next(day);
+        if next > target + 1e-9 {
+            break;
+        }
+        out.push((AirParams::new(rules, day, next - day, seed, count).at_base(base), next));
+        day = next;
+    }
+    out
+}
+
+/// The glide from the last grid mark to the date (R21, Truth): the next mark's step, cut short and
+/// made unable to come down (fall and washout 0), so a cloud moves smoothly between marks and
+/// arrives at the mark where the full step puts it (the same start, mean wind and weather draw).
+/// It is drawn, never kept: the next frame steps from the mark again (`AirMaybes::park`).
+pub fn glide(rules: &AirRules, mark: f64, day: f64, seed: u64, count: u32, base: u32) -> Option<AirParams> {
+    let dt = day - mark;
+    if dt <= 1e-6 || crate::app::grid_next(mark) < day - 1e-9 {
+        return None;
+    }
+    Some(AirParams { fall: 0.0, washout: 0.0, ..AirParams::new(rules, mark, dt, seed, count).at_base(base) })
+}
+
+impl AirParams {
+    /// The same for the cloud whose paths begin at `base`.
+    pub fn at_base(mut self, base: u32) -> AirParams {
+        self.base = base;
+        self
+    }
+}
+
+/// The wind's maybes on the GPU: `wind.wgsl` as a compute pass over a buffer of paths, the sea's
+/// `Maybes` shape (R21): a cloud at a base, many steps in one submit, keeps and restores. In the app
+/// it shares the sea's paths buffer (`Maybes.air`), so the look reads seeds and lamps from one
+/// buffer, a cloud a slot; `held` is `Aloft::code` (0 flying, 1 down on land, 2 down on the sea).
 pub struct AirMaybes {
     pipeline: wgpu::ComputePipeline,
     bind: wgpu::BindGroup,
     params: wgpu::Buffer,
     paths: wgpu::Buffer,
     readback: wgpu::Buffer,
+    /// Every cloud's state at its last grid mark, by base, while the buffer shows it glided on.
+    park: wgpu::Buffer,
     pub capacity: u32,
-    _wind: crate::gpu::textures::Texture,
+    _wind: Option<crate::gpu::textures::Texture>,
     _gusts: crate::gpu::textures::Texture,
 }
 
 impl AirMaybes {
+    /// Room for `capacity` paths in a buffer of its own (the tests'; the app's shares the sea's).
     pub fn new(gpu: &crate::gpu::Gpu, assets: &dyn Assets, textures: &crate::gpu::Textures, capacity: u32) -> anyhow::Result<AirMaybes> {
         use crate::gpu::textures::{decode, Texture};
         let wind = Texture::flat(gpu, "wind", &decode(&assets.read("wind.png")?, 4)?);
+        let size = capacity as u64 * std::mem::size_of::<super::GpuPath>() as u64;
+        let paths = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("air paths"),
+            size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let mut m = Self::sharing(gpu, assets, textures, &wind.view, paths, capacity)?;
+        m._wind = Some(wind);
+        Ok(m)
+    }
+
+    /// The wind's pipeline over `paths` (the sea's maybes' buffer, `capacity` paths), reading the
+    /// wind sheet the sea's maybes already hold.
+    pub fn sharing(gpu: &crate::gpu::Gpu, assets: &dyn Assets, textures: &crate::gpu::Textures, wind: &wgpu::TextureView, paths: wgpu::Buffer, capacity: u32) -> anyhow::Result<AirMaybes> {
+        use crate::gpu::textures::{decode, Texture};
         let gusts = Texture::flat(gpu, "gusts", &decode(&assets.read("gusts.png")?, 4)?);
         let tex = |binding| wgpu::BindGroupLayoutEntry {
             binding,
@@ -401,13 +472,14 @@ impl AirMaybes {
             ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
             count: None,
         };
+        let psize = wgpu::BufferSize::new(std::mem::size_of::<AirParams>() as u64);
         let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("air maybes"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: true, min_binding_size: psize },
                     count: None,
                 },
                 tex(1),
@@ -423,29 +495,29 @@ impl AirMaybes {
         });
         let params = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("air params"),
-            size: std::mem::size_of::<AirParams>() as u64,
+            size: super::gpu::SLOT * super::MAX_STEPS as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let size = capacity as u64 * std::mem::size_of::<super::GpuPath>() as u64;
-        let paths = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("air paths"),
-            size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
         let readback = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("air readback"),
             size,
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
+        let park = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("air park"),
+            size,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
         let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("air maybes"),
             layout: &layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: params.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&wind.view) },
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &params, offset: 0, size: psize }) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(wind) },
                 wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&gusts.view) },
                 wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&textures.geo.view) },
                 wgpu::BindGroupEntry { binding: 4, resource: paths.as_entire_binding() },
@@ -461,24 +533,75 @@ impl AirMaybes {
             compilation_options: Default::default(),
             cache: None,
         });
-        Ok(AirMaybes { pipeline, bind, params, paths, readback, capacity, _wind: wind, _gusts: gusts })
+        Ok(AirMaybes { pipeline, bind, params, paths, readback, park, capacity, _wind: None, _gusts: gusts })
     }
 
+    /// Writes the paths to step from 0.
     pub fn seed(&self, gpu: &crate::gpu::Gpu, paths: &[super::GpuPath]) {
-        assert!(paths.len() as u32 <= self.capacity);
-        gpu.queue.write_buffer(&self.paths, 0, bytemuck::cast_slice(paths));
+        self.seed_at(gpu, 0, paths);
     }
 
-    /// One step of every path (k = its index + 1).
+    /// Writes a cloud's paths from `base`.
+    pub fn seed_at(&self, gpu: &crate::gpu::Gpu, base: u32, paths: &[super::GpuPath]) {
+        assert!(base + paths.len() as u32 <= self.capacity);
+        gpu.queue.write_buffer(&self.paths, base as u64 * std::mem::size_of::<super::GpuPath>() as u64, bytemuck::cast_slice(paths));
+    }
+
+    /// One step of a cloud's paths (k = its index from its base + 1).
     pub fn step(&self, gpu: &crate::gpu::Gpu, params: AirParams) {
-        gpu.queue.write_buffer(&self.params, 0, bytemuck::bytes_of(&params));
+        self.step_many(gpu, &[params]);
+    }
+
+    /// Several steps in one submit, each with its own parameters (at most `MAX_STEPS`); the same as
+    /// the steps one by one.
+    pub fn step_many(&self, gpu: &crate::gpu::Gpu, steps: &[AirParams]) {
+        let slot = super::gpu::SLOT as usize;
+        assert!(steps.len() as u32 <= super::MAX_STEPS, "at most {} steps a call", super::MAX_STEPS);
+        if steps.is_empty() {
+            return;
+        }
+        let mut bytes = vec![0u8; slot * steps.len()];
+        for (i, p) in steps.iter().enumerate() {
+            bytes[i * slot..i * slot + std::mem::size_of::<AirParams>()].copy_from_slice(bytemuck::bytes_of(p));
+        }
+        gpu.queue.write_buffer(&self.params, 0, &bytes);
         let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("air maybes") });
         {
             let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("air maybes"), timestamp_writes: None });
             pass.set_pipeline(&self.pipeline);
-            pass.set_bind_group(0, &self.bind, &[]);
-            pass.dispatch_workgroups((params.count + 63) / 64, 1, 1);
+            for (i, p) in steps.iter().enumerate() {
+                pass.set_bind_group(0, &self.bind, &[(i * slot) as u32]);
+                pass.dispatch_workgroups(p.count.div_ceil(64), 1, 1);
+            }
         }
+        gpu.queue.submit([enc.finish()]);
+    }
+
+    /// A checkpoint of the cloud whose `count` paths begin at `base`.
+    pub fn keep_at(&self, gpu: &crate::gpu::Gpu, base: u32, count: u32) -> super::Keep {
+        super::gpu::keep_from(gpu, &self.paths, base, count)
+    }
+
+    /// The paths put back as a checkpoint had them.
+    pub fn restore(&self, gpu: &crate::gpu::Gpu, keep: &super::Keep) {
+        super::gpu::restore_into(gpu, &self.paths, keep)
+    }
+
+    /// Sets a cloud's state at its grid mark aside (before a glide draws it on to the date).
+    pub fn park(&self, gpu: &crate::gpu::Gpu, base: u32, count: u32) {
+        self.copy(gpu, &self.paths, &self.park, base, count);
+    }
+
+    /// Puts a cloud's parked state back (the next frame steps on from its mark, not its glide).
+    pub fn unpark(&self, gpu: &crate::gpu::Gpu, base: u32, count: u32) {
+        self.copy(gpu, &self.park, &self.paths, base, count);
+    }
+
+    fn copy(&self, gpu: &crate::gpu::Gpu, from: &wgpu::Buffer, to: &wgpu::Buffer, base: u32, count: u32) {
+        let at = base as u64 * std::mem::size_of::<super::GpuPath>() as u64;
+        let size = count as u64 * std::mem::size_of::<super::GpuPath>() as u64;
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.copy_buffer_to_buffer(from, at, to, at, size);
         gpu.queue.submit([enc.finish()]);
     }
 
@@ -486,16 +609,13 @@ impl AirMaybes {
         &self.paths
     }
 
+    /// Reads `count` paths from 0 back (waits for the GPU).
     pub fn read(&self, gpu: &crate::gpu::Gpu, count: u32) -> Vec<super::GpuPath> {
-        let size = count as u64 * std::mem::size_of::<super::GpuPath>() as u64;
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&self.paths, 0, &self.readback, 0, size);
-        gpu.queue.submit([enc.finish()]);
-        let slice = self.readback.slice(..size);
-        slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-        let out = bytemuck::cast_slice::<u8, super::GpuPath>(&slice.get_mapped_range()).to_vec();
-        self.readback.unmap();
-        out
+        self.read_at(gpu, 0, count)
+    }
+
+    /// Reads the `count` paths from `base` back.
+    pub fn read_at(&self, gpu: &crate::gpu::Gpu, base: u32, count: u32) -> Vec<super::GpuPath> {
+        super::gpu::read_from(gpu, &self.paths, &self.readback, base, count)
     }
 }

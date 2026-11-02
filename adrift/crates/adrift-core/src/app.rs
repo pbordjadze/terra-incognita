@@ -220,8 +220,9 @@ pub struct App {
 
 /// Days a second while the date runs.
 pub const RATE: f64 = 2.0;
-/// Days a second while the date runs with the wind's preset (R21; `sea/MEDIA.md` › The clock: the
-/// wind is about 20x the sea's pace, so a seed's day of flight takes about 3 s).
+/// Days a second while the date runs with the wind's preset (R21; measured by Truth, SOURCES.md ›
+/// The wind's preset): a seed crosses a cloud framed 100 pt in RMS radius at about 25 pt a second,
+/// as a lamp does at the sea's `RATE`, and the preset's seed (`AirRules::LIFE`) stays up about 7 s.
 pub const AIR_RATE: f64 = 0.3;
 /// The longest step a float takes at once (a quarter day: the fastest currents cross less than a cell).
 const SUBSTEP: f64 = 0.25;
@@ -987,9 +988,9 @@ impl App {
             front(&mut ids, f.id);
         }
         let day = self.clock.day;
-        // (R21) a seed on the wind has no GPU cloud yet: the sea's maybes would step it by the sea's
-        // rules. Truth's `AirMaybes` into the same buffer is the next seam; until then it shows none.
-        ids.retain(|id| self.floats.iter().any(|f| f.id == *id && f.born(day) && f.leg_at(day).map_or(true, |li| f.legs()[li].medium == Medium::Sea)));
+        // (R21, Truth) a seed on the wind shows its cloud as a lamp does: `step_clouds` steps it by
+        // the wind's rules (`Maybes.air`, the same buffer)
+        ids.retain(|id| self.floats.iter().any(|f| f.id == *id && f.born(day)));
         if ids.len() > MAX_CLOUDS {
             ids.drain(0..ids.len() - MAX_CLOUDS);
         }
@@ -1368,6 +1369,71 @@ impl App {
             let Some(li) = f.leg_at(day) else { continue };
             let leg = f.legs[li];
             let base = c.slot * MAYBES;
+            if leg.medium == Medium::Wind {
+                // (R21, Truth) a seed's cloud: the wind's rules (`Maybes.air`) in the same buffer, a
+                // slot as a lamp's. It steps on the quarter-day grid as the seed's own path does
+                // (`sea::wind::grid_steps`: a step between marks would reread a quarter day's weather),
+                // keeps its state at the last mark aside (`park`), and glides on to the date by a step
+                // that cannot come down, which arrives where the mark's full step does.
+                let air = &self.maybes.air;
+                let same = c.n == n && c.leg == leg;
+                let target = day.max(leg.day);
+                let mut reached = if same { c.reached } else { f64::INFINITY };
+                if reached > target + 1e-9 {
+                    let keep = if same { c.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
+                    match keep {
+                        Some(k) => {
+                            air.restore(&self.gpu, &c.keeps[k].keep);
+                            reached = c.keeps[k].day;
+                            c.keeps.truncate(k + 1);
+                            c.next_keep = reached + KEEP_EVERY;
+                        }
+                        None => {
+                            let paths: Vec<GpuPath> = (1..=n)
+                                .map(|k| {
+                                    let e = match leg.eddy {
+                                        Some(e) => (e[0], e[1]),
+                                        None => self.air.put(leg.at, leg.day, leg.seed, k).eddy,
+                                    };
+                                    GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 0.0, eddy_u: e.0, eddy_v: e.1 }
+                                })
+                                .collect();
+                            air.seed_at(&self.gpu, base, &paths);
+                            c.keeps.clear();
+                            reached = leg.day;
+                            c.next_keep = leg.day + KEEP_EVERY;
+                            c.leg = leg;
+                            c.n = n;
+                        }
+                    }
+                } else {
+                    air.unpark(&self.gpu, base, n);
+                }
+                let steps = crate::sea::wind::grid_steps(&self.air, reached, target, leg.seed, n, base, budget);
+                let mut from = 0;
+                for (i, &(_, to)) in steps.iter().enumerate() {
+                    reached = to;
+                    let due = reached >= c.next_keep - 1e-9;
+                    if due || i + 1 == steps.len() {
+                        let batch: Vec<_> = steps[from..=i].iter().map(|s| s.0).collect();
+                        air.step_many(&self.gpu, &batch);
+                        from = i + 1;
+                    }
+                    if due {
+                        c.keeps.push(Kept { day: reached, keep: air.keep_at(&self.gpu, base, n) });
+                        if c.keeps.len() > KEEPS_MAX {
+                            c.keeps.remove(0);
+                        }
+                        c.next_keep = reached + KEEP_EVERY;
+                    }
+                }
+                air.park(&self.gpu, base, n);
+                if let Some(g) = crate::sea::wind::glide(&self.air, reached, target, leg.seed, n, base) {
+                    air.step(&self.gpu, g);
+                }
+                c.reached = reached;
+                continue;
+            }
             let same = c.n == n && c.leg == leg;
             let target = day.max(leg.day);
             let mut reached = if same { c.reached } else { f64::INFINITY };

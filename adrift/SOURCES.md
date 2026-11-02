@@ -236,6 +236,51 @@ the measured statistics. The time scale is a fixed point's. Lofting (convection 
 kilometre up, where the wind is faster and the settling slower) is not modelled; the lifetime
 dial stands in for it. Pollen is measured; a balloon or ash would ride other winds.
 
+## The wind's preset (R21): a seed's life, the pace, the tempo
+
+**What a seed is.** A seed lifted higher than the measured pollen grain: a light down seed (a
+thistle's, a dandelion's) carried up a kilometre or two by the day's convection. It is not a balloon:
+a balloon does not settle, it leaks and bursts, and no number here is a balloon's. Draw it as a seed.
+
+**Its life** (`AirRules::LIFE`, the app's rules `AirRules::sharing`; `a_seeds_life`, from 216
+places over land and sea, 8 worlds each):
+
+| | fall (per day) | washout (per day per mm/day) | life, median (quartiles; 90%) | seconds at 0.3 days a second |
+| --- | --- | --- | --- | --- |
+| Measured: birch pollen near the ground | 0.86 | 0.36 | 0.25–0.5 days (0.25–1.0; 1.25–2.0) | 1–2 s |
+| **The preset** (chosen: 4x) | 0.215 | 0.09 | 2.0–2.25 days (0.75–3.25; 4.5) | 7 s median, 15 s for the longest tenth |
+
+Measured: the settling speed, the rain, the scavenging coefficient. Chosen: the factor 4 on both,
+one dial (`sea/MEDIA.md` › lifetime). It stands in for lofting, which is not modelled: a seed
+carried into a layer two kilometres deep, mixed day and night, would settle about 4x slower than a
+grain in the day's one-kilometre layer that is cut off by night; rain would wash it out about as
+fast as below the cloud, so the dial is kind to the rain. A seed's quarter-day marks still decide
+when it comes down (the CPU's and the GPU's alike), at most once a mark.
+
+**The pace and the tempo** (`the_winds_tempo`, as R11 measured the sea's, scale-free: the cloud
+framed 100 pt in RMS radius, the sea's lamp off Hatteras 15.5 days out, seeds over Indiana and off
+Virginia in May 1.5 days out):
+
+| | spread of the worlds in a 1 s stroke | in a 0.5 s stroke | turned a quarter (1 s circle) | sweep matched |
+| --- | --- | --- | --- | --- |
+| Sea at 3 (its tempo) | 34 pt | 19 pt | 6% | 12–13% |
+| Wind at 0.45 (`AIR_TEMPO`) | 40–41 pt | 21–22 pt | 7–8% | 10–12% |
+| Wind at 0.8 | 57 pt | 40–41 pt | 7–8% | 11–13% |
+| Wind at 1.2 | 86–87 pt | 40–41 pt | 9% | 12–14% |
+
+So the first guesses hold: at 0.45 a stroke spreads the seeds' worlds as the sea's tempo spreads
+the lamps', and the free pace 0.3 (`AIR_RATE`, the same 2:3 as the sea's 2 to 3) moves a seed about
+25 pt a second across a 100 pt cloud, as the sea's 2 does a lamp. Faster blurs (1.2: a second's
+stroke spans 87 pt, most of the cloud). The wind's tempo is coarse where the sea's is fine: a
+quarter-day mark is 0.55 s at 0.45 and spreads the worlds 22 pt (the sea's: 3 pt), because a seed's
+cloud is young (a few marks old) and a mark is a large share of its life.
+
+**What the chooser does on the wind** (`conducting_on_the_wind`). A tap and a sweep do what they
+do on the sea, among the seeds still up. A circle has no spinning law to find in the air: what it
+picks is a world whose gust happened to turn over the stroke's day, and since the gust's memory is
+about a day (the sea's eddy: three), the turn rarely goes on after the cue: it reads as a swerve,
+not a loop.
+
 **Later, for the sea** (Visual's zigzag question, R10): a Gulf Stream lamp's wander stalls and
 doubles back (the random flight's velocity wanders through zero), where real drifters there more
 often loop in coherent rings. A spinning random flight (Veneziani, Griffa, Reynolds and Mariano
