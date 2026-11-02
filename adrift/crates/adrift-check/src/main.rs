@@ -227,6 +227,7 @@ fn play(args: &[String]) -> Result<()> {
         hold: None,
         choose: Vec::new(),
         follow: Vec::new(),
+        keep: Vec::new(),
         seconds: 0.0,
         night: plan.night,
         credits_open: plan.credits_open,

@@ -1,0 +1,6 @@
+{
+  "_": "Which lamps are chosen and how, at a glance (R21, the owner's screenshot): seven lamps in the North Pacific; the blue one (2) chosen as itself, the purple one (6) chosen as its cloud, the mint one (4) kept, the rest not. adrift-check render adrift/crates/adrift-core/src/look/plans/chosen-how.json <out.png> --size 1179x2556 --ppp 3.",
+  "camera": { "lon": -160.0, "lat": 35.0, "zoom": 2.2 }, "day": 200.0, "seconds": 12.0,
+  "floats": [ { "lon": -170.0, "lat": 40.0, "days_ago": 30 }, { "lon": -155.0, "lat": 33.0, "days_ago": 40 }, { "lon": -145.0, "lat": 42.0, "days_ago": 25 }, { "lon": -175.0, "lat": 30.0, "days_ago": 35 }, { "lon": -150.0, "lat": 26.0, "days_ago": 30 }, { "lon": -162.0, "lat": 38.0, "days_ago": 30 }, { "lon": -140.0, "lat": 34.0, "days_ago": 20 } ],
+  "choose": [5], "follow": [1], "keep": [3]
+}

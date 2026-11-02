@@ -350,6 +350,12 @@ pub fn lamp_hue(id: u32) -> [f32; 3] {
     HUES[((id.max(1) - 1) % 8) as usize]
 }
 
+/// A lamp not chosen while another is (as itself or as its cloud), live (R21): it steps back, so the
+/// chosen read at a glance; a finger's hold or a press brings it forward.
+fn step_back(state: &LookState, f: &LookFloat) -> bool {
+    !state.exporting && !(f.followed || f.shown || f.held || f.chosen) && state.floats.iter().any(|g| g.followed || g.shown) && state.panel_press.map_or(true, |p| p.0 != f.id)
+}
+
 fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
     let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
     t * t * (3.0 - 2.0 * t)
@@ -545,6 +551,7 @@ impl Look {
             }
             // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
             let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            let fade = fade * if step_back(state, f) { 0.45 } else { 1.0 };
             wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy, 1.0 / disc[2].max(1.0));
         }
         // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
@@ -556,12 +563,7 @@ impl Look {
                 ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
             }
         }
-        // a lamp kept for good (R13): quietly, a fine gold ring close round it on the globe (live only)
-        if !state.exporting {
-            for f in state.floats.iter().filter(|f| (f.kept) && !f.shown) {
-                ring_on_globe(&mut lines, f.at, 11.0 * reading, disc, 1.0, 0.75, KEPT_GOLD, n);
-            }
-        }
+        // (a lamp kept for good is a gold bead at its shoulder, R21, drawn with the glass: floats.wgsl)
         for c in &state.cues {
             cue(&mut lines, c, n, heavy);
         }
@@ -615,14 +617,14 @@ impl Look {
             .floats
             .iter()
             .filter(|f| f.medium == Medium::Sea)
-            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)), head: state.exporting as u8 as f32 })
+            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)), head: state.exporting as u8 as f32, mode: if state.exporting { 0.0 } else if f.followed { 1.0 } else if f.shown { 2.0 } else { 0.0 }, quiet: (step_back(state, f)) as u8 as f32, kept: (f.kept && !state.exporting) as u8 as f32, _pad: 0.0 })
             .collect();
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && state.wind) {
             sd.push(seeds::SeedInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), hue: lamp_hue(state.floats.len() as u32 + 1), night: n as u8 as f32, lift: 1.0, down: 0.0, after: 0.0, spin: ((state.floats.len() as u32 + 1) as f32 * 2.39996).rem_euclid(std::f32::consts::TAU), lit: 0.0, held: 0.0, head: 0.0, _pad: 0.0 });
         }
         self.seeds.prepare(gpu, &sd);
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && !state.wind) {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0, head: 0.0 });
+            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0, head: 0.0, mode: 0.0, quiet: 0.0, kept: 0.0, _pad: 0.0 });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
