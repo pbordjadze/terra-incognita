@@ -1,0 +1,18 @@
+{
+  "size": [1179, 2556], "ppp": 3,
+  "medium": "Wind",
+  "scene": { "camera": { "lon": -80.0, "lat": 38.0, "zoom": 2.2 }, "day": 130.0, "seconds": 5.0, "medium": "Wind" },
+  "steps": [
+    { "down": [150, 420], "id": 1 },
+    { "advance": 1.0 },
+    { "shot": "01-held-a-third-of-a-day" },
+    { "advance": 2.0 },
+    { "shot": "02-held-a-day" },
+    { "advance": 3.0 },
+    { "shot": "03-held-two-days" },
+    { "advance": 5.0 },
+    { "shot": "04-held-three-and-a-half-days" },
+    { "up": [150, 420], "id": 1 },
+    { "expect": { "saw": ["Put"] } }
+  ]
+}

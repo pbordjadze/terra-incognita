@@ -15,7 +15,8 @@ use bytemuck::{Pod, Zeroable};
 pub struct GpuPath {
     pub lon: f32,
     pub lat: f32,
-    /// 0 free, 1 coast, 2 ice.
+    /// The sea's: 0 free, 1 coast, 2 ice. The wind's (`Aloft::code`, R21): 0 flying, 1 down on
+    /// land, 2 down on the sea. Which a cloud's codes are is its leg's medium.
     pub held: u32,
     pub measured: f32,
     pub eddy_u: f32,
@@ -84,9 +85,48 @@ pub struct Keep {
     pub base: u32,
 }
 
+/// A checkpoint of `count` paths of `paths` from `base` (a copy on the GPU). Shared by the sea's
+/// `Maybes` and the wind's `AirMaybes` (R21: both step clouds in the one buffer).
+pub(crate) fn keep_from(gpu: &Gpu, paths: &wgpu::Buffer, base: u32, count: u32) -> Keep {
+    let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
+    let from = base as u64 * std::mem::size_of::<GpuPath>() as u64;
+    let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("maybes keep"),
+        size: size.max(4),
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+    let mut enc = gpu.device.create_command_encoder(&Default::default());
+    enc.copy_buffer_to_buffer(paths, from, &buffer, 0, size);
+    gpu.queue.submit([enc.finish()]);
+    Keep { buffer, count, base }
+}
+
+/// A checkpoint's paths copied back into `paths` where they were kept from.
+pub(crate) fn restore_into(gpu: &Gpu, paths: &wgpu::Buffer, keep: &Keep) {
+    let size = keep.count as u64 * std::mem::size_of::<GpuPath>() as u64;
+    let mut enc = gpu.device.create_command_encoder(&Default::default());
+    enc.copy_buffer_to_buffer(&keep.buffer, 0, paths, keep.base as u64 * std::mem::size_of::<GpuPath>() as u64, size);
+    gpu.queue.submit([enc.finish()]);
+}
+
+/// Reads `count` paths of `paths` from `base` back through `readback` (waits for the GPU).
+pub(crate) fn read_from(gpu: &Gpu, paths: &wgpu::Buffer, readback: &wgpu::Buffer, base: u32, count: u32) -> Vec<GpuPath> {
+    let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
+    let mut enc = gpu.device.create_command_encoder(&Default::default());
+    enc.copy_buffer_to_buffer(paths, base as u64 * std::mem::size_of::<GpuPath>() as u64, readback, 0, size);
+    gpu.queue.submit([enc.finish()]);
+    let slice = readback.slice(..size);
+    slice.map_async(wgpu::MapMode::Read, |_| {});
+    gpu.device.poll(wgpu::PollType::wait()).expect("poll");
+    let out = bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range()).to_vec();
+    readback.unmap();
+    out
+}
+
 /// The most steps one `step_many` call encodes (its parameters ride a ring of uniform slots).
 pub const MAX_STEPS: u32 = 1024;
-const SLOT: u64 = 256;
+pub(crate) const SLOT: u64 = 256;
 
 pub struct Maybes {
     walk: wgpu::ComputePipeline,
@@ -96,6 +136,9 @@ pub struct Maybes {
     paths: wgpu::Buffer,
     readback: wgpu::Buffer,
     pub capacity: u32,
+    /// The wind's maybes (R21, Truth): `wind.wgsl`'s pipeline over this same paths buffer, so a
+    /// seed's cloud lies in its slot as a lamp's does and the look reads both alike.
+    pub air: super::wind::AirMaybes,
     _wind: Texture,
     _eddy: Texture,
     _eddy_time: Texture,
@@ -189,7 +232,8 @@ impl Maybes {
                 cache: None,
             })
         };
-        Ok(Maybes { walk: make("maybes"), flight: make("maybes_flight"), bind, params, paths, readback, capacity, _wind: wind, _eddy: eddy, _eddy_time: eddy_time })
+        let air = super::wind::AirMaybes::sharing(gpu, assets, textures, &wind.view, paths.clone(), capacity)?;
+        Ok(Maybes { walk: make("maybes"), flight: make("maybes_flight"), bind, params, paths, readback, capacity, air, _wind: wind, _eddy: eddy, _eddy_time: eddy_time })
     }
 
     /// Writes the paths to step (at most `capacity`).
@@ -240,26 +284,12 @@ impl Maybes {
 
     /// A checkpoint of the cloud whose `count` paths begin at `base` (R6).
     pub fn keep_at(&self, gpu: &Gpu, base: u32, count: u32) -> Keep {
-        let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
-        let from = base as u64 * std::mem::size_of::<GpuPath>() as u64;
-        let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("maybes keep"),
-            size: size.max(4),
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false,
-        });
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&self.paths, from, &buffer, 0, size);
-        gpu.queue.submit([enc.finish()]);
-        Keep { buffer, count, base }
+        keep_from(gpu, &self.paths, base, count)
     }
 
     /// The paths put back as a checkpoint had them.
     pub fn restore(&self, gpu: &Gpu, keep: &Keep) {
-        let size = keep.count as u64 * std::mem::size_of::<GpuPath>() as u64;
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&keep.buffer, 0, &self.paths, keep.base as u64 * std::mem::size_of::<GpuPath>() as u64, size);
-        gpu.queue.submit([enc.finish()]);
+        restore_into(gpu, &self.paths, keep)
     }
 
     /// The paths' buffer, for a drawing pass to read.
@@ -269,15 +299,11 @@ impl Maybes {
 
     /// Reads `count` paths back (waits for the GPU).
     pub fn read(&self, gpu: &Gpu, count: u32) -> Vec<GpuPath> {
-        let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
-        let mut enc = gpu.device.create_command_encoder(&Default::default());
-        enc.copy_buffer_to_buffer(&self.paths, 0, &self.readback, 0, size);
-        gpu.queue.submit([enc.finish()]);
-        let slice = self.readback.slice(..size);
-        slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-        let out = bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range()).to_vec();
-        self.readback.unmap();
-        out
+        read_from(gpu, &self.paths, &self.readback, 0, count)
+    }
+
+    /// Reads the `count` paths from `base` back (waits for the GPU).
+    pub fn read_at(&self, gpu: &Gpu, base: u32, count: u32) -> Vec<GpuPath> {
+        read_from(gpu, &self.paths, &self.readback, base, count)
     }
 }
