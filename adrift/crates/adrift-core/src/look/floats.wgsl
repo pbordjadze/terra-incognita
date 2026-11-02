@@ -135,9 +135,13 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     // a clip's head (R20): a soft glow of its hue on the water round it, breathing slowly, so the eye
     // finds the line's head at a glance without the glow outshining the line
     let breath = 0.85 + 0.15 * sin(U.time.x * 1.7);
-    acc = over(acc, hue, i.head * 0.30 * breath * exp(-d * d / (2.6 * 2.6 * r * r)));
-    acc = over(acc, hue, lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
-    acc = over(acc, hue, lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
+    // (R21, Engineering) the glows fade to nothing inside the quad's least reach (2.4 r, a clip's head
+    // 3.6 r): cut off at the quad's edge they showed its square on the night sea
+    let edge = mix(2.4, 3.6, i.head) * r;
+    let win = 1.0 - smoothstep(0.7 * edge, 0.98 * edge, d);
+    acc = over(acc, hue, win * i.head * 0.30 * breath * exp(-d * d / (2.6 * 2.6 * r * r)));
+    acc = over(acc, hue, win * lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
+    acc = over(acc, hue, win * lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // a cool hue's pale ring round the glass (R21), so a blue or purple lamp stands off the sea's blue
     acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * step(i.mqk.x, 0.5) * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
     // the glass, the lamp, its core

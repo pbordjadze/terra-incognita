@@ -593,6 +593,8 @@ fn journey(args: &[String]) -> Result<()> {
     let (_instance, gpu) = gpu()?;
     let (w, h, ppp) = (1179u32, 2556u32, 3.0);
     let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, ppp)?;
+    // (R21) `--night`: the night palette, as a phone in dark appearance exports it
+    app.night = args.iter().any(|a| a == "--night");
     let n = if text.trim_start().starts_with(adrift_core::app::LAMPS_HEADER) {
         app.paste_lamps(&text, true)
     } else {
@@ -651,7 +653,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] | info");
             std::process::exit(2);
         }
     }
