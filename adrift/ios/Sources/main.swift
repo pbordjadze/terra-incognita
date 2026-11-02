@@ -158,13 +158,22 @@ final class AdriftView: UIView {
         mix.inputParameters = [params]
         let out = clip.deletingPathExtension().appendingPathExtension("song.mp4")
         try? FileManager.default.removeItem(at: out)
-        guard let session = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else { done(clip); return }
-        session.outputURL = out
-        session.outputFileType = .mp4
-        session.audioMix = mix
-        session.exportAsynchronously {
-            DispatchQueue.main.async { done(session.status == .completed ? out : clip) }
+        // (R21) the video track passes through as written (small, already the clip's bitrate); only if
+        // that can't be done is it re-encoded, at HEVC 1080p, never at the highest-quality preset
+        // (which re-encoded a 4-minute clip to hundreds of MB)
+        func export(_ preset: String, then fallback: String?) {
+            try? FileManager.default.removeItem(at: out)
+            guard let session = AVAssetExportSession(asset: comp, presetName: preset) else { done(clip); return }
+            session.outputURL = out
+            session.outputFileType = .mp4
+            session.audioMix = mix
+            session.exportAsynchronously {
+                DispatchQueue.main.async {
+                    if session.status == .completed { done(out) } else if let f = fallback { export(f, then: nil) } else { done(clip) }
+                }
+            }
         }
+        export(AVAssetExportPresetPassthrough, then: AVAssetExportPresetHEVC1920x1080)
     }
 
     // ---- the panel's marks for VoiceOver (R10): the marks carry no words on screen; each is an
@@ -290,10 +299,12 @@ final class AdriftView: UIView {
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mp4) else { adrift_export_end(shell); return }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            AVVideoCodecKey: AVVideoCodecType.h264,
+            // (R21) HEVC at 2 Mbit/s: a 4-minute 1080x1920 clip is about 60 MB (12 Mbit/s H.264 made ~360 MB);
+            // the map's broad flat tones and thin lines hold up at this rate (the check's ffmpeg encodes alike)
+            AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(w),
             AVVideoHeightKey: Int(h),
-            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 12_000_000],
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 2_000_000, AVVideoExpectedSourceFrameRateKey: 30, AVVideoMaxKeyFrameIntervalKey: 60],
         ])
         input.expectsMediaDataInRealTime = false
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [

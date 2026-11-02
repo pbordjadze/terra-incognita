@@ -499,7 +499,7 @@ fn play(args: &[String]) -> Result<()> {
             let shot = Offscreen::new(&app.gpu, tw, th);
             let mp4 = out.join(format!("{name}.mp4"));
             let mut ff = std::process::Command::new("ffmpeg")
-                .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20"])
+                .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "2M", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
                 .arg(&mp4)
                 .stdin(std::process::Stdio::piped())
                 .spawn()
@@ -601,10 +601,11 @@ fn journey(args: &[String]) -> Result<()> {
     anyhow::ensure!(n > 0, "no lamps in {}", args[0]);
     let frames = app.journey_begin(seconds, 30.0);
     anyhow::ensure!(frames > 0, "no journey to make");
+    let day0 = app.clock.day;
     let (ew, eh) = app.export_size().unwrap();
     let shot = Offscreen::new(&app.gpu, ew, eh);
     let mut ff = std::process::Command::new("ffmpeg")
-        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20"])
+        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "2M", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
         .arg(&out)
         .stdin(std::process::Stdio::piped())
         .spawn()
@@ -628,6 +629,9 @@ fn journey(args: &[String]) -> Result<()> {
     }
     drop(ff.stdin.take());
     ff.wait()?;
+    // (R21) the days the journey covered and the file it made: a longer clip is a longer journey
+    let bytes = std::fs::metadata(&out).map(|m| m.len()).unwrap_or(0);
+    eprintln!("journey: day {day0:.1} -> {:.1} ({:.1} days in {seconds} s, {:.2} days a second); {:.1} MB ({:.1} MB a minute)", app.clock.day, app.clock.day - day0, (app.clock.day - day0) / seconds, bytes as f64 / 1e6, bytes as f64 / 1e6 / seconds * 60.0);
     std::fs::write(out.with_extension("csv"), trace)?;
     app.export_end();
     println!("{}: {n} lamps, {i} frames {ew}x{eh} in {:.1}s", out.display(), t0.elapsed().as_secs_f64());

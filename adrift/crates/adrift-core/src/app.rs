@@ -2114,15 +2114,23 @@ impl App {
         // (R21, Motion) a journey of seeds ends when the last of them has come down (`journey::all_down`):
         // its end beat begins there, not on days of still seeds; its pace's range is the wind's
         let wind = floats.iter().all(|f| f.legs().last().is_some_and(|l| l.medium == Medium::Wind));
-        let today = crate::journey::all_down(self.media(), &floats, self.clock.day).map_or(self.clock.day, |d| d.min(self.clock.day));
-        let air = if wind { AIR_RATE / RATE } else { 1.0 };
-        let span = (today - first).max(air);
-        let rate = (span / seconds).clamp(0.25 * air, 4.0 * air);
+        // (R21, Engineering) a journey runs at the app's own pace (the medium's free rate) for as long as
+        // the clip runs, carrying the lamps on past today: a longer clip is a longer journey, never a
+        // slower one (before, the span from the put to today was stretched over the clip, so a 4-minute
+        // clip of a 214-day pair crawled at 0.9 days a second and stopped at today). Paths past today are
+        // the same pure function of the legs and the rules. Seeds end when the last comes down.
+        let rate = if wind { AIR_RATE } else { RATE };
+        let mut to = first + rate * seconds;
+        if wind {
+            if let Some(d) = crate::journey::all_down(self.media(), &floats, to) {
+                to = d.max(first + rate);
+            }
+        }
         let fps = 30.0;
         let frames = (seconds * fps).ceil() as usize;
         // the day each frame shows (R14, `journey::pace`: where the lamps do something worth seeing,
-        // the date slows; elsewhere it hurries), as a pace before each frame
-        let days = crate::journey::pace(self.media(), &floats, first, first + rate * seconds, frames, fps);
+        // the date slows; elsewhere it hurries; its mean is the normal pace), as a pace before each frame
+        let days = crate::journey::pace(self.media(), &floats, first, to, frames, fps);
         let mut start = self.take_start();
         start.clock = Clock { day: first, running: true, rate };
         start.chosen = Vec::new();
