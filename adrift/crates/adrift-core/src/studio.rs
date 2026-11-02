@@ -244,10 +244,9 @@ impl ClipCamera {
         let braid = if wb > 0.0 { self.open_zoom.map(|open| braid_lean(l, (open / BRAID_WIDER).max(pair_floor(take, l).unwrap_or(0.0)))) } else { None };
         let (c, z) = match &braid {
             Some(lb) => {
-                let (cb, zb) = frame(lb).unwrap_or((c, z));
-                let (a, b) = (c.to_xyz(), cb.to_xyz());
-                let v = [a[0] + (b[0] - a[0]) * wb, a[1] + (b[1] - a[1]) * wb, a[2] + (b[2] - a[2]) * wb];
-                (crate::model::LonLat::from_xyz(v), (z.ln() + (zb.ln() - z.ln()) * wb).exp())
+                // (R21, round 20's critic) centred on the pair, not the braid: the old trail runs off
+                let (_, zb) = frame(lb).unwrap_or((c, z));
+                (c, (z.ln() + (zb.ln() - z.ln()) * wb).exp())
             }
             None => (c, z),
         };
