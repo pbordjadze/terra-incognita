@@ -439,7 +439,10 @@ fn fan(c: &LookCue, n: usize) -> Vec<[f32; 3]> {
 /// chose among, faint lines of the lamp's hue from where it was to where each would have it, which
 /// fold into the one chosen as the lamp glides there along its own brighter stroke. No spray, no
 /// ring: the bend in the lamp's line is the answer. Over in about a second.
-fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32) {
+/// `straight`: the fan's strokes and the chosen stroke drawn (a lamp's); a seed's cue (R22) keeps only
+/// the worlds' points folding in: its straight strokes across the wind's distances flashed as stray
+/// spokes from the seed, and its own line comes in with the cue's fade.
+fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32, straight: bool) {
     let hue = lamp_hue(c.id);
     let at = unit(c.at);
     let from = unit(c.from);
@@ -453,7 +456,9 @@ fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32
                 let t = j as f32 / 12.0;
                 wake::Pt { p: slerpish(from, end, t), w: (0.8 + 0.9 * t) * heavy, a: 0.5 * flash * gone * (0.25 + 0.75 * t), hollow: 0.0 }
             }).collect();
-            wake::line(out, &pts, hue, false, night, false);
+            if straight {
+                wake::line(out, &pts, hue, false, night, false);
+            }
             wake::line(out, &[wake::Pt { p: end, w: 4.0 * heavy, a: 0.55 * flash * gone, hollow: 0.0 }], hue, false, night, false);
         }
     }
@@ -461,7 +466,7 @@ fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32
     // its line
     let g = smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age);
     let stroke_a = 0.95 * (1.0 - smooth01(0.8, 1.4, c.age));
-    if g > 0.0 && stroke_a > 0.0 {
+    if straight && g > 0.0 && stroke_a > 0.0 {
         let pts: Vec<wake::Pt> = (0..=16).map(|j| {
             let t = g * j as f32 / 16.0;
             wake::Pt { p: slerpish(from, at, t), w: (1.4 + 1.8 * (j as f32 / 16.0)) * heavy, a: stroke_a * (0.4 + 0.6 * j as f32 / 16.0), hollow: 0.0 }
@@ -532,8 +537,10 @@ impl Look {
             // a seed's whole flight (R21), light; once down its line goes quiet but stays its journey
             let quiet = if f.down.down() { 1.0 - 0.5 * smooth01(0.0, seeds::SETTLE_DAYS + seeds::FADE_DAYS, f.down_days) } else { 1.0 };
             let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
-            let at = state.cues.iter().rev().find(|c| c.id == f.id).map_or(f.at, |c| crate::model::LonLat::from_xyz(glide(c).map(|x| x as f64)));
-            wake::air_line(&mut air, &f.wake, at, n, lamp_hue(f.id), quiet * fade, heavy, 1.0 / disc[2].max(1.0));
+            // (R22: the line ends at the seed's own place, as a lamp's does: while it is conducted its
+            // path is already the new one, and a head at the cue's glide drew a straight spoke from the
+            // new path's end back to it; the line comes in with the cue's fade instead)
+            wake::air_line(&mut air, &f.wake, f.at, n, lamp_hue(f.id), quiet * fade, heavy, 1.0 / disc[2].max(1.0));
         }
         self.air.prepare(gpu, &air);
         for f in state.floats.iter().filter(|f| f.medium == Medium::Sea) {
@@ -565,7 +572,8 @@ impl Look {
         }
         // (a lamp kept for good is a gold bead at its shoulder, R21, drawn with the glass: floats.wgsl)
         for c in &state.cues {
-            cue(&mut lines, c, n, heavy);
+            let wind = state.floats.iter().any(|f| f.id == c.id && f.medium == Medium::Wind);
+            cue(&mut lines, c, n, heavy, !wind);
         }
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
@@ -576,7 +584,9 @@ impl Look {
             self.bloom_from = unit(f.at);
             self.hue = lamp_hue(f.id);
         }
-        self.veil.prepare(gpu, self.bloom_from, state.bloom, n);
+        // (the veil's window round the chosen lamp stays off, as it has been since it stopped being
+        // drawn; the pass now carries the panel's ground, R22)
+        self.veil.prepare(gpu, self.bloom_from, 0.0, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n, self.hue);
         // in a clip (R10) what marks a finger is out of its last frame: the held ring and a lamp's
@@ -659,6 +669,19 @@ impl Look {
         // (while a take is made the marks step aside: the take is the globe alone, R12)
         let quiet_take = state.recording.is_some() || state.conducting;
         self.words.panel(if quiet_take { &[] } else { &rows }, reading, n, &mut strokes);
+        // (R22) the marks' own ground while they are up, so the row never lies on the land as more lamps
+        let up = !quiet_take && rows.iter().any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
+        let cells = &self.words.panel_bounds;
+        if up && !cells.is_empty() {
+            let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+            for (_, c) in cells {
+                x0 = x0.min(c[0]); y0 = y0.min(c[1]); x1 = x1.max(c[0] + c[2]); y1 = y1.max(c[1] + c[3]);
+            }
+            let pad = 2.0 * reading;
+            self.veil.panel(gpu, [x0 - pad, y0 - pad, x1 - x0 + 2.0 * pad, y1 - y0 + 2.0 * pad], 1.0);
+        } else {
+            self.veil.panel(gpu, [0.0; 4], 0.0);
+        }
         // a ring at a lamp (R10), over the maybes: a thin circle of its hue spreading
         // from the lamp over a second and fading as it goes
         for &(id, at, age) in &state.lamp_rings {
@@ -713,6 +736,7 @@ impl Look {
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
         self.seeds.draw(rp, view_bind);
+        self.veil.draw(rp, view_bind);
         self.strokes.draw(rp, view_bind);
         self.words.draw(rp, view_bind);
     }

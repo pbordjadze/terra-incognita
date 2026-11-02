@@ -12,12 +12,17 @@ pub struct VeilUniform {
     pub soft: f32,
     pub strength: f32,
     pub night: f32,
+    /// (R22) the panel's ground, x, y, w, h in points, and its strength (0 none)
+    pub panel: [f32; 4],
+    pub panel_a: f32,
+    pub _p: [f32; 3],
 }
 
 pub struct Veil {
     pipeline: wgpu::RenderPipeline,
     uniform: Uniform<VeilUniform>,
     on: bool,
+    last: VeilUniform,
 }
 
 impl Veil {
@@ -36,13 +41,23 @@ impl Veil {
             multiview: None,
             cache: None,
         });
-        Veil { pipeline, uniform, on: false }
+        Veil { pipeline, uniform, on: false, last: VeilUniform::default() }
     }
 
     /// The window round `centre` (a unit vector), `strength` 0..1 with the cloud's bloom.
     pub fn prepare(&mut self, gpu: &Gpu, centre: [f32; 3], strength: f32, night: bool) {
+        self.last = VeilUniform { centre: [centre[0], centre[1], centre[2], 0.0], radius: 120.0, soft: 110.0, strength, night: night as u8 as f32, ..Default::default() };
         self.on = strength > 0.0;
-        self.uniform.write(gpu, &VeilUniform { centre: [centre[0], centre[1], centre[2], 0.0], radius: 120.0, soft: 110.0, strength, night: night as u8 as f32 });
+        self.uniform.write(gpu, &self.last);
+    }
+
+    /// The panel's own ground (R22) under the marks' rect `r` (x, y, w, h in points), `a` 0..1; after
+    /// `prepare`.
+    pub fn panel(&mut self, gpu: &Gpu, r: [f32; 4], a: f32) {
+        self.last.panel = r;
+        self.last.panel_a = a;
+        self.on = self.last.strength > 0.0 || a > 0.0;
+        self.uniform.write(gpu, &self.last);
     }
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup) {

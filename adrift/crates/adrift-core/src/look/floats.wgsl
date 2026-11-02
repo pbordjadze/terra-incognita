@@ -48,9 +48,11 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     let r = float_radius() * (1.0 + 0.3 * f.head);
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
     let reach = max(max(18.0 * rp() * (1.0 - f.beat) + r, mix(2.4, 3.6, f.head) * r), select(0.0, 2.3 * r + 2.0 * rp(), f.mode > 0.5));
+    // (room for the kept star at the shoulder, R22)
+    let reach_k = max(reach, select(0.0, 1.3 * r + max(0.85 * r, 5.0 * rp()) + 2.0 * rp(), f.kept > 0.5));
     let c = corner(vi % 6u);
     var o: FloatOut;
-    o.local = c * reach;
+    o.local = c * reach_k;
     o.pos = clip(p.xy + o.local);
     // (past the limb gone; toward it fading by its facing, as the maybes do, never clipped at a line)
     if (p.z < 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
@@ -76,9 +78,14 @@ fn ring_shade(n: f32) -> vec4<f32> { return mix(vec4<f32>(0.129, 0.322, 0.498, 0
 fn fs(i: FloatOut) -> @location(0) vec4<f32> {
     let rim_fade = smoothstep(0.02, 0.32, i.facing);
     var glass = glass_float(i);
-    if (i.speck > 0.0) { glass = glass * (1.0 - i.speck) + as_maybe(i) * i.speck; }
-    // (R21) a lamp not chosen while another is steps back: fainter, so the chosen read at a glance
-    glass = glass * (1.0 - 0.5 * i.mqk.y);
+    // (R22) a lamp chosen as its cloud stays its glass, drawn over its cloud (which thins under it):
+    // as one maybe among its own it was lost in them, and the eye lost which lamp the cloud is
+    let speck = select(i.speck, 0.0, i.mqk.x > 1.5);
+    if (speck > 0.0) { glass = glass * (1.0 - speck) + as_maybe(i) * speck; }
+    // (R21) a lamp not chosen while another is steps back: fainter, so the chosen read at a glance;
+    // (R22) and it has no rim then (glass_float), so only a chosen lamp is ringed
+    // (a kept lamp steps back less: it is yours)
+    glass = glass * (1.0 - 0.45 * i.mqk.y * (1.0 - 0.5 * i.mqk.z));
     let marks = chosen_marks(i);
     return (marks + glass * (1.0 - marks.a)) * rim_fade;
 }
@@ -143,10 +150,10 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, hue, win * lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
     acc = over(acc, hue, win * lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // a cool hue's pale ring round the glass (R21), so a blue or purple lamp stands off the sea's blue
-    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * step(i.mqk.x, 0.5) * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
+    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * step(i.mqk.x, 0.5) * (1.0 - i.mqk.y) * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
     // the glass, the lamp, its core
     let gb = glass_body(n);
-    acc = over(acc, gb.rgb, gb.a * cover(d - r));
+    acc = over(acc, gb.rgb, gb.a * mix(cover(d - r), 1.0 - smoothstep(0.55 * r, 1.05 * r, d), i.mqk.y));
     let rl = 0.55 * r;
     acc = over(acc, hue, cover(d - rl));
     acc = over(acc, mix(lamp_core(n), hue, 0.25), pow(clamp(1.0 - d / (rl * 0.72), 0.0, 1.0), 1.6));
@@ -157,7 +164,10 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
         let ang = atan2(i.local.y, i.local.x);
         dash = step(0.0, sin(ang * 8.0));
     }
-    acc = over(acc, glass_rim(n), dash * cover(abs(d - (r - rim * 0.5)) - rim * 0.5));
+    // (R22) a lamp stepped back while another is chosen has no dark rim: every rim read as a ring,
+    // and a ring is the sign of chosen; it is a lamp in soft glass, its edge the glass's own fade
+    let rimmed = 1.0 - i.mqk.y;
+    acc = over(acc, glass_rim(n), rimmed * dash * cover(abs(d - (r - rim * 0.5)) - rim * 0.5));
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     acc = over(acc, vec3<f32>(1.0), glass_light(n) * exp(-((h.x * 1.2) * (h.x * 1.2) + (h.y * 2.4) * (h.y * 2.4)) / (0.16 * r * r)));
     // and the glint of a clip's head (R20): the sun's highlight crisper, a bright point on the glass with
@@ -201,12 +211,31 @@ fn chosen_marks(i: FloatOut) -> vec4<f32> {
         acc = over(acc, hue, a * cover(length(q) - dr));
     }
     if (i.mqk.z > 0.5) {
-        let q = i.local - vec2<f32>(0.92, -0.92) * r;
-        let br = 0.36 * r;
-        acc = over(acc, vec3<f32>(0.18, 0.13, 0.04), (1.0 - n) * 0.6 * cover(length(q) - (br + 0.5 * rp())));
-        acc = over(acc, vec3<f32>(0.788, 0.635, 0.243), cover(length(q) - br));
-        let h = q - vec2<f32>(-0.3, -0.3) * br;
-        acc = over(acc, vec3<f32>(1.0, 0.95, 0.8), 0.8 * exp(-dot(h, h) / (0.08 * br * br)));
+        // (R22) kept: a gold star at the shoulder, large enough to read at arm's length (a bead was a
+        // dot among dots); a star is no ring and no dot, so it never reads as chosen. Four points, one
+        // up, on a dark edge by day and its own soft light by night
+        let c = vec2<f32>(0.9, -0.9) * r;
+        let q = i.local - c;
+        let sr = max(0.85 * r, 5.0 * rp());
+        let sd = star4(q, sr);
+        acc = over(acc, vec3<f32>(0.20, 0.14, 0.03), (1.0 - n) * 0.75 * cover(sd - 1.1 * rp()));
+        acc = over(acc, vec3<f32>(0.98, 0.80, 0.30), n * 0.35 * exp(-dot(q, q) / (0.5 * sr * sr)));
+        acc = over(acc, vec3<f32>(0.93, 0.74, 0.22), cover(sd));
+        let h = q - vec2<f32>(-0.12, -0.12) * sr;
+        acc = over(acc, vec3<f32>(1.0, 0.97, 0.85), 0.85 * exp(-dot(h, h) / (0.03 * sr * sr)));
     }
     return acc;
+}
+
+// A four-pointed star's signed distance in pixels (approximate): its points `sr` from the centre on
+// the axes, its waist a third of that, the sides drawn in a little so it reads as a star, not a diamond.
+fn star4(q: vec2<f32>, sr: f32) -> f32 {
+    let a = abs(q);
+    // the boundary between two neighbouring points, in polar form: a curve from (sr, 0) to (0, sr)
+    // through the waist; r(theta) = sr * w / (|cos|^k + |sin|^k)^(1/k) style astroid
+    let ang = atan2(a.y, a.x);
+    let c = cos(ang); let s = sin(ang);
+    let k = 0.62;
+    let rb = sr / pow(pow(c, k) + pow(s, k), 1.0 / k);
+    return length(q) - rb;
 }
