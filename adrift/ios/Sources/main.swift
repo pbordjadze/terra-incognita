@@ -299,12 +299,13 @@ final class AdriftView: UIView {
         try? FileManager.default.removeItem(at: url)
         guard let writer = try? AVAssetWriter(outputURL: url, fileType: .mp4) else { adrift_export_end(shell); return }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            // (R21) HEVC at 2 Mbit/s: a 4-minute 1080x1920 clip is about 60 MB (12 Mbit/s H.264 made ~360 MB);
-            // the map's broad flat tones and thin lines hold up at this rate (the check's ffmpeg encodes alike)
+            // (R21) HEVC at 1.2 Mbit/s: a 4-minute 1080x1920 clip is about 42 MB, 5 minutes about 52 (12 Mbit/s
+            // H.264 made ~360 MB; 2 Mbit/s ~88 MB for 5 minutes); the map's broad flat tones and thin lines
+            // hold up at this rate (the check's ffmpeg encodes alike: 10.4 MB a minute by night)
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(w),
             AVVideoHeightKey: Int(h),
-            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 2_000_000, AVVideoExpectedSourceFrameRateKey: 30, AVVideoMaxKeyFrameIntervalKey: 60],
+            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 1_200_000, AVVideoExpectedSourceFrameRateKey: 30, AVVideoMaxKeyFrameIntervalKey: 60],
         ])
         input.expectsMediaDataInRealTime = false
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [

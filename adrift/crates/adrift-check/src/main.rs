@@ -299,12 +299,14 @@ fn play(args: &[String]) -> Result<()> {
                 f_sum += f;
                 f_worst = f_worst.max(f);
             }
+            let gpu_name = format!("{} {:?}", app.gpu.adapter_info.name, app.gpu.adapter_info.device_type);
             let line = format!(
-                "{i:3} t={t:8.2}s scrub {days:+.0} days over {secs:.1}s: {n} frames; state {:.2} ms mean {:.2} worst; frame {:.1} ms mean {:.1} worst (software GPU); {}",
+                "{i:3} t={t:8.2}s scrub {days:+.0} days over {secs:.1}s: {n} frames; state {:.2} ms mean {:.2} worst; frame {:.1} ms mean {:.1} worst ({}); {}",
                 a_sum / n as f64,
                 a_worst,
                 f_sum / n as f64,
                 f_worst,
+                gpu_name,
                 app.stats()
             );
             println!("{line}");
@@ -500,7 +502,7 @@ fn play(args: &[String]) -> Result<()> {
             let shot = Offscreen::new(&app.gpu, tw, th);
             let mp4 = out.join(format!("{name}.mp4"));
             let mut ff = std::process::Command::new("ffmpeg")
-                .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "2M", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
+                .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "1200k", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
                 .arg(&mp4)
                 .stdin(std::process::Stdio::piped())
                 .spawn()
@@ -608,7 +610,7 @@ fn journey(args: &[String]) -> Result<()> {
     let (ew, eh) = app.export_size().unwrap();
     let shot = Offscreen::new(&app.gpu, ew, eh);
     let mut ff = std::process::Command::new("ffmpeg")
-        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "2M", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
+        .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", "30", "-i", "-", "-c:v", "libx265", "-b:v", "1200k", "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
         .arg(&out)
         .stdin(std::process::Stdio::piped())
         .spawn()
@@ -648,8 +650,11 @@ fn main() -> Result<()> {
         Some("play") if args.len() >= 3 => play(&args[1..]),
         Some("journey") if args.len() >= 4 => journey(&args[1..]),
         Some("info") => {
+            // (R21) the adapter wgpu chose (not the first the system lists), on one line the GPU
+            // runner's summary carries: `adapter: <name> (<type>, <backend>, <driver> <driver info>)`
             let (_i, gpu) = gpu()?;
-            println!("{:?}", gpu.adapter_info);
+            let a = &gpu.adapter_info;
+            println!("adapter: {} ({:?}, {:?}, {} {})", a.name, a.device_type, a.backend, a.driver, a.driver_info);
             Ok(())
         }
         _ => {
