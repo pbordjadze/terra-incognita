@@ -12,7 +12,7 @@ for f in ground sea; do
   cat "$tmp/view.wgsl" "$L/common.wgsl" "$L/$f.wgsl" > "$tmp/$f.wgsl"
   if naga "$tmp/$f.wgsl" > "$tmp/out" 2>&1; then echo "ok   $f.wgsl"; else echo "FAIL $f.wgsl"; cat "$tmp/out"; status=1; fi
 done
-for f in floats wake maybes silver words veil; do
+for f in floats wake maybes silver words veil seeds; do
   cat "$tmp/view.wgsl" "$L/common.wgsl" "$L/marks.wgsl" "$L/$f.wgsl" > "$tmp/$f.wgsl"
   if naga "$tmp/$f.wgsl" > "$tmp/out" 2>&1; then echo "ok   $f.wgsl"; else echo "FAIL $f.wgsl"; cat "$tmp/out"; status=1; fi
 done
