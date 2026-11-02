@@ -576,7 +576,9 @@ impl Look {
             self.bloom_from = unit(f.at);
             self.hue = lamp_hue(f.id);
         }
-        self.veil.prepare(gpu, self.bloom_from, state.bloom, n);
+        // (the veil's window round the chosen lamp stays off, as it has been since it stopped being
+        // drawn; the pass now carries the panel's ground, R22)
+        self.veil.prepare(gpu, self.bloom_from, 0.0, n);
         let track: Vec<[f32; 3]> = state.drifter.iter().map(|p| unit(*p)).collect();
         self.silver.prepare(gpu, &track, state.rise, n, self.hue);
         // in a clip (R10) what marks a finger is out of its last frame: the held ring and a lamp's
@@ -659,6 +661,19 @@ impl Look {
         // (while a take is made the marks step aside: the take is the globe alone, R12)
         let quiet_take = state.recording.is_some() || state.conducting;
         self.words.panel(if quiet_take { &[] } else { &rows }, reading, n, &mut strokes);
+        // (R22) the marks' own ground while they are up, so the row never lies on the land as more lamps
+        let up = !quiet_take && rows.iter().any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
+        let cells = &self.words.panel_bounds;
+        if up && !cells.is_empty() {
+            let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+            for (_, c) in cells {
+                x0 = x0.min(c[0]); y0 = y0.min(c[1]); x1 = x1.max(c[0] + c[2]); y1 = y1.max(c[1] + c[3]);
+            }
+            let pad = 2.0 * reading;
+            self.veil.panel(gpu, [x0 - pad, y0 - pad, x1 - x0 + 2.0 * pad, y1 - y0 + 2.0 * pad], 1.0);
+        } else {
+            self.veil.panel(gpu, [0.0; 4], 0.0);
+        }
         // a ring at a lamp (R10), over the maybes: a thin circle of its hue spreading
         // from the lamp over a second and fading as it goes
         for &(id, at, age) in &state.lamp_rings {
@@ -713,6 +728,7 @@ impl Look {
         self.silver.draw(rp, view_bind);
         self.floats.draw(rp, view_bind);
         self.seeds.draw(rp, view_bind);
+        self.veil.draw(rp, view_bind);
         self.strokes.draw(rp, view_bind);
         self.words.draw(rp, view_bind);
     }

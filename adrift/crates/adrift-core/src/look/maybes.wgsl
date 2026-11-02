@@ -28,6 +28,7 @@ struct SpeckOut {
     @location(3) facing: f32,
     @location(4) hue: vec3<f32>,
     @location(5) together: f32,
+    @location(6) away: f32,         // reading points from its lamp on the screen (R22)
 };
 
 @vertex
@@ -56,6 +57,7 @@ fn vs(@builtin(vertex_index) vi: u32, @builtin(instance_index) k: u32, m: Maybe)
     // (past the limb gone; toward it fading, never clipped at a line: the rim is as smooth as the rest)
     if (p.z < 0.0 || M.bloom <= 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.facing = p.z;
+    o.away = length(p.xy - place(M.origin.xyz).xy) / rp();
     // the worlds (R6): this self and its partner's i-th met the same sea. While they are still
     // together they are one speck of both lamps' hues mixed; as the currents part them each takes its
     // own hue again, so where two clouds diverge is where their colours split, and nowhere else
@@ -93,7 +95,10 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     let pair = i.together * (1.0 - field);
     let in_front = M.quiet < 0.01;
     let aside = select(1.0, 1.0 - pair, !in_front);
-    let shown = min(M.bloom * 2.0, 1.0) * rim * (1.0 - M.quiet) * aside;
+    // (R22) the cloud thins under its own lamp, so the lamp (drawn over it) is what is seen there and
+    // not lost among its selves; the clearing is the lamp's glow's size, never a hole from afar
+    let clear = mix(0.06, 1.0, smoothstep(9.0, 26.0, i.away));
+    let shown = min(M.bloom * 2.0, 1.0) * rim * (1.0 - M.quiet) * aside * clear;
     let ringed = select(0.0, pair, in_front);
     // a pale wash of the lamp's hue (a self aground is not marked: truth underneath); at globe scale a
     // soft kernel at a low alpha, so the field is the sum of many and glows where they crowd. By night
