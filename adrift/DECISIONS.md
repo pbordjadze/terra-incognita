@@ -830,3 +830,33 @@ journey with a song: almost. Round 22, smallest first: no ring on unchosen lamps
 at arm's length; the cloud-chosen lamp drawn over a faded cloud; the journey camera easing in on the
 pair as they close (pan limits scaled with zoom). Then the wind seen at a whole-globe zoom (a seed's
 gust or trail), the stray straight lines in conduct frames, and the dials.
+
+## 29. R22: a master for TikTok, the dance kept, chosen at a glance (Nov 2, 20:40 UTC)
+
+The owner's new goal: an edit view to adjust a clip's days and speed in a light viewer, then an
+export "designed for TikTok upload" (60 fps, as crisp as possible after TikTok's re-encode). Round
+21's critic: the journey camera parks while the pair dances; which lamps are chosen doesn't read at
+phone size. This round: the export and the two fixes; the edit view's model, its screen next round.
+
+- *Engineering* (70b1926, acdee46): the phone exports at 60 fps (`JOURNEY_FPS`, TikTok's ceiling),
+  HEVC 12 Mbit/s, a clean master for the re-encode (~110 MB a minute measured; offered as is).
+  `JourneyEdit` (seconds, from, to, pace) and `App::journey_take_edit` / `adrift_journey_begin_edit`:
+  the edit view's model (test `a_journey_edit_sets_its_days_and_pace`). The check's journey takes
+  `--fps --bitrate --from-day --to-day --pace`; `tools/adrift/tiktok.sh` re-encodes a master
+  roughly as TikTok does (H.264 ~3.5 Mbit/s) and sets stills side by side. `View.export` (the
+  uniform's `pad.y`): 1 in a clip's frames, so the sea and ground passes can tune the export.
+- *Visual* (a5392b3, 918133d): a lamp chosen as its cloud stays its glass over a thinned cloud; while
+  any lamp is chosen the others step back with no rim, so only chosen lamps are ringed; kept is a gold
+  four-pointed star (globe and panel); the panel's marks on their own ground (paper by day, navy by
+  night). The export look (clip frames only): streamlines heavier and brighter, no glitter, the
+  cities' shimmer calmed, the night sea's darkest tones lifted (5th percentile 14,21,37 → 19,28,46)
+  with a fixed grain against banding. A seed's cue draws no straight strokes (the stray lines).
+  Through tiktok.sh at 3.2 Mbit/s the dance's lines are all but the master's.
+- *Motion* (ee23ece): journeys get their own frame (`journey_lean`): the pair and half a day of
+  line, as deep as 160 in open water and 30 with the coast in view, coming back in as the pair
+  closes, the pan limited in the pair's moving frame and led by its run, each lamp's parting led
+  0.8 s. dance / dance-early at 60 s, last 40 s: the pair's median share of the width 2% → 30% and
+  10% → 33% (target 35%), lamps out of frame 0 (were 0 / 29); edited journeys 0 out. `--camera-only`
+  measures a journey's framing without drawing. Its finding: the R19/R20 limiter brakes for a
+  spring's one-frame step, holding the pan to ~25 pt/s; the camera wants one controller (aim and
+  limits together), and centring on the pair's predicted midpoint.
