@@ -24,7 +24,9 @@ pub struct MaybesUniform {
     pub partner_hue: [f32; 4],
     /// how many selves the partner has (an i past it has no partner)
     pub partner_count: u32,
-    pub _p: [u32; 3],
+    /// 1 a cloud of seeds on the wind (R21): held 1 down on land, 2 down on the sea
+    pub wind: u32,
+    pub _p: [u32; 2],
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
@@ -52,6 +54,8 @@ pub struct CloudDraw {
     pub bloom: f32,
     /// The one in front (R6): drawn whole; the others with it a shade quieter.
     pub front: bool,
+    /// A seed's cloud (R21): its selves come down on land or on the sea are drawn so.
+    pub wind: bool,
 }
 
 /// The most clouds drawn at once (the app's `MAX_CLOUDS`).
@@ -90,7 +94,7 @@ impl MaybesPass {
                 _ => ([0.0; 4], c.base, 0),
             };
             // the field's density follows the count drawn: it reads the same at any budget
-            let u = MaybesUniform { origin: [c.origin[0], c.origin[1], c.origin[2], 0.0], hue: [c.hue[0], c.hue[1], c.hue[2], 0.0], bloom: c.bloom, night: night as u8 as f32, density: 512.0 / c.count as f32, quiet: if c.front || clouds.len() == 1 { 0.0 } else { 0.18 }, partner_hue: ph, partner_count: pcount, _p: [0; 3] };
+            let u = MaybesUniform { origin: [c.origin[0], c.origin[1], c.origin[2], 0.0], hue: [c.hue[0], c.hue[1], c.hue[2], 0.0], bloom: c.bloom, night: night as u8 as f32, density: 512.0 / c.count as f32, quiet: if c.front || clouds.len() == 1 { 0.0 } else { 0.18 }, partner_hue: ph, partner_count: pcount, wind: c.wind as u32, _p: [0; 2] };
             self.uniforms[slot].write(gpu, &u);
             self.clouds.push((slot, c.base, c.count, pbase));
         }

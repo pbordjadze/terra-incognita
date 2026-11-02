@@ -225,6 +225,8 @@ pub struct LookCloud {
     pub bloom: f32,
     /// The one in front (the last chosen, or the one under the finger): its silver and its veil.
     pub front: bool,
+    /// A seed's cloud on the wind (R21: its leg's medium).
+    pub wind: bool,
 }
 
 /// Everything the marks draw this frame. The app fills it from its state; the look reads nothing else.
@@ -566,7 +568,7 @@ impl Look {
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
         // silver are the front one's (its place and hue kept while it folds)
-        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front }).collect();
+        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front, wind: c.wind }).collect();
         self.maybes.prepare(gpu, &draws, n);
         if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);

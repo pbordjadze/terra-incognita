@@ -1289,7 +1289,7 @@ impl App {
             .filter(|c| c.n > 0)
             .filter_map(|c| {
                 let f = self.floats.iter().find(|f| f.id == c.id)?;
-                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id) })
+                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id), wind: c.leg.medium == Medium::Wind })
             })
             .collect();
         LookState {

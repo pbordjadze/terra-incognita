@@ -15,7 +15,8 @@ struct Maybes {
     quiet: f32,         // 0 the cloud in front, more for the others out with it (R6: several at once)
     partner_hue: vec4<f32>,  // the partner cloud's hue, w 1 if there is one (R6, the worlds)
     partner_count: u32,      // its selves; an i past them has no partner
-    _p0: u32, _p1: u32, _p2: u32,
+    wind: u32,               // 1 a seed's cloud (R21): held 1 down on land, 2 down on the sea
+    _p1: u32, _p2: u32,
 };
 @group(1) @binding(0) var<uniform> M: Maybes;
 
@@ -109,6 +110,25 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
     let partner_ring = M.partner_hue.rgb * mix(0.85, 1.0, n);
     let ring_r = i.r * 1.55;
     acc = over(acc, partner_ring, 0.7 * ringed * shown * cover(abs(d - ring_r) - 0.24 * i.r));
+    if (M.wind == 1u) {
+        // a seed's cloud (R21): the selves still flying an airy wash, paler than a lamp's; one come
+        // down on land a small mark of the hue darkened, settled; one come down on the sea a pale
+        // ring on the water. Not faded by Truth's `measured` (for the wind it is the rain)
+        if (i.held > 1.5) {
+            let rr = mix(0.6 * i.r, 0.9 * i.r, field);
+            let ink = mix(mix(i.hue, vec3<f32>(1.0), 0.55), night_hue, n);
+            acc = over(acc, ink, mix(0.75, 0.10 * pow(M.density, 0.75), field) * shown * mix(cover(abs(d - rr) - 0.18 * i.r), soft, field));
+            return acc;
+        }
+        if (i.held > 0.5) {
+            let ink = mix(i.hue * 0.55, mix(i.hue, vec3<f32>(1.0), 0.2), n);
+            acc = over(acc, ink, mix(0.85, 0.08 * pow(M.density, 0.75), field) * shown * mix(cover(d - 0.6 * i.r), soft, field));
+            return acc;
+        }
+        let airy = mix(mix(i.hue, vec3<f32>(1.0), mix(0.80, 0.35, field)), mix(night_hue, vec3<f32>(1.0), 0.2), n);
+        acc = over(acc, airy, a * mix(cover(d - 0.8 * i.r), soft, field));
+        return acc;
+    }
     if (n > 0.5 && field < 0.999) {
         // close in by night: each maybe a tiny float, a ring of its glass with the lamp's spark at its
         // heart, so the eye reads a thing on the water and not a light on the land
