@@ -120,13 +120,16 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
         let fine = vnoise3(G.g * 6000.0 + vec3f(t * 0.9, -t * 0.7, 3.1));
         let breath = 0.96 + 0.04 * sin(t * 0.7);
         let catching = smoothstep(0.82, 1.0, vnoise3(G.g * 9000.0 + vec3f(-t * 1.3, t * 1.1, 11.0)));
-        var lights = pow(lightsRaw, 0.75) * (0.74 + 0.28 * shimmer + 0.24 * fine) * breath * smoothstep(0.45, 1.0, night);
-        lights = lights + 0.5 * catching * smoothstep(0.6, 1.0, lights);
+        // (R22, a clip only: U.pad.y) the fine and quick shimmers and the catching are the bits a
+        // re-encode spends and smears; a clip keeps the slow shimmer and calms the rest
+        let ex = U.pad.y;
+        var lights = pow(lightsRaw, 0.75) * (0.74 + 0.28 * shimmer + 0.24 * mix(fine, 0.5, 0.7 * ex)) * breath * smoothstep(0.45, 1.0, night);
+        lights = lights + 0.5 * (1.0 - 0.6 * ex) * catching * smoothstep(0.6, 1.0, lights);
         // close in, flying over a city: each street's light blinks a tiny bit of its own, quick and small
         let close = smoothstep(3.5, 5.5, zoom);
         let cell = floor(G.g * 24000.0);
         let blink = 0.5 + 0.5 * sin(t * (5.0 + 4.0 * hash13(cell)) + 6.2832 * hash13(cell + 1.0));
-        lights = lights * (1.0 + close * 0.12 * (blink - 0.5));
+        lights = lights * (1.0 + (1.0 - ex) * close * 0.12 * (blink - 0.5));
         // a light's colour by how bright it is, as the photographs from orbit show it: a village a
         // deep sodium ember, a town gold, a city's heart whitening
         let ember = mix(N_HALO * 0.95, N_LIGHT, smoothstep(0.12, 0.6, lights));
@@ -147,5 +150,17 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     }
     // the rim, against the page
     let edge = smoothstep(-0.5, 0.5, -ringpx / max(fwRing, 1e-5));
-    return vec4f(mix(page, col, edge), 1.0);
+    var out = mix(page, col, edge);
+    // (R22, a clip only) the night's darkest tones lifted out of the near-black a re-encode crushes
+    // into blocks (its video black is 16 of 255), and a grain of a part in 255 laid over the whole
+    // picture so the deep sea's long gradients don't band: the night still reads as night
+    let ex = U.pad.y;
+    if (ex > 0.0) {
+        let lift = vec3f(0.030, 0.038, 0.056) * night;
+        out = out * (1.0 - 0.06 * night) + lift;
+        // (fixed to the screen, never changing in time: a moving grain is what an encoder pays most for)
+        let tri = hash2(pix) + hash2(pix * 1.37 + 41.0) - 1.0;
+        out = out + vec3f(tri * 1.2 / 255.0);
+    }
+    return vec4f(out, 1.0);
 }
