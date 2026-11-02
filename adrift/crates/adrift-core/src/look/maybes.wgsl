@@ -121,8 +121,9 @@ fn fs(i: SpeckOut) -> @location(0) vec4<f32> {
             return acc;
         }
         if (i.held > 0.5) {
-            let ink = mix(i.hue * 0.55, mix(i.hue, vec3<f32>(1.0), 0.2), n);
-            acc = over(acc, ink, mix(0.85, 0.08 * pow(M.density, 0.75), field) * shown * mix(cover(d - 0.6 * i.r), soft, field));
+            // (quiet: a thousand settled seeds must not pile into a stain over the ones still flying)
+            let ink = mix(i.hue * 0.7, mix(i.hue, vec3<f32>(1.0), 0.2), n);
+            acc = over(acc, ink, mix(0.40, 0.035 * pow(M.density, 0.75), field) * shown * mix(cover(d - 0.45 * i.r), soft, field));
             return acc;
         }
         let airy = mix(mix(i.hue, vec3<f32>(1.0), mix(0.80, 0.35, field)), mix(night_hue, vec3<f32>(1.0), 0.2), n);
