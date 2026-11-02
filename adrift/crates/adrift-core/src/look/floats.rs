@@ -22,12 +22,14 @@ pub struct FloatInstance {
     /// 0 a glass float; 1 drawn as one maybe of its own cloud, no different from the rest (R6: while
     /// its cloud is out the lamp is maybe k = 0, and the panel holds where it was put)
     pub speck: f32,
+    /// 1 in a clip (R20): the line's head, a larger glass float with a glint and a soft glow of its hue
+    pub head: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: std::mem::size_of::<FloatInstance>() as u64,
     step_mode: wgpu::VertexStepMode::Instance,
-    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Float32, 6 => Float32x3, 7 => Float32],
+    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Float32, 6 => Float32x3, 7 => Float32, 8 => Float32],
 };
 
 pub struct Floats {

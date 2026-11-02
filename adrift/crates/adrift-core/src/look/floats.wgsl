@@ -13,6 +13,7 @@ struct FloatIn {
     @location(5) measured: f32,     // how measured the sea is where it rides (0..1): under a half the rim is dashed
     @location(6) hue: vec3<f32>,    // the lamp's colour (amber the first, then each its own)
     @location(7) speck: f32,        // 0 a glass float, 1 one maybe among its cloud's (R6), between as it blooms
+    @location(8) head: f32,         // 1 in a clip (R20): the line's head, a larger glass float with a glint and a glow
 };
 
 struct FloatOut {
@@ -27,6 +28,7 @@ struct FloatOut {
     @location(7) measured: f32,
     @location(8) hue: vec3<f32>,
     @location(9) speck: f32,
+    @location(10) head: f32,
 };
 
 fn float_radius() -> f32 {
@@ -37,9 +39,10 @@ fn float_radius() -> f32 {
 @vertex
 fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     let p = place(f.g);
-    let r = float_radius();
+    // (a clip's head, R20: a size up, so it anchors the eye at 1080 x 1920)
+    let r = float_radius() * (1.0 + 0.3 * f.head);
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
-    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, 2.4 * r);
+    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, mix(2.4, 3.6, f.head) * r);
     let c = corner(vi % 6u);
     var o: FloatOut;
     o.local = c * reach;
@@ -47,6 +50,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     // (past the limb gone; toward it fading by its facing, as the maybes do, never clipped at a line)
     if (p.z < 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.speck = f.speck;
+    o.head = f.head;
     o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured; o.hue = f.hue;
     return o;
 }
@@ -119,6 +123,10 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
 
     // what you just did stays lit, and the lamp's light on the water
     let hue = lamp_of(i.hue, n);
+    // a clip's head (R20): a soft glow of its hue on the water round it, breathing slowly, so the eye
+    // finds the line's head at a glance without the glow outshining the line
+    let breath = 0.85 + 0.15 * sin(U.time.x * 1.7);
+    acc = over(acc, hue, i.head * 0.30 * breath * exp(-d * d / (2.6 * 2.6 * r * r)));
     acc = over(acc, hue, lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
     acc = over(acc, hue, lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // the glass, the lamp, its core
@@ -137,6 +145,13 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, glass_rim(n), dash * cover(abs(d - (r - rim * 0.5)) - rim * 0.5));
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     acc = over(acc, vec3<f32>(1.0), glass_light(n) * exp(-((h.x * 1.2) * (h.x * 1.2) + (h.y * 2.4) * (h.y * 2.4)) / (0.16 * r * r)));
+    // and the glint of a clip's head (R20): the sun's highlight crisper, a bright point on the glass with
+    // a small four-pointed sparkle, and a faint second light low right where the water lights the glass
+    let gp = i.local - vec2<f32>(-0.34 * r, -0.40 * r);
+    let star = exp(-abs(gp.x) / (0.05 * r)) * exp(-abs(gp.y) / (0.45 * r)) + exp(-abs(gp.y) / (0.05 * r)) * exp(-abs(gp.x) / (0.45 * r));
+    acc = over(acc, vec3<f32>(1.0), i.head * clamp(0.9 * exp(-dot(gp, gp) / (0.012 * r * r)) + 0.55 * star * (0.8 + 0.2 * breath), 0.0, 1.0));
+    let low = i.local - vec2<f32>(0.40 * r, 0.42 * r);
+    acc = over(acc, mix(vec3<f32>(1.0), hue, 0.4), i.head * 0.35 * exp(-dot(low, low) / (0.03 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
     // (in its lamp's colour, R8: a lamp chosen as itself is ringed by its own light)
     acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * cover(abs(d - 1.55 * r) - 0.35 * rp()));
