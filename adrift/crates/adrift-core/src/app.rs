@@ -1289,7 +1289,7 @@ impl App {
             .filter(|c| c.n > 0)
             .filter_map(|c| {
                 let f = self.floats.iter().find(|f| f.id == c.id)?;
-                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id) })
+                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id), wind: c.leg.medium == Medium::Wind })
             })
             .collect();
         LookState {
@@ -1299,7 +1299,42 @@ impl App {
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
                     let first = f.legs.first().copied().unwrap_or(Leg::new(f.at, f.put_day, f.seed));
-                    LookFloat { id: f.id, at: f.at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect(), measured: f.measured, kept: f.kept }
+                    // a seed on the wind (R21): its head on its line's spline, and its coming down
+                    let li = f.leg_at(self.clock.day);
+                    let medium = li.map_or(first.medium, |i| f.legs.get(i).map_or(first.medium, |l| l.medium));
+                    let (mut at, mut down, mut down_days) = (f.at, Held::No, 0.0f32);
+                    // (its whole flight since it was lifted, every step: the app's trail starts at its
+                    // first whole day, a seed's life is a day or two)
+                    let mut flight: Vec<LookBead> = Vec::new();
+                    if medium == Medium::Wind {
+                        if let Some(li) = li {
+                            for i in 0..=li {
+                                let until = if i < li { f.legs[i + 1].day } else { self.clock.day };
+                                if let Some(p) = self.paths.get(&(f.id, i)) {
+                                    flight.extend(p.samples.iter().take_while(|x| x.day <= until + 1e-9).map(|x| LookBead { at: x.at, measured: 1.0 }));
+                                }
+                            }
+                        }
+                    }
+                    if medium == Medium::Wind && f.hand != Hand::Carried {
+                        if let Some(p) = li.and_then(|i| self.paths.get(&(f.id, i))) {
+                            let s = &p.samples;
+                            let day = self.clock.day;
+                            let k = s.partition_point(|x| x.day <= day + 1e-9).saturating_sub(1);
+                            if let Some(d) = s.iter().position(|x| x.held.down()) {
+                                if d <= k + 1 {
+                                    down = s[d].held;
+                                    down_days = (day - s[d].day) as f32;
+                                }
+                            }
+                            if k + 1 < s.len() && !s[k].held.down() {
+                                let fr = (day - s[k].day) / (s[k + 1].day - s[k].day).max(1e-9);
+                                let q = |i: usize| s[i.min(s.len() - 1)].at;
+                                at = crate::look::seeds::spline_head([q(k.saturating_sub(1)), q(k), q(k + 1), q(k + 2)], fr);
+                            }
+                        }
+                    }
+                    LookFloat { medium, down, down_days, id: f.id, at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: if medium == Medium::Wind { flight } else { f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect() }, measured: f.measured, kept: f.kept }
                 })
                 .collect(),
             behind: self.behind() as f32,
@@ -1339,6 +1374,7 @@ impl App {
             drifter_nearest: if self.drifter.is_empty() { None } else { Some(self.drifter_nearest.min(self.drifter.len() - 1)) },
             rise: self.bloom_eased(),
             night: self.night,
+            wind: self.medium == Medium::Wind,
             date: format!("{} {}", day, MONTHS[(month - 1) as usize]),
             note: String::new(),
             date_running: self.clock.running,

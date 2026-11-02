@@ -94,3 +94,7 @@ fn uv_grad(uv: vec2f) -> Grad {
     g.dy = vec2f(select(dy2.x, dy1.x, abs(dy1.x) < abs(dy2.x)), dy1.y);
     return g;
 }
+
+// How cool a lamp's hue is, 0..1 (R21, the critic's: a blue or a purple lamp sinks into the sea's
+// blue): its blue over its red. Sky and lilac are cool, amber, coral and gold not at all.
+fn coolness(h: vec3f) -> f32 { return smoothstep(0.0, 0.25, h.b - h.r); }

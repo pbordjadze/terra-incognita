@@ -18,7 +18,7 @@ struct StrokeIn {
 
 struct WakeUniform {
     layer: f32,         // 0 this draw lays the edges, 1 the lines
-    _p0: f32,
+    airy: f32,          // 1 a wind line (R21): no dark edge, paler, its edges feathered
     _p1: f32,
     _p2: f32,
 };
@@ -106,8 +106,21 @@ fn fs(i: StrokeOut) -> @location(0) vec4<f32> {
     let al = mix(i.hw.z, i.hw.w, f);
     let night = i.hue.w;
     var acc = vec4<f32>(0.0);
+    if (W.airy > 0.5) {
+        // a wind line (R21): a light stroke of its hue, no hard edge, its own light by
+        // night, feathered so it reads as air and not as a wake cut in the water
+        if (W.layer < 0.5) { return vec4<f32>(0.0); }
+        let soft = 1.0 - smoothstep(hw - 0.6 * U.frame.z, hw + 0.9 * U.frame.z, dist);
+        // (by day a breath of the hue darkened under it, so a light line still reads on the light sea)
+        acc = over(acc, i.hue.rgb * 0.5, (1.0 - night) * 0.35 * al * (1.0 - smoothstep(hw, hw + 1.6 * U.frame.z, dist)));
+        return over(acc, mix(i.hue.rgb * 0.92, mix(i.hue.rgb, vec3<f32>(1.0), 0.15), night), al * soft);
+    }
     if (W.layer < 0.5) {
-        // the edge: the hue darkened, by day only
+        // the edge: the hue darkened, by day only; for a cool hue (R21) a pale halo outside it, so a
+        // blue or a purple line stays its own against the sea's blue (warm hues keep the dark edge alone)
+        let halo = coolness(i.hue.rgb) * (1.0 - night) * 0.9 * al;
+        let hr = hw + 0.45 * U.frame.z + max(1.4 * U.frame.z, 0.3 * hw);
+        acc = over(acc, vec3<f32>(0.97, 0.985, 1.0), halo * (1.0 - smoothstep(hr - 0.8 * U.frame.z, hr + 0.6 * U.frame.z, dist)));
         acc = over(acc, i.hue.rgb * 0.42, (1.0 - night) * al * al * cover(dist - (hw + 0.45 * U.frame.z)));
     } else {
         acc = over(acc, mix(i.hue.rgb * 0.95, i.hue.rgb, night), al * cover(dist - hw));
