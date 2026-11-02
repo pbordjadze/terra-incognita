@@ -34,9 +34,10 @@ run_one() {
     if [ "${ADRIFT_SOFTWARE:-0}" = 1 ]; then bash tools/adrift/linux-setup.sh; fi
     python3 tools/adrift/assets.py adrift/build/assets --link > /dev/null
     cd adrift
-    vulkaninfo --summary 2>/dev/null | grep -E "deviceName|driverName" | head -4 || true
     cargo test --release -q -p adrift-core 2>&1 | grep -E "test result|FAILED|panicked" || true
     cargo build --release -q -p adrift-check
+    # the adapter wgpu itself chose (a laptop's discrete GPU, not the first device vulkaninfo lists)
+    cargo run --release -q -p adrift-check -- info 2>&1 | grep "^adapter:" || echo "adapter: none found"
     for s in crates/adrift-check/scenes/*.json crates/adrift-core/src/look/scenes/*.json; do
       [ -f "$s" ] || continue
       cargo run --release -q -p adrift-check -- render "$s" "$out/scenes/$(basename "$s" .json).png" --size 1179x2556 --ppp 3 2>&1 | grep -E "drawn|rror" || true
@@ -64,7 +65,7 @@ PY
   # the summary: what a runner session sends back as text
   {
     echo "== SUMMARY $branch $sha"
-    grep -E "deviceName|driverName" "$out/run.log" | head -2 | sed 's/^ *//'
+    grep -E "^adapter:" "$out/run.log" | head -1
     grep -E "test result" "$out/run.log" | head -1
     echo "plans: $(grep -c '^ok ' "$out/run.log") ok, $(grep -c '^FAIL ' "$out/run.log") failed"
     grep '^FAIL ' "$out/run.log" || true
