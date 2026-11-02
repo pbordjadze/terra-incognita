@@ -463,6 +463,7 @@ impl App {
             clock: self.clock,
             rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
             night: if self.night { 1.0 } else { 0.0 },
+            export: 0.0,
         }
     }
 
@@ -2354,6 +2355,8 @@ impl App {
         v.reading = Self::reading_for(w, h, v.ppp);
         v.camera = cam;
         v.disc = View::layout(w, h, v.ppp, cam);
+        // (R22) a clip's frame: the sea and ground passes may tune it for the platform's re-encode
+        v.export = 1.0;
         v
     }
 
