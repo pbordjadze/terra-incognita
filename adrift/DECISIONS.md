@@ -752,3 +752,15 @@ mid-sea, its ending cut off. Motion 64e0113: a final limiter on the clip camera 
 second in its log, 1.8% a frame; pan ≤ 120 points a second), tested, and `lamp_in_clip.py
 --max-step`; open sea (no land within 500 km) frames to zoom 70 (`FRAME_ZOOM_MAX`; 40 near land,
 `FRAME_ZOOM_NEAR`); a journey's end beat 3.2 s, a 2 s pull-out then held.
+
+## 27. R20: eased, the whole trail held, a glint (Nov 2, 01:45 UTC)
+
+Round 19's critic: the dance clip passes ("Coldplay and post as is: yes"; "show it without a caveat?
+Yes for dance.mp4"); the feature's caveat "some clips jerk at the start, and the camera sometimes
+loses where the pair started". Motion: a second-order limiter (the zoom's acceleration ≤ 0.6 log a
+second², the pan's ≤ 160 points a second², braking without overshoot); journeys hold the braid since
+the clip began from 2 s after the opening, so the trail's start stays in frame (the dance's lamps
+then ride its southern end, in the lower third more often: a trade the critic judges). Visual
+5e8c7c2: in a clip each lamp's head a glass float 30% larger, a breathing glow of its hue on the
+water, a glint with a small sparkle. Still to build, from the critic: a way to trim a journey's end
+(the editing surface, with the speed and the trim of takes).
