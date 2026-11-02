@@ -611,12 +611,16 @@ fn journey(args: &[String]) -> Result<()> {
     let edit = adrift_core::app::JourneyEdit { seconds, from: num("--from-day"), to: num("--to-day"), pace: num("--pace") };
     let fps = num("--fps").unwrap_or(60.0);
     let bitrate = arg(args, "--bitrate").unwrap_or_else(|| "12M".to_string());
+    // (R22, Motion) `--camera-only`: the replay and the clip's camera stepped, nothing drawn or encoded,
+    // the trace (`<out>.csv`) written as ever: the framing measured in seconds, not minutes
+    let dry = args.iter().any(|a| a == "--camera-only");
+    app.export_dry = dry;
     let frames = app.journey_begin_edit(&edit, fps);
     anyhow::ensure!(frames > 0, "no journey to make");
     let day0 = app.clock.day;
     let (ew, eh) = app.export_size().unwrap();
     let shot = Offscreen::new(&app.gpu, ew, eh);
-    let mut ff = std::process::Command::new("ffmpeg")
+    let mut ff = std::process::Command::new(if dry { "true" } else { "ffmpeg" })
         .args(["-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgra", "-s", &format!("{ew}x{eh}"), "-r", &format!("{fps}"), "-i", "-", "-c:v", "libx265", "-b:v", &bitrate, "-tag:v", "hvc1", "-x265-params", "log-level=error", "-pix_fmt", "yuv420p"])
         .arg(&out)
         .stdin(std::process::Stdio::piped())
@@ -631,6 +635,10 @@ fn journey(args: &[String]) -> Result<()> {
         if let Some((c, k)) = app.export_camera() {
             let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
             trace.push_str(&format!("{i},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
+        }
+        if dry {
+            i += 1;
+            continue;
         }
         ff.stdin.as_mut().unwrap().write_all(&px)?;
         if i == 0 || i + 1 == frames || i % 900 == 0 {
@@ -665,7 +673,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] [--fps 60] [--bitrate 12M] [--from-day D] [--to-day D] [--pace P] | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] [--fps 60] [--bitrate 12M] [--from-day D] [--to-day D] [--pace P] [--camera-only] | info");
             std::process::exit(2);
         }
     }
