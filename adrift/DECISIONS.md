@@ -860,3 +860,15 @@ phone size. This round: the export and the two fixes; the edit view's model, its
   measures a journey's framing without drawing. Its finding: the R19/R20 limiter brakes for a
   spring's one-frame step, holding the pan to ~25 pt/s; the camera wants one controller (aim and
   limits together), and centring on the pair's predicted midpoint.
+
+**R22 shipped (Nov 2, 22:28 UTC):** main e169c0f, adrift-build-67, web link v26. Round 22's critic:
+the export meets the crispness target (the 60 fps master ~11.8 Mbit/s and its ~3.5 Mbit/s H.264
+re-encode match at 5/20/40/55 s, no banding or blocking; the camera smooth, no jumps); the first
+40 s "lovely". Weakest: the chosen states are three grammars (itself a light double ring; its cloud
+a dark ring, a dotted halo and a scatter; kept a star larger than its lamp, beside it); the panel's
+soft ground over Alaska is chrome the eye lands on first. The journey's last third zooms to 70–117
+over open sea: flat navy, a lamp at the edge, its loops cut off. Show without a caveat: no ("ignore
+the box at the top, and the star means kept"); post as is: nearly, no (the ending). Round 23,
+smallest first: kept as a notch on the lamp's own ring; one light ring for both chosen states (the
+cloud adds only its scatter); the panel folded away or a thin strip without blur; the journey's
+zoom capped lower at sea (the place kept) and centred on the pair's midpoint; then the edit view.
