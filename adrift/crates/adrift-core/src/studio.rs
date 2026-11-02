@@ -383,9 +383,6 @@ impl ClipCamera {
             1.0
         };
         let (want, hold) = (want * lead, hold * lead);
-        if journey && std::env::var_os("ADRIFT_CAM_DEBUG").is_some() && (t * 60.0).round() as i64 % 30 == 0 {
-            eprintln!("cam t {t:.1} frame {:.1} cap {:.1} target {:.1} hold {:.1} lead {lead:.2} want {want:.1} now {:.1}", z, l.zoom_cap, target.zoom, hold, moved.zoom);
-        }
         let half = if want < moved.zoom { ZOOM_OUT_HALF } else if journey { JOURNEY_IN_HALF } else { ZOOM_IN_HALF };
         let (lz, vz) = crate::touch::motion::spring(moved.zoom.ln(), self.fzv, want.ln(), half / HALF_TO_TAU, dt);
         self.fzv = vz;
@@ -1325,6 +1322,7 @@ mod tests {
                 land_km: if i > 40 { Some(300.0) } else { None },
                 land_far_km: Some(400.0),
                 scale: 0.0,
+                journey: false,
             };
             let part = if t < f.hold_in { ClipPart::Before } else if i < 270 { ClipPart::During } else { ClipPart::After };
             let through = if part == ClipPart::After { (i - 270) as f64 / 30.0 / f.hold_out } else { (t / 9.0).min(1.0) };
@@ -1340,5 +1338,48 @@ mod tests {
             }
             last = Some(cam);
         }
+    }
+
+    #[test]
+    fn a_journey_follows_a_running_pair_in_as_it_closes_and_keeps_it_in_frame() {
+        // (R22) a pair running east at a dance's pace (~35 km a second of clip) and closing from ~170 km
+        // to ~25 km apart: the journey's camera keeps both in frame and comes back in (R17-R21's only
+        // pulled out), the pair a fair share of the width at the end
+        let mut cc = ClipCamera::new(Camera::new(150.0, -40.0, 1.0));
+        let f = Framing { braid: true, hold_out: JOURNEY_HOLD_OUT, ..Framing::default() };
+        let fps = 60.0;
+        let at = |t: f64| {
+            let c = 150.0 + 0.4 * t;
+            let gap = 2.0 - 1.7 * (t / 16.0).min(1.0);
+            (LonLat::new(c - gap / 2.0, -40.0), LonLat::new(c + gap / 2.0, -40.0))
+        };
+        let mut whole = Vec::new();
+        let (mut mid, mut last) = (0.0, Camera::new(150.0, -40.0, 1.0));
+        for i in 0..(20.0 * fps) as usize {
+            let t = i as f64 / fps;
+            let (a, b) = at(t);
+            whole.push((2.0 * t, a));
+            whole.push((2.0 * t, b));
+            let l = Lean { lamps: vec![a, b], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: whole.clone(), zoom_cap: FRAME_ZOOM_OPEN_SEA, land_km: None, land_far_km: None, scale: 0.0, journey: false };
+            let part = if t < f.hold_in { ClipPart::Before } else { ClipPart::During };
+            let cam = cc.step(Camera::new(150.0, -40.0, 1.0), part, (t / 30.0).min(1.0), 1.0 / fps, &f, &l);
+            if t > OPEN_SECS {
+                for p in [a, b] {
+                    let v = cam.view(p.to_xyz());
+                    let (x, y) = (180.0 + 166.0 * cam.zoom * v[0], 320.0 - 166.0 * cam.zoom * v[1]);
+                    assert!(v[2] > 0.0 && (0.0..=360.0).contains(&x) && (0.0..=640.0).contains(&y), "{t:.2} s: a lamp at {x:.0},{y:.0} (zoom {:.1})", cam.zoom);
+                }
+            }
+            if (t - 6.0).abs() < 0.5 / fps {
+                mid = cam.zoom;
+            }
+            last = cam;
+        }
+        let (a, b) = at(20.0);
+        let (va, vb) = (last.view(a.to_xyz()), last.view(b.to_xyz()));
+        let span = 166.0 * last.zoom * (va[0] - vb[0]).abs() / 360.0;
+        assert!(last.zoom > 2.0 * mid, "the zoom came in from {mid:.1} only to {:.1}", last.zoom);
+        // 25 km apart is about 30% of the width at `JOURNEY_ZOOM_MAX`, which the zoom is still easing into
+        assert!(span >= 0.2, "the pair spans {:.0}% of the width at the end", span * 100.0);
     }
 }
