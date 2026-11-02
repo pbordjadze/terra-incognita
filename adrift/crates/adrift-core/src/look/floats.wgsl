@@ -14,6 +14,10 @@ struct FloatIn {
     @location(6) hue: vec3<f32>,    // the lamp's colour (amber the first, then each its own)
     @location(7) speck: f32,        // 0 a glass float, 1 one maybe among its cloud's (R6), between as it blooms
     @location(8) head: f32,         // 1 in a clip (R20): the line's head, a larger glass float with a glint and a glow
+    @location(9) mode: f32,         // how it is chosen (R21): 0 not, 1 as itself, 2 as its cloud
+    @location(10) quiet: f32,       // 1 not chosen while another is: it steps back
+    @location(11) kept: f32,        // kept for good: a gold bead at its shoulder
+    @location(12) pad: f32,
 };
 
 struct FloatOut {
@@ -29,6 +33,7 @@ struct FloatOut {
     @location(8) hue: vec3<f32>,
     @location(9) speck: f32,
     @location(10) head: f32,
+    @location(11) @interpolate(flat) mqk: vec3<f32>,   // mode, quiet, kept
 };
 
 fn float_radius() -> f32 {
@@ -42,7 +47,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     // (a clip's head, R20: a size up, so it anchors the eye at 1080 x 1920)
     let r = float_radius() * (1.0 + 0.3 * f.head);
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
-    let reach = max(18.0 * rp() * (1.0 - f.beat) + r, mix(2.4, 3.6, f.head) * r);
+    let reach = max(max(18.0 * rp() * (1.0 - f.beat) + r, mix(2.4, 3.6, f.head) * r), select(0.0, 2.3 * r + 2.0 * rp(), f.mode > 0.5));
     let c = corner(vi % 6u);
     var o: FloatOut;
     o.local = c * reach;
@@ -51,6 +56,7 @@ fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     if (p.z < 0.0) { o.pos = vec4<f32>(0.0, 0.0, 2.0, 1.0); }
     o.speck = f.speck;
     o.head = f.head;
+    o.mqk = vec3<f32>(f.mode, f.quiet, f.kept);
     o.r = r; o.beat = f.beat; o.lit = f.lit; o.held = f.held; o.night = f.night; o.facing = p.z; o.measured = f.measured; o.hue = f.hue;
     return o;
 }
@@ -69,9 +75,12 @@ fn ring_shade(n: f32) -> vec4<f32> { return mix(vec4<f32>(0.129, 0.322, 0.498, 0
 @fragment
 fn fs(i: FloatOut) -> @location(0) vec4<f32> {
     let rim_fade = smoothstep(0.02, 0.32, i.facing);
-    let glass = glass_float(i);
-    if (i.speck <= 0.0) { return glass * rim_fade; }
-    return (glass * (1.0 - i.speck) + as_maybe(i) * i.speck) * rim_fade;
+    var glass = glass_float(i);
+    if (i.speck > 0.0) { glass = glass * (1.0 - i.speck) + as_maybe(i) * i.speck; }
+    // (R21) a lamp not chosen while another is steps back: fainter, so the chosen read at a glance
+    glass = glass * (1.0 - 0.5 * i.mqk.y);
+    let marks = chosen_marks(i);
+    return (marks + glass * (1.0 - marks.a)) * rim_fade;
 }
 
 // The lamp drawn as one maybe of its own cloud (maybes.wgsl's speck, the same sizes and inks), so the
@@ -130,7 +139,7 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, hue, lit_a(n) * i.lit * exp(-d * d / (1.9 * 1.9 * r * r)));
     acc = over(acc, hue, lamp_glow_a(n) * exp(-d * d / (1.25 * 1.25 * r * r)));
     // a cool hue's pale ring round the glass (R21), so a blue or purple lamp stands off the sea's blue
-    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
+    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * step(i.mqk.x, 0.5) * cover(abs(d - (r + 0.9 * rp())) - 0.6 * rp()));
     // the glass, the lamp, its core
     let gb = glass_body(n);
     acc = over(acc, gb.rgb, gb.a * cover(d - r));
@@ -156,6 +165,44 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, mix(vec3<f32>(1.0), hue, 0.4), i.head * 0.35 * exp(-dot(low, low) / (0.03 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
     // (in its lamp's colour, R8: a lamp chosen as itself is ringed by its own light)
-    acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * cover(abs(d - 1.55 * r) - 0.35 * rp()));
+    acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * step(i.mqk.x, 0.5) * cover(abs(d - 1.55 * r) - 0.35 * rp()));
+    return acc;
+}
+
+// How a lamp is chosen, at a glance (R21; the panel's marks carry the same signs): as itself, a solid
+// ring of its hue close round the glass, its own line; as its cloud, a ring of dots of its hue, its
+// maybes; kept, a small gold bead at its shoulder (a jewel, not a ring, so it never reads as chosen).
+// Each on a pale rim by day so a cool hue holds against the sea. `held` is the marks' strength.
+fn chosen_marks(i: FloatOut) -> vec4<f32> {
+    let n = i.night;
+    let d = length(i.local);
+    let r = i.r;
+    let a = clamp(i.held, 0.0, 1.0);
+    let hue = lamp_of(i.hue, n);
+    let pale = vec3<f32>(0.97, 0.985, 1.0);
+    var acc = vec4<f32>(0.0);
+    if (i.mqk.x > 0.5 && i.mqk.x < 1.5) {
+        let rr = 1.7 * r;
+        let w = 0.95 * rp();
+        acc = over(acc, pale, (1.0 - n) * 0.8 * a * cover(abs(d - rr) - (w + 0.9 * rp())));
+        acc = over(acc, hue, a * cover(abs(d - rr) - w));
+    } else if (i.mqk.x > 1.5) {
+        let rr = 2.0 * r;
+        let ang = atan2(i.local.y, i.local.x) + 1.5707963;
+        let k = round(ang * 10.0 / 6.2831853);
+        let t = k * 6.2831853 / 10.0 - 1.5707963;
+        let q = i.local - vec2<f32>(cos(t), sin(t)) * rr;
+        let dr = 1.25 * rp();
+        acc = over(acc, pale, (1.0 - n) * 0.85 * a * cover(length(q) - (dr + 0.8 * rp())));
+        acc = over(acc, hue, a * cover(length(q) - dr));
+    }
+    if (i.mqk.z > 0.5) {
+        let q = i.local - vec2<f32>(0.92, -0.92) * r;
+        let br = 0.36 * r;
+        acc = over(acc, vec3<f32>(0.18, 0.13, 0.04), (1.0 - n) * 0.6 * cover(length(q) - (br + 0.5 * rp())));
+        acc = over(acc, vec3<f32>(0.788, 0.635, 0.243), cover(length(q) - br));
+        let h = q - vec2<f32>(-0.3, -0.3) * br;
+        acc = over(acc, vec3<f32>(1.0, 0.95, 0.8), 0.8 * exp(-dot(h, h) / (0.08 * br * br)));
+    }
     return acc;
 }

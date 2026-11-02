@@ -24,12 +24,20 @@ pub struct FloatInstance {
     pub speck: f32,
     /// 1 in a clip (R20): the line's head, a larger glass float with a glint and a soft glow of its hue
     pub head: f32,
+    /// how it is chosen (R21): 0 not, 1 as itself (a solid ring of its hue), 2 as its cloud (a ring of
+    /// dots of its hue); `held` is the mark's strength
+    pub mode: f32,
+    /// 1 a lamp not chosen while another is: it steps back (R21)
+    pub quiet: f32,
+    /// kept for good (R21 on the globe: a small gold bead at its shoulder, not a ring)
+    pub kept: f32,
+    pub _pad: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: std::mem::size_of::<FloatInstance>() as u64,
     step_mode: wgpu::VertexStepMode::Instance,
-    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Float32, 6 => Float32x3, 7 => Float32, 8 => Float32],
+    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32, 2 => Float32, 3 => Float32, 4 => Float32, 5 => Float32, 6 => Float32x3, 7 => Float32, 8 => Float32, 9 => Float32, 10 => Float32, 11 => Float32, 12 => Float32],
 };
 
 pub struct Floats {

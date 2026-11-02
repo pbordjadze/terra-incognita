@@ -61,6 +61,9 @@ pub struct Scene {
     /// Floats chosen as themselves, their journeys followed, by index in `floats` (R8).
     #[serde(default)]
     pub follow: Vec<usize>,
+    /// Floats kept for good, by index in `floats` (R21: a scene can show a kept lamp's mark).
+    #[serde(default)]
+    pub keep: Vec<usize>,
     /// The drawn motion's seconds.
     #[serde(default)]
     pub seconds: f64,
@@ -1264,6 +1267,11 @@ impl App {
         let ids: Vec<u32> = self.floats.iter().map(|f| f.id).collect();
         self.chosen = scene.choose.iter().filter_map(|&i| ids.get(i).copied()).collect();
         self.followed = scene.follow.iter().filter_map(|&i| ids.get(i).copied()).filter(|id| !self.chosen.contains(id)).collect();
+        for &i in &scene.keep {
+            if let Some(f) = self.floats.get_mut(i) {
+                f.kept = true;
+            }
+        }
         self.samples.clear();
         self.step_samples(usize::MAX);
         self.clouds.clear();
