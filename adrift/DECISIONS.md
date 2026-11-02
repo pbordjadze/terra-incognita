@@ -797,9 +797,23 @@ called done after one small fix; the round's work is the run's plan (b): the win
   into the sea; warm hues unchanged.
 - *Motion* (bcb03f0): a seed set down over land; journeys of seeds by the wind's rules (the seam's
   `journey::pace` stepped them by the sea's: fixed), ending when the last comes down; the clip frame
-  reads the medium (`Lean.scale`); seed plans. The critic's framing (the pair at 40–60% of the width,
-  `PAIR_LEAST`, the zoom allowed back in): the zoom now returns (dance 10 → 28 where R20 held 5.6),
-  but the pair's measured share is still short of the band (see ROUNDS).
+  reads the medium (`Lean.scale`, `WIND_SCALE`); seed plans (put on land, carried to land, ridden,
+  conducted). The critic's framing (the pair at 40–60% of the width) was tried three ways and
+  reverted (0c97643: the journey framing is R20's): measured over the dance's last 15 s the pair's
+  median span stayed 4–6% of the width and lamps left the frame, because at a close zoom the R19/R20
+  pan limits (points a second) can't keep up with the pair. Next round's first job: pan limits scaled
+  with zoom and a lead on the pair (`tools/adrift/pair_share.py` measures it).
+- *Engineering, the owner's journey report* (5de4c9d, 2e6d585): a journey clip ran the days from the
+  later put to today over its length (a 4-minute clip of a 214-day pair crawled at 0.9 days a second
+  and stopped short of the loop he had seen). It now runs at the app's own pace (2 days a second;
+  seeds 0.3) for its whole length, reaching the app's date 80% of the way through
+  (`JOURNEY_ARRIVES`) and carrying the lamps on past it; test `a_journey_reaches_the_apps_date_and_goes_on`.
+  Clips are HEVC at 2 Mbit/s (was H.264 at 12): the dance's 34 s are 9.3 MB, a 4-minute clip about
+  66 MB (was ~360); a song is laid under by passing the video through.
+- *Visual, the owner's "which are chosen"* (a248c3b): chosen as itself a solid ring of its hue on a
+  pale rim; as its cloud a ring of ten dots of its hue; kept a small gold bead at the shoulder (the
+  gold ring, read as another "chosen", gone); the others step back to half their light while any is
+  chosen; the panel's marks alike. Live only (a clip keeps R20's look). `Scene.keep` for plans.
 
 Next, from the exit interviews: a seed come down on the sea becoming a lamp (the one cross-medium
 call); the dials that differ (lifetime, memory, kinship, wander, trail) recorded in a take; a seed
