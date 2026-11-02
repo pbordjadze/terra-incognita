@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """How an exported clip frames its lamps (R11, R14; Motion).
 
-    python3 tools/adrift/lamp_in_clip.py <clip-camera.csv> [--every N] [--max-step 0.02]
+    python3 tools/adrift/lamp_in_clip.py <clip-camera.csv> [--every N] [--max-step 0.02] [--max-accel 0.002]
 
 Reads the camera trace an export writes (`adrift-check play` beside its mp4 as `<name>-camera.csv`,
 `adrift-check journey` as `<out>.csv`): a row a frame with the clip's camera and every lamp out
@@ -16,7 +16,11 @@ clip and every N frames:
 - pan: how fast the ground slides across the screen, points a second at 30 frames a second (the
   camera's centre moving at its zoom; R15: the critic saw hard pans at a close zoom), median and most;
 - step: the largest frame-to-frame change of the zoom, in its log (R19: the critic found a 21% pop);
-  with `--max-step S` the script fails (exit 2) if any frame steps more than S.
+  with `--max-step S` the script fails (exit 2) if any frame steps more than S;
+- accel: the largest frame-to-frame change of that step (R20: the critic saw the zoom's rate stop dead),
+  `--max-accel A` fails a trace past it;
+- start: frames where a trail's start (each lamp's place in the first frame) lies off the frame or
+  within 5% of its edge (R20: the critic saw the trail's start slide off in the middle).
 """
 import csv
 import math
@@ -60,6 +64,9 @@ def main(argv):
     prev = None
     max_step = float(argv[argv.index("--max-step") + 1]) if "--max-step" in argv else None
     step, step_at, last_zoom = 0.0, 0, None
+    max_accel = float(argv[argv.index("--max-accel") + 1]) if "--max-accel" in argv else None
+    accel, accel_at, last_dz = 0.0, 0, None
+    starts, start_off = None, 0
     for n, row in enumerate(rows):
         c = xyz(float(row["clip_lon"]), float(row["clip_lat"]))
         if prev is not None:
@@ -67,9 +74,20 @@ def main(argv):
             stats["pan"].append(ang * R1 * float(row["clip_zoom"]) * 30.0)
         prev = c
         z = float(row["clip_zoom"])
-        if last_zoom is not None and abs(math.log(z / last_zoom)) > step:
-            step, step_at = abs(math.log(z / last_zoom)), n
+        if last_zoom is not None:
+            dz = math.log(z / last_zoom)
+            if abs(dz) > step:
+                step, step_at = abs(dz), n
+            if last_dz is not None and abs(dz - last_dz) > accel:
+                accel, accel_at = abs(dz - last_dz), n
+            last_dz = dz
         last_zoom = z
+        if starts is None and row.get("lamps"):
+            starts = " ".join(row["lamps"].split())
+        if starts:
+            pts0 = screen({**row, "lamps": starts})
+            m = 0.05
+            start_off += any(not f or x < m * W or x > (1 - m) * W or y < m * H or y > (1 - m) * H for x, y, f in pts0)
         pts = screen(row)
         if not pts:
             continue
@@ -93,9 +111,13 @@ def main(argv):
           f"fill median {med(stats['fill']):.0%} ({min(stats['fill']):.0%}..{max(stats['fill']):.0%}); "
           f"centre median {med(stats['cx']):.2f},{med(stats['cy']):.2f} (y {min(stats['cy']):.2f}..{max(stats['cy']):.2f}); "
           f"pan median {med(stats['pan'] or [0]):.0f} pt/s, most {max(stats['pan'] or [0]):.0f}; "
-          f"largest zoom step {step:.1%} at frame {step_at}")
+          f"largest zoom step {step:.1%} at frame {step_at}, its largest change {accel:.2%} at frame {accel_at}; "
+          f"a trail's start off the frame (5% margin) in {start_off}")
     if max_step is not None and step > max_step:
         print(f"FAIL: a zoom step of {step:.1%} exceeds {max_step:.1%}")
+        return 2
+    if max_accel is not None and accel > max_accel:
+        print(f"FAIL: a change of the zoom's step of {accel:.2%} exceeds {max_accel:.2%}")
         return 2
     return 0
 

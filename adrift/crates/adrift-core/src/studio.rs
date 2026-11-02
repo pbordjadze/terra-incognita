@@ -125,11 +125,15 @@ pub struct ClipCamera {
     open_zoom: Option<f64>,
     /// (R18) A journey's establishing zoom, its first frame's.
     establish: Option<f64>,
+    /// (R20) The limiter's own velocities: the zoom's (log a second) and the turn's (radians a second,
+    /// world frame), so the rates themselves ease in and out.
+    lim_vz: f64,
+    lim_w: [f64; 3],
 }
 
 impl ClipCamera {
     pub fn new(start: Camera) -> ClipCamera {
-        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None, establish: None }
+        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None, establish: None, lim_vz: 0.0, lim_w: [0.0; 3] }
     }
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
@@ -224,8 +228,13 @@ impl ClipCamera {
         // (R16) a journey's last third: the frame eases over to the braid, its whole lines
         let wb = match part {
             ClipPart::During if f.braid => {
-                let x = ((through - BRAID_FROM) / BRAID_EASE).clamp(0.0, 1.0);
-                x * x * (3.0 - 2.0 * x)
+                // (R20) from just after the opening, not only the last third: the trail since the
+                // clip began (or its recent part) held in frame through the middle too
+                let ss = |x: f64| {
+                    let x = x.clamp(0.0, 1.0);
+                    x * x * (3.0 - 2.0 * x)
+                };
+                ss((t - OPEN_SECS) / BRAID_IN).max(ss((through - BRAID_FROM) / BRAID_EASE))
             }
             _ => 0.0,
         };
@@ -271,7 +280,7 @@ impl ClipCamera {
             Some(fc) if part != ClipPart::Before => fc,
             _ => {
                 // the opening beat: the frame itself, the camera still, widening less as it eases
-                let target = limit(self.fc, target, dt, l);
+                let target = self.limit(self.fc, target, dt, l);
                 self.fc = Some(target);
                 self.fw = [0.0; 3];
                 self.fzv = 0.0;
@@ -306,9 +315,44 @@ impl ClipCamera {
         // (R18) the opening's ease is the zoom itself (a spring after it would still be coming in when
         // the outward-only rule began, and stop short); after it, outward only
         let zoom = if opening { target.zoom.min(hold * 1.12) } else if f.braid { zoom.min(fc.zoom) } else { zoom };
-        let fc = limit(Some(fc), Camera { zoom, ..moved }, dt, l);
+        let fc = self.limit(Some(fc), Camera { zoom, ..moved }, dt, l);
         self.fc = Some(fc);
         Some(lifted(fc, l))
+    }
+
+    /// `next` approached from `prev` over `dt` with the zoom's and the pan's speeds within `ZOOM_RATE`
+    /// and `PAN_RATE` (R19) and their changes within `ZOOM_ACCEL` and `PAN_ACCEL` (R20: the critic saw
+    /// the opening's constant zoom rate stop dead in one frame): each eases in, and brakes in time to
+    /// arrive without overshooting (its speed no more than `sqrt(2·accel·distance)`).
+    fn limit(&mut self, prev: Option<Camera>, next: Camera, dt: f64, l: &Lean) -> Camera {
+        let Some(prev) = prev else { return next };
+        if dt <= 0.0 {
+            return prev;
+        }
+        let ease = |err: f64, v: f64, rate: f64, accel: f64| {
+            let want = err.signum() * (err.abs() / dt).min((2.0 * accel * err.abs()).sqrt()).min(rate);
+            v + (want - v).clamp(-accel * dt, accel * dt)
+        };
+        // the zoom, in its log
+        self.lim_vz = ease((next.zoom / prev.zoom).ln(), self.lim_vz, ZOOM_RATE, ZOOM_ACCEL);
+        let zoom = prev.zoom * (self.lim_vz * dt).exp();
+        // the turn, as a vector (world frame), its limits in screen points at this zoom
+        let scale = l.r1.max(1.0) * zoom;
+        let (qa, qb) = (cam_quat(Camera { zoom: 1.0, ..prev }), cam_quat(Camera { zoom: 1.0, ..next }));
+        let r = rot_log(qmul(qb, qconj(qa)));
+        let ang = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
+        let (rate, accel) = (PAN_RATE / scale, PAN_ACCEL / scale);
+        let speed = if ang > 1e-12 { (ang / dt).min((2.0 * accel * ang).sqrt()).min(rate) } else { 0.0 };
+        let want = if ang > 1e-12 { [r[0] / ang * speed, r[1] / ang * speed, r[2] / ang * speed] } else { [0.0; 3] };
+        let dv = [want[0] - self.lim_w[0], want[1] - self.lim_w[1], want[2] - self.lim_w[2]];
+        let dvn = (dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]).sqrt();
+        let k = if dvn > accel * dt { accel * dt / dvn } else { 1.0 };
+        for i in 0..3 {
+            self.lim_w[i] += dv[i] * k;
+        }
+        let step = [self.lim_w[0] * dt, self.lim_w[1] * dt, self.lim_w[2] * dt];
+        let q = qmul(rot_exp(step), qa);
+        Camera::from_rotation(crate::touch::camera::quat_mat(q), zoom)
     }
 
     fn spring(&mut self, target: Camera, dt: f64, f: &Framing) -> Camera {
@@ -566,30 +610,18 @@ pub const HOLD_DOWN: f64 = 0.25;
 /// (1.8% a frame at 30 frames a second), its centre by `PAN_RATE` points a second across the screen.
 pub const ZOOM_RATE: f64 = 0.55;
 pub const PAN_RATE: f64 = 120.0;
+/// (R20) How fast those rates may change: the zoom's by this in the log a second a second (full rate
+/// in about a second), the pan's in points a second a second.
+pub const ZOOM_ACCEL: f64 = 0.6;
+pub const PAN_ACCEL: f64 = 160.0;
 /// A journey's end beat pulls out over this many seconds and holds still for the rest.
 pub const END_PULL: f64 = 2.0;
-
-/// `next` held within `ZOOM_RATE` and `PAN_RATE` of `prev` over `dt` (R19: the critic found a 21% zoom
-/// step in one frame where the opening handed over).
-pub fn limit(prev: Option<Camera>, next: Camera, dt: f64, l: &Lean) -> Camera {
-    let Some(prev) = prev else { return next };
-    if dt <= 0.0 {
-        return prev;
-    }
-    let dz = (next.zoom / prev.zoom).ln().clamp(-ZOOM_RATE * dt, ZOOM_RATE * dt);
-    let zoom = prev.zoom * dz.exp();
-    let (qa, qb) = (cam_quat(Camera { zoom: 1.0, ..prev }), cam_quat(Camera { zoom: 1.0, ..next }));
-    let r = rot_log(qmul(qb, qconj(qa)));
-    let ang = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
-    let most = PAN_RATE * dt / (l.r1.max(1.0) * zoom);
-    let k = if ang > most { most / ang } else { 1.0 };
-    let q = qmul(rot_exp([r[0] * k, r[1] * k, r[2] * k]), qa);
-    Camera::from_rotation(crate::touch::camera::quat_mat(q), zoom)
-}
 
 /// A journey's braid is held from this share of its During part, eased over `BRAID_EASE` (R16).
 pub const BRAID_FROM: f64 = 0.6;
 pub const BRAID_EASE: f64 = 0.12;
+/// (R20) After the opening the braid is taken in over this many seconds and held from then on.
+pub const BRAID_IN: f64 = 2.0;
 /// The braid may frame up to this many times wider than the opening (R16: the dance's whole braid since
 /// the clip began wants about zoom 8 against an opening of 13; the end's pull-out goes wider still).
 pub const BRAID_WIDER: f64 = 2.0;
@@ -1060,6 +1092,7 @@ mod tests {
         let mut cc = ClipCamera::new(Camera::new(150.0, -30.0, 1.0));
         let f = Framing { braid: true, hold_out: JOURNEY_HOLD_OUT, ..Framing::default() };
         let mut last: Option<Camera> = None;
+        let mut last_dz: Option<f64> = None;
         let fps = 30.0;
         for i in 0..300 {
             let t = i as f64 / fps;
@@ -1079,8 +1112,13 @@ mod tests {
             let through = if part == ClipPart::After { (i - 270) as f64 / 30.0 / f.hold_out } else { (t / 9.0).min(1.0) };
             let cam = cc.step(Camera::new(150.0, -30.0, 1.0), part, through, 1.0 / fps, &f, &l);
             if let Some(p) = last {
-                let dz = (cam.zoom / p.zoom).ln().abs();
-                assert!(dz <= ZOOM_RATE / fps + 1e-6, "frame {i}: the zoom stepped {:.1}%", dz * 100.0);
+                let dz = (cam.zoom / p.zoom).ln();
+                assert!(dz.abs() <= ZOOM_RATE / fps + 1e-6, "frame {i}: the zoom stepped {:.1}%", dz.abs() * 100.0);
+                if let Some(pd) = last_dz {
+                    let ddz: f64 = dz - pd;
+                    assert!(ddz.abs() <= ZOOM_ACCEL / (fps * fps) + 1e-6, "frame {i}: the zoom's rate changed by {ddz}");
+                }
+                last_dz = Some(dz);
             }
             last = Some(cam);
         }
