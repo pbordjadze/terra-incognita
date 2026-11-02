@@ -685,6 +685,9 @@ pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
 /// width (or, for a pair one above the other, of its height): the old trail runs off rather than the
 /// pair shrinking into an empty frame.
 pub const PAIR_LEAST: f64 = 0.4;
+/// (R21) How deep the pair's floor may take the frame near a coast (the frame's own aim keeps
+/// `FRAME_ZOOM_COAST`): a close pair is held this close rather than shrinking into the frame.
+pub const PAIR_ZOOM_COAST: f64 = 40.0;
 
 /// The widest zoom that keeps the lamps' extent, seen from `cam`'s orientation, at `PAIR_LEAST` of the
 /// clip's width (or of its height, whichever the extent fills more); None for a lone lamp or a pair
@@ -698,8 +701,9 @@ pub fn pair_floor(cam: Camera, l: &Lean) -> Option<f64> {
     let ext = |i: usize| v.iter().map(|p| p[i]).fold(f64::NEG_INFINITY, f64::max) - v.iter().map(|p| p[i]).fold(f64::INFINITY, f64::min);
     // the extent as a share of the frame at zoom 1
     let share = (ext(0) * l.r1 / w).max(ext(1) * l.r1 / h);
-    // (never past the coast's cap: the shelf's shading shows its raster deeper)
-    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
+    // (near a coast no deeper than `PAIR_ZOOM_COAST`: R16's 20 kept a close pair a few % of the width;
+    // the magnified land has been eased since, R21)
+    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.max(PAIR_ZOOM_COAST).min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
     (share > 1e-9).then(|| (PAIR_LEAST / share).clamp(crate::touch::motion::ZOOM_MIN, cap))
 }
 
