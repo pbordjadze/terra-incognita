@@ -819,3 +819,14 @@ Next, from the exit interviews: a seed come down on the sea becoming a lamp (the
 call); the dials that differ (lifetime, memory, kinship, wander, trail) recorded in a take; a seed
 in the panel's marks (it draws as a lamp mark there); `GpuPath.measured` means rain for wind clouds
 (a per-medium meaning on one field).
+
+**R21 shipped (Nov 2, 05:17 UTC):** main f7f719a, adrift-build-62, web link v24. Round 21's critic:
+the journey "goes somewhere now" (120 days in 64 s, 15.5 MB a minute); weakest: the camera pulls out
+to the whole coast by ~20 s and parks while the pair's dance is a dot (the R20 framing, unfixed); and
+which lamps are chosen still doesn't read at phone size (the cloud-chosen lamp is lost in its cloud,
+kept is a tiny dot, every lamp's dark rim reads as a ring, the panel's marks over Siberia read as
+lamps on land). Show without a caveat: no ("you can't tell which lamps you've picked"); post the
+journey with a song: almost. Round 22, smallest first: no ring on unchosen lamps and a kept sign seen
+at arm's length; the cloud-chosen lamp drawn over a faded cloud; the journey camera easing in on the
+pair as they close (pan limits scaled with zoom). Then the wind seen at a whole-globe zoom (a seed's
+gust or trail), the stray straight lines in conduct frames, and the dials.
