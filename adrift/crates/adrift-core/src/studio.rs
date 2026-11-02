@@ -211,8 +211,10 @@ impl ClipCamera {
                 let from = *self.end_from.get_or_insert((c, z));
                 let whole = Lean { trail: l.trail.iter().copied().chain(l.whole.iter().map(|w| w.1)).collect(), focus: None, whole: Vec::new(), ..l.clone() };
                 let (cw, zw) = frame(&whole).unwrap_or((c, z));
-                // never closer than where it was: the end opens out to the shape, it does not dive in
+                // never closer than where it was: the end opens out to the shape, it does not dive in;
+                // (R21) nor wider than keeps the pair at `PAIR_LEAST` of the frame
                 let zw = zw.min(from.1);
+                let zw = pair_floor(Camera { lon: cw.lon, lat: cw.lat, zoom: zw, roll: take.roll }, l).map_or(zw, |p| zw.max(p.min(from.1)));
                 // (R19) the pull-out takes the first `END_PULL` seconds of the end beat; the rest holds
                 // still on the shape, so it reads as an ending
                 let e = crate::touch::motion::ease_in_out((through * f.hold_out / END_PULL).min(1.0));
@@ -238,7 +240,8 @@ impl ClipCamera {
             }
             _ => 0.0,
         };
-        let braid = if wb > 0.0 { self.open_zoom.map(|open| braid_lean(l, open / BRAID_WIDER)) } else { None };
+        // (R21) the trail's start held only while that keeps the pair at least `PAIR_LEAST` of the width
+        let braid = if wb > 0.0 { self.open_zoom.map(|open| braid_lean(l, (open / BRAID_WIDER).max(pair_floor(take, l).unwrap_or(0.0)))) } else { None };
         let (c, z) = match &braid {
             Some(lb) => {
                 let (cb, zb) = frame(lb).unwrap_or((c, z));
@@ -304,9 +307,14 @@ impl ClipCamera {
             Some(lb) => (hold_zoom(moved, l).ln() * (1.0 - wb) + hold_zoom(moved, lb).ln() * wb).exp(),
             None => hold_zoom(moved, l),
         };
+        // (R21, round 20's critic: "frame the lamps, not the whole trail") the pair kept at least
+        // `PAIR_LEAST` of the frame, old trail let run off; never past what holds the lamps themselves
+        let floor = pair_floor(moved, l).map(|z| z.min(hold_zoom(moved, &Lean { trail: Vec::new(), ..l.clone() })));
+        let hold = floor.map_or(hold, |z| hold.max(z));
         let want = target.zoom.min(hold);
-        // (R17) a journey's zoom never comes back in: it eases outward only
-        let want = if f.braid && !opening { want.min(self.fc.map_or(want, |c| c.zoom)) } else { want };
+        let want = floor.map_or(want, |z| want.max(z));
+        // (R21) R17's outward-only rule is gone: once pulled out for a parting, the frame comes back in
+        // as the pair nears (slowly: `ZOOM_IN_HALF`, and the limiters), so they never sit small
         let half = if want < moved.zoom { ZOOM_OUT_HALF } else { ZOOM_IN_HALF };
         let (lz, vz) = crate::touch::motion::spring(moved.zoom.ln(), self.fzv, want.ln(), half / HALF_TO_TAU, dt);
         self.fzv = vz;
@@ -314,7 +322,7 @@ impl ClipCamera {
         let zoom = lz.exp().min(hold * 1.12);
         // (R18) the opening's ease is the zoom itself (a spring after it would still be coming in when
         // the outward-only rule began, and stop short); after it, outward only
-        let zoom = if opening { target.zoom.min(hold * 1.12) } else if f.braid { zoom.min(fc.zoom) } else { zoom };
+        let zoom = if opening { target.zoom.min(hold * 1.12) } else { zoom };
         let fc = self.limit(Some(fc), Camera { zoom, ..moved }, dt, l);
         self.fc = Some(fc);
         Some(lifted(fc, l))
@@ -672,6 +680,28 @@ pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
         if fits(mid) { hi = mid } else { lo = mid }
     }
     with(hi)
+}
+
+/// (R21, round 20's critic) Two lamps or more are never framed smaller than this share of the clip's
+/// width (or, for a pair one above the other, of its height): the old trail runs off rather than the
+/// pair shrinking into an empty frame.
+pub const PAIR_LEAST: f64 = 0.4;
+
+/// The widest zoom that keeps the lamps' extent, seen from `cam`'s orientation, at `PAIR_LEAST` of the
+/// clip's width (or of its height, whichever the extent fills more); None for a lone lamp or a pair
+/// lying on one point.
+pub fn pair_floor(cam: Camera, l: &Lean) -> Option<f64> {
+    if l.lamps.len() < 2 || l.r1 <= 0.0 || l.half <= 0.0 {
+        return None;
+    }
+    let (w, h) = (l.half * 2.0, l.half * 2.0 * 16.0 / 9.0);
+    let v: Vec<[f64; 3]> = l.lamps.iter().map(|p| cam.view(p.to_xyz())).collect();
+    let ext = |i: usize| v.iter().map(|p| p[i]).fold(f64::NEG_INFINITY, f64::max) - v.iter().map(|p| p[i]).fold(f64::INFINITY, f64::min);
+    // the extent as a share of the frame at zoom 1
+    let share = (ext(0) * l.r1 / w).max(ext(1) * l.r1 / h);
+    // (never past the coast's cap: the shelf's shading shows its raster deeper)
+    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(FRAME_ZOOM_MAX) } else { FRAME_ZOOM_MAX };
+    (share > 1e-9).then(|| (PAIR_LEAST / share).clamp(crate::touch::motion::ZOOM_MIN, cap))
 }
 
 /// The deepest zoom at which, from `cam`'s centre (before the lift), every lamp and its weighted line
