@@ -249,7 +249,7 @@ impl Murmuration {
         let tau = 2.6 - 2.2 * e;
         let k = (dt / tau).min(1.0);
         self.heading = norm(addv(scale(self.heading, 1.0 - k), scale(flat, k)));
-        let k3 = (dt / (0.35 + 0.4 * (1.0 - e))).min(1.0);
+        let k3 = (dt / (0.25 + 0.4 * (1.0 - e))).min(1.0);
         self.dir3 = norm(addv(scale(self.dir3, 1.0 - k3), scale(norm(v), k3)));
         let target = addv(scale(you.pos, 0.3), scale(centre, 0.7));
         let kl = (dt / 1.2).min(1.0);
@@ -269,14 +269,15 @@ impl Murmuration {
         // the glass while the flock streams past: you.
         // Just behind and above your bird, so it is the dark shape low and centred on the glass,
         // the one that holds still while the flock streams past.
-        let mut near = addv(sub(you.pos, scale(self.dir3, EYE_BEHIND)), [0.0, -0.9, 0.0]);
+        let back = norm([self.dir3[0], 0.0, self.dir3[2]]);
+        let mut near = addv(sub(you.pos, scale(back, EYE_BEHIND)), [0.0, -0.65, 0.0]);
         near[1] = near[1].max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
         let look_near = addv(scale(ahead, 0.92), scale(self.flock_look, 0.08));
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
-        let roll = if self.reduce_motion { 0.0 } else { 0.15 * e };
+        let roll = if self.reduce_motion { 0.0 } else { 0.3 * e };
         let upv = norm(addv(scale([0.0, 1.0, 0.0], 1.0 - roll), scale(you.lift, roll)));
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
@@ -308,10 +309,10 @@ impl Murmuration {
         let you_el = (to_you[1] / length(to_you).max(0.1)).clamp(-1.0, 1.0).asin();
         let fly_pitch = (you_el + (6.0f32).to_radians())
             .min((0.5 * h / focal).atan() - (4.0f32).to_radians())
-            .min(flock_el + (14.0f32).to_radians())
-            .max(-(10.0f32).to_radians());
+            .min(flock_el + (20.0f32).to_radians())
+            .max(0.0);
         let p0 = fwd[1].clamp(-1.0, 1.0).asin();
-        let p1 = p0 + (fly_pitch - p0) * e;
+        let p1 = (p0 + (fly_pitch - p0) * e).max(0.0);
         let hz = norm([fwd[0], 0.0, fwd[2]]);
         fwd = addv(scale(hz, p1.cos()), [0.0, p1.sin(), 0.0]);
         let right = norm(cross(upv, fwd));
@@ -586,13 +587,21 @@ impl Toy for Murmuration {
             let off = length(sub(c, you_p));
             // A lean pulls against the flock but never leaves it: the farther you are from its
             // thick, the less the lean can take you, and the harder the flock draws you back.
-            let reach = (1.0 - (off - 4.0) / 10.0).clamp(0.0, 1.0);
+            let reach = (1.0 - (off - 8.0) / 12.0).clamp(0.0, 1.0);
             self.strain = 0.0;
             let h = ring_heading(&self.flock, 16.0, 45.0);
             let hh = norm([h[0], 0.0, h[2]]);
             let right = norm(cross([0.0, 1.0, 0.0], hh));
-            let yaw = (dx.clamp(-1.0, 1.0) * 35.0 * reach).to_radians();
-            let pitch = (-dy.clamp(-1.0, 1.0) * 7.0 * reach).to_radians() + h[1].asin();
+            let yaw = (dx.clamp(-1.0, 1.0) * 45.0 * reach).to_radians();
+            // Up and down only within the sheet's own height: a climb allowed while you are below
+            // the level of the birds round you, a dive while above it; never out of the top or
+            // the bottom of the flock.
+            let above = you_p[1] - c[1];
+            let up_ok = ((2.0 - above) / 3.0).clamp(0.0, 1.0);
+            let down_ok = ((above + 2.0) / 3.0).clamp(0.0, 1.0);
+            let lift = -dy.clamp(-1.0, 1.0);
+            let lift = if lift > 0.0 { lift * up_ok } else { lift * down_ok };
+            let pitch = (lift * 7.0 * reach).to_radians() + h[1].asin();
             let flat = addv(scale(hh, yaw.cos()), scale(right, yaw.sin()));
             let mut r = norm(addv(scale(flat, pitch.cos()), [0.0, pitch.sin(), 0.0]));
             let you = &self.flock.birds[self.flock.you];
@@ -608,7 +617,7 @@ impl Toy for Murmuration {
             let lean_now = (dx * dx + dy * dy).sqrt().min(1.0);
             let k_home = 0.15 + 0.5 * (off / 12.0).min(1.5) + 0.6 * (1.0 - lean_now);
             let to_c = sub(c, you_p);
-            let mut pull = scale([to_c[0], to_c[1] * 2.0, to_c[2]], k_home);
+            let mut pull = scale([to_c[0], to_c[1] * 3.0, to_c[2]], k_home);
             let pl = length(pull);
             if pl > 9.0 {
                 pull = scale(pull, 9.0 / pl);
@@ -740,7 +749,11 @@ impl Toy for Murmuration {
             for b in &self.flock.birds {
                 let rel = sub(b.pos, e.pos);
                 let z = dot(rel, e.fwd);
-                if z < 2.0 {
+                let me = std::ptr::eq(b, &self.flock.birds[self.flock.you]);
+                // As the shader culls: other birds nearer than 5 m, or wider than an eighth of
+                // the glass, are not drawn, so not counted.
+                let span_px = 0.38 * b.size * e.focal / z.max(0.05);
+                if z < 0.1 || (!me && (z < 5.0 || span_px > 0.12 * w)) {
                     continue;
                 }
                 let x = dot(rel, e.right) * e.focal / z;
@@ -761,7 +774,7 @@ impl Toy for Murmuration {
                 let b = &self.flock.birds[self.flock.you];
                 let rel = sub(b.pos, e.pos);
                 let z = dot(rel, e.fwd);
-                println!("you {} z {:.2} x {:.0} y {:.0} dist {:.2}", self.flock.you, z, dot(rel, e.right) * e.focal / z, dot(rel, e.up) * e.focal / z, length(rel));
+                println!("you {} z {:.2} x {:.0} y {:.0} dist {:.2} alt {:.1} vel {:.1} {:.1} {:.1} eye {:.1}", self.flock.you, z, dot(rel, e.right) * e.focal / z, dot(rel, e.up) * e.focal / z, length(rel), b.pos[1], b.vel[0], b.vel[1], b.vel[2], e.pos[1]);
             }
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
