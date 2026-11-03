@@ -405,7 +405,7 @@ impl Flock {
                 let b = &self.birds[i];
                 let d = length(sub(b.pos, pyou));
                 if d < LEAN_R {
-                    let w = (1.0 - d / LEAN_R).powi(2) * 0.85 * self.lean_k;
+                    let w = (1.0 - d / LEAN_R).powi(2) * 0.35 * self.lean_k;
                     let want = sub(scale(self.lean_dir, length(b.vel).max(V0 * 0.8)), b.vel);
                     self.acc[i] = addv(scale(self.acc[i], 1.0 - 0.6 * w), scale(want, 2.6 * w));
                 }
