@@ -15,7 +15,7 @@ Additive: every toy builds unchanged, and every toy's plans render the same PNGs
   plan, `KIT_STRICT_TAPS=1` or `--strict-taps` makes it `EXPECT FAILED` and fails the check; an event
   that is meant to do nothing says `"inert": true`. A control shadow says whether the toy is
   deterministic; one that isn't is judged within 80 points of the finger against its own noise
-  (`may have done nothing`). On by default; `--no-tap-check` skips it. `check::Options`,
+  (`may have done nothing`). Opt-in (a plan plays 1.5–3× longer): `KIT_TAP_CHECK=1` or `--tap-check`, set in `toys.yml`; `--no-tap-check` turns it off. `check::Options`,
   `check::Report`, `check::play_with`.
 - **Places by name** (`check.rs`, `lib.rs`, `globe/`): a plan's points (`tap`, `hold`, `drag`'s ends,
   `pinch`'s fingers, `down`/`move`/`up`) may be a name, `"tap": "whale"`, from the new

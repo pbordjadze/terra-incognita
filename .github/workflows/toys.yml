@@ -82,6 +82,8 @@ jobs:
           bash tools/toys/launch_check.sh ${{ matrix.toy }}
       - name: Play every plan
         working-directory: toys
+        # every touch in a plan must do something visible (warned, not failed, unless a plan is strict)
+        env: { KIT_TAP_CHECK: '1' }
         run: |
           mkdir -p build/out
           for p in ${{ matrix.toy }}/plans/*.json; do

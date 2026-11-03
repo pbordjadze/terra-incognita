@@ -3,7 +3,7 @@
 //! `src/bin/check.rs` is one line: `fn main() { toy_kit::check::main::<my_toy::MyToy>("my-toy") }`.
 //!
 //! ```text
-//! <toy>-check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--strict-taps] [--no-tap-check]
+//! <toy>-check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--tap-check] [--strict-taps] [--no-tap-check]
 //! <toy>-check play-all <plans-dir or plan.json>... <out-dir> [-j N] [same flags]
 //! <toy>-check clip <plan.json> <out.mp4> [--size 1080x1920] [--ppp n]
 //! ```
@@ -52,8 +52,10 @@
 //! A control shadow with nothing left out shows whether the toy is deterministic (seeded randomness,
 //! time from the plan, the sound pulled as the real run pulls it); one that isn't (GPU atomics
 //! racing) is judged within 80 points of the finger, where the touch must change clearly more than
-//! the control does (`KIT_TAP_VERBOSE=1` prints every touch's count). `--no-tap-check` skips it (the
-//! renders don't change either way).
+//! the control does (`KIT_TAP_VERBOSE=1` prints every touch's count). It costs a shadow run a touch
+//! (a plan plays 1.5–3× longer), so it is opt-in: `KIT_TAP_CHECK=1` or `--tap-check` (CI's toys.yml
+//! sets it), and always when taps are strict; `--no-tap-check` turns it off (the renders don't change
+//! either way).
 //!
 //! **play-all** plays many plans in one process: the GPU made once, the plans shared out to N threads
 //! (`-j`, default the CPUs), each plan's output in `<out>/<plan name>/` and its lines in
@@ -544,7 +546,7 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Options {
-        Options { size: None, ppp: None, tap_check: true, strict_taps: std::env::var("KIT_STRICT_TAPS").is_ok_and(|v| v == "1"), stretch: false }
+        Options { size: None, ppp: None, tap_check: std::env::var("KIT_TAP_CHECK").is_ok_and(|v| v == "1"), strict_taps: std::env::var("KIT_STRICT_TAPS").is_ok_and(|v| v == "1"), stretch: false }
     }
 }
 
@@ -729,7 +731,7 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
     let film_end = plan.film.as_ref().map(|f| f.to).unwrap_or(0.0);
     let seconds = plan.seconds.unwrap_or(last_shot.max(film_end)).max(last_shot).max(film_end);
     let frames = (seconds * fps).ceil() as usize;
-    let checks = if opts.tap_check { touches(&plan.events, fps, frames) } else { Vec::new() };
+    let checks = if opts.tap_check || opts.strict_taps || plan.strict_taps { touches(&plan.events, fps, frames) } else { Vec::new() };
     let mut seen: BTreeMap<usize, Vec<u8>> = checks.iter().flat_map(|c| c.frames.iter().map(|f| (*f, Vec::new()))).collect();
     let mut si = 0;
     let mut film_next = plan.film.as_ref().map(|f| f.from);
@@ -1035,7 +1037,7 @@ pub fn main<T: Toy>(name: &str) {
     });
     let ppp = flag("--ppp").and_then(|s| s.parse().ok());
     let jobs = flag("-j").and_then(|s| s.parse().ok()).unwrap_or_else(|| std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1));
-    let switches = ["--stretch", "--strict-taps", "--no-tap-check"];
+    let switches = ["--stretch", "--strict-taps", "--tap-check", "--no-tap-check"];
     let pos: Vec<&String> = {
         let mut v = Vec::new();
         let mut skip = false;
@@ -1058,8 +1060,8 @@ pub fn main<T: Toy>(name: &str) {
     let mut opts = Options { size, ppp, ..Options::default() };
     opts.stretch = has("--stretch");
     opts.strict_taps |= has("--strict-taps");
-    opts.tap_check = !has("--no-tap-check");
-    let usage = "usage: check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--strict-taps] [--no-tap-check]\n       check play-all <plans-dir or plan.json>... <out-dir> [-j N] [same flags]\n       check clip <plan.json> <out.mp4> [--size WxH] [--ppp n]";
+    opts.tap_check = (opts.tap_check || has("--tap-check")) && !has("--no-tap-check");
+    let usage = "usage: check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--tap-check] [--strict-taps] [--no-tap-check]\n       check play-all <plans-dir or plan.json>... <out-dir> [-j N] [same flags]\n       check clip <plan.json> <out.mp4> [--size WxH] [--ppp n]";
     let r = match pos.as_slice() {
         [cmd, plan, out] if cmd.as_str() == "play" => read_plan(Path::new(plan.as_str())).and_then(|p| {
             gpu().and_then(|g| play_with::<T>(&g, name, &p, Path::new(out.as_str()), &opts, &mut std::io::stdout())).map(|_| ())
