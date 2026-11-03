@@ -53,6 +53,9 @@ skeleton lands.
   when small, so the hue still tells lamps apart at the whole Earth), its light breathing on its own
   period, a faint shadow by day, and below it the light's broken path on the swell. Studies:
   `studies/r25-*` (plans `seven-lamps.json`, `-night`; sheets by `tools/adrift/lamp_study.py`).
+  R25b, a clip's head: 1.5x (from 1.3x) so its glass reads full-frame, its glass nearer its hue, its
+  flame a quarter larger, its glint smaller; the light's path on the water a little stronger by day
+  (`studies/r25b-*`: after tiktok.sh at 4 s, day then night, each R24 | R25 | R25b).
 - `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
   control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's
   `Press { at, since }` as `(at, thicken(now - since))`.

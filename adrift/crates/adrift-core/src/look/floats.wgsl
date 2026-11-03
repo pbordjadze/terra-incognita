@@ -45,8 +45,8 @@ fn float_radius() -> f32 {
 @vertex
 fn vs(@builtin(vertex_index) vi: u32, f: FloatIn) -> FloatOut {
     let p = place(f.g);
-    // (a clip's head, R20: a size up, so it anchors the eye at 1080 x 1920)
-    let r = float_radius() * (1.0 + 0.3 * f.head);
+    // (a clip's head, R20, R25b 1.5x: a size up, so it anchors the eye at 1080 x 1920)
+    let r = float_radius() * (1.0 + 0.5 * f.head);
     // room for the ring at the start of the beat (16 points) and the glow (2.6 r)
     let reach = max(max(18.0 * rp() * (1.0 - f.beat) + r, mix(2.6, 3.6, f.head) * r), select(0.0, 2.3 * r + 2.0 * rp(), f.mode > 0.5));
     // (room for the kept star at the shoulder, R22)
@@ -160,11 +160,11 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     if (below > 0.0) {
         let row = i.local.y / max(0.30 * r, 1.6 * rp());
         let ripple = sin(row * 6.2832 - U.time.x * 2.4 * l.rate + l.phase + 1.3 * sin(p.x * 3.0 + U.time.x * 1.1));
-        let sliver = smoothstep(0.15, 0.85, ripple);
+        let sliver = smoothstep(mix(0.0, 0.15, n), 0.85, ripple);
         let wide = 0.32 + 0.20 * below;
         let across = exp(-sq((p.x - 0.08 * sin(row * 1.7 + l.phase)) / wide));
-        let fall = smoothstep(0.0, 0.25, below) * exp(-below / 0.85);
-        acc = over(acc, mix(mix(hue, vec3<f32>(1.0), 0.55), mix(hue, lamp_core(n), 0.35), n), win * mix(0.90, 0.80, n) * live * sliver * across * fall);
+        let fall = smoothstep(0.0, 0.25, below) * exp(-below / mix(1.1, 0.85, n));
+        acc = over(acc, mix(mix(hue, vec3<f32>(1.0), 0.30), mix(hue, lamp_core(n), 0.35), n), win * mix(0.95, 0.80, n) * live * sliver * across * fall);
     }
     // (day) a faint shadow where it sits in the water, so it floats rather than lies on the screen
     let sd_sh = glass_sd(p - vec2<f32>(0.10, 0.16), l.shape) * r;
@@ -192,8 +192,8 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     // (small, far out, the hue carries the glass: it is how a lamp is told from its neighbour)
     let small = 1.0 - smoothstep(15.0, 24.0, r);
     let inner = exp(-dot(fc, fc) / mix(0.75, 0.95, small)) * live;
-    let clear = mix(mix(vec3<f32>(0.93, 0.97, 0.97), hue, mix(0.58, 0.68, small)), mix(gb.rgb, hue, 0.85), n);
-    let tint = mix(clear, mix(hue, lamp_core(n), 0.30), inner);
+    let clear = mix(mix(vec3<f32>(0.93, 0.97, 0.97), hue, max(mix(0.58, 0.68, small), 0.80 * i.head)), mix(gb.rgb, hue, 0.85), n);
+    let tint = mix(clear, mix(hue, lamp_core(n), 0.30 - 0.15 * i.head), inner);
     let body_a = mix(cover(sdp), 1.0 - smoothstep(-0.45 * r, 0.05 * r, sdp), i.mqk.y);
     acc = over(acc, tint, mix(0.85, 0.80, n) * body_a);
     // what the glass shows of itself: the rope round a float, a cut float's table, a lantern's frame
@@ -223,7 +223,7 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     }
     // the flame, its heart, its tip leaning as it sways
     let soft = clamp(0.9 * rp() / (l.flame_w * r), 0.12, 0.45);
-    let fm = flame(p, l, fl, soft);
+    let fm = flame(p, l, fl, soft, 1.0 + 0.25 * i.head);
     acc = over(acc, hue, fm.x * live);
     acc = over(acc, mix(lamp_core(n), vec3<f32>(1.0), 0.4), fm.y);
     // the rim, dashed where the sea's current is the sheet's guess and no drifter measured it (Truth's
@@ -240,12 +240,12 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, mix(glass_rim(n), hue, 0.35 * n), rimmed * dash * cover(abs(sdp + rim * 0.5) - rim * 0.5));
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     let hs = select(vec2<f32>(1.2, 2.4), vec2<f32>(2.6, 0.9), l.shape == 2);
-    acc = over(acc, vec3<f32>(1.0), glass_light(n) * 0.85 * inside * exp(-(sq(h.x * hs.x) + sq(h.y * hs.y)) / (0.16 * r * r)));
+    acc = over(acc, vec3<f32>(1.0), glass_light(n) * (0.85 - 0.35 * i.head) * inside * exp(-(sq(h.x * hs.x) + sq(h.y * hs.y)) / (0.16 * r * r)));
     // and the glint of a clip's head (R20): a bright point on the glass with a small four-pointed
     // sparkle, and a faint second light low right where the water lights the glass
     let gp = i.local - vec2<f32>(-0.34 * r, -0.40 * r);
-    let star = exp(-abs(gp.x) / (0.05 * r)) * exp(-abs(gp.y) / (0.45 * r)) + exp(-abs(gp.y) / (0.05 * r)) * exp(-abs(gp.x) / (0.45 * r));
-    acc = over(acc, vec3<f32>(1.0), i.head * clamp(0.9 * exp(-dot(gp, gp) / (0.012 * r * r)) + 0.55 * star * (0.8 + 0.2 * breath), 0.0, 1.0));
+    let star = exp(-abs(gp.x) / (0.04 * r)) * exp(-abs(gp.y) / (0.28 * r)) + exp(-abs(gp.y) / (0.04 * r)) * exp(-abs(gp.x) / (0.28 * r));
+    acc = over(acc, vec3<f32>(1.0), i.head * clamp(0.85 * exp(-dot(gp, gp) / (0.006 * r * r)) + 0.35 * star * (0.8 + 0.2 * breath), 0.0, 1.0));
     let low = i.local - vec2<f32>(0.40 * r, 0.42 * r);
     acc = over(acc, mix(vec3<f32>(1.0), hue, 0.4), i.head * 0.35 * inside * exp(-dot(low, low) / (0.03 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
@@ -374,10 +374,10 @@ fn lamp_breath(l: Lamp) -> f32 {
 
 // The flame: 1 inside, soft at its edge; `core` its white heart. p in radii, y down; its base low in
 // the glass, its tip leaning as it sways.
-fn flame(p: vec2<f32>, l: Lamp, f: f32, soft: f32) -> vec2<f32> {
-    let w = l.flame_w * (1.0 - 0.06 * f);
-    let h = l.flame_h * (1.0 + 0.10 * f);
-    let base = select(0.50, 0.58, l.shape == 2);
+fn flame(p: vec2<f32>, l: Lamp, f: f32, soft: f32, big: f32) -> vec2<f32> {
+    let w = big * l.flame_w * (1.0 - 0.06 * f);
+    let h = big * l.flame_h * (1.0 + 0.10 * f);
+    let base = select(0.50, 0.58, l.shape == 2) + 0.08 * (big - 1.0);
     let v = base - p.y;                 // height above the flame's foot, radii
     let u = clamp((v - w) / max(h - w, 0.01), 0.0, 1.0);
     let sway = (0.06 * sin(U.time.x * l.rate * 3.1 + l.phase) + 0.03 * f) * u * u;
