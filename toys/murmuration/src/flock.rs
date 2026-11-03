@@ -12,17 +12,19 @@ const NEIGHBOURS: usize = 7;
 const SEP_R: f32 = 1.0;
 const W_SEP: f32 = 22.0;
 const W_ALIGN: f32 = 3.5;
-const W_COH: f32 = 1.4;
+const W_COH: f32 = 1.8;
 const W_SPEED: f32 = 1.6;
 const ROOST_R: f32 = 30.0;
 const W_ROOST: f32 = 0.06;
 const ALT: f32 = 55.0;
 const W_ALT: f32 = 0.05;
-const NOISE: f32 = 1.5;
+const NOISE: f32 = 1.0;
 const MAX_ACC: f32 = 30.0;
 const CELL: f32 = 1.8;
 /// How much more the neighbours of the bird that is you heed it than any other (a lean is felt).
 const YOU_WEIGHT: f32 = 4.0;
+/// How far round you a lean is felt, metres.
+const LEAN_R: f32 = 16.0;
 
 pub type V3 = [f32; 3];
 
@@ -107,7 +109,10 @@ pub struct Flock {
     /// overrides the rules.
     pub lean: V3,
     pub lean_k: f32,
+    /// The direction your lean asks for (unit), which the birds round you feel too.
+    pub lean_dir: V3,
     pub roost: V3,
+    centre_now: V3,
     rng: Rng,
     acc: Vec<V3>,
     cells: Vec<u32>,
@@ -153,7 +158,9 @@ impl Flock {
             you,
             lean: [0.0; 3],
             lean_k: 0.0,
+            lean_dir: [0.0, 0.0, 1.0],
             roost,
+            centre_now: roost,
             rng,
             acc: vec![[0.0; 3]; n],
             cells: Vec::new(),
@@ -304,6 +311,7 @@ impl Flock {
         let tt = self.time as f32;
         self.roost = [45.0 * (tt * 0.047).sin(), ALT + 10.0 * (tt * 0.083).sin(), 35.0 * (tt * 0.031 + 1.0).sin()];
         self.build_grid();
+        self.centre_now = self.centre().0;
         let n = self.birds.len();
         let you = self.you;
         // The neighbours, found on every core (the search only reads), then the rules in turn.
@@ -354,9 +362,26 @@ impl Flock {
             }
             self.acc[i] = self.rules(i, &nb);
         }
-        // Your lean: asked of your bird, over the rules as strongly as the finger leans.
+        // Your lean: asked of your bird, over the rules as strongly as the finger leans; and felt by
+        // the birds round you, most by the nearest, so the flock bends with you rather than letting
+        // you go (they would follow you anyway, a few wingbeats later; this is that, sooner).
         let a = self.acc[you];
         self.acc[you] = addv(scale(a, 1.0 - 0.75 * self.lean_k), self.lean);
+        if self.lean_k > 0.0 {
+            let pyou = self.birds[you].pos;
+            for i in 0..n {
+                if i == you {
+                    continue;
+                }
+                let b = &self.birds[i];
+                let d = length(sub(b.pos, pyou));
+                if d < LEAN_R {
+                    let w = (1.0 - d / LEAN_R).powi(2) * 0.85 * self.lean_k;
+                    let want = sub(scale(self.lean_dir, length(b.vel).max(V0 * 0.8)), b.vel);
+                    self.acc[i] = addv(scale(self.acc[i], 1.0 - 0.6 * w), scale(want, 2.6 * w));
+                }
+            }
+        }
         for i in 0..n {
             let mut a = self.acc[i];
             let al = length(a);
@@ -429,7 +454,7 @@ impl Flock {
         let f = scale(v, 1.0 / speed);
         a = addv(a, scale(f, (V0 - speed) * W_SPEED));
         // The roost: turn back toward it beyond its circle (horizontally), and keep the height.
-        let to = sub(self.roost, p);
+        let to = addv(scale(sub(self.roost, self.centre_now), 0.6), scale(sub(self.roost, p), 0.4));
         let hd = (to[0] * to[0] + to[2] * to[2]).sqrt();
         if hd > ROOST_R {
             let k = W_ROOST * (hd - ROOST_R);
