@@ -6,7 +6,9 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 ## v0.2.0 (unreleased)
 
 Additive: every toy builds unchanged, and every toy's plans render the same PNGs and WAVs as before
-(`tools/kit/same_renders.sh`).
+(`tools/kit/same_renders.sh`). For the library half (features, lifted modules) that was checked on
+all seven toys against kit-check d6f17ad: 26 plans, 4569 PNGs and WAVs byte-identical; Mold's 4
+plans (it races GPU atomics) within its own run-to-run noise by `tools/kit/render_noise.py`.
 
 - **A git dependency** for other repositories, with its own version (`version = "0.2.0"` in its
   Cargo.toml; the toys keep the workspace's 0.1.0). Its other fields still inherit the toys'

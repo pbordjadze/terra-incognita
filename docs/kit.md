@@ -78,7 +78,9 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
 - **busquets:** vendors a trimmed copy of the kit today. It will switch to a tagged git dependency once
   the globe is behind a cargo feature (`globe`, default on) and the kit takes its `paint`, `backdrop`,
   `layer`, `sound`, `web` (a generic WebGPU shell) and `check::main_with`, all of which are to be lifted
-  into toy-kit.
+  into toy-kit. Done on branch `kit-lib` (toy-kit 0.2.0, untagged): the features, the five modules and
+  `main_with`; a consumer outside the repository builds against it (`tools/kit/consumer_check.sh`), and
+  every toy's plans rendered the same (Mold within its own run-to-run noise).
 
 ## The tools
 
