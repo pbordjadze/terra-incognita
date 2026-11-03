@@ -56,6 +56,12 @@ skeleton lands.
   R25b, a clip's head: 1.5x (from 1.3x) so its glass reads full-frame, its glass nearer its hue, its
   flame a quarter larger, its glint smaller; the light's path on the water a little stronger by day
   (`studies/r25b-*`: after tiktok.sh at 4 s, day then night, each R24 | R25 | R25b).
+  R25c, the critic's three: no dark outline by day (the glass's edge a deeper shade of its own hue)
+  and no outer ring in a clip (no held ring, no pale ring round a cool hue; live, the chosen ring is
+  lighter); the lamp grows past zoom 3 to 1.75x by zoom 8, the live camera's closest, and is held
+  through a clip's deeper zooms; stronger silhouettes: the cut float a diamond, the lantern taller,
+  the dome's point clearer, the round float's rope thicker (`studies/r25c-*`; `seven-lamps.json`
+  pinches in to zoom 8 for its shot `z9`).
 - `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
   control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's
   `Press { at, since }` as `(at, thicken(now - since))`.
