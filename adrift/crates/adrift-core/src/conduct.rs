@@ -583,6 +583,69 @@ mod tests {
         assert!(!app.previewing());
     }
 
+    /// The owner's report (R24): "I rendered a clip and maybe tapped while rendering, either way one
+    /// dot teleported". An export, touched and dragged mid-render, must leave every lamp as it was:
+    /// the same legs, and the same places frame by frame afterwards as a twin that never exported.
+    #[test]
+    fn touches_during_an_export_change_no_lamp() {
+        use crate::model::{Phase, PointerEvent};
+        let (Some(mut a), Some(mut b)) = (app(), app()) else { return };
+        let t = run(&mut a, 0.0, 0.5, |_| {});
+        run(&mut b, 0.0, 0.5, |_| {});
+        a.command(Intent::Choose { float: 1 });
+        b.command(Intent::Choose { float: 1 });
+        let legs: Vec<_> = a.floats.iter().map(|f| (f.id, f.legs.clone())).collect();
+        let frames = a.journey_begin(2.0, 60.0);
+        assert!(frames > 0);
+        let (w, h) = a.export_target_size().unwrap();
+        let shot = crate::gpu::Offscreen::new(&a.gpu, w, h);
+        // the phone's touch times are its own clock's, far from the replay's
+        let mut tt = t + 40_000.0;
+        for i in 0..frames.min(140) {
+            a.export_render(&shot);
+            // a finger lands on the lamp, drags it across the screen and lifts, mid-render
+            if i == 20 || i == 50 {
+                let p = a.floats.first().map(|f| a.disc().project(&a.camera.camera, f.at).0).unwrap_or([100.0, 300.0]);
+                let ev = |phase, x, y, t| PointerEvent { id: 7, phase, x, y, t };
+                a.pointer(ev(Phase::Down, p[0], p[1], tt));
+                for k in 1..=40 {
+                    tt += 1.0 / 60.0;
+                    a.pointer(ev(Phase::Move, p[0] + 3.0 * k as f64, p[1] + 4.0 * k as f64, tt));
+                }
+                tt += 0.05;
+                a.pointer(ev(Phase::Up, p[0] + 120.0, p[1] + 160.0, tt));
+            }
+            // and a finger rests on open water for a second (a put, in the live app)
+            if i == 80 {
+                a.pointer(PointerEvent { id: 8, phase: Phase::Down, x: 60.0, y: 700.0, t: tt });
+            }
+            if i == 130 {
+                a.pointer(PointerEvent { id: 8, phase: Phase::Up, x: 60.0, y: 700.0, t: tt + 1.2 });
+            }
+            tt += 1.0 / 60.0;
+        }
+        // the app sent to the background mid-export: what it keeps is the live state, not the clip's
+        let kept = a.snapshot();
+        let mut c = app().unwrap();
+        assert!(c.restore(&kept));
+        let mid: Vec<_> = c.floats.iter().map(|f| (f.id, f.legs.clone())).collect();
+        assert_eq!(mid, legs, "a snapshot taken mid-export kept the clip's lamps");
+        assert!((c.clock.day - b.clock.day).abs() < 1e-9, "a snapshot taken mid-export kept the clip's date: {} not {}", c.clock.day, b.clock.day);
+        a.export_end();
+        let after: Vec<_> = a.floats.iter().map(|f| (f.id, f.legs.clone())).collect();
+        assert_eq!(after, legs, "an export with touches in it changed a lamp's legs");
+        // and from here on, frame by frame, the lamps are where a twin's are
+        let mut worst = 0.0f64;
+        let t2 = run(&mut a, t, t + 2.0, |_| {});
+        let _ = t2;
+        run(&mut b, t, t + 2.0, |_| {});
+        assert_eq!(a.floats.len(), b.floats.len(), "a lamp was added or taken");
+        let _ = &mut worst;
+        for (fa, fb) in a.floats.iter().zip(b.floats.iter()) {
+            assert_eq!(fa.legs, fb.legs, "lamp {} differs from its twin", fa.id);
+        }
+    }
+
     #[test]
     fn a_kept_lamp_survives_a_clear_and_is_picked() {
         // R13: a lamp kept for good stays through a clear-all (and its undo and redo), and is what a
