@@ -42,16 +42,22 @@ run_one() {
       [ -f "$s" ] || continue
       cargo run --release -q -p adrift-check -- render "$s" "$out/scenes/$(basename "$s" .json).png" --size 1179x2556 --ppp 3 2>&1 | grep -E "drawn|rror" || true
     done
-    for p in crates/adrift-check/plans/*.json crates/adrift-core/src/touch/plans/*.json crates/adrift-core/src/look/plans/*.json crates/adrift-core/src/sea/plans/*.json; do
-      [ -f "$p" ] || continue
-      grep -q '"steps"' "$p" || continue
-      if cargo run --release -q -p adrift-check -- play "$p" "$out/plans/$(basename "$p" .json)" > "$out/plans-$(basename "$p" .json).log" 2>&1; then
-        echo "ok   $(basename "$p")"
-      else
-        echo "FAIL $(basename "$p")"; tail -3 "$out/plans-$(basename "$p" .json).log"
-      fi
-      grep -hE "scrub .* frames|export " "$out/plans-$(basename "$p" .json).log" || true
+    # every plan with steps in one process (`play-all`: the device and the data loaded once, the
+    # plans N at a time), then reported a plan at a time as ever: its line, its failing lines, its
+    # scrubs and export; each plan's log at plans-<name>.log, its shots in plans/<name>/
+    dirs=()
+    for d in crates/adrift-check/plans crates/adrift-core/src/touch/plans crates/adrift-core/src/look/plans crates/adrift-core/src/sea/plans; do
+      if [ -d "$d" ]; then dirs+=("$d"); fi
     done
+    ./target/release/adrift-check play-all "${dirs[@]}" "$out/plans" > "$out/plays.txt" 2>&1 || true
+    while read -r st n _; do
+      case "$st" in ok|FAIL) ;; *) continue ;; esac
+      mv "$out/plans/$n.log" "$out/plans-$n.log" 2>/dev/null || true
+      if [ "$st" = ok ]; then echo "ok   $n.json"; else echo "FAIL $n.json"; tail -3 "$out/plans-$n.log"; fi
+      grep -hE "scrub .* frames|export " "$out/plans-$n.log" || true
+    done < "$out/plays.txt"
+    # anything else play-all said (no device, a plan that panicked)
+    grep -vE '^(ok|FAIL) |^     ' "$out/plays.txt" || true
   ) 2>&1 | tee -a "$out/run.log"
   # keep the results small: the PNGs at half size where they are big, the mp4s as they are
   python3 - "$out" <<'PY' || true

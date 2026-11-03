@@ -3,6 +3,7 @@
 //!
 //!     ADRIFT_ASSETS=<dir> cargo run -p adrift-check -- render <scene.json> <out.png> [--size WxH] [--ppp 3]
 //!     ADRIFT_ASSETS=<dir> cargo run -p adrift-check -- play <plan.json> <out-dir>
+//!     ADRIFT_ASSETS=<dir> cargo run -p adrift-check -- play-all <plan-or-dir>... <out-dir> [-j N]
 //!     cargo run -p adrift-check -- info
 //!
 //! ADRIFT_ASSETS defaults to adrift/build/assets (python3 tools/adrift/assets.py adrift/build/assets).
@@ -15,6 +16,7 @@
 use adrift_core::{App, DirAssets, Gpu, Offscreen, Phase, PointerEvent, Scene};
 use anyhow::{Context, Result};
 use serde::Deserialize;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 fn assets_dir() -> PathBuf {
@@ -212,10 +214,16 @@ fn play(args: &[String]) -> Result<()> {
     let out = PathBuf::from(&args[1]);
     std::fs::create_dir_all(&out)?;
     let (_instance, gpu) = gpu()?;
+    play_plan(plan, &out, gpu, Box::new(DirAssets(assets_dir())), &mut std::io::stdout())
+}
+
+/// Plays one plan into `out`, its lines (the expectations, the shots, the scrubs, the exports) to
+/// `say` as they happen: `play`'s stdout, or the plan's log in `play-all`.
+fn play_plan(plan: Plan, out: &Path, gpu: Gpu, assets: Box<dyn adrift_core::Assets>, say: &mut dyn std::io::Write) -> Result<()> {
     let points = plan.scene.is_none();
     let (w, h) = if points { ((plan.size[0] * plan.ppp) as u32, (plan.size[1] * plan.ppp) as u32) } else { (plan.size[0] as u32, plan.size[1] as u32) };
     let target = Offscreen::new(&gpu, w, h);
-    let mut app = App::new(gpu, Box::new(DirAssets(assets_dir())), w, h, plan.ppp)?;
+    let mut app = App::new(gpu, assets, w, h, plan.ppp)?;
     app.budget.locked = true;
     app.budget.scale = 1.0;
     app.reduce_motion = plan.reduce_motion;
@@ -309,7 +317,7 @@ fn play(args: &[String]) -> Result<()> {
                 gpu_name,
                 app.stats()
             );
-            println!("{line}");
+            writeln!(say, "{line}")?;
             log.push_str(&line);
             log.push('\n');
         }
@@ -491,7 +499,7 @@ fn play(args: &[String]) -> Result<()> {
             // `saw` and `not` speak of the intents since the last check (touch/VOCABULARY.md › Plans)
             app.seen.clear();
             let line = if bad.is_empty() { format!("{i:3} t={t:7.2}s expect ok\n") } else { failed += 1; format!("{i:3} t={t:7.2}s EXPECT FAILED: {}\n", bad.join("; ")) };
-            print!("{line}");
+            write!(say, "{line}")?;
             log.push_str(&line);
         }
         if let Some(name) = &s.export {
@@ -512,7 +520,6 @@ fn play(args: &[String]) -> Result<()> {
             let mut last = Vec::new();
             let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
             while let Some(px) = app.export_frame(&shot) {
-                use std::io::Write;
                 if let Some((c, k)) = app.export_camera() {
                     // each lamp out: id:lon:lat, space-separated (R12: lamps in frame becomes a number)
                     let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
@@ -548,18 +555,18 @@ fn play(args: &[String]) -> Result<()> {
                 let ok = cmd.arg(&mp4).status().context("ffmpeg (song)")?.success();
                 anyhow::ensure!(ok, "export {name}: the song could not be laid under the clip");
                 let line = format!("{i:3} t={t:7.2}s export {name}: the song from {start:.2} s for {len:.2} s\n");
-                print!("{line}");
+                write!(say, "{line}")?;
                 log.push_str(&line);
             }
             let drift = app.export_drift();
             app.export_end();
             let line = format!("{i:3} t={t:7.2}s export {name}: {n} frames {ew}x{eh} in {:.1}s, the replay ends {} from the take\n", t_export.elapsed().as_secs_f64(), drift.map_or("(no end recorded)".to_string(), |d| format!("{d:.3} km")));
-            print!("{line}");
+            write!(say, "{line}")?;
             log.push_str(&line);
             if drift.map_or(true, |d| d > 0.5) {
                 failed += 1;
                 let line = format!("{i:3} t={t:7.2}s EXPECT FAILED: the replay drifted from the take\n");
-                print!("{line}");
+                write!(say, "{line}")?;
                 log.push_str(&line);
             }
         }
@@ -571,7 +578,7 @@ fn play(args: &[String]) -> Result<()> {
             let cam = app.camera.camera;
             let floats: Vec<String> = app.floats.iter().map(|f| format!("#{} {:.3},{:.3} {:?} {:?} wake {}", f.id, f.at.lon, f.at.lat, f.held, f.hand, f.wake.len())).collect();
             let line = format!("{i:3} t={t:7.2}s day={:8.2} cam={:.2},{:.2} z{:.2} {} {} floats [{}]\n", app.clock.day, cam.lon, cam.lat, cam.zoom, app.gesture_state(), path.display(), floats.join("; "));
-            print!("{line}");
+            write!(say, "{line}")?;
             log.push_str(&line);
         }
     }
@@ -580,6 +587,168 @@ fn play(args: &[String]) -> Result<()> {
         anyhow::bail!("{failed} expectation(s) failed");
     }
     Ok(())
+}
+
+/// Every plan in one process: `play-all <plan-or-dir>... <out-dir> [-j N]`, the GPU and the data
+/// loaded once instead of a launch a plan. One device and the assets' bytes are shared; each plan
+/// gets its own App (its own textures, passes and state), so it plays exactly as `play` would
+/// (tools/adrift/play_all_same.sh proves it). A directory gives its `*.json` in name order; a plan
+/// without `"steps"` is skipped (a scene, as the GPU runner skips it). Each plan's lines go to
+/// `<out>/<name>.log` (what `play` prints, and its error as `play` ends with it) and its outputs to
+/// `<out>/<name>/`; one line a plan, in the order given: `ok   <name>`, or `FAIL <name>` and its
+/// first failing lines indented. Exits non-zero if any failed. A name two plans share takes its
+/// module's name before it (`look-credits`, `touch-credits`). N defaults to the cores, at most 4.
+fn play_all(args: &[String]) -> Result<()> {
+    let mut jobs: Option<usize> = None;
+    let mut paths = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        if a == "-j" {
+            jobs = Some(it.next().context("-j N")?.parse().context("-j N")?);
+        } else if let Some(n) = a.strip_prefix("-j").filter(|n| !n.is_empty()) {
+            jobs = Some(n.parse().context("-j N")?);
+        } else {
+            paths.push(PathBuf::from(a));
+        }
+    }
+    let out = paths.pop().context("play-all <plan-or-dir>... <out-dir>")?;
+    anyhow::ensure!(!paths.is_empty(), "play-all <plan-or-dir>... <out-dir>: no plans given");
+    let mut plans = Vec::new();
+    for p in &paths {
+        if p.is_dir() {
+            let mut found: Vec<PathBuf> = std::fs::read_dir(p)?.filter_map(|e| e.ok().map(|e| e.path())).filter(|f| f.extension().is_some_and(|x| x == "json")).collect();
+            found.sort();
+            plans.extend(found);
+        } else {
+            plans.push(p.clone());
+        }
+    }
+    plans.retain(|p| std::fs::read_to_string(p).map_or(true, |t| t.contains("\"steps\"")));
+    let stem = |p: &Path| p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+    let names: Vec<String> = plans
+        .iter()
+        .map(|p| {
+            let name = stem(p);
+            if plans.iter().filter(|q| stem(q) == name).count() > 1 {
+                // the module the plan belongs to: touch/plans/credits.json is touch-credits
+                let module = p.parent().filter(|d| d.file_name().is_some_and(|n| n == "plans")).and_then(|d| d.parent()).map(stem).unwrap_or_default();
+                format!("{module}-{name}")
+            } else {
+                name
+            }
+        })
+        .collect();
+    std::fs::create_dir_all(&out)?;
+    let cores = std::thread::available_parallelism().map_or(1, |n| n.get());
+    let jobs = jobs.unwrap_or(cores.min(4)).clamp(1, plans.len().max(1));
+    // once for all: the device, and every asset's bytes (each App still decodes its own textures)
+    let (_instance, gpu0) = gpu()?;
+    let dir = assets_dir();
+    let mut bytes = std::collections::HashMap::new();
+    for name in adrift_core::assets::FILES {
+        if let Ok(b) = std::fs::read(dir.join(name)) {
+            bytes.insert(name.to_string(), b);
+        }
+    }
+    let shared = std::sync::Arc::new(bytes);
+    // a plan that panics: its log says so (a release build, panic = "abort", then stops here)
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if let Some(log) = PLAYING.with(|p| p.borrow().clone()) {
+            if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log) {
+                let _ = writeln!(f, "{info}");
+            }
+            eprintln!("play-all: the plan logged in {} panicked", log.display());
+        }
+        default_hook(info);
+    }));
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let (tx, rx) = std::sync::mpsc::channel::<(usize, bool)>();
+    let mut failed = 0;
+    std::thread::scope(|s| {
+        for _ in 0..jobs {
+            let tx = tx.clone();
+            let (gpu0, shared, plans, names, out, dir, next) = (&gpu0, &shared, &plans, &names, &out, &dir, &next);
+            // one device for all (measured: a device per worker is no faster on the software driver)
+            s.spawn(move || loop {
+                let k = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if k >= plans.len() {
+                    break;
+                }
+                let gpu = Gpu { device: gpu0.device.clone(), queue: gpu0.queue.clone(), format: gpu0.format, adapter_info: gpu0.adapter_info.clone() };
+                let assets = Box::new(Shared { bytes: shared.clone(), dir: DirAssets(dir.clone()) });
+                let ok = play_one(&plans[k], &out.join(&names[k]), &out.join(format!("{}.log", names[k])), gpu, assets);
+                let _ = tx.send((k, ok));
+            });
+        }
+        drop(tx);
+        // the lines in the order the plans were given, each as soon as those before it are done
+        let mut done = std::collections::BTreeMap::new();
+        let mut shown = 0;
+        for (k, ok) in rx {
+            done.insert(k, ok);
+            while let Some(ok) = done.remove(&shown) {
+                let name = &names[shown];
+                if ok {
+                    println!("ok   {name}");
+                } else {
+                    failed += 1;
+                    println!("FAIL {name}");
+                    let log = std::fs::read_to_string(out.join(format!("{name}.log"))).unwrap_or_default();
+                    for l in log.lines().filter(|l| l.contains("EXPECT FAILED") || l.contains("rror")).take(5) {
+                        println!("     {l}");
+                    }
+                }
+                shown += 1;
+            }
+        }
+    });
+    if failed > 0 {
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
+thread_local! {
+    /// The log of the plan this thread plays (for the panic hook).
+    static PLAYING: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+/// One plan of `play-all`, as `play <plan> <dir>` with its output to `log`; true if it passed.
+fn play_one(plan: &Path, out: &Path, log: &Path, gpu: Gpu, assets: Box<dyn adrift_core::Assets>) -> bool {
+    let Ok(mut f) = std::fs::File::create(log) else { return false };
+    PLAYING.with(|p| *p.borrow_mut() = Some(log.to_path_buf()));
+    let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<()> {
+        let parsed: Plan = serde_json::from_slice(&std::fs::read(plan).with_context(|| plan.display().to_string())?)?;
+        std::fs::create_dir_all(out)?;
+        play_plan(parsed, out, gpu, assets, &mut f)
+    }));
+    PLAYING.with(|p| *p.borrow_mut() = None);
+    match run {
+        Ok(Ok(())) => true,
+        Ok(Err(e)) => {
+            // as `play` ends: main's error, on the stderr the scripts' logs took in
+            let _ = writeln!(f, "Error: {e:?}");
+            false
+        }
+        Err(_) => false,
+    }
+}
+
+/// The assets' bytes read once and shared by every plan's App; a name not read falls through to the
+/// directory, so a missing file fails as it does for `play`.
+struct Shared {
+    bytes: std::sync::Arc<std::collections::HashMap<String, Vec<u8>>>,
+    dir: DirAssets,
+}
+
+impl adrift_core::Assets for Shared {
+    fn read(&self, name: &str) -> Result<Vec<u8>> {
+        match self.bytes.get(name) {
+            Some(b) => Ok(b.clone()),
+            None => self.dir.read(name),
+        }
+    }
 }
 
 /// A journey clip of copied lamps (R13): `journey <lamps.txt> <seconds> <out.mp4>` pastes the text
@@ -632,7 +801,6 @@ fn journey(args: &[String]) -> Result<()> {
     let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
     // (R24) the phone's pipeline: two frames in flight, each read back straight into the encoder's
     // rows (here one reused buffer), so the GPU draws the next while the last is copied out
-    use std::io::Write;
     let mut rb = adrift_core::gpu::Readback::new(&app.gpu, &shot, 2);
     let mut px = vec![0u8; (ew * eh * 4) as usize];
     let (mut rendered, mut t_draw, mut t_take, mut t_pipe) = (0u32, 0.0f64, 0.0f64, 0.0f64);
@@ -691,6 +859,7 @@ fn main() -> Result<()> {
     match args.first().map(String::as_str) {
         Some("render") if args.len() >= 3 => render(&args[1..]),
         Some("play") if args.len() >= 3 => play(&args[1..]),
+        Some("play-all") if args.len() >= 3 => play_all(&args[1..]),
         Some("journey") if args.len() >= 4 => journey(&args[1..]),
         Some("info") => {
             // (R21) the adapter wgpu chose (not the first the system lists), on one line the GPU
@@ -701,7 +870,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         _ => {
-            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | journey <lamps.txt> <seconds> <out.mp4> [--night] [--fps 60] [--bitrate 12M] [--from-day D] [--to-day D] [--pace P] [--camera-only] | info");
+            eprintln!("usage: adrift-check render <scene.json> <out.png> [--size WxH] [--ppp 3] [--clip] | play <plan.json> <out-dir> | play-all <plan-or-dir>... <out-dir> [-j N] | journey <lamps.txt> <seconds> <out.mp4> [--night] [--fps 60] [--bitrate 12M] [--from-day D] [--to-day D] [--pace P] [--camera-only] | info");
             std::process::exit(2);
         }
     }
