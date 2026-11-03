@@ -448,7 +448,7 @@ impl Flock {
 mod bench {
     #[test]
     fn step_cost() {
-        let mut f = super::Flock::new(4000, 7);
+        let mut f = super::Flock::new(6000, 7);
         for _ in 0..300 {
             f.step(1.0 / 60.0);
         }

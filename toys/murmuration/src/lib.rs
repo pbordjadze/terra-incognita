@@ -23,10 +23,10 @@ const DUSK_FROM: f64 = -24.0;
 const DUSK_TO: f64 = 28.0;
 /// Minutes of dusk a minute.
 const DUSK_RATE: f64 = 1.5;
-const BIRDS: usize = 4000;
+const BIRDS: usize = 6000;
 const MSAA: u32 = 4;
 /// How far from the roost the watcher stands, metres.
-const WATCHER: f32 = 125.0;
+const WATCHER: f32 = 100.0;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -174,7 +174,7 @@ impl Murmuration {
         let far = [self.look[0] - sa.sin() * dh, 2.0, self.look[2] - sa.cos() * dh];
         let near = addv(sub(you.pos, scale(self.dir3, 4.2)), [0.0, -0.9, 0.0]);
         let look_far = self.look;
-        let look_near = addv(addv(you.pos, scale(self.dir3, 9.0)), [0.0, 1.2, 0.0]);
+        let look_near = addv(addv(you.pos, scale(self.dir3, 9.0)), [0.0, 2.6, 0.0]);
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
         let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
@@ -182,6 +182,11 @@ impl Murmuration {
         let mut fwd = norm(sub(look, pos));
         // Never so steeply up that the land leaves the frame (from afar).
         let max_up = (17.0f32 + 33.0 * e).to_radians().sin();
+        let max_down = -(8.0f32).to_radians().sin() * e;
+        if fwd[1] < max_down {
+            let h = norm([fwd[0], 0.0, fwd[2]]);
+            fwd = addv(scale(h, (1.0 - max_down * max_down).sqrt()), [0.0, max_down, 0.0]);
+        }
         if fwd[1] > max_up {
             let h = norm([fwd[0], 0.0, fwd[2]]);
             fwd = addv(scale(h, (1.0 - max_up * max_up).sqrt()), [0.0, max_up, 0.0]);
@@ -428,6 +433,13 @@ impl Toy for Murmuration {
             let r = self.ray(ctx, p);
             let you = &self.flock.birds[self.flock.you];
             let v = you.vel;
+            // The reeds are no place to fly: below 30 m the lean turns up, firmly near the ground.
+            let mut r = r;
+            let alt = you.pos[1];
+            if alt < 30.0 {
+                r[1] = r[1].max(-0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0) + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0));
+                r = norm(r);
+            }
             let want = scale(r, flock::V0);
             let mut a = scale(sub(want, v), 3.2);
             let al = length(a);
@@ -436,7 +448,7 @@ impl Toy for Murmuration {
             }
             let off = dot(norm(v), r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
             self.flock.lean = a;
-            self.flock.lean_k = (0.45 + 0.5 * (off / 35.0).min(1.0)).min(1.0);
+            self.flock.lean_k = 0.45 + 0.35 * (off / 35.0).min(1.0);
         } else {
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
@@ -469,7 +481,7 @@ impl Toy for Murmuration {
         let dc = length(sub(c, self.eye.pos));
         let you = &self.flock.birds[self.flock.you];
         put(&self.ears.rush, (rush * 0.08).min(1.5));
-        put(&self.ears.murmur, (BIRDS as f32 / (1.0 + dc * dc * 0.02) * 0.0012).min(1.0));
+        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.2));
         put(&self.ears.wings, self.near * (0.3 + 0.7 * you.flap));
         put(&self.ears.rate, you.rate);
     }
@@ -507,7 +519,7 @@ impl Toy for Murmuration {
         let hz = [(h0[0] + h1[0]) * 0.5, (h0[1] + h1[1]) * 0.5, (h0[2] + h1[2]) * 0.5];
         let ink = tone([ground[0] * 0.3, ground[1] * 0.3, ground[2] * 0.35], self.exposure);
         let haze = tone(hz, self.exposure);
-        let min_px = (2.2 * ctx.ppp as f32 / 3.0).max(1.5);
+        let min_px = (3.0 * ctx.ppp as f32 / 3.0).max(2.0);
         let bu = BirdU {
             right: [e.right[0], e.right[1], e.right[2], e.focal],
             up: [e.up[0], e.up[1], e.up[2], w],
@@ -547,7 +559,7 @@ impl Toy for Murmuration {
             rp.set_pipeline(&self.bird_pipe);
             rp.set_bind_group(0, &self.bird_bind, &[]);
             rp.set_vertex_buffer(0, self.inst.slice(..));
-            rp.draw(0..12, 0..inst.len() as u32);
+            rp.draw(0..39, 0..inst.len() as u32);
         }
         ctx.gpu.queue.submit([enc.finish()]);
     }
