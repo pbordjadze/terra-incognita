@@ -29,11 +29,16 @@ fn vs_main(@builtin(vertex_index) i: u32) -> VOut {
 const PI = 3.14159265;
 const EL_MIN = -2.0;
 
+// The view's azimuth from the sun's, 0..PI, measured directly (no wrap to go wrong).
+fn sun_angle(dir: vec3f) -> f32 {
+    let h = normalize(vec2f(dir.x, dir.z) + vec2f(1e-6, 0.0));
+    let s = vec2f(sin(u.sun.w), cos(u.sun.w));
+    return acos(clamp(dot(h, s), -1.0, 1.0));
+}
+
 fn sky(dir: vec3f) -> vec3f {
     let el = degrees(asin(clamp(dir.y, -1.0, 1.0)));
-    let az = atan2(dir.x, dir.z);
-    var daz = abs(az - u.sun.w);
-    if (daz > PI) { daz = 2.0 * PI - daz; }
+    let daz = sun_angle(dir);
     let v = sqrt(clamp((el - EL_MIN) / (90.0 - EL_MIN), 0.0, 1.0));
     return textureSampleLevel(table, samp, vec2f(daz / PI, v), 0.0).rgb;
 }
@@ -83,8 +88,6 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
     let disc = smoothstep(0.999962, 0.999972, cs);
     col += u.sun_col.rgb * disc * 400.0;
     // The land: the skyline's silhouette, then the fields toward the eye, hazed with distance.
-    var daz = abs(az - u.sun.w);
-    if (daz > PI) { daz = 2.0 * PI - daz; }
     let hor = sky(normalize(vec3f(dir.x, 0.007, dir.z)));
     let line = skyline(az);
     let pxdeg = degrees(1.0 / f);
