@@ -30,6 +30,15 @@ pub fn decode(bytes: &[u8], channels: u32) -> anyhow::Result<Pixels> {
     Ok(Pixels { width, height, channels: if channels == 1 { 1 } else { 4 }, data })
 }
 
+/// Sends what was written so far and waits for it: wgpu keeps every `write_texture`'s copy of the
+/// pixels in a staging buffer until the next submission is done, so a launch that uploads the whole
+/// globe would otherwise hold all of it twice at once (on a phone the GPU's memory counts toward the
+/// app's limit).
+pub fn settle(gpu: &Gpu) {
+    gpu.queue.submit([]);
+    let _ = gpu.device.poll(wgpu::PollType::wait());
+}
+
 /// The next mip of an image: each texel the mean of four (the box filter the map's distances take
 /// best; wrapping east-west is immaterial at a texel's scale).
 fn half(p: &Pixels) -> Pixels {
@@ -70,11 +79,13 @@ impl Texture {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        let mut level = Pixels { width: p.width, height: p.height, channels: p.channels, data: p.data.clone() };
+        // mip 0 straight from the picture, each further mip from the last (no copy of the picture)
+        let mut level: Option<Pixels> = None;
         for m in 0..mips {
             if m > 0 {
-                level = half(&level);
+                level = Some(half(level.as_ref().unwrap_or(p)));
             }
+            let level = level.as_ref().unwrap_or(p);
             gpu.queue.write_texture(
                 wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: m, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
                 &level.data,
@@ -82,6 +93,7 @@ impl Texture {
                 wgpu::Extent3d { width: level.width, height: level.height, depth_or_array_layers: 1 },
             );
         }
+        settle(gpu);
         let view = texture.create_view(&Default::default());
         Texture { texture, view, width: p.width, height: p.height }
     }
@@ -130,6 +142,7 @@ impl Texture {
                 wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
             );
         }
+        settle(gpu);
         let view = texture.create_view(&wgpu::TextureViewDescriptor { dimension: Some(wgpu::TextureViewDimension::D2Array), ..Default::default() });
         Texture { texture, view, width: w, height: h }
     }
