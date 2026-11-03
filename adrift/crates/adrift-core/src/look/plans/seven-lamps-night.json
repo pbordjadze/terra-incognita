@@ -1,5 +1,5 @@
 {
- "_": "Seven lamps, none chosen (R25: lamps with character, the before/after's scene): the chosen-how plan's lamps in the North Pacific at zoom 2.2, then close in at zoom 9 on lamps 2 and 6 side by side. adrift-check play adrift/crates/adrift-core/src/look/plans/seven-lamps-night.json <out-dir> (the night twin of seven-lamps.json).",
+ "_": "Seven lamps, none chosen (R25: lamps with character, the before/after's scene): the chosen-how plan's lamps in the North Pacific at zoom 2.2, then a pinch closes in to zoom 8 (the live camera's closest) beside lamps 2 and 6 (the shot z9). adrift-check play adrift/crates/adrift-core/src/look/plans/seven-lamps-night.json <out-dir> (the night twin of seven-lamps.json).",
  "size": [
   1179,
   2556
@@ -58,6 +58,210 @@
   },
   {
    "shot": "seven"
+  },
+  {
+   "down": [
+    240,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "down": [
+    260,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "move": [
+    236.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    264.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    232.00000000000003,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    268.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    228.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    272.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    224.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    275.99999999999994,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    220.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    280.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    216.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    284.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    212.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    288.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    208.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    292.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    204.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    296.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "move": [
+    200.0,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "move": [
+    300.0,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 0.03
+  },
+  {
+   "up": [
+    209,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "up": [
+    291,
+    420
+   ],
+   "id": 2
+  },
+  {
+   "advance": 1.5
+  },
+  {
+   "shot": "z9"
   }
  ],
  "night": true

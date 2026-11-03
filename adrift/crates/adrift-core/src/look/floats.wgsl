@@ -1,7 +1,7 @@
 // The floats (and the ring that thickens into one): one instanced quad a float, drawn on the screen
 // in reading points from the palette (palette.json; PALETTE.md says why). A float is a marker: its
-// radius goes from 4.5 to 7 points between zoom 1 and 3 and is then held; it never grows with the
-// water; each lamp is a light in glass of its own by its id (R25, lamp_kind at the foot). Under a resting finger (beat < 1) the ring draws in and the glass forms, without a lamp; the
+// radius goes from 4.5 to 7 points between zoom 1 and 3, then (R25c) on to 1.75x by zoom 8, then held;
+// it never grows with the water; each lamp is a light in glass of its own by its id (R25, lamp_kind at the foot). Under a resting finger (beat < 1) the ring draws in and the glass forms, without a lamp; the
 // float the app puts at the beat arrives with its lamp lit. Premultiplied alpha, over the sea.
 
 struct FloatIn {
@@ -39,7 +39,10 @@ struct FloatOut {
 
 fn float_radius() -> f32 {
     let t = clamp((U.disc.w - 1.0) / 2.0, 0.0, 1.0);
-    return (4.5 + 2.5 * t) * rp();
+    // (R25c) closer in the lamp grows, 1.75x by zoom 8 (the live camera's closest; in the log of the
+    // zoom), then held through a clip's deeper zooms
+    let near = clamp(log2(max(U.disc.w, 3.0) / 3.0) / log2(8.0 / 3.0), 0.0, 1.0);
+    return (4.5 + 2.5 * t) * (1.0 + 0.75 * near) * rp();
 }
 
 @vertex
@@ -171,19 +174,20 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, vec3<f32>(0.03, 0.10, 0.16), (1.0 - n) * 0.22 * (1.0 - i.mqk.y) * (1.0 - smoothstep(-0.2 * r, 0.25 * r, sd_sh)));
     // a cool hue's pale ring round the glass (R21), so a blue or purple lamp stands off the sea's blue
     let sdp = glass_sd(p, l.shape) * r;
-    acc = over(acc, vec3<f32>(0.96, 0.98, 1.0), coolness(i.hue) * (1.0 - n) * 0.85 * step(i.mqk.x, 0.5) * (1.0 - i.mqk.y) * cover(abs(sdp - 0.9 * rp()) - 0.6 * rp()));
+    // (R25c: no pale ring round a cool hue: any ring read as chrome; its glass's own deep edge and the
+    // shadow hold it off the sea)
     // the lantern's cap and bail, the dome's finial: dark metal by day, the rim's pale by night
     let metal = mix(vec3<f32>(0.13, 0.17, 0.20), vec3<f32>(0.62, 0.72, 0.76), n);
     if (l.shape == 2) {
-        let cq = abs(p - vec2<f32>(0.0, -0.98)) - vec2<f32>(0.42 - 0.08, 0.13 - 0.08);
+        let cq = abs(p - vec2<f32>(0.0, -1.04)) - vec2<f32>(0.40 - 0.08, 0.13 - 0.08);
         let cap = (length(max(cq, vec2<f32>(0.0))) + min(max(cq.x, cq.y), 0.0) - 0.08) * r;
         acc = over(acc, metal, (1.0 - 0.6 * i.mqk.y) * cover(cap));
-        let bq = p - vec2<f32>(0.0, -1.10);
+        let bq = p - vec2<f32>(0.0, -1.18);
         let bail = (abs(length(bq) - 0.24) * r) - 0.55 * rp();
         acc = over(acc, metal, (1.0 - 0.6 * i.mqk.y) * step(bq.y, 0.02) * cover(bail));
     }
     if (l.shape == 3) {
-        let fq = p - vec2<f32>(0.0, -1.24);
+        let fq = p - vec2<f32>(0.0, -1.48);
         acc = over(acc, metal, (1.0 - 0.6 * i.mqk.y) * cover(length(fq) * r - max(0.11 * r, 1.0 * rp())));
     }
     // the glass, lit from within: its body tinted by its light, brightest round the flame
@@ -203,19 +207,22 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
         // a rope round its waist, an equator seen from a little above, tied in a knot at its crown
         let ex = p.x;
         let eq = p.y - (l.tilt * 0.5 * ex + 0.34 * sqrt(max(1.0 - ex * ex, 0.0)) + 0.05);
-        let rw = max(0.045 * r, 0.5 * rp());
-        acc = over(acc, rope, 0.75 * inside * (1.0 - 0.6 * i.mqk.y) * cover(abs(eq) * r - rw));
+        let rw = max(0.065 * r, 0.6 * rp());
+        acc = over(acc, rope, 0.9 * inside * (1.0 - 0.6 * i.mqk.y) * cover(abs(eq) * r - rw));
         let kq = p - vec2<f32>(0.0, -1.02);
         acc = over(acc, rope, (1.0 - 0.6 * i.mqk.y) * cover(length(kq * vec2<f32>(1.0, 1.4)) * r - max(0.14 * r, 1.2 * rp())));
     }
     if (l.shape == 1) {
-        acc = over(acc, mix(hue, vec3<f32>(1.0), 0.6), 0.45 * inside * cover(abs(octa(p, 0.55)) * r - 0.45 * rp()));
+        let qd = abs(p);
+        let inner_d = (qd.x / 1.0 + (qd.y + 0.04) / 1.26 - 0.55) * 0.68;
+        acc = over(acc, mix(hue, vec3<f32>(1.0), 0.6), 0.5 * inside * cover(abs(inner_d) * r - 0.45 * rp()));
+        acc = over(acc, mix(hue, vec3<f32>(1.0), 0.6), 0.35 * inside * step(0.42, qd.y) * cover(qd.x * r - 0.4 * rp()));
     }
     if (l.shape == 2) {
-        let bars = min(abs(p.x - 0.40), abs(p.x + 0.40)) * r - 0.5 * rp();
+        let bars = min(abs(p.x - 0.33), abs(p.x + 0.33)) * r - 0.5 * rp();
         acc = over(acc, metal, 0.55 * inside * (1.0 - 0.6 * i.mqk.y) * step(p.y, 0.62) * cover(bars));
         // and its foot, a dark band
-        acc = over(acc, metal, inside * (1.0 - 0.6 * i.mqk.y) * cover((p.y - 0.80) * -r - 0.0));
+        acc = over(acc, metal, inside * (1.0 - 0.6 * i.mqk.y) * cover((p.y - 0.90) * -r - 0.0));
     }
     if (l.shape == 3) {
         let rib = abs(p.y - 0.08) * r - 0.45 * rp();
@@ -237,7 +244,11 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     // and a ring is the sign of chosen; it is a lamp in soft glass, its edge the glass's own fade
     let rimmed = 1.0 - i.mqk.y;
     // (by night the rim takes a little of its light, so the lamp is its colour, not a pale ring)
-    acc = over(acc, mix(glass_rim(n), hue, 0.35 * n), rimmed * dash * cover(abs(sdp + rim * 0.5) - rim * 0.5));
+    // (R25c) no dark outline by day: the glass's edge is a deeper shade of its own hue, so the glass
+    // and the flame are the edge, not a badge round them
+    let edge_ink = mix(mix(hue * 0.42, vec3<f32>(0.05, 0.12, 0.16), 0.25 + 0.35 * coolness(i.hue)), mix(glass_rim(n), hue, 0.35), n);
+    let ew = 0.75 * rp();
+    acc = over(acc, edge_ink, rimmed * dash * mix(0.85, 1.0, n) * cover(abs(sdp + ew * 0.5) - ew * 0.5));
     let h = i.local - vec2<f32>(-0.36 * r, -0.42 * r);
     let hs = select(vec2<f32>(1.2, 2.4), vec2<f32>(2.6, 0.9), l.shape == 2);
     acc = over(acc, vec3<f32>(1.0), glass_light(n) * (0.85 - 0.35 * i.head) * inside * exp(-(sq(h.x * hs.x) + sq(h.y * hs.y)) / (0.16 * r * r)));
@@ -250,7 +261,7 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     acc = over(acc, mix(vec3<f32>(1.0), hue, 0.4), i.head * 0.35 * inside * exp(-dot(low, low) / (0.03 * r * r)));
     // held: a thin ring out at 1.55 r, the maybes' own
     // (in its lamp's colour, R8: a lamp chosen as itself is ringed by its own light)
-    acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * step(i.mqk.x, 0.5) * cover(abs(d - 1.55 * r) - 0.35 * rp()));
+    acc = over(acc, mix(glass_rim(n), i.hue, 0.65), 0.6 * i.held * (1.0 - i.head) * step(i.mqk.x, 0.5) * cover(abs(d - 1.55 * r) - 0.35 * rp()));
     return acc;
 }
 
@@ -271,8 +282,9 @@ fn chosen_marks(i: FloatOut) -> vec4<f32> {
         // maybes); a lamp chosen as its cloud is told only by the scatter of maybes behind it
         let rr = 1.7 * r;
         let w = 0.95 * rp();
-        acc = over(acc, pale, (1.0 - n) * 0.8 * a * cover(abs(d - rr) - (w + 0.9 * rp())));
-        acc = over(acc, hue, a * cover(abs(d - rr) - w));
+        // (R25c) lighter: a thin ring of its hue on a faint pale, so it says chosen without a badge
+        acc = over(acc, pale, (1.0 - n) * 0.45 * a * cover(abs(d - rr) - (0.7 * w + 0.6 * rp())));
+        acc = over(acc, hue, 0.8 * a * cover(abs(d - rr) - 0.7 * w));
     }
     if (i.mqk.z > 0.5) {
         // (R22) kept: a gold star at the shoulder, large enough to read at arm's length (a bead was a
@@ -345,18 +357,22 @@ fn octa(p: vec2<f32>, s: f32) -> f32 {
 
 fn glass_sd(p: vec2<f32>, shape: i32) -> f32 {
     if (shape == 1) {
-        return octa(p, 0.97);
+        // (R25c) a diamond-cut float: a tall rhombus (an octagon read as round at 70 px)
+        let q = abs(p);
+        return (q.x / 1.0 + (q.y + 0.04) / 1.26 - 1.0) * 0.68;
     }
     if (shape == 2) {
         // a lantern: a rounded box a little taller than wide
-        let q = abs(p) - vec2<f32>(0.74 - 0.30, 0.90 - 0.30);
-        return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - 0.30;
+        // (R25c) taller and narrower, so it reads as a lantern beside a round float
+        let q = abs(p - vec2<f32>(0.0, 0.05)) - vec2<f32>(0.62 - 0.22, 1.02 - 0.22);
+        return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - 0.22;
     }
     if (shape == 3) {
         // an onion dome: round below, drawn up to a point
         let yc = -p.y + 0.10;
-        let t = max(yc, 0.0) * 0.74;
-        let x = p.x * (1.0 + 2.6 * t * t);
+        // (R25c) a clearer point: drawn up higher and pinched harder
+        let t = max(yc, 0.0) * 0.62;
+        let x = p.x * (1.0 + 4.2 * t * t);
         return (length(vec2<f32>(x, select(yc, t, yc > 0.0))) - 0.94) * 0.85;
     }
     return length(p) - 1.0;
