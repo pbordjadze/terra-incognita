@@ -18,6 +18,9 @@ pub const ROWS: usize = 4;
 /// A patch chimes when its glow rises above ON, and may again once it has fallen below OFF.
 const ON: f32 = 0.5;
 const OFF: f32 = 0.22;
+/// A patch rings at most RUN beats in a row, then rests REST beats.
+const RUN: u32 = 4;
+const REST: u32 = 3;
 /// A patch needs at least this much light (the sum of its fireflies' weights) to have a voice, so a
 /// lone city's flash is not a patch in step.
 const MIN_LIGHT: f32 = 3.0;
@@ -37,13 +40,18 @@ pub type Queue = Arc<Mutex<Vec<Strike>>>;
 /// The listening, on the main thread.
 pub struct Ear {
     armed: [bool; COLS * ROWS],
+    /// Each patch's strikes in a row, and the beats it still rests (so a lone patch in step is a
+    /// few chimes and a breath, not a metronome), and where it is in its little tune.
+    run: [u32; COLS * ROWS],
+    rest: [u32; COLS * ROWS],
+    step: [usize; COLS * ROWS],
     pub queue: Queue,
     t: f64,
 }
 
 impl Ear {
     pub fn new() -> Ear {
-        Ear { armed: [true; COLS * ROWS], queue: Arc::new(Mutex::new(Vec::new())), t: 0.0 }
+        Ear { armed: [true; COLS * ROWS], run: [0; COLS * ROWS], rest: [0; COLS * ROWS], step: [0; COLS * ROWS], queue: Arc::new(Mutex::new(Vec::new())), t: 0.0 }
     }
 
     /// One frame: `cells` is each patch's (sum of weight x glow, sum of weight).
@@ -58,13 +66,28 @@ impl Ear {
             let g = lw / w;
             if self.armed[k] && g > ON {
                 self.armed[k] = false;
+                if self.rest[k] > 0 {
+                    self.rest[k] -= 1;
+                    continue;
+                }
+                self.run[k] += 1;
+                if self.run[k] >= RUN {
+                    self.run[k] = 0;
+                    self.rest[k] = REST;
+                }
                 let (c, r) = (k % COLS, k / COLS);
-                let note = NOTES[(ROWS - 1 - r) * 2 + c];
-                let amp = (0.035 + 0.04 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
+                // its note wanders among three neighbours of the scale: up, back, down, back
+                const TUNE: [i32; 4] = [0, 1, 0, -1];
+                self.step[k] = (self.step[k] + 1) % TUNE.len();
+                let i = ((ROWS - 1 - r) * 2 + c) as i32 + TUNE[self.step[k]];
+                let note = NOTES[i.clamp(0, NOTES.len() as i32 - 1) as usize];
+                // the middle of the screen sings, the edges are quieter
+                let edge = if c == COLS / 2 { 1.0 } else { 0.55 };
+                let amp = edge * (0.035 + 0.04 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
                 if std::env::var_os("FIREFLIES_SOUND").is_some() {
                     eprintln!("strike patch {k} glow {g:.2} light {w:.1} at {:.2}", self.t);
                 }
-                out.push(Strike { freq: note, amp, pan: (c as f32 - (COLS as f32 - 1.0) / 2.0) * 0.6 });
+                out.push(Strike { freq: note, amp, pan: (c as f32 - (COLS as f32 - 1.0) / 2.0) * 0.45 });
             } else if g < OFF {
                 self.armed[k] = true;
             }

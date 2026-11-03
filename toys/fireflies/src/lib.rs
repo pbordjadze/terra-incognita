@@ -19,7 +19,7 @@ use toy_kit::{Camera, Ctx, Globe, Phase, PointerEvent, Toy};
 
 /// Where the globe first faces: the Americas, north over south, a tall screen's shape (the zoom
 /// is the screen's: `start_zoom`).
-const START: Camera = Camera::new(-72.0, 20.0, 1.0);
+const START: Camera = Camera::new(-80.0, 24.0, 1.0);
 /// A finger's reach for a nudge, in points.
 const NUDGE_PT: f64 = 26.0;
 /// A touch's ring of light: how fast it spreads on the screen (points a second), how long it can
@@ -31,6 +31,46 @@ const RING_WIDTH_PT: f64 = 12.0;
 /// the view), and how long after the fingers lift it starts to settle (seconds).
 const SETTLE_LAT: (f64, f64) = (-38.0, 60.0);
 const SETTLE_AFTER: f64 = 1.0;
+/// When one side of the view shows more of the Earth than this (degrees), the view is the whole globe,
+/// and it settles on a region's centre of light.
+const WHOLE_HALF_ANGLE: f64 = 40.0;
+/// How far the whole globe looks for a brighter region: its light counts less by e for each this
+/// many degrees away.
+const LIGHT_REACH: f64 = 45.0;
+/// A region's reach (degrees): the light within this of a place is that place's light.
+const REGION: f64 = 20.0;
+
+/// The lit regions' centres of light: every place on a 4-degree grid within the settling latitudes,
+/// the light of the fireflies within REGION of it, and their light-weighted centre (lon, lat, light),
+/// keeping the places with any light. Computed once (about 11 million products).
+fn light_centres(swarm: &Swarm) -> Vec<(f64, f64, f64)> {
+    let cosr = REGION.to_radians().cos();
+    let mut out = Vec::new();
+    let mut lat = SETTLE_LAT.0;
+    while lat <= SETTLE_LAT.1 {
+        let mut lon = -180.0;
+        while lon < 180.0 {
+            let p = toy_kit::LonLat::new(lon, lat).to_xyz();
+            let (mut sum, mut m) = (0.0, [0.0; 3]);
+            for f in &swarm.flies {
+                if p[0] * f.xyz[0] + p[1] * f.xyz[1] + p[2] * f.xyz[2] > cosr {
+                    sum += f.weight;
+                    for k in 0..3 {
+                        m[k] += f.weight * f.xyz[k];
+                    }
+                }
+            }
+            if sum > 0.0 {
+                let c = toy_kit::LonLat::from_xyz(m);
+                out.push((c.lon, c.lat.clamp(SETTLE_LAT.0, SETTLE_LAT.1), sum));
+            }
+            lon += 4.0;
+        }
+        lat += 4.0;
+    }
+    out
+}
+
 /// Closer than this the lights' sheet shows its pixels (about 10 km each): the zoom stops here.
 const MAX_ZOOM: f64 = 5.0;
 
@@ -54,6 +94,8 @@ pub struct Fireflies {
     /// Seconds since the last finger lifted.
     idle: f64,
     ear: sound::Ear,
+    /// The lit regions' centres of light (`light_centres`).
+    lights: Vec<(f64, f64, f64)>,
     /// Drifting to the lights (until it is over the lit place it was going to).
     drifting: bool,
 }
@@ -127,6 +169,22 @@ impl Fireflies {
         (best, bd.clamp(-1.0, 1.0).acos())
     }
 
+    /// The lit region whose centre of light the whole globe settles on: the brightest near the view's
+    /// centre (its light discounted by how far it is), and how far it is (radians).
+    fn nearest_light_centre(&self) -> ((f64, f64), f64) {
+        let c = toy_kit::LonLat::new(self.globe.camera.lon, self.globe.camera.lat).to_xyz();
+        let mut best = (f64::MIN, (0.0, 0.0), 0.0);
+        for l in &self.lights {
+            let x = toy_kit::LonLat::new(l.0, l.1).to_xyz();
+            let d = (c[0] * x[0] + c[1] * x[1] + c[2] * x[2]).clamp(-1.0, 1.0).acos();
+            let score = l.2 * (-d / LIGHT_REACH.to_radians()).exp();
+            if score > best.0 {
+                best = (score, (l.0, l.1), d);
+            }
+        }
+        (best.1, best.2)
+    }
+
     /// Whatever the hand did, the globe at rest settles: north up (the roll eases to nothing), its
     /// centre within the lit latitudes, and a lit crowd in the middle of the view (at whole-globe
     /// zoom too). It waits a second after the fingers lift, so a fling plays out first.
@@ -146,26 +204,34 @@ impl Fireflies {
         cam.roll = roll - roll * k;
         cam.lat += (cam.lat.clamp(SETTLE_LAT.0, SETTLE_LAT.1) - cam.lat) * k;
         let half = self.half_angle();
-        let (near, far) = self.nearest_crowd();
-        if far > 0.15 * half {
+        // far out (a whole hemisphere in view) the view settles on a lit region's centre of light;
+        // closer in, on the nearest lit crowd
+        let whole = half > WHOLE_HALF_ANGLE.to_radians();
+        let ((lon, lat), far) = if whole {
+            self.nearest_light_centre()
+        } else {
+            let (i, far) = self.nearest_crowd();
+            ((self.swarm.flies[i].lon, self.swarm.flies[i].lat), far)
+        };
+        let (start, stop) = if whole { (0.08, 0.02) } else { (0.15, 0.05) };
+        if far > start * half {
             self.drifting = true;
         }
-        if far < 0.05 * half {
+        if far < stop * half {
             self.drifting = false;
         }
         if std::env::var_os("FIREFLIES_DRIFT").is_some() {
-            let (c, f) = (self.globe.camera, &self.swarm.flies[near]);
+            let c = self.globe.camera;
             eprintln!(
-                "t {:.2} cam {:.1},{:.1} roll {:.1} z{:.1} crowd {:.1},{:.1} at {:.1} deg (lost past {:.1}) drifting {}",
-                self.swarm.t, c.lon, c.lat, c.roll, c.zoom, f.lon, f.lat, far.to_degrees(), (0.15 * half).to_degrees(), self.drifting
+                "t {:.2} cam {:.1},{:.1} roll {:.1} z{:.1} target {lon:.1},{lat:.1} ({}) at {:.1} deg drifting {}",
+                self.swarm.t, c.lon, c.lat, c.roll, c.zoom, if whole { "light centre" } else { "crowd" }, far.to_degrees(), self.drifting
             );
         }
         if self.drifting {
-            let f = &self.swarm.flies[near];
             let cam = &mut self.globe.camera;
-            let dlon = (f.lon - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
+            let dlon = (lon - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
             cam.lon += dlon * k;
-            cam.lat += (f.lat - cam.lat) * k;
+            cam.lat += (lat - cam.lat) * k;
         }
     }
 }
@@ -183,9 +249,11 @@ impl Toy for Fireflies {
         globe.night = 1.0;
         globe.camera = START;
         globe.camera.zoom = start_zoom(ctx.points());
-        // a pinch out goes a little past the whole globe and springs back to it (the kit's rest_zoom)
+        // a pinch out goes past the whole globe and springs back (the kit's rest_zoom)
         globe.hand.min_zoom = 0.8;
-        globe.hand.rest_zoom = 1.0;
+        // at rest it comes back a little closer than the whole globe on a tall screen (the phone),
+        // where the whole globe is a narrow band in black
+        globe.hand.rest_zoom = (0.8 * globe.camera.zoom).max(1.0);
         globe.hand.max_zoom = MAX_ZOOM;
         let seed = std::env::var("FIREFLIES_SEED")
             .ok()
@@ -193,6 +261,7 @@ impl Toy for Fireflies {
             .unwrap_or(0x5eed_f1e5);
         let swarm = Swarm::from_bytes(&ctx.assets.read("fireflies.bin")?, Tune::default(), seed)?;
         let look = look::Look::new(&ctx.gpu, &globe, swarm.flies.len());
+        let lights = light_centres(&swarm);
         Ok(Fireflies {
             globe,
             swarm,
@@ -205,6 +274,7 @@ impl Toy for Fireflies {
             idle: 0.0,
             drifting: false,
             ear: sound::Ear::new(),
+            lights,
         })
     }
 
