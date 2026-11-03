@@ -111,3 +111,77 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
     out += vec3f(d / 255.0);
     return vec4f(out, 1.0);
 }
+
+// The reed bed the watcher stands in: stems and plumes against the sky, in three layers (near,
+// mid, far), swaying in a light wind. Placed by the view's azimuth and elevation, so they stay put
+// in the world as the eye turns; drawn over the birds (they are nearer), and gone while flying.
+fn h2(a: f32, b: f32) -> f32 {
+    return fract(sin(a * 127.1 + b * 311.7) * 43758.5453);
+}
+
+fn reeds(azd: f32, el: f32, pxdeg: f32, t: f32) -> vec2f {
+    var cov = 0.0;
+    var depth = 0.0;
+    for (var layer = 0; layer < 3; layer++) {
+        let l = f32(layer);
+        let dens = mix(1.6, 5.0, l / 2.0);           // stems a degree
+        let top_max = mix(9.0, 1.2, l / 2.0);       // the tallest tops, degrees above level
+        let w = mix(0.11, 0.035, l / 2.0);          // stem width, degrees
+        let ps = mix(1.0, 0.3, l / 2.0);            // plume size
+        let cell = floor(azd * dens);
+        for (var k = -1; k <= 1; k++) {
+            let c = cell + f32(k);
+            let r1 = h2(c, l + 1.0);
+            let r2 = h2(c + 17.0, l + 3.0);
+            let r3 = h2(c + 41.0, l + 7.0);
+            let base = (c + r1) / dens;
+            let top = top_max * (0.3 + 0.7 * r2 * r2) - 1.0;
+            let sway = (0.25 + 0.5 * r3) * ps * sin(t * (0.7 + 0.5 * r3) + r3 * 6.283 + base * 0.08);
+            // The near layer rises from the foot of the glass; the farther ones stand on the horizon.
+            let bottom = select(-0.6 - 0.4 * l, -25.0, layer == 0);
+            let s = clamp((el - bottom) / (top - bottom), 0.0, 1.0);
+            let ac = base + sway * s * s;
+            var c_here = 0.0;
+            if (el < top && el > bottom) {
+                let d = abs(azd - ac);
+                c_here = 1.0 - smoothstep(0.5 * w - 0.5 * pxdeg, 0.5 * w + 0.5 * pxdeg, d);
+            }
+            // The plume: a drooping, feathered head leaning with the wind.
+            let pc = vec2f(base + sway * 1.25, top + 0.75 * ps);
+            let q = vec2f(azd - pc.x, el - pc.y);
+            let lean = sway * 0.6;
+            let qq = vec2f(q.x - lean * q.y, q.y);
+            let pw = 0.2 * ps + 0.6 * pxdeg;
+            let ph = 0.85 * ps;
+            let rr = length(vec2f(qq.x / pw, qq.y / ph));
+            let feather = 0.75 + 0.25 * h2(floor(el / max(pxdeg * 3.0, 0.01)), c);
+            let pcov = (1.0 - smoothstep(0.75, 1.0, rr)) * feather;
+            let here = max(c_here, pcov);
+            if (here > cov) {
+                cov = here;
+                depth = l / 2.0;
+            }
+        }
+    }
+    return vec2f(cov, depth);
+}
+
+@fragment
+fn fs_reeds(in: VOut) -> @location(0) vec4f {
+    let strength = u.horizon2.w;
+    if (strength <= 0.001) { discard; }
+    let f = u.right.w;
+    let px = vec2f(in.pos.x - 0.5 * u.up.w, 0.5 * u.fwd.w - in.pos.y);
+    let dir = normalize(u.fwd.xyz * f + u.right.xyz * px.x + u.up.xyz * px.y);
+    let el = degrees(asin(clamp(dir.y, -1.0, 1.0)));
+    if (el > 12.0) { discard; }
+    let azd = degrees(atan2(dir.x, dir.z));
+    let pxdeg = degrees(1.0 / f);
+    let r = reeds(azd, el, pxdeg, u.ground.w);
+    if (r.x <= 0.001) { discard; }
+    let hor = sky(normalize(vec3f(dir.x, 0.007, dir.z)));
+    // Near reeds nearly black; far ones hazed toward the sky behind them.
+    let col = tone(mix(u.ground.rgb * 0.5, hor * 0.5, r.y * 0.35 * smoothstep(-0.5, 0.5, el)));
+    let a = r.x * strength;
+    return vec4f(col * a, a);
+}

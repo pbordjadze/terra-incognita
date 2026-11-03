@@ -75,7 +75,11 @@ fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: 
     // How big it would be on screen: a wingspan of 0.38 m at its distance.
     let span = 0.38 * b.fwd.w * f / max(z0, 0.05);
     let grow = max(1.0, u.eye.w / max(span, 1e-4));
-    let s = shape(vi, beat) * b.fwd.w * grow;
+    var s = shape(vi, beat) * b.fwd.w * grow;
+    // Far birds a little fuller in the body and wing (their chord), so a distant flock reads dark,
+    // as the eye sees it, not as fine stipple.
+    let full = clamp(sqrt(28.0 * u.eye.w / 3.0 / max(span, 1e-3)), 1.0, 1.9);
+    s = vec3f(s.x, s.y * full, s.z * full);
     let w = b.pos.xyz + side * s.x + up * s.y + fwd * s.z;
     let rel = w - u.eye.xyz;
     let x = dot(rel, u.right.xyz);
