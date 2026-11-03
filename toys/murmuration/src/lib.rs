@@ -219,7 +219,9 @@ impl Murmuration {
         let c_loc = if n_loc > 20 { c_loc } else { centre };
         let kc = (dt / 0.8).min(1.0);
         self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
-        let near = addv(sub(you.pos, scale(self.dir3, 6.5)), [0.0, -1.6, 0.0]);
+        let mut near = sub(you.pos, scale(self.dir3, 6.5));
+        // Below the flock round you, so it stands against the sky, not the land.
+        near[1] = (you.pos[1] - 2.8).min(self.flock_look[1] - 4.0).max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
         let look_near = addv(scale(ahead, 0.45), scale(self.flock_look, 0.55));

@@ -18,7 +18,7 @@ const ROOST_R: f32 = 30.0;
 const W_ROOST: f32 = 0.06;
 const ALT: f32 = 55.0;
 const W_ALT: f32 = 0.05;
-const NOISE: f32 = 1.5;
+const NOISE: f32 = 1.0;
 const MAX_ACC: f32 = 30.0;
 const CELL: f32 = 1.8;
 /// How much more the neighbours of the bird that is you heed it than any other (a lean is felt).
