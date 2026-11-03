@@ -82,7 +82,11 @@ async function blank(page, png, sel) {
   const browser = await chromium.launch({ args: FLAGS });
   const page = await browser.newPage({ viewport: { width: o.size[0], height: o.size[1] }, deviceScaleFactor: o.dpr });
   const errors = [];
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  // a missing file is named and warned about, not failed on (a shell may probe an optional file, as
+  // adrift-web does assets/index.json); if it mattered, the page throws or the canvas stays blank
+  const missing = [];
+  page.on('response', r => { if (r.status() === 404) missing.push(r.url()); });
+  page.on('console', m => { if (m.type() === 'error' && !/status of 404/.test(m.text())) errors.push(m.text()); });
   page.on('pageerror', e => errors.push(String(e)));
   const t0 = Date.now();
   await page.goto(url);
@@ -109,6 +113,7 @@ async function blank(page, png, sel) {
     console.log(`${file}: ${((Date.now() - t0) / 1000).toFixed(1)} s${b ? ', ' + b : ''}`);
     if (b) fail = b;
   }
+  for (const u of missing) console.log('warning: 404', u);
   for (const e of errors) console.log('page error:', e);
   if (!fail && errors.length) fail = `${errors.length} page error(s)`;
   await browser.close();
