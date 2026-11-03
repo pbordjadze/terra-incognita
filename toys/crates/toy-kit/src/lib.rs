@@ -116,6 +116,17 @@ pub trait Toy: 'static {
         None
     }
     fn restore(&mut self, _ctx: &mut Ctx, _saved: &str) {}
+    /// The places the toy names, in points from the top left, as they are now (a plan may tap
+    /// `"whale"`: check.rs). None by default.
+    fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        Vec::new()
+    }
+    /// Where a longitude and latitude are on screen now, in points, if the toy has a globe and the
+    /// place faces the reader (a plan may tap `{"lonlat": [lon, lat]}`). A toy with a globe returns
+    /// `self.globe.point(lonlat)`. None by default.
+    fn project(&self, _lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        None
+    }
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
