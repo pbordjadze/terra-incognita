@@ -183,9 +183,8 @@ fn glass_float(i: FloatOut) -> vec4<f32> {
     return acc;
 }
 
-// How a lamp is chosen, at a glance (R21; the panel's marks carry the same signs): as itself, a solid
-// ring of its hue close round the glass, its own line; as its cloud, a ring of dots of its hue, its
-// maybes; kept, a small gold bead at its shoulder (a jewel, not a ring, so it never reads as chosen).
+// How a lamp is chosen, at a glance (R21; R23 one ring for both): chosen, as itself or as its cloud, a
+// solid ring of its hue close round the glass (its cloud is the scatter of maybes behind it); kept, a small gold bead at its shoulder (a jewel, not a ring, so it never reads as chosen).
 // Each on a pale rim by day so a cool hue holds against the sea. `held` is the marks' strength.
 fn chosen_marks(i: FloatOut) -> vec4<f32> {
     let n = i.night;
@@ -195,20 +194,14 @@ fn chosen_marks(i: FloatOut) -> vec4<f32> {
     let hue = lamp_of(i.hue, n);
     let pale = vec3<f32>(0.97, 0.985, 1.0);
     var acc = vec4<f32>(0.0);
-    if (i.mqk.x > 0.5 && i.mqk.x < 1.5) {
+    if (i.mqk.x > 0.5) {
+        // (R23) one sign for chosen: as itself or as its cloud, the same light ring of its hue close
+        // round the glass (a cloud's dotted halo was a second grammar and read as noise among its
+        // maybes); a lamp chosen as its cloud is told only by the scatter of maybes behind it
         let rr = 1.7 * r;
         let w = 0.95 * rp();
         acc = over(acc, pale, (1.0 - n) * 0.8 * a * cover(abs(d - rr) - (w + 0.9 * rp())));
         acc = over(acc, hue, a * cover(abs(d - rr) - w));
-    } else if (i.mqk.x > 1.5) {
-        let rr = 2.0 * r;
-        let ang = atan2(i.local.y, i.local.x) + 1.5707963;
-        let k = round(ang * 10.0 / 6.2831853);
-        let t = k * 6.2831853 / 10.0 - 1.5707963;
-        let q = i.local - vec2<f32>(cos(t), sin(t)) * rr;
-        let dr = 1.25 * rp();
-        acc = over(acc, pale, (1.0 - n) * 0.85 * a * cover(length(q) - (dr + 0.8 * rp())));
-        acc = over(acc, hue, a * cover(length(q) - dr));
     }
     if (i.mqk.z > 0.5) {
         // (R22) kept: a gold star at the shoulder, large enough to read at arm's length (a bead was a
