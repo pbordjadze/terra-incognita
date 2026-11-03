@@ -1,0 +1,89 @@
+{
+  "_": "Several hydrophones: four lowered across the sea one after another (each flares as a ring passes it, so a song's arrival can be watched travelling from one to the next; the songs are heard at the newest), a touch on the first listens there again, a fifth lifts the oldest.",
+  "seconds": 26,
+  "fps": 30,
+  "audio": true,
+  "events": [
+    {
+      "t": 1.5,
+      "tap": {
+        "lonlat": [
+          -128,
+          35
+        ]
+      }
+    },
+    {
+      "t": 3.0,
+      "tap": {
+        "lonlat": [
+          -124,
+          28
+        ]
+      }
+    },
+    {
+      "t": 4.5,
+      "tap": {
+        "lonlat": [
+          -119,
+          24
+        ]
+      }
+    },
+    {
+      "t": 6.0,
+      "tap": {
+        "lonlat": [
+          -113,
+          20
+        ]
+      }
+    },
+    {
+      "t": 14.0,
+      "tap": {
+        "lonlat": [
+          -128,
+          35
+        ]
+      }
+    },
+    {
+      "t": 19.0,
+      "tap": {
+        "lonlat": [
+          -121,
+          18
+        ]
+      }
+    }
+  ],
+  "shots": [
+    {
+      "t": 7.0,
+      "name": "four-down"
+    },
+    {
+      "t": 10.0,
+      "name": "arrivals"
+    },
+    {
+      "t": 15.0,
+      "name": "listening-at-the-first"
+    },
+    {
+      "t": 19.6,
+      "name": "fifth-lifts-oldest"
+    },
+    {
+      "t": 22.0,
+      "name": "later"
+    }
+  ],
+  "film": {
+    "from": 6,
+    "to": 14,
+    "every": 0.1
+  }
+}

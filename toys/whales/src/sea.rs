@@ -63,7 +63,10 @@ impl Sea {
     /// Whether the way by sea from `a` to `b` is open: no peninsula or coast on the great circle
     /// between them (an island a few tens of kilometres across does not stop the sound; the rings
     /// shader's `open_sea` is the same march).
-    pub fn open(&self, a: [f64; 3], b: [f64; 3]) -> bool {
+    pub fn open(&self, singer: [f64; 3], listener: [f64; 3]) -> bool {
+        // marched from the listener toward the singer, as the rings shader marches from each point of
+        // the sea to the singer: the singer's own bay is spared at the march's end, never the listener's
+        let (a, b) = (listener, singer);
         let c = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
         let theta = c.acos();
         if theta < 1e-6 {

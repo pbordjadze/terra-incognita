@@ -36,6 +36,10 @@ const IDLE_BACK: f64 = 14.0;
 /// How long a hydrophone stays down on the water, and the land's silence lasts.
 const EAR_LIFE: f64 = 24.0;
 const SILENCE_LIFE: f64 = 4.0;
+/// How many hydrophones may be down on the water at once (a further one lifts the oldest).
+const MAX_EARS: usize = 4;
+/// How long a hydrophone takes to come up when it is lifted early.
+const EAR_LIFT: f64 = 1.2;
 /// How fast each whale's rings spread, points a second (times the screen's size).
 const RING_PTS: [f64; 2] = [46.0, 34.0];
 
@@ -63,8 +67,8 @@ struct RingsU {
     at: [[f32; 4]; MAX_RINGS],
     look: [[f32; 4]; MAX_RINGS],
     n: [f32; 4],
-    /// The hydrophone (unit vector) and how far it is down, 0..1.
-    ear: [f32; 4],
+    /// The hydrophones (unit vectors) and how far down each is, 0..1 (0: none).
+    ears: [[f32; 4]; MAX_EARS],
     /// Each whale's place now (the land's shadow is cast from it); w unused.
     whale: [[f32; 4]; 2],
     /// x the hydrophone's reach, radians.
@@ -93,7 +97,9 @@ struct Singer {
 
 /// A touch on the sea lowers a hydrophone there: the songs are heard as they arrive at it (late,
 /// quieter and muffled with distance, hardly at all behind the land), and the rings brighten as they
-/// pass it. A touch on the land is the land's silence.
+/// pass it. Several may be down at once: the songs are heard at the newest (or the one last touched),
+/// and every one flares as a ring passes it, so a song's arrivals can be watched across the sea. A
+/// touch on the land is the land's silence.
 struct Ear {
     at: [f64; 3],
     born: f64,
@@ -102,6 +108,8 @@ struct Ear {
     ping: f32,
     /// Whether the way from each whale is open sea.
     open: [bool; 2],
+    /// When it began to come up early (a fifth was lowered, or a whale was followed).
+    lift: Option<f64>,
 }
 
 impl Ear {
@@ -110,7 +118,12 @@ impl Ear {
         let age = t - self.born;
         let life = if self.land { SILENCE_LIFE } else { EAR_LIFE };
         let lift = if self.land { 0.8 } else { 1.5 };
-        (age / 0.25).clamp(0.0, 1.0) * ((life - age) / lift).clamp(0.0, 1.0)
+        let early = self.lift.map(|l| ((l + EAR_LIFT - t) / EAR_LIFT).clamp(0.0, 1.0)).unwrap_or(1.0);
+        (age / 0.25).clamp(0.0, 1.0) * ((life - age) / lift).clamp(0.0, 1.0) * early
+    }
+
+    fn gone(&self, t: f64) -> bool {
+        self.strength(t) <= 0.0 && t - self.born > 1.0
     }
 }
 
@@ -124,7 +137,10 @@ struct Saved {
 pub struct Whales {
     globe: Globe,
     sea: Sea,
-    ear: Option<Ear>,
+    /// The hydrophones on the water, oldest first; the songs are heard at the last one not lifting.
+    ears: Vec<Ear>,
+    /// The land's silence, while it lasts.
+    silence: Option<Ear>,
     /// How close the camera holds a followed whale (a pinch changes it).
     follow_zoom: f64,
     singers: [Singer; 2],
@@ -256,15 +272,16 @@ impl Whales {
         let l = dx.hypot(dy).max(1e-9);
         let (ux, uy) = ((dx / l).abs(), (dy / l).abs());
         let reach = disc1.r * (half + 0.05).min(1.4).sin();
-        let zx = (wp / 2.0 - 50.0).max(40.0) / (reach * ux).max(1e-9);
+        // the pair right of the middle, so the open sea (where their songs go) fills the screen and
+        // the coast's lit land keeps to its corner
+        let right = 0.14 * wp;
+        let zx = (wp / 2.0 - right - 40.0).max(40.0) / (reach * ux).max(1e-9);
         let zy = (hp * 0.40 - 90.0).max(40.0) / (reach * uy).max(1e-9);
         let zoom = zx.min(zy).clamp(1.1, 9.0);
-        // the pair a little below the middle of the screen: the land above them, their songs
-        // spreading into the open sea below; the camera's centre is that much north of their middle
+        // the camera's centre that far west of their middle
         let r = disc1.r * zoom;
-        let lift = (hp * 0.10 / r).clamp(0.0, 0.6).asin();
-        let north = norm([-mid[0] * mid[1], 1.0 - mid[1] * mid[1], -mid[2] * mid[1]]);
-        let centre = norm([mid[0] * lift.cos() + north[0] * lift.sin(), mid[1] * lift.cos() + north[1] * lift.sin(), mid[2] * lift.cos() + north[2] * lift.sin()]);
+        let west = (right / r).clamp(0.0, 0.6).asin().to_degrees();
+        let centre = LonLat { lon: ll.lon - west / ll.lat.to_radians().cos().max(0.2), lat: ll.lat }.to_xyz();
         (centre, zoom)
     }
 
@@ -343,12 +360,9 @@ impl Whales {
             // the blue whale's sped-up moan is the loudest thing in its band: it sits under the humpback
             let level = if i == 1 { 0.72 } else { 1.15 };
             let (mut g, mut p, mut delay, mut corner) = (gain * level, pan, 0.0f32, 20_000.0f32);
-            if let Some(ear) = &self.ear {
+            if let Some(ear) = self.listening() {
                 let k = ear.strength(self.t) as f32;
-                if ear.land {
-                    // the land's silence
-                    g *= 1.0 - 0.97 * k;
-                } else {
+                {
                     // as it arrives at the hydrophone: when its ring does, as faint as its ring is then,
                     // muffled the farther it came, hardly at all from behind the land
                     let wpos = self.singers[i].route.at(self.day);
@@ -370,8 +384,12 @@ impl Whales {
                     corner = 20_000.0 + (c - 20_000.0) * k;
                 }
             }
+            if let Some(sil) = &self.silence {
+                // the land's silence
+                g *= 1.0 - 0.97 * sil.strength(self.t) as f32;
+            }
             if std::env::var("WHALES_DEBUG").is_ok() && (self.t * 30.0).round() as i64 % 30 == 0 {
-                eprintln!("  voice {i}: gain {g:.3} pan {p:.2} delay {delay:.2} corner {corner:.0} open {:?}", self.ear.as_ref().map(|e| e.open));
+                eprintln!("  voice {i}: gain {g:.3} pan {p:.2} delay {delay:.2} corner {corner:.0} open {:?}", self.listening().map(|e| e.open));
             }
             self.mix.set(i, g, p);
             self.mix.place(i, delay, corner);
@@ -406,28 +424,32 @@ impl Whales {
         }
         let t = self.t;
         self.rings.retain(|r| t - r.born < RING_LIFE);
-        // the hydrophone: which ways are open, a ping as a ring passes over it, lifted at its end
-        if let Some(ear) = &mut self.ear {
+        // the hydrophones: which ways are open, a ping as a ring passes over each, lifted at their end
+        for ear in &mut self.ears {
             for i in 0..2 {
                 ear.open[i] = self.sea.open(self.singers[i].route.at(self.day), ear.at);
             }
             ear.ping *= (-dt / 0.3).exp() as f32;
-            if !ear.land {
-                for r in &self.rings {
-                    let c = [r.at[0] as f64, r.at[1] as f64, r.at[2] as f64];
-                    let d = dot(c, ear.at).clamp(-1.0, 1.0).acos();
-                    let age = t - r.born;
-                    let (r0, r1) = (r.speed as f64 * (age - dt).max(0.0), r.speed as f64 * age);
-                    if d >= r0 && d < r1 && ear.open[r.kind as usize] {
-                        let fade = (1.0 - age / RING_LIFE).max(0.0).powf(1.6) as f32;
-                        ear.ping = ear.ping.max((r.amp * fade * 1.4).min(1.0));
-                    }
+            for r in &self.rings {
+                let c = [r.at[0] as f64, r.at[1] as f64, r.at[2] as f64];
+                let d = dot(c, ear.at).clamp(-1.0, 1.0).acos();
+                let age = t - r.born;
+                let (r0, r1) = (r.speed as f64 * (age - dt).max(0.0), r.speed as f64 * age);
+                if d >= r0 && d < r1 && ear.open[r.kind as usize] {
+                    let fade = (1.0 - age / RING_LIFE).max(0.0).powf(1.6) as f32;
+                    ear.ping = ear.ping.max((r.amp * fade * 1.4).min(1.0));
                 }
             }
-            if ear.strength(t) <= 0.0 && t - ear.born > 1.0 {
-                self.ear = None;
-            }
         }
+        self.ears.retain(|e| !e.gone(t));
+        if self.silence.as_ref().is_some_and(|e| e.gone(t)) {
+            self.silence = None;
+        }
+    }
+
+    /// The hydrophone the songs are heard at: the last lowered or touched, unless it is coming up.
+    fn listening(&self) -> Option<&Ear> {
+        self.ears.last().filter(|e| e.lift.is_none())
     }
 
     fn build_marks(&mut self) {
@@ -468,11 +490,14 @@ impl Whales {
             let alpha = (f / 0.15).min(1.0);
             self.marks.push(MarkI { at: [x as f32, y as f32, len as f32, heading as f32], look: [i as f32, alpha as f32, phase as f32, glow] });
         }
-        if let Some(ear) = &self.ear {
+        // the hydrophones, the one listened at a little larger and brighter; the land's silence
+        let n = self.ears.len();
+        for (j, ear) in self.ears.iter().chain(self.silence.iter()).enumerate() {
             let ([x, y], f) = self.globe.project(LonLat::from_xyz(ear.at));
             if f > 0.0 {
-                let k = ear.strength(self.t) as f32;
-                let size = 30.0 * reading * self.size_k();
+                let heard = ear.land || (j + 1 == n && ear.lift.is_none());
+                let k = (ear.strength(self.t) * if heard { 1.0 } else { 0.7 }) as f32;
+                let size = if heard { 30.0 } else { 25.0 } * reading * self.size_k();
                 self.marks.push(MarkI { at: [x as f32, y as f32, size as f32, 0.0], look: [3.0, k, ear.ping, if ear.land { 1.0 } else { 0.0 }] });
             }
         }
@@ -497,7 +522,8 @@ impl Toy for Whales {
         let mut toy = Whales {
             globe,
             sea,
-            ear: None,
+            ears: Vec::new(),
+            silence: None,
             follow_zoom: 11.0,
             singers: [singer(hr, hs, 0.0), singer(br, bs, 3.0)],
             mix,
@@ -529,6 +555,20 @@ impl Toy for Whales {
 
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
+    }
+
+    /// The whales by name, for a plan's `"tap": "humpback"` (check.rs).
+    fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        (0..2)
+            .filter_map(|i| {
+                let (p, f) = self.whale_on_screen(i);
+                (f > 0.0).then(|| (["humpback", "blue"][i].to_string(), p))
+            })
+            .collect()
+    }
+
+    fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        self.globe.point(lonlat)
     }
 
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
@@ -594,13 +634,18 @@ impl Toy for Whales {
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
-        let mut u = RingsU { at: [[0.0; 4]; MAX_RINGS], look: [[0.0; 4]; MAX_RINGS], n: [0.0; 4], ear: [0.0; 4], whale: [[0.0; 4]; 2], misc: [0.0; 4] };
+        let mut u = RingsU { at: [[0.0; 4]; MAX_RINGS], look: [[0.0; 4]; MAX_RINGS], n: [0.0; 4], ears: [[0.0; 4]; MAX_EARS], whale: [[0.0; 4]; 2], misc: [0.0; 4] };
         for i in 0..2 {
             let w = self.singers[i].route.at(self.day);
             u.whale[i] = [w[0] as f32, w[1] as f32, w[2] as f32, 0.0];
         }
-        if let Some(ear) = self.ear.as_ref().filter(|e| !e.land) {
-            u.ear = [ear.at[0] as f32, ear.at[1] as f32, ear.at[2] as f32, ear.strength(self.t) as f32];
+        // the last four on the water (one coming up besides four down is the fifth: the oldest is left out)
+        let n = self.ears.len();
+        for (slot, j) in (n.saturating_sub(MAX_EARS)..n).enumerate() {
+            let ear = &self.ears[j];
+            let heard = j + 1 == n && ear.lift.is_none();
+            let k = ear.strength(self.t) * if heard { 1.0 } else { 0.6 };
+            u.ears[slot] = [ear.at[0] as f32, ear.at[1] as f32, ear.at[2] as f32, k as f32];
         }
         u.misc[0] = (22.0 * self.globe.reading() * self.size_k() / self.globe.disc().r) as f32;
         let disc_r = self.globe.disc().r as f32;
@@ -679,7 +724,8 @@ impl Whales {
             Some((i, _)) => {
                 self.mode = Mode::Follow(i);
                 self.follow_zoom = 11.0;
-                self.ear = None;
+                self.lift_ears();
+                self.silence = None;
                 ctx.haptic();
                 // it answers: a ring at once, whatever the song is doing
                 let s = &mut self.singers[i];
@@ -693,15 +739,51 @@ impl Whales {
                 self.rings.push(Ring { at: [p[0] as f32, p[1] as f32, p[2] as f32], born: self.t, amp: 0.8, pitch, kind: i as u32, speed: speed as f32 });
             }
             None => {
-                // the water: a hydrophone there; the land: its silence
+                // the water: a hydrophone there (or, on one already down, listening there again);
+                // the land: its silence
                 let Some(place) = self.globe.unproject(at[0], at[1]) else { return };
                 let p = place.to_xyz();
-                let land = !self.sea.is_sea(p);
-                let open = [0, 1].map(|i| !land && self.sea.open(self.singers[i].route.at(self.day), p));
-                self.ear = Some(Ear { at: p, born: self.t, land, ping: 0.0, open });
+                let t = self.t;
+                if !self.sea.is_sea(p) {
+                    self.silence = Some(Ear { at: p, born: t, land: true, ping: 0.0, open: [false; 2], lift: None });
+                    ctx.haptic();
+                    return;
+                }
+                self.silence = None;
+                let reach = 26.0 * self.globe.reading();
+                let near = self.ears.iter().position(|e| {
+                    let ([x, y], f) = self.globe.project(LonLat::from_xyz(e.at));
+                    e.lift.is_none() && f > 0.0 && (x - at[0]).hypot(y - at[1]) < reach
+                });
+                match near {
+                    Some(j) => {
+                        let mut ear = self.ears.remove(j);
+                        // down again from now, at once
+                        ear.born = t - 0.25;
+                        self.ears.push(ear);
+                    }
+                    None => {
+                        let open = [0, 1].map(|i| self.sea.open(self.singers[i].route.at(self.day), p));
+                        self.ears.push(Ear { at: p, born: t, land: false, ping: 0.0, open, lift: None });
+                        let down = self.ears.iter().filter(|e| e.lift.is_none()).count();
+                        if down > MAX_EARS {
+                            if let Some(oldest) = self.ears.iter_mut().find(|e| e.lift.is_none()) {
+                                oldest.lift = Some(t);
+                            }
+                        }
+                    }
+                }
                 self.mix.moved.fetch_add(1, Ordering::Relaxed);
                 ctx.haptic();
             }
+        }
+    }
+
+    /// Every hydrophone comes up (a whale is followed: its song comes forward instead).
+    fn lift_ears(&mut self) {
+        let t = self.t;
+        for e in self.ears.iter_mut().filter(|e| e.lift.is_none()) {
+            e.lift = Some(t);
         }
     }
 }
