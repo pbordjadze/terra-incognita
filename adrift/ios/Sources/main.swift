@@ -80,6 +80,39 @@ final class AdriftView: UIView {
         let recording = adrift_recording(shell)
         if recording != wasRecording { wasRecording = recording; songFollows(recording) }
         if UIAccessibility.isVoiceOverRunning { refreshPanelElements(link.targetTimestamp) }
+        editor?.follow(day: adrift_day(shell))
+    }
+
+    // ---- the edit view (R23): a journey clip's days and speed set in a light viewer over the globe,
+    // then exported. Dragging a handle shows the lamps on that day; play runs the clip's days at its
+    // speed; Export makes the 60 fps master as set.
+
+    var editor: EditPanel?
+
+    func openEditor() {
+        guard let shell, editor == nil, !exporting else { return }
+        var born = 0.0, now = 0.0, from = 0.0, to = 0.0
+        guard adrift_journey_bounds(shell, 30, &born, &now, &from, &to), adrift_preview_begin(shell) else { return }
+        let panel = EditPanel(born: born, now: now, from: from, to: to, basePace: (to - from) / 30)
+        panel.onShow = { [weak self] day in if let s = self?.shell { adrift_preview_at(s, day) } }
+        panel.onPlay = { [weak self] a, b, pace in if let s = self?.shell { adrift_preview_play(s, a, b, pace) } }
+        panel.onClose = { [weak self] in self?.closeEditor() }
+        panel.onExport = { [weak self] a, b, secs in
+            self?.closeEditor()
+            self?.exportTake(journey: secs, from: a, to: b)
+        }
+        let h: CGFloat = 176
+        panel.frame = CGRect(x: 10, y: bounds.maxY - h - max(safeAreaInsets.bottom, 10), width: bounds.width - 20, height: h)
+        panel.autoresizingMask = [.flexibleWidth, .flexibleTopMargin]
+        addSubview(panel)
+        editor = panel
+        adrift_preview_at(shell, from)
+    }
+
+    func closeEditor() {
+        editor?.removeFromSuperview()
+        editor = nil
+        if let shell { adrift_preview_end(shell) }
     }
 
     // ---- the song (R12): an audio file opened into Adrift (from Files, or another app's share sheet)
@@ -232,7 +265,7 @@ final class AdriftView: UIView {
         let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
         let lamps = picked == 1 ? "this lamp" : "these \(picked) lamps"
         if picked > 0 {
-            sheet.addAction(UIAlertAction(title: "A clip of \(lamps)' journey", style: .default) { [weak self] _ in self?.journeyLengths() })
+            sheet.addAction(UIAlertAction(title: "A clip of \(lamps)' journey", style: .default) { [weak self] _ in self?.openEditor() })
         }
         if takes > 0 {
             sheet.addAction(UIAlertAction(title: "The last take again", style: .default) { [weak self] _ in self?.exportTake() })
@@ -293,10 +326,10 @@ final class AdriftView: UIView {
     }
 
     /// Exports the newest take, or (R13) a journey clip of the picked lamps `journey` seconds long.
-    func exportTake(journey: Double? = nil) {
+    func exportTake(journey: Double? = nil, from: Double = .nan, to: Double = .nan) {
         guard let shell, !exporting else { return }
         var w: UInt32 = 0, h: UInt32 = 0
-        let frames = journey.map { adrift_journey_begin(shell, $0, Self.exportFps, &w, &h) } ?? adrift_export_begin(shell, Self.exportFps, &w, &h)
+        let frames = journey.map { adrift_journey_begin_edit(shell, $0, from, to, .nan, Self.exportFps, &w, &h) } ?? adrift_export_begin(shell, Self.exportFps, &w, &h)
         guard frames > 0 else { return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Adrift-\(Int(Date().timeIntervalSince1970)).mp4")
         try? FileManager.default.removeItem(at: url)
@@ -444,4 +477,145 @@ final class PanelElement: UIAccessibilityElement {
         view.tap(at: CGPoint(x: f.midX, y: f.midY))
         return true
     }
+}
+
+
+/// The edit view's panel (R23): the lamps' days as a line, the clip's first and last days as two
+/// handles on it, its speed, play, Export and close. The length follows from the days and the speed.
+final class EditPanel: UIVisualEffectView {
+    let born: Double, now: Double, basePace: Double
+    var from: Double, to: Double
+    let lo: Double, hi: Double
+    var speed = 1.0
+    var onShow: ((Double) -> Void)?
+    var onPlay: ((Double, Double, Double) -> Void)?
+    var onExport: ((Double, Double, Double) -> Void)?
+    var onClose: (() -> Void)?
+
+    let track = UIView(), span = UIView(), head = UIView()
+    let startKnob = UIView(), endKnob = UIView(), nowTick = UIView()
+    let words = UILabel()
+    let speeds = UISegmentedControl(items: ["½×", "1×", "2×", "4×"])
+    let play = UIButton(type: .system), export = UIButton(type: .system), close = UIButton(type: .system)
+
+    init(born: Double, now: Double, from: Double, to: Double, basePace: Double) {
+        self.born = born; self.now = now; self.from = from; self.to = to
+        self.basePace = max(basePace, 0.01)
+        lo = born
+        hi = max(max(now, to) + max(30, (now - born) * 0.25), from + 1)
+        super.init(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+        layer.cornerRadius = 22
+        clipsToBounds = true
+        let ink = UIColor.label
+        track.backgroundColor = ink.withAlphaComponent(0.18)
+        span.backgroundColor = UIColor(red: 0.96, green: 0.65, blue: 0.17, alpha: 0.9)
+        nowTick.backgroundColor = ink.withAlphaComponent(0.45)
+        head.backgroundColor = ink
+        head.isHidden = true
+        for k in [startKnob, endKnob] {
+            k.backgroundColor = .white
+            k.layer.cornerRadius = 14
+            k.layer.shadowColor = UIColor.black.cgColor
+            k.layer.shadowOpacity = 0.25
+            k.layer.shadowRadius = 3
+            k.layer.shadowOffset = CGSize(width: 0, height: 1)
+            k.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(drag(_:))))
+        }
+        words.font = .monospacedDigitSystemFont(ofSize: 15, weight: .medium)
+        words.textColor = ink
+        words.textAlignment = .center
+        speeds.selectedSegmentIndex = 1
+        speeds.addTarget(self, action: #selector(speedChanged), for: .valueChanged)
+        play.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        play.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
+        close.setImage(UIImage(systemName: "xmark"), for: .normal)
+        close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        export.setTitle("Export", for: .normal)
+        export.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
+        export.addTarget(self, action: #selector(exportTapped), for: .touchUpInside)
+        for v in [track, nowTick, span, head, startKnob, endKnob, words, speeds, play, export, close] { contentView.addSubview(v) }
+        startKnob.accessibilityLabel = "Start"
+        endKnob.accessibilityLabel = "End"
+        refresh()
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    var pace: Double { basePace * speed }
+    var seconds: Double { min(max((to - from) / pace, 3), 600) }
+
+    func x(_ day: Double) -> CGFloat {
+        let w = bounds.width - 56
+        return 28 + CGFloat((day - lo) / (hi - lo)) * w
+    }
+    func day(_ x: CGFloat) -> Double {
+        let w = max(bounds.width - 56, 1)
+        return lo + Double((x - 28) / w) * (hi - lo)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let w = bounds.width
+        close.frame = CGRect(x: 8, y: 8, width: 40, height: 40)
+        play.frame = CGRect(x: w / 2 - 20, y: 8, width: 40, height: 40)
+        export.frame = CGRect(x: w - 96, y: 8, width: 88, height: 40)
+        words.frame = CGRect(x: 16, y: 54, width: w - 32, height: 22)
+        let ty: CGFloat = 104
+        track.frame = CGRect(x: 28, y: ty - 1.5, width: w - 56, height: 3)
+        speeds.frame = CGRect(x: 28, y: 132, width: w - 56, height: 32)
+        refresh()
+    }
+
+    func refresh() {
+        let ty: CGFloat = 104
+        let a = x(from), b = x(to)
+        span.frame = CGRect(x: a, y: ty - 2.5, width: max(b - a, 1), height: 5)
+        startKnob.frame = CGRect(x: a - 14, y: ty - 14, width: 28, height: 28)
+        endKnob.frame = CGRect(x: b - 14, y: ty - 14, width: 28, height: 28)
+        nowTick.frame = CGRect(x: x(now) - 1, y: ty - 10, width: 2, height: 20)
+        let s = Int(seconds.rounded())
+        words.text = "\(Self.date(from)) – \(Self.date(to))   \(s / 60):" + String(format: "%02d", s % 60)
+        startKnob.accessibilityValue = Self.date(from)
+        endKnob.accessibilityValue = Self.date(to)
+    }
+
+    /// A day since 2000-01-01 as the clip's date (day and month: the sea is a typical year's).
+    static func date(_ day: Double) -> String {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("d MMM")
+        f.timeZone = TimeZone(identifier: "UTC")
+        return f.string(from: Date(timeIntervalSince1970: 946_684_800 + day * 86_400))
+    }
+
+    @objc func drag(_ g: UIPanGestureRecognizer) {
+        let d = day(g.location(in: self).x)
+        if g.view === startKnob {
+            from = min(max(d, lo), to - 1)
+            onShow?(from)
+        } else {
+            to = max(min(d, hi), from + 1)
+            onShow?(to)
+        }
+        head.isHidden = true
+        refresh()
+    }
+
+    @objc func speedChanged() {
+        speed = [0.5, 1, 2, 4][speeds.selectedSegmentIndex]
+        refresh()
+    }
+
+    @objc func playTapped() {
+        head.isHidden = false
+        onPlay?(from, to, pace)
+    }
+
+    /// The playhead follows the app's date while a preview plays.
+    func follow(day: Double) {
+        guard !head.isHidden else { return }
+        head.frame = CGRect(x: x(day) - 1, y: 104 - 12, width: 2, height: 24)
+        if day >= to - 1e-6 { head.isHidden = true }
+    }
+
+    @objc func exportTapped() { onExport?(from, to, seconds) }
+    @objc func closeTapped() { onClose?() }
 }

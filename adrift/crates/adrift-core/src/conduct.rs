@@ -560,6 +560,29 @@ mod tests {
         assert!((a - 154.0).abs() < 1.0, "begins when the lamps were all out: {a}");
     }
 
+    /// R23, the edit view's preview: it shows the lamps at a day, plays to a day and stops there, and
+    /// closing it leaves the live state as it was.
+    #[test]
+    fn the_edit_views_preview_shows_plays_and_puts_back() {
+        let Some(mut app) = app() else { return };
+        let t = run(&mut app, 0.0, 0.5, |_| {});
+        app.command(Intent::Choose { float: 1 });
+        let (born, now, from, to) = app.journey_bounds(30.0).expect("bounds");
+        assert!(born <= from && from < to && (now - app.clock.day).abs() < 1e-9, "{born} {now} {from} {to}");
+        let (day0, cam0, chosen0) = (app.clock.day, app.camera.camera, app.chosen.clone());
+        assert!(app.preview_begin());
+        app.preview_at(from);
+        assert_eq!(app.clock.day, from);
+        app.preview_play(from, from + 3.0, 6.0);
+        let t = run(&mut app, t, t + 1.5, |_| {});
+        assert!((app.clock.day - (from + 3.0)).abs() < 1e-9 && !app.clock.running, "stopped on its last day: {}", app.clock.day);
+        app.preview_end();
+        let _ = t;
+        assert_eq!((app.clock.day, app.chosen.clone()), (day0, chosen0));
+        assert_eq!(app.camera.camera, cam0);
+        assert!(!app.previewing());
+    }
+
     #[test]
     fn a_kept_lamp_survives_a_clear_and_is_picked() {
         // R13: a lamp kept for good stays through a clear-all (and its undo and redo), and is what a
