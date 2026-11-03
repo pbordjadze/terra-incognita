@@ -14,7 +14,7 @@ name: Toys
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
-    paths: ['toys/**', 'tools/toys/**', '.github/workflows/toys.yml']
+    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml']
   workflow_dispatch:
     inputs:
       toy:

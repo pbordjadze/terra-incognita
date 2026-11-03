@@ -29,7 +29,7 @@ on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore']
     # a web pack alone needs no native build: packs.yml (Linux) validates and publishes it
-    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml', 'adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'toys/**', 'tools/toys/**', '.github/workflows/toys.yml']
+    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml', 'adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'toys/**', 'tools/toys/**', '.github/workflows/toys.yml', 'tools/kit/**', 'docs/kit.md']
   workflow_dispatch:
     inputs:
       device:

@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOYS = sorted(p.parent.name for p in (ROOT / 'toys').glob('*/toy.json'))
-SHARED = ('toys/crates/', 'toys/ios/', 'toys/Cargo.', 'tools/toys/', '.github/workflows/toys.yml')
+SHARED = ('toys/crates/', 'toys/ios/', 'toys/Cargo.', 'tools/toys/', 'tools/kit/', '.github/workflows/toys.yml')
 
 event, ref, before, sha, message = sys.argv[1:6]
 named = []
