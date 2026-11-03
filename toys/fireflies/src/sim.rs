@@ -320,7 +320,7 @@ impl Swarm {
                 let t = self.t;
                 self.flash(i, t);
             } else {
-                let (r, t) = (0.7 + 0.29 * rand(&mut self.rng), self.t);
+                let (r, t) = (0.82 + 0.17 * rand(&mut self.rng), self.t);
                 self.set(i, r, t);
             }
         }

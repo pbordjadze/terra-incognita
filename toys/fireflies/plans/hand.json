@@ -1,0 +1,76 @@
+{
+ "_": "The whole globe in the hand: a pinch out stops at the globe filling the screen's width (no smaller); a tap on Europe at whole-globe zoom (its answer: a ragged sparkle of the lights under the finger); a pinch in over Europe goes to Europe, not the empty sea between.",
+ "seconds": 12,
+ "fps": 30,
+ "night": true,
+ "events": [
+  {
+   "t": 0.5,
+   "pinch": [
+    [
+     146,
+     426
+    ],
+    [
+     246,
+     426
+    ]
+   ],
+   "to": 0.4,
+   "for": 0.6
+  },
+  {
+   "t": 3.0,
+   "tap": [
+    294,
+    345
+   ]
+  },
+  {
+   "t": 7.0,
+   "pinch": [
+    [
+     264,
+     345
+    ],
+    [
+     324,
+     345
+    ]
+   ],
+   "to": 2.5,
+   "for": 0.8
+  }
+ ],
+ "shots": [
+  {
+   "t": 1.4,
+   "name": "pinched-out"
+  },
+  {
+   "t": 2.9,
+   "name": "before-tap"
+  },
+  {
+   "t": 3.25,
+   "name": "tapped"
+  },
+  {
+   "t": 3.6,
+   "name": "tapped-later"
+  },
+  {
+   "t": 8.5,
+   "name": "pinched-into-europe"
+  },
+  {
+   "t": 12.0,
+   "name": "europe"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 12,
+  "every": 0.0667
+ }
+}

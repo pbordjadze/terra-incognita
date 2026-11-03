@@ -26,6 +26,8 @@ pub struct Fireflies {
     soft: bool,
     downs: std::collections::HashMap<u64, ([f64; 2], f64, f64)>,
     fingers_seen: usize,
+    /// Where each finger is now.
+    at: std::collections::HashMap<u64, [f64; 2]>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -58,6 +60,8 @@ impl Toy for Fireflies {
         )?;
         globe.night = 1.0;
         globe.camera = START;
+        // never smaller than the room: a pinch out stops at the whole globe filling the screen's width
+        globe.hand.min_zoom = 1.0;
         let seed = std::env::var("FIREFLIES_SEED")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -71,6 +75,7 @@ impl Toy for Fireflies {
             soft: ctx.reduce_motion,
             downs: Default::default(),
             fingers_seen: 0,
+            at: Default::default(),
         })
     }
 
@@ -79,7 +84,36 @@ impl Toy for Fireflies {
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
+        // two fingers: the kit's hand zooms about the screen's centre; here the place between the
+        // fingers stays between them, so a pinch goes toward what the fingers are on (and two fingers
+        // moving together carry the globe)
+        let mid = |at: &std::collections::HashMap<u64, [f64; 2]>| {
+            let v: Vec<[f64; 2]> = at.values().copied().collect();
+            (v.len() == 2).then(|| [(v[0][0] + v[1][0]) / 2.0, (v[0][1] + v[1][1]) / 2.0])
+        };
+        let before = if e.phase == Phase::Move && self.at.contains_key(&e.id) { mid(&self.at) } else { None };
+        let held = before.and_then(|m| self.globe.unproject(m[0], m[1]));
         self.globe.pointer(e);
+        match e.phase {
+            Phase::Down | Phase::Move => {
+                if e.phase == Phase::Down || self.at.contains_key(&e.id) {
+                    self.at.insert(e.id, [e.x, e.y]);
+                }
+            }
+            Phase::Up | Phase::Cancel => {
+                self.at.remove(&e.id);
+            }
+        }
+        if let (Some(place), Some(m)) = (held, mid(&self.at)) {
+            let (q, facing) = self.globe.project(place);
+            if facing > 0.0 {
+                let (dx, dy) = (m[0] - q[0], m[1] - q[1]);
+                let r = self.globe.disc().r;
+                if dx.hypot(dy) > 1e-6 {
+                    self.globe.camera = self.globe.camera.turned([dy, dx, 0.0], dx.hypot(dy) / r);
+                }
+            }
+        }
         match e.phase {
             Phase::Down => {
                 if self.downs.is_empty() {
