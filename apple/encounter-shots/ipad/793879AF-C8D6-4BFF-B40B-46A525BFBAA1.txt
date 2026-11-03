@@ -1,0 +1,18 @@
+Application, 0x11364e940, pid: 24956, label: 'Terra Incognita' <App element pid: 24956>
+  Window (Main), 0x11364e800, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4334881792.3>
+    Other, 0x11364dcc0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4384457216.4>
+      Other, 0x11364c8c0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4384933760.5>
+        Other, 0x11364f840, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4384084352.6>
+          Other, 0x11364d180, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4334879744.7>
+            Other, 0x11364e440, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 24956, elementOrHash.elementID: 4336405568.8>
+              Image, 0x1136b9a40, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 24956, elementOrHash.elementID: 4334796800.9>
+              StaticText, 0x1136bb700, {{24.0, 1239.0}, {216.5, 81.0}}, label: 'THE GLOBE, The whole world, Spin it, pinch it, tap a country.' <AX element pid: 24956, elementOrHash.elementID: 4336530112.321>
+                StaticText, 0x1136b9900, {{24.0, 1239.0}, {87.5, 15.0}}, label: 'THE GLOBE' <AX element pid: 24956, elementOrHash.elementID: 4336518016.322>
+                StaticText, 0x1136baa80, {{24.0, 1260.0}, {216.5, 34.5}}, label: 'The whole world' <AX element pid: 24956, elementOrHash.elementID: 4336521600.323>
+                StaticText, 0x1136ba580, {{24.0, 1300.5}, {204.5, 19.5}}, label: 'Spin it, pinch it, tap a country.' <AX element pid: 24956, elementOrHash.elementID: 4336527872.324>
+              Other, 0x1136bbd40, {{658.0, 8.0}, {202.0, 44.0}}, label: 'Active prototype: The Earth at night, and 2 more running' <AX element pid: 24956, elementOrHash.elementID: 4383564544.114>
+                StaticText, 0x1136b9680, {{658.0, 21.0}, {127.5, 18.0}}, identifier: 'activePrototype', label: 'The Earth at night' <AX element pid: 24956, elementOrHash.elementID: 4383562304.115>
+                StaticText, 0x1136b9cc0, {{791.5, 21.0}, {18.5, 18.0}}, identifier: 'otherPrototypes', label: 'and 2 more running' <AX element pid: 24956, elementOrHash.elementID: 4383534912.222>
+                Button, 0x1136b8b40, {{816.0, 8.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'End The Earth at night' <AX element pid: 24956, elementOrHash.elementID: 4383561856.116>
+              Switch, 0x1136bb980, {{870.0, 8.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 24956, elementOrHash.elementID: 4336154624.11>
+              Button, 0x1136bbc00, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 24956, elementOrHash.elementID: 4336403328.12>
