@@ -18,16 +18,17 @@ const W: u32 = 4096;
 const H: u32 = 2048;
 const GLOW: u32 = 4;
 /// The agents: enough for a fine network over every continent.
-const AGENTS: u32 = 1 << 17;
+const AGENTS: u32 = 1 << 16;
 /// The lit places an agent may bud again at (drawn by brightness).
 const SPAWNS: usize = 1 << 16;
 const MAX_FEEDS: usize = 32;
+const MAX_RIPPLES: usize = 8;
 /// A flake's box's half height in cells (sim.wgsl's REACH).
 const FEED_REACH: u32 = 96;
 /// Steps a second (the mold's speed: a step is about a cell).
 const RATE: f64 = 60.0;
 /// How much of the body's light a cell keeps a step (its easing in time).
-const BODY_EASE: f32 = 0.93;
+const BODY_EASE: f32 = 0.97;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -46,6 +47,8 @@ struct Params {
 struct Look {
     a: [f32; 4],
     ages: [[f32; 4]; MAX_FEEDS],
+    /// lon, lat (radians), seconds since, 1 on land (0 the sea)
+    ripples: [[f32; 4]; MAX_RIPPLES],
 }
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -53,6 +56,14 @@ struct Feed {
     lon: f64,
     lat: f64,
     at: f64,
+}
+
+#[derive(Clone, Copy)]
+struct Ripple {
+    lon: f64,
+    lat: f64,
+    at: f64,
+    land: bool,
 }
 
 struct Touch {
@@ -65,6 +76,7 @@ struct Touch {
 
 pub struct Mold {
     globe: Globe,
+    night: Night,
     params: wgpu::Buffer,
     look: wgpu::Buffer,
     agents_pipe: wgpu::ComputePipeline,
@@ -85,6 +97,12 @@ pub struct Mold {
     age: f64,
     feeds: Vec<Feed>,
     touch: Option<Touch>,
+    /// The taps' rings (on land and sea).
+    ripples: Vec<Ripple>,
+    /// When a finger last touched (the shell's seconds).
+    touched: f64,
+    /// Where the mold may go (ground.png's G), for a tap.
+    land: Vec<bool>,
     reduce_motion: bool,
 }
 
@@ -322,7 +340,9 @@ impl Toy for Mold {
             cache: None,
         });
 
+        let night = Night::new(gpu, &globe);
         Ok(Mold {
+            night,
             globe,
             params,
             look,
@@ -343,6 +363,9 @@ impl Toy for Mold {
             age: 0.0,
             feeds: Vec::new(),
             touch: None,
+            ripples: Vec::new(),
+            touched: f64::NEG_INFINITY,
+            land: ground.iter().map(|&g| g >= 0.0).collect(),
             reduce_motion: ctx.reduce_motion,
         })
     }
@@ -353,6 +376,7 @@ impl Toy for Mold {
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         self.globe.pointer(e);
+        self.touched = self.seconds;
         match e.phase {
             Phase::Down => {
                 // a second finger makes it a pinch, never a feed
@@ -369,7 +393,14 @@ impl Toy for Mold {
                 if let Some(t) = self.touch.take() {
                     if t.id == e.id && !t.moved && e.t - t.t < 0.5 {
                         if let Some(at) = self.globe.unproject(e.x, e.y) {
-                            self.feed(at);
+                            // on land a flake (the mold may reach it); on the sea only the ring
+                            if self.on_land(at) {
+                                self.feed(at);
+                            }
+                            self.ripples.push(Ripple { lon: at.lon, lat: at.lat, at: self.seconds, land: self.on_land(at) });
+                            if self.ripples.len() > MAX_RIPPLES {
+                                self.ripples.remove(0);
+                            }
                             ctx.haptic();
                         }
                     }
@@ -382,6 +413,15 @@ impl Toy for Mold {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.globe.update(&ctx.gpu, ctx.assets.as_ref(), t, dt);
         self.seconds = t;
+        // left alone a while (a fling spent), the globe settles north up over the mold's latitudes,
+        // never resting on the ice or the empty southern ocean
+        if self.globe.hand.fingers() == 0 && t - self.touched > 2.5 {
+            let k = 1.0 - 0.5f64.powf(dt / 1.2);
+            let cam = &mut self.globe.camera;
+            let lat = cam.lat.clamp(8.0, 52.0);
+            cam.lat += (lat - cam.lat) * k;
+            cam.roll -= cam.roll * k;
+        }
         // the mold wakes slowly: the mist condenses over its first seconds, then it lives at its pace
         self.age += dt;
         let k = (self.age / 7.0).clamp(0.0, 1.0);
@@ -426,6 +466,7 @@ impl Toy for Mold {
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
+        self.night.follow(&ctx.gpu, &self.globe);
         ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::bytes_of(&self.look()));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
@@ -441,7 +482,7 @@ impl Toy for Mold {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            self.globe.draw(&mut rp);
+            self.night.draw(&mut rp, &self.globe);
             rp.set_pipeline(&self.draw_pipe);
             rp.set_bind_group(0, self.globe.view_bind(), &[]);
             rp.set_bind_group(1, &self.draw_binds[self.parity], &[]);
@@ -486,7 +527,17 @@ impl Mold {
         for (i, f) in self.feeds.iter().rev().take(MAX_FEEDS).enumerate() {
             ages[i][0] = (self.seconds - f.at) as f32;
         }
-        Look { a: [1.0, 0.13, self.streak_share(), H as f32], ages }
+        let mut ripples = [[0.0f32, 0.0, 99.0, 0.0]; MAX_RIPPLES];
+        for (i, r) in self.ripples.iter().enumerate() {
+            ripples[i] = [r.lon.to_radians() as f32, r.lat.to_radians() as f32, (self.seconds - r.at) as f32, if r.land { 1.0 } else { 0.0 }];
+        }
+        Look { a: [1.0, 0.1, self.streak_share(), H as f32], ages, ripples }
+    }
+
+    fn on_land(&self, at: LonLat) -> bool {
+        let x = (((at.lon / 360.0 + 0.5) * W as f64).floor() as i64).rem_euclid(W as i64) as usize;
+        let y = (((0.5 - at.lat / 180.0) * H as f64).floor() as i64).clamp(0, H as i64 - 1) as usize;
+        self.land[y * W as usize + x]
     }
 
     fn feed(&mut self, at: LonLat) {
@@ -494,6 +545,65 @@ impl Mold {
         if self.feeds.len() > MAX_FEEDS {
             self.feeds.remove(0);
         }
+    }
+}
+
+/// Mold's own night ground (night.wgsl): the kit's ground pass with a darker night, its textures the
+/// globe's own.
+struct Night {
+    pipeline: wgpu::RenderPipeline,
+    layout: wgpu::BindGroupLayout,
+    bind: wgpu::BindGroup,
+    months: (u32, u32),
+}
+
+impl Night {
+    fn new(gpu: &toy_kit::Gpu, globe: &Globe) -> Night {
+        use toy_kit::globe::ground::{sampler, tex2d, tex_array};
+        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("mold night"),
+            entries: &[tex2d(0), tex2d(1), tex2d(2), tex_array(3), tex2d(4), tex2d(5), sampler(6), tex2d(7)],
+        });
+        let shader = gpu.shader("mold night", &toy_kit::globe::wgsl(include_str!("night.wgsl")));
+        let pipeline = gpu.fullscreen_pipeline("mold night", &shader, &[&globe.view_layout, &layout], None);
+        let bind = Self::bind(gpu, &layout, globe);
+        Night { pipeline, layout, bind, months: globe.textures.land_months }
+    }
+
+    fn bind(gpu: &toy_kit::Gpu, layout: &wgpu::BindGroupLayout, globe: &Globe) -> wgpu::BindGroup {
+        fn tv(t: &toy_kit::gpu::Texture) -> wgpu::BindingResource<'_> {
+            wgpu::BindingResource::TextureView(&t.view)
+        }
+        let tx = &globe.textures;
+        gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mold night"),
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: tv(&tx.geo) },
+                wgpu::BindGroupEntry { binding: 1, resource: tv(&tx.terrain) },
+                wgpu::BindGroupEntry { binding: 2, resource: tv(&tx.floor) },
+                wgpu::BindGroupEntry { binding: 3, resource: tv(&tx.ice) },
+                wgpu::BindGroupEntry { binding: 4, resource: tv(&tx.land_a) },
+                wgpu::BindGroupEntry { binding: 5, resource: tv(&tx.land_b) },
+                wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x) },
+                wgpu::BindGroupEntry { binding: 7, resource: tv(&tx.lights) },
+            ],
+        })
+    }
+
+    /// Keeps the bind group on the globe's land textures (they change when its months do).
+    fn follow(&mut self, gpu: &toy_kit::Gpu, globe: &Globe) {
+        if self.months != globe.textures.land_months {
+            self.bind = Self::bind(gpu, &self.layout, globe);
+            self.months = globe.textures.land_months;
+        }
+    }
+
+    fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, globe: &'a Globe) {
+        rp.set_pipeline(&self.pipeline);
+        rp.set_bind_group(0, globe.view_bind(), &[]);
+        rp.set_bind_group(1, &self.bind, &[]);
+        rp.draw(0..3, 0..1);
     }
 }
 

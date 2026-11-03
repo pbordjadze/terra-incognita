@@ -16,7 +16,7 @@ struct Params {
 @group(1) @binding(2) var<storage, read> glow: array<f32>;
 // a: x how much shows, y the gain, z the streaks' share (by zoom), w the grid's rows; ages: x each
 // flake's seconds since it was laid
-struct Look { a: vec4f, ages: array<vec4f, 32> };
+struct Look { a: vec4f, ages: array<vec4f, 32>, ripples: array<vec4f, 8> };   // ripples: lon, lat, seconds since, 1 on land
 @group(1) @binding(3) var<uniform> look: Look;
 
 const MOLD = vec3f(0.55, 1.0, 0.72);    // foxfire
@@ -83,10 +83,10 @@ fn smooth_body(uv: vec2f, W: i32, H: i32) -> f32 {
     let sv = smooth_body(G.uv, W, H);
     let fw = max(fwidth(sv), 1e-4);
     if (share > 0.0) {
-        let inside = (sv - 3.2) / fw;                     // pixels inside the tube's edge
+        let inside = (sv - 4.6) / fw;                     // pixels inside the tube's edge
         let edge = clamp(inside + 0.5, 0.0, 1.0);
         let rim = exp(-max(inside, 0.0) / (1.2 * U.frame.z)) * edge;   // its membrane, a bright line
-        let heart = smoothstep(5.5, 12.0, sv);
+        let heart = smoothstep(8.0, 21.0, sv);
         let tube = MOLD * (0.10 + 0.28 * heart) * edge + MOLD * 0.42 * rim + TUBE * 0.18 * heart * heart * edge;
         col = col * (1.0 - 0.6 * share) + tube * share;
     }
@@ -104,11 +104,23 @@ fn smooth_body(uv: vec2f, W: i32, H: i32) -> f32 {
         let r = 2.6 * U.frame.z * U.frame.w;
         flakes += OAT * (0.45 * (1.0 - smoothstep(r * 0.4, r, px)) + 0.12 * exp(-px / (2.5 * r)));
         fedb += 1.0 * exp(-(ang / (PI / look.a.w)) / 14.0) * smoothstep(0.0, 3.0, age);
-        let ring = age * 70.0 * U.frame.z * U.frame.w;      // 70 reading points a second
-        let fade = (1.0 - smoothstep(0.0, 1.4, age));
-        flakes += OAT * 0.22 * fade * exp(-sq((px - ring) / (2.0 * U.frame.z)));
     }
     col = col * fedb + flakes;
+    // the taps' rings: one goes out from each, quick then slowing, a bright line with a soft glow
+    // behind it, oat-pale on land and a cool pale blue on the sea
+    for (var i = 0u; i < 8u; i++) {
+        let rp = look.ripples[i];
+        if (rp.z > 2.0 || rp.z < 0.0) { continue; }
+        let w = vec3f(cos(rp.y) * sin(rp.x), sin(rp.y), cos(rp.y) * cos(rp.x));
+        let px = acos(clamp(dot(w, G.g), -1.0, 1.0)) * U.disc.z * U.frame.z;
+        let pt = U.frame.z * U.frame.w;
+        let ring = (1.0 - exp(-rp.z * 2.2)) * 60.0 * pt;
+        let fade = 1.0 - smoothstep(0.1, 2.0, rp.z);
+        let line = exp(-sq((px - ring) / (0.9 * U.frame.z)));
+        let wake = exp(-max(ring - px, 0.0) / (10.0 * pt)) * step(px, ring) * 0.25;
+        let tint = mix(vec3f(0.62, 0.80, 1.0), OAT, rp.w);
+        col += tint * (0.75 * line + wake) * fade;
+    }
     // the shuttle streaming of a living Physarum: its body pulses, slow waves along the tubes
     let tt = U.tone.z;
     let wave = 0.5 + 0.5 * sin(tt * 1.6 - 9.0 * vnoise3(G.g * 40.0) - 5.0 * vnoise3(G.g * 160.0 + 3.0));
