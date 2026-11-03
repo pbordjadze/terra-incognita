@@ -11,7 +11,7 @@ a new web shell must do the same, see `WEB_SHELL` below).
     python3 tools/kit/artifact.py <web-dir> [--assets assets]
 
 Writes, in <web-dir>: the wrapped files, `<assets>/index.json`, and `artifact.json`:
-    {"file_path": "<web-dir>/index.html", "batches": [{published path: source path}, ...]}
+    {"file_path": "<web-dir>/index.html", "batches": [{published path: source path or {from, contentType}}, ...]}
 Each batch fits one publish; publish the first with `file_path` and `files`, the rest to the same url.
 Fails (exit 1) on a file too large for the host even wrapped, or without index.html.
 """
@@ -25,6 +25,7 @@ SERVED = {'.html', '.js', '.mjs', '.css', '.json', '.wasm', '.png', '.jpg', '.jp
           '.ico', '.txt', '.md', '.csv', '.wav', '.mp3', '.ogg', '.mp4', '.webm', '.woff', '.woff2', '.ttf', '.otf',
           '.pdf'}
 TEXT = {'.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.md', '.csv'}
+EXPLICIT = {'.wasm': 'application/wasm', '.mjs': 'text/javascript', '.wav': 'audio/wav', '.woff2': 'font/woff2'}
 MB = 1 << 20
 LIMIT_TEXT, LIMIT_BINARY, BATCH_FILES, BATCH_BYTES = 16 * MB, 15 * MB, 255, 64 * MB
 
@@ -92,7 +93,8 @@ def main():
         if cur and (len(cur) >= BATCH_FILES or cur_bytes + size > BATCH_BYTES):
             batches.append(cur)
             cur, cur_bytes = {}, 0
-        cur[rel] = src
+        # a type the host may not infer from the extension is stated: {from, contentType}
+        cur[rel] = {'from': src, 'contentType': EXPLICIT[os.path.splitext(rel)[1].lower()]} if os.path.splitext(rel)[1].lower() in EXPLICIT else src
         cur_bytes += size
     if cur:
         batches.append(cur)
