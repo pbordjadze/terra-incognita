@@ -102,8 +102,10 @@ fn smooth_body(uv: vec2f, W: i32, H: i32) -> f32 {
         let ang = acos(clamp(dot(w, G.g), -1.0, 1.0));
         let px = ang * U.disc.z * U.frame.z;                 // pixels from the flake
         let r = 2.6 * U.frame.z * U.frame.w;
-        flakes += OAT * (0.45 * (1.0 - smoothstep(r * 0.4, r, px)) + 0.12 * exp(-px / (2.5 * r)));
-        fedb += 1.0 * exp(-(ang / (PI / look.a.w)) / 14.0) * smoothstep(0.0, 3.0, age);
+        // (just laid, it flares, so each feed reads as its own even in the thick of the mold)
+        let flare = 1.0 + 1.6 * exp(-age / 1.5);
+        flakes += OAT * flare * (0.7 * (1.0 - smoothstep(r * 0.4, r, px)) + 0.16 * exp(-px / (2.5 * r)));
+        fedb += 1.4 * exp(-(ang / (PI / look.a.w)) / 14.0) * smoothstep(0.0, 3.0, age);
     }
     col = col * fedb + flakes;
     // the taps' rings: one goes out from each, quick then slowing, a bright line with a soft glow

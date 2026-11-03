@@ -86,6 +86,7 @@ fn fed(w: vec3f) -> f32 {
     let cover = 1.0 - smoothstep(in.half - 0.5, in.half + 0.5, abs(in.across));
     // brighter at the head, where the agent is: a streak of light running the way it goes
     let run = 0.45 + 0.55 * smoothstep(0.0, 1.0, in.along);
-    let a = cover * run * in.shade * look.a.z * look.a.x * 0.15;
+    // (they give way again close in, where single streaks would read as loose hairs)
+    let a = cover * run * in.shade * look.a.z * look.a.x * 0.15 * (1.0 - smoothstep(4.0, 7.0, U.disc.w));
     return vec4f(STREAK * a, 0.0);
 }
