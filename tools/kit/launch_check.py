@@ -36,7 +36,9 @@ from pathlib import Path
 # Overflow question 5887248, "iOS app max memory budget": a test app allocating until killed) gives
 # about 1.8 GB for the XR and 2.0 GB for the XS. The budget leaves room for what the Linux check cannot
 # see (the phone's drawables, UIKit and the audio engine, Metal's compiled pipelines) and is an
-# estimate, not Apple's figure: 1400 MB.
+# estimate, not Apple's figure: 1400 MB. (Nov 3, 2026, the four toys peaked on this check at 206-650 MB;
+# Mold before its memory cut, 6aeb591's parent, at 797 MB with today's kit, 1058 MB with the kit of then:
+# under the budget, so that crash, if it was memory, is not one this budget can claim to catch.)
 DEFAULT_BUDGET_MB = 1400
 LAUNCH_PLAN = {"seconds": 2, "fps": 10, "shots": [2.0]}
 
