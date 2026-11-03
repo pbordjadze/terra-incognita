@@ -1,42 +1,84 @@
 {
-  "seconds": 6,
-  "fps": 30,
-  "night": false,
-  "events": [
-    {
-      "t": 1.0,
-      "drag": [
-        [
-          200,
-          500
-        ],
-        [
-          320,
-          470
-        ]
-      ],
-      "for": 0.5
-    },
-    {
-      "t": 3.0,
-      "tap": [
-        196,
-        426
-      ]
-    }
-  ],
-  "shots": [
-    {
-      "t": 0.5,
-      "name": "start"
-    },
-    {
-      "t": 2.0,
-      "name": "turned"
-    },
-    {
-      "t": 6.0,
-      "name": "end"
-    }
-  ]
+ "_": "First sight: the flock wheeling over Ham Wall at the dusk of a fixed day; then a finger: the eye drops in behind your bird, which leans toward the finger (right, then hard left: out of the flock); let go, and the eye rises back to the watcher as the flock takes you home.",
+ "restore": "{\"day\": 9803, \"minutes\": -16, \"fixed\": true}",
+ "seconds": 20,
+ "fps": 30,
+ "events": [
+  {
+   "t": 4.0,
+   "down": [
+    196,
+    430
+   ],
+   "id": 1
+  },
+  {
+   "t": 5.5,
+   "move": [
+    230,
+    420
+   ],
+   "id": 1
+  },
+  {
+   "t": 7.0,
+   "move": [
+    330,
+    380
+   ],
+   "id": 1
+  },
+  {
+   "t": 9.5,
+   "move": [
+    60,
+    300
+   ],
+   "id": 1
+  },
+  {
+   "t": 12.0,
+   "up": [
+    60,
+    300
+   ],
+   "id": 1
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.1,
+   "name": "first"
+  },
+  {
+   "t": 3.5,
+   "name": "wheeling"
+  },
+  {
+   "t": 5.4,
+   "name": "in"
+  },
+  {
+   "t": 8.8,
+   "name": "lean"
+  },
+  {
+   "t": 11.5,
+   "name": "slip"
+  },
+  {
+   "t": 14,
+   "name": "rising"
+  },
+  {
+   "t": 20,
+   "name": "home"
+  }
+ ],
+ "audio": true,
+ "film": {
+  "from": 0,
+  "to": 20,
+  "every": 0.1
+ }
 }

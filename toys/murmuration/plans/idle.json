@@ -1,0 +1,8 @@
+{
+  "_": "Nothing touched: twenty seconds of the flock wheeling over Ham Wall at dusk, from where the eye rests.",
+  "restore": "{\"day\": 9803, \"minutes\": -12, \"fixed\": true}",
+  "seconds": 20,
+  "fps": 30,
+  "shots": [{ "t": 0.1, "name": "first" }, { "t": 10, "name": "ten" }, { "t": 20, "name": "twenty" }],
+  "film": { "from": 0, "to": 20, "every": 0.2 }
+}

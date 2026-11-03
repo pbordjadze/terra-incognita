@@ -1,52 +1,647 @@
-//! Murmuration (a working title): a flock on simple rules over the real sky, and you one of them
+//! Murmuration (a working title; painting-company row 202): starlings wheeling over a real reed bed at
+//! the real dusk, on the rules measured in real murmurations, and you are one of them.
 //!
-//! The starter the seam left: the real globe by day, turned by a finger. The toy's session replaces
-//! all of it (toys/README.md says how a toy is built, checked and shipped).
+//! The place is Ham Wall on the Somerset Levels, where starlings gather in winter; the sky is today's
+//! dusk there, the sun where it really is (sun.rs), its light scattered by the air (sky.rs). The flock
+//! is flock.rs. A finger is where you want to go: touch, and the eye drops in behind your bird; it
+//! leans toward the finger, its neighbours heed it, and the flock bends round you. Lean hard and you
+//! slip out; let go and the seven nearest still pull you home, and the flock heals.
 
-use toy_kit::{Ctx, Globe, PointerEvent, Toy};
+pub mod flock;
+pub mod sky;
+pub mod sun;
+
+use flock::{addv, cross, dot, length, norm, scale, sub, Flock, V3};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
+use toy_kit::{Ctx, Phase, PointerEvent, Synth, Toy};
+
+/// Ham Wall RSPB reserve, Somerset: a winter roost of starlings in the reed beds.
+pub const PLACE: (f64, f64) = (-2.787, 51.153);
+/// The dusk the toy opens on, minutes from sunset, and where it rests.
+const DUSK_FROM: f64 = -24.0;
+const DUSK_TO: f64 = 28.0;
+/// Minutes of dusk a minute.
+const DUSK_RATE: f64 = 1.5;
+const BIRDS: usize = 4000;
+const MSAA: u32 = 4;
+/// How far from the roost the watcher stands, metres.
+const WATCHER: f32 = 125.0;
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct SkyU {
+    right: [f32; 4],
+    up: [f32; 4],
+    fwd: [f32; 4],
+    sun: [f32; 4],
+    sun_col: [f32; 4],
+    ground: [f32; 4],
+    horizon: [f32; 4],
+    horizon2: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct BirdU {
+    right: [f32; 4],
+    up: [f32; 4],
+    fwd: [f32; 4],
+    eye: [f32; 4],
+    ink: [f32; 4],
+    haze: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct Inst {
+    pos: [f32; 4],
+    fwd: [f32; 4],
+    lift: [f32; 4],
+}
+
+/// The eye: where it is and its frame.
+#[derive(Clone, Copy)]
+struct Eye {
+    pos: V3,
+    right: V3,
+    up: V3,
+    fwd: V3,
+    focal: f32,
+}
+
+/// What the sound hears, from the simulation (levels as f32 bits).
+#[derive(Default)]
+struct Ears {
+    rush: AtomicU32,
+    murmur: AtomicU32,
+    wings: AtomicU32,
+    rate: AtomicU32,
+}
+
+fn put(a: &AtomicU32, v: f32) {
+    a.store(v.to_bits(), Ordering::Relaxed)
+}
+fn get(a: &AtomicU32) -> f32 {
+    f32::from_bits(a.load(Ordering::Relaxed))
+}
 
 pub struct Murmuration {
-    globe: Globe,
+    flock: Flock,
+    sky: sky::Sky,
+    // The dusk: the UTC day it is for, minutes from sunset, how fast it runs.
+    day: f64,
+    minutes: f64,
+    rate: f64,
+    sun_el: f64,
+    sun_az: f64,
+    // The eye: the heading it follows (smoothed), how far in it has dropped (0 far .. 1 behind you).
+    heading: V3,
+    dir3: V3,
+    look: V3,
+    near: f32,
+    near_to: f32,
+    release_t: f64,
+    finger: Option<(u64, [f64; 2])>,
+    eye: Eye,
+    t: f64,
+    reduce_motion: bool,
+    ears: Arc<Ears>,
+    // GPU
+    sky_pipe: wgpu::RenderPipeline,
+    sky_bind: wgpu::BindGroup,
+    sky_buf: wgpu::Buffer,
+    sky_tex: wgpu::Texture,
+    bird_pipe: wgpu::RenderPipeline,
+    bird_bind: wgpu::BindGroup,
+    bird_buf: wgpu::Buffer,
+    inst: wgpu::Buffer,
+    msaa: wgpu::TextureView,
+    exposure: f32,
+}
+
+/// The tone curve the sky's shader uses, for colours worked out here (linear in, display out).
+fn tone(c: [f32; 3], exposure: f32) -> [f32; 3] {
+    let x = [c[0] * exposure * 0.84, c[1] * exposure, c[2] * exposure * 1.3];
+    let l = 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2];
+    let lt = l * (1.0 + l / 9.0) / (1.0 + l);
+    let k = lt / l.max(1e-6);
+    [(x[0] * k).min(1.0).powf(1.0 / 2.2), (x[1] * k).min(1.0).powf(1.0 / 2.2), (x[2] * k).min(1.0).powf(1.0 / 2.2)]
+}
+
+fn msaa_view(ctx: &Ctx) -> wgpu::TextureView {
+    ctx.gpu
+        .device
+        .create_texture(&wgpu::TextureDescriptor {
+            label: Some("murmuration msaa"),
+            size: wgpu::Extent3d { width: ctx.width, height: ctx.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: MSAA,
+            dimension: wgpu::TextureDimension::D2,
+            format: ctx.gpu.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        })
+        .create_view(&Default::default())
+}
+
+impl Murmuration {
+    fn sun_at(&self, minutes: f64) -> (f64, f64) {
+        let set = sun::sunset(PLACE.0, PLACE.1, self.day + 0.5);
+        sun::position(PLACE.0, PLACE.1, set + minutes / 1440.0)
+    }
+
+    /// The eye this frame, from the flock, your bird and how far in it has dropped.
+    fn place_eye(&mut self, ctx: &Ctx, dt: f32) {
+        let you = &self.flock.birds[self.flock.you];
+        let (centre, _) = self.flock.centre();
+        let v = you.vel;
+        let flat = norm([v[0], 0.0, v[2]]);
+        let e = self.near * self.near * (3.0 - 2.0 * self.near);
+        // The heading follows yours: slowly from afar, closely from behind you.
+        let tau = 2.6 - 2.2 * e;
+        let k = (dt / tau).min(1.0);
+        self.heading = norm(addv(scale(self.heading, 1.0 - k), scale(flat, k)));
+        let k3 = (dt / (0.35 + 0.4 * (1.0 - e))).min(1.0);
+        self.dir3 = norm(addv(scale(self.dir3, 1.0 - k3), scale(norm(v), k3)));
+        let target = addv(scale(you.pos, 0.3), scale(centre, 0.7));
+        let kl = (dt / 1.2).min(1.0);
+        self.look = addv(scale(self.look, 1.0 - kl), scale(target, kl));
+        // From afar, a watcher stands in the reeds on the far side of the roost from the sun, and
+        // watches the flock wheel against the sunset.
+        let sa = (self.sun_az as f32).to_radians();
+        let dh = WATCHER.max((self.look[1] - 2.0) / (15.0f32).to_radians().tan());
+        let far = [self.look[0] - sa.sin() * dh, 2.0, self.look[2] - sa.cos() * dh];
+        let near = addv(sub(you.pos, scale(self.dir3, 4.2)), [0.0, -0.9, 0.0]);
+        let look_far = self.look;
+        let look_near = addv(addv(you.pos, scale(self.dir3, 9.0)), [0.0, 1.2, 0.0]);
+        let pos = addv(scale(far, 1.0 - e), scale(near, e));
+        let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
+        let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
+        let upv = norm(addv(scale([0.0, 1.0, 0.0], 1.0 - roll), scale(you.lift, roll)));
+        let mut fwd = norm(sub(look, pos));
+        // Never so steeply up that the land leaves the frame (from afar).
+        let max_up = (17.0f32 + 33.0 * e).to_radians().sin();
+        if fwd[1] > max_up {
+            let h = norm([fwd[0], 0.0, fwd[2]]);
+            fwd = addv(scale(h, (1.0 - max_up * max_up).sqrt()), [0.0, max_up, 0.0]);
+        }
+        let right = norm(cross(upv, fwd));
+        let up = cross(fwd, right);
+        let [w, h] = [ctx.width as f32, ctx.height as f32];
+        // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
+        let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
+        let focal = focal * (1.9 - 0.78 * e);
+        self.eye = Eye { pos, right, up, fwd, focal };
+    }
+
+    /// The ray through a point on the screen (points), from the eye.
+    fn ray(&self, ctx: &Ctx, p: [f64; 2]) -> V3 {
+        let x = (p[0] * ctx.ppp) as f32 - 0.5 * ctx.width as f32;
+        let y = 0.5 * ctx.height as f32 - (p[1] * ctx.ppp) as f32;
+        norm(addv(addv(scale(self.eye.fwd, self.eye.focal), scale(self.eye.right, x)), scale(self.eye.up, y)))
+    }
+
+    fn upload_sky(&mut self, ctx: &Ctx) {
+        let mut data = Vec::with_capacity(sky::AZ * sky::EL * 8);
+        for c in &self.sky.table {
+            for k in 0..4 {
+                data.extend_from_slice(&sky::half(c[k]).to_le_bytes());
+            }
+        }
+        ctx.gpu.queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &self.sky_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &data,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(sky::AZ as u32 * 8), rows_per_image: None },
+            wgpu::Extent3d { width: sky::AZ as u32, height: sky::EL as u32, depth_or_array_layers: 1 },
+        );
+        // The eye adapts to the sky (not wholly: dusk still darkens).
+        let l = self.sky.adaptation().max(1e-9);
+        self.exposure = (0.16 / l.powf(0.82) * 0.0022f64.powf(-0.18)) as f32;
+        self.sky.changed = false;
+    }
 }
 
 impl Toy for Murmuration {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
-        globe.night = 0.0;
-        Ok(Murmuration { globe })
+        let gpu = &ctx.gpu;
+        let dev = &gpu.device;
+        let sky_shader = gpu.shader("sky", include_str!("sky.wgsl"));
+        let bird_shader = gpu.shader("birds", include_str!("birds.wgsl"));
+        let uni = |size: u64, label: &str| {
+            dev.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false })
+        };
+        let sky_buf = uni(std::mem::size_of::<SkyU>() as u64, "sky u");
+        let bird_buf = uni(std::mem::size_of::<BirdU>() as u64, "bird u");
+        let sky_tex = dev.create_texture(&wgpu::TextureDescriptor {
+            label: Some("sky table"),
+            size: wgpu::Extent3d { width: sky::AZ as u32, height: sky::EL as u32, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let samp = dev.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            ..Default::default()
+        });
+        let frag = wgpu::ShaderStages::VERTEX_FRAGMENT;
+        let sky_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("sky"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry { binding: 0, visibility: frag, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: frag,
+                    ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry { binding: 2, visibility: frag, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+            ],
+        });
+        let tex_view = sky_tex.create_view(&Default::default());
+        let sky_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("sky"),
+            layout: &sky_layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: sky_buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&tex_view) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&samp) },
+            ],
+        });
+        let ms = wgpu::MultisampleState { count: MSAA, mask: !0, alpha_to_coverage_enabled: false };
+        let sky_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sky"), bind_group_layouts: &[&sky_layout], push_constant_ranges: &[] });
+        let sky_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("sky"),
+            layout: Some(&sky_pl),
+            vertex: wgpu::VertexState { module: &sky_shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: ms,
+            fragment: Some(wgpu::FragmentState {
+                module: &sky_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
+            }),
+            multiview: None,
+            cache: None,
+        });
+        let bird_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("birds"),
+            entries: &[wgpu::BindGroupLayoutEntry { binding: 0, visibility: frag, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None }],
+        });
+        let bird_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("birds"),
+            layout: &bird_layout,
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: bird_buf.as_entire_binding() }],
+        });
+        let bird_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("birds"), bind_group_layouts: &[&bird_layout], push_constant_ranges: &[] });
+        let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4];
+        let bird_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("birds"),
+            layout: Some(&bird_pl),
+            vertex: wgpu::VertexState {
+                module: &bird_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Inst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                compilation_options: Default::default(),
+            },
+            primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
+            depth_stencil: None,
+            multisample: ms,
+            fragment: Some(wgpu::FragmentState {
+                module: &bird_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
+            }),
+            multiview: None,
+            cache: None,
+        });
+        let inst = dev.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("birds"),
+            size: (BIRDS * std::mem::size_of::<Inst>()) as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let msaa = msaa_view(ctx);
+        let mut flock = Flock::new(BIRDS, 0x5eed_2026);
+        for _ in 0..360 {
+            flock.step(1.0 / 60.0);
+        }
+        let heading = norm({
+            let v = flock.birds[flock.you].vel;
+            [v[0], 0.0, v[2]]
+        });
+        let dir3 = norm(flock.birds[flock.you].vel);
+        let look = flock.centre().0;
+        let day = sun::now_days().floor();
+        let eye = Eye { pos: [0.0; 3], right: [1.0, 0.0, 0.0], up: [0.0, 1.0, 0.0], fwd: [0.0, 0.0, 1.0], focal: 1000.0 };
+        let mut m = Murmuration {
+            flock,
+            sky: sky::Sky::new(),
+            day,
+            minutes: DUSK_FROM,
+            rate: DUSK_RATE,
+            sun_el: 0.0,
+            sun_az: 0.0,
+            heading,
+            dir3,
+            look,
+            near: 0.0,
+            near_to: 0.0,
+            release_t: -10.0,
+            finger: None,
+            eye,
+            t: 0.0,
+            reduce_motion: ctx.reduce_motion,
+            ears: Arc::new(Ears::default()),
+            sky_pipe,
+            sky_bind,
+            sky_buf,
+            sky_tex,
+            bird_pipe,
+            bird_bind,
+            bird_buf,
+            inst,
+            msaa,
+            exposure: 1.0,
+        };
+        let (el, az) = m.sun_at(m.minutes);
+        (m.sun_el, m.sun_az) = (el, az);
+        m.sky.compute_now(el);
+        m.upload_sky(ctx);
+        m.place_eye(ctx, 1.0);
+        Ok(m)
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
-        self.globe.resize(ctx.width, ctx.height, ctx.ppp);
+        self.msaa = msaa_view(ctx);
     }
 
-    fn pointer(&mut self, _ctx: &mut Ctx, e: PointerEvent) {
-        self.globe.pointer(e);
+    fn settings(&mut self, ctx: &mut Ctx) {
+        self.reduce_motion = ctx.reduce_motion;
+    }
+
+    fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
+        match e.phase {
+            Phase::Down => {
+                if self.finger.is_none() {
+                    self.finger = Some((e.id, [e.x, e.y]));
+                    self.near_to = 1.0;
+                    ctx.haptic();
+                }
+            }
+            Phase::Move => {
+                if let Some((id, _)) = self.finger {
+                    if id == e.id {
+                        self.finger = Some((id, [e.x, e.y]));
+                    }
+                }
+            }
+            _ => {
+                if let Some((id, _)) = self.finger {
+                    if id == e.id {
+                        self.finger = None;
+                        self.release_t = self.t;
+                    }
+                }
+            }
+        }
     }
 
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
-        self.globe.update(&ctx.gpu, ctx.assets.as_ref(), t, dt);
+        self.t = t;
+        // The dusk moves on, and the sky's table follows the sun a few rows a frame.
+        self.minutes = (self.minutes + dt * self.rate / 60.0).min(DUSK_TO);
+        let (el, az) = self.sun_at(self.minutes);
+        (self.sun_el, self.sun_az) = (el, az);
+        self.sky.step(el, 6);
+        // Your lean: toward the finger, through the eye.
+        if let Some((_, p)) = self.finger {
+            let r = self.ray(ctx, p);
+            let you = &self.flock.birds[self.flock.you];
+            let v = you.vel;
+            let want = scale(r, flock::V0);
+            let mut a = scale(sub(want, v), 3.2);
+            let al = length(a);
+            if al > 32.0 {
+                a = scale(a, 32.0 / al);
+            }
+            let off = dot(norm(v), r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
+            self.flock.lean = a;
+            self.flock.lean_k = (0.45 + 0.5 * (off / 35.0).min(1.0)).min(1.0);
+        } else {
+            self.flock.lean = [0.0; 3];
+            self.flock.lean_k = 0.0;
+            if t - self.release_t > 1.6 {
+                self.near_to = 0.0;
+            }
+        }
+        // The flock, in steps of a sixtieth or less.
+        let n = (dt * 60.0).ceil().max(1.0) as usize;
+        if dt > 0.0 {
+            for _ in 0..n {
+                self.flock.step((dt / n as f64) as f32);
+            }
+        }
+        // The eye drops in quickly and rises out slowly.
+        let rate = if self.near_to > self.near { 1.0 / 0.9 } else { 1.0 / 2.6 };
+        let step = (dt as f32 * rate).min((self.near_to - self.near).abs());
+        self.near += step * (self.near_to - self.near).signum();
+        self.place_eye(ctx, dt as f32);
+        // What the ears hear: the rush of wings near the eye, the murmur of the whole.
+        let mut rush = 0.0f32;
+        for b in &self.flock.birds {
+            let d = sub(b.pos, self.eye.pos);
+            let d2 = dot(d, d);
+            if d2 < 400.0 {
+                rush += 1.0 / (1.0 + d2 * 0.25);
+            }
+        }
+        let (c, _) = self.flock.centre();
+        let dc = length(sub(c, self.eye.pos));
+        let you = &self.flock.birds[self.flock.you];
+        put(&self.ears.rush, (rush * 0.08).min(1.5));
+        put(&self.ears.murmur, (BIRDS as f32 / (1.0 + dc * dc * 0.02) * 0.0012).min(1.0));
+        put(&self.ears.wings, self.near * (0.3 + 0.7 * you.flap));
+        put(&self.ears.rate, you.rate);
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
-        self.globe.upload(&ctx.gpu);
+        if self.sky.changed {
+            self.upload_sky(ctx);
+        }
+        let e = self.eye;
+        let [w, h] = [ctx.width as f32, ctx.height as f32];
+        let se = (self.sun_el as f32).to_radians();
+        let sa = (self.sun_az as f32).to_radians();
+        let sun = [sa.sin() * se.cos(), se.sin(), sa.cos() * se.cos()];
+        let trans = sky::transmittance([0.0, se.sin() as f64, se.cos() as f64]);
+        let zen = self.sky.lookup(90.0, 0.0);
+        let h0 = self.sky.lookup(0.4, 0.0);
+        let h1 = self.sky.lookup(0.4, 180.0);
+        let sin_el = se.sin().max(0.0);
+        let mut ground = [0.0f32; 3];
+        for c in 0..3 {
+            ground[c] = 0.05 * (zen[c] * 2.0 + trans[c] as f32 * sin_el / std::f32::consts::PI);
+        }
+        let u = SkyU {
+            right: [e.right[0], e.right[1], e.right[2], e.focal],
+            up: [e.up[0], e.up[1], e.up[2], w],
+            fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
+            sun: [sun[0], sun[1], sun[2], sa],
+            sun_col: [trans[0] as f32, trans[1] as f32, trans[2] as f32, self.exposure],
+            ground: [ground[0], ground[1], ground[2], (self.t % 64.0) as f32],
+            horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
+            horizon2: [h1[0], h1[1], h1[2], 0.0],
+        };
+        ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
+        // The birds: dark against the sky, a little hazed with distance.
+        let hz = [(h0[0] + h1[0]) * 0.5, (h0[1] + h1[1]) * 0.5, (h0[2] + h1[2]) * 0.5];
+        let ink = tone([ground[0] * 0.3, ground[1] * 0.3, ground[2] * 0.35], self.exposure);
+        let haze = tone(hz, self.exposure);
+        let min_px = (2.2 * ctx.ppp as f32 / 3.0).max(1.5);
+        let bu = BirdU {
+            right: [e.right[0], e.right[1], e.right[2], e.focal],
+            up: [e.up[0], e.up[1], e.up[2], w],
+            fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
+            eye: [e.pos[0], e.pos[1], e.pos[2], min_px],
+            ink: [ink[0], ink[1], ink[2], 1.0],
+            haze: [haze[0], haze[1], haze[2], 4000.0],
+        };
+        ctx.gpu.queue.write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
+        let inst: Vec<Inst> = self
+            .flock
+            .birds
+            .iter()
+            .map(|b| {
+                let f = norm(b.vel);
+                Inst { pos: [b.pos[0], b.pos[1], b.pos[2], b.phase], fwd: [f[0], f[1], f[2], b.size], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
+            })
+            .collect();
+        ctx.gpu.queue.write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("murmuration"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: target,
-                    resolve_target: None,
+                    view: &self.msaa,
+                    resolve_target: Some(target),
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Discard },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            self.globe.draw(&mut rp);
+            rp.set_pipeline(&self.sky_pipe);
+            rp.set_bind_group(0, &self.sky_bind, &[]);
+            rp.draw(0..3, 0..1);
+            rp.set_pipeline(&self.bird_pipe);
+            rp.set_bind_group(0, &self.bird_bind, &[]);
+            rp.set_vertex_buffer(0, self.inst.slice(..));
+            rp.draw(0..12, 0..inst.len() as u32);
         }
         ctx.gpu.queue.submit([enc.finish()]);
+    }
+
+    fn synth(&mut self) -> Option<Box<dyn Synth>> {
+        Some(Box::new(Wind::new(self.ears.clone())))
+    }
+
+    fn save(&self) -> Option<String> {
+        Some(serde_json::json!({ "day": self.day, "minutes": self.minutes }).to_string())
+    }
+
+    fn restore(&mut self, ctx: &mut Ctx, saved: &str) {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(saved) else { return };
+        let day = v["day"].as_f64();
+        let fixed = v["fixed"].as_bool().unwrap_or(false);
+        // A new day's dusk starts at its beginning; the same day's goes on from where it was.
+        if fixed || day == Some(self.day) {
+            if let Some(d) = day {
+                self.day = d;
+            }
+            if let Some(m) = v["minutes"].as_f64() {
+                self.minutes = m.clamp(DUSK_FROM - 30.0, DUSK_TO);
+            }
+            if let Some(r) = v["rate"].as_f64() {
+                self.rate = r;
+            }
+            let (el, az) = self.sun_at(self.minutes);
+            (self.sun_el, self.sun_az) = (el, az);
+            self.sky.compute_now(el);
+            self.upload_sky(ctx);
+        }
+    }
+}
+
+/// The sound of a murmuration (the word is the sound): the hush of thousands of wings far off, the
+/// rush of the near ones passing, and, from behind your own bird, its wingbeats.
+struct Wind {
+    ears: Arc<Ears>,
+    seed: u32,
+    pink: [f32; 3],
+    bp: [[f32; 2]; 3],
+    lv: [f32; 3],
+    phase: f32,
+}
+
+impl Wind {
+    fn new(ears: Arc<Ears>) -> Wind {
+        Wind { ears, seed: 0x1234_5678, pink: [0.0; 3], bp: [[0.0; 2]; 3], lv: [0.0; 3], phase: 0.0 }
+    }
+    fn noise(&mut self) -> f32 {
+        self.seed ^= self.seed << 13;
+        self.seed ^= self.seed >> 17;
+        self.seed ^= self.seed << 5;
+        (self.seed as f32 / u32::MAX as f32) * 2.0 - 1.0
+    }
+}
+
+/// One state-variable band-pass step: returns the band.
+fn svf(s: &mut [f32; 2], x: f32, f: f32, q: f32) -> f32 {
+    let low = s[0] + f * s[1];
+    let high = x - low - q * s[1];
+    let band = f * high + s[1];
+    s[0] = low;
+    s[1] = band;
+    band
+}
+
+impl Synth for Wind {
+    fn render(&mut self, out: &mut [f32], channels: usize, rate: f64) {
+        let target = [get(&self.ears.murmur), get(&self.ears.rush), get(&self.ears.wings)];
+        let beat = get(&self.ears.rate).max(1.0);
+        let fr = |hz: f32| 2.0 * (std::f32::consts::PI * hz / rate as f32).sin();
+        let (f_low, f_mid, f_hi) = (fr(420.0), fr(1500.0), fr(3200.0));
+        for frame in out.chunks_mut(channels) {
+            for k in 0..3 {
+                self.lv[k] += (target[k] - self.lv[k]) * 0.0004;
+            }
+            let w = self.noise();
+            // Pinkish: a few one-pole filters summed.
+            self.pink[0] = 0.997 * self.pink[0] + 0.03 * w;
+            self.pink[1] = 0.96 * self.pink[1] + 0.12 * w;
+            self.pink[2] = 0.6 * self.pink[2] + 0.4 * w;
+            let pink = self.pink[0] + self.pink[1] + self.pink[2] * 0.5;
+            let murmur = svf(&mut self.bp[0], pink, f_low, 1.2) * self.lv[0] * 0.5;
+            let rush = svf(&mut self.bp[1], w, f_mid, 1.4) * self.lv[1] * 0.18;
+            self.phase = (self.phase + beat / rate as f32) % 1.0;
+            let flutter = (0.5 - 0.5 * (self.phase * std::f32::consts::TAU).cos()).powi(3);
+            let wings = svf(&mut self.bp[2], w, f_hi, 1.6) * flutter * self.lv[2] * 0.12;
+            let s = (murmur + rush + wings).clamp(-1.0, 1.0);
+            for c in frame.iter_mut() {
+                *c = s;
+            }
+        }
     }
 }
 
