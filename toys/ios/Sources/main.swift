@@ -38,6 +38,10 @@ final class ToyView: UIView {
         let w = UInt32(max(bounds.width * metal.contentsScale, 1)), h = UInt32(max(bounds.height * metal.contentsScale, 1))
         metal.drawableSize = CGSize(width: CGFloat(w), height: CGFloat(h))
         let assets = Bundle.main.resourcePath! + "/data"
+        // the toy's log (a panic's message, a GPU error, a toy that could not start), in the app's
+        // Documents, which the Files app shows: On My iPhone › <the toy> › toy-log.txt
+        let log = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("toy-log.txt").path
+        log.withCString { toy_set_log($0) }
         shell = assets.withCString { toy_new(Unmanaged.passUnretained(metal).toOpaque(), w, h, Double(metal.contentsScale), $0) }
         guard let shell else { NSLog("toy: the library did not start"); return }
         toy_set_reduce_motion(shell, UIAccessibility.isReduceMotionEnabled)

@@ -50,6 +50,18 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
 - `.github/workflows/toys.yml`: CI (its header). `ci/sidestore_apps.json` lists every app the
   SideStore source carries; the source is regenerated from the releases after every build.
 
+## When it crashes on the phone
+
+A toy isn't done until it opens on a phone; the Linux renders can't prove that. Two things help:
+
+- `tools/toys/launch_check.sh <toy>` (in CI's check): every shader the toy builds at launch, translated to
+  Metal as wgpu does on iOS; with `--ipa <file>` (in CI's IPA job), every manifest file bundled.
+- The device keeps the toy's log: a panic's message and place, every GPU error (logged, not fatal: a
+  toy drawn wrong beats a toy gone), a toy that could not start. It is `toy-log.txt` in the Files app,
+  On My iPhone › the toy's name; share it from there. iOS's own report is in Settings › Privacy &
+  Security › Analytics & Improvements › Analytics Data (an entry named after the toy; a `JetsamEvent`
+  entry means it was killed for memory).
+
 ## Build and check on Linux
 
     sudo apt-get install -y mesa-vulkan-drivers ffmpeg     # once: Vulkan in software, for wgpu

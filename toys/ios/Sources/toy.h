@@ -4,6 +4,7 @@
 #include <stddef.h>
 typedef struct ToyShell ToyShell;
 typedef struct ToySynth ToySynth;
+void toy_set_log(const char *path);
 ToyShell *toy_new(void *layer, uint32_t width, uint32_t height, double scale, const char *assets);
 void toy_resize(ToyShell *shell, uint32_t width, uint32_t height, double scale);
 void toy_frame(ToyShell *shell, double t);

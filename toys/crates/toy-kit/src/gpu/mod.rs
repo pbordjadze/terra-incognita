@@ -44,6 +44,10 @@ impl Gpu {
                 trace: wgpu::Trace::Off,
             })
             .await?;
+        // wgpu's default answer to an error it cannot return is a panic, which on the device is a
+        // crash; a toy is better drawn wrong than gone, so the error is logged instead (the log says
+        // what to fix: toy-kit `log`)
+        device.on_uncaptured_error(Box::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
         let format = match surface {
             Some(s) => {
                 let caps = s.get_capabilities(&adapter);
@@ -59,6 +63,13 @@ impl Gpu {
     }
 
     pub fn shader(&self, label: &str, wgsl: &str) -> wgpu::ShaderModule {
+        // TOY_DUMP_SHADERS=<dir>: every shader as the device will get it, for tools/toys/launch_check.sh
+        // to translate to Metal (MSL) as the iPhone does
+        if let Ok(dir) = std::env::var("TOY_DUMP_SHADERS") {
+            let _ = std::fs::create_dir_all(&dir);
+            let name: String = label.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
+            let _ = std::fs::write(std::path::Path::new(&dir).join(format!("{name}.wgsl")), wgsl);
+        }
         self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some(label),
             source: wgpu::ShaderSource::Wgsl(wgsl.into()),

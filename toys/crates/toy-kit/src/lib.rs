@@ -19,7 +19,39 @@ pub use globe::Globe;
 pub use gpu::{Gpu, Offscreen};
 pub use model::*;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
+
+static LOG: OnceLock<std::path::PathBuf> = OnceLock::new();
+
+/// Where the device keeps the toy's log (`<Documents>/toy-log.txt`, visible in the Files app): the
+/// shell sets it before the toy starts. A panic's message and place, a GPU error, a toy that could not
+/// start are written there, so a crash on a phone can be read without a Mac.
+pub fn set_log(path: std::path::PathBuf) {
+    if LOG.set(path).is_ok() {
+        std::panic::set_hook(Box::new(|info| {
+            let at = info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+            let msg = info
+                .payload()
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| info.payload().downcast_ref::<String>().cloned())
+                .unwrap_or_default();
+            log(&format!("panic at {at}: {msg}"));
+        }));
+    }
+}
+
+/// One line in the device's log (and stderr), stamped with seconds since 1970.
+pub fn log(line: &str) {
+    eprintln!("toy: {line}");
+    if let Some(p) = LOG.get() {
+        use std::io::Write;
+        let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
+            let _ = writeln!(f, "{t} {line}");
+        }
+    }
+}
 
 /// What a toy is given: the device, its data, the screen, the reader's settings, and a way back to
 /// the shell (a haptic tap).
@@ -191,6 +223,11 @@ macro_rules! ios_shell {
             use std::ffi::{c_char, c_void, CStr};
             type S = $crate::shell::Shell<$toy>;
 
+            /// Where to keep the log (call before `toy_new`).
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_set_log(path: *const c_char) {
+                $crate::set_log(CStr::from_ptr(path).to_string_lossy().into_owned().into());
+            }
             #[no_mangle]
             pub unsafe extern "C" fn toy_new(layer: *mut c_void, width: u32, height: u32, scale: f64, assets: *const c_char) -> *mut S {
                 let dir = CStr::from_ptr(assets).to_string_lossy().into_owned();

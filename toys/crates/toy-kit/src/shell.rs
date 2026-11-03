@@ -24,14 +24,14 @@ impl<T: Toy> Shell<T> {
         let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
             Ok(s) => s,
             Err(e) => {
-                eprintln!("toy: no surface: {e}");
+                crate::log(&format!("no surface: {e}"));
                 return None;
             }
         };
         let gpu = match block_on(Gpu::new(&instance, Some(&surface))) {
             Ok(g) => g,
             Err(e) => {
-                eprintln!("toy: no device: {e}");
+                crate::log(&format!("no device: {e:#}"));
                 return None;
             }
         };
@@ -50,7 +50,7 @@ impl<T: Toy> Shell<T> {
         match Host::<T>::new(ctx) {
             Ok(host) => Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0 }),
             Err(e) => {
-                eprintln!("toy: {e:#}");
+                crate::log(&format!("the toy did not start: {e:#}"));
                 None
             }
         }

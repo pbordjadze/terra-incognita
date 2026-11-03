@@ -76,6 +76,10 @@ jobs:
           cargo build --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check
           cargo test --release -p toy-kit -p ${{ matrix.toy }}
           cargo clippy --release -p ${{ matrix.toy }} -- -D warnings || echo "::warning::clippy has findings"
+      - name: Launch check (every shader translated to Metal as on the iPhone)
+        run: |
+          command -v naga > /dev/null || cargo install -q naga-cli --version 26.0.0 --locked
+          bash tools/toys/launch_check.sh ${{ matrix.toy }}
       - name: Play every plan
         working-directory: toys
         run: |
@@ -115,6 +119,7 @@ jobs:
           mkdir -p out
           BUILD="$BUILD" bash toys/ios/build.sh ${{ matrix.toy }} out 2>&1 | tee out/ipa-build.log | tail -40
           ls -l out/${{ matrix.toy }}.ipa
+          bash tools/toys/launch_check.sh ${{ matrix.toy }} --ipa out/${{ matrix.toy }}.ipa
       - name: Release
         if: github.ref_name == 'main'
         env:
