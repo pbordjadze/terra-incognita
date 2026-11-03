@@ -8,6 +8,7 @@ struct Waves { info: vec4f };  // x the light's gain, y the glow, z the texel's 
 @group(1) @binding(0) var eta: texture_2d<f32>;
 @group(1) @binding(1) var samp: sampler;
 @group(1) @binding(2) var<uniform> S: Waves;
+@group(1) @binding(3) var geo: texture_2d<f32>;
 
 fn at(uv: vec2f) -> f32 { return textureSampleLevel(eta, samp, uv, 0.0).r; }
 
@@ -29,11 +30,20 @@ fn at(uv: vec2f) -> f32 { return textureSampleLevel(eta, samp, uv, 0.0).r; }
     let tilt = -dot(gv - G.v * dot(gv, G.v), L);
     let s = tanh(S.info.x * tilt);
     let rim = smoothstep(0.0, 0.12, G.v.z);
-    let b = max(s, 0.0) * 0.8 * rim;
-    let d = max(-s, 0.0) * 0.55 * rim;
-    let glow = tanh(abs(h) * S.info.y) * 0.28 * rim;
+    // the real coast (the globe's own, finer than the sea's grid): nothing drawn on land; within a few
+    // pixels of the map (~40 km) of the shore the slopes' light gives way to the surf, a line of light
+    // as bright as the wave arriving there is tall
+    let fine = (textureSampleLevel(geo, samp, G.uv, 0.0).r * 255.0 - 128.0) / 8.0;
+    let sea = 1.0 - smoothstep(-0.8, 0.2, fine);
+    let open = smoothstep(1.5, 6.0, -fine);
+    let surf = (1.0 - smoothstep(0.5, 4.5, -fine)) * sea * tanh(abs(h) * S.info.y * 1.6);
+    let b = max(s, 0.0) * 0.8 * rim * open;
+    let d = max(-s, 0.0) * 0.5 * rim * open;
+    let glow = tanh(abs(h) * S.info.y) * 0.4 * rim * open;
     let light = vec3f(1.0, 0.99, 0.94);
     let deep = vec3f(0.10, 0.22, 0.42);
-    let a = clamp(b + d + glow, 0.0, 0.85);
-    return vec4f(light * (b + glow) + deep * d, a);
+    let lit = (b + glow + surf * 0.9 * rim) * sea;
+    let dk = d * sea;
+    let a = clamp(lit + dk, 0.0, 0.9);
+    return vec4f(light * lit + deep * dk, a);
 }

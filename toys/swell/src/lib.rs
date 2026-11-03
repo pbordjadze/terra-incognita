@@ -48,6 +48,8 @@ pub struct Swell {
     buf: wgpu::Buffer,
     bind: wgpu::BindGroup,
     half: Vec<u16>,
+    /// land cells beside the sea and their wet neighbours: drawn with the sea's height beside them
+    shore: Vec<(u32, [u32; 4], u8)>,
     acc: f64,
     t: f64,
     queue: sound::Queue,
@@ -146,7 +148,7 @@ impl Swell {
 impl Toy for Swell {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 2)?;
-        globe.camera = Camera::new(-178.0, 20.0, 1.3);
+        globe.camera = Camera::new(-178.0, 20.0, 1.6);
         globe.hand.max_zoom = 8.0;
         let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?);
         // the coast's cells gathered by 4-degree tiles: each tile one voice
@@ -211,6 +213,16 @@ impl Toy for Swell {
                     ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
             ],
         });
         let bind = ctx.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -220,11 +232,32 @@ impl Toy for Swell {
                 wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
                 wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
                 wgpu::BindGroupEntry { binding: 2, resource: buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&globe.textures.geo.view) },
             ],
         });
         let shader = ctx.gpu.shader("swell", &toy_kit::globe::wgsl(include_str!("swell.wgsl")));
         let pipe = ctx.gpu.fullscreen_pipeline("swell", &shader, &[&globe.view_layout, &layout], Some(toy_kit::Gpu::over()));
         let n_regions = regions.len();
+        let mut shore = Vec::new();
+        for j in 1..sea::H - 1 {
+            for i in 0..sea::W {
+                let k = j * sea::W + i;
+                if sea.wet[k] {
+                    continue;
+                }
+                let mut nb = [0u32; 4];
+                let mut c = 0u8;
+                for q in [j * sea::W + (i + sea::W - 1) % sea::W, j * sea::W + (i + 1) % sea::W, k - sea::W, k + sea::W] {
+                    if sea.wet[q] {
+                        nb[c as usize] = q as u32;
+                        c += 1;
+                    }
+                }
+                if c > 0 {
+                    shore.push((k as u32, nb, c));
+                }
+            }
+        }
         Ok(Swell {
             globe,
             sea,
@@ -233,6 +266,7 @@ impl Toy for Swell {
             buf,
             bind,
             half: vec![0; sea::W * sea::H],
+            shore,
             acc: 0.0,
             t: 0.0,
             queue: Default::default(),
@@ -244,7 +278,7 @@ impl Toy for Swell {
             fingers_seen: 0,
             source: None,
             last_touch: -100.0,
-            next_idle: 1.0,
+            next_idle: 0.3,
             idle_k: 0,
             soft: ctx.reduce_motion,
         })
@@ -318,7 +352,7 @@ impl Toy for Swell {
                 if self.drop_at(at, 0.7, 0.6) {
                     ctx.haptic();
                 }
-                self.source = Some((id, at, next + 1.1));
+                self.source = Some((id, at, next + 0.95 + 0.3 * (0.5 + 0.5 * (t * 7.31).sin())));
             }
         }
         // left alone, the sea rises where the great tsunamis began
@@ -346,6 +380,10 @@ impl Toy for Swell {
         self.globe.upload(&ctx.gpu);
         for (h, &e) in self.half.iter_mut().zip(&self.sea.eta) {
             *h = half(e);
+        }
+        for &(k, nb, c) in &self.shore {
+            let m: f32 = nb[..c as usize].iter().map(|&q| self.sea.eta[q as usize]).sum::<f32>() / c as f32;
+            self.half[k as usize] = half(m);
         }
         ctx.gpu.queue.write_texture(
             wgpu::TexelCopyTextureInfo { texture: &self.tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },

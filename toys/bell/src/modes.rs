@@ -22,13 +22,14 @@ pub const MODES: [(u32, f64, f64); 12] = [
     (12, 1.9905, 304.6),
 ];
 
-/// One factor takes every mode into hearing (0S2 to D3, 146.8 Hz): the chord's ratios are the Earth's.
-pub const PITCH: f64 = 146.83 / 0.3093e-3;
+/// One factor takes every mode into hearing (0S2 to D4, 293.7 Hz, where a phone's speaker sings): the
+/// chord's ratios are the Earth's.
+pub const PITCH: f64 = 293.66 / 0.3093e-3;
 /// The drawn motion runs this much slower than the heard (0S2 swells about once in two seconds).
-pub const SLOW: f64 = 300.0;
+pub const SLOW: f64 = 600.0;
 /// Every ring lasts this many times as long as the Earth's quality factors give at that pitch (the
 /// ratios of the decays are kept: the high degrees go first), the breathing mode held to `BREATH`.
-pub const LINGER: f64 = 2.5;
+pub const LINGER: f64 = 5.0;
 
 /// A mode's frequency heard (Hz) and its decay (seconds to fall by e) on the device.
 pub fn heard(i: usize) -> (f64, f64) {

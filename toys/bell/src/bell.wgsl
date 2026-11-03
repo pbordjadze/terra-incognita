@@ -13,7 +13,10 @@ struct Bells {
 @group(1) @binding(2) var<uniform> B: Bells;
 
 // the motion at a world point g: x the height, yzw its gradient (world)
+var<private> ring_light: f32;
+
 fn field(g: vec3f) -> vec4f {
+    ring_light = 0.0;
     var u = 0.0;
     var grad = vec3f(0.0);
     let n = i32(B.info.x);
@@ -43,6 +46,7 @@ fn field(g: vec3f) -> vec4f {
         let focus = inverseSqrt(sg + 0.12) * 0.35;
         let r = ring.y * focus * exp(-dd * dd);
         su += r;
+        ring_light += r;
         // d(ring)/dx = d/dγ · dγ/dx, dγ/dx = -1/sin γ
         sd += (-2.0 * dd / ring.z * r) * (-1.0 / max(sg, 0.05));
         u += su;
@@ -78,8 +82,10 @@ fn field(g: vec3f) -> vec4f {
     // soft-limited: a faint swell still reads, a fresh strike never goes black
     let s = tanh(B.info.w * tilt);
     let warm = tanh(u * 30.0);
-    var lit = col * (1.0 + 0.28 * min(s, 0.0)) + vec3f(1.0, 0.97, 0.9) * 0.22 * max(s, 0.0);
-    lit = lit * mix(vec3f(1.0), select(vec3f(0.93, 0.98, 1.06), vec3f(1.06, 1.01, 0.93), warm > 0.0), abs(warm) * 0.6);
+    // the swells as a soft tint, never darker than a shadow on land; the surface wave as light
+    var lit = col * (1.0 + 0.14 * min(s, 0.0)) + vec3f(1.0, 0.97, 0.9) * 0.18 * max(s, 0.0);
+    lit = lit * mix(vec3f(1.0), select(vec3f(0.95, 0.99, 1.05), vec3f(1.05, 1.01, 0.95), warm > 0.0), abs(warm) * 0.6);
+    lit += vec3f(1.0, 0.95, 0.82) * 0.55 * tanh(max(ring_light, 0.0) * 2.5);
     col = mix(col, lit, on);
     return vec4f(col, 1.0);
 }

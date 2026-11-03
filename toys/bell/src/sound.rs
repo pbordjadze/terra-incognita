@@ -163,7 +163,7 @@ impl toy_kit::Synth for Voice {
             }
         }
         let frames = out.len() / channels.max(1);
-        let gain = 0.16;
+        let gain = 0.6;
         for r in &mut self.ringing {
             let n = frames as f64;
             for p in &mut r.partials {
@@ -217,7 +217,7 @@ impl toy_kit::Synth for Voice {
         let peak = out.iter().fold(0f32, |m, v| m.max(v.abs())) as f64;
         let k = if peak > self.level { 0.3 } else { 0.02 };
         self.level += (peak - self.level) * k;
-        let g = (0.45 / self.level.max(0.45)) as f32;
+        let g = (0.75 / self.level.max(0.75)) as f32;
         for v in out.iter_mut() {
             *v = (*v * g).tanh();
         }

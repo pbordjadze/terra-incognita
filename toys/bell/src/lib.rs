@@ -25,7 +25,8 @@ const GREAT: [(f64, f64); 6] = [
 
 /// The surface wave's speed (Rayleigh waves, about 3.9 km/s), as the drawn motion runs it: radians a second.
 const RING_SPEED: f64 = 3900.0 / 6_371_000.0 * (modes::PITCH / modes::SLOW);
-const RING_FADE: f64 = 7.0;
+/// The ring fades with the low modes' sound (0S2's decay heard, about 2.7 s, a little longer).
+const RING_FADE: f64 = 4.5;
 const MAX: usize = sound::MAX_RINGING;
 
 struct Strike {
@@ -171,7 +172,7 @@ impl Toy for Bell {
             fingers_seen: 0,
             t: 0.0,
             last_touch: -100.0,
-            next_idle: 1.2,
+            next_idle: 0.6,
             idle_k: 0,
             soft: ctx.reduce_motion,
         })
@@ -241,12 +242,13 @@ impl Toy for Bell {
             let age = (self.t - s.t0).max(0.0);
             let base = 1 + 6 * k;
             u[base] = [s.at[0] as f32, s.at[1] as f32, s.at[2] as f32, 0.0];
-            let ring_h = 0.3 * s.strength * (-age / RING_FADE).exp() * (age / 0.15).min(1.0);
-            u[base + 1] = [(age * RING_SPEED) as f32, ring_h as f32, 0.16, 0.0];
+            let ring_h = 0.5 * s.strength * (-age / RING_FADE).exp() * (age / 0.15).min(1.0);
+            u[base + 1] = [(age * RING_SPEED) as f32, ring_h as f32, 0.07, 0.0];
             for (i, &(l, _, _)) in MODES.iter().enumerate() {
                 let (f, tau) = modes::heard(i);
                 let fv = f / modes::SLOW;
-                let c = modes::weight(i) * s.strength * (-age / tau).exp() * (2.0 * std::f64::consts::PI * fv * age).cos();
+                let boost = match l { 0 => 2.0, 2 => 1.8, 3 => 1.4, _ => 1.0 };
+                let c = boost * modes::weight(i) * s.strength * (-age / tau).exp() * (2.0 * std::f64::consts::PI * fv * age).cos();
                 let l = l as usize;
                 u[base + 2 + l / 4][l % 4] = c as f32;
             }
