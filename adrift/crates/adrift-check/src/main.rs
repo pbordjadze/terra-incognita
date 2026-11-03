@@ -529,7 +529,10 @@ fn play(args: &[String]) -> Result<()> {
             drop(last);
             // the clip's camera, frame by frame, beside the take's (R10)
             std::fs::write(out.join(format!("{name}-camera.csv")), trace)?;
-            drop(ff.stdin.take());
+            if adrift_core::look::profile::on() {
+        eprintln!("(ADRIFT_PROFILE) the GPU's passes, a frame:\n{}", adrift_core::look::profile::report());
+    }
+    drop(ff.stdin.take());
             ff.wait()?;
             // the song under the clip, from the take's first moment, fading over its last second (R12)
             if let (Some(song), Some((start, len))) = (&plan.song, app.export_song()) {

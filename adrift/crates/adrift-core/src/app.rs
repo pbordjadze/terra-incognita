@@ -1653,6 +1653,12 @@ impl App {
             } else {
                 self.sea.prepare(&self.gpu, &self.ripples);
             }
+            if crate::look::profile::on() {
+                // (R24) each pass alone and timed (look/profile.rs); the same pixels
+                let clear = wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 };
+                crate::look::profile::pass(&self.gpu, "ground", &stage.view, Some(clear), |rp| self.ground.draw(rp, &self.stage_view_bind));
+                crate::look::profile::pass(&self.gpu, "sea", &stage.view, None, |rp| self.sea.draw(rp, &self.stage_view_bind));
+            } else {
             let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stage") });
             {
                 let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -1671,6 +1677,7 @@ impl App {
                 self.sea.draw(&mut rp, &self.stage_view_bind);
             }
             self.gpu.queue.submit([enc.finish()]);
+            }
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
             self.frames.3 += 1;
@@ -1681,6 +1688,11 @@ impl App {
         let state = self.look_state();
         let d = view.disc;
         self.look.prepare(&self.gpu, &state, (view.width as f64 / view.ppp) as f32, (view.height as f64 / view.ppp) as f32, view.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
+        if crate::look::profile::on() {
+            crate::look::profile::pass(&self.gpu, "blit", target, None, |rp| self.blit.draw(rp, self.stage.as_ref().unwrap()));
+            self.look.draw_profiled(&self.gpu, target, &self.view_bind, &self.maybes);
+            return;
+        }
         let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame") });
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
