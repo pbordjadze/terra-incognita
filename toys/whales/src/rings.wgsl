@@ -12,7 +12,7 @@ struct Rings {
     at: array<vec4f, 64>,     // the whale's place (unit vector) and the ring's radius (radians)
     look: array<vec4f, 64>,   // loudness 0..1, pitch 0..1, which whale (0 humpback, 1 blue), width (radians)
     n: vec4f,                 // x how many
-    ear: vec4f,               // the hydrophone (unit vector), how far down it is (0 none)
+    ears: array<vec4f, 4>,    // the hydrophones (unit vectors), how far down each is (0 none)
     whale: array<vec4f, 2>,   // each whale's place now: the land's shadow is cast from it
     misc: vec4f,              // x the hydrophone's reach (radians)
 };
@@ -74,9 +74,14 @@ fn open_sea(p: vec3f, w: vec3f) -> f32 {
     let n = i32(RS.n.x);
     // each whale's shadow behind the land, worked out once a pixel and only where its rings are
     var open = vec2f(-1.0, -1.0);
-    // the hydrophone: the rings brighten as they pass over it
-    let earD = acos(clamp(dot(G.g, RS.ear.xyz), -1.0, 1.0));
-    let earBoost = 1.0 + 2.2 * RS.ear.w * exp(-sq(earD / max(RS.misc.x, 1e-5)));
+    // the hydrophones: the rings brighten as they pass over each
+    var earBoost = 1.0;
+    for (var e = 0; e < 4; e++) {
+        let ear = RS.ears[e];
+        if (ear.w <= 0.0) { continue; }
+        let earD = acos(clamp(dot(G.g, ear.xyz), -1.0, 1.0));
+        earBoost += 2.2 * ear.w * exp(-sq(earD / max(RS.misc.x, 1e-5)));
+    }
     for (var i = 0; i < n; i++) {
         let a = RS.at[i];
         let l = RS.look[i];
