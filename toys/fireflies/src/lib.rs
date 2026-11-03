@@ -11,6 +11,7 @@
 
 pub mod look;
 pub mod sim;
+pub mod sound;
 
 use serde::{Deserialize, Serialize};
 use sim::{Swarm, Tune};
@@ -25,11 +26,13 @@ const NUDGE_PT: f64 = 26.0;
 /// reach (seconds), and how wide it is drawn (points).
 const RING_PT_S: f64 = 280.0;
 const RING_REACH_S: f64 = 2.0;
-const RING_WIDTH_PT: f64 = 2.5;
-/// Fewer fireflies than this in the middle of the screen and, the hand at rest, the view drifts to the nearest lights.
-const LOST_BELOW: usize = 25;
-/// The view's latitude the hand comes back within at rest, so a pole never fills it.
-const TILT_LIMIT: f64 = 58.0;
+const RING_WIDTH_PT: f64 = 12.0;
+/// The latitudes the view's centre settles within at rest (where the lights are: a pole never fills
+/// the view), and how long after the fingers lift it starts to settle (seconds).
+const SETTLE_LAT: (f64, f64) = (-38.0, 60.0);
+const SETTLE_AFTER: f64 = 1.0;
+/// Closer than this the lights' sheet shows its pixels (about 10 km each): the zoom stops here.
+const MAX_ZOOM: f64 = 5.0;
 
 /// The opening zoom: on a tall screen the whole globe would be a narrow band (the phone: half the
 /// screen black above and below), so it starts closer there, filling about 70% of the height.
@@ -50,6 +53,7 @@ pub struct Fireflies {
     rings: Vec<look::Ring>,
     /// Seconds since the last finger lifted.
     idle: f64,
+    ear: sound::Ear,
     /// Drifting to the lights (until it is over the lit place it was going to).
     drifting: bool,
 }
@@ -76,31 +80,56 @@ impl Fireflies {
         }
         self.rings.push(look::Ring { at: at.to_xyz(), t0: self.swarm.t, speed: RING_PT_S / r, life: (last + 0.6).clamp(1.2, 4.0) });
         ctx.haptic();
+        self.ear.touch((x / (self.globe.view().width as f64 / self.globe.view().ppp)) as f32);
     }
 
-    /// The fireflies in the middle of the screen (a corner's coast doesn't make a view), and the nearest to the screen's centre that is in a crowd (a lit coast
-    /// or a land's field of lights, not a lone island's speck).
-    fn in_view(&self) -> (usize, usize) {
-        let [w, h] = [self.globe.view().width as f64 / self.globe.view().ppp, self.globe.view().height as f64 / self.globe.view().ppp];
+    /// Listens to the screen: each patch's glow, for the chimes (sound.rs).
+    fn listen(&mut self) {
+        let v = self.globe.view();
+        let (w, h) = (v.width as f64 / v.ppp, v.height as f64 / v.ppp);
         let c = toy_kit::LonLat::new(self.globe.camera.lon, self.globe.camera.lat).to_xyz();
-        let (mut n, mut best, mut bd) = (0, 0, f64::MIN);
+        let mut cells = [(0f32, 0f32); sound::COLS * sound::ROWS];
+        for (i, f) in self.swarm.flies.iter().enumerate() {
+            if c[0] * f.xyz[0] + c[1] * f.xyz[1] + c[2] * f.xyz[2] < 0.05 {
+                continue;
+            }
+            let ([x, y], facing) = self.globe.project(toy_kit::LonLat::new(f.lon, f.lat));
+            if facing <= 0.05 || x < 0.0 || y < 0.0 || x >= w || y >= h {
+                continue;
+            }
+            let k = ((y / h * sound::ROWS as f64) as usize).min(sound::ROWS - 1) * sound::COLS + ((x / w * sound::COLS as f64) as usize).min(sound::COLS - 1);
+            let wt = f.weight as f32;
+            cells[k].0 += wt * self.swarm.glow(i, false);
+            cells[k].1 += wt;
+        }
+        self.ear.hear(&cells, self.soft, self.swarm.t);
+    }
+
+    /// The view's half-width as an angle on the globe (radians): how much of the Earth one side of
+    /// the screen's shorter half shows.
+    fn half_angle(&self) -> f64 {
+        let v = self.globe.view();
+        let short = (v.width.min(v.height) as f64 / v.ppp) / 2.0;
+        (short / self.globe.disc().r).min(1.0).asin()
+    }
+
+    /// The firefly in a crowd (a lit land, not a lone island's speck) nearest the screen's centre,
+    /// and how far it is (radians).
+    fn nearest_crowd(&self) -> (usize, f64) {
+        let c = toy_kit::LonLat::new(self.globe.camera.lon, self.globe.camera.lat).to_xyz();
+        let (mut best, mut bd) = (0, f64::MIN);
         for (i, f) in self.swarm.flies.iter().enumerate() {
             let d = c[0] * f.xyz[0] + c[1] * f.xyz[1] + c[2] * f.xyz[2];
-            if d > bd && f.near.len() >= 10 {
+            if d > bd && f.near.len() >= 10 && f.lat > SETTLE_LAT.0 && f.lat < SETTLE_LAT.1 {
                 (bd, best) = (d, i);
             }
-            if d > 0.1 {
-                let ([x, y], facing) = self.globe.project(toy_kit::LonLat::new(f.lon, f.lat));
-                if facing > 0.1 && (x - w / 2.0).abs() <= 0.35 * w && (y - h / 2.0).abs() <= 0.3 * h {
-                    n += 1;
-                }
-            }
         }
-        (n, best)
+        (best, bd.clamp(-1.0, 1.0).acos())
     }
 
-    /// The hand at rest is never left lost: the tilt eases back within the limit, and a view with
-    /// (almost) no lights in it drifts to the nearest.
+    /// Whatever the hand did, the globe at rest settles: north up (the roll eases to nothing), its
+    /// centre within the lit latitudes, and a lit crowd in the middle of the view (at whole-globe
+    /// zoom too). It waits a second after the fingers lift, so a fling plays out first.
     fn steady(&mut self, dt: f64) {
         if self.globe.hand.fingers() > 0 {
             self.idle = 0.0;
@@ -108,33 +137,35 @@ impl Fireflies {
             return;
         }
         self.idle += dt;
-        if self.idle < 0.8 {
+        if self.idle < SETTLE_AFTER {
             return;
         }
+        let k = 1.0 - (-dt * 1.6).exp();
         let cam = &mut self.globe.camera;
-        if cam.lat.abs() > TILT_LIMIT {
-            let lim = TILT_LIMIT * cam.lat.signum();
-            cam.lat -= (cam.lat - lim) * (1.0 - (-dt * 2.5).exp());
-        }
-        let (n, near) = self.in_view();
-        if std::env::var_os("FIREFLIES_DRIFT").is_some() {
-            let (c, f) = (self.globe.camera, &self.swarm.flies[near]);
-            eprintln!("t {:.2} in view {n} cam {:.1},{:.1} z{:.1} target {:.1},{:.1}", self.swarm.t, c.lon, c.lat, c.zoom, f.lon, f.lat);
-        }
-        if n < LOST_BELOW {
+        let roll = (cam.roll + 540.0).rem_euclid(360.0) - 180.0;
+        cam.roll = roll - roll * k;
+        cam.lat += (cam.lat.clamp(SETTLE_LAT.0, SETTLE_LAT.1) - cam.lat) * k;
+        let half = self.half_angle();
+        let (near, far) = self.nearest_crowd();
+        if far > 0.15 * half {
             self.drifting = true;
         }
-        let f = &self.swarm.flies[near];
-        let there = (f.lon - self.globe.camera.lon).abs() + (f.lat - self.globe.camera.lat).abs() < 1.0 / self.globe.camera.zoom;
-        if there {
+        if far < 0.05 * half {
             self.drifting = false;
         }
+        if std::env::var_os("FIREFLIES_DRIFT").is_some() {
+            let (c, f) = (self.globe.camera, &self.swarm.flies[near]);
+            eprintln!(
+                "t {:.2} cam {:.1},{:.1} roll {:.1} z{:.1} crowd {:.1},{:.1} at {:.1} deg (lost past {:.1}) drifting {}",
+                self.swarm.t, c.lon, c.lat, c.roll, c.zoom, f.lon, f.lat, far.to_degrees(), (0.15 * half).to_degrees(), self.drifting
+            );
+        }
         if self.drifting {
-            let k = 1.0 - (-dt * 1.4).exp();
+            let f = &self.swarm.flies[near];
             let cam = &mut self.globe.camera;
             let dlon = (f.lon - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
             cam.lon += dlon * k;
-            cam.lat += (f.lat.clamp(-TILT_LIMIT, TILT_LIMIT) - cam.lat) * k;
+            cam.lat += (f.lat - cam.lat) * k;
         }
     }
 }
@@ -155,6 +186,7 @@ impl Toy for Fireflies {
         // a pinch out goes a little past the whole globe and springs back to it (the kit's rest_zoom)
         globe.hand.min_zoom = 0.8;
         globe.hand.rest_zoom = 1.0;
+        globe.hand.max_zoom = MAX_ZOOM;
         let seed = std::env::var("FIREFLIES_SEED")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -172,6 +204,7 @@ impl Toy for Fireflies {
             rings: Vec::new(),
             idle: 0.0,
             drifting: false,
+            ear: sound::Ear::new(),
         })
     }
 
@@ -240,6 +273,7 @@ impl Toy for Fireflies {
         self.globe.update(&ctx.gpu, ctx.assets.as_ref(), t, dt);
         self.swarm.step(dt);
         self.steady(dt);
+        self.listen();
         if std::env::var_os("FIREFLIES_ORDER").is_some() && (t * 2.0).fract() < dt * 2.0 {
             let o = |lo0: f64, lo1: f64, la0: f64, la1: f64| {
                 move |f: &sim::Firefly| f.lon >= lo0 && f.lon < lo1 && f.lat >= la0 && f.lat < la1
@@ -261,6 +295,10 @@ impl Toy for Fireflies {
         let width = RING_WIDTH_PT / self.globe.disc().r;
         self.look.upload(&ctx.gpu, &self.swarm, self.soft, &self.rings, width);
         self.look.draw(&ctx.gpu, &self.globe, target);
+    }
+
+    fn synth(&mut self) -> Option<Box<dyn toy_kit::Synth>> {
+        Some(Box::new(sound::Chimes::new(self.ear.queue.clone())))
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {

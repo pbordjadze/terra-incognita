@@ -1,0 +1,106 @@
+{
+ "_": "Flings (round 3's critic: two hard flings left a dark, rolled Southern Ocean that never recovered): at whole-globe zoom, a hard flick down over the pole and a hard diagonal flick; within a few seconds of rest the globe settles north up with a lit crowd in the middle; then a pinch far in, which stops where the lights stay round.",
+ "seconds": 24,
+ "fps": 30,
+ "night": true,
+ "events": [
+  {
+   "t": 0.5,
+   "pinch": [
+    [
+     100,
+     426
+    ],
+    [
+     296,
+     426
+    ]
+   ],
+   "to": 0.3,
+   "for": 0.6
+  },
+  {
+   "t": 2.5,
+   "drag": [
+    [
+     196,
+     250
+    ],
+    [
+     196,
+     780
+    ]
+   ],
+   "for": 0.12
+  },
+  {
+   "t": 3.2,
+   "drag": [
+    [
+     90,
+     650
+    ],
+    [
+     330,
+     180
+    ]
+   ],
+   "for": 0.12
+  },
+  {
+   "t": 15.0,
+   "pinch": [
+    [
+     176,
+     426
+    ],
+    [
+     216,
+     426
+    ]
+   ],
+   "to": 9.0,
+   "for": 1.2
+  }
+ ],
+ "shots": [
+  {
+   "t": 2.4,
+   "name": "whole"
+  },
+  {
+   "t": 3.6,
+   "name": "flung"
+  },
+  {
+   "t": 5.0,
+   "name": "come-to-rest"
+  },
+  {
+   "t": 7.0,
+   "name": "settling"
+  },
+  {
+   "t": 10.0,
+   "name": "settled"
+  },
+  {
+   "t": 14.5,
+   "name": "settled-later"
+  },
+  {
+   "t": 17.5,
+   "name": "pinched-far-in"
+  },
+  {
+   "t": 24.0,
+   "name": "close"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 24,
+  "every": 0.0667
+ },
+ "audio": true
+}
