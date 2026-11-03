@@ -1,5 +1,5 @@
 {
-  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's ipa job and adrift.yml both regenerate the source from here.",
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's ipa job, adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
   "apps": [
     {
       "tag": "build",
@@ -21,6 +21,83 @@
       "icon": "adrift-icon.png",
       "iconSource": "adrift/ios/icon/icon.png",
       "tintColor": "#E0A040",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "whales-build",
+      "name": "Whales",
+      "bundleIdentifier": "com.pbordjadze.toy.whales",
+      "subtitle": "Two whales, their songs and their travels",
+      "localizedDescription": "Pick two whales and hear them sing as they travel the real oceans. Working title; a toy in the making.",
+      "icon": "whales-icon.png",
+      "iconSource": "toys/whales/icon.png",
+      "tintColor": "#4A7FA8",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "murmuration-build",
+      "name": "Murmuration",
+      "bundleIdentifier": "com.pbordjadze.toy.murmuration",
+      "subtitle": "A flock, and you one of them",
+      "localizedDescription": "Hundreds of birds on simple rules over the real sky; lean and the flock bends around you. Working title; a toy in the making.",
+      "icon": "murmuration-icon.png",
+      "iconSource": "toys/murmuration/icon.png",
+      "tintColor": "#C98A6A",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "mold-build",
+      "name": "Mold",
+      "bundleIdentifier": "com.pbordjadze.toy.mold",
+      "subtitle": "A slime mold finds the night's cities",
+      "localizedDescription": "A glowing mold on the night Earth seeks the cities' lights and finds the routes between them. Working title; a toy in the making.",
+      "icon": "mold-icon.png",
+      "iconSource": "toys/mold/icon.png",
+      "tintColor": "#E8B84A",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "fireflies-build",
+      "name": "Fireflies",
+      "bundleIdentifier": "com.pbordjadze.toy.fireflies",
+      "subtitle": "Every night city a firefly",
+      "localizedDescription": "Each city of the night Earth blinks its own rhythm; nudge one and continents fall into step. Working title; a toy in the making.",
+      "icon": "fireflies-icon.png",
+      "iconSource": "toys/fireflies/icon.png",
+      "tintColor": "#F2D16B",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "bell-build",
+      "name": "Bell",
+      "bundleIdentifier": "com.pbordjadze.toy.bell",
+      "subtitle": "Strike the Earth and hear it ring",
+      "localizedDescription": "Tap the Earth and it rings in its own measured free oscillations, the chord heard from the place facing you. Working title; a toy in the making.",
+      "icon": "bell-icon.png",
+      "iconSource": "toys/bell/icon.png",
+      "tintColor": "#B8C8D8",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "swell-build",
+      "name": "Swell",
+      "bundleIdentifier": "com.pbordjadze.toy.swell",
+      "subtitle": "Waves on the real sea floor",
+      "localizedDescription": "Touch the sea and a wave crosses the ocean at the speed its real depth gives it; the coasts chime where it arrives. Working title; a toy in the making.",
+      "icon": "swell-icon.png",
+      "iconSource": "toys/swell/icon.png",
+      "tintColor": "#6FA8D0",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "battle-build",
+      "name": "Battle Ink",
+      "bundleIdentifier": "com.pbordjadze.toy.battle",
+      "subtitle": "Cannae as a living engraving",
+      "localizedDescription": "Cannae, 216 BC, on its real ground: two armies of thousands of burin cuts, and your lines of ink are the orders. Working title; a toy in the making.",
+      "icon": "battle-icon.png",
+      "iconSource": "toys/battle/icon.png",
+      "tintColor": "#80225C",
       "minOSVersion": "17.0"
     }
   ]

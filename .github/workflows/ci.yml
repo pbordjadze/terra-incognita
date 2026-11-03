@@ -27,9 +27,10 @@ name: CI
 
 on:
   push:
-    branches-ignore: ['ci-shots/**', 'sidestore']
+    # a toy's or the toy kit's branch merging main would otherwise wake this full UI suite (toys.yml checks them)
+    branches-ignore: ['ci-shots/**', 'sidestore', 'toy-*', 'kit-*']
     # a web pack alone needs no native build: packs.yml (Linux) validates and publishes it
-    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml', 'adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json']
+    paths-ignore: ['Prototypes/**', 'tools/playground/**', '.github/workflows/packs.yml', 'adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'toys/**', 'tools/toys/**', '.github/workflows/toys.yml', 'tools/kit/**', 'docs/kit.md']
   workflow_dispatch:
     inputs:
       device:

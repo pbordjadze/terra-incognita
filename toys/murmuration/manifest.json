@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Murmuration needs none: its sky is worked out from the sun's real position and the air's measured constants (src/sun.rs, src/sky.rs).",
+  "files": {}
+}

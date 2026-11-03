@@ -1,0 +1,76 @@
+{
+ "_": "The whole globe in the hand: a pinch out goes a little past the whole globe and springs back to it; a tap on the eastern US at whole-globe zoom (its answer: a ragged sparkle under the finger and a ring of light setting off the lights round it); a pinch in over southeast Brazil goes to Brazil's lights.",
+ "seconds": 12,
+ "fps": 30,
+ "night": true,
+ "events": [
+  {
+   "t": 0.5,
+   "pinch": [
+    [
+     146,
+     426
+    ],
+    [
+     246,
+     426
+    ]
+   ],
+   "to": 0.4,
+   "for": 0.6
+  },
+  {
+   "t": 3.0,
+   "tap": [
+    170,
+    363
+   ]
+  },
+  {
+   "t": 7.0,
+   "pinch": [
+    [
+     249,
+     544
+    ],
+    [
+     289,
+     544
+    ]
+   ],
+   "to": 3.0,
+   "for": 0.8
+  }
+ ],
+ "shots": [
+  {
+   "t": 1.2,
+   "name": "pinched-out"
+  },
+  {
+   "t": 2.9,
+   "name": "sprung-back"
+  },
+  {
+   "t": 3.25,
+   "name": "tapped"
+  },
+  {
+   "t": 3.7,
+   "name": "tapped-ring"
+  },
+  {
+   "t": 8.5,
+   "name": "pinched-into-brazil"
+  },
+  {
+   "t": 12.0,
+   "name": "brazil"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 12,
+  "every": 0.0667
+ }
+}

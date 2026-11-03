@@ -225,6 +225,6 @@ retirement (row 195) the packs named below are at `before-retirement-2026-10-31`
 
 ## The engine's apps: the kit and shared tooling
 
-| Tool | What it does | Run | Users |
-| --- | --- | --- | --- |
-| adrift-check play-all | every plan in one process, N at a time: one device and the assets' bytes shared, each plan its own App, so each plays exactly as `play` would (`tools/adrift/play_all_same.sh` proves it); `<out>/<name>.log` and `<out>/<name>/` a plan, `ok`/`FAIL` a line | `adrift-check play-all <plan-or-dir>... <out-dir> [-j N]` | `tools/adrift/touch-play.sh`, `gpu-runner.sh` |
+Adrift, the toys and the engine's other users (busquets, traveling-squadron) have their own table, one
+line a tool as it lands: `docs/kit.md` › The tools. (It lives there so a kit change doesn't start this
+repository's macOS CI: `ci.yml` ignores `docs/kit.md` and `tools/kit/`.)

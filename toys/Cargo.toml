@@ -1,0 +1,33 @@
+# The toys: each its own app (toys/README.md). toy-kit is what they share; each toy is one crate.
+[workspace]
+resolver = "2"
+members = ["crates/toy-kit", "whales", "murmuration", "mold", "fireflies", "bell", "swell", "battle"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+toy-kit = { path = "crates/toy-kit" }
+wgpu = { version = "26", default-features = false, features = ["wgsl"] }
+bytemuck = { version = "1", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+anyhow = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+panic = "abort"
+strip = "debuginfo"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3

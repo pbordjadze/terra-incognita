@@ -1,0 +1,182 @@
+name: Toys
+
+# The toys (toys/README.md): each its own app beside Terra and Adrift in the same SideStore source.
+#   plan    which toys this push touches (tools/toys/ci_plan.py).
+#   check   Linux, a toy at a time: built, tested, every plan in toys/<toy>/plans played headless on Mesa's
+#           software Vulkan; the shots, films (MP4 and contact sheet) and sound are the `<toy>-check`
+#           artifact: look at them.
+#   ipa     macOS (the five runners are shared with every app: one build a toy a round): on main for a
+#           toy whose own directory changed, on a branch when the commit's first line says
+#           `[toys-ipa <toy>]`. On main it is released as `<toy>-build-<n>` (the five newest kept);
+#           on a branch it is the `<toy>-ipa` artifact.
+#   publish on main after a release: the SideStore source regenerated with every app (ci/sidestore_publish.sh).
+
+on:
+  push:
+    branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
+    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml']
+  workflow_dispatch:
+    inputs:
+      toy:
+        description: The toy (empty for all)
+        type: string
+        default: ''
+      ipa:
+        description: Build its IPA too (macOS runner)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # a branch's newer push cancels its older run; on main every merge runs to the end (two toys' rounds
+  # may merge a minute apart)
+  group: toys-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      check: ${{ steps.plan.outputs.check }}
+      ipa: ${{ steps.plan.outputs.ipa }}
+      kit: ${{ steps.plan.outputs.kit }}
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false, fetch-depth: 0, filter: 'blob:none' }
+      - id: plan
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          python3 tools/toys/ci_plan.py "${{ github.event_name }}" "${{ github.ref_name }}" "${{ github.event.before }}" "${{ github.sha }}" "$MESSAGE" "${{ inputs.toy }}" "${{ inputs.ipa }}" | tee -a "$GITHUB_OUTPUT"
+
+  check:
+    needs: [plan]
+    if: ${{ needs.plan.outputs.check != '[]' }}
+    name: Check ${{ matrix.toy }} on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        toy: ${{ fromJSON(needs.plan.outputs.check) }}
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: toys, key: '${{ matrix.toy }}' }
+      - name: Software Vulkan, ffmpeg and the data
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers ffmpeg > /dev/null
+          python3 tools/toys/assets.py ${{ matrix.toy }} --link
+      - name: Build and test
+        working-directory: toys
+        run: |
+          cargo build --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check
+          cargo test --release -p toy-kit -p ${{ matrix.toy }}
+          cargo clippy --release -p ${{ matrix.toy }} -- -D warnings || echo "::warning::clippy has findings"
+      - name: Launch check (every shader translated to Metal as on the iPhone)
+        run: |
+          command -v naga > /dev/null || cargo install -q naga-cli --version 26.0.0 --locked
+          bash tools/toys/launch_check.sh ${{ matrix.toy }}
+      - name: Play every plan
+        working-directory: toys
+        # every touch in a plan must do something visible (warned, not failed, unless a plan is strict)
+        env: { KIT_TAP_CHECK: '1' }
+        run: |
+          mkdir -p build/out
+          for p in ${{ matrix.toy }}/plans/*.json; do
+            n=$(basename "$p" .json)
+            cargo run -q --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
+            if [ -d "build/out/$n/film" ]; then bash ../tools/toys/film.sh "build/out/$n" && rm -rf "build/out/$n/film"; fi
+          done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: '${{ matrix.toy }}-check', path: toys/build/out, if-no-files-found: error }
+
+  kit:
+    # toy-kit as other repositories use it (docs/kit.md): without the globe, and the web shell for
+    # wasm32. Only when toy-kit changed; nothing needs it, so it never holds a toy's check or release.
+    needs: [plan]
+    if: ${{ needs.plan.outputs.kit == 'true' }}
+    name: toy-kit without the globe, and for the web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Build
+        working-directory: toys
+        run: |
+          # the budget's test makes a device (Mesa's software Vulkan, as the check jobs)
+          sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers > /dev/null
+          rustup target add wasm32-unknown-unknown
+          cargo build -p toy-kit --no-default-features
+          cargo test -q -p toy-kit --no-default-features
+          cargo check -p toy-kit --no-default-features --features web --target wasm32-unknown-unknown
+
+  ipa:
+    needs: [plan, check]
+    if: ${{ !cancelled() && needs.plan.outputs.ipa != '[]' && needs.check.result == 'success' }}
+    name: IPA for ${{ matrix.toy }} (unsigned device build)
+    permissions:
+      contents: write
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        toy: ${{ fromJSON(needs.plan.outputs.ipa) }}
+    env:
+      BUILD: ${{ github.run_number }}
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: aarch64-apple-ios }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: toys, key: 'ios-${{ matrix.toy }}' }
+      - name: Build the IPA
+        run: |
+          mkdir -p out
+          BUILD="$BUILD" bash toys/ios/build.sh ${{ matrix.toy }} out 2>&1 | tee out/ipa-build.log | tail -40
+          ls -l out/${{ matrix.toy }}.ipa
+          bash tools/toys/launch_check.sh ${{ matrix.toy }} --ipa out/${{ matrix.toy }}.ipa
+      - name: Release
+        if: github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TOY: ${{ matrix.toy }}
+        run: |
+          TAG="$TOY-build-$BUILD"
+          git log -1 --format=%s > out/notes.txt
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "out/$TOY.ipa" --clobber
+          else
+            gh release create "$TAG" "out/$TOY.ipa" --prerelease --target "$GITHUB_SHA" \
+              --title "$(python3 -c "import json; print(json.load(open('toys/$TOY/toy.json'))['name'])") build $BUILD" --notes-file out/notes.txt
+          fi
+          gh release list --limit 200 --json tagName -q '.[].tagName' | grep "^$TOY-build-[0-9]*$" | sort -t- -k3 -n -r | tail -n +6 |
+            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with: { name: '${{ matrix.toy }}-ipa', path: out, if-no-files-found: error }
+
+  publish:
+    needs: [plan, ipa]
+    if: ${{ !cancelled() && github.ref_name == 'main' && needs.plan.outputs.ipa != '[]' && needs.ipa.result != 'skipped' }}
+    name: SideStore source
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # one publish at a time; a newer one waiting replaces an older one waiting (it reads every release)
+    concurrency: { group: toys-sidestore-source, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v5
+      - name: Regenerate and push the source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash ci/sidestore_publish.sh build/source "SideStore source after toys build ${{ github.run_number }} (${{ join(fromJSON(needs.plan.outputs.ipa), ', ') }})"

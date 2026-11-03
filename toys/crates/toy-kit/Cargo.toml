@@ -1,0 +1,40 @@
+[package]
+name = "toy-kit"
+# its own version (the tag toy-kit-v<version> is the stable API: CHANGES.md); the toys keep the workspace's
+version = "0.2.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "What every toy stands on: the GPU, the data, the real globe by day and night, a 2D painter, a backdrop, layers, a sound out, the device's C ABI, the web shell and the headless check."
+
+[features]
+# `globe`: the real globe by day and night (`globe`, `gpu::Textures`), which names Terra's NASA-derived
+# assets. `default-features = false` builds the kit without it.
+default = ["globe"]
+globe = []
+# `web`: the WebGPU shell (`web::run`), on wasm32 only; its dependencies are wasm32's alone, so a
+# native build with or without it is the same.
+web = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys", "dep:console_error_panic_hook"]
+
+[dependencies]
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+image = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+anyhow = { workspace = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+wgpu = { workspace = true, features = ["metal"] }
+
+[target.'cfg(all(not(target_os = "ios"), not(target_arch = "wasm32")))'.dependencies]
+wgpu = { workspace = true, features = ["vulkan", "metal", "counters"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu = { workspace = true, features = ["webgpu"] }
+wasm-bindgen = { version = "=0.2.130", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "Element", "HtmlCanvasElement", "PointerEvent", "Performance", "console", "DomRect", "Storage", "MediaQueryList", "AudioContext", "BaseAudioContext", "AudioContextState", "AudioDestinationNode", "AudioNode", "ScriptProcessorNode", "AudioProcessingEvent", "AudioBuffer", "Navigator"] }
+console_error_panic_hook = { version = "0.1", optional = true }

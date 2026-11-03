@@ -1,0 +1,19 @@
+{
+  "_": "A first-timer's lean: hold at 10 s, wander a little, lean up and right hard for 4 s, bring the finger back almost to where it came down, let go at 26 s. You must never leave the flock: within a second of the finger coming back you are in its thick again. Measure: python3 tools/toys/murmuration/holds.py toys/murmuration/plans/lean-back.json",
+  "restore": "{\"day\": 9803, \"minutes\": -10, \"fixed\": true}",
+  "seconds": 32,
+  "fps": 30,
+  "events": [
+    { "t": 10.0, "down": [196, 520], "id": 1 },
+    { "t": 12.0, "move": [215, 510], "id": 1 },
+    { "t": 14.0, "move": [180, 530], "id": 1 },
+    { "t": 16.0, "move": [205, 515], "id": 1 },
+    { "t": 19.0, "move": [330, 380], "id": 1 },
+    { "t": 21.0, "move": [350, 360], "id": 1 },
+    { "t": 23.0, "move": [205, 510], "id": 1 },
+    { "t": 26.0, "up": [205, 510], "id": 1 }
+  ],
+  "shots": [{ "t": 15.0, "name": "wander" }, { "t": 21.5, "name": "lean" }, { "t": 24.0, "name": "back" }, { "t": 25.5, "name": "settled" }, { "t": 27.0, "name": "letgo" }],
+  "film": { "from": 0, "to": 32, "every": 0.1 },
+  "audio": true
+}

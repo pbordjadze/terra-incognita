@@ -1,0 +1,13 @@
+{
+  "_": "The core moment: the app opens on both whales, held, singing in late November (the humpback in Monterey Bay, the blue whale off Baja going south); each moment of each song a ring over the sea; the film and the sound together.",
+  "seconds": 12,
+  "fps": 30,
+  "audio": true,
+  "events": [],
+  "shots": [
+    { "t": 0.5, "name": "open" },
+    { "t": 4.0, "name": "singing" },
+    { "t": 11.0, "name": "later" }
+  ],
+  "film": { "from": 0, "to": 12, "every": 0.1 }
+}

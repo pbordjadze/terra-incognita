@@ -1,0 +1,13 @@
+{
+ "_": "A strike over the Caribbean, then the ringing globe turned under a finger: the chord changes as the place facing you moves from near the strike toward its far side (the ear is at the screen's centre). Then two quick strikes close together, which add.",
+ "seconds": 12,
+ "fps": 30,
+ "events": [
+  { "t": 0.6, "tap": [196, 300] },
+  { "t": 2.0, "drag": [[300, 430], [90, 440]], "for": 2.5 },
+  { "t": 7.0, "tap": [150, 420] },
+  { "t": 7.4, "tap": [240, 480] }
+ ],
+ "shots": [{ "t": 1.0, "name": "struck" }, { "t": 3.5, "name": "turning" }, { "t": 7.8, "name": "two" }, { "t": 11.9, "name": "after" }],
+ "audio": true
+}

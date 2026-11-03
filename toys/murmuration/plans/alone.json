@@ -1,0 +1,8 @@
+{
+  "_": "Left alone for ninety seconds, from the watcher's place: the flock should keep folding and pulsing (agitation waves now and then), one body, not a stiff oval.",
+  "restore": "{\"day\": 9803, \"minutes\": -14, \"fixed\": true}",
+  "seconds": 90,
+  "fps": 30,
+  "shots": [{ "t": 30, "name": "thirty" }, { "t": 60, "name": "sixty" }, { "t": 89, "name": "eightynine" }],
+  "film": { "from": 0, "to": 90, "every": 1.0 }
+}
