@@ -36,6 +36,16 @@ const GLOW = vec3f(255.0, 128.0, 40.0) / 255.0;      // the light round a city, 
 const FLY = vec3f(190.0, 255.0, 90.0) / 255.0;
 const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
 
+fn soft_light(uv: vec2f, lod: f32, dims: vec2f) -> f32 {
+    let o = exp2(lod) / dims * 0.6;
+    var v = textureSampleLevel(lightsTex, linearS, uv, lod).r * 2.0;
+    v += textureSampleLevel(lightsTex, linearS, uv + vec2f(o.x, 0.4 * o.y), lod).r;
+    v += textureSampleLevel(lightsTex, linearS, uv + vec2f(-0.4 * o.x, o.y), lod).r;
+    v += textureSampleLevel(lightsTex, linearS, uv + vec2f(-o.x, -0.4 * o.y), lod).r;
+    v += textureSampleLevel(lightsTex, linearS, uv + vec2f(0.4 * o.x, -o.y), lod).r;
+    return v / 6.0;
+}
+
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let pix = in.position.xy;
     let R = U.disc.z * U.frame.z;
@@ -51,12 +61,17 @@ const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
     let coarse = (g.g * 255.0 - 128.0) * 2.0;
     // land or sea, softly (no coast is drawn: the land is only a breath warmer than the water)
     let landa = smoothstep(-3.0, 3.0, coarse);
-    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
     let ldims = vec2f(textureDimensions(lightsTex));
     let lod0 = log2(max(max(length(gr.dx * ldims), length(gr.dy * ldims)), 1e-4));
-    let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.0, 0.0)).r;
-    let near = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 3.5, 0.0)).r;
-    let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 5.5, 0.0)).r;
+    // (close in, a coarse level's texels would show through the glow as soft blocks: each glow is
+    // read five times about the pixel, half a texel of its level apart, and averaged)
+    // the lights themselves: magnified past the sheet's own pixels (about 10 km) they are read soft
+    // too, so a town is a glow and not a cell
+    let sharp = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
+    let lightsRaw = mix(sharp, soft_light(G.uv, 0.0, ldims * 0.7), smoothstep(0.0, -1.5, lod0));
+    let halo = soft_light(G.uv, max(lod0 + 2.0, 0.0), ldims);
+    let near = soft_light(G.uv, max(lod0 + 3.5, 0.0), ldims);
+    let wide = soft_light(G.uv, max(lod0 + 5.5, 0.0), ldims);
     // the fireflies here: their glow, blended by nearness (r / g), where any are
     let fs = textureSampleLevel(fieldTex, linearS, G.uv, 0.0);
     let cover = smoothstep(0.0, 0.12, fs.g);
@@ -70,7 +85,10 @@ const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
     let shimmer = vnoise3(G.g * 1400.0 + vec3f(tt * 0.45, tt * 0.31, 7.9));
     let lit = 1.25 * pow(lightsRaw, 0.7) * (0.9 + 0.2 * shimmer);
     let l = lit * level;
-    let tint = L.a.z * smoothstep(0.3, 1.0, glow) * cover;
+    // far out (the whole globe), a flash is a few pixels: it is drawn greener and its bloom wider, so
+    // a region falling into step reads from arm's length
+    let far = 1.0 - smoothstep(1.3, 3.0, U.disc.w);
+    let tint = min(L.a.z * (1.0 + 0.3 * far), 1.0) * smoothstep(0.3, 1.0, glow) * cover;
     // a light's colour by how bright it is: ember, amber, gold, a whitening heart
     var lc = mix(EMBER, AMBER, smoothstep(0.05, 0.35, l));
     lc = mix(lc, GOLD, smoothstep(0.35, 0.8, l));
@@ -83,7 +101,7 @@ const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
     col = col + airc * (0.55 * pow(halo, 1.0) + 0.40 * pow(near, 1.3) + 0.22 * pow(wide, 1.8)) * level;
     // a flash's own bloom: the light a swarm in step throws into the night round it
     let flash = smoothstep(0.35, 1.0, glow) * cover * L.a.w;
-    col = col + FLY * (0.45 * pow(near, 1.0) + 0.45 * pow(wide, 1.2)) * flash;
+    col = col + FLY * (0.45 * pow(near, 1.0) + 0.45 * pow(wide, 1.2)) * flash * (1.0 + 1.6 * far);
     // a finger's flash, spreading from where it touched as light, not a line: a soft wavefront with a
     // long fading wake behind it, faint in the dark air over the sea, lifting the city lights it passes
     // over (they flash as it reaches them: sim.rs touch)
