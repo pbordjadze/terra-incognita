@@ -1,0 +1,18 @@
+{
+  "_": "The same on the 13-inch iPad: the mist condensing, a flake fed in the Sahara, a drag that turns the globe east to Asia's network.",
+  "size": [2064, 2752],
+  "ppp": 2,
+  "seconds": 22,
+  "fps": 30,
+  "night": true,
+  "events": [
+    { "t": 8.0, "tap": [516, 820] },
+    { "t": 14.0, "drag": [[800, 700], [420, 700]], "for": 1.5 }
+  ],
+  "shots": [
+    { "t": 0.1, "name": "first" },
+    { "t": 7.9, "name": "network" },
+    { "t": 13.9, "name": "reaching" },
+    { "t": 22.0, "name": "asia" }
+  ]
+}
