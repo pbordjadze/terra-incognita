@@ -25,6 +25,13 @@ const DUSK_TO: f64 = 28.0;
 const DUSK_RATE: f64 = 1.5;
 const BIRDS: usize = 6000;
 const MSAA: u32 = 4;
+/// When the eye first glides in by itself (seconds after opening), how long it rides, and how long
+/// untouched before it shows again.
+const FIRST_SHOW: f64 = 4.5;
+const SHOW_FOR: f64 = 6.0;
+const SHOW_AGAIN: f64 = 40.0;
+/// How far behind your bird the eye rides while flying, metres.
+const EYE_BEHIND: f32 = 4.5;
 /// How far from the roost the watcher stands, metres.
 const WATCHER: f32 = 65.0;
 
@@ -105,6 +112,12 @@ pub struct Murmuration {
     /// How long and hard the finger has leaned out of the flock (0..1): the lean's limit gives with it.
     strain: f32,
     release_t: f64,
+    /// The toy's own clock (seconds since it opened), and when the eye next glides in by itself:
+    /// a few seconds after opening, and again after a while untouched, the eye drops in behind your
+    /// bird, rides a while and rises out, showing without a word what a touch does.
+    clock: f64,
+    show_next: f64,
+    show_until: f64,
     finger: Option<(u64, [f64; 2])>,
     eye: Eye,
     t: f64,
@@ -220,8 +233,9 @@ impl Murmuration {
         let c_loc = if n_loc > 20 { c_loc } else { centre };
         let kc = (dt / 0.8).min(1.0);
         self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
-        let mut near = sub(you.pos, scale(self.dir3, 6.5));
-        // Below the flock round you, so it stands against the sky, not the land.
+        // Close behind your bird and a little under it, so it is the one bird that holds still on
+        // the glass while the flock streams past: you.
+        let mut near = sub(you.pos, scale(self.dir3, EYE_BEHIND));
         near[1] = (you.pos[1] - 1.5).min(self.flock_look[1] - 1.8).max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
@@ -233,7 +247,7 @@ impl Murmuration {
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
         let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
-        let focal = focal * (1.15 - 0.03 * e);
+        let focal = focal * (1.15 - 0.03 * e) * (1.0 - 0.07 * self.flock.lean_k * e);
         let mut fwd = norm(sub(look, pos));
         // Never so steeply up that the land leaves the frame (from afar).
         // Flying, never pitched up so far that the dusk leaves the glass: the horizon stays in the
@@ -435,6 +449,9 @@ impl Toy for Murmuration {
             near_to: 0.0,
             strain: 0.0,
             release_t: -10.0,
+            clock: 0.0,
+            show_next: FIRST_SHOW,
+            show_until: -1.0,
             finger: None,
             eye,
             t: 0.0,
@@ -474,6 +491,8 @@ impl Toy for Murmuration {
                 if self.finger.is_none() {
                     self.finger = Some((e.id, [e.x, e.y]));
                     self.near_to = 1.0;
+                    self.show_until = -1.0;
+                    self.show_next = self.clock + SHOW_AGAIN;
                     ctx.haptic();
                 }
             }
@@ -488,7 +507,8 @@ impl Toy for Murmuration {
                 if let Some((id, _)) = self.finger {
                     if id == e.id {
                         self.finger = None;
-                        self.release_t = self.t;
+                        self.release_t = self.clock;
+                        self.show_next = self.clock + SHOW_AGAIN;
                     }
                 }
             }
@@ -497,6 +517,7 @@ impl Toy for Murmuration {
 
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.t = t;
+        self.clock += dt;
         // The dusk moves on, and the sky's table follows the sun a few rows a frame.
         self.minutes = (self.minutes + dt * self.rate / 60.0).min(DUSK_TO);
         let (el, az) = self.sun_at(self.minutes);
@@ -547,7 +568,13 @@ impl Toy for Murmuration {
             self.strain = (self.strain - dt as f32 * 0.5).max(0.0);
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
-            if t - self.release_t > 1.6 {
+            if self.clock >= self.show_next {
+                self.show_until = self.clock + SHOW_FOR;
+                self.show_next = self.clock + SHOW_FOR + SHOW_AGAIN;
+            }
+            if self.clock < self.show_until {
+                self.near_to = 1.0;
+            } else if self.clock - self.release_t > 1.6 {
                 self.near_to = 0.0;
             }
         }
@@ -559,7 +586,7 @@ impl Toy for Murmuration {
             }
         }
         // The eye drops in quickly and rises out slowly.
-        let rate = if self.near_to > self.near { 1.0 / 0.9 } else { 1.0 / 2.6 };
+        let rate = if self.near_to > self.near { if self.finger.is_some() { 1.0 / 0.6 } else { 1.0 / 1.4 } } else { 1.0 / 2.6 };
         let step = (dt as f32 * rate).min((self.near_to - self.near).abs());
         self.near += step * (self.near_to - self.near).signum();
         self.place_eye(ctx, dt as f32);
