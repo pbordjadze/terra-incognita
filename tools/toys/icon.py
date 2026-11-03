@@ -78,7 +78,40 @@ def fireflies():
     return img
 
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies}
+def battle():
+    """Battle Ink: on warm paper, the Roman mass in iron-gall cuts held in a ring of Tyrian purple."""
+    img = Image.new('RGBA', (N, N), (239, 231, 214, 255))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(216)
+    for _ in range(3000):  # paper fibres
+        x, y = rnd.uniform(0, N), rnd.uniform(0, N)
+        d.line([(x, y), (x + rnd.uniform(-2, 2), y + rnd.uniform(4, 14))], fill=(200, 186, 160, 60), width=1)
+
+    def cut(x, y, a, L, w, col):
+        pts_l, pts_r = [], []
+        for k in range(9):
+            t = k / 8
+            s = (t - 0.5) * L
+            hw = w * math.sin(math.pi * t) ** 0.7
+            cx, cy = x + math.cos(a) * s, y + math.sin(a) * s
+            pts_l.append((cx - math.sin(a) * hw, cy + math.cos(a) * hw))
+            pts_r.append((cx + math.sin(a) * hw, cy - math.cos(a) * hw))
+        d.polygon(pts_l + pts_r[::-1], fill=col)
+    cx, cy = 512, 540
+    for _ in range(520):  # Rome, pressed into the pocket
+        r = 230 * math.sqrt(rnd.random())
+        t = rnd.uniform(0, math.tau)
+        x, y = cx + r * math.cos(t), cy + r * math.sin(t) * 0.8
+        cut(x, y, math.pi / 2 + rnd.uniform(-0.25, 0.25) + (x - cx) / 900, 34, 4.5, (38, 46, 70, 255))
+    for _ in range(700):  # Carthage, the ring closing round it, combed along it
+        t = rnd.uniform(0, math.tau)
+        r = rnd.uniform(270, 360)
+        x, y = cx + r * math.cos(t), cy + r * math.sin(t) * 0.8
+        cut(x, y, t + math.pi / 2 + rnd.uniform(-0.2, 0.2), 40, 5, (128, 34, 92, 255))
+    return img
+
+
+DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'battle': battle}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
