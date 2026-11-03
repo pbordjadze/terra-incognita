@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marbling</title>
+<style>html,body{margin:0;height:100%;background:#2a2622;overflow:hidden;touch-action:none}
+canvas{display:block;width:100vw;height:100vh}</style></head>
+<body><canvas id="c"></canvas>
+<script src="marble.js"></script><script src="look.js"></script>
+<script>
+'use strict';
+// Touch: the first touch flicks the brush and the armies' drops fall in their order of battle; a stroke is
+// a stylus drawn through the size; holding still lays a sheet and lifts the print; a touch on the print
+// begins a fresh tray. ?manual leaves the clock to the caller (window.tick).
+const manual = location.search.includes('manual');
+const cv = document.getElementById('c');
+const dpr = Math.min(2, window.devicePixelRatio || 1);
+cv.width = MW * dpr; cv.height = MH * dpr;
+const dye = document.createElement('canvas'); dye.width = MW * dpr; dye.height = MH * dpr;
+const dctx = dye.getContext('2d', { willReadFrequently: true }); // a CPU canvas: uploads without a GPU round trip
+const S = { m: new Marble(7), t: 0, sprinkled: false, printed: 0, sheet: 0, phase: 'tray', down: null, path: [], hold: 0, still: 0 };
+let look;
+const toSim = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * MW, (e.clientY - r.top) / r.height * MH]; };
+cv.addEventListener('pointerdown', (e) => {
+  const p = toSim(e);
+  if (S.phase === 'print') { S.m = new Marble(7 + Math.floor(S.t * 10)); S.sprinkled = false; S.printed = 0; S.sheet = 0; S.phase = 'tray'; }
+  if (!S.sprinkled) { S.m.sprinkle(); S.sprinkled = true; S.down = null; return; }
+  S.down = p; S.last = p; S.path = []; S.still = 0; S.moved = 0;
+});
+cv.addEventListener('pointermove', (e) => { if (!S.down) return; const p = toSim(e); S.path.push(p); });
+const up = () => { S.down = null; S.still = 0; };
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+
+function tick(dt, show = true) {
+  S.t += dt;
+  if (S.down && S.phase === 'tray') {
+    let moved = 0;
+    for (const p of S.path) { const l = S.last; moved += Math.hypot(p[0] - l[0], p[1] - l[1]); S.m.stylus(l[0], l[1], p[0], p[1]); S.last = p; }
+    S.path = [];
+    S.moved += moved;
+    S.still = moved < 0.5 ? S.still + dt : 0;
+    if (S.still > 0.9 && S.m.polys.length) { S.phase = 'sheet'; S.down = null; }
+  }
+  if (S.phase === 'sheet') {
+    S.sheet = Math.min(1, S.sheet + dt / 0.8);
+    if (S.sheet >= 1) { S.hold = (S.hold || 0) + dt; if (S.hold > 0.35) { S.phase = 'lift'; S.hold = 0; } }
+  }
+  if (S.phase === 'lift') { S.printed = Math.min(1, S.printed + dt / 0.5); if (S.printed >= 1) S.phase = 'print'; }
+  S.m.step(dt);
+  if (show) render();
+}
+function render() {
+  S.m.draw(dctx, dpr);
+  look.render(S.t, S.printed, S.phase === 'print' || S.phase === 'lift' ? 0 : S.sheet);
+}
+const img = new Image();
+img.onload = () => {
+  look = new Look(cv, dye, img);
+  tick(0);
+  window.ready = true;
+  if (!manual) { let last = performance.now(); const loop = (now) => { tick(Math.min(0.05, (now - last) / 1000)); last = now; requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+};
+img.src = 'ground.png';
+window.tick = tick; window.render = render; window.S = S; window.dctx = dctx; window.look = () => look;
+</script></body></html>
