@@ -37,13 +37,13 @@ fn at(uv: vec2f) -> f32 { return textureSampleLevel(eta, samp, uv, 0.0).r; }
     let sea = 1.0 - smoothstep(-0.8, 0.2, fine);
     let open = smoothstep(1.5, 6.0, -fine);
     let surf = (1.0 - smoothstep(0.5, 4.5, -fine)) * sea * tanh(abs(h) * S.info.y * 1.6);
-    let b = max(s, 0.0) * 0.8 * rim * open;
-    let d = max(-s, 0.0) * 0.5 * rim * open;
-    let glow = tanh(abs(h) * S.info.y) * 0.4 * rim * open;
+    let b = max(s, 0.0) * 0.6 * rim * open;
+    let d = max(-s, 0.0) * 0.7 * rim * open;
+    let glow = tanh(abs(h) * S.info.y) * 0.22 * rim * open;
     let light = vec3f(1.0, 0.99, 0.94);
     let deep = vec3f(0.10, 0.22, 0.42);
     let lit = (b + glow + surf * 0.9 * rim) * sea;
     let dk = d * sea;
-    let a = clamp(lit + dk, 0.0, 0.9);
+    let a = clamp(lit + dk, 0.0, 0.75);
     return vec4f(light * lit + deep * dk, a);
 }

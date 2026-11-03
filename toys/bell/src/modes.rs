@@ -40,14 +40,14 @@ pub fn heard(i: usize) -> (f64, f64) {
 }
 
 /// The breathing mode's decay at most (its Q of 5300 would hold it as a drone over all the rest).
-pub const BREATH: f64 = 4.0;
+pub const BREATH: f64 = 1.6;
 
 /// How strongly a strike excites each degree (drawn: an even, mallet-like spectrum falling with l;
 /// the breathing mode gently).
 pub fn weight(i: usize) -> f64 {
     let l = MODES[i].0 as f64;
     if l == 0.0 {
-        0.25
+        0.05
     } else {
         (2.0 * l + 1.0) / (4.0 * std::f64::consts::PI) * 2.6 / l.powf(1.25)
     }

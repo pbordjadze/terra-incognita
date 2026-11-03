@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy)]
 pub enum Note {
-    Plunk { amp: f64, pan: f64 },
+    Plunk { amp: f64, pan: f64, freq: f64 },
     Chime { freq: f64, amp: f64, pan: f64 },
 }
 
@@ -20,6 +20,8 @@ struct Voice {
     decay: f64,
     pan: f64,
     plunk: bool,
+    lp: f64,
+    seed: u32,
 }
 
 pub struct Chimes {
@@ -45,8 +47,8 @@ impl toy_kit::Synth for Chimes {
                     self.voices.remove(k);
                 }
                 self.voices.push(match n {
-                    Note::Plunk { amp, pan } => Voice { freq: 150.0, phase: [0.0; 3], amp, t: 0.0, decay: 0.22, pan, plunk: true },
-                    Note::Chime { freq, amp, pan } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 1.5, pan, plunk: false },
+                    Note::Plunk { amp, pan, freq } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 0.22, pan, plunk: true, lp: 0.0, seed: 7 },
+                    Note::Chime { freq, amp, pan } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 1.5, pan, plunk: false, lp: 0.0, seed: (freq * 13.0) as u32 | 1 },
                 });
             }
         }
@@ -71,6 +73,12 @@ impl toy_kit::Synth for Chimes {
                         // the upper partials die sooner, as glass's do
                         s += a * (tau * v.phase[p]).sin() * (-v.t * ratio * 0.6).exp();
                     }
+                    // the wash: soft noise swelling in over 0.15 s and out over 0.8
+                    v.seed = v.seed.wrapping_mul(1664525).wrapping_add(1013904223);
+                    let w = (v.seed >> 8) as f64 / (1u32 << 24) as f64 * 2.0 - 1.0;
+                    v.lp += (w - v.lp) * 0.06;
+                    let swell = (v.t / 0.15).min(1.0) * (-v.t / 0.8).exp();
+                    s += 0.9 * v.lp * swell;
                 }
                 let s = s * env * 0.2;
                 if channels >= 2 {

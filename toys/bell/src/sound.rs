@@ -166,6 +166,7 @@ impl toy_kit::Synth for Voice {
         let gain = 0.6;
         for r in &mut self.ringing {
             let n = frames as f64;
+            let a0 = r.age;
             for p in &mut r.partials {
                 if p.env < 1e-4 {
                     continue;
@@ -173,13 +174,15 @@ impl toy_kit::Synth for Voice {
                 let (dc, ds) = ((p.tc - p.c) / n, (p.ts - p.s) / n);
                 let (gl, gr) = ((1.0 - p.pan) * gain, (1.0 + p.pan) * gain);
                 for f in 0..frames {
+                    // a 4 ms rise, so the strike never clicks
+                    let rise = ((a0 + f as f64 / rate) / 0.004).min(1.0);
                     let (re, im) = (p.re * p.rot.0 - p.im * p.rot.1, p.re * p.rot.1 + p.im * p.rot.0);
                     p.re = re;
                     p.im = im;
                     p.env *= p.decay_k;
                     p.c += dc;
                     p.s += ds;
-                    let v = p.env * (p.c * re + p.s * im);
+                    let v = rise * p.env * (p.c * re + p.s * im);
                     if channels >= 2 {
                         out[f * channels] += (v * gl) as f32;
                         out[f * channels + 1] += (v * gr) as f32;
@@ -200,8 +203,7 @@ impl toy_kit::Synth for Voice {
                     self.seed = self.seed.wrapping_mul(1664525).wrapping_add(1013904223);
                     let w = (self.seed >> 8) as f64 / (1u32 << 24) as f64 * 2.0 - 1.0;
                     self.lp += (w - self.lp) * 0.08;
-                    let age = r.age;
-                    r.age += 1.0 / rate;
+                    let age = a0 + f as f64 / rate;
                     let rise = (age / 0.003).min(1.0);
                     let tink: f64 = TINK.iter().map(|&(fr, a)| a * (2.0 * std::f64::consts::PI * fr * age).sin() * (-age * fr / 60.0).exp()).sum();
                     let v = (rise * r.knock * r.strength * (0.5 * self.lp * (-age / 0.012).exp() + 0.22 * tink)) as f32;
@@ -211,6 +213,9 @@ impl toy_kit::Synth for Voice {
                     }
                 }
             }
+        }
+        for r in &mut self.ringing {
+            r.age += frames as f64 / rate;
         }
         self.ringing.retain(|r| r.knock > 1e-3 || r.partials.iter().any(|p| p.env > 2e-3));
         // a slow level follower over the whole: piled strikes stay near one loudness

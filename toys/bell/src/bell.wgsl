@@ -85,7 +85,7 @@ fn field(g: vec3f) -> vec4f {
     // the swells as a soft tint, never darker than a shadow on land; the surface wave as light
     var lit = col * (1.0 + 0.14 * min(s, 0.0)) + vec3f(1.0, 0.97, 0.9) * 0.18 * max(s, 0.0);
     lit = lit * mix(vec3f(1.0), select(vec3f(0.95, 0.99, 1.05), vec3f(1.05, 1.01, 0.95), warm > 0.0), abs(warm) * 0.6);
-    lit += vec3f(1.0, 0.95, 0.82) * 0.55 * tanh(max(ring_light, 0.0) * 2.5);
+    lit += vec3f(1.0, 0.95, 0.82) * 0.42 * tanh(max(ring_light, 0.0) * 2.0);
     col = mix(col, lit, on);
     return vec4f(col, 1.0);
 }

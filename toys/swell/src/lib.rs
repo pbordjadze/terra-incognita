@@ -22,6 +22,8 @@ const SOURCES: [(f64, f64); 5] = [
     (-147.0, 58.6),  // Alaska, 1964
     (-73.2, -35.8),  // Maule, 2010
 ];
+/// The month the globe and the sea's ice are drawn in (0 = January): September, the north's ice least.
+const MONTH: u32 = 8;
 const PENTA: [f64; 5] = [0.0, 2.0, 4.0, 7.0, 9.0];
 
 #[derive(Serialize, Deserialize)]
@@ -95,8 +97,11 @@ impl Swell {
         let ([x, _], facing) = self.globe.project(at);
         let w = self.globe.disc().cx * 2.0;
         let pan = ((x / w) * 2.0 - 1.0).clamp(-0.8, 0.8);
+        // the drop's note follows the wave's speed there: deep water low, a shelf higher
+        let depth = self.sea.depth_at(at.lon, at.lat).max(20.0);
+        let freq = (120.0 * (4000.0 / depth).powf(0.25)).clamp(90.0, 420.0);
         if let Ok(mut q) = self.queue.lock() {
-            q.push(sound::Note::Plunk { amp: loud * if facing > 0.0 { 1.0 } else { 0.3 }, pan });
+            q.push(sound::Note::Plunk { amp: loud * if facing > 0.0 { 1.0 } else { 0.3 }, pan, freq });
         }
         true
     }
@@ -147,10 +152,11 @@ impl Swell {
 
 impl Toy for Swell {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 2)?;
-        globe.camera = Camera::new(-178.0, 20.0, 1.6);
+        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, MONTH)?;
+        globe.camera = Camera::new(-178.0, 20.0, 1.45);
         globe.hand.max_zoom = 8.0;
-        let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?);
+        let ice = ctx.assets.read(&format!("ice-{:02}.png", MONTH + 1)).ok().and_then(|b| toy_kit::gpu::textures::decode(&b, 1).ok());
+        let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?, ice.as_ref().map(|p| (&p.data[..], p.width as usize, p.height as usize)));
         // the coast's cells gathered by 4-degree tiles: each tile one voice
         let mut coast_region = Vec::with_capacity(sea.coast.len());
         let mut regions: Vec<Region> = Vec::new();

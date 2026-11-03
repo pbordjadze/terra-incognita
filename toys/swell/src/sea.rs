@@ -26,6 +26,7 @@ pub struct Sea {
     inv_cos: Vec<f32>,
     damp: Vec<f32>,
     pub wet: Vec<bool>,
+    depth: Vec<f32>,
     /// sea cells beside land: where waves arrive
     pub coast: Vec<u32>,
     steps: u64,
@@ -76,7 +77,9 @@ pub fn lon_of(i: usize) -> f64 {
 }
 
 impl Sea {
-    pub fn new(depth: &[u8]) -> Sea {
+    /// `ice`: the month's sea-ice concentration (1440 x 720 grey, the globe's grid); sea under half ice
+    /// or more is taken as shore (the ice damps the long waves out).
+    pub fn new(depth: &[u8], ice: Option<(&[u8], usize, usize)>) -> Sea {
         let n = W * H;
         let mut h = vec![0f64; n];
         for k in 0..n.min(depth.len() / 2) {
@@ -86,6 +89,16 @@ impl Sea {
             if lat_of(j).abs() > EDGE_LAT {
                 for i in 0..W {
                     h[j * W + i] = 0.0;
+                }
+            }
+        }
+        if let Some((px, iw, ih)) = ice {
+            for j in 0..H {
+                for i in 0..W {
+                    let (x, y) = (i * iw / W, j * ih / H);
+                    if px.get(y * iw + x).copied().unwrap_or(0) >= 128 {
+                        h[j * W + i] = 0.0;
+                    }
                 }
             }
         }
@@ -130,7 +143,7 @@ impl Sea {
                 damp[k] = if near_land { 0.008 } else { 0.0004 };
             }
         }
-        Sea { eta: vec![0.0; n], prev: vec![0.0; n], ke, kn, inv_cos, damp, wet, coast, steps: 0, scratch: Vec::with_capacity(n) }
+        Sea { depth: h.iter().map(|&d| d as f32).collect(), eta: vec![0.0; n], prev: vec![0.0; n], ke, kn, inv_cos, damp, wet, coast, steps: 0, scratch: Vec::with_capacity(n) }
     }
 
     /// One step of `STEP` seconds of sea, its rows in bands across the cores.
@@ -206,6 +219,12 @@ impl Sea {
         }
     }
 
+    pub fn depth_at(&self, lon: f64, lat: f64) -> f64 {
+        let j = (((90.0 - lat) / 180.0 * H as f64) as usize).min(H - 1);
+        let i = (((lon + 180.0) / 360.0 * W as f64) as usize).min(W - 1);
+        self.depth[j * W + i] as f64
+    }
+
     pub fn is_wet(&self, lon: f64, lat: f64) -> bool {
         let j = (((90.0 - lat) / 180.0 * H as f64) as usize).min(H - 1);
         let i = (((lon + 180.0) / 360.0 * W as f64) as usize).min(W - 1);
@@ -221,7 +240,7 @@ mod tests {
     #[test]
     fn a_drop_spreads_and_stays_bounded() {
         let path = concat!(env!("CARGO_MANIFEST_DIR"), "/data/depth.bin");
-        let mut sea = Sea::new(&std::fs::read(path).unwrap());
+        let mut sea = Sea::new(&std::fs::read(path).unwrap(), None);
         sea.raise(143.2, 38.1, 1.0, 170.0);
         let t = std::time::Instant::now();
         for _ in 0..1080 {
