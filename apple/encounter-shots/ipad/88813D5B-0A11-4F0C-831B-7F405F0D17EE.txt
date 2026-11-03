@@ -1,0 +1,17 @@
+Application, 0x11a5a9040, pid: 56500, label: 'Terra Incognita' <App element pid: 56500>
+  Window (Main), 0x11a5a8780, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4381149184.3>
+    Other, 0x11a5aae40, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4430513152.4>
+      Other, 0x11a5a9400, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4431218560.5>
+        Other, 0x11a5ab480, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4430090176.6>
+          Other, 0x11a5abc00, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4381148160.7>
+            Other, 0x11a5a97c0, {{0.0, 0.0}, {1032.0, 1376.0}} <AX element pid: 56500, elementOrHash.elementID: 4382407552.8>
+              Image, 0x11a5a8280, {{0.0, 0.0}, {1032.0, 1376.0}}, identifier: 'mainAtlasGlobe', label: 'The globe' <AX element pid: 56500, elementOrHash.elementID: 4381081600.9>
+              StaticText, 0x11a5a9b80, {{24.0, 1301.5}, {229.5, 40.5}}, identifier: 'globeFootCaption', label: 'DELIVERY CHECK, First words. Bundled with the app.' <AX element pid: 56500, elementOrHash.elementID: 4429554432.561>
+                StaticText, 0x11a5ab5c0, {{24.0, 1301.5}, {134.5, 15.0}}, label: 'DELIVERY CHECK' <AX element pid: 56500, elementOrHash.elementID: 4429551296.563>
+                StaticText, 0x11a5ab700, {{24.0, 1322.5}, {229.5, 19.5}}, label: 'First words. Bundled with the app.' <AX element pid: 56500, elementOrHash.elementID: 4429558016.564>
+              Other, 0x11a5a9e00, {{649.0, 8.0}, {211.0, 44.0}}, label: 'Active prototype: Delivery check' <AX element pid: 56500, elementOrHash.elementID: 4429548608.562>
+                StaticText, 0x11a5aa300, {{649.0, 21.0}, {105.5, 18.0}}, identifier: 'activePrototype', label: 'Delivery check' <AX element pid: 56500, elementOrHash.elementID: 4429559360.565>
+                Button, 0x11a5ab340, {{760.5, 8.0}, {49.5, 44.0}}, identifier: 'openActivePrototype', label: 'Open' <AX element pid: 56500, elementOrHash.elementID: 4429550848.566>
+                Button, 0x11a5aa800, {{816.0, 8.0}, {44.0, 44.0}}, identifier: 'endActivePrototype', label: 'Back to the plain globe' <AX element pid: 56500, elementOrHash.elementID: 4429556672.567>
+              Switch, 0x11a5a88c0, {{870.0, 8.0}, {68.0, 58.0}}, identifier: 'cloudsButton', label: 'Clouds', value: On <AX element pid: 56500, elementOrHash.elementID: 4382571840.11>
+              Button, 0x11a5a8500, {{948.0, 8.0}, {68.0, 58.0}}, identifier: 'workbenchButton', label: 'Workbench' <AX element pid: 56500, elementOrHash.elementID: 4381987648.12>

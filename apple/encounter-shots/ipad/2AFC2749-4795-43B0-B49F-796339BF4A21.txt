@@ -1,0 +1,5 @@
+Query chain:
+ →Find: Target Application 'com.pbordjadze.terraincognita'
+  ↪︎Find: Descendants matching type Any
+    ↪︎Find: Elements matching predicate 'label CONTAINS "Second words."'
+      ↪︎Find: First Match
