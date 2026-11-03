@@ -8,6 +8,46 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 Additive: every toy builds unchanged, and every toy's plans render the same PNGs and WAVs as before
 (`tools/kit/same_renders.sh`).
 
+- **A git dependency** for other repositories, with its own version (`version = "0.2.0"` in its
+  Cargo.toml; the toys keep the workspace's 0.1.0). Its other fields still inherit the toys'
+  workspace, which cargo resolves inside a git checkout: `tools/kit/consumer_check.sh` builds a
+  throwaway crate outside this repository against a ref.
+- **The `globe` feature** (default on): `globe` (`Globe`, its passes, `globe::wgsl`) and
+  `gpu::Textures` (the globe's NASA-derived files) build only with it. `default-features = false`
+  builds the kit without them; `gpu::Texture`, `gpu::textures::decode`, `View`, the geometry in
+  `model` and everything else stay.
+- **The `web` feature**: `web::run::<T>(canvas_id, key)`, a WebGPU shell for wasm32 (one canvas,
+  pointer events, the sound from the first touch, `save`/`restore` through localStorage, a haptic as
+  `navigator.vibrate`). Its dependencies (wasm-bindgen `=0.2.130`, web-sys, js-sys,
+  wasm-bindgen-futures, console_error_panic_hook) are wasm32's alone, so a native build is the same
+  with or without it; on wasm32 wgpu takes `webgpu`. `check` isn't built on wasm32.
+- **From busquets' copy of the kit** (pbordjadze/busquets `crates/kit`, written on toy-kit 6bf0613;
+  same author, MIT), lifted as they were: `paint` (`Painter`: soft discs, rings, round-capped strokes
+  and glows in one instanced draw a blend; `Shape`, `pm`), `backdrop` (`Backdrop`, `BackdropParams`,
+  `PRELUDE`: a full-screen fragment of the toy's own over a camera and eight parameters), `layer`
+  (`Layer`: a screen-sized texture that keeps what is painted into it, laid over the frame),
+  `sound` (`Bells`, `Note`, `pentatonic`: struck FM notes and a low bed), `web` (above) and
+  `check::main_with::<T>(name, &args)` (the check's command line from arguments given, without the
+  program's name; `check::main` now calls it with the process's). They use the kit as it now is:
+  their textures and buffers made through `wgpu` directly aren't counted in `budget::kit_bytes`, only
+  in the GPU's total.
+
+**Moving from a vendored copy** (busquets' `crates/kit`): delete the copy and depend on the tag,
+
+```toml
+toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", tag = "toy-kit-v0.2.0", default-features = false }
+# and, in the web crate: features = ["web"]
+```
+
+`default-features = false` leaves the globe and its data out. The crate is `toy_kit` (`use kit::…`
+becomes `use toy_kit::…`, or `kit = { package = "toy-kit", … }` keeps the old name). Everything the
+copy had is here under the same paths and signatures; what it lacked and now gets: `gpu::Texture`,
+`gpu::View`, `model`'s geometry, `budget` (the iPhone's limits under `KIT_IPHONE_LIMITS=1`, GPU
+errors fatal in the check), the check's places by name, touch check, play-all, clip, loudness and
+`--stretch`. Two behaviours differ from the 6bf0613 copy: on a surface (the device, the web) a GPU
+validation error is logged through `toy_kit::log` instead of wgpu's default panic (headless it is
+still fatal), and `Gpu::new` on a surface logs the adapter's limits there too.
+
 - **Touches must do something** (`check.rs`): after a plan is played, every finger event (`tap`,
   `hold`, `drag`, `pinch`, `down` with its moves and up) is played again without it in a shadow run on
   the same clock, and compared 0.4 s after it began and ended. One that changed nothing prints
