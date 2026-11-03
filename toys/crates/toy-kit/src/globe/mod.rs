@@ -59,7 +59,7 @@ impl Globe {
         let textures = Textures::load(gpu, assets, month)?;
         let view_layout = view_layout(gpu);
         let ground = ground::GroundPass::new(gpu, &view_layout, &textures);
-        let view_buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        let view_buf = gpu.buffer(&wgpu::BufferDescriptor {
             label: Some("view"),
             size: std::mem::size_of::<ViewUniform>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,

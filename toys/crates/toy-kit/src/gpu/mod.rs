@@ -31,23 +31,61 @@ impl Gpu {
             .map_err(|e| anyhow::anyhow!("no adapter: {e}"))?;
         let adapter_info = adapter.get_info();
         log::info!("adapter: {adapter_info:?}");
-        let limits = wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits());
-        let mut required_limits = wgpu::Limits::default().using_resolution(adapter.limits());
-        required_limits.max_texture_dimension_2d = required_limits.max_texture_dimension_2d.max(4096);
-        let _ = limits;
+        // What the kit asks of the device: WebGPU's default limits, the adapter's texture sizes (at
+        // least 4096), no features. Under KIT_IPHONE_LIMITS=1 (the launch check) the same request is
+        // made with an iPhone's limits in place of this adapter's, and it must fit what an iPhone
+        // grants, so a buffer, binding or pipeline the phone's device would refuse fails here too.
+        let request = |granted: &wgpu::Limits| {
+            let mut l = wgpu::Limits::default().using_resolution(granted.clone());
+            l.max_texture_dimension_2d = l.max_texture_dimension_2d.max(4096);
+            l
+        };
+        let required_features = wgpu::Features::empty();
+        let required_limits = if crate::budget::iphone() {
+            let phone = crate::budget::iphone_limits();
+            let l = request(&phone);
+            let mut over = Vec::new();
+            l.check_limits_with_fail_fn(&phone, false, |name, want, have| over.push(format!("{name} {want} > {have}")));
+            anyhow::ensure!(over.is_empty(), "an iPhone would refuse the device: {}", over.join(", "));
+            let lacking = required_features - crate::budget::iphone_features();
+            anyhow::ensure!(lacking.is_empty(), "an iPhone lacks the features {lacking:?}");
+            log::info!("the iPhone's limits (KIT_IPHONE_LIMITS)");
+            l
+        } else {
+            request(&adapter.limits())
+        };
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("toy"),
-                required_features: wgpu::Features::empty(),
+                required_features,
                 required_limits,
                 memory_hints: wgpu::MemoryHints::Performance,
                 trace: wgpu::Trace::Off,
             })
             .await?;
-        // wgpu's default answer to an error it cannot return is a panic, which on the device is a
-        // crash; a toy is better drawn wrong than gone, so the error is logged instead (the log says
-        // what to fix: toy-kit `log`)
-        device.on_uncaptured_error(Box::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
+        if surface.is_some() {
+            // the device: wgpu's default answer to an error it cannot return is a panic, which on the
+            // phone is a crash; a toy is better drawn wrong than gone, so the error is logged instead
+            // (the log says what to fix: toy-kit `log`), after what the device offers
+            let l = adapter.limits();
+            crate::log(&format!(
+                "gpu: {} ({:?}); max buffer {} MB, storage binding {} MB, texture {}",
+                adapter_info.name,
+                adapter_info.backend,
+                l.max_buffer_size >> 20,
+                l.max_storage_buffer_binding_size >> 20,
+                l.max_texture_dimension_2d
+            ));
+            device.on_uncaptured_error(Box::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
+        } else {
+            // the headless check: an error the device would only log is fatal here, so the check fails
+            device.on_uncaptured_error(Box::new(|e: wgpu::Error| {
+                crate::log(&format!("gpu: {e}"));
+                panic!("a GPU validation error (logged, not fatal, on the device; fatal in the check)")
+            }));
+        }
+        let device = Arc::new(device);
+        crate::budget::start_report(device.clone());
         let format = match surface {
             Some(s) => {
                 let caps = s.get_capabilities(&adapter);
@@ -59,7 +97,19 @@ impl Gpu {
             }
             None => wgpu::TextureFormat::Rgba8Unorm,
         };
-        Ok(Gpu { device: Arc::new(device), queue: Arc::new(queue), format, adapter_info })
+        Ok(Gpu { device, queue: Arc::new(queue), format, adapter_info })
+    }
+
+    /// A texture, its bytes counted toward the toy's budget (`budget`).
+    pub fn texture(&self, desc: &wgpu::TextureDescriptor) -> wgpu::Texture {
+        crate::budget::count(crate::budget::texture_bytes(desc));
+        self.device.create_texture(desc)
+    }
+
+    /// A buffer, its bytes counted toward the toy's budget (`budget`).
+    pub fn buffer(&self, desc: &wgpu::BufferDescriptor) -> wgpu::Buffer {
+        crate::budget::count(desc.size);
+        self.device.create_buffer(desc)
     }
 
     pub fn shader(&self, label: &str, wgsl: &str) -> wgpu::ShaderModule {
@@ -144,7 +194,7 @@ pub struct Offscreen {
 
 impl Offscreen {
     pub fn new(gpu: &Gpu, width: u32, height: u32) -> Offscreen {
-        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("offscreen"),
             size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
             mip_level_count: 1,
@@ -161,6 +211,7 @@ impl Offscreen {
     /// The pixels, RGBA8, rows top down.
     pub fn read(&self, gpu: &Gpu) -> Vec<u8> {
         let bpr = (self.width * 4).div_ceil(256) * 256;
+        // (the check's alone, and let go at once: not counted)
         let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("readback"),
             size: (bpr * self.height) as u64,

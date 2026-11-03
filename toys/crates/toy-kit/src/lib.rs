@@ -7,6 +7,7 @@
 //! rounds never break a toy, and a toy's never break Adrift: change them here freely, for every toy.
 
 pub mod assets;
+pub mod budget;
 pub mod check;
 pub mod globe;
 pub mod gpu;
