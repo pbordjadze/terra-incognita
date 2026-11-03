@@ -10,7 +10,7 @@ struct Agent { p: vec2f, h: f32, s: u32, home: u32, moved: u32 };
 struct Params { grid: vec4u, mv: vec4f, tr: vec4f, misc: vec4f, ex: vec4f, feeds: array<vec4f, 32> };
 // a: x how much shows, y the gain, z the streaks' share (by zoom), w the grid's rows; ages: x each
 // flake's seconds since it was laid
-struct Look { a: vec4f, ages: array<vec4f, 32> };
+struct Look { a: vec4f, ages: array<vec4f, 32>, ripples: array<vec4f, 8> };   // ripples: lon, lat, seconds since, 1 on land
 
 @group(1) @binding(0) var<storage, read> agents: array<Agent>;
 @group(1) @binding(1) var<uniform> look: Look;
