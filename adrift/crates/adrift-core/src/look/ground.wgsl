@@ -34,6 +34,15 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
 const N_HALO = vec3f(255.0, 146.0, 58.0) / 255.0;     // the pool of light round a city, deeper sodium
 const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a lit region
 
+fn k0(zoom: f32) -> f32 { return clamp(zoom, 1.0, 8.0); }
+fn grainAt(pix: vec2f) -> f32 { return vnoise(pix / 1.7) * 0.5 + vnoise(pix / 9.0) * 0.5; }
+// the page: paper with a little grain; the ground's air, a thin bright haze just outside the limb
+fn paper(pix: vec2f, rr: f32, ringpx: f32, night: f32) -> vec3f {
+    let grain = grainAt(pix);
+    let page = mix(PAPER * (0.985 + 0.03 * grain), N_PAGE * (0.97 + 0.06 * grain), night);
+    return mix(page, mix(G_ATMOS, N_ATMOS, night), mix(0.85, 0.7, night) * exp(-max(ringpx, 0.0) / mix(3.5, 5.0, night)) * select(0.0, 1.0, rr >= 1.0));
+}
+
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let pix = in.position.xy;
     let R = U.disc.z * U.frame.z;                        // the radius in pixels
@@ -42,12 +51,9 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let G = ground_at(U, pix);
     let rr = sqrt(G.r2);
     let z = G.v.z;
-    // the page: paper with a little grain; the ground's air, a thin bright haze just outside the limb
     let night = U.pad.x;
-    let grain = vnoise(pix / 1.7) * 0.5 + vnoise(pix / 9.0) * 0.5;
-    var page = mix(PAPER * (0.985 + 0.03 * grain), N_PAGE * (0.97 + 0.06 * grain), night);
+    // (R24: the grain and the page are worked out only for the pixels that show them, `paper` below)
     let ringpx = (rr - 1.0) * R;
-    page = mix(page, mix(G_ATMOS, N_ATMOS, night), mix(0.85, 0.7, night) * exp(-max(ringpx, 0.0) / mix(3.5, 5.0, night)) * select(0.0, 1.0, rr >= 1.0));
     let fwRing = fwidth(ringpx);
     // (every derivative at the top level, before any pixel leaves)
     let gr = uv_grad(G.uv);
@@ -59,9 +65,17 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let hill = (t.r * 255.0 - 128.0) / 127.0;
     let height = t.g * 255.0 - 128.0;
     let fwD = fwidth(d);
+    let k = k0(zoom);
+    // (R24) the reads below are each made only where what they give can show: the month's picture
+    // where there is land or the coast's line (`pale`), the lights by night, the floor where there is
+    // sea; the same pixels, fewer reads (an export frame is mostly open water)
     let landa = smoothstep(-0.5, 0.5, d / max(fwD, 1e-5));
-    let k = clamp(zoom, 1.0, 8.0);
-    var landCol = mix(textureSampleGrad(landA, linearS, G.uv, gr.dx, gr.dy).rgb,
+    let coastW = stroke(d, 0.6 * scale * min(pow(k0(zoom), 0.3), 1.5), fwD);
+    let needLand = landa > 0.0 || coastW > 0.0;
+    var landCol = vec3f(0.0);
+    var grain = 0.5;
+    if (needLand) {
+    landCol = mix(textureSampleGrad(landA, linearS, G.uv, gr.dx, gr.dy).rgb,
                       textureSampleGrad(landB, linearS, G.uv, gr.dx, gr.dy).rgb, U.time.w);
     // magnified past its own pixels (a clip close in, R16), the month's picture would show as blocks,
     // and its dark sea pixels as notches along the drawn coast: it eases toward the picture read a few
@@ -71,20 +85,26 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let alod = log2(max(max(length(gr.dx * adims), length(gr.dy * adims)), 1e-5));
     let soft = mix(textureSampleLevel(landA, linearS, G.uv, 3.0).rgb, textureSampleLevel(landB, linearS, G.uv, 3.0).rgb, U.time.w);
     let magnified = smoothstep(-1.0, -3.0, alod);
+    if (magnified > 0.0) { grain = grainAt(pix); }
     landCol = mix(landCol, soft * (0.97 + 0.06 * grain), 0.85 * magnified);
-    let fl = (textureSampleGrad(floorTex, linearS, G.uv, gr.dx, gr.dy).r * 255.0 - 128.0) / 127.0;
+    }
+    var fl = 0.0;
+    if (landa < 1.0) { fl = (textureSampleGrad(floorTex, linearS, G.uv, gr.dx, gr.dy).r * 255.0 - 128.0) / 127.0; }
     let ice = mix(textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.y), 0.0).r,
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
     // the Earth's lights (NASA's Black Marble, Terra's sheet), sampled before any pixel leaves
-    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
+    var lightsRaw = 0.0; var halo = 0.0; var wide = 0.0;
+    if (night > 0.0) {
+    lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
     // and their glow, as a long exposure from orbit sees it (R6): the same sheet read a few mips
     // coarser than the pixel's own, a near halo and a wide one, so a city sits in a pool of its own
     // light that spills a little over its coast; drawn from the measured lights, never invented
     let ldims = vec2f(textureDimensions(lightsTex));
     let lod0 = log2(max(max(length(gr.dx * ldims), length(gr.dy * ldims)), 1e-4));
-    let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r;
-    let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r;
-    if (rr >= 1.0) { return vec4f(page, 1.0); }
+    halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r;
+    wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r;
+    }
+    if (rr >= 1.0) { return vec4f(paper(pix, rr, ringpx, night), 1.0); }
 
     // the land: the month's picture, shaded from the north-west
     let gland = landCol * (1.0 + 0.20 * hill);
@@ -100,7 +120,7 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     var col = mix(gsea, gland, landa);
     // the coast, lighter and finer than a map's, fading where both sides are white
     let pale = smoothstep(0.90, 0.97, (gland.r + gland.g + gland.b) / 3.0);
-    col = mix(col, G_COAST, (0.55 - 0.35 * pale) * stroke(d, 0.6 * scale * min(pow(k, 0.3), 1.5), fwD));
+    col = mix(col, G_COAST, (0.55 - 0.35 * pale) * coastW);
     // roundness, and the air at the limb
     col *= 1.0 - 0.05 * (1.0 - z) * (1.0 - z);
     col = mix(col, G_ATMOS, 0.55 * pow(1.0 - z, 4.0));
@@ -116,10 +136,17 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
         // quicker one over streets and suburbs, the whole field breathing over nine seconds, and the
         // brightest cores catching now and then, as lights seen from far do
         let t = U.tone.z;
-        let shimmer = vnoise3(G.g * 1400.0 + vec3f(t * 0.45, t * 0.31, 7.9));
-        let fine = vnoise3(G.g * 6000.0 + vec3f(t * 0.9, -t * 0.7, 3.1));
+        // (R24: each noise worked out only where it shows: the slow shimmer where there are lights or
+        // their glow, the fine one and the catching where there are lights; elsewhere they're scaled
+        // by nothing)
+        var shimmer = 0.0;
+        if (lightsRaw > 0.0 || wide > 0.0 || halo > 0.0) { shimmer = vnoise3(G.g * 1400.0 + vec3f(t * 0.45, t * 0.31, 7.9)); }
+        var fine = 0.0; var catching = 0.0;
+        if (lightsRaw > 0.0) {
+            fine = vnoise3(G.g * 6000.0 + vec3f(t * 0.9, -t * 0.7, 3.1));
+            catching = smoothstep(0.82, 1.0, vnoise3(G.g * 9000.0 + vec3f(-t * 1.3, t * 1.1, 11.0)));
+        }
         let breath = 0.96 + 0.04 * sin(t * 0.7);
-        let catching = smoothstep(0.82, 1.0, vnoise3(G.g * 9000.0 + vec3f(-t * 1.3, t * 1.1, 11.0)));
         // (R22, a clip only: U.pad.y) the fine and quick shimmers and the catching are the bits a
         // re-encode spends and smears; a clip keeps the slow shimmer and calms the rest
         let ex = U.pad.y;
@@ -150,7 +177,8 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     }
     // the rim, against the page
     let edge = smoothstep(-0.5, 0.5, -ringpx / max(fwRing, 1e-5));
-    var out = mix(page, col, edge);
+    var out = col;
+    if (edge < 1.0) { out = mix(paper(pix, rr, ringpx, night), col, edge); }
     // (R22, a clip only) the night's darkest tones lifted out of the near-black a re-encode crushes
     // into blocks (its video black is 16 of 255), and a grain of a part in 255 laid over the whole
     // picture so the deep sea's long gradients don't band: the night still reads as night

@@ -38,6 +38,12 @@ skeleton lands.
 - `ground.wgsl` and `sea.wgsl` are Visual's from R2: Terra's ports, with the night palette gated by
   `View.pad.x` (DEMANDS.md D4: the `N_` ground with the Earth's lights from `lightsTex` at `@group(1) @binding(7)`, the sea's lines pale, the surf a line, no sheen) and
   the sea's rest eased by `View.tone.w` (D3: the running light settles to half, the glitter goes).
+- (R24, cost) The ground and the sea read only what can show (the land's picture on land and the
+  coast's line, the lights by night, the sea's water after its land/ice/off-globe early-outs); the
+  stream sheet is paired by month (`sea.rs` `pair_months`: 16 loads a pixel for both surfaces, from
+  32); the light along the lines is worked out at half resolution (`fs_glow`, `SeaPass::glow_pass`,
+  which the stage encodes before its pass) and read between texels. `ADRIFT_PROFILE=1` times each
+  pass (`profile.rs`; `adrift-check journey` prints the table). Before/after: `studies/r24-export-cuts.png`.
   The maybes bloom from the held float's place to their own as `LookState.bloom` runs 0 → 1.
 - `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
   control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's

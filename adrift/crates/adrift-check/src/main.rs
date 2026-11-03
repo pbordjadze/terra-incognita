@@ -663,12 +663,18 @@ fn journey(args: &[String]) -> Result<()> {
         }
         t_pipe += t.elapsed().as_secs_f64();
         i += 1;
+        if i == 120 && adrift_core::look::profile::on() {
+            eprintln!("(ADRIFT_PROFILE) the GPU's passes, a frame, the first 120 frames:\n{}", adrift_core::look::profile::report());
+        }
     }
     if dry {
         i = rendered;
     }
     let n_f = i.max(1) as f64;
     eprintln!("export: {i} frames; a frame {:.1} ms drawing (the replay and the GPU's commands), {:.1} ms waiting for and copying its pixels, {:.1} ms to the encoder ({})", t_draw / n_f * 1e3, t_take / n_f * 1e3, t_pipe / n_f * 1e3, app.gpu.adapter_info.name);
+    if adrift_core::look::profile::on() {
+        eprintln!("(ADRIFT_PROFILE) the GPU's passes, a frame, from frame 120:\n{}", adrift_core::look::profile::report());
+    }
     drop(ff.stdin.take());
     ff.wait()?;
     // (R21) the days the journey covered and the file it made: a longer clip is a longer journey
