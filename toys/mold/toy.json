@@ -1,5 +1,6 @@
 {
-  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id. Its SideStore entry is in ci/sidestore_apps.json (tag mold-build).",
+  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id; memory_mb is its budget for peak memory at launch (tools/kit/launch_check.py says why 1400). Its SideStore entry is in ci/sidestore_apps.json (tag mold-build).",
   "name": "Mold",
-  "bundleIdentifier": "com.pbordjadze.toy.mold"
+  "bundleIdentifier": "com.pbordjadze.toy.mold",
+  "memory_mb": 1400
 }

@@ -60,7 +60,7 @@ impl Texture {
             _ => wgpu::TextureFormat::Rgba8Unorm,
         };
         let mips = 32 - p.width.max(p.height).leading_zeros();
-        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: wgpu::Extent3d { width: p.width, height: p.height, depth_or_array_layers: 1 },
             mip_level_count: mips,
@@ -89,7 +89,7 @@ impl Texture {
     /// A texture without mips (a data sheet read texel by texel).
     pub fn flat(gpu: &Gpu, label: &str, p: &Pixels) -> Texture {
         let format = if p.channels == 1 { wgpu::TextureFormat::R8Unorm } else { wgpu::TextureFormat::Rgba8Unorm };
-        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: wgpu::Extent3d { width: p.width, height: p.height, depth_or_array_layers: 1 },
             mip_level_count: 1,
@@ -112,7 +112,7 @@ impl Texture {
     /// Twelve months of one-channel sheets as the layers of one texture (sampled between months).
     pub fn months(gpu: &Gpu, label: &str, sheets: &[Pixels]) -> Texture {
         let (w, h) = (sheets[0].width, sheets[0].height);
-        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: sheets.len() as u32 },
             mip_level_count: 1,
@@ -183,7 +183,7 @@ impl Texture {
                 }
             }
         }
-        let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("noise tile"),
             size: wgpu::Extent3d { width: N as u32, height: N as u32, depth_or_array_layers: N as u32 },
             mip_level_count: 1,
