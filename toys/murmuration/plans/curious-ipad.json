@@ -1,0 +1,148 @@
+{
+ "_": "The curious hand at the 13-inch iPad's size (2064x2752 @2): flying must fill the glass there too. Measure with: python3 tools/toys/murmuration/holds.py toys/murmuration/plans/curious-ipad.json (round 4: no flying frame under 150 birds).",
+ "restore": "{\"day\": 9803, \"minutes\": -8, \"fixed\": true}",
+ "seconds": 34,
+ "fps": 30,
+ "events": [
+  {
+   "t": 2.0,
+   "hold": [
+    340,
+    120
+   ],
+   "for": 4.0
+  },
+  {
+   "t": 7.0,
+   "hold": [
+    40,
+    120
+   ],
+   "for": 3.0
+  },
+  {
+   "t": 10.5,
+   "drag": [
+    [
+     60,
+     700
+    ],
+    [
+     350,
+     150
+    ]
+   ],
+   "for": 0.25
+  },
+  {
+   "t": 11.2,
+   "drag": [
+    [
+     350,
+     300
+    ],
+    [
+     20,
+     600
+    ]
+   ],
+   "for": 0.2
+  },
+  {
+   "t": 12.0,
+   "hold": [
+    196,
+    820
+   ],
+   "for": 3.5
+  },
+  {
+   "t": 16.0,
+   "hold": [
+    380,
+    430
+   ],
+   "for": 3.0
+  },
+  {
+   "t": 19.5,
+   "hold": [
+    10,
+    430
+   ],
+   "for": 3.0
+  },
+  {
+   "t": 23.0,
+   "drag": [
+    [
+     196,
+     800
+    ],
+    [
+     196,
+     60
+    ]
+   ],
+   "for": 0.15
+  },
+  {
+   "t": 23.5,
+   "drag": [
+    [
+     196,
+     60
+    ],
+    [
+     196,
+     800
+    ]
+   ],
+   "for": 0.15
+  },
+  {
+   "t": 24.5,
+   "hold": [
+    196,
+    840
+   ],
+   "for": 3.0
+  },
+  {
+   "t": 28.0,
+   "hold": [
+    196,
+    30
+   ],
+   "for": 3.0
+  }
+ ],
+ "shots": [
+  {
+   "t": 5.0,
+   "name": "hold-upper-right"
+  },
+  {
+   "t": 13.5,
+   "name": "hold-bottom"
+  },
+  {
+   "t": 21.5,
+   "name": "hold-left"
+  },
+  {
+   "t": 27.0,
+   "name": "hold-bottom-again"
+  },
+  {
+   "t": 34,
+   "name": "home"
+  }
+ ],
+ "audio": false,
+ "size": [
+  2064,
+  2752
+ ],
+ "ppp": 2
+}

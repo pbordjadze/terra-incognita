@@ -221,18 +221,26 @@ impl Murmuration {
         self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
         let mut near = sub(you.pos, scale(self.dir3, 6.5));
         // Below the flock round you, so it stands against the sky, not the land.
-        near[1] = (you.pos[1] - 2.8).min(self.flock_look[1] - 4.0).max(3.0);
+        near[1] = (you.pos[1] - 1.5).min(self.flock_look[1] - 1.8).max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
-        let look_near = addv(scale(ahead, 0.45), scale(self.flock_look, 0.55));
+        let look_near = addv(scale(ahead, 0.3), scale(self.flock_look, 0.7));
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
         let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
         let upv = norm(addv(scale([0.0, 1.0, 0.0], 1.0 - roll), scale(you.lift, roll)));
+        let [w, h] = [ctx.width as f32, ctx.height as f32];
+        // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
+        let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
+        let focal = focal * (1.9 - 0.78 * e);
         let mut fwd = norm(sub(look, pos));
         // Never so steeply up that the land leaves the frame (from afar).
-        let max_up = (17.0f32 + 33.0 * e).to_radians().sin();
-        let max_down = -(8.0f32).to_radians().sin() * e;
+        // Flying, never pitched up so far that the dusk leaves the glass: the horizon stays in the
+        // lowest part of the frame, whatever the screen's field of view.
+        let half_v = (0.5 * h / focal).atan();
+        let fly_up = (half_v - (6.0f32).to_radians()).max(0.0);
+        let max_up = ((17.0f32).to_radians() * (1.0 - e) + fly_up * e).sin();
+        let max_down = -(6.0f32).to_radians().sin() * e;
         if fwd[1] < max_down {
             let h = norm([fwd[0], 0.0, fwd[2]]);
             fwd = addv(scale(h, (1.0 - max_down * max_down).sqrt()), [0.0, max_down, 0.0]);
@@ -243,10 +251,6 @@ impl Murmuration {
         }
         let right = norm(cross(upv, fwd));
         let up = cross(fwd, right);
-        let [w, h] = [ctx.width as f32, ctx.height as f32];
-        // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
-        let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
-        let focal = focal * (1.9 - 0.78 * e);
         self.eye = Eye { pos, right, up, fwd, focal };
     }
 
