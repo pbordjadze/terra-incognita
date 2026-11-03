@@ -13,7 +13,8 @@ before and after and comparing the PNGs.
 and becomes consumable from any repository as a git dependency:
 
 ```toml
-toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", tag = "toy-kit-v0.2.0" }
+toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", rev = "85b00e81298a1bd3014e29ca5d9b1cbe80675a25" }   # 0.2.0
+# once the tag exists: tag = "toy-kit-v0.2.0"
 ```
 
 Cargo finds the crate by name anywhere in the repository; the tag is the stable API. Rules:
@@ -64,7 +65,9 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
    PNGs), merged when the toys' conductor says the toys are between rounds.
 4. Adrift's side (`play-all`, `--artifact`, the runner's summary, the launch check in `adrift.yml`) on
    Adrift's conductor's yes.
-5. The tag `toy-kit-v0.2.0`; busquets and traveling-squadron told how to depend on it.
+5. 0.2.0 is main's 85b00e81 (Nov 3). The tag `toy-kit-v0.2.0` is still to be made: this session's git
+   access pushes branches, not tags (`git tag -a toy-kit-v0.2.0 85b00e81 && git push origin toy-kit-v0.2.0`,
+   by anyone who may). Until then a consumer pins the commit (`rev`), which never moves.
 
 ## Answers (Nov 3)
 

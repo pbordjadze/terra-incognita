@@ -37,7 +37,8 @@ plans (it races GPU atomics) within its own run-to-run noise by `tools/kit/rende
 **Moving from a vendored copy** (busquets' `crates/kit`): delete the copy and depend on the tag,
 
 ```toml
-toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", tag = "toy-kit-v0.2.0", default-features = false }
+toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", rev = "85b00e81298a1bd3014e29ca5d9b1cbe80675a25", default-features = false }
+# 0.2.0 is that commit; once the tag toy-kit-v0.2.0 exists, tag = "toy-kit-v0.2.0" says the same
 # and, in the web crate: features = ["web"]
 ```
 
