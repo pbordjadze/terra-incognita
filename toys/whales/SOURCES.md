@@ -19,7 +19,8 @@ hand-edited).
 
 What is done to them, and only this: the band each animal sings in is kept (the rest is the sea's
 and ships' noise, and the blue file's clipping), the steady noise floor is lowered gently, the level
-normalised, the end crossfaded into the start so each loops, resampled to 12 kHz and stored as 4-bit
+evened (a gentle 2:1 compressor and a soft ceiling, so the song is not buried under the
+clicks' peaks), the end crossfaded into the start so each loops, resampled to 12 kHz and stored as 4-bit
 IMA ADPCM. Nothing is added or synthesised.
 
 ## The year (`data/routes.json`; `tools/toys/whales/routes.py`)

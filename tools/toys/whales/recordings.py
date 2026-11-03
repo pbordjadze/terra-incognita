@@ -17,7 +17,8 @@ The sources (toys/whales/SOURCES.md credits them):
 What is done to them, and only this: the band the animal sings in is kept (a humpback 90 Hz-5.5 kHz,
 the sped-up blue 50-420 Hz: the rest is the sea's and the ships' noise, and the blue file's clipping),
 the steady noise floor is lowered a little (a gentle spectral subtraction, never to silence), the
-level is normalised, the end crossfaded into the start so it loops, and it is resampled (both to 12 kHz) and stored as 4-bit IMA ADPCM, which the toy decodes (src/song.rs). Nothing is added.
+level evened (a gentle 2:1 compressor, then a loudness with a soft ceiling: the clicks and
+sharpest onsets otherwise set the peak and the song sits far under it), the end crossfaded into the start so it loops, and it is resampled (both to 12 kHz) and stored as 4-bit IMA ADPCM, which the toy decodes (src/song.rs). Nothing is added.
 
 The file (`.song`, little-endian): b"SONG", u32 version 1, u32 rate, u32 samples, u32 envelope
 frames, f32 envelope rate (frames a second); the envelope (per frame: u8 loudness 0-255, u8 pitch,
@@ -157,6 +158,20 @@ def norm(x, peak=0.89):
     return x * peak / (np.max(np.abs(x)) + 1e-12)
 
 
+def even(x, rate, rms_db, ratio=2.0):
+    """Evens the level: a gentle compressor (2:1 above the song's median loudness, on a 50 ms
+    envelope), then the whole set to `rms_db` dBFS with a soft ceiling at 0.95. A recording's clicks
+    and sharpest onsets otherwise set its peak, and its song sits 20 dB below it."""
+    w = max(int(0.05 * rate), 1)
+    env = np.sqrt(np.convolve(x * x, np.ones(w) / w, "same")) + 1e-9
+    knee = np.median(env)
+    gain = np.where(env > knee, (env / knee) ** (1.0 / ratio - 1.0), 1.0)
+    gain = np.convolve(gain, np.ones(w) / w, "same")
+    y = x * gain
+    y *= 10 ** (rms_db / 20) / np.sqrt(np.mean(y * y))
+    return 0.95 * np.tanh(y / 0.95)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache", default="/tmp/whale-src")
@@ -169,7 +184,7 @@ def main():
     x = loop(x, rate, 2.0)
     y = signal.resample_poly(x, 3, 4)  # 16 kHz to 12 kHz
     env = envelope(y, 12000, 1.0)
-    write("humpback.song", norm(y), 12000, env)
+    write("humpback.song", even(y, 12000, -17.0), 12000, env)
 
     # the blue whale, ten times faster, as NOAA plays it
     rate, b = wavfile.read(io.BytesIO(fetch(NOAA_BLUE, a.cache, "nepblue24s10x.wav")))
@@ -179,7 +194,7 @@ def main():
     b = loop(b, rate, 1.0)
     y = signal.resample_poly(b, 3, 2)  # 8 kHz to 12 kHz (played back without images near 4 kHz)
     env = envelope(y, 12000, 10.0)
-    write("blue.song", norm(y), 12000, env)
+    write("blue.song", even(y, 12000, -19.0), 12000, env)
 
 
 if __name__ == "__main__":
