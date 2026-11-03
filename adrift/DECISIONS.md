@@ -890,3 +890,22 @@ performance, then the lamps' design).
   been seen (no UIKit off a Mac): the owner's phone is its first look.
 - *Visual* (2903522): a lamp chosen as its cloud wears the same ring as one chosen as itself (its hue
   on a pale rim); the ring of ten dots gone. The kept star and the panel are as they were.
+
+## 31. R24: clip rendering faster; the teleported lamp (Nov 3, 04:30 UTC)
+
+The owner: "performance, specifically for clip rendering", and a bug: "one dot teleported".
+
+- *Engineering* (a18d651, 979bf3d): the export's readback pipelined (`gpu::Readback`, two frames in
+  flight, rows straight into the encoder's buffer, no per-frame allocation, no swizzle on the phone;
+  `App::export_render`); the phone keeps the screen on while exporting, shows the time left and a
+  cancel, logs ms a frame. **The teleport:** a snapshot written while an export replayed (the app
+  sent to the background mid-export, where iOS ends GPU work) kept the clip's world (its lamps only,
+  its date up to hundreds of days on, its camera) and came back on the next launch. `App::snapshot`
+  now always writes the live state (the export's stash, the edit view's saved date and camera), and
+  touches are ignored while an export renders. Test `touches_during_an_export_change_no_lamp` (fails
+  before the fix). Shipped as adrift-build-73.
+- *Visual* (ec4222d): an export frame's GPU work −43% by day, −39% by night (llvmpipe, shares by
+  pass with `ADRIFT_PROFILE=1`): the stream sheet paired by month (16 loads, not 32), the sea's early
+  outs before its water is read, the ground reading only what a pixel needs, the light along the lines
+  at half resolution (≤0.05% of pixels change by more than 1/255). Left: ground ~33%, sea ~45%; one
+  merged ground+sea pass is the next step.
