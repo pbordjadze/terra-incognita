@@ -110,6 +110,55 @@ One line a tool as it lands (moved here from `docs/tools.md` on Nov 3).
 | Toy clip | a plan rendered at 1080×1920, 30 fps, with its sound, encoded H.264 high yuv420p + AAC 48 kHz, +faststart (ready to post) | `<toy>-check clip <plan> <out.mp4>` (encodes with `bash tools/kit/clip.sh <frames-dir> <out.mp4> [fps]`) | any toy |
 | Same renders | every toy's plans played by two sets of check binaries and every PNG and WAV compared byte for byte: a kit change that must not change a look | `bash tools/kit/same_renders.sh render <bin-dir> <out>`, then `compare <a> <b>`; for a toy that differs from itself run to run (Mold), `python3 tools/kit/render_noise.py <a> <b>` against two runs of the base; `bash tools/kit/play_all_speed.sh <toy>` times play-all | kit changes |
 
+## First after the reset: Paul's two asks (Nov 3, 3:45 PM ET)
+
+Paul put every app on one page of his phone. He asked that all the globe apps share Adrift's
+two-finger rotate ("that should've been part of the shared engine"), and that each app get a tiny
+"info" button that explains what the app is, briefly and visually. Both are deferred: neither could be
+proved on a phone for every toy before the 6 PM reset.
+
+**1. One globe camera, Adrift's gestures, for every globe toy** (Whales, Mold, Fireflies, Bell, Swell; Battle
+Ink has no globe).
+- **What already exists:**
+  - toy-kit's `Camera` already has `roll`, and its view and shaders draw it.
+  - What's missing is the hand. `globe::Hand` turns and pinches; Adrift's
+    `adrift-core/src/touch/camera.rs` (`CameraControl`, 762 lines with tests) also does:
+    - a trackball drag that carries the orb over the poles (no north to stop at);
+    - a two-finger twist that rolls about the fingers' midpoint and keeps what they hold;
+    - a pinch anchored to the fingers;
+    - a fling;
+    - `fly_to`, which gives Home: the short way back, landing upright.
+- **Design:**
+  - Lift `CameraControl` into the kit as `globe::Orb`, unchanged apart from its imports, its tests with
+    it. `Globe` gets `orb: Orb` beside `Hand`, and a `Globe::gestures(Gestures::Orb | Gestures::Hand)`
+    switch, so each toy moves on its own round.
+  - Home is a `Globe::home()` the toy calls from whatever it uses for home (Adrift: over-pinch or three
+    fingers up). The kit doesn't choose the gesture.
+  - Each toy's session moves its own toy. Its plans keep passing: a one-finger drag and a pinch do the
+    same as before away from the poles. Its feel is judged on a phone.
+  - Adrift moving onto the kit's `Orb`, which would leave one copy instead of two, is Adrift's
+    conductor's call.
+- **Proof per toy:**
+  - its plans, plus a new twist plan (`pinch` with a rotation, or raw `down`/`move` pairs);
+  - `same_renders.sh` on its untouched plans;
+  - one IPA, and a launch on the phone.
+
+**2. A tiny info button, a kit component.**
+- **What it is:**
+  - one small mark in a corner, drawn by the kit at reading size, kept clear of the app's touches;
+  - a tap opens a few seconds' visual demonstration of the app's one gesture and what it does: a ghost
+    finger performing it on the live scene;
+  - at most one line of text, then a tap anywhere closes it.
+- **How it's built:**
+  - Each app supplies `Toy::demo(&self) -> Option<Demo>`, default None, which hides the mark. A `Demo`
+    is a short plan of fingers (the check's own event format, so the same JSON is a tested plan too)
+    and an optional line.
+  - The kit plays the ghost finger and draws the line. VoiceOver reads the line; Reduce Motion shows a
+    still with the line.
+- **Taste:** Paul asked for this text, so keep it to the one line. Nothing else on screen changes.
+- **Proof:** a plan that taps the mark and screenshots the demo (`"tap": "info"` through
+  `Toy::anchors`); a phone run for its size and corner.
+
 ## Where it stands (handoff, Nov 3, 2026, ~1 PM ET)
 
 **Landed.**
