@@ -301,7 +301,15 @@ impl Murmuration {
         // Flying, the eye rides under and behind your bird and looks up at it (25°, or less if the
         // screen's field of view would lose the horizon): your bird, wings spread, just below the
         // middle of the glass against the sky, the dusk's band low, the flock round and above.
-        let fly_pitch = (25.0f32).to_radians().min((0.5 * h / focal).atan() - (4.0f32).to_radians());
+        // ...unless the flock round you is below: then the eye looks down with it, never losing it.
+        let to_flock = sub(self.flock_look, pos);
+        let flock_el = (to_flock[1] / length(to_flock).max(1.0)).clamp(-1.0, 1.0).asin();
+        let to_you = sub(you.pos, pos);
+        let you_el = (to_you[1] / length(to_you).max(0.1)).clamp(-1.0, 1.0).asin();
+        let fly_pitch = (you_el + (6.0f32).to_radians())
+            .min((0.5 * h / focal).atan() - (4.0f32).to_radians())
+            .min(flock_el + (14.0f32).to_radians())
+            .max(-(10.0f32).to_radians());
         let p0 = fwd[1].clamp(-1.0, 1.0).asin();
         let p1 = p0 + (fly_pitch - p0) * e;
         let hz = norm([fwd[0], 0.0, fwd[2]]);
@@ -571,15 +579,20 @@ impl Toy for Murmuration {
             let from = self.finger_from;
             let dx = ((p[0] - from[0]) / LEAN_PT) as f32;
             let dy = ((p[1] - from[1]) / LEAN_PT) as f32;
-            let hard = dx.abs() > 1.2 || dy.abs() > 1.2;
-            self.strain = (self.strain + dt as f32 * if hard { 1.0 / 6.0 } else { -0.5 }).clamp(0.0, 1.0);
+            // The thick of the flock round you: its centre, and how far you are from it.
+            let (_, c_near, n_near) = local(&self.flock, 60.0);
+            let c = if n_near > 300 { c_near } else { self.flock.centre().0 };
+            let you_p = self.flock.birds[self.flock.you].pos;
+            let off = length(sub(c, you_p));
+            // A lean pulls against the flock but never leaves it: the farther you are from its
+            // thick, the less the lean can take you, and the harder the flock draws you back.
+            let reach = (1.0 - (off - 4.0) / 10.0).clamp(0.0, 1.0);
+            self.strain = 0.0;
             let h = ring_heading(&self.flock, 16.0, 45.0);
             let hh = norm([h[0], 0.0, h[2]]);
             let right = norm(cross([0.0, 1.0, 0.0], hh));
-            let yaw_max = 35.0 + 70.0 * self.strain * self.strain;
-            let yaw = (dx.clamp(-1.0, 1.0) * 35.0 + (dx.abs() - 1.0).max(0.0) * dx.signum() * (yaw_max - 35.0)).to_radians();
-            let pitch_max = 14.0 + 40.0 * self.strain * self.strain;
-            let pitch = (-dy.clamp(-1.0, 1.0) * 14.0 - (dy.abs() - 1.0).max(0.0) * dy.signum() * (pitch_max - 14.0)).to_radians() + h[1].asin();
+            let yaw = (dx.clamp(-1.0, 1.0) * 35.0 * reach).to_radians();
+            let pitch = (-dy.clamp(-1.0, 1.0) * 7.0 * reach).to_radians() + h[1].asin();
             let flat = addv(scale(hh, yaw.cos()), scale(right, yaw.sin()));
             let mut r = norm(addv(scale(flat, pitch.cos()), [0.0, pitch.sin(), 0.0]));
             let you = &self.flock.birds[self.flock.you];
@@ -590,14 +603,16 @@ impl Toy for Murmuration {
                 r[1] = r[1].max(-0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0) + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0));
                 r = norm(r);
             }
-            // And the thick of the flock keeps you: a gentle pull toward the birds round you.
-            let (_, c_loc, n_loc) = local(&self.flock, 25.0);
-            let mut pull = if n_loc > 20 { scale(sub(c_loc, you.pos), 0.25) } else { [0.0; 3] };
+            // Home: gentle while you are in the thick, strong once you stray, and strongest when
+            // the finger comes back toward where it came down.
+            let lean_now = (dx * dx + dy * dy).sqrt().min(1.0);
+            let k_home = 0.15 + 0.5 * (off / 12.0).min(1.5) + 0.6 * (1.0 - lean_now);
+            let to_c = sub(c, you_p);
+            let mut pull = scale([to_c[0], to_c[1] * 2.0, to_c[2]], k_home);
             let pl = length(pull);
-            if pl > 4.0 {
-                pull = scale(pull, 4.0 / pl);
+            if pl > 9.0 {
+                pull = scale(pull, 9.0 / pl);
             }
-            let pull = scale(pull, 1.0 - self.strain);
             let want = addv(scale(r, flock::V0), pull);
             let mut a = scale(sub(want, v), 3.0);
             let al = length(a);

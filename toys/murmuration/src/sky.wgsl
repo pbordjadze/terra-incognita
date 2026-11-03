@@ -118,7 +118,12 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
             // Water reflects by Fresnel (Schlick, n = 1.33): little looking down, nearly all at a graze.
             let fres = 0.02 + 0.98 * pow(1.0 - depression, 5.0);
             let refl = sky(normalize(vec3f(dir.x, -dir.y, dir.z))) * fres;
-            let field = u.ground.rgb * (0.8 + 0.4 * hash(floor(q / vec2f(85.0, 140.0))));
+            // Fields of slightly different tone, their edges soft (no facets).
+            let cell = q / vec2f(85.0, 140.0);
+            let fc = floor(cell);
+            let ff = smoothstep(vec2f(0.0), vec2f(1.0), fract(cell));
+            let n = mix(mix(hash(fc), hash(fc + vec2f(1.0, 0.0)), ff.x), mix(hash(fc + vec2f(0.0, 1.0)), hash(fc + vec2f(1.0, 1.0)), ff.x), ff.y);
+            let field = u.ground.rgb * (0.88 + 0.24 * mix(n, 0.5, far_k));
             g = mix(mix(field, field * 0.6 + refl * 0.8, water), hor, haze);
         }
         col = mix(col, g, land);

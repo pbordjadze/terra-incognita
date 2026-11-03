@@ -103,9 +103,9 @@ fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: 
     // Nothing ever reaches the eye: a bird nearer than a couple of metres in front of it, or beside
     // or behind it, fades and then is not drawn at all (its wings would sweep the glass).
     // (Your own bird is always drawn: it is the one that rides just ahead of the eye.) Others never
-    // come nearer than 4 m nor grow past a seventh of the glass, so yours is the largest, nearest.
+    // come nearer than 5 m nor grow past an eighth of the glass, so yours is the largest, nearest.
     if (!me) {
-        a = a * step(4.0, z0) * (1.0 - step(0.14, span / u.up.w));
+        a = a * step(5.0, z0) * (1.0 - step(0.12, span / u.up.w));
     }
     if (a <= 0.002) {
         o.pos = vec4f(2.0, 2.0, 2.0, 1.0);
