@@ -219,6 +219,8 @@ pub struct App {
     /// The last cue's lamp (None: every lamp) and its drawn second (R12, Motion's: the clip pushes in on
     /// a lamp cued alone, then eases back to them all).
     last_cue: Option<(Option<u32>, f64)>,
+    /// The edit view's preview (R23): what it put aside, and the day a played preview stops at.
+    preview: Option<Preview>,
     /// The panel's rows as a check holds them, whatever the look draws (Motion's D11, R6): when set,
     /// `panel_bounds()` returns these. Nothing in the app sets it.
     pub panel_stand_in: Option<Vec<(u32, [f32; 4])>>,
@@ -271,6 +273,18 @@ const KEEPS_MAX: usize = 40;
 pub const MAX_CLOUDS: usize = 8;
 /// Maybes a chosen cloud steps on the CPU for the camera's framing (R8).
 pub const FRAME_SAMPLES: u32 = 16;
+
+/// The edit view's preview (R23, `App::preview_begin`): the live state it put aside, the lamps it
+/// shows, and the day a played preview stops at.
+struct Preview {
+    clock: Clock,
+    camera: Camera,
+    chosen: Vec<u32>,
+    followed: Vec<u32>,
+    riding: Option<u32>,
+    ids: Vec<u32>,
+    until: Option<f64>,
+}
 
 /// One cloud of maybes out (R6): the float's, seeded from its leg, in buffer slot `slot`.
 struct Cloud {
@@ -427,6 +441,7 @@ impl App {
             credits_open: false,
             frames: (0, 0.0, 0.0, 0),
             panel_stand_in: None,
+            preview: None,
             studio: Default::default(),
             exporting: false,
             export_dry: false,
@@ -884,6 +899,16 @@ impl App {
         self.last_t = Some(now);
         self.last_dt = dt;
         self.now = now;
+        // (R23) a played preview stops on its last day
+        if let Some(until) = self.preview.as_ref().and_then(|p| p.until) {
+            if self.clock.running && self.clock.day + self.clock.rate * dt >= until {
+                self.clock.day = until;
+                self.clock.running = false;
+                if let Some(p) = &mut self.preview {
+                    p.until = None;
+                }
+            }
+        }
         if dt > 0.0 {
             self.frames.0 += 1;
             self.frames.1 += dt;
@@ -2229,6 +2254,116 @@ impl App {
     /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
     pub fn journey_begin(&mut self, seconds: f64, fps: f64) -> u32 {
         self.journey_begin_edit(&JourneyEdit { seconds, ..Default::default() }, fps)
+    }
+
+    /// The picked lamps' days for the edit view (R23): the first day they are all out, the app's date,
+    /// and the days a journey of `seconds` would show by default (`journey_take`'s own choice).
+    pub fn journey_bounds(&self, seconds: f64) -> Option<(f64, f64, f64, f64)> {
+        let take = self.journey_take(seconds)?;
+        let ids = self.picked_lamps();
+        let born = self.floats.iter().filter(|f| ids.contains(&f.id)).map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
+        let mut day = take.start.clock.day;
+        for e in &take.events {
+            if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+                day += days_per_second / JOURNEY_FPS;
+            }
+        }
+        Some((born, self.clock.day, take.start.clock.day, day))
+    }
+
+    /// The edit view opens (R23): the live state is put aside, the picked lamps followed and the date
+    /// held; `preview_at` and `preview_play` show their journey; `preview_end` puts everything back.
+    pub fn preview_begin(&mut self) -> bool {
+        if self.preview.is_some() || self.studio.replay.is_some() || self.studio.recording.is_some() {
+            return false;
+        }
+        let ids = self.picked_lamps();
+        if ids.is_empty() {
+            return false;
+        }
+        self.preview = Some(Preview { clock: self.clock, camera: self.camera.camera, chosen: self.chosen.clone(), followed: self.followed.clone(), riding: self.camera.riding, ids: ids.clone(), until: None });
+        self.chosen.clear();
+        self.followed = ids;
+        self.camera.riding = None;
+        self.clock.running = false;
+        true
+    }
+
+    /// The preview at `day` (R23): the date there, held, and the camera flown to hold the lamps.
+    pub fn preview_at(&mut self, day: f64) {
+        if self.preview.is_none() {
+            return;
+        }
+        if let Some(p) = &mut self.preview {
+            p.until = None;
+        }
+        self.clock.day = day;
+        self.clock.running = false;
+        self.step_floats_with(usize::MAX);
+        self.preview_frame(false);
+    }
+
+    /// The preview plays from `from` to `to` at `pace` days a second (R23), the camera following.
+    pub fn preview_play(&mut self, from: f64, to: f64, pace: f64) {
+        if self.preview.is_none() {
+            return;
+        }
+        self.clock.day = from;
+        self.clock.rate = pace.clamp(0.01, 60.0);
+        self.clock.running = true;
+        if let Some(p) = &mut self.preview {
+            p.until = Some(to);
+        }
+        self.step_floats_with(usize::MAX);
+        self.preview_frame(false);
+    }
+
+    /// The camera flown (or, with `now`, set) to hold the previewed lamps: centred on them, zoomed so
+    /// their spread fills about 60% of the shorter side.
+    fn preview_frame(&mut self, now: bool) {
+        let Some(p) = &self.preview else { return };
+        let day = self.clock.day;
+        let pts: Vec<LonLat> = self.floats.iter().filter(|f| p.ids.contains(&f.id) && f.born(day)).map(|f| f.at).collect();
+        if pts.is_empty() {
+            return;
+        }
+        let (mut x, mut y, mut z) = (0.0, 0.0, 0.0);
+        for q in &pts {
+            let v = q.to_xyz();
+            x += v[0];
+            y += v[1];
+            z += v[2];
+        }
+        let n = (x * x + y * y + z * z).sqrt().max(1e-9);
+        let c = LonLat::from_xyz([x / n, y / n, z / n]);
+        let spread = pts.iter().map(|q| q.distance_m(c) / EARTH_RADIUS_M).fold(0.0f64, f64::max).max(0.004);
+        let disc = View::layout(self.width, self.height, self.ppp, Camera::new(c.lon, c.lat, 1.0));
+        let half = (self.width.min(self.height) as f64 / self.ppp) / 2.0;
+        let zoom = (0.6 * half / (disc.r * spread.sin())).clamp(1.0, 40.0);
+        let to = Camera::new(c.lon, c.lat, zoom);
+        if now {
+            self.camera = CameraControl::new(to);
+        } else {
+            let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
+            self.camera.fly_to(to, self.now, motion);
+        }
+    }
+
+    /// The edit view closes (R23): the live state as it was.
+    pub fn preview_end(&mut self) {
+        if let Some(p) = self.preview.take() {
+            self.clock = p.clock;
+            self.camera = CameraControl::new(p.camera);
+            self.camera.riding = p.riding;
+            self.chosen = p.chosen;
+            self.followed = p.followed;
+            self.step_floats_with(usize::MAX);
+        }
+    }
+
+    /// Whether the edit view's preview is open (R23).
+    pub fn previewing(&self) -> bool {
+        self.preview.is_some()
     }
 
     /// Begins exporting a journey clip as an edit sets it (R22); the frames to come.

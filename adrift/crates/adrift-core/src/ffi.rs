@@ -332,6 +332,54 @@ pub unsafe extern "C" fn adrift_journey_begin(shell: *mut Shell, seconds: f64, f
     adrift_journey_begin_edit(shell, seconds, f64::NAN, f64::NAN, f64::NAN, fps, width, height)
 }
 
+/// The edit view's days (R23): the first day the picked lamps are all out, the app's date, and the
+/// days a journey of `seconds` shows by default; false when no lamp is picked.
+#[no_mangle]
+pub unsafe extern "C" fn adrift_journey_bounds(shell: *mut Shell, seconds: f64, born: *mut f64, now: *mut f64, from: *mut f64, to: *mut f64) -> bool {
+    let Some(s) = shell.as_mut() else { return false };
+    let Some((b, n, f, t)) = s.app.journey_bounds(seconds) else { return false };
+    for (p, v) in [(born, b), (now, n), (from, f), (to, t)] {
+        if let Some(p) = p.as_mut() {
+            *p = v;
+        }
+    }
+    true
+}
+
+/// The edit view's preview (R23): begin (false if nothing to show), show a day, play between days at
+/// a pace, and end (the live state put back).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_preview_begin(shell: *mut Shell) -> bool {
+    shell.as_mut().is_some_and(|s| s.app.preview_begin())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn adrift_preview_at(shell: *mut Shell, day: f64) {
+    if let Some(s) = shell.as_mut() {
+        s.app.preview_at(day);
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn adrift_preview_play(shell: *mut Shell, from: f64, to: f64, pace: f64) {
+    if let Some(s) = shell.as_mut() {
+        s.app.preview_play(from, to, pace);
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn adrift_preview_end(shell: *mut Shell) {
+    if let Some(s) = shell.as_mut() {
+        s.app.preview_end();
+    }
+}
+
+/// The app's date (R23: the edit view's playhead while a preview plays).
+#[no_mangle]
+pub unsafe extern "C" fn adrift_day(shell: *mut Shell) -> f64 {
+    shell.as_mut().map_or(0.0, |s| s.app.clock.day)
+}
+
 /// Begins exporting a journey clip as the edit view sets it (R22): its first and last days and its
 /// pace (days a second), each NaN for the app's own choice; the frames to come, the size as above.
 #[no_mangle]

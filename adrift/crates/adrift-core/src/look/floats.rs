@@ -24,8 +24,8 @@ pub struct FloatInstance {
     pub speck: f32,
     /// 1 in a clip (R20): the line's head, a larger glass float with a glint and a soft glow of its hue
     pub head: f32,
-    /// how it is chosen (R21): 0 not, 1 as itself (a solid ring of its hue), 2 as its cloud (a ring of
-    /// dots of its hue); `held` is the mark's strength
+    /// how it is chosen (R21): 0 not, 1 as itself, 2 as its cloud; both wear the same solid ring of
+    /// its hue (R23), the cloud told by its maybes; `held` is the mark's strength
     pub mode: f32,
     /// 1 a lamp not chosen while another is: it steps back (R21)
     pub quiet: f32,
