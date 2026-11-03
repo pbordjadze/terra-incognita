@@ -17,6 +17,8 @@ toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", rev = "85b00e
 # once the tag exists: tag = "toy-kit-v0.2.0"
 ```
 
+In a claude.ai cloud session cargo fetches the git dependency only with `CARGO_NET_GIT_FETCH_WITH_CLI=true`
+(the proxy; found by busquets, Nov 3). busquets depends on it so since b6f3375 (no globe; `web` in its web crate).
 Cargo finds the crate by name anywhere in the repository; the tag is the stable API. Rules:
 
 - **Tags, not branches.** `toy-kit-v0.<minor>.<patch>`: a patch never changes a public signature; a
