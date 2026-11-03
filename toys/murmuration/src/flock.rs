@@ -16,7 +16,7 @@ const W_COH: f32 = 1.7;
 const W_SPEED: f32 = 1.6;
 const ROOST_R: f32 = 30.0;
 const W_ROOST: f32 = 0.06;
-const ALT: f32 = 55.0;
+const ALT: f32 = 32.0;
 const W_ALT: f32 = 0.05;
 const NOISE: f32 = 1.0;
 const MAX_ACC: f32 = 30.0;
@@ -315,7 +315,7 @@ impl Flock {
         // The flock's pull wanders over the reed bed: a slow figure (StarDisplay's roost is fixed; a
         // real flock ranges over it, sweeping out and back).
         let tt = self.time as f32;
-        self.roost = [45.0 * (tt * 0.047).sin(), ALT + 10.0 * (tt * 0.083).sin(), 35.0 * (tt * 0.031 + 1.0).sin()];
+        self.roost = [45.0 * (tt * 0.047).sin(), ALT + 7.0 * (tt * 0.083).sin(), 35.0 * (tt * 0.031 + 1.0).sin()];
         self.build_grid();
         self.centre_now = self.centre().0;
         let n = self.birds.len();

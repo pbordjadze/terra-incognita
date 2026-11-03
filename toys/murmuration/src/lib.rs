@@ -26,7 +26,7 @@ const DUSK_RATE: f64 = 1.5;
 const BIRDS: usize = 6000;
 const MSAA: u32 = 4;
 /// How far from the roost the watcher stands, metres.
-const WATCHER: f32 = 100.0;
+const WATCHER: f32 = 65.0;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -112,6 +112,7 @@ pub struct Murmuration {
     ears: Arc<Ears>,
     // GPU
     sky_pipe: wgpu::RenderPipeline,
+    reed_pipe: wgpu::RenderPipeline,
     sky_bind: wgpu::BindGroup,
     sky_buf: wgpu::Buffer,
     sky_tex: wgpu::Texture,
@@ -211,7 +212,7 @@ impl Murmuration {
         // From afar, a watcher stands in the reeds on the far side of the roost from the sun, and
         // watches the flock wheel against the sunset.
         let sa = (self.sun_az as f32).to_radians();
-        let dh = WATCHER.max((self.look[1] - 2.0) / (15.0f32).to_radians().tan());
+        let dh = WATCHER.max((self.look[1] - 2.0) / (24.0f32).to_radians().tan());
         let far = [self.look[0] - sa.sin() * dh, 2.0, self.look[2] - sa.cos() * dh];
         // From behind you, a little below, looking where you go and toward the birds round you,
         // so the flock fills the glass while you fly in it.
@@ -232,14 +233,14 @@ impl Murmuration {
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
         let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
-        let focal = focal * (1.9 - 0.78 * e);
+        let focal = focal * (1.15 - 0.03 * e);
         let mut fwd = norm(sub(look, pos));
         // Never so steeply up that the land leaves the frame (from afar).
         // Flying, never pitched up so far that the dusk leaves the glass: the horizon stays in the
         // lowest part of the frame, whatever the screen's field of view.
         let half_v = (0.5 * h / focal).atan();
         let fly_up = (half_v - (6.0f32).to_radians()).max(0.0);
-        let max_up = ((17.0f32).to_radians() * (1.0 - e) + fly_up * e).sin();
+        let max_up = ((22.0f32).to_radians() * (1.0 - e) + fly_up * e).sin();
         let max_down = -(6.0f32).to_radians().sin() * e;
         if fwd[1] < max_down {
             let h = norm([fwd[0], 0.0, fwd[2]]);
@@ -351,6 +352,22 @@ impl Toy for Murmuration {
             multiview: None,
             cache: None,
         });
+        let reed_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("reeds"),
+            layout: Some(&sky_pl),
+            vertex: wgpu::VertexState { module: &sky_shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: ms,
+            fragment: Some(wgpu::FragmentState {
+                module: &sky_shader,
+                entry_point: Some("fs_reeds"),
+                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
+            }),
+            multiview: None,
+            cache: None,
+        });
         let bird_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("birds"),
             entries: &[wgpu::BindGroupLayoutEntry { binding: 0, visibility: frag, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None }],
@@ -424,6 +441,7 @@ impl Toy for Murmuration {
             reduce_motion: ctx.reduce_motion,
             ears: Arc::new(Ears::default()),
             sky_pipe,
+            reed_pipe,
             sky_bind,
             sky_buf,
             sky_tex,
@@ -546,20 +564,28 @@ impl Toy for Murmuration {
         self.near += step * (self.near_to - self.near).signum();
         self.place_eye(ctx, dt as f32);
         // What the ears hear: the rush of wings near the eye, the murmur of the whole.
-        let mut rush = 0.0f32;
+        // The hush of the birds round the eye, and the whoosh of each one passing close: by how
+        // near it comes and how fast it goes past (the eye moves with your bird while you fly).
+        let eye_v = scale(self.flock.birds[self.flock.you].vel, self.near);
+        let (mut round, mut pass) = (0.0f32, 0.0f32);
         for b in &self.flock.birds {
             let d = sub(b.pos, self.eye.pos);
             let d2 = dot(d, d);
             if d2 < 400.0 {
-                rush += 1.0 / (1.0 + d2 * 0.25);
+                round += 1.0 / (1.0 + d2 * 0.25);
+                if d2 < 49.0 {
+                    let k = 1.0 - d2.sqrt() / 7.0;
+                    pass += k * k * length(sub(b.vel, eye_v)) / 10.0;
+                }
             }
         }
+        let rush = 0.08 * (1.0 + round).ln() + 0.09 * pass;
         let (c, _) = self.flock.centre();
         let dc = length(sub(c, self.eye.pos));
         let you = &self.flock.birds[self.flock.you];
-        put(&self.ears.rush, (rush * 0.08).min(1.5));
-        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.2));
-        put(&self.ears.wings, self.near * (0.3 + 0.7 * you.flap));
+        put(&self.ears.rush, rush.min(1.6));
+        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.75 * self.near));
+        put(&self.ears.wings, self.near * (0.15 + 0.5 * you.flap));
         put(&self.ears.rate, you.rate);
     }
 
@@ -587,9 +613,9 @@ impl Toy for Murmuration {
             fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
             sun: [sun[0], sun[1], sun[2], sa],
             sun_col: [trans[0] as f32, trans[1] as f32, trans[2] as f32, self.exposure],
-            ground: [ground[0], ground[1], ground[2], (self.t % 64.0) as f32],
+            ground: [ground[0], ground[1], ground[2], (self.t % (std::f64::consts::TAU * 100.0)) as f32],
             horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
-            horizon2: [h1[0], h1[1], h1[2], 0.0],
+            horizon2: [h1[0], h1[1], h1[2], 1.0 - self.near.min(1.0) * 2.0],
         };
         ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
         // The birds: dark against the sky, a little hazed with distance.
@@ -658,6 +684,9 @@ impl Toy for Murmuration {
             rp.set_bind_group(0, &self.bird_bind, &[]);
             rp.set_vertex_buffer(0, self.inst.slice(..));
             rp.draw(0..39, 0..inst.len() as u32);
+            rp.set_pipeline(&self.reed_pipe);
+            rp.set_bind_group(0, &self.sky_bind, &[]);
+            rp.draw(0..3, 0..1);
         }
         ctx.gpu.queue.submit([enc.finish()]);
     }
@@ -743,7 +772,7 @@ impl Synth for Wind {
             self.pink[2] = 0.6 * self.pink[2] + 0.4 * w;
             let pink = self.pink[0] + self.pink[1] + self.pink[2] * 0.5;
             let murmur = svf(&mut self.bp[0], pink, f_low, 1.2) * self.lv[0] * 0.5;
-            let rush = svf(&mut self.bp[1], w, f_mid, 1.4) * self.lv[1] * 0.18;
+            let rush = svf(&mut self.bp[1], w, f_mid, 1.4) * self.lv[1] * 0.4;
             self.phase = (self.phase + beat / rate as f32) % 1.0;
             let flutter = (0.5 - 0.5 * (self.phase * std::f32::consts::TAU).cos()).powi(3);
             let wings = svf(&mut self.bp[2], w, f_hi, 1.6) * flutter * self.lv[2] * 0.12;
