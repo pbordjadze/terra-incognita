@@ -16,8 +16,8 @@ use sim::{Sim, DEAD, FLEEING, FORMED, GONE, KINDS};
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 
 /// The battle's box (world units) that the view keeps whole on any screen.
-const BOX_C: [f32; 2] = [528.0, 470.0];
-const BOX: [f32; 2] = [570.0, 540.0];
+const BOX_C: [f32; 2] = [520.0, 470.0];
+const BOX: [f32; 2] = [700.0, 600.0];
 /// Sim seconds a second, and while a finger draws (the day slows under the pen).
 const PACE: f32 = 1.6;
 const PACE_DRAWING: f32 = 0.6;
@@ -34,6 +34,8 @@ const MAX_SEGS: usize = 8192;
 const SETTLE: f64 = 3.0;
 /// Seconds from the decision until nothing moves.
 const FREEZE: f64 = 1.5;
+/// Seconds the camera takes to draw back to the whole field once the day is decided.
+const PULL_BACK: f64 = 3.5;
 /// The pen combs the cuts this near its passage (units), for this long (s).
 const COMB_R: f32 = 56.0;
 const COMB_LIFE: f32 = 3.0;
@@ -132,6 +134,7 @@ pub struct Battle {
     next_judge: f64,
     /// the camera: px a unit and the world point at the screen's middle, eased toward the fight
     cam: Option<(f32, [f32; 2])>,
+    cam_at_decision: Option<(f32, [f32; 2])>,
     last_touch: f64,
     initial: [u32; 2],
     dead: Vec<f32>,
@@ -283,6 +286,16 @@ impl Battle {
     fn follow(&mut self, ctx: &Ctx, dt: f32) {
         let base = Self::box_scale(ctx);
         let cur = self.cam.unwrap_or((base, BOX_C));
+        if let Some(d) = self.decided_at {
+            // the day decided: the camera draws back to the whole field, the river and the ridge,
+            // and the page arrives as a print
+            let p = (((self.clock - d) / PULL_BACK) as f32).clamp(0.0, 1.0);
+            let from = *self.cam_at_decision.get_or_insert(cur);
+            let e = p * p * (3.0 - 2.0 * p);
+            let s = (from.0.ln() + (base.ln() - from.0.ln()) * e).exp();
+            self.cam = Some((s, [from.1[0] + (BOX_C[0] - from.1[0]) * e, from.1[1] + (BOX_C[1] - from.1[1]) * e]));
+            return;
+        }
         if !self.sim.started || !self.touches.is_empty() || self.clock - self.last_touch < 2.5 {
             self.cam = Some(cur);
             return;
@@ -349,6 +362,7 @@ impl Battle {
         self.deaths_drawn = 0;
         self.decided_at = None;
         self.cam = None;
+        self.cam_at_decision = None;
         self.count_initial();
         self.pending_dots.clear();
         self.clear_stain = true;
@@ -835,6 +849,7 @@ impl Toy for Battle {
             decided_at: None,
             next_judge: 0.0,
             cam: None,
+            cam_at_decision: None,
             last_touch: -10.0,
             initial: [0, 0],
             dead: vec![0.0; dw * dh],
@@ -911,6 +926,18 @@ impl Toy for Battle {
                     self.start();
                     self.sim.pulse(wx, wy);
                     self.drops.push((wx, wy, self.clock));
+                    // the cuts round the drop bristle, then comb back
+                    for (i, u) in self.sim.units.iter().enumerate() {
+                        let d = ((u.x - wx).powi(2) + (u.y - wy).powi(2)).sqrt();
+                        if d < 36.0 && u.state < DEAD {
+                            let a = (u.j - 0.5) * 2.4 * (1.0 - d / 36.0);
+                            let lk = &mut self.looks[i];
+                            let (c, sn) = (a.cos(), a.sin());
+                            let (x, y) = (lk.dx * c - lk.dy * sn, lk.dx * sn + lk.dy * c);
+                            lk.dx = x;
+                            lk.dy = y;
+                        }
+                    }
                     self.pending_dots.push(Dot { pr: [wx, wy, 9.0, 0.0], v: [0.0, 0.0, 0.5, 0.0] });
                 }
             }
@@ -1028,7 +1055,18 @@ impl Toy for Battle {
         // the real day's ghost lies faint under the fight and lifts once the day is decided, to set
         // beside the plan; the pen's strokes dry to faint channels
         let settle = self.decided_at.map_or(0.0, |d| (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0));
-        let mut segs: Vec<Seg> = self.ghost.iter().map(|g| Seg { ka: [g.ka[0], 0.15 + 0.32 * settle, 0.0, 0.0], ..*g }).collect();
+        // the ghost: faint while the fight runs; once decided it rises (darker dashes), then settles
+        // into a fine continuous engraved line beside the plan
+        let tau = self.decided_at.map_or(0.0, |d| (self.clock - d) as f32);
+        let rise = (tau / 1.5).clamp(0.0, 1.0);
+        let fine = ((tau - 1.5) / 2.5).clamp(0.0, 1.0);
+        let g_alpha = 0.12 + 0.4 * rise - 0.2 * fine;
+        let g_width = 0.7 + 0.25 * rise - 0.55 * fine;
+        let mut segs: Vec<Seg> = self
+            .ghost
+            .iter()
+            .map(|g| Seg { sw: [g.sw[0], g.sw[1], g_width, g.sw[3]], ka: [g.ka[0], g_alpha, fine, 0.0], ..*g })
+            .collect();
         let t = self.sim.time;
         for st in &self.sim.strokes {
             let age = t - st.born;
@@ -1038,7 +1076,8 @@ impl Toy for Battle {
                 if segs.len() >= MAX_SEGS - 64 {
                     break;
                 }
-                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9, flow], ka: [0.0, alpha, 0.0, 0.0] });
+                // drying to a thin engraved channel
+                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9 - 0.4 * settle, flow], ka: [0.0, alpha, 0.0, 0.0] });
             }
             if st.done {
                 let e = st.pts.last().unwrap();
@@ -1049,9 +1088,10 @@ impl Toy for Battle {
         for &(x, y, born) in &self.drops {
             let age = (self.clock - born) as f32;
             // a drop blooms into the paper and dries: it spreads, paling, then stays a faint mark
-            let k = 1.0 - (-age / 0.9).exp();
-            let r = 2.5 + 11.0 * k;
-            segs.push(Seg { ab: [x, y, x, y], sw: [100.0, 100.0, r, 0.0], ka: [0.0, 0.7 - 0.56 * k, 0.0, 0.0] });
+            // a blot that wicks a little into the paper and dries: small, crisp, ink not a disc
+            let k = 1.0 - (-age / 0.6).exp();
+            let r = 1.6 + 2.2 * k;
+            segs.push(Seg { ab: [x, y, x, y], sw: [100.0, 100.0, r, 0.0], ka: [0.0, 0.85 - 0.35 * k, 0.0, 0.0] });
         }
         self.n_segs = segs.len().min(MAX_SEGS) as u32;
         q.write_buffer(&self.segs, 0, bytemuck::cast_slice(&segs[..self.n_segs as usize]));
