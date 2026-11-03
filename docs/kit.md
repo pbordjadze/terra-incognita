@@ -110,6 +110,43 @@ One line a tool as it lands (moved here from `docs/tools.md` on Nov 3).
 | Toy clip | a plan rendered at 1080×1920, 30 fps, with its sound, encoded H.264 high yuv420p + AAC 48 kHz, +faststart (ready to post) | `<toy>-check clip <plan> <out.mp4>` (encodes with `bash tools/kit/clip.sh <frames-dir> <out.mp4> [fps]`) | any toy |
 | Same renders | every toy's plans played by two sets of check binaries and every PNG and WAV compared byte for byte: a kit change that must not change a look | `bash tools/kit/same_renders.sh render <bin-dir> <out>`, then `compare <a> <b>`; for a toy that differs from itself run to run (Mold), `python3 tools/kit/render_noise.py <a> <b>` against two runs of the base; `bash tools/kit/play_all_speed.sh <toy>` times play-all | kit changes |
 
+## Where it stands (handoff, Nov 3, 2026, ~1 PM ET)
+
+**Landed.**
+- On main: the launch check (0209eb6), the check's new options (5024250) and toy-kit 0.2.0 as a
+  library (85b00e81). Every toy's CI and the kit job are green there.
+- On the `adrift` branch, reaching main with Adrift's next round: `play-all` (kit-play-all) and
+  `--artifact` (kit-artifact).
+- No kit branch has work left that isn't merged (`kit-*` can be deleted).
+
+**Who uses what.**
+- **The seven toys** (Whales, Murmuration, Mold, Fireflies, Bell, Swell, Battle): toy-kit from the
+  path, the launch check and the touch check (`KIT_TAP_CHECK=1`) in CI.
+- **busquets:** toy-kit at `rev = "85b00e81298a1bd3014e29ca5d9b1cbe80675a25"`, without the globe and
+  with `web` (b6f3375); its own copy of the kit is deleted.
+- **Adrift:** `webgpu_shot.cjs`, `artifact.py` through `web-build.sh --artifact`, `adrift-check play-all`.
+- **traveling-squadron:** not reached; it can pin the same commit.
+- **Mold:** `mold-build-71` writes the GPU's limits and the memory available before and after launch
+  to its `toy-log.txt`. Its next launch on a phone shows whether a closure was memory or a GPU error.
+
+**Open, in order.**
+1. **The tag.** `git tag -a toy-kit-v0.2.0 85b00e81 && git push origin toy-kit-v0.2.0`, by anyone whose
+   access pushes tags (a cloud session's git proxy refuses tags). The pinned commit is the same
+   version, so nothing waits on it.
+2. **The launch check in `adrift.yml`.** Adrift's conductor agreed to it as a job that gates nothing at
+   first; send them the budget numbers before it blocks anything. adrift-core's Gpu needs what
+   toy-kit's has: a shader dump (`TOY_DUMP_SHADERS`) and `KIT_IPHONE_LIMITS`. Then
+   `tools/kit/launch_check.py --check '<adrift-check play cmd>'` works as is.
+3. **`tools/kit/same_renders.sh` keeps every frame of both runs.** It filled the disk once (8.6 GB).
+   Give it a mode that keeps only the hashes.
+4. **Mold isn't deterministic** (its cells are claimed by racing GPU atomics), so its touches and its
+   renders can only be judged against its own noise. A fixed claim order would fix both. That is the
+   Mold session's call, because it may change the look.
+5. **`play-all` is CPU-bound on Linux's software Vulkan** (1.4–1.6× faster on 4 CPUs). Its gain on the
+   homelab GPU is unmeasured, and the GPU runner's switch to it is untested until its next run.
+6. **Places by name** (`Toy::anchors` / `Toy::project`): no toy implements them yet; each toy's
+   session adds them.
+
 ## What the kit can't prove
 
 A Linux check can't run Apple's Metal compiler or the phone's memory pressure. The device's
