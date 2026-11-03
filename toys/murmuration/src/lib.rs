@@ -616,7 +616,11 @@ impl Toy for Murmuration {
             // the finger comes back toward where it came down.
             let lean_now = (dx * dx + dy * dy).sqrt().min(1.0);
             let k_home = 0.15 + 0.5 * (off / 12.0).min(1.5) + 0.6 * (1.0 - lean_now);
-            let to_c = sub(c, you_p);
+            // Home is the back half of the flock: a few metres behind its centre, so the flock is
+            // ahead of you and in view, not trailing behind your bird where the eye can't see it.
+            let fh = norm(self.flock.centre().1);
+            let home = sub(c, scale(fh, 6.0));
+            let to_c = sub(home, you_p);
             let mut pull = scale([to_c[0], to_c[1] * 3.0, to_c[2]], k_home);
             let pl = length(pull);
             if pl > 9.0 {
@@ -632,10 +636,13 @@ impl Toy for Murmuration {
             self.flock.lean = a;
             self.flock.lean_dir = r;
             self.flock.lean_k = 0.3 + 0.4 * lean;
+            // The flock round you bends with your lean only as far as you lean.
+            self.flock.lean_field = lean;
         } else {
             self.strain = (self.strain - dt as f32 * 0.5).max(0.0);
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
+            self.flock.lean_field = 0.0;
             if self.clock >= self.show_next {
                 if self.near < 0.3 {
                     self.pick_you();
@@ -775,6 +782,10 @@ impl Toy for Murmuration {
                 let rel = sub(b.pos, e.pos);
                 let z = dot(rel, e.fwd);
                 println!("you {} z {:.2} x {:.0} y {:.0} dist {:.2} alt {:.1} vel {:.1} {:.1} {:.1} eye {:.1}", self.flock.you, z, dot(rel, e.right) * e.focal / z, dot(rel, e.up) * e.focal / z, length(rel), b.pos[1], b.vel[0], b.vel[1], b.vel[2], e.pos[1]);
+                let (_, _, n15) = local(&self.flock, 15.0);
+                let c = self.flock.centre().0;
+                let to_c = sub(c, e.pos);
+                println!("round {} centre_dist {:.1} centre_in_view_z {:.1} cx {:.0} cy {:.0}", n15, length(sub(c, b.pos)), dot(to_c, e.fwd), dot(to_c, e.right) * e.focal / dot(to_c, e.fwd), dot(to_c, e.up) * e.focal / dot(to_c, e.fwd));
             }
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());

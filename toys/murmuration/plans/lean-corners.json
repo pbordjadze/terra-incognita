@@ -1,0 +1,26 @@
+{
+  "_": "Hard leans to every corner, each held 3 s with the finger at the corner, then back near where it came down: down-left (the critic's), up-left, down-right, up-right. Whatever the direction, the flock stays round you, and within about a second of the finger coming back you are in its thick again. Measure: python3 tools/toys/murmuration/holds.py toys/murmuration/plans/lean-corners.json",
+  "restore": "{\"day\": 9803, \"minutes\": -10, \"fixed\": true}",
+  "seconds": 44,
+  "fps": 30,
+  "events": [
+    { "t": 10.0, "down": [196, 520], "id": 1 },
+    { "t": 12.0, "move": [210, 500], "id": 1 },
+    { "t": 14.0, "move": [190, 530], "id": 1 },
+    { "t": 15.0, "move": [196, 120], "id": 1 },
+    { "t": 19.0, "move": [196, 520], "id": 1 },
+    { "t": 21.0, "move": [40, 820], "id": 1 },
+    { "t": 23.0, "move": [30, 840], "id": 1 },
+    { "t": 24.5, "move": [196, 520], "id": 1 },
+    { "t": 27.0, "move": [30, 120], "id": 1 },
+    { "t": 30.0, "move": [196, 520], "id": 1 },
+    { "t": 32.0, "move": [360, 830], "id": 1 },
+    { "t": 35.0, "move": [196, 520], "id": 1 },
+    { "t": 37.0, "move": [360, 120], "id": 1 },
+    { "t": 40.0, "move": [196, 520], "id": 1 },
+    { "t": 42.0, "up": [196, 520], "id": 1 }
+  ],
+  "shots": [{ "t": 23.0, "name": "down-left" }, { "t": 25.5, "name": "down-left-back" }, { "t": 29.0, "name": "up-left" }, { "t": 34.0, "name": "down-right" }, { "t": 36.0, "name": "down-right-back" }, { "t": 39.0, "name": "up-right" }],
+  "film": { "from": 0, "to": 44, "every": 0.1 },
+  "audio": true
+}
