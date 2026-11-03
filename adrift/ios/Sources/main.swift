@@ -253,6 +253,9 @@ final class AdriftView: UIView {
     // written as H.264 by AVAssetWriter, then offered by the share sheet (Save Video, Messages, ...)
 
     var exporting = false
+    var cancelled = false
+    let remaining = UILabel()
+    let cancel = UIButton(type: .system)
     let spinner = UIActivityIndicatorView(style: .large)
     let progress = UIProgressView(progressViewStyle: .default)
 
@@ -353,6 +356,9 @@ final class AdriftView: UIView {
         guard writer.startWriting() else { adrift_export_end(shell); return }
         writer.startSession(atSourceTime: .zero)
         exporting = true
+        cancelled = false
+        // (R24) a long clip renders for minutes: the screen stays on (a lock would end the export)
+        UIApplication.shared.isIdleTimerDisabled = true
         link?.isPaused = true
         spinner.center = CGPoint(x: bounds.midX, y: bounds.midY)
         addSubview(spinner)
@@ -363,6 +369,19 @@ final class AdriftView: UIView {
         progress.trackTintColor = UIColor.black.withAlphaComponent(0.08)
         progress.progressTintColor = UIColor(red: 0.72, green: 0.42, blue: 0.32, alpha: 1)
         if frames > 300 { addSubview(progress) }
+        // (R24) the time left, and a way out
+        remaining.frame = CGRect(x: bounds.midX - 100, y: bounds.midY + 46, width: 200, height: 20)
+        remaining.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        remaining.textColor = UIColor.secondaryLabel
+        remaining.textAlignment = .center
+        remaining.text = ""
+        cancel.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        cancel.tintColor = UIColor.secondaryLabel
+        cancel.frame = CGRect(x: bounds.midX - 22, y: bounds.midY + 72, width: 44, height: 44)
+        cancel.removeTarget(nil, action: nil, for: .allEvents)
+        cancel.addTarget(self, action: #selector(cancelExport), for: .touchUpInside)
+        if frames > 300 { addSubview(remaining); addSubview(cancel) }
+        let began = CACurrentMediaTime()
         var index: Int64 = 0
         func finish() {
             input.markAsFinished()
@@ -375,8 +394,18 @@ final class AdriftView: UIView {
                     self.spinner.stopAnimating()
                     self.spinner.removeFromSuperview()
                     self.progress.removeFromSuperview()
+                    self.remaining.removeFromSuperview()
+                    self.cancel.removeFromSuperview()
                     self.exporting = false
+                    UIApplication.shared.isIdleTimerDisabled = false
                     self.link?.isPaused = false
+                    let took = CACurrentMediaTime() - began
+                    NSLog("adrift: export of \(index) frames took %.1f s (%.1f ms a frame)", took, took * 1000 / Double(max(index, 1)))
+                    if self.cancelled {
+                        writer.cancelWriting()
+                        try? FileManager.default.removeItem(at: url)
+                        return
+                    }
                     if writer.status == .completed {
                         if hasSong && self.song != nil {
                             self.withSong(url, start: songStart, length: songLength) { self.share($0) }
@@ -389,6 +418,7 @@ final class AdriftView: UIView {
         }
         func step() {
             guard let shell = self.shell else { return }
+            if self.cancelled { finish(); return }
             for _ in 0..<4 {
                 guard input.isReadyForMoreMediaData else { break }
                 guard let pool = adaptor.pixelBufferPool else { finish(); return }
@@ -404,10 +434,17 @@ final class AdriftView: UIView {
                 index += 1
                 self.progress.progress = Float(index) / Float(max(frames, 1))
             }
+            if index > 30 && index % 30 == 0 {
+                let rate = Double(index) / max(CACurrentMediaTime() - began, 0.001)
+                let left = Int((Double(Int64(frames) - index) / rate).rounded())
+                self.remaining.text = left >= 60 ? "\(left / 60) min \(left % 60) s" : "\(left) s"
+            }
             DispatchQueue.main.async { step() }
         }
         DispatchQueue.main.async { step() }
     }
+
+    @objc func cancelExport() { cancelled = true }
 
     func share(_ url: URL) {
         let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)

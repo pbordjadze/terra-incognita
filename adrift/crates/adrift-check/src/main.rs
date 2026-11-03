@@ -630,23 +630,45 @@ fn journey(args: &[String]) -> Result<()> {
     let mut i = 0u32;
     // the clip's camera and each lamp, a row a frame, beside the mp4 (R14: as `play`'s export writes)
     let mut trace = String::from("frame,clip_lon,clip_lat,clip_zoom,clip_roll,take_lon,take_lat,take_zoom,take_roll,lamps\n");
-    while let Some(px) = app.export_frame(&shot) {
-        use std::io::Write;
-        if let Some((c, k)) = app.export_camera() {
-            let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
-            trace.push_str(&format!("{i},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
+    // (R24) the phone's pipeline: two frames in flight, each read back straight into the encoder's
+    // rows (here one reused buffer), so the GPU draws the next while the last is copied out
+    use std::io::Write;
+    let mut rb = adrift_core::gpu::Readback::new(&app.gpu, &shot, 2);
+    let mut px = vec![0u8; (ew * eh * 4) as usize];
+    let (mut rendered, mut t_draw, mut t_take, mut t_pipe) = (0u32, 0.0f64, 0.0f64, 0.0f64);
+    loop {
+        while rb.has_room() {
+            let t = std::time::Instant::now();
+            let Some(drawn) = app.export_render(&shot) else { break };
+            if let Some((c, k)) = app.export_camera() {
+                let lamps: Vec<String> = app.floats.iter().filter(|f| f.born(app.clock.day)).map(|f| format!("{}:{:.4}:{:.4}", f.id, f.at.lon, f.at.lat)).collect();
+                trace.push_str(&format!("{rendered},{:.5},{:.5},{:.5},{:.3},{:.5},{:.5},{:.5},{:.3},{}\n", c.lon, c.lat, c.zoom, c.roll, k.lon, k.lat, k.zoom, k.roll, lamps.join(" ")));
+            }
+            rendered += 1;
+            if drawn {
+                rb.submit(&app.gpu, &shot);
+            }
+            t_draw += t.elapsed().as_secs_f64();
         }
-        if dry {
-            i += 1;
-            continue;
+        let t = std::time::Instant::now();
+        if !rb.take(&app.gpu, &mut px, (ew * 4) as usize, true) {
+            break;
         }
+        t_take += t.elapsed().as_secs_f64();
+        let t = std::time::Instant::now();
         ff.stdin.as_mut().unwrap().write_all(&px)?;
         if i == 0 || i + 1 == frames || i % 900 == 0 {
             let rgba: Vec<u8> = px.chunks_exact(4).flat_map(|p| [p[2], p[1], p[0], p[3]]).collect();
             save(&out.with_extension(format!("{i:05}.png")), ew, eh, &rgba)?;
         }
+        t_pipe += t.elapsed().as_secs_f64();
         i += 1;
     }
+    if dry {
+        i = rendered;
+    }
+    let n_f = i.max(1) as f64;
+    eprintln!("export: {i} frames; a frame {:.1} ms drawing (the replay and the GPU's commands), {:.1} ms waiting for and copying its pixels, {:.1} ms to the encoder ({})", t_draw / n_f * 1e3, t_take / n_f * 1e3, t_pipe / n_f * 1e3, app.gpu.adapter_info.name);
     drop(ff.stdin.take());
     ff.wait()?;
     // (R21) the days the journey covered and the file it made: a longer clip is a longer journey

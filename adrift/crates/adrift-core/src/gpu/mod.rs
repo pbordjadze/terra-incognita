@@ -190,3 +190,84 @@ impl Offscreen {
         out
     }
 }
+
+/// A ring of readback buffers for an export (R24): each frame's pixels are copied into the next
+/// buffer and mapped while the GPU draws the frame after it, and taken from the oldest straight into
+/// the caller's rows (the video encoder's buffer), swizzled only if the formats differ. Nothing is
+/// allocated per frame and only that frame's copy is waited for.
+pub struct Readback {
+    bufs: Vec<wgpu::Buffer>,
+    bpr: u32,
+    width: u32,
+    height: u32,
+    /// Submitted copies, oldest first: (buffer, submission).
+    pending: std::collections::VecDeque<(usize, wgpu::SubmissionIndex)>,
+    next: usize,
+}
+
+impl Readback {
+    pub fn new(gpu: &Gpu, target: &Offscreen, depth: usize) -> Readback {
+        let bpr = (target.width * 4 + 255) / 256 * 256;
+        let bufs = (0..depth.max(1))
+            .map(|_| {
+                gpu.device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("export readback"),
+                    size: (bpr * target.height) as u64,
+                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                    mapped_at_creation: false,
+                })
+            })
+            .collect();
+        Readback { bufs, bpr, width: target.width, height: target.height, pending: Default::default(), next: 0 }
+    }
+
+    /// Copies were submitted and not yet taken.
+    pub fn pending(&self) -> usize {
+        self.pending.len()
+    }
+
+    /// Room for another frame in flight.
+    pub fn has_room(&self) -> bool {
+        self.pending.len() < self.bufs.len()
+    }
+
+    /// Copies the target's current pixels into the next buffer and asks for it mapped.
+    pub fn submit(&mut self, gpu: &Gpu, target: &Offscreen) {
+        let i = self.next;
+        self.next = (self.next + 1) % self.bufs.len();
+        let mut enc = gpu.device.create_command_encoder(&Default::default());
+        enc.copy_texture_to_buffer(
+            wgpu::TexelCopyTextureInfo { texture: &target.texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyBufferInfo { buffer: &self.bufs[i], layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(self.bpr), rows_per_image: None } },
+            wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+        );
+        let idx = gpu.queue.submit([enc.finish()]);
+        self.bufs[i].slice(..).map_async(wgpu::MapMode::Read, |_| {});
+        self.pending.push_back((i, idx));
+    }
+
+    /// The oldest frame's pixels written to `out` (rows `stride` bytes apart), as BGRA when `bgra`
+    /// else RGBA; false if none is pending.
+    pub fn take(&mut self, gpu: &Gpu, out: &mut [u8], stride: usize, bgra: bool) -> bool {
+        let Some((i, idx)) = self.pending.pop_front() else { return false };
+        gpu.device.poll(wgpu::PollType::WaitForSubmissionIndex(idx)).expect("poll");
+        let row = (self.width * 4) as usize;
+        {
+            let data = self.bufs[i].slice(..).get_mapped_range();
+            let swap = bgra != (gpu.format == wgpu::TextureFormat::Bgra8Unorm || gpu.format == wgpu::TextureFormat::Bgra8UnormSrgb);
+            for y in 0..self.height as usize {
+                let src = &data[y * self.bpr as usize..y * self.bpr as usize + row];
+                let dst = &mut out[y * stride..y * stride + row];
+                dst.copy_from_slice(src);
+                if swap {
+                    for px in dst.chunks_exact_mut(4) {
+                        px.swap(0, 2);
+                    }
+                }
+            }
+        }
+        self.bufs[i].unmap();
+        true
+    }
+}
+

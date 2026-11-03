@@ -16,6 +16,8 @@ pub struct Shell {
     stats_at: f64,
     /// The offscreen target of an export under way (R9).
     export: Option<crate::gpu::Offscreen>,
+    /// Its frames in flight (R24).
+    readback: Option<crate::gpu::Readback>,
 }
 
 /// Makes the app over a CAMetalLayer. `scale` is the screen's pixels a point; `assets` the bundle's
@@ -56,7 +58,7 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
             return std::ptr::null_mut();
         }
     };
-    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0, export: None }))
+    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0, export: None, readback: None }))
 }
 
 #[no_mangle]
@@ -183,6 +185,7 @@ pub unsafe extern "C" fn adrift_export_begin(shell: *mut Shell, fps: f64, width:
     }
     let (tw, th) = s.app.export_target_size().unwrap_or((2, 2));
     s.export = Some(crate::gpu::Offscreen::new(&s.app.gpu, tw, th));
+    s.readback = None;
     let (w, h) = s.app.export_size().unwrap_or((2, 2));
     if let Some(p) = width.as_mut() {
         *p = w;
@@ -200,12 +203,19 @@ pub unsafe extern "C" fn adrift_export_frame(shell: *mut Shell, out: *mut u8, st
     let Some(s) = shell.as_mut() else { return false };
     let Some(target) = s.export.as_ref() else { return false };
     let Some((w, h)) = s.app.export_size() else { return false };
-    let Some(px) = s.app.export_frame(target) else { return false };
-    let row = w as usize * 4;
-    for y in 0..h as usize {
-        std::ptr::copy_nonoverlapping(px.as_ptr().add(y * row), out.add(y * stride), row);
+    // (R24) two frames in flight: the next is drawn while the last is read back, straight into the
+    // encoder's buffer, BGRA as it is drawn (no allocation, no swizzle on the phone)
+    let rb = s.readback.get_or_insert_with(|| crate::gpu::Readback::new(&s.app.gpu, target, 2));
+    while rb.has_room() {
+        match s.app.export_render(target) {
+            Some(true) => rb.submit(&s.app.gpu, target),
+            Some(false) => {}
+            None => break,
+        }
     }
-    true
+    let _ = w;
+    let rows = std::slice::from_raw_parts_mut(out, stride * h as usize);
+    rb.take(&s.app.gpu, rows, stride, true)
 }
 
 /// Ends an export: the live app put back as it was.
@@ -214,6 +224,7 @@ pub unsafe extern "C" fn adrift_export_end(shell: *mut Shell) {
     let Some(s) = shell.as_mut() else { return };
     s.app.export_end();
     s.export = None;
+    s.readback = None;
 }
 
 /// The panel's marks for VoiceOver (R10): how many there are now.
@@ -393,6 +404,7 @@ pub unsafe extern "C" fn adrift_journey_begin_edit(shell: *mut Shell, seconds: f
     }
     let (tw, th) = s.app.export_target_size().unwrap_or((2, 2));
     s.export = Some(crate::gpu::Offscreen::new(&s.app.gpu, tw, th));
+    s.readback = None;
     let (w, h) = s.app.export_size().unwrap_or((2, 2));
     if let Some(p) = width.as_mut() {
         *p = w;

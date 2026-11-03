@@ -2513,6 +2513,22 @@ impl App {
     /// Renders the export's next frame into `target` (an `Offscreen` of `export_target_size`) and
     /// returns its pixels as BGRA rows, top down, cropped to `export_size`; None when it is done.
     pub fn export_frame(&mut self, target: &crate::gpu::Offscreen) -> Option<Vec<u8>> {
+        if !self.export_render(target)? {
+            return Some(Vec::new());
+        }
+        let rgba = target.read(&self.gpu);
+        // RGBA in, BGRA out
+        let mut out = rgba;
+        for p in out.chunks_exact_mut(4) {
+            p.swap(0, 2);
+        }
+        Some(out)
+    }
+
+    /// The next frame of an export drawn into `target` and the replay moved on (R24: the pipelined
+    /// export reads it back itself, `gpu::Readback`); None when the clip is done; Some(false) for a
+    /// dry run's frame (nothing drawn).
+    pub fn export_render(&mut self, target: &crate::gpu::Offscreen) -> Option<bool> {
         use crate::studio::ClipPart;
         let (t_out, part, through, dt) = {
             let r = self.studio.replay.as_ref()?;
@@ -2575,7 +2591,7 @@ impl App {
         if self.export_dry {
             self.seconds = seconds;
             self.studio.replay.as_mut().unwrap().frame += 1;
-            return Some(Vec::new());
+            return Some(false);
         }
         let view = self.clip_view(cam);
         self.haptic = false;
@@ -2584,15 +2600,8 @@ impl App {
         self.exporting = false;
         self.clip_phase = (1.0, 0.0);
         self.seconds = seconds;
-        let rgba = target.read(&self.gpu);
-        let r = self.studio.replay.as_mut().unwrap();
-        r.frame += 1;
-        // RGBA in, BGRA out
-        let mut out = rgba;
-        for p in out.chunks_exact_mut(4) {
-            p.swap(0, 2);
-        }
-        Some(out)
+        self.studio.replay.as_mut().unwrap().frame += 1;
+        Some(true)
     }
 
     /// Feeds the export's remaining events and says how far the replay ended from where the take
