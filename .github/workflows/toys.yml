@@ -41,6 +41,7 @@ jobs:
     outputs:
       check: ${{ steps.plan.outputs.check }}
       ipa: ${{ steps.plan.outputs.ipa }}
+      kit: ${{ steps.plan.outputs.kit }}
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false, fetch-depth: 0, filter: 'blob:none' }
@@ -94,6 +95,25 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with: { name: '${{ matrix.toy }}-check', path: toys/build/out, if-no-files-found: error }
+
+  kit:
+    # toy-kit as other repositories use it (docs/kit.md): without the globe, and the web shell for
+    # wasm32. Only when toy-kit changed; nothing needs it, so it never holds a toy's check or release.
+    needs: [plan]
+    if: ${{ needs.plan.outputs.kit == 'true' }}
+    name: toy-kit without the globe, and for the web
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with: { persist-credentials: false }
+      - name: Build
+        working-directory: toys
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo build -p toy-kit --no-default-features
+          cargo test -q -p toy-kit --no-default-features
+          cargo check -p toy-kit --no-default-features --features web --target wasm32-unknown-unknown
 
   ipa:
     needs: [plan, check]
