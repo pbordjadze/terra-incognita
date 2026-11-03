@@ -18,10 +18,10 @@ What is measured, what is drawn, and from where.
 
 ## Drawn (not measured)
 
-- **Time**: 4,800 seconds of sea a second (a wave crosses the Pacific in about 18 s).
-- **The drop**: a hump of sea 170 km wide raised at rest (a real tsunami's source is the sea floor's
+- **Time**: 3,600 seconds of sea a second (a wave crosses the Pacific in about 24 s).
+- **The drop**: a hump of sea 260 km wide raised at rest (a real tsunami's source is the sea floor's
   uplift over a fault, hundreds of km long); a held finger raises one every 1.1 s.
-- **The loss**: a little everywhere and more at the coasts (the real sea loses wave energy to friction
+- **The loss**: a little everywhere, more at the coasts, and the grid's own few-cell ripples filtered out (a Shapiro filter) (the real sea loses wave energy to friction
   and breaking at the shore), and a wall past 78° of latitude (the grid's limit).
 - **The waves' height and light** (drawn as sunlight on the slopes, exaggerated), the chimes (a coast's
   note by its latitude on a pentatonic scale, sounded when a wave arrives above the coast's recent

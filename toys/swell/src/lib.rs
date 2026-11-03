@@ -10,9 +10,9 @@ mod sound;
 use serde::{Deserialize, Serialize};
 use toy_kit::{Camera, Ctx, Globe, LonLat, Phase, PointerEvent, Toy};
 
-/// Seconds of sea a second on the screen: a wave crosses the Pacific (a day) in about 18 seconds.
-const RATE: f64 = 4800.0;
-const DROP_KM: f64 = 170.0;
+/// Seconds of sea a second on the screen: a wave crosses the Pacific (a day) in about 24 seconds.
+const RATE: f64 = 3600.0;
+const DROP_KM: f64 = 260.0;
 const THRESHOLD: f32 = 0.06;
 /// Where the great tsunamis of the record began (offshore of their earthquakes, USGS / NOAA NCEI).
 const SOURCES: [(f64, f64); 5] = [
@@ -33,6 +33,8 @@ struct Region {
     armed: bool,
     /// the coast's usual swell lately: a chime is an arrival above it
     base: f32,
+    /// the last chime's wave, fading: an echo rings only if it is taller
+    last: f32,
     quiet_until: f64,
     lon: f64,
     lat: f64,
@@ -98,7 +100,7 @@ impl Swell {
     }
 
     fn listen(&mut self, dt: f64) {
-        self.tokens = (self.tokens + dt * 3.5).min(4.0);
+        self.tokens = (self.tokens + dt * 1.5).min(3.0);
         for p in self.peak.iter_mut() {
             *p = 0.0;
         }
@@ -115,9 +117,11 @@ impl Swell {
             let a = self.peak[r];
             let base = reg.base;
             reg.base += (a - reg.base) * k;
-            if reg.armed && a > THRESHOLD && a > 2.5 * base && self.t >= reg.quiet_until && self.tokens >= 1.0 {
+            reg.last *= (-dt / 8.0).exp() as f32;
+            if reg.armed && a > THRESHOLD && a > 2.5 * base && a > 1.15 * reg.last && self.t >= reg.quiet_until && self.tokens >= 1.0 {
                 reg.armed = false;
-                reg.quiet_until = self.t + 2.5;
+                reg.last = a;
+                reg.quiet_until = self.t + 5.0;
                 self.tokens -= 1.0;
                 let at = LonLat::new(reg.lon, reg.lat);
                 let ([x, _], facing) = self.globe.project(at);
@@ -142,7 +146,7 @@ impl Swell {
 impl Toy for Swell {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 2)?;
-        globe.camera = Camera::new(178.0, 16.0, 1.0);
+        globe.camera = Camera::new(-178.0, 20.0, 1.3);
         globe.hand.max_zoom = 8.0;
         let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?);
         // the coast's cells gathered by 4-degree tiles: each tile one voice
@@ -153,7 +157,7 @@ impl Toy for Swell {
             let (i, j) = (k as usize % sea::W, k as usize / sea::W);
             let tile = (i / 8, j / 8);
             let r = *index.entry(tile).or_insert_with(|| {
-                regions.push(Region { armed: true, base: 0.0, quiet_until: 0.0, lon: sea::lon_of(tile.0 * 8 + 4), lat: sea::lat_of(tile.1 * 8 + 4) });
+                regions.push(Region { armed: true, base: 0.0, last: 0.0, quiet_until: 0.0, lon: sea::lon_of(tile.0 * 8 + 4), lat: sea::lat_of(tile.1 * 8 + 4) });
                 regions.len() - 1
             });
             coast_region.push(r as u16);

@@ -64,7 +64,7 @@ fn field(g: vec3f) -> vec4f {
     let F = field(g);
     let amp = B.info.y;
     let u = F.x * amp;
-    let scale = 1.0 + u * B.info.z;
+    let scale = 1.0 + clamp(u, -0.05, 0.05) * B.info.z;
     let q2 = v2 / scale;
     let at = vec2f(U.disc.x + q2.x * R, U.disc.y - q2.y * R) * U.frame.z;
     var col = textureSampleLevel(src, samp, at / U.frame.xy, 0.0).rgb;

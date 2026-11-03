@@ -28,6 +28,43 @@ pub struct Sea {
     pub wet: Vec<bool>,
     /// sea cells beside land: where waves arrive
     pub coast: Vec<u32>,
+    steps: u64,
+    scratch: Vec<f32>,
+}
+
+/// f - δ⁴f / 16 along each axis where the five cells are sea: grid-scale waves (2 cells) removed,
+/// 4 cells kept three-quarters, 10 cells 99%.
+fn shapiro(f: &mut [f32], wet: &[bool], tmp: &mut Vec<f32>) {
+    tmp.clear();
+    tmp.extend_from_slice(f);
+    for j in 2..H - 2 {
+        let row = j * W;
+        for i in 0..W {
+            let k = row + i;
+            if !wet[k] {
+                continue;
+            }
+            let at = |d: i64| row + (i as i64 + d).rem_euclid(W as i64) as usize;
+            let (a, b, d, e) = (at(-2), at(-1), at(1), at(2));
+            if wet[a] && wet[b] && wet[d] && wet[e] {
+                f[k] = tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
+            }
+        }
+    }
+    tmp.clear();
+    tmp.extend_from_slice(f);
+    for j in 2..H - 2 {
+        for i in 0..W {
+            let k = j * W + i;
+            if !wet[k] {
+                continue;
+            }
+            let (a, b, d, e) = (k - 2 * W, k - W, k + W, k + 2 * W);
+            if wet[a] && wet[b] && wet[d] && wet[e] {
+                f[k] = tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
+            }
+        }
+    }
 }
 
 pub fn lat_of(j: usize) -> f64 {
@@ -90,10 +127,10 @@ impl Sea {
                     coast.push(k as u32);
                 }
                 // a little loss everywhere, more at the shore (the coast takes some of each wave)
-                damp[k] = if near_land { 0.004 } else { 0.0004 };
+                damp[k] = if near_land { 0.008 } else { 0.0004 };
             }
         }
-        Sea { eta: vec![0.0; n], prev: vec![0.0; n], ke, kn, inv_cos, damp, wet, coast }
+        Sea { eta: vec![0.0; n], prev: vec![0.0; n], ke, kn, inv_cos, damp, wet, coast, steps: 0, scratch: Vec::with_capacity(n) }
     }
 
     /// One step of `STEP` seconds of sea, its rows in bands across the cores.
@@ -132,6 +169,14 @@ impl Sea {
             }
         });
         self.prev = std::mem::replace(&mut self.eta, prev);
+        self.steps += 1;
+        if self.steps % 16 == 0 {
+            // the grid's own ripples (a few cells long, which no real long wave has) taken out: a
+            // second-order Shapiro filter, alike on both levels so only the shortest waves lose
+            let wet = &self.wet;
+            shapiro(&mut self.eta, wet, &mut self.scratch);
+            shapiro(&mut self.prev, wet, &mut self.scratch);
+        }
     }
 
     /// Raises the sea by a hump `height` high and `radius_km` wide about a place (a drop, a source's beat).

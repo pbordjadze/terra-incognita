@@ -29,8 +29,8 @@ fn at(uv: vec2f) -> f32 { return textureSampleLevel(eta, samp, uv, 0.0).r; }
     let tilt = -dot(gv - G.v * dot(gv, G.v), L);
     let s = tanh(S.info.x * tilt);
     let rim = smoothstep(0.0, 0.12, G.v.z);
-    let b = max(s, 0.0) * 0.6 * rim;
-    let d = max(-s, 0.0) * 0.45 * rim;
+    let b = max(s, 0.0) * 0.8 * rim;
+    let d = max(-s, 0.0) * 0.55 * rim;
     let glow = tanh(abs(h) * S.info.y) * 0.28 * rim;
     let light = vec3f(1.0, 0.99, 0.94);
     let deep = vec3f(0.10, 0.22, 0.42);

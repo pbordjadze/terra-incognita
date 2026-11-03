@@ -46,7 +46,7 @@ impl toy_kit::Synth for Chimes {
                 }
                 self.voices.push(match n {
                     Note::Plunk { amp, pan } => Voice { freq: 150.0, phase: [0.0; 3], amp, t: 0.0, decay: 0.22, pan, plunk: true },
-                    Note::Chime { freq, amp, pan } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 2.4, pan, plunk: false },
+                    Note::Chime { freq, amp, pan } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 1.5, pan, plunk: false },
                 });
             }
         }

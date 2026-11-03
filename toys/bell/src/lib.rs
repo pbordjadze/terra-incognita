@@ -236,7 +236,7 @@ impl Toy for Bell {
         self.globe.upload(&ctx.gpu);
         let mut u = [[0f32; 4]; 49];
         let n = self.strikes.len().min(MAX);
-        u[0] = [n as f32, 0.04, if self.soft { 0.0 } else { 1.0 }, if self.soft { 9.0 } else { 18.0 }];
+        u[0] = [n as f32, 0.055, if self.soft { 0.0 } else { 1.0 }, if self.soft { 16.0 } else { 34.0 }];
         for (k, s) in self.strikes.iter().take(MAX).enumerate() {
             let age = (self.t - s.t0).max(0.0);
             let base = 1 + 6 * k;

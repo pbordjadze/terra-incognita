@@ -28,8 +28,8 @@ What is measured, what is drawn, and from where.
 ## Drawn (not measured)
 
 - **Time and pitch**: one factor (about 475,000) takes every mode into hearing (0S2 to D3, 146.8 Hz), so
-  the chord's ratios are the Earth's; every ring lasts 5 times what the quality factors give at that
-  pitch (their ratios kept: the breathing mode outlasts the rest, the high degrees fade first). The
+  the chord's ratios are the Earth's; every ring lasts what the quality factors give at that
+  pitch, 2.5 times (their ratios kept, the high degrees fading first; the breathing mode, whose Q would hold it for minutes, cut to 4 s). The
   picture runs 300 times slower than the sound, so the swells can be watched.
 - **Splitting of degrees 3–6**: 0S2's spacing scaled as 1/(l(l+1)), the Coriolis form; degrees above 6
   are not split (they fade before a beat could be heard).
