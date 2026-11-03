@@ -2,14 +2,20 @@
 # Builds Adrift's web shell: the wasm (release), its bindings, the page and the data, into
 # adrift/build/web/, a directory any static server can serve (and a claude.ai artifact can hold).
 #
-#     bash tools/adrift/web-build.sh [out-dir]
+#     bash tools/adrift/web-build.sh [out-dir] [--artifact]
 #     python3 -m http.server -d adrift/build/web 8000    # then open http://localhost:8000
+#
+# --artifact also makes it publishable as a claude.ai artifact (tools/kit/artifact.py: drifters.bin
+# wrapped as base64 behind assets/index.json, the files map in <out-dir>/artifact.json) and screenshots it
+# headless (tools/kit/webgpu_shot.cjs, <out-dir>/../web-shot.png), failing if the page draws nothing.
 #
 # Needs the wasm32-unknown-unknown target and wasm-bindgen-cli 0.2.130 (cargo install wasm-bindgen-cli
 # --version 0.2.130; the crate's wasm-bindgen is pinned to the same).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-OUT="$(python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "${1:-$ROOT/adrift/build/web}")"
+ARTIFACT=0; ARGS=()
+for a in "$@"; do if [ "$a" = --artifact ]; then ARTIFACT=1; else ARGS+=("$a"); fi; done
+OUT="$(python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "${ARGS[0]:-$ROOT/adrift/build/web}")"
 cd "$ROOT/adrift"
 cargo build --release --target wasm32-unknown-unknown -p adrift-web
 mkdir -p "$OUT"
@@ -19,3 +25,7 @@ cp crates/adrift-web/index.html "$OUT/index.html"
 python3 "$ROOT/tools/adrift/assets.py" "$OUT/assets" > /dev/null
 du -sh "$OUT" | cut -f1 | xargs echo "web build in $OUT:"
 ls -l "$OUT/adrift_web_bg.wasm" | awk '{print "wasm", $5, "bytes"}'
+if [ "$ARTIFACT" = 1 ]; then
+  python3 "$ROOT/tools/kit/artifact.py" "$OUT"
+  node "$ROOT/tools/kit/webgpu_shot.cjs" "$OUT" "$(dirname "$OUT")/web-shot.png" --size 390x844 --dpr 1 --wait 30
+fi
