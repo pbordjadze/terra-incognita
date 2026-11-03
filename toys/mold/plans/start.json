@@ -1,42 +1,20 @@
 {
-  "seconds": 6,
+  "_": "Mold's core moment on the phone: the mist over the lit land condenses into a network between the cities, a flake fed in the dark Sahara is found and reached, another fed by Moscow, then a pinch in on the Sahara's new tube.",
+  "seconds": 30,
   "fps": 30,
   "night": true,
   "events": [
-    {
-      "t": 1.0,
-      "drag": [
-        [
-          200,
-          500
-        ],
-        [
-          320,
-          470
-        ]
-      ],
-      "for": 0.5
-    },
-    {
-      "t": 3.0,
-      "tap": [
-        196,
-        426
-      ]
-    }
+    { "t": 9.0, "tap": [196, 520] },
+    { "t": 11.0, "tap": [262, 330] },
+    { "t": 22.0, "pinch": [[150, 500], [250, 520]], "to": 2.2, "for": 1.2 }
   ],
   "shots": [
-    {
-      "t": 0.5,
-      "name": "start"
-    },
-    {
-      "t": 2.0,
-      "name": "turned"
-    },
-    {
-      "t": 6.0,
-      "name": "end"
-    }
-  ]
+    { "t": 0.1, "name": "first" },
+    { "t": 3.0, "name": "condensing" },
+    { "t": 8.9, "name": "network" },
+    { "t": 15.0, "name": "reaching" },
+    { "t": 21.9, "name": "found" },
+    { "t": 30.0, "name": "close" }
+  ],
+  "film": { "from": 0, "to": 30, "every": 0.1 }
 }
