@@ -1,0 +1,110 @@
+{
+ "_": "A curious hand that gets lost (round 2's critic): a pinch out to the whole globe, which springs back to it; a tap on the empty mid-Atlantic, answered by a ring of light that sets off the nearest coasts as it reaches them; a pinch deep into the empty sea, from which the view drifts to the nearest lights once the fingers lift; a fast flick toward the South Pole, from which the tilt eases back.",
+ "seconds": 17,
+ "fps": 30,
+ "night": true,
+ "events": [
+  {
+   "t": 0.5,
+   "pinch": [
+    [
+     100,
+     426
+    ],
+    [
+     296,
+     426
+    ]
+   ],
+   "to": 0.3,
+   "for": 0.6
+  },
+  {
+   "t": 2.5,
+   "tap": [
+    300,
+    440
+   ]
+  },
+  {
+   "t": 5.0,
+   "pinch": [
+    [
+     305,
+     330
+    ],
+    [
+     345,
+     330
+    ]
+   ],
+   "to": 6.0,
+   "for": 1.0
+  },
+  {
+   "t": 11.5,
+   "drag": [
+    [
+     196,
+     250
+    ],
+    [
+     196,
+     750
+    ]
+   ],
+   "for": 0.15
+  }
+ ],
+ "shots": [
+  {
+   "t": 1.2,
+   "name": "pinched-out"
+  },
+  {
+   "t": 2.0,
+   "name": "sprung-back"
+  },
+  {
+   "t": 2.75,
+   "name": "sea-tap"
+  },
+  {
+   "t": 3.3,
+   "name": "sea-tap-ring"
+  },
+  {
+   "t": 4.0,
+   "name": "sea-tap-coasts"
+  },
+  {
+   "t": 6.2,
+   "name": "deep-in-the-sea"
+  },
+  {
+   "t": 8.0,
+   "name": "drifting"
+  },
+  {
+   "t": 11.0,
+   "name": "found-the-lights"
+  },
+  {
+   "t": 12.0,
+   "name": "flicked"
+  },
+  {
+   "t": 14.0,
+   "name": "easing-back"
+  },
+  {
+   "t": 17.0,
+   "name": "steady"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 17,
+  "every": 0.0667
+ }
+}
