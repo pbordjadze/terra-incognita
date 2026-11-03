@@ -1,0 +1,20 @@
+{
+  "_": "Being the bird: wait ten seconds, touch and hold for twenty, leaning right, left, up and down from where the finger came down, let go, fling, wait. For the whole hold you should be in the thick of the flock, birds passing on every side, your bird low and centred. Measure: python3 tools/toys/murmuration/holds.py toys/murmuration/plans/held.json",
+  "restore": "{\"day\": 9803, \"minutes\": -10, \"fixed\": true}",
+  "seconds": 40,
+  "fps": 30,
+  "events": [
+    { "t": 10.0, "down": [196, 520], "id": 1 },
+    { "t": 13.0, "move": [250, 520], "id": 1 },
+    { "t": 16.0, "move": [130, 520], "id": 1 },
+    { "t": 19.0, "move": [196, 450], "id": 1 },
+    { "t": 22.0, "move": [196, 600], "id": 1 },
+    { "t": 25.0, "move": [300, 470], "id": 1 },
+    { "t": 28.0, "move": [196, 520], "id": 1 },
+    { "t": 30.0, "up": [196, 520], "id": 1 },
+    { "t": 32.0, "drag": [[60, 700], [340, 200]], "for": 0.2 }
+  ],
+  "shots": [{ "t": 12.0, "name": "held" }, { "t": 15.0, "name": "right" }, { "t": 18.0, "name": "left" }, { "t": 21.0, "name": "up" }, { "t": 24.0, "name": "down" }, { "t": 27.0, "name": "hard" }, { "t": 40.0, "name": "after" }],
+  "film": { "from": 0, "to": 40, "every": 0.1 },
+  "audio": true
+}

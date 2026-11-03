@@ -33,10 +33,10 @@ const SETTLE_LAT: (f64, f64) = (-38.0, 60.0);
 const SETTLE_AFTER: f64 = 1.0;
 /// When one side of the view shows more of the Earth than this (degrees), the view is the whole globe,
 /// and it settles on a region's centre of light.
-const WHOLE_HALF_ANGLE: f64 = 40.0;
+const WHOLE_HALF_ANGLE: f64 = 35.0;
 /// How far the whole globe looks for a brighter region: its light counts less by e for each this
 /// many degrees away.
-const LIGHT_REACH: f64 = 45.0;
+const LIGHT_REACH: f64 = 70.0;
 /// A region's reach (degrees): the light within this of a place is that place's light.
 const REGION: f64 = 20.0;
 
@@ -136,7 +136,7 @@ impl Fireflies {
         let v = self.globe.view();
         let (w, h) = (v.width as f64 / v.ppp, v.height as f64 / v.ppp);
         let c = toy_kit::LonLat::new(self.globe.camera.lon, self.globe.camera.lat).to_xyz();
-        let mut cells = [(0f32, 0f32); sound::COLS * sound::ROWS];
+        let mut cells = [(0f32, 0f32, 0u32); sound::COLS * sound::ROWS];
         for (i, f) in self.swarm.flies.iter().enumerate() {
             if c[0] * f.xyz[0] + c[1] * f.xyz[1] + c[2] * f.xyz[2] < 0.05 {
                 continue;
@@ -147,8 +147,10 @@ impl Fireflies {
             }
             let k = ((y / h * sound::ROWS as f64) as usize).min(sound::ROWS - 1) * sound::COLS + ((x / w * sound::COLS as f64) as usize).min(sound::COLS - 1);
             let wt = f.weight as f32;
-            cells[k].0 += wt * self.swarm.glow(i, false);
+            let g = self.swarm.glow(i, false);
+            cells[k].0 += wt * g;
             cells[k].1 += wt;
+            cells[k].2 += (g > 0.5) as u32;
         }
         self.ear.hear(&cells, self.soft, self.swarm.t);
     }
@@ -257,9 +259,9 @@ impl Toy for Fireflies {
         globe.camera.zoom = start_zoom(ctx.points());
         // a pinch out goes past the whole globe and springs back (the kit's rest_zoom)
         globe.hand.min_zoom = 0.8;
-        // at rest it comes back a little closer than the whole globe on a tall screen (the phone),
-        // where the whole globe is a narrow band in black
-        globe.hand.rest_zoom = (0.8 * globe.camera.zoom).max(1.0);
+        // at rest it comes back to the opening's size: on a tall screen (the phone) the whole globe is
+        // a narrow band in black, so it rests closer there
+        globe.hand.rest_zoom = globe.camera.zoom;
         globe.hand.max_zoom = MAX_ZOOM;
         let seed = std::env::var("FIREFLIES_SEED")
             .ok()

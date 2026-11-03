@@ -66,6 +66,20 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
    Adrift's conductor's yes.
 5. The tag `toy-kit-v0.2.0`; busquets and traveling-squadron told how to depend on it.
 
+## Answers (Nov 3)
+
+- **Toys' conductor:** yes, on two conditions. The did-nothing tap check warns by default and fails only
+  when a plan opts in. `launch_check.sh` keeps its interface. `toys/ios` stays theirs. Their first wants
+  are the iPhone's limits, GPU bytes and the budget (Mold still closes at launch on the phone), plus a
+  loudness line and contrast-stretched shots. Merge only when all four toys are green with identical renders.
+- **Adrift's conductor:** `play-all` (built from `origin/adrift`, with `play`'s lines unchanged; they
+  merge it), `--artifact` and the launch check as a job that doesn't block anything at first: yes. The GPU
+  runner was already fixed on main. Nothing is merged into `adrift` or `main` from 06:45 to 07:30 UTC.
+- **busquets:** vendors a trimmed copy of the kit today. It will switch to a tagged git dependency once
+  the globe is behind a cargo feature (`globe`, default on) and the kit takes its `paint`, `backdrop`,
+  `layer`, `sound`, `web` (a generic WebGPU shell) and `check::main_with`, all of which are to be lifted
+  into toy-kit.
+
 ## What the kit can't prove
 
 A Linux check can't run Apple's Metal compiler or the phone's memory pressure. The device's
