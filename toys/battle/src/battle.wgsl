@@ -251,7 +251,7 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   col = mix(col, water * 0.8, inner * 0.35);
 
   // the inks
-  let rome = mix(vec3f(0.149, 0.180, 0.275), vec3f(0.74, 0.75, 0.76), night);
+  let rome = mix(vec3f(0.149, 0.180, 0.275), vec3f(0.55, 0.68, 0.92), night);
   let carth = mix(vec3f(0.502, 0.133, 0.361), vec3f(0.80, 0.46, 0.54), night);
   let quill = mix(vec3f(0.26, 0.18, 0.12), vec3f(0.60, 0.48, 0.34), night);
   let graphite = mix(vec3f(0.28, 0.28, 0.30), vec3f(0.52, 0.47, 0.40), night);

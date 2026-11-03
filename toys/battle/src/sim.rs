@@ -185,8 +185,9 @@ impl Sim {
         let kd = KINDS[k as usize];
         let (r1, r2, r3, r4) = (self.rand(), self.rand(), self.rand(), self.rand());
         self.units.push(Unit {
-            x: x + (r1 - 0.5) * 1.2,
-            y: y + (r2 - 0.5) * 1.2,
+            // ranks are men, not a grid: a little give in every place
+            x: x + (r1 - 0.5) * 2.6,
+            y: y + (r2 - 0.5) * 2.6,
             fy: if kd.side == 1 { -1.0 } else { 1.0 },
             hp: kd.hp,
             mor: kd.morale * (0.85 + r3 * 0.3),
