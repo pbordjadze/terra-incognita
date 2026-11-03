@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Pressure front</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#ece4d2;touch-action:none}canvas{display:block}</style>
+</head><body><canvas id="c"></canvas>
+<script src="terrain.js"></script><script src="sim.js"></script><script src="draw.js"></script>
+<script>
+(function () {
+  const canvas = document.getElementById('c');
+  const seed = +(new URLSearchParams(location.search).get('seed') || 216);
+  const world = new PF.World({ seed });
+  const painter = new PFPainter(canvas, world);
+  const STEPS = 2;
+  // the finger: a stroke laid from an army carries it along; a still, held finger pins it
+  let finger = null;
+  canvas.addEventListener('pointerdown', e => {
+    const [gx, gy] = painter.toGrid(e.clientX, e.clientY);
+    const A = world.armyAt(gx, gy, 6);
+    if (!A) return;
+    canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+    finger = { A, x0: e.clientX, y0: e.clientY, frames: 0, moved: false, stroke: null, pin: null, pts: [[gx, gy]] };
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!finger || finger.pin) return;
+    const [gx, gy] = painter.toGrid(e.clientX, e.clientY);
+    if (!finger.moved && Math.hypot(e.clientX - finger.x0, e.clientY - finger.y0) > 8) {
+      finger.moved = true; finger.stroke = world.addStroke(finger.A, finger.pts);
+    }
+    const l = finger.pts[finger.pts.length - 1];
+    if (Math.hypot(gx - l[0], gy - l[1]) > 0.8) finger.pts.push([gx, gy]);
+  });
+  const up = () => { if (finger && finger.pin) { finger.pin.held = false; finger.pin.released = world.t; } finger = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  function frame() {
+    if (finger && !finger.moved && !finger.pin && ++finger.frames > 10) {
+      const p = finger.pts[0]; finger.pin = world.addPin(finger.A, p[0], p[1]);
+    }
+    for (let k = 0; k < STEPS; k++) world.tick();
+    painter.draw();
+  }
+  window.__world = world;
+  window.__advance = n => { for (let i = 0; i < n; i++) frame(); };
+  window.__stats = () => world.armies.map(A => { let s = 0, b = 0; for (let i = 0; i < A.rho.length; i++) { s += A.rho[i]; if (A.rho[i] > 1e-4 && A.q[i] / A.rho[i] < 0.5) b += A.rho[i]; } return { name: A.name, left: +(s / A.start).toFixed(3), broken: +(b / A.start).toFixed(3) }; });
+  if (!/manual/.test(location.search)) { const loop = () => { frame(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  else painter.draw();
+})();
+</script></body></html>
