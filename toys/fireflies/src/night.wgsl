@@ -23,8 +23,8 @@
 struct Look { a: vec4f, b: vec4f, rings: array<vec4f, 8> };
 @group(1) @binding(9) var<uniform> L: Look;
 
-const LAND = vec3f(11.0, 11.0, 14.0) / 255.0;
-const SEA = vec3f(5.0, 7.0, 12.0) / 255.0;
+const LAND = vec3f(16.0, 15.0, 19.0) / 255.0;
+const SEA = vec3f(6.0, 8.0, 14.0) / 255.0;
 const PAGE = vec3f(3.0, 4.0, 7.0) / 255.0;
 const AIR = vec3f(40.0, 62.0, 104.0) / 255.0;        // the thin air at the limb
 const EMBER = vec3f(150.0, 52.0, 12.0) / 255.0;      // a village, a deep sodium ember
