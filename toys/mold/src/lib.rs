@@ -27,7 +27,7 @@ const FEED_REACH: u32 = 96;
 /// Steps a second (the mold's speed: a step is about a cell).
 const RATE: f64 = 60.0;
 /// How much of the body's light a cell keeps a step (its easing in time).
-const BODY_EASE: f32 = 0.85;
+const BODY_EASE: f32 = 0.93;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -38,6 +38,14 @@ struct Params {
     misc: [f32; 4],
     ex: [f32; 4],
     feeds: [[f32; 4]; MAX_FEEDS],
+}
+
+/// What the drawing passes read besides the params (mold.wgsl's and streaks.wgsl's `Look`).
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct Look {
+    a: [f32; 4],
+    ages: [[f32; 4]; MAX_FEEDS],
 }
 
 #[derive(Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -66,6 +74,8 @@ pub struct Mold {
     sim_binds: [wgpu::BindGroup; 2],
     draw_pipe: wgpu::RenderPipeline,
     draw_binds: [wgpu::BindGroup; 2],
+    streak_pipe: wgpu::RenderPipeline,
+    streak_bind: wgpu::BindGroup,
     /// Which trail buffer holds the latest field.
     parity: usize,
     steps: u64,
@@ -201,7 +211,7 @@ impl Toy for Mold {
         });
         let look = dev.create_buffer(&wgpu::BufferDescriptor {
             label: Some("mold look"),
-            size: 16,
+            size: std::mem::size_of::<Look>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -278,6 +288,40 @@ impl Toy for Mold {
         let draw_shader = gpu.shader("mold draw", &toy_kit::globe::wgsl(&format!("@group(0) @binding(0) var<uniform> U: View;\n{}", include_str!("mold.wgsl"))));
         let draw_pipe = gpu.fullscreen_pipeline("mold draw", &draw_shader, &[&globe.view_layout, &draw_layout], Some(add));
 
+        // the agents themselves, close in (streaks.wgsl): six vertices an agent, no vertex buffers
+        let vf = wgpu::ShaderStages::VERTEX_FRAGMENT;
+        let streak_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("mold streaks"),
+            entries: &[storage(0, true, wgpu::ShaderStages::VERTEX), uniform(1, vf), uniform(2, vf)],
+        });
+        let streak_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mold streaks"),
+            layout: &streak_layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: agents_buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: look.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 2, resource: params.as_entire_binding() },
+            ],
+        });
+        let streak_shader = gpu.shader("mold streaks", &toy_kit::globe::wgsl(&format!("@group(0) @binding(0) var<uniform> U: View;\n{}", include_str!("streaks.wgsl"))));
+        let streak_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold streaks"), bind_group_layouts: &[&globe.view_layout, &streak_layout], push_constant_ranges: &[] });
+        let streak_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("mold streaks"),
+            layout: Some(&streak_pl),
+            vertex: wgpu::VertexState { module: &streak_shader, entry_point: Some("vs_streak"), buffers: &[], compilation_options: Default::default() },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &streak_shader,
+                entry_point: Some("fs_streak"),
+                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(add), write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
+            }),
+            multiview: None,
+            cache: None,
+        });
+
         Ok(Mold {
             globe,
             params,
@@ -289,6 +333,8 @@ impl Toy for Mold {
             sim_binds,
             draw_pipe,
             draw_binds,
+            streak_pipe,
+            streak_bind,
             parity: 0,
             steps: 0,
             // (one step owed at once, so the first frame has the mist's glow)
@@ -380,8 +426,7 @@ impl Toy for Mold {
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
-        let gain = 0.28f32;
-        ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::cast_slice(&[1.0f32, gain, 0.0, 0.0]));
+        ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::bytes_of(&self.look()));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -401,6 +446,11 @@ impl Toy for Mold {
             rp.set_bind_group(0, self.globe.view_bind(), &[]);
             rp.set_bind_group(1, &self.draw_binds[self.parity], &[]);
             rp.draw(0..3, 0..1);
+            if self.streak_share() > 0.0 {
+                rp.set_pipeline(&self.streak_pipe);
+                rp.set_bind_group(1, &self.streak_bind, &[]);
+                rp.draw(0..6, 0..AGENTS);
+            }
         }
         ctx.gpu.queue.submit([enc.finish()]);
     }
@@ -415,13 +465,30 @@ impl Toy for Mold {
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
         if let Ok((feeds, cam)) = serde_json::from_str::<(Vec<Feed>, Camera)>(saved) {
-            self.feeds = feeds;
+            // (laid before: long fed, on this launch's clock)
+            self.feeds = feeds.into_iter().map(|f| Feed { at: self.seconds - 600.0, ..f }).collect();
             self.globe.camera = cam;
         }
     }
 }
 
 impl Mold {
+    /// How far the agents' own streaks have taken over from the field: none at the opening zoom,
+    /// all from about two and a half times closer.
+    fn streak_share(&self) -> f32 {
+        let z = self.globe.camera.zoom;
+        let k = ((z - 1.8) / (4.0 - 1.8)).clamp(0.0, 1.0);
+        (k * k * (3.0 - 2.0 * k)) as f32
+    }
+
+    fn look(&self) -> Look {
+        let mut ages = [[0.0f32; 4]; MAX_FEEDS];
+        for (i, f) in self.feeds.iter().rev().take(MAX_FEEDS).enumerate() {
+            ages[i][0] = (self.seconds - f.at) as f32;
+        }
+        Look { a: [1.0, 0.13, self.streak_share(), H as f32], ages }
+    }
+
     fn feed(&mut self, at: LonLat) {
         self.feeds.push(Feed { lon: at.lon, lat: at.lat, at: self.seconds });
         if self.feeds.len() > MAX_FEEDS {
