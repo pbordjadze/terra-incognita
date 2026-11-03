@@ -99,6 +99,10 @@ pub unsafe extern "C" fn adrift_frame(shell: *mut Shell, t: f64) {
 #[no_mangle]
 pub unsafe extern "C" fn adrift_pointer(shell: *mut Shell, id: u64, phase: u32, x: f64, y: f64, t: f64) {
     let Some(s) = shell.as_mut() else { return };
+    // (R24) while an export renders, a touch does nothing to the world (the clip is the take's)
+    if s.export.is_some() {
+        return;
+    }
     let phase = match phase {
         0 => Phase::Down,
         1 => Phase::Move,

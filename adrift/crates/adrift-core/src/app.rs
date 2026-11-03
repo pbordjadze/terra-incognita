@@ -1257,12 +1257,26 @@ impl App {
 
     /// The state to keep, as JSON.
     pub fn snapshot(&self) -> String {
-        let mut floats = self.floats.clone();
+        // (R24, the owner's teleported lamp) always the live state: while an export replays, the
+        // world is the clip's (its lamps only, its date up to hundreds of days past today, its camera),
+        // and a snapshot written then (the app sent to the background mid-export, then ended by the
+        // system) came back on the next launch as the clip's; the edit view's preview likewise holds
+        // its own date and camera
+        let (mut floats, next_id, clock, camera, medium) = match &self.studio.replay {
+            Some(r) => {
+                let s = &r.live.start;
+                (s.floats.clone(), s.next_id, s.clock, s.camera, s.medium)
+            }
+            None => match &self.preview {
+                Some(p) => (self.floats.clone(), self.next_id, p.clock, p.camera, self.medium),
+                None => (self.floats.clone(), self.next_id, self.clock, self.camera.camera, self.medium),
+            },
+        };
         for f in &mut floats {
             f.hand = Hand::Free;
             f.lit_for = 10.0;
         }
-        serde_json::to_string(&Snapshot { version: 1, floats, next_id: self.next_id, day: self.clock.day, running: self.clock.running, camera: self.camera.camera, medium: self.medium }).unwrap_or_default()
+        serde_json::to_string(&Snapshot { version: 1, floats, next_id, day: clock.day, running: clock.running, camera, medium }).unwrap_or_default()
     }
 
     /// Takes a kept state back; a state that can't be read is ignored.
