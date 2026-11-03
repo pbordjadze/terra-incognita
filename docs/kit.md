@@ -13,9 +13,12 @@ before and after and comparing the PNGs.
 and becomes consumable from any repository as a git dependency:
 
 ```toml
-toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", tag = "toy-kit-v0.2.0" }
+toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", rev = "85b00e81298a1bd3014e29ca5d9b1cbe80675a25" }   # 0.2.0
+# once the tag exists: tag = "toy-kit-v0.2.0"
 ```
 
+In a claude.ai cloud session cargo fetches the git dependency only with `CARGO_NET_GIT_FETCH_WITH_CLI=true`
+(the proxy; found by busquets, Nov 3). busquets depends on it so since b6f3375 (no globe; `web` in its web crate).
 Cargo finds the crate by name anywhere in the repository; the tag is the stable API. Rules:
 
 - **Tags, not branches.** `toy-kit-v0.<minor>.<patch>`: a patch never changes a public signature; a
@@ -64,7 +67,9 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
    PNGs), merged when the toys' conductor says the toys are between rounds.
 4. Adrift's side (`play-all`, `--artifact`, the runner's summary, the launch check in `adrift.yml`) on
    Adrift's conductor's yes.
-5. The tag `toy-kit-v0.2.0`; busquets and traveling-squadron told how to depend on it.
+5. 0.2.0 is main's 85b00e81 (Nov 3). The tag `toy-kit-v0.2.0` is still to be made: this session's git
+   access pushes branches, not tags (`git tag -a toy-kit-v0.2.0 85b00e81 && git push origin toy-kit-v0.2.0`,
+   by anyone who may). Until then a consumer pins the commit (`rev`), which never moves.
 
 ## Answers (Nov 3)
 
@@ -78,7 +83,31 @@ Each lands with its line in `docs/tools.md` (› The engine's apps).
 - **busquets:** vendors a trimmed copy of the kit today. It will switch to a tagged git dependency once
   the globe is behind a cargo feature (`globe`, default on) and the kit takes its `paint`, `backdrop`,
   `layer`, `sound`, `web` (a generic WebGPU shell) and `check::main_with`, all of which are to be lifted
-  into toy-kit.
+  into toy-kit. Done on branch `kit-lib` (toy-kit 0.2.0, untagged): the features, the five modules and
+  `main_with`; a consumer outside the repository builds against it (`tools/kit/consumer_check.sh`), and
+  every toy's plans rendered the same (Mold within its own run-to-run noise).
+
+## The tools
+
+One line a tool as it lands (moved here from `docs/tools.md` on Nov 3).
+
+| Tool | What it does | Run | Users |
+| --- | --- | --- | --- |
+| Toy kit | the library every toy stands on (the toy's life, GPU, globe, data, sound, the device's ABI, the headless check) | `toys/crates/toy-kit`; from another repository a git dependency pinned to a `toy-kit-v*` tag | the four toys |
+| Kit features | `globe` (default on): the globe and `gpu::Textures`, which name Terra's NASA-derived files; `default-features = false` builds the kit without them. `web`: the WebGPU shell `web::run` (wasm32 only; its dependencies wasm32's alone) | `toy-kit = { git = "https://github.com/pbordjadze/terra-incognita", tag = "toy-kit-v0.2.0", default-features = false, features = ["web"] }` | busquets |
+| Kit: paint, backdrop, layer, sound, web | soft 2D shapes in one instanced draw (`Painter`), a full-screen fragment of a toy's own (`Backdrop`), a texture that keeps what is painted (`Layer`), struck FM notes and a bed (`sound::Bells`), a WebGPU shell; `check::main_with` takes the check's arguments given. Lifted from busquets' copy of the kit (same author, MIT) | `toy_kit::paint`, `backdrop`, `layer`, `sound`, `web` | busquets' takes |
+| Kit consumer check | a throwaway crate outside this repository built against toy-kit at a git ref (by default this checkout's branch, no globe), touching the public API: proves the git dependency and its workspace inheritance resolve; `--wasm` builds it for wasm32 with `web` | `bash tools/kit/consumer_check.sh [<git-url>] [--branch b \| --tag t] [--globe] [--wasm]` | the kit's tags, before busquets moves |
+| WebGPU shot | a WebGPU page screenshotted by headless Chromium on Linux, not blank (the four flags that composite the canvas); fails on no adapter, a page error or a one-colour canvas | `node tools/kit/webgpu_shot.cjs <dir or url> <out.png> [--size 390x844 --dpr 3 --wait 8 --shots 2,4]` | any web shell |
+| Web artifact | a web build made publishable as a claude.ai artifact: other binaries wrapped as base64 JSON in `assets/index.json`, the `files` map in batches within the host's limits | `python3 tools/kit/artifact.py <web-dir>` (writes `artifact.json`) | Adrift's web build |
+| Launch check | any engine app's launch as the iPhone would take it: the shaders it builds translated to MSL 2.4 by naga; its short launch plan at the phone's 1170x2532 under an Apple7 iPhone's GPU limits (`KIT_IPHONE_LIMITS=1`), a GPU validation error fatal; peak RSS against the app's budget (`memory_mb`, default 1400 MB) with the GPU's peak bytes beside it; with `--ipa`, every manifest file bundled. Can't run Apple's Metal compiler or the phone's memory pressure | `python3 tools/kit/launch_check.py --check '<cmd> {plan} {out} --size {size} --ppp {ppp}' --manifest m.json [--app-json toy.json] [--ipa f]` | the toys (through the wrapper below), then Adrift |
+| Toy launch check | the launch check above with a toy's check binary, manifest and budget (`toy.json`'s `memory_mb` if set) (same CLI as before) | `bash tools/toys/launch_check.sh <toy> [--ipa f]` | `toys.yml` |
+| Launch safety in the kit | `KIT_IPHONE_LIMITS=1`: the device requested as on an iPhone; `KIT_MEMORY_REPORT=<f>`: the GPU's peak live bytes (wgpu's counters) and the bytes made through the kit's helpers; GPU errors fatal headless, logged on the device, with the launch's available memory in `toy-log.txt` | `toys/crates/toy-kit/src/budget.rs` | the launch check |
+| Toy check: touches | every finger event in a plan played again without it (a shadow run, same clock); one that changes nothing 0.4 s on prints `WARN: tap at t=… did nothing` (fails with `"strict_taps": true` or `KIT_STRICT_TAPS=1`; `"inert": true` exempts an event); a toy that isn't deterministic is judged near the finger against its own noise | opt-in in `<toy>-check play` (`KIT_TAP_CHECK=1` or `--tap-check`; on in `toys.yml`'s check) | every toy's plans |
+| Toy check: places by name | a plan touches `"tap": "name"` (the toy's `Toy::anchors`) or `{"lonlat": [lon, lat]}` (`Toy::project`, `Globe::point`), resolved when the event starts; an unresolved place fails the plan | in any plan | toys that name their places |
+| Toy check: play-all | many plans in one process, the GPU made once, on N threads; a line a plan, exit 1 if any failed; each plan's lines in `<out>/<plan>.log` | `<toy>-check play-all <dir or plans…> <out> -j N` | toys' CI, Adrift's later |
+| Toy check: loudness, stretch | a plan with sound prints its integrated LUFS, RMS and peak; `--stretch` writes `<shot>.stretch.png`, contrast-stretched, to find faint panels and seams | `<toy>-check play … [--stretch]` | the toys' critics |
+| Toy clip | a plan rendered at 1080×1920, 30 fps, with its sound, encoded H.264 high yuv420p + AAC 48 kHz, +faststart (ready to post) | `<toy>-check clip <plan> <out.mp4>` (encodes with `bash tools/kit/clip.sh <frames-dir> <out.mp4> [fps]`) | any toy |
+| Same renders | every toy's plans played by two sets of check binaries and every PNG and WAV compared byte for byte: a kit change that must not change a look | `bash tools/kit/same_renders.sh render <bin-dir> <out>`, then `compare <a> <b>`; for a toy that differs from itself run to run (Mold), `python3 tools/kit/render_noise.py <a> <b>` against two runs of the base; `bash tools/kit/play_all_speed.sh <toy>` times play-all | kit changes |
 
 ## What the kit can't prove
 

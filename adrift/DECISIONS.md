@@ -921,3 +921,12 @@ light breathing on its own period; its broken path shimmering on the water below
 In a clip the head is 1.5x, its glass near its hue, the flame larger, the glint smaller. Kept: the
 chosen ring, the kept star, stepped-back lamps, dashed rims, the clip's glint. Studies: look/studies
 r25-* and r25b-* (`tools/adrift/lamp_study.py`).
+
+**R25 shipped (build 80), its critic, and the follow-up.** Critic on 8453a45: by night "oh, they're
+glass lanterns … a little festival" (show without a caveat: yes); by day "map pins" in dark badges;
+in the clip ~60–70 px, "orange dot and blue dot", the ring "a selection marker (chrome)", no growth
+close in. Visual (5c0d424): no dark badge (the glass's edge a deeper shade of its own hue), no ring
+round a clip's lamps (live, a chosen lamp's one ring thinner and lighter); the lamp grows past zoom
+3 to 1.75x by zoom 8 and holds through a clip's deep zooms; silhouettes apart at ~70 px (the cut
+float a tall diamond, the lantern taller, the teardrop's point sharper, the rope thicker): the dance
+pair is a roped orange float and a blue diamond.

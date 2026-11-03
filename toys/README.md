@@ -35,6 +35,11 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     (`globe::wgsl(own)` prepends it and the shared helpers to a pass's WGSL; `globe.view_bind()` is
     its group 0). Copied from adrift-core on Nov 2, 2026 so neither breaks the other: change the kit
     here, for every toy, compatibly (every toy builds in CI when the kit changes).
+  - `paint` (soft 2D discs, rings, strokes, glows), `backdrop` (a full-screen fragment of your own),
+    `layer` (a texture that keeps what is painted into it), `sound::Bells` (struck notes) and `web`
+    (a WebGPU shell, the `web` feature, wasm32): from busquets' copy of the kit (Nov 3, 2026). The
+    globe is the `globe` feature, on by default; other repositories take the kit as a git dependency
+    (`CHANGES.md` says how).
   - `check` (check.rs): the headless check. A plan of fingers (taps, drags, pinches, holds, raw
     down/move/up, a shake), its moments as PNG, a film of frames, the sound as WAV. Its header is the
     plan format.

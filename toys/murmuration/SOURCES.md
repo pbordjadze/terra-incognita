@@ -40,7 +40,8 @@ flock are worked out from the constants and rules below (src/sun.rs, src/sky.rs,
   horizon, its reflection weighted by Fresnel's law for water), the reed bed the watcher stands in (stems and plumes in three layers, swaying), far birds
   drawn a little fuller so a distant flock reads dark as the eye sees it, the starling's silhouette (wingspan 0.38 m, drawn a third larger so a flock reads on a phone),
   its wingbeat (about 10 Hz, in bouts with glides), the roost's slow wander, and that your bird counts
-  four times in its neighbours' reckoning so a lean is felt.
+  four times in its neighbours' reckoning, and that the birds within 45 m of you feel your lean
+  (fading with distance), so a lean bends the flock round you.
 
 ## The sound (drawn)
 
