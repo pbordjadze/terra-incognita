@@ -90,6 +90,16 @@ def main():
          [(3.5, 'drops'), (7.5, 'scribble'), (11.4, 'held'), (13.5, 'fresh'), (20.5, 'shaken')], film=(0, 24, 0.25),
          taps=[(2.0, [600, 560]), (2.6, [450, 300])],
          extra=[{'t': 10.0, 'hold': view(phone, 3)([520, 760]), 'for': 2.2}, {'t': 19.0, 'shake': True}], night=True)
+    # many crossing orders into one dense clash, still coming after the day is first decided (each one
+    # takes the day up again where it lay), then the day called and kept, and a tap on the print begins again
+    crowd = []
+    for k in range(14):
+        a = k * 2.399
+        dx, dy = 230 * math.cos(a), 170 * math.sin(a)
+        crowd.append(([[520 - dx, 470 - dy], [520 + dx * 0.2, 470 + dy * 0.2 + 30], [520 + dx, 470 + dy]], 2.0 + k * 6.0, 0.9))
+    plan('crowded', 'Night on the phone: fourteen crossing orders into one dense clash over 80 s (each order after the day is decided takes it up again), the day called and kept once they stop, then a tap on the print begins again.',
+         phone, 3, crowd, 124, [(40.0, 'melee'), (84.0, 'still-ordering'), (108.0, 'kept'), (123.0, 'begun-again')],
+         film=(0, 124, 2.0), taps=[(114.0, [520, 700])], night=True)
     plan('ipad', 'The good plan on the 13-inch iPad, portrait.',
          ipad, 2, good, 70, [(0.1, 'first'), (5.0, 'drawing'), (20.0, 'clash'), (40.0, 'closing'), (70.0, 'print')])
     plan('ipad-landscape', 'The good plan on the 13-inch iPad, landscape, at night.',
