@@ -80,7 +80,7 @@ fn vs_main(@builtin(vertex_index) vi: u32, b: In) -> VOut {
     var a = min(1.0, 2.2 / (grow * grow));
     // Nothing ever reaches the eye: a bird nearer than a couple of metres in front of it, or beside
     // or behind it, fades and then is not drawn at all (its wings would sweep the glass).
-    a = a * smoothstep(1.8, 2.3, z0) * (1.0 - smoothstep(0.3, 0.45, span / u.up.w));
+    a = a * step(2.2, z0) * (1.0 - step(0.4, span / u.up.w));
     if (a <= 0.002) {
         o.pos = vec4f(2.0, 2.0, 2.0, 1.0);
         o.col = vec4f(0.0);

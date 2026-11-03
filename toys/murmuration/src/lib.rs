@@ -99,8 +99,11 @@ pub struct Murmuration {
     heading: V3,
     dir3: V3,
     look: V3,
+    flock_look: V3,
     near: f32,
     near_to: f32,
+    /// How long and hard the finger has leaned out of the flock (0..1): the lean's limit gives with it.
+    strain: f32,
     release_t: f64,
     finger: Option<(u64, [f64; 2])>,
     eye: Eye,
@@ -118,6 +121,44 @@ pub struct Murmuration {
     inst: wgpu::Buffer,
     msaa: wgpu::TextureView,
     exposure: f32,
+}
+
+/// The heading of the birds between `r0` and `r1` metres of yours: the flock round you that your
+/// lean has not yet bent (the whole flock's, if none are there).
+fn ring_heading(f: &Flock, r0: f32, r1: f32) -> V3 {
+    let p = f.birds[f.you].pos;
+    let mut h = [0.0f32; 3];
+    let mut n = 0;
+    for b in &f.birds {
+        let d = sub(b.pos, p);
+        let d2 = dot(d, d);
+        if d2 > r0 * r0 && d2 < r1 * r1 {
+            h = addv(h, b.vel);
+            n += 1;
+        }
+    }
+    if n < 20 {
+        return norm(f.centre().1);
+    }
+    norm(h)
+}
+
+/// The birds within `r` metres of yours: their mean heading (unit), their centre, how many.
+fn local(f: &Flock, r: f32) -> (V3, V3, usize) {
+    let p = f.birds[f.you].pos;
+    let (mut h, mut c, mut n) = ([0.0f32; 3], [0.0f32; 3], 0usize);
+    for b in &f.birds {
+        let d = sub(b.pos, p);
+        if dot(d, d) < r * r {
+            h = addv(h, b.vel);
+            c = addv(c, b.pos);
+            n += 1;
+        }
+    }
+    if n == 0 {
+        return (norm(f.birds[f.you].vel), p, 0);
+    }
+    (norm(h), scale(c, 1.0 / n as f32), n)
 }
 
 /// The tone curve the sky's shader uses, for colours worked out here (linear in, display out).
@@ -172,9 +213,16 @@ impl Murmuration {
         let sa = (self.sun_az as f32).to_radians();
         let dh = WATCHER.max((self.look[1] - 2.0) / (15.0f32).to_radians().tan());
         let far = [self.look[0] - sa.sin() * dh, 2.0, self.look[2] - sa.cos() * dh];
-        let near = addv(sub(you.pos, scale(self.dir3, 4.2)), [0.0, -0.9, 0.0]);
+        // From behind you, a little below, looking where you go and toward the birds round you,
+        // so the flock fills the glass while you fly in it.
+        let (_, c_loc, n_loc) = local(&self.flock, 30.0);
+        let c_loc = if n_loc > 20 { c_loc } else { centre };
+        let kc = (dt / 0.8).min(1.0);
+        self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
+        let near = addv(sub(you.pos, scale(self.dir3, 6.5)), [0.0, -1.6, 0.0]);
         let look_far = self.look;
-        let look_near = addv(addv(you.pos, scale(self.dir3, 9.0)), [0.0, 2.6, 0.0]);
+        let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
+        let look_near = addv(scale(ahead, 0.45), scale(self.flock_look, 0.55));
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
         let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
@@ -359,8 +407,10 @@ impl Toy for Murmuration {
             heading,
             dir3,
             look,
+            flock_look: look,
             near: 0.0,
             near_to: 0.0,
+            strain: 0.0,
             release_t: -10.0,
             finger: None,
             eye,
@@ -440,16 +490,37 @@ impl Toy for Murmuration {
                 r[1] = r[1].max(-0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0) + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0));
                 r = norm(r);
             }
+            // The lean bends you within the flock: never more than so far from the heading of the
+            // birds round you, unless you keep leaning hard, when the limit slowly gives.
+            let h_loc = ring_heading(&self.flock, 16.0, 45.0);
+            let raw = dot(h_loc, r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
+            let hard = raw > 50.0;
+            self.strain = (self.strain + dt as f32 * if hard { 1.0 / 6.0 } else { -0.5 }).clamp(0.0, 1.0);
+            let max_ang = (30.0 + 80.0 * self.strain * self.strain).to_radians();
+            let r = if raw.to_radians() > max_ang {
+                let perp = norm(sub(r, scale(h_loc, dot(r, h_loc))));
+                norm(addv(scale(h_loc, max_ang.cos()), scale(perp, max_ang.sin())))
+            } else {
+                r
+            };
+            // Climbs and dives are held closer to the flock's than turns: up and down is how a bird
+            // leaves a sheet of birds a few metres thick.
+            let dv = (0.26 + 0.6 * self.strain * self.strain).min(0.9);
+            let mut r = r;
+            r[1] = r[1].clamp(h_loc[1] - dv, h_loc[1] + dv);
+            let r = norm(r);
             let want = scale(r, flock::V0);
-            let mut a = scale(sub(want, v), 3.2);
+            let mut a = scale(sub(want, v), 3.0);
             let al = length(a);
-            if al > 32.0 {
-                a = scale(a, 32.0 / al);
+            if al > 30.0 {
+                a = scale(a, 30.0 / al);
             }
             let off = dot(norm(v), r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
             self.flock.lean = a;
-            self.flock.lean_k = 0.45 + 0.35 * (off / 35.0).min(1.0);
+            self.flock.lean_dir = r;
+            self.flock.lean_k = 0.4 + 0.3 * (off / 35.0).min(1.0);
         } else {
+            self.strain = (self.strain - dt as f32 * 0.5).max(0.0);
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
             if t - self.release_t > 1.6 {
@@ -502,7 +573,7 @@ impl Toy for Murmuration {
         let sin_el = se.sin().max(0.0);
         let mut ground = [0.0f32; 3];
         for c in 0..3 {
-            ground[c] = 0.05 * (zen[c] * 2.0 + trans[c] as f32 * sin_el / std::f32::consts::PI);
+            ground[c] = 0.11 * (zen[c] * 2.0 + trans[c] as f32 * sin_el / std::f32::consts::PI);
         }
         let u = SkyU {
             right: [e.right[0], e.right[1], e.right[2], e.focal],
@@ -539,6 +610,27 @@ impl Toy for Murmuration {
             })
             .collect();
         ctx.gpu.queue.write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
+        if std::env::var_os("MURMURATION_COUNT").is_some() {
+            // For tools/toys/murmuration/holds.py: how many birds are on the glass, and how many of
+            // them against the sky.
+            let (mut n, mut sky) = (0, 0);
+            for b in &self.flock.birds {
+                let rel = sub(b.pos, e.pos);
+                let z = dot(rel, e.fwd);
+                if z < 2.0 {
+                    continue;
+                }
+                let x = dot(rel, e.right) * e.focal / z;
+                let y = dot(rel, e.up) * e.focal / z;
+                if x.abs() < 0.5 * w && y.abs() < 0.5 * h {
+                    n += 1;
+                    if b.pos[1] > e.pos[1] || z > 2000.0 {
+                        sky += 1;
+                    }
+                }
+            }
+            println!("visible {:.2} {} {} near {:.2}", self.t, n, sky, self.near);
+        }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
