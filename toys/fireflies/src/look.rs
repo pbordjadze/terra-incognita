@@ -247,9 +247,9 @@ impl Look {
             .write_buffer(&self.inst, 0, bytemuck::cast_slice(&self.staging));
         // the rest level, the flash's gain, the tint, the bloom (Reduce Motion: a gentler swell)
         let a: [f32; 4] = if soft {
-            [0.45, 0.8, 0.5, 0.4]
+            [0.75, 0.6, 0.5, 0.4]
         } else {
-            [0.24, 1.6, 0.8, 1.0]
+            [0.55, 1.8, 0.9, 1.0]
         };
         gpu.queue
             .write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&a));
