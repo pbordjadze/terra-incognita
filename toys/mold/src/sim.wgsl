@@ -29,10 +29,20 @@ struct Params {
 @group(0) @binding(2) var<storage, read> trail_in: array<f32>;
 @group(0) @binding(3) var<storage, read_write> trail_out: array<f32>;
 @group(0) @binding(4) var<storage, read_write> body: array<f32>;      // the mold itself, seen: its cells held, eased in time
-@group(0) @binding(5) var<storage, read> ground: array<f32>;
 @group(0) @binding(6) var<storage, read> spawn: array<vec2f>;   // lit places, by brightness
 @group(0) @binding(7) var<storage, read_write> glow: array<f32>;
-@group(0) @binding(8) var<storage, read_write> occupied: array<atomic<u32>>;
+// a cell, packed (one buffer, not two, for the phone's memory): bit 0 an agent holds it, bit 1 the
+// mold may go there (land, or a strait), bits 8..15 its food (0..255)
+@group(0) @binding(8) var<storage, read_write> cells: array<atomic<u32>>;
+fn is_sea(i: u32) -> bool { return (atomicLoad(&cells[i]) & 2u) == 0u; }
+// the ground as the model reads it: the food 0..1 on land, -1 at sea
+fn ground_at_cell(i: u32) -> f32 {
+    let v = atomicLoad(&cells[i]);
+    return select(f32((v >> 8u) & 255u) / 255.0, -1.0, (v & 2u) == 0u);
+}
+// takes a cell if no agent holds it (says whether it did)
+fn claim(i: u32) -> bool { return (atomicOr(&cells[i], 1u) & 1u) == 0u; }
+fn release(i: u32) { atomicAnd(&cells[i], ~1u); }
 
 const PI: f32 = 3.14159265;
 const GLOW: u32 = 4u;        // the glow's cells are GLOW x GLOW of the field's
@@ -67,7 +77,7 @@ fn ahead(p: vec2f, h: f32, d: f32) -> vec2f {
 fn sense(p: vec2f, h: f32) -> f32 {
     let q = ahead(p, h, P.mv.y);
     let i = cell(q.x, q.y);
-    return select(trail_in[i], P.misc.z, ground[i] < 0.0);
+    return select(trail_in[i], P.misc.z, is_sea(i));
 }
 
 @compute @workgroup_size(256)
@@ -99,13 +109,13 @@ fn step_agents(@builtin(global_invocation_id) gid: vec3u) {
     let was = p;
     let q = ahead(p, h, P.mv.w);
     let qi = cell(q.x, q.y);
-    if (ground[qi] < 0.0 || abs(q.y) > 1.35) {
+    if (is_sea(qi) || abs(q.y) > 1.35) {
         h = rand(&s) * 2.0 * PI;
     } else if (qi == home) {
         p = q;
-    } else if (atomicCompareExchangeWeak(&occupied[qi], 0u, 1u).exchanged) {
+    } else if (claim(qi)) {
         // the cell ahead is free: it moves there, leaving its own
-        if (home != NONE) { atomicStore(&occupied[home], 0u); }
+        if (home != NONE) { release(home); }
         home = qi;
         p = q;
     } else {
@@ -115,7 +125,7 @@ fn step_agents(@builtin(global_invocation_id) gid: vec3u) {
         } else if (rand(&s) < P.ex.x) {
             // crowded in: now and then it lets go and walks out to the edge, so a packed mass thins
             // into tubes and its edge keeps reaching
-            atomicStore(&occupied[home], 0u);
+            release(home);
             home = NONE;
         } else {
             h = rand(&s) * 2.0 * PI;
@@ -126,7 +136,7 @@ fn step_agents(@builtin(global_invocation_id) gid: vec3u) {
         let n = arrayLength(&spawn);
         p = spawn[min(u32(rand(&s) * f32(n)), n - 1u)];
         h = rand(&s) * 2.0 * PI;
-        if (home != NONE) { atomicStore(&occupied[home], 0u); }
+        if (home != NONE) { release(home); }
         home = NONE;
     }
     agents[i] = Agent(p, h - 2.0 * PI * floor(h / (2.0 * PI)), s, home, select(0u, 1u, any(p != was) && home != NONE));
@@ -137,10 +147,11 @@ fn diffuse(@builtin(global_invocation_id) gid: vec3u) {
     let W = P.grid.x; let H = P.grid.y;
     if (gid.x >= W || gid.y >= H) { return; }
     let idx = gid.y * W + gid.x;
-    let g = ground[idx];
+    let g = ground_at_cell(idx);
     // an agent deposits in the cell it holds (so a cell takes at most one agent's a step)
-    let held = f32(atomicLoad(&occupied[idx]));
-    body[idx] = body[idx] * P.misc.w + held;
+    let held = f32(atomicLoad(&cells[idx]) & 1u);
+    // (the first step starts the body as if the agents had sat a while, so the first frame shows the mist)
+    body[idx] = select(body[idx] * P.misc.w + held, held / (1.0 - P.misc.w), P.grid.w == 0u);
     let dep = held * P.tr.x;
     if (g < 0.0) { trail_out[idx] = 0.0; return; }
     var sum = 0.0;
@@ -179,7 +190,7 @@ fn feed(@builtin(global_invocation_id) gid: vec3u) {
     if (add < 1e-3) { return; }
     let x = u32(((cx + dx) % i32(W) + i32(W)) % i32(W));
     let idx = u32(y) * W + x;
-    if (ground[idx] < 0.0) { return; }
+    if (is_sea(idx)) { return; }
     trail_out[idx] += add;
 }
 

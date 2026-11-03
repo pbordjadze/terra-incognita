@@ -102,7 +102,7 @@ pub struct Mold {
     /// When a finger last touched (the shell's seconds).
     touched: f64,
     /// Where the mold may go (ground.png's G), for a tap.
-    land: Vec<bool>,
+    land: Vec<u64>,
     reduce_motion: bool,
 }
 
@@ -164,17 +164,17 @@ impl Toy for Mold {
         // the ground: food on land (the lights), and the sea
         let gp = decode(&ctx.assets.read("mold-ground.png")?, 4)?;
         anyhow::ensure!(gp.width == W && gp.height == H, "mold-ground.png is {}x{}, not {W}x{H}", gp.width, gp.height);
-        let mut ground = vec![0f32; (W * H) as usize];
-        for i in 0..(W * H) as usize {
-            let food = gp.data[i * 4] as f32 / 255.0;
-            let land = gp.data[i * 4 + 1] > 127;
-            ground[i] = if land { food } else { -1.0 };
-        }
+        // one packed word a cell (sim.wgsl's `cells`): bit 1 land, bits 8..15 the food; bit 0 (an agent
+        // holds it) set as the agents are placed. The decoded picture is let go at once.
+        let mut cells: Vec<u32> = gp.data.chunks_exact(4).map(|px| if px[1] > 127 { 2 | (px[0] as u32) << 8 } else { 0 }).collect();
+        drop(gp);
+        let food = |v: u32| -> f32 { if v & 2 == 0 { -1.0 } else { ((v >> 8) & 255) as f32 / 255.0 } };
         // the lit places, the brightest likeliest: where the mold starts, and where an agent buds again
         let mut rng = Rng(0x9E3779B97F4A7C15);
         let mut lit: Vec<(u32, f64)> = Vec::new();
         let mut total = 0.0;
-        for (i, &g) in ground.iter().enumerate() {
+        for (i, &v) in cells.iter().enumerate() {
+            let g = food(v);
             if g > 0.2 {
                 let lat = (0.5 - ((i as u32 / W) as f64 + 0.5) / H as f64) * std::f64::consts::PI;
                 total += (g as f64).powf(2.0) * lat.cos();
@@ -193,17 +193,16 @@ impl Toy for Mold {
         // the start: a mist over the lit land, each agent in a cell of its own (Jones's start, a sparse
         // population that condenses into tubes), a cell taken already passing to one beside it
         let mut agents = Vec::with_capacity(AGENTS as usize);
-        let mut occupied = vec![0u32; (W * H) as usize];
         while agents.len() < AGENTS as usize {
             let c = pick(&mut rng);
             let (dx, dy) = ((rng.next() * 9.0) as i64 - 4, (rng.next() * 9.0) as i64 - 4);
             let x = ((c % W) as i64 + dx).rem_euclid(W as i64) as u32;
             let y = ((c / W) as i64 + dy).clamp(0, H as i64 - 1) as u32;
             let i = (y * W + x) as usize;
-            if ground[i] < 0.0 || occupied[i] != 0 {
+            if cells[i] & 2 == 0 || cells[i] & 1 != 0 {
                 continue;
             }
-            occupied[i] = 1;
+            cells[i] |= 1;
             let p = place(i as u32, &mut rng);
             let n = agents.len() as u32;
             agents.push([p[0].to_bits(), p[1].to_bits(), ((rng.next() * std::f64::consts::TAU) as f32).to_bits(), n ^ 0x5bd1e995, i as u32, 0]);
@@ -212,15 +211,22 @@ impl Toy for Mold {
         let init = |label, contents: &[u8], usage| dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some(label), contents, usage });
         let st = wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST;
         let agents_buf = init("agents", bytemuck::cast_slice(&agents), st);
-        let ground_buf = init("ground", bytemuck::cast_slice(&ground), st);
         let spawn_buf = init("spawn", bytemuck::cast_slice(&spawn), st);
-        let zeros = vec![0f32; (W * H) as usize];
-        let trails = [init("trail a", bytemuck::cast_slice(&zeros), st), init("trail b", bytemuck::cast_slice(&zeros), st)];
-        // (the body as it is when the agents have sat a while, so the first frame shows the mist)
-        let body0: Vec<f32> = occupied.iter().map(|&o| o as f32 / (1.0 - BODY_EASE)).collect();
-        let body = init("body", bytemuck::cast_slice(&body0), st);
-        let occupied = init("occupied", bytemuck::cast_slice(&occupied), st);
-        let glow = init("glow", bytemuck::cast_slice(&zeros[..((W / GLOW) * (H / GLOW)) as usize]), st);
+        // (wgpu zeroes a new buffer: no zeros made on the CPU; the body's start is the first step's, on
+        // the GPU)
+        let zeroed = |label, n: u32| dev.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size: n as u64 * 4, usage: st, mapped_at_creation: false });
+        let trails = [zeroed("trail a", W * H), zeroed("trail b", W * H)];
+        let body = zeroed("body", W * H);
+        let glow = zeroed("glow", (W / GLOW) * (H / GLOW));
+        // the land, a bit a cell, for a tap (the rest of the cells live on the GPU only)
+        let mut land = vec![0u64; (W * H) as usize / 64];
+        for (i, &v) in cells.iter().enumerate() {
+            if v & 2 != 0 {
+                land[i / 64] |= 1 << (i % 64);
+            }
+        }
+        let cells_buf = init("cells", bytemuck::cast_slice(&cells), st);
+        drop(cells);
         let params = dev.create_buffer(&wgpu::BufferDescriptor {
             label: Some("mold params"),
             size: std::mem::size_of::<Params>() as u64,
@@ -243,7 +249,6 @@ impl Toy for Mold {
                 storage(2, true, cs),
                 storage(3, false, cs),
                 storage(4, false, cs),
-                storage(5, true, cs),
                 storage(6, true, cs),
                 storage(7, false, cs),
                 storage(8, false, cs),
@@ -260,10 +265,9 @@ impl Toy for Mold {
                     wgpu::BindGroupEntry { binding: 2, resource: a.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 3, resource: b.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 4, resource: body.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 5, resource: ground_buf.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 6, resource: spawn_buf.as_entire_binding() },
                     wgpu::BindGroupEntry { binding: 7, resource: glow.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 8, resource: occupied.as_entire_binding() },
+                    wgpu::BindGroupEntry { binding: 8, resource: cells_buf.as_entire_binding() },
                 ],
             })
         });
@@ -365,7 +369,7 @@ impl Toy for Mold {
             touch: None,
             ripples: Vec::new(),
             touched: f64::NEG_INFINITY,
-            land: ground.iter().map(|&g| g >= 0.0).collect(),
+            land,
             reduce_motion: ctx.reduce_motion,
         })
     }
@@ -537,7 +541,8 @@ impl Mold {
     fn on_land(&self, at: LonLat) -> bool {
         let x = (((at.lon / 360.0 + 0.5) * W as f64).floor() as i64).rem_euclid(W as i64) as usize;
         let y = (((0.5 - at.lat / 180.0) * H as f64).floor() as i64).clamp(0, H as i64 - 1) as usize;
-        self.land[y * W as usize + x]
+        let i = y * W as usize + x;
+        self.land[i / 64] >> (i % 64) & 1 == 1
     }
 
     fn feed(&mut self, at: LonLat) {
