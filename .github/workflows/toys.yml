@@ -110,6 +110,8 @@ jobs:
       - name: Build
         working-directory: toys
         run: |
+          # the budget's test makes a device (Mesa's software Vulkan, as the check jobs)
+          sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers > /dev/null
           rustup target add wasm32-unknown-unknown
           cargo build -p toy-kit --no-default-features
           cargo test -q -p toy-kit --no-default-features
