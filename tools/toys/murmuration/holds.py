@@ -26,7 +26,7 @@ def main():
     if not args:
         sys.exit(__doc__)
     plan = Path(args[0]).resolve()
-    out = Path(args[1]) if len(args) > 1 else ROOT / 'toys/build/murmuration/out' / (plan.stem + '-holds')
+    out = Path(args[1]).resolve() if len(args) > 1 else ROOT / 'toys/build/murmuration/out' / (plan.stem + '-holds')
     cmd = ['cargo', 'run', '-q', '--release', '-p', 'murmuration', '--bin', 'murmuration-check', '--', 'play', str(plan), str(out)]
     if size: cmd += ['--size', size]
     if ppp: cmd += ['--ppp', ppp]

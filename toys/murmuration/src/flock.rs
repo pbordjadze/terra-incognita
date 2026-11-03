@@ -12,7 +12,7 @@ const NEIGHBOURS: usize = 7;
 const SEP_R: f32 = 1.0;
 const W_SEP: f32 = 22.0;
 const W_ALIGN: f32 = 3.5;
-const W_COH: f32 = 1.8;
+const W_COH: f32 = 1.7;
 const W_SPEED: f32 = 1.6;
 const ROOST_R: f32 = 30.0;
 const W_ROOST: f32 = 0.06;
@@ -25,6 +25,8 @@ const CELL: f32 = 1.8;
 const YOU_WEIGHT: f32 = 4.0;
 /// How far round you a lean is felt, metres.
 const LEAN_R: f32 = 16.0;
+/// How far round a startled bird the startle takes, metres.
+const STARTLE_R: f32 = 9.0;
 
 pub type V3 = [f32; 3];
 
@@ -113,6 +115,8 @@ pub struct Flock {
     pub lean_dir: V3,
     pub roost: V3,
     centre_now: V3,
+    startle: Option<(V3, V3, f32)>,
+    startle_in: f32,
     rng: Rng,
     acc: Vec<V3>,
     cells: Vec<u32>,
@@ -161,6 +165,8 @@ impl Flock {
             lean_dir: [0.0, 0.0, 1.0],
             roost,
             centre_now: roost,
+            startle: None,
+            startle_in: 3.0,
             rng,
             acc: vec![[0.0; 3]; n],
             cells: Vec::new(),
@@ -361,6 +367,29 @@ impl Flock {
                 }
             }
             self.acc[i] = self.rules(i, &nb);
+        }
+        // Agitation: now and then a patch of birds startles into a sharp banked turn (as at a
+        // falcon's pass, or for no reason a watcher can see); alignment carries it through the
+        // flock as a wave (Procaccini et al. 2011), and the flock folds.
+        self.startle_in -= dt;
+        if self.startle_in <= 0.0 {
+            let i = (self.rng.next() * n as f32) as usize % n;
+            let v = norm(self.birds[i].vel);
+            let side = norm(cross([0.0, 1.0, 0.0], v));
+            let sgn = if self.rng.next() < 0.5 { -1.0 } else { 1.0 };
+            self.startle = Some((self.birds[i].pos, scale(addv(side, [0.0, self.rng.signed() * 0.4, 0.0]), sgn), 0.45));
+            self.startle_in = 3.0 + self.rng.next() * 5.0;
+        }
+        if let Some((at, dir, left)) = self.startle {
+            for (k, b) in self.birds.iter().enumerate() {
+                let d = length(sub(b.pos, at));
+                if d < STARTLE_R {
+                    let w = 1.0 - d / STARTLE_R;
+                    self.acc[k] = addv(self.acc[k], scale(dir, 22.0 * w));
+                }
+            }
+            let left = left - dt;
+            self.startle = if left > 0.0 { Some((at, dir, left)) } else { None };
         }
         // Your lean: asked of your bird, over the rules as strongly as the finger leans; and felt by
         // the birds round you, most by the nearest, so the flock bends with you rather than letting

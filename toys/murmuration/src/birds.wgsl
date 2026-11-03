@@ -56,13 +56,20 @@ fn shape(i: u32, beat: f32) -> vec3f {
 }
 
 @vertex
-fn vs_main(@builtin(vertex_index) vi: u32, b: In) -> VOut {
+fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: In) -> VOut {
     var o: VOut;
     let f = u.right.w;
     let fwd = normalize(b.fwd.xyz);
-    let side = normalize(cross(b.lift.xyz, fwd));   // the bird's right... or left: symmetric
+    // Each bird a little its own: a roll of its own about its heading, and its own way of holding
+    // its wings in a glide (level, raised, or swept down).
+    let h1 = fract(sin(f32(ii) * 12.9898) * 43758.5453);
+    let h2 = fract(sin(f32(ii) * 78.233) * 24634.6345);
+    let side0 = normalize(cross(b.lift.xyz, fwd));
+    let up0 = cross(fwd, side0);
+    let roll = (h1 - 0.5) * 0.7 + 0.25 * sin(b.pos.w * 0.13 + h2 * 6.28);
+    let side = side0 * cos(roll) + up0 * sin(roll);
     let up = cross(fwd, side);
-    let beat = sin(b.pos.w) * b.lift.w + (1.0 - b.lift.w) * 0.12;
+    let beat = sin(b.pos.w) * b.lift.w + (1.0 - b.lift.w) * (h2 * 0.5 - 0.15);
     let rel0 = b.pos.xyz - u.eye.xyz;
     let z0 = dot(rel0, u.fwd.xyz);
     // How big it would be on screen: a wingspan of 0.38 m at its distance.
