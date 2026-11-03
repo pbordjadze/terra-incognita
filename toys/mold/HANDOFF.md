@@ -6,7 +6,7 @@ kept off the open sea. ROUNDS.md has a line a round; SOURCES.md the data and the
 
 ## Where it stands
 
-- Shipped: round 4 (BUILD) on main (MERGE). What Paul taps: the globe opens on Europe and Africa, a mist
+- Shipped: round 4, `mold-build-103` (13:38 ET), from main 69b8264. What Paul taps: the globe opens on Europe and Africa, a mist
   of spores on the lights condensing into a network over about 7 s; a pinch in shows translucent tubes
   between the cities down to 9x (a pinch past it eases back); a tap lays a flake (a ring; the mold
   reaches it) or, on the sea, rings only; left alone after a fling it settles north up over lit land.
