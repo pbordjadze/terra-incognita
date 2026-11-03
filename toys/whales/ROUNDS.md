@@ -11,7 +11,7 @@ One line a round, with the clock of each step (ET).
 
 ## Handoff (Nov 3, 2026, about 1:30 PM ET)
 
-- **Where it stands:** round 4 is on main (merge 0911ab0) and released as the build that merge made (whales-build-<n>, listed in the toys' release list). Before it: whales-build-57, round 3 plus the audio fix, the device log and the kit's texture settle (main 61910bc).
+- **Where it stands:** round 4 is on main (merge 0911ab0) and released as whales-build-102 (CI green, SideStore source regenerated). Before it: whales-build-57, round 3 plus the audio fix, the device log and the kit's texture settle (main 61910bc).
 - **Not yet confirmed on a phone:** the launch crash. Its likely cause, the audio overrun, is fixed (49acc47), and the kit's launch memory is lower (61910bc; Whales' Linux peak 558 to 428 MB of the 1400 MB budget). But no phone has said yet that Whales opens. If it still closes, `toy-log.txt` (Files › On My iPhone › Whales) or a JetsamEvent in Settings › Privacy & Security › Analytics Data says why.
 - **What the last critic said** (after round 3, kept: the two ring colours, the soft coast shadows, the 13 pt hydrophone, the silence on land, the first tap alive at once, the camera coming home), and its to-do list, now:
   - the phone's opening frame mostly land: done in round 4;
