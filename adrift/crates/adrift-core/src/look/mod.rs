@@ -7,6 +7,7 @@
 pub mod floats;
 pub mod ground;
 pub mod maybes;
+pub mod profile;
 pub mod sea;
 pub mod seeds;
 pub mod silver;
@@ -727,6 +728,18 @@ impl Look {
     /// opens the page of credits (Truth's D2); the page closes on any tap.
     pub fn credit_bounds(&self) -> Option<[f32; 4]> {
         self.words.credit_bounds
+    }
+
+    /// (R24, `ADRIFT_PROFILE=1`) The same draws as [`Look::draw`], each in its own timed pass.
+    pub fn draw_profiled(&self, gpu: &Gpu, target: &wgpu::TextureView, view_bind: &wgpu::BindGroup, maybes: &crate::sea::Maybes) {
+        crate::timed!(gpu, "wakes", target, None, |rp| { self.wake.draw(rp, view_bind); self.air.draw(rp, view_bind) });
+        crate::timed!(gpu, "maybes", target, None, |rp| self.maybes.draw(rp, view_bind, maybes));
+        crate::timed!(gpu, "silver", target, None, |rp| self.silver.draw(rp, view_bind));
+        crate::timed!(gpu, "floats", target, None, |rp| self.floats.draw(rp, view_bind));
+        crate::timed!(gpu, "seeds", target, None, |rp| self.seeds.draw(rp, view_bind));
+        crate::timed!(gpu, "veil", target, None, |rp| self.veil.draw(rp, view_bind));
+        crate::timed!(gpu, "strokes", target, None, |rp| self.strokes.draw(rp, view_bind));
+        crate::timed!(gpu, "words", target, None, |rp| self.words.draw(rp, view_bind));
     }
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes) {
