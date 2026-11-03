@@ -263,7 +263,7 @@ impl Look {
         let a: [f32; 4] = if soft {
             [0.75, 0.6, 0.5, 0.4]
         } else {
-            [0.55, 1.8, 0.9, 1.0]
+            [0.62, 1.8, 0.9, 1.0]
         };
         let mut u = vec![0f32; LOOK_FLOATS];
         u[..4].copy_from_slice(&a);

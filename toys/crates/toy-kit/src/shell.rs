@@ -4,6 +4,17 @@
 
 use crate::{block_on, Ctx, DirAssets, Gpu, Host, Phase, PointerEvent, SharedSynth, Toy};
 
+extern "C" {
+    /// How many bytes the app may still take before the system kills it for memory (iOS 13+,
+    /// <os/proc.h>).
+    fn os_proc_available_memory() -> usize;
+}
+
+/// MB the app may still take before it is killed for memory (jetsam).
+fn available_mb() -> usize {
+    unsafe { os_proc_available_memory() >> 20 }
+}
+
 /// A toy on a CAMetalLayer.
 pub struct Shell<T: Toy> {
     _instance: wgpu::Instance,
@@ -20,6 +31,10 @@ impl<T: Toy> Shell<T> {
     /// # Safety
     /// `layer` is a live CAMetalLayer.
     pub unsafe fn new(layer: *mut std::ffi::c_void, width: u32, height: u32, scale: f64, assets: &str) -> Option<Shell<T>> {
+        // the launch's memory in the log: if the system kills the toy for memory while it starts, the
+        // second line is missing and the first says how much there was (tools/kit/launch_check.py's
+        // budget is checked against these)
+        crate::log(&format!("launch: {} MB available to the app", available_mb()));
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..Default::default() });
         let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
             Ok(s) => s,
@@ -48,7 +63,10 @@ impl<T: Toy> Shell<T> {
         surface.configure(&gpu.device, &config);
         let ctx = Ctx::new(gpu, Box::new(DirAssets(assets.into())), width.max(1), height.max(1), scale);
         match Host::<T>::new(ctx) {
-            Ok(host) => Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0 }),
+            Ok(host) => {
+                crate::log(&format!("launch: the toy started, {} MB still available ({} MB made through the kit)", available_mb(), crate::budget::kit_bytes() >> 20));
+                Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0 })
+            }
             Err(e) => {
                 crate::log(&format!("the toy did not start: {e:#}"));
                 None

@@ -1,0 +1,70 @@
+{
+ "_": "Left alone (round 5's critic: the resting globe went silent): a pinch out to the whole globe, two hard flings, then 75 seconds untouched. The globe settles north up on a region's centre of light and keeps flashing; its regions in step keep ringing a sparse, wandering chime. tools/toys/fireflies/silence.py <out>/audio.wav checks the longest silence and the balance.",
+ "seconds": 90,
+ "fps": 30,
+ "night": true,
+ "audio": true,
+ "events": [
+  {
+   "t": 0.5,
+   "pinch": [
+    [
+     100,
+     426
+    ],
+    [
+     296,
+     426
+    ]
+   ],
+   "to": 0.3,
+   "for": 0.6
+  },
+  {
+   "t": 2.5,
+   "drag": [
+    [
+     196,
+     250
+    ],
+    [
+     196,
+     780
+    ]
+   ],
+   "for": 0.12
+  },
+  {
+   "t": 3.2,
+   "drag": [
+    [
+     90,
+     650
+    ],
+    [
+     330,
+     180
+    ]
+   ],
+   "for": 0.12
+  }
+ ],
+ "shots": [
+  {
+   "t": 10.0,
+   "name": "settled"
+  },
+  {
+   "t": 30.0,
+   "name": "alone-30"
+  },
+  {
+   "t": 60.0,
+   "name": "alone-60"
+  },
+  {
+   "t": 89.9,
+   "name": "alone-90"
+  }
+ ]
+}

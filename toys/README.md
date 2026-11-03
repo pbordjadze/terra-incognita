@@ -10,6 +10,8 @@ the owner's to decide):
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | `murmuration-build-<n>` |
 | Mold: a slime mold on the night Earth finding the routes between cities' lights | `mold/` | `com.pbordjadze.toy.mold` | `mold-build-<n>` |
 | Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
+| Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
+| Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 
@@ -54,10 +56,13 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
 
 A toy isn't done until it opens on a phone; the Linux renders can't prove that. Two things help:
 
-- `tools/toys/launch_check.sh <toy>` (in CI's check): every shader the toy builds at launch, translated to
-  Metal as wgpu does on iOS; with `--ipa <file>` (in CI's IPA job), every manifest file bundled.
+- `tools/toys/launch_check.sh <toy>` (in CI's check; `tools/kit/launch_check.py` does the work): every
+  shader the toy builds at launch, translated to Metal as wgpu does on iOS; the launch played at the
+  phone's size under an iPhone's GPU limits, any GPU error fatal; peak memory against 1400 MB (or
+  `toy.json`'s `memory_mb`, when a toy needs its own); with `--ipa <file>` (in CI's IPA job), every manifest file bundled.
 - The device keeps the toy's log: a panic's message and place, every GPU error (logged, not fatal: a
-  toy drawn wrong beats a toy gone), a toy that could not start. It is `toy-log.txt` in the Files app,
+  toy drawn wrong beats a toy gone), a toy that could not start, the GPU's limits, and the memory
+  available as the toy starts and once it has started (the second line missing: it died starting). It is `toy-log.txt` in the Files app,
   On My iPhone › the toy's name; share it from there. iOS's own report is in Settings › Privacy &
   Security › Analytics & Improvements › Analytics Data (an entry named after the toy; a `JetsamEvent`
   entry means it was killed for memory).

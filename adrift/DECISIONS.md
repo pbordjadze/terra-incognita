@@ -909,3 +909,15 @@ The owner: "performance, specifically for clip rendering", and a bug: "one dot t
   outs before its water is read, the ground reading only what a pixel needs, the light along the lines
   at half resolution (≤0.05% of pixels change by more than 1/255). Left: ground ~33%, sea ~45%; one
   merged ground+sea pass is the next step.
+
+## 32. R25: lamps with character (Nov 3, 05:35 UTC)
+
+The owner: "These look a little generic". Visual (23e5867, 93b68a2): a lamp is a light in glass of
+its own, by its id: a round float roped at the waist with a knot at its crown, a cut octagonal float,
+a lantern with cap, bail and frame bars, an onion-domed lamp with a finial; neighbours by id (and ids
+four apart) never share a glass, so a pair is two individuals. Inside, a flame with its own height,
+width, flicker and sway (slow incommensurate sines); the glass lit by it and tinted by its hue; each
+light breathing on its own period; its broken path shimmering on the water below (by night clearly).
+In a clip the head is 1.5x, its glass near its hue, the flame larger, the glint smaller. Kept: the
+chosen ring, the kept star, stepped-back lamps, dashed rims, the clip's glint. Studies: look/studies
+r25-* and r25b-* (`tools/adrift/lamp_study.py`).

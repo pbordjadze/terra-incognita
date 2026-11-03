@@ -1,0 +1,9 @@
+{
+ "_": "First sight: South America by day, and at 1.2 s the Earth struck by itself at Valdivia (1960's quake): the ring runs out round the world, the ground swells and sinks, the globe's outline breathes; at 6 s a tap on Africa strikes it again and the rings add. A 14 s film with its sound.",
+ "seconds": 14,
+ "fps": 30,
+ "events": [{ "t": 6.0, "tap": [300, 560] }],
+ "shots": [{ "t": 0.5, "name": "first-sight" }, { "t": 1.8, "name": "struck" }, { "t": 3.0, "name": "ring" }, { "t": 6.6, "name": "second" }, { "t": 9.0, "name": "ringing" }, { "t": 13.9, "name": "late" }],
+ "film": { "from": 0, "to": 14, "every": 0.0667 },
+ "audio": true
+}

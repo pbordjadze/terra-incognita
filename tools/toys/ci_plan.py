@@ -31,7 +31,9 @@ if event == 'workflow_dispatch':
 else:
     try:
         if set(before) == {'0'}:
-            raise ValueError('a new branch')
+            # a new branch: everything it changed since it left main (its head commit alone may be a
+            # docs line, and a kit change earlier on the branch would go unchecked)
+            before = subprocess.run(['git', 'merge-base', 'origin/main', sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.strip()
         files = subprocess.run(['git', 'diff', '--name-only', before, sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.split()
     except Exception:
         files = subprocess.run(['git', 'show', '--name-only', '--format=', sha], check=True, capture_output=True, text=True, cwd=ROOT).stdout.split()
