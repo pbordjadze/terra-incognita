@@ -19,29 +19,47 @@ fn wait(gpu: &Gpu) {
     let _ = gpu.device.poll(wgpu::PollType::wait());
 }
 
-/// One pass drawn alone into `target` (cleared to `clear` if given, else loaded) and timed.
-pub fn pass<'t>(gpu: &Gpu, name: &'static str, target: &'t wgpu::TextureView, clear: Option<wgpu::Color>, draw: impl FnOnce(&mut wgpu::RenderPass<'_>)) {
+/// A pass begun alone: the GPU waited for, the clock started, an encoder.
+pub fn begin(gpu: &Gpu) -> (wgpu::CommandEncoder, std::time::Instant) {
     wait(gpu);
-    let t = std::time::Instant::now();
-    let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some(name) });
-    {
-        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some(name),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: target,
-                resolve_target: None,
-                ops: wgpu::Operations { load: clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear), store: wgpu::StoreOp::Store },
-                depth_slice: None,
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-        draw(&mut rp);
-    }
+    (gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("profiled") }), std::time::Instant::now())
+}
+
+/// Its render pass into `target`, cleared to `clear` if given, else loading what is there.
+pub fn render_pass<'e>(enc: &'e mut wgpu::CommandEncoder, target: &'e wgpu::TextureView, clear: Option<wgpu::Color>) -> wgpu::RenderPass<'e> {
+    enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: Some("profiled"),
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            view: target,
+            resolve_target: None,
+            ops: wgpu::Operations { load: clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear), store: wgpu::StoreOp::Store },
+            depth_slice: None,
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+    })
+}
+
+/// Submitted, waited for, and its time added to `name`'s.
+pub fn end(gpu: &Gpu, name: &'static str, (enc, t): (wgpu::CommandEncoder, std::time::Instant)) {
     gpu.queue.submit([enc.finish()]);
     wait(gpu);
     record(name, t.elapsed().as_secs_f64());
+}
+
+/// `timed!(gpu, "name", target, clear, |rp| draws...)`: one pass drawn alone and timed.
+#[macro_export]
+macro_rules! timed {
+    ($gpu:expr, $name:expr, $target:expr, $clear:expr, |$rp:ident| $body:expr) => {{
+        let mut b = $crate::look::profile::begin($gpu);
+        {
+            let mut $rp = $crate::look::profile::render_pass(&mut b.0, $target, $clear);
+            let $rp = &mut $rp;
+            $body;
+        }
+        $crate::look::profile::end($gpu, $name, b);
+    }};
 }
 
 /// Adds a time to a pass's sum.

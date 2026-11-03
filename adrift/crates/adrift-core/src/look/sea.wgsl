@@ -54,6 +54,29 @@ fn streamAt(m: f32, uv: vec2f) -> f32 {
     }
     return acc;
 }
+// (R24) both months at once: the sheet is paired (sea.rs `pair_months`: each texel's next month in b
+// and a), so one load reads the two values a texel of the mix needs, sixteen loads for both surfaces
+// where there were thirty-two; the same sums, the same sea
+fn streamPair(t: vec2i) -> vec2f {
+    let b = floor(textureLoad(stream, t, 0) * 255.0 + 0.5);
+    return (vec2f(b.x, b.z) * 256.0 + vec2f(b.y, b.w)) / 65535.0 * 0.4 - 0.2;
+}
+fn streamBoth(uv: vec2f) -> f32 {
+    let m = U.time.y;
+    if (U.time.z != (m + 1.0) % 12.0) { return mix(streamAt(m, uv), streamAt(U.time.z, uv), U.time.w); }
+    let p = uv * vec2f(720.0, 360.0) + 0.5;
+    let i = floor(p); let f = p - i;
+    let t = vec2i(tileOf(m) + i);
+    let wx = crWeights(f.x); let wy = crWeights(f.y);
+    let lo = vec2i(tileOf(m)); let hi = lo + vec2i(721, 361);
+    var acc = vec2f(0.0);
+    for (var y = -1; y <= 2; y++) {
+        let row = wx.x * streamPair(clamp(t + vec2i(-1, y), lo, hi)) + wx.y * streamPair(clamp(t + vec2i(0, y), lo, hi))
+                + wx.z * streamPair(clamp(t + vec2i(1, y), lo, hi)) + wx.w * streamPair(clamp(t + vec2i(2, y), lo, hi));
+        acc += row * wy[y + 1];
+    }
+    return mix(acc.x, acc.y, U.time.w);
+}
 
 // the distance in pixels from a contour of q (one a unit; fw is fwidth(q)), and how much of the set
 // shows: all of it, unless its lines would crowd closer than a few pixels
@@ -79,10 +102,16 @@ fn contour(q: f32, fw: f32) -> vec2f {
                    textureSampleLevel(iceTex, oceanEastWest, uv, i32(U.time.z), 0.0).r, U.time.w);
     let ice = smoothstep(0.30, 0.55, iceC);
 
+    // (R24: every derivative above; no read below is for a pixel the sea doesn't cover: off the
+    // globe, on land, under ice, all left before the water is read)
+    if (r2 >= 1.0 || sea <= 0.0) { return vec4f(0.0); }
+    let water = sea * (1.0 - ice) * smoothstep(0.0, 0.12, z) * U.tone.x;
+    if (water <= 0.0) { return vec4f(0.0); }
+
     // the month's water: its current and stream function, between this month and the next
     let c0 = currentAt(U.time.y, uv); let c1 = currentAt(U.time.z, uv);
     let cur = mix(c0, c1, U.time.w);
-    let psi = mix(streamAt(U.time.y, uv), streamAt(U.time.z, uv), U.time.w);
+    let psi = streamBoth(uv);
     let speed = length(cur.xy); let measured = cur.z;
     let east = normalize(vec3f(g.z, 0.0, -g.x) + vec3f(1e-6, 0.0, 0.0));
     let north = cross(g, east);
@@ -91,10 +120,6 @@ fn contour(q: f32, fw: f32) -> vec2f {
     let rot = mat3x3f(U.rot0.xyz, U.rot1.xyz, U.rot2.xyz);
     let ax = rot * vec3f(1.0, 0.0, -v.x / max(z, 0.05)); let ay = rot * vec3f(0.0, 1.0, -v.y / max(z, 0.05));
     let fwPsi = max(length(vec2f(dot(slope, ax), dot(slope, ay))), 1e-9) / (R * uPx);
-
-    if (r2 >= 1.0 || sea <= 0.0) { return vec4f(0.0); }
-    let water = sea * (1.0 - ice) * smoothstep(0.0, 0.12, z) * U.tone.x;
-    if (water <= 0.0) { return vec4f(0.0); }
     var acc = vec4f(0.0);
 
     // -- the sheen: the sky's light on the water, from the upper left, soft and broad
@@ -129,7 +154,9 @@ fn contour(q: f32, fw: f32) -> vec2f {
     let pk = floor(plevel); let pb = plevel - pk;
     let pace = 26.0 * reading / R;
     let along = flow / max(speed, 1e-4);
-    var glow = 0.0; var w2 = 0.0;
+    var glow = 0.0; var w2 = 1.0;
+    // (R24) twelve reads of the noise, only where the light can show (it is scaled by `running`)
+    if (running > 0.0) { w2 = 0.0;
     for (var o = 0; o < 2; o++) {
         let F = exp2(pk + f32(o));
         let wo = select(pb, 1.0 - pb, o == 0);
@@ -143,6 +170,7 @@ fn contour(q: f32, fw: f32) -> vec2f {
             glow += wo * wp * tail / 2.1;
             w2 += wo * wo * wp * wp;
         }
+    }
     }
     glow = smoothstep(0.3, 1.5, glow / (0.185 * 0.86 * sqrt(w2))) * running * mix(0.45, 1.0, smoothstep(1.0, 2.2, zoom));
     // the sea at rest: while the date is stopped the light holds where it is (tm is held) and settles to
