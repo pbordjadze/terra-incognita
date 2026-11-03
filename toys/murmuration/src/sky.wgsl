@@ -58,7 +58,14 @@ fn vnoise(x: f32) -> f32 {
 
 // The skyline's height (degrees) at an azimuth (radians): hedgerows, a few trees, a far low hill.
 fn skyline(az: f32) -> f32 {
-    let a = az * 57.2958;
+    // Continuous all the way round: the skyline at a bearing, blended with itself a turn later,
+    // so it meets itself behind the eye without a step.
+    let a0 = az * 57.2958;
+    let t = (a0 + 180.0) / 360.0;
+    return mix(skyline_at(a0), skyline_at(a0 - 360.0), t);
+}
+
+fn skyline_at(a: f32) -> f32 {
     let hill = 0.35 * vnoise(a * 0.02) + 0.25 * vnoise(a * 0.05 + 7.0);
     let hedge = 0.18 * vnoise(a * 0.6) + 0.10 * vnoise(a * 2.3);
     let tree = 0.45 * smoothstep(0.55, 1.0, vnoise(a * 0.5 + 11.0)) + 0.3 * smoothstep(0.6, 1.0, vnoise(a * 1.7 + 3.0));
