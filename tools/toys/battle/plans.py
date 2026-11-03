@@ -78,8 +78,8 @@ def main():
     good = [(GOOD[0], 2.0, 1.6), (GOOD[1], 4.6, 0.8), (GOOD[2], 6.2, 0.8)]
     bad = [(BAD[0], 2.0, 0.6), (BAD[1], 3.6, 0.7), (BAD[2], 5.0, 0.7)]
     plan('start', 'The first touch on the phone: the engraving at rest, then one stroke that sends Hasdrubal\'s horse up the river and round the Roman rear (watch it comb the purple), a drop of ink on the open flank, and the day running on.',
-         phone, 3, [good[0]], 40, [(0.1, 'first'), (2.9, 'drawing'), (5.0, 'combed'), (14.0, 'riding'), (40.0, 'later')],
-         film=(0, 40, 0.25), taps=[(9.0, [800, 520])])
+         phone, 3, [good[0]], 62, [(0.1, 'first'), (2.9, 'drawing'), (5.0, 'combed'), (14.0, 'riding'), (62.0, 'later')],
+         film=(0, 62, 0.4), taps=[(9.0, [800, 520])])
     plan('good', 'Three strokes on the phone: Hasdrubal round the rear, both African wings turned in; the double envelopment closes and the Roman mass ends a crisp pocket inside the purple ring.',
          phone, 3, good, 75, [(3.0, 'drawing'), (8.0, 'orders'), (22.0, 'clash'), (38.0, 'closing'), (55.0, 'pocket'), (75.0, 'print')],
          film=(0, 75, 0.5))
@@ -87,7 +87,7 @@ def main():
          phone, 3, bad, 75, [(8.0, 'orders'), (25.0, 'clash'), (45.0, 'broken'), (75.0, 'print')], film=(0, 75, 0.5))
     plan('touch', 'The hand on the phone at night: taps (drops of ink pushing rings through both armies), a scribble, a long hold that starts a fresh page, then a shake that starts another.',
          phone, 3, [([[420, 620], [470, 560], [430, 520], [500, 470]], 6.0, 0.7)], 24,
-         [(3.5, 'drops'), (7.5, 'scribble'), (12.0, 'held'), (13.5, 'fresh'), (20.5, 'shaken')], film=(0, 24, 0.25),
+         [(3.5, 'drops'), (7.5, 'scribble'), (11.4, 'held'), (13.5, 'fresh'), (20.5, 'shaken')], film=(0, 24, 0.25),
          taps=[(2.0, [600, 560]), (2.6, [450, 300])],
          extra=[{'t': 10.0, 'hold': view(phone, 3)([520, 760]), 'for': 2.2}, {'t': 19.0, 'shake': True}], night=True)
     plan('ipad', 'The good plan on the 13-inch iPad, portrait.',
