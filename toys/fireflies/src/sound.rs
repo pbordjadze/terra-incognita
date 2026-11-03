@@ -20,7 +20,7 @@ pub const ROWS: usize = 4;
 /// once they fall under OFF_TIMES times the usual. The usual is the same in step or not (a firefly is
 /// bright the same share of its cycle either way): only the peaks differ, so this hears a region in
 /// step at any zoom, whatever else shares its patch.
-const ON_TIMES: f32 = 3.0;
+const ON_TIMES: f32 = 2.0;
 const ON_MORE: f32 = 3.0;
 /// And never two chimes closer than this (seconds), whichever patches: a few at a time, not a shower.
 const GAP_S: f64 = 0.6;
