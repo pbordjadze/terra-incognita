@@ -26,32 +26,39 @@ struct VOut {
 };
 
 // The silhouette in the bird's frame (x right, y lift, z forward), metres: a starling seen from
-// below, its short square tail, its pointed triangular wings bent at the wrist, the hand beating
-// more than the arm. 13 triangles, 39 vertices.
-fn shape(i: u32, beat: f32) -> vec3f {
-    let ya = beat * 0.035;
-    let yt = beat * 0.095;
-    let tz = -0.05 - 0.015 * abs(beat);
-    var p = array<vec3f, 14>(
-        vec3f(0.0, 0.0, 0.105),                                     // 0 bill
-        vec3f(-0.017, 0.0, 0.07), vec3f(0.017, 0.0, 0.07),          // 1 2 neck
-        vec3f(-0.026, 0.0, 0.02), vec3f(0.026, 0.0, 0.02),          // 3 4 shoulders
-        vec3f(-0.019, 0.0, -0.045), vec3f(0.019, 0.0, -0.045),      // 5 6 hips
-        vec3f(-0.030, 0.0, -0.105), vec3f(0.030, 0.0, -0.105),      // 7 8 tail
-        vec3f(0.020, 0.0, 0.048),                                   // 9 wing root, leading
-        vec3f(0.020, 0.0, -0.022),                                  // 10 wing root, trailing
-        vec3f(0.100, ya, 0.036),                                    // 11 wrist
-        vec3f(0.092, ya, -0.030),                                   // 12 elbow, trailing
-        vec3f(0.190, yt, tz),                                       // 13 tip
+// below. The body a fan round its middle (bill, round head, the shoulders, the short square tail,
+// spread wider in a turn); each wing a strip from the root out to the pointed tip, its leading edge
+// curving forward to the wrist and back to the tip, the hand beating more than the arm.
+// 30 triangles, 90 vertices.
+fn shape(i: u32, beat: f32, spread: f32) -> vec3f {
+    let y1 = beat * 0.02;
+    let y2 = beat * 0.045;
+    let y3 = beat * 0.07;
+    let y4 = beat * 0.095;
+    let tz = -0.04 - 0.012 * abs(beat);
+    let tw = 0.026 * spread;
+    var p = array<vec3f, 26>(
+        // body outline, clockwise from the bill (0..15), then its middle (16)
+        vec3f(0.0, 0.0, 0.118), vec3f(0.012, 0.0, 0.098), vec3f(0.017, 0.0, 0.07), vec3f(0.026, 0.0, 0.025),
+        vec3f(0.025, 0.0, -0.02), vec3f(0.017, 0.0, -0.05), vec3f(0.014, 0.0, -0.066), vec3f(tw, 0.0, -0.112),
+        vec3f(0.0, 0.0, -0.104), vec3f(-tw, 0.0, -0.112), vec3f(-0.014, 0.0, -0.066), vec3f(-0.017, 0.0, -0.05),
+        vec3f(-0.025, 0.0, -0.02), vec3f(-0.026, 0.0, 0.025), vec3f(-0.017, 0.0, 0.07), vec3f(-0.012, 0.0, 0.098),
+        vec3f(0.0, 0.0, 0.01),
+        // the right wing: leading edge root, arm, wrist, hand; the tip; trailing edge hand, arm, root
+        vec3f(0.02, 0.0, 0.05), vec3f(0.065, y1, 0.06), vec3f(0.105, y2, 0.052), vec3f(0.15, y3, 0.022),
+        vec3f(0.195, y4, tz),
+        vec3f(0.148, y3, -0.034), vec3f(0.1, y2, -0.04), vec3f(0.058, y1, -0.036), vec3f(0.02, 0.0, -0.026),
     );
-    var idx = array<u32, 39>(
-        0u, 1u, 2u,  1u, 3u, 4u,  1u, 4u, 2u,  3u, 5u, 6u,  3u, 6u, 4u,  5u, 7u, 8u,  5u, 8u, 6u,
-        9u, 10u, 11u,  10u, 12u, 11u,  11u, 12u, 13u,
-        9u, 10u, 11u,  10u, 12u, 11u,  11u, 12u, 13u,
+    var idx = array<u32, 90>(
+        16u, 0u, 1u,  16u, 1u, 2u,  16u, 2u, 3u,  16u, 3u, 4u,  16u, 4u, 5u,  16u, 5u, 6u,
+        16u, 6u, 7u,  16u, 7u, 8u,  16u, 8u, 9u,  16u, 9u, 10u,  16u, 10u, 11u,  16u, 11u, 12u,
+        16u, 12u, 13u,  16u, 13u, 14u,  16u, 14u, 15u,  16u, 15u, 0u,
+        17u, 25u, 18u,  25u, 24u, 18u,  18u, 24u, 19u,  24u, 23u, 19u,  19u, 23u, 20u,  23u, 22u, 20u,  20u, 22u, 21u,
+        17u, 25u, 18u,  25u, 24u, 18u,  18u, 24u, 19u,  24u, 23u, 19u,  19u, 23u, 20u,  23u, 22u, 20u,  20u, 22u, 21u,
     );
     var v = p[idx[i]];
-    // The second wing is the first, mirrored.
-    if (i >= 30u) { v.x = -v.x; }
+    // The left wing is the right one, mirrored.
+    if (i >= 69u) { v.x = -v.x; }
     return v;
 }
 
@@ -66,7 +73,9 @@ fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: 
     let h2 = fract(sin(f32(ii) * 78.233) * 24634.6345);
     let side0 = normalize(cross(b.lift.xyz, fwd));
     let up0 = cross(fwd, side0);
-    let roll = (h1 - 0.5) * 0.7 + 0.25 * sin(b.pos.w * 0.13 + h2 * 6.28);
+    let me = ii == u32(u.ink.w);
+    var roll = (h1 - 0.5) * 0.7 + 0.25 * sin(b.pos.w * 0.13 + h2 * 6.28);
+    if (me) { roll = 0.0; }
     let side = side0 * cos(roll) + up0 * sin(roll);
     let up = cross(fwd, side);
     let beat = sin(b.pos.w) * b.lift.w + (1.0 - b.lift.w) * (h2 * 0.5 - 0.15);
@@ -75,7 +84,9 @@ fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: 
     // How big it would be on screen: a wingspan of 0.38 m at its distance.
     let span = 0.38 * b.fwd.w * f / max(z0, 0.05);
     let grow = max(1.0, u.eye.w / max(span, 1e-4));
-    var s = shape(vi, beat) * b.fwd.w * grow;
+    // A turning bird fans its tail (the lift leaning off the vertical is the turn).
+    let spread = 1.0 + 2.2 * clamp(1.0 - b.lift.y, 0.0, 0.5);
+    var s = shape(vi, beat, spread) * b.fwd.w * grow;
     // Far birds a little fuller in the body and wing (their chord), so a distant flock reads dark,
     // as the eye sees it, not as fine stipple.
     let full = clamp(sqrt(28.0 * u.eye.w / 3.0 / max(span, 1e-3)), 1.0, 1.9);
@@ -91,7 +102,11 @@ fn vs_main(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32, b: 
     var a = min(1.0, 2.2 / (grow * grow));
     // Nothing ever reaches the eye: a bird nearer than a couple of metres in front of it, or beside
     // or behind it, fades and then is not drawn at all (its wings would sweep the glass).
-    a = a * step(2.2, z0) * (1.0 - step(0.4, span / u.up.w));
+    // (Your own bird is always drawn: it is the one that rides just ahead of the eye.) Others never
+    // come nearer than 4 m nor grow past a seventh of the glass, so yours is the largest, nearest.
+    if (!me) {
+        a = a * step(4.0, z0) * (1.0 - step(0.14, span / u.up.w));
+    }
     if (a <= 0.002) {
         o.pos = vec4f(2.0, 2.0, 2.0, 1.0);
         o.col = vec4f(0.0);

@@ -31,7 +31,7 @@ const FIRST_SHOW: f64 = 4.5;
 const SHOW_FOR: f64 = 6.0;
 const SHOW_AGAIN: f64 = 40.0;
 /// How far behind your bird the eye rides while flying, metres.
-const EYE_BEHIND: f32 = 4.5;
+const EYE_BEHIND: f32 = 2.2;
 /// A drag of this many points is a full lean.
 const LEAN_PT: f64 = 70.0;
 /// How far from the roost the watcher stands, metres.
@@ -88,6 +88,7 @@ struct Ears {
     murmur: AtomicU32,
     wings: AtomicU32,
     rate: AtomicU32,
+    phase: AtomicU32,
 }
 
 fn put(a: &AtomicU32, v: f32) {
@@ -212,6 +213,31 @@ impl Murmuration {
         sun::position(PLACE.0, PLACE.1, set + minutes / 1440.0)
     }
 
+    /// Which bird you are, chosen as the eye drops in: of a sample, the one with the most birds
+    /// round it, so a drop always lands in the thick of the flock.
+    fn pick_you(&mut self) {
+        let n = self.flock.birds.len();
+        let mut best = (0usize, self.flock.you);
+        for k in 0..240 {
+            let i = (k * 7919 + (self.clock * 1000.0) as usize) % n;
+            let p = self.flock.birds[i].pos;
+            let mut c = 0;
+            for b in &self.flock.birds {
+                let d = sub(b.pos, p);
+                if dot(d, d) < 36.0 {
+                    c += 1;
+                }
+            }
+            if c > best.0 {
+                best = (c, i);
+            }
+        }
+        self.flock.you = best.1;
+        let v = self.flock.birds[best.1].vel;
+        self.dir3 = norm(v);
+        self.heading = norm([v[0], 0.0, v[2]]);
+    }
+
     /// The eye this frame, from the flock, your bird and how far in it has dropped.
     fn place_eye(&mut self, ctx: &Ctx, dt: f32) {
         let you = &self.flock.birds[self.flock.you];
@@ -239,18 +265,18 @@ impl Murmuration {
         let c_loc = if n_loc > 20 { c_loc } else { centre };
         let kc = (dt / 0.8).min(1.0);
         self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
-        // Close behind your bird and a little under it, so it is the one bird that holds still on
+        // Close behind your bird and under it, so it is the one bird that holds still on
         // the glass while the flock streams past: you.
         // Just behind and above your bird, so it is the dark shape low and centred on the glass,
         // the one that holds still while the flock streams past.
-        let mut near = addv(sub(you.pos, scale(self.dir3, EYE_BEHIND)), [0.0, -0.3, 0.0]);
+        let mut near = addv(sub(you.pos, scale(self.dir3, EYE_BEHIND)), [0.0, -0.9, 0.0]);
         near[1] = near[1].max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
-        let look_near = addv(scale(ahead, 0.65), scale(self.flock_look, 0.35));
+        let look_near = addv(scale(ahead, 0.92), scale(self.flock_look, 0.08));
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
-        let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
+        let roll = if self.reduce_motion { 0.0 } else { 0.15 * e };
         let upv = norm(addv(scale([0.0, 1.0, 0.0], 1.0 - roll), scale(you.lift, roll)));
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
@@ -272,9 +298,10 @@ impl Murmuration {
             let h = norm([fwd[0], 0.0, fwd[2]]);
             fwd = addv(scale(h, (1.0 - max_up * max_up).sqrt()), [0.0, max_up, 0.0]);
         }
-        // Flying, the eye looks up just so far that the horizon lies at seven tenths of the glass:
-        // your bird low and centred against the glow, the flock round and above you against the sky.
-        let fly_pitch = (0.2 * h / focal).atan();
+        // Flying, the eye rides under and behind your bird and looks up at it (25°, or less if the
+        // screen's field of view would lose the horizon): your bird, wings spread, just below the
+        // middle of the glass against the sky, the dusk's band low, the flock round and above.
+        let fly_pitch = (25.0f32).to_radians().min((0.5 * h / focal).atan() - (4.0f32).to_radians());
         let p0 = fwd[1].clamp(-1.0, 1.0).asin();
         let p1 = p0 + (fly_pitch - p0) * e;
         let hz = norm([fwd[0], 0.0, fwd[2]]);
@@ -498,6 +525,9 @@ impl Toy for Murmuration {
         match e.phase {
             Phase::Down => {
                 if self.finger.is_none() {
+                    if self.near < 0.3 {
+                        self.pick_you();
+                    }
                     self.finger = Some((e.id, [e.x, e.y]));
                     self.finger_from = [e.x, e.y];
                     self.near_to = 1.0;
@@ -583,6 +613,9 @@ impl Toy for Murmuration {
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
             if self.clock >= self.show_next {
+                if self.near < 0.3 {
+                    self.pick_you();
+                }
                 self.show_until = self.clock + SHOW_FOR;
                 self.show_next = self.clock + SHOW_FOR + SHOW_AGAIN;
             }
@@ -628,6 +661,7 @@ impl Toy for Murmuration {
         put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.3 * self.near));
         put(&self.ears.wings, self.near * (0.15 + 0.5 * you.flap));
         put(&self.ears.rate, you.rate);
+        put(&self.ears.phase, you.phase);
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
@@ -646,7 +680,7 @@ impl Toy for Murmuration {
         let sin_el = se.sin().max(0.0);
         let mut ground = [0.0f32; 3];
         for c in 0..3 {
-            ground[c] = 0.11 * (zen[c] * 2.0 + trans[c] as f32 * sin_el / std::f32::consts::PI);
+            ground[c] = 0.2 * (zen[c] * 2.0 + trans[c] as f32 * sin_el / std::f32::consts::PI);
         }
         let u = SkyU {
             right: [e.right[0], e.right[1], e.right[2], e.focal],
@@ -670,7 +704,7 @@ impl Toy for Murmuration {
             up: [e.up[0], e.up[1], e.up[2], w],
             fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
             eye: [e.pos[0], e.pos[1], e.pos[2], min_px],
-            ink: [ink[0], ink[1], ink[2], 1.0],
+            ink: [ink[0], ink[1], ink[2], self.flock.you as f32],
             haze: [haze[0], haze[1], haze[2], 4000.0],
         };
         ctx.gpu.queue.write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
@@ -708,6 +742,12 @@ impl Toy for Murmuration {
                 }
             }
             println!("visible {:.2} {} {} near {:.2} big {}", self.t, n, sky, self.near, big);
+            if std::env::var_os("MURMURATION_YOU").is_some() {
+                let b = &self.flock.birds[self.flock.you];
+                let rel = sub(b.pos, e.pos);
+                let z = dot(rel, e.fwd);
+                println!("you {} z {:.2} x {:.0} y {:.0} dist {:.2}", self.flock.you, z, dot(rel, e.right) * e.focal / z, dot(rel, e.up) * e.focal / z, length(rel));
+            }
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
@@ -729,7 +769,7 @@ impl Toy for Murmuration {
             rp.set_pipeline(&self.bird_pipe);
             rp.set_bind_group(0, &self.bird_bind, &[]);
             rp.set_vertex_buffer(0, self.inst.slice(..));
-            rp.draw(0..39, 0..inst.len() as u32);
+            rp.draw(0..90, 0..inst.len() as u32);
             rp.set_pipeline(&self.reed_pipe);
             rp.set_bind_group(0, &self.sky_bind, &[]);
             rp.draw(0..3, 0..1);
@@ -805,6 +845,8 @@ impl Synth for Wind {
     fn render(&mut self, out: &mut [f32], channels: usize, rate: f64) {
         let target = [get(&self.ears.murmur), get(&self.ears.rush), get(&self.ears.wings)];
         let beat = get(&self.ears.rate).max(1.0);
+        // Your bird's wingbeat, heard in step with the one seen.
+        self.phase = get(&self.ears.phase) / std::f32::consts::TAU;
         let fr = |hz: f32| 2.0 * (std::f32::consts::PI * hz / rate as f32).sin();
         let (f_low, f_mid, f_hi) = (fr(420.0), fr(1500.0), fr(3200.0));
         for frame in out.chunks_mut(channels) {
