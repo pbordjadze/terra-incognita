@@ -232,3 +232,5 @@ Adrift, the toys and the engine's other users (busquets, traveling-squadron). Th
 | --- | --- | --- | --- |
 | Toy kit | the library every toy stands on (the toy's life, GPU, globe, data, sound, the device's ABI, the headless check) | `toys/crates/toy-kit`; from another repository a git dependency pinned to a `toy-kit-v*` tag | the four toys |
 | Toy launch check | shaders to MSL 2.4 as on iOS; with `--ipa`, the manifest's files bundled | `bash tools/toys/launch_check.sh <toy> [--ipa f]` | `toys.yml` |
+| WebGPU shot | a WebGPU page screenshotted by headless Chromium on Linux, not blank (the four flags that composite the canvas); fails on no adapter, a page error or a one-colour canvas | `node tools/kit/webgpu_shot.cjs <dir or url> <out.png> [--size 390x844 --dpr 3 --wait 8 --shots 2,4]` | any web shell |
+| Web artifact | a web build made publishable as a claude.ai artifact: other binaries wrapped as base64 JSON in `assets/index.json`, the `files` map in batches within the host's limits | `python3 tools/kit/artifact.py <web-dir>` (writes `artifact.json`) | Adrift's web build |
