@@ -85,6 +85,7 @@ struct SegOut {
   @location(2) @interpolate(flat) b: vec2f,
   @location(3) @interpolate(flat) s: vec2f,     // along-length at a and b (units)
   @location(4) @interpolate(flat) wk: vec4f,    // width pt, kind, alpha, pulse flow
+  @location(5) @interpolate(flat) fill: f32,    // the ghost's dashes closed (0..1)
 };
 
 @vertex
@@ -107,6 +108,7 @@ fn vs_seg(@builtin(vertex_index) vi: u32, @location(0) ab: vec4f, @location(1) s
   o.b = b;
   o.s = sw.xy;
   o.wk = vec4f(sw.z, ka.x, ka.y, sw.w);
+  o.fill = ka.z;
   return o;
 }
 
@@ -128,7 +130,8 @@ fn fs_seg(i: SegOut) -> @location(0) vec4f {
     w = (w + 1.1 * pulse * select(1.0, 0.0, flow == 0.0)) * taper;
   } else {
     // the real day's ghost: a dashed graphite underdrawing
-    alpha = alpha * step(fract(s / 9.0), 0.55);
+    // dashed while it rises, then the dashes close into one fine engraved line (ka.z: 0..1)
+    alpha = alpha * max(step(fract(s / 9.0), 0.55), i.fill);
   }
   let hw = max(w * u.screen.z * 0.5, 0.5);
   let cov = clamp(hw + 0.5 - dist, 0.0, 1.0) * min(1.0, w * u.screen.z) * alpha;
