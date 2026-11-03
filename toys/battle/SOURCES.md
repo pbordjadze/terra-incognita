@@ -43,4 +43,12 @@ What is measured, what is modelled from the accounts, what is drawn (painting-co
   swell running the way it goes), the inks (iron-gall blue-black for Rome; Tyrian purple, the Phoenician
   dye, for Carthage), the marbled chevrons where the inks meet, the stains the currents leave, the fallen
   laid into hatching. The frame is turned so the Romans face down the screen: north-east is up.
+- The ending: once Rome has almost no man standing, time slows to a stop over six seconds and, as it
+  does, the pocket is pressed together (Rome's fallen and the men ringed in with them gathered round its
+  middle, each keeping its bearing, the nearer nearer) and Hannibal's men still standing close up round
+  it, tangent to the ring, the nearer inside: a composed page, not a simulated one (the accounts tell of
+  the Romans crushed together so they could not lift their arms; the geometry is drawn). Men who got
+  away leave a short trail and fade from the page; a man who fell alone fades; the fallen take room, so
+  the living step round them. Any other ending (Carthage broken, or the day run long) is left exactly as
+  it lies.
 - The speeds, attack and morale numbers were tuned by eye (the spike's, and this round's).

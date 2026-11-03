@@ -23,6 +23,8 @@ const CG: f32 = 40.0;
 /// How much of a blow a Carthaginian takes, and of a fright (1: as the spike had it).
 const CARTHAGE_TAKES: f32 = 0.5;
 const CARTHAGE_NERVE: f32 = 0.6;
+/// The room a fallen body takes.
+const FALLEN_R: f32 = 1.9;
 /// Where the Roman commanders press: the centre.
 const RCX: f32 = 520.0;
 
@@ -84,6 +86,8 @@ pub struct Unit {
     pub state: u8,
     loosed: bool,
     pub on_ink: bool,
+    /// fleeing but ringed in: no way out
+    pub trapped: bool,
     pub fight: bool,
     hit: f32,
     /// seconds since it fell or fled (for the drawing's easing)
@@ -350,9 +354,11 @@ impl Sim {
                 }
             }
         }
+        // the fallen are binned too: they lie where they fell and the living cannot walk through
+        // them, so the dead pile into a mass the fight closes round, not over
         for (i, u) in self.units.iter().enumerate() {
             self.next[i] = -1;
-            if u.state < DEAD {
+            if u.state <= DEAD {
                 if let Some(c) = self.cell(u.x, u.y) {
                     self.next[i] = self.head[c];
                     self.head[c] = i as i32;
@@ -406,7 +412,7 @@ impl Sim {
                     let mut j = self.head[jy as usize * self.gw + jx as usize];
                     while j >= 0 {
                         let ju = j as usize;
-                        if ju != i {
+                        if ju != i && self.units[ju].state < DEAD {
                             let uj = &self.units[ju];
                             let (dx, dy) = (uj.x - x, uj.y - y);
                             let d2 = dx * dx + dy * dy;
@@ -421,8 +427,9 @@ impl Sim {
                                     }
                                 }
                             } else if uj.state == FLEEING && ui.state == FORMED {
-                                // men running inside reach: cut down once no formed foe is at hand
-                                if d2 < nfd {
+                                // men running close at hand: cut down once no formed foe is near
+                                // (no pursuit across the sheet)
+                                if d2 < 400.0 && d2 < nfd {
                                     nfd = d2;
                                     nf = j as i64;
                                 }
@@ -494,6 +501,8 @@ impl Sim {
             let (fxi, fyi) = (ui.fx, ui.fy);
             let mut loosed = loosed0;
             let mut new_state = state;
+            let trapped0 = ui.trapped;
+            let mut trapped = false;
             let mut mor = ui.mor;
             let hit = ui.hit;
             let mut taken: Option<i32> = None;
@@ -504,18 +513,20 @@ impl Sim {
                     hx /= hl;
                     hy /= hl;
                 }
-                tx = hx * 0.8;
-                ty = hy * 0.8 + if side == 1 { 0.6 } else { -0.6 };
-                sp *= if cav { 1.1 } else { 0.9 };
-                // clear of the enemy, men rally (the spike's flight was for good)
-                if en == 0 && flee == 0 {
-                    mor += 0.06 * dt;
-                    if mor > kd.morale * 0.4 {
-                        new_state = FORMED;
-                    }
+                // ringed in, there is nowhere to run: men press together where they stand, so the
+                // pocket stays a mass; with a way out they run for home, slowing as the fight falls
+                // behind, a short trail that stops (the spike's flight wandered the whole sheet)
+                let ringed = en >= 3 && (rx * rx + ry * ry).sqrt() / (en as f32) < 0.6;
+                trapped = ringed || (trapped0 && en > 0);
+                if trapped {
+                    tx = 0.0;
+                    ty = 0.0;
                 } else {
-                    mor = mor.min(0.0);
+                    tx = hx * 0.8;
+                    ty = hy * 0.8 + if side == 1 { 0.6 } else { -0.6 };
+                    sp *= if cav { 1.1 } else { 0.9 } * (-ui.since / 5.0).exp();
                 }
+                mor = mor.min(0.0);
             } else {
                 let contact = ne >= 0 && nd < if cav { 8.0 } else { 6.4 };
                 let ink = if side == 1 { self.ink_at(x, y) } else { None };
@@ -629,6 +640,7 @@ impl Sim {
             let u = &mut self.units[i];
             u.loosed = loosed;
             u.on_ink = on_ink;
+            u.trapped = trapped;
             u.fight = fight;
             u.mor = mor;
             if new_state != u.state {
@@ -717,7 +729,19 @@ impl Sim {
                         let mut j = self.head[jy as usize * self.gw + jx as usize];
                         while j >= 0 {
                             let ju = j as usize;
-                            if ju > i && self.units[ju].state < DEAD {
+                            if ju != i && self.units[ju].state == DEAD {
+                                // the fallen do not move; the living step round them
+                                let rr = ri + FALLEN_R;
+                                let dx = self.units[ju].x - self.units[i].x;
+                                let dy = self.units[ju].y - self.units[i].y;
+                                let d2 = dx * dx + dy * dy;
+                                if d2 < rr * rr && d2 > 1e-6 {
+                                    let d = d2.sqrt();
+                                    let o = (rr - d) / d * 0.5;
+                                    self.units[i].x -= dx * o;
+                                    self.units[i].y -= dy * o;
+                                }
+                            } else if ju > i && self.units[ju].state < DEAD {
                                 let rr = ri + if KINDS[self.units[ju].kind as usize].cav { 2.9 } else { 2.25 };
                                 let dx = self.units[ju].x - self.units[i].x;
                                 let dy = self.units[ju].y - self.units[i].y;

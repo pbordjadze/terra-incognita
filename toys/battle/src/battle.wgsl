@@ -211,7 +211,7 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
 
   // the paper: laid, a faint unevenness and fibres
   let day_paper = vec3f(0.937, 0.906, 0.839);
-  let night_paper = vec3f(0.075, 0.082, 0.110);
+  let night_paper = vec3f(0.105, 0.088, 0.070);
   var paper = mix(day_paper, night_paper, night);
   let blot = vnoise(px / (u.screen.z * 90.0)) * 0.6 + vnoise(px / (u.screen.z * 23.0)) * 0.4;
   let fib = vnoise(vec2f(px.x / (u.screen.z * 1.2), px.y / (u.screen.z * 9.0)) + vnoise(px / (u.screen.z * 30.0)) * 4.0);
@@ -223,7 +223,7 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   let gx = gsample(w + vec2f(e, 0.0)).x - gsample(w - vec2f(e, 0.0)).x;
   let gy = gsample(w + vec2f(0.0, e)).x - gsample(w - vec2f(0.0, e)).x;
   let shade = clamp((gx + gy) * 0.5 * 2.2, -0.6, 1.0);
-  let sepia = mix(vec3f(0.40, 0.31, 0.20), vec3f(0.62, 0.66, 0.76), night);
+  let sepia = mix(vec3f(0.40, 0.31, 0.20), vec3f(0.58, 0.50, 0.40), night);
   col = mix(col, sepia, max(shade, 0.0) * 0.16 + max(-shade, 0.0) * 0.04 * (1.0 - night));
 
   // contours every metre, every fifth firmer: on the plain the ground's breath, on the ridge hatching
@@ -234,7 +234,7 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   col = mix(col, sepia, max(minor * 0.11, major * 0.22) * mix(1.0, 0.9, night));
 
   // the Aufidus: a verdigris wash, its banks engraved, water lines echoing them outward
-  let water = mix(vec3f(0.30, 0.45, 0.42), vec3f(0.45, 0.62, 0.62), night);
+  let water = mix(vec3f(0.30, 0.45, 0.42), vec3f(0.36, 0.46, 0.44), night);
   let ard = abs(rd);
   let bank = 6.5;
   col = mix(col, mix(water, col, 0.55), (1.0 - smoothstep(bank - 0.5, bank + 0.5, ard)) * 0.5);
@@ -251,10 +251,10 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   col = mix(col, water * 0.8, inner * 0.35);
 
   // the inks
-  let rome = mix(vec3f(0.149, 0.180, 0.275), vec3f(0.74, 0.80, 0.92), night);
-  let carth = mix(vec3f(0.502, 0.133, 0.361), vec3f(0.90, 0.47, 0.75), night);
-  let quill = mix(vec3f(0.26, 0.18, 0.12), vec3f(0.86, 0.80, 0.68), night);
-  let graphite = mix(vec3f(0.28, 0.28, 0.30), vec3f(0.65, 0.66, 0.72), night);
+  let rome = mix(vec3f(0.149, 0.180, 0.275), vec3f(0.74, 0.75, 0.76), night);
+  let carth = mix(vec3f(0.502, 0.133, 0.361), vec3f(0.80, 0.46, 0.54), night);
+  let quill = mix(vec3f(0.26, 0.18, 0.12), vec3f(0.60, 0.48, 0.34), night);
+  let graphite = mix(vec3f(0.28, 0.28, 0.30), vec3f(0.52, 0.47, 0.40), night);
 
   // the paper's memory: where each current ran, where men fell
   let st = textureSampleLevel(stain_tex, lin, (w - u.world.xy) / u.world.zw, 0.0);
