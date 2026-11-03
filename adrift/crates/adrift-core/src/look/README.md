@@ -45,6 +45,17 @@ skeleton lands.
   which the stage encodes before its pass) and read between texels. `ADRIFT_PROFILE=1` times each
   pass (`profile.rs`; `adrift-check journey` prints the table). Before/after: `studies/r24-export-cuts.png`.
   The maybes bloom from the held float's place to their own as `LookState.bloom` runs 0 → 1.
+- (R25, lamps with character) A lamp is a light in glass of its own (`floats.wgsl` `lamp_kind`, by
+  its id, which `FloatInstance.id` carries): a round float with a rope at its waist and a knot at its
+  crown, a cut (octagonal) float, a lantern with its cap, bail and frame, or an onion-domed lamp with a
+  finial (neighbours by id and ids four apart never share a glass); inside, a flame of its own height
+  and width that flickers and sways at its own rate, the glass lit by it and tinted by its hue (more so
+  when small, so the hue still tells lamps apart at the whole Earth), its light breathing on its own
+  period, a faint shadow by day, and below it the light's broken path on the swell. Studies:
+  `studies/r25-*` (plans `seven-lamps.json`, `-night`; sheets by `tools/adrift/lamp_study.py`).
+  R25b, a clip's head: 1.5x (from 1.3x) so its glass reads full-frame, its glass nearer its hue, its
+  flame a quarter larger, its glint smaller; the light's path on the water a little stronger by day
+  (`studies/r25b-*`: after tiktok.sh at 4 s, day then night, each R24 | R25 | R25b).
 - `Look::date_bounds()` is where the date was drawn (points), the one drawn thing that is also a
   control: Motion's scrub and pause probe it through the app. `LookState.resting` takes Motion's
   `Press { at, since }` as `(at, thicken(now - since))`.
