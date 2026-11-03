@@ -16,8 +16,8 @@ use sim::{Sim, DEAD, FLEEING, FORMED, GONE, KINDS};
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 
 /// The battle's box (world units) that the view keeps whole on any screen.
-const BOX_C: [f32; 2] = [530.0, 455.0];
-const BOX: [f32; 2] = [600.0, 560.0];
+const BOX_C: [f32; 2] = [528.0, 470.0];
+const BOX: [f32; 2] = [570.0, 540.0];
 /// Sim seconds a second, and while a finger draws (the day slows under the pen).
 const PACE: f32 = 1.6;
 const PACE_DRAWING: f32 = 0.6;
@@ -31,10 +31,9 @@ const ICELL: f32 = 8.0;
 const SCELL: f32 = 2.0;
 const MAX_SEGS: usize = 8192;
 /// Seconds from the day's decision to the still page.
-const SETTLE: f64 = 6.0;
-/// Room a man takes in the pressed pocket, and in the ring that closes round it (units²).
-const CORE_AREA: f32 = 9.0;
-const RING_AREA: f32 = 21.0;
+const SETTLE: f64 = 3.0;
+/// Seconds from the decision until nothing moves.
+const FREEZE: f64 = 1.5;
 /// The pen combs the cuts this near its passage (units), for this long (s).
 const COMB_R: f32 = 56.0;
 const COMB_LIFE: f32 = 3.0;
@@ -129,10 +128,11 @@ pub struct Battle {
     tmp: Vec<f32>,
     tmp3: Vec<V3>,
     /// once a side has no man standing: where it fell (its fallen's middle), per side
-    fallen_at: [Option<[f32; 2]>; 2],
     decided_at: Option<f64>,
-    /// the victors' re-forming round the pocket: unit, from, to
-    ring: Vec<(usize, f32, f32, f32, f32)>,
+    next_judge: f64,
+    /// the camera: px a unit and the world point at the screen's middle, eased toward the fight
+    cam: Option<(f32, [f32; 2])>,
+    last_touch: f64,
     initial: [u32; 2],
     dead: Vec<f32>,
     deaths_drawn: usize,
@@ -257,19 +257,86 @@ impl Battle {
         })
     }
 
-    /// Pixels a world unit, and where the world's origin lies on screen (px).
-    fn view(ctx: &Ctx) -> (f32, [f32; 2]) {
+    /// The opening framing: the deployment's box kept whole (points a unit).
+    fn box_scale(ctx: &Ctx) -> f32 {
         let [wp, hp] = ctx.points();
-        let s_pt = ((wp as f32) / BOX[0]).min((hp as f32) / BOX[1]);
-        let s = s_pt * ctx.ppp as f32;
-        let (w, h) = (ctx.width as f32, ctx.height as f32);
-        (s, [w * 0.5 - BOX_C[0] * s, h * 0.5 - BOX_C[1] * s])
+        ((wp as f32) / BOX[0]).min((hp as f32) / BOX[1])
     }
 
-    fn to_world(ctx: &Ctx, x: f64, y: f64) -> (f32, f32) {
-        let (s, o) = Self::view(ctx);
+    /// Pixels a world unit, and where the world's origin lies on screen (px): the camera, which
+    /// opens on the deployment and eases in on the fight.
+    fn view(&self, ctx: &Ctx) -> (f32, [f32; 2]) {
+        let (s_pt, c) = self.cam.unwrap_or((Self::box_scale(ctx), BOX_C));
+        let s = s_pt * ctx.ppp as f32;
+        let (w, h) = (ctx.width as f32, ctx.height as f32);
+        (s, [w * 0.5 - c[0] * s, h * 0.5 - c[1] * s])
+    }
+
+    fn to_world(&self, ctx: &Ctx, x: f64, y: f64) -> (f32, f32) {
+        let (s, o) = self.view(ctx);
         let p = ctx.ppp as f32;
         ((x as f32 * p - o[0]) / s, (y as f32 * p - o[1]) / s)
+    }
+
+    /// The camera follows the fight once the pen has rested a moment: the armies (and where they
+    /// fell) kept at most of the frame, never further out than the opening, slowly.
+    fn follow(&mut self, ctx: &Ctx, dt: f32) {
+        let base = Self::box_scale(ctx);
+        let cur = self.cam.unwrap_or((base, BOX_C));
+        if !self.sim.started || !self.touches.is_empty() || self.clock - self.last_touch < 2.5 {
+            self.cam = Some(cur);
+            return;
+        }
+        let (mut xs, mut ys): (Vec<f32>, Vec<f32>) = (vec![], vec![]);
+        for u in &self.sim.units {
+            // the fight: men moving or fallen or ringed in; reserves standing idle are not framed
+            let idle = u.state == FORMED && u.vx * u.vx + u.vy * u.vy < 2.0;
+            if u.state == GONE || (u.state == FLEEING && !u.trapped) || idle {
+                continue;
+            }
+            xs.push(u.x);
+            ys.push(u.y);
+        }
+        if xs.len() < 20 {
+            return;
+        }
+        xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let q = |v: &Vec<f32>, f: f32| v[((v.len() - 1) as f32 * f) as usize];
+        let (x0, x1, y0, y1) = (q(&xs, 0.04), q(&xs, 0.96), q(&ys, 0.04), q(&ys, 0.96));
+        let (bw, bh) = (x1 - x0 + 60.0, y1 - y0 + 60.0);
+        let [wp, hp] = ctx.points();
+        let target = ((1.0 * wp as f32) / bw).min((0.8 * hp as f32) / bh).clamp(base, base * 2.2);
+        let tc = [(x0 + x1) * 0.5, (y0 + y1) * 0.5];
+        let k = 1.0 - (-dt * 0.45).exp();
+        let s = (cur.0.ln() + (target.ln() - cur.0.ln()) * k).exp();
+        self.cam = Some((s, [cur.1[0] + (tc[0] - cur.1[0]) * k, cur.1[1] + (tc[1] - cur.1[1]) * k]));
+    }
+
+    /// Whether Hannibal's men stand all round Rome's standing mass.
+    fn encircled(&self) -> bool {
+        let rome: Vec<[f32; 2]> = self.sim.units.iter().filter(|u| u.state == FORMED && KINDS[u.kind as usize].side == 0).map(|u| [u.x, u.y]).collect();
+        if rome.len() < 30 {
+            return false;
+        }
+        let n = rome.len() as f32;
+        let c = [rome.iter().map(|p| p[0]).sum::<f32>() / n, rome.iter().map(|p| p[1]).sum::<f32>() / n];
+        let mut d: Vec<f32> = rome.iter().map(|p| ((p[0] - c[0]).powi(2) + (p[1] - c[1]).powi(2)).sqrt()).collect();
+        d.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let r85 = d[(d.len() as f32 * 0.85) as usize];
+        let r = r85 + 40.0;
+        let inner = r85 * 0.6;
+        const BINS: usize = 24;
+        let mut seen = [false; BINS];
+        for u in self.sim.units.iter().filter(|u| u.state == FORMED && KINDS[u.kind as usize].side == 1) {
+            let (dx, dy) = (u.x - c[0], u.y - c[1]);
+            // round it, not in it: a column driven into the middle closes nothing
+            if dx * dx + dy * dy < r * r && dx * dx + dy * dy > inner * inner {
+                let b = ((dy.atan2(dx) + std::f32::consts::PI) / std::f32::consts::TAU * BINS as f32) as usize;
+                seen[b.min(BINS - 1)] = true;
+            }
+        }
+        seen.iter().filter(|&&b| b).count() as f32 / BINS as f32 >= 0.85
     }
 
     fn fresh_page(&mut self) {
@@ -280,120 +347,14 @@ impl Battle {
         self.drops.clear();
         self.comb.clear();
         self.deaths_drawn = 0;
-        self.fallen_at = [None, None];
         self.decided_at = None;
-        self.ring.clear();
+        self.cam = None;
         self.count_initial();
         self.pending_dots.clear();
         self.clear_stain = true;
         self.page_t = self.clock;
         for t in self.touches.iter_mut() {
             t.stroke = None;
-        }
-    }
-
-    /// When Rome is beaten in a pocket, Hannibal's men still standing close up round it: each keeps
-    /// its bearing from the pocket's middle and steps to a ring just outside the fallen mass, the
-    /// nearer men on the inside, so where they stood all round, a closed ring; where they stood on
-    /// one side, an arc there. (Victors re-forming; nothing is placed where no man stood.)
-    fn plan_ring(&mut self, c: [f32; 2]) {
-        use std::f32::consts::{PI, TAU};
-        // the pocket: Rome's fallen and the men ringed in with them, pressed together round its
-        // middle, each keeping its bearing, the nearer nearer: a dense mass
-        let mut core: Vec<(usize, f32, f32)> = self
-            .sim
-            .units
-            .iter()
-            .enumerate()
-            .filter(|(_, u)| KINDS[u.kind as usize].side == 0 && (u.state == DEAD || u.state == FORMED || (u.state == FLEEING && u.trapped)))
-            .map(|(i, u)| {
-                let (dx, dy) = (u.x - c[0], u.y - c[1]);
-                (i, (dx * dx + dy * dy).sqrt(), dy.atan2(dx))
-            })
-            .collect();
-        if core.is_empty() {
-            return;
-        }
-        let n = core.len() as f32;
-        let r_core = (n * CORE_AREA / PI).sqrt();
-        let mut rank = vec![0usize; core.len()];
-        let mut by_d: Vec<usize> = (0..core.len()).collect();
-        by_d.sort_by(|&a, &b| core[a].1.partial_cmp(&core[b].1).unwrap());
-        for (k, &ix) in by_d.iter().enumerate() {
-            rank[ix] = k;
-        }
-        core.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
-        let mut rank2 = vec![0usize; core.len()];
-        {
-            let mut by_d: Vec<usize> = (0..core.len()).collect();
-            by_d.sort_by(|&a, &b| core[a].1.partial_cmp(&core[b].1).unwrap());
-            for (k, &ix) in by_d.iter().enumerate() {
-                rank2[ix] = k;
-            }
-        }
-        let _ = rank;
-        for (k, &(i, _, _)) in core.iter().enumerate() {
-            // bearing by the order round, radius by nearness: an even, full mass
-            let th = -PI + (k as f32 + 0.5) / n * TAU + (self.sim.units[i].j - 0.5) * 0.05;
-            let r = r_core * ((rank2[k] as f32 + 0.5) / n).sqrt();
-            let u = &self.sim.units[i];
-            self.ring.push((i, u.x, u.y, c[0] + r * th.cos(), c[1] + r * th.sin()));
-        }
-        // Hannibal's men close up round it, the nearer on the inside: all round it if they stood
-        // all round it (then evenly round, in the order they stood), else an arc where they stood
-        let r0 = r_core - 1.5;
-        let mut men: Vec<(usize, f32, f32)> = self
-            .sim
-            .units
-            .iter()
-            .enumerate()
-            .filter(|(_, u)| KINDS[u.kind as usize].side == 1 && u.state == FORMED)
-            .map(|(i, u)| {
-                let (dx, dy) = (u.x - c[0], u.y - c[1]);
-                (i, (dx * dx + dy * dy).sqrt(), dy.atan2(dx))
-            })
-            .filter(|m| m.1 < 260.0)
-            .collect();
-        if men.is_empty() {
-            return;
-        }
-        const BINS: usize = 36;
-        let mut seen = [false; BINS];
-        for m in &men {
-            seen[(((m.2 + PI) / TAU * BINS as f32) as usize).min(BINS - 1)] = true;
-        }
-        let round = seen.iter().filter(|&&b| b).count() as f32 / BINS as f32 > 0.7;
-        if round {
-            men.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
-            let m = men.len() as f32;
-            let r1 = (r0 * r0 + m * RING_AREA / PI).sqrt();
-            // spread over the annulus: bearing by order round, radius by nearness
-            let mut by_d: Vec<usize> = (0..men.len()).collect();
-            by_d.sort_by(|&a, &b| men[a].1.partial_cmp(&men[b].1).unwrap());
-            let mut rank = vec![0usize; men.len()];
-            for (k, &ix) in by_d.iter().enumerate() {
-                rank[ix] = k;
-            }
-            for (k, &(i, _, _)) in men.iter().enumerate() {
-                let a = -PI + (k as f32 + 0.5) / m * TAU;
-                let f = (rank[k] as f32 + 0.5) / m;
-                let r = (r0 * r0 + f * (r1 * r1 - r0 * r0)).sqrt();
-                let u = &self.sim.units[i];
-                self.ring.push((i, u.x, u.y, c[0] + r * a.cos(), c[1] + r * a.sin()));
-            }
-        } else {
-            men.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-            let mut filled = [0usize; BINS];
-            let wedge = TAU / BINS as f32;
-            for (i, _d, th) in men {
-                let b = (((th + PI) / TAU * BINS as f32) as usize).min(BINS - 1);
-                let k = filled[b] as f32;
-                filled[b] += 1;
-                let r = (r0 * r0 + 2.0 * k * RING_AREA / wedge).sqrt();
-                let a = th + (self.sim.units[i].j - 0.5) * wedge * 0.8;
-                let u = &self.sim.units[i];
-                self.ring.push((i, u.x, u.y, c[0] + r * a.cos(), c[1] + r * a.sin()));
-            }
         }
     }
 
@@ -522,26 +483,11 @@ impl Battle {
                     rate = 9.0;
                 }
             }
-            if let Some(c) = self.fallen_at[1 - s] {
-                // the day decided: Hannibal's men, ringing the fallen, comb round the ring they
-                // closed (tangent to it, each the way it already leans); a winning Rome stands as it is
+            if self.decided_at.is_some() {
+                // the day decided: every cut keeps the way it last lay
                 let lk = self.looks[i];
-                if s == 1 {
-                    let (dx, dy) = (u.x - c[0], u.y - c[1]);
-                    let l = (dx * dx + dy * dy).sqrt().max(1e-3);
-                    let tg = [-dy / l, dx / l];
-                    let sg = if tg[0] * lk.dx + tg[1] * lk.dy >= 0.0 { 1.0 } else { -1.0 };
-                    t = [tg[0] * sg, tg[1] * sg];
-                    rate = 1.6;
-                } else {
-                    t = [lk.dx, lk.dy];
-                }
-            } else if let Some(c) = self.fallen_at[s] {
-                // Rome's last men, pressed in the pocket, face out at the ring
-                let (dx, dy) = (u.x - c[0], u.y - c[1]);
-                let l = (dx * dx + dy * dy).sqrt().max(1e-3);
-                t = [dx / l, dy / l];
-                rate = 1.6;
+                t = [lk.dx, lk.dy];
+                rate = 0.0;
             }
             if !self.comb.is_empty() {
                 let mut c = [0.0f32; 3];
@@ -564,6 +510,10 @@ impl Battle {
                     rate = rate.max(14.0 * k);
                 }
             }
+            // each cut a hand's, a little off true
+            let wob = (u.j - 0.5) * 0.28;
+            let (cw, sw) = (wob.cos(), wob.sin());
+            let t = [t[0] * cw - t[1] * sw, t[0] * sw + t[1] * cw];
             let l = (t[0] * t[0] + t[1] * t[1]).sqrt();
             let (tx, ty) = if l > 0.2 { (t[0] / l, t[1] / l) } else { (u.fx, u.fy) };
             let lk = &mut self.looks[i];
@@ -645,10 +595,6 @@ impl Battle {
                     let lone = 0.12 + 0.13 * settle;
                     let a = ((crowd - lone) / 0.3).clamp(0.0, 1.0);
                     alpha = 0.95 * (1.0 - k + k * a * a * (3.0 - 2.0 * a));
-                    // the victors' own fallen, lying among Rome's, leave the page as it settles
-                    if kd.side == 1 && self.fallen_at[0].is_some() {
-                        alpha *= 1.0 - settle;
-                    }
                     if alpha < 0.02 {
                         continue;
                     }
@@ -886,9 +832,10 @@ impl Toy for Battle {
             intent: [vec![V3::default(); iw * ih], vec![V3::default(); iw * ih]],
             tmp: vec![],
             tmp3: vec![],
-            fallen_at: [None, None],
             decided_at: None,
-            ring: vec![],
+            next_judge: 0.0,
+            cam: None,
+            last_touch: -10.0,
             initial: [0, 0],
             dead: vec![0.0; dw * dh],
             deaths_drawn: 0,
@@ -925,6 +872,7 @@ impl Toy for Battle {
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
+        self.last_touch = self.clock;
         match e.phase {
             Phase::Down => {
                 self.touches.push(Touch { id: e.id, x: e.x, y: e.y, seen: self.clock, moved: false, stroke: None, reset: false });
@@ -935,11 +883,11 @@ impl Toy for Battle {
                 if !self.touches[k].moved && ((e.x - x0).powi(2) + (e.y - y0).powi(2)).sqrt() > 6.0 && !self.touches[k].reset {
                     self.touches[k].moved = true;
                     self.start();
-                    let (wx, wy) = Self::to_world(ctx, x0, y0);
+                    let (wx, wy) = self.to_world(ctx, x0, y0);
                     self.touches[k].stroke = Some(self.sim.begin_stroke(wx, wy));
                 }
                 if let Some(s) = self.touches[k].stroke {
-                    let (wx, wy) = Self::to_world(ctx, e.x, e.y);
+                    let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     let before = self.sim.strokes[s].pts.len();
                     self.sim.extend_stroke(s, wx, wy);
                     let pts = &self.sim.strokes[s].pts;
@@ -954,12 +902,12 @@ impl Toy for Battle {
                 let Some(k) = self.touches.iter().position(|t| t.id == e.id) else { return };
                 let t = self.touches.remove(k);
                 if let Some(s) = t.stroke {
-                    let (wx, wy) = Self::to_world(ctx, e.x, e.y);
+                    let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     self.sim.extend_stroke(s, wx, wy);
                     self.sim.end_stroke(s);
                 } else if !t.moved && !t.reset && e.phase == Phase::Up {
                     // a tap: a drop of ink spreads its ring through the men
-                    let (wx, wy) = Self::to_world(ctx, t.x, t.y);
+                    let (wx, wy) = self.to_world(ctx, t.x, t.y);
                     self.start();
                     self.sim.pulse(wx, wy);
                     self.drops.push((wx, wy, self.clock));
@@ -992,7 +940,7 @@ impl Toy for Battle {
         if let Some(d) = self.decided_at {
             // the pocket's own settling carries the page from here; the fight itself stops at
             // once (so no man falls outside the pocket after it is drawn), the rest within a beat
-            pace *= if self.fallen_at[0].is_some() { 0.0 } else { (1.0 - ((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0) };
+            pace *= (1.0 - ((self.clock - d) / FREEZE) as f32).clamp(0.0, 1.0);
         }
         self.acc += dt as f32 * pace;
         let before: Vec<u32> = self.sim.strokes.iter().map(|s| s.carried).collect();
@@ -1011,53 +959,23 @@ impl Toy for Battle {
         if self.sim.strokes.iter().zip(before.iter()).any(|(s, b)| *b == 0 && s.carried > 0) {
             ctx.haptic();
         }
-        // the day decided: one army has (almost) no man standing, or it has gone on long enough;
-        // then time slows to a stop and the page is left as it lies
-        if self.sim.started && n > 0 && self.decided_at.is_none() {
+        // the day decided, and the page freezes where it happened: the moment Hannibal's men close
+        // all round Rome's standing mass, or one army is broken, or the day has run long
+        if self.sim.started && n > 0 && self.decided_at.is_none() && self.clock >= self.next_judge {
+            self.next_judge = self.clock + 0.5;
             let c = self.sim.census();
-            let (r0, c0) = (self.initial[0].max(1) as f32, self.initial[1].max(1) as f32);
-            let rome = c[0][0] as f32 / r0;
-            let carth = c[1][0] as f32 / c0;
-            if rome < 0.06 || carth < 0.12 || self.sim.time > 80.0 {
+            let rome = c[0][0] as f32 / self.initial[0].max(1) as f32;
+            let carth = c[1][0] as f32 / self.initial[1].max(1) as f32;
+            let ringed = c[0][1] + c[0][2] > self.initial[0] / 6 && self.encircled();
+            if ringed || rome < 0.4 || carth < 0.3 || self.sim.time > 75.0 {
                 self.decided_at = Some(self.clock);
-                let pocket = rome < 0.06;
                 if std::env::var("BATTLE_CENSUS").is_ok() {
-                    eprintln!("decided at sim {:.1}: rome {:?} carthage {:?}", self.sim.time, c[0], c[1]);
-                }
-                // a pocket closes round a beaten Rome; any other ending (Carthage broken, or the day
-                // run long) is left exactly as it lies
-                let loser = if pocket { 0 } else { 2 };
-                let (mut sx, mut sy, mut k) = (0.0f32, 0.0f32, 0.0f32);
-                for u in self.sim.units.iter().filter(|_| loser < 2) {
-                    if KINDS[u.kind as usize].side as usize == loser && (u.state == DEAD || (u.state == FLEEING && u.trapped)) {
-                        sx += u.x;
-                        sy += u.y;
-                        k += 1.0;
-                    }
-                }
-                if k > 0.0 {
-                    let c = [sx / k, sy / k];
-                    self.fallen_at[loser] = Some(c);
-                    if loser == 0 {
-                        self.plan_ring(c);
-                    }
-                }
-            }
-        }
-        if let Some(d) = self.decided_at {
-            let p = (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0);
-            let e = p * p * (3.0 - 2.0 * p);
-            for &(i, sx, sy, tx, ty) in &self.ring {
-                let u = &mut self.sim.units[i];
-                {
-                    u.x = sx + (tx - sx) * e;
-                    u.y = sy + (ty - sy) * e;
-                    u.vx *= 0.9;
-                    u.vy *= 0.9;
+                    eprintln!("decided at sim {:.1} (ringed {ringed}): rome {:?} carthage {:?}", self.sim.time, c[0], c[1]);
                 }
             }
         }
         let t1 = t0.elapsed().as_secs_f64() * 1e3;
+        self.follow(ctx, dt as f32);
         let now32 = self.clock as f32;
         self.comb.retain(|p| now32 - p[4] < COMB_LIFE);
         // the pen rakes: Hannibal's men under its fresh passage are drawn along it at once
@@ -1091,7 +1009,7 @@ impl Toy for Battle {
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
-        let (s, o) = Self::view(ctx);
+        let (s, o) = self.view(ctx);
         let fade = ((self.clock - self.page_t) / 1.2).clamp(0.0, 1.0) as f32;
         let un = Uniform {
             screen: [ctx.width as f32, ctx.height as f32, ctx.ppp as f32, s],
@@ -1107,16 +1025,20 @@ impl Toy for Battle {
         self.n_cuts = cuts.len() as u32;
         q.write_buffer(&self.cuts, 0, bytemuck::cast_slice(&cuts));
         // the finger's strokes, the drops, the ghost
-        let mut segs: Vec<Seg> = self.ghost.clone();
+        // the real day's ghost lies faint under the fight and lifts once the day is decided, to set
+        // beside the plan; the pen's strokes dry to faint channels
+        let settle = self.decided_at.map_or(0.0, |d| (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0));
+        let mut segs: Vec<Seg> = self.ghost.iter().map(|g| Seg { ka: [g.ka[0], 0.15 + 0.32 * settle, 0.0, 0.0], ..*g }).collect();
         let t = self.sim.time;
         for st in &self.sim.strokes {
             let age = t - st.born;
-            let alpha = 0.32 + 0.4 * (-age / 20.0).exp();
+            let alpha = (0.32 + 0.4 * (-age / 20.0).exp()) * (1.0 - 0.45 * settle);
+            let flow = 40.0 * (1.0 - settle);
             for w in st.pts.windows(2) {
                 if segs.len() >= MAX_SEGS - 64 {
                     break;
                 }
-                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9, 40.0], ka: [0.0, alpha, 0.0, 0.0] });
+                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9, flow], ka: [0.0, alpha, 0.0, 0.0] });
             }
             if st.done {
                 let e = st.pts.last().unwrap();
@@ -1126,8 +1048,10 @@ impl Toy for Battle {
         }
         for &(x, y, born) in &self.drops {
             let age = (self.clock - born) as f32;
-            let r = 3.0 + (age * 2.0).min(2.5);
-            segs.push(Seg { ab: [x, y, x, y], sw: [100.0, 100.0, r, 0.0], ka: [0.0, 0.85 * (-age / 30.0).exp().max(0.35), 0.0, 0.0] });
+            // a drop blooms into the paper and dries: it spreads, paling, then stays a faint mark
+            let k = 1.0 - (-age / 0.9).exp();
+            let r = 2.5 + 11.0 * k;
+            segs.push(Seg { ab: [x, y, x, y], sw: [100.0, 100.0, r, 0.0], ka: [0.0, 0.7 - 0.56 * k, 0.0, 0.0] });
         }
         self.n_segs = segs.len().min(MAX_SEGS) as u32;
         q.write_buffer(&self.segs, 0, bytemuck::cast_slice(&segs[..self.n_segs as usize]));
