@@ -22,6 +22,7 @@ Build and check on Linux (about two seconds a render on the software driver):
     python3 tools/adrift/assets.py adrift/build/assets --link
     cd adrift && cargo run -p adrift-check -- render crates/adrift-check/scenes/atlantic.json build/out/a.png --size 1179x2556 --ppp 3
     cargo run -p adrift-check -- play crates/adrift-check/plans/put-and-drift.json build/out/put
+    cargo run --release -p adrift-check -- play-all crates/adrift-check/plans crates/adrift-core/src/touch/plans build/out/plays   # every plan, one process, N at a time
 
 The web build: `bash tools/adrift/web-build.sh` (a directory for any static server; WebGPU: Safari
 26, Chrome, Edge). The device: `adrift/ios/build.sh` on a Mac, or `[adrift-ipa]` in a branch commit's

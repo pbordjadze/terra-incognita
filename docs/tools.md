@@ -222,3 +222,9 @@ retirement (row 195) the packs named below are at `before-retirement-2026-10-31`
 - **Not duplicates:** the glint drawn in Python for packs and in Swift for natives (one recipe, two
   hosts); `check.cjs` (any pack, fixed shots) beside `alive_check.cjs` (one pack's behaviour asserted);
   `tools/clouds/compose.py`, already shared by the clouds' and the ocean's looks.
+
+## The engine's apps: the kit and shared tooling
+
+| Tool | What it does | Run | Users |
+| --- | --- | --- | --- |
+| adrift-check play-all | every plan in one process, N at a time: one device and the assets' bytes shared, each plan its own App, so each plays exactly as `play` would (`tools/adrift/play_all_same.sh` proves it); `<out>/<name>.log` and `<out>/<name>/` a plan, `ok`/`FAIL` a line | `adrift-check play-all <plan-or-dir>... <out-dir> [-j N]` | `tools/adrift/touch-play.sh`, `gpu-runner.sh` |

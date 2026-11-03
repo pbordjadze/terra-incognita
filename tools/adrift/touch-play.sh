@@ -1,21 +1,17 @@
 #!/usr/bin/env bash
 # Plays every touch plan (adrift/crates/adrift-core/src/touch/plans/*.json) on the real globe with
-# adrift-check and reports which passed their expectations. Minutes on Linux's software Vulkan.
+# adrift-check and reports which passed their expectations: one process (`play-all`), the plans
+# N at a time, each one's lines in <out-dir>/<name>.log and its shots in <out-dir>/<name>/.
+# Minutes on Linux's software Vulkan.
 #
-#     bash tools/adrift/touch-play.sh [out-dir]      # default adrift/build/out/motion
+#     bash tools/adrift/touch-play.sh [out-dir] [-j N]   # default adrift/build/out/motion, N the cores (at most 4)
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 OUT=${1:-adrift/build/out/motion}
+shift || true
 mkdir -p "$OUT"
+case "$OUT" in /*) ;; *) OUT="../$OUT" ;; esac   # as adrift/ sees it
 python3 tools/adrift/assets.py adrift/build/assets --link > /dev/null
 (cd adrift && cargo build -q -p adrift-check)
-status=0
-for plan in adrift/crates/adrift-core/src/touch/plans/*.json; do
-  name=$(basename "$plan" .json)
-  if (cd adrift && ./target/debug/adrift-check play "../$plan" "../$OUT/$name" > "../$OUT/$name.log" 2>&1); then
-    echo "ok   $name"
-  else
-    echo "FAIL $name"; grep -h "EXPECT FAILED\|rror" "$OUT/$name.log" | head -5 | sed 's/^/     /'; status=1
-  fi
-done
-exit $status
+# prints `ok   <name>`, or `FAIL <name>` and its first failing lines; non-zero if any failed
+cd adrift && ./target/debug/adrift-check play-all crates/adrift-core/src/touch/plans "$OUT" "$@"
