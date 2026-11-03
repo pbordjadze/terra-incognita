@@ -4,17 +4,69 @@
   "fps": 30,
   "audio": true,
   "events": [
-    { "t": 3.0, "tap": [180, 325] },
-    { "t": 10.0, "drag": [[200, 600], [120, 520]], "for": 0.7 },
-    { "t": 13.0, "pinch": [[150, 430], [250, 430]], "to": 0.6, "for": 0.6 }
+    {
+      "t": 3.0,
+      "tap": "humpback"
+    },
+    {
+      "t": 10.0,
+      "drag": [
+        [
+          200,
+          600
+        ],
+        [
+          120,
+          520
+        ]
+      ],
+      "for": 0.7
+    },
+    {
+      "t": 13.0,
+      "pinch": [
+        [
+          150,
+          430
+        ],
+        [
+          250,
+          430
+        ]
+      ],
+      "to": 0.6,
+      "for": 0.6
+    }
   ],
   "shots": [
-    { "t": 2.5, "name": "before" },
-    { "t": 5.0, "name": "following-humpback" },
-    { "t": 9.0, "name": "following-later" },
-    { "t": 12.0, "name": "dragged" },
-    { "t": 15.0, "name": "pinched" },
-    { "t": 33.0, "name": "back-to-both" }
+    {
+      "t": 2.5,
+      "name": "before"
+    },
+    {
+      "t": 5.0,
+      "name": "following-humpback"
+    },
+    {
+      "t": 9.0,
+      "name": "following-later"
+    },
+    {
+      "t": 12.0,
+      "name": "dragged"
+    },
+    {
+      "t": 15.0,
+      "name": "pinched"
+    },
+    {
+      "t": 33.0,
+      "name": "back-to-both"
+    }
   ],
-  "film": { "from": 2, "to": 12, "every": 0.1 }
+  "film": {
+    "from": 2,
+    "to": 12,
+    "every": 0.1
+  }
 }

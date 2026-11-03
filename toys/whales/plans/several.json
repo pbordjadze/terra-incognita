@@ -4,19 +4,86 @@
   "fps": 30,
   "audio": true,
   "events": [
-    { "t": 1.5, "tap": [70, 330] },
-    { "t": 3.0, "tap": [110, 600] },
-    { "t": 4.5, "tap": [220, 700] },
-    { "t": 6.0, "tap": [340, 640] },
-    { "t": 14.0, "tap": [58, 303] },
-    { "t": 19.0, "tap": [200, 800] }
+    {
+      "t": 1.5,
+      "tap": {
+        "lonlat": [
+          -128,
+          35
+        ]
+      }
+    },
+    {
+      "t": 3.0,
+      "tap": {
+        "lonlat": [
+          -124,
+          28
+        ]
+      }
+    },
+    {
+      "t": 4.5,
+      "tap": {
+        "lonlat": [
+          -119,
+          24
+        ]
+      }
+    },
+    {
+      "t": 6.0,
+      "tap": {
+        "lonlat": [
+          -113,
+          20
+        ]
+      }
+    },
+    {
+      "t": 14.0,
+      "tap": {
+        "lonlat": [
+          -128,
+          35
+        ]
+      }
+    },
+    {
+      "t": 19.0,
+      "tap": {
+        "lonlat": [
+          -121,
+          18
+        ]
+      }
+    }
   ],
   "shots": [
-    { "t": 7.0, "name": "four-down" },
-    { "t": 10.0, "name": "arrivals" },
-    { "t": 15.0, "name": "listening-at-the-first" },
-    { "t": 19.6, "name": "fifth-lifts-oldest" },
-    { "t": 22.0, "name": "later" }
+    {
+      "t": 7.0,
+      "name": "four-down"
+    },
+    {
+      "t": 10.0,
+      "name": "arrivals"
+    },
+    {
+      "t": 15.0,
+      "name": "listening-at-the-first"
+    },
+    {
+      "t": 19.6,
+      "name": "fifth-lifts-oldest"
+    },
+    {
+      "t": 22.0,
+      "name": "later"
+    }
   ],
-  "film": { "from": 6, "to": 14, "every": 0.1 }
+  "film": {
+    "from": 6,
+    "to": 14,
+    "every": 0.1
+  }
 }

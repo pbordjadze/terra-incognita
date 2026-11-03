@@ -4,18 +4,76 @@
   "fps": 30,
   "audio": true,
   "events": [
-    { "t": 2.0, "tap": [110, 640] },
-    { "t": 9.0, "tap": [320, 200] },
-    { "t": 13.0, "tap": [255, 520] },
-    { "t": 20.0, "pinch": [[200, 450], [280, 450]], "to": 5.0, "for": 1.0 }
+    {
+      "t": 2.0,
+      "tap": {
+        "lonlat": [
+          -126,
+          27
+        ]
+      }
+    },
+    {
+      "t": 9.0,
+      "tap": {
+        "lonlat": [
+          -114,
+          39
+        ]
+      }
+    },
+    {
+      "t": 13.0,
+      "tap": [
+        255,
+        520
+      ]
+    },
+    {
+      "t": 20.0,
+      "pinch": [
+        [
+          200,
+          450
+        ],
+        [
+          280,
+          450
+        ]
+      ],
+      "to": 5.0,
+      "for": 1.0
+    }
   ],
   "shots": [
-    { "t": 1.5, "name": "before" },
-    { "t": 3.2, "name": "ear-open-sea" },
-    { "t": 6.0, "name": "ear-ring-passing" },
-    { "t": 9.6, "name": "land-silence" },
-    { "t": 15.0, "name": "ear-near-blue" },
-    { "t": 22.0, "name": "pinched-in" }
+    {
+      "t": 1.5,
+      "name": "before"
+    },
+    {
+      "t": 3.2,
+      "name": "ear-open-sea"
+    },
+    {
+      "t": 6.0,
+      "name": "ear-ring-passing"
+    },
+    {
+      "t": 9.6,
+      "name": "land-silence"
+    },
+    {
+      "t": 15.0,
+      "name": "ear-near-blue"
+    },
+    {
+      "t": 22.0,
+      "name": "pinched-in"
+    }
   ],
-  "film": { "from": 1, "to": 16, "every": 0.1 }
+  "film": {
+    "from": 1,
+    "to": 16,
+    "every": 0.1
+  }
 }

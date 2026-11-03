@@ -557,6 +557,20 @@ impl Toy for Whales {
         self.reduce_motion = ctx.reduce_motion;
     }
 
+    /// The whales by name, for a plan's `"tap": "humpback"` (check.rs).
+    fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        (0..2)
+            .filter_map(|i| {
+                let (p, f) = self.whale_on_screen(i);
+                (f > 0.0).then(|| (["humpback", "blue"][i].to_string(), p))
+            })
+            .collect()
+    }
+
+    fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        self.globe.point(lonlat)
+    }
+
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
         self.choir.take().map(|c| Box::new(c) as Box<dyn Synth>)
     }
