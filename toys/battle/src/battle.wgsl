@@ -12,7 +12,7 @@ struct U {
   off: vec4f,     // world origin on screen (px), seconds, night 0..1
   world: vec4f,   // the world sheets' rect: x0, y0, width, height (units)
   ground: vec4f,  // the ground's rect: x0, y0, width, height (units)
-  misc: vec4f,    // reduce motion, the page's fade-in, 0, 0
+  misc: vec4f,    // reduce motion, the page's fade-in, the cuts' width scale, 0
 };
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -55,7 +55,8 @@ fn vs_cut(@builtin(vertex_index) vi: u32, @location(0) a: vec4f, @location(1) b:
   let nn = vec2f(-tan.y, tan.x);
   // tapered at both ends, swelling where the current's pulse is
   let swell = 0.55 + 0.45 * cos(6.2831853 * (t - b.w));
-  let w_pt = b.y * pow(max(sin(3.14159265 * t), 0.0), 0.7) * swell;
+  // a cut's width grows a little with the view's scale, so a closer view is not hairlines
+  let w_pt = b.y * u.misc.z * pow(max(sin(3.14159265 * t), 0.0), 0.7) * swell;
   let hw = max(w_pt * u.screen.z * 0.5, 0.0);
   let ext = hw + 1.0;
   var o: CutOut;

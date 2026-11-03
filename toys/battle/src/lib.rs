@@ -880,7 +880,7 @@ impl Toy for Battle {
             off: [o[0], o[1], self.clock as f32, if ctx.night { 1.0 } else { 0.0 }],
             world: [sim::WX0, sim::WY0, sim::WX1 - sim::WX0, sim::WY1 - sim::WY0],
             ground: self.ground_rect,
-            misc: [if ctx.reduce_motion { 1.0 } else { 0.0 }, fade, 0.0, 0.0],
+            misc: [if ctx.reduce_motion { 1.0 } else { 0.0 }, fade, (s / ctx.ppp as f32 / 0.63).sqrt().clamp(1.0, 1.8), 0.0],
         };
         let q = &ctx.gpu.queue;
         q.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&un));
