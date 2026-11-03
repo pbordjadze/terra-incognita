@@ -1,0 +1,19 @@
+{
+  "_": "Close in: the network over Italy and the Alps pinched in about six times, then a flake fed by the Po; the tubes should stay thin streaming veins, never the field's cells.",
+  "seconds": 24,
+  "fps": 30,
+  "night": true,
+  "events": [
+    { "t": 9.0, "pinch": [[150, 400], [250, 400]], "to": 2.0, "for": 1.0 },
+    { "t": 11.0, "pinch": [[150, 400], [250, 400]], "to": 2.0, "for": 1.0 },
+    { "t": 15.0, "tap": [200, 380] }
+  ],
+  "shots": [
+    { "t": 8.9, "name": "far" },
+    { "t": 10.5, "name": "closer" },
+    { "t": 14.9, "name": "close" },
+    { "t": 15.5, "name": "fed-ring" },
+    { "t": 24.0, "name": "fed-close" }
+  ],
+  "film": { "from": 8, "to": 24, "every": 0.1 }
+}

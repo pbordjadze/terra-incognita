@@ -11,7 +11,8 @@
 // toward the poles. It cannot go to sea (ground < 0): a step that would is refused and it turns.
 
 // home: the cell the agent holds (one agent a cell, Jones's occupancy), or NONE
-struct Agent { p: vec2f, h: f32, s: u32, home: u32, _pad: u32 };
+// moved: 1 when it stepped this step (its streak is drawn along h, behind p)
+struct Agent { p: vec2f, h: f32, s: u32, home: u32, moved: u32 };
 const NONE: u32 = 0xffffffffu;
 
 struct Params {
@@ -95,6 +96,7 @@ fn step_agents(@builtin(global_invocation_id) gid: vec3u) {
     }
     h += (rand(&s) - 0.5) * 0.2;
     var home = a.home;
+    let was = p;
     let q = ahead(p, h, P.mv.w);
     let qi = cell(q.x, q.y);
     if (ground[qi] < 0.0 || abs(q.y) > 1.35) {
@@ -127,7 +129,7 @@ fn step_agents(@builtin(global_invocation_id) gid: vec3u) {
         if (home != NONE) { atomicStore(&occupied[home], 0u); }
         home = NONE;
     }
-    agents[i] = Agent(p, h - 2.0 * PI * floor(h / (2.0 * PI)), s, home, 0u);
+    agents[i] = Agent(p, h - 2.0 * PI * floor(h / (2.0 * PI)), s, home, select(0u, 1u, any(p != was) && home != NONE));
 }
 
 @compute @workgroup_size(16, 16)
