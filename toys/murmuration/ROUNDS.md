@@ -13,3 +13,27 @@ One line a round, with the clock of each loop step (ET).
 - R9 (Nov 3, 3:12–4:20 am ET; the critic's lean-and-back plan reproduced 3:15 (46% of flying frames thin), the lean field and the eye's pitch found 3:45, merged 4:20): a lean pulls against the flock but never leaves it (its reach shrinks with your distance from the flock's thick, a pull home grows with it and is strongest as the finger comes back; climbs and dives allowed half as much as turns); your neighbours feel your lean less, so no small group breaks away with you; the eye looks down with the flock if it is below you, and pitches from your bird's own angle; other birds kept beyond 5 m so yours stays plainly the largest on the iPad; the land's fields soft-edged. lean-back.json: 0% of flying frames with fewer than 40 near birds.
 - R10 (Nov 3, 3:52–5:05 am ET; holds.py's near count made to mirror what is drawn 4:00, the lean reaching the whole flock 4:20, the glide's dive found and the eye kept under your bird 4:45, measured at both sizes and launch-checked 5:00, merged 5:05): a lean bends the whole flock round you (the birds within 45 m feel it, fading with distance) so it wheels with you; climbs and dives only within the sheet's height; the eye stays under your bird along its level heading, never pitched below level, so the glide lands your bird against the glow; leans tilt the world more; startles never jolt your own bird. lean-back.json: 2% of flying frames under 40 near birds (honest count); held.json at iPad size: 2%.
 - R11 (Nov 3, 4:48–5:50 am ET; the critic's corner lean reproduced in plans/lean-corners.json 4:55, found to be the eye looking away from a flock that was right behind you 5:10, merged 5:50): leaning to any corner keeps the flock round you and in view: the flock bends with you only as far as you lean (at rest you no longer lead it from its front edge), home is the back half of the flock so the flock is ahead of you, and the skyline is continuous behind the eye. lean-corners.json (four corners, held 3 s each, and back): 6% of flying frames under 40 near birds, the thinnest about half a second as the finger comes back (was 25%); lean-back.json 2%.
+
+## Where it stopped (after round 11's verdict, Nov 3, 5:30 am ET)
+
+Not yet showable without a caveat. Round 11's critic: discoverability is right, the dense moments
+and the iPad holds are healthy; the weakest point is that a hard lean can put your bird above the
+flock rather than in it (a lean up and right, then straight down, leaves your bird alone against bare
+sky for seconds with the flock a carpet below the horizon; the lean-corners return from down-left
+shows 1–9 birds on the glass). Keep: the opening from the reeds, your bird's wings against the glow
+with the flock streaming past, the settle back to the reeds on letting go, the sound swelling on a
+hold.
+
+To do, in order:
+1. A lean in any direction keeps flock above and around your bird: the sheet climbs with you, or
+   you sink back into it within about half a second (the vertical home pull, and the eye's pitch,
+   taken from the flock's level rather than yours). Its check: holds.py should count the birds above
+   your bird's line on the glass, not only near ones (birds packed along the horizon count as near
+   and flatter a lean that has left the sheet); measure on lean-corners.json and an up-right-then-down
+   plan.
+2. The skyline still kinks into a V for a frame on corner returns (about 24.6 s of lean-corners):
+   the land's horizon line, not only the skyline's noise, needs looking at as the eye rolls.
+3. The demo glide's arrival (6.7–6.9 s) is thin, just before the reader becomes a bird: land it in
+   the thick (pick the bird again as the eye arrives, or slow the last half second).
+Unjudged from Linux: the lean's latency under a finger, the frame rate with 6,000 birds, haptics,
+loudness on the device, the iPad crowding in hand.
