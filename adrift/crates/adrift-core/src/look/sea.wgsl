@@ -14,6 +14,7 @@
 @group(1) @binding(7) var oceanWrap: sampler;        // repeat, for the noise tile
 struct SeaUniforms { ripple: array<vec4f, 8> };      // four touches: centre (world) and when, then strength
 @group(2) @binding(0) var<uniform> S: SeaUniforms;
+@group(3) @binding(0) var glowTex: texture_2d<f32>;    // (R24) `lightAlong` at half resolution
 
 fn gnoise(p: vec3f) -> f32 { return textureSampleLevel(tile, oceanWrap, p * (1.0 / 16.0), 0.0).r * 2.0 - 1.0; }
 
@@ -84,6 +85,57 @@ fn contour(q: f32, fw: f32) -> vec2f {
     return vec2f(abs(q - floor(q + 0.5)) / max(fw, 1e-6), 1.0 - smoothstep(0.16, 0.36, fw));
 }
 
+// -- light running along the streamlines: noise carried by the current, each bright place trailing a
+// tail upstream, so a still picture shows which way the water goes. (R24) Its features are tens of
+// points across (`pulse`), so it is worked out at half the stage's resolution (`fs_glow`, sea.rs) and
+// read between texels by the sea: the same light, a quarter of the noise's reads.
+fn lightAlong(g: vec3f, cur: vec3f, R: f32, reading: f32, zoom: f32, tm: f32) -> f32 {
+    let speed = length(cur.xy); let measured = cur.z;
+    let running = smoothstep(0.04, 0.40, speed) * measured;
+    let east = normalize(vec3f(g.z, 0.0, -g.x) + vec3f(1e-6, 0.0, 0.0));
+    let north = cross(g, east);
+    let flow = east * cur.x + north * cur.y;
+    let pulse = 46.0 * reading;
+    let plevel = log2(R / pulse);
+    let pk = floor(plevel); let pb = plevel - pk;
+    let pace = 26.0 * reading / R;
+    let along = flow / max(speed, 1e-4);
+    var glow = 0.0; var w2 = 1.0;
+    // (R24) twelve reads of the noise, only where the light can show (it is scaled by `running`)
+    if (running > 0.0) { w2 = 0.0;
+    for (var o = 0; o < 2; o++) {
+        let F = exp2(pk + f32(o));
+        let wo = select(pb, 1.0 - pb, o == 0);
+        for (var ph = 0; ph < 2; ph++) {
+            let cyc = tm / 5.0 + 0.5 * f32(ph);
+            let age = fract(cyc);
+            let wp = 1.0 - abs(2.0 * age - 1.0);
+            let p = (g - flow * pace * age * 5.0) * F + 37.0 * floor(cyc) + 11.0 * f32(o);
+            var tail = 0.0;
+            for (var s = 0; s < 3; s++) { tail += gnoise(p + along * (0.22 * f32(s))) * (1.0 - 0.3 * f32(s)); }
+            glow += wo * wp * tail / 2.1;
+            w2 += wo * wo * wp * wp;
+        }
+    }
+    }
+    glow = smoothstep(0.3, 1.5, glow / (0.185 * 0.86 * sqrt(w2))) * running * mix(0.45, 1.0, smoothstep(1.0, 2.2, zoom));
+    // the sea at rest: while the date is stopped the light holds where it is (tm is held) and settles to
+    // half its strength over a beat (U.tone.w eases 0..1 as the date stops: DEMANDS.md D3), so a still
+    // frame reads as light lying along the lines, not a flash caught mid-air
+    glow *= mix(1.0, 0.5, U.tone.w);
+    // close in the light's bands were the brightest thing on the sea (the owner's screenshot at zoom 6):
+    // from zoom 4 they thin to a third, so a lamp and its cloud are what the eye finds
+    glow *= mix(1.0, 0.35, smoothstep(4.0, 6.5, zoom));
+    return glow;
+}
+
+@fragment fn fs_glow(in: FsIn) -> @location(0) vec4f {
+    let G = ground_at(U, in.position.xy * 2.0);
+    if (G.r2 > 1.3) { return vec4f(0.0); }
+    let cur = mix(currentAt(U.time.y, G.uv), currentAt(U.time.z, G.uv), U.time.w);
+    return vec4f(lightAlong(G.g, cur, U.disc.z, U.frame.w, U.disc.w, U.tone.z), 0.0, 0.0, 1.0);
+}
+
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let uPx = U.frame.z;
     let R = U.disc.z; let zoom = U.disc.w; let reading = U.frame.w; let t = U.time.x; let tm = U.tone.z;
@@ -147,39 +199,9 @@ fn contour(q: f32, fw: f32) -> vec2f {
     let running = smoothstep(0.04, 0.40, speed) * measured;
     acc = over(acc, mix(vec3f(0.20, 0.42, 0.62), vec3f(0.62, 0.74, 0.86), U.pad.x), mix(0.22, 0.30, U.pad.x) * mix(1.0, 1.45, ex) * core * running * water);
 
-    // -- light running along them: noise carried by the current, each bright place trailing a tail
-    // upstream, so a still picture shows which way the water goes
-    let pulse = 46.0 * reading;
-    let plevel = log2(R / pulse);
-    let pk = floor(plevel); let pb = plevel - pk;
-    let pace = 26.0 * reading / R;
-    let along = flow / max(speed, 1e-4);
-    var glow = 0.0; var w2 = 1.0;
-    // (R24) twelve reads of the noise, only where the light can show (it is scaled by `running`)
-    if (running > 0.0) { w2 = 0.0;
-    for (var o = 0; o < 2; o++) {
-        let F = exp2(pk + f32(o));
-        let wo = select(pb, 1.0 - pb, o == 0);
-        for (var ph = 0; ph < 2; ph++) {
-            let cyc = tm / 5.0 + 0.5 * f32(ph);
-            let age = fract(cyc);
-            let wp = 1.0 - abs(2.0 * age - 1.0);
-            let p = (g - flow * pace * age * 5.0) * F + 37.0 * floor(cyc) + 11.0 * f32(o);
-            var tail = 0.0;
-            for (var s = 0; s < 3; s++) { tail += gnoise(p + along * (0.22 * f32(s))) * (1.0 - 0.3 * f32(s)); }
-            glow += wo * wp * tail / 2.1;
-            w2 += wo * wo * wp * wp;
-        }
-    }
-    }
-    glow = smoothstep(0.3, 1.5, glow / (0.185 * 0.86 * sqrt(w2))) * running * mix(0.45, 1.0, smoothstep(1.0, 2.2, zoom));
-    // the sea at rest: while the date is stopped the light holds where it is (tm is held) and settles to
-    // half its strength over a beat (U.tone.w eases 0..1 as the date stops: DEMANDS.md D3), so a still
-    // frame reads as light lying along the lines, not a flash caught mid-air
-    glow *= mix(1.0, 0.5, U.tone.w);
-    // close in the light's bands were the brightest thing on the sea (the owner's screenshot at zoom 6):
-    // from zoom 4 they thin to a third, so a lamp and its cloud are what the eye finds
-    glow *= mix(1.0, 0.35, smoothstep(4.0, 6.5, zoom));
+    // -- light running along them (`lightAlong`): a smooth field, worked out at half the stage's
+    // resolution in its own pass (`fs_glow`) and read here between its texels (R24)
+    let glow = textureSampleLevel(glowTex, oceanHeld, in.position.xy / (2.0 * vec2f(textureDimensions(glowTex))), 0.0).r;
     // (a clip: the light along the lines kept on the lines and calmer off them, where its soft noise
     // moving every frame is the bits a re-encode spends and turns to mush)
     acc = over(acc, vec3f(0.96, 0.99, 1.0), (mix(0.24, 0.12, ex) * halo + mix(0.6, 0.7, ex) * core) * glow * water);

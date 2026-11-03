@@ -1656,10 +1656,15 @@ impl App {
             if crate::look::profile::on() {
                 // (R24) each pass alone and timed (look/profile.rs); the same pixels
                 let clear = wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 };
+                let b = crate::look::profile::begin(&self.gpu);
+                let mut b = b;
+                self.sea.glow_pass(&self.gpu, &mut b.0, &self.stage_view_bind, stage.width, stage.height);
+                crate::look::profile::end(&self.gpu, "sea glow", b);
                 crate::timed!(&self.gpu, "ground", &stage.view, Some(clear), |rp| self.ground.draw(rp, &self.stage_view_bind));
                 crate::timed!(&self.gpu, "sea", &stage.view, None, |rp| self.sea.draw(rp, &self.stage_view_bind));
             } else {
             let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stage") });
+            self.sea.glow_pass(&self.gpu, &mut enc, &self.stage_view_bind, stage.width, stage.height);
             {
                 let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("stage"),
