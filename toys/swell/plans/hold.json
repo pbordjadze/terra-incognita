@@ -1,0 +1,13 @@
+{
+ "_": "Close over the open Pacific: a finger held still on the sea beats there, ring after ring, for six seconds; a second finger's tap far off drops a single wave into the train; the rings bend over the floor and interfere.",
+ "seconds": 14,
+ "fps": 30,
+ "events": [
+  { "t": 0.2, "pinch": [[150, 430], [250, 430]], "to": 1.6, "for": 0.4 },
+  { "t": 1.0, "hold": [200, 420], "for": 6.0 },
+  { "t": 8.0, "tap": [120, 560] }
+ ],
+ "shots": [{ "t": 3.0, "name": "beating" }, { "t": 6.5, "name": "train" }, { "t": 9.5, "name": "crossing" }, { "t": 13.9, "name": "after" }],
+ "film": { "from": 0, "to": 14, "every": 0.1 },
+ "audio": true
+}

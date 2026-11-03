@@ -1,0 +1,9 @@
+{
+ "_": "First sight: the Pacific by day; at 1 s the sea rises off Tōhoku by itself and the wave crosses the ocean at the real depth's speed, slowing over the shelves and ridges, the coasts chiming as it arrives; at 9 s a tap near Hawaii drops a second. A 20 s film with its sound.",
+ "seconds": 20,
+ "fps": 30,
+ "events": [{ "t": 9.0, "tap": [250, 470] }],
+ "shots": [{ "t": 0.5, "name": "first-sight" }, { "t": 3.0, "name": "spreading" }, { "t": 7.0, "name": "crossing" }, { "t": 11.0, "name": "second" }, { "t": 15.0, "name": "crossed" }, { "t": 19.9, "name": "late" }],
+ "film": { "from": 0, "to": 20, "every": 0.0667 },
+ "audio": true
+}
