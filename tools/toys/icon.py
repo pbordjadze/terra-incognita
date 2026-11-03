@@ -3,7 +3,7 @@
 the IPA both use it (toys/ios/build.sh resizes it with sips). A toy that draws its own icon replaces
 its entry here, or writes icon.png by its own tool; the name and the final icon are the owner's.
 
-    python3 tools/toys/icon.py [<toy> ...]      # all four when none is named
+    python3 tools/toys/icon.py [<toy> ...]      # every toy's when none is named
 """
 import math, random, sys
 from pathlib import Path
@@ -78,6 +78,40 @@ def fireflies():
     return img
 
 
+def bell():
+    # a pale Earth, a strike's rings running out from it, lit from the upper left
+    img = Image.new('RGBA', (N, N), (243, 239, 230, 255))
+    d = ImageDraw.Draw(img)
+    c, r = N / 2, 400
+    d.ellipse([c - r, c - r, c + r, c + r], fill=(170, 205, 230, 255))
+    ring = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    rd = ImageDraw.Draw(ring)
+    sx, sy = c - 120, c + 90
+    for k, rad in enumerate([90, 190, 300]):
+        a = 200 - 50 * k
+        rd.ellipse([sx - rad, sy - rad, sx + rad, sy + rad], outline=(255, 252, 240, a), width=22 - 5 * k)
+        rd.ellipse([sx - rad + 14, sy - rad + 14, sx + rad + 14, sy + rad + 14], outline=(40, 70, 110, a // 3), width=14 - 3 * k)
+    mask = Image.new('L', img.size, 0)
+    ImageDraw.Draw(mask).ellipse([c - r, c - r, c + r, c + r], fill=255)
+    ring = ring.filter(ImageFilter.GaussianBlur(5))
+    ring.putalpha(Image.composite(ring.getchannel('A'), Image.new('L', img.size, 0), mask))
+    img.alpha_composite(ring)
+    return img
+
+
+def swell():
+    # the sea, a wave's light bent as it crosses the floor
+    img = Image.new('RGBA', (N, N), (150, 196, 226, 255))
+    layer = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for k in range(5):
+        rad = 150 + 150 * k
+        box = [300 - rad, 330 - rad * 0.86, 300 + rad, 330 + rad * 0.86]
+        d.arc(box, -10, 110, fill=(255, 253, 245, 230 - 35 * k), width=26 - 3 * k)
+        d.arc([box[0] + 18, box[1] + 18, box[2] + 18, box[3] + 18], -10, 110, fill=(25, 60, 110, 90 - 12 * k), width=16 - 2 * k)
+    img.alpha_composite(layer.filter(ImageFilter.GaussianBlur(6)))
+    return img
+
 def battle():
     """Battle Ink: on warm paper, the Roman mass in iron-gall cuts held in a ring of Tyrian purple."""
     img = Image.new('RGBA', (N, N), (239, 231, 214, 255))
@@ -111,7 +145,7 @@ def battle():
     return img
 
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'battle': battle}
+DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

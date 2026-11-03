@@ -10,6 +10,8 @@ the owner's to decide):
 | Murmuration: a flock on simple rules over the real sky, and you one of them | `murmuration/` | `com.pbordjadze.toy.murmuration` | `murmuration-build-<n>` |
 | Mold: a slime mold on the night Earth finding the routes between cities' lights | `mold/` | `com.pbordjadze.toy.mold` | `mold-build-<n>` |
 | Fireflies: every night city a firefly, falling into step | `fireflies/` | `com.pbordjadze.toy.fireflies` | `fireflies-build-<n>` |
+| Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
+| Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 

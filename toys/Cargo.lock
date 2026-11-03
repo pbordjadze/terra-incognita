@@ -58,6 +58,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bell"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -735,6 +747,18 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "swell"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
 
 [[package]]
 name = "syn"

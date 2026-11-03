@@ -68,6 +68,28 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "bell-build",
+      "name": "Bell",
+      "bundleIdentifier": "com.pbordjadze.toy.bell",
+      "subtitle": "Strike the Earth and hear it ring",
+      "localizedDescription": "Tap the Earth and it rings in its own measured free oscillations, the chord heard from the place facing you. Working title; a toy in the making.",
+      "icon": "bell-icon.png",
+      "iconSource": "toys/bell/icon.png",
+      "tintColor": "#B8C8D8",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "swell-build",
+      "name": "Swell",
+      "bundleIdentifier": "com.pbordjadze.toy.swell",
+      "subtitle": "Waves on the real sea floor",
+      "localizedDescription": "Touch the sea and a wave crosses the ocean at the speed its real depth gives it; the coasts chime where it arrives. Working title; a toy in the making.",
+      "icon": "swell-icon.png",
+      "iconSource": "toys/swell/icon.png",
+      "tintColor": "#6FA8D0",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "battle-build",
       "name": "Battle Ink",
       "bundleIdentifier": "com.pbordjadze.toy.battle",

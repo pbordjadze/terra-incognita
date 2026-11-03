@@ -31,7 +31,8 @@ pub struct FloatInstance {
     pub quiet: f32,
     /// kept for good (R21 on the globe: a small gold bead at its shoulder, not a ring)
     pub kept: f32,
-    pub _pad: f32,
+    /// the lamp's id (R25): its glass's shape, its flame and its rhythm (`floats.wgsl` `lamp_kind`)
+    pub id: f32,
 }
 
 const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {

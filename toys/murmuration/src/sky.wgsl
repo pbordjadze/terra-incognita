@@ -9,7 +9,8 @@ struct U {
     sun_col: vec4f,    // the sun's disc (transmitted), .w: exposure
     ground: vec4f,     // the land's colour (lit), .w: the time
     horizon: vec4f,    // the horizon's radiance toward the sun's side, .w: camera height (m)
-    horizon2: vec4f,   // the horizon's radiance opposite the sun
+    horizon2: vec4f,   // the horizon's radiance opposite the sun, .w: the reeds' strength
+    eye: vec4f,        // the eye's place (world, metres)
 };
 
 @group(0) @binding(0) var<uniform> u: U;
@@ -101,7 +102,24 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
             let depression = max(-dir.y, 1e-4);
             let dist = u.horizon.w / depression;
             let haze = 1.0 - exp(-dist / 30000.0);
-            g = mix(u.ground.rgb, hor, haze);
+            // The Levels: dark fields cut by straight rhynes (drainage ditches) full of water that
+            // holds the dusk sky, the fields' edges going off toward the horizon.
+            let gp = u.eye.xz + dir.xz / depression * u.eye.y;
+            let rot = mat2x2f(0.94, -0.34, 0.34, 0.94);
+            let q = rot * gp;
+            let foot = dist / (f * depression);           // metres a pixel, along the view
+            let wx = abs(fract(q.x / 85.0 + 0.5) - 0.5) * 85.0;
+            let wz = abs(fract(q.y / 140.0 + 0.5) - 0.5) * 140.0;
+            let half_w = 1.1;
+            let ditch = max(1.0 - smoothstep(half_w - foot, half_w + foot, wx), 1.0 - smoothstep(half_w - foot, half_w + foot, wz));
+            // Far off, too fine to draw: their share of the ground instead.
+            let far_k = smoothstep(1.2, 4.0, foot);
+            let water = 0.05 * far_k + 0.0 * ditch;
+            // Water reflects by Fresnel (Schlick, n = 1.33): little looking down, nearly all at a graze.
+            let fres = 0.02 + 0.98 * pow(1.0 - depression, 5.0);
+            let refl = sky(normalize(vec3f(dir.x, -dir.y, dir.z))) * fres;
+            let field = u.ground.rgb * (0.8 + 0.4 * hash(floor(q / vec2f(85.0, 140.0))));
+            g = mix(mix(field, field * 0.6 + refl * 0.8, water), hor, haze);
         }
         col = mix(col, g, land);
     }
