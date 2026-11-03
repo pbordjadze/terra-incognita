@@ -34,7 +34,9 @@ flock are worked out from the constants and rules below (src/sun.rs, src/sky.rs,
 - The wings lie in the plane the bird banks in, so birds turning together show more wing and darken,
   which is how the dark bands that cross a murmuration are seen (A. Procaccini et al., "Propagating
   waves in starling murmurations", *Animal Behaviour* 82 (2011) 759–765).
-- Drawn: the starling's silhouette (wingspan 0.38 m, drawn a third larger so a flock reads on a phone),
+- Drawn: the agitation waves' starts (every 3 to 8 s a patch of birds 9 m across startles into a sharp
+  banked turn; the wave that crosses the flock is alignment's own), each bird's roll and glide pose,
+  the starling's silhouette (wingspan 0.38 m, drawn a third larger so a flock reads on a phone),
   its wingbeat (about 10 Hz, in bouts with glides), the roost's slow wander, and that your bird counts
   four times in its neighbours' reckoning so a lean is felt.
 
