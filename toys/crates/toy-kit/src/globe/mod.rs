@@ -173,6 +173,9 @@ pub struct Hand {
     pub on: bool,
     pub min_zoom: f64,
     pub max_zoom: f64,
+    /// Below this zoom the globe eases back up once the fingers lift (a pinch out springs back to
+    /// fill its room); set it to `min_zoom` to keep wherever the pinch left it.
+    pub rest_zoom: f64,
     fingers: HashMap<u64, [f64; 2]>,
     /// The flick's turn: axis (view space) times radians a second.
     spin: [f64; 3],
@@ -181,7 +184,7 @@ pub struct Hand {
 
 impl Default for Hand {
     fn default() -> Hand {
-        Hand { on: true, min_zoom: 0.6, max_zoom: 40.0, fingers: HashMap::new(), spin: [0.0; 3], last_t: 0.0 }
+        Hand { on: true, min_zoom: 0.6, max_zoom: 40.0, rest_zoom: 1.0, fingers: HashMap::new(), spin: [0.0; 3], last_t: 0.0 }
     }
 }
 
@@ -237,6 +240,15 @@ impl Hand {
         if !self.fingers.is_empty() {
             return cam;
         }
+        let mut cam = cam;
+        if cam.zoom < self.rest_zoom {
+            // a pinch out springs back: halfway every 0.25 s
+            let k = 0.5f64.powf(dt / 0.25);
+            cam.zoom = self.rest_zoom - (self.rest_zoom - cam.zoom) * k;
+            if self.rest_zoom - cam.zoom < 1e-3 {
+                cam.zoom = self.rest_zoom;
+            }
+        }
         let w = self.spin[0].hypot(self.spin[1]);
         if w < 1e-3 {
             self.spin = [0.0; 3];
@@ -269,5 +281,16 @@ mod tests {
         }
         let ([px, py], _) = disc.project(&cam, under);
         assert!((px - x).abs() < 1.5 && (py - y).abs() < 1.5, "the place is at {px},{py}, the finger at {x},{y}");
+    }
+
+    #[test]
+    fn a_pinch_out_springs_back() {
+        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let mut hand = Hand::default();
+        let mut cam = Camera::new(0.0, 0.0, 0.6);
+        for _ in 0..120 {
+            cam = hand.coast(cam, disc, 1.0 / 60.0);
+        }
+        assert!((cam.zoom - 1.0).abs() < 0.01, "zoom {}", cam.zoom);
     }
 }
