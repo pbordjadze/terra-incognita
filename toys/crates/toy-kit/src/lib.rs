@@ -1,21 +1,36 @@
 //! toy-kit: what every toy stands on (toys/README.md). A toy is one type implementing [`Toy`]; the
 //! kit runs it on the device (`ios_shell!`, the C ABI the generic Swift shell in `toys/ios` calls),
-//! headless on Linux (`check::main`, plans played to PNG and WAV on Mesa's software Vulkan), and gives
-//! it the GPU, the data, the real globe by day or night (`globe`), and a sound out (`Synth`).
+//! headless on Linux (`check::main`, plans played to PNG and WAV on Mesa's software Vulkan), in a
+//! browser (`web::run`, WebGPU; the `web` feature, wasm32), and gives it the GPU, the data, the real
+//! globe by day or night (`globe`; the `globe` feature, on by default), a painter of soft 2D shapes
+//! (`paint`), a full-screen backdrop (`backdrop`), persistent layers (`layer`) and a sound out
+//! (`Synth`, `sound::Bells`).
 //!
 //! The GPU, the geometry and the ground were copied from adrift-core (Nov 2, 2026) so that Adrift's
 //! rounds never break a toy, and a toy's never break Adrift: change them here freely, for every toy.
+//! `paint`, `backdrop`, `layer`, `sound`, `web` and `check::main_with` came from pbordjadze/busquets'
+//! copy of the kit (Nov 3, 2026; same author, MIT). Other repositories take the kit as a git
+//! dependency pinned to a `toy-kit-v*` tag (CHANGES.md).
 
 pub mod assets;
+pub mod backdrop;
 pub mod budget;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod check;
+#[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
+pub mod layer;
 pub mod model;
+pub mod paint;
 #[cfg(target_os = "ios")]
 pub mod shell;
+pub mod sound;
+#[cfg(all(feature = "web", target_arch = "wasm32"))]
+pub mod web;
 
 pub use assets::{Assets, DirAssets, MemoryAssets};
+#[cfg(feature = "globe")]
 pub use globe::Globe;
 pub use gpu::{Gpu, Offscreen};
 pub use model::*;
@@ -116,6 +131,17 @@ pub trait Toy: 'static {
         None
     }
     fn restore(&mut self, _ctx: &mut Ctx, _saved: &str) {}
+    /// The places the toy names, in points from the top left, as they are now (a plan may tap
+    /// `"whale"`: check.rs). None by default.
+    fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        Vec::new()
+    }
+    /// Where a longitude and latitude are on screen now, in points, if the toy has a globe and the
+    /// place faces the reader (a plan may tap `{"lonlat": [lon, lat]}`). A toy with a globe returns
+    /// `self.globe.point(lonlat)`. None by default.
+    fn project(&self, _lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        None
+    }
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.

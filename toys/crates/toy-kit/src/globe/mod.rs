@@ -123,6 +123,13 @@ impl Globe {
         self.disc().project(&self.camera, at)
     }
 
+    /// Where `[lon, lat]` is on screen (points), if it faces the reader: what a toy's `Toy::project`
+    /// returns, so a plan can touch a place by its longitude and latitude.
+    pub fn point(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        let (p, facing) = self.project(LonLat::new(lonlat[0], lonlat[1]));
+        (facing > 0.0).then_some(p)
+    }
+
     /// The place under a point of the screen, if it is on the globe.
     pub fn unproject(&self, x: f64, y: f64) -> Option<LonLat> {
         self.disc().unproject(&self.camera, x, y)

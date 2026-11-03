@@ -24,7 +24,7 @@ const CELL: f32 = 1.8;
 /// How much more the neighbours of the bird that is you heed it than any other (a lean is felt).
 const YOU_WEIGHT: f32 = 4.0;
 /// How far round you a lean is felt, metres.
-const LEAN_R: f32 = 16.0;
+const LEAN_R: f32 = 45.0;
 /// How far round a startled bird the startle takes, metres.
 const STARTLE_R: f32 = 9.0;
 
@@ -113,6 +113,8 @@ pub struct Flock {
     pub lean_k: f32,
     /// The direction your lean asks for (unit), which the birds round you feel too.
     pub lean_dir: V3,
+    /// How far you lean (0..1): the birds round you feel the lean that much.
+    pub lean_field: f32,
     pub roost: V3,
     centre_now: V3,
     startle: Option<(V3, V3, f32)>,
@@ -163,6 +165,7 @@ impl Flock {
             lean: [0.0; 3],
             lean_k: 0.0,
             lean_dir: [0.0, 0.0, 1.0],
+            lean_field: 0.0,
             roost,
             centre_now: roost,
             startle: None,
@@ -382,6 +385,10 @@ impl Flock {
         }
         if let Some((at, dir, left)) = self.startle {
             for (k, b) in self.birds.iter().enumerate() {
+                // Your bird is yours: a startle near it moves the birds round you, not you.
+                if k == self.you {
+                    continue;
+                }
                 let d = length(sub(b.pos, at));
                 if d < STARTLE_R {
                     let w = 1.0 - d / STARTLE_R;
@@ -405,7 +412,7 @@ impl Flock {
                 let b = &self.birds[i];
                 let d = length(sub(b.pos, pyou));
                 if d < LEAN_R {
-                    let w = (1.0 - d / LEAN_R).powi(2) * 0.85 * self.lean_k;
+                    let w = (1.0 - d / LEAN_R) * 0.5 * self.lean_field;
                     let want = sub(scale(self.lean_dir, length(b.vel).max(V0 * 0.8)), b.vel);
                     self.acc[i] = addv(scale(self.acc[i], 1.0 - 0.6 * w), scale(want, 2.6 * w));
                 }

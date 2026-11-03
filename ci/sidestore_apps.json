@@ -88,6 +88,17 @@
       "iconSource": "toys/swell/icon.png",
       "tintColor": "#6FA8D0",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "battle-build",
+      "name": "Battle Ink",
+      "bundleIdentifier": "com.pbordjadze.toy.battle",
+      "subtitle": "Cannae as a living engraving",
+      "localizedDescription": "Cannae, 216 BC, on its real ground: two armies of thousands of burin cuts, and your lines of ink are the orders. Working title; a toy in the making.",
+      "icon": "battle-icon.png",
+      "iconSource": "toys/battle/icon.png",
+      "tintColor": "#80225C",
+      "minOSVersion": "17.0"
     }
   ]
 }
