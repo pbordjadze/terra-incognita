@@ -1,21 +1,36 @@
 //! toy-kit: what every toy stands on (toys/README.md). A toy is one type implementing [`Toy`]; the
 //! kit runs it on the device (`ios_shell!`, the C ABI the generic Swift shell in `toys/ios` calls),
-//! headless on Linux (`check::main`, plans played to PNG and WAV on Mesa's software Vulkan), and gives
-//! it the GPU, the data, the real globe by day or night (`globe`), and a sound out (`Synth`).
+//! headless on Linux (`check::main`, plans played to PNG and WAV on Mesa's software Vulkan), in a
+//! browser (`web::run`, WebGPU; the `web` feature, wasm32), and gives it the GPU, the data, the real
+//! globe by day or night (`globe`; the `globe` feature, on by default), a painter of soft 2D shapes
+//! (`paint`), a full-screen backdrop (`backdrop`), persistent layers (`layer`) and a sound out
+//! (`Synth`, `sound::Bells`).
 //!
 //! The GPU, the geometry and the ground were copied from adrift-core (Nov 2, 2026) so that Adrift's
 //! rounds never break a toy, and a toy's never break Adrift: change them here freely, for every toy.
+//! `paint`, `backdrop`, `layer`, `sound`, `web` and `check::main_with` came from pbordjadze/busquets'
+//! copy of the kit (Nov 3, 2026; same author, MIT). Other repositories take the kit as a git
+//! dependency pinned to a `toy-kit-v*` tag (CHANGES.md).
 
 pub mod assets;
+pub mod backdrop;
 pub mod budget;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod check;
+#[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
+pub mod layer;
 pub mod model;
+pub mod paint;
 #[cfg(target_os = "ios")]
 pub mod shell;
+pub mod sound;
+#[cfg(all(feature = "web", target_arch = "wasm32"))]
+pub mod web;
 
 pub use assets::{Assets, DirAssets, MemoryAssets};
+#[cfg(feature = "globe")]
 pub use globe::Globe;
 pub use gpu::{Gpu, Offscreen};
 pub use model::*;

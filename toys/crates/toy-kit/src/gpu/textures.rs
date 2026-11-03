@@ -2,6 +2,7 @@
 //! distances), with mips made here, and the noise tile the sea's shader reads.
 
 use super::Gpu;
+#[cfg(feature = "globe")]
 use crate::assets::Assets;
 
 pub struct Texture {
@@ -217,7 +218,9 @@ impl Texture {
     }
 }
 
-/// Every texture the passes read, and the samplers.
+/// Every texture the globe's passes read, and the samplers (the `globe` feature: its files are the
+/// globe's NASA-derived data).
+#[cfg(feature = "globe")]
 pub struct Textures {
     pub geo: Texture,
     pub terrain: Texture,
@@ -237,6 +240,7 @@ pub struct Textures {
     pub linear_repeat: wgpu::Sampler,
 }
 
+#[cfg(feature = "globe")]
 impl Textures {
     pub fn load(gpu: &Gpu, assets: &dyn Assets, month: u32) -> anyhow::Result<Textures> {
         let geo = Texture::from_pixels(gpu, "geo", &decode(&assets.read("geo.png")?, 4)?, false);

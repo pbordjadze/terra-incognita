@@ -1,6 +1,7 @@
 //! The headless check every toy has: a plan of fingers played on Linux (Mesa's software Vulkan) or a
 //! Mac, its moments written as PNG, a film of frames, and the toy's sound as WAV. A toy's
-//! `src/bin/check.rs` is one line: `fn main() { toy_kit::check::main::<my_toy::MyToy>("my-toy") }`.
+//! `src/bin/check.rs` is one line: `fn main() { toy_kit::check::main::<my_toy::MyToy>("my-toy") }`
+//! (`check::main_with` takes the arguments given, for a binary that checks several toys).
 //!
 //! ```text
 //! <toy>-check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--tap-check] [--strict-taps] [--no-tap-check]
@@ -1028,7 +1029,14 @@ pub fn clip<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>,
 
 /// The command line of a toy's `check` binary.
 pub fn main<T: Toy>(name: &str) {
-    let args: Vec<String> = std::env::args().collect();
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    main_with::<T>(name, &args)
+}
+
+/// The same, with the arguments given (without the program's name): a binary that checks several
+/// toys picks one first and passes the rest on. (From busquets' copy of the kit.)
+pub fn main_with<T: Toy>(name: &str, given: &[String]) {
+    let args: Vec<String> = std::iter::once(String::new()).chain(given.iter().cloned()).collect();
     let flag = |k: &str| args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned();
     let has = |k: &str| args.iter().any(|a| a == k);
     let size = flag("--size").and_then(|s| {

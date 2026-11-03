@@ -6,7 +6,9 @@ pub mod view;
 
 use std::sync::Arc;
 
-pub use textures::{Texture, Textures};
+pub use textures::Texture;
+#[cfg(feature = "globe")]
+pub use textures::Textures;
 pub use view::{View, ViewUniform, VIEW_WGSL};
 
 /// The device and its queue, shared by every pass.
