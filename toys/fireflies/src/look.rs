@@ -7,6 +7,20 @@ use toy_kit::{Globe, Gpu};
 
 pub const FIELD_W: u32 = 2048;
 pub const FIELD_H: u32 = 1024;
+/// The look's uniform: levels (4), the clock and the ring's width (4), and MAX_RINGS rings of 8.
+const LOOK_FLOATS: usize = 8 + MAX_RINGS * 8;
+pub const MAX_RINGS: usize = 4;
+
+/// A finger's ring of light on the globe: where, when, how fast it spreads (radians a second) and
+/// how long it lasts.
+#[derive(Clone, Copy, Debug)]
+pub struct Ring {
+    pub at: [f64; 3],
+    pub t0: f64,
+    pub speed: f64,
+    pub life: f64,
+}
+
 const FIELD_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 
 pub struct Look {
@@ -125,7 +139,7 @@ impl Look {
             });
         let look_buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("look"),
-            size: 16,
+            size: (LOOK_FLOATS * 4) as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -220,7 +234,7 @@ impl Look {
     }
 
     /// The fireflies' glows into the instance buffer, and the look's levels.
-    pub fn upload(&mut self, gpu: &Gpu, swarm: &Swarm, soft: bool) {
+    pub fn upload(&mut self, gpu: &Gpu, swarm: &Swarm, soft: bool, rings: &[Ring], width: f64) {
         self.staging.clear();
         let mut n = 0;
         for (i, f) in swarm.flies.iter().enumerate() {
@@ -251,8 +265,15 @@ impl Look {
         } else {
             [0.55, 1.8, 0.9, 1.0]
         };
-        gpu.queue
-            .write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&a));
+        let mut u = vec![0f32; LOOK_FLOATS];
+        u[..4].copy_from_slice(&a);
+        u[4] = swarm.t as f32;
+        u[5] = width as f32;
+        for (k, r) in rings.iter().take(MAX_RINGS).enumerate() {
+            let o = 8 + k * 8;
+            u[o..o + 8].copy_from_slice(&[r.at[0] as f32, r.at[1] as f32, r.at[2] as f32, r.t0 as f32, r.speed as f32, r.life as f32, 1.0, 0.0]);
+        }
+        gpu.queue.write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&u));
     }
 
     /// The flash field, then the night with it, into `target`.

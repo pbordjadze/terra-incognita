@@ -67,12 +67,14 @@ pub struct Firefly {
     pub near: Vec<(u32, f32)>,
 }
 
-/// Something due: a flash seen by `to` (ver None), or `to`'s own flash if its version still holds.
+/// Something due: a flash seen by `to` (ver None), or `to`'s own flash if its version still holds,
+/// or (force) a finger's ring of light reaching it, which makes it flash.
 #[derive(PartialEq)]
 struct Pulse {
     at: f64,
     to: u32,
     ver: Option<u32>,
+    force: bool,
 }
 impl Eq for Pulse {}
 impl Ord for Pulse {
@@ -224,6 +226,7 @@ impl Swarm {
             at: f.tref + (1.0 - f.phase) / f.freq,
             to: i as u32,
             ver: Some(f.ver),
+            force: false,
         });
     }
 
@@ -245,6 +248,7 @@ impl Swarm {
                 at: at + d as f64,
                 to: j,
                 ver: None,
+                force: false,
             });
         }
         self.set(i, 0.0, at);
@@ -260,6 +264,12 @@ impl Swarm {
             let p = self.pulses.pop().unwrap();
             let i = p.to as usize;
             let now = p.at;
+            if p.force {
+                if (now - self.flies[i].flashed) * self.flies[i].freq >= self.tune.refractory {
+                    self.flash(i, now);
+                }
+                continue;
+            }
             match p.ver {
                 Some(v) => {
                     if v == self.flies[i].ver {
@@ -310,21 +320,36 @@ impl Swarm {
         v
     }
 
-    /// A finger's nudge: the nearest flashes now, out of turn, and those round it are hurried on to
-    /// the brink by different amounts, so they flash raggedly within half a second (a sparkle under
-    /// the finger) and come out of it out of step with the field round them, which pulls them back.
-    pub fn nudge(&mut self, at: [f64; 3], r_km: f64) -> usize {
-        let near = self.around(at, r_km);
-        for (k, &(_, i)) in near.iter().enumerate() {
-            if k == 0 {
-                let t = self.t;
-                self.flash(i, t);
+    /// A finger's touch: the firefly nearest flashes now, those within `r_km` of it are hurried on to
+    /// the brink by different amounts (a ragged sparkle under the finger, out of step with the field
+    /// round them, which pulls them back), and a ring of light leaves the finger at `speed_kms`: each
+    /// firefly it reaches, out to `reach_km`, flashes as it arrives, so even a touch on the dark sea
+    /// is answered by the nearest coast a beat later. When nothing is within reach, the ring carries
+    /// on to the nearest dozen. Returns how many answered and when the last of them will (seconds).
+    pub fn touch(&mut self, at: [f64; 3], r_km: f64, reach_km: f64, speed_kms: f64) -> (usize, f64) {
+        let t = self.t;
+        let mut all: Vec<(f64, usize)> = self.flies.iter().enumerate().map(|(i, f)| (km(at, f.xyz), i)).collect();
+        all.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        let mut last: f64 = 0.0;
+        let mut n = 0;
+        for (k, &(d, i)) in all.iter().enumerate() {
+            if d <= r_km {
+                if k == 0 {
+                    self.flash(i, t);
+                } else {
+                    let r = 0.82 + 0.17 * rand(&mut self.rng);
+                    self.set(i, r, t);
+                }
+            } else if d <= reach_km || k < 12 {
+                let delay = d / speed_kms;
+                self.pulses.push(Pulse { at: t + delay, to: i as u32, ver: None, force: true });
+                last = last.max(delay);
             } else {
-                let (r, t) = (0.82 + 0.17 * rand(&mut self.rng), self.t);
-                self.set(i, r, t);
+                break;
             }
+            n += 1;
         }
-        near.len()
+        (n, last)
     }
 
     /// How in step the fireflies are, 0 (scattered) to 1 (as one), the Kuramoto order parameter of
@@ -382,6 +407,17 @@ mod tests {
     }
 
     #[test]
+    fn a_touch_on_the_sea_reaches_the_nearest_lights() {
+        let mut s = Swarm::new(&line(10), Tune::default(), 5);
+        // 20 degrees west of the line's start, over open water: nothing within reach
+        let (n, last) = s.touch(xyz(-20.0, 40.0), 50.0, 300.0, 2000.0);
+        assert_eq!(n, 10);
+        assert!(last > 0.8 && last < 1.2, "the ring reaches them in {last:.2} s");
+        s.step(1.3);
+        assert!(s.flies.iter().all(|f| f.flashed > 0.5), "every one flashed as the ring arrived");
+    }
+
+    #[test]
     fn seas_keep_continents_apart() {
         let mut places = line(20);
         places.extend(line(20).into_iter().map(|(lo, la, w)| (lo + 60.0, la, w)));
@@ -397,7 +433,7 @@ mod tests {
         for _ in 0..(60 * 60) {
             s.step(1.0 / 60.0);
         }
-        let n = s.nudge(xyz(10.0, 40.0), 200.0);
+        let (n, _) = s.touch(xyz(10.0, 40.0), 200.0, 400.0, 2000.0);
         assert!(n >= 5);
         assert!(s.order(|_| true) < 0.95);
     }
