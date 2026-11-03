@@ -1,0 +1,15 @@
+{
+  "_": "The year, a day a second: from late November the humpback goes south along Baja to Bahía de Banderas and the blue whale to the Costa Rica Dome; the songs change with the seasons (the blue whale quiet by February); both come north in spring.",
+  "seconds": 250,
+  "fps": 30,
+  "events": [],
+  "shots": [
+    { "t": 20, "name": "dec-10" },
+    { "t": 45, "name": "jan-04" },
+    { "t": 80, "name": "feb-08" },
+    { "t": 130, "name": "mar-30" },
+    { "t": 175, "name": "may-14" },
+    { "t": 210, "name": "jun-18" },
+    { "t": 248, "name": "jul-26" }
+  ]
+}
