@@ -71,6 +71,10 @@ fn light_centres(swarm: &Swarm) -> Vec<(f64, f64, f64)> {
     out
 }
 
+/// A lit crowd: a firefly whose light with its neighbours' is at least this (a city's region, about
+/// the brightest quarter of the fireflies: Ohio 4.0, Lisbon 3.1; not New Brunswick's 1.2).
+const CROWD_LIGHT: f64 = 2.8;
+
 /// Closer than this the lights' sheet shows its pixels (about 10 km each): the zoom stops here.
 const MAX_ZOOM: f64 = 5.0;
 
@@ -94,6 +98,8 @@ pub struct Fireflies {
     /// Seconds since the last finger lifted.
     idle: f64,
     ear: sound::Ear,
+    /// Each firefly's light with its neighbours' (a crowd's light).
+    crowd: Vec<f64>,
     /// The lit regions' centres of light (`light_centres`).
     lights: Vec<(f64, f64, f64)>,
     /// Drifting to the lights (until it is over the lit place it was going to).
@@ -155,14 +161,14 @@ impl Fireflies {
         (short / self.globe.disc().r).min(1.0).asin()
     }
 
-    /// The firefly in a crowd (a lit land, not a lone island's speck) nearest the screen's centre,
+    /// The firefly in a lit crowd (CROWD_LIGHT: a city's region, not a lone island's speck) nearest the screen's centre,
     /// and how far it is (radians).
     fn nearest_crowd(&self) -> (usize, f64) {
         let c = toy_kit::LonLat::new(self.globe.camera.lon, self.globe.camera.lat).to_xyz();
         let (mut best, mut bd) = (0, f64::MIN);
         for (i, f) in self.swarm.flies.iter().enumerate() {
             let d = c[0] * f.xyz[0] + c[1] * f.xyz[1] + c[2] * f.xyz[2];
-            if d > bd && f.near.len() >= 10 && f.lat > SETTLE_LAT.0 && f.lat < SETTLE_LAT.1 {
+            if d > bd && self.crowd[i] >= CROWD_LIGHT && f.lat > SETTLE_LAT.0 && f.lat < SETTLE_LAT.1 {
                 (bd, best) = (d, i);
             }
         }
@@ -262,6 +268,7 @@ impl Toy for Fireflies {
         let swarm = Swarm::from_bytes(&ctx.assets.read("fireflies.bin")?, Tune::default(), seed)?;
         let look = look::Look::new(&ctx.gpu, &globe, swarm.flies.len());
         let lights = light_centres(&swarm);
+        let crowd = swarm.flies.iter().map(|f| f.weight + f.near.iter().map(|&(j, _)| swarm.flies[j as usize].weight).sum::<f64>()).collect();
         Ok(Fireflies {
             globe,
             swarm,
@@ -275,6 +282,7 @@ impl Toy for Fireflies {
             drifting: false,
             ear: sound::Ear::new(),
             lights,
+            crowd,
         })
     }
 
