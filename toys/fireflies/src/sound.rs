@@ -15,15 +15,24 @@ use toy_kit::Synth;
 /// The grid of patches over the screen.
 pub const COLS: usize = 3;
 pub const ROWS: usize = 4;
-/// A patch chimes when its glow rises above ON, and may again once it has fallen below OFF.
-const ON: f32 = 0.5;
-const OFF: f32 = 0.22;
+/// A patch chimes when the fireflies bright in it right now outnumber its own usual (their running
+/// mean over a few seconds) by ON_TIMES times plus ON_MORE, at least MIN_BRIGHT of them; it may again
+/// once they fall under OFF_TIMES times the usual. The usual is the same in step or not (a firefly is
+/// bright the same share of its cycle either way): only the peaks differ, so this hears a region in
+/// step at any zoom, whatever else shares its patch.
+const ON_TIMES: f32 = 3.0;
+const ON_MORE: f32 = 3.0;
+/// And never two chimes closer than this (seconds), whichever patches: a few at a time, not a shower.
+const GAP_S: f64 = 0.6;
+const OFF_TIMES: f32 = 1.3;
+const MIN_BRIGHT: u32 = 5;
+const USUAL_S: f64 = 4.0;
 /// A patch rings at most RUN beats in a row, then rests REST beats.
-const RUN: u32 = 4;
-const REST: u32 = 3;
+const RUN: u32 = 3;
+const REST: u32 = 4;
 /// A patch needs at least this much light (the sum of its fireflies' weights) to have a voice, so a
 /// lone city's flash is not a patch in step.
-const MIN_LIGHT: f32 = 3.0;
+const MIN_LIGHT: f32 = 2.0;
 /// The scale (A minor pentatonic, two octaves), high notes at the top of the screen.
 const NOTES: [f32; 10] = [220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
 
@@ -45,26 +54,45 @@ pub struct Ear {
     run: [u32; COLS * ROWS],
     rest: [u32; COLS * ROWS],
     step: [usize; COLS * ROWS],
+    usual: [f32; COLS * ROWS],
+    heard: bool,
+    start: f64,
+    last: f64,
     pub queue: Queue,
     t: f64,
 }
 
 impl Ear {
     pub fn new() -> Ear {
-        Ear { armed: [true; COLS * ROWS], run: [0; COLS * ROWS], rest: [0; COLS * ROWS], step: [0; COLS * ROWS], queue: Arc::new(Mutex::new(Vec::new())), t: 0.0 }
+        Ear { armed: [true; COLS * ROWS], run: [0; COLS * ROWS], rest: [0; COLS * ROWS], step: [0; COLS * ROWS], usual: [0.0; COLS * ROWS], heard: false, start: 0.0, last: -1.0, queue: Arc::new(Mutex::new(Vec::new())), t: 0.0 }
     }
 
-    /// One frame: `cells` is each patch's (sum of weight x glow, sum of weight).
-    pub fn hear(&mut self, cells: &[(f32, f32); COLS * ROWS], quiet: bool, t: f64) {
+    /// One frame: `cells` is each patch's (sum of weight x glow, sum of weight, how many fireflies
+    /// are bright now).
+    pub fn hear(&mut self, cells: &[(f32, f32, u32); COLS * ROWS], quiet: bool, t: f64) {
+        let dt = (t - self.t).clamp(0.0, 0.1);
         self.t = t;
+        // (warming up, the usual is the plain mean of every frame so far; and nothing chimes until it
+        // has heard a couple of seconds)
+        if !self.heard {
+            self.heard = true;
+            self.start = t;
+        }
+        let age = t - self.start;
+        let a = (1.0 - (-dt / USUAL_S).exp()).max(dt / (age + dt).max(1e-6)) as f32;
+        let warm = age >= 2.0;
         let mut out = Vec::new();
-        for (k, &(lw, w)) in cells.iter().enumerate() {
+        for (k, &(_, w, nb)) in cells.iter().enumerate() {
+            let usual = self.usual[k];
+            self.usual[k] += (nb as f32 - usual) * a;
             if w < MIN_LIGHT {
                 self.armed[k] = true;
                 continue;
             }
-            let g = lw / w;
-            if self.armed[k] && g > ON {
+            let n = nb as f32;
+            let g = n;
+            if warm && self.armed[k] && nb >= MIN_BRIGHT && n > ON_TIMES * usual + ON_MORE && t - self.last >= GAP_S {
+                self.last = t;
                 self.armed[k] = false;
                 if self.rest[k] > 0 {
                     self.rest[k] -= 1;
@@ -83,12 +111,12 @@ impl Ear {
                 let note = NOTES[i.clamp(0, NOTES.len() as i32 - 1) as usize];
                 // the middle of the screen sings, the edges are quieter
                 let edge = if c == COLS / 2 { 1.0 } else { 0.55 };
-                let amp = edge * (0.035 + 0.04 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
+                let amp = edge * (0.07 + 0.08 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
                 if std::env::var_os("FIREFLIES_SOUND").is_some() {
-                    eprintln!("strike patch {k} glow {g:.2} light {w:.1} at {:.2}", self.t);
+                    eprintln!("strike patch {k} bright {g} usual {usual:.1} light {w:.1} at {:.2}", self.t);
                 }
                 out.push(Strike { freq: note, amp, pan: (c as f32 - (COLS as f32 - 1.0) / 2.0) * 0.45 });
-            } else if g < OFF {
+            } else if n < OFF_TIMES * usual + 1.0 {
                 self.armed[k] = true;
             }
         }
