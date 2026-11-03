@@ -39,6 +39,23 @@ const N_CORE = vec3f(255.0, 244.0, 220.0) / 255.0;    // a city's core, whitenin
 const N_HALO = vec3f(255.0, 146.0, 58.0) / 255.0;     // the pool of light round a city, deeper sodium
 const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a lit region
 
+fn bspline_lights(uv: vec2f) -> f32 {
+    let dims = vec2f(textureDimensions(lightsTex));
+    let st = uv * dims - 0.5;
+    let i = floor(st);
+    let f = st - i;
+    let w0 = (1.0 - f) * (1.0 - f) * (1.0 - f) / 6.0;
+    let w1 = (3.0 * f * f * f - 6.0 * f * f + 4.0) / 6.0;
+    let w2 = (-3.0 * f * f * f + 3.0 * f * f + 3.0 * f + 1.0) / 6.0;
+    let w3 = f * f * f / 6.0;
+    let g0 = w0 + w1;
+    let g1 = w2 + w3;
+    let o0 = (i - 0.5 + w1 / g0) / dims;     // between texels i-1 and i
+    let o1 = (i + 1.5 + w3 / g1) / dims;     // between texels i+1 and i+2
+    return g0.y * (g0.x * textureSampleLevel(lightsTex, linearS, vec2f(o0.x, o0.y), 0.0).r + g1.x * textureSampleLevel(lightsTex, linearS, vec2f(o1.x, o0.y), 0.0).r)
+         + g1.y * (g0.x * textureSampleLevel(lightsTex, linearS, vec2f(o0.x, o1.y), 0.0).r + g1.x * textureSampleLevel(lightsTex, linearS, vec2f(o1.x, o1.y), 0.0).r);
+}
+
 @fragment fn fs_main(in: FsIn) -> @location(0) vec4f {
     let pix = in.position.xy;
     let R = U.disc.z * U.frame.z;                        // the radius in pixels
@@ -81,7 +98,7 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let ice = mix(textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.y), 0.0).r,
                   textureSampleLevel(iceTex, linearS, G.uv, i32(U.time.z), 0.0).r, U.time.w);
     // the Earth's lights (NASA's Black Marble, Terra's sheet), sampled before any pixel leaves
-    let lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
+    var lightsRaw = textureSampleGrad(lightsTex, linearS, G.uv, gr.dx, gr.dy).r;
     // and their glow, as a long exposure from orbit sees it (R6): the same sheet read a few mips
     // coarser than the pixel's own, a near halo and a wide one, so a city sits in a pool of its own
     // light that spills a little over its coast; drawn from the measured lights, never invented
@@ -89,6 +106,9 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let lod0 = log2(max(max(length(gr.dx * ldims), length(gr.dy * ldims)), 1e-4));
     let halo = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 2.5, 0.0)).r;
     let wide = textureSampleLevel(lightsTex, linearS, G.uv, max(lod0 + 4.5, 0.0)).r;
+    // (Mold's) magnified past its own pixels, the lights' sheet is read through a cubic B-spline (four
+    // bilinear taps), so a pinch in never shows it as squares
+    lightsRaw = mix(lightsRaw, bspline_lights(G.uv), smoothstep(0.0, -1.5, lod0));
     if (rr >= 1.0) { return vec4f(page, 1.0); }
 
     // the land: the month's picture, shaded from the north-west

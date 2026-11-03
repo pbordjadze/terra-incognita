@@ -23,6 +23,12 @@ const AGENTS: u32 = 1 << 16;
 const SPAWNS: usize = 1 << 16;
 const MAX_FEEDS: usize = 32;
 const MAX_RIPPLES: usize = 8;
+/// The closest the camera rests (the opening is 1.55): closer, the 10 km field and the lights' sheet
+/// would show their cells.
+const MAX_ZOOM: f64 = 9.0;
+/// Where the mold lives thickest, by longitude: the Americas, Europe and Africa, India, East Asia,
+/// Australia. A globe left over an empty ocean turns to the nearest.
+const LIT_LONGITUDES: [f64; 6] = [-95.0, -50.0, 15.0, 78.0, 118.0, 145.0];
 /// A flake's box's half height in cells (sim.wgsl's REACH).
 const FEED_REACH: u32 = 96;
 /// Steps a second (the mold's speed: a step is about a cell).
@@ -157,6 +163,9 @@ impl Toy for Mold {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
         globe.night = 1.0;
+        // as close as the mold still reads as tubes and the ground's lights as lights: a pinch past it
+        // goes a little further, then eases back when the fingers lift
+        globe.hand.max_zoom = MAX_ZOOM * 1.3;
         globe.camera = Camera::new(12.0, 42.0, 1.55);
         let gpu = &ctx.gpu;
         let dev = &gpu.device;
@@ -422,9 +431,22 @@ impl Toy for Mold {
         if self.globe.hand.fingers() == 0 && t - self.touched > 2.5 {
             let k = 1.0 - 0.5f64.powf(dt / 1.2);
             let cam = &mut self.globe.camera;
-            let lat = cam.lat.clamp(8.0, 52.0);
+            let lat = cam.lat.clamp(-30.0, 55.0);
             cam.lat += (lat - cam.lat) * k;
             cam.roll -= cam.roll * k;
+            // and turns toward lit land when it rests over an empty ocean: the nearest of the
+            // longitudes where the mold lives, when none is within 30 degrees
+            let off = |a: f64| (a - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
+            let near = LIT_LONGITUDES.iter().map(|&a| off(a)).min_by(|a, b| a.abs().total_cmp(&b.abs())).unwrap_or(0.0);
+            if near.abs() > 30.0 {
+                cam.lon += near * k * 0.6;
+            }
+        }
+        // a pinch past the closest view eases back to it
+        if self.globe.hand.fingers() == 0 && self.globe.camera.zoom > MAX_ZOOM {
+            let k = 1.0 - 0.5f64.powf(dt / 0.25);
+            let z = self.globe.camera.zoom;
+            self.globe.camera.zoom = z + (MAX_ZOOM - z) * k;
         }
         // the mold wakes slowly: the mist condenses over its first seconds, then it lives at its pace
         self.age += dt;
@@ -535,7 +557,7 @@ impl Mold {
         for (i, r) in self.ripples.iter().enumerate() {
             ripples[i] = [r.lon.to_radians() as f32, r.lat.to_radians() as f32, (self.seconds - r.at) as f32, if r.land { 1.0 } else { 0.0 }];
         }
-        Look { a: [1.0, 0.1, self.streak_share(), H as f32], ages, ripples }
+        Look { a: [1.0, 0.125, self.streak_share(), H as f32], ages, ripples }
     }
 
     fn on_land(&self, at: LonLat) -> bool {
