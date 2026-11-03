@@ -135,6 +135,7 @@ pub struct Battle {
     /// the camera: px a unit and the world point at the screen's middle, eased toward the fight
     cam: Option<(f32, [f32; 2])>,
     cam_at_decision: Option<(f32, [f32; 2])>,
+    print_at: Option<(f32, [f32; 2])>,
     last_touch: f64,
     initial: [u32; 2],
     dead: Vec<f32>,
@@ -203,9 +204,9 @@ fn ghost_paths() -> Vec<Vec<[f32; 2]>> {
         vec![[262., 610.], [250., 470.], [272., 385.], [292., 262.], [380., 196.], [520., 180.], [650., 196.], [720., 262.], [716., 340.]],
         vec![[338., 600.], [330., 520.], [348., 452.], [392., 410.]],
         vec![[700., 600.], [706., 520.], [690., 452.], [646., 410.]],
-        vec![[520., 260.], [520., 470.]],
     ];
-    for (bow, y0) in [(46.0f32, 540.0f32), (-40.0, 560.0)] {
+    // the centre's bow, bent back under the Roman press
+    for (bow, y0) in [(-40.0f32, 560.0f32)] {
         v.push(
             (0..=12)
                 .map(|c| {
@@ -283,26 +284,11 @@ impl Battle {
 
     /// The camera follows the fight once the pen has rested a moment: the armies (and where they
     /// fell) kept at most of the frame, never further out than the opening, slowly.
-    fn follow(&mut self, ctx: &Ctx, dt: f32) {
-        let base = Self::box_scale(ctx);
-        let cur = self.cam.unwrap_or((base, BOX_C));
-        if let Some(d) = self.decided_at {
-            // the day decided: the camera draws back to the whole field, the river and the ridge,
-            // and the page arrives as a print
-            let p = (((self.clock - d) / PULL_BACK) as f32).clamp(0.0, 1.0);
-            let from = *self.cam_at_decision.get_or_insert(cur);
-            let e = p * p * (3.0 - 2.0 * p);
-            let s = (from.0.ln() + (base.ln() - from.0.ln()) * e).exp();
-            self.cam = Some((s, [from.1[0] + (BOX_C[0] - from.1[0]) * e, from.1[1] + (BOX_C[1] - from.1[1]) * e]));
-            return;
-        }
-        if !self.sim.started || !self.touches.is_empty() || self.clock - self.last_touch < 2.5 {
-            self.cam = Some(cur);
-            return;
-        }
+    /// The fight's extent (4th to 96th percentiles): men moving, fallen or ringed in; reserves
+    /// standing idle are not counted.
+    fn fight_box(&self) -> Option<[f32; 4]> {
         let (mut xs, mut ys): (Vec<f32>, Vec<f32>) = (vec![], vec![]);
         for u in &self.sim.units {
-            // the fight: men moving or fallen or ringed in; reserves standing idle are not framed
             let idle = u.state == FORMED && u.vx * u.vx + u.vy * u.vy < 2.0;
             if u.state == GONE || (u.state == FLEEING && !u.trapped) || idle {
                 continue;
@@ -311,12 +297,60 @@ impl Battle {
             ys.push(u.y);
         }
         if xs.len() < 20 {
-            return;
+            return None;
         }
         xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
         ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let q = |v: &Vec<f32>, f: f32| v[((v.len() - 1) as f32 * f) as usize];
-        let (x0, x1, y0, y1) = (q(&xs, 0.04), q(&xs, 0.96), q(&ys, 0.04), q(&ys, 0.96));
+        Some([q(&xs, 0.04), q(&xs, 0.96), q(&ys, 0.04), q(&ys, 0.96)])
+    }
+
+    /// The print's framing: the frozen fight at about half the width or more, with the river beside
+    /// it in view, never further out than the whole field.
+    fn print_frame(&self, ctx: &Ctx) -> (f32, [f32; 2]) {
+        let base = Self::box_scale(ctx);
+        let Some([x0, x1, y0, y1]) = self.fight_box() else { return (base, BOX_C) };
+        let cy = (y0 + y1) * 0.5;
+        let left = (self.sim.river_x(cy) - 25.0).min(x0 - 25.0);
+        let right = x1 + 30.0;
+        let [wp, hp] = ctx.points();
+        let (wp, hp) = (wp as f32, hp as f32);
+        let s = (wp / (right - left)).min(0.82 * hp / (y1 - y0 + 90.0)).min(wp * 0.62 / (x1 - x0)).max(base);
+        // centred on the fight, shifted only as far as the river needs
+        let half = wp * 0.5 / s;
+        let mut cx = (x0 + x1) * 0.5;
+        if cx - half > left {
+            cx = left + half;
+        }
+        (s, [cx, cy])
+    }
+
+    /// The camera follows the fight once the pen has rested a moment, slowly; once the day is
+    /// decided it draws back to the print's framing, the river beside the frozen fight.
+    fn follow(&mut self, ctx: &Ctx, dt: f32) {
+        let base = Self::box_scale(ctx);
+        let cur = self.cam.unwrap_or((base, BOX_C));
+        if let Some(d) = self.decided_at {
+            let p = (((self.clock - d) / PULL_BACK) as f32).clamp(0.0, 1.0);
+            let from = *self.cam_at_decision.get_or_insert(cur);
+            let to = match self.print_at {
+                Some(t) => t,
+                None => {
+                    let t = self.print_frame(ctx);
+                    self.print_at = Some(t);
+                    t
+                }
+            };
+            let e = p * p * (3.0 - 2.0 * p);
+            let s = (from.0.ln() + (to.0.ln() - from.0.ln()) * e).exp();
+            self.cam = Some((s, [from.1[0] + (to.1[0] - from.1[0]) * e, from.1[1] + (to.1[1] - from.1[1]) * e]));
+            return;
+        }
+        if !self.sim.started || !self.touches.is_empty() || self.clock - self.last_touch < 2.5 {
+            self.cam = Some(cur);
+            return;
+        }
+        let Some([x0, x1, y0, y1]) = self.fight_box() else { return };
         let (bw, bh) = (x1 - x0 + 60.0, y1 - y0 + 60.0);
         let [wp, hp] = ctx.points();
         let target = ((1.0 * wp as f32) / bw).min((0.8 * hp as f32) / bh).clamp(base, base * 2.2);
@@ -363,6 +397,7 @@ impl Battle {
         self.decided_at = None;
         self.cam = None;
         self.cam_at_decision = None;
+        self.print_at = None;
         self.count_initial();
         self.pending_dots.clear();
         self.clear_stain = true;
@@ -821,8 +856,20 @@ impl Toy for Battle {
         });
 
         let mut ghost = vec![];
-        for p in ghost_paths() {
-            polyline_segs(&p, &mut ghost, 0.7, 1.0, 0.32);
+            for (k, p) in ghost_paths().iter().enumerate() {
+            polyline_segs(p, &mut ghost, 0.8, 1.0, 0.32);
+            // an arrowhead where each movement went (not on the bow, which is a line held)
+            if k < 3 {
+                let (e, q) = (p[p.len() - 1], p[p.len() - 2]);
+                let (dx, dy) = (e[0] - q[0], e[1] - q[1]);
+                let l = (dx * dx + dy * dy).sqrt().max(1e-3);
+                let (ux, uy) = (dx / l, dy / l);
+                for sg in [-1.0f32, 1.0] {
+                    let (c, sn) = (0.45f32.cos(), 0.45f32.sin() * sg);
+                    let (bx, by) = (-(ux * c - uy * sn) * 9.0, -(ux * sn + uy * c) * 9.0);
+                    ghost.push(Seg { ab: [e[0], e[1], e[0] + bx, e[1] + by], sw: [0.0, 9.0, 0.8, 0.0], ka: [3.0, 0.32, 0.0, 0.0] });
+                }
+            }
         }
         let looks = sim0.units.iter().map(|u| Look { dx: u.fx, dy: u.fy, curv: 0.0, ph: u.j }).collect();
         let mut b = Battle {
@@ -850,6 +897,7 @@ impl Toy for Battle {
             next_judge: 0.0,
             cam: None,
             cam_at_decision: None,
+            print_at: None,
             last_touch: -10.0,
             initial: [0, 0],
             dead: vec![0.0; dw * dh],
@@ -1043,7 +1091,7 @@ impl Toy for Battle {
             off: [o[0], o[1], self.clock as f32, if ctx.night { 1.0 } else { 0.0 }],
             world: [sim::WX0, sim::WY0, sim::WX1 - sim::WX0, sim::WY1 - sim::WY0],
             ground: self.ground_rect,
-            misc: [if ctx.reduce_motion { 1.0 } else { 0.0 }, fade, (s / ctx.ppp as f32 / 0.63).sqrt().clamp(1.0, 1.8), 0.0],
+            misc: [if ctx.reduce_motion { 1.0 } else { 0.0 }, fade, (s / ctx.ppp as f32 / 0.63).sqrt().clamp(1.0, 1.8), self.decided_at.map_or(0.0, |d| (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0))],
         };
         let q = &ctx.gpu.queue;
         q.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&un));
@@ -1055,29 +1103,23 @@ impl Toy for Battle {
         // the real day's ghost lies faint under the fight and lifts once the day is decided, to set
         // beside the plan; the pen's strokes dry to faint channels
         let settle = self.decided_at.map_or(0.0, |d| (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0));
-        // the ghost: faint while the fight runs; once decided it rises (darker dashes), then settles
-        // into a fine continuous engraved line beside the plan
+        // the real day: a quieter register, fine sanguine dots with arrowheads, faint while the
+        // fight runs, rising once the day is decided and staying, beside the plan in Carthage's ink
         let tau = self.decided_at.map_or(0.0, |d| (self.clock - d) as f32);
-        let rise = (tau / 1.5).clamp(0.0, 1.0);
-        let fine = ((tau - 1.5) / 2.5).clamp(0.0, 1.0);
-        let g_alpha = 0.12 + 0.4 * rise - 0.2 * fine;
-        let g_width = 0.7 + 0.25 * rise - 0.55 * fine;
-        let mut segs: Vec<Seg> = self
-            .ghost
-            .iter()
-            .map(|g| Seg { sw: [g.sw[0], g.sw[1], g_width, g.sw[3]], ka: [g.ka[0], g_alpha, fine, 0.0], ..*g })
-            .collect();
+        let rise = (tau / 2.0).clamp(0.0, 1.0);
+        let g_alpha = 0.16 + 0.5 * rise;
+        let mut segs: Vec<Seg> = self.ghost.iter().map(|g| Seg { ka: [g.ka[0], g_alpha, 0.0, 0.0], ..*g }).collect();
         let t = self.sim.time;
         for st in &self.sim.strokes {
             let age = t - st.born;
-            let alpha = (0.32 + 0.4 * (-age / 20.0).exp()) * (1.0 - 0.45 * settle);
+            let alpha = (0.32 + 0.4 * (-age / 20.0).exp()) * (1.0 - settle) + 0.75 * settle;
             let flow = 40.0 * (1.0 - settle);
             for w in st.pts.windows(2) {
                 if segs.len() >= MAX_SEGS - 64 {
                     break;
                 }
                 // drying to a thin engraved channel
-                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9 - 0.4 * settle, flow], ka: [0.0, alpha, 0.0, 0.0] });
+                segs.push(Seg { ab: [w[0][0], w[0][1], w[1][0], w[1][1]], sw: [w[0][2], w[1][2], 0.9 - 0.3 * settle, flow], ka: [0.0, alpha, 0.0, 0.0] });
             }
             if st.done {
                 let e = st.pts.last().unwrap();
