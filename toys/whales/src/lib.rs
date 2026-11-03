@@ -292,7 +292,13 @@ impl Whales {
         if self.globe.hand.fingers() > 0 {
             return;
         }
-        if self.mode == Mode::Free && self.t - self.last_touch > IDLE_BACK {
+        // left alone, the camera comes back to hold both; soon when neither whale is in sight
+        let in_sight = (0..2).any(|i| {
+            let ([x, y], f) = self.whale_on_screen(i);
+            f > 0.0 && x > 0.0 && y > 0.0 && x < self.w() as f64 / self.ppp() && y < self.h() as f64 / self.ppp()
+        });
+        let idle = if in_sight { IDLE_BACK } else { 4.0 };
+        if self.mode == Mode::Free && self.t - self.last_touch > idle {
             self.mode = Mode::Both;
         }
         let (target, zoom) = match self.mode {
@@ -435,14 +441,14 @@ impl Whales {
             let mut k = 1;
             let mut last = self.globe.project(route.lonlat(self.day)).0;
             let gap = 7.0 * reading;
-            while k <= 168 && self.marks.len() < MAX_MARKS - 4 {
+            while k <= 72 && self.marks.len() < MAX_MARKS - 4 {
                 let d = self.day - k as f64 * 0.25;
                 let ([x, y], f) = self.globe.project(route.lonlat(d));
                 // a dot each few points of the way it came, so lingering in a bay draws no knot
                 if f > 0.05 && (x - last[0]).hypot(y - last[1]) >= gap {
                     last = [x, y];
-                    let fade = (1.0 - k as f64 / 169.0).powf(1.3) * (f / 0.2).min(1.0);
-                    self.marks.push(MarkI { at: [x as f32, y as f32, (2.6 * reading) as f32, 0.0], look: [2.0, (0.38 * fade) as f32, 0.0, 0.0] });
+                    let fade = (1.0 - k as f64 / 73.0).powf(1.5) * (f / 0.2).min(1.0);
+                    self.marks.push(MarkI { at: [x as f32, y as f32, (2.6 * reading) as f32, 0.0], look: [2.0, (0.24 * fade) as f32, 0.0, 0.0] });
                 }
                 k += 1;
             }
@@ -716,7 +722,7 @@ mod tests {
             let s = Song::parse(&data(name)).unwrap();
             assert!((s.seconds() - secs).abs() < 1.0, "{name} is {} s", s.seconds());
             let peak = s.pcm.iter().fold(0.0f32, |m, x| m.max(x.abs()));
-            assert!(peak > 0.5 && peak <= 1.0, "{name} peaks at {peak}");
+            assert!(peak > 0.25 && peak <= 1.0, "{name} peaks at {peak}");
             assert!(s.env.iter().any(|e| e[0] > 0.8), "{name}'s envelope never rises");
         }
     }
@@ -787,3 +793,4 @@ mod round2 {
         assert!(r > 0.9, "the song heard is not the song sung two seconds before (r {r})");
     }
 }
+

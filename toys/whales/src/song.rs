@@ -148,7 +148,7 @@ pub struct Choir {
     /// placing whose delay the voices are at.
     written: usize,
     moved: u32,
-    jumping: bool,
+    jumping: [bool; 2],
 }
 
 impl Choir {
@@ -156,7 +156,19 @@ impl Choir {
         let pos = [start[0] * songs[0].rate, start[1] * songs[1].rate];
         // the past is kept at up to 48 kHz; a faster output keeps a shorter one (MAX_DELAY is then less)
         let n = (MAX_DELAY * 48_000.0) as usize + 4096;
-        Choir { songs, mix, pos, g: [0.0; 2], p: [0.0; 2], past: [vec![0.0; n], vec![0.0; n]], head: 0, delay: [0.0; 2], dip: [1.0; 2], lp: [0.0; 2], corner: [20_000.0; 2], written: 0, moved: 0, jumping: false }
+        // the past already full of what each whale sang before the toy opened (taken as heard at
+        // 48 kHz), so a hydrophone lowered in the first seconds hears it arriving, never a silence
+        let past = [0, 1].map(|v| {
+            let s = &songs[v];
+            let len = s.pcm.len() as f64;
+            (0..n)
+                .map(|k| {
+                    let back = (n - k) as f64 / 48_000.0 * s.rate;
+                    s.pcm[((pos[v] - back).rem_euclid(len)) as usize % s.pcm.len()]
+                })
+                .collect::<Vec<f32>>()
+        });
+        Choir { songs, mix, pos, g: [0.0; 2], p: [0.0; 2], past, head: 0, delay: [0.0; 2], dip: [1.0; 2], lp: [0.0; 2], corner: [20_000.0; 2], written: n - 1, moved: 0, jumping: [false; 2] }
     }
 }
 
@@ -177,7 +189,7 @@ impl Synth for Choir {
         let moved = self.mix.moved.load(Ordering::Relaxed);
         if moved != self.moved {
             self.moved = moved;
-            self.jumping = true;
+            self.jumping = [true; 2];
         }
         for f in 0..frames {
             let (mut l, mut r) = (0.0f32, 0.0f32);
@@ -199,11 +211,13 @@ impl Synth for Choir {
                 // a jump (the hydrophone moved) dips out and back; a drift (the whale swims, the
                 // camera's scale changes) glides, a twentieth of a second each second
                 let want = td[v].clamp(0.0, max_d);
-                if self.jumping && (want - self.delay[v]).abs() > 0.02 {
+                if self.jumping[v] {
+                    // dip out, land on the new delay, come back up (once a placing)
                     self.dip[v] -= dk;
                     if self.dip[v] <= 0.0 {
                         self.dip[v] = 0.0;
                         self.delay[v] = want;
+                        self.jumping[v] = false;
                     }
                 } else {
                     let slew = 0.2 / rate;
@@ -223,9 +237,6 @@ impl Synth for Choir {
             }
             self.head = (self.head + 1) % n;
             self.written = (self.written + 1).min(n - 1);
-            if self.jumping && self.dip[0] >= 1.0 && self.dip[1] >= 1.0 {
-                self.jumping = false;
-            }
             // a soft ceiling above a knee, so two loud whales together never clip (and one is untouched)
             let soft = |x: f32| {
                 let a = x.abs();
