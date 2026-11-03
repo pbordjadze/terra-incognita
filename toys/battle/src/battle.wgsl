@@ -12,7 +12,7 @@ struct U {
   off: vec4f,     // world origin on screen (px), seconds, night 0..1
   world: vec4f,   // the world sheets' rect: x0, y0, width, height (units)
   ground: vec4f,  // the ground's rect: x0, y0, width, height (units)
-  misc: vec4f,    // reduce motion, the page's fade-in, the cuts' width scale, 0
+  misc: vec4f,    // reduce motion, the page's fade-in, the cuts' width scale, the page's drying (0..1)
 };
 @group(0) @binding(0) var<uniform> u: U;
 
@@ -130,8 +130,11 @@ fn fs_seg(i: SegOut) -> @location(0) vec4f {
     w = (w + 1.1 * pulse * select(1.0, 0.0, flow == 0.0)) * taper;
   } else {
     // the real day's ghost: a dashed graphite underdrawing
-    // dashed while it rises, then the dashes close into one fine engraved line (ka.z: 0..1)
-    alpha = alpha * max(step(fract(s / 9.0), 0.55), i.fill);
+    // the real day: fine dots, an engraver's stipple (kind 3: an arrowhead, solid)
+    if (i.wk.y < 2.5) {
+      let ph = fract(s / 4.5);
+      alpha = alpha * (1.0 - smoothstep(0.1, 0.16, abs(ph - 0.5)));
+    }
   }
   let hw = max(w * u.screen.z * 0.5, 0.5);
   let cov = clamp(hw + 0.5 - dist, 0.0, 1.0) * min(1.0, w * u.screen.z) * alpha;
@@ -257,7 +260,8 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   let rome = mix(vec3f(0.149, 0.180, 0.275), vec3f(0.55, 0.68, 0.92), night);
   let carth = mix(vec3f(0.502, 0.133, 0.361), vec3f(0.80, 0.46, 0.54), night);
   let quill = mix(vec3f(0.26, 0.18, 0.12), vec3f(0.60, 0.48, 0.34), night);
-  let graphite = mix(vec3f(0.28, 0.28, 0.30), vec3f(0.52, 0.47, 0.40), night);
+  // the real day in sanguine, quieter than either army's ink, visible on the night paper too
+  let graphite = mix(vec3f(0.62, 0.32, 0.22), vec3f(0.86, 0.52, 0.40), night);
 
   // the paper's memory: where each current ran, where men fell
   let st = textureSampleLevel(stain_tex, lin, (w - u.world.xy) / u.world.zw, 0.0);
@@ -266,8 +270,9 @@ fn fs_page(@builtin(position) fc: vec4f) -> @location(0) vec4f {
   col = mix(col, quill, (1.0 - exp(-st.b * 3.0)) * 0.25);
 
   let ink = textureLoad(ink_tex, vec2i(px), 0);
-  col = mix(col, graphite, ink.a * 0.75);
-  col = mix(col, quill, ink.b * 0.9);
+  col = mix(col, graphite, ink.a * 0.85);
+  // the plan: the quill's ink while drawn, drying into Carthage's purple, the army's own orders
+  col = mix(col, mix(quill, carth * mix(1.0, 0.85, 1.0 - night), u.misc.w), ink.b * 0.9);
 
   // where the two armies meet, the inks fold: each pixel takes one, chosen by which army is the
   // stronger here, combed into feathered chevrons along the front that drift as the lines shear

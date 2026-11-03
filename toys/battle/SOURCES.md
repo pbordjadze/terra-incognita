@@ -34,8 +34,8 @@ What is measured, what is modelled from the accounts, what is drawn (painting-co
   Romans advance and press the centre. Nothing is scripted: the double envelopment comes out of three
   strokes; a bad plan breaks the crescent.
 - **The ghost of the day**: the faint dashed graphite under the armies is the movements as the accounts
-  give them (Hasdrubal's ride round the Roman rear, the Africans turning in, the Roman press, the crescent
-  as it stood and as it was bent back), drawn from the same reconstruction.
+  give them (Hasdrubal's ride round the Roman rear, the Africans turning in, the crescent bent back under the
+  Roman press), drawn from the same reconstruction.
 
 ## Drawn (not measured)
 
@@ -46,8 +46,8 @@ What is measured, what is modelled from the accounts, what is drawn (painting-co
 - The ending: the page freezes where the day was decided (the moment Hannibal's men stand all round
   Rome's standing mass, or an army is badly broken, or the day has run long): every cut keeps the way it
   last lay, men who got away and men standing alone fade, the pen's strokes dry to faint channels and the
-  real day's ghost rises, then settles into a fine engraved line beside them, and the camera draws back to
-  the whole field, river to ridge. Nothing is rearranged: each plan's page is its own fight.
+  real day's ghost (a sanguine stipple with arrowheads) rises beside your plan (dried into Carthage's
+  purple), and the camera draws back until the frozen fight lies beside the river. Nothing is rearranged: each plan's page is its own fight.
 - The camera: it opens on the deployment and, once the pen rests, eases in on the fight (the men moving,
   fallen or ringed in), never further out than the opening.
 - The speeds, attack and morale numbers were tuned by eye (the spike's, and this round's).
