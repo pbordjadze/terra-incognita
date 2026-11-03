@@ -222,3 +222,13 @@ retirement (row 195) the packs named below are at `before-retirement-2026-10-31`
 - **Not duplicates:** the glint drawn in Python for packs and in Swift for natives (one recipe, two
   hosts); `check.cjs` (any pack, fixed shots) beside `alive_check.cjs` (one pack's behaviour asserted);
   `tools/clouds/compose.py`, already shared by the clouds' and the ocean's looks.
+
+## The engine's apps: the kit and shared tooling
+
+Adrift, the toys and the engine's other users (busquets, traveling-squadron). The plan and its owners:
+`docs/kit.md`. One line a tool as it lands.
+
+| Tool | What it does | Run | Users |
+| --- | --- | --- | --- |
+| Toy kit | the library every toy stands on (the toy's life, GPU, globe, data, sound, the device's ABI, the headless check) | `toys/crates/toy-kit`; from another repository a git dependency pinned to a `toy-kit-v*` tag | the four toys |
+| Toy launch check | shaders to MSL 2.4 as on iOS; with `--ipa`, the manifest's files bundled | `bash tools/toys/launch_check.sh <toy> [--ipa f]` | `toys.yml` |

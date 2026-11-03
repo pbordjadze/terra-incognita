@@ -14,7 +14,8 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 if [ "${1:-}" = "--ipa" ]; then
-  (cd "$WORK" && unzip -q "$(cd "$(dirname "$2")" && pwd)/$(basename "$2")")
+  IPA="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
+  (cd "$WORK" && unzip -q "$IPA")
   python3 - "$ROOT/toys/$TOY/manifest.json" "$WORK"/Payload/*.app/data <<'PY'
 import json, os, sys
 names = json.load(open(sys.argv[1]))['files']
