@@ -67,21 +67,48 @@ final class ToyView: UIView {
     }
 
     /// The toy's sound: an engine whose source node asks the library for samples (the ambient
-    /// category: the silent switch silences it, and other apps' audio plays on).
+    /// category: the silent switch silences it, and other apps' audio plays on). The library fills
+    /// interleaved stereo into a scratch buffer allocated here, never on the audio thread; it is then
+    /// copied into whatever layout the engine hands over (two deinterleaved buffers on a device, or
+    /// one interleaved), in chunks no larger than the scratch.
+    static let scratchFrames = 4096
+    let scratch = UnsafeMutablePointer<Float>.allocate(capacity: ToyView.scratchFrames * 2)
     func startSound() {
         guard let shell, let s = toy_synth(shell) else { return }
         synth = s
         try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         try? AVAudioSession.sharedInstance().setActive(true)
         let engine = AVAudioEngine()
-        let rate = engine.outputNode.outputFormat(forBus: 0).sampleRate
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: rate > 0 ? rate : 48000, channels: 2, interleaved: true) else { return }
-        let ptr = UnsafeMutableRawPointer(s)
-        let node = AVAudioSourceNode(format: format) { _, _, frames, list -> OSStatus in
+        let hw = engine.outputNode.outputFormat(forBus: 0).sampleRate
+        let rate = hw > 0 ? hw : 48000
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2) else { return }
+        let ptr = OpaquePointer(UnsafeMutableRawPointer(s))
+        let scratch = self.scratch
+        let cap = ToyView.scratchFrames
+        let node = AVAudioSourceNode(format: format) { silence, _, frames, list -> OSStatus in
             let buffers = UnsafeMutableAudioBufferListPointer(list)
-            if let data = buffers[0].mData {
-                toy_audio(OpaquePointer(ptr), data.assumingMemoryBound(to: Float.self), frames, 2, format.sampleRate)
+            let total = Int(frames)
+            var done = 0
+            while done < total {
+                let n = min(cap, total - done)
+                toy_audio(ptr, scratch, UInt32(n), 2, rate)
+                if buffers.count >= 2 {
+                    // deinterleaved: one buffer a channel
+                    for c in 0..<2 {
+                        guard let d = buffers[c].mData?.assumingMemoryBound(to: Float.self) else { continue }
+                        let room = Int(buffers[c].mDataByteSize) / MemoryLayout<Float>.size
+                        for i in 0..<n where done + i < room { d[done + i] = scratch[2 * i + c] }
+                    }
+                } else if buffers.count == 1, let d = buffers[0].mData?.assumingMemoryBound(to: Float.self) {
+                    let ch = max(Int(buffers[0].mNumberChannels), 1)
+                    let room = Int(buffers[0].mDataByteSize) / MemoryLayout<Float>.size
+                    for i in 0..<n {
+                        for c in 0..<ch where (done + i) * ch + c < room { d[(done + i) * ch + c] = scratch[2 * i + min(c, 1)] }
+                    }
+                }
+                done += n
             }
+            silence.pointee = false
             return noErr
         }
         engine.attach(node)
