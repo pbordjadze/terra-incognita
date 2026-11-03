@@ -67,8 +67,9 @@ fn whale(p0: vec2f, kind: f32, phase: f32) -> Shape {
         // the humpback: stout, a broad head, its tail stock narrowing
         let taper = mix(0.42, 1.0, smoothstep(-0.48, 0.05, p.x));
         let b = min(ell(vec2f(p.x - 0.02, p.y / taper), vec2f(0.47, 0.105)), length(p - vec2f(0.30, 0.0)) - 0.095);
-        let f1 = limb(p, vec2f(0.16, 0.07), 2.25, 0.30, 0.07);
-        let f2 = limb(p, vec2f(0.16, -0.07), -2.25, 0.30, 0.07);
+        // the long flippers, swept back along the flanks as a swimming humpback holds them
+        let f1 = limb(p, vec2f(0.17, 0.07), 2.55, 0.30, 0.055);
+        let f2 = limb(p, vec2f(0.17, -0.07), -2.55, 0.30, 0.055);
         let tail = vec2f(-0.43, -beat * 0.25);
         let k1 = limb(p, tail, 1.95 + beat, 0.18, 0.065);
         let k2 = limb(p, tail, -1.95 + beat, 0.18, 0.065);
@@ -95,6 +96,23 @@ fn whale(p0: vec2f, kind: f32, phase: f32) -> Shape {
     let alpha = v.look.y;
     let night = U.pad.x;
     let px = 1.0 / max(v.size * U.frame.z, 1.0);       // a pixel in body lengths
+    if (kind > 2.5) {
+        // the hydrophone: a small bright point on the water, a thin ring round it that flares as a
+        // song's ring passes; on the land, a dull grey point (the land's silence)
+        let r = length(v.q);
+        let core = 1.0 - smoothstep(0.07 - px, 0.07 + px, r);
+        let halo = exp(-sq(r / 0.16)) * 0.35;
+        let ping = v.look.z;
+        let rr = 0.34 + 0.12 * ping;
+        let ring = (1.0 - smoothstep(0.0, 1.5 * px + 0.012, abs(r - rr))) * (0.35 + 0.65 * ping);
+        if (v.look.w > 0.5) {
+            let dull = (1.0 - smoothstep(0.0, 1.5 * px + 0.012, abs(r - 0.30))) * 0.45;
+            let a = clamp(core * 0.8 + halo * 0.4 + dull, 0.0, 1.0) * alpha;
+            return vec4f(vec3f(0.52, 0.52, 0.55) * a, a);
+        }
+        let a = clamp(core + halo * (1.0 + ping) + ring, 0.0, 1.0) * alpha;
+        return vec4f(vec3f(0.92, 0.97, 1.0) * a, a);
+    }
     if (kind > 1.5) {
         // a dot of the wake
         let r = length(v.q);
@@ -118,7 +136,8 @@ fn whale(p0: vec2f, kind: f32, phase: f32) -> Shape {
         let mott = vnoise(v.q * 38.0 + vec2f(3.1, 7.7));
         body = mix(vec3f(0.36, 0.52, 0.66), vec3f(0.55, 0.70, 0.84), night) * (0.9 + 0.2 * mott);
     }
-    let fin = mix(vec3f(0.90, 0.95, 0.95), vec3f(0.96, 0.98, 1.0), night);
+    // the flippers pale under the water (white in the light, seen through the sea a grey-blue)
+    let fin = mix(vec3f(0.90, 0.95, 0.95), vec3f(0.66, 0.76, 0.82), night);
     var col = mix(body, fin, finIn);
     // the one followed glows a little in the water
     let glow = v.look.w * (1.0 - smoothstep(0.0, 0.35, d)) * 0.35 * (1.0 - inside);

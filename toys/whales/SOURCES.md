@@ -39,8 +39,11 @@ Measured (from the literature; the dated places in the tool):
 Drawn (the toy's, not measured): the way between dated places (great circles, eased) and a slow
 wander along it, kept 25 km from the globe's coast; a floor under each whale's singing season so
 neither is ever quite silent; the year's pace (a day a second); the rings (how a song looks here:
-their timing and colour come from the recording's own loudness and pitch); the whales' shapes and
-swimming; the wake.
+their timing and colour come from the recording's own loudness and pitch, their spread a drawn
+speed, not sound's 1.5 km/s); the hydrophone a touch lowers (a song reaches it when its ring does,
+quieter and muffled the farther it came, hardly at all from behind the land: the coast is the globe's
+own, the attenuation and muffling are drawn); the land's silence; the whales' shapes and swimming;
+the wake.
 
 ## The ground
 
