@@ -84,8 +84,11 @@ const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
     // a flash's own bloom: the light a swarm in step throws into the night round it
     let flash = smoothstep(0.35, 1.0, glow) * cover * L.a.w;
     col = col + FLY * (0.45 * pow(near, 1.0) + 0.45 * pow(wide, 1.2)) * flash;
-    // a finger's ring of light, spreading over land and sea from where it touched, fading as it goes
-    var ring = 0.0;
+    // a finger's flash, spreading from where it touched as light, not a line: a soft wavefront with a
+    // long fading wake behind it, faint in the dark air over the sea, lifting the city lights it passes
+    // over (they flash as it reaches them: sim.rs touch)
+    var wave = 0.0;
+    var spot = 0.0;
     for (var k = 0; k < 4; k++) {
         let p = L.rings[2 * k];
         let q = L.rings[2 * k + 1];
@@ -93,16 +96,17 @@ const FLY_CORE = vec3f(240.0, 255.0, 200.0) / 255.0;
             let age = L.b.x - p.w;
             if (age >= 0.0 && age < q.y) {
                 let ang = acos(clamp(dot(G.g, p.xyz), -1.0, 1.0));
-                let rad = q.x * age;
-                let w = L.b.y * (1.0 + 0.3 * age);
-                let fade = (1.0 - smoothstep(0.0, q.y, age)) * smoothstep(0.0, 0.08, age);
-                ring = ring + exp(-sq((ang - rad) / w)) * fade;
-                // and the touch itself, a glow where the finger was, for a moment
-                ring = ring + 0.8 * exp(-sq(ang / (2.5 * L.b.y))) * exp(-age / 0.35);
+                let dlt = ang - q.x * age;
+                let w = L.b.y * (1.0 + 0.5 * age);
+                let front = select(exp(dlt / (5.0 * w)), exp(-sq(dlt / w)), dlt > 0.0);
+                let fade = (1.0 - smoothstep(0.0, q.y, age)) * smoothstep(0.0, 0.1, age);
+                wave = wave + front * fade / (1.0 + 2.0 * q.x * age);
+                spot = spot + exp(-sq(ang / (4.0 * L.b.y))) * exp(-age / 0.4);
             }
         }
     }
-    col = col + FLY * 0.14 * min(ring, 1.5);
+    col = col + FLY * min(wave, 1.2) * (0.045 + 1.1 * lit);
+    col = col + FLY_CORE * 0.12 * min(spot, 1.0);
     // a soft shoulder, so a bright heart whitens instead of clipping to a flat block
     col = vec3f(1.0) - exp(-col * 1.15);
     // roundness: darker toward the limb, and the thin air there
