@@ -32,6 +32,8 @@ const SHOW_FOR: f64 = 6.0;
 const SHOW_AGAIN: f64 = 40.0;
 /// How far behind your bird the eye rides while flying, metres.
 const EYE_BEHIND: f32 = 4.5;
+/// A drag of this many points is a full lean.
+const LEAN_PT: f64 = 70.0;
 /// How far from the roost the watcher stands, metres.
 const WATCHER: f32 = 65.0;
 
@@ -46,6 +48,8 @@ struct SkyU {
     ground: [f32; 4],
     horizon: [f32; 4],
     horizon2: [f32; 4],
+    /// The eye's place (x, z) for the ground's pattern, and the toy's time.
+    eye: [f32; 4],
 }
 
 #[repr(C)]
@@ -119,6 +123,8 @@ pub struct Murmuration {
     show_next: f64,
     show_until: f64,
     finger: Option<(u64, [f64; 2])>,
+    /// Where the finger came down: a lean is measured from there.
+    finger_from: [f64; 2],
     eye: Eye,
     t: f64,
     reduce_motion: bool,
@@ -235,11 +241,13 @@ impl Murmuration {
         self.flock_look = addv(scale(self.flock_look, 1.0 - kc), scale(c_loc, kc));
         // Close behind your bird and a little under it, so it is the one bird that holds still on
         // the glass while the flock streams past: you.
-        let mut near = sub(you.pos, scale(self.dir3, EYE_BEHIND));
-        near[1] = (you.pos[1] - 1.5).min(self.flock_look[1] - 1.8).max(3.0);
+        // Just behind and above your bird, so it is the dark shape low and centred on the glass,
+        // the one that holds still while the flock streams past.
+        let mut near = addv(sub(you.pos, scale(self.dir3, EYE_BEHIND)), [0.0, -0.3, 0.0]);
+        near[1] = near[1].max(3.0);
         let look_far = self.look;
         let ahead = addv(addv(you.pos, scale(self.dir3, 12.0)), [0.0, 2.0, 0.0]);
-        let look_near = addv(scale(ahead, 0.3), scale(self.flock_look, 0.7));
+        let look_near = addv(scale(ahead, 0.65), scale(self.flock_look, 0.35));
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
         let roll = if self.reduce_motion { 0.0 } else { 0.4 * e };
@@ -264,16 +272,16 @@ impl Murmuration {
             let h = norm([fwd[0], 0.0, fwd[2]]);
             fwd = addv(scale(h, (1.0 - max_up * max_up).sqrt()), [0.0, max_up, 0.0]);
         }
+        // Flying, the eye looks up just so far that the horizon lies at seven tenths of the glass:
+        // your bird low and centred against the glow, the flock round and above you against the sky.
+        let fly_pitch = (0.2 * h / focal).atan();
+        let p0 = fwd[1].clamp(-1.0, 1.0).asin();
+        let p1 = p0 + (fly_pitch - p0) * e;
+        let hz = norm([fwd[0], 0.0, fwd[2]]);
+        fwd = addv(scale(hz, p1.cos()), [0.0, p1.sin(), 0.0]);
         let right = norm(cross(upv, fwd));
         let up = cross(fwd, right);
         self.eye = Eye { pos, right, up, fwd, focal };
-    }
-
-    /// The ray through a point on the screen (points), from the eye.
-    fn ray(&self, ctx: &Ctx, p: [f64; 2]) -> V3 {
-        let x = (p[0] * ctx.ppp) as f32 - 0.5 * ctx.width as f32;
-        let y = 0.5 * ctx.height as f32 - (p[1] * ctx.ppp) as f32;
-        norm(addv(addv(scale(self.eye.fwd, self.eye.focal), scale(self.eye.right, x)), scale(self.eye.up, y)))
     }
 
     fn upload_sky(&mut self, ctx: &Ctx) {
@@ -453,6 +461,7 @@ impl Toy for Murmuration {
             show_next: FIRST_SHOW,
             show_until: -1.0,
             finger: None,
+            finger_from: [0.0; 2],
             eye,
             t: 0.0,
             reduce_motion: ctx.reduce_motion,
@@ -490,6 +499,7 @@ impl Toy for Murmuration {
             Phase::Down => {
                 if self.finger.is_none() {
                     self.finger = Some((e.id, [e.x, e.y]));
+                    self.finger_from = [e.x, e.y];
                     self.near_to = 1.0;
                     self.show_until = -1.0;
                     self.show_next = self.clock + SHOW_AGAIN;
@@ -523,47 +533,51 @@ impl Toy for Murmuration {
         let (el, az) = self.sun_at(self.minutes);
         (self.sun_el, self.sun_az) = (el, az);
         self.sky.step(el, 6);
-        // Your lean: toward the finger, through the eye.
+        // Your lean: a touch rides with the flock; a drag from where the finger came down leans you,
+        // right and left (turns) more than up and down (a sheet of birds is a few metres thick),
+        // always from the heading of the flock round you, so you stay in it. Only a long, hard lean
+        // out past the edge of the reach slowly lets you go.
         if let Some((_, p)) = self.finger {
-            let r = self.ray(ctx, p);
+            let from = self.finger_from;
+            let dx = ((p[0] - from[0]) / LEAN_PT) as f32;
+            let dy = ((p[1] - from[1]) / LEAN_PT) as f32;
+            let hard = dx.abs() > 1.2 || dy.abs() > 1.2;
+            self.strain = (self.strain + dt as f32 * if hard { 1.0 / 6.0 } else { -0.5 }).clamp(0.0, 1.0);
+            let h = ring_heading(&self.flock, 16.0, 45.0);
+            let hh = norm([h[0], 0.0, h[2]]);
+            let right = norm(cross([0.0, 1.0, 0.0], hh));
+            let yaw_max = 35.0 + 70.0 * self.strain * self.strain;
+            let yaw = (dx.clamp(-1.0, 1.0) * 35.0 + (dx.abs() - 1.0).max(0.0) * dx.signum() * (yaw_max - 35.0)).to_radians();
+            let pitch_max = 14.0 + 40.0 * self.strain * self.strain;
+            let pitch = (-dy.clamp(-1.0, 1.0) * 14.0 - (dy.abs() - 1.0).max(0.0) * dy.signum() * (pitch_max - 14.0)).to_radians() + h[1].asin();
+            let flat = addv(scale(hh, yaw.cos()), scale(right, yaw.sin()));
+            let mut r = norm(addv(scale(flat, pitch.cos()), [0.0, pitch.sin(), 0.0]));
             let you = &self.flock.birds[self.flock.you];
             let v = you.vel;
             // The reeds are no place to fly: below 30 m the lean turns up, firmly near the ground.
-            let mut r = r;
             let alt = you.pos[1];
             if alt < 30.0 {
                 r[1] = r[1].max(-0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0) + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0));
                 r = norm(r);
             }
-            // The lean bends you within the flock: never more than so far from the heading of the
-            // birds round you, unless you keep leaning hard, when the limit slowly gives.
-            let h_loc = ring_heading(&self.flock, 16.0, 45.0);
-            let raw = dot(h_loc, r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
-            let hard = raw > 50.0;
-            self.strain = (self.strain + dt as f32 * if hard { 1.0 / 6.0 } else { -0.5 }).clamp(0.0, 1.0);
-            let max_ang = (30.0 + 80.0 * self.strain * self.strain).to_radians();
-            let r = if raw.to_radians() > max_ang {
-                let perp = norm(sub(r, scale(h_loc, dot(r, h_loc))));
-                norm(addv(scale(h_loc, max_ang.cos()), scale(perp, max_ang.sin())))
-            } else {
-                r
-            };
-            // Climbs and dives are held closer to the flock's than turns: up and down is how a bird
-            // leaves a sheet of birds a few metres thick.
-            let dv = (0.26 + 0.6 * self.strain * self.strain).min(0.9);
-            let mut r = r;
-            r[1] = r[1].clamp(h_loc[1] - dv, h_loc[1] + dv);
-            let r = norm(r);
-            let want = scale(r, flock::V0);
+            // And the thick of the flock keeps you: a gentle pull toward the birds round you.
+            let (_, c_loc, n_loc) = local(&self.flock, 25.0);
+            let mut pull = if n_loc > 20 { scale(sub(c_loc, you.pos), 0.25) } else { [0.0; 3] };
+            let pl = length(pull);
+            if pl > 4.0 {
+                pull = scale(pull, 4.0 / pl);
+            }
+            let pull = scale(pull, 1.0 - self.strain);
+            let want = addv(scale(r, flock::V0), pull);
             let mut a = scale(sub(want, v), 3.0);
             let al = length(a);
             if al > 30.0 {
                 a = scale(a, 30.0 / al);
             }
-            let off = dot(norm(v), r).clamp(-1.0, 1.0).acos().to_degrees() as f32;
+            let lean = (dx * dx + dy * dy).sqrt().min(1.0);
             self.flock.lean = a;
             self.flock.lean_dir = r;
-            self.flock.lean_k = 0.4 + 0.3 * (off / 35.0).min(1.0);
+            self.flock.lean_k = 0.3 + 0.4 * lean;
         } else {
             self.strain = (self.strain - dt as f32 * 0.5).max(0.0);
             self.flock.lean = [0.0; 3];
@@ -606,12 +620,12 @@ impl Toy for Murmuration {
                 }
             }
         }
-        let rush = 0.08 * (1.0 + round).ln() + 0.09 * pass;
+        let rush = 0.17 * (1.0 + round).ln() + 0.09 * pass;
         let (c, _) = self.flock.centre();
         let dc = length(sub(c, self.eye.pos));
         let you = &self.flock.birds[self.flock.you];
         put(&self.ears.rush, rush.min(1.6));
-        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.75 * self.near));
+        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.3 * self.near));
         put(&self.ears.wings, self.near * (0.15 + 0.5 * you.flap));
         put(&self.ears.rate, you.rate);
     }
@@ -643,6 +657,7 @@ impl Toy for Murmuration {
             ground: [ground[0], ground[1], ground[2], (self.t % (std::f64::consts::TAU * 100.0)) as f32],
             horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
             horizon2: [h1[0], h1[1], h1[2], 1.0 - self.near.min(1.0) * 2.0],
+            eye: [e.pos[0], e.pos[1], e.pos[2], 0.0],
         };
         ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
         // The birds: dark against the sky, a little hazed with distance.
@@ -672,7 +687,7 @@ impl Toy for Murmuration {
         if std::env::var_os("MURMURATION_COUNT").is_some() {
             // For tools/toys/murmuration/holds.py: how many birds are on the glass, and how many of
             // them against the sky.
-            let (mut n, mut sky) = (0, 0);
+            let (mut n, mut sky, mut big) = (0, 0, 0);
             for b in &self.flock.birds {
                 let rel = sub(b.pos, e.pos);
                 let z = dot(rel, e.fwd);
@@ -683,12 +698,16 @@ impl Toy for Murmuration {
                 let y = dot(rel, e.up) * e.focal / z;
                 if x.abs() < 0.5 * w && y.abs() < 0.5 * h {
                     n += 1;
+                    // Big enough to read as a bird near you: a wingspan of 12 points or more.
+                    if 0.5 * e.focal / z >= 12.0 * ctx.ppp as f32 {
+                        big += 1;
+                    }
                     if b.pos[1] > e.pos[1] || z > 2000.0 {
                         sky += 1;
                     }
                 }
             }
-            println!("visible {:.2} {} {} near {:.2}", self.t, n, sky, self.near);
+            println!("visible {:.2} {} {} near {:.2} big {}", self.t, n, sky, self.near, big);
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
