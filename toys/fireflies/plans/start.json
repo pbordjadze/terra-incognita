@@ -1,42 +1,12 @@
 {
-  "seconds": 6,
+  "_": "First sight: the night Earth, every patch of its lights a firefly on its own beat; within seconds cities fall into step with their neighbours, then regions flash as one (the eastern US, Europe, India behind the rim). A film of the first 24 seconds at 15 frames a second.",
+  "seconds": 24,
   "fps": 30,
   "night": true,
-  "events": [
-    {
-      "t": 1.0,
-      "drag": [
-        [
-          200,
-          500
-        ],
-        [
-          320,
-          470
-        ]
-      ],
-      "for": 0.5
-    },
-    {
-      "t": 3.0,
-      "tap": [
-        196,
-        426
-      ]
-    }
-  ],
   "shots": [
-    {
-      "t": 0.5,
-      "name": "start"
-    },
-    {
-      "t": 2.0,
-      "name": "turned"
-    },
-    {
-      "t": 6.0,
-      "name": "end"
-    }
-  ]
+    { "t": 0.5, "name": "first-sight" },
+    { "t": 12.0, "name": "falling-into-step" },
+    { "t": 23.9, "name": "in-step" }
+  ],
+  "film": { "from": 0, "to": 24, "every": 0.0667 }
 }

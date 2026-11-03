@@ -1,6 +1,7 @@
 {
   "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). Built data under toys/<id>/data/ is the toy's own; never hand-edit it.",
   "files": {
+    "fireflies.bin": "toys/fireflies/data/fireflies.bin",
     "geo.png": "Globe/geo.png",
     "terrain.png": "Globe/terrain.png",
     "floor.png": "Globe/ground/floor.png",
