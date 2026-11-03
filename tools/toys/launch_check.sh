@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # A toy's launch check: tools/kit/launch_check.py (what it checks and why) with the toy's check binary,
-# manifest and budget (toys/<toy>/toy.json's memory_mb).
+# manifest and budget (toys/<toy>/toy.json's memory_mb when it has one, else the tool's default).
 #
 #     bash tools/toys/launch_check.sh <toy> [--ipa <toy.ipa>]     # needs naga-cli 26 (cargo install naga-cli --version 26.0.0)
 set -euo pipefail

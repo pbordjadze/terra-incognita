@@ -1,6 +1,5 @@
 {
-  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id; memory_mb is its budget for peak memory at launch (tools/kit/launch_check.py says why 1400). Its SideStore entry is in ci/sidestore_apps.json (tag whales-build).",
+  "_": "The toy's app (toys/ios/build.sh): its display name (a working title; the final name is the owner's) and bundle id. Its SideStore entry is in ci/sidestore_apps.json (tag whales-build).",
   "name": "Whales",
-  "bundleIdentifier": "com.pbordjadze.toy.whales",
-  "memory_mb": 1400
+  "bundleIdentifier": "com.pbordjadze.toy.whales"
 }
