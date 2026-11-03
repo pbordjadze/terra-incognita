@@ -137,6 +137,8 @@ pub struct Battle {
     cam_at_decision: Option<(f32, [f32; 2])>,
     print_at: Option<(f32, [f32; 2])>,
     last_touch: f64,
+    /// When the last order was drawn: the day isn't called for running long while orders still come.
+    last_order: f64,
     initial: [u32; 2],
     dead: Vec<f32>,
     deaths_drawn: usize,
@@ -899,6 +901,7 @@ impl Toy for Battle {
             cam_at_decision: None,
             print_at: None,
             last_touch: -10.0,
+            last_order: -10.0,
             initial: [0, 0],
             dead: vec![0.0; dw * dh],
             deaths_drawn: 0,
@@ -945,6 +948,17 @@ impl Toy for Battle {
                 let (x0, y0) = (self.touches[k].x, self.touches[k].y);
                 if !self.touches[k].moved && ((e.x - x0).powi(2) + (e.y - y0).powi(2)).sqrt() > 6.0 && !self.touches[k].reset {
                     self.touches[k].moved = true;
+                    // a new order on a decided page: the day goes on from where it lay (the ink wets
+                    // again, the camera lets go), so a finger is never met by stillness; the day is
+                    // judged again only after the order has had time to tell
+                    if self.decided_at.is_some() {
+                        ctx.haptic();
+                        self.decided_at = None;
+                        self.cam_at_decision = None;
+                        self.print_at = None;
+                        self.next_judge = self.clock + 10.0;
+                    }
+                    self.last_order = self.clock;
                     self.start();
                     let (wx, wy) = self.to_world(ctx, x0, y0);
                     self.touches[k].stroke = Some(self.sim.begin_stroke(wx, wy));
@@ -953,6 +967,7 @@ impl Toy for Battle {
                     let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     let before = self.sim.strokes[s].pts.len();
                     self.sim.extend_stroke(s, wx, wy);
+                    self.last_order = self.clock;
                     let pts = &self.sim.strokes[s].pts;
                     if pts.len() > before && pts.len() >= 2 {
                         let (a, b) = (pts[pts.len() - 2], pts[pts.len() - 1]);
@@ -968,6 +983,12 @@ impl Toy for Battle {
                     let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     self.sim.extend_stroke(s, wx, wy);
                     self.sim.end_stroke(s);
+                } else if !t.moved && !t.reset && e.phase == Phase::Up
+                    && self.decided_at.map_or(false, |d| self.clock - d > SETTLE + PULL_BACK)
+                {
+                    // a tap on the kept print, once it has settled: the quiet way to begin again
+                    ctx.haptic();
+                    self.fresh_page();
                 } else if !t.moved && !t.reset && e.phase == Phase::Up {
                     // a tap: a drop of ink spreads its ring through the men
                     let (wx, wy) = self.to_world(ctx, t.x, t.y);
@@ -1042,8 +1063,10 @@ impl Toy for Battle {
             let rome = c[0][0] as f32 / self.initial[0].max(1) as f32;
             let carth = c[1][0] as f32 / self.initial[1].max(1) as f32;
             let ringed = c[0][1] + c[0][2] > self.initial[0] / 6 && self.encircled();
-            if ringed || rome < 0.4 || carth < 0.3 || self.sim.time > 75.0 {
+            if ringed || rome < 0.4 || carth < 0.3 || (self.sim.time > 75.0 && self.clock - self.last_order > 12.0) || self.sim.time > 150.0 {
                 self.decided_at = Some(self.clock);
+                // the day's end is felt as well as seen
+                ctx.haptic();
                 if std::env::var("BATTLE_CENSUS").is_ok() {
                     eprintln!("decided at sim {:.1} (ringed {ringed}): rome {:?} carthage {:?}", self.sim.time, c[0], c[1]);
                 }
