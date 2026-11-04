@@ -1,9 +1,9 @@
-{ "_": "Every stride in one night: a drag pulling the ring out to the far corner (huge: nearly every try refused, the walker standing still, its footprints piling into spikes), then a tap by the walker (tiny: a fine scribble), then a third of the screen (every hill); the dawn after.",
-  "size": [1179, 2556], "ppp": 3, "seconds": 50, "fps": 30, "audio": true,
+{ "_": "Every stride in one night: a drag pulling the ring out to the far corner (huge: nearly every try refused, the walker standing still, its footprints piling into spikes), then a tap by the walker (tiny: a fine scribble), then a third of the screen (every hill); the night lasts 30 s past that last change, then its dawn.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 62, "fps": 30, "audio": true,
   "events": [
     { "t": 2.0, "drag": ["walker", "far"], "for": 1.0 },
     { "t": 14.0, "tap": "near" },
     { "t": 24.0, "tap": "good" }
   ],
-  "shots": [{ "t": 3.5, "name": "huge" }, { "t": 13.0, "name": "standing" }, { "t": 20.0, "name": "tiny" }, { "t": 26.0, "name": "good" }, { "t": 41.0, "name": "map" }, { "t": 48.0, "name": "dawn" }],
-  "film": { "from": 0, "to": 50, "every": 0.5 } }
+  "shots": [{ "t": 3.5, "name": "huge" }, { "t": 13.0, "name": "standing" }, { "t": 20.0, "name": "tiny" }, { "t": 26.0, "name": "good" }, { "t": 41.0, "name": "map" }, { "t": 52.0, "name": "late-night" }, { "t": 61.0, "name": "dawn" }],
+  "film": { "from": 0, "to": 62, "every": 0.5 } }

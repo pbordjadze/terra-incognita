@@ -16,12 +16,16 @@ use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 pub const PACE: f64 = 120.0;
 /// A night's walk, the dawn coming up, the day held, the dusk (seconds).
 const NIGHT: f64 = 42.0;
+/// A night lasts at least this long after the stride last changed (so a new stride has its time), and
+/// never longer than LONGEST.
+const AFTER: f64 = 30.0;
+const LONGEST: f64 = 80.0;
 const RISE: f64 = 3.5;
 const DAY: f64 = 13.0;
 const DUSK: f64 = 3.0;
 /// The stride's bounds and its first value (screen widths).
 const MIN_STRIDE: f64 = 0.006;
-const FIRST_STRIDE: f64 = 0.022;
+const FIRST_STRIDE: f64 = 0.05;
 /// The map's contours, every this many of its units (a contour step is a factor of e^0.7 ≈ 2 in footprints).
 const CONTOUR: f32 = 0.7;
 const BUMPS: usize = 40;
@@ -32,6 +36,8 @@ pub struct Walk {
     night: u64,
     /// When this night began (the shell's clock).
     began: f64,
+    /// This night's length (NIGHT, longer if the stride changed late).
+    length: f64,
     t: f64,
     acc: f64,
     points: [f64; 2],
@@ -124,6 +130,7 @@ impl Walk {
         self.land = Land::new(0x5eed_0000 + self.night, aspect);
         self.walker = Walker::new(&self.land, 0xf007 + self.night * 31, self.walker.stride);
         self.began = t;
+        self.length = NIGHT;
         self.lamp = self.walker.at;
         self.trail.clear();
         self.glances.clear();
@@ -140,14 +147,14 @@ impl Walk {
     /// How far the dawn has come (0 night, 1 day), and the light (0 at the dusk's end).
     fn dawn(&self) -> (f64, f64) {
         let c = self.clock();
-        let up = ((c - NIGHT) / RISE).clamp(0.0, 1.0);
+        let up = ((c - self.length) / RISE).clamp(0.0, 1.0);
         let up = up * up * (3.0 - 2.0 * up);
-        let light = if c < 2.0 && self.night > 1 { c / 2.0 } else { 1.0 - ((c - NIGHT - DAY) / DUSK).clamp(0.0, 1.0) };
+        let light = if c < 2.0 && self.night > 1 { c / 2.0 } else { 1.0 - ((c - self.length - DAY) / DUSK).clamp(0.0, 1.0) };
         (up, light)
     }
 
     fn walking(&self) -> bool {
-        self.clock() < NIGHT
+        self.clock() < self.length
     }
 
     /// A place on the land (screen widths) on screen (points), and back.
@@ -162,6 +169,9 @@ impl Walk {
         let q = self.from_pt(p);
         let d = (q[0] - self.lamp[0]).hypot(q[1] - self.lamp[1]);
         self.walker.stride = d.max(MIN_STRIDE);
+        if self.walking() {
+            self.length = self.length.max(self.clock() + AFTER).min(LONGEST);
+        }
     }
 }
 
@@ -178,6 +188,7 @@ impl Toy for Walk {
             walker,
             night: 1,
             began: 0.0,
+            length: NIGHT,
             t: 0.0,
             acc: 0.0,
             points,
@@ -218,7 +229,7 @@ impl Toy for Walk {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.points = ctx.points();
         self.t = t;
-        if self.clock() >= NIGHT + DAY + DUSK {
+        if self.clock() >= self.length + DAY + DUSK {
             self.begin_night(ctx, t);
         }
         let mut steps: Vec<(f32, f32)> = Vec::new();
@@ -275,9 +286,9 @@ impl Toy for Walk {
             wgpu::Extent3d { width: GW as u32, height: self.ground.gh as u32, depth_or_array_layers: 1 },
         );
         // the map's height is log(footprints / (count · cell area)) less the land's highest log-chance
-        let cell = 1.0 / GW as f64;
-        let peak = K * self.land.top - self.land.log_z;
-        let off = peak + ((self.walker.count.max(1) as f64) * cell * cell).ln();
+        // (placed by the pile's own deepest point: the map knows nothing of the land)
+        let deepest = self.walker.prints.iter().fold(1e-6f32, |a, &b| a.max(b));
+        let off = (deepest as f64).ln();
         let mut u: Vec<f32> = vec![
             size[0] as f32, size[1] as f32, self.t as f32, k as f32,
             dawn as f32, light as f32, off as f32, K as f32,
@@ -305,7 +316,15 @@ impl Toy for Walk {
         let w = self.points[0];
         let px = |p: [f64; 2]| [(p[0] * w * k) as f32, (p[1] * w * k) as f32];
         let pk = k as f32; // pixels a point
-        let lamp = px(self.lamp);
+        let mut lamp = px(self.lamp);
+        // the lantern flinches toward a spot it has just refused
+        if let (false, Some(&(g, at))) = (self.still, self.glances.back()) {
+            let a = (1.0 - (self.t - at) / 0.1).clamp(0.0, 1.0) as f32;
+            let to = px(g);
+            let (dx, dy) = (to[0] - lamp[0], to[1] - lamp[1]);
+            let d = dx.hypot(dy).max(1.0);
+            lamp = [lamp[0] + dx / d * 1.6 * pk * a, lamp[1] + dy / d * 1.6 * pk * a];
+        }
         let night = (1.0 - dawn) as f32 * light as f32;
         let lit = light as f32;
 
@@ -313,7 +332,10 @@ impl Toy for Walk {
         if !self.still {
             for &(p, at) in &self.glances {
                 let a = (1.0 - (self.t - at) / 0.45).clamp(0.0, 1.0) as f32;
-                self.painter.disc(px(p), 1.3 * pk, 1.0 * pk, [0.80, 0.86, 1.0, 0.30 * a * a * night]);
+                // a try off the edge is shown at the edge, where it left the land
+                let e = 0.006;
+                let q = [p[0].clamp(e, 1.0 - e), p[1].clamp(e, self.land.aspect - e)];
+                self.painter.disc(px(q), 1.6 * pk, 1.0 * pk, [0.80, 0.86, 1.0, 0.42 * a * a * night]);
             }
         }
         // the latest footprints: warm while fresh, cooling into the map
@@ -328,14 +350,17 @@ impl Toy for Walk {
         // the stride: a ring round the walker that reaches as far as a step may go
         let r = (self.stride_seen * w * k) as f32;
         let since = self.clock();
-        let invite = if self.touched || self.night > 1 || since < 2.5 {
-            0.0
-        } else {
-            let come = ((since - 2.5) / 1.0).min(1.0) as f32;
-            let b = if self.still { 0.7 } else { 0.5 + 0.5 * (0.5 + 0.5 * ((since - 2.5) * 2.2).sin()) as f32 };
-            come * b
-        };
-        let ring_a = (0.20 + 0.30 * self.holding as i32 as f32 + 0.35 * invite) * lit * (1.0 - 0.6 * dawn as f32);
+        let invite = if self.touched || !self.walking() || (self.night == 1 && since < 2.5) { 0.0 } else { 1.0 };
+        if invite > 0.0 {
+            // every 3.2 s a faint ring swells from the stride's out toward a third of the screen and fades
+            let ph = ((self.t - 2.5).max(0.0) % 3.2 / 2.2).min(1.0) as f32;
+            let ease = 1.0 - (1.0 - ph) * (1.0 - ph);
+            let grow = if self.still { 0.5 } else { ease };
+            let rr = r + (0.30 * w * k) as f32 * grow;
+            let a = if self.still { 0.25 } else { 0.35 * (1.0 - ph) * (ph * 6.0).min(1.0) };
+            self.painter.glow_ring(lamp, rr, 0.8 * pk, 1.2 * pk, [1.0, 0.90, 0.70, a * lit]);
+        }
+        let ring_a = (0.28 + 0.30 * self.holding as i32 as f32 + 0.1 * invite) * lit * (1.0 - 0.6 * dawn as f32);
         self.painter.glow_ring(lamp, r.max(2.5 * pk), 0.7 * pk, 0.9 * pk, [1.0, 0.90, 0.70, ring_a]);
         // the lantern
         let sway = if self.still { 0.0 } else { (self.t * 7.3).sin() as f32 * 0.06 };
@@ -407,10 +432,10 @@ impl Toy for Walk {
             &[
                 "The walker picks a spot at random, no farther than its ring.",
                 "Higher ground: it always goes. Lower: only sometimes, and more rarely the farther down it is.",
-                "When it doesn't go, it stays put and leaves another footprint where it stands.",
+                "When it doesn't go, it stays put and leaves another footprint where it stands. Past the edge there is no ground: it never goes there.",
                 "Where footprints pile up thickest, the map in the dark rises highest. At dawn, the land itself.",
             ],
-            "Real: every step is that rule, on the land you see at dawn; the map is drawn from the footprints alone. Drawn: the land (a new one each night), the walker, the night.",
+            "Real: every step is that rule, on the land you see at dawn; the map in the dark is made from the footprints alone. Drawn: the land (a new one each night), the walker, the night.",
         ))
     }
 }
@@ -491,12 +516,15 @@ fn relief(g: vec2<f32>) -> f32 {
   day = mix(day, high, smoothstep(0.55, 1.0, tt));
   day = day * (0.62 + 0.5 * relief(u.p1.w * hg.yz));
   day = day * (0.96 + 0.08 * grain);
-  let fT = Lt / CONTOUR;
-  let lineT = contour(fT, fwidth(fT), ppp);
-  day = mix(day, vec3<f32>(0.42, 0.30, 0.18), 0.40 * lineT);
+  // by day both sets of contours every second level, at the same heights, so they can be compared
+  let fT = Lt / (2.0 * CONTOUR);
+  let lineT = contour(fT, fwidth(fT), 1.6 * ppp);
+  day = mix(day, vec3<f32>(0.36, 0.24, 0.12), 0.75 * lineT);
+  let fD = L / (2.0 * CONTOUR);
+  let lineD = contour(fD, fwidth(fD), ppp) * smoothstep(0.04, 0.2, pile);
   // the night's map stays on the day as ink: its contours, and a cool wash where it walked
   day = mix(day, day * vec3<f32>(0.86, 0.90, 1.0), 0.35 * seen);
-  day = mix(day, vec3<f32>(0.10, 0.12, 0.24), 0.6 * lineN);
+  day = mix(day, vec3<f32>(0.10, 0.12, 0.26), 0.7 * lineD);
   // the dawn's light from the top of the screen
   let uv = i.uv;
   day = day * (1.0 + 0.10 * (1.0 - uv.y)) * vec3<f32>(1.04, 1.0, 0.95);
