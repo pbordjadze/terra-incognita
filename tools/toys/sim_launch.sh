@@ -54,12 +54,16 @@ export SIMCTL_CHILD_TOY_OPEN=rules,origins SIMCTL_CHILD_TOY_OPEN_AFTER=$(( WAIT 
 before="$(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true)"
 xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --stderr="$OUT/stderr.txt" "$UDID" "$BUNDLE"
 alive=1
-for i in $(seq 1 "$WAIT"); do
+# (by the clock, not by passes: on a busy hosted Mac a pass of this loop took 5 s, not 1)
+start=$(date +%s); shot_screen=0; shot_rules=0
+while :; do
   sleep 1
+  i=$(( $(date +%s) - start ))
   # (a Simulator app is a process of the Mac's own: its executable's path names it)
   if ! pgrep -f "/$EXEC.app/$EXEC" > /dev/null; then alive=0; echo "gone after ${i} s"; break; fi
-  [ "$i" = $(( WAIT - 17 )) ] && { xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; }
-  [ "$i" = $(( WAIT - 9 )) ] && { xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true; }
+  if [ "$shot_screen" = 0 ] && [ "$i" -ge $(( WAIT - 19 )) ]; then shot_screen=1; xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; fi
+  if [ "$shot_rules" = 0 ] && [ "$i" -ge $(( WAIT - 12 )) ]; then shot_rules=1; xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true; fi
+  [ "$i" -ge "$WAIT" ] && break
 done
 xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>&1 || true
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
