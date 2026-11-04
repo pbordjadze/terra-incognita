@@ -75,6 +75,7 @@ pub fn doors() -> Vec<Door> {
         Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
         Door { id: "battle", name: "Battle Ink", at: [16.13, 41.31], tint: [0.45, 0.25, 0.55], night: false, degree: 1, open: rooms::open::<battle::Battle> },
         Door { id: "jam", name: "Ghost Jam", at: [136.91, 35.18], tint: [0.86, 0.20, 0.12], night: true, degree: 5, open: rooms::open::<jam::Jam> },
+        Door { id: "meander", name: "Meander", at: [-67.03, -12.97], tint: [0.30, 0.52, 0.62], night: false, degree: 7, open: rooms::open::<meander::Meander> },
     ]
 }
 

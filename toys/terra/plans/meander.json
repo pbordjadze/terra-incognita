@@ -1,0 +1,12 @@
+{
+ "_": "Meander, held with one line: its light over the Rio Beni's floodplain (a breathing light of the river's colour), touched; the floodplain comes up through the Earth; a finger lays a course; the Earth mark back.",
+ "seconds": 13,
+ "fps": 20,
+ "events": [
+  { "t": 0.5, "drag": [[200, 560], [200, 420]], "for": 0.8 },
+  { "t": 2.0, "tap": "meander" },
+  { "t": 7.0, "drag": [[80, 300], [320, 560]], "for": 1.2 },
+  { "t": 11.0, "tap": "earth" }
+ ],
+ "shots": [{ "t": 1.9, "name": "before" }, { "t": 3.2, "name": "diving" }, { "t": 6.5, "name": "inside" }, { "t": 9.5, "name": "drawn" }, { "t": 12.8, "name": "back" }]
+}

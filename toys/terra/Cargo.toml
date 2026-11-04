@@ -25,6 +25,7 @@ bell = { path = "../bell" }
 swell = { path = "../swell" }
 battle = { path = "../battle" }
 jam = { path = "../jam" }
+meander = { path = "../meander" }
 
 [[bin]]
 name = "terra-check"
