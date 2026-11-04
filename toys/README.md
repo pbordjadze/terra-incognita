@@ -70,9 +70,12 @@ A toy isn't done until it opens on a phone; the Linux renders can't prove that. 
   shader the toy builds at launch, translated to Metal as wgpu does on iOS; the launch played at the
   phone's size under an iPhone's GPU limits, any GPU error fatal; peak memory against 1400 MB (or
   `toy.json`'s `memory_mb`, when a toy needs its own); with `--ipa <file>` (in CI's IPA job), every manifest file bundled.
+- `tools/toys/sim_launch.sh <toy>` (in CI's IPA job, macOS): the toy opened in the iOS Simulator with
+  Metal's validation on, so every pipeline goes through Apple's own Metal compiler; it fails if the toy
+  closes or logs a GPU error. It found Mold's launch crash (a varying named `half`, a Metal type).
 - The device keeps the toy's log: a panic's message and place, every GPU error (logged, not fatal: a
-  toy drawn wrong beats a toy gone), a toy that could not start, the GPU's limits, and the memory
-  available as the toy starts and once it has started (the second line missing: it died starting). It is `toy-log.txt` in the Files app,
+  toy drawn wrong beats a toy gone), a toy that could not start, the GPU's limits, every launch step
+  with the memory still available (the last line is the step it died in), and the first frames. It is `toy-log.txt` in the Files app,
   On My iPhone › the toy's name; share it from there. iOS's own report is in Settings › Privacy &
   Security › Analytics & Improvements › Analytics Data (an entry named after the toy; a `JetsamEvent`
   entry means it was killed for memory).

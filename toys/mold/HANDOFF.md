@@ -15,7 +15,20 @@ kept off the open sea. ROUNDS.md has a line a round; SOURCES.md the data and the
 - Plans: start (phone, the core moment), close (pinched to ~6x on Italy), deep (to the 9x stop, three
   feeds), touch (sea and land taps, a fling into the Pacific), ipad.
 
-## The open issue: the launch crash
+## The launch crash: found (Nov 4, 2026)
+
+The first run of the toys in the iOS Simulator with Metal's validation on (`tools/toys/sim_launch.sh`,
+now in every IPA job) showed it: Apple's Metal compiler refuses the streaks pipeline, because naga
+writes the WGSL varying `half` through to MSL as `float half [[user(loc2)]]` and `half` is a Metal
+type. Builds before mold-build-71 let wgpu's default handler panic on that error inside `toy_new`
+(panic = abort): closed at once. Builds 71–103 log it instead; the frame's one render pass then goes
+black whenever the streaks draw (zoom past about 1.8x). The varying is `halfw` now, and
+`tools/kit/launch_check.py` fails on any MSL declaration named after a Metal type. Sure of the
+failing pipeline (the Simulator's own compiler error); fairly sure it was Paul's crash (it is the
+only error on launch, and it fits "closed the moment it opened" on a build before 50); the phone's
+`toy-log.txt` on the fixed build is the last word.
+
+## (Before Nov 4) the open issue: the launch crash
 
 Paul reported Mold closing the moment it opened (on a build before 50; which one is not known). Nothing
 on Linux reproduces it: the launch check above passes, memory was cut 1049 -> 645 MB on the check, and
