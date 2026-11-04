@@ -183,6 +183,16 @@ by standing on the kit:
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.
 
+**Next (Nov 4):**
+1. On the phone: Mold opens and pinches past 2x without going black (the fixed build's
+   `toy-log.txt` has no `gpu:` error line); the twist and Home feel right in each globe toy; the
+   mark's corner and size (bottom right, 26 x 34 points in) clear the home indicator.
+2. Adrift's info mark: not built (its shell is its own; Adrift's conductor's call). Its gestures
+   are the kit's reference, so its camera already matches.
+3. Battle Ink has no globe: it has the info mark, not the camera.
+4. `sim_launch.sh` doesn't zoom or touch: a pipeline that fails only when first drawn would still
+   pass it if it were made lazily (every toy makes its pipelines at launch today).
+
 ## Where it stands (handoff, Nov 3, 2026, ~1 PM ET)
 
 **Landed.**
