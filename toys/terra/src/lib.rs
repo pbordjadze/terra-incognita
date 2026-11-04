@@ -322,7 +322,7 @@ impl Terra {
         // pair, which is already close); a scene of its own: as close over its place as the Earth goes
         let to = match room.camera() {
             Some(own) if self.life.doors[i].id == "whales" => own,
-            Some(own) => Camera::new(at[0], at[1], (own.zoom * 1.8).max(2.4)),
+            Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             None => Camera::new(at[0], at[1], 9.0),
         };
         self.room = Some(room);
