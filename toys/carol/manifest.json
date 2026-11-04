@@ -1,0 +1,7 @@
+{
+  "_": "The files the toy loads, by the names the code uses, and where each is in this repository (tools/toys/assets.py assembles them; the IPA bundles them as data/). pieces.png is drawn by tools/toys/carol/pieces.py; never hand-edit it.",
+  "files": {
+    "drills.json": "toys/carol/data/drills.json",
+    "pieces.png": "toys/carol/data/pieces.png"
+  }
+}

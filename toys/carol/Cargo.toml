@@ -1,0 +1,22 @@
+[package]
+name = "carol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Carol: a toy chess trainer; tap a piece, then where it goes (painting-company row 215)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "carol-check"
+path = "src/bin/check.rs"
