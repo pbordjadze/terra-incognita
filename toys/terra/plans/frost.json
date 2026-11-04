@@ -1,0 +1,14 @@
+{
+ "_": "Frost, held with one line: its light over Oymyakon (a breathing light of ice blue), the Earth turned to Siberia, touched; the cabin window comes up through the Earth; a warm finger melts the frost; the Earth mark back.",
+ "seconds": 14,
+ "fps": 20,
+ "events": [
+  { "t": 0.5, "drag": [[330, 430], [60, 430]], "for": 0.8 },
+  { "t": 2.0, "drag": [[330, 430], [60, 430]], "for": 0.8 },
+  { "t": 3.5, "drag": [[200, 330], [200, 520]], "for": 0.8 },
+  { "t": 5.0, "tap": "frost" },
+  { "t": 9.0, "drag": [[100, 400], [300, 500]], "for": 1.0 },
+  { "t": 12.0, "tap": "earth" }
+ ],
+ "shots": [{ "t": 4.9, "name": "siberia" }, { "t": 6.0, "name": "diving" }, { "t": 8.8, "name": "inside" }, { "t": 10.5, "name": "melted" }, { "t": 13.8, "name": "back" }]
+}
