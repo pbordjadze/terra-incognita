@@ -62,7 +62,9 @@ fn night(p: vec2<f32>) -> vec3<f32> {
   let y = p.y / h;
   let horizon = 0.74 + 0.012 * sin(p.x * 0.011) + 0.008 * sin(p.x * 0.037 + 1.0);
   // the sky: deep blue, a little lighter toward the snow
-  var c = mix(vec3<f32>(0.006, 0.010, 0.030), vec3<f32>(0.020, 0.036, 0.075), smoothstep(0.0, horizon, y));
+  var c = mix(vec3<f32>(0.012, 0.022, 0.060), vec3<f32>(0.050, 0.080, 0.150), smoothstep(0.0, horizon, y));
+  // the moon's glow, low over the far bank
+  c += vec3<f32>(0.05, 0.06, 0.08) * exp(-pow(length(vec2<f32>((p.x / L.pane.x - 0.72) * 1.4, y - horizon + 0.05)) * 3.0, 2.0));
   // stars: a few hundred, each its own brightness, breathing slowly in the cold air
   let g = p / 9.0;
   let cell = floor(g);
@@ -77,7 +79,7 @@ fn night(p: vec2<f32>) -> vec3<f32> {
   // the snow on the river's flat, faintly lit by the stars, darker toward the glass
   if y > horizon {
     let k = (y - horizon) / (1.0 - horizon);
-    c = mix(vec3<f32>(0.060, 0.074, 0.110), vec3<f32>(0.030, 0.036, 0.058), k);
+    c = mix(vec3<f32>(0.120, 0.140, 0.190), vec3<f32>(0.060, 0.070, 0.100), k);
     c *= 0.9 + 0.1 * noise(vec2<f32>(p.x * 0.02, k * 6.0));
   }
   // larches on the far bank: thin dark spires along the horizon
@@ -126,13 +128,15 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 
   // the ice
   let s = ice_at(p);
-  // meltwater where a fingertip was: clear dark glass under a thin film, and a bright wet rim
-  // where the ice was
+  // meltwater where a fingertip was: the night clear through it under a thin film that catches the
+  // lamp, and a fine bright line of water at its edge
   let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.95, 0.985, s));
   if wet > 0.0 {
-    let rimw = smoothstep(0.82, 0.9, s) * (1.0 - smoothstep(0.92, 0.95, s));
-    c = mix(c, c * 0.8, wet);
-    c += vec3<f32>(0.42, 0.44, 0.46) * rimw * wet;
+    let film = smoothstep(0.55, 0.9, s);
+    let line = smoothstep(0.86, 0.9, s) * (1.0 - smoothstep(0.91, 0.94, s));
+    let sheen = 0.5 + 0.5 * sin((p.x * 0.6 + p.y) * 0.035);
+    c += (vec3<f32>(0.030, 0.034, 0.040) * (0.4 + 0.6 * sheen) + vec3<f32>(0.05, 0.05, 0.055) * film) * wet;
+    c += vec3<f32>(0.30, 0.31, 0.32) * line * wet;
   }
   let cover = smoothstep(0.98, 1.02, s);
   if cover > 0.0 {
@@ -166,7 +170,7 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
       let tw = 0.5 + 0.5 * sin(L.time * (0.7 + 1.5 * hash2(g + 2.0)) + h * 60.0);
       ice += vec3<f32>(1.0, 0.97, 0.9) * pow(tw, 6.0) * 0.9 * age;
     }
-    let a = cover * clamp(mix(0.30, 0.78, age * age) + rim * 0.5, 0.0, 0.92);
+    let a = cover * clamp(mix(0.46, 0.82, age * age) + rim * 0.45, 0.0, 0.92);
     c = mix(c, ice, a);
   }
   // a breath of condensation low on the glass, before the frost: the faintest grey veil

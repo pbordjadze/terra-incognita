@@ -278,7 +278,7 @@ impl Frost {
         }
         seeds.truncate(16);
         for (i, p) in seeds.into_iter().enumerate() {
-            self.start(p, t + 0.25 + 0.08 * i as f64);
+            self.start(p, t + 0.05 + 0.05 * i as f64);
         }
     }
 
