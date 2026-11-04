@@ -1129,6 +1129,22 @@ impl Toy for Battle {
                 }
             }
         }
+        // the broken army pours off the page while the rest stills (the rout is seen, not only read)
+        if let (Some(d), Some(o)) = (self.decided_at, self.outcome) {
+            let side = match o {
+                Outcome::RomeBreaks => Some(0),
+                Outcome::CarthageBreaks => Some(1),
+                Outcome::Surrounded => None,
+            };
+            if let Some(side) = side.filter(|_| self.clock - d < SETTLE + 1.0) {
+                for u in self.sim.units.iter_mut() {
+                    if u.state == FLEEING && !u.trapped && KINDS[u.kind as usize].side == side {
+                        u.x += u.vx * dt as f32;
+                        u.y += u.vy * dt as f32;
+                    }
+                }
+            }
+        }
         let t1 = t0.elapsed().as_secs_f64() * 1e3;
         let now32 = self.clock as f32;
         self.comb.retain(|p| now32 - p[4] < COMB_LIFE);

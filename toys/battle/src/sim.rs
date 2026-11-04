@@ -766,6 +766,12 @@ impl Sim {
                 u.state = FLEEING;
                 u.since = 0.0;
                 u.trapped = false;
+                // away from the fight, home: Rome up the page, Carthage down it, each a little its own way
+                let home = if side == 0 { -1.0 } else { 1.0 };
+                u.vx = (u.j - 0.5) * 24.0;
+                u.vy = home * (28.0 + u.j * 14.0);
+                u.fx = u.vx / 40.0;
+                u.fy = home;
             }
         }
     }
