@@ -1,0 +1,8 @@
+{ "_": "First sight and the core moment: the even flow, then one tap on the car at the ring's bottom; the jam forms and its brake lights crawl backward round the ring; a second tap at the top makes a second jam.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 75, "fps": 30, "audio": true,
+  "events": [
+    { "t": 6.0, "tap": "near" },
+    { "t": 45.0, "tap": "far" }
+  ],
+  "shots": [{ "t": 3.0, "name": "flow" }, { "t": 6.3, "name": "tap" }, { "t": 12.0, "name": "forming" }, { "t": 20.0, "name": "jam" }, { "t": 30.0, "name": "later" }, { "t": 40.0, "name": "lap" }, { "t": 55.0, "name": "two" }, { "t": 74.0, "name": "end" }],
+  "film": { "from": 0, "to": 75, "every": 0.5 } }

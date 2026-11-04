@@ -1,0 +1,4 @@
+{ "_": "The 13-inch iPad: the ring at its size, a tap, the jam formed.",
+  "size": [2064, 2752], "ppp": 2, "seconds": 26, "fps": 30,
+  "events": [ { "t": 4.0, "tap": "near" } ],
+  "shots": [{ "t": 3.0, "name": "flow" }, { "t": 25.0, "name": "jam" }] }

@@ -1,0 +1,10 @@
+{ "_": "A restless hand: taps on cars all round the ring, one on an already standing car, one on the empty middle (nothing), one on the ground outside (nothing).",
+  "size": [1179, 2556], "ppp": 3, "seconds": 40, "fps": 30, "audio": true,
+  "events": [
+    { "t": 2.0, "tap": "car3" }, { "t": 2.6, "tap": "car9" }, { "t": 3.1, "tap": "car15" },
+    { "t": 12.0, "tap": "centre", "inert": true },
+    { "t": 13.0, "tap": [40, 120], "inert": true },
+    { "t": 20.0, "tap": "far" }
+  ],
+  "shots": [{ "t": 3.5, "name": "three" }, { "t": 15.0, "name": "three-jams" }, { "t": 39.0, "name": "after" }],
+  "film": { "from": 0, "to": 40, "every": 0.5 } }
