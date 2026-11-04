@@ -1,4 +1,58 @@
-{"_": "Left alone until the frame's frost has crept over most of the glass, then touched: a fingertip melts a hole in the old ice and a new crystal grows into it; a drag cuts a line of them.",
- "size": [1179, 2556], "ppp": 3, "seconds": 56, "fps": 30,
- "events": [{"t": 40.0, "tap": [200, 560]}, {"t": 43.0, "tap": [120, 150]}, {"t": 46.0, "drag": [[300, 450], [260, 760]], "for": 1.2}],
- "shots": [20.0, 39.9, 41.0, 42.5, 45.0, 48.0, 56.0], "film": {"from": 38, "to": 56, "every": 0.1}, "audio": true}
+{
+ "_": "Left alone until the frame's frost has crept over much of the glass, then touched: a tap on the ice melts a spot, a finger resting on it melts a wider one, a drag wipes a streak; each time the frost grows back in from the melt's edges and meets in the middle.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 62,
+ "fps": 30,
+ "events": [
+  {
+   "t": 40.0,
+   "tap": [
+    200,
+    600
+   ]
+  },
+  {
+   "t": 43.0,
+   "hold": [
+    150,
+    160
+   ],
+   "for": 2.0
+  },
+  {
+   "t": 48.0,
+   "drag": [
+    [
+     320,
+     420
+    ],
+    [
+     90,
+     760
+    ]
+   ],
+   "for": 1.2
+  }
+ ],
+ "shots": [
+  20.0,
+  39.9,
+  41.0,
+  42.5,
+  45.2,
+  47.0,
+  49.5,
+  52.0,
+  62.0
+ ],
+ "film": {
+  "from": 38,
+  "to": 62,
+  "every": 0.1
+ },
+ "audio": true
+}

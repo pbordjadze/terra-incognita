@@ -126,13 +126,12 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 
   // the ice
   let s = ice_at(p);
-  // meltwater where a fingertip was: a film that darkens the glass a little and catches the lamp at
-  // its rim
-  let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.93, 0.98, s));
+  // meltwater where a fingertip was: a thin film that glistens faintly, brightest at its edge where
+  // the ice was
+  let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.95, 0.985, s));
   if wet > 0.0 {
-    let rimw = smoothstep(0.75, 0.9, s);
-    c = mix(c, c * 0.7 + vec3<f32>(0.03, 0.035, 0.045), wet * 0.6);
-    c += vec3<f32>(0.20, 0.19, 0.17) * rimw * wet * 0.5;
+    let rimw = smoothstep(0.7, 0.92, s);
+    c += vec3<f32>(0.035, 0.040, 0.050) * wet + vec3<f32>(0.10, 0.10, 0.11) * rimw * rimw * wet;
   }
   let cover = smoothstep(0.98, 1.02, s);
   if cover > 0.0 {

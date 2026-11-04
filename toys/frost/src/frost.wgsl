@@ -40,17 +40,19 @@ struct Globals {
   alpha: f32,
   frame: f32,          // the window frame's width, points
   bar: f32,            // the crossbar's middle, points from the top (0: none)
-  slots: array<Slot, 8>,
+  slots: array<Slot, 12>,
 };
 
 struct Op {
   slot: u32,
-  kind: u32,          // 1 seed the slot, 2 melt a disc
+  kind: u32,          // 1 seed the slot, 2 melt along the finger's way
   _a: u32,
   _b: u32,
-  at: vec2<f32>,      // points
+  at: vec2<f32>,      // the finger's way this frame, from at to to (points)
   radius: f32,
-  _c: f32,
+  _c: f32,            // the print's wobble (a phase)
+  to: vec2<f32>,
+  _d: vec2<f32>,
 };
 
 @group(0) @binding(0) var<uniform> G: Globals;
@@ -105,7 +107,14 @@ fn on_glass(p: vec2<f32>) -> bool {
   if p.x < f || p.y < f || p.x >= G.pane.x - f || p.y >= G.pane.y - f {
     return false;
   }
-  return G.bar <= 0.0 || abs(p.y - G.bar) > 0.5 * f;
+  if G.bar > 0.0 && abs(p.y - G.bar) <= 0.5 * f {
+    return false;
+  }
+  // the corner where the two help marks sit stays clear (the lamp's warmth, as it were)
+  let a = vec2<f32>(G.pane.x - 70.0, G.pane.y - 34.0);
+  let b = vec2<f32>(G.pane.x - 26.0, G.pane.y - 34.0);
+  let t = clamp(dot(p - a, b - a) / dot(b - a, b - a), 0.0, 1.0);
+  return distance(p, a + t * (b - a)) > 32.0;
 }
 
 fn mask_index(p: vec2<f32>) -> i32 {
@@ -253,14 +262,25 @@ fn melt_cells(@builtin(global_invocation_id) gid: vec3<u32>) {
   let q = i32(gid.x) - HALF;
   let r = i32(gid.y) - HALF;
   let p = pane_of(k, q, r);
-  if distance(p, O.at) <= melt_radius(p) {
+  if distance(p, melt_near(p)) <= melt_radius(p) {
     dst[at(k, q, r)] = beta_at(p);
   }
 }
 
+// the nearest point of the finger's way
+fn melt_near(p: vec2<f32>) -> vec2<f32> {
+  let d = O.to - O.at;
+  let l = dot(d, d);
+  if l < 1e-6 {
+    return O.at;
+  }
+  return O.at + clamp(dot(p - O.at, d) / l, 0.0, 1.0) * d;
+}
+
 // a fingertip's print is not a circle: its edge wanders with the angle
 fn melt_radius(p: vec2<f32>) -> f32 {
-  let a = atan2(p.y - O.at.y, p.x - O.at.x);
+  let c = melt_near(p);
+  let a = atan2(p.y - c.y, p.x - c.x);
   let w = 0.16 * sin(3.0 * a + O._c) + 0.10 * sin(5.0 * a + 2.0 * O._c) + 0.07 * sin(8.0 * a + 3.1 * O._c);
   return O.radius * (1.0 + w);
 }
@@ -271,18 +291,22 @@ fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
     return;
   }
   // over the field's texels near the disc
-  let lo = vec2<i32>(floor((O.at - 1.4 * O.radius - 2.0) * G.fs));
+  let lo = vec2<i32>(floor((min(O.at, O.to) - 1.4 * O.radius - 2.0) * G.fs));
   let f = lo + vec2<i32>(gid.xy);
   if f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
     return;
   }
   let p = (vec2<f32>(f) + 0.5) / G.fs;
-  let d = distance(p, O.at);
+  let d = distance(p, melt_near(p));
   let rr = melt_radius(p);
   if d <= rr {
     // a film of meltwater (pane.wgsl draws field values between 0.3 and 0.95 as wet glass), thinner
     // toward the middle where the finger pressed longest
-    field[f.y * i32(G.field_w) + f.x] = 0.55 + 0.35 * smoothstep(0.5 * rr, rr, d);
+    // (a finger's way melts frame after frame: where it is wet already, the thinner film stays)
+    let i = f.y * i32(G.field_w) + f.x;
+    let film = 0.55 + 0.35 * smoothstep(0.5 * rr, rr, d);
+    let was = field[i];
+    field[i] = select(film, min(was, film), was > 0.3 && was < 0.98);
     let m = mask_index(p);
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);
@@ -330,7 +354,7 @@ fn paint(@builtin(global_invocation_id) gid: vec3<u32>) {
   if owner == EMPTY {
     return;
   }
-  for (var k = 0u; k < 8u; k++) {
+  for (var k = 0u; k < 12u; k++) {
     if G.slots[k].live != 0u && G.slots[k].id == owner {
       field[gid.y * G.field_w + gid.x] = sample(k, p);
       return;
