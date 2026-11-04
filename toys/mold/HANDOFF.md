@@ -9,7 +9,10 @@ kept off the open sea. ROUNDS.md has a line a round; SOURCES.md the data and the
 - Nov 4 (row 219): three marks, bottom right: the info mark (unchanged), the "?" (the rules alone) and
   an asterisk (where they came from; `origins()` in lib.rs). The card hangs over the half of the
   screen with less lit land (`card_at_top`). `plans/rules.json` photographs both; the Simulator keeps
-  `rules.png` and `origins.png`. Open: whether Paul reads the asterisk as "where it came from".
+  `rules.png` and `origins.png`. Shipped as `mold-build-149` (main 2fb52ec, Nov 4, 6:55 PM ET). Open:
+  whether Paul reads the asterisk as "where it came from"; the Simulator's shots of that build all
+  caught the asterisk's card (the hosted Mac's screenshots lag 20-140 s): sim_launch.sh now warms up
+  and opens the cards 30 s apart, first proved on the next IPA run.
 
 - Shipped: round 4, `mold-build-103` (13:38 ET), from main 69b8264. What Paul taps: the globe opens on Europe and Africa, a mist
   of spores on the lights condensing into a network over about 7 s; a pinch in shows translucent tubes
