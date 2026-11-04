@@ -110,6 +110,12 @@ impl Ctx {
         self.haptic = true;
     }
 
+    /// Whether a haptic tap was asked for since the last call, forgetting it (a host passes on the
+    /// taps of a toy it holds: `toys/terra`).
+    pub fn take_haptic(&mut self) -> bool {
+        std::mem::take(&mut self.haptic)
+    }
+
     /// The screen's size in points.
     pub fn points(&self) -> [f64; 2] {
         [self.width as f64 / self.ppp, self.height as f64 / self.ppp]
@@ -321,11 +327,20 @@ pub fn block_on<F: std::future::Future>(f: F) -> F::Output {
 
 /// The C ABI over a toy type: `toy_kit::ios_shell!(MyToy);` in the toy's `lib.rs`. Compiled only for
 /// iOS (the static library the shell links).
+///
+/// A host links several toys into one library (Terra holds them all: `toys/terra`), so each toy's own
+/// C ABI is left out when the kit's `hosted` feature is on (the host's crate turns it on; cargo then
+/// builds the kit hosted for every toy in that build), and the host exports its own with
+/// `ios_shell!(host MyHost)`. A toy's own app is built without it, as before.
 #[macro_export]
 macro_rules! ios_shell {
-    ($toy:ty) => {
+    (host $toy:ty) => {
         #[cfg(target_os = "ios")]
         pub mod ffi {
+            $crate::ios_shell!(@body $toy);
+        }
+    };
+    (@body $toy:ty) => {
             use super::*;
             use std::ffi::{c_char, c_void, CStr};
             type S = $crate::shell::Shell<$toy>;
@@ -431,6 +446,30 @@ macro_rules! ios_shell {
             pub unsafe extern "C" fn toy_free(s: *mut S) {
                 if !s.is_null() { drop(Box::from_raw(s)) }
             }
+    };
+    ($toy:ty) => {
+        $crate::__own_shell!($toy);
+    };
+}
+
+/// A toy's own C ABI (`ios_shell!(MyToy)`), unless the kit is built `hosted`.
+#[cfg(not(feature = "hosted"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __own_shell {
+    ($toy:ty) => {
+        #[cfg(target_os = "ios")]
+        pub mod ffi {
+            $crate::ios_shell!(@body $toy);
         }
     };
+}
+
+/// Built `hosted` (a host such as Terra links several toys: their own C ABIs would collide), a toy's
+/// `ios_shell!` exports nothing; the host's `ios_shell!(host MyHost)` does.
+#[cfg(feature = "hosted")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __own_shell {
+    ($toy:ty) => {};
 }

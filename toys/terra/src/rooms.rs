@@ -1,0 +1,131 @@
+//! The toys Terra holds, each behind one face (`Room`): a toy and its own `Ctx` on Terra's device and
+//! data, driven by Terra as a shell drives a toy. Its info and rules become Terra's while it is open;
+//! its haptic taps pass through; its sound goes to Terra's mixer.
+
+use std::sync::Arc;
+use toy_kit::info::{Demo, Rules};
+use toy_kit::{Assets, Camera, Ctx, Gpu, PointerEvent, Synth, Toy};
+
+/// Terra's data, shared by every toy it opens (the toys' manifests merged: `manifest.json`).
+pub struct Shared(pub Arc<dyn Assets>);
+
+impl Assets for Shared {
+    fn read(&self, name: &str) -> anyhow::Result<Vec<u8>> {
+        self.0.read(name)
+    }
+}
+
+/// A toy as Terra drives it.
+pub trait Room {
+    fn pointer(&mut self, e: PointerEvent);
+    fn update(&mut self, t: f64);
+    fn draw(&mut self, target: &wgpu::TextureView);
+    fn resize(&mut self, width: u32, height: u32, ppp: f64);
+    fn settings(&mut self, night: bool, reduce_motion: bool);
+    fn demo(&self) -> Option<Demo>;
+    fn rules(&self) -> Option<Rules>;
+    fn synth(&mut self) -> Option<Box<dyn Synth>>;
+    fn take_haptic(&mut self) -> bool;
+    /// The toy's globe camera now, if it has a globe (read from what it saves: every globe toy keeps
+    /// its camera, as `camera` or last in a list).
+    fn camera(&self) -> Option<Camera>;
+    fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]>;
+    fn anchors(&self) -> Vec<(String, [f64; 2])>;
+}
+
+pub struct Inside<T: Toy> {
+    ctx: Ctx,
+    toy: T,
+    last_t: Option<f64>,
+}
+
+/// A new context on the same device and data, the screen's size and settings.
+pub fn context(from: &Ctx, assets: &Arc<dyn Assets>) -> Ctx {
+    let g = &from.gpu;
+    let gpu = Gpu { device: g.device.clone(), queue: g.queue.clone(), format: g.format, adapter_info: g.adapter_info.clone() };
+    let mut ctx = Ctx::new(gpu, Box::new(Shared(assets.clone())), from.width, from.height, from.ppp);
+    ctx.night = from.night;
+    ctx.reduce_motion = from.reduce_motion;
+    ctx
+}
+
+pub fn open<T: Toy + 'static>(from: &Ctx, assets: &Arc<dyn Assets>) -> anyhow::Result<Box<dyn Room>> {
+    let mut ctx = context(from, assets);
+    let toy = T::new(&mut ctx)?;
+    Ok(Box::new(Inside { ctx, toy, last_t: None }))
+}
+
+/// A camera from what a toy saves: `{"camera": ..}`, or a list whose last item is one.
+pub fn saved_camera(saved: &str) -> Option<Camera> {
+    let v: serde_json::Value = serde_json::from_str(saved).ok()?;
+    let c = match &v {
+        serde_json::Value::Object(m) => m.get("camera")?.clone(),
+        serde_json::Value::Array(a) => a.last()?.clone(),
+        _ => return None,
+    };
+    serde_json::from_value(c).ok()
+}
+
+impl<T: Toy> Room for Inside<T> {
+    fn pointer(&mut self, e: PointerEvent) {
+        self.toy.pointer(&mut self.ctx, e);
+    }
+    fn update(&mut self, t: f64) {
+        let dt = match self.last_t {
+            Some(l) => (t - l).clamp(0.0, 0.1),
+            None => 0.0,
+        };
+        self.last_t = Some(t);
+        self.toy.update(&mut self.ctx, t, dt);
+    }
+    fn draw(&mut self, target: &wgpu::TextureView) {
+        self.toy.draw(&mut self.ctx, target);
+    }
+    fn resize(&mut self, width: u32, height: u32, ppp: f64) {
+        (self.ctx.width, self.ctx.height, self.ctx.ppp) = (width.max(1), height.max(1), ppp);
+        self.toy.resize(&mut self.ctx);
+    }
+    fn settings(&mut self, night: bool, reduce_motion: bool) {
+        self.ctx.night = night;
+        self.ctx.reduce_motion = reduce_motion;
+        self.toy.settings(&mut self.ctx);
+    }
+    fn demo(&self) -> Option<Demo> {
+        self.toy.demo(&self.ctx)
+    }
+    fn rules(&self) -> Option<Rules> {
+        self.toy.rules()
+    }
+    fn synth(&mut self) -> Option<Box<dyn Synth>> {
+        self.toy.synth()
+    }
+    fn take_haptic(&mut self) -> bool {
+        self.ctx.take_haptic()
+    }
+    fn camera(&self) -> Option<Camera> {
+        self.toy.save().as_deref().and_then(saved_camera)
+    }
+    fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
+        self.toy.project(lonlat)
+    }
+    fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        self.toy.anchors()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_camera_is_found_in_what_the_toys_save() {
+        let c = Camera::new(12.0, 42.0, 1.55);
+        let obj = serde_json::to_string(&serde_json::json!({"day": 3.0, "camera": c})).unwrap();
+        assert_eq!(saved_camera(&obj), Some(c));
+        // mold's (feeds, camera)
+        let pair = serde_json::to_string(&(Vec::<u8>::new(), c)).unwrap();
+        assert_eq!(saved_camera(&pair), Some(c));
+        assert_eq!(saved_camera("{\"seed\": 4}"), None);
+        assert_eq!(saved_camera("nonsense"), None);
+    }
+}

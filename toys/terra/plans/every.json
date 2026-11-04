@@ -1,0 +1,107 @@
+{
+ "_": "Every light entered in turn and left again (the swell's after the Earth is turned by hand): each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
+ "seconds": 70.0,
+ "fps": 10,
+ "events": [
+  {
+   "t": 0.5,
+   "tap": "mold"
+  },
+  {
+   "t": 6.5,
+   "tap": "earth"
+  },
+  {
+   "t": 10.0,
+   "tap": "murmuration"
+  },
+  {
+   "t": 16.0,
+   "tap": "earth"
+  },
+  {
+   "t": 19.5,
+   "tap": "battle"
+  },
+  {
+   "t": 25.5,
+   "tap": "earth"
+  },
+  {
+   "t": 29.0,
+   "tap": "fireflies"
+  },
+  {
+   "t": 35.0,
+   "tap": "earth"
+  },
+  {
+   "t": 38.5,
+   "tap": "bell"
+  },
+  {
+   "t": 44.5,
+   "tap": "earth"
+  },
+  {
+   "t": 48.0,
+   "tap": "whales"
+  },
+  {
+   "t": 54.0,
+   "tap": "earth"
+  },
+  {
+   "t": 57.5,
+   "drag": [
+    [
+     150,
+     420
+    ],
+    [
+     300,
+     420
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 59.5,
+   "tap": "swell"
+  },
+  {
+   "t": 65.5,
+   "tap": "earth"
+  }
+ ],
+ "shots": [
+  {
+   "t": 5.0,
+   "name": "mold"
+  },
+  {
+   "t": 14.5,
+   "name": "murmuration"
+  },
+  {
+   "t": 24.0,
+   "name": "battle"
+  },
+  {
+   "t": 33.5,
+   "name": "fireflies"
+  },
+  {
+   "t": 43.0,
+   "name": "bell"
+  },
+  {
+   "t": 52.5,
+   "name": "whales"
+  },
+  {
+   "t": 64.0,
+   "name": "swell"
+  }
+ ]
+}
