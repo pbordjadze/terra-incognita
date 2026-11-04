@@ -9,7 +9,8 @@
 # It builds the toy for the Simulator (SIM=1 toys/ios/build.sh), boots an iPhone, installs and launches
 # it, waits SECONDS_ALIVE (default 25) and fails if the toy is gone or logged a GPU error. <out-dir> keeps what it saw: the toy's
 # own toy-log.txt (the kit's launch steps, its GPU errors), its stdout and stderr (Metal's validation
-# messages), any crash report, and a screenshot. What it can't vouch for: the phone's memory limit
+# messages), any crash report, and two screenshots: `screen.png` at rest and, 8 s before the end,
+# the shell's rules page opened (TOY_OPEN=rules, main.swift) as `rules.png`. What it can't vouch for: the phone's memory limit
 # (the Simulator has none of its own) and the phone's GPU (the Mac's draws for it): toy-log.txt from a
 # phone stays the last word.
 set -euo pipefail
@@ -46,6 +47,8 @@ xcrun simctl install "$UDID" "$APP"
 export SIMCTL_CHILD_MTL_DEBUG_LAYER=1
 export SIMCTL_CHILD_MTL_DEBUG_LAYER_ERROR_MODE=assert
 export SIMCTL_CHILD_RUST_BACKTRACE=1
+# (the rules page opens by itself near the end, for its screenshot: the iOS text a Linux shot lacks)
+export SIMCTL_CHILD_TOY_OPEN=rules SIMCTL_CHILD_TOY_OPEN_AFTER=$(( WAIT - 8 ))
 before="$(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true)"
 xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --stderr="$OUT/stderr.txt" "$UDID" "$BUNDLE"
 alive=1
@@ -53,8 +56,9 @@ for i in $(seq 1 "$WAIT"); do
   sleep 1
   # (a Simulator app is a process of the Mac's own: its executable's path names it)
   if ! pgrep -f "/$EXEC.app/$EXEC" > /dev/null; then alive=0; echo "gone after ${i} s"; break; fi
+  [ "$i" = $(( WAIT - 10 )) ] && { xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; }
 done
-xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true
+xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
 [ -n "$DATA" ] && cp "$DATA/Documents/toy-log.txt" "$OUT/toy-log.txt" 2> /dev/null || true
 ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" | head -n $(( $(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true) - before )) |

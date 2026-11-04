@@ -163,6 +163,11 @@ pub trait Toy: 'static {
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         None
     }
+    /// What the rules mark shows (`info`): the few rules that make what is on screen, and one line of
+    /// what is measured and what is drawn. None (the default) shows no rules mark.
+    fn rules(&self) -> Option<info::Rules> {
+        None
+    }
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
@@ -181,6 +186,7 @@ pub struct Host<T: Toy> {
     /// The info mark and its demo.
     pub info: info::Info,
     has_demo: bool,
+    has_rules: bool,
 }
 
 impl<T: Toy> Host<T> {
@@ -189,7 +195,8 @@ impl<T: Toy> Host<T> {
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         let has_demo = toy.demo(&ctx).is_some();
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo })
+        let has_rules = toy.rules().is_some();
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo, has_rules })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -199,11 +206,24 @@ impl<T: Toy> Host<T> {
 
     /// A real finger: the info mark's (and the tap that closes its demo), or the toy's.
     pub fn pointer(&mut self, e: PointerEvent) {
-        match self.info.route(&e, self.ctx.points(), self.has_demo) {
+        match self.info.route(&e, self.ctx.points(), self.has_demo, self.has_rules) {
             info::Route::Toy => self.toy.pointer(&mut self.ctx, e),
             info::Route::Taken => {}
             info::Route::Open => self.open_info(e.t),
+            info::Route::Rules => self.open_rules(),
         }
+    }
+
+    /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
+    /// hides them.
+    pub fn open_rules(&mut self) {
+        let r = if self.info.rules().is_some() { None } else { self.toy.rules() };
+        self.info.show_rules(r);
+    }
+
+    /// The rules mark's place in points, if the toy has one.
+    pub fn rules_spot(&self) -> Option<[f64; 2]> {
+        self.has_rules.then(|| info::Info::rules_spot(self.ctx.points()))
     }
 
     /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
@@ -224,6 +244,9 @@ impl<T: Toy> Host<T> {
         if let Some(s) = self.info_spot() {
             a.push(("info".into(), s));
         }
+        if let Some(s) = self.rules_spot() {
+            a.push(("rules".into(), s));
+        }
         a
     }
 
@@ -243,7 +266,7 @@ impl<T: Toy> Host<T> {
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
         self.toy.draw(&mut self.ctx, target);
-        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.has_demo, self.ctx.reduce_motion);
+        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.has_demo, self.has_rules, self.ctx.reduce_motion);
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).
@@ -388,6 +411,21 @@ macro_rules! ios_shell {
             #[no_mangle]
             pub unsafe extern "C" fn toy_info_open(s: *mut S, t: f64) {
                 if let Some(s) = s.as_mut() { s.host.open_info(t) }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_rules_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
+                match s.as_ref().and_then(|s| s.host.rules_spot()) {
+                    Some(p) => { *x = p[0]; *y = p[1]; true }
+                    None => false,
+                }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_rules_text(s: *mut S) -> *const c_char {
+                s.as_ref().and_then(|s| s.host.info.rules()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_rules_open(s: *mut S) {
+                if let Some(s) = s.as_mut() { s.host.open_rules() }
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_free(s: *mut S) {

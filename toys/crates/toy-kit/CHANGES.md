@@ -22,6 +22,14 @@ A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand mo
   ghost fingertip, with its one line (`host.info.line()`, set by the shell in the system's text); a tap
   anywhere closes it. `Globe::spot_for(places)` aims a stroke at a place in view. A plan taps it as
   `"tap": "info"`. The C ABI adds `toy_info_spot`, `toy_info_line`, `toy_info_open`.
+- **The rules mark** (painting-company row 214; Paul, Nov 4: "a second button with just a tiny bit
+  more detail. Just the rules"): `Toy::rules(&self) -> Option<info::Rules>` (default None: no mark),
+  the few rules that make what is on screen, a line each, and one line of what is real and what is
+  drawn. A "?" beside the info mark; a tap shows them (`host.info.rules()`, set by the shell in the
+  system's text on a dark glass over the live scene); a tap anywhere closes them; no timer. A plan
+  taps it as `"tap": "rules"`. The C ABI adds `toy_rules_spot`, `toy_rules_text`, `toy_rules_open`;
+  `Info::route` and `Info::draw` take `has_rules`. The check writes the shell's text beside a shot
+  (`<shot>.shell.json`) and `tools/kit/shell_text.py` draws it on.
 - **Launch steps in toy-log.txt**: `toy_kit::step(what)` logs a step with the memory iOS says is
   left; the kit logs its own (device, globe textures, the toy starting, the first frames, a lost
   device).

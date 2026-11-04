@@ -5,6 +5,12 @@
 //! draws the mark and the ghost; the line is the shell's, in the system's text (VoiceOver reads it, it
 //! follows the reader's text size; `host.info.line()`). Under Reduce Motion the ghost rests where the
 //! gesture starts, still, with the line, and no touch is played. A plan taps it as `"tap": "info"`.
+//!
+//! Beside it, the rules mark (a "?"): a tap shows the toy's [`Rules`] (`Toy::rules`): the few rules
+//! that make what is on screen, then one line of what is measured and what is drawn. The shell sets
+//! them in the system's text over the live scene (`host.info.rules()`); a tap anywhere closes them,
+//! and nothing closes them on a timer (they are read at the reader's pace, or not at all). A plan
+//! taps it as `"tap": "rules"`. painting-company row 214.
 
 use crate::paint::Painter;
 use crate::{Gpu, Phase, PointerEvent};
@@ -81,6 +87,28 @@ impl Demo {
     }
 }
 
+/// What the rules mark shows: the rules, a line each, and one line saying what is real and what is drawn.
+#[derive(Clone, Debug)]
+pub struct Rules {
+    pub lines: Vec<String>,
+    pub note: String,
+}
+
+impl Rules {
+    pub fn new(lines: &[&str], note: &str) -> Rules {
+        Rules { lines: lines.iter().map(|l| l.to_string()).collect(), note: note.into() }
+    }
+    /// As the shell takes it: the lines, one a line, then a blank line and the note.
+    pub fn text(&self) -> String {
+        let mut t = self.lines.join("\n");
+        if !self.note.is_empty() {
+            t.push_str("\n\n");
+            t.push_str(&self.note);
+        }
+        t.replace('\0', "")
+    }
+}
+
 /// How long the demo lingers after its last stroke before it closes by itself.
 const LINGER: f64 = 2.2;
 /// The ghost's ids, far from any the shell gives.
@@ -102,6 +130,8 @@ pub struct Info {
     close_pending: bool,
     now: f64,
     line: Option<std::ffi::CString>,
+    /// The rules while they show (the shell's text).
+    rules: Option<std::ffi::CString>,
 }
 
 /// What the host should do with a finger.
@@ -110,6 +140,8 @@ pub enum Route {
     Taken,
     /// The mark was tapped: open the demo.
     Open,
+    /// The rules mark was tapped: show the rules.
+    Rules,
 }
 
 impl Info {
@@ -117,11 +149,30 @@ impl Info {
     pub fn spot(points: [f64; 2]) -> [f64; 2] {
         [points[0] - 26.0, points[1] - 34.0]
     }
-    /// A fingertip's reach for it, points.
+    /// Where the rules mark is: beside the info mark, toward the middle.
+    pub fn rules_spot(points: [f64; 2]) -> [f64; 2] {
+        [points[0] - 26.0 - Self::GAP, points[1] - 34.0]
+    }
+    /// A fingertip's reach for either, points (half the gap between them: no tap is both's).
     const REACH: f64 = 22.0;
+    const GAP: f64 = 44.0;
 
+    /// The demo or the rules showing.
     pub fn is_open(&self) -> bool {
-        self.open.is_some()
+        self.open.is_some() || self.rules.is_some()
+    }
+
+    /// The rules while they show (for the shell to set in the system's text; `Rules::text`).
+    pub fn rules(&self) -> Option<&std::ffi::CStr> {
+        self.rules.as_deref()
+    }
+
+    /// Shows the rules (closing the demo, whose ghost goes up on the next frame), or hides them.
+    pub fn show_rules(&mut self, rules: Option<Rules>) {
+        if rules.is_some() && self.open.is_some() {
+            self.close_pending = true;
+        }
+        self.rules = rules.map(|r| std::ffi::CString::new(r.text()).unwrap_or_default());
     }
 
     /// The line while the demo shows (for the shell to set in the system's text).
@@ -129,15 +180,21 @@ impl Info {
         self.line.as_deref()
     }
 
-    /// Routes a real finger: the mark's, the closing tap's, or the toy's. `has_demo` says whether the
-    /// toy has a mark at all.
-    pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], has_demo: bool) -> Route {
+    /// Routes a real finger: a mark's, the closing tap's, or the toy's. `has_demo` and `has_rules`
+    /// say which marks the toy has.
+    pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], has_demo: bool, has_rules: bool) -> Route {
+        let near = |s: [f64; 2], k: f64| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH * k;
         if self.taken.contains(&e.id) {
             if matches!(e.phase, Phase::Up | Phase::Cancel) {
                 self.taken.retain(|&i| i != e.id);
-                let s = Self::spot(points);
-                if e.phase == Phase::Up && !self.is_open() && (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH * 1.5 {
-                    return Route::Open;
+                if e.phase == Phase::Up && !self.is_open() {
+                    // (lifted within reach of where it went down: the marks are 44 points apart)
+                    if has_demo && near(Self::spot(points), 1.0) {
+                        return Route::Open;
+                    }
+                    if has_rules && near(Self::rules_spot(points), 1.0) {
+                        return Route::Rules;
+                    }
                 }
             }
             return Route::Taken;
@@ -149,10 +206,10 @@ impl Info {
             // a tap anywhere closes it, and is not the toy's
             self.taken.push(e.id);
             self.close_pending = true;
+            self.rules = None;
             return Route::Taken;
         }
-        let s = Self::spot(points);
-        if has_demo && (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH {
+        if (has_demo && near(Self::spot(points), 1.0)) || (has_rules && near(Self::rules_spot(points), 1.0)) {
             self.taken.push(e.id);
             return Route::Taken;
         }
@@ -209,22 +266,47 @@ impl Info {
         out
     }
 
-    /// Draws the mark, and the ghost while the demo plays, over the toy's frame.
-    pub fn draw(&mut self, gpu: &Gpu, target: &wgpu::TextureView, size: [u32; 2], ppp: f64, has_demo: bool, reduce_motion: bool) {
-        if !has_demo {
+    /// Draws the marks, and the ghost while the demo plays, over the toy's frame.
+    pub fn draw(&mut self, gpu: &Gpu, target: &wgpu::TextureView, size: [u32; 2], ppp: f64, has_demo: bool, has_rules: bool, reduce_motion: bool) {
+        if !has_demo && !has_rules {
             return;
         }
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
         let k = ppp as f32;
         let points = [size[0] as f64 / ppp, size[1] as f64 / ppp];
-        let s = Self::spot(points);
-        let c = [s[0] as f32 * k, s[1] as f32 * k];
-        let lit = if self.open.is_some() { 0.85 } else { 0.5 };
-        // a soft dark ground so it reads on any scene, then a small ring and an "i" in it
-        painter.disc(c, 9.0 * k, 4.0 * k, [0.0, 0.0, 0.0, 0.28]);
-        painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        painter.disc([c[0], c[1] - 3.1 * k], 0.95 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-        painter.line([c[0], c[1] - 0.6 * k], [c[0], c[1] + 3.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        // a soft dark ground so each reads on any scene, then a small ring and its letter
+        let ground = |painter: &mut Painter, c: [f32; 2], lit: f32| {
+            painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
+            painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        };
+        if has_demo {
+            let s = Self::spot(points);
+            let c = [s[0] as f32 * k, s[1] as f32 * k];
+            let lit = if self.open.is_some() { 0.85 } else { 0.5 };
+            ground(painter, c, lit);
+            painter.disc([c[0], c[1] - 3.1 * k], 0.95 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            painter.line([c[0], c[1] - 0.6 * k], [c[0], c[1] + 3.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        }
+        if has_rules {
+            let s = Self::rules_spot(points);
+            let c = [s[0] as f32 * k, s[1] as f32 * k];
+            let lit = if self.rules.is_some() { 0.85 } else { 0.5 };
+            ground(painter, c, lit);
+            // a "?": an arc over the top, a short stem down from its right, a dot
+            let (r, o) = (2.3f32, [c[0], c[1] - 1.7 * k]);
+            let arc: Vec<[f32; 2]> = (0..=10)
+                .map(|i| {
+                    let a = std::f32::consts::PI * (1.0 + 1.4 * i as f32 / 10.0);
+                    [o[0] + a.cos() * r * k, o[1] + a.sin() * r * k]
+                })
+                .collect();
+            for w in arc.windows(2) {
+                painter.line(w[0], w[1], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            }
+            let end = arc[arc.len() - 1];
+            painter.line(end, [c[0], c[1] + 1.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            painter.disc([c[0], c[1] + 3.6 * k], 0.85 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        }
         if let Some((demo, at)) = &self.open {
             let el = self.now - at;
             for s in &demo.strokes {
@@ -250,5 +332,36 @@ impl Info {
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         painter.render(gpu, &mut enc, target, size, None);
         gpu.queue.submit([enc.finish()]);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tap(info: &mut Info, id: u64, at: [f64; 2], demo: bool, rules: bool) -> Route {
+        let pts = [390.0, 844.0];
+        let down = PointerEvent { id, phase: Phase::Down, x: at[0], y: at[1], t: 0.0 };
+        let r = info.route(&down, pts, demo, rules);
+        if !matches!(r, Route::Taken) {
+            return r;
+        }
+        info.route(&PointerEvent { phase: Phase::Up, ..down }, pts, demo, rules)
+    }
+
+    #[test]
+    fn the_rules_mark_opens_and_any_tap_closes() {
+        let pts = [390.0, 844.0];
+        let mut info = Info::default();
+        assert!(matches!(tap(&mut info, 1, Info::rules_spot(pts), true, true), Route::Rules));
+        assert!(matches!(tap(&mut info, 2, Info::spot(pts), true, true), Route::Open));
+        // without a rules mark its place is the toy's
+        assert!(matches!(tap(&mut info, 3, Info::rules_spot(pts), true, false), Route::Toy));
+        info.show_rules(Some(Rules::new(&["a", "b"], "c")));
+        assert_eq!(info.rules().unwrap().to_str().unwrap(), "a\nb\n\nc");
+        assert!(info.is_open());
+        // a tap anywhere closes them and is not the toy's
+        assert!(matches!(tap(&mut info, 4, [100.0, 100.0], true, true), Route::Taken));
+        assert!(info.rules().is_none() && !info.is_open());
     }
 }
