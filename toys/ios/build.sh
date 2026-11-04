@@ -16,6 +16,10 @@ BUILD="${BUILD:-1}"
 MIN_IOS=17.0
 meta() { python3 -c "import json,sys; print(json.load(open('$ROOT/toys/$TOY/toy.json'))[sys.argv[1]])" "$1"; }
 NAME="$(meta name)"; BUNDLE="$(meta bundleIdentifier)"
+# a toy.json's optional versionBase lifts its version and build above an app it replaces (Terra's
+# bundle id was built by Xcode as 1.0.<run>, with run numbers in the hundreds)
+BASE="$(python3 -c "import json; print(json.load(open('$ROOT/toys/$TOY/toy.json')).get('versionBase', 0))")"
+BUILD=$((BUILD + BASE))
 EXEC="$(echo "$TOY" | python3 -c "import sys; print(sys.stdin.read().strip().title().replace('-', ''))")"
 SIM="${SIM:-0}"
 if [ "$SIM" = 1 ]; then

@@ -36,3 +36,7 @@ const char *toy_origins_text(ToyShell *shell);
 void toy_origins_open(ToyShell *shell);
 // Whether the card (the rules or the origins) hangs from the top, asked as it opens (Toy::card_at_top).
 bool toy_card_at_top(ToyShell *shell);
+// The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in
+// points (empty: none; valid until the next call), and pressing one by its line's index.
+const char *toy_buttons(ToyShell *shell);
+void toy_button_press(ToyShell *shell, uint32_t index, double t);

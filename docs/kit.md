@@ -37,6 +37,8 @@ What the kit carries (✓ exists today, + to be added, each extracted from where
 | Real data: a manifest, files by name, the bundle or a directory | `assets.rs` | ✓ | |
 | Sound: a `Synth` on the audio thread | `lib.rs` | ✓ | |
 | The device's C ABI, `ios_shell!` | `shell.rs` | ✓ | |
+| A host holding several toys: the `hosted` feature (each toy's own C ABI left out), `ios_shell!(host ..)`, `Ctx::take_haptic` | `lib.rs` | ✓ | Terra, Nov 4 |
+| VoiceOver buttons a toy names on screen (`Toy::buttons`, `press`; `toy_buttons`) | `lib.rs`, `toys/ios` | ✓ | Terra, Nov 4 |
 | The headless check (plans, shots, films, WAV) | `check.rs` | ✓ | |
 | **Launch safety**: the iPhone's GPU limits requested on Linux (`KIT_IPHONE_LIMITS=1`), so a pipeline the phone refuses fails the check; GPU memory counted as it is allocated; a budget in `toy.json` | `gpu/`, `budget.rs` | + | the two launch crashes |
 | **Taps that must do something**: every finger event in a plan must change the frame unless it says `"inert": true` | `check.rs` | + | "plans pass when a tap does nothing" |

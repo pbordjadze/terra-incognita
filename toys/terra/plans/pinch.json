@@ -1,0 +1,10 @@
+{
+ "_": "Falling in and climbing out by hand: the fireflies' light touched (the Earth falls into night, the toy comes up), then inside the toy two fingers pinched together hard, past the toy's whole Earth: the toy goes back down into Terra's Earth and the Earth comes up whole (the dive reversed), no mark needed.",
+ "seconds": 11,
+ "fps": 20,
+ "events": [
+  { "t": 1.0, "tap": "fireflies" },
+  { "t": 5.5, "pinch": [[110, 430], [290, 430]], "to": 0.2, "for": 0.6 }
+ ],
+ "shots": [{ "t": 4.8, "name": "inside" }, { "t": 6.0, "name": "pinched" }, { "t": 6.5, "name": "going-down" }, { "t": 10.5, "name": "back" }]
+}

@@ -22,6 +22,8 @@ final class ToyView: UIView {
     lazy var infoElement = InfoElement(accessibilityContainer: self)
     lazy var rulesElement = RulesElement(accessibilityContainer: self)
     lazy var originsElement = OriginsElement(accessibilityContainer: self)
+    /// The toy's own buttons (toy_buttons: Terra's lights), kept by label so VoiceOver's focus stays put.
+    var buttonElements: [String: ButtonElement] = [:]
     /// The rules (the rules mark's; toy-kit's info.rs › Rules) in the system's text: the toy's few
     /// rules, then one dimmer line of what is measured and what is drawn, on a dark glass over the live
     /// scene, above the marks. A tap anywhere closes it; it scrolls if the reader's text size needs.
@@ -268,6 +270,19 @@ final class ToyView: UIView {
             var out: [Any] = []
             guard let shell else { return [] }
             if rulesText != nil { out.append(rulesLabel) }
+            if let text = toy_buttons(shell).map({ String(cString: $0) }), !text.isEmpty {
+                for (i, line) in text.split(separator: "\n").enumerated() {
+                    let f = line.split(separator: "\t")
+                    guard f.count == 3, let bx = Double(f[1]), let by = Double(f[2]) else { continue }
+                    let label = String(f[0])
+                    let e = buttonElements[label] ?? ButtonElement(accessibilityContainer: self)
+                    buttonElements[label] = e
+                    e.accessibilityLabel = label
+                    e.index = UInt32(i)
+                    e.accessibilityFrameInContainerSpace = CGRect(x: bx - 22, y: by - 22, width: 44, height: 44)
+                    out.append(e)
+                }
+            }
             if toy_origins_spot(shell, &x, &y) {
                 originsElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
                 out.append(originsElement)
@@ -320,6 +335,21 @@ final class InfoElement: UIAccessibilityElement {
     override func accessibilityActivate() -> Bool {
         guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
         toy_info_open(shell, CACurrentMediaTime())
+        return true
+    }
+}
+
+/// One of the toy's own buttons (toy_buttons), pressed by its index in this frame's list.
+final class ButtonElement: UIAccessibilityElement {
+    var index: UInt32 = 0
+    override init(accessibilityContainer container: Any) {
+        super.init(accessibilityContainer: container)
+        accessibilityTraits = .button
+    }
+    override func accessibilityActivate() -> Bool {
+        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
+        toy_button_press(shell, index, CACurrentMediaTime())
+        UIAccessibility.post(notification: .layoutChanged, argument: nil)
         return true
     }
 }

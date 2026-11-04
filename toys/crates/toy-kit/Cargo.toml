@@ -12,6 +12,9 @@ description = "What every toy stands on: the GPU, the data, the real globe by da
 # assets. `default-features = false` builds the kit without it.
 default = ["globe"]
 globe = []
+# `hosted`: a host links several toys into one library (toys/terra), so each toy's own C ABI
+# (`ios_shell!`) is left out and the host's (`ios_shell!(host ..)`) is the library's only one.
+hosted = []
 # `web`: the WebGPU shell (`web::run`), on wasm32 only; its dependencies are wasm32's alone, so a
 # native build with or without it is the same.
 web = ["dep:wasm-bindgen", "dep:wasm-bindgen-futures", "dep:js-sys", "dep:web-sys", "dep:console_error_panic_hook"]

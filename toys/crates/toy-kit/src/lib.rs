@@ -110,6 +110,12 @@ impl Ctx {
         self.haptic = true;
     }
 
+    /// Whether a haptic tap was asked for since the last call, forgetting it (a host passes on the
+    /// taps of a toy it holds: `toys/terra`).
+    pub fn take_haptic(&mut self) -> bool {
+        std::mem::take(&mut self.haptic)
+    }
+
     /// The screen's size in points.
     pub fn points(&self) -> [f64; 2] {
         [self.width as f64 / self.ppp, self.height as f64 / self.ppp]
@@ -180,6 +186,14 @@ pub trait Toy: 'static {
     fn card_at_top(&self, _ctx: &Ctx) -> bool {
         false
     }
+    /// Things on screen a finger can touch that VoiceOver should offer as buttons: a label and where
+    /// it is, in points (Terra's lights, each opening its toy). None by default: a toy's scene is
+    /// touched, not pressed.
+    fn buttons(&self, _ctx: &Ctx) -> Vec<(String, [f64; 2])> {
+        Vec::new()
+    }
+    /// VoiceOver activated `buttons()[i]` (as it was this frame); `t` the shell's seconds.
+    fn press(&mut self, _ctx: &mut Ctx, _i: usize, _t: f64) {}
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
@@ -198,6 +212,8 @@ pub struct Host<T: Toy> {
     /// The info mark and its demo.
     pub info: info::Info,
     marks: info::Marks,
+    /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
+    buttons: std::ffi::CString,
 }
 
 impl<T: Toy> Host<T> {
@@ -206,7 +222,7 @@ impl<T: Toy> Host<T> {
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         let marks = info::Marks { demo: toy.demo(&ctx).is_some(), rules: toy.rules().is_some(), origins: toy.origins().is_some() };
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks })
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks, buttons: Default::default() })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -264,6 +280,23 @@ impl<T: Toy> Host<T> {
     /// The info mark's place in points, if the toy has one.
     pub fn info_spot(&self) -> Option<[f64; 2]> {
         self.marks.demo.then(|| info::Info::spot(self.ctx.points()))
+    }
+
+    /// The toy's buttons, a line each: its label, a tab, x, a tab, y (points); valid until the next call.
+    pub fn buttons_text(&mut self) -> &std::ffi::CStr {
+        let text: String = self
+            .toy
+            .buttons(&self.ctx)
+            .into_iter()
+            .map(|(label, p)| format!("{}\t{:.1}\t{:.1}\n", label.replace(['\t', '\n', '\0'], " "), p[0], p[1]))
+            .collect();
+        self.buttons = std::ffi::CString::new(text).unwrap_or_default();
+        &self.buttons
+    }
+
+    /// VoiceOver pressed button `i`.
+    pub fn press(&mut self, i: usize, t: f64) {
+        self.toy.press(&mut self.ctx, i, t);
     }
 
     /// The toy's named places, and the info mark's as `"info"`.
@@ -352,11 +385,20 @@ pub fn block_on<F: std::future::Future>(f: F) -> F::Output {
 
 /// The C ABI over a toy type: `toy_kit::ios_shell!(MyToy);` in the toy's `lib.rs`. Compiled only for
 /// iOS (the static library the shell links).
+///
+/// A host links several toys into one library (Terra holds them all: `toys/terra`), so each toy's own
+/// C ABI is left out when the kit's `hosted` feature is on (the host's crate turns it on; cargo then
+/// builds the kit hosted for every toy in that build), and the host exports its own with
+/// `ios_shell!(host MyHost)`. A toy's own app is built without it, as before.
 #[macro_export]
 macro_rules! ios_shell {
-    ($toy:ty) => {
+    (host $toy:ty) => {
         #[cfg(target_os = "ios")]
         pub mod ffi {
+            $crate::ios_shell!(@body $toy);
+        }
+    };
+    (@body $toy:ty) => {
             use super::*;
             use std::ffi::{c_char, c_void, CStr};
             type S = $crate::shell::Shell<$toy>;
@@ -478,9 +520,41 @@ macro_rules! ios_shell {
                 s.as_ref().map(|s| s.host.card_at_top()).unwrap_or(false)
             }
             #[no_mangle]
+            pub unsafe extern "C" fn toy_buttons(s: *mut S) -> *const c_char {
+                s.as_mut().map(|s| s.host.buttons_text().as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_button_press(s: *mut S, i: u32, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.press(i as usize, t) }
+            }
+            #[no_mangle]
             pub unsafe extern "C" fn toy_free(s: *mut S) {
                 if !s.is_null() { drop(Box::from_raw(s)) }
             }
+    };
+    ($toy:ty) => {
+        $crate::__own_shell!($toy);
+    };
+}
+
+/// A toy's own C ABI (`ios_shell!(MyToy)`), unless the kit is built `hosted`.
+#[cfg(not(feature = "hosted"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __own_shell {
+    ($toy:ty) => {
+        #[cfg(target_os = "ios")]
+        pub mod ffi {
+            $crate::ios_shell!(@body $toy);
         }
     };
+}
+
+/// Built `hosted` (a host such as Terra links several toys: their own C ABIs would collide), a toy's
+/// `ios_shell!` exports nothing; the host's `ios_shell!(host MyHost)` does.
+#[cfg(feature = "hosted")]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __own_shell {
+    ($toy:ty) => {};
 }

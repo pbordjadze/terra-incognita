@@ -171,7 +171,99 @@ def carol():
     img.alpha_composite(ink, at)
     return img
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol}
+def meander():
+    """A café-au-lait river swinging down a dark forest, a black-water oxbow beside its bend (the toy's own colours)."""
+    img = Image.new('RGBA', (N, N), (34, 64, 44, 255))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(3)
+    for _ in range(2600):  # the canopy's grain
+        x, y, r = rnd.uniform(0, N), rnd.uniform(0, N), rnd.uniform(4, 14)
+        g = rnd.uniform(-12, 12)
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(int(34 + g), int(66 + g), int(46 + g * 0.6), 255))
+    river = [(N * 0.5 + 300 * math.sin(t * 2.2 + 0.4) * (0.6 + 0.4 * math.sin(t * 1.3)), -40 + t / math.tau * (N + 80)) for t in [i / 400 * math.tau for i in range(401)]]
+    ox = [(N * 0.17 + 110 * math.cos(a), N * 0.45 + 140 * math.sin(a)) for a in [math.pi * (0.25 + 1.5 * i / 80) for i in range(81)]]
+    def tube(pts, r, col):
+        for i in range(len(pts) - 1):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            for k in range(6):
+                x, y = x0 + (x1 - x0) * k / 6, y0 + (y1 - y0) * k / 6
+                d.ellipse([x - r, y - r, x + r, y + r], fill=col)
+    tube(ox, 22, (38, 38, 58, 255))
+    tube(river, 59, (224, 207, 168, 255))
+    tube(river, 46, (194, 161, 120, 255))
+    return img
+
+
+def jam():
+    # the ring from above at dusk: cars round it, and one knot of red brake lights
+    img = Image.new('RGBA', (N, N), (30, 34, 44, 255))
+    d = ImageDraw.Draw(img)
+    c, r, w = N / 2, 360, 70
+    d.ellipse([c - r - w / 2, c - r - w / 2, c + r + w / 2, c + r + w / 2], fill=(18, 20, 26, 255))
+    d.ellipse([c - r + w / 2, c - r + w / 2, c + r - w / 2, c + r - w / 2], fill=(30, 34, 44, 255))
+    reds = []
+    cars = [k * 360 / 16 for k in range(16)]
+    # the knot: five cars bunched at the upper right
+    cars = [a for a in cars if not 20 < a < 80] + [24 + 11 * k for k in range(5)]
+    for a in cars:
+        t = math.radians(a)
+        x, y = c + r * math.cos(t), c - r * math.sin(t)
+        hx, hy = -math.sin(t), -math.cos(t)
+        L, W = 34, 15
+        pts = [(x + hx * L * sx - hy * W * sy, y + hy * L * sx + hx * W * sy) for sx, sy in [(1, 1), (1, -1), (-1, -1), (-1, 1)]]
+        d.polygon(pts, fill=(222, 224, 228, 255))
+        if 20 < a < 80:
+            reds.append((x - hx * L, y - hy * L))
+    glow(img, reds, 16, (255, 40, 25, 230), 22)
+    return img
+
+
+
+def frost():
+    """One ice flower grown by the toy's own rule (tools/toys/frost/reiter.py), white on the night glass."""
+    import numpy as np
+    sys.path.insert(0, str(ROOT / 'tools/toys/frost'))
+    import reiter
+    n = 241
+    s = np.full((n, n), 0.55)
+    c = n // 2
+    s[c, c] = 1.0
+    q, r = np.meshgrid(np.arange(n) - c, np.arange(n) - c, indexing='ij')
+    dist = (abs(q) + abs(r) + abs(q + r)) / 2
+    g = 0.005 * (1 + 0.4 * np.random.default_rng(5).uniform(-1, 1, (n, n)))
+    while dist[s >= 1].max() < 105:
+        fr = s >= 1
+        rec = fr.copy()
+        for m in reiter.nbrs(fr):
+            rec |= m
+        u = np.where(rec, 0, s)
+        v = np.where(rec, s + g, 0)
+        u = u + 0.5 * (sum(reiter.nbrs(u)) / 6 - u)
+        s = u + v
+        s[dist >= c - 1] = 0.55
+    img = Image.new('RGBA', (N, N))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        k = y / N
+        d.line([(0, y), (N, y)], fill=(int(4 + 14 * k), int(8 + 20 * k), int(26 + 40 * k), 255))
+    ys, xs = np.mgrid[0:N, 0:N]
+    sc = N / 236
+    X, Y = (xs - N / 2) / sc, (ys - N / 2) / sc
+    a = 0.26
+    X, Y = X * math.cos(a) + Y * math.sin(a), -X * math.sin(a) + Y * math.cos(a)
+    rr = Y / (math.sqrt(3) / 2)
+    qq = X - rr / 2
+    v = s[np.clip(np.round(qq).astype(int) + c, 0, n - 1), np.clip(np.round(rr).astype(int) + c, 0, n - 1)]
+    age = np.clip(np.log1p(np.maximum(v - 1, 0) * 30) / 3, 0, 1)
+    cover = (v >= 1).astype(float)
+    col = np.stack([0.66 + 0.27 * age, 0.78 + 0.17 * age, 0.93 + 0.05 * age], -1) * 255
+    alpha = cover * (0.6 + 0.37 * age)
+    ice = Image.fromarray(np.dstack([col, alpha[..., None] * 255]).astype(np.uint8), 'RGBA').filter(ImageFilter.GaussianBlur(1.2))
+    img.alpha_composite(ice)
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

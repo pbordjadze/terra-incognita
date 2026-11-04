@@ -77,6 +77,8 @@ jobs:
         run: |
           cargo build --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check
           cargo test --release -p toy-kit -p ${{ matrix.toy }}
+          # Terra holds the others: its data is theirs, merged (tools/toys/terra/manifest.py)
+          if [ "${{ matrix.toy }}" = terra ]; then python3 ../tools/toys/terra/manifest.py --check; fi
           cargo clippy --release -p ${{ matrix.toy }} -- -D warnings || echo "::warning::clippy has findings"
       - name: Launch check (every shader translated to Metal as on the iPhone)
         run: |
