@@ -6,7 +6,7 @@ the ring while every car drives forward. ROUNDS.md has a line a round; SOURCES.m
 
 ## Where it stands
 
-- Merged to main at 2bb910dc (Nov 4, 5:02 PM ET); main's run builds and releases `jam-build-<n>`
+- Merged to main at 2bb910dc (Nov 4, 5:02 PM ET); main's run released `jam-build-144` (5:43 PM ET)
   and puts Ghost Jam in the SideStore source (`ci/sidestore_apps.json`, after Carol). The branch
   IPA (round 1) built and opened in the iOS Simulator with Metal's validation on. Not yet seen on a phone.
 - Checks: `cargo test -p jam` (the paper's numbers: even flow about 31 km/h holding 10 minutes under
