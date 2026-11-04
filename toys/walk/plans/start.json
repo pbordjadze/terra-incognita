@@ -1,0 +1,7 @@
+{ "_": "First sight and the core moment: the first night untouched (short steps: one hill drawn finely), its dawn showing the land and the hills the walker never found; in the second night a touch a third of the screen away from the walker (long steps: every hill found), and its dawn where the map and the land agree.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 106, "fps": 30, "audio": true,
+  "events": [
+    { "t": 64.0, "tap": "good" }
+  ],
+  "shots": [{ "t": 1.0, "name": "first" }, { "t": 4.0, "name": "invite" }, { "t": 12.0, "name": "climb" }, { "t": 30.0, "name": "one-hill" }, { "t": 41.5, "name": "night-end" }, { "t": 47.0, "name": "dawn" }, { "t": 56.0, "name": "day" }, { "t": 61.5, "name": "night-two" }, { "t": 64.3, "name": "reach" }, { "t": 75.0, "name": "wander" }, { "t": 90.0, "name": "every-hill" }, { "t": 104.0, "name": "dawn-two" }],
+  "film": { "from": 0, "to": 106, "every": 1.0 } }
