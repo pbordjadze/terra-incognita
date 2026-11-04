@@ -40,7 +40,12 @@ is a photograph or a recording.
 ## Drawn
 
 - The hour (dusk; the experiment ran by day), the paving, the ring's asphalt and painted edges, the cars'
-  shapes and colours, headlights, brake lights (lit while a car brakes harder than 1.8 m/s² or stands),
-  the red light lingering on the asphalt for a few seconds where cars braked (the jam's path), a touch's ring.
+  shapes and colours (drawn 1.25 times as long and 1.45 times as wide as life, the road wider with them,
+  so they read on a phone), headlights, brake lights (lit while a car brakes harder than 1.8 m/s² or
+  stands), a touch's ring.
+- Inside the ring, the last 40 seconds: each car's position every 0.2 s drawn at a radius that shrinks
+  with its age, red where its brake lights were on. It is the paper's own kind of figure (its figure 4,
+  each car's position against time) wrapped round the ring: the cars' tracks wind forward, a jam's red
+  arm winds backward.
 - The sound: each car an engine buzz whose pitch follows its speed and grows louder as it pulls away,
-  tyres' hiss with the ring's speed, a soft thump for a tap; heard from the centre.
+  a car pulling out of a stop revving loudest (so the jam's front is heard as one car after another pulling away), tyres' hiss with the ring's speed, a soft thump for a tap; heard from the centre.

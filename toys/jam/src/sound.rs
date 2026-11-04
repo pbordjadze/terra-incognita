@@ -106,9 +106,12 @@ impl Synth for Hum {
         if let Some(cars) = cars {
             for i in 0..N {
                 let c = cars[i];
-                tf[i] = (32.0 + 6.5 * c.v) * self.detune[i];
-                // idling quiet, cruising steady, pulling away loud
-                tl[i] = 0.35 + 0.05 * c.v + 0.45 * (c.acc.max(0.0) / 2.0).min(1.0);
+                // the engine's note: idle low, rising with the speed (and a gear's worth more when
+                // pulling hard); idling quiet, cruising steady, pulling away out of a stop loud
+                let pull = (c.acc.max(0.0) / 1.5).min(1.0);
+                tf[i] = (52.0 + 7.5 * c.v + 25.0 * pull) * self.detune[i];
+                let launch = pull * (1.0 - (c.v / 9.0).min(1.0));
+                tl[i] = 0.30 + 0.035 * c.v + 0.35 * pull + 2.2 * launch;
                 tp[i] = c.pan;
                 speed += c.v / N as f32;
             }

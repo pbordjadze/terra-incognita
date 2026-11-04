@@ -35,12 +35,19 @@ pub struct Jam {
     /// Where taps landed (screen points of the car, when), for the touch's ring.
     taps: Vec<([f64; 2], f64)>,
     paint: [usize; N],
-    /// Red light left on the asphalt, by where on the ring (2° bins): the jam's path, fading.
-    trail: Vec<f32>,
+    /// Where every car was, every SAMPLE seconds, and whether its brake lights were on: drawn inside
+    /// the ring as the paper's time-space diagram wrapped round, the past spiralling inward.
+    hist: std::collections::VecDeque<[(f32, f32); N]>,
+    next_sample: f64,
 }
 
-const BINS: usize = 180;
-const TRAIL_FADE: f64 = 3.5;
+const SAMPLE: f64 = 0.2;
+/// Seconds of the past drawn inside the ring, and how far inward a second goes (m).
+const PAST: f64 = 40.0;
+/// Cars drawn larger than life so they read on a phone (length, width); the road with them.
+const LONG: f64 = 1.25;
+const WIDE: f64 = 1.45;
+pub const ROAD: f64 = 3.0;
 
 struct Layout {
     c: [f64; 2],
@@ -51,7 +58,7 @@ struct Layout {
 impl Jam {
     fn layout(&self) -> Layout {
         let [w, h] = self.points;
-        let s = (w.min(h * 0.75) * 0.96) / (2.0 * (RADIUS + 2.6));
+        let s = (w.min(h * 0.75) * 0.97) / (2.0 * (RADIUS + ROAD + 0.4));
         Layout { c: [w * 0.5, h * 0.47], s }
     }
 
@@ -112,7 +119,7 @@ impl Toy for Jam {
         }
         let ring = Ring::new(0x5eed_2008);
         let sound = sound::Engines::new();
-        Ok(Jam { ring, ground, painter, sound, points: ctx.points(), t: 0.0, taps: Vec::new(), paint, trail: vec![0.0; BINS] })
+        Ok(Jam { ring, ground, painter, sound, points: ctx.points(), t: 0.0, taps: Vec::new(), paint, hist: Default::default(), next_sample: 0.0 })
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
@@ -133,17 +140,14 @@ impl Toy for Jam {
         self.t = t;
         self.ring.step(dt);
         self.taps.retain(|(_, at)| t - at < 2.0);
-        let fade = (-dt / TRAIL_FADE).exp() as f32;
-        for b in self.trail.iter_mut() {
-            *b *= fade;
-        }
-        for c in &self.ring.cars {
-            if c.lights > 0.05 {
-                let at = (c.x - CAR * 0.6).rem_euclid(traffic::RING) / traffic::RING * BINS as f64;
-                let b = at as usize % BINS;
-                let add = (c.lights * dt * 0.5) as f32;
-                self.trail[b] = (self.trail[b] + add).min(1.0);
+        while t >= self.next_sample {
+            self.next_sample += SAMPLE;
+            if self.next_sample < t - 1.0 {
+                self.next_sample = t;
             }
+            let now: [(f32, f32); N] = std::array::from_fn(|i| (self.ring.cars[i].x as f32, self.ring.cars[i].lights as f32));
+            self.hist.push_front(now);
+            self.hist.truncate((PAST / SAMPLE) as usize + 1);
         }
         let l = self.layout();
         let cars: Vec<(f32, f32, f32)> = self
@@ -170,28 +174,47 @@ impl Toy for Jam {
             time: self.t as f32,
             scale: m,
             center: [0.0, 0.0],
-            p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, RADIUS as f32, 0.0, 0.0, 0.0, 0.0, 0.0],
+            p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, RADIUS as f32, ROAD as f32, 0.0, 0.0, 0.0, 0.0],
         };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         self.ground.render(gpu, &mut enc, target, size, &params);
 
         // where each car is, and its corners
         let at = |p: [f64; 2], h: [f64; 2], fwd: f64, side: f64| -> [f32; 2] {
-            // side: + to the car's right (screen: heading turned clockwise)
+            // side: + to the car's right (screen: heading turned clockwise); drawn larger than life
+            let (fwd, side) = (fwd * LONG, side * WIDE);
             let r = [-h[1], h[0]];
             px([p[0] + l.s * (h[0] * fwd + r[0] * side), p[1] + l.s * (h[1] * fwd + r[1] * side)])
         };
         let placed: Vec<([f64; 2], [f64; 2])> = self.ring.cars.iter().map(|c| self.place(&l, c.x)).collect();
         let half = CAR / 2.0;
 
-        // the jam's path: red light lingering on the asphalt where cars stood braking
-        for (b, &v) in self.trail.iter().enumerate() {
-            if v > 0.01 {
-                let x = (b as f64 + 0.5) / BINS as f64 * traffic::RING;
-                let (p, h) = self.place(&l, x);
-                let a = at(p, h, -1.0, 0.0);
-                let e = at(p, h, 1.0, 0.0);
-                self.painter.glow(a, e, 1.4 * m, 1.6 * m, [0.9, 0.06, 0.04, 0.16 * v.sqrt()]);
+        // the past, inside the ring: each car's track drawn inward as it ages (the paper's
+        // time-space diagram wrapped round), red where its brake lights were on; the cars' tracks wind
+        // forward, and a jam shows as a red arm winding backward against them
+        let r_in = RADIUS - ROAD - 1.6;
+        let r_min = 6.0;
+        let inward = (r_in - r_min) / PAST;
+        let polar = |x: f32, age: f64| -> [f32; 2] {
+            let th = x as f64 / RADIUS;
+            let r = r_in - inward * age;
+            px([l.c[0] + l.s * r * th.cos(), l.c[1] - l.s * r * th.sin()])
+        };
+        let ns = self.hist.len();
+        for j in 0..ns.saturating_sub(1) {
+            let (a, b) = (&self.hist[j], &self.hist[j + 1]);
+            let age = j as f64 * SAMPLE + (self.t - (self.next_sample - SAMPLE)).clamp(0.0, SAMPLE);
+            let fade = (1.0 - age / PAST).clamp(0.0, 1.0) as f32;
+            let fade = fade * fade.min(1.0);
+            for i in 0..N {
+                let red = 0.5 * (a[i].1 + b[i].1);
+                let p = polar(a[i].0, age);
+                let q = polar(b[i].0, age + SAMPLE);
+                if red > 0.15 {
+                    self.painter.glow(p, q, 0.20 * m, 0.30 * m, [1.0, 0.10, 0.06, 0.75 * red * fade]);
+                } else {
+                    self.painter.glow(p, q, 0.07 * m, 0.10 * m, [0.70, 0.78, 0.95, 0.10 * fade]);
+                }
             }
         }
         // light on the ground: headlights ahead, the red of brake lights behind
@@ -200,35 +223,37 @@ impl Toy for Jam {
             self.painter.glow(at(p, h, half + 1.0, 0.0), at(p, h, half + 7.0, 0.0), 1.5 * m, 2.6 * m, [1.0, 0.86, 0.62, 0.07]);
             let red = c.lights as f32;
             if red > 0.01 {
-                self.painter.glow(at(p, h, -half - 0.6, 0.0), at(p, h, -half - 2.2, 0.0), 1.2 * m, 2.4 * m, [1.0, 0.10, 0.06, 0.30 * red]);
+                self.painter.glow(at(p, h, -half - 0.6, 0.0), at(p, h, -half - 2.2, 0.0), 1.6 * m, 3.0 * m, [1.0, 0.08, 0.05, 0.55 * red]);
             }
         }
         self.painter.render(gpu, &mut enc, target, size, None);
 
         // the cars
+        let wd = WIDE as f32;
         for (i, c) in self.ring.cars.iter().enumerate() {
             let (p, h) = placed[i];
             let col = PAINT[self.paint[i]];
             let dim = |c: [f32; 3], f: f32, a: f32| [c[0] * f, c[1] * f, c[2] * f, a];
             // shadow (the last of the sky's light, from above and a little west)
             let sh = |q: [f32; 2]| [q[0] + 0.25 * m, q[1] + 0.35 * m];
-            self.painter.line(sh(at(p, h, -1.75, 0.0)), sh(at(p, h, 1.75, 0.0)), 0.95 * m, 0.55 * m, [0.0, 0.0, 0.02, 0.5]);
+            self.painter.line(sh(at(p, h, -1.75, 0.0)), sh(at(p, h, 1.75, 0.0)), 0.95 * m * wd, 0.55 * m, [0.0, 0.0, 0.02, 0.5]);
             // body: two strokes side by side make a rounded box
             for side in [-0.36, 0.36] {
-                self.painter.line(at(p, h, -1.72, side), at(p, h, 1.72, side), 0.48 * m, 0.6, dim(col, 0.80, 1.0));
+                self.painter.line(at(p, h, -1.72, side), at(p, h, 1.72, side), 0.48 * m * wd, 0.6, dim(col, 0.80, 1.0));
             }
             // the roof, a little lighter (it faces the sky), between dark glass
-            self.painter.line(at(p, h, -0.95, 0.0), at(p, h, 0.45, 0.0), 0.56 * m, 0.08 * m, dim(col, 0.92, 1.0));
-            self.painter.line(at(p, h, 0.86, -0.50), at(p, h, 0.86, 0.50), 0.24 * m, 0.6, [0.05, 0.07, 0.10, 0.95]);
-            self.painter.line(at(p, h, -1.30, -0.46), at(p, h, -1.30, 0.46), 0.17 * m, 0.6, [0.05, 0.07, 0.10, 0.9]);
+            self.painter.line(at(p, h, -0.95, 0.0), at(p, h, 0.45, 0.0), 0.56 * m * wd, 0.08 * m, dim(col, 0.92, 1.0));
+            self.painter.line(at(p, h, 0.86, -0.50), at(p, h, 0.86, 0.50), 0.24 * m * wd, 0.6, [0.05, 0.07, 0.10, 0.95]);
+            self.painter.line(at(p, h, -1.30, -0.46), at(p, h, -1.30, 0.46), 0.17 * m * wd, 0.6, [0.05, 0.07, 0.10, 0.9]);
             // the lamps, unlit
             for side in [-0.6, 0.6] {
-                self.painter.disc(at(p, h, -2.08, side), 0.17 * m, 0.6, [0.30, 0.04, 0.04, 1.0]);
-                self.painter.disc(at(p, h, 2.10, side), 0.16 * m, 0.6, [0.85, 0.84, 0.78, 1.0]);
+                self.painter.disc(at(p, h, -2.08, side), 0.17 * m * wd, 0.6, [0.30, 0.04, 0.04, 1.0]);
+                self.painter.disc(at(p, h, 2.10, side), 0.16 * m * wd, 0.6, [0.85, 0.84, 0.78, 1.0]);
             }
             let _ = c;
         }
         // lamps alight
+        let wd = WIDE as f32;
         for (i, c) in self.ring.cars.iter().enumerate() {
             let (p, h) = placed[i];
             for side in [-0.6, 0.6] {
@@ -238,8 +263,8 @@ impl Toy for Jam {
             if red > 0.01 {
                 for side in [-0.6, 0.6] {
                     let q = at(p, h, -2.1, side);
-                    self.painter.glow(q, q, 0.16 * m, 0.25 * m, [1.0, 0.18, 0.10, 0.95 * red]);
-                    self.painter.glow(q, q, 0.25 * m, 1.1 * m, [1.0, 0.06, 0.04, 0.35 * red]);
+                    self.painter.glow(q, q, 0.22 * m * wd, 0.25 * m, [1.0, 0.30, 0.18, 1.0 * red]);
+                    self.painter.glow(q, q, 0.4 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.55 * red]);
                 }
             }
         }
@@ -283,8 +308,9 @@ impl Toy for Jam {
             &[
                 "Every driver does one thing: keep a safe gap to the car ahead, and speed up when there's room.",
                 "Brake once and the car behind brakes a little harder, and the next harder still, until some stop: a jam that moves backward while every car drives forward.",
+                "Inside the ring, the last 40 seconds wind inward: each car's track, red where it braked.",
             ],
-            "Real: the 230 m ring and its 22 cars in Nagoya, the even 30 km/h, the jam's 20 km/h backward. Drawn: the hour, the cars, the ground.",
+            "Real: the 230 m ring and its 22 cars in Nagoya, the even 30 km/h, the jam's 20 km/h backward. Drawn: the hour, the cars (larger than life), the ground.",
         ))
     }
 }
@@ -309,16 +335,16 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let g = abs(fract(m / 6.0 + 0.5) - 0.5) * 6.0;
   let seam = 1.0 - smoothstep(0.02, 0.02 + 1.5 * pxm, min(g.x, g.y));
   col = col * (1.0 - 0.14 * seam);
-  // the ring's asphalt, 4.4 m wide
+  // the ring's asphalt (drawn wider than the real lane, as the cars are drawn larger)
   let d = abs(r - R);
-  let road = 1.0 - smoothstep(2.2, 2.2 + 1.5 * pxm, d);
+  let road = 1.0 - smoothstep(u.p0.w, u.p0.w + 1.5 * pxm, d);
   var asphalt = vec3<f32>(0.085, 0.092, 0.112) * (0.92 + 0.16 * fbm(m * 1.7));
   // the tyres' track, a little darker and smoother, either side of the middle
-  let track = exp(-pow((d - 0.75) / 0.35, 2.0));
+  let track = exp(-pow((d - 1.0) / 0.5, 2.0));
   asphalt = asphalt * (1.0 - 0.18 * track);
   col = mix(col, asphalt, road);
   // the painted edges, worn
-  let paint = (1.0 - smoothstep(0.06, 0.06 + 1.2 * pxm, abs(d - 2.05))) * (0.55 + 0.45 * smoothstep(0.25, 0.65, fbm(m * 2.3)));
+  let paint = (1.0 - smoothstep(0.06, 0.06 + 1.2 * pxm, abs(d - u.p0.w + 0.15))) * (0.55 + 0.45 * smoothstep(0.25, 0.65, fbm(m * 2.3)));
   col = mix(col, vec3<f32>(0.62, 0.63, 0.63), paint * 0.6);
   // the camera at the centre: three legs and its head, and their shadow
   var cam = 0.0;
