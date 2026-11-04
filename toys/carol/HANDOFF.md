@@ -3,6 +3,15 @@
 painting-company row 215. A one-off toy chess trainer as its own app on the toy kit (no globe):
 a wooden board, tap a piece, then where it goes. ROUNDS.md has a line a round; SOURCES.md the data.
 
+## Where it stands
+
+- Shipped: `carol-build-113` (12:23 ET, Nov 4), from main 0e3d918, in the SideStore source as Carol
+  1.0.113. Opened in the iOS Simulator with Metal's validation on (passed); not yet seen on a phone.
+- Checks: `bash tools/toys/launch_check.sh carol` passes (the iPhone's limits, 3 shaders to MSL 2.4,
+  peak RSS 142 MB of 1400); `cargo test -p carol` walks every drill; plans start, line, info, ipad.
+- The release was made by a run started by hand (toy carol, ipa on) after a `[skip ci]` merge, while
+  GitHub's macOS arm64 runners dropped jobs after 15 minutes queued (11:25 to 12:15 ET).
+
 ## How it works
 
 - `src/chess.rs`: FEN to a board, `drills.json` to drills, and `Ply::accepts` (the line's squares,
