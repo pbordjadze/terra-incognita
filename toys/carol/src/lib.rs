@@ -706,6 +706,12 @@ impl Toy for Carol {
                 }
             }
         }
+        // the line so far: a gold thread along the frame's foot
+        let frac = (self.ply as f64 / drill.plies.len().max(1) as f64).min(1.0);
+        if frac > 0.0 {
+            let y = l.y0 + l.s + 5.0;
+            self.painter.line(px([l.x0 + 4.0, y]), px([l.x0 + 4.0 + (l.s - 8.0) * frac, y]), 1.3 * k, 0.8 * k, [0.99, 0.82, 0.42, 0.9]);
+        }
         // the buttons: a bulb (the hint) and a play mark (show it)
         let live = self.turn == Turn::Yours;
         for (kind, x) in [(0u8, l.hint_x), (1u8, l.show_x)] {
@@ -720,7 +726,7 @@ impl Toy for Carol {
             self.painter.disc([c[0], c[1] + 3.0 * ku], r, 5.0 * ku, [0.0, 0.0, 0.0, 0.25 * a]);
             self.painter.disc(c, r, 0.8 * ku, [0.99, 0.96, 0.90, 0.10 + 0.08 * a + 0.2 * press]);
             self.painter.ring(c, r, 1.5 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.55 * a]);
-            let ink = [0.99, 0.94, 0.80, a];
+            let ink = if live { [0.99, 0.94, 0.80, 1.0] } else { [0.45, 0.49, 0.54, 1.0] };
             if kind == 0 {
                 // a bulb: a round glass, two lines of its screw
                 let g = [c[0], c[1] - 3.5 * ku];
