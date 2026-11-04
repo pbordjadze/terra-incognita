@@ -290,7 +290,28 @@ def taste():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste}
+
+def walk():
+    # night: a footprint map's contours rising round one hill, and the walker's lantern on it
+    img = Image.new('RGBA', (N, N), (10, 13, 24, 255))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(224)
+    cx, cy = 470, 560
+    for k in range(7, 0, -1):
+        pts = []
+        for j in range(90):
+            a = j / 90 * math.tau
+            r = k * 52 * (1 + 0.10 * math.sin(3 * a + k) + 0.06 * math.sin(5 * a - k))
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a) * 0.85))
+        shade = int(30 + (7 - k) * 22)
+        d.polygon(pts, fill=(shade, shade + 6, shade + 30, 255), outline=(200, 210, 235, 255), width=5)
+    prints = [(cx + rnd.gauss(0, 90), cy + rnd.gauss(0, 80)) for _ in range(70)]
+    glow(img, prints, 6, (255, 220, 160, 150), 3)
+    glow(img, [(cx + 60, cy - 40)], 26, (255, 225, 170, 255), 30)
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

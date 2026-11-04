@@ -1000,6 +1000,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca718471876992059f251e33aafc334346ada08042b7661dd1fe313a9bced557"
 
 [[package]]
+name = "walk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "serde",
+ "serde_json",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "wasm-bindgen"
 version = "0.2.130"
 source = "registry+https://github.com/rust-lang/crates.io-index"

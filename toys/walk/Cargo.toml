@@ -1,0 +1,22 @@
+[package]
+name = "walk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Night Walk (a working title): one walker's footprints in the dark become the map of a land no one can see, until dawn (painting-company row 224)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "walk-check"
+path = "src/bin/check.rs"

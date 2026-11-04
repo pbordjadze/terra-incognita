@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Night Walk needs none: each night's land is made from a seed in src/land.rs.",
+  "files": {}
+}
