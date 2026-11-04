@@ -5,7 +5,7 @@ and which are built as IPAs on the shared macOS runners. Prints `check=<json lis
 
     python3 tools/toys/ci_plan.py <event> <ref-name> <before-sha> <sha> "<head commit message>" [<toy> <ipa>]
 
-- checked: every toy whose own directory (toys/<toy>/) changed; every toy when the shared parts did
+- checked: every toy whose own directory (toys/<toy>/) changed (and Terra, which holds them); every toy when the shared parts did
   (toys/crates, toys/ios, toys/Cargo.*, tools/toys, the workflow).
 - built: on main, every toy whose own directory changed (one IPA a toy a merge: a round's merge is one
   build), plus any named; on a branch only the toys named by `[toys-ipa <toy> ...]` (or `all`) in the
@@ -42,6 +42,9 @@ else:
     own = [t for t in TOYS if any(f.startswith(f'toys/{t}/') for f in files)]
     shared = any(f.startswith(SHARED) for f in files)
     check = TOYS if shared else own
+    # Terra holds the other toys (toys/terra): a change to any of them is checked inside it too
+    if own and 'terra' in TOYS and 'terra' not in check:
+        check = check + ['terra']
     build = sorted(set((own if ref == 'main' else []) + named))
     check = sorted(set(check + build))
     kit = any(f.startswith('toys/crates/toy-kit/') for f in files)

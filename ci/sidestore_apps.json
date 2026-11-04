@@ -1,16 +1,16 @@
 {
-  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's ipa job, adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
+  "_": "The apps the SideStore source lists (ci/sidestore_source.py): each from this repository's releases tagged <tag>-<n> that carry an .ipa asset. Terra's own (since Nov 4, 2026, painting-company row 217) comes from toys.yml as terra-build-<n>; the Xcode-built Terra's ipa job, adrift.yml and toys.yml each regenerate the source from here (an app with no release yet is left out).",
   "apps": [
     {
-      "tag": "build",
+      "tag": "terra-build",
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
-      "subtitle": "The world, closer and closer",
-      "localizedDescription": "A wandering atlas in the making: a live globe, its ground, sea and clouds as satellites and buoys saw them, and a workbench of prototypes to try on it. Offline, apart from the workbench's optional prototype packs.",
+      "subtitle": "The world, and the toys on it",
+      "localizedDescription": "The whole Earth as satellites saw it this month, and on it a living light for each of the toys: whales off California, starlings in Somerset, a slime mold between Europe's cities, fireflies in the Smokies, a bell struck in Chile, a swell in the Pacific, a battle at Cannae. Touch one and fall into it. Offline; every dataset credited.",
       "icon": "icon.png",
       "iconSource": "ci/sidestore-icon.png",
       "tintColor": "#C9A243",
-      "minOSVersion": "26.0"
+      "minOSVersion": "17.0"
     },
     {
       "tag": "adrift-build",

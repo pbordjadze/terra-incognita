@@ -1,5 +1,15 @@
 # Terra Incognita — engineering notes
 
+**Since November 4, 2026 (painting-company row 217), the Terra Incognita app is the toy that holds the
+other toys: `toys/terra/`** (Rust on the toy kit, built and released by `.github/workflows/toys.yml` as
+`terra-build-<n>` under Terra's own bundle id; `toys/README.md` › The map). It opens on the whole Earth
+with a living light for each toy (`doors.rs`); a touch dives into the toy itself, linked into Terra's one
+library (`rooms.rs`); the Earth mark or a pinch out comes back. Retired from the release with the owner's
+yes: the Xcode-built globe as the opening view (its clouds and moving sea), the caption, country tapping,
+names, the cloud and workbench buttons and the workbench, and fetching packs. Everything below — the
+Xcode app in `App/`, its globe, clouds, ocean, quiet rules, playground runtime and tools — stays whole in
+the repository and in its own CI, no longer what the SideStore source lists for Terra.
+
 A playground for a wandering atlas: the app opens on a live globe, the ground as satellites saw it
 this month in a light key, its sea and clouds moving, and several prototypes run on it at once,
 entered by a doorway on the globe or from a developer workbench that lists them. Every experience was

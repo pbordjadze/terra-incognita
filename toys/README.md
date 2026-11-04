@@ -14,6 +14,7 @@ the owner's to decide):
 | Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 | Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
 | Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | `jam-build-<n>` |
+| Terra Incognita: the toy that holds the others, the whole Earth with a living light for each (row 217) | `terra/` | `com.pbordjadze.terraincognita` | `terra-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 
@@ -56,6 +57,16 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     down/move/up, a shake), its moments as PNG, a film of frames, the sound as WAV. Its header is the
     plan format.
   - `ios_shell!(MyToy)`: the device's C ABI (`ios/Sources/toy.h`), one line in the toy's `lib.rs`.
+  - A host that links several toys (Terra) turns on the kit's `hosted` feature, which leaves each toy's own
+    C ABI out, and exports its own with `ios_shell!(host MyHost)`; it drives the toys it holds through
+    `Toy` as a shell does (`terra/src/rooms.rs`), on its own device and data.
+  - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
+    mark); the shell reads them through `toy_buttons`. None by default.
+- `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a light for each toy it
+  holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). Its data is the held toys' merged
+  (`tools/toys/terra/manifest.py`); CI checks it whenever a toy it holds changes. A toy added to Terra is a
+  dependency in its `Cargo.toml`, a `Door` and a name in `doors.rs`/`lib.rs`, and its name in the manifest
+  tool.
 - `<toy>/`: one crate a toy (`src/lib.rs` the toy, `src/bin/check.rs` its check binary), `toy.json` (its
   app name and bundle id), `manifest.json` (the data it loads, by name, from where in this repository;
   its own built data under `<toy>/data/`, never hand-edited, built by a tool in `tools/toys/<toy>/`),

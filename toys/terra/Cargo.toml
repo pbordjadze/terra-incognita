@@ -1,0 +1,30 @@
+[package]
+name = "terra"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Terra Incognita: the whole Earth, and on it the toys, each a living light where it is real (painting-company row 217)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+# `hosted`: the toys below are linked into this one library, so only Terra's C ABI is exported
+toy-kit = { workspace = true, features = ["hosted"] }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+whales = { path = "../whales" }
+murmuration = { path = "../murmuration" }
+mold = { path = "../mold" }
+fireflies = { path = "../fireflies" }
+bell = { path = "../bell" }
+swell = { path = "../swell" }
+battle = { path = "../battle" }
+
+[[bin]]
+name = "terra-check"
+path = "src/bin/check.rs"
