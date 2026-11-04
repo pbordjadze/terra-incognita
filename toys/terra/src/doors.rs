@@ -86,6 +86,8 @@ pub struct Life {
     stir_at: Vec<f64>,
     /// Bare taps: where (lon, lat) and when.
     rings: Vec<(LonLat, f64)>,
+    /// The light that beckons until the first touch (Terra sets it at launch).
+    pub beckon: Option<usize>,
 }
 
 fn rand(seed: &mut u64) -> f64 {
@@ -119,6 +121,7 @@ impl Life {
             glint_at: (0..n).map(|i| 1.5 + i as f64 * 1.37).collect(),
             stir_at: vec![-100.0; n],
             rings: Vec::new(),
+            beckon: None,
         };
         life.scatter_flies();
         life.place_whales();
@@ -193,10 +196,41 @@ impl Life {
         self.rings.push((at, t));
     }
 
-    /// Where light `i` is on screen (points) and how far it faces the reader.
-    pub fn spot(&self, globe: &Globe, i: usize) -> ([f64; 2], f64) {
+    /// Where light `i` truly is on screen (points) and how far it faces the reader.
+    pub fn true_spot(&self, globe: &Globe, i: usize) -> ([f64; 2], f64) {
         let d = &self.doors[i];
         globe.project(LonLat::new(d.at[0], d.at[1]))
+    }
+
+    /// Where every light is shown (points): its true place, unless lights crowd (Europe's three from
+    /// afar), when they are eased apart until each has its room; a fine line then joins each to its place.
+    pub fn shown(&self, globe: &Globe) -> Vec<([f64; 2], f64)> {
+        let mut out: Vec<([f64; 2], f64)> = (0..self.doors.len()).map(|i| self.true_spot(globe, i)).collect();
+        let room = Self::size(globe) * 2.3;
+        for _ in 0..24 {
+            for i in 0..out.len() {
+                for j in i + 1..out.len() {
+                    if out[i].1 <= 0.3 || out[j].1 <= 0.3 {
+                        continue;
+                    }
+                    let (a, b) = (out[i].0, out[j].0);
+                    let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
+                    let d = dx.hypot(dy);
+                    if d < room {
+                        let (ux, uy) = if d > 1e-3 { (dx / d, dy / d) } else { (1.0, 0.0) };
+                        let push = (room - d) * 0.5 * 0.5;
+                        out[i].0 = [a[0] - ux * push, a[1] - uy * push];
+                        out[j].0 = [b[0] + ux * push, b[1] + uy * push];
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// Where light `i` is shown (points) and how far it faces the reader.
+    pub fn spot(&self, globe: &Globe, i: usize) -> ([f64; 2], f64) {
+        self.shown(globe)[i]
     }
 
     /// The light's size, points: grows a little as the reader comes closer.
@@ -246,8 +280,9 @@ impl Life {
                 p.ring(c, ((6.0 + 34.0 * u) * k) as f32, 1.4 * kf, 1.0, [0.69, 0.54, 0.24, a as f32]);
             }
         }
+        let shown = self.shown(globe);
         for (i, d) in self.doors.iter().enumerate() {
-            let (s, facing) = self.spot(globe, i);
+            let (s, facing) = shown[i];
             let vis = smooth(0.3, 0.5, facing) * fade;
             if vis <= 0.01 {
                 continue;
@@ -255,8 +290,21 @@ impl Life {
             let c = px(s);
             let a = vis as f32;
             let tint = d.tint;
+            // eased apart from a crowd: the whole likeness moves with it, and a fine line goes to its place
+            let truth = px(self.true_spot(globe, i).0);
+            let (ox, oy) = (c[0] - truth[0], c[1] - truth[1]);
+            if ox.hypot(oy) > 3.0 * kf {
+                p.line(truth, c, 0.45 * kf, 0.8, [tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6, 0.6 * a]);
+                p.disc(truth, 1.3 * kf, 0.8, [tint[0] * 0.6, tint[1] * 0.6, tint[2] * 0.6, 0.8 * a]);
+            }
+            let at = |ll: [f64; 2]| at(ll).map(|(q, f)| ([q[0] + ox, q[1] + oy], f));
+            // the beckoning light (until the first touch): a slow ring breathing out of it
+            if Some(i) == self.beckon && !reduce_motion {
+                let ph = (t / 2.6).rem_euclid(1.0);
+                p.ring(c, ((r * (1.1 + 1.6 * ph)) * k) as f32, 1.6 * kf, 1.5, [tint[0], tint[1], tint[2], ((1.0 - ph).powf(1.5) * 0.7) as f32 * a]);
+            }
             // a soft halo of its colour, so it reads from across the Earth
-            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a]);
+            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * (1.0 - globe.night)]);
             p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.22 * a]);
             match d.id {
                 "whales" => {
@@ -266,9 +314,9 @@ impl Life {
                             let Some((wc, _)) = at([ll.lon, ll.lat]) else { continue };
                             for j in 0..2 {
                                 let ph = (tm * 0.42 + j as f64 * 0.5 + w as f64 * 0.27).rem_euclid(1.0);
-                                let rr = r * (0.25 + 1.45 * ph);
+                                let rr = r * (0.25 + 3.2 * ph);
                                 let col = cols[w];
-                                p.ring(wc, (rr * k) as f32, 1.3 * kf, 1.0, [col[0], col[1], col[2], ((1.0 - ph).powf(1.3) * 0.95) as f32 * a]);
+                                p.ring(wc, (rr * k) as f32, 1.3 * kf, 1.0, [col[0], col[1], col[2], ((1.0 - ph).powf(1.6) * 0.95) as f32 * a]);
                             }
                             let col = cols[w];
                             p.disc(wc, 2.4 * kf, 1.0, [col[0], col[1], col[2], 0.95 * a]);
@@ -330,12 +378,12 @@ impl Life {
                     // rings on the sphere about the place: the bell's one, crossing the whole Earth;
                     // the swell's train of crests, slower and close
                     let centre = LonLat::new(d.at[0], d.at[1]).to_xyz();
-                    let (period, reach, crests, width) = if d.id == "bell" { (4.5, 0.45, 2, 1.6) } else { (6.0, 0.32, 3, 1.7) };
+                    let (period, reach, crests, width) = if d.id == "bell" { (6.0, 0.9, 2, 2.4) } else { (9.0, 0.7, 3, 2.4) };
                     for j in 0..crests {
                         let ph = (tm / period - j as f64 * if d.id == "bell" { 0.5 } else { 0.07 }).rem_euclid(1.0);
                         let theta = 0.02 + reach * ph;
                         let al = ((1.0 - ph).powf(1.2) * smooth(0.0, 0.05, ph)) as f32 * a;
-                        sphere_ring(p, globe, centre, theta, k, width * kf, [tint[0], tint[1], tint[2], 0.9 * al]);
+                        sphere_ring(p, globe, centre, theta, k, [ox, oy], width * kf, [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.8, al]);
                     }
                     p.disc(c, 2.2 * kf, 1.0, [tint[0], tint[1], tint[2], 0.9 * a]);
                 }
@@ -393,7 +441,7 @@ impl Life {
 }
 
 /// A circle on the sphere: the places `theta` radians from `centre`, drawn where they face the reader.
-fn sphere_ring(p: &mut Painter, globe: &Globe, centre: [f64; 3], theta: f64, k: f64, width: f32, col: [f32; 4]) {
+fn sphere_ring(p: &mut Painter, globe: &Globe, centre: [f64; 3], theta: f64, k: f64, off: [f32; 2], width: f32, col: [f32; 4]) {
     let c = centre;
     // two directions square to the centre
     let a = if c[1].abs() < 0.9 { [0.0, 1.0, 0.0] } else { [1.0, 0.0, 0.0] };
@@ -412,7 +460,7 @@ fn sphere_ring(p: &mut Painter, globe: &Globe, centre: [f64; 3], theta: f64, k: 
         let (sp, cp) = ph.sin_cos();
         let w = [c[0] * ct + (u[0] * cp + v[0] * sp) * st, c[1] * ct + (u[1] * cp + v[1] * sp) * st, c[2] * ct + (u[2] * cp + v[2] * sp) * st];
         let (s, f) = globe.project(LonLat::from_xyz(w));
-        let q = ([(s[0] * k) as f32, (s[1] * k) as f32], f);
+        let q = ([(s[0] * k) as f32 + off[0], (s[1] * k) as f32 + off[1]], f);
         if let Some(pq) = prev {
             if pq.1 > 0.02 && q.1 > 0.02 {
                 let fa = smooth(0.02, 0.25, pq.1.min(q.1)) as f32;

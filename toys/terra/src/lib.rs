@@ -236,6 +236,10 @@ pub struct Terra {
     veil: Veil,
     t: f64,
     last_touch: f64,
+    /// Fingers in a globe toy, and a two-finger pinch's start (their spread, the toy's zoom): pinched out
+    /// past the whole Earth, the toy goes back down into Terra's (the dive reversed).
+    inside_fingers: std::collections::HashMap<u64, [f64; 2]>,
+    pinch: Option<(f64, f64)>,
     /// Fingers down on the Earth: where and when, and whether they moved (a tap is still and short).
     downs: std::collections::HashMap<u64, ([f64; 2], f64, bool)>,
     /// A finger on the Earth mark.
@@ -335,6 +339,8 @@ impl Terra {
         self.room_level.store(0f32.to_bits(), Ordering::Relaxed);
         self.strike(self.life.doors[self.door].degree - 5, 0.18, 0.0);
         ctx.haptic();
+        self.inside_fingers.clear();
+        self.pinch = None;
         self.state = State::Closing { t0: t };
     }
 
@@ -355,8 +361,43 @@ impl Terra {
         }
     }
 
+    /// Whether this finger ends a pinch that took a globe toy out past its whole Earth (as the kit's
+    /// hand's own over-pinch would fly it Home, at 0.75 of its least zoom 0.6: here it goes Home to Terra).
+    fn pinched_out(&mut self, e: &PointerEvent) -> bool {
+        let spread = |f: &std::collections::HashMap<u64, [f64; 2]>| -> Option<f64> {
+            let v: Vec<&[f64; 2]> = f.values().collect();
+            (v.len() == 2).then(|| (v[0][0] - v[1][0]).hypot(v[0][1] - v[1][1]).max(1.0))
+        };
+        match e.phase {
+            Phase::Down => {
+                self.inside_fingers.insert(e.id, [e.x, e.y]);
+                self.pinch = match (spread(&self.inside_fingers), self.room.as_ref().and_then(|r| r.camera())) {
+                    (Some(d), Some(cam)) => Some((d, cam.zoom)),
+                    _ => None,
+                };
+                false
+            }
+            Phase::Move => {
+                if let Some(f) = self.inside_fingers.get_mut(&e.id) {
+                    *f = [e.x, e.y];
+                }
+                false
+            }
+            Phase::Up | Phase::Cancel => {
+                let out = match (self.pinch, spread(&self.inside_fingers)) {
+                    (Some((d0, z0)), Some(d)) => e.phase == Phase::Up && z0 * d / d0 < 0.6 * 0.75,
+                    _ => false,
+                };
+                self.inside_fingers.remove(&e.id);
+                self.pinch = None;
+                out
+            }
+        }
+    }
+
     fn atlas_pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         self.last_touch = e.t;
+        self.life.beckon = None;
         match e.phase {
             Phase::Down => {
                 self.downs.insert(e.id, ([e.x, e.y], e.t, false));
@@ -455,9 +496,11 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-52.0, 30.0, 1.0);
+        globe.camera = Camera::new(-45.0, 33.0, 1.3);
         globe.set_home();
-        let life = Life::new(assets.as_ref());
+        let mut life = Life::new(assets.as_ref());
+        let [w, h] = ctx.points();
+        life.beckon = life.nearest(&globe, [w / 2.0, h / 2.0]);
         Ok(Terra {
             globe,
             painter: Painter::new(&ctx.gpu),
@@ -474,6 +517,8 @@ impl Toy for Terra {
             last_touch: -100.0,
             downs: Default::default(),
             earth_finger: None,
+            inside_fingers: Default::default(),
+            pinch: None,
             reduce_motion: ctx.reduce_motion,
         })
     }
@@ -503,8 +548,12 @@ impl Toy for Terra {
                 return;
             }
             if matches!(self.state, State::Inside) {
+                let out = self.pinched_out(&e);
                 if let Some(r) = self.room.as_mut() {
                     r.pointer(e);
+                }
+                if out {
+                    self.leave(ctx, e.t);
                 }
             }
             return;
@@ -536,7 +585,7 @@ impl Toy for Terra {
                 let u = (t - t0) / dur;
                 self.globe.camera = fly(from, to, u.min(1.0));
                 if self.life.doors[self.door].night {
-                    self.globe.night = ease(u * 1.4 - 0.2) as f32;
+                    self.globe.night = ease((u - 0.55) / 0.45) as f32;
                 }
                 if u >= 1.0 {
                     if let Some(r) = self.room.as_mut() {
@@ -573,7 +622,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: from.zoom.min(1.0), roll: 0.0, ..from };
+                    let to = Camera { zoom: from.zoom.min(1.3), roll: 0.0, ..from };
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
@@ -710,7 +759,7 @@ impl Toy for Terra {
         Some(Rules::new(
             &[
                 "Seven lights, seven toys, each where it is real: whales off California, starlings in Somerset, a slime mold between Europe's cities, fireflies in the Smokies, a bell struck in Chile, a swell in the Pacific, a battle at Cannae.",
-                "Touch a light to fall into its toy. The Earth mark, bottom left, brings you back.",
+                "Touch a light to fall into its toy. Pinch out past the whole Earth, or touch the Earth mark bottom left, to come back.",
             ],
             "Real: the Earth this month as NASA's satellites saw it, and each toy's place. Drawn: the lights.",
         ))
