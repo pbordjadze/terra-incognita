@@ -82,6 +82,12 @@ pub struct Taste {
     seed: u64,
     /// The last decision's moment (for a little swell when a form is kept).
     kept_at: f64,
+    /// Whether a finger has rested on it yet (the reader is with it only after).
+    ever_held: bool,
+    /// The last frame a finger rested on it.
+    held_at: f64,
+    /// Touches landing on it: (where, when), each answered with a soft ring.
+    pats: Vec<([f64; 2], f64)>,
 }
 
 struct View {
@@ -208,6 +214,9 @@ impl Toy for Taste {
             still: ctx.reduce_motion,
             seed: SEED,
             kept_at: -10.0,
+            ever_held: false,
+            held_at: 0.0,
+            pats: Vec::new(),
         })
     }
 
@@ -220,6 +229,17 @@ impl Toy for Taste {
         match e.phase {
             Phase::Down => {
                 self.fingers.insert(e.id, Finger { at: p });
+                let v = self.view();
+                if self.fingers.len() == 1 && self.z > 0.9 && (p[0] - v.c[0]).hypot(p[1] - v.c[1]) < v.r * 1.35 + 30.0 {
+                    self.pats.push((p, e.t));
+                    if self.pats.len() > 6 {
+                        self.pats.remove(0);
+                    }
+                    let mut n = Self::sound_of(&self.walker.display(), 0.07);
+                    n.freq *= 2.0;
+                    n.decay = 0.9;
+                    self.bells.strike(n);
+                }
                 if self.fingers.len() == 2 {
                     let v: Vec<[f64; 2]> = self.fingers.values().map(|f| f.at).collect();
                     self.pinch = Some(((v[0][0] - v[1][0]).hypot(v[0][1] - v[1][1]).max(10.0), self.z));
@@ -269,6 +289,7 @@ impl Toy for Taste {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.points = ctx.points();
         self.t = t;
+        self.pats.retain(|(_, at)| t - at < 1.0);
         // the zoom eases to where it is going (unless fingers hold it)
         if self.pinch.is_none() {
             let rate = if self.still { 6.0 } else { 1.6 };
@@ -278,6 +299,10 @@ impl Toy for Taste {
             }
         }
         let held = self.holding();
+        if held {
+            self.ever_held = true;
+            self.held_at = t;
+        }
         let target = if held { 1.0 } else { 0.0 };
         self.touch += (target - self.touch) * (1.0 - (-5.0 * dt).exp());
         // the creature looks toward the finger, or wanders its gaze
@@ -296,7 +321,10 @@ impl Toy for Taste {
         }
         // the walk moves while the creature is close; while the wheel shows it waits
         if self.z > 0.95 && self.z_to > 0.5 {
-            let ev = self.walker.step(dt, if held { dt } else { 0.0 });
+            // the reader is with it while a finger is on it or just was; before the first touch, watching
+            // counts as with it (what it shows unheld is what it has shown in vain)
+            let engaged = held || !self.ever_held || t - self.held_at < walk::ENGAGED;
+            let ev = self.walker.step(dt, if held { dt } else { 0.0 }, engaged);
             match ev {
                 Some(Event::Keeps) => {
                     self.kept_at = t;
@@ -406,6 +434,13 @@ impl Toy for Taste {
                 self.painter.line(px(a), px(e), line_w, 0.8, [col[0], col[1], col[2], 0.55 * path_a]);
             }
         }
+        // a touch on it: a ring spreading from the finger
+        for &(p, at) in &self.pats {
+            let a = ((self.t - at) / 0.9).clamp(0.0, 1.0) as f32;
+            if a < 1.0 {
+                self.painter.glow_ring(px(p), ((18.0 + 50.0 * a as f64) * k) as f32, (2.5 * k) as f32, (5.0 * k) as f32, [1.0, 0.97, 0.92, 0.45 * (1.0 - a)]);
+            }
+        }
         // a finger on it: a soft ring where it rests
         if self.touch > 0.02 {
             if let Some(f) = self.fingers.values().next() {
@@ -471,6 +506,7 @@ impl Toy for Taste {
         self.replay = None;
         self.z_to = 1.0;
         self.liked_for = usize::MAX;
+        self.ever_held = false;
     }
 
     fn save(&self) -> Option<String> {
@@ -510,7 +546,7 @@ impl Toy for Taste {
         Some(toy_kit::info::Rules::new(
             &[
                 "It keeps trying on a slightly different self, and now and then a very different one.",
-                "If you held the new one at least as long as the old, it keeps it. If you held it less, it keeps it only sometimes: the less you held it, the more rarely.",
+                "If you held forms like the new one as much as the old, it keeps it. If less, it keeps it only sometimes: the less, the more rarely. Only while your finger is on it, or just was, does it learn.",
                 "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, bright where you held it. Pinch to see it any time; shake for a new one.",
             ],
             "Real: nothing but your finger, and how long it rested on each form. Drawn: the creature, every form it could be, its sounds.",

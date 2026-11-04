@@ -4,8 +4,8 @@
 //! - A form is four numbers (`Form`): its colour, how spiky, how many arms, how it glows (the rest of
 //!   its looks follow from these). Colour wraps round; the rest lie in 0..1.
 //! - The density: for any form, how much of the time it was in front of the reader they held it
-//!   (`Memory::liking`): every moment the creature is shown is remembered with whether a finger was on
-//!   it, and a form's liking is the held time near it over the shown time near it (near: a gaussian in
+//!   (`Memory::liking`): every moment the creature is shown while the reader is with it (a finger on it
+//!   now or within ENGAGED seconds) is remembered with whether a finger was on it, and a form's liking is the held time near it over the shown time near it (near: a gaussian in
 //!   the four numbers), pulled toward an even prior where little has been seen.
 //! - The step: from the form it is, it tries on a form a small random step away (each number moved by
 //!   a gaussian, the colour wrapped, the rest reflected at their ends: the proposal is symmetric), shows
@@ -45,6 +45,8 @@ pub const REST: f64 = 0.45;
 pub const TRY: f64 = 0.32;
 pub const LOOK: f64 = 0.5;
 pub const BACK: f64 = 0.25;
+/// The reader is with it while a finger is on it and for this long after it lifts.
+pub const ENGAGED: f64 = 6.0;
 /// The reader's eye lags the screen: the form remembered for a moment is the one shown this long ago.
 pub const LAG: f64 = 0.3;
 
@@ -264,7 +266,9 @@ impl Walker {
 
     /// Time moves by `dt`, `held` of it under the reader's finger. `liking` is the target: the
     /// reader's (`Memory::liking`) in the toy; any function in the tests.
-    pub fn step_with(&mut self, dt: f64, held: f64, liking: &dyn Fn(&Memory, &Form) -> f64) -> Option<Event> {
+    /// `engaged`: whether the reader is with it (a finger on it now or a moment ago); only then is the
+    /// moment remembered, so watching without touching neither teaches nor unteaches it.
+    pub fn step_with(&mut self, dt: f64, held: f64, engaged: bool, liking: &dyn Fn(&Memory, &Form) -> f64) -> Option<Event> {
         self.time += dt;
         // remember what the reader saw a moment ago, and whether they held it
         let now = self.display();
@@ -273,7 +277,7 @@ impl Walker {
             self.shown.pop_front();
         }
         let seen = self.shown.front().map(|s| s.1).unwrap_or(now);
-        if dt > 0.0 {
+        if dt > 0.0 && engaged {
             self.memory.remember(&seen, dt, held);
         }
         if let Some(s) = self.path.last_mut() {
@@ -299,6 +303,9 @@ impl Walker {
                 let ratio = (b / a.max(1e-9)).powf(SHARP);
                 let keep = self.rng.f() < ratio.min(1.0);
                 self.last = (ratio, keep);
+                if std::env::var("TASTE_TRACE").is_ok() {
+                    eprintln!("trace {:.3} {} {:.3} {:.3} held {:.2}", self.time, keep, self.y[0], ratio, self.memory.held_total());
+                }
                 if keep {
                     self.x = self.y;
                     self.path.push(Stop { form: self.x, dwell: 0.0, declined: Vec::new() });
@@ -327,8 +334,8 @@ impl Walker {
         }
     }
 
-    pub fn step(&mut self, dt: f64, held: f64) -> Option<Event> {
-        self.step_with(dt, held, &|m, f| m.liking(f))
+    pub fn step(&mut self, dt: f64, held: f64, engaged: bool) -> Option<Event> {
+        self.step_with(dt, held, engaged, &|m, f| m.liking(f))
     }
 }
 
@@ -356,7 +363,7 @@ mod tests {
         let (mut above, mut all) = (0.0, 0.0);
         let dt = 0.05;
         for _ in 0..1_000_000 {
-            w.step_with(dt, 0.0, &target);
+            w.step_with(dt, 0.0, true, &target);
             // the kept form's time: the walk's state is x (a try shown is not yet the walk's)
             if w.x[1] > 0.5 {
                 above += dt;

@@ -42,7 +42,7 @@ pub const START: Form = taste::START;
 
 /// Plays a reader of taste `t` (who touches only when `touch`; the closeness is to `t` either way) for `seconds` at `fps`; returns per-frame
 /// (holding, closeness of the creature's kept form) and the walker.
-fn play(t: Option<&Taste>, touch: bool, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec<f64>, Walker) {
+fn play(t: Option<&Taste>, touch: bool, rests: bool, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec<f64>, Walker) {
     let mut w = Walker::new(seed, START);
     let dt = 1.0 / fps;
     let frames = (seconds * fps).ceil() as usize;
@@ -50,32 +50,48 @@ fn play(t: Option<&Taste>, touch: bool, seed: u64, seconds: f64, fps: f64) -> (V
     let lag = (0.45 * fps) as usize;
     let mut holding = false;
     let mut since = 0.0;
+    let mut free_since = f64::NEG_INFINITY;
+    // a reader who rests now and then: after a long hold, sometimes a pause of 6-15 s without touching
+    let mut resting_until = 0.0;
+    let mut r = taste::walk::Rng(seed.wrapping_mul(0x2545_f491) | 1);
     let (mut holds, mut near) = (Vec::new(), Vec::new());
     for f in 0..=frames {
-        let time = f as f64 * dt;
+        let time = f as f64 / fps;
         seen.push_back(w.display());
         if seen.len() > lag {
             seen.pop_front();
         }
-        if let (Some(t), true) = (t, touch) {
+        let leaving = std::env::var("TASTER_LEAVE").ok().and_then(|v| v.parse::<f64>().ok()).is_some_and(|l| time >= l);
+        if leaving && holding {
+            holding = false;
+            free_since = time - dt;
+        }
+        if let (Some(t), true, false) = (t, touch, leaving) {
             let c = closeness(t, &seen[0]);
             since += dt;
             // they start after a first look, and a hold or a pause lasts at least 0.6 s
-            if time > 3.0 && since > 0.6 {
+            if time > 3.0 && since > 0.6 && time >= resting_until {
                 if !holding && c > 0.35 {
                     holding = true;
                     since = 0.0;
-                } else if holding && c < 0.2 {
+                } else if holding && (c < 0.2 || (since > 8.0 && rests && r.f() < 0.004)) {
+                    if c >= 0.2 {
+                        resting_until = time + 6.0 + 9.0 * r.f();
+                    }
                     holding = false;
                     since = 0.0;
+                    free_since = time - dt;
                 }
             }
         }
         holds.push(holding);
         near.push(t.map(|t| closeness(t, &w.x)).unwrap_or(0.0));
         // the frame: the check dispatches events at t, then steps by dt (dt is 0 on the first frame)
-        let step = if f == 0 { 0.0 } else { dt };
-        w.step(step, if holding { step } else { 0.0 });
+        // (as the host does: this frame's time less the last's, not a constant 1/fps, so the walk's
+        // phases end on the same frames)
+        let step = if f == 0 { 0.0 } else { (f as f64 / fps - (f - 1) as f64 / fps).clamp(0.0, 0.1) };
+        let engaged = holding || time - free_since < taste::walk::ENGAGED || (free_since == f64::NEG_INFINITY && touch);
+        w.step(step, if holding { step } else { 0.0 }, engaged);
     }
     (holds, near, w)
 }
@@ -84,14 +100,15 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("stats") => {
+            let rests = args.get(2).map(String::as_str) != Some("steady");
             let fps = 30.0;
             let mut total = Vec::new();
             for t in TASTES {
                 let mut rows = Vec::new();
                 let mut score = 0.0;
                 for seed in 1..=6u64 {
-                    let (_, near, w) = play(Some(t), true, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
-                    let (_, near0, _) = play(Some(t), false, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
+                    let (_, near, w) = play(Some(t), true, rests, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
+                    let (_, near0, _) = play(Some(t), false, false, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
                     // the share of each minute the kept form is close to the taste (> 0.5)
                     let share = |v: &[f64], a: f64, b: f64| {
                         let s = &v[(a * fps) as usize..(b * fps) as usize];
@@ -119,7 +136,7 @@ fn main() {
             let seconds: f64 = args[3].parse().unwrap();
             let t = TASTES.iter().find(|t| t.name == name).expect("taste");
             let fps = 30.0;
-            let (holds, near, w) = play(Some(t), true, taste::SEED, seconds, fps);
+            let (holds, near, w) = play(Some(t), true, true, taste::SEED, seconds, fps);
             let mut events = Vec::new();
             let mut start = None;
             for (f, h) in holds.iter().enumerate() {
