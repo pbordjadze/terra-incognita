@@ -204,6 +204,9 @@ pub struct Stop {
     pub form: Form,
     pub dwell: f64,
     pub declined: Vec<Form>,
+    /// Begun afresh here (the reader chose it on the wheel), not walked to.
+    #[serde(default)]
+    pub jump: bool,
 }
 
 /// What a step decided, for the toy's sound and touch.
@@ -246,7 +249,7 @@ impl Walker {
             clock: 0.0,
             rng: Rng(seed | 1),
             memory: Memory::default(),
-            path: vec![Stop { form: start, dwell: 0.0, declined: Vec::new() }],
+            path: vec![Stop { form: start, dwell: 0.0, declined: Vec::new(), jump: false }],
             steps: 0,
             shown: Default::default(),
             time: 0.0,
@@ -308,7 +311,7 @@ impl Walker {
                 }
                 if keep {
                     self.x = self.y;
-                    self.path.push(Stop { form: self.x, dwell: 0.0, declined: Vec::new() });
+                    self.path.push(Stop { form: self.x, dwell: 0.0, declined: Vec::new(), jump: false });
                     self.phase = Phase::Rest;
                     // every step lasts as long, kept or not, so time is shared as the rule shares it
                     self.clock = -BACK;
@@ -332,6 +335,16 @@ impl Walker {
             }
             _ => None,
         }
+    }
+
+    /// Begins the walk again from a form it kept before (the reader chose it on the wheel). Any kept
+    /// form is a fair place to walk on from; what it remembers is untouched.
+    pub fn return_to(&mut self, f: Form) {
+        self.x = f;
+        self.y = f;
+        self.phase = Phase::Rest;
+        self.clock = 0.0;
+        self.path.push(Stop { form: f, dwell: 0.0, declined: Vec::new(), jump: true });
     }
 
     pub fn step(&mut self, dt: f64, held: f64, engaged: bool) -> Option<Event> {

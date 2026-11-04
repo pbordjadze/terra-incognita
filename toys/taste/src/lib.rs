@@ -178,6 +178,13 @@ impl Taste {
         chosen
     }
 
+    /// The small kept creatures on the wheel as they are now: (stop, centre, radius), points.
+    fn keepsake_spots(&self) -> Vec<(usize, [f64; 2], f64)> {
+        let v = self.view();
+        let small = View { r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15, ..v };
+        self.keepsakes(&small, self.walker.path.len()).into_iter().map(|i| (i, Self::map_point(&v, &self.walker.path[i].form), small.r * 0.9)).collect()
+    }
+
     fn sound_of(f: &Form, amp: f32) -> Note {
         // the colour picks the note (a pentatonic run round the wheel), the spikes its brightness, the
         // glow how long it rings
@@ -272,12 +279,22 @@ impl Toy for Taste {
                             self.come_back();
                         }
                     }
-                } else if let Some(f) = f {
-                    // a touch on the wheel: back to the creature
-                    let _ = f;
-                    if self.z_to < 0.5 {
-                        self.come_back();
+                } else if f.is_some() && self.z_to < 0.5 {
+                    // a touch on the wheel: back to the creature, as the small one touched if any
+                    let near = self
+                        .keepsake_spots()
+                        .into_iter()
+                        .map(|(i, q, r)| (i, (q[0] - p[0]).hypot(q[1] - p[1]) - r))
+                        .filter(|(_, d)| *d < 14.0)
+                        .min_by(|a, b| a.1.total_cmp(&b.1));
+                    if let Some((i, _)) = near {
+                        let form = self.walker.path[i].form;
+                        self.walker.return_to(form);
+                        self.liked_for = usize::MAX;
+                        self.bells.strike(Self::sound_of(&form, 0.14));
+                        self.kept_at = e.t;
                     }
+                    self.come_back();
                 }
                 if self.fingers.is_empty() {
                     self.free_since = e.t;
@@ -424,7 +441,7 @@ impl Toy for Taste {
                 let e = [a[0] + (b[0] - a[0]) * 0.32, a[1] + (b[1] - a[1]) * 0.32];
                 self.painter.line(px(a), px(e), line_w * 0.45, 0.8, [col[0], col[1], col[2], 0.22 * path_a]);
             }
-            if i + 1 < n {
+            if i + 1 < n && !path[i + 1].jump {
                 let frac = (upto - i as f64).clamp(0.0, 1.0);
                 if frac <= 0.0 {
                     continue;
@@ -455,10 +472,16 @@ impl Toy for Taste {
         if away > 0.02 {
             let small = View { r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15, ..v };
             let keep = self.keepsakes(&small, (upto.floor() as usize) + 1);
-            for &i in &keep {
+            // once the path has drawn and a few seconds pass, the small ones breathe: touch me
+            let waited = match self.replay {
+                Some(at) => self.t - at - 1.2 - (2.5 + 0.09 * n as f64).min(9.0) - 3.0,
+                None => -1.0,
+            };
+            for (j, &i) in keep.iter().enumerate() {
                 let p = Self::map_point(&v, &path[i].form);
                 let appear = ((upto - i as f64) * 0.8).clamp(0.0, 1.0) as f32;
-                self.creatures.list.push(Instance::new(px(p), (small.r * 0.9 * k) as f32, away * appear, &path[i].form, i as f32 * 1.7, 0.0, [0.0, 0.0]));
+                let breathe = if waited > 0.0 && !self.still { 1.0 + 0.09 * (waited.min(1.0)) * ((self.t * 2.2 - j as f64 * 0.7).sin() * 0.5 + 0.5) } else { 1.0 };
+                self.creatures.list.push(Instance::new(px(p), (small.r * 0.9 * breathe * k) as f32, away * appear, &path[i].form, i as f32 * 1.7, 0.0, [0.0, 0.0]));
             }
             if let Some(x) = travel {
                 let i = (x.floor() as usize).min(n.saturating_sub(1));
@@ -533,6 +556,11 @@ impl Toy for Taste {
         a.push(("pinch-a".into(), [f[0] - 90.0, f[1] - 60.0]));
         a.push(("pinch-b".into(), [f[0] + 90.0, f[1] + 60.0]));
         a.push(("aside".into(), [self.points[0] * 0.5, self.points[1] * 0.85]));
+        if self.z_to < 0.5 {
+            for (j, (_, q, _)) in self.keepsake_spots().into_iter().enumerate() {
+                a.push((format!("kept{j}"), q));
+            }
+        }
         a
     }
 
@@ -547,7 +575,7 @@ impl Toy for Taste {
             &[
                 "It keeps trying on a slightly different self, and now and then a very different one.",
                 "If you held forms like the new one as much as the old, it keeps it. If less, it keeps it only sometimes: the less, the more rarely. Only while your finger is on it, or just was, does it learn.",
-                "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, bright where you held it. Pinch to see it any time; shake for a new one.",
+                "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, bright where you held it. Touch one of the small ones there to have it back as that one, or anywhere to come back. Pinch to see the wheel any time; shake for a new one.",
             ],
             "Real: nothing but your finger, and how long it rested on each form. Drawn: the creature, every form it could be, its sounds.",
         ))
