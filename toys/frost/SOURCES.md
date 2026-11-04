@@ -30,8 +30,10 @@ What is real, what is drawn, and from where (painting-company row 218).
 - Each crystal grows in its own grid of 512 x 512 cells, with the air held at β a little beyond its
   tips (not across the whole pane): a bound for the phone's GPU.
 - Frost starting by itself where the glass meets the frame (real: the frame's edge is the coldest
-  glass), a seed every few seconds, more often low: the timing is drawn.
-- A fingertip's warmth melting a disc of ice where it touches, before the new seed freezes there.
+  glass), a seed every 0.7 s at first, the glass frosted over in about 20 s: the timing is drawn.
+- A fingertip's warmth melting the ice along its way (wider where it rests), and the wet glass
+  freezing again from the melt's edge once it lifts (real in kind: a moist print on cold glass
+  frosts over; the sizes and the pace are drawn).
 - The window (a wooden frame and crossbar), the night outside (sky, stars, snow, larches), the lamp
   behind the reader, the meltwater's film, the ice's colour and
   light: drawn in code, no photographs.

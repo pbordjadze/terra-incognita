@@ -20,11 +20,9 @@ const STEPS_PER_S: f64 = 230.0;
 /// Field texels a point.
 const FS: f32 = 2.0;
 /// A fingertip's warmth melts this far at once, and as far as this while it rests (over MELT_S).
-const MELT: f64 = 24.0;
-const MELT_MAX: f64 = 62.0;
+const MELT: f64 = 30.0;
+const MELT_MAX: f64 = 72.0;
 const MELT_S: f64 = 1.6;
-/// On clear glass a drag starts another crystal every so many points.
-const SPACING: f64 = 110.0;
 /// A crystal stops being stepped once its tips have gone no further for this long (blocked by other
 /// ice or the frame all round; its grid is then free), or at this age.
 const QUIET_S: f64 = 1.5;
@@ -34,8 +32,8 @@ const FRAME: f64 = 14.0;
 const BAR_AT: f64 = 0.36;
 /// Left alone, the glass frosts from the frame by itself: a new seed every so many seconds (more
 /// often low on the glass, where the air is wetter), until this many have started.
-const CREEP_S: f64 = 5.0;
-const CREEP_MAX: u32 = 14;
+const CREEP_S: f64 = 0.7;
+const CREEP_MAX: u32 = 44;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, Default)]
@@ -122,8 +120,8 @@ struct Pending {
     after: f64,
 }
 
-/// The finger on the glass: warm. On ice it melts its way, widening where it rests; on clear glass
-/// frost starts at it. Lifted from ice, the frost comes back from the melt's edges.
+/// The finger on the glass: warm. It melts its way, widening where it rests; lifted, the wet glass
+/// freezes again from the melt's edges.
 struct Finger {
     id: u64,
     at: [f64; 2],
@@ -132,13 +130,9 @@ struct Finger {
     /// Since when it has rested (within a few points).
     rest_at: [f64; 2],
     rest_since: f64,
-    /// What was under it when it came down: unknown until the GPU says (one frame).
-    on_ice: Option<bool>,
     /// Its way, a point every few points, and the widest the melt has been.
     path: Vec<[f64; 2]>,
     radius: f64,
-    /// On clear glass: where it last started a crystal.
-    seeded_at: [f64; 2],
     lifted: bool,
 }
 
@@ -148,10 +142,6 @@ pub struct Frost {
     look: wgpu::Buffer,
     stats: wgpu::Buffer,
     readback: wgpu::Buffer,
-    mask: wgpu::Buffer,
-    /// A point whose owner the next frame reads back (what is under a finger as it comes down).
-    probe: Option<[f64; 2]>,
-    probing: bool,
     binds: [wgpu::BindGroup; 2],
     draw_bind: wgpu::BindGroup,
     grow: wgpu::ComputePipeline,
@@ -230,7 +220,7 @@ impl Frost {
             field_h: self.field_side,
             // high on the glass the air is drier: compact plates; low, wetter: ferns (Reiter's phase
             // diagram; tools/toys/frost/reiter.py)
-            beta_top: 0.40,
+            beta_top: 0.45,
             beta_bottom: 0.74,
             gamma_top: 0.001,
             gamma_bottom: 0.0005,
@@ -253,12 +243,12 @@ impl Frost {
     /// Lifted from ice: seeds along the melt's edge, a beat later and one after another, each at its
     /// own angle; they grow in from the rim and meet in the middle.
     fn regrow(&mut self, f: &Finger, t: f64) {
-        let r = f.radius * 0.82;
+        let r = f.radius * 0.94;
         let mut seeds = Vec::new();
         let len: f64 = f.path.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).sum();
         if len < 12.0 {
             let a0 = self.rand() * std::f64::consts::TAU;
-            let n = 4 + (self.rand() * 2.0) as usize;
+            let n = 6 + (self.rand() * 3.0) as usize;
             for i in 0..n {
                 let a = a0 + i as f64 * std::f64::consts::TAU / n as f64 + (self.rand() - 0.5) * 0.6;
                 seeds.push([f.path[0][0] + r * a.cos(), f.path[0][1] + r * a.sin()]);
@@ -275,9 +265,9 @@ impl Frost {
                     seeds.push([w[0][0] - d0 / l * r, w[0][1] - d1 / l * r]);
                 }
                 acc += l;
-                if acc > 46.0 {
+                if acc > 26.0 {
                     acc = 0.0;
-                    let j = 0.8 + 0.3 * self.rand();
+                    let j = 0.92 + 0.06 * self.rand();
                     seeds.push([w[1][0] + side * nx * r * j, w[1][1] + side * ny * r * j]);
                     side = -side;
                 }
@@ -286,9 +276,9 @@ impl Frost {
                 }
             }
         }
-        seeds.truncate(10);
+        seeds.truncate(16);
         for (i, p) in seeds.into_iter().enumerate() {
-            self.start(p, t + 0.3 + 0.13 * i as f64);
+            self.start(p, t + 0.25 + 0.08 * i as f64);
         }
     }
 
@@ -310,17 +300,17 @@ impl Frost {
             let v = self.rand();
             // which edge: the bottom and the crossbar's underside are the wettest
             let e = self.rand();
-            let p = if e < 0.30 {
+            let p = if e < 0.20 {
                 [f + u * (w - 2.0 * f), h - f]
-            } else if e < 0.45 {
+            } else if e < 0.30 {
                 [f + u * (w - 2.0 * f), h * BAR_AT + 0.5 * FRAME + 1.5]
-            } else if e < 0.55 {
+            } else if e < 0.46 {
                 [f + u * (w - 2.0 * f), h * BAR_AT - 0.5 * FRAME - 1.5]
             } else if e < 0.62 {
                 [f + u * (w - 2.0 * f), f]
             } else {
-                // a side, lower more often
-                [if u < 0.5 { f } else { w - f }, f + (1.0 - v * v) * (h - 2.0 * f)]
+                // a side, lower a little more often
+                [if u < 0.5 { f } else { w - f }, f + (1.0 - 0.6 * v * v) * (h - 2.0 * f)]
             };
             if self.on_glass(p) {
                 break p;
@@ -417,9 +407,6 @@ impl Toy for Frost {
             look,
             stats,
             readback,
-            mask,
-            probe: None,
-            probing: false,
             binds,
             draw_bind,
             grow,
@@ -469,13 +456,10 @@ impl Toy for Frost {
                         melted_to: p,
                         rest_at: p,
                         rest_since: e.t,
-                        on_ice: None,
                         path: vec![p],
                         radius: MELT,
-                        seeded_at: p,
                         lifted: false,
                     });
-                    self.probe = Some(p);
                 }
             }
             Phase::Move => {
@@ -514,7 +498,9 @@ impl Toy for Frost {
         } else if self.crept > 0 && self.crept < CREEP_MAX && t > self.next_creep {
             self.crept += 1;
             let r = self.rand();
-            self.next_creep = t + CREEP_S * (0.6 + 0.8 * r);
+            // quick at first (the glass takes about twenty seconds to frost over), then now and then
+            let pace = if self.crept < 26 { CREEP_S } else { CREEP_S * 6.0 };
+            self.next_creep = t + pace * (0.6 + 0.8 * r);
             self.creep();
         }
         let gpu = &ctx.gpu;
@@ -524,26 +510,18 @@ impl Toy for Frost {
         let mut melt: Option<([f64; 2], [f64; 2], f64)> = None;
         let mut lifted = None;
         if let Some(f) = &mut self.finger {
-            if f.on_ice != Some(false) {
-                let k = ((t - f.rest_since) / MELT_S).clamp(0.0, 1.0);
-                let r = if f.on_ice.is_none() { MELT } else { MELT + (MELT_MAX - MELT) * k * k * (3.0 - 2.0 * k) };
-                f.radius = f.radius.max(r);
-                melt = Some((f.melted_to, f.at, r));
-                f.melted_to = f.at;
-            } else if !f.lifted && (f.at[0] - f.seeded_at[0]).hypot(f.at[1] - f.seeded_at[1]) >= SPACING {
-                // a drag over clear glass: another crystal now and then
-                f.seeded_at = f.at;
-                let at = f.at;
-                self.pending.push(Pending { at, after: t });
-            }
-            if f.lifted && f.on_ice.is_some() {
+            let k = ((t - f.rest_since) / MELT_S).clamp(0.0, 1.0);
+            let r = MELT + (MELT_MAX - MELT) * k * k * (3.0 - 2.0 * k);
+            f.radius = f.radius.max(r);
+            melt = Some((f.melted_to, f.at, r));
+            f.melted_to = f.at;
+            if f.lifted {
                 lifted = self.finger.take();
             }
         }
         if let Some(f) = lifted {
-            if f.on_ice == Some(true) {
-                self.regrow(&f, t);
-            }
+            // the melt (or, on clear glass, the finger's moist print) freezes again from its edge
+            self.regrow(&f, t);
         }
         // one new crystal a frame (each needs its own op)
         let mut op = Op::default();
@@ -563,13 +541,6 @@ impl Toy for Frost {
             self.next_id += 1;
             op.kind |= OP_SEED;
             op.slot = k as u32;
-        }
-        // what is under a finger that has just come down (read back with the counts below)
-        if let Some(p) = self.probe.take() {
-            let m = [(p[0] / self.cell).floor().max(0.0) as u64, (p[1] / self.cell).floor().max(0.0) as u64];
-            let i = (m[1] * self.mask_side as u64 + m[0]).min((self.mask_side * self.mask_side) as u64 - 1);
-            enc.copy_buffer_to_buffer(&self.mask, i * 4, &self.readback, SLOTS as u64 * 16, 4);
-            self.probing = true;
         }
         let op = if op.kind != 0 { Some(op) } else { None };
         gpu.queue.write_buffer(&self.globals, 0, bytemuck::bytes_of(&self.globals()));
@@ -620,19 +591,6 @@ impl Toy for Frost {
         let _ = gpu.device.poll(wgpu::PollType::Wait);
         let counts: Vec<u32> = bytemuck::cast_slice(&slice.get_mapped_range()).to_vec();
         self.readback.unmap();
-        if std::mem::take(&mut self.probing) {
-            let ice = counts[SLOTS * 4] != u32::MAX;
-            if let Some(f) = &mut self.finger {
-                if f.on_ice.is_none() {
-                    f.on_ice = Some(ice);
-                    if !ice {
-                        // clear glass: frost starts at the fingertip
-                        let at = f.path[0];
-                        self.pending.insert(0, Pending { at, after: t });
-                    }
-                }
-            }
-        }
         let mut frozen_now = 0.0;
         let mut pan_w = 0.0;
         for k in 0..SLOTS {
@@ -723,16 +681,17 @@ impl Toy for Frost {
 
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         let at = [self.pane[0] * 0.55, self.pane[1] * 0.45];
-        Some(info::Demo::new("Frost on a window at −50 °C. Touch the glass.", vec![info::Stroke::tap(0.4, at)]))
+        Some(info::Demo::new("Frost on a window at −50 °C. Your finger is warm.", vec![info::Stroke::drag(0.4, 1.4, at, [at[0] - 90.0, at[1] + 140.0])]))
     }
 
     fn rules(&self) -> Option<info::Rules> {
         Some(info::Rules::new(
             &[
                 "The glass is a honeycomb of cells. A cell that is ice, or touches ice, takes water from the air.",
-                "Everywhere else the water spreads to the six neighbours. That alone grows six arms.",
+                "Everywhere else the water spreads to the six neighbours. That alone grows six arms, each crystal at its own angle.",
                 "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
-                "Two crystals can't share water: they meet in a seam. Left alone, frost creeps in from the frame.",
+                "Two crystals can't share water: they meet in a seam.",
+                "Your finger is warm: it melts the frost. Lifted, the wet glass freezes again from the edge.",
             ],
             "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
         ))

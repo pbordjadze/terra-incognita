@@ -126,12 +126,13 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
 
   // the ice
   let s = ice_at(p);
-  // meltwater where a fingertip was: a thin film that glistens faintly, brightest at its edge where
-  // the ice was
+  // meltwater where a fingertip was: clear dark glass under a thin film, and a bright wet rim
+  // where the ice was
   let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.95, 0.985, s));
   if wet > 0.0 {
-    let rimw = smoothstep(0.7, 0.92, s);
-    c += vec3<f32>(0.035, 0.040, 0.050) * wet + vec3<f32>(0.10, 0.10, 0.11) * rimw * rimw * wet;
+    let rimw = smoothstep(0.82, 0.9, s) * (1.0 - smoothstep(0.92, 0.95, s));
+    c = mix(c, c * 0.8, wet);
+    c += vec3<f32>(0.42, 0.44, 0.46) * rimw * wet;
   }
   let cover = smoothstep(0.98, 1.02, s);
   if cover > 0.0 {
@@ -157,7 +158,7 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
     ice = mix(ice, vec3<f32>(1.0), rim * (0.55 + 0.45 * toward));
     // the lamp warms the ice low on the glass
     let warm = exp(-ld * ld * 1.6) * L.lamp;
-    ice *= mix(vec3<f32>(1.0), vec3<f32>(1.07, 0.93, 0.78), warm);
+    ice *= mix(vec3<f32>(1.0), vec3<f32>(1.04, 0.97, 0.90), warm);
     // a few facets catch the lamp: sparks that come and go slowly
     let g = floor(p * 1.5);
     let h = hash2(g);
@@ -165,7 +166,7 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
       let tw = 0.5 + 0.5 * sin(L.time * (0.7 + 1.5 * hash2(g + 2.0)) + h * 60.0);
       ice += vec3<f32>(1.0, 0.97, 0.9) * pow(tw, 6.0) * 0.9 * age;
     }
-    let a = cover * clamp(mix(0.30, 0.85, age * age) + rim * 0.5, 0.0, 0.97);
+    let a = cover * clamp(mix(0.30, 0.78, age * age) + rim * 0.5, 0.0, 0.92);
     c = mix(c, ice, a);
   }
   // a breath of condensation low on the glass, before the frost: the faintest grey veil

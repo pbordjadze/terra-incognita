@@ -216,10 +216,10 @@ fn claim(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let p = pane_of(k, q, r);
   let id = G.slots[k].id;
-  // (the glass two cells round its ice: another crystal's arms keep that far off, a clear seam)
-  let m0 = vec2<i32>(floor(p / G.cell)) - vec2<i32>(2, 2);
-  for (var dy = 0; dy < 5; dy++) {
-    for (var dx = 0; dx < 5; dx++) {
+  // (the glass three cells round its ice: another crystal's arms keep that far off, a clear seam)
+  let m0 = vec2<i32>(floor(p / G.cell)) - vec2<i32>(3, 3);
+  for (var dy = 0; dy < 7; dy++) {
+    for (var dx = 0; dx < 7; dx++) {
       let m = m0 + vec2<i32>(dx, dy);
       if m.x >= 0 && m.y >= 0 && m.x < i32(G.mask_w) && m.y < i32(G.mask_h) {
         atomicMin(&mask[m.y * i32(G.mask_w) + m.x], id);
