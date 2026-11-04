@@ -23,7 +23,7 @@ struct VsOut {
     @builtin(position) pos: vec4f,
     @location(0) along: f32,      // 0..1 tail to head
     @location(1) across: f32,     // pixels from the streak's middle line
-    @location(2) half: f32,       // its half width in pixels
+    @location(2) halfw: f32,      // its half width in pixels (not `half`: a type in Metal, which refuses the pipeline)
     @location(3) shade: f32,
 };
 
@@ -77,13 +77,13 @@ fn fed(w: vec3f) -> f32 {
     o.pos = vec4f(p.x / U.frame.x * 2.0 - 1.0, 1.0 - p.y / U.frame.y * 2.0, 0.0, 1.0);
     o.along = k.x;
     o.across = ext * k.y;
-    o.half = half;
+    o.halfw = half;
     o.shade = smoothstep(0.02, 0.25, h.z) * (0.85 + 0.3 * hash13(vec3f(f32(iid) * 0.37, 1.7, 3.1))) * fed(world(a.p));
     return o;
 }
 
 @fragment fn fs_streak(in: VsOut) -> @location(0) vec4f {
-    let cover = 1.0 - smoothstep(in.half - 0.5, in.half + 0.5, abs(in.across));
+    let cover = 1.0 - smoothstep(in.halfw - 0.5, in.halfw + 0.5, abs(in.across));
     // brighter at the head, where the agent is: a streak of light running the way it goes
     let run = 0.45 + 0.55 * smoothstep(0.0, 1.0, in.along);
     // (they give way again close in, where single streaks would read as loose hairs)

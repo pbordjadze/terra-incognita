@@ -43,6 +43,10 @@ DEFAULT_BUDGET_MB = 1400
 LAUNCH_PLAN = {"seconds": 2, "fps": 10, "shots": [2.0]}
 
 
+# A declaration (a member, a variable, an argument) whose name is one of Metal's type names.
+MSL_TYPE_NAME = re.compile(r"^\s*(?:const\s+)?(?:metal::)?[A-Za-z_][\w:<>]*\s+(half[234]?|bfloat[234]?|uchar[234]?|ushort[234]?|char[234]?|short[234]?|float[234]|int[234]|uint[234]|bool[234]|vec|texture2d|sampler|kernel|vertex|fragment|device|constant|thread|threadgroup)\s*(?:\[\[|;|=|,|\))")
+
+
 def say(ok, line):
     print(("ok    " if ok else "FAIL  ") + line, flush=True)
     return ok
@@ -60,6 +64,14 @@ def shaders(dump: Path):
         r = subprocess.run([naga, "--metal-version", "2.4", str(f), str(f.with_suffix(".metal"))], capture_output=True, text=True)
         if r.returncode != 0:
             bad.append(f"{f.name}: {(r.stderr or r.stdout).strip()}")
+            continue
+        # naga passes some names through that Apple's Metal compiler refuses: a declaration named
+        # after a Metal type (Mold's varying `half`, Nov 4, 2026: `float half [[user(loc2)]]`, its
+        # pipeline refused on the phone while every check on Linux passed). Rename it in the WGSL.
+        for n, line in enumerate(f.with_suffix(".metal").read_text().splitlines(), 1):
+            m = MSL_TYPE_NAME.search(line)
+            if m:
+                bad.append(f"{f.name}: MSL line {n} declares `{m.group(1)}`, a Metal type name Apple's compiler refuses: {line.strip()}")
     for b in bad:
         print("      MSL FAILS: " + b)
     return say(not bad, f"shaders: {len(files) - len(bad)} of {len(files)} translate to MSL 2.4")

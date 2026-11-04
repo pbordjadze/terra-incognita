@@ -7,7 +7,7 @@
 #     bash tools/toys/sim_launch.sh <toy> [out-dir]      # macOS with Xcode and rustup's aarch64-apple-ios-sim
 #
 # It builds the toy for the Simulator (SIM=1 toys/ios/build.sh), boots an iPhone, installs and launches
-# it, waits SECONDS (default 25) and fails if the toy is gone. <out-dir> keeps what it saw: the toy's
+# it, waits SECONDS_ALIVE (default 25) and fails if the toy is gone or logged a GPU error. <out-dir> keeps what it saw: the toy's
 # own toy-log.txt (the kit's launch steps, its GPU errors), its stdout and stderr (Metal's validation
 # messages), any crash report, and a screenshot. What it can't vouch for: the phone's memory limit
 # (the Simulator has none of its own) and the phone's GPU (the Mac's draws for it): toy-log.txt from a
@@ -51,7 +51,8 @@ xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --std
 alive=1
 for i in $(seq 1 "$WAIT"); do
   sleep 1
-  if ! xcrun simctl spawn "$UDID" launchctl list 2> /dev/null | grep -q "$BUNDLE"; then alive=0; echo "gone after ${i} s"; break; fi
+  # (a Simulator app is a process of the Mac's own: its executable's path names it)
+  if ! pgrep -f "/$EXEC.app/$EXEC" > /dev/null; then alive=0; echo "gone after ${i} s"; break; fi
 done
 xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
@@ -60,8 +61,14 @@ ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" | head -n $((
   while read -r f; do cp ~/Library/Logs/DiagnosticReports/"$f" "$OUT/"; echo "crash report: $f"; done || true
 xcrun simctl terminate "$UDID" "$BUNDLE" 2> /dev/null || true
 echo "== toy-log.txt"; cat "$OUT/toy-log.txt" 2> /dev/null || echo "(none)"
+# a GPU error the toy only logged (a pipeline Apple's compiler refused draws nothing on the phone)
+if grep -q "gpu: " "$OUT/toy-log.txt" 2> /dev/null && grep -q -E "gpu: .*(Error|error|lost)" "$OUT/toy-log.txt"; then
+  echo "FAIL  $TOY logged a GPU error in the Simulator (toy-log.txt above)"; gpu_error=1
+fi
 echo "== stderr (last 40 lines)"; tail -40 "$OUT/stderr.txt" 2> /dev/null || true
-if [ "$alive" = 1 ]; then
+if [ "${gpu_error:-0}" = 1 ]; then
+  exit 1
+elif [ "$alive" = 1 ]; then
   echo "ok    $TOY alive in the Simulator after ${WAIT} s, Metal validation on"
 else
   echo "FAIL  $TOY closed in the Simulator (Metal validation on): toy-log.txt and stderr above say where"
