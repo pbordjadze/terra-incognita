@@ -26,3 +26,10 @@ a wooden board, tap a piece, then where it goes. ROUNDS.md has a line a round; S
 
 Only the moves and positions go public. No titles or notes refer to any person, game, record or
 preparation; anything added must be about the chess itself.
+
+## Next
+
+- The "?" rules mark (`Toy::rules`, toy-kit on branch `toys-rules`, row 214): once it is on main, add
+  Carol's `fn rules` beside `demo` (two or three lines: tap a piece then its square; the other side
+  answers; the bulb and the play mark each count a miss; then "Real: … Drawn: …") and a
+  `plans/rules.json` like the other toys'.
