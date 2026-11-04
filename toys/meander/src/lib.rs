@@ -28,7 +28,8 @@ pub fn seed_wobble(course: &[[f64; 2]], seed: u64) -> Vec<[f64; 2]> {
         return p;
     }
     let mut s = seed | 1;
-    let waves: Vec<(f64, f64, f64)> = (0..3).map(|k| (1900.0 + 900.0 * k as f64 + 600.0 * rand(&mut s), 170.0 + 80.0 * rand(&mut s), rand(&mut s) * 6.283)).collect();
+    // irregular, not a sine: six waves of random length (1.6-5 km) and strength
+    let waves: Vec<(f64, f64, f64)> = (0..6).map(|_| (1600.0 + 3400.0 * rand(&mut s), 70.0 + 110.0 * rand(&mut s), rand(&mut s) * 6.283)).collect();
     let mut out = Vec::with_capacity(p.len());
     let mut along = 0.0;
     for i in 0..p.len() {

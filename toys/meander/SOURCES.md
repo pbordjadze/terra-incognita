@@ -36,7 +36,7 @@ What is measured, what is modelled, what is drawn (painting-company row 218).
 
 ## Drawn (not measured)
 
-- The pace: a second is twelve years. The depth in the model (16 m, setting alpha and so the loops'
+- The pace: a second is ten years. The depth in the model (16 m, setting alpha and so the loops'
   size) was chosen so the bends are the size of the photograph's old loops at this width; the beginning
   wobble a drawn course is given (a few waves of 2-4 km), so the first oxbow comes within about ten
   seconds; a whisper of random noise on the banks; light smoothing of the line every step; the belt's

@@ -15,7 +15,7 @@ const NG: usize = 880;
 const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
 const LAKE_LIFE: f64 = 700.0;
-const COURSE_LIFE: f64 = 260.0;
+const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
 
 const WGSL: &str = r#"
 struct U { size: vec2<f32>, centre: vec2<f32>, scale: f32, now: f32, side: f32, ppp: f32 };
@@ -43,18 +43,26 @@ fn vnoise(p: vec2<f32>) -> f32 {
   c = clamp((c - 0.06) * 1.18, vec3(0.0), vec3(1.0));
   c = mix(vec3(l), c, 1.15);
   // where the river has been: bare sand, then cane and young forest, then the old forest again
+  // where the river has been: bare sand, then cane, then the forest again; the swept ground's edge is
+  // softened by looking a little round (the grid is 25 m)
+  let e = 1.6 / u.side * 25.0;
   let d = textureSampleLevel(dep, smp, st, 0.0).r;
+  var near = 0.0;
+  for (var k = 0; k < 4; k++) {
+    let o = vec2(cos(f32(k) * 1.5708), sin(f32(k) * 1.5708)) * e;
+    near += select(0.0, 0.25, textureSampleLevel(dep, smp, st + o, 0.0).r > -1.0e8);
+  }
   let age = u.now - d;
   if (d > -1.0e8 && age >= 0.0) {
     let bands = 0.5 + 0.5 * sin(d * 0.9);             // the scroll bars: a low ridge every few years
     let grain = vnoise(world / 40.0) * 0.6 + vnoise(world / 12.0) * 0.4;
-    let sand = vec3(0.78, 0.70, 0.55) * (0.95 + 0.07 * grain);
-    let cane = vec3(0.40, 0.50, 0.28) * (0.88 + 0.22 * grain);
-    var g = mix(sand, cane, smoothstep(4.0, 30.0, age + grain * 12.0));
-    // then the forest takes it back: the photograph's own ground, the ridges a shade lighter for a while
-    let back = smoothstep(25.0, 110.0, age + grain * 20.0);
-    let ridge = c * (1.0 + 0.16 * (bands - 0.5) * (1.0 - smoothstep(150.0, 500.0, age)));
-    c = mix(g, ridge, back);
+    let sand = vec3(0.74, 0.67, 0.53) * (0.95 + 0.07 * grain);
+    let cane = mix(c, vec3(0.36, 0.44, 0.27), 0.55) * (0.9 + 0.18 * grain);
+    var g = mix(sand, cane, smoothstep(3.0, 22.0, age + grain * 8.0));
+    let back = smoothstep(18.0, 90.0, age + grain * 18.0);
+    let ridge = c * (1.0 + 0.12 * (bands - 0.5) * (1.0 - smoothstep(120.0, 450.0, age)));
+    g = mix(g, ridge, back);
+    c = mix(c, g, near * near);
   }
   return vec4<f32>(c, 1.0);
 }
@@ -283,7 +291,7 @@ impl Toy for Meander {
             toy.river.advance(1.0);
             toy.stamp();
         }
-        toy.river.year = 60.0;
+        toy.cuts_seen = toy.river.cuts.len();
         Ok(toy)
     }
 
@@ -336,7 +344,10 @@ impl Toy for Meander {
         self.t = t;
         self.frame += 1;
         // the river doesn't move while a new course is being drawn over it
-        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * YEARS_A_SECOND };
+        // a new course runs at twice the pace for its first few seconds (its bends are slow to start),
+        // easing back to the usual ten years a second
+        let young = 1.0 + 1.0 * (1.0 - smooth01(3.0, 7.0, t - self.laid)) as f64;
+        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * YEARS_A_SECOND * young };
         self.river.advance(years);
         if self.river.year - self.epoch > 30000.0 {
             let shift = 20000.0;
@@ -354,6 +365,9 @@ impl Toy for Meander {
             let (_, at) = self.river.cuts[self.cuts_seen];
             self.cuts_seen += 1;
             if at[0] > b[0] && at[0] < b[2] && at[1] > b[1] && at[1] < b[3] {
+                if std::env::var("MEANDER_CUTS").is_ok() {
+                    eprintln!("meander: cut on screen at t={t:.1}s");
+                }
                 self.ripples.push(Ripple { at, t, strong: true });
                 ctx.haptic();
                 let pan = (((at[0] - b[0]) / (b[2] - b[0])) * 2.0 - 1.0) as f32;
@@ -363,7 +377,7 @@ impl Toy for Meander {
                 self.bells.strike(Note { freq: f * 0.5, amp: 0.12, decay: 4.0, pan: pan * 0.6, bright: 0.1 });
             }
         }
-        self.ripples.retain(|r| t - r.t < 2.5);
+        self.ripples.retain(|r| t - r.t < 3.0);
         // the lakes age out
         let year = self.river.year;
         self.river.oxbows.retain(|o| year - o.born < if o.course { COURSE_LIFE } else { LAKE_LIFE });
@@ -413,14 +427,22 @@ impl Toy for Meander {
             }
             let plug = ((age / 25.0).min(1.0) * (W * 1.4 / 130.0)) as usize; // nodes silted at each end
             let (a, b) = (plug.min(n / 3), n - plug.min(n / 3));
-            let clear = smooth01(0.0, if o.course { 10.0 } else { 30.0 }, age);
-            let marsh = smooth01(life * 0.35, life * 0.8, age);
-            let fade = 1.0 - smooth01(life * 0.6, life, age);
+            let clear = smooth01(0.0, if o.course { 6.0 } else { 30.0 }, age);
+            let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.35, life * 0.8, age) };
+            let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.6, life, age) };
             let col = mix3(mix3(WATER, LAKE, clear), MARSH, marsh);
-            let thin = if o.course { smooth01(0.0, 8.0, age) } else { smooth01(0.0, 40.0, age) };
-            let width = wpx * 0.5 * (1.0 - 0.35 * thin - 0.3 * smooth01(60.0, life * 0.7, age));
+            let thin = if o.course { smooth01(0.0, 14.0, age) * 1.6 } else { smooth01(0.0, 40.0, age) };
+            let width = wpx * 0.5 * (1.0 - 0.35 * thin - 0.3 * smooth01(60.0, life * 0.7, age)).max(0.08);
             for w in o.line[a..b].windows(2) {
                 p.line(px(w[0]), px(w[1]), width, 1.0, lin(col, 0.95 * fade));
+            }
+            // a loop just cut off lights up for a moment: here is the new lake
+            if !o.course && age < 22.0 {
+                let k = (1.0 - age / 22.0) as f32;
+                let k = k * k;
+                for w in o.line[a..b].windows(3).step_by(3) {
+                    p.glow(px(w[0]), px(w[2]), width * 1.6, wpx * 0.7, [1.0, 0.9, 0.7, 0.05 * k]);
+                }
             }
         }
         // the river: a pale bank of wet sand, then the water; a new course swells from a thread
@@ -464,9 +486,9 @@ impl Toy for Meander {
         }
         // rings: where a neck broke (bright, wide), or where a finger touched
         for rp in &self.ripples {
-            let a = ((self.t - rp.t) / 2.5).clamp(0.0, 1.0) as f32;
+            let a = ((self.t - rp.t) / 3.0).clamp(0.0, 1.0) as f32;
             let c = px(rp.at);
-            let (r0, r1, i) = if rp.strong { (0.5, 5.0, 0.55) } else { (0.3, 2.0, 0.35) };
+            let (r0, r1, i) = if rp.strong { (0.5, 7.0, 0.7) } else { (0.4, 4.0, 0.5) };
             let rad = wpx * (r0 + (r1 - r0) * (1.0 - (1.0 - a) * (1.0 - a)));
             p.glow_ring(c, rad, (1.5 * ppp) as f32, 2.0 * ppp as f32, [1.0, 0.95, 0.85, i * (1.0 - a)]);
         }
@@ -510,7 +532,7 @@ impl Toy for Meander {
                 "The Rio Beni's floodplain in Bolivia, as a satellite saw it in 2024. The dark crescents are the river's real old loops.",
                 "Water runs fastest round the outside of a bend: it cuts that bank and leaves sand on the inside, so bends grow and drift downstream.",
                 "When a loop's neck closes, the river cuts through and the loop is left as a lake. A new course leaves the old one to silt up.",
-                "A second is twelve years.",
+                "A second is ten years (twenty, for a new course's first few seconds).",
             ],
             "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace.",
         ))
