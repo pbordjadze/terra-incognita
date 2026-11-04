@@ -23,6 +23,8 @@ the wet glass freezes again from the melt's edge. ROUNDS.md has a line a round; 
 - `bash tools/toys/launch_check.sh frost`: passes (183 MB peak of 1400, all three shaders to MSL 2.4).
 - Plans: start, full (left alone 22 s, then tap, rest, winding wipe), drag, meet, melt, ipad, info, rules;
   every touch changes the frame (`--tap-check`). The 44 s `full` plan takes several minutes on lavapipe.
+- On CI the plans take about 23 minutes (the 44 s `full` plan with the touch check's shadow runs on
+  a 2-core runner); shorten it if CI time matters.
 - The phone's GPU cost is unmeasured: up to 12 live grids × 262k cells × ~4 steps a frame, most threads
   exiting early. If it is slow, drop SLOTS or N, or STEPS_PER_S.
 
@@ -42,7 +44,8 @@ melt's dark hole with its wet rim and the stars through it, the night and the fr
 
 ## Not done
 
-- No device run by Paul yet. The IPA was built by a run started by hand (the branch's push run was
-  cancelled behind another toy's stuck check).
+- No run on Paul's phone yet. The IPA built and opened in the iOS Simulator with Metal's validation on
+  (run 41920531959, started by hand; the branch's push run was cancelled behind another toy's stuck
+  check).
 - Save/restore: the pane isn't kept when the app goes to the background (it frosts over again).
 - Terra (the toy that holds the toys) may want Frost's place: Oymyakon, 63.46°N 142.79°E.
