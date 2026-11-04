@@ -24,6 +24,8 @@ pub trait Room {
     fn settings(&mut self, night: bool, reduce_motion: bool);
     fn demo(&self) -> Option<Demo>;
     fn rules(&self) -> Option<Rules>;
+    fn origins(&self) -> Option<Rules>;
+    fn card_at_top(&self) -> bool;
     fn synth(&mut self) -> Option<Box<dyn Synth>>;
     fn take_haptic(&mut self) -> bool;
     /// The toy's globe camera now, if it has a globe (read from what it saves: every globe toy keeps
@@ -114,6 +116,12 @@ impl<T: Toy> Room for Inside<T> {
     }
     fn rules(&self) -> Option<Rules> {
         self.toy.rules()
+    }
+    fn origins(&self) -> Option<Rules> {
+        self.toy.origins()
+    }
+    fn card_at_top(&self) -> bool {
+        self.toy.card_at_top(&self.ctx)
     }
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
         self.toy.synth()

@@ -761,6 +761,18 @@ impl Toy for Terra {
         }
     }
 
+    fn origins(&self) -> Option<Rules> {
+        // the open toy's, while it is open and settled (none on the Earth)
+        if matches!(self.state, State::Inside) {
+            return self.room.as_ref().and_then(|r| r.origins());
+        }
+        None
+    }
+
+    fn card_at_top(&self, _ctx: &Ctx) -> bool {
+        self.inside() && self.room.as_ref().is_some_and(|r| r.card_at_top())
+    }
+
     fn rules(&self) -> Option<Rules> {
         if self.inside() {
             return self.room.as_ref().and_then(|r| r.rules());
