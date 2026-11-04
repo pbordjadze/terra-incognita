@@ -25,9 +25,9 @@ pub const B: f64 = 3.0;
 pub const T: f64 = 0.5;
 pub const S0: f64 = 1.5;
 
-/// A tap: the car brakes this hard (m/s²) for this long (s).
+/// A tap: the car brakes this hard (m/s²) to a stop, and stands this long (s) before it goes on.
 pub const TAP_BRAKE: f64 = 6.5;
-pub const TAP_SECONDS: f64 = 1.2;
+pub const TAP_HOLD: f64 = 0.8;
 /// The wobble in each driver's foot (m/s² a √s): small enough that the flow holds.
 pub const WOBBLE: f64 = 0.06;
 
@@ -39,7 +39,9 @@ pub struct Car {
     pub x: f64,
     pub v: f64,
     pub acc: f64,
-    /// Seconds of the tap's brake left.
+    /// A tap: braking to a stop.
+    pub stopping: bool,
+    /// Seconds still to stand after a tap's stop.
     pub brake: f64,
     /// The brake lights, eased 0..1.
     pub lights: f64,
@@ -72,7 +74,7 @@ impl Ring {
     pub fn new(seed: u64) -> Ring {
         let v = even_speed();
         let cars = (0..N)
-            .map(|i| Car { x: i as f64 * RING / N as f64, v, acc: 0.0, brake: 0.0, lights: 0.0 })
+            .map(|i| Car { x: i as f64 * RING / N as f64, v, acc: 0.0, stopping: false, brake: 0.0, lights: 0.0 })
             .collect();
         Ring { cars, rng: seed.max(1), t: 0.0, left: 0.0 }
     }
@@ -101,7 +103,8 @@ impl Ring {
     }
 
     pub fn tap(&mut self, i: usize) {
-        self.cars[i].brake = TAP_SECONDS;
+        self.cars[i].stopping = true;
+        self.cars[i].brake = TAP_HOLD;
     }
 
     pub fn step(&mut self, dt: f64) {
@@ -127,20 +130,25 @@ impl Ring {
         for (i, a) in acc.iter_mut().enumerate() {
             *a += w * self.gauss();
             let c = &mut self.cars[i];
-            if c.brake > 0.0 {
+            if c.stopping {
                 *a = a.min(-TAP_BRAKE);
+                if c.v <= 0.0 {
+                    c.stopping = false;
+                }
+            } else if c.brake > 0.0 {
+                *a = a.min(0.0);
                 c.brake -= dt;
             }
         }
         for (i, c) in self.cars.iter_mut().enumerate() {
-            c.acc = if c.brake > 0.0 { acc[i] } else { 0.8 * c.acc + 0.2 * calm[i] };
+            c.acc = if c.stopping { acc[i] } else { 0.8 * c.acc + 0.2 * calm[i] };
             c.v = (c.v + acc[i] * dt).max(0.0);
             if c.v == 0.0 {
                 c.acc = c.acc.max(0.0);
             }
             c.x = (c.x + c.v * dt).rem_euclid(RING);
             // the driver's foot on the brake: braking, or held still
-            let on = if c.acc < -1.8 || c.v < 0.8 || c.brake > 0.0 { 1.0 } else { 0.0 };
+            let on = if c.acc < -1.8 || c.v < 0.8 || c.stopping || c.brake > 0.0 { 1.0 } else { 0.0 };
             let k = if on > c.lights { 14.0 } else { 5.0 };
             c.lights += (on - c.lights) * (k * dt).min(1.0);
         }
@@ -212,6 +220,37 @@ mod tests {
             let fastest = r.cars.iter().map(|c| c.v).fold(0.0, f64::max);
             assert!((36.0..52.0).contains(&kmh(fastest)), "outside the jam {}", kmh(fastest));
             assert!(r.stopped() >= 3, "seed {seed}: the jam dissolved");
+        }
+    }
+
+    /// A tap always starts a jam: on the even flow, on a ring still settling from earlier taps, and
+    /// three at once spread round the ring.
+    #[test]
+    fn every_tap_starts_a_jam() {
+        let jammed = |r: &mut Ring| {
+            let mut most = 0;
+            for _ in 0..300 {
+                r.step(0.1);
+                most = most.max(r.stopped());
+            }
+            most >= 3
+        };
+        for seed in 1..9u64 {
+            let mut r = Ring::new(seed);
+            r.step(1.0 + seed as f64);
+            r.tap((seed as usize * 7) % N);
+            assert!(jammed(&mut r), "seed {seed}: one tap on the even flow");
+            let mut r = Ring::new(seed);
+            for k in 0..3 {
+                r.tap((k * 7 + seed as usize) % N);
+            }
+            assert!(jammed(&mut r), "seed {seed}: three at once");
+            // then a long time on, another tap still jams (or the jam is still there)
+            for _ in 0..1200 {
+                r.step(0.1);
+            }
+            r.tap(seed as usize % N);
+            assert!(jammed(&mut r), "seed {seed}: a later tap");
         }
     }
 
