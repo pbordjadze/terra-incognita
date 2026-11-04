@@ -1,0 +1,4 @@
+{ "size": [1179, 2556], "ppp": 3, "seconds": 22, "fps": 30,
+  "events": [],
+  "shots": [{"t": 0.5, "name": "open"}, {"t": 6, "name": "6s"}, {"t": 10, "name": "10s"}, {"t": 16, "name": "16s"}, {"t": 22, "name": "22s"}],
+  "audio": true }
