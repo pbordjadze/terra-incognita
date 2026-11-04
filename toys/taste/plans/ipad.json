@@ -1,0 +1,4 @@
+{ "_": "The 13-inch iPad: the creature at its size, held a while, then pinched out to the wheel and spread back.",
+  "size": [2064, 2752], "ppp": 2, "seconds": 22, "fps": 30,
+  "events": [ { "t": 2.0, "hold": "creature", "for": 8.0 }, { "t": 12.0, "pinch": ["pinch-a", "pinch-b"], "to": 0.3, "for": 0.8 }, { "t": 18.0, "pinch": ["pinch-a", "pinch-b"], "to": 2.5, "for": 0.8 } ],
+  "shots": [{ "t": 1.0, "name": "first" }, { "t": 6.0, "name": "held" }, { "t": 16.0, "name": "wheel" }, { "t": 21.5, "name": "back" }] }

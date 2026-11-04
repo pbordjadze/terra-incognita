@@ -174,6 +174,18 @@ pub trait Toy: 'static {
     fn rules(&self) -> Option<info::Rules> {
         None
     }
+    /// What the origins mark shows (`info`): where the rules came from (the real science and
+    /// history behind them), then a dimmer note of what is real and what is drawn. None (the default)
+    /// shows no origins mark.
+    fn origins(&self) -> Option<info::Rules> {
+        None
+    }
+    /// Whether the shell hangs the rules' and origins' card from the top of the screen, not over the
+    /// marks at the foot (false, the default), so it keeps clear of what matters in the scene. Asked
+    /// as a card opens, so it may look at where things are now.
+    fn card_at_top(&self, _ctx: &Ctx) -> bool {
+        false
+    }
     /// Things on screen a finger can touch that VoiceOver should offer as buttons: a label and where
     /// it is, in points (Terra's lights, each opening its toy). None by default: a toy's scene is
     /// touched, not pressed.
@@ -199,8 +211,7 @@ pub struct Host<T: Toy> {
     last_t: Option<f64>,
     /// The info mark and its demo.
     pub info: info::Info,
-    has_demo: bool,
-    has_rules: bool,
+    marks: info::Marks,
     /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
     buttons: std::ffi::CString,
 }
@@ -210,9 +221,8 @@ impl<T: Toy> Host<T> {
         step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
-        let has_demo = toy.demo(&ctx).is_some();
-        let has_rules = toy.rules().is_some();
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo, has_rules, buttons: Default::default() })
+        let marks = info::Marks { demo: toy.demo(&ctx).is_some(), rules: toy.rules().is_some(), origins: toy.origins().is_some() };
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks, buttons: Default::default() })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -222,12 +232,30 @@ impl<T: Toy> Host<T> {
 
     /// A real finger: the info mark's (and the tap that closes its demo), or the toy's.
     pub fn pointer(&mut self, e: PointerEvent) {
-        match self.info.route(&e, self.ctx.points(), self.has_demo, self.has_rules) {
+        match self.info.route(&e, self.ctx.points(), self.marks) {
             info::Route::Toy => self.toy.pointer(&mut self.ctx, e),
             info::Route::Taken => {}
             info::Route::Open => self.open_info(e.t),
             info::Route::Rules => self.open_rules(),
+            info::Route::Origins => self.open_origins(),
         }
+    }
+
+    /// Shows where the rules came from (a tap on the origins mark, or VoiceOver's activation of it),
+    /// or, if that shows, hides it.
+    pub fn open_origins(&mut self) {
+        let r = if self.info.origins().is_some() { None } else { self.toy.origins() };
+        self.info.show_origins(r);
+    }
+
+    /// The origins mark's place in points, if the toy has one.
+    pub fn origins_spot(&self) -> Option<[f64; 2]> {
+        self.marks.origins.then(|| info::Info::origins_spot(self.ctx.points()))
+    }
+
+    /// Whether the shell hangs the card from the top (`Toy::card_at_top`).
+    pub fn card_at_top(&self) -> bool {
+        self.toy.card_at_top(&self.ctx)
     }
 
     /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
@@ -239,7 +267,7 @@ impl<T: Toy> Host<T> {
 
     /// The rules mark's place in points, if the toy has one.
     pub fn rules_spot(&self) -> Option<[f64; 2]> {
-        self.has_rules.then(|| info::Info::rules_spot(self.ctx.points()))
+        self.marks.rules.then(|| info::Info::rules_spot(self.ctx.points()))
     }
 
     /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
@@ -251,7 +279,7 @@ impl<T: Toy> Host<T> {
 
     /// The info mark's place in points, if the toy has one.
     pub fn info_spot(&self) -> Option<[f64; 2]> {
-        self.has_demo.then(|| info::Info::spot(self.ctx.points()))
+        self.marks.demo.then(|| info::Info::spot(self.ctx.points()))
     }
 
     /// The toy's buttons, a line each: its label, a tab, x, a tab, y (points); valid until the next call.
@@ -280,6 +308,9 @@ impl<T: Toy> Host<T> {
         if let Some(s) = self.rules_spot() {
             a.push(("rules".into(), s));
         }
+        if let Some(s) = self.origins_spot() {
+            a.push(("origins".into(), s));
+        }
         a
     }
 
@@ -299,7 +330,7 @@ impl<T: Toy> Host<T> {
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
         self.toy.draw(&mut self.ctx, target);
-        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.has_demo, self.has_rules, self.ctx.reduce_motion);
+        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.marks, self.ctx.reduce_motion);
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).
@@ -468,6 +499,25 @@ macro_rules! ios_shell {
             #[no_mangle]
             pub unsafe extern "C" fn toy_rules_open(s: *mut S) {
                 if let Some(s) = s.as_mut() { s.host.open_rules() }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_origins_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
+                match s.as_ref().and_then(|s| s.host.origins_spot()) {
+                    Some(p) => { *x = p[0]; *y = p[1]; true }
+                    None => false,
+                }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_origins_text(s: *mut S) -> *const c_char {
+                s.as_ref().and_then(|s| s.host.info.origins()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_origins_open(s: *mut S) {
+                if let Some(s) = s.as_mut() { s.host.open_origins() }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_card_at_top(s: *mut S) -> bool {
+                s.as_ref().map(|s| s.host.card_at_top()).unwrap_or(false)
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_buttons(s: *mut S) -> *const c_char {

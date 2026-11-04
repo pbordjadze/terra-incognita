@@ -1,0 +1,11 @@
+{ "_": "A restless hand: quick taps on the creature and beside it, a hold well off the creature (nothing: only a finger on it counts), a pinch to the wheel, a tap back, a shake for a new creature.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 30, "fps": 30, "audio": true,
+  "events": [
+    { "t": 1.5, "tap": "creature", "inert": true }, { "t": 2.0, "tap": "aside", "inert": true },
+    { "t": 3.0, "hold": "aside", "for": 4.0, "inert": true },
+    { "t": 10.0, "pinch": ["pinch-a", "pinch-b"], "to": 0.3, "for": 0.8 },
+    { "t": 16.0, "tap": "centre" },
+    { "t": 22.0, "shake": true }
+  ],
+  "shots": [{ "t": 5.0, "name": "held-aside" }, { "t": 14.0, "name": "wheel" }, { "t": 20.0, "name": "back" }, { "t": 24.0, "name": "new" }, { "t": 29.5, "name": "after" }],
+  "film": { "from": 0, "to": 30, "every": 0.5 } }

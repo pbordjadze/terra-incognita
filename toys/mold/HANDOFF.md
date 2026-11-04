@@ -6,6 +6,11 @@ kept off the open sea. ROUNDS.md has a line a round; SOURCES.md the data and the
 
 ## Where it stands
 
+- Nov 4 (row 219): three marks, bottom right: the info mark (unchanged), the "?" (the rules alone) and
+  an asterisk (where they came from; `origins()` in lib.rs). The card hangs over the half of the
+  screen with less lit land (`card_at_top`). `plans/rules.json` photographs both; the Simulator keeps
+  `rules.png` and `origins.png`. Open: whether Paul reads the asterisk as "where it came from".
+
 - Shipped: round 4, `mold-build-103` (13:38 ET), from main 69b8264. What Paul taps: the globe opens on Europe and Africa, a mist
   of spores on the lights condensing into a network over about 7 s; a pinch in shows translucent tubes
   between the cities down to 9x (a pinch past it eases back); a tap lays a flake (a ring; the mold

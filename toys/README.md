@@ -15,7 +15,9 @@ the owner's to decide):
 | Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
 | Ghost Jam: 22 cars on the real 230 m ring at Nagoya; tap one and a jam runs backward (row 218) | `jam/` | `com.pbordjadze.toy.jam` | `jam-build-<n>` |
 | Meander: a river on the Rio Beni's floodplain that wanders and cuts off oxbow lakes; a finger lays its course (row 218) | `meander/` | `com.pbordjadze.toy.meander` | `meander-build-<n>` |
+| Taste: a creature that keeps changing and lingers where you hold it (row 225) | `taste/` | `com.pbordjadze.toy.taste` | `taste-build-<n>` |
 | Terra Incognita: the toy that holds the others, the whole Earth with a living light for each (row 217) | `terra/` | `com.pbordjadze.terraincognita` | `terra-build-<n>` |
+| Frost: frost on a cabin window at Oymyakon; your finger is warm, wipe it and it grows back (row 218) | `frost/` | `com.pbordjadze.toy.frost` | `frost-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 
@@ -46,7 +48,9 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     under a ghost fingertip) and one line; the kit draws the mark bottom right, the shell the line.
     Beside it a "?": a toy's `rules()` gives the few rules that make what is on screen and one line
     of what is real and what is drawn (its SOURCES.md, in a sentence); the shell sets them on a dark
-    glass, closed by a tap anywhere. Plain words, no title, nothing to do: a person can glance and go.
+    glass, closed by a tap anywhere. A toy may split that in two (Mold, the trial): `rules()` the rules
+    alone, and `origins()`, an asterisk beside the "?", where they came from and what is real and what
+    is made up; `card_at_top()` hangs the card from the top when the scene is low. Plain words, no title, nothing to do: a person can glance and go.
     `plans/rules.json` photographs it; `python3 tools/kit/shell_text.py <out>` draws the shell's text
     on the check's shots (the Simulator's `rules.png` is the real one).
   - `paint` (soft 2D discs, rings, strokes, glows), `backdrop` (a full-screen fragment of your own),

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The info mark's line and the rules (toy-kit's info.rs) are set by the iOS shell in the system's text,
+The info mark's line, the rules and their origins (toy-kit's info.rs) are set by the iOS shell in the system's text,
 so a check's frame lacks them; the check writes what was showing beside each shot as
-`<shot>.shell.json` (size, ppp, line, rules). This draws them as the shell lays them out, into
+`<shot>.shell.json` (size, ppp, line, rules, origins, top: the card hung from the top). This draws them as the shell lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
 
     python3 tools/kit/shell_text.py <check out dir> [...]     # every shot with a .shell.json under it
@@ -35,7 +35,7 @@ def wrap(draw, text, font, width):
     return out
 
 
-def rules(img, text, k):
+def rules(img, text, k, top=False):
     W, H = img.size[0] / k, img.size[1] / k
     w = min(W - 32, 480)
     pad = (14, 16)
@@ -47,12 +47,13 @@ def rules(img, text, k):
     for i, p in enumerate(parts[0].split('\n')):
         for j, l in enumerate(wrap(d, p, body, (w - 2 * pad[1]) * k)):
             rows.append((l, body, 0.95, 7 if i and not j else 0, 21))
-    for i, l in enumerate(wrap(d, '\n'.join(parts[1:]), note, (w - 2 * pad[1]) * k)):
-        rows.append((l, note, 0.64, 13 if not i else 0, 18))
+    if len(parts) > 1:
+        for i, l in enumerate(wrap(d, '\n'.join(parts[1:]), note, (w - 2 * pad[1]) * k)):
+            rows.append((l, note, 0.64, 13 if not i else 0, 18))
     th = sum(r[3] + r[4] for r in rows)
     foot = H - 60
     h = min(th + 2 * pad[0], foot - SAFE_TOP - 8)
-    x0, y0 = (W - w) / 2, foot - h
+    x0, y0 = (W - w) / 2, (SAFE_TOP + 8 if top else foot - h)
     box = tuple(round(v * k) for v in (x0, y0, x0 + w, y0 + h))
     glass = img.crop(box).filter(ImageFilter.GaussianBlur(14 * k))
     glass = Image.blend(glass, Image.new("RGB", glass.size, (15, 15, 17)), 0.75)  # (material + the 0.62 tint)
@@ -91,8 +92,8 @@ def main():
             s = json.loads(j.read_text())
             shot = j.with_name(j.name[: -len('.shell.json')] + '.png')
             img = Image.open(shot).convert('RGB')
-            if s.get('rules'):
-                rules(img, s['rules'], s['ppp'])
+            if s.get('rules') or s.get('origins'):
+                rules(img, s.get('rules') or s['origins'], s['ppp'], s.get('top', False))
             if s.get('line'):
                 caption(img, s['line'], s['ppp'])
             out = j.with_name(j.name[: -len('.shell.json')] + '.shell.png')

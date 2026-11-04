@@ -3,6 +3,7 @@
   "apps": [
     {
       "tag": "terra-build",
+      "versionBase": 1000,
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
       "subtitle": "The world, and the toys on it",
@@ -131,6 +132,28 @@
       "icon": "meander-icon.png",
       "iconSource": "toys/meander/icon.png",
       "tintColor": "#C2A178",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "taste-build",
+      "name": "Taste",
+      "bundleIdentifier": "com.pbordjadze.toy.taste",
+      "subtitle": "A creature that becomes what you like",
+      "localizedDescription": "A small creature keeps changing its shape and colour. Rest a finger on it while you like what it is: it keeps trying on a slightly different self, and keeps the new one as often as you held it. It lingers where you linger, still wanders off, and every so often pulls back to show the path it took. Working title; a toy in the making.",
+      "icon": "taste-icon.png",
+      "iconSource": "toys/taste/icon.png",
+      "tintColor": "#A054F5",
+      "minOSVersion": "17.0"
+    },
+    {
+      "tag": "frost-build",
+      "name": "Frost",
+      "bundleIdentifier": "com.pbordjadze.toy.frost",
+      "subtitle": "Your finger is warm",
+      "localizedDescription": "A cabin window at Oymyakon, about −50 °C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: wipe the glass and watch the frost grow back in from the edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
+      "icon": "frost-icon.png",
+      "iconSource": "toys/frost/icon.png",
+      "tintColor": "#5F7FA8",
       "minOSVersion": "17.0"
     }
   ]

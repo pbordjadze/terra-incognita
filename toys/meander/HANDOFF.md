@@ -4,6 +4,11 @@ painting-company row 218. A river on the Rio Beni's real floodplain (Sentinel-2,
 taken out) wandering by the Howard–Knutson curvature model; when a loop's neck closes it cuts through and
 leaves an oxbow lake. One gesture: draw a course. ROUNDS.md has a line a round; SOURCES.md the data and model.
 
+## Shipped
+
+`meander-build-139` (6:16 PM ET, Nov 4), from main 53e4baf; the IPA opened in the iOS Simulator with Metal's
+validation on. Five rounds, each judged by a fresh critic (ROUNDS.md). Not yet opened on a phone.
+
 ## What Paul sees
 
 Opens on a meandering tan river down the green forest belt, a neck already glowing and cutting within a

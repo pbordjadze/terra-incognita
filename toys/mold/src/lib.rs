@@ -109,6 +109,9 @@ pub struct Mold {
     touched: f64,
     /// Where the mold may go (ground.png's G), for a tap.
     land: Vec<u64>,
+    /// Lit places, by brightness (the first of the respawns' places): where the scene is, so a card
+    /// can hang over the emptier half (`card_at_top`).
+    lit: Vec<[f32; 2]>,
     reduce_motion: bool,
 }
 
@@ -201,6 +204,7 @@ impl Toy for Mold {
             [((x / W as f64 - 0.5) * std::f64::consts::TAU) as f32, ((0.5 - y / H as f64) * std::f64::consts::PI) as f32]
         };
         let spawn: Vec<[f32; 2]> = (0..SPAWNS).map(|_| { let i = pick(&mut rng); place(i, &mut rng) }).collect();
+        let lit = spawn[..2048].to_vec();
         // the start: a mist over the lit land, each agent in a cell of its own (Jones's start, a sparse
         // population that condenses into tubes), a cell taken already passing to one beside it
         let mut agents = Vec::with_capacity(AGENTS as usize);
@@ -385,6 +389,7 @@ impl Toy for Mold {
             ripples: Vec::new(),
             touched: f64::NEG_INFINITY,
             land,
+            lit,
             reduce_motion: ctx.reduce_motion,
         })
     }
@@ -533,15 +538,44 @@ impl Toy for Mold {
         Some(toy_kit::info::Demo::new("A slime mold between the cities. Tap to feed it.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
     }
 
+    // The "?": the rules alone, as sim.wgsl runs them. Where they came from is the asterisk's.
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::new(
             &[
-                "65,000 specks of slime mold. Each sniffs ahead, left and right, turns toward the strongest scent, steps, and leaves scent behind.",
-                "Scent spreads and fades. City lights are food.",
-                "The tubes between the cities come from that alone.",
+                "65,000 specks wander the land.",
+                "Each sniffs ahead, ahead-left and ahead-right, turns toward the strongest scent, and steps forward.",
+                "If that spot is taken, it turns a random way instead.",
+                "Each leaves a little scent behind. Scent spreads and fades.",
+                "City lights and your taps give off scent.",
+                "No speck crosses open sea.",
             ],
-            "Real: the city lights, seen from space (NASA); the rule, a model of real slime mold. Drawn: the glow.",
+            "",
         ))
+    }
+
+    // The asterisk: where the rules came from (SOURCES.md), then what is real and what is made up.
+    fn origins(&self) -> Option<toy_kit::info::Rules> {
+        Some(toy_kit::info::Rules::new(
+            &[
+                "In 2010 Atsushi Tero's team set oat flakes on a map of the towns around Tokyo, and a real slime mold, Physarum, joined them much as Tokyo's railways do.",
+                "The same year, Jeff Jones showed that specks following a few simple rules grow the same kind of network.",
+                "Here the oat flakes are the world's city lights, as NASA's satellites see them at night.",
+            ],
+            "From the science: the city lights and Jones's rules. Made up: the sea rule, the taps, the numbers, the color and the glow.",
+        ))
+    }
+
+    // the card hangs over the half of the screen with less of the lit land on it
+    fn card_at_top(&self, ctx: &Ctx) -> bool {
+        let h = ctx.points()[1];
+        let (mut top, mut foot) = (0.0, 0.0);
+        for p in &self.lit {
+            let (at, facing) = self.globe.project(LonLat::new((p[0] as f64).to_degrees(), (p[1] as f64).to_degrees()));
+            if facing > 0.0 && (0.0..h).contains(&at[1]) {
+                if at[1] < h / 2.0 { top += facing } else { foot += facing }
+            }
+        }
+        top < foot
     }
 
     fn settings(&mut self, ctx: &mut Ctx) {
