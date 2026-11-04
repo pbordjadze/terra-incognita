@@ -13,7 +13,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / 'toys' / 'battle' / 'plans'
-BOX_C, BOX = (520.0, 470.0), (700.0, 600.0)
+BOX_C, BOX = (530.0, 470.0), (600.0, 600.0)
+WORDS_BAND = 96.0  # lib.rs: points kept clear at the foot for the page's words
 
 GOOD = [
     [[262, 616], [258, 540], [252, 460], [258, 400], [276, 320], [312, 252], [390, 206], [520, 190], [640, 200], [706, 250], [724, 322]],
@@ -28,18 +29,19 @@ BAD = [
 
 
 def view(size, ppp):
-    wp, hp = size[0] / ppp, size[1] / ppp
+    wp, hp = size[0] / ppp, size[1] / ppp - WORDS_BAND
     s = min(wp / BOX[0], hp / BOX[1])
     return lambda p: [round((p[0] - BOX_C[0]) * s + wp / 2, 1), round((p[1] - BOX_C[1]) * s + hp / 2, 1)]
 
 
-def stroke(events, to, pts, t0, dur, fid):
-    """A finger drawn along a polyline at an even pace, a move every 1/30 s."""
+def stroke(events, to, pts, t0, dur, fid, hold=0.0):
+    """A finger drawn along a polyline at an even pace, a move every 1/30 s (after resting `hold` s)."""
     sp = [to(p) for p in pts]
     seg = [math.dist(a, b) for a, b in zip(sp, sp[1:])]
     total = sum(seg)
     n = max(2, int(dur * 30))
     events.append({'t': round(t0, 3), 'down': sp[0], 'id': fid})
+    t0 += hold
     for k in range(1, n + 1):
         d, i = total * k / n, 0
         while i < len(seg) - 1 and d > seg[i]:
@@ -54,8 +56,8 @@ def stroke(events, to, pts, t0, dur, fid):
 def plan(name, note, size, ppp, strokes, seconds, shots, film=None, taps=(), extra=(), night=False, reduce_motion=False):
     to = view(size, ppp)
     ev = []
-    for k, (pts, t0, dur) in enumerate(strokes):
-        stroke(ev, to, pts, t0, dur, 100 + k)
+    for k, st in enumerate(strokes):
+        stroke(ev, to, *st[:3], 100 + k, *st[3:])
     for t, p in taps:
         ev.append({'t': t, 'tap': to(p)})
     ev += list(extra)
@@ -77,29 +79,28 @@ def main():
     phone, ipad, ipad_l = (1179, 2556), (2064, 2752), (2752, 2064)
     good = [(GOOD[0], 2.0, 1.6), (GOOD[1], 4.6, 0.8), (GOOD[2], 6.2, 0.8)]
     bad = [(BAD[0], 2.0, 0.6), (BAD[1], 3.6, 0.7), (BAD[2], 5.0, 0.7)]
-    plan('start', 'The first touch on the phone: the engraving at rest, then one stroke that sends Hasdrubal\'s horse up the river and round the Roman rear (watch it comb the purple), a drop of ink on the open flank, and the day running on.',
+    plan('start', 'The first touch on the phone: the engraving at rest with its words (you are Carthage; draw a line), then one stroke that sends Hasdrubal\'s horse up the river and round the Roman rear, and the day running on to its end and its words.',
          phone, 3, [good[0]], 62, [(0.1, 'first'), (2.9, 'drawing'), (5.0, 'combed'), (14.0, 'riding'), (62.0, 'later')],
-         film=(0, 62, 0.4), taps=[(9.0, [800, 520])])
-    plan('good', 'Three strokes on the phone: Hasdrubal round the rear, both African wings turned in; the double envelopment closes and the Roman mass ends a crisp pocket inside the purple ring.',
-         phone, 3, good, 75, [(3.0, 'drawing'), (8.0, 'orders'), (22.0, 'clash'), (38.0, 'closing'), (55.0, 'pocket'), (75.0, 'print')],
-         film=(0, 75, 0.5))
+         film=(0, 62, 0.4))
+    plan('good', 'Three strokes on the phone: Hasdrubal round the rear, both African wings turned in; the double envelopment closes, the page freezes and its words say Rome is surrounded.',
+         phone, 3, good, 40, [(3.0, 'drawing'), (8.0, 'orders'), (16.0, 'clash'), (24.0, 'decided'), (40.0, 'print')],
+         film=(0, 40, 0.5))
     plan('bad', 'A bad plan on the phone: everything thrown at the Roman centre; the Roman depth breaks the crescent.',
          phone, 3, bad, 75, [(8.0, 'orders'), (25.0, 'clash'), (45.0, 'broken'), (75.0, 'print')], film=(0, 75, 0.5))
-    plan('touch', 'The hand on the phone at night: taps (drops of ink pushing rings through both armies), a scribble, a long hold that starts a fresh page, then a shake that starts another.',
-         phone, 3, [([[420, 620], [470, 560], [430, 520], [500, 470]], 6.0, 0.7)], 24,
-         [(3.5, 'drops'), (7.5, 'scribble'), (11.4, 'held'), (13.5, 'fresh'), (20.5, 'shaken')], film=(0, 24, 0.25),
-         taps=[(2.0, [600, 560]), (2.6, [450, 300])],
-         extra=[{'t': 10.0, 'hold': view(phone, 3)([520, 760]), 'for': 2.2}, {'t': 19.0, 'shake': True}], night=True)
-    # many crossing orders into one dense clash, still coming after the day is first decided (each one
-    # takes the day up again where it lay), then the day called and kept, and a tap on the print begins again
+    plan('touch', 'A newcomer\'s hand on the phone at night: a tap (the day begins, nothing more), a finger held still two seconds and then drawn (an order; nothing is lost), a line begun a little beside the men (it starts on the nearest), a shake (nothing is lost), the day ended with its words, a touch too soon (ignored), then a tap that begins a new battle.',
+         phone, 3, [([[520, 548], [520, 470], [520, 400]], 3.0, 0.8, 2.0), ([[300, 700], [270, 560], [300, 300]], 9.0, 1.0)], 80,
+         [(1.0, 'words'), (4.0, 'held'), (12.0, 'beside'), (21.0, 'shaken'), (60.0, 'decided'), (76.0, 'tapped'), (80.0, 'new')],
+         film=(0, 80, 0.5), taps=[(1.5, [520, 760]), (75.0, [520, 760])],
+         extra=[{'t': 20.0, 'shake': True}], night=True)
+    # many crossing orders into one dense clash, and the day always called within its length
     crowd = []
-    for k in range(14):
+    for k in range(10):
         a = k * 2.399
         dx, dy = 230 * math.cos(a), 170 * math.sin(a)
-        crowd.append(([[520 - dx, 470 - dy], [520 + dx * 0.2, 470 + dy * 0.2 + 30], [520 + dx, 470 + dy]], 2.0 + k * 6.0, 0.9))
-    plan('crowded', 'Night on the phone: fourteen crossing orders into one dense clash over 80 s (each order after the day is decided takes it up again), the day called and kept once they stop, then a tap on the print begins again.',
-         phone, 3, crowd, 124, [(40.0, 'melee'), (84.0, 'still-ordering'), (108.0, 'kept'), (123.0, 'begun-again')],
-         film=(0, 124, 2.0), taps=[(114.0, [520, 700])], night=True)
+        crowd.append(([[520 - dx, 470 - dy], [520 + dx * 0.2, 470 + dy * 0.2 + 30], [520 + dx, 470 + dy]], 2.0 + k * 5.0, 0.9))
+    plan('crowded', 'Night on the phone: ten crossing orders into one dense clash over 47 s (orders keep coming), the day still called within its length (about a minute) and kept, then a tap begins again.',
+         phone, 3, crowd, 84, [(30.0, 'melee'), (50.0, 'still-ordering'), (70.0, 'kept'), (83.0, 'begun-again')],
+         film=(0, 84, 2.0), taps=[(78.0, [520, 700])], night=True)
     plan('ipad', 'The good plan on the 13-inch iPad, portrait.',
          ipad, 2, good, 70, [(0.1, 'first'), (5.0, 'drawing'), (20.0, 'clash'), (40.0, 'closing'), (70.0, 'print')])
     plan('ipad-landscape', 'The good plan on the 13-inch iPad, landscape, at night.',

@@ -9,21 +9,34 @@
 //! The ground is Cannae's relief from Terrarium elevation, the Aufidus traced along the valley floor
 //! (tools/toys/battle/build.py); the real day's movements lie under it as a faint graphite ghost.
 //! Simulation in `update` on the CPU (3,000 units); the drawing on the GPU (battle.wgsl).
+//!
+//! Play is one gesture (painting-company row 216): a line from Carthage's men is an order. The view is
+//! fixed so a line lands where it is drawn; the page's own engraved words say how to begin and, once the
+//! day is decided (Rome surrounded, an army broken, or a minute's day run out), how it went; then a tap
+//! begins a new battle. Nothing else wipes the page.
 
+mod letters;
 mod sim;
 
 use sim::{Sim, DEAD, FLEEING, FORMED, GONE, KINDS};
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 
 /// The battle's box (world units) that the view keeps whole on any screen.
-const BOX_C: [f32; 2] = [520.0, 470.0];
-const BOX: [f32; 2] = [700.0, 600.0];
-/// Sim seconds a second, and while a finger draws (the day slows under the pen).
+const BOX_C: [f32; 2] = [530.0, 470.0];
+const BOX: [f32; 2] = [600.0, 600.0];
+/// Sim seconds a second.
 const PACE: f32 = 1.6;
-const PACE_DRAWING: f32 = 0.6;
 const STEP: f32 = 1.0 / 30.0;
 /// The day begins at the first touch, or after this long untouched.
-const IDLE_START: f64 = 14.0;
+const IDLE_START: f64 = 9.0;
+/// The day is always decided by this much sim time (about a minute): every battle ends.
+const DAY_LONG: f32 = 100.0;
+/// Points kept clear at the foot for the page's words (the field is framed above them).
+const WORDS_BAND: f32 = 96.0;
+/// Seconds after the decision before a touch begins a new battle (the end is seen first).
+const END_READY: f64 = 2.5;
+/// A line begun this near Carthage's men (units) starts on the nearest of them.
+const PICKUP: f32 = 70.0;
 /// The world sheets (density, intent): a cell of this many units.
 const DCELL: f32 = 4.0;
 const ICELL: f32 = 8.0;
@@ -34,8 +47,6 @@ const MAX_SEGS: usize = 8192;
 const SETTLE: f64 = 3.0;
 /// Seconds from the decision until nothing moves.
 const FREEZE: f64 = 1.5;
-/// Seconds the camera takes to draw back to the whole field once the day is decided.
-const PULL_BACK: f64 = 3.5;
 /// The pen combs the cuts this near its passage (units), for this long (s).
 const COMB_R: f32 = 56.0;
 const COMB_LIFE: f32 = 3.0;
@@ -90,10 +101,8 @@ struct Touch {
     id: u64,
     x: f64,
     y: f64,
-    seen: f64,
     moved: bool,
     stroke: Option<usize>,
-    reset: bool,
 }
 
 /// What the drawing remembers of each unit: the cut's direction (eased), its swell's phase.
@@ -105,6 +114,31 @@ struct Look {
     ph: f32,
 }
 
+/// How the day went.
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum Outcome {
+    Surrounded,
+    RomeBreaks,
+    CarthageBreaks,
+}
+
+impl Outcome {
+    fn title(self) -> &'static str {
+        match self {
+            Outcome::Surrounded => "YOU WIN: ROME IS SURROUNDED",
+            Outcome::RomeBreaks => "YOU WIN: ROME BREAKS AND RUNS",
+            Outcome::CarthageBreaks => "YOU LOSE: CARTHAGE BREAKS",
+        }
+    }
+    fn history(self) -> &'static str {
+        match self {
+            Outcome::Surrounded => "AS HANNIBAL DID IN 216 BC",
+            Outcome::RomeBreaks => "NEXT, SURROUND THEM, AS HANNIBAL DID",
+            Outcome::CarthageBreaks => "HANNIBAL WON BY SURROUNDING ROME",
+        }
+    }
+}
+
 pub struct Battle {
     sim: Sim,
     river: Vec<[f32; 2]>,
@@ -113,7 +147,6 @@ pub struct Battle {
     clock: f64,
     started_at: Option<f64>,
     touches: Vec<Touch>,
-    drops: Vec<(f32, f32, f64)>,
     /// the pen's fresh passage (x, y, tangent, when): the cuts near it comb along it at once,
     /// before the men have taken a step
     comb: Vec<[f32; 5]>,
@@ -132,13 +165,10 @@ pub struct Battle {
     /// once a side has no man standing: where it fell (its fallen's middle), per side
     decided_at: Option<f64>,
     next_judge: f64,
-    /// the camera: px a unit and the world point at the screen's middle, eased toward the fight
-    cam: Option<(f32, [f32; 2])>,
-    cam_at_decision: Option<(f32, [f32; 2])>,
-    print_at: Option<(f32, [f32; 2])>,
-    last_touch: f64,
-    /// When the last order was drawn: the day isn't called for running long while orders still come.
-    last_order: f64,
+    /// how the day went, once decided (the page's words)
+    outcome: Option<Outcome>,
+    /// when the first order was drawn (the opening words go)
+    first_order: Option<f64>,
     initial: [u32; 2],
     dead: Vec<f32>,
     deaths_drawn: usize,
@@ -263,19 +293,18 @@ impl Battle {
         })
     }
 
-    /// The opening framing: the deployment's box kept whole (points a unit).
+    /// The framing, fixed for the whole battle so a line lands where it is drawn: the deployment's
+    /// box kept whole above the words' band (points a unit).
     fn box_scale(ctx: &Ctx) -> f32 {
         let [wp, hp] = ctx.points();
-        ((wp as f32) / BOX[0]).min((hp as f32) / BOX[1])
+        ((wp as f32) / BOX[0]).min((hp as f32 - WORDS_BAND) / BOX[1])
     }
 
-    /// Pixels a world unit, and where the world's origin lies on screen (px): the camera, which
-    /// opens on the deployment and eases in on the fight.
+    /// Pixels a world unit, and where the world's origin lies on screen (px).
     fn view(&self, ctx: &Ctx) -> (f32, [f32; 2]) {
-        let (s_pt, c) = self.cam.unwrap_or((Self::box_scale(ctx), BOX_C));
-        let s = s_pt * ctx.ppp as f32;
-        let (w, h) = (ctx.width as f32, ctx.height as f32);
-        (s, [w * 0.5 - c[0] * s, h * 0.5 - c[1] * s])
+        let s = Self::box_scale(ctx) * ctx.ppp as f32;
+        let (w, h) = (ctx.width as f32, ctx.height as f32 - WORDS_BAND * ctx.ppp as f32);
+        (s, [w * 0.5 - BOX_C[0] * s, h * 0.5 - BOX_C[1] * s])
     }
 
     fn to_world(&self, ctx: &Ctx, x: f64, y: f64) -> (f32, f32) {
@@ -284,82 +313,79 @@ impl Battle {
         ((x as f32 * p - o[0]) / s, (y as f32 * p - o[1]) / s)
     }
 
-    /// The camera follows the fight once the pen has rested a moment: the armies (and where they
-    /// fell) kept at most of the frame, never further out than the opening, slowly.
-    /// The fight's extent (4th to 96th percentiles): men moving, fallen or ringed in; reserves
-    /// standing idle are not counted.
-    fn fight_box(&self) -> Option<[f32; 4]> {
-        let (mut xs, mut ys): (Vec<f32>, Vec<f32>) = (vec![], vec![]);
-        for u in &self.sim.units {
-            let idle = u.state == FORMED && u.vx * u.vx + u.vy * u.vy < 2.0;
-            if u.state == GONE || (u.state == FLEEING && !u.trapped) || idle {
-                continue;
+    /// The page's words, engraved in Rome's ink below the field: how to begin before the first order,
+    /// how the day went once it is decided. Each line (text, cap height in points, alpha).
+    fn words(&self, ctx: &Ctx) -> Vec<(&'static str, f32, f32)> {
+        let [wp, _] = ctx.points();
+        let big = (wp as f32 * 0.036).clamp(12.0, 22.0);
+        let small = (big * 0.62).max(8.0);
+        let mut out = vec![];
+        let since_page = (self.clock - self.page_t) as f32;
+        if let (Some(d), Some(o)) = (self.decided_at, self.outcome) {
+            let t = (self.clock - d) as f32;
+            let a1 = ((t - 0.6) / 0.8).clamp(0.0, 1.0);
+            let a2 = ((t - 1.4) / 0.8).clamp(0.0, 1.0);
+            let a3 = ((t - END_READY as f32) / 0.6).clamp(0.0, 1.0);
+            out.push((o.title(), big, a1));
+            out.push((o.history(), small, a2));
+            out.push(("TAP FOR A NEW BATTLE", small, a3));
+        } else {
+            // until the first order (or a while into a day begun untouched)
+            let gone = match self.first_order {
+                Some(f) => ((self.clock - f) as f32 / 0.8).clamp(0.0, 1.0),
+                None => ((self.sim.time - 12.0) / 2.0).clamp(0.0, 1.0),
+            };
+            let a = ((since_page - 0.8) / 1.0).clamp(0.0, 1.0) * (1.0 - gone);
+            if a > 0.0 {
+                out.push(("YOU ARE CARTHAGE, IN PURPLE", big * 0.8, a));
+                out.push(("DRAW A LINE FROM YOUR MEN", small, a));
+                out.push(("AND THEY WILL FOLLOW IT", small, a));
             }
-            xs.push(u.x);
-            ys.push(u.y);
         }
-        if xs.len() < 20 {
+        out
+    }
+
+    /// The words as engraved segments (world units), centred in the band below the field; returns
+    /// the world rect they take (x0, y0, x1, y1), with a margin, so the frozen page clears behind them.
+    fn word_segs(&self, ctx: &Ctx, out: &mut Vec<Seg>) -> Option<[f32; 4]> {
+        let lines = self.words(ctx);
+        if lines.is_empty() {
             return None;
         }
-        xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let q = |v: &Vec<f32>, f: f32| v[((v.len() - 1) as f32 * f) as usize];
-        Some([q(&xs, 0.04), q(&xs, 0.96), q(&ys, 0.04), q(&ys, 0.96)])
-    }
-
-    /// The print's framing: the frozen fight at about half the width or more, with the river beside
-    /// it in view, never further out than the whole field.
-    fn print_frame(&self, ctx: &Ctx) -> (f32, [f32; 2]) {
-        let base = Self::box_scale(ctx);
-        let Some([x0, x1, y0, y1]) = self.fight_box() else { return (base, BOX_C) };
-        let cy = (y0 + y1) * 0.5;
-        let left = (self.sim.river_x(cy) - 25.0).min(x0 - 25.0);
-        let right = x1 + 30.0;
+        let mut rect = [f32::MAX, f32::MAX, f32::MIN, f32::MIN];
+        let (s, o) = self.view(ctx);
+        let ppp = ctx.ppp as f32;
         let [wp, hp] = ctx.points();
         let (wp, hp) = (wp as f32, hp as f32);
-        let s = (wp / (right - left)).min(0.82 * hp / (y1 - y0 + 90.0)).min(wp * 0.62 / (x1 - x0)).max(base);
-        // centred on the fight, shifted only as far as the river needs
-        let half = wp * 0.5 / s;
-        let mut cx = (x0 + x1) * 0.5;
-        if cx - half > left {
-            cx = left + half;
-        }
-        (s, [cx, cy])
-    }
-
-    /// The camera follows the fight once the pen has rested a moment, slowly; once the day is
-    /// decided it draws back to the print's framing, the river beside the frozen fight.
-    fn follow(&mut self, ctx: &Ctx, dt: f32) {
-        let base = Self::box_scale(ctx);
-        let cur = self.cam.unwrap_or((base, BOX_C));
-        if let Some(d) = self.decided_at {
-            let p = (((self.clock - d) / PULL_BACK) as f32).clamp(0.0, 1.0);
-            let from = *self.cam_at_decision.get_or_insert(cur);
-            let to = match self.print_at {
-                Some(t) => t,
-                None => {
-                    let t = self.print_frame(ctx);
-                    self.print_at = Some(t);
-                    t
+        // the band: from just below the deployment to clear of the marks at the foot
+        let top = (690.0 * s + o[1]) / ppp;
+        let bottom = hp - 58.0;
+        let gap = |h: f32| h * 0.9;
+        let total: f32 = lines.iter().map(|l| l.1 + gap(l.1)).sum::<f32>() - gap(lines.last().unwrap().1);
+        let mut y = (top + bottom) * 0.5 - total * 0.5;
+        for (text, h, a) in lines {
+            let mut h = h;
+            let wgrid = letters::width(text);
+            if wgrid * h / 6.0 > wp * 0.92 {
+                h = wp * 0.92 * 6.0 / wgrid;
+            }
+            let step = h / 6.0;
+            let x0 = wp * 0.5 - wgrid * step * 0.5;
+            if a > 0.0 {
+                let to_w = |p: [f32; 2]| [(p[0] * ppp - o[0]) / s, (p[1] * ppp - o[1]) / s];
+                let width = (h * 0.085).clamp(0.7, 1.6);
+                for pl in letters::lines(text, [x0, y], step) {
+                    for w in pl.windows(2) {
+                        let (p, q) = (to_w(w[0]), to_w(w[1]));
+                        rect = [rect[0].min(p[0]).min(q[0]), rect[1].min(p[1]).min(q[1]), rect[2].max(p[0]).max(q[0]), rect[3].max(p[1]).max(q[1])];
+                        out.push(Seg { ab: [p[0], p[1], q[0], q[1]], sw: [0.0, 1.0, width, 0.0], ka: [4.0, a, 0.0, 0.0] });
+                    }
                 }
-            };
-            let e = p * p * (3.0 - 2.0 * p);
-            let s = (from.0.ln() + (to.0.ln() - from.0.ln()) * e).exp();
-            self.cam = Some((s, [from.1[0] + (to.1[0] - from.1[0]) * e, from.1[1] + (to.1[1] - from.1[1]) * e]));
-            return;
+            }
+            y += h + gap(h);
         }
-        if !self.sim.started || !self.touches.is_empty() || self.clock - self.last_touch < 2.5 {
-            self.cam = Some(cur);
-            return;
-        }
-        let Some([x0, x1, y0, y1]) = self.fight_box() else { return };
-        let (bw, bh) = (x1 - x0 + 60.0, y1 - y0 + 60.0);
-        let [wp, hp] = ctx.points();
-        let target = ((1.0 * wp as f32) / bw).min((0.8 * hp as f32) / bh).clamp(base, base * 2.2);
-        let tc = [(x0 + x1) * 0.5, (y0 + y1) * 0.5];
-        let k = 1.0 - (-dt * 0.45).exp();
-        let s = (cur.0.ln() + (target.ln() - cur.0.ln()) * k).exp();
-        self.cam = Some((s, [cur.1[0] + (tc[0] - cur.1[0]) * k, cur.1[1] + (tc[1] - cur.1[1]) * k]));
+        let m = 14.0 * ppp / s;
+        (rect[0] < rect[2]).then(|| [rect[0] - m, rect[1] - m, rect[2] + m, rect[3] + m])
     }
 
     /// Whether Hannibal's men stand all round Rome's standing mass.
@@ -393,13 +419,12 @@ impl Battle {
         self.looks = self.sim.units.iter().map(|u| Look { dx: u.fx, dy: u.fy, curv: 0.0, ph: u.j }).collect();
         self.acc = 0.0;
         self.started_at = None;
-        self.drops.clear();
         self.comb.clear();
         self.deaths_drawn = 0;
         self.decided_at = None;
-        self.cam = None;
-        self.cam_at_decision = None;
-        self.print_at = None;
+        self.next_judge = 0.0;
+        self.outcome = None;
+        self.first_order = None;
         self.count_initial();
         self.pending_dots.clear();
         self.clear_stain = true;
@@ -594,7 +619,8 @@ impl Battle {
         }
     }
 
-    fn build_cuts(&self, out: &mut Vec<Cut>) {
+    /// Every unit's cut; once the day is decided, none behind the words (`clear`, a world rect).
+    fn build_cuts(&self, out: &mut Vec<Cut>, clear: Option<[f32; 4]>) {
         out.clear();
         let settle = self.decided_at.map_or(0.0, |d| (((self.clock - d) / SETTLE) as f32).clamp(0.0, 1.0));
         for (i, u) in self.sim.units.iter().enumerate() {
@@ -663,6 +689,14 @@ impl Battle {
                 alpha *= 1.0 - settle + settle * a * a * (3.0 - 2.0 * a);
                 if alpha < 0.02 {
                     continue;
+                }
+            }
+            if let Some(r) = clear.filter(|_| settle > 0.0) {
+                if u.x > r[0] && u.x < r[2] && u.y > r[1] && u.y < r[3] {
+                    alpha *= 1.0 - settle;
+                    if alpha < 0.02 {
+                        continue;
+                    }
                 }
             }
             out.push(Cut {
@@ -882,7 +916,6 @@ impl Toy for Battle {
             clock: 0.0,
             started_at: None,
             touches: vec![],
-            drops: vec![],
             comb: vec![],
             ghost,
             page_t: -10.0,
@@ -897,11 +930,8 @@ impl Toy for Battle {
             tmp3: vec![],
             decided_at: None,
             next_judge: 0.0,
-            cam: None,
-            cam_at_decision: None,
-            print_at: None,
-            last_touch: -10.0,
-            last_order: -10.0,
+            outcome: None,
+            first_order: None,
             initial: [0, 0],
             dead: vec![0.0; dw * dh],
             deaths_drawn: 0,
@@ -948,15 +978,15 @@ impl Toy for Battle {
             (Some(c), Some(r)) => (screen(c), screen([c[0] + (r[0] - c[0]) * 0.6, c[1] + (r[1] - c[1]) * 0.6])),
             _ => ([wp * 0.35, hp * 0.6], [wp * 0.6, hp * 0.45]),
         };
-        Some(toy_kit::info::Demo::new("Cannae, 216 BC. Draw a line: an order for Carthage.", vec![toy_kit::info::Stroke::drag(0.4, 1.6, a, b)]))
+        Some(toy_kit::info::Demo::new("Cannae, 216 BC. You are Carthage: draw a line from your men.", vec![toy_kit::info::Stroke::drag(0.4, 1.6, a, b)]))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::new(
             &[
                 "Cannae, 216 BC: Rome in black, Carthage in purple. Each mark is a few dozen men who see only around them.",
-                "Carthage's men near your line follow it. The rest go for the nearest enemy. Hit from behind or both sides, men break.",
-                "Hannibal's encirclement happens only if your lines make it.",
+                "Draw a line from Carthage's men: the body it starts on follows it, then goes for the nearest enemy. Hit from behind or both sides, men break.",
+                "The day ends when Rome is surrounded or an army breaks, within about a minute. Hannibal's encirclement happens only if your lines make it.",
             ],
             "Real: the ground; the armies, from Polybius and Livy. Drawn: the strengths, the engraving.",
         ))
@@ -968,36 +998,48 @@ impl Toy for Battle {
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
-        self.last_touch = self.clock;
+        // One gesture: a line from Carthage's men is an order. Once the day is decided the page is
+        // kept, and a tap (after a beat, so the end is seen) begins a new battle.
         match e.phase {
             Phase::Down => {
-                self.touches.push(Touch { id: e.id, x: e.x, y: e.y, seen: self.clock, moved: false, stroke: None, reset: false });
+                self.touches.push(Touch { id: e.id, x: e.x, y: e.y, moved: false, stroke: None });
             }
             Phase::Move => {
                 let Some(k) = self.touches.iter().position(|t| t.id == e.id) else { return };
                 let (x0, y0) = (self.touches[k].x, self.touches[k].y);
-                if !self.touches[k].moved && ((e.x - x0).powi(2) + (e.y - y0).powi(2)).sqrt() > 6.0 && !self.touches[k].reset {
+                if !self.touches[k].moved && ((e.x - x0).powi(2) + (e.y - y0).powi(2)).sqrt() > 6.0 {
                     self.touches[k].moved = true;
-                    // a new order on a decided page: the day goes on from where it lay (the ink wets
-                    // again, the camera lets go), so a finger is never met by stillness; the day is
-                    // judged again only after the order has had time to tell
                     if self.decided_at.is_some() {
-                        ctx.haptic();
-                        self.decided_at = None;
-                        self.cam_at_decision = None;
-                        self.print_at = None;
-                        self.next_judge = self.clock + 10.0;
+                        return;
                     }
-                    self.last_order = self.clock;
                     self.start();
+                    self.first_order.get_or_insert(self.clock);
                     let (wx, wy) = self.to_world(ctx, x0, y0);
-                    self.touches[k].stroke = Some(self.sim.begin_stroke(wx, wy));
+                    // begun near Carthage's men, the line starts on the nearest of them: a finger
+                    // needn't land exactly on a mark a few points wide
+                    let mut near = (PICKUP * PICKUP, None);
+                    for u in self.sim.units.iter().filter(|u| u.state == FORMED && KINDS[u.kind as usize].side == 1) {
+                        let d2 = (u.x - wx).powi(2) + (u.y - wy).powi(2);
+                        if d2 < near.0 {
+                            near = (d2, Some([u.x, u.y]));
+                        }
+                    }
+                    let st = match near.1 {
+                        Some(p) if near.0 > (sim::REACH * 0.5).powi(2) => {
+                            let st = self.sim.begin_stroke(p[0], p[1]);
+                            self.sim.extend_stroke(st, wx, wy);
+                            st
+                        }
+                        _ => self.sim.begin_stroke(wx, wy),
+                    };
+                    // the whole body the line begins on follows it, not only the men under the pen
+                    self.sim.claim(st, wx, wy, PICKUP);
+                    self.touches[k].stroke = Some(st);
                 }
                 if let Some(s) = self.touches[k].stroke {
                     let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     let before = self.sim.strokes[s].pts.len();
                     self.sim.extend_stroke(s, wx, wy);
-                    self.last_order = self.clock;
                     let pts = &self.sim.strokes[s].pts;
                     if pts.len() > before && pts.len() >= 2 {
                         let (a, b) = (pts[pts.len() - 2], pts[pts.len() - 1]);
@@ -1013,31 +1055,13 @@ impl Toy for Battle {
                     let (wx, wy) = self.to_world(ctx, e.x, e.y);
                     self.sim.extend_stroke(s, wx, wy);
                     self.sim.end_stroke(s);
-                } else if !t.moved && !t.reset && e.phase == Phase::Up
-                    && self.decided_at.map_or(false, |d| self.clock - d > SETTLE + PULL_BACK)
-                {
-                    // a tap on the kept print, once it has settled: the quiet way to begin again
+                } else if e.phase == Phase::Up && !t.moved && self.decided_at.map_or(false, |d| self.clock - d > END_READY) {
+                    // a tap, not a line drawn on the kept page (a late order changes nothing)
                     ctx.haptic();
                     self.fresh_page();
-                } else if !t.moved && !t.reset && e.phase == Phase::Up {
-                    // a tap: a drop of ink spreads its ring through the men
-                    let (wx, wy) = self.to_world(ctx, t.x, t.y);
+                } else if e.phase == Phase::Up && self.decided_at.is_none() {
+                    // a tap begins the day, nothing more
                     self.start();
-                    self.sim.pulse(wx, wy);
-                    self.drops.push((wx, wy, self.clock));
-                    // the cuts round the drop bristle, then comb back
-                    for (i, u) in self.sim.units.iter().enumerate() {
-                        let d = ((u.x - wx).powi(2) + (u.y - wy).powi(2)).sqrt();
-                        if d < 36.0 && u.state < DEAD {
-                            let a = (u.j - 0.5) * 2.4 * (1.0 - d / 36.0);
-                            let lk = &mut self.looks[i];
-                            let (c, sn) = (a.cos(), a.sin());
-                            let (x, y) = (lk.dx * c - lk.dy * sn, lk.dx * sn + lk.dy * c);
-                            lk.dx = x;
-                            lk.dy = y;
-                        }
-                    }
-                    self.pending_dots.push(Dot { pr: [wx, wy, 9.0, 0.0], v: [0.0, 0.0, 0.5, 0.0] });
                 }
             }
         }
@@ -1045,24 +1069,10 @@ impl Toy for Battle {
 
     fn update(&mut self, ctx: &mut Ctx, _t: f64, dt: f64) {
         self.clock += dt;
-        // a finger held still a long beat: a fresh page
-        let now = self.clock;
-        let mut reset = false;
-        for t in self.touches.iter_mut() {
-            if !t.moved && !t.reset && now - t.seen > 1.6 {
-                t.reset = true;
-                reset = true;
-            }
-        }
-        if reset {
-            ctx.haptic();
-            self.fresh_page();
-        }
-        if self.started_at.is_none() && self.clock - self.page_t > IDLE_START {
+        if self.started_at.is_none() && self.clock - self.page_t.max(0.0) > IDLE_START {
             self.start();
         }
-        let drawing = self.touches.iter().any(|t| t.stroke.is_some());
-        let mut pace = if drawing { PACE_DRAWING } else { PACE };
+        let mut pace = PACE;
         if let Some(d) = self.decided_at {
             // the pocket's own settling carries the page from here; the fight itself stops at
             // once (so no man falls outside the pocket after it is drawn), the rest within a beat
@@ -1086,24 +1096,40 @@ impl Toy for Battle {
             ctx.haptic();
         }
         // the day decided, and the page freezes where it happened: the moment Hannibal's men close
-        // all round Rome's standing mass, or one army is broken, or the day has run long
+        // all round Rome's standing mass, or one army is broken, or the day has run its length
+        // (always: every battle ends, about a minute in)
         if self.sim.started && n > 0 && self.decided_at.is_none() && self.clock >= self.next_judge {
             self.next_judge = self.clock + 0.5;
             let c = self.sim.census();
             let rome = c[0][0] as f32 / self.initial[0].max(1) as f32;
             let carth = c[1][0] as f32 / self.initial[1].max(1) as f32;
             let ringed = c[0][1] + c[0][2] > self.initial[0] / 6 && self.encircled();
-            if ringed || rome < 0.4 || carth < 0.3 || (self.sim.time > 75.0 && self.clock - self.last_order > 12.0) || self.sim.time > 150.0 {
+            if ringed || rome < 0.4 || carth < 0.3 || self.sim.time > DAY_LONG {
                 self.decided_at = Some(self.clock);
+                self.outcome = Some(if ringed {
+                    Outcome::Surrounded
+                } else if rome / 0.4 <= carth / 0.3 {
+                    Outcome::RomeBreaks
+                } else {
+                    Outcome::CarthageBreaks
+                });
+                // a broken army runs: its men still in formation turn for home (and leave the page)
+                let broken = match self.outcome {
+                    Some(Outcome::RomeBreaks) => Some(0),
+                    Some(Outcome::CarthageBreaks) => Some(1),
+                    _ => None,
+                };
+                if let Some(side) = broken {
+                    self.sim.rout(side);
+                }
                 // the day's end is felt as well as seen
                 ctx.haptic();
                 if std::env::var("BATTLE_CENSUS").is_ok() {
-                    eprintln!("decided at sim {:.1} (ringed {ringed}): rome {:?} carthage {:?}", self.sim.time, c[0], c[1]);
+                    eprintln!("decided at sim {:.1} ({:?}): rome {:?} carthage {:?}", self.sim.time, self.outcome.unwrap(), c[0], c[1]);
                 }
             }
         }
         let t1 = t0.elapsed().as_secs_f64() * 1e3;
-        self.follow(ctx, dt as f32);
         let now32 = self.clock as f32;
         self.comb.retain(|p| now32 - p[4] < COMB_LIFE);
         // the pen rakes: Hannibal's men under its fresh passage are drawn along it at once
@@ -1148,8 +1174,10 @@ impl Toy for Battle {
         };
         let q = &ctx.gpu.queue;
         q.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&un));
+        let mut words = vec![];
+        let clear = self.word_segs(ctx, &mut words);
         let mut cuts = Vec::with_capacity(self.sim.units.len());
-        self.build_cuts(&mut cuts);
+        self.build_cuts(&mut cuts, clear);
         self.n_cuts = cuts.len() as u32;
         q.write_buffer(&self.cuts, 0, bytemuck::cast_slice(&cuts));
         // the finger's strokes, the drops, the ghost
@@ -1160,12 +1188,14 @@ impl Toy for Battle {
         // fight runs, rising once the day is decided and staying, beside the plan in Carthage's ink
         let tau = self.decided_at.map_or(0.0, |d| (self.clock - d) as f32);
         let rise = (tau / 2.0).clamp(0.0, 1.0);
-        let g_alpha = 0.16 + 0.5 * rise;
+        // (unseen while the day runs: an unexplained second set of arrows confuses the player's own)
+        let g_alpha = 0.42 * rise;
         let mut segs: Vec<Seg> = self.ghost.iter().map(|g| Seg { ka: [g.ka[0], g_alpha, 0.0, 0.0], ..*g }).collect();
         let t = self.sim.time;
         for st in &self.sim.strokes {
             let age = t - st.born;
-            let alpha = (0.32 + 0.4 * (-age / 20.0).exp()) * (1.0 - settle) + 0.75 * settle;
+            // spent orders fade while the day runs (no tails left lying); the plan returns, dried, on the print
+            let alpha = 0.75 * (-age / 12.0).exp() * (1.0 - settle) + 0.55 * settle;
             let flow = 40.0 * (1.0 - settle);
             for w in st.pts.windows(2) {
                 if segs.len() >= MAX_SEGS - 64 {
@@ -1180,14 +1210,7 @@ impl Toy for Battle {
                 segs.push(Seg { ab: [e[0], e[1], e[0], e[1]], sw: [100.0, 100.0, 3.4, 0.0], ka: [0.0, alpha * 0.9, 0.0, 0.0] });
             }
         }
-        for &(x, y, born) in &self.drops {
-            let age = (self.clock - born) as f32;
-            // a drop blooms into the paper and dries: it spreads, paling, then stays a faint mark
-            // a blot that wicks a little into the paper and dries: small, crisp, ink not a disc
-            let k = 1.0 - (-age / 0.6).exp();
-            let r = 1.6 + 2.2 * k;
-            segs.push(Seg { ab: [x, y, x, y], sw: [100.0, 100.0, r, 0.0], ka: [0.0, 0.85 - 0.35 * k, 0.0, 0.0] });
-        }
+        segs.extend(words);
         self.n_segs = segs.len().min(MAX_SEGS) as u32;
         q.write_buffer(&self.segs, 0, bytemuck::cast_slice(&segs[..self.n_segs as usize]));
         let nd = self.pending_dots.len().min(MAX_DOTS);
@@ -1274,11 +1297,6 @@ impl Toy for Battle {
             p.draw(0..3, 0..1);
         }
         q.submit([enc.finish()]);
-    }
-
-    fn shaken(&mut self, ctx: &mut Ctx) {
-        ctx.haptic();
-        self.fresh_page();
     }
 }
 

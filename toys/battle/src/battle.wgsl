@@ -1,7 +1,7 @@
 // Battle Ink's drawing (painting-company row 206). Four passes:
 //   cut   every unit one tapered burin cut, an arc along its army's current, into the ink sheet
 //         (R Rome, G Carthage), its swell running the way the current goes;
-//   seg   the finger's strokes (B) and the real day's ghost (A) into the same sheet;
+//   seg   the finger's strokes (B), the real day's ghost (A) and the page's words (R) into the same sheet;
 //   dot   the paper's memory: where the currents ran and where men fell, into a sheet of the world;
 //   page  the paper, Cannae's relief and the Aufidus engraved, the stains, and the two inks laid on
 //         it, each pixel one ink: where the armies meet the inks fold into marbled chevrons rather
@@ -139,6 +139,8 @@ fn fs_seg(i: SegOut) -> @location(0) vec4f {
   let hw = max(w * u.screen.z * 0.5, 0.5);
   let cov = clamp(hw + 0.5 - dist, 0.0, 1.0) * min(1.0, w * u.screen.z) * alpha;
   if (i.wk.y < 0.5) { return vec4f(0.0, 0.0, cov, 0.0); }
+  // (kind 4: the page's words, engraved in Rome's ink)
+  if (i.wk.y > 3.5) { return vec4f(cov, 0.0, 0.0, 0.0); }
   return vec4f(0.0, 0.0, 0.0, cov);
 }
 
