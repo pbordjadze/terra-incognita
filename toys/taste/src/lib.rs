@@ -20,8 +20,8 @@ use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 use walk::{Event, Form, Walker};
 
 pub const SEED: u64 = 0x0007_a57e_2026;
-/// The first creature: a soft violet star of five arms, a little curled, faintly veined.
-pub const START: Form = [0.74, 0.38, 0.32, 0.62, 0.3, 0.22, 0.45, 0.35];
+/// The first creature: a soft violet star of five arms, half lit.
+pub const START: Form = [0.74, 0.38, 0.32, 0.45];
 
 /// The map: a form's place on the wheel (colour round, spikier outward), in units of the wheel's radius.
 const HUB: f64 = 0.2;
@@ -33,9 +33,9 @@ pub fn on_map(f: &Form) -> [f64; 2] {
 
 /// When the creature first pulls back to show its path (steps taken, seconds held), and then every
 /// further REVEAL_AGAIN steps.
-const REVEAL_FIRST: usize = 34;
+const REVEAL_FIRST: usize = 56;
 const REVEAL_HELD: f64 = 10.0;
-const REVEAL_AGAIN: usize = 60;
+const REVEAL_AGAIN: usize = 100;
 /// The map's close zoom: how much larger the wheel is under the creature than when it pulls back.
 const CLOSE: f64 = 4.0;
 
@@ -100,7 +100,7 @@ impl Taste {
 
     fn view(&self) -> View {
         let [w, h] = self.points;
-        let far = 0.44 * w.min(h * 0.62);
+        let far = 0.47 * w.min(h * 0.62);
         let z = self.z.clamp(0.0, 1.0);
         let ez = z * z * (3.0 - 2.0 * z);
         let s = far * CLOSE.powf(ez);
@@ -121,7 +121,12 @@ impl Taste {
     }
 
     fn holding(&self) -> bool {
-        self.fingers.len() == 1 && self.z > 0.9 && self.pinch.is_none()
+        if self.fingers.len() != 1 || self.z <= 0.9 || self.pinch.is_some() {
+            return false;
+        }
+        // on it, or near it: a fingertip's slack round its rim
+        let v = self.view();
+        self.fingers.values().all(|f| (f.at[0] - v.c[0]).hypot(f.at[1] - v.c[1]) < v.r * 1.35 + 30.0)
     }
 
     fn reveal(&mut self) {
@@ -171,7 +176,7 @@ impl Taste {
         // the colour picks the note (a pentatonic run round the wheel), the spikes its brightness, the
         // glow how long it rings
         let degree = (f[0] * 10.0).round() as i32 + 3;
-        Note { freq: pentatonic(196.0, degree), amp, decay: 1.4 + 2.6 * f[6] as f32, pan: 0.0, bright: 0.3 + 2.2 * f[1] as f32 }
+        Note { freq: pentatonic(196.0, degree), amp, decay: 1.4 + 2.6 * f[3] as f32, pan: 0.0, bright: 0.3 + 2.2 * f[1] as f32 }
     }
 }
 
@@ -344,7 +349,7 @@ impl Toy for Taste {
             time: self.t as f32,
             scale: (v.s * k) as f32,
             center: [0.0, 0.0],
-            p: [(v.o[0] * k) as f32, (v.o[1] * k) as f32, HUB as f32, away, now[0] as f32, now[6] as f32, (v.c[0] * k) as f32, (v.c[1] * k) as f32],
+            p: [(v.o[0] * k) as f32, (v.o[1] * k) as f32, HUB as f32, away, now[0] as f32, now[3] as f32, (v.c[0] * k) as f32, (v.c[1] * k) as f32],
         };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         self.ground.render(gpu, &mut enc, target, size, &params);
@@ -379,7 +384,7 @@ impl Toy for Taste {
         }
         // the path: from each kept form to the next, in the colour it was; the tries it turned down,
         // short faint twigs toward them
-        let line_w = ((0.9 + 1.1 * away as f64) * k) as f32;
+        let line_w = ((0.6 + 0.6 * away as f64) * k) as f32;
         for i in 0..n {
             if !shown(i) {
                 break;
@@ -543,7 +548,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   col = col + hsv3(u.p1.x, 0.45, 0.07) * exp(-dc * dc * 5.0) * (1.0 - away * 0.6);
   // the wheel: each place tinted with the colour a creature there would be, darker toward the hub
   let inside = 1.0 - smoothstep(1.0, 1.0 + 2.0 / u.scale, r);
-  let tint = hsv3(hue, 0.55, 0.05 + 0.10 * smoothstep(u.p0.z * 0.5, 1.0, r));
+  let tint = hsv3(hue, 0.5, 0.06 + 0.13 * smoothstep(u.p0.z * 0.5, 1.0, r));
   let vis = 0.35 + 0.65 * away;
   col = col + tint * inside * vis;
   // its rim, and the hub's ring, hairlines

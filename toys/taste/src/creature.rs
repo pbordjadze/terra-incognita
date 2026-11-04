@@ -1,7 +1,7 @@
 //! The creature, drawn: one instanced quad a creature (the one in front, and the small ones on the map
 //! of where it has been), every pixel worked out from its eight numbers in the fragment shader.
 //!
-//! The eight numbers (walk.rs's `Form`): 0 colour (round the wheel), 1 spikes (a smooth round body to a
+//! The eight traits (`body`, from walk.rs's four numbers): 0 colour (round the wheel), 1 spikes (a smooth round body to a
 //! sharp star), 2 arms (three to nine, the count blended between whole numbers), 3 curl (arms swept
 //! one way, straight, or swept the other), 4 markings (plain, veins along the arms, rings, spots), 5
 //! the second colour (a near neighbour of the first, round to its opposite), 6 glow (matte and
@@ -24,10 +24,23 @@ pub struct Instance {
     pub life: [f32; 4],
 }
 
+/// The creature's eight traits from the walk's four (colour, spikes, arms, glow): the other four follow
+/// smoothly, so a small step is a small change and every corner of the four is a different creature.
+pub fn body(f: &crate::walk::Form) -> [f64; 8] {
+    let tau = std::f64::consts::TAU;
+    let (h, s, a, g) = (f[0], f[1], f[2], f[3]);
+    let curl = 0.5 + 0.48 * (tau * (h + 0.6 * a) + 1.0).sin() * (0.3 + 0.7 * s);
+    let marks = 0.5 + 0.5 * (tau * (0.7 * s + 0.9 * g + 0.4 * h)).sin();
+    let second = 0.5 + 0.5 * (tau * (h * 2.0 + 0.5 * a)).cos();
+    let temper = 0.5 + 0.45 * (tau * (0.6 * s - 0.5 * g + 0.25)).sin();
+    [h, s, a, curl, marks, second, g, temper]
+}
+
 impl Instance {
     #[allow(clippy::too_many_arguments)]
     pub fn new(c: [f32; 2], r: f32, alpha: f32, form: &crate::walk::Form, clock: f32, touch: f32, look: [f32; 2]) -> Instance {
-        let f = |i: usize| form[i] as f32;
+        let b = body(form);
+        let f = |i: usize| b[i] as f32;
         Instance { c, r, alpha, f0: [f(0), f(1), f(2), f(3)], f1: [f(4), f(5), f(6), f(7)], life: [clock, touch, look[0], look[1]] }
     }
 }

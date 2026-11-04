@@ -1,12 +1,12 @@
 //! The walk: one creature, one form at a time, moving through every form it could be by a Metropolis
 //! walk whose target is the reader's own attention (painting-company row 225).
 //!
-//! - A form is eight numbers (`Form`): its colour, how spiky, how many arms, how they curl, its
-//!   markings, its second colour, how it glows, how it moves. Colour wraps round; the rest lie in 0..1.
+//! - A form is four numbers (`Form`): its colour, how spiky, how many arms, how it glows (the rest of
+//!   its looks follow from these). Colour wraps round; the rest lie in 0..1.
 //! - The density: for any form, how much of the time it was in front of the reader they held it
 //!   (`Memory::liking`): every moment the creature is shown is remembered with whether a finger was on
 //!   it, and a form's liking is the held time near it over the shown time near it (near: a gaussian in
-//!   the eight numbers), pulled toward an even prior where little has been seen.
+//!   the four numbers), pulled toward an even prior where little has been seen.
 //! - The step: from the form it is, it tries on a form a small random step away (each number moved by
 //!   a gaussian, the colour wrapped, the rest reflected at their ends: the proposal is symmetric), shows
 //!   it for a moment, then keeps it with probability min(1, liking(new) / liking(old)), or goes back.
@@ -20,8 +20,9 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const D: usize = 8;
-/// colour (wraps), spikes, arms, curl, markings, second colour, glow, temper
+pub const D: usize = 4;
+/// colour (wraps), spikes, arms, glow: what the eye reads first. The creature's other traits (curl,
+/// markings, second colour, temper) follow from these smoothly (creature.rs' `body`).
 pub type Form = [f64; D];
 
 /// The proposal's step, each number: mostly a small one, sometimes (JUMPS of the time) a leap. A
@@ -30,20 +31,20 @@ pub const STEP: f64 = 0.12;
 pub const LEAP: f64 = 0.4;
 pub const JUMPS: f64 = 0.15;
 /// "Near", for the liking: the gaussian's width in the eight numbers.
-pub const NEAR: f64 = 0.2;
+pub const NEAR: f64 = 0.17;
 /// The even prior: a form never seen counts as held this share of the time, worth PRIOR_S seconds.
 pub const PRIOR: f64 = 0.15;
 pub const PRIOR_S: f64 = 0.8;
 
 /// The target is the liking raised to this power: the walk keeps to what was held more firmly than
 /// the bare ratio would (a cooler walk on the same liking).
-pub const SHARP: f64 = 2.5;
+pub const SHARP: f64 = 3.0;
 
 /// The phases of a step, and their seconds.
-pub const REST: f64 = 0.5;
-pub const TRY: f64 = 0.6;
-pub const LOOK: f64 = 0.9;
-pub const BACK: f64 = 0.45;
+pub const REST: f64 = 0.45;
+pub const TRY: f64 = 0.32;
+pub const LOOK: f64 = 0.5;
+pub const BACK: f64 = 0.25;
 /// The reader's eye lags the screen: the form remembered for a moment is the one shown this long ago.
 pub const LAG: f64 = 0.3;
 
@@ -338,7 +339,7 @@ mod tests {
     #[test]
     fn proposals_stay_in_range_and_are_symmetric_in_spread() {
         let mut r = Rng(7);
-        let x = [0.98, 0.01, 0.5, 0.99, 0.5, 0.5, 0.0, 1.0];
+        let x = [0.98, 0.01, 0.99, 0.0];
         for _ in 0..1000 {
             let y = propose(&x, &mut r);
             assert!(y.iter().all(|v| (0.0..=1.0).contains(v)));
@@ -379,7 +380,7 @@ mod tests {
         assert!(m.liking(&a) > 0.8);
         assert!(m.liking(&b) < 0.15);
         // far from both: the prior
-        let c = [0.5, 0.5, 0.0, 1.0, 0.5, 0.5, 0.0, 1.0];
+        let c = [0.5, 0.5, 0.0, 1.0];
         assert!((m.liking(&c) - PRIOR).abs() < 0.05);
     }
 }

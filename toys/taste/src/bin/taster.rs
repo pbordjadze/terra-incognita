@@ -3,7 +3,7 @@
 //!     cargo run -p taste --bin taste-taster --release -- stats
 //!     cargo run -p taste --bin taste-taster --release -- plan <taste> <seconds> <out.json>
 //!
-//! A taste is a favourite in a few of the eight numbers (the rest the reader doesn't mind). The reader
+//! A taste is a favourite in two or three of the four numbers (the rest the reader doesn't mind). The reader
 //! holds a finger on the creature while what they saw a moment ago is close enough to it, and lifts
 //! when it isn't (with a little hysteresis). `stats` plays several tastes and seeds and prints how much
 //! of each minute the creature spent near the taste, against a reader who never touches; `plan` writes
@@ -20,10 +20,10 @@ struct Taste {
 }
 
 const TASTES: &[Taste] = &[
-    Taste { name: "warm-spiky", fav: &[(0, 0.04), (1, 0.85)], width: 0.22 },
-    Taste { name: "blue-jelly", fav: &[(0, 0.58), (6, 0.9), (1, 0.15)], width: 0.22 },
-    Taste { name: "curly-spots", fav: &[(3, 0.95), (4, 0.95)], width: 0.22 },
-    Taste { name: "green-calm", fav: &[(0, 0.33), (7, 0.05), (2, 0.1)], width: 0.22 },
+    Taste { name: "warm-spiky", fav: &[(0, 0.04), (1, 0.85)], width: 0.2 },
+    Taste { name: "blue-jelly", fav: &[(0, 0.58), (3, 0.9), (1, 0.15)], width: 0.22 },
+    Taste { name: "many-matte", fav: &[(2, 0.9), (3, 0.1)], width: 0.2 },
+    Taste { name: "green-calm", fav: &[(0, 0.33), (2, 0.1)], width: 0.2 },
 ];
 
 fn closeness(t: &Taste, f: &Form) -> f64 {
@@ -40,9 +40,9 @@ fn closeness(t: &Taste, f: &Form) -> f64 {
 
 pub const START: Form = taste::START;
 
-/// Plays a reader of taste `t` (None: never touches) for `seconds` at `fps`; returns per-frame
+/// Plays a reader of taste `t` (who touches only when `touch`; the closeness is to `t` either way) for `seconds` at `fps`; returns per-frame
 /// (holding, closeness of the creature's kept form) and the walker.
-fn play(t: Option<&Taste>, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec<f64>, Walker) {
+fn play(t: Option<&Taste>, touch: bool, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec<f64>, Walker) {
     let mut w = Walker::new(seed, START);
     let dt = 1.0 / fps;
     let frames = (seconds * fps).ceil() as usize;
@@ -57,7 +57,7 @@ fn play(t: Option<&Taste>, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec
         if seen.len() > lag {
             seen.pop_front();
         }
-        if let Some(t) = t {
+        if let (Some(t), true) = (t, touch) {
             let c = closeness(t, &seen[0]);
             since += dt;
             // they start after a first look, and a hold or a pause lasts at least 0.6 s
@@ -90,8 +90,8 @@ fn main() {
                 let mut rows = Vec::new();
                 let mut score = 0.0;
                 for seed in 1..=6u64 {
-                    let (_, near, w) = play(Some(t), taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
-                    let (_, near0, _) = play(None, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
+                    let (_, near, w) = play(Some(t), true, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
+                    let (_, near0, _) = play(Some(t), false, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
                     // the share of each minute the kept form is close to the taste (> 0.5)
                     let share = |v: &[f64], a: f64, b: f64| {
                         let s = &v[(a * fps) as usize..(b * fps) as usize];
@@ -119,7 +119,7 @@ fn main() {
             let seconds: f64 = args[3].parse().unwrap();
             let t = TASTES.iter().find(|t| t.name == name).expect("taste");
             let fps = 30.0;
-            let (holds, near, w) = play(Some(t), taste::SEED, seconds, fps);
+            let (holds, near, w) = play(Some(t), true, taste::SEED, seconds, fps);
             let mut events = Vec::new();
             let mut start = None;
             for (f, h) in holds.iter().enumerate() {
