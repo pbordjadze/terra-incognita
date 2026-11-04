@@ -1,0 +1,5 @@
+{
+  "_": "The toy's app (toys/ios/build.sh): its display name and bundle id. Its SideStore entry is in ci/sidestore_apps.json (tag carol-build).",
+  "name": "Carol",
+  "bundleIdentifier": "com.pbordjadze.toy.carol"
+}

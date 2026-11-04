@@ -1,0 +1,10 @@
+{ "_": "The first touch: the pieces drop in, White's first move answers by itself, a right move (tap the piece, then its square), a wrong one bumped back with a red square, a hint, a shown move.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 9, "fps": 30, "audio": true,
+  "events": [
+    { "t": 2.0, "tap": "from" }, { "t": 2.5, "tap": "to" },
+    { "t": 3.8, "tap": "a7" }, { "t": 4.1, "tap": "a5" },
+    { "t": 5.0, "tap": "hint" },
+    { "t": 6.5, "tap": "show" }
+  ],
+  "shots": [{ "t": 0.25, "name": "drop" }, { "t": 1.6, "name": "first" }, { "t": 2.2, "name": "chosen" }, { "t": 2.62, "name": "sliding" }, { "t": 4.2, "name": "wrong" }, { "t": 5.6, "name": "hint" }, { "t": 8.5, "name": "later" }],
+  "film": { "from": 0, "to": 9, "every": 0.1 } }

@@ -99,6 +99,17 @@
       "iconSource": "toys/battle/icon.png",
       "tintColor": "#80225C",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "carol-build",
+      "name": "Carol",
+      "bundleIdentifier": "com.pbordjadze.toy.carol",
+      "subtitle": "Tap a piece, then where it goes",
+      "localizedDescription": "A wooden chess set that knows its lines: tap a piece, then where it goes. The right move slides home with a note and the other side answers; a wrong one bumps back. Twenty-four drills, openings and puzzles, the missed ones coming back first. A toy; offline.",
+      "icon": "carol-icon.png",
+      "iconSource": "toys/carol/icon.png",
+      "tintColor": "#B5824F",
+      "minOSVersion": "17.0"
     }
   ]
 }

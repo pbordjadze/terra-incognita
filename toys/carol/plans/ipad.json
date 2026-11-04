@@ -1,0 +1,4 @@
+{ "_": "The 13-inch iPad, portrait: a puzzle bead tapped, solved.",
+  "size": [2064, 2752], "ppp": 2, "seconds": 5, "fps": 20,
+  "events": [ { "t": 0.8, "tap": "bead12" }, { "t": 2.2, "tap": "from" }, { "t": 2.6, "tap": "to" } ],
+  "shots": [{ "t": 2.0, "name": "puzzle" }, { "t": 3.4, "name": "solved" }] }
