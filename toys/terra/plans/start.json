@@ -1,0 +1,9 @@
+{
+ "_": "First sight: the whole Earth over the Atlantic, its lights alive (the fireflies' cities falling into step, the bell's ring crossing from Chile, the starlings wheeling, the mold's threads reaching), glints now and then; it begins to turn on its own. A tap on the bare sea at 6 s: a ring there, the nearest light glints back.",
+ "seconds": 10,
+ "fps": 20,
+ "events": [{ "t": 6.0, "tap": { "lonlat": [-40.0, 30.0] } }],
+ "shots": [{ "t": 0.6, "name": "first-sight" }, { "t": 2.5, "name": "alive" }, { "t": 6.4, "name": "tap" }, { "t": 9.8, "name": "turning" }],
+ "film": { "from": 0, "to": 10, "every": 0.1 },
+ "audio": true
+}
