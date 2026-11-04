@@ -146,6 +146,20 @@ impl Land {
     /// A place on a hill's shoulder, to begin a night from: the walker is seen to climb.
     pub fn start(&self, r: &mut Rng) -> [f64; 2] {
         let k = (r.f() * self.hills.len() as f64) as usize % self.hills.len().max(1);
+        self.start_on(k, r)
+    }
+
+    /// The hill nearest the screen's middle (the first night's, so the others lie above and below it).
+    pub fn middle_hill(&self) -> usize {
+        let m = [0.5, 0.5 * self.aspect];
+        (0..self.hills.len()).min_by(|&a, &b| {
+            let d = |i: usize| (self.hills[i][0] - m[0]).hypot(self.hills[i][1] - m[1]);
+            d(a).total_cmp(&d(b))
+        }).unwrap_or(0)
+    }
+
+    /// A place on hill `k`'s shoulder.
+    pub fn start_on(&self, k: usize, r: &mut Rng) -> [f64; 2] {
         let c = self.hills.get(k).copied().unwrap_or([0.5, 0.5 * self.aspect]);
         for _ in 0..200 {
             let a = r.range(0.0, std::f64::consts::TAU);

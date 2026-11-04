@@ -16,6 +16,8 @@ use toy_kit::{Ctx, Phase, PointerEvent, Toy};
 pub const PACE: f64 = 120.0;
 /// A night's walk, the dawn coming up, the day held, the dusk (seconds).
 const NIGHT: f64 = 42.0;
+/// The first night, while untouched, is shorter: its dawn comes soon.
+const FIRST_NIGHT: f64 = 27.0;
 /// A night lasts at least this long after the stride last changed (so a new stride has its time), and
 /// never longer than LONGEST.
 const AFTER: f64 = 30.0;
@@ -170,7 +172,7 @@ impl Walk {
         let d = (q[0] - self.lamp[0]).hypot(q[1] - self.lamp[1]);
         self.walker.stride = d.max(MIN_STRIDE);
         if self.walking() {
-            self.length = self.length.max(self.clock() + AFTER).min(LONGEST);
+            self.length = self.length.max(NIGHT).max(self.clock() + AFTER).min(LONGEST);
         }
     }
 }
@@ -180,7 +182,11 @@ impl Toy for Walk {
         let points = ctx.points();
         let aspect = points[1] / points[0].max(1.0);
         let land = Land::new(0x5eed_0001, aspect);
-        let walker = Walker::new(&land, 0xf007 + 31, FIRST_STRIDE);
+        let mut walker = Walker::new(&land, 0xf007 + 31, FIRST_STRIDE);
+        // the first night begins on the middle hill, the others above and below it
+        let mut r = land::Rng::new(0xf1257);
+        walker.at = land.start_on(land.middle_hill(), &mut r);
+        walker.h = land.h(walker.at);
         let ground = Ground::new(ctx, walker.gh);
         let lamp = walker.at;
         Ok(Walk {
@@ -188,7 +194,7 @@ impl Toy for Walk {
             walker,
             night: 1,
             began: 0.0,
-            length: NIGHT,
+            length: FIRST_NIGHT,
             t: 0.0,
             acc: 0.0,
             points,
@@ -335,7 +341,7 @@ impl Toy for Walk {
                 // a try off the edge is shown at the edge, where it left the land
                 let e = 0.006;
                 let q = [p[0].clamp(e, 1.0 - e), p[1].clamp(e, self.land.aspect - e)];
-                self.painter.disc(px(q), 1.6 * pk, 1.0 * pk, [0.80, 0.86, 1.0, 0.42 * a * a * night]);
+                self.painter.disc(px(q), 1.6 * pk, 1.0 * pk, [0.80, 0.86, 1.0, 0.6 * a * a * night]);
             }
         }
         // the latest footprints: warm while fresh, cooling into the map
@@ -362,6 +368,20 @@ impl Toy for Walk {
         }
         let ring_a = (0.28 + 0.30 * self.holding as i32 as f32 + 0.1 * invite) * lit * (1.0 - 0.6 * dawn as f32);
         self.painter.glow_ring(lamp, r.max(2.5 * pk), 0.7 * pk, 0.9 * pk, [1.0, 0.90, 0.70, ring_a]);
+        // standing: the share of the latest tries refused, as a ring stamped round the lantern
+        let recent = self.trail.iter().rev().take(36);
+        let (mut stays, mut all) = (0.0f32, 0.0f32);
+        for &(_, _, went) in recent {
+            all += 1.0;
+            if !went {
+                stays += 1.0;
+            }
+        }
+        let stay = if all > 0.0 { stays / all } else { 0.0 };
+        if stay > 0.3 {
+            let beat = if self.still { 0.5 } else { (self.t * 9.0).sin().abs() as f32 };
+            self.painter.glow_ring(lamp, (5.5 + 1.5 * beat) * pk, 0.8 * pk, 1.0 * pk, [1.0, 0.88, 0.65, 0.5 * (stay - 0.3) / 0.7 * night]);
+        }
         // the lantern
         let sway = if self.still { 0.0 } else { (self.t * 7.3).sin() as f32 * 0.06 };
         self.painter.glow(lamp, lamp, 2.0 * pk, 24.0 * pk, [1.0, 0.78, 0.45, (0.22 + sway * 0.3) * night + 0.05 * lit]);
@@ -502,9 +522,10 @@ fn relief(g: vec2<f32>) -> f32 {
   var ink = mix(vec3<f32>(0.07, 0.09, 0.17), vec3<f32>(0.62, 0.68, 0.82), t * t) * (0.55 + 0.65 * shade);
   let fL = L / CONTOUR;
   let wL = fwidth(fL);
-  let lineN = contour(fL, wL, ppp) * smoothstep(0.04, 0.2, pile);
+  let thick = smoothstep(0.15, 0.5, pile);
+  let lineN = contour(fL, wL, ppp) * thick;
   ink = mix(ink, vec3<f32>(0.80, 0.85, 0.95), 0.45 * lineN);
-  let nightMap = mix(night, ink, seen);
+  let nightMap = mix(night, ink, seen * (0.45 + 0.55 * thick));
   // the land itself, by day
   let hg = land(q);
   let Lt = u.p1.w * (hg.x - u.p2.x);
@@ -518,10 +539,10 @@ fn relief(g: vec2<f32>) -> f32 {
   day = day * (0.96 + 0.08 * grain);
   // by day both sets of contours every second level, at the same heights, so they can be compared
   let fT = Lt / (2.0 * CONTOUR);
-  let lineT = contour(fT, fwidth(fT), 1.6 * ppp);
+  let lineT = contour(fT, fwidth(fT), 1.6 * ppp) * smoothstep(-6.0, -4.2, Lt);
   day = mix(day, vec3<f32>(0.36, 0.24, 0.12), 0.75 * lineT);
   let fD = L / (2.0 * CONTOUR);
-  let lineD = contour(fD, fwidth(fD), ppp) * smoothstep(0.04, 0.2, pile);
+  let lineD = contour(fD, fwidth(fD), ppp) * thick;
   // the night's map stays on the day as ink: its contours, and a cool wash where it walked
   day = mix(day, day * vec3<f32>(0.86, 0.90, 1.0), 0.35 * seen);
   day = mix(day, vec3<f32>(0.10, 0.12, 0.26), 0.7 * lineD);
