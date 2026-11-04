@@ -385,7 +385,7 @@ impl Life {
                     // rings on the sphere about the place: the bell's one, crossing the whole Earth;
                     // the swell's train of crests, slower and close
                     let centre = LonLat::new(d.at[0], d.at[1]).to_xyz();
-                    let (period, reach, crests, width) = if d.id == "bell" { (6.0, 0.9, 2, 2.4) } else { (9.0, 0.7, 3, 2.4) };
+                    let (period, reach, crests, width) = if d.id == "bell" { (5.0, 0.55, 2, 3.0) } else { (9.0, 0.7, 3, 2.4) };
                     for j in 0..crests {
                         let ph = (tm / period - j as f64 * if d.id == "bell" { 0.5 } else { 0.07 }).rem_euclid(1.0);
                         let theta = 0.02 + reach * ph;

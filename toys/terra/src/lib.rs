@@ -321,7 +321,9 @@ impl Terra {
         // a globe toy: down close over the light, where the toy will open (the whales' own framing of the
         // pair, which is already close); a scene of its own: as close over its place as the Earth goes
         let to = match room.camera() {
-            Some(own) if self.life.doors[i].id == "whales" => own,
+            // the toys whose first sight is a whole sea or the whole Earth (the whales' pair, the bell's
+            // ring round the world, the swell's crossing an ocean): down to that, the toy's own view
+            Some(own) if matches!(self.life.doors[i].id, "whales" | "bell" | "swell") => own,
             Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             None => Camera::new(at[0], at[1], 9.0),
         };
@@ -358,11 +360,8 @@ impl Terra {
             return;
         }
         let Some(r) = self.room.as_mut() else { return };
-        // (the dive arrived centred on the light, so a toy that doesn't say where places are is touched
-        // at its disc's centre)
-        let disc = self.globe.disc();
-        let centre = [disc.cx, disc.cy];
-        let at = if d.id == "whales" { r.anchors().first().map(|a| a.1) } else { r.project(d.at).or(Some(centre)) };
+        // (Terra's Earth is at the toy's camera now, so it says where the light is for a toy that doesn't)
+        let at = if d.id == "whales" { r.anchors().first().map(|a| a.1) } else { r.project(d.at).or_else(|| self.globe.point(d.at)) };
         if let Some(p) = at {
             let id = 9_000_000;
             r.pointer(PointerEvent { id, phase: Phase::Down, x: p[0], y: p[1], t });
