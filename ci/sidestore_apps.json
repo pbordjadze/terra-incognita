@@ -155,6 +155,17 @@
       "iconSource": "toys/frost/icon.png",
       "tintColor": "#5F7FA8",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "walk-build",
+      "name": "Night Walk",
+      "bundleIdentifier": "com.pbordjadze.toy.walk",
+      "subtitle": "A walker's footprints map a land no one can see",
+      "localizedDescription": "A walker crosses a land in the dark. Each step it picks a spot at random within its stride: higher ground it always takes, lower only sometimes. Where its footprints pile up, a map rises; at dawn the real land comes up under it. Touch to set how far it steps. Working title; a toy in the making.",
+      "icon": "walk-icon.png",
+      "iconSource": "toys/walk/icon.png",
+      "tintColor": "#E8B86A",
+      "minOSVersion": "17.0"
     }
   ]
 }
