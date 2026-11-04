@@ -358,7 +358,11 @@ impl Terra {
             return;
         }
         let Some(r) = self.room.as_mut() else { return };
-        let at = if d.id == "whales" { r.anchors().first().map(|a| a.1) } else { r.project(d.at) };
+        // (the dive arrived centred on the light, so a toy that doesn't say where places are is touched
+        // at its disc's centre)
+        let disc = self.globe.disc();
+        let centre = [disc.cx, disc.cy];
+        let at = if d.id == "whales" { r.anchors().first().map(|a| a.1) } else { r.project(d.at).or(Some(centre)) };
         if let Some(p) = at {
             let id = 9_000_000;
             r.pointer(PointerEvent { id, phase: Phase::Down, x: p[0], y: p[1], t });
@@ -501,7 +505,7 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-62.0, 32.0, 1.12);
+        globe.camera = Camera::new(-58.0, 18.0, 1.22);
         globe.set_home();
         let mut life = Life::new(assets.as_ref());
         let [w, h] = ctx.points();
@@ -628,7 +632,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: from.zoom.min(1.12), roll: 0.0, ..from };
+                    let to = Camera { zoom: from.zoom.min(1.22), roll: 0.0, ..from };
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
