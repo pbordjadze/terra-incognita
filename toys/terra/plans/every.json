@@ -1,34 +1,48 @@
 {
  "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
- "seconds": 78.0,
+ "seconds": 80.5,
  "fps": 10,
  "events": [
   {
    "t": 0.5,
+   "drag": [
+    [
+     300,
+     430
+    ],
+    [
+     110,
+     430
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 3.0,
    "tap": "battle"
   },
   {
-   "t": 6.5,
+   "t": 9.0,
    "tap": "earth"
   },
   {
-   "t": 10.0,
+   "t": 12.5,
    "tap": "mold"
   },
   {
-   "t": 16.0,
+   "t": 18.5,
    "tap": "earth"
   },
   {
-   "t": 19.5,
+   "t": 22.0,
    "tap": "murmuration"
   },
   {
-   "t": 25.5,
+   "t": 28.0,
    "tap": "earth"
   },
   {
-   "t": 29.0,
+   "t": 31.5,
    "drag": [
     [
      110,
@@ -42,15 +56,15 @@
    "for": 0.8
   },
   {
-   "t": 31.5,
+   "t": 34.0,
    "tap": "fireflies"
   },
   {
-   "t": 37.5,
+   "t": 40.0,
    "tap": "earth"
   },
   {
-   "t": 41.0,
+   "t": 43.5,
    "drag": [
     [
      200,
@@ -64,15 +78,15 @@
    "for": 0.8
   },
   {
-   "t": 43.5,
+   "t": 46.0,
    "tap": "bell"
   },
   {
-   "t": 49.5,
+   "t": 52.0,
    "tap": "earth"
   },
   {
-   "t": 53.0,
+   "t": 55.5,
    "drag": [
     [
      100,
@@ -86,15 +100,15 @@
    "for": 0.8
   },
   {
-   "t": 55.5,
+   "t": 58.0,
    "tap": "whales"
   },
   {
-   "t": 61.5,
+   "t": 64.0,
    "tap": "earth"
   },
   {
-   "t": 65.0,
+   "t": 67.5,
    "drag": [
     [
      110,
@@ -108,41 +122,41 @@
    "for": 0.8
   },
   {
-   "t": 67.5,
+   "t": 70.0,
    "tap": "swell"
   },
   {
-   "t": 73.5,
+   "t": 76.0,
    "tap": "earth"
   }
  ],
  "shots": [
   {
-   "t": 5.0,
+   "t": 7.5,
    "name": "battle"
   },
   {
-   "t": 14.5,
+   "t": 17.0,
    "name": "mold"
   },
   {
-   "t": 24.0,
+   "t": 26.5,
    "name": "murmuration"
   },
   {
-   "t": 36.0,
+   "t": 38.5,
    "name": "fireflies"
   },
   {
-   "t": 48.0,
+   "t": 50.5,
    "name": "bell"
   },
   {
-   "t": 60.0,
+   "t": 62.5,
    "name": "whales"
   },
   {
-   "t": 72.0,
+   "t": 74.5,
    "name": "swell"
   }
  ]

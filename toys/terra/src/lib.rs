@@ -370,7 +370,7 @@ impl Terra {
     }
 
     /// Whether this finger ends a pinch that took a globe toy out past its whole Earth (as the kit's
-    /// hand's own over-pinch would fly it Home, at 0.75 of its least zoom 0.6: here it goes Home to Terra).
+    /// hand's own over-pinch would fly it Home): pinched to below the whole Earth (zoom 0.8), it goes Home to Terra).
     fn pinched_out(&mut self, e: &PointerEvent) -> bool {
         let spread = |f: &std::collections::HashMap<u64, [f64; 2]>| -> Option<f64> {
             let v: Vec<&[f64; 2]> = f.values().collect();
@@ -393,7 +393,7 @@ impl Terra {
             }
             Phase::Up | Phase::Cancel => {
                 let out = match (self.pinch, spread(&self.inside_fingers)) {
-                    (Some((d0, z0)), Some(d)) => e.phase == Phase::Up && z0 * d / d0 < 0.6 * 0.75,
+                    (Some((d0, z0)), Some(d)) => e.phase == Phase::Up && z0 * d / d0 < 0.8,
                     _ => false,
                 };
                 self.inside_fingers.remove(&e.id);
@@ -504,7 +504,7 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-58.0, 18.0, 1.22);
+        globe.camera = Camera::new(-66.0, 20.0, 1.4);
         globe.set_home();
         let mut life = Life::new(assets.as_ref());
         let [w, h] = ctx.points();
@@ -631,7 +631,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: from.zoom.min(1.22), roll: 0.0, ..from };
+                    let to = Camera { zoom: 1.4, roll: 0.0, ..from };
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
