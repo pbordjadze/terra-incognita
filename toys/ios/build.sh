@@ -6,6 +6,8 @@
 # and rustup (`rustup target add aarch64-apple-ios`).
 #
 #     BUILD=<n> bash toys/ios/build.sh <toy> [out-dir]     # <out>/<toy>.ipa; version 1.0.<n>, build <n>
+#     SIM=1 bash toys/ios/build.sh <toy> [out-dir]         # <out>/Payload/<Exec>.app for the iOS Simulator
+#                                                          # (ad-hoc signed; tools/toys/sim_launch.sh runs it)
 set -euo pipefail
 TOY="${1:?usage: build.sh <toy> [out-dir]}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -15,19 +17,25 @@ MIN_IOS=17.0
 meta() { python3 -c "import json,sys; print(json.load(open('$ROOT/toys/$TOY/toy.json'))[sys.argv[1]])" "$1"; }
 NAME="$(meta name)"; BUNDLE="$(meta bundleIdentifier)"
 EXEC="$(echo "$TOY" | python3 -c "import sys; print(sys.stdin.read().strip().title().replace('-', ''))")"
-SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+SIM="${SIM:-0}"
+if [ "$SIM" = 1 ]; then
+  RTARGET=aarch64-apple-ios-sim; SDKNAME=iphonesimulator; STARGET="arm64-apple-ios$MIN_IOS-simulator"
+else
+  RTARGET=aarch64-apple-ios; SDKNAME=iphoneos; STARGET="arm64-apple-ios$MIN_IOS"
+fi
+SDK="$(xcrun --sdk $SDKNAME --show-sdk-path)"
 export SDKROOT="$SDK"
 mkdir -p "$OUT"
 cd "$ROOT/toys"
-echo "== rust: $TOY (aarch64-apple-ios, release)"
-cargo build --release --target aarch64-apple-ios -p "$TOY" --lib
-LIB="target/aarch64-apple-ios/release/lib$(echo "$TOY" | tr - _).a"
+echo "== rust: $TOY ($RTARGET, release)"
+cargo build --release --target $RTARGET -p "$TOY" --lib
+LIB="target/$RTARGET/release/lib$(echo "$TOY" | tr - _).a"
 ls -l "$LIB"
 APP="$OUT/Payload/$EXEC.app"
 rm -rf "$OUT/Payload"
 mkdir -p "$APP/data"
 echo "== swift"
-swiftc -O -target arm64-apple-ios$MIN_IOS -sdk "$SDK" \
+swiftc -O -target $STARGET -sdk "$SDK" \
   -I "$ROOT/toys/ios/Sources" -import-objc-header "$ROOT/toys/ios/Sources/toy.h" \
   -parse-as-library -module-name "$EXEC" \
   "$ROOT/toys/ios/Sources/main.swift" "$LIB" \
@@ -45,6 +53,12 @@ sips -z 180 180 "$ICON" --out "$APP/AppIcon60x60@3x.png" > /dev/null
 sips -z 152 152 "$ICON" --out "$APP/AppIcon76x76@2x.png" > /dev/null
 python3 "$ROOT/tools/toys/assets.py" "$TOY" "$APP/data" > /dev/null
 echo "APPL????" > "$APP/PkgInfo"
+if [ "$SIM" = 1 ]; then
+  # the Simulator runs only signed apps; an ad-hoc signature does
+  codesign --force --sign - "$APP" > /dev/null
+  du -sh "$APP" | cut -f1 | xargs echo "app (simulator):"
+  exit 0
+fi
 rm -f "$OUT/$TOY.ipa"
 (cd "$OUT" && zip -qry "$TOY.ipa" Payload)
 ls -l "$OUT/$TOY.ipa"

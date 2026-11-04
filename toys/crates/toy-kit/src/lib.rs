@@ -69,6 +69,20 @@ pub fn log(line: &str) {
     }
 }
 
+/// A launch step in the device's log, with the memory the app may still take there (iOS's
+/// `os_proc_available_memory`, what the system kills on), so a toy that closes while it starts says
+/// how far it got and how much room was left: the last line in `toy-log.txt` is the step it died in.
+/// A toy may call it between its own heavy steps. Off the device it is a line on stderr only when
+/// `KIT_STEPS=1`.
+pub fn step(what: &str) {
+    #[cfg(target_os = "ios")]
+    log(&format!("launch: {what}; {} MB available", shell::available_mb()));
+    #[cfg(not(target_os = "ios"))]
+    if std::env::var("KIT_STEPS").is_ok_and(|v| v == "1") {
+        eprintln!("toy: launch: {what}");
+    }
+}
+
 /// What a toy is given: the device, its data, the screen, the reader's settings, and a way back to
 /// the shell (a haptic tap).
 pub struct Ctx {
@@ -161,6 +175,7 @@ pub struct Host<T: Toy> {
 
 impl<T: Toy> Host<T> {
     pub fn new(mut ctx: Ctx) -> anyhow::Result<Host<T>> {
+        step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         Ok(Host { ctx, toy, synth, last_t: None })

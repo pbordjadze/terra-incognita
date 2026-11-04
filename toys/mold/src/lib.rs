@@ -170,6 +170,7 @@ impl Toy for Mold {
         let gpu = &ctx.gpu;
         let dev = &gpu.device;
 
+        toy_kit::step("mold: the ground");
         // the ground: food on land (the lights), and the sea
         let gp = decode(&ctx.assets.read("mold-ground.png")?, 4)?;
         anyhow::ensure!(gp.width == W && gp.height == H, "mold-ground.png is {}x{}, not {W}x{H}", gp.width, gp.height);
@@ -217,6 +218,7 @@ impl Toy for Mold {
             agents.push([p[0].to_bits(), p[1].to_bits(), ((rng.next() * std::f64::consts::TAU) as f32).to_bits(), n ^ 0x5bd1e995, i as u32, 0]);
         }
 
+        toy_kit::step("mold: the buffers");
         let init = |label, contents: &[u8], usage| dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some(label), contents, usage });
         let st = wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST;
         let agents_buf = init("agents", bytemuck::cast_slice(&agents), st);
@@ -249,6 +251,7 @@ impl Toy for Mold {
             mapped_at_creation: false,
         });
 
+        toy_kit::step("mold: the simulation's pipelines");
         let cs = wgpu::ShaderStages::COMPUTE;
         let sim_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold sim"),
@@ -294,6 +297,7 @@ impl Toy for Mold {
         };
         let (agents_pipe, diffuse_pipe, feed_pipe, blur_pipe) = (compute("step_agents"), compute("diffuse"), compute("feed"), compute("blur"));
 
+        toy_kit::step("mold: the drawing's pipelines");
         let fs = wgpu::ShaderStages::FRAGMENT;
         let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold draw"),
@@ -354,6 +358,7 @@ impl Toy for Mold {
         });
 
         let night = Night::new(gpu, &globe);
+        toy_kit::step("mold: made");
         Ok(Mold {
             night,
             globe,

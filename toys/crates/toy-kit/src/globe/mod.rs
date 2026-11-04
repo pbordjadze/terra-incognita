@@ -56,7 +56,9 @@ pub struct Globe {
 impl Globe {
     /// The globe over the month `month` (0 = January).
     pub fn new(gpu: &Gpu, assets: &dyn Assets, width: u32, height: u32, ppp: f64, month: u32) -> anyhow::Result<Globe> {
+        crate::step("the globe's textures");
         let textures = Textures::load(gpu, assets, month)?;
+        crate::step("the globe's ground pass");
         let view_layout = view_layout(gpu);
         let ground = ground::GroundPass::new(gpu, &view_layout, &textures);
         let view_buf = gpu.buffer(&wgpu::BufferDescriptor {

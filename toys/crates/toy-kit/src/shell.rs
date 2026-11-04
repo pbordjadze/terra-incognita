@@ -11,7 +11,7 @@ extern "C" {
 }
 
 /// MB the app may still take before it is killed for memory (jetsam).
-fn available_mb() -> usize {
+pub(crate) fn available_mb() -> usize {
     unsafe { os_proc_available_memory() >> 20 }
 }
 
@@ -25,6 +25,9 @@ pub struct Shell<T: Toy> {
     stats_at: f64,
     frames: u32,
     cost: f64,
+    /// Frames drawn since launch (the first few, and a few seconds on, go in the log).
+    drawn: u64,
+    started: Option<f64>,
 }
 
 impl<T: Toy> Shell<T> {
@@ -35,6 +38,7 @@ impl<T: Toy> Shell<T> {
         // second line is missing and the first says how much there was (tools/kit/launch_check.py's
         // budget is checked against these)
         crate::log(&format!("launch: {} MB available to the app", available_mb()));
+        crate::log(&format!("launch: {} {}x{} px at {scale}x", env!("CARGO_PKG_VERSION"), width, height));
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..Default::default() });
         let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
             Ok(s) => s,
@@ -61,11 +65,12 @@ impl<T: Toy> Shell<T> {
             view_formats: vec![],
         };
         surface.configure(&gpu.device, &config);
+        crate::step("the device and the surface");
         let ctx = Ctx::new(gpu, Box::new(DirAssets(assets.into())), width.max(1), height.max(1), scale);
         match Host::<T>::new(ctx) {
             Ok(host) => {
                 crate::log(&format!("launch: the toy started, {} MB still available ({} MB made through the kit)", available_mb(), crate::budget::kit_bytes() >> 20));
-                Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0 })
+                Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0, drawn: 0, started: None })
             }
             Err(e) => {
                 crate::log(&format!("the toy did not start: {e:#}"));
@@ -98,6 +103,13 @@ impl<T: Toy> Shell<T> {
         let view = frame.texture.create_view(&Default::default());
         self.host.draw(&view);
         frame.present();
+        self.drawn += 1;
+        let since = t - *self.started.get_or_insert(t);
+        // the first frames and the first seconds, in the log: a toy that dies after it started says
+        // whether it ever drew, and how its memory went
+        if self.drawn <= 3 || (self.drawn % 60 == 0 && since < 20.0) {
+            crate::step(&format!("frame {} drawn at {since:.1} s", self.drawn));
+        }
         self.frames += 1;
         self.cost += start.elapsed().as_secs_f64();
         // the frame's CPU cost every five seconds, in the device's log
