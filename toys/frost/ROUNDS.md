@@ -1,0 +1,9 @@
+# Frost: rounds
+
+One line a round: what changed, and the clock of each loop step (ET).
+
+- Round 1 (Nov 4, 2026): Reiter's hexagonal automaton on GPU compute, up to eight crystals growing at once, each in its own 384² hex grid at its own lattice angle; a shared pane mask makes one crystal's ice a sink for another's (seams); finished crystals stay in a pane field. Touch starts a crystal (a drag one every 56 pt; on ice the fingertip melts a hole first); humidity rises down the glass, plates high, ferns low; the frame's lower corner frosts by itself at 0.6 s. Crackle and haptic ticks by cells frozen. Plans start, drag, meet, melt, ipad, info, rules.
+- Round 2 (Nov 4): critic 1 "ok": fixed-size floating snowflakes, overlaps, not a window. Unlimited growth (512² grids) until tips meet ice or the frame, a claim two cells round the ice (seams), frost creeping from the frame, a wooden frame and crossbar, a wet melt edge, lower γ (no plaster in-fill).
+- Round 3 (Nov 4): critic 2 "ten seconds of neat, then ok": the glass went white and a touch only stamped a star. The warm finger melts, wider as it rests; lifted, frost regrows from the melt's edges; slower frame seeding; the help marks' corner kept clear.
+- Round 4 (Nov 4): critic 3 "ok": the melt barely showed (a one-point probe misread fern gaps as clear glass) and taps spawned clip-art stars. The finger only melts; the wet print freezes again from its rim (on clear glass too); the frame frosts the whole glass in ~20 s with many small grains; seams three cells wide; a dark melt with a bright wet rim; regrowth seeded at the melt's very edge.
+- Round 5 (Nov 4): critic 4 "close to neat for 20 s; the melt a black eraser": a brighter moonlit night shows through the melt under a thin film and a bright water line; regrowth within 0.05 s; young ice brighter. Critic 5: "a good ok": the refreeze makes stars inside the melt instead of fronts from its edge (HANDOFF.md, first).

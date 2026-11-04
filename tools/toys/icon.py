@@ -217,7 +217,53 @@ def jam():
     glow(img, reds, 16, (255, 40, 25, 230), 22)
     return img
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam}
+
+
+def frost():
+    """One ice flower grown by the toy's own rule (tools/toys/frost/reiter.py), white on the night glass."""
+    import numpy as np
+    sys.path.insert(0, str(ROOT / 'tools/toys/frost'))
+    import reiter
+    n = 241
+    s = np.full((n, n), 0.55)
+    c = n // 2
+    s[c, c] = 1.0
+    q, r = np.meshgrid(np.arange(n) - c, np.arange(n) - c, indexing='ij')
+    dist = (abs(q) + abs(r) + abs(q + r)) / 2
+    g = 0.005 * (1 + 0.4 * np.random.default_rng(5).uniform(-1, 1, (n, n)))
+    while dist[s >= 1].max() < 105:
+        fr = s >= 1
+        rec = fr.copy()
+        for m in reiter.nbrs(fr):
+            rec |= m
+        u = np.where(rec, 0, s)
+        v = np.where(rec, s + g, 0)
+        u = u + 0.5 * (sum(reiter.nbrs(u)) / 6 - u)
+        s = u + v
+        s[dist >= c - 1] = 0.55
+    img = Image.new('RGBA', (N, N))
+    d = ImageDraw.Draw(img)
+    for y in range(N):
+        k = y / N
+        d.line([(0, y), (N, y)], fill=(int(4 + 14 * k), int(8 + 20 * k), int(26 + 40 * k), 255))
+    ys, xs = np.mgrid[0:N, 0:N]
+    sc = N / 236
+    X, Y = (xs - N / 2) / sc, (ys - N / 2) / sc
+    a = 0.26
+    X, Y = X * math.cos(a) + Y * math.sin(a), -X * math.sin(a) + Y * math.cos(a)
+    rr = Y / (math.sqrt(3) / 2)
+    qq = X - rr / 2
+    v = s[np.clip(np.round(qq).astype(int) + c, 0, n - 1), np.clip(np.round(rr).astype(int) + c, 0, n - 1)]
+    age = np.clip(np.log1p(np.maximum(v - 1, 0) * 30) / 3, 0, 1)
+    cover = (v >= 1).astype(float)
+    col = np.stack([0.66 + 0.27 * age, 0.78 + 0.17 * age, 0.93 + 0.05 * age], -1) * 255
+    alpha = cover * (0.6 + 0.37 * age)
+    ice = Image.fromarray(np.dstack([col, alpha[..., None] * 255]).astype(np.uint8), 'RGBA').filter(ImageFilter.GaussianBlur(1.2))
+    img.alpha_composite(ice)
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
