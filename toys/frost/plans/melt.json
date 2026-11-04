@@ -1,0 +1,32 @@
+{
+ "_": "A touch on ice: the fingertip's warmth melts a hole, and a new crystal grows in it at its own angle.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 8,
+ "fps": 30,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": [
+    196,
+    520
+   ]
+  },
+  {
+   "t": 4.0,
+   "tap": [
+    210,
+    530
+   ]
+  }
+ ],
+ "shots": [
+  3.9,
+  4.2,
+  5.0,
+  8.0
+ ]
+}

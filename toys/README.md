@@ -13,6 +13,7 @@ the owner's to decide):
 | Bell: strike the Earth and it rings in its own measured free oscillations | `bell/` | `com.pbordjadze.toy.bell` | `bell-build-<n>` |
 | Swell: waves on the real sea, at the speed its depth gives them | `swell/` | `com.pbordjadze.toy.swell` | `swell-build-<n>` |
 | Carol: a toy chess trainer; tap a piece, then where it goes (row 215) | `carol/` | `com.pbordjadze.toy.carol` | `carol-build-<n>` |
+| Frost: ice flowers on a cabin window at Oymyakon; touch the glass (row 218) | `frost/` | `com.pbordjadze.toy.frost` | `frost-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
 

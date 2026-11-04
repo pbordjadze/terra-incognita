@@ -1,0 +1,31 @@
+{
+ "_": "Two crystals started close: they meet along a seam (neither can take the other's water).",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 7,
+ "fps": 30,
+ "events": [
+  {
+   "t": 1.0,
+   "tap": [
+    130,
+    420
+   ]
+  },
+  {
+   "t": 1.3,
+   "tap": [
+    270,
+    470
+   ]
+  }
+ ],
+ "shots": [
+  1.8,
+  3.0,
+  7.0
+ ]
+}
