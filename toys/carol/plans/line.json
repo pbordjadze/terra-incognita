@@ -1,0 +1,86 @@
+{
+ "_": "A whole line played right, taps and drags: the frame gilds, the confetti, and the mix brings the next drill.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 16.5,
+ "fps": 30,
+ "events": [
+  {
+   "t": 1.8,
+   "tap": "from"
+  },
+  {
+   "t": 2.15,
+   "tap": "to"
+  },
+  {
+   "t": 3.4000000000000004,
+   "drag": [
+    "from",
+    "to"
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 5.0,
+   "tap": "from"
+  },
+  {
+   "t": 5.35,
+   "tap": "to"
+  },
+  {
+   "t": 6.6,
+   "drag": [
+    "from",
+    "to"
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 8.2,
+   "tap": "from"
+  },
+  {
+   "t": 8.549999999999999,
+   "tap": "to"
+  },
+  {
+   "t": 9.799999999999999,
+   "drag": [
+    "from",
+    "to"
+   ],
+   "for": 0.45
+  },
+  {
+   "t": 11.399999999999999,
+   "tap": "from"
+  },
+  {
+   "t": 11.749999999999998,
+   "tap": "to"
+  }
+ ],
+ "shots": [
+  {
+   "t": 4.15,
+   "name": "dragging"
+  },
+  {
+   "t": 12.099999999999998,
+   "name": "done"
+  },
+  {
+   "t": 12.699999999999998,
+   "name": "confetti"
+  },
+  {
+   "t": 16.2,
+   "name": "next"
+  }
+ ]
+}

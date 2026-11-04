@@ -146,34 +146,30 @@ def battle():
 
 
 def carol():
-    """A cream knight lifted off a wooden board's corner, on the slate table (the toy's own pieces)."""
+    """One cream knight, large and centred, on a warm wood ground (the toy's own pieces)."""
     img = Image.new('RGBA', (N, N))
     d = ImageDraw.Draw(img)
+    rnd = random.Random(7)
     for y in range(N):
         k = y / N
-        d.line([(0, y), (N, y)], fill=(int(51 - 23 * k), int(69 - 31 * k), int(87 - 36 * k), 255))
-    q = 256
-    for r in range(3):
-        for c in range(3):
-            light = (r + c) % 2 == 0
-            x0, y0 = 512 - 1.5 * q + c * q + 40, 512 - 1.5 * q + r * q + 130
-            d.rectangle([x0, y0, x0 + q, y0 + q], fill=(242, 219, 176, 255) if light else (181, 130, 79, 255))
+        g = 1 + 0.03 * math.sin(y / 9 + rnd.random() * 0.3)
+        d.line([(0, y), (N, y)], fill=(int((196 - 40 * k) * g), int((140 - 32 * k) * g), int((86 - 22 * k) * g), 255))
     atlas = Image.open(ROOT / 'toys/carol/data/pieces.png')
-    cell = atlas.crop((4 * 160, 0, 5 * 160, 160)).resize((720, 720), Image.LANCZOS)
-    sil, rim, shadow, _ = cell.split()
+    cell = atlas.crop((4 * 160, 0, 5 * 160, 160)).resize((900, 900), Image.LANCZOS)
+    sil, rim = cell.split()[0], cell.split()[1]
+    at = (62, 92)
     pad = Image.new('L', (N, N), 0)
-    pad.paste(sil, (180, 200))
-    sh = Image.new('RGBA', (N, N), (10, 12, 18, 255))
-    sh.putalpha(pad.filter(ImageFilter.GaussianBlur(26)).point(lambda v: int(v * 0.5)))
+    pad.paste(sil, (at[0] + 14, at[1] + 34))
+    sh = Image.new('RGBA', (N, N), (40, 22, 10, 255))
+    sh.putalpha(pad.filter(ImageFilter.GaussianBlur(24)).point(lambda v: int(v * 0.55)))
     img.alpha_composite(sh)
-    body = Image.new('RGBA', (720, 720), (252, 242, 222, 255))
+    body = Image.new('RGBA', (900, 900), (253, 244, 226, 255))
     body.putalpha(sil)
-    img.alpha_composite(body, (150, 110))
-    ink = Image.new('RGBA', (720, 720), (60, 43, 33, 255))
-    ink.putalpha(rim.point(lambda v: int(v * 0.9)))
-    img.alpha_composite(ink, (150, 110))
+    img.alpha_composite(body, at)
+    ink = Image.new('RGBA', (900, 900), (66, 44, 30, 255))
+    ink.putalpha(rim.point(lambda v: int(v * 0.85)))
+    img.alpha_composite(ink, at)
     return img
-
 
 DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol}
 

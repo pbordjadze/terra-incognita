@@ -85,6 +85,8 @@ struct Layout {
     hint_x: f64,
     show_x: f64,
     button_r: f64,
+    /// The controls' scale: 1 on a phone, larger on an iPad (a reading scale, as Terra's).
+    ui: f64,
 }
 
 pub struct Carol {
@@ -121,25 +123,32 @@ pub struct Carol {
 impl Carol {
     fn layout(&self, points: [f64; 2]) -> Layout {
         let [w, h] = points;
-        let s = (w - 28.0).min(h - 250.0).min(640.0).max(200.0);
+        let ui = (w.min(h) / 390.0).clamp(1.0, 1.5);
+        // the group (beads, board, buttons) centred in the safe area (a status bar above, the home
+        // indicator below)
+        let (top, bottom) = (54.0, 30.0);
+        let above = 44.0 * ui;
+        let below = 24.0 * ui + 2.0 * 30.0 * ui;
+        let s = (w - 28.0).min(h - top - bottom - above - below - 24.0).min(820.0).max(200.0);
         let x0 = (w - s) / 2.0;
-        let cy = h * 0.47;
-        let y0 = cy - s / 2.0;
-        let span = (s + 8.0).min(w - 40.0);
-        let units = (self.drills.len() + 1) as f64; // a unit's gap between groups (two gaps, minus the end)
-        let beads_dx = span / units;
-        let beads_x0 = (w - span) / 2.0 + beads_dx / 2.0;
-        let button_r = 25.0;
+        let y0 = top + ((h - top - bottom) - (above + s + below)) / 2.0 + above;
+        let span = (s - 8.0).min(w - 40.0);
+        let gaps = self.drills.windows(2).filter(|p| p[0].group != p[1].group).count();
+        let slots = (self.drills.len() + gaps).max(2) as f64;
+        let beads_dx = span / (slots - 1.0);
+        let beads_x0 = (w - span) / 2.0;
+        let button_r = 30.0 * ui;
         Layout {
+            ui,
             x0,
             y0,
             s,
-            beads_y: y0 - 40.0,
+            beads_y: y0 - 30.0 * ui,
             beads_x0,
             beads_dx,
-            buttons_y: y0 + s + 62.0,
-            hint_x: w / 2.0 - 46.0,
-            show_x: w / 2.0 + 46.0,
+            buttons_y: y0 + s + 24.0 * ui + button_r,
+            hint_x: w / 2.0 - 58.0 * ui,
+            show_x: w / 2.0 + 58.0 * ui,
             button_r,
         }
     }
@@ -468,7 +477,7 @@ impl Toy for Carol {
                     }
                 }
                 // the beads
-                if (p[1] - l.beads_y).abs() < 22.0 {
+                if (p[1] - l.beads_y).abs() < 22.0 * l.ui {
                     let near = (0..self.drills.len()).map(|i| (i, dist(p, self.bead_pos(&l, i)))).min_by(|a, b| a.1.total_cmp(&b.1));
                     if let Some((i, d)) = near {
                         if d < l.beads_dx.max(14.0) {
@@ -667,10 +676,11 @@ impl Toy for Carol {
         inst.extend(top);
         self.pieces.render(gpu, &mut enc, target, size, &inst);
 
+        let ku = k * l.ui as f32;
         // over the pieces: the beads, the buttons, the misses, ripples, sparks
         for i in 0..self.drills.len() {
             let c = px(self.bead_pos(&l, i));
-            let r = 4.6 * k;
+            let r = 5.2 * ku;
             let col = match self.drills[i].group.as_str() {
                 "black" => [0.17, 0.15, 0.16, 1.0],
                 "white" => [0.99, 0.96, 0.90, 1.0],
@@ -678,21 +688,21 @@ impl Toy for Carol {
             };
             let st = self.stats[i];
             if i == self.current {
-                self.painter.ring(c, r + 4.0 * k, 1.6 * k, 0.8 * k, [0.99, 0.96, 0.90, 0.9]);
+                self.painter.ring(c, r + 4.0 * ku, 1.6 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.9]);
             }
             if st.done == 0 {
-                self.painter.ring(c, r - 0.9 * k, 1.8 * k, 0.6 * k, col);
+                self.painter.ring(c, r - 0.9 * ku, 1.8 * ku, 0.6 * ku, col);
                 if self.drills[i].group == "black" {
-                    self.painter.ring(c, r + 0.4 * k, 0.8 * k, 0.6 * k, [0.99, 0.96, 0.90, 0.35]);
+                    self.painter.ring(c, r + 0.4 * ku, 0.8 * ku, 0.6 * ku, [0.99, 0.96, 0.90, 0.35]);
                 }
             } else {
                 if self.drills[i].group == "black" {
-                    self.painter.disc(c, r + 0.9 * k, 0.6 * k, [0.99, 0.96, 0.90, 0.35]);
+                    self.painter.disc(c, r + 0.9 * ku, 0.6 * ku, [0.99, 0.96, 0.90, 0.35]);
                 }
-                self.painter.disc(c, r, 0.7 * k, col);
+                self.painter.disc(c, r, 0.7 * ku, col);
                 if st.last > 0 {
-                    let d = [c[0], c[1] + r + 5.0 * k];
-                    self.painter.disc(d, 1.9 * k, 0.6 * k, [0.93, 0.36, 0.30, 1.0]);
+                    let d = [c[0], c[1] + r + 5.0 * ku];
+                    self.painter.disc(d, 1.9 * ku, 0.6 * ku, [0.93, 0.36, 0.30, 1.0]);
                 }
             }
         }
@@ -706,39 +716,39 @@ impl Toy for Carol {
             } as f32;
             let r = (l.button_r as f32) * k * (1.0 - 0.08 * press);
             let a = if live { 1.0 } else { 0.4 };
-            self.painter.disc([c[0], c[1] + 3.0 * k], r, 5.0 * k, [0.0, 0.0, 0.0, 0.25 * a]);
-            self.painter.disc(c, r, 0.8 * k, [0.99, 0.96, 0.90, 0.10 + 0.08 * a + 0.2 * press]);
-            self.painter.ring(c, r, 1.5 * k, 0.8 * k, [0.99, 0.96, 0.90, 0.55 * a]);
+            self.painter.disc([c[0], c[1] + 3.0 * ku], r, 5.0 * ku, [0.0, 0.0, 0.0, 0.25 * a]);
+            self.painter.disc(c, r, 0.8 * ku, [0.99, 0.96, 0.90, 0.10 + 0.08 * a + 0.2 * press]);
+            self.painter.ring(c, r, 1.5 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.55 * a]);
             let ink = [0.99, 0.94, 0.80, a];
             if kind == 0 {
                 // a bulb: a round glass, two lines of its screw
-                let g = [c[0], c[1] - 3.5 * k];
-                self.painter.ring(g, 7.0 * k, 2.2 * k, 0.7 * k, ink);
-                self.painter.line([c[0] - 3.5 * k, c[1] + 7.0 * k], [c[0] + 3.5 * k, c[1] + 7.0 * k], 1.2 * k, 0.6 * k, ink);
-                self.painter.line([c[0] - 2.5 * k, c[1] + 10.5 * k], [c[0] + 2.5 * k, c[1] + 10.5 * k], 1.2 * k, 0.6 * k, ink);
+                let g = [c[0], c[1] - 3.5 * ku];
+                self.painter.ring(g, 7.0 * ku, 2.2 * ku, 0.7 * ku, ink);
+                self.painter.line([c[0] - 3.5 * ku, c[1] + 7.0 * ku], [c[0] + 3.5 * ku, c[1] + 7.0 * ku], 1.2 * ku, 0.6 * ku, ink);
+                self.painter.line([c[0] - 2.5 * ku, c[1] + 10.5 * ku], [c[0] + 2.5 * ku, c[1] + 10.5 * ku], 1.2 * ku, 0.6 * ku, ink);
                 if self.hint_at.is_some() && live {
-                    self.painter.glow(g, g, 6.0 * k, 6.0 * k, [1.0, 0.8, 0.3, 0.8]);
+                    self.painter.glow(g, g, 6.0 * ku, 6.0 * ku, [1.0, 0.8, 0.3, 0.8]);
                 }
             } else {
                 // a play mark: a triangle, filled by strokes
-                let (x0, x1, h) = (c[0] - 5.0 * k, c[0] + 8.0 * k, 8.5 * k);
+                let (x0, x1, h) = (c[0] - 5.0 * ku, c[0] + 8.0 * ku, 8.5 * ku);
                 for j in 0..6 {
                     let u = j as f32 / 5.0;
                     let y = c[1] - h * (1.0 - u) + 0.0;
                     let y2 = c[1] + h * (1.0 - u);
                     let x = x0 + (x1 - x0) * u * 0.92;
-                    self.painter.line([x, y], [x, y2], 1.6 * k, 0.6 * k, ink);
+                    self.painter.line([x, y], [x, y2], 1.6 * ku, 0.6 * ku, ink);
                 }
-                self.painter.line([x0, c[1] - h], [x1, c[1]], 1.4 * k, 0.6 * k, ink);
-                self.painter.line([x0, c[1] + h], [x1, c[1]], 1.4 * k, 0.6 * k, ink);
+                self.painter.line([x0, c[1] - h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
+                self.painter.line([x0, c[1] + h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
             }
         }
         // the misses so far: red pips between the buttons
-        let n = self.misses.min(9) as usize;
+        let n = self.misses.min(6) as usize;
         for i in 0..n {
-            let x = l.show_x.min(l.hint_x) + (l.show_x - l.hint_x).abs() / 2.0 + (i as f64 - (n as f64 - 1.0) / 2.0) * 9.0;
-            let c = px([x, l.buttons_y + l.button_r + 18.0]);
-            self.painter.disc(c, 3.0 * k, 0.7 * k, [0.93, 0.36, 0.30, 1.0]);
+            let x = l.show_x.min(l.hint_x) + (l.show_x - l.hint_x).abs() / 2.0 + (i as f64 - (n as f64 - 1.0) / 2.0) * 8.0 * l.ui;
+            let c = px([x, l.buttons_y]);
+            self.painter.disc(c, 3.0 * ku, 0.7 * ku, [0.93, 0.36, 0.30, 1.0]);
         }
         for r in &self.ripples {
             let u = ((t - r.born) / 0.6) as f32;
