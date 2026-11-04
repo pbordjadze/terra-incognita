@@ -709,6 +709,7 @@ impl Toy for Carol {
         // the buttons: a bulb (the hint) and a play mark (show it)
         let live = self.turn == Turn::Yours;
         for (kind, x) in [(0u8, l.hint_x), (1u8, l.show_x)] {
+            let ku = ku * 1.2;
             let c = px([x, l.buttons_y]);
             let press = match self.pressed {
                 Some((p, at)) if p == kind && t - at < 0.25 => 1.0 - (t - at) / 0.25,
