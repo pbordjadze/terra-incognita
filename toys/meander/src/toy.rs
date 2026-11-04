@@ -61,15 +61,20 @@ fn vnoise(p: vec2<f32>) -> f32 {
   let d = select(-2.0e9, dg.x / max(dg.y, 1e-3), dg.y > 0.02);
   let age = u.now - d;
   if (dg.y > 0.02 && age >= 0.0) {
-    let bands = 0.5 + 0.5 * sin(d * 0.9);             // the scroll bars: a low ridge every few years
-    let grain = vnoise(world / 40.0) * 0.6 + vnoise(world / 12.0) * 0.4;
-    let sand = vec3(0.74, 0.67, 0.53) * (0.95 + 0.07 * grain);
-    let cane = mix(c, vec3(0.36, 0.44, 0.27), 0.55) * (0.9 + 0.18 * grain);
-    var g = mix(sand, cane, smoothstep(3.0, 22.0, age + grain * 8.0));
-    let back = smoothstep(18.0, 90.0, age + grain * 18.0);
-    let ridge = c * (1.0 + 0.12 * (bands - 0.5) * (1.0 - smoothstep(120.0, 450.0, age)));
-    g = mix(g, ridge, back);
-    c = mix(c, g, near);
+    // where the river has been, its old banks: a thin pale arc every ten years (lines of equal age,
+    // the scroll bars a growing bend leaves on its inside), fading as the forest closes over them;
+    // a narrow fringe of bare sand at the newest
+    let per = 10.0;
+    let ph = d / per;
+    let fw = max(fwidth(ph), 1e-4);
+    let line = smoothstep(0.0, 1.6 * fw + 0.04, abs(fract(ph) - 0.5) * 2.0 - (1.0 - 2.4 * fw));
+    let grain = vnoise(world / 30.0);
+    let fade = 1.0 - smoothstep(60.0, 320.0, age + grain * 30.0);
+    let arc = clamp(line, 0.0, 1.0) * fade * near * 0.55;
+    c = mix(c, vec3(0.78, 0.80, 0.62), arc);
+    let sand = (1.0 - smoothstep(1.0, 6.0, age)) * near;
+    c = mix(c, vec3(0.80, 0.72, 0.56), sand * 0.85);
+    c = c * (1.0 + 0.06 * near * fade);
   }
   return vec4<f32>(c, 1.0);
 }
@@ -217,7 +222,7 @@ fn smooth01(e0: f64, e1: f64, x: f64) -> f32 {
 
 const WATER: [f32; 3] = [0.76, 0.63, 0.47]; // the Beni's café-au-lait: white water, full of the Andes
 const BANK: [f32; 3] = [0.88, 0.81, 0.66];
-const LAKE: [f32; 3] = [0.15, 0.22, 0.22]; // the photograph's own oxbow lakes, sampled // a cut-off loop, cleared: black water
+const LAKE: [f32; 3] = [0.14, 0.18, 0.27]; // the photograph's own oxbow lakes, sampled // a cut-off loop, cleared: black water
 const MARSH: [f32; 3] = [0.22, 0.30, 0.19];
 
 impl Toy for Meander {
