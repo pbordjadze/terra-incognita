@@ -596,3 +596,5 @@ impl Toy for Meander {
     }
 }
 
+
+toy_kit::ios_shell!(Meander);
