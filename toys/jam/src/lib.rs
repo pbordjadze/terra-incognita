@@ -201,8 +201,8 @@ impl Toy for Jam {
         let half = CAR / 2.0;
 
         // the past, inside the ring: each car's track drawn inward as it ages (the paper's
-        // time-space diagram wrapped round), red where its brake lights were on; the cars' tracks wind
-        // forward, and a jam shows as a red arm winding backward against them
+        // time-space diagram wrapped round), with a red glow where its brake lights were on; the cars'
+        // tracks wind forward, and a jam shows as one red arm winding backward against them
         let r_in = RADIUS - ROAD - 1.6;
         let r_min = 6.0;
         let inward = (r_in - r_min) / PAST;
@@ -221,10 +221,14 @@ impl Toy for Jam {
                 let red = 0.5 * (a[i].1 + b[i].1);
                 let p = polar(a[i].0, age);
                 let q = polar(b[i].0, age + SAMPLE);
-                if red > 0.15 {
-                    self.painter.glow(p, q, 0.20 * m, 0.30 * m, [1.0, 0.10, 0.06, 0.75 * red * fade]);
-                } else {
-                    self.painter.glow(p, q, 0.07 * m, 0.10 * m, [0.70, 0.78, 0.95, 0.10 * fade]);
+                // each car's own track, faint, winding forward
+                self.painter.glow(p, q, 0.07 * m, 0.10 * m, [0.70, 0.78, 0.95, 0.10 * fade]);
+                // the brake light's red, a soft wide blob, so the red of many cars over time merges
+                // into one arm (the jam), not into each car's track
+                if red > 0.15 && j % 2 == 0 {
+                    // spread along the ring by about a car's spacing, so neighbours merge
+                    let (u, v) = (polar(a[i].0 - 2.8, age), polar(a[i].0 + 2.8, age));
+                    self.painter.glow(u, v, 0.7 * m, 1.4 * m, [1.0, 0.09, 0.05, 0.12 * red * fade]);
                 }
             }
         }

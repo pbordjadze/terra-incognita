@@ -297,3 +297,30 @@ mod probe {
         }
     }
 }
+
+#[cfg(test)]
+mod probe_late {
+    use super::*;
+    /// `cargo test -p jam --release probe_late -- --ignored --nocapture`: two minutes untouched, then
+    /// one tap; how many stand 10, 30 and 60 s on.
+    #[test]
+    #[ignore]
+    fn probe_late() {
+        for seed in [1u64, 2, 3, 4, 5, 0x5eed_2008] {
+            for car in [0usize, 5, 11, 17] {
+                let mut r = Ring::new(seed);
+                r.step(120.0);
+                r.tap(car);
+                let mut at = Vec::new();
+                for s in 0..60 {
+                    r.step(1.0);
+                    if s == 9 || s == 29 || s == 59 {
+                        at.push(r.stopped());
+                    }
+                }
+                print!("{at:?} ");
+            }
+            println!(" seed {seed}");
+        }
+    }
+}

@@ -44,7 +44,7 @@ is a photograph or a recording.
   so they read on a phone), headlights, brake lights (lit while a car brakes harder than 1.8 m/s² or
   stands), a touch's ring, and, until the first touch, a soft halo breathing round one car.
 - Inside the ring, the last 40 seconds: each car's position every 0.2 s drawn at a radius that shrinks
-  with its age, red where its brake lights were on. It is the paper's own kind of figure (its figure 4,
+  with its age (a faint line), and a soft red glow, spread along the ring by a car's spacing, where its brake lights were on. It is the paper's own kind of figure (its figure 4,
   each car's position against time) wrapped round the ring: the cars' tracks wind forward, a jam's red
   arm winds backward.
 - The sound: each car an engine buzz whose pitch follows its speed and grows louder as it pulls away,
