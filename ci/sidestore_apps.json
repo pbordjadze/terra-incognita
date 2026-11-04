@@ -110,6 +110,17 @@
       "iconSource": "toys/carol/icon.png",
       "tintColor": "#B5824F",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "meander-build",
+      "name": "Meander",
+      "bundleIdentifier": "com.pbordjadze.toy.meander",
+      "subtitle": "Draw a river and watch it wander",
+      "localizedDescription": "The Rio Beni's real floodplain in Bolivia. Draw a river with your finger: its bends grow and drift, and when a loop's neck closes the river cuts through and leaves an oxbow lake, the same shape as the real ones beneath. Working title; a toy in the making.",
+      "icon": "meander-icon.png",
+      "iconSource": "toys/meander/icon.png",
+      "tintColor": "#C2A178",
+      "minOSVersion": "17.0"
     }
   ]
 }

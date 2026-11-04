@@ -171,7 +171,29 @@ def carol():
     img.alpha_composite(ink, at)
     return img
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol}
+def meander():
+    """A café-au-lait river swinging down a dark forest, a black-water oxbow beside its bend (the toy's own colours)."""
+    img = Image.new('RGBA', (N, N), (34, 64, 44, 255))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(3)
+    for _ in range(2600):  # the canopy's grain
+        x, y, r = rnd.uniform(0, N), rnd.uniform(0, N), rnd.uniform(4, 14)
+        g = rnd.uniform(-12, 12)
+        d.ellipse([x - r, y - r, x + r, y + r], fill=(int(34 + g), int(66 + g), int(46 + g * 0.6), 255))
+    river = [(N * 0.5 + 300 * math.sin(t * 2.2 + 0.4) * (0.6 + 0.4 * math.sin(t * 1.3)), -40 + t / math.tau * (N + 80)) for t in [i / 400 * math.tau for i in range(401)]]
+    ox = [(N * 0.17 + 110 * math.cos(a), N * 0.45 + 140 * math.sin(a)) for a in [math.pi * (0.25 + 1.5 * i / 80) for i in range(81)]]
+    def tube(pts, r, col):
+        for i in range(len(pts) - 1):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            for k in range(6):
+                x, y = x0 + (x1 - x0) * k / 6, y0 + (y1 - y0) * k / 6
+                d.ellipse([x - r, y - r, x + r, y + r], fill=col)
+    tube(ox, 22, (38, 38, 58, 255))
+    tube(river, 59, (224, 207, 168, 255))
+    tube(river, 46, (194, 161, 120, 255))
+    return img
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
