@@ -932,6 +932,25 @@ impl Toy for Battle {
         Ok(b)
     }
 
+    fn demo(&self, ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // an order drawn from Carthage's ranks toward Rome's: the men in its reach ride the line
+        let centre = |side: u8| {
+            let (mut x, mut y, mut n) = (0.0f32, 0.0f32, 0.0f32);
+            for u in self.sim.units.iter().filter(|u| u.state == FORMED && KINDS[u.kind as usize].side == side) {
+                (x, y, n) = (x + u.x, y + u.y, n + 1.0);
+            }
+            (n > 0.0).then(|| [x / n, y / n])
+        };
+        let (s, o) = self.view(ctx);
+        let screen = |w: [f32; 2]| [((w[0] * s + o[0]) / ctx.ppp as f32) as f64, ((w[1] * s + o[1]) / ctx.ppp as f32) as f64];
+        let [wp, hp] = ctx.points();
+        let (a, b) = match (centre(1), centre(0)) {
+            (Some(c), Some(r)) => (screen(c), screen([c[0] + (r[0] - c[0]) * 0.6, c[1] + (r[1] - c[1]) * 0.6])),
+            _ => ([wp * 0.35, hp * 0.6], [wp * 0.6, hp * 0.45]),
+        };
+        Some(toy_kit::info::Demo::new("Cannae, 216 BC. Draw a line: an order for Carthage.", vec![toy_kit::info::Stroke::drag(0.4, 1.6, a, b)]))
+    }
+
     fn resize(&mut self, ctx: &mut Ctx) {
         self.ink_tex = Self::ink_target(ctx);
         self.page_bind = Self::page_bind(ctx, &self.page_layout, &self.ground_tex, &self.ink_tex, &self.stain_tex, &self.dens_tex, &self.sampler);

@@ -590,7 +590,7 @@ impl<T: Toy> Run<T> {
                         let mut p = [[0.0; 2]; 9];
                         for (s, place) in events[it.ev].places.slots().iter().enumerate() {
                             if let Some(place) = place {
-                                p[s] = resolve(place, || self.host.toy.anchors(), |ll| self.host.toy.project(ll))
+                                p[s] = resolve(place, || self.host.anchors(), |ll| self.host.toy.project(ll))
                                     .map_err(|e| anyhow::anyhow!("event at t={}: {e}", events[it.ev].t))?;
                             }
                         }

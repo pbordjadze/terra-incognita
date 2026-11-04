@@ -79,6 +79,7 @@ impl Gpu {
                 l.max_texture_dimension_2d
             ));
             device.on_uncaptured_error(Box::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
+            device.set_device_lost_callback(|reason, msg| crate::log(&format!("gpu: the device was lost ({reason:?}): {msg}")));
         } else {
             // the headless check: an error the device would only log is fatal here, so the check fails
             device.on_uncaptured_error(Box::new(|e: wgpu::Error| {

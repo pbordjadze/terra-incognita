@@ -20,6 +20,7 @@ pub mod check;
 #[cfg(feature = "globe")]
 pub mod globe;
 pub mod gpu;
+pub mod info;
 pub mod layer;
 pub mod model;
 pub mod paint;
@@ -66,6 +67,20 @@ pub fn log(line: &str) {
         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
             let _ = writeln!(f, "{t} {line}");
         }
+    }
+}
+
+/// A launch step in the device's log, with the memory the app may still take there (iOS's
+/// `os_proc_available_memory`, what the system kills on), so a toy that closes while it starts says
+/// how far it got and how much room was left: the last line in `toy-log.txt` is the step it died in.
+/// A toy may call it between its own heavy steps. Off the device it is a line on stderr only when
+/// `KIT_STEPS=1`.
+pub fn step(what: &str) {
+    #[cfg(target_os = "ios")]
+    log(&format!("launch: {what}; {} MB available", shell::available_mb()));
+    #[cfg(not(target_os = "ios"))]
+    if std::env::var("KIT_STEPS").is_ok_and(|v| v == "1") {
+        eprintln!("toy: launch: {what}");
     }
 }
 
@@ -142,6 +157,12 @@ pub trait Toy: 'static {
     fn project(&self, _lonlat: [f64; 2]) -> Option<[f64; 2]> {
         None
     }
+    /// What the info mark shows (`info`): the app's one gesture as a ghost finger on the live scene,
+    /// and at most one line. None (the default) shows no mark. Asked when the mark is tapped, so the
+    /// strokes may aim at where things are now (a city, a whale).
+    fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
+        None
+    }
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
@@ -157,13 +178,18 @@ pub struct Host<T: Toy> {
     pub toy: T,
     pub synth: Option<SharedSynth>,
     last_t: Option<f64>,
+    /// The info mark and its demo.
+    pub info: info::Info,
+    has_demo: bool,
 }
 
 impl<T: Toy> Host<T> {
     pub fn new(mut ctx: Ctx) -> anyhow::Result<Host<T>> {
+        step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
-        Ok(Host { ctx, toy, synth, last_t: None })
+        let has_demo = toy.demo(&ctx).is_some();
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -171,8 +197,34 @@ impl<T: Toy> Host<T> {
         self.toy.resize(&mut self.ctx);
     }
 
+    /// A real finger: the info mark's (and the tap that closes its demo), or the toy's.
     pub fn pointer(&mut self, e: PointerEvent) {
-        self.toy.pointer(&mut self.ctx, e);
+        match self.info.route(&e, self.ctx.points(), self.has_demo) {
+            info::Route::Toy => self.toy.pointer(&mut self.ctx, e),
+            info::Route::Taken => {}
+            info::Route::Open => self.open_info(e.t),
+        }
+    }
+
+    /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
+    pub fn open_info(&mut self, t: f64) {
+        if let Some(d) = self.toy.demo(&self.ctx) {
+            self.info.open(d, t);
+        }
+    }
+
+    /// The info mark's place in points, if the toy has one.
+    pub fn info_spot(&self) -> Option<[f64; 2]> {
+        self.has_demo.then(|| info::Info::spot(self.ctx.points()))
+    }
+
+    /// The toy's named places, and the info mark's as `"info"`.
+    pub fn anchors(&self) -> Vec<(String, [f64; 2])> {
+        let mut a = self.toy.anchors();
+        if let Some(s) = self.info_spot() {
+            a.push(("info".into(), s));
+        }
+        a
     }
 
     /// Time to `t`; the first call only sets the clock.
@@ -182,11 +234,16 @@ impl<T: Toy> Host<T> {
             None => 0.0,
         };
         self.last_t = Some(t);
+        // the demo's ghost finger: real touches, before the toy's step
+        for g in self.info.advance(t, self.ctx.reduce_motion) {
+            self.toy.pointer(&mut self.ctx, g);
+        }
         self.toy.update(&mut self.ctx, t, dt);
     }
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
         self.toy.draw(&mut self.ctx, target);
+        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.has_demo, self.ctx.reduce_motion);
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).
@@ -316,6 +373,21 @@ macro_rules! ios_shell {
             #[no_mangle]
             pub unsafe extern "C" fn toy_synth_free(synth: *mut $crate::SharedSynth) {
                 if !synth.is_null() { drop(Box::from_raw(synth)) }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_info_spot(s: *mut S, x: *mut f64, y: *mut f64) -> bool {
+                match s.as_ref().and_then(|s| s.host.info_spot()) {
+                    Some(p) => { *x = p[0]; *y = p[1]; true }
+                    None => false,
+                }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_info_line(s: *mut S) -> *const c_char {
+                s.as_ref().and_then(|s| s.host.info.line()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_info_open(s: *mut S, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.open_info(t) }
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_free(s: *mut S) {

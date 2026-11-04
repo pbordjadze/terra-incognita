@@ -3,6 +3,29 @@
 One line an addition, newest first. A consumer pins a tag (`toy-kit-v0.<minor>.<patch>`, docs/kit.md):
 a patch never changes a public signature; a minor may, and its lines say how to move.
 
+## v0.3.0 (unreleased)
+
+A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
+
+- **One globe camera, Adrift's gestures** (`globe::Hand`; Paul, Nov 3: "all the globe ones should
+  share the two finger rotate"): the drag keeps the place it took under the finger (a trackball over
+  the poles), after an 8-point slop, so a tap never turns the globe; a fling glides on Adrift's decay
+  (`globe::feel`); two fingers pinch about what they hold and, turned, roll the orb about it (the
+  twist); Home (pinched out past the least zoom and let go, three fingers swiped up, or
+  `Globe::home()`) flies the short way to `hand.home` and lands upright. `Globe::set_home()` takes the
+  opening view; `hand.busy()` says a finger, fling or flight has the camera (a toy's autopilot waits);
+  `hand.reduce_motion` (no fling, Home a cut). To move: call `globe.set_home()` once the opening camera
+  is set, and set `globe.hand.reduce_motion` in `settings`.
+- **The info mark** (`info`; Paul: a tiny "info" button that explains what the app is, briefly and
+  visually): `Toy::demo(&self, ctx) -> Option<info::Demo>` (default None: no mark). The host draws a
+  small mark bottom right; a tap plays the demo's strokes as real touches on the live scene under a
+  ghost fingertip, with its one line (`host.info.line()`, set by the shell in the system's text); a tap
+  anywhere closes it. `Globe::spot_for(places)` aims a stroke at a place in view. A plan taps it as
+  `"tap": "info"`. The C ABI adds `toy_info_spot`, `toy_info_line`, `toy_info_open`.
+- **Launch steps in toy-log.txt**: `toy_kit::step(what)` logs a step with the memory iOS says is
+  left; the kit logs its own (device, globe textures, the toy starting, the first frames, a lost
+  device).
+
 ## v0.2.0 (unreleased)
 
 Additive: every toy builds unchanged, and every toy's plans render the same PNGs and WAVs as before

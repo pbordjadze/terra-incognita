@@ -526,6 +526,14 @@ impl Toy for Murmuration {
         self.msaa = msaa_view(ctx);
     }
 
+    fn demo(&self, ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a touch held, then leaning: the eye drops in behind your bird and the flock bends round you
+        let [w, h] = ctx.points();
+        let c = [w * 0.5, h * 0.55];
+        let stroke = toy_kit::info::Stroke { start: 0.4, seconds: 2.6, path: vec![c, c, [w * 0.68, h * 0.45], [w * 0.62, h * 0.38]] };
+        Some(toy_kit::info::Demo::new("Starlings at dusk. Touch to fly as one of them.", vec![stroke]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
     }

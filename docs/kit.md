@@ -100,6 +100,7 @@ One line a tool as it lands (moved here from `docs/tools.md` on Nov 3).
 | WebGPU shot | a WebGPU page screenshotted by headless Chromium on Linux, not blank (the four flags that composite the canvas); fails on no adapter, a page error or a one-colour canvas | `node tools/kit/webgpu_shot.cjs <dir or url> <out.png> [--size 390x844 --dpr 3 --wait 8 --shots 2,4]` | any web shell |
 | Web artifact | a web build made publishable as a claude.ai artifact: other binaries wrapped as base64 JSON in `assets/index.json`, the `files` map in batches within the host's limits | `python3 tools/kit/artifact.py <web-dir>` (writes `artifact.json`) | Adrift's web build |
 | Launch check | any engine app's launch as the iPhone would take it: the shaders it builds translated to MSL 2.4 by naga; its short launch plan at the phone's 1170x2532 under an Apple7 iPhone's GPU limits (`KIT_IPHONE_LIMITS=1`), a GPU validation error fatal; peak RSS against the app's budget (`memory_mb`, default 1400 MB) with the GPU's peak bytes beside it; with `--ipa`, every manifest file bundled. Can't run Apple's Metal compiler or the phone's memory pressure | `python3 tools/kit/launch_check.py --check '<cmd> {plan} {out} --size {size} --ppp {ppp}' --manifest m.json [--app-json toy.json] [--ipa f]` | the toys (through the wrapper below), then Adrift |
+| Simulator launch | a toy opened in the iOS Simulator with Metal's validation on (`MTL_DEBUG_LAYER`): its shaders through Apple's Metal compiler, its every Metal call through Apple's checks; fails if it closes within 25 s; keeps its toy-log.txt, stderr, any crash report and a screenshot. Can't vouch for the phone's memory limit or GPU | `bash tools/toys/sim_launch.sh <toy> [out]` (macOS; `SIM=1 toys/ios/build.sh` builds it) | `toys.yml`'s IPA job |
 | Toy launch check | the launch check above with a toy's check binary, manifest and budget (`toy.json`'s `memory_mb` if set) (same CLI as before) | `bash tools/toys/launch_check.sh <toy> [--ipa f]` | `toys.yml` |
 | Launch safety in the kit | `KIT_IPHONE_LIMITS=1`: the device requested as on an iPhone; `KIT_MEMORY_REPORT=<f>`: the GPU's peak live bytes (wgpu's counters) and the bytes made through the kit's helpers; GPU errors fatal headless, logged on the device, with the launch's available memory in `toy-log.txt` | `toys/crates/toy-kit/src/budget.rs` | the launch check |
 | Toy check: touches | every finger event in a plan played again without it (a shadow run, same clock); one that changes nothing 0.4 s on prints `WARN: tap at t=… did nothing` (fails with `"strict_taps": true` or `KIT_STRICT_TAPS=1`; `"inert": true` exempts an event); a toy that isn't deterministic is judged near the finger against its own noise | opt-in in `<toy>-check play` (`KIT_TAP_CHECK=1` or `--tap-check`; on in `toys.yml`'s check) | every toy's plans |
@@ -158,6 +159,29 @@ Ink has no globe).
 - **Taste:** Paul asked for this text, so keep it to the one line. Nothing else on screen changes.
 - **Proof:** a plan that taps the mark and screenshots the demo (`"tap": "info"` through
   `Toy::anchors`); a phone run for its size and corner.
+
+## Built (Nov 4, 2026): Paul's two asks
+
+Both landed in the kit, not toy by toy (branch `toys-unify`, then main), so a new globe toy has them
+by standing on the kit:
+
+- **The globe camera** is `globe::Hand` itself, rewritten with Adrift's gestures' math (not a second
+  `Orb` beside it: every globe toy already routed its fingers through `Hand`, so all five moved at
+  once, with no switch to forget). Drag over the poles, twist, anchored pinch, fling on Adrift's
+  decay, Home by over-pinch or three fingers up, landing upright. Each toy sets `globe.set_home()` and
+  passes Reduce Motion; Mold and Fireflies no longer ease the roll away when left alone (a twist
+  stays; Home rights it); Fireflies' own anchored pinch is gone (the kit's is the same). Adrift keeps
+  its own `CameraControl`: the kit's is the same numbers (`globe::feel` = `touch/motion.rs`) and the
+  same functions, lifted, so the two feel alike; moving Adrift onto the kit is still its conductor's
+  call. Proof: the kit's tests (over the pole, twist, pinch held, fling, tap within the slop), each
+  globe toy's `plans/twist.json`.
+- **The info mark** is `info` in the kit, drawn by `Host` over every toy that gives `Toy::demo`
+  (all seven), and the shell's one line in system text. Terra Incognita has its own (SwiftUI,
+  `InfoDemo` in `PlaygroundRoot.swift`, beside the cloud button while no prototype runs). Adrift has
+  none yet (its shell and look are its conductor's). Proof: every toy's `plans/info.json`.
+- **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
+  Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
+  run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.
 
 ## Where it stands (handoff, Nov 3, 2026, ~1 PM ET)
 

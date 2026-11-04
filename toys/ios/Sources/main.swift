@@ -15,12 +15,31 @@ final class ToyView: UIView {
     var touchIds: [ObjectIdentifier: UInt64] = [:]
     var nextTouchId: UInt64 = 1
     let haptic = UIImpactFeedbackGenerator(style: .light)
+    /// The info mark's one line, in the system's text (it follows the reader's text size; VoiceOver
+    /// reads it), shown while the kit plays the mark's demo (toy-kit's info.rs).
+    let caption = UILabel()
+    var captionText: String?
+    lazy var infoElement = InfoElement(accessibilityContainer: self)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         isMultipleTouchEnabled = true
         backgroundColor = .black
         (layer as? CAMetalLayer)?.framebufferOnly = true
+        caption.font = UIFont.preferredFont(forTextStyle: .callout)
+        caption.adjustsFontForContentSizeCategory = true
+        caption.adjustsFontSizeToFitWidth = true
+        caption.minimumScaleFactor = 0.7
+        caption.numberOfLines = 1
+        caption.textAlignment = .center
+        caption.textColor = UIColor(white: 1.0, alpha: 0.92)
+        caption.layer.shadowColor = UIColor.black.cgColor
+        caption.layer.shadowOpacity = 0.9
+        caption.layer.shadowRadius = 6
+        caption.layer.shadowOffset = .zero
+        caption.alpha = 0
+        caption.isUserInteractionEnabled = false
+        addSubview(caption)
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -134,6 +153,32 @@ final class ToyView: UIView {
         guard let shell else { return }
         toy_frame(shell, link.targetTimestamp)
         if toy_take_haptic(shell) { haptic.impactOccurred() }
+        showCaption(toy_info_line(shell).map { String(cString: $0) })
+    }
+
+    func showCaption(_ text: String?) {
+        guard text != captionText else { return }
+        captionText = text
+        if let text {
+            caption.text = text
+            let w = min(bounds.width - 48, 560)
+            caption.frame = CGRect(x: (bounds.width - w) / 2, y: bounds.height - safeAreaInsets.bottom - 96, width: w, height: 44)
+            UIView.animate(withDuration: 0.25) { self.caption.alpha = 1 }
+            UIAccessibility.post(notification: .announcement, argument: text)
+        } else {
+            UIView.animate(withDuration: 0.35) { self.caption.alpha = 0 }
+        }
+    }
+
+    /// The mark, for VoiceOver: "About this app", activated to open its demo.
+    override var accessibilityElements: [Any]? {
+        get {
+            var x = 0.0, y = 0.0
+            guard let shell, toy_info_spot(shell, &x, &y) else { return [] }
+            infoElement.accessibilityFrameInContainerSpace = CGRect(x: x - 22, y: y - 22, width: 44, height: 44)
+            return [infoElement]
+        }
+        set {}
     }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
@@ -160,6 +205,19 @@ final class ToyView: UIView {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 1) }
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 2) }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { send(touches, 3) }
+}
+
+final class InfoElement: UIAccessibilityElement {
+    override init(accessibilityContainer container: Any) {
+        super.init(accessibilityContainer: container)
+        accessibilityLabel = "About this app"
+        accessibilityTraits = .button
+    }
+    override func accessibilityActivate() -> Bool {
+        guard let view = accessibilityContainer as? ToyView, let shell = view.shell else { return false }
+        toy_info_open(shell, CACurrentMediaTime())
+        return true
+    }
 }
 
 final class ToyController: UIViewController {

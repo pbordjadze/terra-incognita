@@ -167,9 +167,11 @@ impl Toy for Mold {
         // goes a little further, then eases back when the fingers lift
         globe.hand.max_zoom = MAX_ZOOM * 1.3;
         globe.camera = Camera::new(12.0, 42.0, 1.55);
+        globe.set_home();
         let gpu = &ctx.gpu;
         let dev = &gpu.device;
 
+        toy_kit::step("mold: the ground");
         // the ground: food on land (the lights), and the sea
         let gp = decode(&ctx.assets.read("mold-ground.png")?, 4)?;
         anyhow::ensure!(gp.width == W && gp.height == H, "mold-ground.png is {}x{}, not {W}x{H}", gp.width, gp.height);
@@ -217,6 +219,7 @@ impl Toy for Mold {
             agents.push([p[0].to_bits(), p[1].to_bits(), ((rng.next() * std::f64::consts::TAU) as f32).to_bits(), n ^ 0x5bd1e995, i as u32, 0]);
         }
 
+        toy_kit::step("mold: the buffers");
         let init = |label, contents: &[u8], usage| dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some(label), contents, usage });
         let st = wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST;
         let agents_buf = init("agents", bytemuck::cast_slice(&agents), st);
@@ -249,6 +252,7 @@ impl Toy for Mold {
             mapped_at_creation: false,
         });
 
+        toy_kit::step("mold: the simulation's pipelines");
         let cs = wgpu::ShaderStages::COMPUTE;
         let sim_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold sim"),
@@ -294,6 +298,7 @@ impl Toy for Mold {
         };
         let (agents_pipe, diffuse_pipe, feed_pipe, blur_pipe) = (compute("step_agents"), compute("diffuse"), compute("feed"), compute("blur"));
 
+        toy_kit::step("mold: the drawing's pipelines");
         let fs = wgpu::ShaderStages::FRAGMENT;
         let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold draw"),
@@ -354,6 +359,7 @@ impl Toy for Mold {
         });
 
         let night = Night::new(gpu, &globe);
+        toy_kit::step("mold: made");
         Ok(Mold {
             night,
             globe,
@@ -426,14 +432,13 @@ impl Toy for Mold {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.globe.update(&ctx.gpu, ctx.assets.as_ref(), t, dt);
         self.seconds = t;
-        // left alone a while (a fling spent), the globe settles north up over the mold's latitudes,
-        // never resting on the ice or the empty southern ocean
-        if self.globe.hand.fingers() == 0 && t - self.touched > 2.5 {
+        // left alone a while (a fling spent), the globe settles over the mold's latitudes, never resting
+        // on the ice or the empty southern ocean (a twist's roll is kept: Home sets it upright)
+        if !self.globe.hand.busy() && t - self.touched > 2.5 {
             let k = 1.0 - 0.5f64.powf(dt / 1.2);
             let cam = &mut self.globe.camera;
             let lat = cam.lat.clamp(-30.0, 55.0);
             cam.lat += (lat - cam.lat) * k;
-            cam.roll -= cam.roll * k;
             // and turns toward lit land when it rests over an empty ocean: the nearest of the
             // longitudes where the mold lives, when none is within 30 degrees
             let off = |a: f64| (a - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
@@ -522,8 +527,15 @@ impl Toy for Mold {
         ctx.gpu.queue.submit([enc.finish()]);
     }
 
+    fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a tap on a lit city: a flake laid, the mold reaching for it
+        let at = self.globe.spot_for(&[[2.35, 48.86], [9.19, 45.46], [-0.13, 51.51], [31.24, 30.04], [3.38, 6.52], [77.21, 28.61], [139.69, 35.69], [-74.0, 40.71], [-99.13, 19.43], [-46.63, -23.55]]);
+        Some(toy_kit::info::Demo::new("A slime mold between the cities. Tap to feed it.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
+        self.globe.hand.reduce_motion = ctx.reduce_motion;
     }
 
     fn save(&self) -> Option<String> {

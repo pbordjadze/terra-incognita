@@ -116,6 +116,7 @@ impl Toy for Bell {
         let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
         globe.camera = Camera::new(-62.0, -18.0, 1.0);
         globe.hand.max_zoom = 6.0;
+        globe.set_home();
         let layout = ctx.gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("bell"),
             entries: &[
@@ -295,8 +296,15 @@ impl Toy for Bell {
         Some(Box::new(sound::Voice::new(self.ear.clone())))
     }
 
+    fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a strike in the globe's middle: the Earth rings
+        let at = self.globe.spot_for(&[]);
+        Some(toy_kit::info::Demo::new("Strike the Earth and hear it ring.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.soft = ctx.reduce_motion;
+        self.globe.hand.reduce_motion = ctx.reduce_motion;
     }
 
     fn save(&self) -> Option<String> {

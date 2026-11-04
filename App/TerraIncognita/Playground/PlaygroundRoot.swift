@@ -12,6 +12,8 @@ struct PlaygroundRoot: View {
     @State private var controlsFrame = CGRect.zero
     /// The launch screen's slate: the globe fades up from it.
     @State private var veil = 1.0
+    /// The info mark's demo, while it shows (`InfoDemo`).
+    @State private var infoShown = false
     @Environment(\.scenePhase) private var scenePhase
 
     private var style: GlobeStyle { playground.style }
@@ -33,6 +35,7 @@ struct PlaygroundRoot: View {
                 VStack(alignment: .trailing, spacing: 8) {
                     HStack(alignment: .top, spacing: 10) {
                         if let stage = playground.stage, !covered { chip(stage) }
+                        if playground.stage == nil { infoMark }
                         CloudsButton(style: style, experience: playground.veiled)
                         // (a store build would leave WORKBENCH out of the build settings, and the workbench with it)
                         #if WORKBENCH
@@ -58,6 +61,13 @@ struct PlaygroundRoot: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: lens?.id)
+            .overlay {
+                if infoShown {
+                    InfoDemo(globe: playground.globe) { infoShown = false }
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: infoShown)
             .overlay {
                 Color("LaunchBackground").opacity(veil).ignoresSafeArea().allowsHitTesting(false)
             }
@@ -107,6 +117,20 @@ struct PlaygroundRoot: View {
         return AnyView(GlobeFoot(caption: stage.caption, time: stage.time,
                                  onTime: { [weak stage] in stage?.setTime($0, by: .reader) },
                                  onPlay: { [weak stage] in stage?.play($0) }))
+    }
+
+    /// The info mark: tiny, beside the controls; a tap shows what the app is (`InfoDemo`).
+    private var infoMark: some View {
+        Button { infoShown = true } label: {
+            Image(systemName: "info.circle")
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(.secondary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("About this app")
+        .accessibilityIdentifier("infoMark")
     }
 
     private var workbenchButton: some View {
@@ -178,5 +202,67 @@ struct PlaygroundRoot: View {
         .frame(maxWidth: 420, alignment: .leading)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18))
         .accessibilityIdentifier("playgroundProblem")
+    }
+}
+
+/// What the info mark shows for a few seconds: a ghost finger dragging the live globe (the globe turns
+/// under it, as under a finger) and one line; a tap anywhere closes it. Under Reduce Motion the finger
+/// rests, still, and the globe stays where it is.
+struct InfoDemo: View {
+    weak var globe: GlobeView?
+    let close: () -> Void
+    @State private var start = Date()
+    private static let line = "The Earth as satellites saw it this month. Drag to turn it; tap a country."
+    private static let drag = (from: 0.9, seconds: 1.6)
+
+    var body: some View {
+        GeometryReader { geo in
+            TimelineView(.animation) { context in
+                let el = context.date.timeIntervalSince(start)
+                let reduce = UIAccessibility.isReduceMotionEnabled
+                let u = reduce ? 0 : min(max((el - Self.drag.from) / Self.drag.seconds, 0), 1)
+                let e = u * u * (3 - 2 * u)
+                let w = geo.size.width, h = geo.size.height
+                let p = CGPoint(x: w * (0.32 + 0.36 * e), y: h * (0.5 - 0.04 * e))
+                let shown = reduce ? 1 : min(max((el - 0.4) / 0.3, 0), 1) * (1 - min(max((el - Self.drag.from - Self.drag.seconds - 0.2) / 0.4, 0), 1))
+                ZStack {
+                    Circle()
+                        .fill(Color.white.opacity(0.16))
+                        .overlay(Circle().stroke(Color.white.opacity(0.6), lineWidth: 1.4))
+                        .frame(width: 38, height: 38)
+                        .position(p)
+                        .opacity(shown)
+                    Text(Self.line)
+                        .font(.callout)
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.9), radius: 6)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: min(w - 48, 560))
+                        .position(x: w / 2, y: h - 120)
+                }
+                .onChange(of: el > 5.5) { _, done in if done { close() } }
+            }
+        }
+        .ignoresSafeArea()
+        .contentShape(Rectangle())
+        .onTapGesture { close() }
+        .accessibilityElement()
+        .accessibilityLabel(Self.line)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Closes")
+        .onAppear {
+            start = Date()
+            UIAccessibility.post(notification: .announcement, argument: Self.line)
+            guard !UIAccessibility.isReduceMotionEnabled, let globe else { return }
+            // the drag's turn: what's under the finger goes with it, west to east
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(Self.drag.from))
+                let c = globe.authoredCamera
+                let r = max(globe.stageCamera.radius, 1)
+                let degrees = Double(globe.bounds.width) * 0.36 / r * 180 / .pi
+                globe.setAuthoredCamera(GlobeCamera(lon: c.lon - degrees, lat: c.lat, zoom: c.zoom), duration: Self.drag.seconds)
+            }
+        }
     }
 }
