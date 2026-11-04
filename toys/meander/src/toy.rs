@@ -64,13 +64,15 @@ fn vnoise(p: vec2<f32>) -> f32 {
     // where the river has been, its old banks: a thin pale arc every ten years (lines of equal age,
     // the scroll bars a growing bend leaves on its inside), fading as the forest closes over them;
     // a narrow fringe of bare sand at the newest
-    let per = 10.0;
+    let per = 22.0;
     let ph = d / per;
     let fw = max(fwidth(ph), 1e-4);
     let line = smoothstep(0.0, 1.6 * fw + 0.04, abs(fract(ph) - 0.5) * 2.0 - (1.0 - 2.4 * fw));
     let grain = vnoise(world / 30.0);
-    let fade = 1.0 - smoothstep(60.0, 320.0, age + grain * 30.0);
-    let arc = clamp(line, 0.0, 1.0) * fade * near * 0.55;
+    let fade = 1.0 - smoothstep(50.0, 200.0, age + grain * 20.0);
+    // where the ridges crowd together (a bend's tip, a neck) they would fan into a mesh: let them go
+    let calm = 1.0 - smoothstep(0.06, 0.2, fw);
+    let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.42;
     c = mix(c, vec3(0.78, 0.80, 0.62), arc);
     let sand = (1.0 - smoothstep(1.0, 6.0, age)) * near;
     c = mix(c, vec3(0.80, 0.72, 0.56), sand * 0.85);
@@ -408,7 +410,7 @@ impl Toy for Meander {
             }
         }
         self.ripples.retain(|r| t - r.t < 2.0);
-        self.flashes.retain(|f| t - f.0 < 1.6);
+        self.flashes.retain(|f| t - f.0 < 0.9);
         // the lakes age out
         let year = self.river.year;
         self.river.oxbows.retain(|o| year - o.born < if o.course { COURSE_LIFE } else { LAKE_LIFE });
@@ -425,15 +427,18 @@ impl Toy for Meander {
         let (s, c) = self.view(ctx);
         let ppp = ctx.ppp;
         // the deposits, as half floats
-        // (year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
-        // nearby and g a soft edge
-        let half: Vec<u16> = self.dep.iter().flat_map(|&d| if d > NEVER { [f16(d), 0x3c00] } else { [0, 0] }).collect();
-        gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            bytemuck::cast_slice(&half),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: None },
-            wgpu::Extent3d { width: NG as u32, height: NG as u32, depth_or_array_layers: 1 },
-        );
+        // the deposits change slowly (a third of a year a frame): sent every third frame (3 MB)
+        if self.frame % 3 == 1 || self.frame < 3 {
+            // (year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
+            // nearby and g a soft edge
+            let half: Vec<u16> = self.dep.iter().flat_map(|&d| if d > NEVER { [f16(d), 0x3c00] } else { [0, 0] }).collect();
+            gpu.queue.write_texture(
+                wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+                bytemuck::cast_slice(&half),
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: None },
+                wgpu::Extent3d { width: NG as u32, height: NG as u32, depth_or_array_layers: 1 },
+            );
+        }
         let u = Uni {
             size: [ctx.width as f32, ctx.height as f32],
             centre: [c[0] as f32, c[1] as f32],
@@ -490,7 +495,7 @@ impl Toy for Meander {
         }
         // a cut: the new short channel through the neck flashes as the river takes it
         for &(t0, at) in &self.flashes {
-            let k = (1.0 - (self.t - t0) / 1.6).clamp(0.0, 1.0) as f32;
+            let k = (1.0 - (self.t - t0) / 0.9).clamp(0.0, 1.0) as f32;
             let k = k * k;
             for w in line.windows(2) {
                 let d = dist(w[0], at);
@@ -529,7 +534,7 @@ impl Toy for Meander {
         }
         // a neck closing: a warm glow that grows as the banks come together
         for (at, k) in self.river.necks() {
-            let k = (k * k) as f32;
+            let k = (((k - 0.35) / 0.65).max(0.0).powi(2)) as f32;
             if k > 0.02 {
                 p.glow(px(at), px(at), wpx * (0.6 + 0.8 * k), wpx * 0.8, [1.0, 0.85, 0.6, 0.22 * k]);
             }
@@ -580,7 +585,7 @@ impl Toy for Meander {
         Some(toy_kit::info::Rules::new(
             &[
                 "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake.",
-                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). A second is about twenty years, slowing to six as a neck closes.",
+                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). Time runs about twenty years a second, slowing as a neck closes.",
             ],
             "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace.",
         ))
