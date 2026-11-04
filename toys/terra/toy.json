@@ -1,0 +1,6 @@
+{
+  "_": "The app (toys/ios/build.sh): Terra Incognita, the toy that holds the others (painting-company row 217). Its bundle id is Terra's own, so the installed app updates in place; versionBase keeps its version above the Xcode-built Terra's (1.0.<run>, run numbers in the 200s). Its SideStore entry is in ci/sidestore_apps.json.",
+  "name": "Terra Incognita",
+  "bundleIdentifier": "com.pbordjadze.terraincognita",
+  "versionBase": 1000
+}

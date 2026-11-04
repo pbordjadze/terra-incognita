@@ -171,6 +171,28 @@ def carol():
     img.alpha_composite(ink, at)
     return img
 
+def jam():
+    # the ring from above at dusk: cars round it, and one knot of red brake lights
+    img = Image.new('RGBA', (N, N), (30, 34, 44, 255))
+    d = ImageDraw.Draw(img)
+    c, r, w = N / 2, 360, 70
+    d.ellipse([c - r - w / 2, c - r - w / 2, c + r + w / 2, c + r + w / 2], fill=(18, 20, 26, 255))
+    d.ellipse([c - r + w / 2, c - r + w / 2, c + r - w / 2, c + r - w / 2], fill=(30, 34, 44, 255))
+    reds = []
+    cars = [k * 360 / 16 for k in range(16)]
+    # the knot: five cars bunched at the upper right
+    cars = [a for a in cars if not 20 < a < 80] + [24 + 11 * k for k in range(5)]
+    for a in cars:
+        t = math.radians(a)
+        x, y = c + r * math.cos(t), c - r * math.sin(t)
+        hx, hy = -math.sin(t), -math.cos(t)
+        L, W = 34, 15
+        pts = [(x + hx * L * sx - hy * W * sy, y + hy * L * sx + hx * W * sy) for sx, sy in [(1, 1), (1, -1), (-1, -1), (-1, 1)]]
+        d.polygon(pts, fill=(222, 224, 228, 255))
+        if 20 < a < 80:
+            reds.append((x - hx * L, y - hy * L))
+    glow(img, reds, 16, (255, 40, 25, 230), 22)
+    return img
 
 def frost():
     """One ice flower grown by the toy's own rule (tools/toys/frost/reiter.py), white on the night glass."""
@@ -216,7 +238,7 @@ def frost():
     return img
 
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'frost': frost}
+DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
