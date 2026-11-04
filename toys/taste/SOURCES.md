@@ -35,9 +35,9 @@ Nothing in Taste is measured from the world except the reader's finger. Every fo
   advance. Nothing in the rule points the creature at a favourite: no gradient, no memory of the best
   form, no steering. Ignored, it seeks forms it has not shown (they keep the prior while shown ones
   fall); held everywhere, it wanders evenly.
-- **The light on the wheel** is the target itself, L^3, at every place on the wheel: for each colour and
+- **The light on the wheel** is the target itself, L^3, above what a never-tried form gets (so an untried place is dark, not liked), at every place on the wheel: for each colour and
   spikiness, the best over a few arm counts and glows (the wheel shows two of the four numbers), scaled
-  to its brightest. The path crowds where it is bright because the walk's time follows it. The small
+  to its brightest. The path crowds where it is bright because the walk's time follows the target (roughly: the light is the best over the hidden numbers, the walk's time their total). The small
   kept creatures are the forms kept longest (by time alone), none crowding another.
 - **Chosen again.** After a touch on the wheel brings back a kept form, its first rest is 2 s longer
   (the same rule, only slower to take its first step).

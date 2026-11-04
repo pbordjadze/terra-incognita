@@ -162,18 +162,22 @@ impl Taste {
         for i in 0..36 {
             for j in 0..9 {
                 let (h, sp) = (i as f64 / 36.0, 0.05 + 0.1125 * j as f64);
-                let mut best: f64 = 0.0;
+                let mut best: f64 = 0.0; // (never below nothing)
                 for a in [0.15, 0.5, 0.85] {
                     for g in [0.15, 0.5, 0.85] {
-                        best = best.max(self.walker.memory.liking(&[h, sp, a, g]).powf(walk::SHARP));
+                        // only what was held more than a form never tried counts as light: an untried place
+                        // is not a liked one
+                        best = best.max(self.walker.memory.liking(&[h, sp, a, g]).powf(walk::SHARP) - walk::PRIOR.powf(walk::SHARP));
                     }
                 }
                 land.push((h, sp, best));
             }
         }
-        let top = land.iter().map(|c| c.2).fold(1e-9, f64::max);
+        let top = land.iter().map(|c| c.2).fold(0.05, f64::max);
+        // squared, so the faint lift the gaussian's tails give far-off forms stays dark and the hill
+        // where the reader held reads as one
         for c in &mut land {
-            c.2 /= top;
+            c.2 = (c.2 / top).powi(2);
         }
         self.land = land;
     }
@@ -606,7 +610,7 @@ impl Toy for Taste {
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         let v = self.view();
         let p = [v.c[0] + v.r * 0.15, v.c[1] + v.r * 0.25];
-        Some(toy_kit::info::Demo::new("Rest a finger on it while you like what it is.", vec![toy_kit::info::Stroke::hold(0.4, 3.2, p)]))
+        Some(toy_kit::info::Demo::new("Rest a finger on it while you like it; lift it when you don't.", vec![toy_kit::info::Stroke::hold(0.4, 3.2, p)]))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
