@@ -9,7 +9,7 @@ Nothing in Taste is measured from the world except the reader's finger. Every fo
   spikes, arms, glow; the creature's other four traits, curl, markings, second colour and temper, follow
   from them smoothly: `creature.rs`' `body`). From the form it is, the creature proposes a form a random
   step away (a gaussian in each of the four numbers, mostly small,
-  one step in five a leap; colour wrapped round, the rest reflected at their ends, so the proposal is
+  about one step in seven a leap; colour wrapped round, the rest reflected at their ends, so the proposal is
   symmetric), shows it, and keeps it with probability min(1, (L(new) / L(old))^3), else goes back.
   Every step lasts as long (about 1.5 s), kept or not, so the walk's time at each kept form is shared as the rule shares it. What the screen shows is not only the kept form: about half of each step shows the try, and a try turned down is on screen too before it goes back. With a
   fixed L the walk's time at each form is proportional to L^3 (`walk.rs`' test
@@ -35,10 +35,15 @@ Nothing in Taste is measured from the world except the reader's finger. Every fo
   advance. Nothing in the rule points the creature at a favourite: no gradient, no memory of the best
   form, no steering. Ignored, it seeks forms it has not shown (they keep the prior while shown ones
   fall); held everywhere, it wanders evenly.
+- **The light on the wheel** is the target itself, L^3, at every place on the wheel: for each colour and
+  spikiness, the best over a few arm counts and glows (the wheel shows two of the four numbers), scaled
+  to its brightest. The path crowds where it is bright because the walk's time follows it. The small
+  kept creatures are the forms kept longest (by time alone), none crowding another.
+- **Chosen again.** After a touch on the wheel brings back a kept form, its first rest is 2 s longer
+  (the same rule, only slower to take its first step).
 - **The wheel** (the pulled-back view) is a picture of two of the four numbers: colour round the
   wheel, spikes outward. The path joins the forms kept, in order; the short twigs point toward tries it
-  turned down; the light under the path is L at each kept form; the small creatures are the forms kept
-  longest, none crowding another.
+  turned down; the light under it is the target described above.
 
 ## Tuning
 

@@ -77,6 +77,9 @@ pub struct Taste {
     free_since: f64,
     /// The liking at each kept form, worked out when the path changes (for the wheel's light).
     liked: Vec<f64>,
+    /// The target across the wheel (colour, spikes, light 0..1), worked out when the wheel shows.
+    land: Vec<(f64, f64, f64)>,
+    land_for: (usize, usize),
     liked_for: usize,
     still: bool,
     seed: u64,
@@ -147,6 +150,34 @@ impl Taste {
         self.replay = None;
     }
 
+    /// The target the walk samples, L^SHARP, across the wheel: at each colour and spikiness the best
+    /// over a few arm counts and glows (the wheel shows two of the four numbers), scaled to its brightest.
+    fn refresh_land(&mut self) {
+        let key = (self.walker.memory.moments.len(), self.walker.path.len());
+        if self.land_for == key {
+            return;
+        }
+        self.land_for = key;
+        let mut land = Vec::new();
+        for i in 0..36 {
+            for j in 0..9 {
+                let (h, sp) = (i as f64 / 36.0, 0.05 + 0.1125 * j as f64);
+                let mut best: f64 = 0.0;
+                for a in [0.15, 0.5, 0.85] {
+                    for g in [0.15, 0.5, 0.85] {
+                        best = best.max(self.walker.memory.liking(&[h, sp, a, g]).powf(walk::SHARP));
+                    }
+                }
+                land.push((h, sp, best));
+            }
+        }
+        let top = land.iter().map(|c| c.2).fold(1e-9, f64::max);
+        for c in &mut land {
+            c.2 /= top;
+        }
+        self.land = land;
+    }
+
     fn refresh_liking(&mut self) {
         if self.liked_for != self.walker.path.len() || self.liked.len() != self.walker.path.len() {
             self.liked = self.walker.path.iter().map(|s| self.walker.memory.liking(&s.form)).collect();
@@ -159,7 +190,7 @@ impl Taste {
         let path = &self.walker.path;
         let n = upto.min(path.len());
         let mut order: Vec<usize> = (0..n).collect();
-        let worth = |i: usize| path[i].dwell * (0.3 + self.liked.get(i).copied().unwrap_or(0.3));
+        let worth = |i: usize| path[i].dwell;
         order.sort_by(|a, b| worth(*b).total_cmp(&worth(*a)));
         let gap = v.r * 2.3;
         let mut chosen: Vec<usize> = Vec::new();
@@ -217,6 +248,8 @@ impl Toy for Taste {
             look: [0.0, 0.0],
             free_since: 0.0,
             liked: Vec::new(),
+            land: Vec::new(),
+            land_for: (usize::MAX, 0),
             liked_for: usize::MAX,
             still: ctx.reduce_motion,
             seed: SEED,
@@ -376,8 +409,9 @@ impl Toy for Taste {
         let f = self.walker.display();
         self.bells.bed(if held { 0.35 } else { 0.0 }, 55.0 * 2f32.powf(f[0] as f32));
         // the replay's notes: each keepsake rings as the traveller passes it
-        if self.replay.is_some() {
+        if self.replay.is_some() || self.z < 0.98 {
             self.refresh_liking();
+            self.refresh_land();
         }
     }
 
@@ -414,18 +448,22 @@ impl Toy for Taste {
         };
         let shown = |i: usize| (i as f64) <= upto + 1e-9;
 
-        // the light where it was held: a glow at each kept form, as bright as it was liked, as wide as long kept
+        // the light across the wheel: the target itself (refresh_land), rising as the wheel comes
         let path_a = 0.07 + 0.93 * away * away;
-        for (i, s) in path.iter().enumerate() {
-            if !shown(i) {
-                break;
+        if away > 0.05 {
+            let rise = match self.replay {
+                Some(at) => ((self.t - at - 0.6) / 1.5).clamp(0.0, 1.0),
+                None => 1.0,
+            } as f32;
+            let cell = (0.1 * v.s * k) as f32;
+            for &(h, sp, l) in &self.land {
+                if l < 0.02 {
+                    continue;
+                }
+                let p = Self::map_point(&v, &[h, sp, 0.5, 0.5]);
+                let col = hsv(h, 0.4, 1.0);
+                self.painter.glow(px(p), px(p), cell * 0.35, cell * 1.1, [col[0], col[1], col[2], 0.22 * l as f32 * away * rise]);
             }
-            let like = self.liked.get(i).copied().unwrap_or(0.3) as f32;
-            let p = Self::map_point(&v, &s.form);
-            let col = hsv(s.form[0], 0.55, 1.0);
-            let r = (v.r * (0.5 + 0.35 * s.dwell.sqrt().min(4.0))) as f32 * k as f32;
-            let strength = (like * like * 0.5 + 0.03) * path_a;
-            self.painter.glow(px(p), px(p), r * 0.3, r, [col[0], col[1], col[2], strength]);
         }
         // the path: from each kept form to the next, in the colour it was; the tries it turned down,
         // short faint twigs toward them
@@ -529,6 +567,7 @@ impl Toy for Taste {
         self.replay = None;
         self.z_to = 1.0;
         self.liked_for = usize::MAX;
+        self.land_for = (usize::MAX, 0);
         self.ever_held = false;
     }
 
@@ -575,7 +614,7 @@ impl Toy for Taste {
             &[
                 "It keeps trying on a slightly different self, and now and then a very different one.",
                 "If you held forms like the new one as much as the old, it keeps it. If less, it keeps it only sometimes: the less, the more rarely. Only while your finger is on it, or just was, does it learn.",
-                "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, bright where you held it. Touch one of the small ones there to have it back as that one, or anywhere to come back. Pinch to see the wheel any time; shake for a new one.",
+                "So it lingers where you linger, and still wanders off. Every so often it pulls back to show where it has been: colour round the wheel, spikier outward, glowing where you held it most. Touch one of the small ones there to have it back as that one, or anywhere to come back. Pinch to see the wheel any time; shake for a new one.",
             ],
             "Real: nothing but your finger, and how long it rested on each form. Drawn: the creature, every form it could be, its sounds.",
         ))

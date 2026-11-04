@@ -30,7 +30,7 @@ pub type Form = [f64; D];
 pub const STEP: f64 = 0.12;
 pub const LEAP: f64 = 0.4;
 pub const JUMPS: f64 = 0.15;
-/// "Near", for the liking: the gaussian's width in the eight numbers.
+/// "Near", for the liking: the gaussian's width in the four numbers.
 pub const NEAR: f64 = 0.17;
 /// The even prior: a form never seen counts as held this share of the time, worth PRIOR_S seconds.
 pub const PRIOR: f64 = 0.15;
@@ -345,6 +345,8 @@ impl Walker {
         self.phase = Phase::Rest;
         self.clock = 0.0;
         self.path.push(Stop { form: f, dwell: 0.0, declined: Vec::new(), jump: true });
+        // a longer first rest on the form chosen: the same rule, only a slower first step
+        self.clock = -2.0;
     }
 
     pub fn step(&mut self, dt: f64, held: f64, engaged: bool) -> Option<Event> {
