@@ -3,6 +3,7 @@
   "apps": [
     {
       "tag": "terra-build",
+      "versionBase": 1000,
       "name": "Terra Incognita",
       "bundleIdentifier": "com.pbordjadze.terraincognita",
       "subtitle": "The world, and the toys on it",
