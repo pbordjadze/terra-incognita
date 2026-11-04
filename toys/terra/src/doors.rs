@@ -201,7 +201,7 @@ impl Life {
 
     /// The light's size, points: grows a little as the reader comes closer.
     pub fn size(globe: &Globe) -> f64 {
-        11.0 * globe.reading() * globe.camera.zoom.clamp(1.0, 5.0).sqrt()
+        13.0 * globe.reading() * globe.camera.zoom.clamp(1.0, 5.0).sqrt()
     }
 
     /// The light under a point, if any (the nearest within reach).
@@ -211,7 +211,7 @@ impl Life {
             .filter_map(|i| {
                 let (s, facing) = self.spot(globe, i);
                 let d = (s[0] - p[0]).hypot(s[1] - p[1]);
-                (facing > 0.15 && d < reach).then_some((i, d))
+                (facing > 0.35 && d < reach).then_some((i, d))
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(i, _)| i)
@@ -222,7 +222,7 @@ impl Life {
         (0..self.doors.len())
             .filter_map(|i| {
                 let (s, facing) = self.spot(globe, i);
-                (facing > 0.15).then_some((i, (s[0] - p[0]).hypot(s[1] - p[1])))
+                (facing > 0.35).then_some((i, (s[0] - p[0]).hypot(s[1] - p[1])))
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(i, _)| i)
@@ -248,7 +248,7 @@ impl Life {
         }
         for (i, d) in self.doors.iter().enumerate() {
             let (s, facing) = self.spot(globe, i);
-            let vis = smooth(0.0, 0.3, facing) * fade;
+            let vis = smooth(0.3, 0.5, facing) * fade;
             if vis <= 0.01 {
                 continue;
             }
@@ -256,9 +256,8 @@ impl Life {
             let a = vis as f32;
             let tint = d.tint;
             // a soft halo of its colour, so it reads from across the Earth
-            if !d.night {
-                p.disc(c, (r * 1.1 * k) as f32, (r * 1.2 * k) as f32, [tint[0], tint[1], tint[2], 0.26 * a]);
-            }
+            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a]);
+            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.22 * a]);
             match d.id {
                 "whales" => {
                     if let Some(spots) = self.whale_spots() {
@@ -300,10 +299,6 @@ impl Life {
                 "mold" | "fireflies" => {
                     let cities: &[[f64; 2]] = if d.id == "mold" { &MOLD_CITIES } else { &FIREFLY_CITIES };
                     let pts: Vec<Option<([f32; 2], f64)>> = cities.iter().map(|&ll| at(ll)).collect();
-                    // night under each city, overlapping into one dusk-soft shape, so their lights can show
-                    for q in pts.iter().flatten() {
-                        p.disc(q.0, (r * 0.5 * k) as f32, (r * 0.9 * k) as f32, [0.09, 0.11, 0.27, 0.24 * a]);
-                    }
                     if d.id == "mold" {
                         // threads reaching city to city, growing, held, then let go
                         for (e, &(x, y)) in MOLD_THREADS.iter().enumerate() {
@@ -314,11 +309,11 @@ impl Life {
                             let g = grow as f32;
                             let tip = [pa[0] + (pb[0] - pa[0]) * g, pa[1] + (pb[1] - pa[1]) * g];
                             let al = (fade_out as f32) * a;
-                            p.line(pa, tip, 0.75 * kf, 0.9, [0.98, 0.80, 0.32, 0.9 * al]);
-                            p.glow(pa, tip, 2.4 * kf, 2.5 * kf, [0.98, 0.72, 0.25, 0.25 * al]);
+                            p.line(pa, tip, 0.95 * kf, 0.9, [0.80, 0.55, 0.06, 0.95 * al]);
+                            p.glow(pa, tip, 1.6 * kf, 2.0 * kf, [1.0, 0.78, 0.25, 0.14 * al]);
                         }
                         for q in pts.iter().flatten() {
-                            p.disc(q.0, 1.6 * kf, 1.0, [1.0, 0.93, 0.70, a]);
+                            p.disc(q.0, 1.9 * kf, 1.0, [0.72, 0.48, 0.05, a]);
                         }
                     } else {
                         for (j, q) in pts.iter().enumerate() {
@@ -326,8 +321,8 @@ impl Life {
                             let clock = self.flies[j].0;
                             let flash = (-(clock / 0.06).powi(2)).exp().max((-((1.0 - clock) / 0.02).powi(2)).exp());
                             let fl = if reduce_motion { 0.3 } else { flash as f32 };
-                            p.disc(*q, 1.3 * kf, 1.0, [0.75, 0.85, 0.55, 0.55 * a]);
-                            p.glow(*q, *q, (1.5 + 2.5 * fl) * kf, 3.0 * kf, [0.62, 1.0, 0.35, 0.9 * fl * a]);
+                            p.disc(*q, (1.4 + 0.8 * fl) * kf, 1.0, [0.22 + 0.5 * fl, 0.38 + 0.5 * fl, 0.10 + 0.1 * fl, 0.95 * a]);
+                            p.glow(*q, *q, (2.0 + 3.5 * fl) * kf, 3.5 * kf, [0.75, 1.0, 0.35, 0.7 * fl * a]);
                         }
                     }
                 }
@@ -335,9 +330,9 @@ impl Life {
                     // rings on the sphere about the place: the bell's one, crossing the whole Earth;
                     // the swell's train of crests, slower and close
                     let centre = LonLat::new(d.at[0], d.at[1]).to_xyz();
-                    let (period, reach, crests, width) = if d.id == "bell" { (7.0, 1.5, 1, 1.4) } else { (6.0, 0.42, 3, 1.7) };
+                    let (period, reach, crests, width) = if d.id == "bell" { (4.5, 0.45, 2, 1.6) } else { (6.0, 0.32, 3, 1.7) };
                     for j in 0..crests {
-                        let ph = (tm / period - j as f64 * 0.07).rem_euclid(1.0);
+                        let ph = (tm / period - j as f64 * if d.id == "bell" { 0.5 } else { 0.07 }).rem_euclid(1.0);
                         let theta = 0.02 + reach * ph;
                         let al = ((1.0 - ph).powf(1.2) * smooth(0.0, 0.05, ph)) as f32 * a;
                         sphere_ring(p, globe, centre, theta, k, width * kf, [tint[0], tint[1], tint[2], 0.9 * al]);
@@ -347,17 +342,17 @@ impl Life {
                 "battle" => {
                     // an engraving's two inks, as the battle went: Rome's black ranks pressing south, Carthage's
                     // purple bowing back before them, then its wings closing round
-                    let s = r * 0.85;
-                    let ph = (tm / 10.0).rem_euclid(1.0);
+                    let s = r * 1.05;
+                    let ph = (tm / 10.0 + 0.55).rem_euclid(1.0);
                     let press = smooth(0.0, 0.5, ph) * (1.0 - smooth(0.9, 1.0, ph));
-                    let wrap = smooth(0.35, 0.8, ph) * (1.0 - smooth(0.9, 1.0, ph));
+                    let wrap = 0.35 + 0.65 * smooth(0.35, 0.8, ph) * (1.0 - smooth(0.9, 1.0, ph));
                     let dot = |p: &mut Painter, x: f64, y: f64, col: [f32; 3]| {
-                        p.disc([c[0] + (x * s * k) as f32, c[1] + (y * s * k) as f32], 1.15 * kf, 0.8, [col[0], col[1], col[2], 0.95 * a]);
+                        p.disc([c[0] + (x * s * k) as f32, c[1] + (y * s * k) as f32], 1.0 * kf, 0.8, [col[0], col[1], col[2], 0.95 * a]);
                     };
                     for row in 0..3 {
-                        for col in 0..6 {
-                            let x = (col as f64 - 2.5) * 0.17;
-                            let y = -0.55 + row as f64 * 0.16 + press * 0.32;
+                        for col in 0..5 {
+                            let x = (col as f64 - 2.0) * 0.17;
+                            let y = -0.55 + row as f64 * 0.16 + press * 0.22;
                             dot(p, x, y, [0.10, 0.10, 0.10]);
                         }
                     }
@@ -366,7 +361,7 @@ impl Life {
                         let u = q as f64 / 16.0 - 0.5;
                         let (lx, ly) = (u * 1.4, 0.32);
                         let ang = std::f64::consts::FRAC_PI_2 + u * std::f64::consts::PI * 1.55;
-                        let (hx, hy) = (ang.cos() * 0.72, ang.sin() * 0.62 - 0.2);
+                        let (hx, hy) = (ang.cos() * 0.9, ang.sin() * 0.72 - 0.38);
                         let (x, y) = (lx + (hx - lx) * wrap, ly + (hy - ly) * wrap + press * 0.12);
                         dot(p, x, y, [0.45, 0.22, 0.55]);
                     }

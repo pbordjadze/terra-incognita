@@ -174,6 +174,14 @@ pub trait Toy: 'static {
     fn rules(&self) -> Option<info::Rules> {
         None
     }
+    /// Things on screen a finger can touch that VoiceOver should offer as buttons: a label and where
+    /// it is, in points (Terra's lights, each opening its toy). None by default: a toy's scene is
+    /// touched, not pressed.
+    fn buttons(&self, _ctx: &Ctx) -> Vec<(String, [f64; 2])> {
+        Vec::new()
+    }
+    /// VoiceOver activated `buttons()[i]` (as it was this frame); `t` the shell's seconds.
+    fn press(&mut self, _ctx: &mut Ctx, _i: usize, _t: f64) {}
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
@@ -193,6 +201,8 @@ pub struct Host<T: Toy> {
     pub info: info::Info,
     has_demo: bool,
     has_rules: bool,
+    /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
+    buttons: std::ffi::CString,
 }
 
 impl<T: Toy> Host<T> {
@@ -202,7 +212,7 @@ impl<T: Toy> Host<T> {
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         let has_demo = toy.demo(&ctx).is_some();
         let has_rules = toy.rules().is_some();
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo, has_rules })
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), has_demo, has_rules, buttons: Default::default() })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -242,6 +252,23 @@ impl<T: Toy> Host<T> {
     /// The info mark's place in points, if the toy has one.
     pub fn info_spot(&self) -> Option<[f64; 2]> {
         self.has_demo.then(|| info::Info::spot(self.ctx.points()))
+    }
+
+    /// The toy's buttons, a line each: its label, a tab, x, a tab, y (points); valid until the next call.
+    pub fn buttons_text(&mut self) -> &std::ffi::CStr {
+        let text: String = self
+            .toy
+            .buttons(&self.ctx)
+            .into_iter()
+            .map(|(label, p)| format!("{}\t{:.1}\t{:.1}\n", label.replace(['\t', '\n', '\0'], " "), p[0], p[1]))
+            .collect();
+        self.buttons = std::ffi::CString::new(text).unwrap_or_default();
+        &self.buttons
+    }
+
+    /// VoiceOver pressed button `i`.
+    pub fn press(&mut self, i: usize, t: f64) {
+        self.toy.press(&mut self.ctx, i, t);
     }
 
     /// The toy's named places, and the info mark's as `"info"`.
@@ -441,6 +468,14 @@ macro_rules! ios_shell {
             #[no_mangle]
             pub unsafe extern "C" fn toy_rules_open(s: *mut S) {
                 if let Some(s) = s.as_mut() { s.host.open_rules() }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_buttons(s: *mut S) -> *const c_char {
+                s.as_mut().map(|s| s.host.buttons_text().as_ptr()).unwrap_or(std::ptr::null())
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_button_press(s: *mut S, i: u32, t: f64) {
+                if let Some(s) = s.as_mut() { s.host.press(i as usize, t) }
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_free(s: *mut S) {

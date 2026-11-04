@@ -1,11 +1,11 @@
 {
- "_": "Every light entered in turn and left again (the swell's after the Earth is turned by hand): each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
- "seconds": 70.0,
+ "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
+ "seconds": 78.0,
  "fps": 10,
  "events": [
   {
    "t": 0.5,
-   "tap": "mold"
+   "tap": "battle"
   },
   {
    "t": 6.5,
@@ -13,7 +13,7 @@
   },
   {
    "t": 10.0,
-   "tap": "murmuration"
+   "tap": "mold"
   },
   {
    "t": 16.0,
@@ -21,7 +21,7 @@
   },
   {
    "t": 19.5,
-   "tap": "battle"
+   "tap": "murmuration"
   },
   {
    "t": 25.5,
@@ -29,78 +29,120 @@
   },
   {
    "t": 29.0,
+   "drag": [
+    [
+     110,
+     430
+    ],
+    [
+     290,
+     430
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 31.5,
    "tap": "fireflies"
   },
   {
-   "t": 35.0,
+   "t": 37.5,
    "tap": "earth"
   },
   {
-   "t": 38.5,
+   "t": 41.0,
+   "drag": [
+    [
+     200,
+     560
+    ],
+    [
+     200,
+     380
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 43.5,
    "tap": "bell"
   },
   {
-   "t": 44.5,
+   "t": 49.5,
    "tap": "earth"
   },
   {
-   "t": 48.0,
-   "tap": "whales"
-  },
-  {
-   "t": 54.0,
-   "tap": "earth"
-  },
-  {
-   "t": 57.5,
+   "t": 53.0,
    "drag": [
     [
-     150,
-     420
+     100,
+     280
     ],
     [
-     300,
+     290,
      420
     ]
    ],
    "for": 0.8
   },
   {
-   "t": 59.5,
+   "t": 55.5,
+   "tap": "whales"
+  },
+  {
+   "t": 61.5,
+   "tap": "earth"
+  },
+  {
+   "t": 65.0,
+   "drag": [
+    [
+     110,
+     430
+    ],
+    [
+     280,
+     430
+    ]
+   ],
+   "for": 0.8
+  },
+  {
+   "t": 67.5,
    "tap": "swell"
   },
   {
-   "t": 65.5,
+   "t": 73.5,
    "tap": "earth"
   }
  ],
  "shots": [
   {
    "t": 5.0,
-   "name": "mold"
-  },
-  {
-   "t": 14.5,
-   "name": "murmuration"
-  },
-  {
-   "t": 24.0,
    "name": "battle"
   },
   {
-   "t": 33.5,
+   "t": 14.5,
+   "name": "mold"
+  },
+  {
+   "t": 24.0,
+   "name": "murmuration"
+  },
+  {
+   "t": 36.0,
    "name": "fireflies"
   },
   {
-   "t": 43.0,
+   "t": 48.0,
    "name": "bell"
   },
   {
-   "t": 52.5,
+   "t": 60.0,
    "name": "whales"
   },
   {
-   "t": 64.0,
+   "t": 72.0,
    "name": "swell"
   }
  ]

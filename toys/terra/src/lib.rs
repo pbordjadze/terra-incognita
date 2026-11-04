@@ -338,6 +338,23 @@ impl Terra {
         self.state = State::Closing { t0: t };
     }
 
+    /// The touch that opened a light goes on into its toy: the toy is touched where the light was (the
+    /// bell rings from Chile, the swell drops its wave, a whale is followed, the mold fed, the fireflies
+    /// stirred). The scenes, whose touch is a hold or a drawn line, are left to the reader.
+    fn touch_through(&mut self, t: f64) {
+        let d = &self.life.doors[self.door];
+        if !matches!(d.id, "bell" | "swell" | "whales" | "mold" | "fireflies") {
+            return;
+        }
+        let Some(r) = self.room.as_mut() else { return };
+        let at = if d.id == "whales" { r.anchors().first().map(|a| a.1) } else { r.project(d.at) };
+        if let Some(p) = at {
+            let id = 9_000_000;
+            r.pointer(PointerEvent { id, phase: Phase::Down, x: p[0], y: p[1], t });
+            r.pointer(PointerEvent { id, phase: Phase::Up, x: p[0], y: p[1], t: t + 0.06 });
+        }
+    }
+
     fn atlas_pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         self.last_touch = e.t;
         match e.phase {
@@ -437,8 +454,8 @@ impl Toy for Terra {
         ctx.assets = Box::new(Shared(assets.clone()));
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
-        // the Atlantic: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-38.0, 24.0, 1.0);
+        // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
+        globe.camera = Camera::new(-52.0, 30.0, 1.0);
         globe.set_home();
         let life = Life::new(assets.as_ref());
         Ok(Terra {
@@ -528,6 +545,7 @@ impl Toy for Terra {
                         r.update(t);
                     }
                     self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
+                    self.touch_through(t);
                     self.state = State::Opening { t0: t };
                 }
             }
@@ -564,7 +582,7 @@ impl Toy for Terra {
                 let u = (t - t0) / dur;
                 self.globe.camera = fly(from, to, u.min(1.0));
                 if self.globe.night > 0.0 {
-                    self.globe.night = (1.0 - ease(u * 1.3)) as f32;
+                    self.globe.night = (1.0 - ease(u * 2.2)) as f32;
                 }
                 if u >= 1.0 {
                     self.globe.night = 0.0;
@@ -641,12 +659,7 @@ impl Toy for Terra {
             a.push(("earth".into(), earth_spot(pts)));
             return a;
         }
-        (0..self.life.doors.len())
-            .filter_map(|i| {
-                let (s, f) = self.life.spot(&self.globe, i);
-                (f > 0.15).then(|| (self.life.doors[i].id.to_string(), s))
-            })
-            .collect()
+        self.visible_doors().into_iter().map(|(i, s)| (self.life.doors[i].id.to_string(), s)).collect()
     }
 
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
@@ -666,6 +679,30 @@ impl Toy for Terra {
         Some(Demo::new("Each light is a toy. Touch one to go in.", vec![Stroke::tap(0.6, at)]))
     }
 
+    fn buttons(&self, ctx: &Ctx) -> Vec<(String, [f64; 2])> {
+        if self.inside() {
+            return vec![("Back to the Earth".into(), earth_spot(ctx.points()))];
+        }
+        if !matches!(self.state, State::Atlas) {
+            return Vec::new();
+        }
+        self.visible_doors().into_iter().map(|(i, p)| (NAMES[i].to_string(), p)).collect()
+    }
+
+    fn press(&mut self, ctx: &mut Ctx, i: usize, t: f64) {
+        if self.inside() {
+            if matches!(self.state, State::Inside | State::Opening { .. }) {
+                self.leave(ctx, t);
+            }
+            return;
+        }
+        if matches!(self.state, State::Atlas) {
+            if let Some(&(d, _)) = self.visible_doors().get(i) {
+                self.enter(ctx, d, t);
+            }
+        }
+    }
+
     fn rules(&self) -> Option<Rules> {
         if self.inside() {
             return self.room.as_ref().and_then(|r| r.rules());
@@ -680,7 +717,20 @@ impl Toy for Terra {
     }
 }
 
+/// The lights' names, for VoiceOver (the toys' names on their own apps).
+const NAMES: [&str; 7] = ["Whales", "Murmuration", "Mold", "Fireflies", "Bell", "Swell", "Battle Ink"];
+
 impl Terra {
+    /// The lights facing the reader now, with where they are (points).
+    fn visible_doors(&self) -> Vec<(usize, [f64; 2])> {
+        (0..self.life.doors.len())
+            .filter_map(|i| {
+                let (s, f) = self.life.spot(&self.globe, i);
+                (f > 0.35).then_some((i, s))
+            })
+            .collect()
+    }
+
     fn globe_points(&self) -> [f64; 2] {
         let d = self.globe.view();
         [d.width as f64 / d.ppp, d.height as f64 / d.ppp]
