@@ -1,0 +1,48 @@
+{
+ "_": "First sight on the phone: the frame's corner frosting by itself, then three touches, high (plates), low (ferns) and between; the core moment.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 30,
+ "fps": 30,
+ "events": [
+  {
+   "t": 2.0,
+   "tap": [
+    200,
+    330
+   ]
+  },
+  {
+   "t": 3.2,
+   "tap": [
+    120,
+    600
+   ]
+  },
+  {
+   "t": 4.0,
+   "tap": [
+    300,
+    520
+   ]
+  }
+ ],
+ "shots": [
+  0.3,
+  1.5,
+  3.5,
+  5.0,
+  8.0,
+  15.0,
+  30.0
+ ],
+ "film": {
+  "from": 0,
+  "to": 30,
+  "every": 0.1
+ },
+ "audio": true
+}

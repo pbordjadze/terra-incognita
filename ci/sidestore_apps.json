@@ -143,6 +143,17 @@
       "iconSource": "toys/taste/icon.png",
       "tintColor": "#A054F5",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "frost-build",
+      "name": "Frost",
+      "bundleIdentifier": "com.pbordjadze.toy.frost",
+      "subtitle": "Your finger is warm",
+      "localizedDescription": "A cabin window at Oymyakon, about −50 °C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: wipe the glass and watch the frost grow back in from the edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
+      "icon": "frost-icon.png",
+      "iconSource": "toys/frost/icon.png",
+      "tintColor": "#5F7FA8",
+      "minOSVersion": "17.0"
     }
   ]
 }

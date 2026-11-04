@@ -189,6 +189,13 @@ by standing on the kit:
   on by `tools/kit/shell_text.py`; the Simulator's `out/sim/rules.png` is the real text).
   Open: the card covers the lower half (Battle's flanks, Swell's wavefront) while it shows; a light
   card on the paper scenes was suggested and not taken (one look for all seven).
+- **The origins mark** (Nov 4, painting-company row 219; Paul: "one button should explain the
+  rules... a separate button can explain where those rules came from"): an asterisk left of the "?",
+  `Toy::origins()` (a `Rules`: the science and history, then a dim "From the science / Made up"
+  note), the same card and closing tap; the "?" can then be the rules alone. `Toy::card_at_top(ctx)`,
+  asked as a card opens, hangs it from the top (Mold: over whichever half has less lit land). On Mold
+  only, as a trial; any toy adopts it by giving `origins()`. Judged by two fresh critics on
+  `plans/rules.json` (now "?", then the asterisk); the Simulator keeps `rules.png` and `origins.png`.
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.

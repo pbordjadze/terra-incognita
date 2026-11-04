@@ -1,0 +1,20 @@
+[package]
+name = "frost"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Frost (a working title): ice flowers on a cabin window at Oymyakon; touch the glass and a crystal grows (Reiter's hexagonal automaton)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "frost-check"
+path = "src/bin/check.rs"

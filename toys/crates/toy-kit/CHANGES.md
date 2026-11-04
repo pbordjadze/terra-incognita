@@ -22,6 +22,14 @@ A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand mo
   ghost fingertip, with its one line (`host.info.line()`, set by the shell in the system's text); a tap
   anywhere closes it. `Globe::spot_for(places)` aims a stroke at a place in view. A plan taps it as
   `"tap": "info"`. The C ABI adds `toy_info_spot`, `toy_info_line`, `toy_info_open`.
+- **The origins mark** (painting-company row 219; Paul, Nov 4: one button for the rules, "a separate
+  button can explain where those rules came from"): `Toy::origins(&self) -> Option<info::Rules>`
+  (default None: no mark), the science and history behind the rules and a dimmer note of what is real
+  and what is made up, so `rules()` can be the rules alone (a `Rules` note may now be empty). An
+  asterisk beside the "?"; same card, same closing tap; a plan taps it as `"tap": "origins"`.
+  `Toy::card_at_top(&self, ctx) -> bool` (default false), asked as a card opens, hangs it from the top
+  instead of over the marks. `info::Info::route` and `draw` take `info::Marks` in place of two bools.
+  The C ABI adds `toy_origins_spot`, `toy_origins_text`, `toy_origins_open`, `toy_card_at_top`.
 - **The rules mark** (painting-company row 214; Paul, Nov 4: "a second button with just a tiny bit
   more detail. Just the rules"): `Toy::rules(&self) -> Option<info::Rules>` (default None: no mark),
   the few rules that make what is on screen, a line each, and one line of what is real and what is

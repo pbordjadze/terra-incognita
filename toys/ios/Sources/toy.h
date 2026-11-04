@@ -30,6 +30,12 @@ void toy_info_open(ToyShell *shell, double t);
 bool toy_rules_spot(ToyShell *shell, double *x, double *y);
 const char *toy_rules_text(ToyShell *shell);
 void toy_rules_open(ToyShell *shell);
+// The origins mark beside that (info.rs; Toy::origins): where the rules came from, in the same card.
+bool toy_origins_spot(ToyShell *shell, double *x, double *y);
+const char *toy_origins_text(ToyShell *shell);
+void toy_origins_open(ToyShell *shell);
+// Whether the card (the rules or the origins) hangs from the top, asked as it opens (Toy::card_at_top).
+bool toy_card_at_top(ToyShell *shell);
 // The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in
 // points (empty: none; valid until the next call), and pressing one by its line's index.
 const char *toy_buttons(ToyShell *shell);

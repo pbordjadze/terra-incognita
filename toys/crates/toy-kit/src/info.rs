@@ -11,6 +11,12 @@
 //! them in the system's text over the live scene (`host.info.rules()`); a tap anywhere closes them,
 //! and nothing closes them on a timer (they are read at the reader's pace, or not at all). A plan
 //! taps it as `"tap": "rules"`. painting-company row 214.
+//!
+//! Beside that, the origins mark (an asterisk, a footnote's mark): a tap shows where the rules came
+//! from (`Toy::origins`, a [`Rules`] too: its lines the science and history behind them, its note what
+//! is real and what is drawn), so the "?" can be the rules alone. Same card, same closing tap. A
+//! toy may hang the card from the top instead of over the marks (`Toy::card_at_top`), to keep it off
+//! what matters in its scene. A plan taps it as `"tap": "origins"`. painting-company row 219.
 
 use crate::paint::Painter;
 use crate::{Gpu, Phase, PointerEvent};
@@ -87,7 +93,8 @@ impl Demo {
     }
 }
 
-/// What the rules mark shows: the rules, a line each, and one line saying what is real and what is drawn.
+/// What the rules mark (or the origins mark) shows: lines, a line each, and an optional dimmer note
+/// (empty: none), e.g. what is real and what is drawn.
 #[derive(Clone, Debug)]
 pub struct Rules {
     pub lines: Vec<String>,
@@ -132,6 +139,16 @@ pub struct Info {
     line: Option<std::ffi::CString>,
     /// The rules while they show (the shell's text).
     rules: Option<std::ffi::CString>,
+    /// Where the rules came from, while that shows (the shell's text).
+    origins: Option<std::ffi::CString>,
+}
+
+/// Which marks a toy has (each shown only if the toy gives its text).
+#[derive(Clone, Copy, Default, Debug)]
+pub struct Marks {
+    pub demo: bool,
+    pub rules: bool,
+    pub origins: bool,
 }
 
 /// What the host should do with a finger.
@@ -142,6 +159,8 @@ pub enum Route {
     Open,
     /// The rules mark was tapped: show the rules.
     Rules,
+    /// The origins mark was tapped: show where the rules came from.
+    Origins,
 }
 
 impl Info {
@@ -153,13 +172,33 @@ impl Info {
     pub fn rules_spot(points: [f64; 2]) -> [f64; 2] {
         [points[0] - 26.0 - Self::GAP, points[1] - 34.0]
     }
+    /// Where the origins mark is: beside the rules mark, further toward the middle.
+    pub fn origins_spot(points: [f64; 2]) -> [f64; 2] {
+        [points[0] - 26.0 - 2.0 * Self::GAP, points[1] - 34.0]
+    }
     /// A fingertip's reach for either, points (half the gap between them: no tap is both's).
     const REACH: f64 = 22.0;
     const GAP: f64 = 44.0;
 
-    /// The demo or the rules showing.
+    /// The demo, the rules or the origins showing.
     pub fn is_open(&self) -> bool {
-        self.open.is_some() || self.rules.is_some()
+        self.open.is_some() || self.rules.is_some() || self.origins.is_some()
+    }
+
+    /// Where the rules came from, while that shows (for the shell's text; `Rules::text`).
+    pub fn origins(&self) -> Option<&std::ffi::CStr> {
+        self.origins.as_deref()
+    }
+
+    /// Shows the origins (closing the demo or the rules), or hides them.
+    pub fn show_origins(&mut self, origins: Option<Rules>) {
+        if origins.is_some() {
+            if self.open.is_some() {
+                self.close_pending = true;
+            }
+            self.rules = None;
+        }
+        self.origins = origins.map(|r| std::ffi::CString::new(r.text()).unwrap_or_default());
     }
 
     /// The rules while they show (for the shell to set in the system's text; `Rules::text`).
@@ -169,8 +208,11 @@ impl Info {
 
     /// Shows the rules (closing the demo, whose ghost goes up on the next frame), or hides them.
     pub fn show_rules(&mut self, rules: Option<Rules>) {
-        if rules.is_some() && self.open.is_some() {
-            self.close_pending = true;
+        if rules.is_some() {
+            if self.open.is_some() {
+                self.close_pending = true;
+            }
+            self.origins = None;
         }
         self.rules = rules.map(|r| std::ffi::CString::new(r.text()).unwrap_or_default());
     }
@@ -180,20 +222,22 @@ impl Info {
         self.line.as_deref()
     }
 
-    /// Routes a real finger: a mark's, the closing tap's, or the toy's. `has_demo` and `has_rules`
-    /// say which marks the toy has.
-    pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], has_demo: bool, has_rules: bool) -> Route {
+    /// Routes a real finger: a mark's, the closing tap's, or the toy's. `m` says which marks the toy has.
+    pub fn route(&mut self, e: &PointerEvent, points: [f64; 2], m: Marks) -> Route {
         let near = |s: [f64; 2], k: f64| (e.x - s[0]).hypot(e.y - s[1]) <= Self::REACH * k;
         if self.taken.contains(&e.id) {
             if matches!(e.phase, Phase::Up | Phase::Cancel) {
                 self.taken.retain(|&i| i != e.id);
                 if e.phase == Phase::Up && !self.is_open() {
                     // (lifted within reach of where it went down: the marks are 44 points apart)
-                    if has_demo && near(Self::spot(points), 1.0) {
+                    if m.demo && near(Self::spot(points), 1.0) {
                         return Route::Open;
                     }
-                    if has_rules && near(Self::rules_spot(points), 1.0) {
+                    if m.rules && near(Self::rules_spot(points), 1.0) {
                         return Route::Rules;
+                    }
+                    if m.origins && near(Self::origins_spot(points), 1.0) {
+                        return Route::Origins;
                     }
                 }
             }
@@ -207,9 +251,13 @@ impl Info {
             self.taken.push(e.id);
             self.close_pending = true;
             self.rules = None;
+            self.origins = None;
             return Route::Taken;
         }
-        if (has_demo && near(Self::spot(points), 1.0)) || (has_rules && near(Self::rules_spot(points), 1.0)) {
+        if (m.demo && near(Self::spot(points), 1.0))
+            || (m.rules && near(Self::rules_spot(points), 1.0))
+            || (m.origins && near(Self::origins_spot(points), 1.0))
+        {
             self.taken.push(e.id);
             return Route::Taken;
         }
@@ -267,8 +315,8 @@ impl Info {
     }
 
     /// Draws the marks, and the ghost while the demo plays, over the toy's frame.
-    pub fn draw(&mut self, gpu: &Gpu, target: &wgpu::TextureView, size: [u32; 2], ppp: f64, has_demo: bool, has_rules: bool, reduce_motion: bool) {
-        if !has_demo && !has_rules {
+    pub fn draw(&mut self, gpu: &Gpu, target: &wgpu::TextureView, size: [u32; 2], ppp: f64, m: Marks, reduce_motion: bool) {
+        if !m.demo && !m.rules && !m.origins {
             return;
         }
         let painter = self.painter.get_or_insert_with(|| Painter::new(gpu));
@@ -279,7 +327,7 @@ impl Info {
             painter.disc(c, 9.5 * k, 3.0 * k, [0.0, 0.0, 0.0, 0.42]);
             painter.ring(c, 7.5 * k, 1.1 * k, 0.7, [1.0, 1.0, 1.0, lit]);
         };
-        if has_demo {
+        if m.demo {
             let s = Self::spot(points);
             let c = [s[0] as f32 * k, s[1] as f32 * k];
             let lit = if self.open.is_some() { 0.85 } else { 0.5 };
@@ -287,7 +335,7 @@ impl Info {
             painter.disc([c[0], c[1] - 3.1 * k], 0.95 * k, 0.7, [1.0, 1.0, 1.0, lit]);
             painter.line([c[0], c[1] - 0.6 * k], [c[0], c[1] + 3.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
         }
-        if has_rules {
+        if m.rules {
             let s = Self::rules_spot(points);
             let c = [s[0] as f32 * k, s[1] as f32 * k];
             let lit = if self.rules.is_some() { 0.85 } else { 0.5 };
@@ -306,6 +354,18 @@ impl Info {
             let end = arc[arc.len() - 1];
             painter.line(end, [c[0], c[1] + 1.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
             painter.disc([c[0], c[1] + 3.6 * k], 0.85 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+        }
+        if m.origins {
+            let s = Self::origins_spot(points);
+            let c = [s[0] as f32 * k, s[1] as f32 * k];
+            let lit = if self.origins.is_some() { 0.85 } else { 0.5 };
+            ground(painter, c, lit);
+            // an asterisk, a footnote's mark: six spokes from a small open middle
+            for i in 0..6 {
+                let a = std::f32::consts::PI * (0.5 + i as f32 / 3.0);
+                let (dx, dy) = (a.cos() * k, a.sin() * k);
+                painter.line([c[0] + dx * 0.9, c[1] - dy * 0.9], [c[0] + dx * 3.5, c[1] - dy * 3.5], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            }
         }
         if let Some((demo, at)) = &self.open {
             let el = self.now - at;
@@ -340,13 +400,33 @@ mod tests {
     use super::*;
 
     fn tap(info: &mut Info, id: u64, at: [f64; 2], demo: bool, rules: bool) -> Route {
+        tap3(info, id, at, Marks { demo, rules, origins: false })
+    }
+    fn tap3(info: &mut Info, id: u64, at: [f64; 2], m: Marks) -> Route {
         let pts = [390.0, 844.0];
         let down = PointerEvent { id, phase: Phase::Down, x: at[0], y: at[1], t: 0.0 };
-        let r = info.route(&down, pts, demo, rules);
+        let r = info.route(&down, pts, m);
         if !matches!(r, Route::Taken) {
             return r;
         }
-        info.route(&PointerEvent { phase: Phase::Up, ..down }, pts, demo, rules)
+        info.route(&PointerEvent { phase: Phase::Up, ..down }, pts, m)
+    }
+
+    #[test]
+    fn the_origins_mark_opens_and_takes_the_rules_place() {
+        let pts = [390.0, 844.0];
+        let all = Marks { demo: true, rules: true, origins: true };
+        let mut info = Info::default();
+        assert!(matches!(tap3(&mut info, 1, Info::origins_spot(pts), all), Route::Origins));
+        // without it its place is the toy's
+        assert!(matches!(tap3(&mut info, 2, Info::origins_spot(pts), Marks { origins: false, ..all }), Route::Toy));
+        info.show_rules(Some(Rules::new(&["a"], "")));
+        assert_eq!(info.rules().unwrap().to_str().unwrap(), "a");
+        info.show_origins(Some(Rules::new(&["b"], "c")));
+        assert!(info.rules().is_none());
+        assert_eq!(info.origins().unwrap().to_str().unwrap(), "b\n\nc");
+        assert!(matches!(tap3(&mut info, 3, [100.0, 100.0], all), Route::Taken));
+        assert!(info.origins().is_none() && !info.is_open());
     }
 
     #[test]
