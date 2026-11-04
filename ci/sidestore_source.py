@@ -33,7 +33,8 @@ for a in spec["apps"]:
         ipa = next((x for x in r["assets"] if x["name"].endswith(".ipa")), None)
         if not tag.startswith(prefix) or not tag[len(prefix):].isdigit() or ipa is None:
             continue
-        build = tag[len(prefix):]
+        # an app's optional versionBase (Terra's, toys/terra/toy.json: its IPA is built as 1.0.<n + base>)
+        build = str(int(tag[len(prefix):]) + a.get("versionBase", 0))
         versions.append({
             "version": f"1.0.{build}",
             "buildVersion": build,
