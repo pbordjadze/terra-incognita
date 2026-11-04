@@ -3,5 +3,5 @@
   "events": [
     { "t": 49.0, "tap": "good" }
   ],
-  "shots": [{ "t": 1.0, "name": "first" }, { "t": 4.0, "name": "invite" }, { "t": 12.0, "name": "climb" }, { "t": 20.0, "name": "one-hill" }, { "t": 26.5, "name": "night-end" }, { "t": 32.0, "name": "dawn" }, { "t": 40.0, "name": "day" }, { "t": 46.5, "name": "night-two" }, { "t": 49.3, "name": "reach" }, { "t": 60.0, "name": "wander" }, { "t": 80.0, "name": "every-hill" }, { "t": 90.0, "name": "dawn-two" }],
+  "shots": [{ "t": 1.0, "name": "first" }, { "t": 4.0, "name": "invite" }, { "t": 12.0, "name": "climb" }, { "t": 20.0, "name": "one-hill" }, { "t": 26.5, "name": "night-end" }, { "t": 28.8, "name": "first-light" }, { "t": 33.5, "name": "dawn" }, { "t": 40.0, "name": "day" }, { "t": 46.5, "name": "night-two" }, { "t": 49.3, "name": "reach" }, { "t": 60.0, "name": "wander" }, { "t": 80.0, "name": "every-hill" }, { "t": 86.8, "name": "first-light-two" }, { "t": 92.0, "name": "dawn-two" }],
   "film": { "from": 0, "to": 94, "every": 1.0 } }

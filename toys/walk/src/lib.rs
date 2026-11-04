@@ -22,7 +22,7 @@ const FIRST_NIGHT: f64 = 27.0;
 /// never longer than LONGEST.
 const AFTER: f64 = 30.0;
 const LONGEST: f64 = 80.0;
-const RISE: f64 = 3.5;
+const RISE: f64 = 6.0;
 const DAY: f64 = 13.0;
 const DUSK: f64 = 3.0;
 /// The stride's bounds and its first value (screen widths).
@@ -50,6 +50,8 @@ pub struct Walk {
     trail: std::collections::VecDeque<([f64; 2], f64, bool)>,
     glances: std::collections::VecDeque<([f64; 2], f64)>,
     holding: bool,
+    /// The walk's pace (1 at full; slow while a finger sets the stride, so single tries can be seen).
+    pace: f64,
     /// Where the lantern was when the finger came down: the stride is measured from there while it stays.
     anchor: [f64; 2],
     touched: bool,
@@ -204,6 +206,7 @@ impl Toy for Walk {
             trail: Default::default(),
             glances: Default::default(),
             holding: false,
+            pace: 1.0,
             anchor: [0.0, 0.0],
             touched: false,
             still: ctx.reduce_motion,
@@ -244,7 +247,9 @@ impl Toy for Walk {
         }
         let mut steps: Vec<(f32, f32)> = Vec::new();
         if self.walking() {
-            self.acc += dt * PACE;
+            let want = if self.holding { 0.1 } else { 1.0 };
+            self.pace += (want - self.pace) * (1.0 - (-dt / if self.holding { 0.15 } else { 0.6 }).exp());
+            self.acc += dt * PACE * self.pace;
             let n = self.acc.floor() as usize;
             self.acc -= n as f64;
             for k in 0..n.min(40) {
@@ -534,7 +539,13 @@ fn relief(g: vec2<f32>, k: f32) -> f32 {
   let pile = c.r;
   let L = log(max(pile, 1e-6)) - u.p1.z;
   let seen = smoothstep(0.02, 0.12, pile);
-  let gL = vec2<f32>(dpdx(L), dpdy(L)) * size.x;
+  // the map's slope from its neighbours a cell away (smooth, unlike the screen's 2x2 derivatives)
+  let tw = 1.0 / 144.0;
+  let tv = vec2<f32>(q.x, q.y * 144.0 / u.p2.w);
+  let th = 1.0 / u.p2.w;
+  let lx = log(max(textureSample(prints, smp, tv + vec2<f32>(tw, 0.0)).r, 1e-6)) - log(max(textureSample(prints, smp, tv - vec2<f32>(tw, 0.0)).r, 1e-6));
+  let ly = log(max(textureSample(prints, smp, tv + vec2<f32>(0.0, th)).r, 1e-6)) - log(max(textureSample(prints, smp, tv - vec2<f32>(0.0, th)).r, 1e-6));
+  let gL = vec2<f32>(lx, ly) / (2.0 * tw);
   let t = clamp(1.0 + L / 6.5, 0.0, 1.0);
   let shade = relief(gL, 0.022);
   var ink = mix(vec3<f32>(0.07, 0.09, 0.17), vec3<f32>(0.62, 0.68, 0.82), t * t) * (0.55 + 0.65 * shade);
@@ -556,18 +567,28 @@ fn relief(g: vec2<f32>, k: f32) -> f32 {
   day = day * (0.45 + 0.75 * relief(u.p1.w * hg.yz, 0.05));
   day = day * (0.96 + 0.08 * grain);
   // by day both sets of contours every second level, at the same heights, so they can be compared
+  // the night's own map, coloured as land: the first light shows what the walker found
+  let tm = clamp(1.0 + L / 6.5, 0.0, 1.0);
+  var mapDay = mix(low, mid, smoothstep(0.0, 0.6, tm));
+  mapDay = mix(mapDay, high, smoothstep(0.55, 1.0, tm));
+  mapDay = mapDay * (0.45 + 0.75 * relief(gL, 0.03));
+  mapDay = mix(low * 0.55, mapDay, seen * (0.45 + 0.55 * thick));
+  // only the upper contours are compared, and only where footprints are thick
   let fT = Lt / (2.0 * CONTOUR);
-  let lineT = contour(fT, fwidth(fT), 1.6 * ppp) * smoothstep(-6.0, -4.2, Lt);
+  let lineT = contour(fT, fwidth(fT), 1.6 * ppp) * smoothstep(-4.8, -4.0, Lt);
   day = mix(day, vec3<f32>(0.36, 0.24, 0.12), 0.75 * lineT);
   let fD = L / (2.0 * CONTOUR);
-  let lineD = contour(fD, fwidth(fD), 1.6 * ppp) * thick;
+  let lineD = contour(fD, fwidth(fD), 1.6 * ppp) * smoothstep(0.3, 0.8, pile) * smoothstep(-4.8, -4.0, L);
   // the night's map stays on the day as ink: its contours, and a cool wash where it walked
-  day = mix(day, day * vec3<f32>(0.86, 0.90, 1.0), 0.35 * seen);
+  day = mix(day, day * vec3<f32>(0.86, 0.90, 1.0), 0.30 * seen * thick);
   day = mix(day, vec3<f32>(0.10, 0.12, 0.30), 0.75 * lineD);
   // the dawn's light from the top of the screen
   let uv = i.uv;
   day = day * (1.0 + 0.10 * (1.0 - uv.y)) * vec3<f32>(1.04, 1.0, 0.95);
-  var col = mix(nightMap, day, dawn);
+  // dawn in two steps: the night's map warms into land where it lies, then the real land comes up under it
+  let a = smoothstep(0.0, 0.45, dawn);
+  let b = smoothstep(0.45, 1.0, dawn);
+  var col = mix(nightMap, mix(mapDay, day, b), a);
   let v = length((uv - vec2<f32>(0.5, 0.5)) * vec2<f32>(1.0, size.y / size.x));
   col = col * (1.0 - (0.5 - 0.3 * dawn) * smoothstep(0.45, 1.3, v));
   col = col * light;
