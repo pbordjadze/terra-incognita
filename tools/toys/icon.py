@@ -217,7 +217,33 @@ def jam():
     glow(img, reds, 16, (255, 40, 25, 230), 22)
     return img
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam}
+def taste():
+    # a soft five-armed creature on the dark, and behind it the faint path it walked, bright where it lingered
+    img = Image.new('RGBA', (N, N), (16, 17, 24, 255))
+    d = ImageDraw.Draw(img)
+    path = [(250, 820), (330, 700), (300, 610), (420, 560), (520, 520)]
+    for a, b in zip(path, path[1:]):
+        d.line([a, b], fill=(150, 120, 200, 255), width=10)
+    glow(img, path[2:3], 30, (230, 120, 255, 160), 40)
+    star = []
+    c, R = (560, 470), 300
+    for i in range(400):
+        t = i / 400 * 2 * math.pi
+        r = R * (0.68 + 0.32 * ((0.5 + 0.5 * math.cos(5 * (t + 0.5 * 0.6))) ** 2.5))
+        star.append((c[0] + r * math.cos(t), c[1] - r * math.sin(t)))
+    halo = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    ImageDraw.Draw(halo).polygon(star, fill=(190, 90, 255, 200))
+    img.alpha_composite(halo.filter(ImageFilter.GaussianBlur(36)))
+    d = ImageDraw.Draw(img)
+    d.polygon(star, fill=(160, 84, 245, 255))
+    inner = [(c[0] + (x - c[0]) * 0.55, c[1] + (y - c[1]) * 0.55) for x, y in star]
+    core = Image.new('RGBA', (N, N), (0, 0, 0, 0))
+    ImageDraw.Draw(core).polygon(inner, fill=(255, 140, 190, 255))
+    img.alpha_composite(core.filter(ImageFilter.GaussianBlur(40)))
+    glow(img, [c], 40, (255, 230, 200, 230), 50)
+    return img
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'taste': taste}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

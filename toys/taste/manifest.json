@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Taste needs none: every form is drawn from its eight numbers (src/creature.rs), and the walk is src/walk.rs.",
+  "files": {}
+}
