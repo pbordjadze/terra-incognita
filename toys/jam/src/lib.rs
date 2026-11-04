@@ -228,7 +228,7 @@ impl Toy for Jam {
                 if red > 0.15 && j % 2 == 0 {
                     // spread along the ring by about a car's spacing, so neighbours merge
                     let (u, v) = (polar(a[i].0 - 2.8, age), polar(a[i].0 + 2.8, age));
-                    self.painter.glow(u, v, 0.7 * m, 1.4 * m, [1.0, 0.09, 0.05, 0.12 * red * fade]);
+                    self.painter.glow(u, v, 0.7 * m, 1.4 * m, [1.0, 0.09, 0.05, 0.055 * red * fade]);
                 }
             }
         }
@@ -286,10 +286,10 @@ impl Toy for Jam {
         // the invitation: until the first touch, one car breathes a soft halo (after a moment's
         // first look at the even flow)
         let since = self.t - self.born;
-        if let (false, Some(i), true) = (self.touched, self.invite, since > 2.5) {
+        if let (false, Some(i), true) = (self.touched, self.invite, since > 1.2) {
             let (p, _) = placed[i];
-            let come = ((since - 2.5) / 1.2).min(1.0) as f32;
-            let breathe = if self.still { 0.8 } else { 0.55 + 0.45 * (0.5 + 0.5 * ((since - 2.5) * 2.4).sin()) as f32 };
+            let come = ((since - 1.2) / 0.6).min(1.0) as f32;
+            let breathe = if self.still { 0.8 } else { 0.55 + 0.45 * (0.5 + 0.5 * ((since - 1.2) * 2.4).sin()) as f32 };
             let r = (4.4 + 0.5 * breathe) * m;
             self.painter.glow_ring(px(p), r, 0.22 * m, 0.35 * m, [1.0, 0.97, 0.90, 0.55 * come * breathe]);
             self.painter.glow(px(p), px(p), r * 0.8, r * 0.6, [1.0, 0.95, 0.85, 0.06 * come * breathe]);
@@ -320,6 +320,20 @@ impl Toy for Jam {
         a.push(("near".into(), self.place(&l, self.ring.cars[self.car_near_angle(-90.0)].x).0));
         a.push(("far".into(), self.place(&l, self.ring.cars[self.car_near_angle(90.0)].x).0));
         a.push(("centre".into(), l.c));
+        // the moving car farthest round the ring from any braking one (for a second jam of its own)
+        let lit: Vec<f64> = self.ring.cars.iter().filter(|c| c.lights > 0.3).map(|c| c.x).collect();
+        let clear = self
+            .ring
+            .cars
+            .iter()
+            .enumerate()
+            .max_by(|(_, a), (_, b)| {
+                let d = |x: f64| lit.iter().map(|&y| (x - y).rem_euclid(traffic::RING).min((y - x).rem_euclid(traffic::RING))).fold(traffic::RING, f64::min);
+                d(a.x).total_cmp(&d(b.x))
+            })
+            .map(|(i, _)| i)
+            .unwrap_or(0);
+        a.push(("clear".into(), self.place(&l, self.ring.cars[clear].x).0));
         if let Some(i) = self.invite {
             a.push(("invited".into(), self.place(&l, self.ring.cars[i].x).0));
         }
