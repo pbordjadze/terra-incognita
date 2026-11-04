@@ -270,3 +270,30 @@ mod tests {
         assert!(low > 0.5, "gap {low}");
     }
 }
+
+#[cfg(test)]
+mod probe {
+    use super::*;
+    /// `cargo test -p jam --release probe_many -- --ignored --nocapture`: a hand tapping eleven cars
+    /// in three seconds; how many stand a minute and two minutes on.
+    #[test]
+    #[ignore]
+    fn probe_many() {
+        for seed in 1..7u64 {
+            let mut r = Ring::new(seed);
+            r.step(2.0);
+            for k in 0..11 {
+                r.tap((k * 2 + seed as usize) % N);
+                r.step(0.27);
+            }
+            let mut at = Vec::new();
+            for s in 0..120 {
+                r.step(1.0);
+                if s == 30 || s == 60 || s == 119 {
+                    at.push(r.stopped());
+                }
+            }
+            println!("seed {seed}: standing at 30/60/120 s: {at:?}");
+        }
+    }
+}

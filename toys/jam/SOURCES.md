@@ -42,10 +42,18 @@ is a photograph or a recording.
 - The hour (dusk; the experiment ran by day), the paving, the ring's asphalt and painted edges, the cars'
   shapes and colours (drawn 1.25 times as long and 1.45 times as wide as life, the road wider with them,
   so they read on a phone), headlights, brake lights (lit while a car brakes harder than 1.8 m/s² or
-  stands), a touch's ring.
+  stands), a touch's ring, and, until the first touch, a soft halo breathing round one car.
 - Inside the ring, the last 40 seconds: each car's position every 0.2 s drawn at a radius that shrinks
   with its age, red where its brake lights were on. It is the paper's own kind of figure (its figure 4,
   each car's position against time) wrapped round the ring: the cars' tracks wind forward, a jam's red
   arm winds backward.
 - The sound: each car an engine buzz whose pitch follows its speed and grows louder as it pulls away,
-  a car pulling out of a stop revving loudest (so the jam's front is heard as one car after another pulling away), tyres' hiss with the ring's speed, a soft thump for a tap; heard from the centre.
+  a car pulling out of a stop revving loudest (so the jam's front is heard as one car after another pulling away), tyres' hiss with the ring's speed, a short tyre chirp for each car braking harder than 1.8 m/s² (so a jam is heard as one chirp after another as cars arrive at its back), a soft thump for a tap; heard from the centre.
+
+## Known
+
+- Tapping many cars within a few seconds can leave no jam: when most of the ring stops together, the
+  drivers in this model all pull away together too, and the even flow comes back. Real drivers wait for
+  the car ahead to move off; a "slow to start" rule was tried (Nov 4) and made jams too big and too slow
+  (about 15 km/h backward) for the paper's numbers, so it was left out. `cargo test -p jam probe_many
+  -- --ignored --nocapture` shows it.

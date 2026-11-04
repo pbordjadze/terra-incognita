@@ -39,6 +39,12 @@ pub struct Jam {
     /// the ring as the paper's time-space diagram wrapped round, the past spiralling inward.
     hist: std::collections::VecDeque<[(f32, f32); N]>,
     next_sample: f64,
+    /// Until the first touch, one car breathes a soft halo: the thing to touch.
+    touched: bool,
+    invite: Option<usize>,
+    still: bool,
+    /// When the toy opened (the shell's clock).
+    born: f64,
 }
 
 const SAMPLE: f64 = 0.2;
@@ -119,7 +125,7 @@ impl Toy for Jam {
         }
         let ring = Ring::new(0x5eed_2008);
         let sound = sound::Engines::new();
-        Ok(Jam { ring, ground, painter, sound, points: ctx.points(), t: 0.0, taps: Vec::new(), paint, hist: Default::default(), next_sample: 0.0 })
+        Ok(Jam { ring, ground, painter, sound, points: ctx.points(), t: 0.0, taps: Vec::new(), paint, hist: Default::default(), next_sample: 0.0, touched: false, invite: None, still: ctx.reduce_motion, born: 0.0 })
     }
 
     fn resize(&mut self, ctx: &mut Ctx) {
@@ -128,6 +134,7 @@ impl Toy for Jam {
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         if e.phase == Phase::Down {
+            self.touched = true;
             let reach = 34.0_f64.max(self.layout().s * 4.0);
             if let Some(i) = self.car_at([e.x, e.y], reach) {
                 self.tap_car(ctx, i);
@@ -138,6 +145,10 @@ impl Toy for Jam {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.points = ctx.points();
         self.t = t;
+        if self.invite.is_none() {
+            self.invite = Some(self.car_near_angle(-50.0));
+            self.born = t;
+        }
         self.ring.step(dt);
         self.taps.retain(|(_, at)| t - at < 2.0);
         while t >= self.next_sample {
@@ -268,6 +279,17 @@ impl Toy for Jam {
                 }
             }
         }
+        // the invitation: until the first touch, one car breathes a soft halo (after a moment's
+        // first look at the even flow)
+        let since = self.t - self.born;
+        if let (false, Some(i), true) = (self.touched, self.invite, since > 2.5) {
+            let (p, _) = placed[i];
+            let come = ((since - 2.5) / 1.2).min(1.0) as f32;
+            let breathe = if self.still { 0.8 } else { 0.55 + 0.45 * (0.5 + 0.5 * ((since - 2.5) * 2.4).sin()) as f32 };
+            let r = (4.4 + 0.5 * breathe) as f32 * m;
+            self.painter.glow_ring(px(p), r, 0.22 * m, 0.35 * m, [1.0, 0.97, 0.90, 0.55 * come * breathe]);
+            self.painter.glow(px(p), px(p), r * 0.8, r * 0.6, [1.0, 0.95, 0.85, 0.06 * come * breathe]);
+        }
         // a touch: a soft ring from the car
         for &(p, at_t) in &self.taps {
             let a = ((self.t - at_t) / 0.9).clamp(0.0, 1.0) as f32;
@@ -277,6 +299,10 @@ impl Toy for Jam {
         }
         self.painter.render(gpu, &mut enc, target, size, None);
         gpu.queue.submit([enc.finish()]);
+    }
+
+    fn settings(&mut self, ctx: &mut Ctx) {
+        self.still = ctx.reduce_motion;
     }
 
     fn synth(&mut self) -> Option<Box<dyn toy_kit::Synth>> {
@@ -290,6 +316,9 @@ impl Toy for Jam {
         a.push(("near".into(), self.place(&l, self.ring.cars[self.car_near_angle(-90.0)].x).0));
         a.push(("far".into(), self.place(&l, self.ring.cars[self.car_near_angle(90.0)].x).0));
         a.push(("centre".into(), l.c));
+        if let Some(i) = self.invite {
+            a.push(("invited".into(), self.place(&l, self.ring.cars[i].x).0));
+        }
         a
     }
 

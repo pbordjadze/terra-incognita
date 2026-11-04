@@ -65,6 +65,8 @@ impl Engines {
             thump_phase: 0.0,
             seen: 0,
             fade: 0.0,
+            braking: [false; N],
+            squeals: Vec::new(),
         })
     }
 }
@@ -83,6 +85,18 @@ struct Hum {
     thump_phase: f32,
     seen: u32,
     fade: f32,
+    /// Each car's foot hard on the brake last buffer, and the tyres' chirps sounding.
+    braking: [bool; N],
+    squeals: Vec<Squeal>,
+}
+
+/// A tyre's short chirp as a car brakes hard: a high, falling whistle with a little grit.
+struct Squeal {
+    phase: f32,
+    freq: f32,
+    amp: f32,
+    pan: f32,
+    age: f32,
 }
 
 impl Synth for Hum {
@@ -114,6 +128,12 @@ impl Synth for Hum {
                 tl[i] = 0.30 + 0.035 * c.v + 0.35 * pull + 2.2 * launch;
                 tp[i] = c.pan;
                 speed += c.v / N as f32;
+                let hard = c.acc < -1.8 && c.v > 1.5;
+                if hard && !self.braking[i] && self.squeals.len() < 8 {
+                    let sev = ((-c.acc - 1.8) / 4.0).clamp(0.3, 1.0);
+                    self.squeals.push(Squeal { phase: 0.0, freq: 1250.0 + 90.0 * (i % 5) as f32 + 250.0 * sev, amp: 0.07 * sev, pan: c.pan, age: 0.0 });
+                }
+                self.braking[i] = hard || (self.braking[i] && c.acc < -1.2);
             }
         }
         let n = frames.max(1) as f32;
@@ -140,7 +160,7 @@ impl Synth for Hum {
             let w = (self.noise as f32 / u32::MAX as f32) * 2.0 - 1.0;
             self.hiss[0] += (w - self.hiss[0]) * 0.08;
             self.hiss[1] += (self.hiss[0] - self.hiss[1]) * 0.08;
-            let h = self.hiss[1] * hiss_gain * 6.0;
+            let h = self.hiss[1] * hiss_gain * 3.0;
             // the thump: a low knock with a little body
             let mut th = 0.0;
             if self.thump > 1e-4 {
@@ -149,8 +169,24 @@ impl Synth for Hum {
                     + (self.thump_phase * 3.0 * std::f32::consts::TAU).sin() * self.thump * self.thump * 0.08;
                 self.thump *= (-1.0 / (0.09 * rate)).exp();
             }
+            // the chirps
+            let dtr = 1.0 / rate;
+            for s in self.squeals.iter_mut() {
+                s.age += dtr;
+                let f = s.freq * (1.0 - 0.12 * (s.age / 0.4).min(1.0)) * (1.0 + 0.006 * (s.age * 37.0).sin());
+                s.phase = (s.phase + f * dtr).fract();
+            }
+            let (mut sl, mut sr) = (0.0f32, 0.0f32);
+            for s in &self.squeals {
+                let env = (s.age / 0.025).min(1.0) * (-s.age / 0.16).exp();
+                let x = s.phase * std::f32::consts::TAU;
+                let v = (x.sin() + 0.25 * (2.0 * x).sin()) * (0.85 + 0.15 * w) * env * s.amp;
+                sl += v * (0.6 - 0.4 * s.pan);
+                sr += v * (0.6 + 0.4 * s.pan);
+            }
+            self.squeals.retain(|s| s.age < 0.9);
             let g = gain * self.fade;
-            let (lo, ro) = ((l * g + h + th).tanh(), (r * g + h + th).tanh());
+            let (lo, ro) = ((l * g + h + th + sl * self.fade).tanh(), (r * g + h + th + sr * self.fade).tanh());
             if channels >= 2 {
                 out[f * channels] = lo;
                 out[f * channels + 1] = ro;
