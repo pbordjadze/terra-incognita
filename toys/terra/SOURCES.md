@@ -15,7 +15,7 @@ inside Terra they are the same toys, unchanged.
   rule credits the Smokies' synchronous fireflies). Bell: Valdivia, Chile, 1960 (the first of the toy's
   great quakes). Swell: the mid-Pacific where the toy opens. Battle: Cannae, Apulia. Ghost Jam: Nagoya
   (the city of the ring experiment's universities, not the test ground itself). Meander: the Rio Beni's
-  floodplain, Bolivia (the toy's Sentinel-2 scene).
+  floodplain, Bolivia (the toy's Sentinel-2 scene). Frost: Oymyakon, Yakutia.
 - **The cities in the mold's and the fireflies' lights**: their real longitudes and latitudes.
 
 ## Drawn

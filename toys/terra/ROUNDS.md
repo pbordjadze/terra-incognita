@@ -12,4 +12,4 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   crowded lights eased apart with a fine line to their place; one beckons until the first touch; the
   touch carried into the toy; the dive falls onto the light and the toy opens there (Bell, Swell and
   Whales at their own first sight); a pinch out past the whole Earth climbs back; VoiceOver buttons.
-  Six fresh critics; released from main by hand as terra-build. Ghost Jam added with one line (plan `jam`).
+  Six fresh critics; released from main by hand as terra-build. Ghost Jam, Meander and Frost added with one line each (plans `jam`, `meander`, `frost`): ten toys.
