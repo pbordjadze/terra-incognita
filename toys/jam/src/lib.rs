@@ -286,7 +286,7 @@ impl Toy for Jam {
             let (p, _) = placed[i];
             let come = ((since - 2.5) / 1.2).min(1.0) as f32;
             let breathe = if self.still { 0.8 } else { 0.55 + 0.45 * (0.5 + 0.5 * ((since - 2.5) * 2.4).sin()) as f32 };
-            let r = (4.4 + 0.5 * breathe) as f32 * m;
+            let r = (4.4 + 0.5 * breathe) * m;
             self.painter.glow_ring(px(p), r, 0.22 * m, 0.35 * m, [1.0, 0.97, 0.90, 0.55 * come * breathe]);
             self.painter.glow(px(p), px(p), r * 0.8, r * 0.6, [1.0, 0.95, 0.85, 0.06 * come * breathe]);
         }
