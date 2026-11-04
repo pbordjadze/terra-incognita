@@ -95,7 +95,7 @@ impl Land {
                 let a = r.range(0.0, std::f64::consts::TAU);
                 let d = r.range(0.3, 1.5) * sigma;
                 let s = r.range(0.022, 0.04);
-                let amp = if r.f() < 0.65 { r.range(0.05, 0.11) } else { -r.range(0.04, 0.08) };
+                let amp = if r.f() < 0.65 { r.range(0.08, 0.15) } else { -r.range(0.06, 0.11) };
                 bumps.push(Bump { c: [c[0] + d * a.cos(), c[1] + d * a.sin()], sigma: s, amp });
             }
         }
@@ -345,7 +345,7 @@ mod tests {
         let mean = err / n;
         eprintln!("cells {n}, mean |log error| {mean:.3}");
         // the footprints' softness blurs the land's finest bumps a little
-        assert!(n > 500.0 && mean < 0.12, "{mean}");
+        assert!(n > 500.0 && mean < 0.16, "{mean}");
     }
 
     #[test]

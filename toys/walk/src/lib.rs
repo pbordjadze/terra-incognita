@@ -50,6 +50,8 @@ pub struct Walk {
     trail: std::collections::VecDeque<([f64; 2], f64, bool)>,
     glances: std::collections::VecDeque<([f64; 2], f64)>,
     holding: bool,
+    /// Where the lantern was when the finger came down: the stride is measured from there while it stays.
+    anchor: [f64; 2],
     touched: bool,
     still: bool,
     ground: Ground,
@@ -169,7 +171,7 @@ impl Walk {
 
     fn reach_to(&mut self, p: [f64; 2]) {
         let q = self.from_pt(p);
-        let d = (q[0] - self.lamp[0]).hypot(q[1] - self.lamp[1]);
+        let d = (q[0] - self.anchor[0]).hypot(q[1] - self.anchor[1]);
         self.walker.stride = d.max(MIN_STRIDE);
         if self.walking() {
             self.length = self.length.max(NIGHT).max(self.clock() + AFTER).min(LONGEST);
@@ -202,6 +204,7 @@ impl Toy for Walk {
             trail: Default::default(),
             glances: Default::default(),
             holding: false,
+            anchor: [0.0, 0.0],
             touched: false,
             still: ctx.reduce_motion,
             ground,
@@ -220,6 +223,7 @@ impl Toy for Walk {
             Phase::Down => {
                 self.touched = true;
                 self.holding = true;
+                self.anchor = self.lamp;
                 self.reach_to([e.x, e.y]);
                 ctx.haptic();
             }
@@ -368,6 +372,20 @@ impl Toy for Walk {
         }
         let ring_a = (0.28 + 0.30 * self.holding as i32 as f32 + 0.1 * invite) * lit * (1.0 - 0.6 * dawn as f32);
         self.painter.glow_ring(lamp, r.max(2.5 * pk), 0.7 * pk, 0.9 * pk, [1.0, 0.90, 0.70, ring_a]);
+        // a stride longer than the land: its edges glow faintly, where the far tries end
+        let corner = [[0.0, 0.0], [1.0, 0.0], [0.0, self.land.aspect], [1.0, self.land.aspect]]
+            .iter()
+            .map(|c: &[f64; 2]| (c[0] - self.lamp[0]).hypot(c[1] - self.lamp[1]))
+            .fold(0.0, f64::max);
+        let beyond = ((self.stride_seen - 0.5 * corner) / (0.5 * corner)).clamp(0.0, 1.0) as f32;
+        if beyond > 0.0 {
+            let (sw, sh) = (size[0] as f32, size[1] as f32);
+            let e = 1.5 * pk;
+            let c = [1.0, 0.88, 0.65, 0.22 * beyond * night];
+            for (a, b) in [([e, e], [sw - e, e]), ([sw - e, e], [sw - e, sh - e]), ([sw - e, sh - e], [e, sh - e]), ([e, sh - e], [e, e])] {
+                self.painter.glow(a, b, 0.6 * pk, 10.0 * pk, c);
+            }
+        }
         // standing: the share of the latest tries refused, as a ring stamped round the lantern
         let recent = self.trail.iter().rev().take(36);
         let (mut stays, mut all) = (0.0f32, 0.0f32);
@@ -497,8 +515,8 @@ fn contour(f: f32, w: f32, px: f32) -> f32 {
   let d = abs(fract(f + 0.5) - 0.5) / max(w, 1e-5);
   return (1.0 - smoothstep(0.35 * px, 0.35 * px + 1.0, d)) * (1.0 - smoothstep(0.25, 0.6, w));
 }
-fn relief(g: vec2<f32>) -> f32 {
-  let n = normalize(vec3<f32>(-g * 0.022, 1.0));
+fn relief(g: vec2<f32>, k: f32) -> f32 {
+  let n = normalize(vec3<f32>(-g * k, 1.0));
   return clamp(dot(n, normalize(vec3<f32>(-0.55, -0.65, 0.55))), 0.0, 1.0);
 }
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
@@ -515,10 +533,10 @@ fn relief(g: vec2<f32>) -> f32 {
   let c = textureSample(prints, smp, vec2<f32>(q.x, q.y * 144.0 / u.p2.w));
   let pile = c.r;
   let L = log(max(pile, 1e-6)) - u.p1.z;
-  let seen = smoothstep(0.012, 0.09, pile);
+  let seen = smoothstep(0.02, 0.12, pile);
   let gL = vec2<f32>(dpdx(L), dpdy(L)) * size.x;
   let t = clamp(1.0 + L / 6.5, 0.0, 1.0);
-  let shade = relief(gL);
+  let shade = relief(gL, 0.022);
   var ink = mix(vec3<f32>(0.07, 0.09, 0.17), vec3<f32>(0.62, 0.68, 0.82), t * t) * (0.55 + 0.65 * shade);
   let fL = L / CONTOUR;
   let wL = fwidth(fL);
@@ -535,17 +553,17 @@ fn relief(g: vec2<f32>) -> f32 {
   let high = vec3<f32>(0.94, 0.90, 0.80);
   var day = mix(low, mid, smoothstep(0.0, 0.6, tt));
   day = mix(day, high, smoothstep(0.55, 1.0, tt));
-  day = day * (0.62 + 0.5 * relief(u.p1.w * hg.yz));
+  day = day * (0.45 + 0.75 * relief(u.p1.w * hg.yz, 0.05));
   day = day * (0.96 + 0.08 * grain);
   // by day both sets of contours every second level, at the same heights, so they can be compared
   let fT = Lt / (2.0 * CONTOUR);
   let lineT = contour(fT, fwidth(fT), 1.6 * ppp) * smoothstep(-6.0, -4.2, Lt);
   day = mix(day, vec3<f32>(0.36, 0.24, 0.12), 0.75 * lineT);
   let fD = L / (2.0 * CONTOUR);
-  let lineD = contour(fD, fwidth(fD), ppp) * thick;
+  let lineD = contour(fD, fwidth(fD), 1.6 * ppp) * thick;
   // the night's map stays on the day as ink: its contours, and a cool wash where it walked
   day = mix(day, day * vec3<f32>(0.86, 0.90, 1.0), 0.35 * seen);
-  day = mix(day, vec3<f32>(0.10, 0.12, 0.26), 0.7 * lineD);
+  day = mix(day, vec3<f32>(0.10, 0.12, 0.30), 0.75 * lineD);
   // the dawn's light from the top of the screen
   let uv = i.uv;
   day = day * (1.0 + 0.10 * (1.0 - uv.y)) * vec3<f32>(1.04, 1.0, 0.95);

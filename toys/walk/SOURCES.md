@@ -15,7 +15,7 @@ photograph, a dataset or a recording.
 - The footprints therefore pile up in proportion to `exp(K · h)` once the walk has wandered long
   enough, and the map drawn in the dark is the log of the pile (each footprint a soft spot two cells
   wide, the map 144 cells across), less a constant: the land's own height, measured. `cargo test -p
-  walk` checks it: after 1.5 million tries the map's log differs from the land's by 0.08 on average
+  walk` checks it: after 1.5 million tries the map's log differs from the land's by about 0.13 on average (the footprints' softness rounds the smallest rises)
   where the footprints are thick (`the_map_is_the_land`), and that a tiny stride takes nearly every try
   and stays on one hill, a stride of a third of the screen crosses between hills many times a night,
   and a stride longer than the screen refuses about 98 tries in 100 (`strides_feel_different`).
