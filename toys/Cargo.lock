@@ -875,6 +875,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "terra"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "battle",
+ "bell",
+ "bytemuck",
+ "fireflies",
+ "mold",
+ "murmuration",
+ "serde",
+ "serde_json",
+ "swell",
+ "toy-kit",
+ "wgpu",
+ "whales",
+]
+
+[[package]]
 name = "thiserror"
 version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"

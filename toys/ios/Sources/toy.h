@@ -30,3 +30,7 @@ void toy_info_open(ToyShell *shell, double t);
 bool toy_rules_spot(ToyShell *shell, double *x, double *y);
 const char *toy_rules_text(ToyShell *shell);
 void toy_rules_open(ToyShell *shell);
+// The toy's buttons for VoiceOver (toy-kit's Toy::buttons): a line each, its label, a tab, x, a tab, y in
+// points (empty: none; valid until the next call), and pressing one by its line's index.
+const char *toy_buttons(ToyShell *shell);
+void toy_button_press(ToyShell *shell, uint32_t index, double t);
