@@ -19,3 +19,8 @@ ToySynth *toy_synth(ToyShell *shell);
 void toy_audio(ToySynth *synth, float *out, uint32_t frames, uint32_t channels, double rate);
 void toy_synth_free(ToySynth *synth);
 void toy_free(ToyShell *shell);
+// The info mark (toy-kit's info.rs): its place in points (false: the toy has none), its line while its
+// demo shows (NULL otherwise; valid until the next frame), and opening it (VoiceOver's activation).
+bool toy_info_spot(ToyShell *shell, double *x, double *y);
+const char *toy_info_line(ToyShell *shell);
+void toy_info_open(ToyShell *shell, double t);

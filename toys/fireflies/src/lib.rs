@@ -193,11 +193,11 @@ impl Fireflies {
         (best.1, best.2)
     }
 
-    /// Whatever the hand did, the globe at rest settles: north up (the roll eases to nothing), its
+    /// Whatever the hand did, the globe at rest settles (a twist's roll kept: Home sets it upright): its
     /// centre within the lit latitudes, and a lit crowd in the middle of the view (at whole-globe
     /// zoom too). It waits a second after the fingers lift, so a fling plays out first.
     fn steady(&mut self, dt: f64) {
-        if self.globe.hand.fingers() > 0 {
+        if self.globe.hand.busy() {
             self.idle = 0.0;
             self.drifting = false;
             return;
@@ -208,8 +208,6 @@ impl Fireflies {
         }
         let k = 1.0 - (-dt * 1.6).exp();
         let cam = &mut self.globe.camera;
-        let roll = (cam.roll + 540.0).rem_euclid(360.0) - 180.0;
-        cam.roll = roll - roll * k;
         cam.lat += (cam.lat.clamp(SETTLE_LAT.0, SETTLE_LAT.1) - cam.lat) * k;
         let half = self.half_angle();
         // far out (a whole hemisphere in view) the view settles on a lit region's centre of light;
@@ -263,6 +261,7 @@ impl Toy for Fireflies {
         // a narrow band in black, so it rests closer there
         globe.hand.rest_zoom = globe.camera.zoom;
         globe.hand.max_zoom = MAX_ZOOM;
+        globe.set_home();
         let seed = std::env::var("FIREFLIES_SEED")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -293,15 +292,7 @@ impl Toy for Fireflies {
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
-        // two fingers: the kit's hand zooms about the screen's centre; here the place between the
-        // fingers stays between them, so a pinch goes toward what the fingers are on (and two fingers
-        // moving together carry the globe)
-        let mid = |at: &std::collections::HashMap<u64, [f64; 2]>| {
-            let v: Vec<[f64; 2]> = at.values().copied().collect();
-            (v.len() == 2).then(|| [(v[0][0] + v[1][0]) / 2.0, (v[0][1] + v[1][1]) / 2.0])
-        };
-        let before = if e.phase == Phase::Move && self.at.contains_key(&e.id) { mid(&self.at) } else { None };
-        let held = before.and_then(|m| self.globe.unproject(m[0], m[1]));
+        // (two fingers: the kit's hand pinches about what they hold and twists, as in every globe app)
         self.globe.pointer(e);
         match e.phase {
             Phase::Down | Phase::Move => {
@@ -311,16 +302,6 @@ impl Toy for Fireflies {
             }
             Phase::Up | Phase::Cancel => {
                 self.at.remove(&e.id);
-            }
-        }
-        if let (Some(place), Some(m)) = (held, mid(&self.at)) {
-            let (q, facing) = self.globe.project(place);
-            if facing > 0.0 {
-                let (dx, dy) = (m[0] - q[0], m[1] - q[1]);
-                let r = self.globe.disc().r;
-                if dx.hypot(dy) > 1e-6 {
-                    self.globe.camera = self.globe.camera.turned([dy, dx, 0.0], dx.hypot(dy) / r);
-                }
             }
         }
         match e.phase {
@@ -381,8 +362,15 @@ impl Toy for Fireflies {
         Some(Box::new(sound::Chimes::new(self.ear.queue.clone())))
     }
 
+    fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a tap on a lit crowd: its lights sparkle out of step and the field pulls them back
+        let at = self.globe.spot_for(&[[2.35, 48.86], [9.19, 45.46], [-0.13, 51.51], [31.24, 30.04], [3.38, 6.52], [77.21, 28.61], [139.69, 35.69], [-74.0, 40.71], [-99.13, 19.43], [-46.63, -23.55]]);
+        Some(toy_kit::info::Demo::new("Every city a firefly, falling into step. Tap one.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.soft = ctx.reduce_motion;
+        self.globe.hand.reduce_motion = ctx.reduce_motion;
     }
 
     fn save(&self) -> Option<String> {

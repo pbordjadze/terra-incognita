@@ -35,6 +35,11 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
     (`globe::wgsl(own)` prepends it and the shared helpers to a pass's WGSL; `globe.view_bind()` is
     its group 0). Copied from adrift-core on Nov 2, 2026 so neither breaks the other: change the kit
     here, for every toy, compatibly (every toy builds in CI when the kit changes).
+  - The globe's hand is Adrift's gestures (drag over the poles, two-finger twist and anchored pinch,
+    fling, Home by over-pinch or three fingers up): a globe toy calls `globe.set_home()` once its
+    opening camera is set, and lets its own camera wait while `globe.hand.busy()`.
+  - `info`: the info mark. A toy's `demo()` gives its one gesture (strokes, played as real touches
+    under a ghost fingertip) and one line; the kit draws the mark bottom right, the shell the line.
   - `paint` (soft 2D discs, rings, strokes, glows), `backdrop` (a full-screen fragment of your own),
     `layer` (a texture that keeps what is painted into it), `sound::Bells` (struck notes) and `web`
     (a WebGPU shell, the `web` feature, wasm32): from busquets' copy of the kit (Nov 3, 2026). The

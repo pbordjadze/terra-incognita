@@ -306,7 +306,8 @@ impl Whales {
     }
 
     fn steer_camera(&mut self, dt: f64) {
-        if self.globe.hand.fingers() > 0 {
+        // (a finger, a fling or Home's flight: the hand's)
+        if self.globe.hand.busy() {
             return;
         }
         // left alone, the camera comes back to hold both; soon when neither whale is in sight
@@ -546,6 +547,7 @@ impl Toy for Whales {
         let (centre, zoom) = toy.both_target();
         let ll = LonLat::from_xyz(centre);
         toy.globe.camera = Camera::new(ll.lon, ll.lat, zoom);
+        toy.globe.set_home();
         Ok(toy)
     }
 
@@ -553,8 +555,15 @@ impl Toy for Whales {
         self.globe.resize(ctx.width, ctx.height, ctx.ppp);
     }
 
+    fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a tap on a whale: followed, its song heard
+        let at = self.anchors().first().map(|a| a.1).unwrap_or_else(|| self.globe.spot_for(&[]));
+        Some(toy_kit::info::Demo::new("Two whales singing along their real routes. Tap one.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
+        self.globe.hand.reduce_motion = ctx.reduce_motion;
     }
 
     /// The whales by name, for a plan's `"tap": "humpback"` (check.rs).

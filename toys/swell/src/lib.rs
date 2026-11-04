@@ -155,6 +155,7 @@ impl Toy for Swell {
         let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, MONTH)?;
         globe.camera = Camera::new(-178.0, 20.0, 1.45);
         globe.hand.max_zoom = 8.0;
+        globe.set_home();
         let ice = ctx.assets.read(&format!("ice-{:02}.png", MONTH + 1)).ok().and_then(|b| toy_kit::gpu::textures::decode(&b, 1).ok());
         let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?, ice.as_ref().map(|p| (&p.data[..], p.width as usize, p.height as usize)));
         // the coast's cells gathered by 4-degree tiles: each tile one voice
@@ -426,8 +427,15 @@ impl Toy for Swell {
         Some(Box::new(sound::Chimes::new(self.queue.clone())))
     }
 
+    fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
+        // a tap on the open sea in view: a wave dropped, carried at the speed its depth gives it
+        let at = self.globe.spot_for(&[[-150.0, 15.0], [-178.0, 20.0], [-30.0, 25.0], [80.0, -15.0], [160.0, 10.0], [-120.0, -20.0]]);
+        Some(toy_kit::info::Demo::new("Drop a wave into the real sea.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.soft = ctx.reduce_motion;
+        self.globe.hand.reduce_motion = ctx.reduce_motion;
     }
 
     fn save(&self) -> Option<String> {
