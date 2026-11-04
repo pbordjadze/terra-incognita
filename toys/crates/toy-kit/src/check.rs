@@ -771,10 +771,11 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 writeln!(log, "shot {:>7.2}s {} (update {cost:.2} ms)", t, p.display())?;
                 // the shell's text showing then (the info line, the rules), which the shell sets in
                 // the system's text and this frame lacks: tools/kit/shell_text.py draws it on the shot
-                let (line, rules) = (host.info.line(), host.info.rules());
-                if line.is_some() || rules.is_some() {
+                let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
+                if line.is_some() || rules.is_some() || origins.is_some() {
                     let s = |c: Option<&std::ffi::CStr>| serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()));
-                    let j = serde_json::json!({ "size": [w, h], "ppp": ppp, "line": s(line), "rules": s(rules) });
+                    let j = serde_json::json!({ "size": [w, h], "ppp": ppp, "line": s(line), "rules": s(rules),
+                        "origins": s(origins), "top": host.card_at_top() });
                     std::fs::write(out.join(format!("{}.shell.json", shots[si].1)), j.to_string())?;
                 }
                 si += 1;
