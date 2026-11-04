@@ -951,6 +951,17 @@ impl Toy for Battle {
         Some(toy_kit::info::Demo::new("Cannae, 216 BC. Draw a line: an order for Carthage.", vec![toy_kit::info::Stroke::drag(0.4, 1.6, a, b)]))
     }
 
+    fn rules(&self) -> Option<toy_kit::info::Rules> {
+        Some(toy_kit::info::Rules::new(
+            &[
+                "Cannae, 216 BC: Rome in black, Carthage in purple. Each mark is a few dozen men who see only around them.",
+                "Carthage's men near your line follow it. The rest go for the nearest enemy. Hit from behind or both sides, men break.",
+                "Hannibal's encirclement happens only if your lines make it.",
+            ],
+            "Real: the ground; the armies, from Polybius and Livy. Drawn: the strengths, the engraving.",
+        ))
+    }
+
     fn resize(&mut self, ctx: &mut Ctx) {
         self.ink_tex = Self::ink_target(ctx);
         self.page_bind = Self::page_bind(ctx, &self.page_layout, &self.ground_tex, &self.ink_tex, &self.stain_tex, &self.dens_tex, &self.sampler);

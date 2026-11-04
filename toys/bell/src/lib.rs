@@ -302,6 +302,16 @@ impl Toy for Bell {
         Some(toy_kit::info::Demo::new("Strike the Earth and hear it ring.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
     }
 
+    fn rules(&self) -> Option<toy_kit::info::Rules> {
+        Some(toy_kit::info::Rules::new(
+            &[
+                "A great earthquake makes the whole Earth ring like a bell for days, far too low to hear.",
+                "Here it's sped up a million times, and the bands are the ground rising and falling. Where you strike sets which notes ring.",
+            ],
+            "Real: the Earth's notes, and the great quakes it rings from on its own. Drawn: the speed-up, the motion's size.",
+        ))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.soft = ctx.reduce_motion;
         self.globe.hand.reduce_motion = ctx.reduce_motion;

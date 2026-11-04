@@ -433,6 +433,16 @@ impl Toy for Swell {
         Some(toy_kit::info::Demo::new("Drop a wave into the real sea.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
     }
 
+    fn rules(&self) -> Option<toy_kit::info::Rules> {
+        Some(toy_kit::info::Rules::new(
+            &[
+                "A wave runs faster where the sea is deeper: as fast as a jet over the deep ocean, a car on the shelves.",
+                "So it bends round islands, grows as it nears a coast, and bounces back.",
+            ],
+            "Real: the sea floor's depth; tsunami physics. Drawn: the pace (an hour a second), the height.",
+        ))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.soft = ctx.reduce_motion;
         self.globe.hand.reduce_motion = ctx.reduce_motion;

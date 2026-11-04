@@ -533,6 +533,17 @@ impl Toy for Mold {
         Some(toy_kit::info::Demo::new("A slime mold between the cities. Tap to feed it.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
     }
 
+    fn rules(&self) -> Option<toy_kit::info::Rules> {
+        Some(toy_kit::info::Rules::new(
+            &[
+                "65,000 specks of slime mold. Each sniffs ahead, left and right, turns toward the strongest scent, steps, and leaves scent behind.",
+                "Scent spreads and fades. City lights are food.",
+                "The tubes between the cities come from that alone.",
+            ],
+            "Real: the city lights, seen from space (NASA); the rule, a model of real slime mold. Drawn: the glow.",
+        ))
+    }
+
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
         self.globe.hand.reduce_motion = ctx.reduce_motion;

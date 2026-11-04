@@ -179,6 +179,14 @@ by standing on the kit:
   (all seven), and the shell's one line in system text. Terra Incognita has its own (SwiftUI,
   `InfoDemo` in `PlaygroundRoot.swift`, beside the cloud button while no prototype runs). Adrift has
   none yet (its shell and look are its conductor's). Proof: every toy's `plans/info.json`.
+- **The rules mark** (Nov 4, painting-company row 214; Paul: "a second button with just a tiny bit
+  more detail. Just the rules"): a "?" beside the info mark, `Toy::rules()` in each toy, the shell's
+  system text on a dark glass above the marks, closed by a tap anywhere, no timer. Words: the rules
+  that make the scene, a line each, then one dim line, "Real: ... Drawn: ...", from the toy's
+  SOURCES.md. Judged by two fresh critics on screenshots (`plans/rules.json`; the shell's text drawn
+  on by `tools/kit/shell_text.py`; the Simulator's `out/sim/rules.png` is the real text).
+  Open: the card covers the lower half (Battle's flanks, Swell's wavefront) while it shows; a light
+  card on the paper scenes was suggested and not taken (one look for all seven).
 - **Launch safety, one step further:** `tools/toys/sim_launch.sh` opens each IPA's toy in the iOS
   Simulator with Metal's validation on (Apple's own Metal compiler and API checks, which Linux can't
   run), in the IPA job; and `toy-log.txt` now has every launch step with the memory left.
