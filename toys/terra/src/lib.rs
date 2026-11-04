@@ -614,9 +614,8 @@ impl Toy for Terra {
                 }
             }
             State::Closing { t0 } => {
-                if let Some(r) = self.room.as_mut() {
-                    r.update(t);
-                }
+                // the toy held still as it goes down (its own hand would fly it Home after a pinch out),
+                // so its picture and the Earth's under it stay one
                 if t - t0 >= FADE {
                     self.room = None;
                     *self.room_sound.lock().unwrap() = None;
