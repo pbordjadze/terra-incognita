@@ -145,7 +145,33 @@ def battle():
     return img
 
 
-DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle}
+def carol():
+    """One cream knight, large and centred, on a warm wood ground (the toy's own pieces)."""
+    img = Image.new('RGBA', (N, N))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(7)
+    for y in range(N):
+        k = y / N
+        g = 1 + 0.03 * math.sin(y / 9 + rnd.random() * 0.3)
+        d.line([(0, y), (N, y)], fill=(int((196 - 40 * k) * g), int((140 - 32 * k) * g), int((86 - 22 * k) * g), 255))
+    atlas = Image.open(ROOT / 'toys/carol/data/pieces.png')
+    cell = atlas.crop((4 * 160, 0, 5 * 160, 160)).resize((900, 900), Image.LANCZOS)
+    sil, rim = cell.split()[0], cell.split()[1]
+    at = (62, 92)
+    pad = Image.new('L', (N, N), 0)
+    pad.paste(sil, (at[0] + 14, at[1] + 34))
+    sh = Image.new('RGBA', (N, N), (40, 22, 10, 255))
+    sh.putalpha(pad.filter(ImageFilter.GaussianBlur(24)).point(lambda v: int(v * 0.55)))
+    img.alpha_composite(sh)
+    body = Image.new('RGBA', (900, 900), (253, 244, 226, 255))
+    body.putalpha(sil)
+    img.alpha_composite(body, at)
+    ink = Image.new('RGBA', (900, 900), (66, 44, 30, 255))
+    ink.putalpha(rim.point(lambda v: int(v * 0.85)))
+    img.alpha_composite(ink, at)
+    return img
+
+DRAW = {'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:
