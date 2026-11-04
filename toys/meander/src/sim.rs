@@ -21,10 +21,13 @@ const CF: f64 = 0.022; // friction factor
 const DEPTH: f64 = 16.0; // m
 const OMEGA: f64 = -1.0;
 const GAMMA: f64 = 2.5;
-const CUT: f64 = W * 1.1; // a neck narrower than this (centreline to centreline) is cut
+const CUT: f64 = W * 1.0; // a neck narrower than this (centreline to centreline: the banks touch) is cut
 const HELD: usize = 3; // nodes held at each end
 /// The meander belt on the sheet (the young forest between the old terraces and pastures): its axis's
 /// x and half its width, m. Banks outside it (older, cohesive ground) give way a quarter as fast.
+/// Nodes apart along the river before two parts of it can be a neck (5 widths).
+const GAP: usize = (W * 5.0 / DS) as usize;
+
 pub const BELT_X: f64 = 1100.0;
 pub const BELT_HALF: f64 = 4600.0;
 
@@ -173,7 +176,7 @@ impl River {
                 grid.entry(((p[0] / cell).floor() as i64, (p[1] / cell).floor() as i64)).or_default().push(i);
             }
             // the first (most upstream) neck: i < j, far apart along the line, close on the ground
-            let gap = ((W * 8.0) / DS) as usize;
+            let gap = GAP;
             let mut found: Option<(usize, usize)> = None;
             'outer: for i in 0..n {
                 let p = self.line[i];
@@ -205,6 +208,69 @@ impl River {
             self.oxbows.push(Oxbow { line: loop_line, born: self.year, course: false });
             self.cuts.push((self.year, at));
         }
+    }
+
+    /// The necks closing: where two parts of the river far apart along it are within 2.5 widths, the
+    /// midpoint and how close (0 at 2.5 widths, 1 at the cut). One a neck (its closest pair).
+    pub fn necks(&self) -> Vec<([f64; 2], f64)> {
+        let n = self.line.len();
+        let reach = W * 2.5;
+        let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> = std::collections::HashMap::new();
+        for (i, p) in self.line.iter().enumerate() {
+            grid.entry(((p[0] / reach).floor() as i64, (p[1] / reach).floor() as i64)).or_default().push(i);
+        }
+        let mut best: Vec<(usize, usize, f64)> = Vec::new();
+        for i in 0..n {
+            let p = self.line[i];
+            let (cx, cy) = ((p[0] / reach).floor() as i64, (p[1] / reach).floor() as i64);
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    if let Some(v) = grid.get(&(cx + dx, cy + dy)) {
+                        for &j in v {
+                            if j > i + GAP {
+                                let d = dist(p, self.line[j]);
+                                if d < reach {
+                                    // the same neck if both ends are near one already found
+                                    match best.iter_mut().find(|b| b.0.abs_diff(i) < GAP && b.1.abs_diff(j) < GAP) {
+                                        Some(b) if b.2 <= d => {}
+                                        Some(b) => *b = (i, j, d),
+                                        None => best.push((i, j, d)),
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        best.iter()
+            .map(|&(i, j, d)| {
+                let (a, b) = (self.line[i], self.line[j]);
+                ([(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5], ((reach - d) / (reach - CUT)).clamp(0.0, 1.0))
+            })
+            .collect()
+    }
+
+    /// A finger's nudge: the bank near `at` pushed toward it (up to `amount` m, fading over 1.2 km of
+    /// river either side), so a bend starts there.
+    pub fn nudge(&mut self, at: [f64; 2], amount: f64) {
+        let n = self.line.len();
+        if n < 8 {
+            return;
+        }
+        let Some((k, d)) = self.line.iter().enumerate().map(|(i, p)| (i, dist(*p, at))).min_by(|a, b| a.1.total_cmp(&b.1)) else { return };
+        if d > W * 6.0 || k < HELD || k >= n - HELD {
+            return;
+        }
+        let dir = [(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)];
+        let push = amount.min(d);
+        for i in HELD..n - HELD {
+            let s = (i as f64 - k as f64) * DS;
+            let g = (-(s * s) / (2.0 * 600.0 * 600.0)).exp();
+            self.line[i][0] += dir[0] * push * g;
+            self.line[i][1] += dir[1] * push * g;
+        }
+        self.line = resample(&self.line, DS);
     }
 
     /// The channel's length, m.

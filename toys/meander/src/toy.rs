@@ -14,7 +14,9 @@ const SIDE: f64 = 22000.0;
 const NG: usize = 880;
 const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
-const LAKE_LIFE: f64 = 700.0;
+const LAKE_LIFE: f64 = 420.0;
+/// The screen's longer side, m: a few loops at a time, each big enough to watch.
+const VIEW_M: f64 = 13000.0;
 const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
 
 const WGSL: &str = r#"
@@ -132,7 +134,7 @@ impl Meander {
     /// Points a metre, and the sheet's point at the screen's centre.
     fn view(&self, ctx: &Ctx) -> (f64, [f64; 2]) {
         let [wp, hp] = ctx.points();
-        let s = wp.max(hp) / 21500.0;
+        let s = wp.max(hp) / VIEW_M;
         let half = [wp / s * 0.5, hp / s * 0.5];
         let lim = |h: f64| (SIDE * 0.5 - h).max(0.0);
         let cx = 1100.0f64.clamp(-lim(half[0]), lim(half[0]));
@@ -332,7 +334,8 @@ impl Toy for Meander {
                         ctx.haptic();
                         self.bells.strike(Note { freq: 98.0, amp: 0.18, decay: 2.5, pan: 0.0, bright: 0.3 });
                     } else {
-                        // a touch on the plain: a ring on the water or the ground, nothing more
+                        // a touch near the river nudges its bank toward the finger: a bend starts there
+                        self.river.nudge(w, W * 0.9);
                         self.ripples.push(Ripple { at: w, t: self.t, strong: false });
                     }
                 }
@@ -344,10 +347,7 @@ impl Toy for Meander {
         self.t = t;
         self.frame += 1;
         // the river doesn't move while a new course is being drawn over it
-        // a new course runs at twice the pace for its first few seconds (its bends are slow to start),
-        // easing back to the usual ten years a second
-        let young = 1.0 + 1.0 * (1.0 - smooth01(3.0, 7.0, t - self.laid)) as f64;
-        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * YEARS_A_SECOND * young };
+        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * YEARS_A_SECOND };
         self.river.advance(years);
         if self.river.year - self.epoch > 30000.0 {
             let shift = 20000.0;
@@ -431,8 +431,8 @@ impl Toy for Meander {
             let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.35, life * 0.8, age) };
             let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.6, life, age) };
             let col = mix3(mix3(WATER, LAKE, clear), MARSH, marsh);
-            let thin = if o.course { smooth01(0.0, 14.0, age) * 1.6 } else { smooth01(0.0, 40.0, age) };
-            let width = wpx * 0.5 * (1.0 - 0.35 * thin - 0.3 * smooth01(60.0, life * 0.7, age)).max(0.08);
+            let thin = if o.course { smooth01(0.0, 14.0, age) * 1.6 } else { 0.4 * smooth01(0.0, 40.0, age) };
+            let width = wpx * 0.5 * (1.0 - 0.3 * thin - 0.35 * smooth01(life * 0.4, life * 0.8, age)).max(0.08);
             for w in o.line[a..b].windows(2) {
                 p.line(px(w[0]), px(w[1]), width, 1.0, lin(col, 0.95 * fade));
             }
@@ -484,6 +484,13 @@ impl Toy for Meander {
                 p.line(px(w[0]), px(w[1]), 1.4 * ppp as f32, 1.0, lin(WATER, 1.0));
             }
         }
+        // a neck closing: a warm glow that grows as the banks come together
+        for (at, k) in self.river.necks() {
+            let k = (k * k) as f32;
+            if k > 0.02 {
+                p.glow(px(at), px(at), wpx * (0.6 + 0.8 * k), wpx * 0.8, [1.0, 0.85, 0.6, 0.22 * k]);
+            }
+        }
         // rings: where a neck broke (bright, wide), or where a finger touched
         for rp in &self.ripples {
             let a = ((self.t - rp.t) / 3.0).clamp(0.0, 1.0) as f32;
@@ -529,10 +536,8 @@ impl Toy for Meander {
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::new(
             &[
-                "The Rio Beni's floodplain in Bolivia, as a satellite saw it in 2024. The dark crescents are the river's real old loops.",
-                "Water runs fastest round the outside of a bend: it cuts that bank and leaves sand on the inside, so bends grow and drift downstream.",
-                "When a loop's neck closes, the river cuts through and the loop is left as a lake. A new course leaves the old one to silt up.",
-                "A second is ten years (twenty, for a new course's first few seconds).",
+                "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake.",
+                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). A second is ten years.",
             ],
             "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace.",
         ))

@@ -1,3 +1,6 @@
 # Meander: rounds
 
 One line a round: what changed, and the clock of each loop step (ET).
+- Round 1 (Nov 4, 2026): the Rio Beni's floodplain (Sentinel-2, today's river taken out), a river migrating by Howard–Knutson with neck cutoffs into lakes that clear to black water, point bars greening over in scroll bars; a finger lays a new course, extended to the edges, seeded with small bends. Clock (ET): read 3:42 pm, imagery 3:50–4:05, model tuned 4:05–4:25, toy rendered 4:25–4:55, IPA proof pushed 4:01 pm. Critic: "ok": the old course stays as a whole dark river; point bars loud and hard-edged; the drawing barely matters.
+- Round 2 (Nov 4): an abandoned course silts away in under three seconds; quieter, soft-edged point bars; irregular starting bends (no sine); a cut loop glows as it becomes a lake. Critic: "ok, one oh-huh moment" (a straight line wriggling back into meanders); cutoffs never readable (2–4 rings at once, thin lakes tangling); the drawing erased too fast; a tap a dead gesture; a wall of rules.
+- Round 3 (Nov 4): closer in (13 km on the long side: a few big loops on a phone, the river 17 pt), ten years a second with no faster start, a neck glows warm as its banks close and then cuts (one at a time, mostly), lakes the river's width and slow to fade, a tap nudges the nearest bank toward the finger (a bend starts there), the rules two lines.
