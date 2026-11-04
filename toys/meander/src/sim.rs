@@ -165,6 +165,46 @@ impl River {
         self.line = resample(&q, DS);
         self.year += dt;
         self.cutoffs();
+        self.erase_crossed();
+    }
+
+    /// Where the river now runs over a lake, the lake is gone (the channel took it): its line is cut
+    /// there, and pieces too short to read are dropped.
+    fn erase_crossed(&mut self) {
+        if self.oxbows.is_empty() {
+            return;
+        }
+        let cell = W;
+        let mut grid: std::collections::HashSet<(i64, i64)> = std::collections::HashSet::new();
+        for p in &self.line {
+            grid.insert(((p[0] / cell).floor() as i64, (p[1] / cell).floor() as i64));
+        }
+        let near = |q: [f64; 2], line: &[[f64; 2]]| {
+            let (cx, cy) = ((q[0] / cell).floor() as i64, (q[1] / cell).floor() as i64);
+            (-1..=1).any(|dx| (-1..=1).any(|dy| grid.contains(&(cx + dx, cy + dy)))) && line.iter().any(|p| dist(*p, q) < W * 0.75)
+        };
+        let mut out = Vec::with_capacity(self.oxbows.len());
+        for o in self.oxbows.drain(..) {
+            let mut piece: Vec<[f64; 2]> = Vec::new();
+            let mut cut = false;
+            for &q in &o.line {
+                if near(q, &self.line) {
+                    cut = true;
+                    if piece.len() >= 5 {
+                        out.push(Oxbow { line: std::mem::take(&mut piece), born: o.born, course: o.course });
+                    }
+                    piece.clear();
+                } else {
+                    piece.push(q);
+                }
+            }
+            if !cut {
+                out.push(Oxbow { line: piece, born: o.born, course: o.course });
+            } else if piece.len() >= 5 {
+                out.push(Oxbow { line: piece, born: o.born, course: o.course });
+            }
+        }
+        self.oxbows = out;
     }
 
     fn cutoffs(&mut self) {

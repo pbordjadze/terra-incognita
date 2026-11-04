@@ -4,7 +4,7 @@ pub mod sim;
 use sim::{dist, rand, resample};
 
 /// The time-lapse: years of the river's life a second on screen.
-pub const YEARS_A_SECOND: f64 = 10.0;
+pub const YEARS_A_SECOND: f64 = 6.0;
 
 /// The river the toy opens on: down the middle of the belt, entering at the bottom (upstream, south)
 /// and leaving at the top (north), with the gentle bends of a young course.
@@ -29,7 +29,7 @@ pub fn seed_wobble(course: &[[f64; 2]], seed: u64) -> Vec<[f64; 2]> {
     }
     let mut s = seed | 1;
     // irregular, not a sine: six waves of random length (1.6-5 km) and strength
-    let waves: Vec<(f64, f64, f64)> = (0..6).map(|_| (1600.0 + 3400.0 * rand(&mut s), 90.0 + 120.0 * rand(&mut s), rand(&mut s) * 6.283)).collect();
+    let waves: Vec<(f64, f64, f64)> = (0..6).map(|_| (1600.0 + 3400.0 * rand(&mut s), 110.0 + 120.0 * rand(&mut s), rand(&mut s) * 6.283)).collect();
     let mut out = Vec::with_capacity(p.len());
     let mut along = 0.0;
     for i in 0..p.len() {

@@ -14,7 +14,9 @@ const SIDE: f64 = 22000.0;
 const NG: usize = 880;
 const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
-const LAKE_LIFE: f64 = 420.0;
+/// The clock while nothing on screen is about to happen, years a second.
+const FAST_YEARS: f64 = 20.0;
+const LAKE_LIFE: f64 = 220.0; // a lake silts up and is forest again in under half a minute
 /// The screen's longer side, m: a few loops at a time, each big enough to watch.
 const VIEW_M: f64 = 13000.0;
 const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
@@ -44,18 +46,21 @@ fn vnoise(p: vec2<f32>) -> f32 {
   let l = dot(c, vec3(0.3, 0.59, 0.11));
   c = clamp((c - 0.06) * 1.18, vec3(0.0), vec3(1.0));
   c = mix(vec3(l), c, 1.15);
-  // where the river has been: bare sand, then cane and young forest, then the old forest again
-  // where the river has been: bare sand, then cane, then the forest again; the swept ground's edge is
-  // softened by looking a little round (the grid is 25 m)
-  let e = 1.6 / u.side * 25.0;
-  let d = textureSampleLevel(dep, smp, st, 0.0).r;
-  var near = 0.0;
-  for (var k = 0; k < 4; k++) {
-    let o = vec2(cos(f32(k) * 1.5708), sin(f32(k) * 1.5708)) * e;
-    near += select(0.0, 0.25, textureSampleLevel(dep, smp, st + o, 0.0).r > -1.0e8);
+  // where the river has been: bare sand, then cane, then the forest again
+  // nine taps a cell apart: the 25 m grid's cells blurred into a soft edge
+  let cellw = 25.0 / u.side;
+  var dg = vec2<f32>(0.0);
+  for (var j = -1; j <= 1; j++) {
+    for (var k = -1; k <= 1; k++) {
+      let wgt = select(0.5, 1.0, j == 0 && k == 0);
+      dg += textureSampleLevel(dep, smp, st + vec2(f32(j), f32(k)) * cellw * 0.9, 0.0).rg * wgt;
+    }
   }
+  dg /= 5.0;
+  let near = smoothstep(0.05, 0.85, dg.y);
+  let d = select(-2.0e9, dg.x / max(dg.y, 1e-3), dg.y > 0.02);
   let age = u.now - d;
-  if (d > -1.0e8 && age >= 0.0) {
+  if (dg.y > 0.02 && age >= 0.0) {
     let bands = 0.5 + 0.5 * sin(d * 0.9);             // the scroll bars: a low ridge every few years
     let grain = vnoise(world / 40.0) * 0.6 + vnoise(world / 12.0) * 0.4;
     let sand = vec3(0.74, 0.67, 0.53) * (0.95 + 0.07 * grain);
@@ -64,7 +69,7 @@ fn vnoise(p: vec2<f32>) -> f32 {
     let back = smoothstep(18.0, 90.0, age + grain * 18.0);
     let ridge = c * (1.0 + 0.12 * (bands - 0.5) * (1.0 - smoothstep(120.0, 450.0, age)));
     g = mix(g, ridge, back);
-    c = mix(c, g, near * near);
+    c = mix(c, g, near);
   }
   return vec4<f32>(c, 1.0);
 }
@@ -104,6 +109,10 @@ pub struct Meander {
     laid: f64,
     ripples: Vec<Ripple>,
     cuts_seen: usize,
+    /// The clock now, years a second.
+    pace: f64,
+    /// Cuts on screen: when, and where the neck broke (the new channel there flashes).
+    flashes: Vec<(f64, [f64; 2])>,
     t: f64,
     /// Flecks on the water, as fractions of its length.
     flecks: Vec<(f64, f64)>,
@@ -208,7 +217,7 @@ fn smooth01(e0: f64, e1: f64, x: f64) -> f32 {
 
 const WATER: [f32; 3] = [0.76, 0.63, 0.47]; // the Beni's café-au-lait: white water, full of the Andes
 const BANK: [f32; 3] = [0.88, 0.81, 0.66];
-const LAKE: [f32; 3] = [0.15, 0.15, 0.23]; // a cut-off loop, cleared: black water
+const LAKE: [f32; 3] = [0.15, 0.22, 0.22]; // the photograph's own oxbow lakes, sampled // a cut-off loop, cleared: black water
 const MARSH: [f32; 3] = [0.22, 0.30, 0.19];
 
 impl Toy for Meander {
@@ -222,7 +231,7 @@ impl Toy for Meander {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::R16Float,
+            format: wgpu::TextureFormat::Rg16Float,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
@@ -278,6 +287,8 @@ impl Toy for Meander {
             laid: -10.0,
             ripples: Vec::new(),
             cuts_seen: 0,
+            pace: YEARS_A_SECOND,
+            flashes: Vec::new(),
             t: 0.0,
             flecks: Vec::new(),
             bells: Bells::new(),
@@ -347,7 +358,22 @@ impl Toy for Meander {
         self.t = t;
         self.frame += 1;
         // the river doesn't move while a new course is being drawn over it
-        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * YEARS_A_SECOND };
+        // the clock runs fast while bends grow and slows as a neck on screen closes, so each cut is
+        // seen: from about twenty years a second down to six
+        let b = self.view_bounds(ctx);
+        let closing = self
+            .river
+            .necks()
+            .iter()
+            .filter(|(at, _)| at[0] > b[0] && at[0] < b[2] && at[1] > b[1] && at[1] < b[3])
+            .map(|n| n.1)
+            .fold(0.0f64, f64::max);
+        let target = FAST_YEARS + (YEARS_A_SECOND - FAST_YEARS) * smooth01(0.0, 0.5, closing) as f64;
+        let since_cut = self.flashes.last().map_or(9.0, |f| t - f.0);
+        let target = if since_cut < 1.5 { YEARS_A_SECOND } else { target };
+        let ease = 1.0 - (-dt * 2.0).exp();
+        self.pace += (target - self.pace) * ease;
+        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * self.pace };
         self.river.advance(years);
         if self.river.year - self.epoch > 30000.0 {
             let shift = 20000.0;
@@ -359,8 +385,7 @@ impl Toy for Meander {
             }
         }
         self.stamp();
-        // a neck cut: a ring where it broke, a soft low note, a tap in the hand
-        let b = self.view_bounds(ctx);
+        // a neck cut: a flash where it broke, a soft low note, a tap in the hand
         while self.cuts_seen < self.river.cuts.len() {
             let (_, at) = self.river.cuts[self.cuts_seen];
             self.cuts_seen += 1;
@@ -368,7 +393,7 @@ impl Toy for Meander {
                 if std::env::var("MEANDER_CUTS").is_ok() {
                     eprintln!("meander: cut on screen at t={t:.1}s");
                 }
-                self.ripples.push(Ripple { at, t, strong: true });
+                self.flashes.push((t, at));
                 ctx.haptic();
                 let pan = (((at[0] - b[0]) / (b[2] - b[0])) * 2.0 - 1.0) as f32;
                 let mut s = self.frame ^ 0x77;
@@ -377,7 +402,8 @@ impl Toy for Meander {
                 self.bells.strike(Note { freq: f * 0.5, amp: 0.12, decay: 4.0, pan: pan * 0.6, bright: 0.1 });
             }
         }
-        self.ripples.retain(|r| t - r.t < 3.0);
+        self.ripples.retain(|r| t - r.t < 2.0);
+        self.flashes.retain(|f| t - f.0 < 1.6);
         // the lakes age out
         let year = self.river.year;
         self.river.oxbows.retain(|o| year - o.born < if o.course { COURSE_LIFE } else { LAKE_LIFE });
@@ -394,11 +420,13 @@ impl Toy for Meander {
         let (s, c) = self.view(ctx);
         let ppp = ctx.ppp;
         // the deposits, as half floats
-        let half: Vec<u16> = self.dep.iter().map(|&d| f16(d)).collect();
+        // (year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
+        // nearby and g a soft edge
+        let half: Vec<u16> = self.dep.iter().flat_map(|&d| if d > NEVER { [f16(d), 0x3c00] } else { [0, 0] }).collect();
         gpu.queue.write_texture(
             wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             bytemuck::cast_slice(&half),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 2), rows_per_image: None },
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: None },
             wgpu::Extent3d { width: NG as u32, height: NG as u32, depth_or_array_layers: 1 },
         );
         let u = Uni {
@@ -422,27 +450,25 @@ impl Toy for Meander {
             let age = year - o.born;
             let life = if o.course { COURSE_LIFE } else { LAKE_LIFE };
             let n = o.line.len();
-            if n < 3 {
+            if n < 5 {
                 continue;
             }
-            let plug = ((age / 25.0).min(1.0) * (W * 1.4 / 130.0)) as usize; // nodes silted at each end
-            let (a, b) = (plug.min(n / 3), n - plug.min(n / 3));
-            let clear = smooth01(0.0, if o.course { 6.0 } else { 30.0 }, age);
-            let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.35, life * 0.8, age) };
-            let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.6, life, age) };
+            // the ends silt first (the plugs), then the lake shrinks toward its middle as it fills
+            let silt = (0.08 + 0.37 * smooth01(0.0, life, age) as f64).min(0.45);
+            let cut = ((n as f64) * silt) as usize;
+            let (a, b) = (cut.min(n / 2 - 1), (n - cut).max(n / 2 + 1));
+            let clear = smooth01(0.0, if o.course { 6.0 } else { 20.0 }, age);
+            let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.45, life * 0.9, age) };
+            let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.55, life, age) };
             let col = mix3(mix3(WATER, LAKE, clear), MARSH, marsh);
-            let thin = if o.course { smooth01(0.0, 14.0, age) * 1.6 } else { 0.4 * smooth01(0.0, 40.0, age) };
-            let width = wpx * 0.5 * (1.0 - 0.3 * thin - 0.35 * smooth01(life * 0.4, life * 0.8, age)).max(0.08);
-            for w in o.line[a..b].windows(2) {
-                p.line(px(w[0]), px(w[1]), width, 1.0, lin(col, 0.95 * fade));
-            }
-            // a loop just cut off lights up for a moment: here is the new lake
-            if !o.course && age < 22.0 {
-                let k = (1.0 - age / 22.0) as f32;
-                let k = k * k;
-                for w in o.line[a..b].windows(3).step_by(3) {
-                    p.glow(px(w[0]), px(w[2]), width * 1.6, wpx * 0.7, [1.0, 0.9, 0.7, 0.05 * k]);
-                }
+            let thin = if o.course { (smooth01(0.0, 14.0, age) * 1.6).min(0.92) } else { 0.15 * smooth01(0.0, 30.0, age) + 0.3 * smooth01(life * 0.3, life, age) };
+            let width = wpx * 0.5 * (1.0 - thin);
+            let span = (b - a).max(2) as f32;
+            for i in a..b - 1 {
+                // tapering to points at both ends, like the real crescents
+                let e = ((i - a) as f32).min((b - 1 - i) as f32) / (span * 0.22);
+                let taper = e.clamp(0.0, 1.0).sqrt();
+                p.line(px(o.line[i]), px(o.line[i + 1]), (width * taper).max(0.5), 1.6 * ppp as f32, lin(col, 0.88 * fade));
             }
         }
         // the river: a pale bank of wet sand, then the water; a new course swells from a thread
@@ -452,10 +478,22 @@ impl Toy for Meander {
         let step = ((wpx * 0.25 / (130.0 * s * ppp) as f32).floor() as usize).max(1);
         let pts: Vec<[f32; 2]> = line.iter().step_by(step).map(|&q| px(q)).collect();
         for w in pts.windows(2) {
-            p.line(w[0], w[1], r + 1.6 * ppp as f32, 1.2, lin(BANK, 0.9));
+            p.line(w[0], w[1], r + 1.0 * ppp as f32, 2.0 * ppp as f32, lin(mix3(BANK, [0.45, 0.50, 0.36], 0.35), 1.0));
         }
         for w in pts.windows(2) {
-            p.line(w[0], w[1], r, 1.0, lin(WATER, 1.0));
+            p.line(w[0], w[1], r, 1.2 * ppp as f32, lin(WATER, 1.0));
+        }
+        // a cut: the new short channel through the neck flashes as the river takes it
+        for &(t0, at) in &self.flashes {
+            let k = (1.0 - (self.t - t0) / 1.6).clamp(0.0, 1.0) as f32;
+            let k = k * k;
+            for w in line.windows(2) {
+                let d = dist(w[0], at);
+                if d < 900.0 {
+                    let f = (1.0 - d / 900.0) as f32;
+                    p.glow(px(w[0]), px(w[1]), r * 0.9, wpx * 0.5, [1.0, 0.92, 0.75, 0.30 * k * f]);
+                }
+            }
         }
         // the current: faint light flecks drifting down the middle
         let len = self.river.length();
@@ -493,9 +531,9 @@ impl Toy for Meander {
         }
         // rings: where a neck broke (bright, wide), or where a finger touched
         for rp in &self.ripples {
-            let a = ((self.t - rp.t) / 3.0).clamp(0.0, 1.0) as f32;
+            let a = ((self.t - rp.t) / 2.0).clamp(0.0, 1.0) as f32;
             let c = px(rp.at);
-            let (r0, r1, i) = if rp.strong { (0.5, 7.0, 0.7) } else { (0.4, 4.0, 0.5) };
+            let (r0, r1, i) = if rp.strong { (0.5, 7.0, 0.7) } else { (0.3, 2.5, 0.45) };
             let rad = wpx * (r0 + (r1 - r0) * (1.0 - (1.0 - a) * (1.0 - a)));
             p.glow_ring(c, rad, (1.5 * ppp) as f32, 2.0 * ppp as f32, [1.0, 0.95, 0.85, i * (1.0 - a)]);
         }
@@ -537,7 +575,7 @@ impl Toy for Meander {
         Some(toy_kit::info::Rules::new(
             &[
                 "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake.",
-                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). A second is ten years.",
+                "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). A second is about twenty years, slowing to six as a neck closes.",
             ],
             "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace.",
         ))
