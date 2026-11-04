@@ -24,6 +24,7 @@ fireflies = { path = "../fireflies" }
 bell = { path = "../bell" }
 swell = { path = "../swell" }
 battle = { path = "../battle" }
+jam = { path = "../jam" }
 
 [[bin]]
 name = "terra-check"

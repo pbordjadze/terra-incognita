@@ -13,7 +13,8 @@ inside Terra they are the same toys, unchanged.
   Wall, Somerset (the toy's `PLACE`). Mold: between Europe's cities (the toy opens over Europe). Fireflies:
   the eastern United States' cities round the Great Smoky Mountains (the toy opens over the Americas; its
   rule credits the Smokies' synchronous fireflies). Bell: Valdivia, Chile, 1960 (the first of the toy's
-  great quakes). Swell: the mid-Pacific where the toy opens. Battle: Cannae, Apulia.
+  great quakes). Swell: the mid-Pacific where the toy opens. Battle: Cannae, Apulia. Ghost Jam: Nagoya
+  (the city of the ring experiment's universities, not the test ground itself).
 - **The cities in the mold's and the fireflies' lights**: their real longitudes and latitudes.
 
 ## Drawn

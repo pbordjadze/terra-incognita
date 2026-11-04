@@ -895,6 +895,7 @@ dependencies = [
  "bell",
  "bytemuck",
  "fireflies",
+ "jam",
  "mold",
  "murmuration",
  "serde",
