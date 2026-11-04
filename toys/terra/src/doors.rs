@@ -13,6 +13,8 @@ pub type Opener = fn(&Ctx, &Arc<dyn Assets>) -> anyhow::Result<Box<dyn Room>>;
 
 pub struct Door {
     pub id: &'static str,
+    /// Its toy's name (VoiceOver says it).
+    pub name: &'static str,
     /// Where the light is: where the toy opens (the whales' is their middle, as it moves).
     pub at: [f64; 2],
     pub tint: [f32; 3],
@@ -60,15 +62,18 @@ const FIREFLY_CITIES: [[f64; 2]; 16] = [
 pub const WHALES: usize = 0;
 pub const FIREFLIES: usize = 3;
 
+/// Every toy Terra holds, one line each. A new toy: its crate in Cargo.toml, its line here (where it opens,
+/// its colour, its note), its name in tools/toys/terra/manifest.py; a likeness of its own in `paint` is
+/// optional (without one it is a breathing light of its colour).
 pub fn doors() -> Vec<Door> {
     vec![
-        Door { id: "whales", at: [-125.0, 30.0], tint: [0.80, 0.60, 0.26], night: true, degree: 0, open: rooms::open::<whales::Whales> },
-        Door { id: "murmuration", at: [murmuration::PLACE.0, murmuration::PLACE.1], tint: [0.93, 0.58, 0.42], night: false, degree: 4, open: rooms::open::<murmuration::Murmuration> },
-        Door { id: "mold", at: [21.5, 51.2], tint: [0.95, 0.76, 0.28], night: true, degree: 2, open: rooms::open::<mold::Mold> },
-        Door { id: "fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
-        Door { id: "bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
-        Door { id: "swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
-        Door { id: "battle", at: [16.13, 41.31], tint: [0.45, 0.25, 0.55], night: false, degree: 1, open: rooms::open::<battle::Battle> },
+        Door { id: "whales", name: "Whales", at: [-125.0, 30.0], tint: [0.80, 0.60, 0.26], night: true, degree: 0, open: rooms::open::<whales::Whales> },
+        Door { id: "murmuration", name: "Murmuration", at: [murmuration::PLACE.0, murmuration::PLACE.1], tint: [0.93, 0.58, 0.42], night: false, degree: 4, open: rooms::open::<murmuration::Murmuration> },
+        Door { id: "mold", name: "Mold", at: [21.5, 51.2], tint: [0.95, 0.76, 0.28], night: true, degree: 2, open: rooms::open::<mold::Mold> },
+        Door { id: "fireflies", name: "Fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
+        Door { id: "bell", name: "Bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
+        Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
+        Door { id: "battle", name: "Battle Ink", at: [16.13, 41.31], tint: [0.45, 0.25, 0.55], night: false, degree: 1, open: rooms::open::<battle::Battle> },
     ]
 }
 
@@ -283,7 +288,9 @@ impl Life {
         let shown = self.shown(globe);
         for (i, d) in self.doors.iter().enumerate() {
             let (s, facing) = shown[i];
-            let vis = smooth(0.3, 0.5, facing) * fade;
+            let [sw, sh] = [globe.view().width as f64 / globe.view().ppp, globe.view().height as f64 / globe.view().ppp];
+            let edge = s[0].min(sw - s[0]).min(s[1]).min(sh - s[1]);
+            let vis = smooth(0.3, 0.5, facing) * smooth(r * 0.9, r * 1.6, edge) * fade;
             if vis <= 0.01 {
                 continue;
             }
@@ -414,7 +421,12 @@ impl Life {
                         dot(p, x, y, [0.45, 0.22, 0.55]);
                     }
                 }
-                _ => {}
+                _ => {
+                    // a toy without a likeness of its own yet: a light of its colour, breathing
+                    let ph = (tm / 3.0 + i as f64 * 0.37).rem_euclid(1.0);
+                    p.ring(c, ((r * (0.3 + 1.2 * ph)) * k) as f32, 1.6 * kf, 1.2, [tint[0], tint[1], tint[2], ((1.0 - ph) * 0.85) as f32 * a]);
+                    p.disc(c, 3.0 * kf, 1.0, [tint[0], tint[1], tint[2], 0.95 * a]);
+                }
             }
             // touched: it stirs (a ring of its colour going out)
             let st = t - self.stir_at[i];

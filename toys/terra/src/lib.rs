@@ -318,8 +318,13 @@ impl Terra {
             }
         };
         let at = self.life.doors[i].at;
-        // the toy's own opening camera (a globe toy), or close over its place (a scene of its own)
-        let to = room.camera().unwrap_or(Camera::new(at[0], at[1], 9.0));
+        // a globe toy: down close over the light, where the toy will open (the whales' own framing of the
+        // pair, which is already close); a scene of its own: as close over its place as the Earth goes
+        let to = match room.camera() {
+            Some(own) if self.life.doors[i].id == "whales" => own,
+            Some(own) => Camera::new(at[0], at[1], (own.zoom * 1.8).max(2.4)),
+            None => Camera::new(at[0], at[1], 9.0),
+        };
         self.room = Some(room);
         self.door = i;
         let from = self.globe.camera;
@@ -496,7 +501,7 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-45.0, 33.0, 1.3);
+        globe.camera = Camera::new(-62.0, 32.0, 1.12);
         globe.set_home();
         let mut life = Life::new(assets.as_ref());
         let [w, h] = ctx.points();
@@ -589,6 +594,8 @@ impl Toy for Terra {
                 }
                 if u >= 1.0 {
                     if let Some(r) = self.room.as_mut() {
+                        // the toy opens where the dive arrived: one picture becoming another
+                        r.set_camera(Camera { roll: self.globe.camera.roll, ..to });
                         r.settings(ctx.night, ctx.reduce_motion);
                         *self.room_sound.lock().unwrap() = r.synth();
                         r.update(t);
@@ -621,7 +628,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: from.zoom.min(1.3), roll: 0.0, ..from };
+                    let to = Camera { zoom: from.zoom.min(1.12), roll: 0.0, ..from };
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
@@ -734,7 +741,7 @@ impl Toy for Terra {
         if !matches!(self.state, State::Atlas) {
             return Vec::new();
         }
-        self.visible_doors().into_iter().map(|(i, p)| (NAMES[i].to_string(), p)).collect()
+        self.visible_doors().into_iter().map(|(i, p)| (self.life.doors[i].name.to_string(), p)).collect()
     }
 
     fn press(&mut self, ctx: &mut Ctx, i: usize, t: f64) {
@@ -757,16 +764,13 @@ impl Toy for Terra {
         }
         Some(Rules::new(
             &[
-                "Seven lights, seven toys, each where it is real: whales off California, starlings in Somerset, a slime mold between Europe's cities, fireflies in the Smokies, a bell struck in Chile, a swell in the Pacific, a battle at Cannae.",
+                "Every light is a toy, at the place where it is real.",
                 "Touch a light to fall into its toy. Pinch out past the whole Earth, or touch the Earth mark bottom left, to come back.",
             ],
             "Real: the Earth this month as NASA's satellites saw it, and each toy's place. Drawn: the lights.",
         ))
     }
 }
-
-/// The lights' names, for VoiceOver (the toys' names on their own apps).
-const NAMES: [&str; 7] = ["Whales", "Murmuration", "Mold", "Fireflies", "Bell", "Swell", "Battle Ink"];
 
 impl Terra {
     /// The lights facing the reader now, with where they are (points).

@@ -29,6 +29,9 @@ pub trait Room {
     /// The toy's globe camera now, if it has a globe (read from what it saves: every globe toy keeps
     /// its camera, as `camera` or last in a list).
     fn camera(&self) -> Option<Camera>;
+    /// Puts the toy's globe camera at `cam` (a globe toy takes back what it saved with the camera in it
+    /// changed: every one keeps its camera, as `camera` or last in a list). False: no globe camera.
+    fn set_camera(&mut self, cam: Camera) -> bool;
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]>;
     fn anchors(&self) -> Vec<(String, [f64; 2])>;
 }
@@ -53,6 +56,22 @@ pub fn open<T: Toy + 'static>(from: &Ctx, assets: &Arc<dyn Assets>) -> anyhow::R
     let mut ctx = context(from, assets);
     let toy = T::new(&mut ctx)?;
     Ok(Box::new(Inside { ctx, toy, last_t: None }))
+}
+
+/// What a toy saves with its camera changed to `cam` (None: no camera in it).
+pub fn with_camera(saved: &str, cam: Camera) -> Option<String> {
+    let mut v: serde_json::Value = serde_json::from_str(saved).ok()?;
+    let c = serde_json::to_value(cam).ok()?;
+    match &mut v {
+        serde_json::Value::Object(m) if m.contains_key("camera") => {
+            m.insert("camera".into(), c);
+        }
+        serde_json::Value::Array(a) if a.last().is_some_and(|l| serde_json::from_value::<Camera>(l.clone()).is_ok()) => {
+            *a.last_mut()? = c;
+        }
+        _ => return None,
+    }
+    serde_json::to_string(&v).ok()
 }
 
 /// A camera from what a toy saves: `{"camera": ..}`, or a list whose last item is one.
@@ -105,6 +124,11 @@ impl<T: Toy> Room for Inside<T> {
     fn camera(&self) -> Option<Camera> {
         self.toy.save().as_deref().and_then(saved_camera)
     }
+    fn set_camera(&mut self, cam: Camera) -> bool {
+        let Some(s) = self.toy.save().and_then(|s| with_camera(&s, cam)) else { return false };
+        self.toy.restore(&mut self.ctx, &s);
+        true
+    }
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]> {
         self.toy.project(lonlat)
     }
@@ -127,5 +151,9 @@ mod tests {
         assert_eq!(saved_camera(&pair), Some(c));
         assert_eq!(saved_camera("{\"seed\": 4}"), None);
         assert_eq!(saved_camera("nonsense"), None);
+        let d = Camera::new(-83.0, 35.6, 2.4);
+        assert_eq!(saved_camera(&with_camera(&obj, d).unwrap()), Some(d));
+        assert_eq!(saved_camera(&with_camera(&pair, d).unwrap()), Some(d));
+        assert_eq!(with_camera("{\"seed\": 4}", d), None);
     }
 }
