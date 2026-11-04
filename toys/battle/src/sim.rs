@@ -65,12 +65,6 @@ pub struct Stroke {
     pub carried: u32,
 }
 
-pub struct Pulse {
-    pub x: f32,
-    pub y: f32,
-    pub born: f32,
-}
-
 #[derive(Default)]
 pub struct Unit {
     pub x: f32,
@@ -100,7 +94,6 @@ pub struct Sim {
     seed: u32,
     pub units: Vec<Unit>,
     pub strokes: Vec<Stroke>,
-    pub pulses: Vec<Pulse>,
     pub started: bool,
     pub time: f32,
     /// [x, y, side] of every unit that fell, in order (the drawing stains the paper with them)
@@ -150,7 +143,6 @@ impl Sim {
             seed: 216,
             units: Vec::with_capacity(3200),
             strokes: vec![],
-            pulses: vec![],
             started: false,
             time: 0.0,
             deaths: vec![],
@@ -279,6 +271,20 @@ impl Sim {
         self.strokes.len() - 1
     }
 
+    /// The whole body (group) of Carthage's nearest formed man within `r` of (x, y) goes to stroke `k`.
+    pub fn claim(&mut self, k: usize, x: f32, y: f32, r: f32) {
+        let mut best = (r * r, None);
+        for u in self.units.iter().filter(|u| u.state == FORMED && KINDS[u.kind as usize].side == 1) {
+            let d2 = (u.x - x).powi(2) + (u.y - y).powi(2);
+            if d2 < best.0 {
+                best = (d2, Some(u.grp as usize));
+            }
+        }
+        if let Some(g) = best.1 {
+            self.group_ink[g] = k as i32;
+        }
+    }
+
     pub fn extend_stroke(&mut self, k: usize, x: f32, y: f32) {
         let p = *self.strokes[k].pts.last().unwrap();
         let d = ((x - p[0]).powi(2) + (y - p[1]).powi(2)).sqrt();
@@ -297,12 +303,6 @@ impl Sim {
 
     pub fn end_stroke(&mut self, k: usize) {
         self.strokes[k].done = true;
-    }
-
-    /// A drop of ink: a ring that pushes both armies out a little, the way a drop spreads on the plate.
-    pub fn pulse(&mut self, x: f32, y: f32) {
-        self.started = true;
-        self.pulses.push(Pulse { x, y, born: self.time });
     }
 
     pub fn ink_at(&self, x: f32, y: f32) -> Option<Ink> {
@@ -696,22 +696,6 @@ impl Sim {
                 u.state = GONE;
             }
         }
-        // the drops of ink push outward in a ring
-        let t = self.time;
-        self.pulses.retain(|p| t - p.born < 6.0);
-        if !self.pulses.is_empty() {
-            for u in self.units.iter_mut().filter(|u| u.state < DEAD) {
-                for p in &self.pulses {
-                    let age = t - p.born;
-                    let (dx, dy) = (u.x - p.x, u.y - p.y);
-                    let d = (dx * dx + dy * dy).sqrt().max(1e-3);
-                    let ring = 4.0 + age * 40.0;
-                    let w = (-(d - ring).powi(2) / 120.0).exp() * (-age * 0.7).exp();
-                    u.x += dx / d * w * 18.0 * dt;
-                    u.y += dy / d * w * 18.0 * dt;
-                }
-            }
-        }
         // bodies take room: overlap is pushed apart, so depth presses
         self.bin();
         for _ in 0..2 {
@@ -771,6 +755,23 @@ impl Sim {
                     u.x = rx + 6.0;
                     u.vx = u.vx.max(0.0);
                 }
+            }
+        }
+    }
+
+    /// An army broken: every man of `side` still formed turns to run.
+    pub fn rout(&mut self, side: u8) {
+        for u in self.units.iter_mut() {
+            if u.state == FORMED && KINDS[u.kind as usize].side == side {
+                u.state = FLEEING;
+                u.since = 0.0;
+                u.trapped = false;
+                // away from the fight, home: Rome up the page, Carthage down it, each a little its own way
+                let home = if side == 0 { -1.0 } else { 1.0 };
+                u.vx = (u.j - 0.5) * 24.0;
+                u.vy = home * (28.0 + u.j * 14.0);
+                u.fx = u.vx / 40.0;
+                u.fy = home;
             }
         }
     }
