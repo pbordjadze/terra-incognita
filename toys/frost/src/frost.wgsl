@@ -10,8 +10,8 @@
 // beta, the pane's humidity where the cell is. A cell on another crystal's ice, or off the glass, is a
 // sink (0): the crystals meet at a seam.
 
-const N: i32 = 384;
-const HALF: i32 = 192;
+const N: i32 = 512;
+const HALF: i32 = 256;
 const MARGIN: i32 = 28;
 const EMPTY: u32 = 0xffffffffu;
 
@@ -38,8 +38,8 @@ struct Globals {
   gamma_bottom: f32,
   eps: f32,
   alpha: f32,
-  _p0: f32,
-  _p1: f32,
+  frame: f32,          // the window frame's width, points
+  bar: f32,            // the crossbar's middle, points from the top (0: none)
   slots: array<Slot, 8>,
 };
 
@@ -99,8 +99,17 @@ fn gamma_at(p: vec2<f32>) -> f32 {
   return g * (1.0 + G.eps * h);
 }
 
+// the glass: inside the frame, off the crossbar
+fn on_glass(p: vec2<f32>) -> bool {
+  let f = G.frame;
+  if p.x < f || p.y < f || p.x >= G.pane.x - f || p.y >= G.pane.y - f {
+    return false;
+  }
+  return G.bar <= 0.0 || abs(p.y - G.bar) > 0.5 * f;
+}
+
 fn mask_index(p: vec2<f32>) -> i32 {
-  if p.x < 0.0 || p.y < 0.0 || p.x >= G.pane.x || p.y >= G.pane.y {
+  if !on_glass(p) {
     return -1;
   }
   let m = vec2<i32>(floor(p / G.cell));
@@ -198,9 +207,10 @@ fn claim(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let p = pane_of(k, q, r);
   let id = G.slots[k].id;
-  let m0 = vec2<i32>(floor(p / G.cell - 0.5));
-  for (var dy = 0; dy < 2; dy++) {
-    for (var dx = 0; dx < 2; dx++) {
+  // (the glass two cells round its ice: another crystal's arms keep that far off, a clear seam)
+  let m0 = vec2<i32>(floor(p / G.cell)) - vec2<i32>(2, 2);
+  for (var dy = 0; dy < 5; dy++) {
+    for (var dx = 0; dx < 5; dx++) {
       let m = m0 + vec2<i32>(dx, dy);
       if m.x >= 0 && m.y >= 0 && m.x < i32(G.mask_w) && m.y < i32(G.mask_h) {
         atomicMin(&mask[m.y * i32(G.mask_w) + m.x], id);
@@ -215,7 +225,7 @@ fn claim(@builtin(global_invocation_id) gid: vec3<u32>) {
 // is bound read-only, so the pass runs once a parity)
 @compute @workgroup_size(8, 8, 1)
 fn seed(@builtin(global_invocation_id) gid: vec3<u32>) {
-  if gid.x >= u32(N) || gid.y >= u32(N) {
+  if gid.x >= u32(N) || gid.y >= u32(N) || (O.kind & 1u) == 0u {
     return;
   }
   let k = O.slot;
@@ -237,28 +247,42 @@ fn seed(@builtin(global_invocation_id) gid: vec3<u32>) {
 @compute @workgroup_size(8, 8, 1)
 fn melt_cells(@builtin(global_invocation_id) gid: vec3<u32>) {
   let k = gid.z;
-  if gid.x >= u32(N) || gid.y >= u32(N) || G.slots[k].live == 0u {
+  if gid.x >= u32(N) || gid.y >= u32(N) || G.slots[k].live == 0u || (O.kind & 2u) == 0u {
     return;
   }
   let q = i32(gid.x) - HALF;
   let r = i32(gid.y) - HALF;
   let p = pane_of(k, q, r);
-  if distance(p, O.at) <= O.radius {
+  if distance(p, O.at) <= melt_radius(p) {
     dst[at(k, q, r)] = beta_at(p);
   }
 }
 
+// a fingertip's print is not a circle: its edge wanders with the angle
+fn melt_radius(p: vec2<f32>) -> f32 {
+  let a = atan2(p.y - O.at.y, p.x - O.at.x);
+  let w = 0.16 * sin(3.0 * a + O._c) + 0.10 * sin(5.0 * a + 2.0 * O._c) + 0.07 * sin(8.0 * a + 3.1 * O._c);
+  return O.radius * (1.0 + w);
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (O.kind & 2u) == 0u {
+    return;
+  }
   // over the field's texels near the disc
-  let lo = vec2<i32>(floor((O.at - O.radius - 2.0) * G.fs));
+  let lo = vec2<i32>(floor((O.at - 1.4 * O.radius - 2.0) * G.fs));
   let f = lo + vec2<i32>(gid.xy);
   if f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
     return;
   }
   let p = (vec2<f32>(f) + 0.5) / G.fs;
-  if distance(p, O.at) <= O.radius {
-    field[f.y * i32(G.field_w) + f.x] = 0.0;
+  let d = distance(p, O.at);
+  let rr = melt_radius(p);
+  if d <= rr {
+    // a film of meltwater (pane.wgsl draws field values between 0.3 and 0.95 as wet glass), thinner
+    // toward the middle where the finger pressed longest
+    field[f.y * i32(G.field_w) + f.x] = 0.55 + 0.35 * smoothstep(0.5 * rr, rr, d);
     let m = mask_index(p);
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);

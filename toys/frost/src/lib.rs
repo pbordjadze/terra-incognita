@@ -13,7 +13,7 @@ use toy_kit::{info, Ctx, Phase, PointerEvent, Toy};
 use wgpu::util::DeviceExt;
 
 /// A grid's side, cells (frost.wgsl's N).
-const N: u32 = 384;
+const N: u32 = 512;
 const SLOTS: usize = 8;
 /// Automaton steps a second: a fern's tip runs about a quarter cell a step.
 const STEPS_PER_S: f64 = 300.0;
@@ -23,11 +23,17 @@ const FS: f32 = 2.0;
 const MELT: f32 = 34.0;
 /// A drag starts another crystal every so many points.
 const SPACING: f64 = 56.0;
-/// A crystal stops being stepped once it has frozen nothing for this long, or at this age.
-const QUIET_S: f64 = 1.2;
-/// A crystal's reach, cells (each its own, within a fifth of this).
-const REACH: f64 = 112.0;
-const MAX_AGE_S: f64 = 40.0;
+/// A crystal stops being stepped once its tips have gone no further for this long (blocked by other
+/// ice or the frame all round; its grid is then free), or at this age.
+const QUIET_S: f64 = 1.5;
+const MAX_AGE_S: f64 = 60.0;
+/// The window: its frame's width and the crossbar's height (a share of the screen), points.
+const FRAME: f64 = 14.0;
+const BAR_AT: f64 = 0.36;
+/// Left alone, the glass frosts from the frame by itself: a new seed every so many seconds (more
+/// often low on the glass, where the air is wetter), until this many have started.
+const CREEP_S: f64 = 3.2;
+const CREEP_MAX: u32 = 24;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, Default)]
@@ -55,7 +61,8 @@ struct Globals {
     gamma_bottom: f32,
     eps: f32,
     alpha: f32,
-    _p: [f32; 2],
+    frame: f32,
+    bar: f32,
     slots: [SlotU; SLOTS],
 }
 
@@ -81,7 +88,8 @@ struct Look {
     field_w: f32,
     field_h: f32,
     lamp: f32,
-    _a: [f32; 2],
+    frame: f32,
+    bar: f32,
 }
 
 const OP_SEED: u32 = 1;
@@ -99,12 +107,15 @@ struct Slot {
     grew: f64,
     /// Cells frozen in all (the GPU's count at the last readback).
     frozen: u32,
-    /// How far (cells) it grows before the air round it is spent.
+    /// How far its tips have gone (cells), and when they last went further.
     reach: u32,
+    advanced: f64,
 }
 
 struct Pending {
     at: [f64; 2],
+    /// A finger's: its warmth melts the glass first.
+    warm: bool,
 }
 
 pub struct Frost {
@@ -141,8 +152,9 @@ pub struct Frost {
     crack: f64,
     last_tick: f64,
     reduce_motion: bool,
-    /// The opening's crystal, from the frame, once.
-    opened: bool,
+    /// The frost creeping in from the frame by itself: seeds started, and when the next is due.
+    crept: u32,
+    next_creep: f64,
 }
 
 fn storage(binding: u32, read_only: bool, vis: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
@@ -191,13 +203,14 @@ impl Frost {
             field_h: self.field_side,
             // high on the glass the air is drier: compact plates; low, wetter: ferns (Reiter's phase
             // diagram; tools/toys/frost/reiter.py)
-            beta_top: 0.40,
+            beta_top: 0.46,
             beta_bottom: 0.74,
-            gamma_top: 0.02,
-            gamma_bottom: 0.0008,
-            eps: 0.4,
+            gamma_top: 0.0016,
+            gamma_bottom: 0.0005,
+            eps: 0.3,
             alpha: 1.0,
-            _p: [0.0; 2],
+            frame: FRAME as f32,
+            bar: (self.pane[1] * BAR_AT) as f32,
             slots,
         }
     }
@@ -205,7 +218,42 @@ impl Frost {
     /// A crystal at `at` (points): the finger's warmth melts the glass there, then a seed freezes at
     /// its middle, at a lattice angle of its own.
     fn start(&mut self, at: [f64; 2]) {
-        self.pending.push(Pending { at });
+        if self.on_glass(at) {
+            self.pending.push(Pending { at, warm: true });
+        }
+    }
+
+    fn on_glass(&self, p: [f64; 2]) -> bool {
+        let f = FRAME;
+        p[0] >= f && p[1] >= f && p[0] < self.pane[0] - f && p[1] < self.pane[1] - f && (p[1] - self.pane[1] * BAR_AT).abs() > 0.5 * f
+    }
+
+    /// A seed where the glass meets the frame (or the crossbar), low more often than high.
+    fn creep(&mut self) {
+        let [w, h] = self.pane;
+        let f = FRAME + 1.5;
+        let at = loop {
+            let u = self.rand();
+            let v = self.rand();
+            // which edge: the bottom and the crossbar's underside are the wettest
+            let e = self.rand();
+            let p = if e < 0.30 {
+                [f + u * (w - 2.0 * f), h - f]
+            } else if e < 0.45 {
+                [f + u * (w - 2.0 * f), h * BAR_AT + 0.5 * FRAME + 1.5]
+            } else if e < 0.55 {
+                [f + u * (w - 2.0 * f), h * BAR_AT - 0.5 * FRAME - 1.5]
+            } else if e < 0.62 {
+                [f + u * (w - 2.0 * f), f]
+            } else {
+                // a side, lower more often
+                [if u < 0.5 { f } else { w - f }, f + (1.0 - v * v) * (h - 2.0 * f)]
+            };
+            if self.on_glass(p) {
+                break p;
+            }
+        };
+        self.pending.push(Pending { at, warm: false });
     }
 
     fn live(&self) -> usize {
@@ -320,7 +368,8 @@ impl Toy for Frost {
             crack: 0.0,
             last_tick: f64::NEG_INFINITY,
             reduce_motion: ctx.reduce_motion,
-            opened: false,
+            crept: 0,
+            next_creep: 0.0,
         })
     }
 
@@ -358,10 +407,17 @@ impl Toy for Frost {
 
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.time = t;
-        // the opening: frost creeping in from the frame's lower corner, by itself
-        if !self.opened && t > 0.6 {
-            self.opened = true;
-            self.start([self.pane[0] * 0.08, self.pane[1] * 0.93]);
+        // the opening: frost creeping in from the frame's lower corner, then more along the frame,
+        // a seed every few seconds, by itself
+        if self.crept == 0 && t > 0.6 {
+            self.crept = 1;
+            self.next_creep = t + CREEP_S;
+            self.pending.push(Pending { at: [FRAME + 1.5, self.pane[1] - FRAME - 1.5], warm: false });
+        } else if self.crept > 0 && self.crept < CREEP_MAX && t > self.next_creep {
+            self.crept += 1;
+            let r = self.rand();
+            self.next_creep = t + CREEP_S * (0.6 + 0.8 * r);
+            self.creep();
         }
         let gpu = &ctx.gpu;
         let mut enc = gpu.device.create_command_encoder(&Default::default());
@@ -369,13 +425,14 @@ impl Toy for Frost {
         let mut op = None;
         if !self.pending.is_empty() {
             let p = self.pending.remove(0);
-            // a free grid, or the oldest crystal's (it stops where it is)
-            let k = (0..SLOTS).find(|&k| !self.slots[k].live).unwrap_or_else(|| (0..SLOTS).min_by(|&a, &b| self.slots[a].born.total_cmp(&self.slots[b].born)).unwrap());
+            // a free grid, or the one whose tips have stalled longest (it stops where it is)
+            let k = (0..SLOTS).find(|&k| !self.slots[k].live).unwrap_or_else(|| (0..SLOTS).min_by(|&a, &b| self.slots[a].advanced.total_cmp(&self.slots[b].advanced)).unwrap());
             let angle = self.rand() * std::f64::consts::FRAC_PI_3;
-            let reach = (REACH * (0.8 + 0.4 * self.rand())) as u32;
-            self.slots[k] = Slot { id: self.next_id, center: p.at, angle, live: true, born: t, grew: t, frozen: 0, reach };
+            let wobble = self.rand() as f32 * 6.28;
+            self.slots[k] = Slot { id: self.next_id, center: p.at, angle, live: true, born: t, grew: t, frozen: 0, reach: 0, advanced: t };
             self.next_id += 1;
-            op = Some(Op { slot: k as u32, kind: OP_SEED | OP_MELT, _a: [0; 2], at: [p.at[0] as f32, p.at[1] as f32], radius: MELT as f32, _c: 0.0 });
+            let kind = if p.warm { OP_SEED | OP_MELT } else { OP_SEED };
+            op = Some(Op { slot: k as u32, kind, _a: [0; 2], at: [p.at[0] as f32, p.at[1] as f32], radius: MELT as f32, _c: wobble });
         }
         gpu.queue.write_buffer(&self.globals, 0, bytemuck::bytes_of(&self.globals()));
         let wg = N.div_ceil(8);
@@ -391,7 +448,7 @@ impl Toy for Frost {
                 cp.set_pipeline(&self.seed);
                 cp.dispatch_workgroups(wg, wg, 1);
             }
-            let span = ((2.0 * o.radius + 6.0) * FS).ceil() as u32;
+            let span = ((2.8 * o.radius + 6.0) * FS).ceil() as u32;
             cp.set_pipeline(&self.melt_pane);
             cp.dispatch_workgroups(span.div_ceil(8), span.div_ceil(8), 1);
         }
@@ -440,9 +497,12 @@ impl Toy for Frost {
             }
             frozen_now += new as f64;
             pan_w += new as f64 * (s.center[0] / self.pane[0] * 2.0 - 1.0);
-            // done: grown its reach (the air round it spent), nothing frozen for a while (blocked all
-            // round), or old
-            if counts[k * 4] >= s.reach || (t - s.grew > QUIET_S && t - s.born > 1.0) || t - s.born > MAX_AGE_S {
+            if counts[k * 4] > s.reach {
+                s.reach = counts[k * 4];
+                s.advanced = t;
+            }
+            // done: its tips blocked all round (by other ice or the frame) for a while, or old
+            if (t - s.advanced > QUIET_S && t - s.born > 1.0) || t - s.born > MAX_AGE_S || s.reach as i64 >= (N / 2) as i64 - 6 {
                 s.live = false;
             }
         }
@@ -475,7 +535,8 @@ impl Toy for Frost {
             field_w: self.field_side as f32,
             field_h: self.field_side as f32,
             lamp: 1.0,
-            _a: [0.0; 2],
+            frame: FRAME as f32,
+            bar: (self.pane[1] * BAR_AT) as f32,
         };
         ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::bytes_of(&look));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
@@ -519,8 +580,8 @@ impl Toy for Frost {
             &[
                 "The glass is a honeycomb of cells. A cell that is ice, or touches ice, takes water from the air.",
                 "Everywhere else the water spreads to the six neighbours. That alone grows six arms.",
-                "The air is wetter low on the glass: ferns there, plates higher up.",
-                "Two crystals can't share water: they meet in a seam.",
+                "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
+                "Two crystals can't share water: they meet in a seam. Left alone, frost creeps in from the frame.",
             ],
             "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
         ))

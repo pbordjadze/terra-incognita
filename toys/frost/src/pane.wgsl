@@ -11,8 +11,8 @@ struct Look {
   field_w: f32,
   field_h: f32,
   lamp: f32,
-  _a: f32,
-  _b: f32,
+  frame: f32,   // points
+  bar: f32,     // the crossbar's middle, points from the top
 };
 
 @group(0) @binding(0) var<uniform> L: Look;
@@ -95,6 +95,27 @@ fn night(p: vec2<f32>) -> vec3<f32> {
   return c;
 }
 
+// the frame and crossbar: old larch wood, painted once, lit by the lamp; how far into the wood a
+// point is (negative on the glass)
+fn wood_depth(p: vec2<f32>) -> f32 {
+  let f = L.frame;
+  let edge = min(min(p.x, p.y), min(L.pane.x - p.x, L.pane.y - p.y));
+  var d = f - edge;
+  if L.bar > 0.0 {
+    d = max(d, 0.5 * f - abs(p.y - L.bar));
+  }
+  return d;
+}
+
+fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
+  let grain = noise(vec2<f32>(p.x * 0.05, p.y * 0.6)) * 0.5 + noise(vec2<f32>(p.x * 0.3, p.y * 2.0)) * 0.25;
+  var c = vec3<f32>(0.20, 0.12, 0.07) * (0.75 + 0.5 * grain);
+  // a bevel toward the glass: lighter where it faces the room's lamp
+  c *= 0.75 + 0.35 * smoothstep(0.0, 4.0, d);
+  c *= 0.55 + 0.9 * lamp;
+  return c;
+}
+
 @fragment fn fs_main(i: VO) -> @location(0) vec4<f32> {
   let p = i.uv * L.pane;
   var c = night(p);
@@ -105,6 +126,14 @@ fn night(p: vec2<f32>) -> vec3<f32> {
 
   // the ice
   let s = ice_at(p);
+  // meltwater where a fingertip was: a film that darkens the glass a little and catches the lamp at
+  // its rim
+  let wet = smoothstep(0.3, 0.5, s) * (1.0 - smoothstep(0.93, 0.98, s));
+  if wet > 0.0 {
+    let rimw = smoothstep(0.75, 0.9, s);
+    c = mix(c, c * 0.7 + vec3<f32>(0.03, 0.035, 0.045), wet * 0.6);
+    c += vec3<f32>(0.20, 0.19, 0.17) * rimw * wet * 0.5;
+  }
   let cover = smoothstep(0.98, 1.02, s);
   if cover > 0.0 {
     // the ice's edge: where the cover changes within a point (thin new ice, the branches' rims)
@@ -113,7 +142,6 @@ fn night(p: vec2<f32>) -> vec3<f32> {
     let cy = smoothstep(0.98, 1.02, ice_at(p + vec2<f32>(0.0, e))) - smoothstep(0.98, 1.02, ice_at(p - vec2<f32>(0.0, e)));
     let rim = clamp(length(vec2<f32>(cx, cy)), 0.0, 1.0);
     // the age of the ice: the earliest (the spines) has taken the most from the air
-    let age = clamp(log(1.0 + max(s - 1.0, 0.0) * 30.0) / 3.0, 0.0, 1.0);
     // a rim lit from the lamp (low, to the left) is brighter than one turned away
     let toward = clamp(dot(normalize(vec2<f32>(cx, cy) + vec2<f32>(1e-5, 0.0)), normalize(vec2<f32>(0.55, -0.8))), -1.0, 1.0);
     let cool = vec3<f32>(0.66, 0.78, 0.93);
@@ -122,7 +150,11 @@ fn night(p: vec2<f32>) -> vec3<f32> {
     let r2 = 2.4;
     let around = 0.25 * (ice_at(p + vec2<f32>(r2, 0.0)) + ice_at(p - vec2<f32>(r2, 0.0)) + ice_at(p + vec2<f32>(0.0, r2)) + ice_at(p - vec2<f32>(0.0, r2)));
     let ridge = clamp((s - max(around, 1.0)) * 6.0, -1.0, 1.0);
-    var ice = mix(cool, milky, age) * (0.93 + 0.09 * ridge);
+    // the age of the ice, read over a few points (the glass's flaws make it speckle cell by cell):
+    // the earliest (the spines) has taken the most from the air
+    let sm = 0.35 * s + 0.65 * around;
+    let age = clamp(log(1.0 + max(sm - 1.0, 0.0) * 30.0) / 3.0, 0.0, 1.0);
+    var ice = mix(cool, milky, age) * (0.95 + 0.06 * ridge);
     ice = mix(ice, vec3<f32>(1.0), rim * (0.55 + 0.45 * toward));
     // the lamp warms the ice low on the glass
     let warm = exp(-ld * ld * 1.6) * L.lamp;
@@ -134,8 +166,21 @@ fn night(p: vec2<f32>) -> vec3<f32> {
       let tw = 0.5 + 0.5 * sin(L.time * (0.7 + 1.5 * hash2(g + 2.0)) + h * 60.0);
       ice += vec3<f32>(1.0, 0.97, 0.9) * pow(tw, 6.0) * 0.9 * age;
     }
-    let a = cover * clamp(mix(0.40, 0.82, age) + 0.04 * ridge + rim * 0.5, 0.0, 0.97);
+    let a = cover * clamp(mix(0.30, 0.85, age * age) + rim * 0.5, 0.0, 0.97);
     c = mix(c, ice, a);
+  }
+  // a breath of condensation low on the glass, before the frost: the faintest grey veil
+  c += vec3<f32>(0.018, 0.020, 0.024) * smoothstep(0.5, 1.0, p.y / L.pane.y);
+  // the wood over all of it
+  let d = wood_depth(p);
+  if d > -1.5 {
+    let w = wood(p, d, exp(-ld * ld * 1.2) * L.lamp);
+    // a soft shadow on the glass beside the wood
+    if d < 0.0 {
+      c *= 0.6 + 0.4 * smoothstep(-1.5, 0.0, -d - 0.0) ;
+    } else {
+      c = mix(c, w, smoothstep(0.0, 0.8, d));
+    }
   }
   return vec4<f32>(c, 1.0);
 }

@@ -1,0 +1,4 @@
+{"_": "Left alone until the frame's frost has crept over most of the glass, then touched: a fingertip melts a hole in the old ice and a new crystal grows into it; a drag cuts a line of them.",
+ "size": [1179, 2556], "ppp": 3, "seconds": 56, "fps": 30,
+ "events": [{"t": 40.0, "tap": [200, 560]}, {"t": 43.0, "tap": [120, 150]}, {"t": 46.0, "drag": [[300, 450], [260, 760]], "for": 1.2}],
+ "shots": [20.0, 39.9, 41.0, 42.5, 45.0, 48.0, 56.0], "film": {"from": 38, "to": 56, "every": 0.1}, "audio": true}
