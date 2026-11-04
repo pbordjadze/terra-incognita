@@ -7,18 +7,19 @@
 #     bash tools/toys/sim_launch.sh <toy> [out-dir]      # macOS with Xcode and rustup's aarch64-apple-ios-sim
 #
 # It builds the toy for the Simulator (SIM=1 toys/ios/build.sh), boots an iPhone, installs and launches
-# it, waits SECONDS_ALIVE (default 25) and fails if the toy is gone or logged a GPU error. <out-dir> keeps what it saw: the toy's
+# it, waits SECONDS_ALIVE (default 70) and fails if the toy is gone or logged a GPU error. <out-dir> keeps what it saw: the toy's
 # own toy-log.txt (the kit's launch steps, its GPU errors), its stdout and stderr (Metal's validation
 # messages), any crash report, and screenshots: `screen.png` at rest, then the shell's rules card
-# opened (TOY_OPEN, main.swift) as `rules.png` and, if the toy has one, its origins card as
-# `origins.png` (the last 8 s). What it can't vouch for: the phone's memory limit
+# opened (TOY_OPEN, main.swift) at 30 s as `rules.png` and, if the toy has one, its origins card at
+# 60 s as `origins.png`. (A hosted Mac's first `simctl io screenshot` took 140 s and later ones up to
+# 22 s, so the Simulator's screen is warmed up first and the cards are 30 s apart.) What it can't vouch for: the phone's memory limit
 # (the Simulator has none of its own) and the phone's GPU (the Mac's draws for it): toy-log.txt from a
 # phone stays the last word.
 set -euo pipefail
 TOY="${1:?usage: sim_launch.sh <toy> [out-dir]}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$(python3 -c "import os,sys; print(os.path.abspath(sys.argv[1]))" "${2:-$ROOT/toys/build/$TOY/sim}")"
-WAIT="${SECONDS_ALIVE:-25}"
+WAIT="${SECONDS_ALIVE:-70}"
 mkdir -p "$OUT"
 trap 'rm -rf "$OUT/build"' EXIT     # (the built app: only what was seen is kept)
 SIM=1 bash "$ROOT/toys/ios/build.sh" "$TOY" "$OUT/build" | tail -5
@@ -50,7 +51,8 @@ export SIMCTL_CHILD_MTL_DEBUG_LAYER_ERROR_MODE=assert
 export SIMCTL_CHILD_RUST_BACKTRACE=1
 # (the rules card, then the origins card, open by themselves near the end, for their screenshots: the
 # iOS text a Linux shot lacks; a toy without origins keeps showing its rules)
-export SIMCTL_CHILD_TOY_OPEN=rules,origins SIMCTL_CHILD_TOY_OPEN_AFTER=$(( WAIT - 15 )) SIMCTL_CHILD_TOY_OPEN_EVERY=7
+export SIMCTL_CHILD_TOY_OPEN=rules,origins SIMCTL_CHILD_TOY_OPEN_AFTER=30 SIMCTL_CHILD_TOY_OPEN_EVERY=30
+xcrun simctl io "$UDID" screenshot /dev/null > /dev/null 2>&1 || true     # (the warm-up)
 before="$(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true)"
 xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --stderr="$OUT/stderr.txt" "$UDID" "$BUNDLE"
 alive=1
@@ -61,11 +63,11 @@ while :; do
   i=$(( $(date +%s) - start ))
   # (a Simulator app is a process of the Mac's own: its executable's path names it)
   if ! pgrep -f "/$EXEC.app/$EXEC" > /dev/null; then alive=0; echo "gone after ${i} s"; break; fi
-  if [ "$shot_screen" = 0 ] && [ "$i" -ge $(( WAIT - 19 )) ]; then shot_screen=1; xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; fi
-  if [ "$shot_rules" = 0 ] && [ "$i" -ge $(( WAIT - 12 )) ]; then shot_rules=1; xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true; fi
+  if [ "$shot_screen" = 0 ] && [ "$i" -ge 3 ]; then shot_screen=1; xcrun simctl io "$UDID" screenshot "$OUT/screen.png" > /dev/null 2>&1 || true; fi
+  if [ "$shot_rules" = 0 ] && [ "$i" -ge 33 ]; then shot_rules=1; xcrun simctl io "$UDID" screenshot "$OUT/rules.png" > /dev/null 2>&1 || true; fi
   [ "$i" -ge "$WAIT" ] && break
 done
-xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>&1 || true
+[ "$alive" = 1 ] && [ "$WAIT" -ge 63 ] && { xcrun simctl io "$UDID" screenshot "$OUT/origins.png" > /dev/null 2>&1 || true; }
 DATA="$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2> /dev/null || true)"
 [ -n "$DATA" ] && cp "$DATA/Documents/toy-log.txt" "$OUT/toy-log.txt" 2> /dev/null || true
 ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" | head -n $(( $(ls ~/Library/Logs/DiagnosticReports 2> /dev/null | grep -c "$EXEC" || true) - before )) |
