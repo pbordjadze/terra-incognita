@@ -110,6 +110,17 @@
       "iconSource": "toys/carol/icon.png",
       "tintColor": "#B5824F",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "jam-build",
+      "name": "Ghost Jam",
+      "bundleIdentifier": "com.pbordjadze.toy.jam",
+      "subtitle": "Tap a car, and a jam runs backward",
+      "localizedDescription": "The 230 m ring where 22 cars made a traffic jam out of nothing (Nagoya, 2008), from above at dusk. Each driver keeps a safe gap to the car ahead. Tap a car and it brakes for a moment: a knot of brake lights forms and crawls backward round the ring while every car drives forward. Working title; a toy in the making.",
+      "icon": "jam-icon.png",
+      "iconSource": "toys/jam/icon.png",
+      "tintColor": "#D8321E",
+      "minOSVersion": "17.0"
     }
   ]
 }
