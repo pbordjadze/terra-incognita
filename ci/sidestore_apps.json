@@ -134,6 +134,17 @@
       "minOSVersion": "17.0"
     },
     {
+      "tag": "taste-build",
+      "name": "Taste",
+      "bundleIdentifier": "com.pbordjadze.toy.taste",
+      "subtitle": "A creature that becomes what you like",
+      "localizedDescription": "A small creature keeps changing its shape and colour. Rest a finger on it while you like what it is: it keeps trying on a slightly different self, and keeps the new one as often as you held it. It lingers where you linger, still wanders off, and every so often pulls back to show the path it took. Working title; a toy in the making.",
+      "icon": "taste-icon.png",
+      "iconSource": "toys/taste/icon.png",
+      "tintColor": "#A054F5",
+      "minOSVersion": "17.0"
+    },
+    {
       "tag": "frost-build",
       "name": "Frost",
       "bundleIdentifier": "com.pbordjadze.toy.frost",

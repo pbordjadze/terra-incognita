@@ -1,0 +1,4 @@
+{ "_": "The info mark (toy-kit info.rs): tapped, its ghost finger rests on the creature for three seconds (the creature brightens and hums under it); a tap closes it.",
+  "size": [1179, 2556], "ppp": 3, "seconds": 9, "fps": 20,
+  "events": [ { "t": 2.0, "tap": "info" }, { "t": 8.0, "tap": "aside", "inert": true } ],
+  "shots": [{ "t": 1.9, "name": "mark" }, { "t": 2.8, "name": "ghost" }, { "t": 4.5, "name": "answer" }, { "t": 8.6, "name": "closed" }] }
