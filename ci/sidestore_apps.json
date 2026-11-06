@@ -150,7 +150,7 @@
       "name": "Frost",
       "bundleIdentifier": "com.pbordjadze.toy.frost",
       "subtitle": "Your finger is warm",
-      "localizedDescription": "A cabin window at Oymyakon, about −50 °C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: what you wipe stays clear, the frost creeping back only slowly from its edges; touch inside a clear patch and your print frosts. Real snow-crystal physics (Reiter's model). A toy; offline.",
+      "localizedDescription": "A cabin window at Oymyakon, about −50 °C, the night outside. Frost creeps in from the frame, each crystal at its own angle, meeting its neighbours along seams. Your finger is warm: what you wipe stays clear, the frost creeping back only slowly from its edges. Real snow-crystal physics (Reiter's model). A toy; offline.",
       "icon": "frost-icon.png",
       "iconSource": "toys/frost/icon.png",
       "tintColor": "#5F7FA8",

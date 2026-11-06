@@ -14,8 +14,6 @@ const N: i32 = 512;
 const HALF: i32 = 256;
 const MARGIN: i32 = 28;
 const EMPTY: u32 = 0xffffffffu;
-// glass held by a finger's frozen print (no crystal's: the crystals grow round it)
-const HOAR: u32 = 0xfffffff0u;
 
 struct Slot {
   center: vec2<f32>,
@@ -51,8 +49,8 @@ struct Globals {
 
 struct Op {
   slot: u32,
-  kind: u32,          // 1 seed the slot, 2 melt along the finger's way, 4 a moist print along it,
-                      // 8 probe the ice under _d, 16 the stove's warmth (clear within radius of at)
+  kind: u32,          // 1 seed the slot, 2 melt along the finger's way, 8 probe the ice under _d,
+                      // 16 the stove's warmth (clear within radius of at)
   _a: u32,
   _b: u32,
   at: vec2<f32>,      // the finger's way this frame, from at to to (points)
@@ -325,49 +323,15 @@ fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
     let i = f.y * i32(G.field_w) + f.x;
     let film = 0.55 + 0.35 * smoothstep(0.5 * rr, rr, d);
     let was = field[i];
-    field[i] = select(film, min(was, film), was > 0.3 && was < 0.98);
+    // (on dry glass there is no meltwater: it stays as it was)
+    if was >= 0.3 {
+      field[i] = select(film, min(was, film), was < 0.98);
+    }
     let m = mask_index(p);
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);
       // the meltwater freezes smooth: how far inside the melt's edge (the deepest any melt went)
       atomicMax(&glaze[m], bitcast<u32>(max(rr - d, 0.0)));
-    }
-  }
-}
-
-// a fingertip on clear glass: its moist print, which frost can catch on again (the glaze given back
-// along the way, a little wider than the print) and a faint wet trace where the glass was dry
-@compute @workgroup_size(8, 8, 1)
-fn pen(@builtin(global_invocation_id) gid: vec3<u32>) {
-  if (O.kind & 4u) == 0u {
-    return;
-  }
-  let lo = vec2<i32>(floor((min(O.at, O.to) - 3.2 * O.radius - 2.0 * G.fringe - 2.0) * G.fs));
-  let f = lo + vec2<i32>(gid.xy);
-  if f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
-    return;
-  }
-  let p = (vec2<f32>(f) + 0.5) / G.fs;
-  let d = distance(p, melt_near(p));
-  let rr = melt_radius(p);
-  let m = mask_index(p);
-  if m < 0 || d > 3.0 * rr + 2.0 * G.fringe {
-    return;
-  }
-  // (frost may grow feathers out from it a little further than a melt's fringe)
-  atomicMin(&glaze[m], bitcast<u32>(max(d - 3.0 * rr, 0.0)));
-  let i = f.y * i32(G.field_w) + f.x;
-  // the print's middle freezes at once, granular, ragged at its edge
-  let core = rr * (0.2 + 0.5 * flaws(p / 1.6));
-  if d <= core {
-    field[i] = max(field[i], 1.0 + 0.5 * hash(floor(p * 2.7)) * (1.0 - d / rr));
-    atomicMin(&mask[m], HOAR);
-  } else if d <= rr {
-    let was = field[i];
-    if was < 0.3 {
-      field[i] = 0.62;
-    } else if was < 0.98 {
-      field[i] = min(was, 0.62);
     }
   }
 }
@@ -407,7 +371,9 @@ fn clear(@builtin(global_invocation_id) gid: vec3<u32>) {
     return;
   }
   let p = (vec2<f32>(gid.xy) + 0.5) / G.fs;
-  let wob = 1.0 + 0.08 * sin(atan2(p.y - O.at.y, p.x - O.at.x) * 5.0 + 0.03 * p.x);
+  // (a ragged front, not a wipe: warm air finds its way faster in some places than others)
+  let ang = atan2(p.y - O.at.y, p.x - O.at.x);
+  let wob = 1.0 + 0.07 * sin(ang * 5.0 + 0.03 * p.x) + 0.10 * (flaws(p / 23.0) - 0.5) + 0.05 * (flaws(p / 6.0) - 0.5);
   let d = distance(p, O.at) * wob;
   if d > O.radius {
     return;

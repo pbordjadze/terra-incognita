@@ -1,4 +1,35 @@
-# Frost: handoff (Nov 4, 2026)
+# Frost: handoff (Nov 6, 2026; row 242 over row 218's)
+
+Row 242 answered the owner's "it just keeps filling in". What a finger does now lasts:
+
+- **The glaze** (`frost.wgsl`: binding 7, `glaze`, one f32 a mask texel as u32 bits): where a melt froze
+  smooth, how deep inside its edge (points; `melt_pane` takes the max). `grow` treats a cell whose glaze
+  is deeper than `fringe_at` (FRINGE 14 pt, ragged by the flaws) as a sink, so frost creeps back only a
+  fringe deep. `relax` makes every glaze shallower by RELAX_PER_S (0.55 pt/s), so a hole heals in about
+  two minutes; `renew` (lib.rs) seeds a healing hole's edge every ~0.9 s from the CPU's `marks`.
+- **Seeds on the melt's true edge**: `edge_point` mirrors `melt_radius`'s wobble (change both together),
+  with each path point's own melt width (`Finger::radii`).
+- **What is under a finger** is read at touch-down (`probe`: ice in a 16 pt disc, stats words 48–49,
+  read in the same frame): on dry glass a lifted tap's stars come at once, on frost after a beat.
+  A frost-drawing print (rest a finger inside a clear patch) was tried in rounds 7–8 and retired:
+  three critics in a row found a warm finger that sometimes freezes confusing (in history at the
+  round 8 commit if wanted again).
+- **A shake** (`shaken` → `sweep`): `clear` sweeps a wet front from the lamp's side at 900 pt/s, the
+  mask and glaze reset; the creep from the frame restarts (`creep_from`).
+- Plan `play` (54 s) shows all of it; `full` was retired.
+
+Row 242's critic log (fresh critic each round, from renders): 1 "clear improvement" (a drag inside a
+clear patch drew frost: fixed by a still press), 2 "close to showable" (a pause could still draw frost:
+a second's rest and a bloom), 3 "beautiful, lasts; one gesture's rule muddled" (the print retired),
+4 "a keeper" (wiped glass too dark: minor), 5 "close to showable" (minor: healing holes grow loose
+specks mid-hole: `renew` seeds at the frontier the glaze allows, which the fronts may not have reached;
+seed nearer the surviving frost, or only where the probe finds ice close by). Also from 5: a soft smear
+where big feathers overlap at 54 s (pane.wgsl's `around` blur, probably).
+
+Next, if Frost is reworked: open with a little ice already at the foot (Terra's small window shows the
+toy's first frame; row 245); save/restore the pane.
+
+# Frost: row 218's handoff (Nov 4, 2026)
 
 painting-company row 218. A cabin window at Oymyakon at about −50 °C, the night outside. Frost grows by
 itself from the frame by Reiter's hexagonal automaton for snow crystals (GPU compute), each crystal at its

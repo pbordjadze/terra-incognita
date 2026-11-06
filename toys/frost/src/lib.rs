@@ -1,8 +1,8 @@
 //! Frost (a working title): ice flowers on a cabin window at Oymyakon, Yakutia, on a winter night at
 //! about −50 °C. The warm finger melts what it wipes, and the wipe stays (the glaze: frost creeps back
-//! only from its edge, healing over a couple of minutes); set down inside a clear patch, its moist
-//! print freezes and grows frost; a shake clears the window for the frost to come again. Each crystal
-//! is grown by Reiter's hexagonal automaton for snow crystals (frost.wgsl; SOURCES.md): its own angle, the wetter air low on the glass
+//! only from its edge, healing over a couple of minutes); a shake clears the window for the frost to
+//! come again. Each crystal is grown by Reiter's hexagonal automaton for snow crystals (frost.wgsl;
+//! SOURCES.md): its own angle, the wetter air low on the glass
 //! growing ferns and the drier air high up plates, and two crystals meeting along a seam.
 //!
 //! All the simulation is GPU compute in `update`: up to twelve crystals grow at once, each in its own
@@ -44,12 +44,6 @@ const RELAX_PER_S: f64 = 0.55;
 /// How often a healing hole's edge is seeded again (seconds), and from what age.
 const RENEW_S: f64 = 0.9;
 const RENEW_AFTER_S: f64 = 10.0;
-/// A finger set down well inside a hole leaves its moist print, which frosts: its width, and a seed
-/// every so far along its way.
-const PEN: f64 = 9.0;
-const PEN_STEP: f64 = 30.0;
-/// How long a finger rests inside a clear patch before its print starts to freeze.
-const PRESS_S: f64 = 0.4;
 /// The stove's warmth (a shake): the clearing's speed, points a second.
 const SWEEP_SPEED: f64 = 900.0;
 
@@ -117,7 +111,6 @@ struct Look {
 
 const OP_SEED: u32 = 1;
 const OP_MELT: u32 = 2;
-const OP_PEN: u32 = 4;
 const OP_PROBE: u32 = 8;
 const OP_CLEAR: u32 = 16;
 /// The stats buffer: four words a slot, then the probe's (ice samples, samples, the glaze's depth there).
@@ -150,13 +143,8 @@ struct Pending {
 enum Mode {
     /// Set down this frame: what is under it is being read.
     Undecided,
-    /// On frost or glass: it melts.
+    /// Read: it melts.
     Melt,
-    /// Well inside a clear patch, not yet moved: a drag from here is a wipe; held still a moment,
-    /// it becomes the print.
-    Poised,
-    /// Held still inside a clear patch: its print frosts, and a drag on draws frost.
-    Pen,
 }
 
 /// A melt that is healing: where it was, how wide, since when.
@@ -183,10 +171,8 @@ struct Finger {
     radius: f64,
     lifted: bool,
     mode: Mode,
-    /// Where the print last left a seed, and on which side.
-    seeded: [f64; 2],
-    side: f64,
-    down_t: f64,
+    /// How much of the glass round it was ice when it was set down.
+    ice: f64,
 }
 
 pub struct Frost {
@@ -202,7 +188,6 @@ pub struct Frost {
     seed: wgpu::ComputePipeline,
     melt_cells: wgpu::ComputePipeline,
     melt_pane: wgpu::ComputePipeline,
-    pen: wgpu::ComputePipeline,
     probe: wgpu::ComputePipeline,
     clear: wgpu::ComputePipeline,
     relax: wgpu::ComputePipeline,
@@ -342,8 +327,10 @@ impl Frost {
                 break;
             }
             if let Some(p) = self.edge_point(&path, 1.0) {
-                // (a beat first: the clear wet glass, then the lace creeping in from its rim)
-                self.start(p, t + 0.6 + 0.07 * i as f64);
+                // (a beat first: the clear wet glass, then the lace creeping in from its rim; on dry
+                // glass there is nothing to see in the meantime, so at once)
+                let beat = if f.ice < 0.05 { 0.05 } else { 0.6 };
+                self.start(p, t + beat + 0.07 * i as f64);
                 i += 1;
             }
         }
@@ -479,7 +466,7 @@ impl Toy for Frost {
             })
         };
         let (grow, claim, seed, melt_cells, melt_pane, paint) = (compute("grow"), compute("claim"), compute("seed"), compute("melt_cells"), compute("melt_pane"), compute("paint"));
-        let (pen, probe, clear, relax) = (compute("pen"), compute("probe"), compute("clear"), compute("relax"));
+        let (probe, clear, relax) = (compute("probe"), compute("clear"), compute("relax"));
 
         toy_kit::step("frost: the window's pipeline");
         let fs = wgpu::ShaderStages::FRAGMENT;
@@ -506,7 +493,6 @@ impl Toy for Frost {
             seed,
             melt_cells,
             melt_pane,
-            pen,
             probe,
             clear,
             relax,
@@ -562,9 +548,7 @@ impl Toy for Frost {
                         radius: MELT,
                         lifted: false,
                         mode: Mode::Undecided,
-                        seeded: p,
-                        side: 1.0,
-                        down_t: e.t,
+                        ice: 0.0,
                     });
                 }
             }
@@ -644,25 +628,11 @@ impl Toy for Frost {
         let gpu = &ctx.gpu;
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         let mut op = Op::default();
-        // the finger this frame: read what is under it first; then its warmth along its way since
-        // the last frame, wider the longer it rests; or, well inside a hole, its moist print
+        // the finger this frame: read what is under it first (how much ice); then its warmth along
+        // its way since the last frame, wider the longer it rests
         let mut lifted = None;
-        let mut pen_seed = None;
-        let mut ring = None;
         if let Some(f) = &mut self.finger {
-            if f.mode == Mode::Poised {
-                let moved = (f.at[0] - f.path[0][0]).hypot(f.at[1] - f.path[0][1]) > 6.0;
-                if moved || f.lifted {
-                    f.mode = Mode::Melt;
-                    f.rest_since = t;
-                } else if t - f.down_t > PRESS_S {
-                    f.mode = Mode::Pen;
-                    f.seeded = f.at;
-                    ring = Some(f.at);
-                }
-            }
             match f.mode {
-                Mode::Poised => {}
                 Mode::Undecided => {
                     op.kind |= OP_PROBE;
                     op._d = [f.at[0] as f32, f.at[1] as f32];
@@ -677,21 +647,8 @@ impl Toy for Frost {
                     op.kind |= OP_MELT;
                     op.radius = r as f32;
                 }
-                Mode::Pen => {
-                    op.kind |= OP_PEN;
-                    op.radius = PEN as f32;
-                    let (d0, d1) = (f.at[0] - f.seeded[0], f.at[1] - f.seeded[1]);
-                    let l = d0.hypot(d1);
-                    if l > PEN_STEP {
-                        // beside the print, one side then the other, to grow feathers out from it
-                        let o = (PEN + 2.5) * f.side;
-                        pen_seed = Some([f.at[0] - d1 / l * o, f.at[1] + d0 / l * o]);
-                        f.seeded = f.at;
-                        f.side = -f.side;
-                    }
-                }
             }
-            if f.mode != Mode::Undecided && f.mode != Mode::Poised {
+            if f.mode != Mode::Undecided {
                 op.at = [f.melted_to[0] as f32, f.melted_to[1] as f32];
                 op.to = [f.at[0] as f32, f.at[1] as f32];
                 op._c = 1.7;
@@ -699,17 +656,6 @@ impl Toy for Frost {
                 if f.lifted {
                     lifted = self.finger.take();
                 }
-            }
-        }
-        if let Some(a) = pen_seed {
-            self.start(a, t + 0.25);
-        }
-        if let Some(c) = ring {
-            let a0 = self.rand() * std::f64::consts::TAU;
-            for i in 0..4 {
-                let a = a0 + i as f64 * std::f64::consts::TAU / 4.0;
-                let o = PEN + 2.5;
-                self.start([c[0] + o * a.cos(), c[1] + o * a.sin()], t + 0.15 + 0.1 * i as f64);
             }
         }
         if let Some(f) = lifted {
@@ -759,10 +705,10 @@ impl Toy for Frost {
                 cp.set_pipeline(&self.seed);
                 cp.dispatch_workgroups(wg, wg, 1);
             }
-            let reach = if o.kind & OP_PEN != 0 { 6.4 * o.radius + 4.0 * FRINGE as f32 + 6.0 } else { 2.8 * o.radius + 6.0 };
+            let reach = 2.8 * o.radius + 6.0;
             let span = |a: f32, b: f32| (((a - b).abs() + reach) * FS).ceil() as u32;
-            if o.kind & (OP_MELT | OP_PEN) != 0 {
-                cp.set_pipeline(if o.kind & OP_MELT != 0 { &self.melt_pane } else { &self.pen });
+            if o.kind & OP_MELT != 0 {
+                cp.set_pipeline(&self.melt_pane);
                 cp.dispatch_workgroups(span(o.at[0], o.to[0]).div_ceil(8), span(o.at[1], o.to[1]).div_ceil(8), 1);
             }
             if o.kind & OP_PROBE != 0 {
@@ -805,11 +751,11 @@ impl Toy for Frost {
         self.readback.unmap();
         if let Some(f) = &mut self.finger {
             if f.mode == Mode::Undecided {
-                // well inside a clear hole (no frost round the finger, the glaze deep under it): the
-                // print; anywhere else, the warmth
+                // (on dry glass a lifted print has nothing to show while it waits: its stars come at once)
                 let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
                 let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
-                f.mode = if ice < 0.06 && depth > FRINGE * 1.4 { Mode::Poised } else { Mode::Melt };
+                f.ice = ice;
+                f.mode = Mode::Melt;
                 if std::env::var("FROST_LOG").is_ok() {
                     eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
                 }
@@ -918,7 +864,6 @@ impl Toy for Frost {
                 "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
                 "Two crystals can't share water: they meet in a seam.",
                 "Your finger is warm: it melts the frost. The meltwater freezes again smooth, with nothing for frost to catch on: it creeps back only from the edge, slowly.",
-                "Rest it a moment inside a clear patch and it leaves a moist print instead: that freezes, and frost grows from it.",
             ],
             "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
         ))
