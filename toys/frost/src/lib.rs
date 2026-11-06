@@ -189,6 +189,8 @@ struct Finger {
     seeded: [f64; 2],
     side: f64,
     down_t: f64,
+    /// How much of the glass round it was ice when it was set down.
+    ice: f64,
 }
 
 pub struct Frost {
@@ -344,8 +346,10 @@ impl Frost {
                 break;
             }
             if let Some(p) = self.edge_point(&path, 1.0) {
-                // (a beat first: the clear wet glass, then the lace creeping in from its rim)
-                self.start(p, t + 0.6 + 0.07 * i as f64);
+                // (a beat first: the clear wet glass, then the lace creeping in from its rim; on dry
+                // glass there is nothing to see in the meantime, so at once)
+                let beat = if f.ice < 0.05 { 0.05 } else { 0.6 };
+                self.start(p, t + beat + 0.07 * i as f64);
                 i += 1;
             }
         }
@@ -567,6 +571,7 @@ impl Toy for Frost {
                         seeded: p,
                         side: 1.0,
                         down_t: e.t,
+                        ice: 0.0,
                     });
                 }
             }
@@ -821,6 +826,7 @@ impl Toy for Frost {
                 // print; anywhere else, the warmth
                 let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
                 let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
+                f.ice = ice;
                 f.mode = if ice < 0.06 && depth > FRINGE * 1.4 { Mode::Poised } else { Mode::Melt };
                 if std::env::var("FROST_LOG").is_ok() {
                     eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
