@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# The one Xcode every macOS job builds with, named here and nowhere else (Paul's own Mac, a
+# The one Xcode every macOS job builds with, named here and nowhere else, so staying current is a
+# one-line bump (it lists the runner's other Xcodes: take the newest stable one) (Paul's own Mac, a
 # self-hosted runner for every app, keeps the same one at /Applications/Xcode_27.1.app; GitHub's
 # `xcode-27` image has it too). It selects it for the job's later steps (DEVELOPER_DIR in
 # $GITHUB_ENV), fails by name on a runner without it, and fetches the Metal toolchain when that
@@ -16,6 +17,7 @@ DIR="/Applications/Xcode_$VERSION.app/Contents/Developer"
 echo "DEVELOPER_DIR=$DIR" >> "${GITHUB_ENV:-/dev/null}"
 export DEVELOPER_DIR="$DIR"
 xcodebuild -version
+echo "Xcodes on this runner: $(ls -d /Applications/Xcode*.app 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"
 if xcrun -sdk iphoneos metal --version > /dev/null 2>&1; then
   echo "Metal toolchain: $(xcrun -sdk iphoneos metal --version 2>&1 | head -1)"
 else
