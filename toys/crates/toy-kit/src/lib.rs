@@ -214,6 +214,9 @@ pub struct Arrival {
     /// Looking straight down: the ground's metres a point at the middle of the glass (the host's globe's
     /// scale, falling as it dives), so the toy's picture and the globe's are one size as they cross.
     pub scale: f64,
+    /// The least half-width, metres, the toy's subject is drawn at (the host's light, which stood for it,
+    /// at this scale): far above, the subject is shown enlarged to it, one thing the whole way down.
+    pub least: f64,
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.

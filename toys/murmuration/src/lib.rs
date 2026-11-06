@@ -357,6 +357,24 @@ impl Murmuration {
         Eye { pos, right, up, fwd, focal: own.focal }
     }
 
+    /// On a passage: the flock's middle and how much it is drawn enlarged about it (1: its own size).
+    fn passage_growth(&self) -> (V3, f32) {
+        let Some(a) = self.arrive else { return ([0.0; 3], 1.0) };
+        if a.least <= 0.0 {
+            return ([0.0; 3], 1.0);
+        }
+        let (c, _) = self.flock.centre();
+        // its half-width: the root-mean-square of the birds' distances from the middle, across
+        let mut s = 0.0f32;
+        for b in &self.flock.birds {
+            let d = sub(b.pos, c);
+            s += d[0] * d[0] + d[2] * d[2];
+        }
+        let half = (s / self.flock.birds.len() as f32).sqrt().max(5.0) * 1.4;
+        let g = (a.least as f32 / half).max(1.0);
+        (c, 1.0 + (g - 1.0) * (1.0 - a.k as f32))
+    }
+
     /// The bearing (degrees clockwise from north) the watcher faces: the top of the glass from above.
     fn bearing(&self) -> f64 {
         let f = self.own_fwd;
@@ -784,6 +802,7 @@ impl Toy for Murmuration {
             self.upload_sky(ctx);
         }
         let e = self.eye;
+        let (mid, grow) = self.passage_growth();
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         let se = (self.sun_el as f32).to_radians();
         let sa = (self.sun_az as f32).to_radians();
@@ -806,7 +825,8 @@ impl Toy for Murmuration {
             ground: [ground[0], ground[1], ground[2], (self.t % (std::f64::consts::TAU * 100.0)) as f32],
             horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
             horizon2: [h1[0], h1[1], h1[2], (1.0 - self.near.min(1.0) * 2.0) * self.arrive.map_or(1.0, |a| ((a.k as f32 - 0.75) / 0.25).clamp(0.0, 1.0))],
-            eye: [e.pos[0], e.pos[1], e.pos[2], 0.0],
+            // .w: how far into a host's passage (1 straight above .. 0 the watcher's own view)
+            eye: [e.pos[0], e.pos[1], e.pos[2], self.arrive.map_or(0.0, |a| 1.0 - a.k as f32)],
         };
         ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
         // The birds: dark against the sky, a little hazed with distance.
@@ -820,16 +840,19 @@ impl Toy for Murmuration {
             fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
             eye: [e.pos[0], e.pos[1], e.pos[2], min_px],
             ink: [ink[0], ink[1], ink[2], self.flock.you as f32],
-            haze: [haze[0], haze[1], haze[2], 4000.0],
+            haze: [haze[0], haze[1], haze[2], 4000.0 * grow.max(1.0 + self.arrive.map_or(0.0, |a| (1.0 - a.k as f32) * 20.0))],
         };
         ctx.gpu.queue.write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
+        // On a host's passage, far above: the flock itself, enlarged about its middle to the size of the
+        // light that stood for it, shrinking to its own size as the eye comes down (one flock all the way)
         let inst: Vec<Inst> = self
             .flock
             .birds
             .iter()
             .map(|b| {
                 let f = norm(b.vel);
-                Inst { pos: [b.pos[0], b.pos[1], b.pos[2], b.phase], fwd: [f[0], f[1], f[2], b.size], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
+                let p = addv(mid, scale(sub(b.pos, mid), grow));
+                Inst { pos: [p[0], p[1], p[2], b.phase], fwd: [f[0], f[1], f[2], b.size * grow], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
             })
             .collect();
         ctx.gpu.queue.write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));

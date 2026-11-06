@@ -80,8 +80,6 @@ const PASS_OVERLAP: f64 = 0.6;
 /// Seconds: the toy's picture crossing the globe's, and the eye's swing.
 const PASS_FADE: f64 = 0.6;
 const PASS_SWING: f64 = 2.6;
-/// The flock's (or the toy's subject's) half-width, metres: the light's likeness grows to it.
-const PASS_SUBJECT: f64 = 70.0;
 /// How far the Earth falls into night as it hands the picture to a toy's dusk.
 const PASS_DUSK: f64 = 0.8;
 
@@ -459,7 +457,7 @@ impl Terra {
         if !self.reduce_motion {
             let rpz = self.globe.disc().r / self.globe.camera.zoom;
             let s_hand = toy_kit::model::EARTH_RADIUS_M / (rpz * PASS_ZOOM);
-            if let Some(bearing) = room.arrival(Some(Arrival { k: 0.0, scale: s_hand })) {
+            if let Some(bearing) = room.arrival(Some(Arrival { k: 0.0, scale: s_hand, least: 0.0 })) {
                 let from = self.globe.camera;
                 let near = Camera { roll: self.roll_for(at, bearing), ..Camera::new(at[0], at[1], PASS_ZOOM) };
                 let w = {
@@ -502,7 +500,7 @@ impl Terra {
             let at = self.life.doors[self.door].at;
             let rpz = self.globe.disc().r / self.globe.camera.zoom;
             let s_hand = toy_kit::model::EARTH_RADIUS_M / (rpz * PASS_ZOOM);
-            if let Some(bearing) = self.room.as_mut().and_then(|r| r.arrival(Some(Arrival { k: 1.0, scale: PASS_LOW }))) {
+            if let Some(bearing) = self.room.as_mut().and_then(|r| r.arrival(Some(Arrival { k: 1.0, scale: PASS_LOW, least: 0.0 }))) {
                 let far = Camera::new(at[0], at[1], 1.4);
                 let near = Camera { roll: self.roll_for(at, bearing), ..Camera::new(at[0], at[1], PASS_ZOOM) };
                 self.strike(self.life.doors[self.door].degree - 5, 0.18, 0.0);
@@ -679,11 +677,10 @@ impl Terra {
             }
         }
         // the likeness: the light's size until the subject's own (its half-width at this scale) is larger
-        let light = Life::size(&self.globe);
-        let own = PASS_SUBJECT / p.scale(c);
-        let size = light.max(own * 0.9);
-        let gone = ease((own / light - 0.55) / 0.6);
-        let fade = 1.0 - gone;
+        // (the toy draws its own flock at the light's size from the hand-off on: the likeness gives way to it
+        // as the toy's picture comes up, the same size in the same place)
+        let size = Life::size(&self.globe);
+        let fade = 1.0 - a;
         if fade > 0.0 {
             self.life.paint(&mut self.painter, &self.globe, self.t, ctx.ppp, fade, self.reduce_motion, Some((self.door, size, 1.0 - a)), None);
         }
@@ -929,7 +926,7 @@ impl Toy for Terra {
                 let a = p.toy_alpha(c);
                 self.room_level.store((a as f32).to_bits(), Ordering::Relaxed);
                 if let Some(r) = self.room.as_mut() {
-                    r.arrival(Some(Arrival { k: p.swing_at(c), scale: p.scale(c) }));
+                    r.arrival(Some(Arrival { k: p.swing_at(c), scale: p.scale(c), least: Life::size(&self.globe) * 0.8 * p.scale(c) }));
                     r.update(t);
                 }
                 if p.inn && c >= p.total() {

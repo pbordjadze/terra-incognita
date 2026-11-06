@@ -1,5 +1,5 @@
 {
- "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays).",
+ "_": "Every light entered in turn and left again, east to west, the Earth turned by hand between far ones: each toy opens inside Terra and closes, one at a time, its memory freed (the peak: watch VmHWM while it plays). (Murmuration's passage has its own plan, murmuration.json; Battle Ink retired, painting-company row 245.)",
  "seconds": 80.5,
  "fps": 10,
  "events": [
@@ -18,27 +18,11 @@
    "for": 0.8
   },
   {
-   "t": 3.0,
-   "tap": "battle"
-  },
-  {
-   "t": 9.0,
-   "tap": "earth"
-  },
-  {
    "t": 12.5,
    "tap": "mold"
   },
   {
    "t": 18.5,
-   "tap": "earth"
-  },
-  {
-   "t": 22.0,
-   "tap": "murmuration"
-  },
-  {
-   "t": 28.0,
    "tap": "earth"
   },
   {
@@ -132,16 +116,8 @@
  ],
  "shots": [
   {
-   "t": 7.5,
-   "name": "battle"
-  },
-  {
    "t": 17.0,
    "name": "mold"
-  },
-  {
-   "t": 26.5,
-   "name": "murmuration"
   },
   {
    "t": 38.5,

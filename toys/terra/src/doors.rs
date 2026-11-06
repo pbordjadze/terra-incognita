@@ -73,7 +73,6 @@ pub fn doors() -> Vec<Door> {
         Door { id: "fireflies", name: "Fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
         Door { id: "bell", name: "Bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
         Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
-        Door { id: "battle", name: "Battle Ink", at: [16.13, 41.31], tint: [0.45, 0.25, 0.55], night: false, degree: 1, open: rooms::open::<battle::Battle> },
         Door { id: "jam", name: "Ghost Jam", at: [136.91, 35.18], tint: [0.86, 0.20, 0.12], night: true, degree: 5, open: rooms::open::<jam::Jam> },
         Door { id: "meander", name: "Meander", at: [-67.03, -12.97], tint: [0.30, 0.52, 0.62], night: false, degree: 7, open: rooms::open::<meander::Meander> },
         Door { id: "frost", name: "Frost", at: [142.79, 63.46], tint: [0.22, 0.42, 0.78], night: false, degree: 9, open: rooms::open::<frost::Frost> },
@@ -410,33 +409,6 @@ impl Life {
                         sphere_ring(p, globe, centre, theta, k, [ox, oy], width * kf, [tint[0] * 0.8, tint[1] * 0.8, tint[2] * 0.8, al]);
                     }
                     p.disc(c, 2.2 * kf, 1.0, [tint[0], tint[1], tint[2], 0.9 * a]);
-                }
-                "battle" => {
-                    // an engraving's two inks, as the battle went: Rome's black ranks pressing south, Carthage's
-                    // purple bowing back before them, then its wings closing round
-                    let s = r * 1.05;
-                    let ph = (tm / 10.0 + 0.55).rem_euclid(1.0);
-                    let press = smooth(0.0, 0.5, ph) * (1.0 - smooth(0.9, 1.0, ph));
-                    let wrap = 0.35 + 0.65 * smooth(0.35, 0.8, ph) * (1.0 - smooth(0.9, 1.0, ph));
-                    let dot = |p: &mut Painter, x: f64, y: f64, col: [f32; 3]| {
-                        p.disc([c[0] + (x * s * k) as f32, c[1] + (y * s * k) as f32], 1.0 * kf, 0.8, [col[0], col[1], col[2], 0.95 * a]);
-                    };
-                    for row in 0..3 {
-                        for col in 0..5 {
-                            let x = (col as f64 - 2.0) * 0.17;
-                            let y = -0.55 + row as f64 * 0.16 + press * 0.22;
-                            dot(p, x, y, [0.10, 0.10, 0.10]);
-                        }
-                    }
-                    // Carthage's line: facing Rome across the field, then its wings wrapping up round Rome's sides
-                    for q in 0..17 {
-                        let u = q as f64 / 16.0 - 0.5;
-                        let (lx, ly) = (u * 1.4, 0.32);
-                        let ang = std::f64::consts::FRAC_PI_2 + u * std::f64::consts::PI * 1.55;
-                        let (hx, hy) = (ang.cos() * 0.9, ang.sin() * 0.72 - 0.38);
-                        let (x, y) = (lx + (hx - lx) * wrap, ly + (hy - ly) * wrap + press * 0.12);
-                        dot(p, x, y, [0.45, 0.22, 0.55]);
-                    }
                 }
                 "meander" => {
                     // a window onto the floodplain: the forest's dark green, the river's tan line wandering
