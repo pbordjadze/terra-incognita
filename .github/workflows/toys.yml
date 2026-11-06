@@ -70,7 +70,15 @@ jobs:
         with: { workspaces: toys, key: '${{ matrix.toy }}' }
       - name: Software Vulkan, ffmpeg and the data
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers ffmpeg > /dev/null
+          # (a hosted runner's mirror can be slow or hang: only what is needed, bounded, tried twice, and the
+          # driver checked after, so a check never runs on without Vulkan)
+          for i in 1 2; do
+            timeout 300 sudo apt-get update -qq -o Acquire::http::Timeout=30 -o Acquire::Retries=3 &&
+              timeout 1200 sudo apt-get install -y -qq --no-install-recommends -o Acquire::http::Timeout=30 -o Acquire::Retries=3 \
+                mesa-vulkan-drivers ffmpeg > /dev/null && break
+            echo "::warning::apt attempt $i failed or timed out"; sleep 15
+          done
+          ls /usr/share/vulkan/icd.d/lvp_icd*.json > /dev/null || { echo "::error::no software Vulkan (mesa-vulkan-drivers) installed"; exit 1; }
           python3 tools/toys/assets.py ${{ matrix.toy }} --link
       - name: Build and test
         working-directory: toys
@@ -148,7 +156,12 @@ jobs:
           ls -l out/${{ matrix.toy }}.ipa
           bash tools/toys/launch_check.sh ${{ matrix.toy }} --ipa out/${{ matrix.toy }}.ipa
       - name: Open it in the Simulator (Apple's Metal compiler, Metal's validation on)
-        run: bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim
+        run: |
+          bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim
+          # a toy whose sim.env asks for it is opened on an iPad too (Terra: its passages at the iPad's size)
+          if grep -q '^SIM_ALSO=iPad' toys/${{ matrix.toy }}/sim.env 2> /dev/null; then
+            SIM_DEVICE=iPad bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim-ipad
+          fi
       - name: Release
         if: github.ref_name == 'main'
         env:

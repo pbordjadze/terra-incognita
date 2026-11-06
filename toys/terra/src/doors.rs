@@ -73,8 +73,7 @@ pub fn doors() -> Vec<Door> {
         Door { id: "fireflies", name: "Fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
         Door { id: "bell", name: "Bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
         Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
-        Door { id: "battle", name: "Battle Ink", at: [16.13, 41.31], tint: [0.45, 0.25, 0.55], night: false, degree: 1, open: rooms::open::<battle::Battle> },
-        Door { id: "jam", name: "Ghost Jam", at: [136.91, 35.18], tint: [0.86, 0.20, 0.12], night: true, degree: 5, open: rooms::open::<jam::Jam> },
+        Door { id: "jam", name: "Salt Flat", at: [-113.86, 40.76], tint: [0.96, 0.86, 0.70], night: true, degree: 5, open: rooms::open::<jam::Jam> },
         Door { id: "meander", name: "Meander", at: [-67.03, -12.97], tint: [0.30, 0.52, 0.62], night: false, degree: 7, open: rooms::open::<meander::Meander> },
         Door { id: "frost", name: "Frost", at: [142.79, 63.46], tint: [0.22, 0.42, 0.78], night: false, degree: 9, open: rooms::open::<frost::Frost> },
     ]
@@ -316,9 +315,10 @@ impl Life {
     }
 
     /// Every light into the painter (pixels: `k` pixels a point). `fade` dims them all (a dive under way).
-    pub fn paint(&self, p: &mut Painter, globe: &Globe, t: f64, k: f64, fade: f64, reduce_motion: bool) {
+    /// `focus`: only that light, at that size (points) and its halo's strength, as a passage carries it down into its toy.
+    pub fn paint(&self, p: &mut Painter, globe: &Globe, t: f64, k: f64, fade: f64, reduce_motion: bool, focus: Option<(usize, f64, f64)>, skip: Option<usize>) {
         let kf = k as f32;
-        let r = Self::size(globe);
+        let r0 = Self::size(globe);
         let px = |pt: [f64; 2]| [(pt[0] * k) as f32, (pt[1] * k) as f32];
         let at = |ll: [f64; 2]| -> Option<([f32; 2], f64)> {
             let (s, f) = globe.project(LonLat::new(ll[0], ll[1]));
@@ -335,6 +335,14 @@ impl Life {
         }
         let shown = self.shown(globe);
         for (i, d) in self.doors.iter().enumerate() {
+            if skip == Some(i) {
+                continue;
+            }
+            let (r, halo) = match focus {
+                Some((f, _, _)) if f != i => continue,
+                Some((_, size, halo)) => (size, halo as f32),
+                None => (r0, 1.0),
+            };
             let (s, facing) = shown[i];
             let [sw, sh] = [globe.view().width as f64 / globe.view().ppp, globe.view().height as f64 / globe.view().ppp];
             let edge = s[0].min(sw - s[0]).min(s[1]).min(sh - s[1]);
@@ -359,8 +367,8 @@ impl Life {
                 p.ring(c, ((r * (1.1 + 1.6 * ph)) * k) as f32, 1.6 * kf, 1.5, [tint[0], tint[1], tint[2], ((1.0 - ph).powf(1.5) * 0.7) as f32 * a]);
             }
             // a soft halo of its colour, so it reads from across the Earth
-            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * (1.0 - globe.night)]);
-            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.32 * a]);
+            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * halo * (1.0 - globe.night)]);
+            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.32 * a * halo]);
             match d.id {
                 "whales" => {
                     if let Some(spots) = self.whale_spots() {
@@ -379,8 +387,13 @@ impl Life {
                     }
                 }
                 "murmuration" => {
-                    // a little flock over the reed beds at dusk: one dark body, folding and turning
-                    let n = 70;
+                    // a window onto the toy's own dusk: the sky's blue over a low warm glow, the reeds' dark
+                    // line under it, and a flock in it folding and turning, one dark body
+                    let sky_a = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.25 * k) as f32, [0.30, 0.36, 0.50, 0.92 * sky_a]);
+                    p.disc([c[0], c[1] + (r * 0.55 * k) as f32], (r * 0.62 * k) as f32, (r * 0.55 * k) as f32, [1.0, 0.70, 0.36, 0.75 * sky_a]);
+                    p.disc([c[0], c[1] + (r * 0.62 * k) as f32], (r * 0.16 * k) as f32, (r * 0.08 * k) as f32, [1.0, 0.92, 0.70, 0.8 * sky_a]);
+                    let n = 140;
                     let turn = 0.6 * (tm * 0.21).sin();
                     let (st, ct) = (turn.sin(), turn.cos());
                     let stretch = 1.0 + 0.45 * (tm * 0.53).sin();
@@ -394,7 +407,7 @@ impl Life {
                         let mut y = rad * ang.sin() / stretch * 0.6;
                         y += 0.28 * (x * 2.6 + tm * 1.7).sin();
                         x += 0.12 * (y * 3.1 + tm * 1.3).sin();
-                        let (x, y) = (x * r * 0.95, y * r * 0.95);
+                        let (x, y) = (x * r * 0.8, y * r * 0.8 - r * 0.15);
                         let q = [c[0] + ((x * ct - y * st) * k) as f32, c[1] + ((x * st + y * ct) * k) as f32];
                         p.disc(q, 0.95 * kf, 0.8, [0.13, 0.11, 0.15, 0.85 * a]);
                     }
@@ -442,31 +455,84 @@ impl Life {
                     }
                     p.disc(c, 2.2 * kf, 1.0, [tint[0], tint[1], tint[2], 0.9 * a]);
                 }
-                "battle" => {
-                    // an engraving's two inks, as the battle went: Rome's black ranks pressing south, Carthage's
-                    // purple bowing back before them, then its wings closing round
-                    let s = r * 1.05;
-                    let ph = (tm / 10.0 + 0.55).rem_euclid(1.0);
-                    let press = smooth(0.0, 0.5, ph) * (1.0 - smooth(0.9, 1.0, ph));
-                    let wrap = 0.35 + 0.65 * smooth(0.35, 0.8, ph) * (1.0 - smooth(0.9, 1.0, ph));
-                    let dot = |p: &mut Painter, x: f64, y: f64, col: [f32; 3]| {
-                        p.disc([c[0] + (x * s * k) as f32, c[1] + (y * s * k) as f32], 1.0 * kf, 0.8, [col[0], col[1], col[2], 0.95 * a]);
-                    };
-                    for row in 0..3 {
-                        for col in 0..5 {
-                            let x = (col as f64 - 2.0) * 0.17;
-                            let y = -0.55 + row as f64 * 0.16 + press * 0.22;
-                            dot(p, x, y, [0.10, 0.10, 0.10]);
+                "meander" => {
+                    // a window onto the floodplain: the forest's dark green, the river's tan line wandering
+                    // through it (its bends slowly growing and moving on), and a cut-off lake's dark crescent
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.10, 0.25, 0.17, 0.95 * w]);
+                    let lake = [c[0] - (r * 0.38 * k) as f32, c[1] - (r * 0.1 * k) as f32];
+                    p.ring(lake, (r * 0.28 * k) as f32, (r * 0.09 * k) as f32, 1.0, [0.07, 0.12, 0.22, 0.8 * a]);
+                    let n = 28;
+                    let mut prev: Option<[f32; 2]> = None;
+                    for j in 0..=n {
+                        let u = j as f64 / n as f64 * 2.0 - 1.0;
+                        let amp = 0.42 + 0.12 * (tm * 0.13).sin();
+                        let x = amp * (u * 4.4 + tm * 0.25).sin() * (1.0 - u * u).sqrt();
+                        let q = [c[0] + (x * r * k) as f32, c[1] + (u * r * 0.92 * k) as f32];
+                        if let Some(pp) = prev {
+                            p.line(pp, q, (0.075 * r * k) as f32, 1.0, [0.80, 0.66, 0.44, 0.95 * a]);
                         }
+                        prev = Some(q);
                     }
-                    // Carthage's line: facing Rome across the field, then its wings wrapping up round Rome's sides
-                    for q in 0..17 {
-                        let u = q as f64 / 16.0 - 0.5;
-                        let (lx, ly) = (u * 1.4, 0.32);
-                        let ang = std::f64::consts::FRAC_PI_2 + u * std::f64::consts::PI * 1.55;
-                        let (hx, hy) = (ang.cos() * 0.9, ang.sin() * 0.72 - 0.38);
-                        let (x, y) = (lx + (hx - lx) * wrap, ly + (hy - ly) * wrap + press * 0.12);
-                        dot(p, x, y, [0.45, 0.22, 0.55]);
+                }
+                "jam" => {
+                    // a window onto the salt at night: pale crust, and a convoy's headlights snaking across it,
+                    // its tail lights red behind, the tracks it leaves fading
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.16, 0.17, 0.21, 0.95 * w]);
+                    p.disc(c, (r * 0.8 * k) as f32, (r * 0.5 * k) as f32, [0.36, 0.34, 0.33, 0.35 * w]);
+                    let path = |s: f64| -> [f32; 2] {
+                        let x = s;
+                        let y = 0.32 * (s * 2.2 + 0.6 * (tm * 0.21).sin()).sin();
+                        [c[0] + (x * r * 0.85 * k) as f32, c[1] + (y * r * k) as f32]
+                    };
+                    // the tracks
+                    let mut prev: Option<[f32; 2]> = None;
+                    for j in 0..=24 {
+                        let q = path(j as f64 / 12.0 - 1.0);
+                        if let Some(pp) = prev {
+                            p.line(pp, q, 0.5 * kf, 0.8, [0.75, 0.74, 0.70, 0.35 * a]);
+                        }
+                        prev = Some(q);
+                    }
+                    // six cars along it, going on and wrapping round
+                    for j in 0..6 {
+                        let s = ((tm * 0.12 + j as f64 * 0.11).rem_euclid(1.2)) * 1.8 - 0.95;
+                        if s.abs() > 0.9 {
+                            continue;
+                        }
+                        let (head, tail) = (path(s + 0.04), path(s - 0.03));
+                        // its headlights' cone, warm on the dark salt ahead of it
+                        let ahead = path(s + 0.2);
+                        p.glow(head, ahead, (0.1 * r * k) as f32, (0.16 * r * k) as f32, [1.0, 0.82, 0.55, 0.45 * a]);
+                        p.glow(head, head, (0.12 * r * k) as f32, (0.18 * r * k) as f32, [1.0, 0.95, 0.8, 0.55 * a]);
+                        p.disc(head, 0.9 * kf, 1.0, [1.0, 0.97, 0.88, 0.95 * a]);
+                        p.disc(tail, 0.7 * kf, 1.0, [0.95, 0.15, 0.1, 0.9 * a]);
+                    }
+                }
+                "frost" => {
+                    // a window of dark glass at -50°: frost growing on it in six-armed feathers, then fading
+                    // as if a finger had warmed it, and growing back
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.06, 0.10, 0.20, 0.95 * w]);
+                    let ph = (tm / 9.0).rem_euclid(1.0);
+                    let grow = smooth(0.0, 0.7, ph) * (1.0 - smooth(0.85, 1.0, ph));
+                    let ice = [0.80, 0.90, 1.0, 0.9 * a];
+                    for arm in 0..6 {
+                        let ang = arm as f64 * std::f64::consts::FRAC_PI_3 + 0.3;
+                        let (sa, ca) = ang.sin_cos();
+                        let len = r * 0.85 * grow;
+                        let tip = [c[0] + (ca * len * k) as f32, c[1] + (sa * len * k) as f32];
+                        p.line(c, tip, 0.9 * kf, 0.8, ice);
+                        for b in 1..4 {
+                            let at = len * b as f64 / 4.0;
+                            let bl = (len - at) * 0.45;
+                            let o = [c[0] + (ca * at * k) as f32, c[1] + (sa * at * k) as f32];
+                            for side in [-1.0f64, 1.0] {
+                                let ba = ang + side * 1.0;
+                                p.line(o, [o[0] + (ba.cos() * bl * k) as f32, o[1] + (ba.sin() * bl * k) as f32], 0.6 * kf, 0.8, ice);
+                            }
+                        }
                     }
                 }
                 _ => {

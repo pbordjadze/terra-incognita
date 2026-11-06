@@ -1,12 +1,37 @@
 {
- "_": "The two toys that are scenes, not globes: the starlings' light touched (the camera dives to Ham Wall and the dusk sky comes up through the Earth), the Earth mark, then Cannae's (down to Apulia and the engraving's field), and back.",
- "seconds": 22,
+ "_": "The starlings' light touched: the passage down into the dusk at Ham Wall (painting-company row 245), then the Earth mark and back. (Cannae's half retired with Battle Ink.)",
+ "seconds": 12,
  "fps": 20,
  "events": [
-  { "t": 1.0, "tap": "murmuration" },
-  { "t": 8.0, "tap": "earth" },
-  { "t": 12.0, "tap": "battle" },
-  { "t": 19.0, "tap": "earth" }
+  {
+   "t": 1.0,
+   "tap": "murmuration"
+  },
+  {
+   "t": 8.0,
+   "tap": "earth"
+  }
  ],
- "shots": [{ "t": 2.2, "name": "starlings-diving" }, { "t": 3.4, "name": "starlings-opening" }, { "t": 6.5, "name": "starlings" }, { "t": 8.3, "name": "starlings-closing" }, { "t": 11.5, "name": "between" }, { "t": 13.2, "name": "cannae-diving" }, { "t": 14.6, "name": "cannae-opening" }, { "t": 17.5, "name": "cannae" }, { "t": 21.8, "name": "back" }]
+ "shots": [
+  {
+   "t": 2.2,
+   "name": "starlings-diving"
+  },
+  {
+   "t": 3.4,
+   "name": "starlings-opening"
+  },
+  {
+   "t": 6.5,
+   "name": "starlings"
+  },
+  {
+   "t": 8.3,
+   "name": "starlings-closing"
+  },
+  {
+   "t": 11.5,
+   "name": "between"
+  }
+ ]
 }

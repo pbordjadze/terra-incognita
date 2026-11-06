@@ -1,7 +1,7 @@
 # The toys: each its own app (toys/README.md). toy-kit is what they share; each toy is one crate.
 [workspace]
 resolver = "2"
-members = ["crates/toy-kit", "whales", "murmuration", "mold", "fireflies", "bell", "swell", "battle", "carol", "terra", "jam", "meander", "frost", "taste", "walk"]
+members = ["crates/toy-kit", "whales", "murmuration", "mold", "fireflies", "bell", "swell", "carol", "terra", "jam", "meander", "frost", "taste", "walk"]
 
 [workspace.package]
 version = "0.1.0"

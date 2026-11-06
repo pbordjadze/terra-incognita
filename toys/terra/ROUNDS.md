@@ -37,3 +37,22 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   emptier globe than the one you came from: Bell's own look, unowned). Released as terra-build-174 with bell-build-174
   (3:32 AM ET). Next: Bell's look on arrival; an answer at the finger inside the toys that reads as yours; Paul's tap with
   sound on. The loop's tools: `tools/toys/newcomer/` (try.sh, regress.sh, NEWCOMER.md, CRITIC.md).
+- Row 245 rounds 1–2 (Nov 6, 2026, ET): the passages. Murmuration without a cut: the Earth turns its top to the
+  dusk and falls to Ham Wall as the dusk comes down, the toy's own eye (`Toy::arrival`) takes over straight
+  above the reed beds still falling, and tilts up into the sunset as it falls; out the same way backward.
+  Each scene toy's light a small window onto its scene; a scene opens out of that window as the Earth
+  falls on toward it. The Simulator's check plays a passage on an iPhone and an iPad (`sim.env`). Plan
+  `murmuration`.
+- Row 245 rounds 3–4 (Nov 6, 2026, ET): three critics found the overhead passage (the toy's eye straight
+  down, then swinging up) a swap of flocks over brown ground; withdrawn, with the kit hook it needed and its
+  changes to Murmuration. Instead every scene toy's light is a window: touched, it shows the toy itself, live,
+  its whole frame scaled into the light; the Earth turns the light to the middle and falls toward it, the
+  window growing with the Earth's zoom until it is the glass. Out: the window shrinks back into its light as
+  the Earth rises. Frost's light keeps its feathers over the window while the glass is bare. Battle Ink retired
+  (its code at 3032c9a).
+- Row 245 rounds 5–6 (Nov 6, 2026, ET): the window grows from its light's true place to the glass exactly;
+  the starlings' small window holds the thick of the flock and widens to the reeds; Murmuration's first glide
+  waits 15 s so the flock holds when you arrive; Salt Flat at Bonneville (row 244) with its headlights' cones;
+  a pinch out inside a globe toy goes home once the toy's globe is whole or will go no farther. Unjudged from
+  Linux: the frame rate while a scene runs in its window during the dive (the toy is updated and drawn every
+  frame from the touch), touch, sound.
