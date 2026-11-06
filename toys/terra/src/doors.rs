@@ -343,8 +343,13 @@ impl Life {
                     }
                 }
                 "murmuration" => {
-                    // a little flock over the reed beds at dusk: one dark body, folding and turning
-                    let n = 70;
+                    // a window onto the toy's own dusk: the sky's blue over a low warm glow, the reeds' dark
+                    // line under it, and a flock in it folding and turning, one dark body
+                    let sky_a = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.25 * k) as f32, [0.30, 0.36, 0.50, 0.92 * sky_a]);
+                    p.disc([c[0], c[1] + (r * 0.55 * k) as f32], (r * 0.62 * k) as f32, (r * 0.55 * k) as f32, [1.0, 0.70, 0.36, 0.75 * sky_a]);
+                    p.disc([c[0], c[1] + (r * 0.62 * k) as f32], (r * 0.16 * k) as f32, (r * 0.08 * k) as f32, [1.0, 0.92, 0.70, 0.8 * sky_a]);
+                    let n = 140;
                     let turn = 0.6 * (tm * 0.21).sin();
                     let (st, ct) = (turn.sin(), turn.cos());
                     let stretch = 1.0 + 0.45 * (tm * 0.53).sin();
@@ -358,7 +363,7 @@ impl Life {
                         let mut y = rad * ang.sin() / stretch * 0.6;
                         y += 0.28 * (x * 2.6 + tm * 1.7).sin();
                         x += 0.12 * (y * 3.1 + tm * 1.3).sin();
-                        let (x, y) = (x * r * 0.95, y * r * 0.95);
+                        let (x, y) = (x * r * 0.8, y * r * 0.8 - r * 0.15);
                         let q = [c[0] + ((x * ct - y * st) * k) as f32, c[1] + ((x * st + y * ct) * k) as f32];
                         p.disc(q, 0.95 * kf, 0.8, [0.13, 0.11, 0.15, 0.85 * a]);
                     }
@@ -431,6 +436,72 @@ impl Life {
                         let (hx, hy) = (ang.cos() * 0.9, ang.sin() * 0.72 - 0.38);
                         let (x, y) = (lx + (hx - lx) * wrap, ly + (hy - ly) * wrap + press * 0.12);
                         dot(p, x, y, [0.45, 0.22, 0.55]);
+                    }
+                }
+                "meander" => {
+                    // a window onto the floodplain: the forest's dark green, the river's tan line wandering
+                    // through it (its bends slowly growing and moving on), and a cut-off lake's dark crescent
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.10, 0.25, 0.17, 0.95 * w]);
+                    let lake = [c[0] - (r * 0.38 * k) as f32, c[1] - (r * 0.1 * k) as f32];
+                    p.ring(lake, (r * 0.28 * k) as f32, (r * 0.09 * k) as f32, 1.0, [0.07, 0.12, 0.22, 0.8 * a]);
+                    let n = 28;
+                    let mut prev: Option<[f32; 2]> = None;
+                    for j in 0..=n {
+                        let u = j as f64 / n as f64 * 2.0 - 1.0;
+                        let amp = 0.42 + 0.12 * (tm * 0.13).sin();
+                        let x = amp * (u * 4.4 + tm * 0.25).sin() * (1.0 - u * u).sqrt();
+                        let q = [c[0] + (x * r * k) as f32, c[1] + (u * r * 0.92 * k) as f32];
+                        if let Some(pp) = prev {
+                            p.line(pp, q, (0.075 * r * k) as f32, 1.0, [0.80, 0.66, 0.44, 0.95 * a]);
+                        }
+                        prev = Some(q);
+                    }
+                }
+                "jam" => {
+                    // a window onto the night ring: 22 cars round it, and the jam a touch starts, a knot of
+                    // brake lights running backward round the ring as the cars go forward
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.07, 0.08, 0.11, 0.95 * w]);
+                    p.ring(c, (r * 0.68 * k) as f32, (0.16 * r * k) as f32, 1.0, [0.22, 0.23, 0.27, 0.9 * a]);
+                    let jam_at = -tm * 0.35;
+                    for j in 0..22 {
+                        let base = j as f64 / 22.0 * std::f64::consts::TAU;
+                        let d = (base - jam_at).rem_euclid(std::f64::consts::TAU);
+                        let near = (-(d.min(std::f64::consts::TAU - d) / 0.55).powi(2)).exp();
+                        // the cars bunch at the knot and spread after it
+                        let ang = base + tm * 0.5 - 0.25 * near * (d - std::f64::consts::PI).signum();
+                        let q = [c[0] + (ang.cos() * r * 0.68 * k) as f32, c[1] + (ang.sin() * r * 0.68 * k) as f32];
+                        let red = near as f32;
+                        p.disc(q, (0.08 * r * k) as f32 + 0.6 * kf, 1.0, [0.95, 0.9 - 0.75 * red, 0.75 - 0.65 * red, 0.95 * a]);
+                        if red > 0.2 {
+                            p.glow(q, q, (0.12 * r * k) as f32, (0.2 * r * k) as f32, [1.0, 0.2, 0.1, 0.5 * red * a]);
+                        }
+                    }
+                }
+                "frost" => {
+                    // a window of dark glass at -50°: frost growing on it in six-armed feathers, then fading
+                    // as if a finger had warmed it, and growing back
+                    let w = a * halo;
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.06, 0.10, 0.20, 0.95 * w]);
+                    let ph = (tm / 9.0).rem_euclid(1.0);
+                    let grow = smooth(0.0, 0.7, ph) * (1.0 - smooth(0.85, 1.0, ph));
+                    let ice = [0.80, 0.90, 1.0, 0.9 * a];
+                    for arm in 0..6 {
+                        let ang = arm as f64 * std::f64::consts::FRAC_PI_3 + 0.3;
+                        let (sa, ca) = ang.sin_cos();
+                        let len = r * 0.85 * grow;
+                        let tip = [c[0] + (ca * len * k) as f32, c[1] + (sa * len * k) as f32];
+                        p.line(c, tip, 0.9 * kf, 0.8, ice);
+                        for b in 1..4 {
+                            let at = len * b as f64 / 4.0;
+                            let bl = (len - at) * 0.45;
+                            let o = [c[0] + (ca * at * k) as f32, c[1] + (sa * at * k) as f32];
+                            for side in [-1.0f64, 1.0] {
+                                let ba = ang + side * 1.0;
+                                p.line(o, [o[0] + (ba.cos() * bl * k) as f32, o[1] + (ba.sin() * bl * k) as f32], 0.6 * kf, 0.8, ice);
+                            }
+                        }
                     }
                 }
                 _ => {

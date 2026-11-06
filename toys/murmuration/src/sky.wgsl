@@ -116,7 +116,7 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
             let dist = u.horizon.w / depression;
             // The haze is the air's: only its lowest few kilometres thicken it, so from high above
             // (a host's passage coming down from the globe) the ground still shows through.
-            let haze = 1.0 - exp(-(min(u.horizon.w, 2500.0) / depression) / 30000.0);
+            let haze = 1.0 - exp(-(min(u.horizon.w, 800.0) / depression) / 30000.0);
             // Looking steeply down, the haze is the whole horizon's light, not one bearing's
             // (a bearing's own colour would draw a ray to the point below the eye).
             let hor = mix(hor, 0.5 * (u.horizon.rgb + u.horizon2.rgb), smoothstep(0.15, 0.7, depression));
@@ -149,7 +149,13 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
             var field = u.ground.rgb * (0.88 + 0.24 * mix(n, 0.5, cell_k)) * (0.6 + 0.8 * big);
             // Ham Wall's old peat diggings, flooded: still pools among the reeds, holding the sky
             let pool = smoothstep(0.66, 0.70, vn2(gp / 420.0 + vec2f(3.0, 9.0))) * (1.0 - smoothstep(0.0, 1.0, (length(gp) - 1500.0) / 2500.0));
-            field = mix(field, refl * 1.6 + u.ground.rgb * 0.25, pool);
+            // seen from above, a pool is the sky over it, dimmed (still water at dusk: the zenith's blue-grey)
+            let pool_col = sky(normalize(vec3f(dir.x, -dir.y, dir.z))) * (0.16 + 0.84 * fres);
+            field = mix(field, pool_col, pool);
+            // looked down on at dusk, the reed beds lose the low sun's warmth: a cool, dark olive-grey
+            let down = smoothstep(0.45, 0.95, depression);
+            let lum = dot(field, vec3f(0.2126, 0.7152, 0.0722));
+            field = mix(field, lum * vec3f(0.78, 0.86, 0.95), 0.55 * down * (1.0 - pool));
             g = mix(mix(field, field * 0.6 + refl * 0.8, water), hor, haze);
         }
         col = mix(col, g, land);

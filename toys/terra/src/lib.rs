@@ -28,6 +28,9 @@ fn earth_spot(points: [f64; 2]) -> [f64; 2] {
 const EARTH_REACH: f64 = 24.0;
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
+/// Seconds a scene takes to open out of its light, and how fast the Earth falls meanwhile (e-folds a second).
+const IRIS: f64 = 1.3;
+const IRIS_FALL: f64 = 1.1;
 
 enum State {
     /// The Earth and its lights.
@@ -76,7 +79,7 @@ const PASS_LOW: f64 = 3.0;
 const PASS_OVERLAP: f64 = 0.6;
 /// Seconds: the toy's picture crossing the globe's, and the eye's swing.
 const PASS_FADE: f64 = 0.6;
-const PASS_SWING: f64 = 2.4;
+const PASS_SWING: f64 = 2.6;
 /// The flock's (or the toy's subject's) half-width, metres: the light's likeness grows to it.
 const PASS_SUBJECT: f64 = 70.0;
 /// How far the Earth falls into night as it hands the picture to a toy's dusk.
@@ -93,7 +96,11 @@ impl Passage {
         }
     }
     fn total(&self) -> f64 {
-        self.fall + self.swing - PASS_OVERLAP
+        self.fall.max(self.swing_start() + self.swing)
+    }
+    /// The swing begins as soon as the toy's eye has the picture: it tilts up while it still falls.
+    fn swing_start(&self) -> f64 {
+        (self.hand_clock() + PASS_FADE * 0.5).min(self.fall - PASS_OVERLAP)
     }
     /// 0..1 along the fall, eased (fast in the middle of the logarithm, gentle at both ends).
     fn fall_at(&self, c: f64) -> f64 {
@@ -126,7 +133,7 @@ impl Passage {
     }
     /// The swing (0 looking straight down .. 1 the toy's own view).
     fn swing_at(&self, c: f64) -> f64 {
-        ((c - self.fall + PASS_OVERLAP) / self.swing).clamp(0.0, 1.0)
+        ((c - self.swing_start()) / self.swing).clamp(0.0, 1.0)
     }
     /// The globe's camera now: travelling (in) to the light with the turn, its zoom the scale's.
     fn camera(&self, c: f64, r_per_zoom: f64) -> Camera {
@@ -188,7 +195,7 @@ struct Veil {
 }
 
 const VEIL_WGSL: &str = r#"
-struct U { alpha: f32, _a: f32, _b: f32, _c: f32 };
+struct U { alpha: f32, _a: f32, _b: f32, _c: f32, iris: vec4<f32> };
 @group(0) @binding(0) var tex: texture_2d<f32>;
 @group(0) @binding(1) var samp: sampler;
 @group(0) @binding(2) var<uniform> u: U;
@@ -202,7 +209,12 @@ struct O { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 }
 @fragment fn fs_main(i: O) -> @location(0) vec4<f32> {
   let c = textureSample(tex, samp, i.uv);
-  return vec4<f32>(c.rgb * u.alpha, u.alpha);
+  // an iris (centre, radius, softness in pixels): the toy seen through a widening disc
+  var a = u.alpha;
+  if (u.iris.z > 0.0) {
+    a = a * (1.0 - smoothstep(u.iris.z - u.iris.w, u.iris.z + u.iris.w, distance(i.pos.xy, u.iris.xy)));
+  }
+  return vec4<f32>(c.rgb * a, a);
 }
 "#;
 
@@ -259,7 +271,7 @@ impl Veil {
             cache: None,
         });
         let sampler = dev.create_sampler(&wgpu::SamplerDescriptor { mag_filter: wgpu::FilterMode::Linear, min_filter: wgpu::FilterMode::Linear, ..Default::default() });
-        let buf = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("terra veil"), size: 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let buf = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("terra veil"), size: 32, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
         Veil { pipeline, layout, sampler, buf, target: None }
     }
 
@@ -293,8 +305,13 @@ impl Veil {
     }
 
     fn lay(&self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32) {
+        self.lay_iris(ctx, target, alpha, [0.0; 4]);
+    }
+
+    /// Laid through a soft disc: `iris` its centre, radius and softness (pixels; radius 0, none).
+    fn lay_iris(&self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32, iris: [f32; 4]) {
         let Some((_, _, bind, _)) = &self.target else { return };
-        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&[alpha, 0.0, 0.0, 0.0]));
+        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&[alpha, 0.0, 0.0, 0.0, iris[0], iris[1], iris[2], iris[3]]));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -341,6 +358,9 @@ pub struct Terra {
     /// A finger on the Earth mark.
     earth_finger: Option<u64>,
     reduce_motion: bool,
+    /// The open toy is a scene of its own (no globe): it opens out of its light through a widening disc
+    /// as the Earth keeps falling toward it, rather than crossfading.
+    scene: bool,
     /// A passage played by itself (`TERRA_PASSAGE=<toy id>`, set by the Simulator's check: sim.env):
     /// into that toy a few seconds after launch, and out again; with the first frame's time.
     auto: Option<(usize, f64, u8)>,
@@ -391,6 +411,14 @@ fn fly(a: Camera, b: Camera, u: f64) -> Camera {
 impl Terra {
     fn points(ctx: &Ctx) -> [f64; 2] {
         ctx.points()
+    }
+
+    fn fade_secs(&self) -> f64 {
+        if self.scene {
+            IRIS
+        } else {
+            FADE
+        }
     }
 
     fn inside(&self) -> bool {
@@ -456,6 +484,7 @@ impl Terra {
                 return;
             }
         }
+        self.scene = room.camera().is_none();
         self.room = Some(room);
         self.door = i;
         let from = self.globe.camera;
@@ -762,6 +791,7 @@ impl Toy for Terra {
             inside_fingers: Default::default(),
             pinch: None,
             reduce_motion: ctx.reduce_motion,
+            scene: false,
             auto: std::env::var("TERRA_PASSAGE").ok().and_then(|id| life_index(&id)).map(|i| (i, f64::NAN, 0)),
         })
     }
@@ -858,7 +888,11 @@ impl Toy for Terra {
                 if let Some(r) = self.room.as_mut() {
                     r.update(t);
                 }
-                if t - t0 >= FADE {
+                if self.scene {
+                    // the Earth falls on toward the light as the scene opens out of it
+                    self.globe.camera.zoom = (self.globe.camera.zoom * (IRIS_FALL * dt).exp()).min(40.0);
+                }
+                if t - t0 >= self.fade_secs() {
                     self.state = State::Inside;
                     // the Earth's lights sleep while a toy is open
                     self.veil.target = None;
@@ -872,7 +906,10 @@ impl Toy for Terra {
             State::Closing { t0 } => {
                 // the toy held still as it goes down (its own hand would fly it Home after a pinch out),
                 // so its picture and the Earth's under it stay one
-                if t - t0 >= FADE {
+                if self.scene {
+                    self.globe.camera.zoom = (self.globe.camera.zoom * (-IRIS_FALL * dt).exp()).max(1.4);
+                }
+                if t - t0 >= self.fade_secs() {
                     self.room = None;
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
@@ -892,7 +929,7 @@ impl Toy for Terra {
                 let a = p.toy_alpha(c);
                 self.room_level.store((a as f32).to_bits(), Ordering::Relaxed);
                 if let Some(r) = self.room.as_mut() {
-                    r.arrival(Some(Arrival { k: ease(p.swing_at(c)), scale: p.scale(c) }));
+                    r.arrival(Some(Arrival { k: p.swing_at(c), scale: p.scale(c) }));
                     r.update(t);
                 }
                 if p.inn && c >= p.total() {
@@ -940,13 +977,28 @@ impl Toy for Terra {
                 self.draw_atlas(ctx, target, 1.0 - 0.6 * u);
             }
             State::Opening { t0 } | State::Closing { t0 } => {
-                let u = ease((self.t - t0) / FADE);
-                let a = if matches!(self.state, State::Opening { .. }) { u } else { 1.0 - u };
-                self.draw_atlas(ctx, target, 0.4);
+                let raw = ((self.t - t0) / self.fade_secs()).clamp(0.0, 1.0);
+                let raw = if matches!(self.state, State::Opening { .. }) { raw } else { 1.0 - raw };
+                let a = ease(raw);
+                let scene = self.scene;
+                // a scene: seen through a disc that opens from the light itself to the whole glass
+                let iris = if scene {
+                    let k = ctx.ppp as f32;
+                    let (c, _) = self.life.true_spot(&self.globe, self.door);
+                    let r0 = (Life::size(&self.globe) * 1.1) as f32 * k;
+                    let far = ((ctx.width as f32).hypot(ctx.height as f32)) * 0.75;
+                    let u = ease(raw) as f32;
+                    let r = r0 * (far / r0).powf(u);
+                    [c[0] as f32 * k, c[1] as f32 * k, r, r * 0.22 + 2.0 * k]
+                } else {
+                    [0.0; 4]
+                };
+                self.draw_atlas(ctx, target, if scene { 1.0 - a } else { 0.4 });
                 if let Some(r) = self.room.as_mut() {
                     let view = self.veil.view(ctx);
                     r.draw(view);
-                    self.veil.lay(ctx, target, a as f32);
+                    let alpha = if scene { ease(raw * 2.5) } else { a };
+                    self.veil.lay_iris(ctx, target, alpha as f32, iris);
                 }
                 self.draw_earth_mark(ctx, target, a as f32);
             }

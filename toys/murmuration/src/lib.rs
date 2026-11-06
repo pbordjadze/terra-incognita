@@ -338,7 +338,8 @@ impl Murmuration {
         let head = norm([own.fwd[0], 0.0, own.fwd[2]]);
         let own_pitch = own.fwd[1].clamp(-1.0, 1.0).asin();
         let k = a.k.clamp(0.0, 1.0) as f32;
-        let e = k * k * (3.0 - 2.0 * k);
+        // (the host eases k; the pitch starts at once and settles gently)
+        let e = 1.0 - (1.0 - k) * (1.0 - k);
         // the eye's pitch turns evenly from straight down to the watcher's, about an aim that slides from
         // the flock's middle to where the watcher looks, at a distance falling (in its logarithm) from
         // the passage's height to the watcher's own
@@ -594,6 +595,11 @@ impl Toy for Murmuration {
 
     fn arrival(&mut self, ctx: &mut Ctx, a: Option<toy_kit::Arrival>) -> Option<f64> {
         let was = self.arrive.is_some();
+        if a.is_some() && !was && self.finger.is_none() {
+            // carried out while the eye rides with a bird: it drops back out to the watcher as it swings
+            self.near_to = 0.0;
+            self.show_until = -1.0;
+        }
         self.arrive = a;
         if a.is_none() && was {
             // the eye is the watcher's again: the glide that shows a touch comes as it would on opening
