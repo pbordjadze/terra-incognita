@@ -29,3 +29,7 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   home came back turned, the lights first seen gone): the Earth rises from a toy to the opening's own view, turned toward
   the toy just left only as far as keeps its light in view. Plan `first-return` (strict: Bell's light is there to
   touch after coming home from Fireflies).
+- First minute, round 5 (Nov 6; row 246; weakest, two rounds running: arriving in Bell read as a failed dive, one ring
+  then a still pale globe; row 245 handed it over): in Bell itself, the idle Earth is struck from its great quakes 8 s
+  after the last strike and every 11-17 s after (was 20 s, then 28-46 s), and the surface wave is a ring of warm gold
+  laid over the ground (white light added to the pale globe read as nothing).
