@@ -40,3 +40,12 @@ bool toy_card_at_top(ToyShell *shell);
 // points (empty: none; valid until the next call), and pressing one by its line's index.
 const char *toy_buttons(ToyShell *shell);
 void toy_button_press(ToyShell *shell, uint32_t index, double t);
+// A sound file of the reader's own (Toy::wants_file, Toy::opened: Screw's song): whether the toy asks for
+// one now (the shell shows the Files picker), the file decoded and handed over (left/right `frames`
+// floats at `rate` Hz; right NULL for mono; copied), and the toy's quiet title line (NULL: none; valid
+// until the next call).
+bool toy_wants_file(ToyShell *shell);
+void toy_opened_audio(ToyShell *shell, const char *name, const float *left, const float *right, uint64_t frames, double rate);
+const char *toy_title(ToyShell *shell);
+// Whether the toy's sound is music the reader asked for (Toy::plays_music): the playback category.
+bool toy_plays_music(ToyShell *shell);

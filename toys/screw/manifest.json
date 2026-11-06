@@ -1,0 +1,4 @@
+{
+  "_": "The files the toy loads, by the names the code uses (tools/toys/assets.py assembles them; the IPA bundles them as data/). Screw bundles none: the song is the reader's own file, opened from Files (the sleeve), kept in the app's own storage and never in this repository or the app. The checks play a practice record synthesized in src/practice.rs.",
+  "files": {}
+}

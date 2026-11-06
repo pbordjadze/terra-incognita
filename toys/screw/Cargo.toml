@@ -1,0 +1,22 @@
+[package]
+name = "screw"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Screw (a working title): a record on a dark page; push it down and it slows, voice and all; tap and it says the last beat again. Chop and screw, Houston's craft (painting-company row 250)."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "screw-check"
+path = "src/bin/check.rs"

@@ -155,6 +155,17 @@
       "iconSource": "toys/walk/icon.png",
       "tintColor": "#E8B86A",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "screw-build",
+      "name": "Screw",
+      "bundleIdentifier": "com.pbordjadze.toy.screw",
+      "subtitle": "Chop and screw a song of your own",
+      "localizedDescription": "A record turning on a dark page. Open a song of yours from Files; tap and it plays. Push it down and it slows, the voice dropping with it, as Houston's DJ Screw rode a turntable's pitch. Tap and it says the last beat again, in time; flick it back two bars. Your song stays on your phone. Working title; a toy in the making.",
+      "icon": "screw-icon.png",
+      "iconSource": "toys/screw/icon.png",
+      "tintColor": "#8E4FB0",
+      "minOSVersion": "17.0"
     }
   ]
 }
