@@ -299,7 +299,7 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     func pickFile() {
         guard !picking, let vc = window?.rootViewController else { return }
         picking = true
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio], asCopy: true)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio, .movie], asCopy: true)
         picker.delegate = self
         picker.allowsMultipleSelection = false
         vc.present(picker, animated: true)
