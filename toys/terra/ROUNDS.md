@@ -25,3 +25,7 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
 - First minute, round 3 (Nov 6; row 246; weakest: left alone the Earth turned its lights away, bare Pacific by 40 s):
   the idle turn lingers where lights face the reader and crosses the empty sea between them more briskly, so a
   minute's look keeps the Americas' lights and a long look tours every one.
+- First minute, round 4 (Nov 6; row 246; weakest: arriving in Bell looked like a failed dive, passed to row 245; next:
+  home came back turned, the lights first seen gone): the Earth rises from a toy to the opening's own view, turned toward
+  the toy just left only as far as keeps its light in view. Plan `first-return` (strict: Bell's light is there to
+  touch after coming home from Fireflies).

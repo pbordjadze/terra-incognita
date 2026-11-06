@@ -274,6 +274,23 @@ fn this_month() -> u32 {
     (m - 1) as u32
 }
 
+/// Where the Earth comes back to from a toy: the opening's own view, so the lights are where the reader
+/// first saw them, turned toward the toy just left only as far as keeps its light in view (55 degrees
+/// from the middle at most); painting-company row 246: newcomers came home to a turned Earth, the
+/// lights they had seen gone off it.
+fn homecoming(home: Camera, at: [f64; 2]) -> Camera {
+    let reach = 55f64.to_radians();
+    let (a, b) = (LonLat::new(home.lon, home.lat).to_xyz(), LonLat::new(at[0], at[1]).to_xyz());
+    let w = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos();
+    if w <= reach || w > std::f64::consts::PI - 1e-3 {
+        return Camera { roll: 0.0, ..home };
+    }
+    let u = (w - reach) / w;
+    let (sa, sb) = (((1.0 - u) * w).sin() / w.sin(), (u * w).sin() / w.sin());
+    let ll = LonLat::from_xyz([a[0] * sa + b[0] * sb, a[1] * sa + b[1] * sb, a[2] * sa + b[2] * sb]);
+    Camera { lon: ll.lon, lat: ll.lat, zoom: home.zoom, roll: 0.0 }
+}
+
 fn ease(u: f64) -> f64 {
     let u = u.clamp(0.0, 1.0);
     u * u * (3.0 - 2.0 * u)
@@ -662,8 +679,13 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: self.globe.hand.home.map(|h| h.zoom).unwrap_or(1.4), roll: 0.0, ..from };
-                    let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
+                    let home = self.globe.hand.home.unwrap_or(Camera::new(-66.0, 20.0, 1.4));
+                    let to = homecoming(home, self.life.doors[self.door].at);
+                    let w = {
+                        let (a, b) = (LonLat::new(from.lon, from.lat).to_xyz(), LonLat::new(to.lon, to.lat).to_xyz());
+                        (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos()
+                    };
+                    let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.4 * w + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
             }
