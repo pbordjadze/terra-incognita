@@ -1,20 +1,91 @@
 {
- "_": "First sight on the phone, the practice record (src/practice.rs) already in the sleeve: a tap plays it; the finger pushes it down to a screw and leaves it; two chops, a hold, a flick back, the label's brake.",
- "size": [1179, 2556],
+ "_": "First sight on the phone: a tap plays it; the finger pushes it down to a screw and leaves it; two chops, a hold, a flick back, the label's brake.",
+ "size": [
+  1179,
+  2556
+ ],
  "ppp": 3,
  "seconds": 24,
  "fps": 30,
  "events": [
-  { "t": 0.2, "open": "build/screw/practice.wav" },
-  { "t": 1.5, "tap": "left" },
-  { "t": 5.0, "drag": ["record", "below"], "for": 1.6 },
-  { "t": 9.0, "tap": "left" },
-  { "t": 10.4, "tap": "left" },
-  { "t": 12.0, "hold": "left", "for": 3.0 },
-  { "t": 16.5, "drag": [[300, 560], [120, 575]], "for": 0.18 },
-  { "t": 21.0, "tap": "label" }
+  {
+   "t": 1.5,
+   "tap": "left"
+  },
+  {
+   "t": 5.0,
+   "drag": [
+    "record",
+    "below"
+   ],
+   "for": 1.6
+  },
+  {
+   "t": 9.0,
+   "tap": "left"
+  },
+  {
+   "t": 10.4,
+   "tap": "left"
+  },
+  {
+   "t": 12.0,
+   "hold": "left",
+   "for": 3.0
+  },
+  {
+   "t": 16.5,
+   "drag": [
+    [
+     300,
+     560
+    ],
+    [
+     120,
+     575
+    ]
+   ],
+   "for": 0.18
+  },
+  {
+   "t": 21.0,
+   "tap": "label"
+  }
  ],
- "shots": [{ "t": 1.0, "name": "first" }, { "t": 3.0, "name": "playing" }, { "t": 6.0, "name": "screwing" }, { "t": 8.5, "name": "screwed" }, { "t": 12.8, "name": "held" }, { "t": 16.8, "name": "rewind" }, { "t": 23.5, "name": "stopped" }],
- "film": { "from": 0, "to": 24, "every": 0.0333333 },
+ "shots": [
+  {
+   "t": 1.0,
+   "name": "first"
+  },
+  {
+   "t": 3.0,
+   "name": "playing"
+  },
+  {
+   "t": 6.0,
+   "name": "screwing"
+  },
+  {
+   "t": 8.5,
+   "name": "screwed"
+  },
+  {
+   "t": 12.8,
+   "name": "held"
+  },
+  {
+   "t": 16.8,
+   "name": "rewind"
+  },
+  {
+   "t": 23.5,
+   "name": "stopped"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 24,
+  "every": 0.0333333
+ },
  "audio": true
 }

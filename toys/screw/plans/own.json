@@ -1,0 +1,34 @@
+{
+ "_": "A song of his own arriving (as the shell hands a file chosen from Files; here a WAV, the practice record written out): its name on top, the record waiting, a tap plays it.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 5,
+ "events": [
+  {
+   "t": 1.0,
+   "open": "build/screw/practice.wav"
+  },
+  {
+   "t": 2.5,
+   "tap": "left"
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.8,
+   "name": "before"
+  },
+  {
+   "t": 2.0,
+   "name": "opened"
+  },
+  {
+   "t": 4.5,
+   "name": "playing"
+  }
+ ],
+ "audio": true
+}

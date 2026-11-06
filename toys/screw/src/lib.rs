@@ -67,6 +67,24 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
     v += vec3<f32>(0.30, 0.22, 0.38) * kick * grooved * 0.18;
     // the rim
     v += vec3<f32>(0.07) * smoothstep(0.975, 0.995, rr) * (1.0 - smoothstep(0.995, 1.0, rr));
+    // what turns with the record, so its spin shows on the whole disc: the grooves' wear (the light
+    // catches some arcs more than others), dust and a scratch or two, and a DJ's strip of tape across
+    // the grooves marking the cue, smeared along its path as the record runs fast
+    let ra = a - ang;
+    let q = vec2<f32>(cos(ra), sin(ra)) * rr;
+    let wear = noise2(vec2<f32>(rr * 9.0, (ra + 3.14159) * 2.0)) * noise2(vec2<f32>(rr * 31.0 + 5.0, (ra + 3.14159) * 5.0));
+    v += vec3<f32>(0.55, 0.52, 0.60) * wear * wear * 0.10 * grooved * (0.35 + sheen * 4.0);
+    let scratch = smoothstep(0.0025, 0.0, abs(dot(q - vec2<f32>(0.52, 0.18), vec2<f32>(0.62, -0.78)))) * smoothstep(0.16, 0.0, length(q - vec2<f32>(0.52, 0.18)));
+    let scratch2 = smoothstep(0.002, 0.0, abs(length(q - vec2<f32>(-0.9, -0.6)) - 1.18)) * smoothstep(0.22, 0.0, length(q - vec2<f32>(-0.28, 0.26)));
+    v += vec3<f32>(0.32) * (scratch + scratch2 * 0.8) * grooved;
+    let dust = step(0.9985, hash2(floor(q * 260.0))) * grooved;
+    v += vec3<f32>(0.35) * dust;
+    // the tape: a short strip across the grooves, a third of the way in from the rim
+    let tw = 0.035 + blur * 0.4;
+    let along = abs(ra - 1.1 - 6.28318 * round((ra - 1.1) / 6.28318));
+    let tape = smoothstep(0.80, 0.79, rr) * smoothstep(0.62, 0.63, rr) * smoothstep(tw, tw * 0.6, along * rr);
+    let tone = 1.0 / (1.0 + blur * 6.0);
+    v = mix(v, vec3<f32>(0.80, 0.76, 0.66), tape * (0.55 + 0.45 * tone));
     // the label, turning with the record
     let la = a - ang;
     if (rr < LABEL + 0.004) {
@@ -393,11 +411,11 @@ impl Toy for Screw {
                 let u = i as f64 / n as f64;
                 let a = u * std::f64::consts::TAU - std::f64::consts::FRAC_PI_2;
                 let (cs, sn) = (a.cos(), a.sin());
-                let len = 1.0 + 8.0 * *v as f64;
+                let len = 1.0 + 6.0 * *v as f64;
                 let p0 = [(c[0] + cs * (ring - len * 0.5)) as f32 * k, (c[1] + sn * (ring - len * 0.5)) as f32 * k];
                 let p1 = [(c[0] + cs * (ring + len * 0.5)) as f32 * k, (c[1] + sn * (ring + len * 0.5)) as f32 * k];
                 let played = u <= at;
-                let alpha = if played { 0.36 } else { 0.2 };
+                let alpha = if played { 0.22 } else { 0.10 };
                 self.paint.line(p0, p1, 0.55 * k, 0.8, pm([0.93, 0.88, 0.95, alpha]));
             }
             // the way back: where the needle went backward, a streak along the ring, fading
@@ -422,17 +440,18 @@ impl Toy for Screw {
             }
             let a = at * std::f64::consts::TAU - std::f64::consts::FRAC_PI_2;
             let np = [(c[0] + a.cos() * ring) as f32 * k, (c[1] + a.sin() * ring) as f32 * k];
-            self.paint.disc(np, 3.2 * k, 1.0, pm([1.0, 0.95, 0.85, 0.95]));
-            self.paint.glow(np, np, 3.0 * k, 9.0 * k, pm([1.0, 0.75, 0.95, 0.35 + 0.4 * self.kick as f32]));
+            self.paint.disc(np, 2.4 * k, 1.0, pm([1.0, 0.95, 0.85, 0.85]));
+            self.paint.glow(np, np, 2.0 * k, 7.0 * k, pm([1.0, 0.75, 0.95, 0.2 + 0.4 * self.kick as f32]));
         }
         // the sleeve: a square jacket with the record peeking out of it, brighter while no song is on
         let s = self.sleeve_at();
         let (sx, sy) = (s[0] as f32 * k, s[1] as f32 * k);
-        let half = 10.0 * k;
-        let ink = if has { 0.42 } else { 0.55 + 0.25 * (0.5 + 0.5 * (self.t * 2.4).sin() as f32) * if self.reduce_motion { 0.0 } else { 1.0 } };
-        self.paint.disc([sx + 4.0 * k, sy - 4.0 * k], 8.0 * k, 1.0, pm([0.12, 0.11, 0.13, 1.0]));
-        self.paint.ring([sx + 4.0 * k, sy - 4.0 * k], 8.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.8]));
-        self.paint.disc([sx - 1.0 * k, sy + 1.0 * k], half, 1.0, pm([0.0, 0.0, 0.0, 0.0]));
+        let half = 12.0 * k;
+        let ink = if has { 0.62 } else { 0.7 };
+        let peek = [sx + 6.0 * k, sy - 6.0 * k];
+        self.paint.disc(peek, 11.0 * k, 1.0, pm([0.10, 0.09, 0.11, 1.0]));
+        self.paint.ring(peek, 11.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.7]));
+        self.paint.disc(peek, 3.8 * k, 1.0, pm([0.42, 0.16, 0.52, 1.0]));
         let (x0, y0, x1, y1) = (sx - half - 1.0 * k, sy - half + 1.0 * k, sx + half - 1.0 * k, sy + half + 1.0 * k);
         // (the jacket's face covers the record behind it)
         for i in 0..5 {
@@ -446,14 +465,15 @@ impl Toy for Screw {
         if let Some(f) = self.finger {
             let fp = [f.at[0] as f32 * k, f.at[1] as f32 * k];
             let col = match f.kind {
-                Kind::Hold => [1.0, 0.7, 0.95, 0.30 + 0.25 * self.kick as f32],
-                Kind::Sleeve => [0.9, 0.9, 0.95, 0.25],
-                _ => [0.95, 0.85, 1.0, 0.22],
+                Kind::Hold => [1.0, 0.7, 0.95, 0.45 + 0.35 * self.kick as f32],
+                Kind::Sleeve => [0.9, 0.9, 0.95, 0.35],
+                _ => [0.95, 0.85, 1.0, 0.38],
             };
-            self.paint.glow(fp, fp, 14.0 * k, 16.0 * k, pm(col));
+            self.paint.glow(fp, fp, 16.0 * k, 18.0 * k, pm(col));
+            self.paint.ring(fp, 22.0 * k, 1.2 * k, 1.5, pm([1.0, 0.9, 1.0, 0.35]));
             if let Kind::Fader { .. } = f.kind {
                 let st = [f.start[0] as f32 * k, f.start[1] as f32 * k];
-                self.paint.glow(st, fp, 1.0 * k, 6.0 * k, pm([0.75, 0.45, 0.95, 0.25]));
+                self.paint.glow(st, fp, 2.0 * k, 8.0 * k, pm([0.80, 0.50, 1.0, 0.45]));
             }
         }
         drop(d);
