@@ -32,7 +32,7 @@ const PAINT: [[f32; 3]; 9] = [
 const LONG: f64 = 1.3;
 const WIDE: f64 = 1.4;
 /// About one car to this many square metres of salt on screen.
-const AREA: f64 = 850.0;
+const AREA: f64 = 1700.0;
 /// Seconds of night already run before the toy opens (so it opens mid-story).
 const BEFORE: f64 = 25.0;
 /// Tyre tracks: stamped every this many seconds, fading by half in HALF_LIFE.
@@ -429,7 +429,7 @@ impl Toy for Jam {
                     continue;
                 }
                 let f = 0.5f64.powf(age / HALF_LIFE) as f32;
-                self.painter.line(px(a), px(b), r, 0.7 * m * 0.12 + 0.6, [0.035, 0.04, 0.06, 0.20 * f]);
+                self.painter.line(px(a), px(b), r, 0.7 * m * 0.12 + 0.6, [0.02, 0.022, 0.03, 0.30 * f]);
             }
             self.painter.render(gpu, &mut enc, &tracks.view, size, None);
         }
@@ -450,10 +450,12 @@ impl Toy for Jam {
 
         // light on the salt: headlights ahead, tail lights behind, a held finger's light
         for c in cars.iter() {
-            self.painter.glow(at(c, half + 1.5, 0.0), at(c, half + 9.0, 0.0), 2.2 * m, 3.4 * m, [1.0, 0.86, 0.62, 0.075]);
-            self.painter.glow(at(c, half + 1.0, 0.0), at(c, half + 4.0, 0.0), 1.0 * m, 1.6 * m, [1.0, 0.90, 0.72, 0.07]);
+            // headlights: a cone of warm light reaching ahead over the salt, the car's own light
+            for (d, w, a) in [(3.0, 1.1, 0.10), (7.0, 2.0, 0.07), (12.0, 3.2, 0.05), (18.0, 4.6, 0.03)] {
+                self.painter.glow(at(c, half + 0.8, 0.0), at(c, half + d, 0.0), w * m, w * 0.9 * m, [1.0, 0.88, 0.66, a]);
+            }
             let red = c.lights as f32;
-            self.painter.glow(at(c, -half - 0.6, 0.0), at(c, -half - 2.0, 0.0), 1.4 * m, 2.4 * m, [1.0, 0.08, 0.05, 0.12 + 0.5 * red]);
+            self.painter.glow(at(c, -half - 0.6, 0.0), at(c, -half - 2.4, 0.0), 1.3 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.10 + 0.45 * red]);
         }
         let lamp_glow = |p: &mut Painter, w: [f64; 2], a: f32| {
             let q = px(w);
@@ -620,7 +622,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let m = (px - u.p0.xy) / u.scale;          // metres from the centre
   let pxm = 1.0 / u.scale;
   // the moonlit crust
-  var col = vec3<f32>(0.55, 0.59, 0.67);
+  var col = vec3<f32>(0.150, 0.165, 0.205);
   let damp = smoothstep(0.35, 0.75, fbm(m * 0.018 + vec2<f32>(3.1, 1.7)));
   col = col * (1.0 - 0.22 * damp) * (0.93 + 0.12 * fbm(m * 0.21)) * (0.97 + 0.05 * noise2(m * 2.7));
   // the polygons: cells about 2.5 m across, their ridges raised and catching the light

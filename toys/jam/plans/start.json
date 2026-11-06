@@ -1,5 +1,5 @@
 {
- "_": "First sight and the core moment: convoys already on the salt, a halo on the head of the longest; one tap on it and its convoy stops car by car; a finger then takes a car and leads it in a slow loop, its convoy after it; then holds the open salt for a light the cars come to circle.",
+ "_": "First sight and the core moment: convoys already on the salt, a halo on the head of the longest; one tap on it and its convoy stops car by car; a finger takes a car and leads it slowly, twice, its convoy after it; then holds the open salt for a light the cars come to circle.",
  "size": [
   1179,
   2556
@@ -15,44 +15,25 @@
   },
   {
    "t": 20.0,
-   "down": "head",
-   "id": 2
-  },
-  {
-   "t": 21.0,
-   "move": "head",
-   "id": 2
-  },
-  {
-   "t": 22.0,
-   "move": "centre",
-   "id": 2
+   "drag": [
+    "head",
+    [
+     200,
+     520
+    ]
+   ],
+   "for": 4.0
   },
   {
    "t": 24.5,
-   "move": [
-    260,
-    500
+   "drag": [
+    "head",
+    [
+     150,
+     300
+    ]
    ],
-   "id": 2
-  },
-  {
-   "t": 26.5,
-   "move": [
-    140,
-    340
-   ],
-   "id": 2
-  },
-  {
-   "t": 28.0,
-   "move": "centre",
-   "id": 2
-  },
-  {
-   "t": 28.5,
-   "up": "centre",
-   "id": 2
+   "for": 4.0
   },
   {
    "t": 34.0,

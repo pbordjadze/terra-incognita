@@ -341,9 +341,10 @@ impl Flat {
                 let dist = w[0].hypot(w[1]);
                 want = w[1].atan2(w[0]);
                 // as fast as the finger is far, slower while it turns toward it (no orbiting the finger)
-                let off = wrap(want - c.h).cos().max(0.4);
-                let vdes = (dist * 0.9).min(20.0) * off;
-                acc = (vdes - c.v) * 2.5;
+                // on a string: as fast as the finger is far (a finger moves faster than any car)
+                let off = wrap(want - c.h).cos().max(0.5);
+                let vdes = (dist * 3.0).min(45.0) * off;
+                acc = (vdes - c.v) * 6.0;
             } else if let Some(j) = c.leader {
                 let o = &self.cars[j];
                 // after the leader's rear, a little behind it so the follower takes the leader's line
@@ -448,7 +449,7 @@ impl Flat {
             let c = &mut self.cars[i];
             c.blocked = if held { c.blocked + dt } else { (c.blocked - dt * 2.0).max(0.0) };
             let wobble = 0.0;
-            c.acc = (acc + wobble).clamp(-9.0, if led { 6.0 } else { A * 1.2 });
+            c.acc = (acc + wobble).clamp(if led { -40.0 } else { -9.0 }, if led { 40.0 } else { A * 1.2 });
             c.v = (c.v + c.acc * dt).max(0.0);
             if c.stopping && c.v <= 0.0 {
                 c.stopping = false;
@@ -457,14 +458,15 @@ impl Flat {
                 c.brake -= dt;
             }
             // steer: toward the wanted heading, never sharper than the turning circle
-            let kmax = 1.0 / TURN;
+            // a led car swings round on its string; a driven one turns as a car turns
+            let kmax = if led { 1.0 / 1.2 } else { 1.0 / TURN };
             let gain = if led { 4.0 } else { 1.6 };
             let k = (dh * gain / c.v.max(2.0)).clamp(-kmax, kmax);
-            c.k += (k - c.k) * (dt * 6.0).min(1.0);
+            c.k += (k - c.k) * (dt * if led { 20.0 } else { 6.0 }).min(1.0);
             c.h = wrap(c.h + c.v * c.k * dt);
             c.p[0] += c.h.cos() * c.v * dt;
             c.p[1] += c.h.sin() * c.v * dt;
-            let braking = c.acc < -1.6 || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || c.leader.is_some()));
+            let braking = (c.acc < -1.6 && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || c.leader.is_some()));
             let target = if braking { 1.0 } else { 0.0 };
             c.lights += (target - c.lights) * (dt * if braking { 14.0 } else { 3.0 }).min(1.0);
             // patience: a while behind the same convoy, and the driver peels off
