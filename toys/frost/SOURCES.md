@@ -35,8 +35,6 @@ What is real, what is drawn, and from where (painting-company row 218).
   again as smooth clear ice that frost finds hard to catch on, so it creeps back only from the
   edge (real in kind: hoarfrost nucleates on flaws and on ice, and a wiped patch of a frosted window
   stays clearer; the fringe's depth, ~14 points, and the healing, about two minutes, are drawn).
-  A finger set down inside a clear patch leaving a moist print that frosts (real in kind; its
-  look, a granular core with crystals grown from its sides, is drawn).
 - A shake as the stove's warmth sweeping the window clear: drawn.
 - The window (a wooden frame and crossbar), the night outside (sky, stars, snow, larches), the lamp
   behind the reader, the meltwater's film, the ice's colour and

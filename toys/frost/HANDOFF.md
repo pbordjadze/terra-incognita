@@ -9,11 +9,11 @@ Row 242 answered the owner's "it just keeps filling in". What a finger does now 
   two minutes; `renew` (lib.rs) seeds a healing hole's edge every ~0.9 s from the CPU's `marks`.
 - **Seeds on the melt's true edge**: `edge_point` mirrors `melt_radius`'s wobble (change both together),
   with each path point's own melt width (`Finger::radii`).
-- **What is under a finger** is read at touch-down (`probe`: ice in a 16 pt disc and the glaze under it,
-  stats words 48–50, read in the same frame). On frost or bare glass: Melt. Deep inside a clear patch:
-  Poised; moved, Melt (widens the wipe); still for PRESS_S 0.4 s, Pen (`pen`: a granular frozen core
-  owned by HOAR in the mask, the glaze given back three print-widths out, seeds one side then the other
-  every 30 pt).
+- **What is under a finger** is read at touch-down (`probe`: ice in a 16 pt disc, stats words 48–49,
+  read in the same frame): on dry glass a lifted tap's stars come at once, on frost after a beat.
+  A frost-drawing print (rest a finger inside a clear patch) was tried in rounds 7–8 and retired:
+  three critics in a row found a warm finger that sometimes freezes confusing (in history at the
+  round 8 commit if wanted again).
 - **A shake** (`shaken` → `sweep`): `clear` sweeps a wet front from the lamp's side at 900 pt/s, the
   mask and glaze reset; the creep from the frame restarts (`creep_from`).
 - Plan `play` (54 s) shows all of it; `full` was retired.
