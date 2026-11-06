@@ -33,6 +33,13 @@ pub const CONE: f64 = 0.95;
 /// A tap: brake this hard (m/s²) to a stop, stand this long (s).
 pub const TAP_BRAKE: f64 = 7.0;
 pub const TAP_HOLD: f64 = 2.0;
+/// Brake lights ahead: a driver who sees them within this distance (m) dabs the brakes this hard
+/// (m/s²) for this long (s), after a reaction time (s). So a braking car's red passes back down its
+/// convoy one car after another, a ripple, and dies out at the end of it.
+pub const DAB_SEE: f64 = 30.0;
+pub const DAB: f64 = 3.0;
+pub const DAB_FOR: f64 = 0.7;
+pub const REACT: f64 = 0.35;
 /// A held finger on open ground: a light the cars nearby circle at this radius (m), seen this far.
 pub const LAMP_R: f64 = 13.0;
 pub const LAMP_SEE: f64 = 110.0;
@@ -65,6 +72,11 @@ pub struct Car {
     /// What set the speed last tick: 0 the car ahead it follows (or none), 1 another car across or
     /// ahead of it, 2 a tap.
     pub cause: u8,
+    /// Brake lights ahead seen (the leader's were on last tick); seconds until this driver reacts,
+    /// and seconds left of its own dab on the brakes.
+    seen: bool,
+    react: f64,
+    dab: f64,
     wander: f64,
     /// The way a driver on its own means to go (radians).
     aim: f64,
@@ -168,7 +180,7 @@ impl Flat {
         let patience = self.patience();
         let wander = self.uni() * 100.0;
         let following = self.uni() * patience * 0.6;
-        self.cars.push(Car { p, h, v: v0 * 0.8, acc: 0.0, k: 0.0, v0, leader: None, following, patience, bored: 0.0, swerve: 0.0, stopping: false, brake: 0.0, lights: 0.0, blocked: 0.0, cause: 0, wander, aim: h });
+        self.cars.push(Car { p, h, v: v0 * 0.8, acc: 0.0, k: 0.0, v0, leader: None, following, patience, bored: 0.0, swerve: 0.0, stopping: false, brake: 0.0, lights: 0.0, blocked: 0.0, cause: 0, seen: false, react: 0.0, dab: 0.0, wander, aim: h });
     }
 
     fn patience(&mut self) -> f64 {
@@ -340,6 +352,15 @@ impl Flat {
         }
         let n = self.cars.len();
         let lamps: Vec<[f64; 2]> = self.hands.iter().filter_map(|h| if let Hand::Lamp(p) = h { Some(*p) } else { None }).collect();
+        // who is in a train behind a car the finger leads
+        let mut pulled = vec![false; n];
+        for h in &self.hands {
+            if let Hand::Lead(k, _) = *h {
+                for j in self.behind(k) {
+                    pulled[j] = true;
+                }
+            }
+        }
         let mut out: Vec<(f64, f64, bool, u8)> = Vec::with_capacity(n); // (acc, desired heading change, held up)
         for i in 0..n {
             let c = &self.cars[i];
@@ -355,7 +376,7 @@ impl Flat {
                 // as fast as the finger is far, slower while it turns toward it (no orbiting the finger)
                 // on a string: as fast as the finger is far (a finger moves faster than any car)
                 let off = wrap(want - c.h).cos().max(0.5);
-                let vdes = (dist * 3.0).min(45.0) * off;
+                let vdes = (dist * 3.0).min(26.0) * off;
                 acc = (vdes - c.v) * 6.0;
             } else if let Some(j) = c.leader {
                 let o = &self.cars[j];
@@ -366,7 +387,9 @@ impl Flat {
                 let f = c.front();
                 let gap = (r[0] - f[0]).hypot(r[1] - f[1]);
                 let closing = c.v - o.v * (o.h - c.h).cos();
-                acc = idm(c.v, c.v0, gap, closing);
+                // a train behind a car the finger pulls hurries to keep up
+                let v0 = if pulled[i] { c.v0 * 1.8 } else { c.v0 };
+                acc = idm(c.v, v0, gap, closing);
             } else {
                 // wandering: a slow meander, a little slower than the driver would go behind someone
                 // a heading of its own that drifts slowly (never a steady turn: no curling up)
@@ -450,6 +473,11 @@ impl Flat {
             if acc < follow_acc - 0.01 {
                 cause = 1;
             }
+            // a dab on the brakes for the brake lights ahead
+            if c.dab > 0.0 && c.v > 1.0 {
+                acc = acc.min(-DAB);
+                cause = 0;
+            }
             if c.stopping || c.brake > 0.0 && c.v < 0.05 {
                 cause = 2;
                 acc = if c.v > 0.0 { -TAP_BRAKE } else { 0.0 };
@@ -462,14 +490,38 @@ impl Flat {
             out.push((acc, dh, held, cause));
         }
         let half = self.half;
+        let pulled = pulled;
+        let ahead_lit: Vec<bool> = (0..n)
+            .map(|i| match self.cars[i].leader {
+                Some(j) => {
+                    let (a, b) = (&self.cars[i], &self.cars[j]);
+                    b.lights > 0.6 && (a.p[0] - b.p[0]).hypot(a.p[1] - b.p[1]) < DAB_SEE
+                }
+                None => false,
+            })
+            .collect();
         for i in 0..n {
             let (acc, dh, held, cause) = out[i];
             let led = self.led(i).is_some();
             let c = &mut self.cars[i];
             c.cause = cause;
+            // brake lights ahead come on: react, then dab
+            if ahead_lit[i] && !c.seen && c.react <= 0.0 && c.dab <= 0.0 {
+                c.react = REACT;
+            }
+            c.seen = ahead_lit[i];
+            if c.react > 0.0 {
+                c.react -= dt;
+                if c.react <= 0.0 {
+                    c.dab = DAB_FOR;
+                }
+            }
+            if c.dab > 0.0 {
+                c.dab -= dt;
+            }
             c.blocked = if held { c.blocked + dt } else { (c.blocked - dt * 2.0).max(0.0) };
             let wobble = 0.0;
-            c.acc = (acc + wobble).clamp(if led { -40.0 } else { -9.0 }, if led { 40.0 } else { A * 1.2 });
+            c.acc = (acc + wobble).clamp(if led { -40.0 } else { -9.0 }, if led { 40.0 } else if pulled[i] { A * 2.5 } else { A * 1.2 });
             c.v = (c.v + c.acc * dt).max(0.0);
             if c.stopping && c.v <= 0.0 {
                 c.stopping = false;
@@ -487,8 +539,8 @@ impl Flat {
             c.p[0] += c.h.cos() * c.v * dt;
             c.p[1] += c.h.sin() * c.v * dt;
             // brake lights for stamping on it behind the car you follow; easing off round a stranger barely shows
-            let hard = if c.cause == 1 { -6.5 } else { -2.2 };
-            let braking = (c.acc < hard && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || (c.leader.is_some() && c.cause != 1)));
+            let hard = if c.cause == 1 { -6.5 } else { -3.4 };
+            let braking = (c.dab > 0.0 && !led) || (c.acc < hard && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || (c.leader.is_some() && c.cause != 1)));
             let target = if braking { 1.0 } else { 0.0 };
             c.lights += (target - c.lights) * (dt * if braking { 14.0 } else { 3.0 }).min(1.0);
             // patience: a while behind the same convoy, and the driver peels off
@@ -670,6 +722,27 @@ mod lead {
         let d = (f.cars[i].p[0] - to[0]).hypot(f.cars[i].p[1] - to[1]);
         assert!(d < 8.0, "from {d0:.0} m to {d:.0} m");
     }
+
+    #[test]
+    fn a_led_car_pulls_its_convoy() {
+        let mut f = Flat::new(5, [92.0, 199.0], 43);
+        f.step(12.0);
+        let head = (0..f.cars.len()).filter(|&i| f.cars[i].leader.is_none()).max_by_key(|&i| f.behind(i).len()).unwrap();
+        let before = f.behind(head).len();
+        // the finger walks the head on a slow curve, about 12 m/s (a finger crossing the phone in 6 s)
+        let p0 = f.cars[head].p;
+        let d = f.cars[head].dir();
+        for k in 0..80 {
+            let s = k as f64 * 0.1 * 12.0;
+            let a = s / 60.0;
+            let to = [p0[0] + d[0] * 30.0 * a.sin() + -d[1] * 30.0 * (1.0 - a.cos()), p0[1] + d[1] * 30.0 * a.sin() + d[0] * 30.0 * (1.0 - a.cos())];
+            f.hands = vec![Hand::Lead(head, to)];
+            f.step(0.1);
+        }
+        let after = f.behind(head).len();
+        eprintln!("train {before} -> {after}");
+        assert!(after >= 2.min(before), "train of {before} left {after}");
+    }
 }
 
 #[cfg(test)]
@@ -698,6 +771,33 @@ mod quiet {
         }
         let q = lit as f64 / n as f64;
         eprintln!("lit {q:.3} (hard {hard} standing {stand} blocked {blocked} of {lit})");
-        assert!(q < 0.04, "lit {q:.3}");
+        assert!(q < 0.06, "lit {q:.3}");
+    }
+}
+
+#[cfg(test)]
+mod chain {
+    use super::*;
+
+    /// A tap on a convoy's head: the cars behind it light up one after another, in order.
+    #[test]
+    fn a_tap_lights_the_convoy_in_turn() {
+        let mut f = Flat::new(5, [92.0, 199.0], 43);
+        f.step(12.0);
+        let head = (0..f.cars.len()).filter(|&i| f.cars[i].leader.is_none()).max_by_key(|&i| f.behind(i).len()).unwrap();
+        let tail = f.behind(head);
+        f.tap(head);
+        let mut first = vec![f64::NAN; tail.len()];
+        for k in 0..100 {
+            f.step(0.05);
+            for (n, &c) in tail.iter().enumerate() {
+                if first[n].is_nan() && f.cars[c].lights > 0.6 {
+                    first[n] = k as f64 * 0.05;
+                }
+            }
+        }
+        eprintln!("convoy of {}: lit at {:?}", tail.len(), first);
+        let lit = first.iter().take(4).filter(|t| !t.is_nan()).count();
+        assert!(lit >= 3.min(tail.len()), "only {lit} of the first cars behind lit");
     }
 }

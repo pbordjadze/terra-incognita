@@ -158,7 +158,7 @@ impl Jam {
                 let mid = 1.0 - 0.6 * (p[0] / h[0]).hypot(p[1] / h[1]).min(1.0);
                 (i, self.flat.behind(i).len(), mid)
             })
-            .max_by(|a, b| (a.1 as f64 * a.2).total_cmp(&(b.1 as f64 * b.2)))
+            .max_by(|a, b| (a.1 as f64 * (0.75 + 0.25 * a.2)).total_cmp(&(b.1 as f64 * (0.75 + 0.25 * b.2))))
             .map(|(i, n, _)| (i, n))
             .unwrap_or((0, 0))
     }
@@ -455,7 +455,7 @@ impl Toy for Jam {
                 self.painter.glow(at(c, half + 0.8, 0.0), at(c, half + d, 0.0), w * m, w * 0.9 * m, [1.0, 0.88, 0.66, a]);
             }
             let red = c.lights as f32;
-            self.painter.glow(at(c, -half - 0.6, 0.0), at(c, -half - 2.4, 0.0), 1.3 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.10 + 0.45 * red]);
+            self.painter.glow(at(c, -half - 0.6, 0.0), at(c, -half - 2.4, 0.0), 1.3 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.03 + 0.6 * red]);
         }
         let lamp_glow = |p: &mut Painter, w: [f64; 2], a: f32| {
             let q = px(w);
@@ -498,7 +498,7 @@ impl Toy for Jam {
                 self.painter.glow(at(c, 2.15, side), at(c, 2.15, side), 0.12 * m, 0.35 * m, [1.0, 0.92, 0.75, 0.5]);
                 let red = c.lights as f32;
                 let q = at(c, -2.1, side);
-                self.painter.glow(q, q, 0.2 * m * wd, 0.25 * m, [1.0, 0.25, 0.15, 0.35 + 0.65 * red]);
+                self.painter.glow(q, q, 0.2 * m * wd, 0.25 * m, [1.0, 0.25, 0.15, 0.18 + 0.82 * red]);
                 if red > 0.01 {
                     self.painter.glow(q, q, 0.4 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.55 * red]);
                 }
@@ -508,7 +508,7 @@ impl Toy for Jam {
         for f in &self.fingers {
             if f.mode == Mode::Lead {
                 let q = [(f.at[0] * k) as f32, (f.at[1] * k) as f32];
-                self.painter.glow_ring(q, 3.2 * m, 0.25 * m, 0.5 * m, [1.0, 0.95, 0.88, 0.35]);
+                self.painter.glow_ring(q, 5.0 * m, 0.18 * m, 0.4 * m, [1.0, 0.95, 0.88, 0.3]);
             }
         }
         // the invitation: until the first touch, the head of the longest convoy breathes a soft halo
