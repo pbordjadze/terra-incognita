@@ -38,8 +38,9 @@ What is measured, what is modelled, what is drawn (painting-company row 218).
 
 - The pace: a second is seven years. The depth in the model (16 m, setting alpha and so the loops'
   size) was chosen so the bends are the size of the photograph's old loops at this width; the beginning
-  wobble a drawn course is given (a few waves of 2-4 km), so the first oxbow comes within about ten
-  seconds; a whisper of random noise on the banks; light smoothing of the line every step; the belt's
+  wobble the opening course is given (a few waves of 2-4 km); the finger's push (the channel under a
+  fingertip carried along with it, and the bank it pushed eroding up to 3.5 times as fast for a few
+  decades: a stand-in for a bank loosened, so the bend made keeps growing); a whisper of random noise on the banks; light smoothing of the line every step; the belt's
   edges (a bank outside the forest belt erodes a quarter as fast, as older cohesive ground does).
 - The colours: the water's café-au-lait (a white-water river carrying the Andes' sediment, as the
   photograph shows it), the wet-sand bank, the bare sand of a new point bar greening to cane and back to
