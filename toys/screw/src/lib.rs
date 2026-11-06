@@ -451,15 +451,14 @@ impl Toy for Screw {
         let (sx, sy) = (s[0] as f32 * k, s[1] as f32 * k);
         let half = 14.0 * k;
         let ink = if has { 0.62 } else { 0.7 };
-        // a paper record sleeve: a square, its round die-cut hole showing the plum label, the record
-        // half out of it
-        let peek = [sx + 10.0 * k, sy - 4.0 * k];
-        self.paint.disc(peek, 13.0 * k, 1.0, pm([0.07, 0.065, 0.08, 1.0]));
-        self.paint.ring(peek, 13.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.6]));
+        // a paper record sleeve: a square, its round die-cut hole showing the plum label
         let (x0, y0, x1, y1) = (sx - half, sy - half, sx + half, sy + half);
-        for i in 0..7 {
-            let y = y0 + (y1 - y0) * (i as f32 + 0.5) / 7.0;
-            self.paint.line([x0 + 1.0 * k, y], [x1 - 1.0 * k, y], (y1 - y0) / 14.0 + 0.6, 0.6, pm([0.50, 0.46, 0.43, 1.0]));
+        // (the paper's face as thin strokes side by side, each ending its own radius short of the edge)
+        let n = 24;
+        let r = (y1 - y0) / (2 * n) as f32 + 0.8;
+        for i in 0..n {
+            let y = y0 + (y1 - y0) * (i as f32 + 0.5) / n as f32;
+            self.paint.line([x0 + r, y], [x1 - r, y], r, 0.5, pm([0.50, 0.46, 0.43, 1.0]));
         }
         self.paint.disc([sx, sy], 5.2 * k, 1.0, pm([0.45, 0.17, 0.56, 1.0]));
         self.paint.disc([sx, sy], 0.9 * k, 1.0, pm([0.08, 0.07, 0.09, 1.0]));
