@@ -194,29 +194,6 @@ pub trait Toy: 'static {
     }
     /// VoiceOver activated `buttons()[i]` (as it was this frame); `t` the shell's seconds.
     fn press(&mut self, _ctx: &mut Ctx, _i: usize, _t: f64) {}
-    /// A host carrying the reader in from its globe, or out to it (Terra's passages, painting-company
-    /// row 245): `Some(a)` each frame of the passage puts the toy's own eye where `a` says, from straight
-    /// above its place at the globe's scale (`k` 0) to its own first view (`k` 1); `None` gives the eye
-    /// back to the toy, to carry on from its first view. The toy keeps living meanwhile (`update` runs).
-    /// Returns the compass bearing (degrees clockwise from north) the top of the glass faces when the
-    /// eye looks straight down, so the host turns its globe to match; None (the default): the toy
-    /// doesn't take passages, and the host crossfades.
-    fn arrival(&mut self, _ctx: &mut Ctx, _a: Option<Arrival>) -> Option<f64> {
-        None
-    }
-}
-
-/// Where a host's passage puts a toy's eye (`Toy::arrival`).
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Arrival {
-    /// 0: straight down over the toy's place; 1: the toy's own first view. Eased by the host.
-    pub k: f64,
-    /// Looking straight down: the ground's metres a point at the middle of the glass (the host's globe's
-    /// scale, falling as it dives), so the toy's picture and the globe's are one size as they cross.
-    pub scale: f64,
-    /// The least half-width, metres, the toy's subject is drawn at (the host's light, which stood for it,
-    /// at this scale): far above, the subject is shown enlarged to it, one thing the whole way down.
-    pub least: f64,
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.

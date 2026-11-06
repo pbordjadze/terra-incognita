@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 use toy_kit::info::{Demo, Rules};
-use toy_kit::{Arrival, Assets, Camera, Ctx, Gpu, PointerEvent, Synth, Toy};
+use toy_kit::{Assets, Camera, Ctx, Gpu, PointerEvent, Synth, Toy};
 
 /// Terra's data, shared by every toy it opens (the toys' manifests merged: `manifest.json`).
 pub struct Shared(pub Arc<dyn Assets>);
@@ -36,9 +36,6 @@ pub trait Room {
     fn set_camera(&mut self, cam: Camera) -> bool;
     fn project(&self, lonlat: [f64; 2]) -> Option<[f64; 2]>;
     fn anchors(&self) -> Vec<(String, [f64; 2])>;
-    /// Terra's passage carrying the toy's own eye (`Toy::arrival`): the bearing up the glass when the
-    /// eye looks down, or None if the toy doesn't take passages.
-    fn arrival(&mut self, a: Option<Arrival>) -> Option<f64>;
 }
 
 pub struct Inside<T: Toy> {
@@ -145,9 +142,6 @@ impl<T: Toy> Room for Inside<T> {
     }
     fn anchors(&self) -> Vec<(String, [f64; 2])> {
         self.toy.anchors()
-    }
-    fn arrival(&mut self, a: Option<Arrival>) -> Option<f64> {
-        self.toy.arrival(&mut self.ctx, a)
     }
 }
 

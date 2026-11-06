@@ -127,11 +127,6 @@ pub struct Murmuration {
     /// Where the finger came down: a lean is measured from there.
     finger_from: [f64; 2],
     eye: Eye,
-    /// A host's passage (Terra's dive): the eye from straight above the roost, at the globe's scale,
-    /// swinging up into the watcher's view (`Toy::arrival`).
-    arrive: Option<toy_kit::Arrival>,
-    /// The watcher's own forward this frame (before a passage moves the eye).
-    own_fwd: V3,
     t: f64,
     reduce_motion: bool,
     ears: Arc<Ears>,
@@ -323,62 +318,6 @@ impl Murmuration {
         let right = norm(cross(upv, fwd));
         let up = cross(fwd, right);
         self.eye = Eye { pos, right, up, fwd, focal };
-        self.own_fwd = fwd;
-        if let Some(a) = self.arrive {
-            self.eye = self.passage_eye(ctx, a);
-        }
-    }
-
-    /// The eye on a host's passage: straight down over the flock at the host's scale (the top of the
-    /// glass toward the sun, where the watcher will look), then swinging down and up into the
-    /// watcher's own view as `k` goes to 1, the flock held in the middle of the glass all the way.
-    fn passage_eye(&self, ctx: &Ctx, a: toy_kit::Arrival) -> Eye {
-        let own = self.eye;
-        // the watcher's heading, flat: the top of the glass looking down, so the swing only pitches
-        let head = norm([own.fwd[0], 0.0, own.fwd[2]]);
-        let own_pitch = own.fwd[1].clamp(-1.0, 1.0).asin();
-        let k = a.k.clamp(0.0, 1.0) as f32;
-        // (the host eases k; the pitch starts at once and settles gently)
-        let e = 1.0 - (1.0 - k) * (1.0 - k);
-        // the eye's pitch turns evenly from straight down to the watcher's, about an aim that slides from
-        // the flock's middle to where the watcher looks, at a distance falling (in its logarithm) from
-        // the passage's height to the watcher's own
-        let pitch = -std::f32::consts::FRAC_PI_2 * (1.0 - e) + own_pitch * e;
-        let fwd = addv(scale(head, pitch.cos()), [0.0, pitch.sin(), 0.0]);
-        let own_d = 120.0f32;
-        let own_aim = addv(own.pos, scale(own.fwd, own_d));
-        let aim = addv(scale(self.look, 1.0 - e), scale(own_aim, e));
-        let height = (a.scale as f32 * own.focal / ctx.ppp as f32).max(30.0);
-        let d = (height.ln() * (1.0 - e) + own_d.ln() * e).exp();
-        let mut pos = sub(aim, scale(fwd, d));
-        pos[1] = pos[1].max(2.0);
-        let right = norm(cross([0.0, 1.0, 0.0], head));
-        let up = cross(fwd, right);
-        Eye { pos, right, up, fwd, focal: own.focal }
-    }
-
-    /// On a passage: the flock's middle and how much it is drawn enlarged about it (1: its own size).
-    fn passage_growth(&self) -> (V3, f32) {
-        let Some(a) = self.arrive else { return ([0.0; 3], 1.0) };
-        if a.least <= 0.0 {
-            return ([0.0; 3], 1.0);
-        }
-        let (c, _) = self.flock.centre();
-        // its half-width: the root-mean-square of the birds' distances from the middle, across
-        let mut s = 0.0f32;
-        for b in &self.flock.birds {
-            let d = sub(b.pos, c);
-            s += d[0] * d[0] + d[2] * d[2];
-        }
-        let half = (s / self.flock.birds.len() as f32).sqrt().max(5.0) * 1.4;
-        let g = (a.least as f32 / half).max(1.0);
-        (c, 1.0 + (g - 1.0) * (1.0 - a.k as f32))
-    }
-
-    /// The bearing (degrees clockwise from north) the watcher faces: the top of the glass from above.
-    fn bearing(&self) -> f64 {
-        let f = self.own_fwd;
-        (f[0] as f64).atan2(f[2] as f64).to_degrees()
     }
 
     fn upload_sky(&mut self, ctx: &Ctx) {
@@ -560,8 +499,6 @@ impl Toy for Murmuration {
             finger: None,
             finger_from: [0.0; 2],
             eye,
-            arrive: None,
-            own_fwd: [0.0, 0.0, 1.0],
             t: 0.0,
             reduce_motion: ctx.reduce_motion,
             ears: Arc::new(Ears::default()),
@@ -609,24 +546,6 @@ impl Toy for Murmuration {
 
     fn settings(&mut self, ctx: &mut Ctx) {
         self.reduce_motion = ctx.reduce_motion;
-    }
-
-    fn arrival(&mut self, ctx: &mut Ctx, a: Option<toy_kit::Arrival>) -> Option<f64> {
-        let was = self.arrive.is_some();
-        if a.is_some() && !was && self.finger.is_none() {
-            // carried out while the eye rides with a bird: it drops back out to the watcher as it swings
-            self.near_to = 0.0;
-            self.show_until = -1.0;
-        }
-        self.arrive = a;
-        if a.is_none() && was {
-            // the eye is the watcher's again: the glide that shows a touch comes as it would on opening
-            self.near = 0.0;
-            self.near_to = 0.0;
-            self.show_next = self.clock + FIRST_SHOW;
-        }
-        self.place_eye(ctx, 0.0);
-        Some(self.bearing())
     }
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
@@ -742,9 +661,6 @@ impl Toy for Murmuration {
             self.flock.lean = [0.0; 3];
             self.flock.lean_k = 0.0;
             self.flock.lean_field = 0.0;
-            if self.arrive.is_some() {
-                self.show_next = self.show_next.max(self.clock + FIRST_SHOW);
-            }
             if self.clock >= self.show_next {
                 if self.near < 0.3 {
                     self.pick_you();
@@ -802,7 +718,6 @@ impl Toy for Murmuration {
             self.upload_sky(ctx);
         }
         let e = self.eye;
-        let (mid, grow) = self.passage_growth();
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         let se = (self.sun_el as f32).to_radians();
         let sa = (self.sun_az as f32).to_radians();
@@ -824,9 +739,8 @@ impl Toy for Murmuration {
             sun_col: [trans[0] as f32, trans[1] as f32, trans[2] as f32, self.exposure],
             ground: [ground[0], ground[1], ground[2], (self.t % (std::f64::consts::TAU * 100.0)) as f32],
             horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
-            horizon2: [h1[0], h1[1], h1[2], (1.0 - self.near.min(1.0) * 2.0) * self.arrive.map_or(1.0, |a| ((a.k as f32 - 0.75) / 0.25).clamp(0.0, 1.0))],
-            // .w: how far into a host's passage (1 straight above .. 0 the watcher's own view)
-            eye: [e.pos[0], e.pos[1], e.pos[2], self.arrive.map_or(0.0, |a| 1.0 - a.k as f32)],
+            horizon2: [h1[0], h1[1], h1[2], 1.0 - self.near.min(1.0) * 2.0],
+            eye: [e.pos[0], e.pos[1], e.pos[2], 0.0],
         };
         ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
         // The birds: dark against the sky, a little hazed with distance.
@@ -840,19 +754,16 @@ impl Toy for Murmuration {
             fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
             eye: [e.pos[0], e.pos[1], e.pos[2], min_px],
             ink: [ink[0], ink[1], ink[2], self.flock.you as f32],
-            haze: [haze[0], haze[1], haze[2], 4000.0 * grow.max(1.0 + self.arrive.map_or(0.0, |a| (1.0 - a.k as f32) * 20.0))],
+            haze: [haze[0], haze[1], haze[2], 4000.0],
         };
         ctx.gpu.queue.write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
-        // On a host's passage, far above: the flock itself, enlarged about its middle to the size of the
-        // light that stood for it, shrinking to its own size as the eye comes down (one flock all the way)
         let inst: Vec<Inst> = self
             .flock
             .birds
             .iter()
             .map(|b| {
                 let f = norm(b.vel);
-                let p = addv(mid, scale(sub(b.pos, mid), grow));
-                Inst { pos: [p[0], p[1], p[2], b.phase], fwd: [f[0], f[1], f[2], b.size * grow], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
+                Inst { pos: [b.pos[0], b.pos[1], b.pos[2], b.phase], fwd: [f[0], f[1], f[2], b.size], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
             })
             .collect();
         ctx.gpu.queue.write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));

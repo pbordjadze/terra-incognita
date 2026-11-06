@@ -48,12 +48,6 @@ fn hash(p: vec2f) -> f32 {
     return fract(sin(dot(p, vec2f(12.9898, 78.233))) * 43758.5453);
 }
 
-fn vn2(p: vec2f) -> f32 {
-    let i = floor(p);
-    let f = smoothstep(vec2f(0.0), vec2f(1.0), fract(p));
-    return mix(mix(hash(i), hash(i + vec2f(1.0, 0.0)), f.x), mix(hash(i + vec2f(0.0, 1.0)), hash(i + vec2f(1.0, 1.0)), f.x), f.y);
-}
-
 fn vnoise(x: f32) -> f32 {
     let i = floor(x);
     let f = fract(x);
@@ -114,12 +108,7 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
         } else {
             let depression = max(-dir.y, 1e-4);
             let dist = u.horizon.w / depression;
-            // The haze is the air's: only its lowest few kilometres thicken it, so from high above
-            // (a host's passage coming down from the globe) the ground still shows through.
-            let haze = 1.0 - exp(-(min(u.horizon.w, 800.0 / max(u.eye.w, 1e-4)) / depression) / 30000.0);
-            // Looking steeply down, the haze is the whole horizon's light, not one bearing's
-            // (a bearing's own colour would draw a ray to the point below the eye).
-            let hor = mix(hor, 0.5 * (u.horizon.rgb + u.horizon2.rgb), smoothstep(0.15, 0.7, depression) * u.eye.w);
+            let haze = 1.0 - exp(-dist / 30000.0);
             // The Levels: dark fields cut by straight rhynes (drainage ditches) full of water that
             // holds the dusk sky, the fields' edges going off toward the horizon.
             let gp = u.eye.xz + dir.xz / depression * u.eye.y;
@@ -141,23 +130,7 @@ fn fs_main(in: VOut) -> @location(0) vec4f {
             let fc = floor(cell);
             let ff = smoothstep(vec2f(0.0), vec2f(1.0), fract(cell));
             let n = mix(mix(hash(fc), hash(fc + vec2f(1.0, 0.0)), ff.x), mix(hash(fc + vec2f(0.0, 1.0)), hash(fc + vec2f(1.0, 1.0)), ff.x), ff.y);
-            // A field's own tone shows while a field is a few pixels across (from high above too, as a
-            // host's passage comes down), and the Levels' larger lie (moor, droves, villages' trees)
-            // under it, so the ground has a grain at every height.
-            let cell_k = smoothstep(25.0, 80.0, foot);
-            // (all of this only on a host's passage, u.eye.w: the toy's own view is as it was)
-            let passage = u.eye.w;
-            let big = 0.6 * vn2(gp / 1100.0) + 0.4 * vn2(gp / 4300.0 + vec2f(17.0, 5.0));
-            var field = u.ground.rgb * (0.88 + 0.24 * mix(n, 0.5, mix(far_k, cell_k, passage))) * mix(1.0, 0.6 + 0.8 * big, passage);
-            // Ham Wall's old peat diggings, flooded: still pools among the reeds, holding the sky
-            let pool = passage * smoothstep(0.66, 0.70, vn2(gp / 420.0 + vec2f(3.0, 9.0))) * (1.0 - smoothstep(0.0, 1.0, (length(gp) - 1500.0) / 2500.0)) * (1.0 - smoothstep(2500.0, 6000.0, u.horizon.w));
-            // seen from above, a pool is the sky over it, dimmed (still water at dusk: the zenith's blue-grey)
-            let pool_col = sky(normalize(vec3f(dir.x, -dir.y, dir.z))) * (0.16 + 0.84 * fres);
-            field = mix(field, pool_col, pool);
-            // looked down on at dusk, the reed beds lose the low sun's warmth: a cool, dark olive-grey
-            let down = smoothstep(0.45, 0.95, depression) * passage;
-            let lum = dot(field, vec3f(0.2126, 0.7152, 0.0722));
-            field = mix(field, lum * vec3f(0.70, 0.78, 0.88), 0.7 * down * (1.0 - pool));
+            let field = u.ground.rgb * (0.88 + 0.24 * mix(n, 0.5, far_k));
             g = mix(mix(field, field * 0.6 + refl * 0.8, water), hor, haze);
         }
         col = mix(col, g, land);

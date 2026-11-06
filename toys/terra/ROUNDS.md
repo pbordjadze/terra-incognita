@@ -19,3 +19,10 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   Each scene toy's light a small window onto its scene; a scene opens out of that window as the Earth
   falls on toward it. The Simulator's check plays a passage on an iPhone and an iPad (`sim.env`). Plan
   `murmuration`.
+- Row 245 rounds 3–4 (Nov 6, 2026, ET): three critics found the overhead passage (the toy's eye straight
+  down, then swinging up) a swap of flocks over brown ground; withdrawn, with the kit hook it needed and its
+  changes to Murmuration. Instead every scene toy's light is a window: touched, it shows the toy itself, live,
+  its whole frame scaled into the light; the Earth turns the light to the middle and falls toward it, the
+  window growing with the Earth's zoom until it is the glass. Out: the window shrinks back into its light as
+  the Earth rises. Frost's light keeps its feathers over the window while the glass is bare. Battle Ink retired
+  (its code at 3032c9a).

@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use toy_kit::info::{Demo, Rules, Stroke};
 use toy_kit::paint::Painter;
 use toy_kit::sound::{pentatonic, Bells, Note};
-use toy_kit::{Arrival, Assets, Camera, Ctx, Globe, LonLat, MemoryAssets, Phase, PointerEvent, Synth, Toy};
+use toy_kit::{Assets, Camera, Ctx, Globe, LonLat, MemoryAssets, Phase, PointerEvent, Synth, Toy};
 
 use doors::Life;
 use rooms::{Room, Shared};
@@ -28,9 +28,15 @@ fn earth_spot(points: [f64; 2]) -> [f64; 2] {
 const EARTH_REACH: f64 = 24.0;
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
-/// Seconds a scene takes to open out of its light, and how fast the Earth falls meanwhile (e-folds a second).
-const IRIS: f64 = 1.3;
-const IRIS_FALL: f64 = 1.1;
+/// Where in a scene's own frame the window onto it centres while it is small (fractions of the glass):
+/// what the toy is, where it is in its first frame (Frost's ice grows from the window's foot).
+fn window_at(id: &str) -> [f64; 2] {
+    match id {
+        "frost" => [0.5, 0.8],
+        _ => [0.5, 0.5],
+    }
+}
+
 
 enum State {
     /// The Earth and its lights.
@@ -45,104 +51,6 @@ enum State {
     Closing { t0: f64 },
     /// The Earth coming back up to the whole of it.
     Rising { from: Camera, to: Camera, t0: f64, dur: f64 },
-    /// A toy that takes passages (`Toy::arrival`), carried in or out without a cut: one fall in scale
-    /// from the whole Earth down into the toy's own eye straight above its place, then that eye swinging
-    /// up into the toy's first view (or all of it backward, going out).
-    Passing(Passage),
-}
-
-/// One passage's timeline (seconds from `t0`). In: the scale (metres a point at the middle of the glass)
-/// falls from the whole Earth's to the toy's low look, eased in its logarithm over `fall`; the globe's
-/// camera travels to the light and turns its top to the toy's bearing while the globe is still the
-/// picture; once the scale passes the globe's deepest (`hand`), the toy's eye takes over under a short
-/// crossfade, still falling; then `swing` seconds of the eye swinging into its own view. Out: the same,
-/// read backward.
-#[derive(Clone, Copy)]
-struct Passage {
-    inn: bool,
-    t0: f64,
-    fall: f64,
-    swing: f64,
-    /// The globe's camera at the start (in) or at the end (out), and over the light, turned (the hand-off).
-    far: Camera,
-    near: Camera,
-    /// Metres a point: the whole Earth's (at `far`), the globe's deepest (`near`), the toy's low look.
-    s_far: f64,
-    s_hand: f64,
-    s_low: f64,
-}
-
-/// The globe's deepest in a passage, and the toy's lowest look before its eye swings up (metres a point).
-const PASS_ZOOM: f64 = 34.0;
-const PASS_LOW: f64 = 3.0;
-/// Seconds the swing begins before the fall has quite ended (one motion, not two).
-const PASS_OVERLAP: f64 = 0.6;
-/// Seconds: the toy's picture crossing the globe's, and the eye's swing.
-const PASS_FADE: f64 = 0.6;
-const PASS_SWING: f64 = 2.6;
-/// How far the Earth falls into night as it hands the picture to a toy's dusk.
-const PASS_DUSK: f64 = 0.8;
-
-impl Passage {
-    /// Time since the start, the other way round going out (so both read as "in").
-    fn clock(&self, t: f64) -> f64 {
-        let s = t - self.t0;
-        if self.inn {
-            s
-        } else {
-            self.total() - s
-        }
-    }
-    fn total(&self) -> f64 {
-        self.fall.max(self.swing_start() + self.swing)
-    }
-    /// The swing begins as soon as the toy's eye has the picture: it tilts up while it still falls.
-    fn swing_start(&self) -> f64 {
-        (self.hand_clock() + PASS_FADE * 0.5).min(self.fall - PASS_OVERLAP)
-    }
-    /// 0..1 along the fall, eased (fast in the middle of the logarithm, gentle at both ends).
-    fn fall_at(&self, c: f64) -> f64 {
-        // slow while the globe travels, quickest as it hands over, gentle at the end
-        ease((c / self.fall).clamp(0.0, 1.0)).powi(3)
-    }
-    /// Metres a point now.
-    fn scale(&self, c: f64) -> f64 {
-        let u = self.fall_at(c);
-        (self.s_far.ln() * (1.0 - u) + self.s_low.ln() * u).exp()
-    }
-    /// How far along the fall (its own clock) the globe reaches its deepest.
-    fn hand_clock(&self) -> f64 {
-        let want = (self.s_far / self.s_hand).ln() / (self.s_far / self.s_low).ln();
-        // invert the ease by bisection
-        let (mut a, mut b) = (0.0, self.fall);
-        for _ in 0..40 {
-            let m = 0.5 * (a + b);
-            if self.fall_at(m) < want {
-                a = m;
-            } else {
-                b = m;
-            }
-        }
-        0.5 * (a + b)
-    }
-    /// The toy's picture over the globe's: 0 before the hand-off, 1 after the crossfade.
-    fn toy_alpha(&self, c: f64) -> f64 {
-        ease((c - self.hand_clock()) / PASS_FADE)
-    }
-    /// The swing (0 looking straight down .. 1 the toy's own view).
-    fn swing_at(&self, c: f64) -> f64 {
-        ((c - self.swing_start()) / self.swing).clamp(0.0, 1.0)
-    }
-    /// The globe's camera now: travelling (in) to the light with the turn, its zoom the scale's.
-    fn camera(&self, c: f64, r_per_zoom: f64) -> Camera {
-        let zoom = toy_kit::model::EARTH_RADIUS_M / (self.scale(c) * r_per_zoom);
-        let h = self.hand_clock();
-        let u = (c / h).clamp(0.0, 1.0);
-        // the place and the turn arrive with the globe's deepest, the zoom's own fall carrying on
-        let mut cam = fly(self.far, self.near, u);
-        cam.zoom = zoom.max(0.6);
-        cam
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -193,7 +101,7 @@ struct Veil {
 }
 
 const VEIL_WGSL: &str = r#"
-struct U { alpha: f32, _a: f32, _b: f32, _c: f32, iris: vec4<f32> };
+struct U { alpha: f32, _a: f32, _b: f32, _c: f32, iris: vec4<f32>, map: vec4<f32> };
 @group(0) @binding(0) var tex: texture_2d<f32>;
 @group(0) @binding(1) var samp: sampler;
 @group(0) @binding(2) var<uniform> u: U;
@@ -206,11 +114,23 @@ struct O { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
   return o;
 }
 @fragment fn fs_main(i: O) -> @location(0) vec4<f32> {
-  let c = textureSample(tex, samp, i.uv);
-  // an iris (centre, radius, softness in pixels): the toy seen through a widening disc
+  var c = textureSample(tex, samp, i.uv);
   var a = u.alpha;
   if (u.iris.z > 0.0) {
+    // a window (iris: its centre, radius, softness, pixels): the toy's whole frame scaled by map.z about
+    // the frame's point map.xy, which lies at the window's centre; sampled at five points when small
+    let size = vec2<f32>(textureDimensions(tex));
+    let q = u.map.xy + (i.pos.xy - u.iris.xy) / u.map.z;
+    let d = 0.35 / u.map.z;
+    c = (textureSampleLevel(tex, samp, q / size, 0.0) * 2.0
+      + textureSampleLevel(tex, samp, (q + vec2<f32>(d, d)) / size, 0.0)
+      + textureSampleLevel(tex, samp, (q + vec2<f32>(-d, d)) / size, 0.0)
+      + textureSampleLevel(tex, samp, (q + vec2<f32>(d, -d)) / size, 0.0)
+      + textureSampleLevel(tex, samp, (q + vec2<f32>(-d, -d)) / size, 0.0)) / 6.0;
     a = a * (1.0 - smoothstep(u.iris.z - u.iris.w, u.iris.z + u.iris.w, distance(i.pos.xy, u.iris.xy)));
+    // nothing from beyond the frame's edge (the globe shows there until the light has come to the middle)
+    let e = min(min(q.x, size.x - q.x), min(q.y, size.y - q.y));
+    a = a * smoothstep(-1.0, 6.0, e * u.map.z);
   }
   return vec4<f32>(c.rgb * a, a);
 }
@@ -269,7 +189,7 @@ impl Veil {
             cache: None,
         });
         let sampler = dev.create_sampler(&wgpu::SamplerDescriptor { mag_filter: wgpu::FilterMode::Linear, min_filter: wgpu::FilterMode::Linear, ..Default::default() });
-        let buf = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("terra veil"), size: 32, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let buf = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("terra veil"), size: 48, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
         Veil { pipeline, layout, sampler, buf, target: None }
     }
 
@@ -303,13 +223,14 @@ impl Veil {
     }
 
     fn lay(&self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32) {
-        self.lay_iris(ctx, target, alpha, [0.0; 4]);
+        self.lay_window(ctx, target, alpha, [0.0; 4], [0.0, 0.0, 1.0]);
     }
 
-    /// Laid through a soft disc: `iris` its centre, radius and softness (pixels; radius 0, none).
-    fn lay_iris(&self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32, iris: [f32; 4]) {
+    /// Laid as a window: `iris` its centre, radius and softness (pixels; radius 0: the whole glass), and
+    /// `map` the frame's point at its centre and the scale it is shown at.
+    fn lay_window(&self, ctx: &Ctx, target: &wgpu::TextureView, alpha: f32, iris: [f32; 4], map: [f32; 3]) {
         let Some((_, _, bind, _)) = &self.target else { return };
-        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&[alpha, 0.0, 0.0, 0.0, iris[0], iris[1], iris[2], iris[3]]));
+        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&[alpha, 0.0, 0.0, 0.0, iris[0], iris[1], iris[2], iris[3], map[0], map[1], map[2], 0.0]));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -406,17 +327,18 @@ fn fly(a: Camera, b: Camera, u: f64) -> Camera {
     Camera { lon: ll.lon, lat: ll.lat, zoom: zoom.max(0.6), roll: a.roll + dr * e }
 }
 
+/// A scene's dive: the Earth turns the light to the middle first (its window there, small), then falls
+/// toward it (the window growing about the middle), the two overlapping a little.
+fn fly_turn_then_fall(a: Camera, b: Camera, u: f64) -> Camera {
+    let turn = fly(a, Camera { zoom: a.zoom, ..b }, (u / 0.5).min(1.0));
+    let fall = ((u - 0.35) / 0.65).clamp(0.0, 1.0);
+    let fall = fall * fall * (3.0 - 2.0 * fall);
+    Camera { zoom: (a.zoom.ln() * (1.0 - fall) + b.zoom.ln() * fall).exp(), ..turn }
+}
+
 impl Terra {
     fn points(ctx: &Ctx) -> [f64; 2] {
         ctx.points()
-    }
-
-    fn fade_secs(&self) -> f64 {
-        if self.scene {
-            IRIS
-        } else {
-            FADE
-        }
     }
 
     fn inside(&self) -> bool {
@@ -452,37 +374,14 @@ impl Terra {
             Some(own) => Camera::new(at[0], at[1], (own.zoom * 2.0).max(3.0)),
             None => Camera::new(at[0], at[1], 9.0),
         };
-        let mut room = room;
-        // a toy that takes passages: carried in without a cut, its own eye doing the last of the way
-        if !self.reduce_motion {
-            let rpz = self.globe.disc().r / self.globe.camera.zoom;
-            let s_hand = toy_kit::model::EARTH_RADIUS_M / (rpz * PASS_ZOOM);
-            if let Some(bearing) = room.arrival(Some(Arrival { k: 0.0, scale: s_hand, least: 0.0 })) {
-                let from = self.globe.camera;
-                let near = Camera { roll: self.roll_for(at, bearing), ..Camera::new(at[0], at[1], PASS_ZOOM) };
-                let w = {
-                    let (a, b) = (LonLat::new(from.lon, from.lat).to_xyz(), LonLat::new(at[0], at[1]).to_xyz());
-                    (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos()
-                };
-                *self.room_sound.lock().unwrap() = room.synth();
-                room.settings(ctx.night, ctx.reduce_motion);
-                self.room = Some(room);
-                self.door = i;
-                self.state = State::Passing(Passage {
-                    inn: true,
-                    t0: t,
-                    fall: 3.0 + 0.5 * w,
-                    swing: PASS_SWING,
-                    far: from,
-                    near,
-                    s_far: toy_kit::model::EARTH_RADIUS_M / (rpz * from.zoom),
-                    s_hand,
-                    s_low: PASS_LOW,
-                });
-                return;
-            }
-        }
         self.scene = room.camera().is_none();
+        let mut room = room;
+        if self.scene {
+            // a scene lives from the touch: it is seen at once in its light, as a window
+            room.settings(ctx.night, ctx.reduce_motion);
+            *self.room_sound.lock().unwrap() = room.synth();
+            room.update(t);
+        }
         self.room = Some(room);
         self.door = i;
         let from = self.globe.camera;
@@ -490,37 +389,12 @@ impl Terra {
             let (a, b) = (LonLat::new(from.lon, from.lat).to_xyz(), LonLat::new(to.lon, to.lat).to_xyz());
             (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos()
         };
-        let dur = if self.reduce_motion { 0.01 } else { 1.1 + 0.5 * w + 0.25 * (to.zoom / from.zoom).ln().abs() };
+        let dur = if self.reduce_motion { 0.01 } else { 1.1 + 0.5 * w + 0.25 * (to.zoom / from.zoom).ln().abs() + if self.scene { 0.9 } else { 0.0 } };
         self.state = State::Diving { from, to, t0: t, dur };
     }
 
     /// Back to the Earth: the toy goes down into it, at the toy's own camera.
     fn leave(&mut self, ctx: &mut Ctx, t: f64) {
-        if !self.reduce_motion {
-            let at = self.life.doors[self.door].at;
-            let rpz = self.globe.disc().r / self.globe.camera.zoom;
-            let s_hand = toy_kit::model::EARTH_RADIUS_M / (rpz * PASS_ZOOM);
-            if let Some(bearing) = self.room.as_mut().and_then(|r| r.arrival(Some(Arrival { k: 1.0, scale: PASS_LOW, least: 0.0 }))) {
-                let far = Camera::new(at[0], at[1], 1.4);
-                let near = Camera { roll: self.roll_for(at, bearing), ..Camera::new(at[0], at[1], PASS_ZOOM) };
-                self.strike(self.life.doors[self.door].degree - 5, 0.18, 0.0);
-                ctx.haptic();
-                self.inside_fingers.clear();
-                self.pinch = None;
-                self.state = State::Passing(Passage {
-                    inn: false,
-                    t0: t,
-                    fall: 3.2,
-                    swing: PASS_SWING * 0.8,
-                    far,
-                    near,
-                    s_far: toy_kit::model::EARTH_RADIUS_M / (rpz * far.zoom),
-                    s_hand,
-                    s_low: PASS_LOW,
-                });
-                return;
-            }
-        }
         if let Some(c) = self.room.as_ref().and_then(|r| r.camera()) {
             self.globe.camera = c;
         }
@@ -529,6 +403,14 @@ impl Terra {
         ctx.haptic();
         self.inside_fingers.clear();
         self.pinch = None;
+        if self.scene && !self.reduce_motion {
+            self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
+            let from = self.globe.camera;
+            let to = Camera { zoom: 1.4, roll: 0.0, ..from };
+            let dur = 1.6 + 0.35 * (from.zoom / to.zoom).ln().abs();
+            self.state = State::Rising { from, to, t0: t, dur };
+            return;
+        }
         self.state = State::Closing { t0: t };
     }
 
@@ -655,78 +537,59 @@ impl Terra {
         ctx.gpu.queue.submit([enc.finish()]);
     }
 
-    /// A passage's frame: the globe while it is the picture, the toy's own eye over it from the hand-off,
-    /// and the light's likeness over both, growing with the fall until the toy's own subject is as large
-    /// and takes its place.
-    fn draw_passage(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView, p: Passage) {
-        let c = p.clock(self.t);
-        let a = p.toy_alpha(c);
-        if a < 1.0 {
-            let others = 1.0 - (c / p.hand_clock()).clamp(0.0, 1.0);
-            self.draw_atlas_but(ctx, target, others, Some(self.door));
+    /// How far a scene's window has grown (0 the light's size .. 1 the whole glass), from the camera's
+    /// zoom on its way from `near` (the light seen from afar) to `far` (the dive's end): the window grows
+    /// with the Earth, in the logarithm of its zoom.
+    fn window_growth(&self, near: Camera, far: Camera) -> f64 {
+        let (z0, z1) = (near.zoom.max(0.1), far.zoom.max(0.1));
+        if (z1 / z0).ln().abs() < 1e-3 {
+            return 1.0;
         }
-        if a > 0.0 {
-            if let Some(r) = self.room.as_mut() {
-                if a >= 1.0 {
-                    r.draw(target);
-                } else {
-                    let view = self.veil.view(ctx);
-                    r.draw(view);
-                    self.veil.lay(ctx, target, a as f32);
-                }
-            }
-        }
-        // the likeness: the light's size until the subject's own (its half-width at this scale) is larger
-        // (the toy draws its own flock at the light's size from the hand-off on: the likeness gives way to it
-        // as the toy's picture comes up, the same size in the same place)
-        let size = Life::size(&self.globe);
-        let fade = 1.0 - a;
-        if fade > 0.0 {
-            self.life.paint(&mut self.painter, &self.globe, self.t, ctx.ppp, fade, self.reduce_motion, Some((self.door, size, 1.0 - a)), None);
-        }
-        let mark = p.swing_at(c);
-        if mark > 0.0 {
-            self.draw_earth_mark(ctx, target, (mark * mark) as f32);
-        } else {
-            let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
-            self.painter.render(&ctx.gpu, &mut enc, target, [ctx.width, ctx.height], None);
-            ctx.gpu.queue.submit([enc.finish()]);
-        }
+        let g = ((self.globe.camera.zoom / z0).ln() / (z1 / z0).ln()).clamp(0.0, 1.0);
+        g
     }
 
-    /// The camera's roll that puts `bearing` (degrees clockwise from north) at the top of the glass over `at`.
-    fn roll_for(&self, at: [f64; 2], bearing: f64) -> f64 {
-        let b = bearing.to_radians();
-        let d = 0.05;
-        let ahead = LonLat::new(at[0] + d * b.sin() / at[1].to_radians().cos().max(0.05), at[1] + d * b.cos());
-        let mut best = (f64::MAX, 0.0);
-        for k in 0..72 {
-            let roll = k as f64 * 5.0;
-            let cam = Camera { roll, ..Camera::new(at[0], at[1], 4.0) };
-            let g = self.globe.disc();
-            let disc = toy_kit::Disc { r: g.r / self.globe.camera.zoom * cam.zoom, ..g };
-            let (q, _) = disc.project(&cam, ahead);
-            // straight up from the middle: x on the centre, y above it
-            let ang = (q[0] - disc.cx).atan2(disc.cy - q[1]).abs();
-            if ang < best.0 {
-                best = (ang, roll);
+    /// The scene in its light: the toy's whole frame scaled down into a round window over the light,
+    /// growing (`g`) until the window is the glass and the frame is the toy's own, unscaled.
+    fn draw_window(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView, g: f64, alpha: f64, _closing: bool) {
+        let Some(r) = self.room.as_mut() else { return };
+        let k = ctx.ppp;
+        let (w, h) = (ctx.width as f64, ctx.height as f64);
+        let (spot, facing) = self.life.spot(&self.globe, self.door);
+        if facing <= 0.0 {
+            return;
+        }
+        let c = [spot[0] * k, spot[1] * k];
+        let r0 = Life::size(&self.globe) * 1.06 * k;
+        let r1 = 0.5 * w.hypot(h) * 1.08;
+        let rad = r0 * (r1 / r0).powf(g);
+        // the frame's scale: the window shows the frame's whole width until it is as wide as the glass, then
+        // the frame unscaled; its middle at the window's centre (where the dive brings the light)
+        let m = (rad * 2.0 / w).min(1.0);
+        // (a toy whose subject is off the middle: there while the window is small, sliding to the middle as
+        // the window grows past the glass's width, kept inside the frame)
+        let at = window_at(self.life.doors[self.door].id);
+        let full = ((rad * 2.0 / w).ln() / (2.0 * r1 / w).ln()).clamp(0.0, 1.0);
+        let k_mid = full * full * (3.0 - 2.0 * full);
+        let half = rad / m;
+        let ay = (at[1] * h).clamp(half.min(h * 0.5), h - half.min(h * 0.5));
+        let (ax, ay) = (0.5 * w + (at[0] * w - 0.5 * w) * (1.0 - k_mid), 0.5 * h + (ay - 0.5 * h) * (1.0 - k_mid));
+        let view = self.veil.view(ctx);
+        r.draw(view);
+        let soft = (rad * 0.04 + 1.5 * k) as f32;
+        self.veil.lay_window(ctx, target, alpha as f32, [c[0] as f32, c[1] as f32, rad as f32, soft], [ax as f32, ay as f32, m as f32]);
+        // a toy whose first frame is bare (Frost's glass before the ice grows): its light's likeness stays
+        // over the window while it is small, growing with it and fading as the toy's own picture fills it
+        if matches!(self.life.doors[self.door].id, "frost") {
+            let fade = 1.0 - ease(g / 0.45);
+            if fade > 0.0 {
+                let size = rad / k / 1.06;
+                self.life.paint(&mut self.painter, &self.globe, self.t, k, fade * alpha, self.reduce_motion, Some((self.door, size, 0.0)), None);
+                let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
+                self.painter.render(&ctx.gpu, &mut enc, target, [ctx.width, ctx.height], None);
+                ctx.gpu.queue.submit([enc.finish()]);
             }
         }
-        // refine to a degree
-        let base = best.1;
-        for k in -5..=5 {
-            let roll = base + k as f64;
-            let cam = Camera { roll, ..Camera::new(at[0], at[1], 4.0) };
-            let g = self.globe.disc();
-            let disc = toy_kit::Disc { r: g.r / self.globe.camera.zoom * cam.zoom, ..g };
-            let (q, _) = disc.project(&cam, ahead);
-            let ang = (q[0] - disc.cx).atan2(disc.cy - q[1]).abs();
-            if ang < best.0 {
-                best = (ang, roll);
-            }
-        }
-        let r = best.1.rem_euclid(360.0);
-        if r > 180.0 { r - 360.0 } else { r }
     }
 
     /// The Earth mark (a small globe: its rim, a meridian, the equator), on the info marks' dark ground.
@@ -864,16 +727,25 @@ impl Toy for Terra {
             }
             State::Diving { from, to, t0, dur } => {
                 let u = (t - t0) / dur;
-                self.globe.camera = fly(from, to, u.min(1.0));
+                self.globe.camera = if self.scene { fly_turn_then_fall(from, to, u.min(1.0)) } else { fly(from, to, u.min(1.0)) };
                 if self.life.doors[self.door].night {
                     self.globe.night = ease((u - 0.55) / 0.45) as f32;
+                }
+                if self.scene {
+                    if let Some(r) = self.room.as_mut() {
+                        r.update(t);
+                    }
+                    let g = self.window_growth(from, to);
+                    self.room_level.store(((0.25 + 0.75 * g) as f32).to_bits(), Ordering::Relaxed);
                 }
                 if u >= 1.0 {
                     if let Some(r) = self.room.as_mut() {
                         // the toy opens where the dive arrived: one picture becoming another
-                        r.set_camera(Camera { roll: self.globe.camera.roll, ..to });
-                        r.settings(ctx.night, ctx.reduce_motion);
-                        *self.room_sound.lock().unwrap() = r.synth();
+                        if !self.scene {
+                            r.set_camera(Camera { roll: self.globe.camera.roll, ..to });
+                            r.settings(ctx.night, ctx.reduce_motion);
+                            *self.room_sound.lock().unwrap() = r.synth();
+                        }
                         r.update(t);
                     }
                     self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
@@ -885,11 +757,7 @@ impl Toy for Terra {
                 if let Some(r) = self.room.as_mut() {
                     r.update(t);
                 }
-                if self.scene {
-                    // the Earth falls on toward the light as the scene opens out of it
-                    self.globe.camera.zoom = (self.globe.camera.zoom * (IRIS_FALL * dt).exp()).min(40.0);
-                }
-                if t - t0 >= self.fade_secs() {
+                if t - t0 >= FADE {
                     self.state = State::Inside;
                     // the Earth's lights sleep while a toy is open
                     self.veil.target = None;
@@ -903,10 +771,7 @@ impl Toy for Terra {
             State::Closing { t0 } => {
                 // the toy held still as it goes down (its own hand would fly it Home after a pinch out),
                 // so its picture and the Earth's under it stay one
-                if self.scene {
-                    self.globe.camera.zoom = (self.globe.camera.zoom * (-IRIS_FALL * dt).exp()).max(1.4);
-                }
-                if t - t0 >= self.fade_secs() {
+                if t - t0 >= FADE {
                     self.room = None;
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
@@ -916,37 +781,21 @@ impl Toy for Terra {
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
             }
-            State::Passing(p) => {
-                let c = p.clock(t);
-                let rpz = self.globe.disc().r / self.globe.camera.zoom;
-                self.globe.camera = p.camera(c, rpz);
-                // the dusk comes down with the globe's last fall (the toy's ground is dim)
-                let h = p.hand_clock();
-                self.globe.night = (PASS_DUSK * ease((c - 0.4 * h) / (0.6 * h + PASS_FADE))) as f32;
-                let a = p.toy_alpha(c);
-                self.room_level.store((a as f32).to_bits(), Ordering::Relaxed);
-                if let Some(r) = self.room.as_mut() {
-                    r.arrival(Some(Arrival { k: p.swing_at(c), scale: p.scale(c), least: Life::size(&self.globe) * 0.8 * p.scale(c) }));
-                    r.update(t);
-                }
-                if p.inn && c >= p.total() {
-                    if let Some(r) = self.room.as_mut() {
-                        r.arrival(None);
-                    }
-                    self.veil.target = None;
-                    self.state = State::Inside;
-                } else if !p.inn && c <= 0.0 {
-                    self.room = None;
-                    *self.room_sound.lock().unwrap() = None;
-                    self.veil.target = None;
-                    self.globe.night = 0.0;
-                    self.globe.camera = Camera { roll: 0.0, ..self.globe.camera };
-                    self.last_touch = t;
-                    self.state = State::Atlas;
-                }
-            }
             State::Rising { from, to, t0, dur } => {
                 let u = (t - t0) / dur;
+                if self.room.is_some() {
+                    // a scene going back into its light as the Earth rises
+                    if let Some(r) = self.room.as_mut() {
+                        r.update(t);
+                    }
+                    let g = self.window_growth(to, from);
+                    self.room_level.store(((g * g) as f32).to_bits(), Ordering::Relaxed);
+                    if u >= 1.0 {
+                        self.room = None;
+                        *self.room_sound.lock().unwrap() = None;
+                        self.veil.target = None;
+                    }
+                }
                 self.globe.camera = fly(from, to, u.min(1.0));
                 if self.globe.night > 0.0 {
                     self.globe.night = (1.0 - ease(u * 2.2)) as f32;
@@ -967,35 +816,40 @@ impl Toy for Terra {
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         match self.state {
-            State::Atlas | State::Rising { .. } => self.draw_atlas(ctx, target, 1.0),
-            State::Diving { t0, dur, .. } => {
+            State::Atlas => self.draw_atlas(ctx, target, 1.0),
+            State::Rising { from, to, t0, .. } => {
+                self.draw_atlas(ctx, target, 1.0);
+                if self.room.is_some() {
+                    let g = self.window_growth(to, from);
+                    let a = ease(g / 0.12);
+                    self.draw_window(ctx, target, g, a, (self.t - t0) < 0.0);
+                    self.draw_earth_mark(ctx, target, (1.0 - ease((self.t - t0) / 0.5)) as f32);
+                }
+            }
+            State::Diving { from, to, t0, dur } => {
                 // the lights give way to the one being entered
                 let u = ((self.t - t0) / dur).clamp(0.0, 1.0);
                 self.draw_atlas(ctx, target, 1.0 - 0.6 * u);
+                if self.scene {
+                    // the toy itself in its light, at once, the window growing as the Earth comes closer
+                    let g = self.window_growth(from, to);
+                    self.draw_window(ctx, target, g, ease((self.t - t0) / 0.35), false);
+                }
+            }
+            State::Opening { t0 } if self.scene => {
+                if let Some(r) = self.room.as_mut() {
+                    r.draw(target);
+                }
+                self.draw_earth_mark(ctx, target, ease((self.t - t0) / FADE) as f32);
             }
             State::Opening { t0 } | State::Closing { t0 } => {
-                let raw = ((self.t - t0) / self.fade_secs()).clamp(0.0, 1.0);
-                let raw = if matches!(self.state, State::Opening { .. }) { raw } else { 1.0 - raw };
-                let a = ease(raw);
-                let scene = self.scene;
-                // a scene: seen through a disc that opens from the light itself to the whole glass
-                let iris = if scene {
-                    let k = ctx.ppp as f32;
-                    let (c, _) = self.life.true_spot(&self.globe, self.door);
-                    let r0 = (Life::size(&self.globe) * 1.1) as f32 * k;
-                    let far = ((ctx.width as f32).hypot(ctx.height as f32)) * 0.75;
-                    let u = ease(raw) as f32;
-                    let r = r0 * (far / r0).powf(u);
-                    [c[0] as f32 * k, c[1] as f32 * k, r, r * 0.22 + 2.0 * k]
-                } else {
-                    [0.0; 4]
-                };
-                self.draw_atlas(ctx, target, if scene { 1.0 - a } else { 0.4 });
+                let u = ease((self.t - t0) / FADE);
+                let a = if matches!(self.state, State::Opening { .. }) { u } else { 1.0 - u };
+                self.draw_atlas(ctx, target, 0.4);
                 if let Some(r) = self.room.as_mut() {
                     let view = self.veil.view(ctx);
                     r.draw(view);
-                    let alpha = if scene { ease(raw * 2.5) } else { a };
-                    self.veil.lay_iris(ctx, target, alpha as f32, iris);
+                    self.veil.lay(ctx, target, a as f32);
                 }
                 self.draw_earth_mark(ctx, target, a as f32);
             }
@@ -1005,7 +859,6 @@ impl Toy for Terra {
                 }
                 self.draw_earth_mark(ctx, target, 1.0);
             }
-            State::Passing(p) => self.draw_passage(ctx, target, p),
         }
     }
 
