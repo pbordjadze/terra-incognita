@@ -175,7 +175,9 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   draws them (`metal.py shot globe+ocean+clouds out.png --at descent`), and set beside their twins
   (`metal.py twin clouds`). Check a shader here before any macOS run; `layers.py` mirrors the Metal
   layers' Swift (their bindings and uniforms): change them together.
-- **CI** (`ci/` and `.github/workflows/ci.yml`; tags: `[build-only]`, `[shots]`, `[test Class]`,
+- **CI** (`ci/` and `.github/workflows/ci.yml`; every macOS job, here and in `toys.yml` and `adrift.yml`,
+  builds with the one Xcode `ci/xcode.sh` names, 27.1 on GitHub's `xcode-27` image, and fetches its Metal
+  toolchain if missing; `qa-explore.yml` names the same version itself; tags: `[build-only]`, `[shots]`, `[test Class]`,
   `[playground-check]`, `[ipa]`; put them in the commit's first line). The quick ones on a free runner: `[build-only]` compiles the app
   and its UI tests (`build-for-testing`, so a slip in a test's code fails here, not in the run that
   tests it) in about 3 minutes; `[shots]` (or `[shots name:lon,lat,zoom ...]`) photographs the stage at rest at places

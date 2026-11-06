@@ -60,7 +60,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
   PROJECT: App/TerraIncognita.xcodeproj
   SCHEME: TerraIncognita
 
@@ -103,11 +102,13 @@ jobs:
 
   apple:
     name: Simulator builds and encounter interactions
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 260
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
+      - name: Xcode (the one version, ci/xcode.sh)
+        run: bash ci/xcode.sh
       - name: What this run checks
         # `[shots]` and `[test]` on a branch, or the hand-started run's places and tests (ci/fast.py)
         id: fast
@@ -237,12 +238,14 @@ jobs:
     if: ${{ !cancelled() && needs.plates.result == 'success' && needs.apple.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[ipa]')) }}
     permissions:
       contents: write
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     env:
       BUILD: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v5
+      - name: Xcode (the one version, ci/xcode.sh)
+        run: bash ci/xcode.sh
       - name: Archive
         run: |
           set -o pipefail

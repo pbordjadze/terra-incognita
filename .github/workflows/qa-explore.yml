@@ -114,13 +114,13 @@ env:
 jobs:
   explore:
     name: Explore (${{ inputs.mode }}, ${{ inputs.device }})
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v5
         with: { persist-credentials: false }
       - name: Xcode
-        run: ci/qa/xcode.sh 26.6
+        run: ci/qa/xcode.sh 27.1
       - name: Check inputs and credentials
         env:
           HAS_OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
