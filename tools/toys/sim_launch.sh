@@ -12,7 +12,11 @@
 # messages), any crash report, and screenshots: `screen.png` at rest, then the shell's rules card
 # opened (TOY_OPEN, main.swift) at 30 s as `rules.png` and, if the toy has one, its origins card at
 # 60 s as `origins.png`. (A hosted Mac's first `simctl io screenshot` took 140 s and later ones up to
-# 22 s, so the Simulator's screen is warmed up first and the cards are 30 s apart.) What it can't vouch for: the phone's memory limit
+# 22 s, so the Simulator's screen is warmed up first and the cards are 30 s apart.) A toy may keep a
+# `toys/<toy>/sim.env` of KEY=value lines, passed to the app (Terra's TERRA_PASSAGE plays a passage into a
+# held toy and out); SIM_DEVICE=iPad (the environment, or that file) opens it on an iPad instead; SIM_ALSO=iPad there
+# has CI's IPA job open it on an iPad as well (out/sim-ipad).
+# What it can't vouch for: the phone's memory limit
 # (the Simulator has none of its own) and the phone's GPU (the Mac's draws for it): toy-log.txt from a
 # phone stays the last word.
 set -euo pipefail
@@ -27,18 +31,26 @@ APP="$(ls -d "$OUT"/build/Payload/*.app)"
 EXEC="$(basename "$APP" .app)"
 BUNDLE="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['bundleIdentifier'])" "$ROOT/toys/$TOY/toy.json")"
 
-# an iPhone (the newest runtime's first iPhone), booted once and reused by the next toy in this job
-UDID="$(xcrun simctl list devices available -j | python3 -c '
-import json, sys
+# the toy's own environment for the app (sim.env), and the device
+SIM_ENV="$ROOT/toys/$TOY/sim.env"
+if [ -f "$SIM_ENV" ]; then
+  while IFS='=' read -r k v; do
+    case "$k" in ''|\#*|SIM_ALSO) continue ;; SIM_DEVICE) SIM_DEVICE="${SIM_DEVICE:-$v}" ;; *) export "SIMCTL_CHILD_$k=$v" ;; esac
+  done < "$SIM_ENV"
+fi
+DEVICE="${SIM_DEVICE:-iPhone}"
+# an iPhone (or the device asked for: the newest runtime's first of it), booted once and reused by the next toy in this job
+UDID="$(xcrun simctl list devices available -j | DEVICE="$DEVICE" python3 -c '
+import json, os, sys
 d = json.load(sys.stdin)["devices"]
 runtimes = sorted((r for r in d if "iOS" in r), key=lambda r: [int(x) for x in r.rsplit("iOS-", 1)[-1].split("-") if x.isdigit()])
 for r in reversed(runtimes):
-    phones = [x for x in d[r] if x["name"].startswith("iPhone")]
+    phones = [x for x in d[r] if x["name"].startswith(os.environ["DEVICE"])]
     booted = [x for x in phones if x["state"] == "Booted"]
     if booted or phones:
         print((booted or phones)[0]["udid"]); break
 ')"
-[ -n "$UDID" ] || { echo "no iPhone simulator"; exit 1; }
+[ -n "$UDID" ] || { echo "no $DEVICE simulator"; exit 1; }
 xcrun simctl list devices | grep "$UDID" | sed 's/^ */simulator: /'
 xcrun simctl boot "$UDID" 2> /dev/null || true
 xcrun simctl bootstatus "$UDID" -b > /dev/null

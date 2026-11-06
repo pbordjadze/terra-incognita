@@ -1,0 +1,11 @@
+{
+ "_": "The passage into Murmuration and out (painting-company row 245): the starlings' light touched at 1 s; the Earth turns its top to the dusk and falls toward Ham Wall, the dusk coming down; the toy's own eye takes over straight above the reed beds, still falling, the flock growing out of the light's likeness; then the eye swings up into the watcher's view of the sunset. The Earth mark at 13 s: all of it backward.",
+ "seconds": 21,
+ "fps": 20,
+ "events": [
+  { "t": 1.0, "tap": "murmuration" },
+  { "t": 13.0, "tap": "earth" }
+ ],
+ "shots": [{ "t": 2.5, "name": "falling" }, { "t": 3.6, "name": "dusk" }, { "t": 4.4, "name": "handed-over" }, { "t": 5.4, "name": "above-the-flock" }, { "t": 6.3, "name": "swinging" }, { "t": 9.0, "name": "inside" }, { "t": 14.5, "name": "rising" }, { "t": 20.5, "name": "back" }],
+ "film": { "from": 0.5, "to": 21, "every": 0.1 }
+}

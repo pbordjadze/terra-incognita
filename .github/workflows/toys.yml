@@ -148,7 +148,12 @@ jobs:
           ls -l out/${{ matrix.toy }}.ipa
           bash tools/toys/launch_check.sh ${{ matrix.toy }} --ipa out/${{ matrix.toy }}.ipa
       - name: Open it in the Simulator (Apple's Metal compiler, Metal's validation on)
-        run: bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim
+        run: |
+          bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim
+          # a toy whose sim.env asks for it is opened on an iPad too (Terra: its passages at the iPad's size)
+          if grep -q '^SIM_ALSO=iPad' toys/${{ matrix.toy }}/sim.env 2> /dev/null; then
+            SIM_DEVICE=iPad bash tools/toys/sim_launch.sh ${{ matrix.toy }} out/sim-ipad
+          fi
       - name: Release
         if: github.ref_name == 'main'
         env:

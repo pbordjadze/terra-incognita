@@ -271,9 +271,10 @@ impl Life {
     }
 
     /// Every light into the painter (pixels: `k` pixels a point). `fade` dims them all (a dive under way).
-    pub fn paint(&self, p: &mut Painter, globe: &Globe, t: f64, k: f64, fade: f64, reduce_motion: bool) {
+    /// `focus`: only that light, at that size (points) and its halo's strength, as a passage carries it down into its toy.
+    pub fn paint(&self, p: &mut Painter, globe: &Globe, t: f64, k: f64, fade: f64, reduce_motion: bool, focus: Option<(usize, f64, f64)>, skip: Option<usize>) {
         let kf = k as f32;
-        let r = Self::size(globe);
+        let r0 = Self::size(globe);
         let px = |pt: [f64; 2]| [(pt[0] * k) as f32, (pt[1] * k) as f32];
         let at = |ll: [f64; 2]| -> Option<([f32; 2], f64)> {
             let (s, f) = globe.project(LonLat::new(ll[0], ll[1]));
@@ -290,6 +291,14 @@ impl Life {
         }
         let shown = self.shown(globe);
         for (i, d) in self.doors.iter().enumerate() {
+            if skip == Some(i) {
+                continue;
+            }
+            let (r, halo) = match focus {
+                Some((f, _, _)) if f != i => continue,
+                Some((_, size, halo)) => (size, halo as f32),
+                None => (r0, 1.0),
+            };
             let (s, facing) = shown[i];
             let [sw, sh] = [globe.view().width as f64 / globe.view().ppp, globe.view().height as f64 / globe.view().ppp];
             let edge = s[0].min(sw - s[0]).min(s[1]).min(sh - s[1]);
@@ -314,8 +323,8 @@ impl Life {
                 p.ring(c, ((r * (1.1 + 1.6 * ph)) * k) as f32, 1.6 * kf, 1.5, [tint[0], tint[1], tint[2], ((1.0 - ph).powf(1.5) * 0.7) as f32 * a]);
             }
             // a soft halo of its colour, so it reads from across the Earth
-            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * (1.0 - globe.night)]);
-            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.22 * a]);
+            p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * halo * (1.0 - globe.night)]);
+            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.22 * a * halo]);
             match d.id {
                 "whales" => {
                     if let Some(spots) = self.whale_spots() {
