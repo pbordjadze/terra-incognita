@@ -27,7 +27,7 @@ const BIRDS: usize = 6000;
 const MSAA: u32 = 4;
 /// When the eye first glides in by itself (seconds after opening), how long it rides, and how long
 /// untouched before it shows again.
-const FIRST_SHOW: f64 = 4.5;
+const FIRST_SHOW: f64 = 15.0;
 const SHOW_FOR: f64 = 6.0;
 const SHOW_AGAIN: f64 = 40.0;
 /// How far behind your bird the eye rides while flying, metres.

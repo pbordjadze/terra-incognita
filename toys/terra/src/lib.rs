@@ -555,10 +555,14 @@ impl Terra {
         let Some(r) = self.room.as_mut() else { return };
         let k = ctx.ppp;
         let (w, h) = (ctx.width as f64, ctx.height as f64);
-        let (spot, facing) = self.life.spot(&self.globe, self.door);
+        // from where the light is shown (eased apart from a crowd) to where its place truly is
+        let (shown, facing) = self.life.spot(&self.globe, self.door);
         if facing <= 0.0 {
             return;
         }
+        let (truth, _) = self.life.true_spot(&self.globe, self.door);
+        let kt = (g * 3.0).min(1.0);
+        let spot = [shown[0] + (truth[0] - shown[0]) * kt, shown[1] + (truth[1] - shown[1]) * kt];
         let c = [spot[0] * k, spot[1] * k];
         let r0 = Life::size(&self.globe) * 1.06 * k;
         let r1 = 0.5 * w.hypot(h) * 1.08;
@@ -573,7 +577,8 @@ impl Terra {
         let k_mid = full * full * (3.0 - 2.0 * full);
         let half = rad / m;
         let ay = (at[1] * h).clamp(half.min(h * 0.5), h - half.min(h * 0.5));
-        let (ax, ay) = (0.5 * w + (at[0] * w - 0.5 * w) * (1.0 - k_mid), 0.5 * h + (ay - 0.5 * h) * (1.0 - k_mid));
+        // (to the window's own centre at the end, so the frame is then the glass exactly)
+        let (ax, ay) = (c[0] + (at[0] * w - c[0]) * (1.0 - k_mid), c[1] + (ay - c[1]) * (1.0 - k_mid));
         let view = self.veil.view(ctx);
         r.draw(view);
         let soft = (rad * 0.04 + 1.5 * k) as f32;
