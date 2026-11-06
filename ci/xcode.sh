@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # The one Xcode every macOS job builds with, named here and nowhere else, so staying current is a
 # one-line bump (it lists the runner's other Xcodes: take the newest stable one) (Paul's own Mac, a
-# self-hosted runner for every app, keeps the same one at /Applications/Xcode_27.1.app; GitHub's
+# self-hosted runner for every app, keeps the same one at /Applications/Xcode_27.2.app; GitHub's
 # `xcode-27` image has it too). It selects it for the job's later steps (DEVELOPER_DIR in
 # $GITHUB_ENV), fails by name on a runner without it, and fetches the Metal toolchain when that
 # Xcode lacks it (since Xcode 26 it is a separate download; the app's .metal files need it).
 #   ci/xcode.sh            # a workflow's first step after checkout
 #   ci/xcode.sh --version  # prints the version alone
 # (The QA explore workflow, generated from the shared copy, names its version itself:
-# `ci/qa/xcode.sh 27.1` in qa-explore.yml; keep the two the same.)
+# `ci/qa/xcode.sh 27.2` in qa-explore.yml; keep the two the same.)
 set -euo pipefail
-VERSION=27.1
+VERSION=27.2
 [[ "${1:-}" == --version ]] && { echo "$VERSION"; exit 0; }
 DIR="/Applications/Xcode_$VERSION.app/Contents/Developer"
 [[ -d "$DIR" ]] || { echo "::error::Xcode $VERSION is not on this runner ($DIR); installed: $(ls -d /Applications/Xcode*.app 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"; exit 1; }
