@@ -16,9 +16,12 @@ const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
 /// The clock while nothing on screen is about to happen, years a second.
 const FAST_YEARS: f64 = 20.0;
-const LAKE_LIFE: f64 = 220.0; // a lake silts up and is forest again in under half a minute
+const LAKE_LIFE: f64 = 420.0; // a lake silts up and is forest again in under half a minute
 /// The screen's longer side, m: a few loops at a time, each big enough to watch.
 const VIEW_M: f64 = 13000.0;
+/// The finger's brush: points across (a fingertip, a little more), and metres of river gained a tick.
+const BRUSH_PT: f64 = 38.0;
+const TICK_M: f64 = 450.0;
 const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
 
 const WGSL: &str = r#"
@@ -93,6 +96,14 @@ struct Uni {
     ppp: f32,
 }
 
+struct Hand {
+    id: u64,
+    at: [f64; 2],
+    travel: f64,
+    gained: f64,
+    ticks: i32,
+}
+
 struct Ripple {
     at: [f64; 2],
     t: f64,
@@ -103,6 +114,9 @@ pub struct Meander {
     river: River,
     /// The year each cell last had the river in it (NEVER if it never has).
     dep: Vec<f32>,
+    /// The same as the texture's half floats (year, 1), and the rows changed since the last upload.
+    half: Vec<u16>,
+    dirty: (usize, usize),
     epoch: f64,
     dep_tex: wgpu::Texture,
     _plain: Texture,
@@ -110,8 +124,9 @@ pub struct Meander {
     bind: wgpu::BindGroup,
     uni: wgpu::Buffer,
     painter: Painter,
-    /// The finger's course as drawn, metres, and its id.
-    drawing: Option<(u64, Vec<[f64; 2]>)>,
+    /// The finger in the river: its id, where it was last (m), how far it has gone (points), the river's
+    /// length gained since it touched, and the ticks struck for that.
+    hand: Option<Hand>,
     /// When the river was last laid (it swells from a thread to its width).
     laid: f64,
     ripples: Vec<Ripple>,
@@ -193,18 +208,15 @@ impl Meander {
                     let dx = xx as f64 + 0.5 - gx;
                     let dy = yy as f64 + 0.5 - gy;
                     if dx * dx + dy * dy <= r * r {
-                        self.dep[yy as usize * NG + xx as usize] = y;
+                        let c = yy as usize * NG + xx as usize;
+                        self.dep[c] = y;
+                        self.half[c * 2] = f16(y);
+                        self.half[c * 2 + 1] = 0x3c00;
+                        self.dirty = (self.dirty.0.min(yy as usize), self.dirty.1.max(yy as usize + 1));
                     }
                 }
             }
         }
-    }
-
-    fn lay(&mut self, ctx: &Ctx, course: &[[f64; 2]]) {
-        let seed = (self.t * 1000.0) as u64 ^ 0x9e37;
-        let line = seed_wobble(&extend(course, self.view_bounds(ctx)), seed);
-        self.river.relay(line);
-        self.laid = self.t;
     }
 }
 
@@ -283,6 +295,8 @@ impl Toy for Meander {
         let mut toy = Meander {
             river: River::new(Vec::new(), 7),
             dep: vec![NEVER; NG * NG],
+            half: vec![0; NG * NG * 2],
+            dirty: (0, NG),
             epoch: 0.0,
             dep_tex,
             _plain: plain,
@@ -290,7 +304,7 @@ impl Toy for Meander {
             bind,
             uni,
             painter,
-            drawing: None,
+            hand: None,
             laid: -10.0,
             ripples: Vec::new(),
             cuts_seen: 0,
@@ -325,36 +339,47 @@ impl Toy for Meander {
 
     fn pointer(&mut self, ctx: &mut Ctx, e: PointerEvent) {
         let w = self.to_world(ctx, [e.x, e.y]);
+        let (s, _) = self.view(ctx);
         match e.phase {
             toy_kit::Phase::Down => {
-                if self.drawing.is_none() {
-                    self.drawing = Some((e.id, vec![w]));
+                if self.hand.is_none() {
+                    self.hand = Some(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0 });
                 }
             }
             toy_kit::Phase::Move => {
-                if let Some((id, pts)) = &mut self.drawing {
-                    if *id == e.id && dist(*pts.last().unwrap(), w) > 25.0 {
-                        pts.push(w);
-                    }
+                let Some(h) = &mut self.hand else { return };
+                if h.id != e.id {
+                    return;
+                }
+                let d = [w[0] - h.at[0], w[1] - h.at[1]];
+                h.travel += dist(w, h.at) * s;
+                h.at = w;
+                // the finger is a brush about a fingertip wide: whatever river it passes through is
+                // carried along, as a string is through wet sand
+                let gained = self.river.push(w, d, BRUSH_PT / s);
+                let h = self.hand.as_mut().unwrap();
+                h.gained += gained.max(0.0);
+                // the river stretching: a rising tick every few hundred metres it gains
+                while h.gained > (h.ticks + 1) as f64 * TICK_M && h.ticks < 24 {
+                    h.ticks += 1;
+                    let f = toy_kit::sound::pentatonic(392.0, h.ticks - 1);
+                    self.bells.strike(Note { freq: f, amp: 0.07, decay: 0.35, pan: 0.0, bright: 0.8 });
+                    ctx.haptic();
                 }
             }
             toy_kit::Phase::Up | toy_kit::Phase::Cancel => {
-                if let Some((id, mut pts)) = self.drawing.take() {
-                    if id != e.id {
-                        self.drawing = Some((id, pts));
-                        return;
-                    }
-                    pts.push(w);
-                    let len: f64 = pts.windows(2).map(|p| dist(p[0], p[1])).sum();
-                    let (s, _) = self.view(ctx);
-                    if len * s > 50.0 {
-                        self.lay(ctx, &pts);
-                        ctx.haptic();
-                        self.bells.strike(Note { freq: 98.0, amp: 0.18, decay: 2.5, pan: 0.0, bright: 0.3 });
-                    } else {
-                        // a touch near the river nudges its bank toward the finger: a bend starts there
-                        self.river.nudge(w, W * 0.9);
-                        self.ripples.push(Ripple { at: w, t: self.t, strong: false });
+                let Some(h) = self.hand.take() else { return };
+                if h.id != e.id {
+                    self.hand = Some(h);
+                    return;
+                }
+                if h.travel < 12.0 {
+                    // a touch: the nearest bank nudged toward the finger and loosened, so a bend starts there
+                    self.river.nudge(w, W * 1.2);
+                    self.river.kicks.push((w, self.river.year, 1.2));
+                    self.ripples.push(Ripple { at: w, t: self.t, strong: false });
+                    if self.river.distance(w) < W * 6.0 {
+                        self.bells.strike(Note { freq: 196.0, amp: 0.08, decay: 0.8, pan: 0.0, bright: 0.4 });
                     }
                 }
             }
@@ -380,16 +405,18 @@ impl Toy for Meander {
         let target = if since_cut < 1.5 { YEARS_A_SECOND } else { target };
         let ease = 1.0 - (-dt * 2.0).exp();
         self.pace += (target - self.pace) * ease;
-        let years = if self.drawing.is_some() { dt * YEARS_A_SECOND * 0.25 } else { dt * self.pace };
+        let years = dt * self.pace;
         self.river.advance(years);
         if self.river.year - self.epoch > 30000.0 {
             let shift = 20000.0;
             self.epoch += shift;
-            for d in self.dep.iter_mut() {
+            for (c, d) in self.dep.iter_mut().enumerate() {
                 if *d > NEVER {
                     *d = (*d - shift as f32).max(-60000.0);
+                    self.half[c * 2] = f16(*d);
                 }
             }
+            self.dirty = (0, NG);
         }
         self.stamp();
         // a neck cut: a flash where it broke, a soft low note, a tap in the hand
@@ -426,18 +453,18 @@ impl Toy for Meander {
         let gpu = &ctx.gpu;
         let (s, c) = self.view(ctx);
         let ppp = ctx.ppp;
-        // the deposits, as half floats
-        // the deposits change slowly (a third of a year a frame): sent every third frame (3 MB)
-        if self.frame % 3 == 1 || self.frame < 3 {
-            // (year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
-            // nearby and g a soft edge
-            let half: Vec<u16> = self.dep.iter().flat_map(|&d| if d > NEVER { [f16(d), 0x3c00] } else { [0, 0] }).collect();
+        // the deposits, as half floats: only the rows the river touched since the last frame
+        // ((year, 1) where the river has been, (0, 0) where it never has: filtered, r/g is the year
+        // nearby and g a soft edge)
+        if self.dirty.1 > self.dirty.0 {
+            let (r0, r1) = self.dirty;
             gpu.queue.write_texture(
-                wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-                bytemuck::cast_slice(&half),
+                wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d { x: 0, y: r0 as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                bytemuck::cast_slice(&self.half[r0 * NG * 2..r1 * NG * 2]),
                 wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: None },
-                wgpu::Extent3d { width: NG as u32, height: NG as u32, depth_or_array_layers: 1 },
+                wgpu::Extent3d { width: NG as u32, height: (r1 - r0) as u32, depth_or_array_layers: 1 },
             );
+            self.dirty = (NG, 0);
         }
         let u = Uni {
             size: [ctx.width as f32, ctx.height as f32],
@@ -525,13 +552,6 @@ impl Toy for Meander {
                 p.glow(px(tail), px(q), 0.6 * ppp as f32, 1.0, [0.22, 0.20, 0.16, 0.0]);
             }
         }
-        // the finger's course, as it is drawn: a thread of water
-        if let Some((_, pts)) = &self.drawing {
-            for w in pts.windows(2) {
-                p.line(px(w[0]), px(w[1]), 2.2 * ppp as f32, 1.2, lin(BANK, 0.95));
-                p.line(px(w[0]), px(w[1]), 1.4 * ppp as f32, 1.0, lin(WATER, 1.0));
-            }
-        }
         // a neck closing: a warm glow that grows as the banks come together
         for (at, k) in self.river.necks() {
             let k = (((k - 0.35) / 0.65).max(0.0).powi(2)) as f32;
@@ -575,19 +595,19 @@ impl Toy for Meander {
         let path: Vec<[f64; 2]> = (0..=16)
             .map(|i| {
                 let f = i as f64 / 16.0;
-                [wp * (0.5 + 0.18 * (f * 7.0).sin()), hp * (0.85 - 0.7 * f)]
+                [wp * (0.1 + 0.8 * f), hp * (0.5 + 0.03 * (f * 5.0).sin())]
             })
             .collect();
-        Some(toy_kit::info::Demo::new("Draw a river with your finger.", vec![toy_kit::info::Stroke { start: 0.4, seconds: 1.8, path }]))
+        Some(toy_kit::info::Demo::new("Push the river with your finger.", vec![toy_kit::info::Stroke { start: 0.4, seconds: 1.2, path }]))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
         Some(toy_kit::info::Rules::new(
             &[
-                "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake.",
+                "The river cuts the outside of each bend and leaves sand inside, so bends grow. When a loop's neck closes, the river cuts through and leaves the loop as a lake. A bank you push stays soft for a while, so the bend you made keeps growing.",
                 "The dark crescents underneath are the Rio Beni's real old loops (Bolivia, 2024). Time runs about twenty years a second, slowing as a neck closes.",
             ],
-            "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace.",
+            "Real: the floodplain and its lakes (Sentinel-2); the bend law (Howard and Knutson, 1984). Drawn: the water's colours, the pace, the finger's push.",
         ))
     }
 
