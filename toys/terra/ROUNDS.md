@@ -13,3 +13,8 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   touch carried into the toy; the dive falls onto the light and the toy opens there (Bell, Swell and
   Whales at their own first sight); a pinch out past the whole Earth climbs back; VoiceOver buttons.
   Six fresh critics; released from main by hand as terra-build. Ghost Jam, Meander and Frost added with one line each (plans `jam`, `meander`, `frost`): ten toys.
+- First minute, round 1 (Nov 6, 2026; painting-company row 246; three newcomer testers and a fresh critic: the lights didn't
+  reliably work as doors): a light is touched wherever it is seen (the whales themselves, the fireflies' and the mold's
+  cities), with a fingertip's reach at the reading scale; the lights bolder and sized with the screen; the 13-inch iPad
+  opens on the whole Earth, its width the screen's (it ran off all four sides). Plans `first-quiet`, `first-naive`,
+  `first-likeness` (strict); the testers' tools in `tools/toys/newcomer/`.

@@ -26,6 +26,18 @@ fn earth_spot(points: [f64; 2]) -> [f64; 2] {
     [26.0, points[1] - 34.0]
 }
 const EARTH_REACH: f64 = 24.0;
+/// The opening's zoom: on a tall phone the Earth a little wider than the screen, so its lights are large
+/// (1.4, its height well inside); on a squarer screen (the iPad) the Earth just the screen's width, so no
+/// light opens cut by the frame or hidden past it (painting-company row 246: at 1.4 the 13-inch iPad's
+/// Earth ran off all four sides). The kit's disc radius is (short side / 2 - 14) x zoom.
+pub fn opening_zoom(points: [f64; 2]) -> f64 {
+    let (w, h) = (points[0].min(points[1]), points[0].max(points[1]));
+    if h / w > 1.8 {
+        return 1.4;
+    }
+    ((w * 0.53) / (w / 2.0 - 14.0).max(40.0)).min(1.4)
+}
+
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 
@@ -504,7 +516,7 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-66.0, 20.0, 1.4);
+        globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
         globe.set_home();
         let mut life = Life::new(assets.as_ref());
         let [w, h] = ctx.points();
@@ -631,7 +643,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: 1.4, roll: 0.0, ..from };
+                    let to = Camera { zoom: self.globe.hand.home.map(|h| h.zoom).unwrap_or(1.4), roll: 0.0, ..from };
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
