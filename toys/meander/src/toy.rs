@@ -25,11 +25,12 @@ const TICK_M: f64 = 450.0;
 const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
 
 const WGSL: &str = r#"
-struct U { size: vec2<f32>, centre: vec2<f32>, scale: f32, now: f32, side: f32, ppp: f32 };
+struct U { size: vec2<f32>, centre: vec2<f32>, scale: f32, now: f32, side: f32, ppp: f32, river: f32, p0: f32, p1: f32, p2: f32 };
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var plain: texture_2d<f32>;
 @group(0) @binding(2) var dep: texture_2d<f32>;
 @group(0) @binding(3) var smp: sampler;
+@group(0) @binding(4) var mask: texture_2d<f32>;
 struct VO { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs_main(@builtin(vertex_index) vi: u32) -> VO {
   let p = array<vec2<f32>, 3>(vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0))[vi];
@@ -82,6 +83,21 @@ fn vnoise(p: vec2<f32>) -> f32 {
     c = mix(c, vec3(0.36, 0.34, 0.26), sand * 0.55);
     c = c * (1.0 + 0.06 * near * fade);
   }
+  // the water, from the mask the river and its lakes were painted into (r the river's water, g where
+  // a bend shoals it, b a lake's darkness): drawn into the photograph rather than laid on it, with
+  // the photograph's own grain in it, a wet edge, and the faster water down the middle a shade lighter
+  let m = textureSampleLevel(mask, smp, i.uv, 0.0);
+  let grain = l - 0.25;
+  let o = vec2<f32>(u.river * 0.22) / u.size;
+  var mid = 1.0;
+  mid = min(mid, textureSampleLevel(mask, smp, i.uv + vec2(o.x, 0.0), 0.0).r);
+  mid = min(mid, textureSampleLevel(mask, smp, i.uv - vec2(o.x, 0.0), 0.0).r);
+  mid = min(mid, textureSampleLevel(mask, smp, i.uv + vec2(0.0, o.y), 0.0).r);
+  mid = min(mid, textureSampleLevel(mask, smp, i.uv - vec2(0.0, o.y), 0.0).r);
+  c = mix(c, vec3(0.13, 0.17, 0.24) * (1.0 + grain * 0.8), clamp(m.b, 0.0, 1.0) * 0.9);
+  c = mix(c, vec3(0.42, 0.39, 0.29), smoothstep(0.0, 0.5, m.r) * 0.3);
+  let water = mix(vec3(0.62, 0.50, 0.37), vec3(0.76, 0.64, 0.49), clamp(mid * mid * 0.45 + m.g * 0.5, 0.0, 1.0));
+  c = mix(c, water * (1.0 + grain * 0.45), smoothstep(0.1, 1.0, m.r) * 0.92);
   return vec4<f32>(c, 1.0);
 }
 "#;
@@ -95,6 +111,8 @@ struct Uni {
     now: f32,
     side: f32,
     ppp: f32,
+    river: f32,
+    pad: [f32; 3],
 }
 
 struct Hand {
@@ -122,7 +140,13 @@ pub struct Meander {
     dep_tex: wgpu::Texture,
     _plain: Texture,
     pipeline: wgpu::RenderPipeline,
-    bind: wgpu::BindGroup,
+    /// The water mask (half the screen's pixels), its size and the bind group that reads it; made
+    /// again when the screen's size changes.
+    mask: Option<(wgpu::Texture, [u32; 2], wgpu::BindGroup)>,
+    mask_painter: Painter,
+    bgl: wgpu::BindGroupLayout,
+    smp: wgpu::Sampler,
+    dep_view: wgpu::TextureView,
     uni: wgpu::Buffer,
     painter: Painter,
     /// The finger in the river: its id, where it was last (m), how far it has gone (points), the river's
@@ -223,23 +247,13 @@ impl Meander {
     }
 }
 
-fn lin(c: [f32; 3], a: f32) -> [f32; 4] {
-    [c[0] * a, c[1] * a, c[2] * a, a]
-}
-
-fn mix3(a: [f32; 3], b: [f32; 3], t: f32) -> [f32; 3] {
-    let t = t.clamp(0.0, 1.0);
-    [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]
-}
-
 fn smooth01(e0: f64, e1: f64, x: f64) -> f32 {
     let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
     (t * t * (3.0 - 2.0 * t)) as f32
 }
 
-const WATER: [f32; 3] = [0.76, 0.63, 0.47]; // the Beni's café-au-lait: white water, full of the Andes
-const LAKE: [f32; 3] = [0.14, 0.18, 0.27]; // the photograph's own oxbow lakes, sampled // a cut-off loop, cleared: black water
-const MARSH: [f32; 3] = [0.22, 0.30, 0.19];
+// the water's colours are in the shader (the Beni's café-au-lait: white water, full of the Andes;
+// the lakes the photograph's own oxbows' tone, sampled)
 
 impl Toy for Meander {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
@@ -278,19 +292,10 @@ impl Toy for Meander {
                 tex(1),
                 tex(2),
                 wgpu::BindGroupLayoutEntry { binding: 3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+                tex(4),
             ],
         });
         let dep_view = dep_tex.create_view(&Default::default());
-        let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("meander"),
-            layout: &bgl,
-            entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: uni.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&plain.view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&dep_view) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&smp) },
-            ],
-        });
         let shader = gpu.shader("meander-plain", WGSL);
         let pipeline = gpu.fullscreen_pipeline("meander-plain", &shader, &[&bgl], None);
         let painter = Painter::new(gpu);
@@ -303,7 +308,11 @@ impl Toy for Meander {
             dep_tex,
             _plain: plain,
             pipeline,
-            bind,
+            mask: None,
+            mask_painter: Painter::with_format(gpu, wgpu::TextureFormat::Rgba8Unorm),
+            bgl,
+            smp,
+            dep_view,
             uni,
             painter,
             hand: None,
@@ -474,6 +483,7 @@ impl Toy for Meander {
             );
             self.dirty = (NG, 0);
         }
+        let wpx = (W * s * ppp) as f32; // the channel's width in pixels
         let u = Uni {
             size: [ctx.width as f32, ctx.height as f32],
             centre: [c[0] as f32, c[1] as f32],
@@ -481,14 +491,44 @@ impl Toy for Meander {
             now: (self.river.year - self.epoch) as f32,
             side: SIDE as f32,
             ppp: ppp as f32,
+            river: wpx,
+            pad: [0.0; 3],
         };
         gpu.queue.write_buffer(&self.uni, 0, bytemuck::bytes_of(&u));
 
         let [wp, hp] = ctx.points();
         let px = move |w: [f64; 2]| -> [f32; 2] { [(((w[0] - c[0]) * s + wp * 0.5) * ppp) as f32, (((w[1] - c[1]) * s + hp * 0.5) * ppp) as f32] };
-        let wpx = (W * s * ppp) as f32; // the channel's width in pixels
         let year = self.river.year;
-        let p = &mut self.painter;
+        // the mask, half the screen's pixels
+        let msize = [(ctx.width / 2).max(1), (ctx.height / 2).max(1)];
+        if self.mask.as_ref().map_or(true, |m| m.1 != msize) {
+            let tex = gpu.texture(&wgpu::TextureDescriptor {
+                label: Some("water"),
+                size: wgpu::Extent3d { width: msize[0], height: msize[1], depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            });
+            let view = tex.create_view(&Default::default());
+            let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("meander"),
+                layout: &self.bgl,
+                entries: &[
+                    wgpu::BindGroupEntry { binding: 0, resource: self.uni.as_entire_binding() },
+                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&self._plain.view) },
+                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&self.dep_view) },
+                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&self.smp) },
+                    wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&view) },
+                ],
+            });
+            self.mask = Some((tex, msize, bind));
+        }
+        let mk = 0.5f32; // mask pixels a screen pixel
+        let mp = move |q: [f32; 2]| [q[0] * mk, q[1] * mk];
+        let p = &mut self.mask_painter;
         // the lakes: the loop's water clears to black over a few decades, its ends silt shut, then
         // it narrows to a marsh and the forest closes over it
         for o in &self.river.oxbows {
@@ -505,7 +545,6 @@ impl Toy for Meander {
             let clear = smooth01(0.0, if o.course { 6.0 } else { 20.0 }, age);
             let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.45, life * 0.9, age) };
             let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.55, life, age) };
-            let col = mix3(mix3(WATER, LAKE, clear), MARSH, marsh);
             let thin = if o.course { (smooth01(0.0, 14.0, age) * 1.6).min(0.92) } else { 0.15 * smooth01(0.0, 30.0, age) + 0.3 * smooth01(life * 0.3, life, age) };
             let width = wpx * 0.5 * (1.0 - thin);
             let span = (b - a).max(2) as f32;
@@ -513,7 +552,10 @@ impl Toy for Meander {
                 // tapering to points at both ends, like the real crescents
                 let e = ((i - a) as f32).min((b - 1 - i) as f32) / (span * 0.22);
                 let taper = e.clamp(0.0, 1.0).sqrt();
-                p.line(px(o.line[i]), px(o.line[i + 1]), (width * taper).max(0.5), 1.6 * ppp as f32, lin(col, 0.88 * fade));
+                // opaque in the mask (no seams where pieces overlap): r the river's water still in
+                // it, b the lake's darkness, both fading as it silts
+                let f = fade * (1.0 - 0.55 * marsh);
+                p.line(mp(px(o.line[i])), mp(px(o.line[i + 1])), (width * taper * mk).max(0.5), 1.6 * ppp as f32 * mk, [(1.0 - clear) * f, 0.0, clear * f, 1.0]);
             }
         }
         // the river: a pale bank of wet sand, then the water; a new course swells from a thread
@@ -538,12 +580,10 @@ impl Toy for Meander {
             .collect();
         let rw = |i: usize| r * (0.88 + 0.32 * bend[i]);
         for (i, w) in pts.windows(2).enumerate() {
-            p.line(w[0], w[1], (rw(i) + rw(i + 1)) * 0.5 + 1.6 * ppp as f32, 3.0 * ppp as f32, lin([0.50, 0.47, 0.36], 0.85));
-        }
-        for (i, w) in pts.windows(2).enumerate() {
             let k = (bend[i] + bend[i + 1]) * 0.5;
-            p.line(w[0], w[1], (rw(i) + rw(i + 1)) * 0.5, 1.8 * ppp as f32, lin(mix3(WATER, [0.80, 0.69, 0.54], k), 1.0));
+            p.line(mp(w[0]), mp(w[1]), (rw(i) + rw(i + 1)) * 0.5 * mk + 2.0 * ppp as f32 * mk, wpx * 0.3 * mk, [1.0, k, 0.0, 1.0]);
         }
+        let p = &mut self.painter;
         // a cut: the new short channel through the neck flashes as the river takes it
         for &(t0, at) in &self.flashes {
             let k = (1.0 - (self.t - t0) / 0.9).clamp(0.0, 1.0) as f32;
@@ -593,6 +633,9 @@ impl Toy for Meander {
         }
 
         let mut enc = gpu.device.create_command_encoder(&Default::default());
+        let (mtex, msize, _) = self.mask.as_ref().unwrap();
+        let mview = mtex.create_view(&Default::default());
+        self.mask_painter.render(gpu, &mut enc, &mview, *msize, Some([0.0, 0.0, 0.0, 0.0]));
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("meander"),
@@ -607,7 +650,7 @@ impl Toy for Meander {
                 occlusion_query_set: None,
             });
             rp.set_pipeline(&self.pipeline);
-            rp.set_bind_group(0, &self.bind, &[]);
+            rp.set_bind_group(0, &self.mask.as_ref().unwrap().2, &[]);
             rp.draw(0..3, 0..1);
         }
         self.painter.render(gpu, &mut enc, target, [ctx.width, ctx.height], None);
