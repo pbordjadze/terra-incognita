@@ -26,3 +26,9 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   window growing with the Earth's zoom until it is the glass. Out: the window shrinks back into its light as
   the Earth rises. Frost's light keeps its feathers over the window while the glass is bare. Battle Ink retired
   (its code at 3032c9a).
+- Row 245 rounds 5–6 (Nov 6, 2026, ET): the window grows from its light's true place to the glass exactly;
+  the starlings' small window holds the thick of the flock and widens to the reeds; Murmuration's first glide
+  waits 15 s so the flock holds when you arrive; Salt Flat at Bonneville (row 244) with its headlights' cones;
+  a pinch out inside a globe toy goes home once the toy's globe is whole or will go no farther. Unjudged from
+  Linux: the frame rate while a scene runs in its window during the dive (the toy is updated and drawn every
+  frame from the touch), touch, sound.

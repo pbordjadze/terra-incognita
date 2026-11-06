@@ -69,7 +69,10 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
     mark); the shell reads them through `toy_buttons`. None by default.
 - `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a light for each toy it
-  holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). Its data is the held toys' merged
+  holds (`doors.rs`), the toy opened inside it on a touch (`rooms.rs`). A scene toy (no globe of its own) opens as a window:
+  touched, its light shows the toy itself, live, its whole frame scaled into the light (`draw_window`), growing
+  with the Earth's zoom as Terra turns the light to the middle and falls toward it; out, it shrinks back
+  (painting-company row 245). `window_at` in `lib.rs` says what part of a toy's frame its small window holds. Its data is the held toys' merged
   (`tools/toys/terra/manifest.py`); CI checks it whenever a toy it holds changes. A toy added to Terra is a
   dependency in its `Cargo.toml`, a `Door` and a name in `doors.rs`/`lib.rs`, and its name in the manifest
   tool.
