@@ -1,4 +1,4 @@
-# Meander: handoff (Nov 4, 2026)
+# Meander: handoff (Nov 4, 2026; row 243's changes Nov 6, at the end)
 
 painting-company row 218. A river on the Rio Beni's real floodplain (Sentinel-2, 2024-08-15, today's river
 taken out) wandering by the Howard–Knutson curvature model; when a loop's neck closes it cuts through and
@@ -44,3 +44,17 @@ years of its movement). A tap near the river nudges its bank toward the finger.
   drawn wiggle survives longer).
 - The deposit grid (3 MB) is uploaded every third frame; its cost on the phone is unmeasured.
 - No ambient sound (struck notes at a cut and a new course only).
+
+## Row 243 (Nov 6, 2026): the push
+
+- The gesture is now a push (`River::push`, sim.rs): the channel within a fingertip (38 pt) of the finger is carried
+  with it (0.93 in the core, so it slips off after ~250 pt); every push leaves a `kick` (the ground there erodes up to
+  1 + 2.5 times as fast, fading over 45 years), and for ~10 s after a push `River::calm` holds the rest of the river back
+  (0.85), so the next cut is the pushed bend's, ~1.5 s after the lift. Rising pentatonic ticks + haptic every 450 m the
+  river gains. A tap nudges the bank and kicks it. Drawing a new course is gone (`extend`/`seed_wobble` still lay the
+  opening river).
+- The water is drawn by the backdrop shader from a mask the Painter paints at half the screen's pixels (Rgba8: r the
+  river, g shoals and the cut's light pulse, b a lake's darkness), so it takes the photograph's grain and has no seams.
+  Rings are still the Painter's on the target.
+- The deposit grid uploads only the rows the river changed since the last frame (a persistent half-float copy).
+- Not measured: frame rate and touch feel on a phone (the Linux check's update is ~1.4 ms on CPU).
