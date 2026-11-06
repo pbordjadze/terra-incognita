@@ -195,28 +195,30 @@ def meander():
 
 
 def jam():
-    # the ring from above at dusk: cars round it, and one knot of red brake lights
-    img = Image.new('RGBA', (N, N), (30, 34, 44, 255))
+    # Salt Flat: one convoy snaking across moonlit salt, its tracks behind it, the head's tail lights red
+    img = Image.new('RGBA', (N, N), (92, 102, 122, 255))
     d = ImageDraw.Draw(img)
-    c, r, w = N / 2, 360, 70
-    d.ellipse([c - r - w / 2, c - r - w / 2, c + r + w / 2, c + r + w / 2], fill=(18, 20, 26, 255))
-    d.ellipse([c - r + w / 2, c - r + w / 2, c + r - w / 2, c + r - w / 2], fill=(30, 34, 44, 255))
+    path = [(N * (0.12 + 0.76 * k), N * (0.5 + 0.26 * math.sin(k * 2.0 * math.pi + 0.6))) for k in [i / 400 for i in range(401)]]
+    for off in (-14, 14):
+        pts = []
+        for i in range(1, 368):
+            (x0, y0), (x1, y1) = path[i - 1], path[i]
+            l = math.hypot(x1 - x0, y1 - y0) or 1
+            pts.append((x1 - (y1 - y0) / l * off, y1 + (x1 - x0) / l * off))
+        d.line(pts, fill=(40, 46, 60, 255), width=5)
     reds = []
-    cars = [k * 360 / 16 for k in range(16)]
-    # the knot: five cars bunched at the upper right
-    cars = [a for a in cars if not 20 < a < 80] + [24 + 11 * k for k in range(5)]
-    for a in cars:
-        t = math.radians(a)
-        x, y = c + r * math.cos(t), c - r * math.sin(t)
-        hx, hy = -math.sin(t), -math.cos(t)
-        L, W = 34, 15
+    for k in range(6):
+        i = 360 - k * 58
+        (x0, y0), (x1, y1) = path[i - 3], path[i + 3]
+        l = math.hypot(x1 - x0, y1 - y0)
+        hx, hy = (x1 - x0) / l, (y1 - y0) / l
+        x, y = path[i]
+        L, W = 40, 19
         pts = [(x + hx * L * sx - hy * W * sy, y + hy * L * sx + hx * W * sy) for sx, sy in [(1, 1), (1, -1), (-1, -1), (-1, 1)]]
-        d.polygon(pts, fill=(222, 224, 228, 255))
-        if 20 < a < 80:
-            reds.append((x - hx * L, y - hy * L))
-    glow(img, reds, 16, (255, 40, 25, 230), 22)
+        d.polygon(pts, fill=(228, 230, 234, 255))
+        reds.append((x - hx * L, y - hy * L))
+    glow(img, reds, 13, (255, 40, 25, 230), 18)
     return img
-
 
 
 def frost():

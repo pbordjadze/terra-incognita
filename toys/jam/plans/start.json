@@ -1,8 +1,91 @@
-{ "_": "First sight and the core moment: the even flow, then a halo breathes round one car and one tap on it; the jam forms and its brake lights crawl backward round the ring; a second tap on the car farthest from it makes a second jam.",
-  "size": [1179, 2556], "ppp": 3, "seconds": 75, "fps": 30, "audio": true,
-  "events": [
-    { "t": 6.0, "tap": "invited" },
-    { "t": 45.0, "tap": "clear" }
-  ],
-  "shots": [{ "t": 1.0, "name": "flow" }, { "t": 3.0, "name": "invite" }, { "t": 6.3, "name": "tap" }, { "t": 12.0, "name": "forming" }, { "t": 20.0, "name": "jam" }, { "t": 30.0, "name": "later" }, { "t": 40.0, "name": "lap" }, { "t": 55.0, "name": "two" }, { "t": 74.0, "name": "end" }],
-  "film": { "from": 0, "to": 75, "every": 0.5 } }
+{
+ "_": "First sight and the core moment: convoys already on the salt, a halo on the head of the longest; one tap on it and its convoy stops car by car; a finger takes a car and leads it slowly, twice, its convoy after it; then holds the open salt for a light the cars come to circle.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 60,
+ "fps": 30,
+ "audio": true,
+ "events": [
+  {
+   "t": 5.0,
+   "tap": "invited"
+  },
+  {
+   "t": 20.0,
+   "drag": [
+    "head",
+    [
+     200,
+     520
+    ]
+   ],
+   "for": 4.0
+  },
+  {
+   "t": 24.5,
+   "drag": [
+    "head",
+    [
+     150,
+     300
+    ]
+   ],
+   "for": 4.0
+  },
+  {
+   "t": 34.0,
+   "hold": "open",
+   "for": 14.0
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.5,
+   "name": "open"
+  },
+  {
+   "t": 3.0,
+   "name": "invite"
+  },
+  {
+   "t": 5.5,
+   "name": "tap"
+  },
+  {
+   "t": 8.0,
+   "name": "wave"
+  },
+  {
+   "t": 12.0,
+   "name": "stopped"
+  },
+  {
+   "t": 24.0,
+   "name": "lead"
+  },
+  {
+   "t": 30.0,
+   "name": "after-lead"
+  },
+  {
+   "t": 40.0,
+   "name": "light"
+  },
+  {
+   "t": 47.0,
+   "name": "circling"
+  },
+  {
+   "t": 59.0,
+   "name": "end"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 60,
+  "every": 0.5
+ }
+}
