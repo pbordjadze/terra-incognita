@@ -435,7 +435,7 @@ impl Life {
                     // its tail lights red behind, the tracks it leaves fading
                     let w = a * halo;
                     p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.16, 0.17, 0.21, 0.95 * w]);
-                    p.disc(c, (r * 0.8 * k) as f32, (r * 0.5 * k) as f32, [0.42, 0.42, 0.46, 0.35 * w]);
+                    p.disc(c, (r * 0.8 * k) as f32, (r * 0.5 * k) as f32, [0.36, 0.34, 0.33, 0.35 * w]);
                     let path = |s: f64| -> [f32; 2] {
                         let x = s;
                         let y = 0.32 * (s * 2.2 + 0.6 * (tm * 0.21).sin()).sin();
@@ -457,6 +457,9 @@ impl Life {
                             continue;
                         }
                         let (head, tail) = (path(s + 0.04), path(s - 0.03));
+                        // its headlights' cone, warm on the dark salt ahead of it
+                        let ahead = path(s + 0.2);
+                        p.glow(head, ahead, (0.1 * r * k) as f32, (0.16 * r * k) as f32, [1.0, 0.82, 0.55, 0.45 * a]);
                         p.glow(head, head, (0.12 * r * k) as f32, (0.18 * r * k) as f32, [1.0, 0.95, 0.8, 0.55 * a]);
                         p.disc(head, 0.9 * kf, 1.0, [1.0, 0.97, 0.88, 0.95 * a]);
                         p.disc(tail, 0.7 * kf, 1.0, [0.95, 0.15, 0.1, 0.9 * a]);

@@ -30,10 +30,13 @@ const EARTH_REACH: f64 = 24.0;
 const FADE: f64 = 0.7;
 /// Where in a scene's own frame the window onto it centres while it is small (fractions of the glass):
 /// what the toy is, where it is in its first frame (Frost's ice grows from the window's foot).
-fn window_at(id: &str) -> [f64; 2] {
+/// The third number is how much of the frame's width the small window holds (the starlings': the thick of
+/// the flock alone, a dark knot in the dusk as the light shows it, widening to the reeds and the sky).
+fn window_at(id: &str) -> [f64; 3] {
     match id {
-        "frost" => [0.5, 0.8],
-        _ => [0.5, 0.5],
+        "frost" => [0.5, 0.8, 1.0],
+        "murmuration" => [0.55, 0.36, 0.45],
+        _ => [0.5, 0.5, 1.0],
     }
 }
 
@@ -341,6 +344,12 @@ impl Terra {
         ctx.points()
     }
 
+    /// Where the Earth rises to after a toy (from the camera over its place): one place for it, the
+    /// opening's own minute (row 246) may choose it.
+    fn rise_to(&self, from: Camera) -> Camera {
+        Camera { zoom: 1.4, roll: 0.0, ..from }
+    }
+
     fn inside(&self) -> bool {
         matches!(self.state, State::Opening { .. } | State::Inside | State::Closing { .. })
     }
@@ -406,7 +415,7 @@ impl Terra {
         if self.scene && !self.reduce_motion {
             self.room_level.store(1f32.to_bits(), Ordering::Relaxed);
             let from = self.globe.camera;
-            let to = Camera { zoom: 1.4, roll: 0.0, ..from };
+            let to = self.rise_to(from);
             let dur = 1.6 + 0.35 * (from.zoom / to.zoom).ln().abs();
             self.state = State::Rising { from, to, t0: t, dur };
             return;
@@ -456,7 +465,13 @@ impl Terra {
             }
             Phase::Up | Phase::Cancel => {
                 let out = match (self.pinch, spread(&self.inside_fingers)) {
-                    (Some((d0, z0)), Some(d)) => e.phase == Phase::Up && z0 * d / d0 < 0.8,
+                    // pinched in, ending at (or toward) the toy's whole Earth: its own hand stops a pinch at its
+                    // least zoom, so the toy's camera is asked too, not only the fingers' spread
+                    (Some((d0, z0)), Some(d)) => {
+                        let now = self.room.as_ref().and_then(|r| r.camera()).map_or(z0, |c| c.zoom);
+                        // (or pinched hard against a toy whose globe will go no farther out: it is at its floor)
+                        e.phase == Phase::Up && d / d0 < 0.85 && (z0 * d / d0 < 0.8 || now < 1.15 || (d / d0 < 0.65 && now > z0 * 0.85))
+                    }
                     _ => false,
                 };
                 self.inside_fingers.remove(&e.id);
@@ -569,11 +584,11 @@ impl Terra {
         let rad = r0 * (r1 / r0).powf(g);
         // the frame's scale: the window shows the frame's whole width until it is as wide as the glass, then
         // the frame unscaled; its middle at the window's centre (where the dive brings the light)
-        let m = (rad * 2.0 / w).min(1.0);
+        let at = window_at(self.life.doors[self.door].id);
+        let m = (rad * 2.0 / (w * at[2])).min(1.0);
         // (a toy whose subject is off the middle: there while the window is small, sliding to the middle as
         // the window grows past the glass's width, kept inside the frame)
-        let at = window_at(self.life.doors[self.door].id);
-        let full = ((rad * 2.0 / w).ln() / (2.0 * r1 / w).ln()).clamp(0.0, 1.0);
+        let full = ((rad * 2.0 / (w * at[2])).ln() / (2.0 * r1 / (w * at[2])).ln()).clamp(0.0, 1.0);
         let k_mid = full * full * (3.0 - 2.0 * full);
         let half = rad / m;
         let ay = (at[1] * h).clamp(half.min(h * 0.5), h - half.min(h * 0.5));
@@ -781,7 +796,7 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: 1.4, roll: 0.0, ..from };
+                    let to = self.rise_to(from);
                     let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
