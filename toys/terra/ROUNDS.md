@@ -22,3 +22,6 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   but caught by the testers' late stills; passed to the toys' sessions): one tap home with a card up (the kit's Host
   lets a tap on a toy's own button close the card and press it; five of six newcomers had needed two). Plan
   `first-home` (strict); the testers now shoot 0.3 s after each touch.
+- First minute, round 3 (Nov 6; row 246; weakest: left alone the Earth turned its lights away, bare Pacific by 40 s):
+  the idle turn lingers where lights face the reader and crosses the empty sea between them more briskly, so a
+  minute's look keeps the Americas' lights and a long look tours every one.

@@ -257,6 +257,8 @@ pub struct Terra {
     /// A finger on the Earth mark.
     earth_finger: Option<u64>,
     reduce_motion: bool,
+    /// The idle turn's pace now, degrees a second (eased toward what the lights in view ask).
+    drift: f64,
 }
 
 /// The month now (0 = January), from the clock (a fixed month without one).
@@ -540,6 +542,7 @@ impl Toy for Terra {
             inside_fingers: Default::default(),
             pinch: None,
             reduce_motion: ctx.reduce_motion,
+            drift: 1.6,
         })
     }
 
@@ -595,10 +598,26 @@ impl Toy for Terra {
         self.life.update(t, dt);
         match self.state {
             State::Atlas => {
-                // left alone, the Earth turns slowly under the reader (west to east, as it does)
+                // left alone, the Earth turns slowly under the reader (west to east, as it does), lingering
+                // where its lights face the reader and crossing the empty sea between them more briskly, so
+                // a minute's look never turns them all away (painting-company row 246: untouched, the
+                // opening had turned to bare Pacific by 40 s)
                 if !self.reduce_motion && !self.globe.hand.busy() && self.downs.is_empty() {
                     let k = ease((t - self.last_touch - 4.0) / 3.0);
-                    self.globe.camera.lon -= 1.6 * k * dt;
+                    let [w, h] = Self::points(ctx);
+                    let seen: f64 = self
+                        .visible_doors()
+                        .iter()
+                        .map(|&(_, p)| {
+                            // a light counts the more the nearer the middle of the screen it is
+                            let dx = (p[0] / w - 0.5).abs() * 2.0;
+                            let dy = (p[1] / h - 0.5).abs() * 2.0;
+                            (1.0 - dx.max(dy)).clamp(0.0, 1.0).sqrt()
+                        })
+                        .sum();
+                    let want = 1.6 * (2.6 / (1.0 + 1.3 * seen)).clamp(0.3, 2.6);
+                    self.drift += (want - self.drift) * (dt / 3.0).min(1.0);
+                    self.globe.camera.lon -= self.drift * k * dt;
                 }
             }
             State::Diving { from, to, t0, dur } => {
