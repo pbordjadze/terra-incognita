@@ -34,11 +34,11 @@ const WIDE: f64 = 1.4;
 /// About one car to this many square metres of salt on screen.
 const AREA: f64 = 850.0;
 /// Seconds of night already run before the toy opens (so it opens mid-story).
-const BEFORE: f64 = 30.0;
+const BEFORE: f64 = 25.0;
 /// Tyre tracks: stamped every this many seconds, fading by half in HALF_LIFE.
 const STAMP: f64 = 0.1;
-const HALF_LIFE: f64 = 30.0;
-const FADE_EVERY: f64 = 2.0;
+const HALF_LIFE: f64 = 12.0;
+const FADE_EVERY: f64 = 1.0;
 
 pub struct Jam {
     flat: Flat,
@@ -102,9 +102,13 @@ fn layout_of(points: [f64; 2]) -> Layout {
     Layout { c: [points[0] * 0.5, points[1] * 0.5], s: 2.6 * reading(points) }
 }
 
+/// The salt the cars drive on reaches past the screen on every side: convoys turn back out in the dark
+/// and come in again, so the screen's edge is never a road.
+const BEYOND: f64 = 1.45;
+
 fn half_of(points: [f64; 2]) -> [f64; 2] {
     let l = layout_of(points);
-    [points[0] * 0.5 / l.s, points[1] * 0.5 / l.s]
+    [points[0] * 0.5 / l.s * BEYOND, points[1] * 0.5 / l.s * BEYOND]
 }
 
 impl Jam {
@@ -141,9 +145,14 @@ impl Jam {
 
     /// The head of the longest convoy (favouring one near the middle), and how many follow it.
     fn longest(&self) -> (usize, usize) {
-        let h = self.flat.half;
+        // on screen (the salt reaches past it), well inside its edges
+        let h = [self.flat.half[0] / BEYOND, self.flat.half[1] / BEYOND];
         (0..self.flat.cars.len())
             .filter(|&i| self.flat.cars[i].leader.is_none())
+            .filter(|&i| {
+                let p = self.flat.cars[i].p;
+                p[0].abs() < 0.75 * h[0] && p[1].abs() < 0.8 * h[1]
+            })
             .map(|i| {
                 let p = self.flat.cars[i].p;
                 let mid = 1.0 - 0.6 * (p[0] / h[0]).hypot(p[1] / h[1]).min(1.0);
@@ -228,7 +237,7 @@ impl Toy for Jam {
         let (fade, fade_bind) = fade_pipeline(&ctx.gpu);
         let points = ctx.points();
         let half = half_of(points);
-        let n = ((4.0 * half[0] * half[1]) / AREA).round().clamp(40.0, 260.0) as usize;
+        let n = ((4.0 * half[0] * half[1]) / AREA).round().clamp(40.0, 400.0) as usize;
         let mut flat = Flat::new(0x5a17_f1a7, half, n);
         let mut h: u32 = 0x9e3779b9;
         let paint = (0..n)
@@ -448,8 +457,9 @@ impl Toy for Jam {
         }
         let lamp_glow = |p: &mut Painter, w: [f64; 2], a: f32| {
             let q = px(w);
-            p.glow(q, q, 1.0 * m, 9.0 * m, [1.0, 0.86, 0.60, 0.20 * a]);
-            p.glow(q, q, 0.3 * m, 1.6 * m, [1.0, 0.95, 0.85, 0.8 * a]);
+            p.glow(q, q, 4.0 * m, 22.0 * m, [1.0, 0.80, 0.50, 0.16 * a]);
+            p.glow(q, q, 1.2 * m, 5.0 * m, [1.0, 0.86, 0.62, 0.35 * a]);
+            p.glow(q, q, 0.5 * m, 1.2 * m, [1.0, 0.96, 0.88, 0.9 * a]);
         };
         let held: Vec<([f64; 2], f32)> = self.fingers.iter().filter(|f| f.mode == Mode::Lamp).map(|f| (self.to_world(&l, f.at), ((self.t - f.t) / 0.3).clamp(0.0, 1.0) as f32)).collect();
         for (w, come) in held {
@@ -610,7 +620,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let m = (px - u.p0.xy) / u.scale;          // metres from the centre
   let pxm = 1.0 / u.scale;
   // the moonlit crust
-  var col = vec3<f32>(0.40, 0.44, 0.52);
+  var col = vec3<f32>(0.55, 0.59, 0.67);
   let damp = smoothstep(0.35, 0.75, fbm(m * 0.018 + vec2<f32>(3.1, 1.7)));
   col = col * (1.0 - 0.22 * damp) * (0.93 + 0.12 * fbm(m * 0.21)) * (0.97 + 0.05 * noise2(m * 2.7));
   // the polygons: cells about 2.5 m across, their ridges raised and catching the light

@@ -340,7 +340,10 @@ impl Flat {
                 let w = [f[0] - c.p[0], f[1] - c.p[1]];
                 let dist = w[0].hypot(w[1]);
                 want = w[1].atan2(w[0]);
-                acc = 2.0 * idm(c.v, 16.0, (dist - CAR * 0.5).max(0.1), c.v * 0.3);
+                // as fast as the finger is far, slower while it turns toward it (no orbiting the finger)
+                let off = wrap(want - c.h).cos().max(0.4);
+                let vdes = (dist * 0.9).min(20.0) * off;
+                acc = (vdes - c.v) * 2.5;
             } else if let Some(j) = c.leader {
                 let o = &self.cars[j];
                 // after the leader's rear, a little behind it so the follower takes the leader's line
@@ -366,7 +369,9 @@ impl Flat {
                     if dist < LAMP_SEE {
                         let to = w[1].atan2(w[0]);
                         // the tangent, leaning in or out toward the circle
-                        let lean = ((dist - LAMP_R) / LAMP_R).clamp(-1.0, 1.0) * 0.9;
+                        // each driver its own orbit, so they circle in lanes rather than pile up
+                        let r = LAMP_R * (1.0 + 0.9 * (c.wander * 7.3).sin().abs());
+                        let lean = ((dist - r) / r).clamp(-1.0, 1.0) * 0.9;
                         want = to - std::f64::consts::FRAC_PI_2 + lean;
                         acc = idm(c.v, c.v0 * 0.85, 1e3, 0.0);
                     }
@@ -394,7 +399,8 @@ impl Flat {
             let follow_acc = acc;
             let mut held = false;
             for (j, o) in self.cars.iter().enumerate() {
-                if j == i || Some(j) == c.leader {
+                // a car the finger leads goes where it is led (it nudges through; nothing overlaps)
+                if j == i || Some(j) == c.leader || led.is_some() {
                     continue;
                 }
                 let w = [o.p[0] - c.p[0], o.p[1] - c.p[1]];
@@ -442,7 +448,7 @@ impl Flat {
             let c = &mut self.cars[i];
             c.blocked = if held { c.blocked + dt } else { (c.blocked - dt * 2.0).max(0.0) };
             let wobble = 0.0;
-            c.acc = (acc + wobble).clamp(-9.0, if led { 3.5 } else { A * 1.2 });
+            c.acc = (acc + wobble).clamp(-9.0, if led { 6.0 } else { A * 1.2 });
             c.v = (c.v + c.acc * dt).max(0.0);
             if c.stopping && c.v <= 0.0 {
                 c.stopping = false;
@@ -452,7 +458,8 @@ impl Flat {
             }
             // steer: toward the wanted heading, never sharper than the turning circle
             let kmax = 1.0 / TURN;
-            let k = (dh * 1.6 / c.v.max(2.0)).clamp(-kmax, kmax);
+            let gain = if led { 4.0 } else { 1.6 };
+            let k = (dh * gain / c.v.max(2.0)).clamp(-kmax, kmax);
             c.k += (k - c.k) * (dt * 6.0).min(1.0);
             c.h = wrap(c.h + c.v * c.k * dt);
             c.p[0] += c.h.cos() * c.v * dt;
@@ -619,5 +626,24 @@ mod tests {
         run(&mut f, 30.0);
         let near = f.cars.iter().filter(|c| c.p[0].hypot(c.p[1]) < LAMP_R * 2.2).count();
         assert!(near >= 5, "{near} near the light");
+    }
+}
+
+#[cfg(test)]
+mod lead {
+    use super::*;
+
+    #[test]
+    fn a_led_car_comes_to_the_finger() {
+        let mut f = Flat::new(5, [110.0, 240.0], 120);
+        f.step(5.0);
+        let i = 7;
+        let to = [f.cars[i].p[0] + 30.0, f.cars[i].p[1] - 40.0];
+        f.hands = vec![Hand::Lead(i, to)];
+        let d0 = (f.cars[i].p[0] - to[0]).hypot(f.cars[i].p[1] - to[1]);
+        // even with the finger behind it, the car turns round and comes within six seconds
+        f.step(6.0);
+        let d = (f.cars[i].p[0] - to[0]).hypot(f.cars[i].p[1] - to[1]);
+        assert!(d < 8.0, "from {d0:.0} m to {d:.0} m");
     }
 }
