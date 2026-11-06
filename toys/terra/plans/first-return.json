@@ -1,0 +1,4 @@
+{ "_": "Home is where it was (painting-company row 246): into Fireflies, home by the Earth mark, and the lights the reader first saw are there again: Bell's, at the bottom of the Americas, is touched by name (a light not on screen is a plan error) and opens.",
+  "seconds": 18, "fps": 20, "strict_taps": true,
+  "events": [{ "t": 0.5, "tap": "fireflies" }, { "t": 7.0, "tap": "earth" }, { "t": 13.0, "tap": "bell" }],
+  "shots": [{ "t": 0.4, "name": "opening" }, { "t": 12.9, "name": "home" }, { "t": 17.5, "name": "bell" }] }

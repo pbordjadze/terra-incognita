@@ -219,13 +219,16 @@ impl Toy for Bell {
     fn update(&mut self, ctx: &mut Ctx, t: f64, dt: f64) {
         self.t = t;
         self.globe.update(&ctx.gpu, ctx.assets.as_ref(), t, dt);
-        // left alone, the Earth is struck now and then from where it really was
-        if t >= self.next_idle && t - self.last_touch > 20.0 {
+        // left alone, the Earth is struck now and then from where it really was: soon after a strike has
+        // rung out (8 s), and every 11-17 s after, so it is never long a still globe (painting-company row
+        // 246: newcomers who came into Bell through Terra saw one ring, then a still pale globe for 20 s and
+        // more, and took it for a dive that failed)
+        if t >= self.next_idle && t - self.last_touch > 8.0 {
             let (lon, lat) = GREAT[self.idle_k % GREAT.len()];
             let first = self.idle_k == 0;
             self.idle_k += 1;
-            self.strike(ctx, LonLat::new(lon, lat), if first { 0.85 } else { 0.5 });
-            self.next_idle = t + 28.0 + 9.0 * ((self.idle_k as f64 * 2.39).sin() + 1.0);
+            self.strike(ctx, LonLat::new(lon, lat), if first { 0.85 } else { 0.6 });
+            self.next_idle = t + 11.0 + 3.0 * ((self.idle_k as f64 * 2.39).sin() + 1.0);
         }
         let longest = (0..MODES.len()).map(|i| modes::heard(i).1).fold(0.0, f64::max);
         self.strikes.retain(|s| t - s.t0 < longest * 6.0);

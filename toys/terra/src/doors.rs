@@ -240,19 +240,64 @@ impl Life {
         self.shown(globe)[i]
     }
 
-    /// The light's size, points: grows a little as the reader comes closer.
+    /// The light's size, points: grows a little as the reader comes closer, and with the screen (the reading
+    /// scale twice: a big screen's Earth is held farther off and is larger, and its lights must read from
+    /// across it as a phone's do; painting-company row 246).
     pub fn size(globe: &Globe) -> f64 {
-        13.0 * globe.reading() * globe.camera.zoom.clamp(1.0, 5.0).sqrt()
+        13.0 * globe.reading().powi(2) * globe.camera.zoom.clamp(1.0, 5.0).sqrt()
     }
 
-    /// The light under a point, if any (the nearest within reach).
+    /// Where on screen a light can be touched (points): where it is shown, and the parts of its likeness a
+    /// finger goes for (the whales themselves, the fireflies' and the mold's cities), moved with it when it
+    /// is eased apart from a crowd. A light is touched wherever it is seen (painting-company row 246: a
+    /// newcomer's tap on a whale's song-rings, 70 points from the light's middle, did nothing).
+    pub fn parts(&self, globe: &Globe, i: usize, shown: ([f64; 2], f64)) -> Vec<[f64; 2]> {
+        let mut out = vec![shown.0];
+        let truth = self.true_spot(globe, i).0;
+        let (ox, oy) = (shown.0[0] - truth[0], shown.0[1] - truth[1]);
+        let mut add = |ll: [f64; 2]| {
+            let (q, f) = globe.project(LonLat::new(ll[0], ll[1]));
+            if f > 0.2 {
+                out.push([q[0] + ox, q[1] + oy]);
+            }
+        };
+        match self.doors[i].id {
+            "whales" => {
+                for ll in self.whale_spots().into_iter().flatten() {
+                    add([ll.lon, ll.lat]);
+                }
+            }
+            "fireflies" => FIREFLY_CITIES.iter().for_each(|&ll| add(ll)),
+            "mold" => MOLD_CITIES.iter().for_each(|&ll| add(ll)),
+            _ => {}
+        }
+        out
+    }
+
+    /// The light under a point, if any: the nearest whose middle or likeness is within reach (a light's
+    /// own size, at least a fingertip's 30 points at the reading scale).
     pub fn hit(&self, globe: &Globe, p: [f64; 2]) -> Option<usize> {
-        let reach = (Self::size(globe) * 1.8).max(30.0);
+        let reach = (Self::size(globe) * 1.8).max(30.0 * globe.reading());
+        let part_reach = 24.0 * globe.reading();
+        let shown = self.shown(globe);
         (0..self.doors.len())
             .filter_map(|i| {
-                let (s, facing) = self.spot(globe, i);
-                let d = (s[0] - p[0]).hypot(s[1] - p[1]);
-                (facing > 0.35 && d < reach).then_some((i, d))
+                let (s, facing) = shown[i];
+                if facing <= 0.35 {
+                    return None;
+                }
+                let parts = self.parts(globe, i, shown[i]);
+                // the middle within reach, or a part of the likeness within a fingertip (counted a little
+                // farther, so a middle wins over a neighbour's part)
+                let mid = (s[0] - p[0]).hypot(s[1] - p[1]);
+                let part = parts[1..].iter().map(|q| (q[0] - p[0]).hypot(q[1] - p[1])).fold(f64::INFINITY, f64::min);
+                if mid < reach {
+                    Some((i, mid))
+                } else if part < part_reach {
+                    Some((i, part + reach * 0.5))
+                } else {
+                    None
+                }
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(i, _)| i)
@@ -323,7 +368,7 @@ impl Life {
             }
             // a soft halo of its colour, so it reads from across the Earth
             p.disc(c, (r * 1.15 * k) as f32, (r * 1.1 * k) as f32, [1.0, 0.99, 0.95, 0.55 * a * halo * (1.0 - globe.night)]);
-            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.22 * a * halo]);
+            p.disc(c, (r * 1.0 * k) as f32, (r * 1.0 * k) as f32, [tint[0], tint[1], tint[2], 0.32 * a * halo]);
             match d.id {
                 "whales" => {
                     if let Some(spots) = self.whale_spots() {
@@ -334,10 +379,10 @@ impl Life {
                                 let ph = (tm * 0.42 + j as f64 * 0.5 + w as f64 * 0.27).rem_euclid(1.0);
                                 let rr = r * (0.25 + 3.2 * ph);
                                 let col = cols[w];
-                                p.ring(wc, (rr * k) as f32, 1.3 * kf, 1.0, [col[0], col[1], col[2], ((1.0 - ph).powf(1.6) * 0.95) as f32 * a]);
+                                p.ring(wc, (rr * k) as f32, 1.7 * kf, 1.0, [col[0], col[1], col[2], ((1.0 - ph).powf(1.6) * 0.95) as f32 * a]);
                             }
                             let col = cols[w];
-                            p.disc(wc, 2.4 * kf, 1.0, [col[0], col[1], col[2], 0.95 * a]);
+                            p.disc(wc, 3.0 * kf, 1.0, [col[0], col[1], col[2], 0.95 * a]);
                         }
                     }
                 }
@@ -493,8 +538,8 @@ impl Life {
                 _ => {
                     // a toy without a likeness of its own yet: a light of its colour, breathing
                     let ph = (tm / 3.0 + i as f64 * 0.37).rem_euclid(1.0);
-                    p.ring(c, ((r * (0.3 + 1.2 * ph)) * k) as f32, 1.6 * kf, 1.2, [tint[0], tint[1], tint[2], ((1.0 - ph) * 0.85) as f32 * a]);
-                    p.disc(c, 3.0 * kf, 1.0, [tint[0], tint[1], tint[2], 0.95 * a]);
+                    p.ring(c, ((r * (0.3 + 1.2 * ph)) * k) as f32, 2.1 * kf, 1.2, [tint[0], tint[1], tint[2], ((1.0 - ph) * 0.85) as f32 * a]);
+                    p.disc(c, 3.6 * kf, 1.0, [tint[0], tint[1], tint[2], 0.95 * a]);
                 }
             }
             // touched: it stirs (a ring of its colour going out)

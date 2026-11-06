@@ -85,7 +85,10 @@ fn field(g: vec3f) -> vec4f {
     // the swells as a soft tint, never darker than a shadow on land; the surface wave as light
     var lit = col * (1.0 + 0.14 * min(s, 0.0)) + vec3f(1.0, 0.97, 0.9) * 0.18 * max(s, 0.0);
     lit = lit * mix(vec3f(1.0), select(vec3f(0.95, 0.99, 1.05), vec3f(1.05, 1.01, 0.95), warm > 0.0), abs(warm) * 0.6);
-    lit += vec3f(1.0, 0.95, 0.82) * 0.42 * tanh(max(ring_light, 0.0) * 2.0);
+    // the surface wave: a ring of warm gold laid over the ground, not light added to it, so it reads on the
+    // pale day globe as on the night one (painting-company row 246: white on pale blue read as nothing)
+    let rl = tanh(max(ring_light, 0.0) * 6.0);
+    lit = mix(lit, vec3f(0.98, 0.66, 0.24), 0.62 * rl) + vec3f(1.0, 0.95, 0.82) * 0.12 * rl;
     col = mix(col, lit, on);
     return vec4f(col, 1.0);
 }

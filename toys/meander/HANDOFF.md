@@ -47,6 +47,8 @@ years of its movement). A tap near the river nudges its bank toward the finger.
 
 ## Row 243 (Nov 6, 2026): the push
 
+Shipped as `meander-build-169` (2:10 AM ET, Nov 6), from main 502e1be; the IPA opened in the Simulator with Metal's validation on.
+
 - The gesture is now a push (`River::push`, sim.rs): the channel within a fingertip (38 pt) of the finger is carried
   with it (0.93 in the core, so it slips off after ~250 pt); every push leaves a `kick` (the ground there erodes up to
   1 + 2.5 times as fast, fading over 45 years), and for ~10 s after a push `River::calm` holds the rest of the river back

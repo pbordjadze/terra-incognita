@@ -1,0 +1,4 @@
+{ "_": "A light is touched wherever it is seen (painting-company row 246): a tap on New York, one of the fireflies' outlying cities, far from the light's middle, falls into Fireflies; strict, so a miss fails CI.",
+  "seconds": 6, "fps": 20, "strict_taps": true,
+  "events": [{ "t": 1.5, "tap": { "lonlat": [-74.01, 40.71] } }],
+  "shots": [{ "t": 1.4, "name": "before" }, { "t": 5.5, "name": "inside" }] }
