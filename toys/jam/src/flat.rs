@@ -32,7 +32,7 @@ pub const SEE: f64 = 42.0;
 pub const CONE: f64 = 0.95;
 /// A tap: brake this hard (m/s²) to a stop, stand this long (s).
 pub const TAP_BRAKE: f64 = 7.0;
-pub const TAP_HOLD: f64 = 1.0;
+pub const TAP_HOLD: f64 = 2.0;
 /// A held finger on open ground: a light the cars nearby circle at this radius (m), seen this far.
 pub const LAMP_R: f64 = 13.0;
 pub const LAMP_SEE: f64 = 110.0;
@@ -62,6 +62,9 @@ pub struct Car {
     pub lights: f64,
     /// Seconds held up by a car that isn't the one it follows (a car across its nose).
     pub blocked: f64,
+    /// What set the speed last tick: 0 the car ahead it follows (or none), 1 another car across or
+    /// ahead of it, 2 a tap.
+    pub cause: u8,
     wander: f64,
     /// The way a driver on its own means to go (radians).
     aim: f64,
@@ -160,7 +163,7 @@ impl Flat {
         let patience = self.patience();
         let wander = self.uni() * 100.0;
         let following = self.uni() * patience * 0.6;
-        self.cars.push(Car { p, h, v: v0 * 0.8, acc: 0.0, k: 0.0, v0, leader: None, following, patience, bored: 0.0, swerve: 0.0, stopping: false, brake: 0.0, lights: 0.0, blocked: 0.0, wander, aim: h });
+        self.cars.push(Car { p, h, v: v0 * 0.8, acc: 0.0, k: 0.0, v0, leader: None, following, patience, bored: 0.0, swerve: 0.0, stopping: false, brake: 0.0, lights: 0.0, blocked: 0.0, cause: 0, wander, aim: h });
     }
 
     fn patience(&mut self) -> f64 {
@@ -277,13 +280,17 @@ impl Flat {
                 if dist > reach || dist < 0.5 {
                     continue;
                 }
+                // not one cut in right under your nose (you'd have to stamp on the brake)
+                if !keep && dist < CAR + S0 + c.v * T * 0.8 {
+                    continue;
+                }
                 let off = ((w[0] * d[0] + w[1] * d[1]) / dist).clamp(-1.0, 1.0).acos();
                 let cone = if keep { CONE * 1.5 } else { CONE };
                 if off > cone {
                     continue;
                 }
                 // going roughly the same way (no chasing a car coming at you)
-                if (o.h - c.h).cos() < -0.2 {
+                if (o.h - c.h).cos() < if keep { -0.2 } else { 0.4 } {
                     continue;
                 }
                 let mut s = dist * (1.0 + 1.6 * off);
@@ -328,7 +335,7 @@ impl Flat {
         }
         let n = self.cars.len();
         let lamps: Vec<[f64; 2]> = self.hands.iter().filter_map(|h| if let Hand::Lamp(p) = h { Some(*p) } else { None }).collect();
-        let mut out: Vec<(f64, f64, bool)> = Vec::with_capacity(n); // (acc, desired heading change, held up)
+        let mut out: Vec<(f64, f64, bool, u8)> = Vec::with_capacity(n); // (acc, desired heading change, held up)
         for i in 0..n {
             let c = &self.cars[i];
             let d = c.dir();
@@ -398,6 +405,7 @@ impl Flat {
             // whatever else is in front: keep the gap and steer a little away; held up a while by
             // someone across its nose, a driver creeps round them
             let follow_acc = acc;
+            let mut cause = 0u8;
             let mut held = false;
             for (j, o) in self.cars.iter().enumerate() {
                 // a car the finger leads goes where it is led (it nudges through; nothing overlaps)
@@ -406,11 +414,11 @@ impl Flat {
                 }
                 let w = [o.p[0] - c.p[0], o.p[1] - c.p[1]];
                 let along = w[0] * d[0] + w[1] * d[1];
-                if along <= 0.0 || along > 16.0 {
+                if along <= 0.0 || along > 26.0 {
                     continue;
                 }
                 let side = -w[0] * d[1] + w[1] * d[0];
-                if side.abs() > 4.0 {
+                if side.abs() > 5.0 {
                     continue;
                 }
                 // only what is truly ahead (not alongside) holds a driver up
@@ -420,10 +428,12 @@ impl Flat {
                 // open ground: drivers go round one another, and brake only when about to touch
                 if ahead && gap < 2.5 {
                     let closing = c.v - o.v * same.max(0.0);
-                    acc = acc.min(idm(c.v, c.v0, gap.max(0.2), closing.max(0.0) + 0.5));
+                    let brake = idm(c.v, c.v0, gap.max(0.2), closing.max(0.0) + 0.5);
+                    // across your nose: ease off and swerve; only about to touch is a hard stop
+                    acc = acc.min(if same > 0.3 || gap < 0.8 { brake } else { brake.max(-2.5) });
                 }
                 held |= ahead && gap < 3.0 && !(same > 0.3 && o.v > 1.0);
-                let push = (1.0 - along / 16.0) * if same > 0.3 { 0.7 } else { 1.4 } * if c.blocked > 0.6 { 2.5 } else { 1.0 };
+                let push = (1.0 - along / 26.0) * if same > 0.3 { 0.8 } else { 2.0 } * if c.blocked > 0.6 { 2.5 } else { 1.0 };
                 // weave behind a crossing car: away from where it is, toward where it came from
                 let s = if side.abs() < 0.3 && same <= 0.3 { -((o.h - c.h).sin()).signum() } else { side.signum() };
                 want -= s * push;
@@ -432,7 +442,11 @@ impl Flat {
                 // creep: no faster than a walk, wheel turned away
                 acc = follow_acc.min(idm(c.v, 1.6, 1e3, 0.0));
             }
+            if acc < follow_acc - 0.01 {
+                cause = 1;
+            }
             if c.stopping || c.brake > 0.0 && c.v < 0.05 {
+                cause = 2;
                 acc = if c.v > 0.0 { -TAP_BRAKE } else { 0.0 };
             }
             let held = held && c.v < 1.0;
@@ -440,13 +454,14 @@ impl Flat {
             if dh.abs() > 2.6 {
                 dh = dh.abs() * if c.k >= 0.0 { 1.0 } else { -1.0 };
             }
-            out.push((acc, dh, held));
+            out.push((acc, dh, held, cause));
         }
         let half = self.half;
         for i in 0..n {
-            let (acc, dh, held) = out[i];
+            let (acc, dh, held, cause) = out[i];
             let led = self.led(i).is_some();
             let c = &mut self.cars[i];
+            c.cause = cause;
             c.blocked = if held { c.blocked + dt } else { (c.blocked - dt * 2.0).max(0.0) };
             let wobble = 0.0;
             c.acc = (acc + wobble).clamp(if led { -40.0 } else { -9.0 }, if led { 40.0 } else { A * 1.2 });
@@ -466,7 +481,9 @@ impl Flat {
             c.h = wrap(c.h + c.v * c.k * dt);
             c.p[0] += c.h.cos() * c.v * dt;
             c.p[1] += c.h.sin() * c.v * dt;
-            let braking = (c.acc < -1.6 && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || c.leader.is_some()));
+            // brake lights for stamping on it behind the car you follow; easing off round a stranger barely shows
+            let hard = if c.cause == 1 { -6.5 } else { -2.2 };
+            let braking = (c.acc < hard && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || (c.leader.is_some() && c.cause != 1)));
             let target = if braking { 1.0 } else { 0.0 };
             c.lights += (target - c.lights) * (dt * if braking { 14.0 } else { 3.0 }).min(1.0);
             // patience: a while behind the same convoy, and the driver peels off
@@ -647,5 +664,35 @@ mod lead {
         f.step(6.0);
         let d = (f.cars[i].p[0] - to[0]).hypot(f.cars[i].p[1] - to[1]);
         assert!(d < 8.0, "from {d0:.0} m to {d:.0} m");
+    }
+}
+
+#[cfg(test)]
+mod quiet {
+    use super::*;
+
+    /// Untouched, brake lights are rare (so a tap's chain of stops is the red on screen).
+    #[test]
+    fn untouched_brake_lights_are_rare() {
+        let (mut lit, mut hard, mut stand, mut blocked, mut n) = (0, 0, 0, 0, 0);
+        for seed in [21, 22, 23, 24] {
+        let mut f = Flat::new(seed, [110.0, 240.0], 62);
+        f.step(20.0);
+        for _ in 0..120 {
+            f.step(0.5);
+            for c in &f.cars {
+                n += 1;
+                if c.lights > 0.5 {
+                    lit += 1;
+                    if c.acc < -1.6 { hard += 1; }
+                    if c.v < 0.4 { stand += 1; }
+                    if c.cause == 1 { blocked += 1; }
+                }
+            }
+        }
+        }
+        let q = lit as f64 / n as f64;
+        eprintln!("lit {q:.3} (hard {hard} standing {stand} blocked {blocked} of {lit})");
+        assert!(q < 0.04, "lit {q:.3}");
     }
 }

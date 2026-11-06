@@ -32,7 +32,7 @@ const PAINT: [[f32; 3]; 9] = [
 const LONG: f64 = 1.3;
 const WIDE: f64 = 1.4;
 /// About one car to this many square metres of salt on screen.
-const AREA: f64 = 1700.0;
+const AREA: f64 = 1300.0;
 /// Seconds of night already run before the toy opens (so it opens mid-story).
 const BEFORE: f64 = 25.0;
 /// Tyre tracks: stamped every this many seconds, fading by half in HALF_LIFE.
@@ -99,7 +99,7 @@ fn reading(points: [f64; 2]) -> f64 {
 }
 
 fn layout_of(points: [f64; 2]) -> Layout {
-    Layout { c: [points[0] * 0.5, points[1] * 0.5], s: 2.6 * reading(points) }
+    Layout { c: [points[0] * 0.5, points[1] * 0.5], s: 3.1 * reading(points) }
 }
 
 /// The salt the cars drive on reaches past the screen on every side: convoys turn back out in the dark
