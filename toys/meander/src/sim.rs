@@ -378,8 +378,17 @@ impl River {
         if d > W * 6.0 || k < HELD || k >= n - HELD {
             return;
         }
-        let dir = [(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)];
-        let push = amount.min(d);
+        // a touch on the water itself bows the bank out on the side the finger is (a kink you see at
+        // once); a touch beside the river draws the bank toward the finger
+        let (dir, push) = if d < W * 0.8 {
+            let (a, b) = (self.line[k.saturating_sub(1)], self.line[(k + 1).min(n - 1)]);
+            let l = dist(a, b).max(1e-6);
+            let nrm = [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
+            let side = if (at[0] - self.line[k][0]) * nrm[0] + (at[1] - self.line[k][1]) * nrm[1] < 0.0 { -1.0 } else { 1.0 };
+            ([nrm[0] * side, nrm[1] * side], amount * 1.3)
+        } else {
+            ([(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)], amount.min(d))
+        };
         for i in HELD..n - HELD {
             let s = (i as f64 - k as f64) * DS;
             let g = (-(s * s) / (2.0 * 600.0 * 600.0)).exp();
