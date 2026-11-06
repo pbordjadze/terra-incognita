@@ -79,8 +79,9 @@ fn vnoise(p: vec2<f32>) -> f32 {
     let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.22;
     c = mix(c, vec3(0.78, 0.80, 0.62), arc);
     // just swept: wet silt, darker than the forest's edge, drying within a few years
-    let sand = (1.0 - smoothstep(0.5, 4.0, age)) * near;
-    c = mix(c, vec3(0.36, 0.34, 0.26), sand * 0.55);
+    // just left by the water: a point bar of pale sand on the inside of the bend, greening in a decade
+    let sand = (1.0 - smoothstep(1.0, 10.0, age + grain * 3.0)) * near;
+    c = mix(c, vec3(0.72, 0.66, 0.52), sand * 0.5);
     c = c * (1.0 + 0.06 * near * fade);
   }
   // the water, from the mask the river and its lakes were painted into (r the river's water, g where
@@ -96,7 +97,8 @@ fn vnoise(p: vec2<f32>) -> f32 {
   mid = min(mid, textureSampleLevel(mask, smp, i.uv - vec2(0.0, o.y), 0.0).r);
   c = mix(c, vec3(0.13, 0.17, 0.24) * (1.0 + grain * 0.8), clamp(m.b, 0.0, 1.0) * 0.9);
   c = mix(c, vec3(0.42, 0.39, 0.29), smoothstep(0.0, 0.5, m.r) * 0.3);
-  let water = mix(vec3(0.62, 0.50, 0.37), vec3(0.76, 0.64, 0.49), clamp(mid * mid * 0.45 + m.g * 0.5, 0.0, 1.0));
+  // the deep water down the middle a shade darker, the shoals at the bends paler
+  let water = mix(vec3(0.68, 0.56, 0.42), vec3(0.78, 0.67, 0.52), clamp(m.g * 1.4, 0.0, 1.0)) * (1.0 - 0.1 * mid * mid) + vec3(0.5, 0.46, 0.36) * smoothstep(0.62, 1.0, m.g);
   c = mix(c, water * (1.0 + grain * 0.45), smoothstep(0.1, 1.0, m.r) * 0.92);
   return vec4<f32>(c, 1.0);
 }
@@ -542,7 +544,7 @@ impl Toy for Meander {
             let silt = (0.08 + 0.37 * smooth01(0.0, life, age) as f64).min(0.45);
             let cut = ((n as f64) * silt) as usize;
             let (a, b) = (cut.min(n / 2 - 1), (n - cut).max(n / 2 + 1));
-            let clear = smooth01(0.0, if o.course { 6.0 } else { 20.0 }, age);
+            let clear = smooth01(0.0, if o.course { 6.0 } else { 1.5 }, age);
             let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.45, life * 0.9, age) };
             let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.55, life, age) };
             let thin = if o.course { (smooth01(0.0, 14.0, age) * 1.6).min(0.92) } else { 0.15 * smooth01(0.0, 30.0, age) + 0.3 * smooth01(life * 0.3, life, age) };
@@ -578,24 +580,28 @@ impl Toy for Meander {
                 (turn / ((lu + lv) * 0.5) * wpx * 1.6).min(1.0)
             })
             .collect();
-        let rw = |i: usize| r * (0.88 + 0.32 * bend[i]);
+        let rw = |i: usize| r * (0.85 + 0.5 * bend[i]);
         for (i, w) in pts.windows(2).enumerate() {
             let k = (bend[i] + bend[i + 1]) * 0.5;
-            p.line(mp(w[0]), mp(w[1]), (rw(i) + rw(i + 1)) * 0.5 * mk + 2.0 * ppp as f32 * mk, wpx * 0.3 * mk, [1.0, k, 0.0, 1.0]);
+            p.line(mp(w[0]), mp(w[1]), (rw(i) + rw(i + 1)) * 0.5 * mk + 2.0 * ppp as f32 * mk, wpx * 0.3 * mk, [1.0, k * 0.55, 0.0, 1.0]);
         }
-        let p = &mut self.painter;
+        let p = &mut self.mask_painter;
         // a cut: the new short channel through the neck flashes as the river takes it
         for &(t0, at) in &self.flashes {
             let k = (1.0 - (self.t - t0) / 0.9).clamp(0.0, 1.0) as f32;
             let k = k * k;
+            // a pulse of light running out along the river both ways from the break
+            let front = (self.t - t0) * 2600.0;
             for w in line.windows(2) {
                 let d = dist(w[0], at);
-                if d < 900.0 {
-                    let f = (1.0 - d / 900.0) as f32;
-                    p.glow(px(w[0]), px(w[1]), r * 0.9, wpx * 0.5, [1.0, 0.92, 0.75, 0.30 * k * f]);
+                let f = (1.0 - ((d - front) / 500.0).powi(2)).max(0.0) as f32 + if d < 300.0 { 0.6 } else { 0.0 };
+                if f > 0.0 {
+                    // into the mask's g, as light in the water itself (opaque there: no seams)
+                    p.line(mp(px(w[0])), mp(px(w[1])), r * 0.5 * mk, wpx * 0.25 * mk, [1.0, 0.6 + 0.4 * k * f.min(1.0), 0.0, 1.0]);
                 }
             }
         }
+        let p = &mut self.painter;
         // the current: faint light flecks drifting down the middle
         let len = self.river.length();
         if len > 0.0 {
