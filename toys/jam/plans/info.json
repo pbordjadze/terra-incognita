@@ -1,4 +1,39 @@
-{ "_": "The info mark (toy-kit info.rs): tapped, its ghost finger taps a car coming round the bottom right; it brakes and the jam starts; a tap closes it.",
-  "size": [1179, 2556], "ppp": 3, "seconds": 9, "fps": 20,
-  "events": [ { "t": 2.0, "tap": "info" }, { "t": 8.0, "tap": "centre", "inert": true } ],
-  "shots": [{ "t": 1.9, "name": "mark" }, { "t": 2.6, "name": "ghost" }, { "t": 5.0, "name": "answer" }, { "t": 8.6, "name": "closed" }] }
+{
+ "_": "The info mark (toy-kit info.rs): tapped, its ghost finger taps the head of the longest convoy; it brakes and the cars behind stop; a tap closes it.",
+ "size": [
+  1179,
+  2556
+ ],
+ "ppp": 3,
+ "seconds": 9,
+ "fps": 20,
+ "events": [
+  {
+   "t": 2.0,
+   "tap": "info"
+  },
+  {
+   "t": 8.0,
+   "tap": "centre",
+   "inert": true
+  }
+ ],
+ "shots": [
+  {
+   "t": 1.9,
+   "name": "mark"
+  },
+  {
+   "t": 2.6,
+   "name": "ghost"
+  },
+  {
+   "t": 5.0,
+   "name": "answer"
+  },
+  {
+   "t": 8.6,
+   "name": "closed"
+  }
+ ]
+}

@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
-description = "Ghost Jam (a working title): traffic on the real 230 m ring in Nagoya; tap a car and a jam travels backwards (painting-company row 218)."
+description = "Salt Flat (a working title): cars at night on the Bonneville salt with no roads, each following the tail lights ahead; convoys emerge (painting-company rows 218, 244)."
 
 [lib]
 crate-type = ["lib", "staticlib"]

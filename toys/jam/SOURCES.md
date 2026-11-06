@@ -1,59 +1,42 @@
-# Ghost Jam: sources
+# Salt Flat: sources
 
-What is measured and what is drawn. The cars, the ground and the sound are drawn from code; nothing
-is a photograph or a recording.
+What is measured and what is drawn. The cars, the ground and the sound are drawn from code; nothing is
+a photograph or a recording. (The crate is still `jam`: the toy began as Ghost Jam, the Nagoya ring,
+painting-company row 218; row 244 opened it up. The ring's toy is whole in `main`'s history at 3032c9a.)
 
-## The ring (measured)
+## The drivers (a measured rule, on open ground)
 
-- Y. Sugiyama, M. Fukui, M. Kikuchi, K. Hasebe, A. Nakayama, K. Nishinari, S. Tadaki and S. Yukawa,
-  "Traffic jams without bottlenecks: experimental evidence for the physical mechanism of the formation
-  of a jam", *New Journal of Physics* 10 (2008) 033001 (open access, CC BY-NC-SA). From the paper:
-  - a circular single-lane road on flat ground, **230 m** round (here a radius of 36.6 m), with
-    **22** cars; a 360-degree camera at the centre (drawn here as a tripod at the ring's centre);
-  - the drivers were asked to cruise at about **30 km/h**, evenly spaced, and only to follow the car
-    ahead safely;
-  - after a while a jam formed with no cause: a cluster of cars (five, in the run shown) stopped
-    completely while the cars outside it ran at about **40 km/h**; the front car pulls away as another
-    joins the back, and the cluster travels **backward at about 20 km/h**, the speed measured for jams
-    on real highways, keeping its size.
-- The paper's group are from Nagoya University and Meijo University (Nagoya); the paper itself doesn't
-  name the test ground, so the toy shows no map.
+- Keeping the gap is the Intelligent Driver Model: M. Treiber, A. Hennecke and D. Helbing, "Congested
+  traffic states in empirical observations and microscopic simulations", *Physical Review E* 62 (2000)
+  1805. It is the rule Ghost Jam tuned to the Nagoya ring of Y. Sugiyama et al., "Traffic jams without
+  bottlenecks", *New Journal of Physics* 10 (2008) 033001, where 22 cars made a jam out of nothing.
+  Here: acceleration 1.6 m/s², comfortable braking 2.6 m/s², time gap 0.8 s, standstill gap 2.2 m, each
+  driver's own speed 27–38 km/h (drawn: a leisurely night drive). A braked car's followers slow one
+  after another, as on the ring.
+- A driver who sees brake lights come on ahead (within 30 m) dabs their own brakes (3 m/s² for 0.7 s)
+  after a reaction time of 0.35 s: the usual human reaction time is about 0.7–1.5 s to a surprise and
+  shorter to an expected cue; 0.35 s is drawn, short, so the ripple reads on a phone.
+- A small car's turning circle (about 5.5 m radius, so 11 m across) bounds every turn.
+- **Drawn:** everything else the drivers do. That they follow the nearest tail lights ahead in their
+  headlights' reach (42 m) and cone (about 55° either side), one follower to a car; that a driver with no
+  one to follow wanders and drifts back from the dark at the edge of the screen; that after 25–70 s
+  behind the same car a driver gets bored and peels off; that drivers go round one another on open
+  ground and brake only when about to touch; that a held light draws the drivers near it into circling
+  it. The convoys, their merging and splitting, the occasional ring a convoy closes on itself, and the
+  spiral round a held light are not in the code: they emerge.
 
-## The drivers (a model, tuned to the measurements)
+## The salt (drawn from what is real)
 
-- One rule each, the Intelligent Driver Model: M. Treiber, A. Hennecke and D. Helbing, "Congested traffic
-  states in empirical observations and microscopic simulations", *Physical Review E* 62 (2000) 1805.
-  It belongs to the same family as the Optimal Velocity model the paper compares with (M. Bando,
-  K. Hasebe, A. Nakayama, A. Shibata and Y. Sugiyama, *Physical Review E* 51 (1995) 1035): a driver
-  speeds toward the speed its gap allows. IDM was chosen because its cars never collide.
-- The constants (desired speed 15 m/s, acceleration 2 m/s², comfortable braking 3 m/s², time gap 0.5 s,
-  standstill gap 1.5 m, cars 4.4 m long) are chosen so the ring matches the paper: even flow at 31 km/h;
-  once jammed, standing cars, about 40–45 km/h outside the jam, and the jam moving backward at about 20 km/h (the tests hold it between 15 and 26).
-  `cargo test -p jam` holds them to that (`src/traffic.rs`).
-- **One departure from the real ring.** In Nagoya the even flow was unstable, so the drivers' own small
-  wobbles grew into the jam after a few minutes. Here the flow is held just on the stable side
-  (metastable): the drivers wobble (a small random push on each car's speed) and the flow absorbs it,
-  but one hard brake (6.5 m/s² for 1.2 s, your tap) grows into a jam that then keeps itself going as
-  the real one did. So a jam starts only where you tap.
-- Jams are emergent: the code has no notion of a jam, only of each car and the car ahead.
+- The Bonneville Salt Flats, Utah: a dry lake bed of salt crust, flat to the horizon, where people do
+  drive on the open salt. The crust's polygons (here about 2.6 m across with low raised ridges) are its
+  real pattern; their size and the damper patches are drawn. The night, headlights, the tyre tracks and their
+  fading (by half in 12 s) are drawn.
+- Cars drawn 1.3 times as long and 1.4 times as wide as life so they read on a phone; about one car to
+  1,700 m² of salt; the salt reaches 1.45 screens on every side. Brake lights glow while a driver dabs,
+  brakes harder than 3.4 m/s² behind the car it follows, or stands; tail lights are dim otherwise.
 
-## Drawn
+## The sound (drawn)
 
-- The hour (dusk; the experiment ran by day), the paving, the ring's asphalt and painted edges, the cars'
-  shapes and colours (drawn 1.25 times as long and 1.45 times as wide as life, the road wider with them,
-  so they read on a phone), headlights, brake lights (lit while a car brakes harder than 1.8 m/s² or
-  stands), a touch's ring, and, until the first touch, a soft halo breathing round one car.
-- Inside the ring, the last 40 seconds: each car's position every 0.2 s drawn at a radius that shrinks
-  with its age (a faint line), and a soft red glow, spread along the ring by a car's spacing, where its brake lights were on. It is the paper's own kind of figure (its figure 4,
-  each car's position against time) wrapped round the ring: the cars' tracks wind forward, a jam's red
-  arm winds backward.
-- The sound: each car an engine buzz whose pitch follows its speed and grows louder as it pulls away,
-  a car pulling out of a stop revving loudest (so the jam's front is heard as one car after another pulling away), tyres' hiss with the ring's speed, a short tyre chirp for each car braking harder than 1.8 m/s² (so a jam is heard as one chirp after another as cars arrive at its back), a soft thump for a tap; heard from the centre.
-
-## Known
-
-- Tapping many cars within a few seconds can leave no jam: when most of the ring stops together, the
-  drivers in this model all pull away together too, and the even flow comes back. Real drivers wait for
-  the car ahead to move off; a "slow to start" rule was tried (Nov 4) and made jams too big and too slow
-  (about 15 km/h backward) for the paper's numbers, so it was left out. `cargo test -p jam probe_many
-  -- --ignored --nocapture` shows it.
+- The 24 engines nearest the middle of the screen, each a buzz whose pitch follows its speed and grows
+  louder pulling away; tyres' hiss with their speed; a short chirp for each car braking hard; a soft
+  thump for a tap.

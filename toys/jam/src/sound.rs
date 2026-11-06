@@ -1,9 +1,11 @@
-//! The ring heard from its centre (where the experiment's camera stood): 22 small engines, each a
+//! The salt heard from the middle of the screen: the nearest small engines, each a
 //! buzz whose pitch follows its car's speed and whose voice opens when it accelerates, and the hiss of
 //! its tyres. In even flow it is one steady hum; a jam drops a handful to idle and brings back the
 //! rising notes of cars pulling away. A tap adds a soft thump. Drawn, not recorded.
 
-use crate::traffic::N;
+/// How many engines are heard: the cars nearest the middle of the screen.
+pub const VOICES: usize = 24;
+const N: usize = VOICES;
 use std::sync::{Arc, Mutex};
 use toy_kit::Synth;
 

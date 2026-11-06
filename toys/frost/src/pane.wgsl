@@ -135,7 +135,9 @@ fn wood(p: vec2<f32>, d: f32, lamp: f32) -> vec3<f32> {
     let film = smoothstep(0.55, 0.9, s);
     let line = smoothstep(0.86, 0.9, s) * (1.0 - smoothstep(0.91, 0.94, s));
     let sheen = 0.5 + 0.5 * sin((p.x * 0.6 + p.y) * 0.035);
-    c += (vec3<f32>(0.030, 0.034, 0.040) * (0.4 + 0.6 * sheen) + vec3<f32>(0.05, 0.05, 0.055) * film) * wet;
+    // (the frost's haze gone, the night a little deeper through the water than through the dry glass)
+    c *= 1.0 - 0.12 * wet;
+    c += (vec3<f32>(0.022, 0.026, 0.032) * (0.4 + 0.6 * sheen) + vec3<f32>(0.022, 0.024, 0.028) * film) * wet;
     c += vec3<f32>(0.30, 0.31, 0.32) * line * wet;
   }
   let cover = smoothstep(0.98, 1.02, s);

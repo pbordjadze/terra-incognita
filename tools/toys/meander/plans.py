@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes Meander's stroke plans (toys/meander/plans/draw.json, ipad.json): a finger's course as raw
+"""Writes Meander's stroke plans (toys/meander/plans/push.json, ipad.json): a finger's push as raw
 down/move/up events (the check's drag has only two ends), a slightly wavy stroke as a hand draws it.
 
     python3 tools/toys/meander/plans.py
@@ -30,18 +30,18 @@ def stroke(t0, secs, pts, n=40, ident=1):
 
 
 plans = {
-    "draw": {
-        "_": "The one gesture: a finger lays a new course across the plain (a slightly wavy stroke, bottom left to top right); the old river is left to silt; the new one snakes and cuts its first oxbow. Then a tap on the plain (a ring). Written by tools/toys/meander/plans.py.",
-        "size": [1179, 2556], "ppp": 3, "seconds": 24, "fps": 30,
-        "events": stroke(1.0, 1.4, [[120, 790], [160, 600], [130, 420], [210, 250], [280, 60]]) + [{"t": 21.0, "tap": [300, 420]}],
-        "shots": [{"t": 0.9, "name": "before"}, {"t": 2.0, "name": "drawn"}, {"t": 3.0, "name": "3s"}, {"t": 8, "name": "8s"}, {"t": 12, "name": "12s"}, {"t": 16, "name": "16s"}, {"t": 21.3, "name": "tap"}],
-        "film": {"from": 0, "to": 24, "every": 0.1},
+    "push": {
+        "_": "The one gesture: a finger pushes through the river sideways (left to right, a little wavy); the reach it passes is carried along and stretched, then keeps swelling by itself and pinches off a lake away from the finger. Then a tap by the river (a ring, the bank nudged). Written by tools/toys/meander/plans.py.",
+        "size": [1179, 2556], "ppp": 3, "seconds": 20, "fps": 30,
+        "events": stroke(1.0, 0.9, [[40, 420], [200, 440], [340, 470]], n=30) + [{"t": 17.0, "tap": [200, 700]}],
+        "shots": [{"t": 0.9, "name": "before"}, {"t": 1.5, "name": "pushing"}, {"t": 2.0, "name": "pushed"}, {"t": 4, "name": "4s"}, {"t": 7, "name": "7s"}, {"t": 11, "name": "11s"}, {"t": 17.3, "name": "tap"}],
+        "film": {"from": 0, "to": 14, "every": 0.1},
         "audio": True,
     },
     "ipad": {
-        "_": "The 13-inch iPad, landscape: the opening, then a course drawn across. Written by tools/toys/meander/plans.py.",
+        "_": "The 13-inch iPad, landscape: the opening, then a push across the river. Written by tools/toys/meander/plans.py.",
         "size": [2752, 2064], "ppp": 2, "seconds": 18, "fps": 30,
-        "events": stroke(6.0, 1.2, [[400, 1000], [600, 700], [500, 400], [700, 60]]),
+        "events": stroke(6.0, 1.0, [[300, 900], [900, 950], [1500, 1000]]),
         "shots": [{"t": 0.5, "name": "open"}, {"t": 5.5, "name": "before"}, {"t": 17.5, "name": "after"}],
     },
 }

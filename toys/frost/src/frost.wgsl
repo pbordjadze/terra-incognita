@@ -14,6 +14,8 @@ const N: i32 = 512;
 const HALF: i32 = 256;
 const MARGIN: i32 = 28;
 const EMPTY: u32 = 0xffffffffu;
+// glass held by a finger's frozen print (no crystal's: the crystals grow round it)
+const HOAR: u32 = 0xfffffff0u;
 
 struct Slot {
   center: vec2<f32>,
@@ -40,12 +42,17 @@ struct Globals {
   alpha: f32,
   frame: f32,          // the window frame's width, points
   bar: f32,            // the crossbar's middle, points from the top (0: none)
+  fringe: f32,         // how far frost creeps back into a melt from its edge, points (on average)
+  relax: f32,          // how much shallower every glaze gets this frame (the holes heal), points
+  _g1: f32,
+  _g2: f32,
   slots: array<Slot, 12>,
 };
 
 struct Op {
   slot: u32,
-  kind: u32,          // 1 seed the slot, 2 melt along the finger's way
+  kind: u32,          // 1 seed the slot, 2 melt along the finger's way, 4 a moist print along it,
+                      // 8 probe the ice under _d, 16 the stove's warmth (clear within radius of at)
   _a: u32,
   _b: u32,
   at: vec2<f32>,      // the finger's way this frame, from at to to (points)
@@ -62,6 +69,9 @@ struct Op {
 @group(0) @binding(4) var<storage, read_write> stats: array<atomic<u32>>;
 @group(0) @binding(5) var<storage, read_write> field: array<f32>;
 @group(0) @binding(6) var<uniform> O: Op;
+// the glaze: where a melt froze again smooth, how far inside its edge (points, as f32 bits; 0 is glass
+// frost can catch on). Frost grows into it only a fringe deep (fringe_at): a wipe stays clear.
+@group(0) @binding(7) var<storage, read_write> glaze: array<atomic<u32>>;
 
 fn hexdist(q: i32, r: i32) -> i32 {
   return (abs(q) + abs(r) + abs(q + r)) / 2;
@@ -128,6 +138,15 @@ fn mask_index(p: vec2<f32>) -> i32 {
   return m.y * i32(G.mask_w) + m.x;
 }
 
+// how deep into a melt the frost may creep back here: ragged, a few points to twice the mean
+fn fringe_at(p: vec2<f32>) -> f32 {
+  return G.fringe * (0.45 + 1.1 * flaws(p / 7.0) + 0.3 * flaws(p / 2.3));
+}
+
+fn glazed(m: i32, p: vec2<f32>) -> bool {
+  return bitcast<f32>(atomicLoad(&glaze[m])) > fringe_at(p);
+}
+
 fn at(k: u32, q: i32, r: i32) -> u32 {
   return k * u32(N * N) + u32(r + HALF) * u32(N) + u32(q + HALF);
 }
@@ -181,7 +200,7 @@ fn grow(@builtin(global_invocation_id) gid: vec3<u32>) {
       return;
     }
     let owner = atomicLoad(&mask[m]);
-    if owner != EMPTY && owner != G.slots[k].id {
+    if (owner != EMPTY && owner != G.slots[k].id) || glazed(m, p) {
       dst[i] = 0.0;
       return;
     }
@@ -310,7 +329,96 @@ fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
     let m = mask_index(p);
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);
+      // the meltwater freezes smooth: how far inside the melt's edge (the deepest any melt went)
+      atomicMax(&glaze[m], bitcast<u32>(max(rr - d, 0.0)));
     }
+  }
+}
+
+// a fingertip on clear glass: its moist print, which frost can catch on again (the glaze given back
+// along the way, a little wider than the print) and a faint wet trace where the glass was dry
+@compute @workgroup_size(8, 8, 1)
+fn pen(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (O.kind & 4u) == 0u {
+    return;
+  }
+  let lo = vec2<i32>(floor((min(O.at, O.to) - 3.2 * O.radius - 2.0 * G.fringe - 2.0) * G.fs));
+  let f = lo + vec2<i32>(gid.xy);
+  if f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
+    return;
+  }
+  let p = (vec2<f32>(f) + 0.5) / G.fs;
+  let d = distance(p, melt_near(p));
+  let rr = melt_radius(p);
+  let m = mask_index(p);
+  if m < 0 || d > 3.0 * rr + 2.0 * G.fringe {
+    return;
+  }
+  // (frost may grow feathers out from it a little further than a melt's fringe)
+  atomicMin(&glaze[m], bitcast<u32>(max(d - 3.0 * rr, 0.0)));
+  let i = f.y * i32(G.field_w) + f.x;
+  // the print's middle freezes at once, granular, ragged at its edge
+  let core = rr * (0.2 + 0.5 * flaws(p / 1.6));
+  if d <= core {
+    field[i] = max(field[i], 1.0 + 0.5 * hash(floor(p * 2.7)) * (1.0 - d / rr));
+    atomicMin(&mask[m], HOAR);
+  } else if d <= rr {
+    let was = field[i];
+    if was < 0.3 {
+      field[i] = 0.62;
+    } else if was < 0.98 {
+      field[i] = min(was, 0.62);
+    }
+  }
+}
+
+// how much of the glass round a point is ice (stats[48], and how many samples were on the glass: [49])
+@compute @workgroup_size(8, 8, 1)
+fn probe(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (O.kind & 8u) == 0u {
+    return;
+  }
+  if gid.x == 0u && gid.y == 0u {
+    let c = mask_index(O._d);
+    if c >= 0 {
+      atomicStore(&stats[50], atomicLoad(&glaze[c]));
+    }
+  }
+  let o = (vec2<f32>(gid.xy) - 3.5) / 3.5;
+  if dot(o, o) > 1.0 {
+    return;
+  }
+  let p = O._d + o * 16.0;
+  let f = vec2<i32>(floor(p * G.fs));
+  if mask_index(p) < 0 || f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
+    return;
+  }
+  atomicAdd(&stats[49], 1u);
+  if field[f.y * i32(G.field_w) + f.x] >= 1.0 {
+    atomicAdd(&stats[48], 1u);
+  }
+}
+
+// the stove's warmth: everything within radius of at runs wet and clears, the glaze with it (the
+// glass new again, for the frost to come back to); a wet front at the edge
+@compute @workgroup_size(8, 8, 1)
+fn clear(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if (O.kind & 16u) == 0u || gid.x >= G.field_w || gid.y >= G.field_h {
+    return;
+  }
+  let p = (vec2<f32>(gid.xy) + 0.5) / G.fs;
+  let wob = 1.0 + 0.08 * sin(atan2(p.y - O.at.y, p.x - O.at.x) * 5.0 + 0.03 * p.x);
+  let d = distance(p, O.at) * wob;
+  if d > O.radius {
+    return;
+  }
+  let i = gid.y * G.field_w + gid.x;
+  let wet = 1.0 - smoothstep(O.radius - 60.0, O.radius - 6.0, d);
+  field[i] = select(0.0, mix(0.9, 0.55, wet), d > O.radius - 60.0);
+  let m = mask_index(p);
+  if m >= 0 {
+    atomicStore(&mask[m], EMPTY);
+    atomicStore(&glaze[m], 0u);
   }
 }
 
@@ -359,5 +467,18 @@ fn paint(@builtin(global_invocation_id) gid: vec3<u32>) {
       field[gid.y * G.field_w + gid.x] = sample(k, p);
       return;
     }
+  }
+}
+
+// the holes heal: every glaze a little shallower each frame, so the frost's edge may creep further in
+@compute @workgroup_size(8, 8, 1)
+fn relax(@builtin(global_invocation_id) gid: vec3<u32>) {
+  if gid.x >= G.mask_w || gid.y >= G.mask_h {
+    return;
+  }
+  let i = gid.y * G.mask_w + gid.x;
+  let v = bitcast<f32>(atomicLoad(&glaze[i]));
+  if v > 0.0 {
+    atomicStore(&glaze[i], bitcast<u32>(max(v - G.relax, 0.0)));
   }
 }
