@@ -32,6 +32,9 @@ places in points from the screen's top left: the phone is 393 x 852 points, the 
   in; below 1 brings them together) over `for` seconds.
 - `shots` are the screenshots you get (name them); `film` gives a frame every `every` seconds in
   `<out-dir>/film/` when you need to see motion (keep films short: a few seconds at 0.1).
+- A touch's answer can be quick: take a shot about 0.3 s after every touch, and another a second or two
+  later (a phone shows you the moment in between; a still a few seconds on has already lost it). When you
+  can't tell whether your touch did anything, play the same plan without that touch and compare.
 - The script prints the pictures' paths; look at them with your image reader. Text the phone's system
   draws (a card, a line) is drawn in. Every touch from the 1.5 s before a shot is drawn on it as a
   ring the size of a fingertip (a line for a drag, two rings for a pinch), so you can see where your

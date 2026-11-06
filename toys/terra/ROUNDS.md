@@ -18,3 +18,7 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   cities), with a fingertip's reach at the reading scale; the lights bolder and sized with the screen; the 13-inch iPad
   opens on the whole Earth, its width the screen's (it ran off all four sides). Plans `first-quiet`, `first-naive`,
   `first-likeness` (strict); the testers' tools in `tools/toys/newcomer/`.
+- First minute, round 2 (Nov 6; row 246; weakest: touches inside the toys looked dead, measured as answering at once
+  but caught by the testers' late stills; passed to the toys' sessions): one tap home with a card up (the kit's Host
+  lets a tap on a toy's own button close the card and press it; five of six newcomers had needed two). Plan
+  `first-home` (strict); the testers now shoot 0.3 s after each touch.
