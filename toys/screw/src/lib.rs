@@ -182,7 +182,7 @@ impl Screw {
 
     fn sleeve_at(&self) -> [f64; 2] {
         let [_, h] = self.pts;
-        [30.0, h - 36.0]
+        [32.0, h - 38.0]
     }
 
     fn has_song(&self) -> bool {
@@ -285,7 +285,7 @@ impl Toy for Screw {
                     return;
                 }
                 let s = self.sleeve_at();
-                let kind = if (p[0] - s[0]).hypot(p[1] - s[1]) < 30.0 { Kind::Sleeve } else { Kind::Open };
+                let kind = if (p[0] - s[0] - 4.0).hypot(p[1] - s[1]) < 32.0 { Kind::Sleeve } else { Kind::Open };
                 self.finger = Some(Finger { id: e.id, at: p, start: p, t0: e.t, vx: 0.0, tl: e.t, kind });
             }
             Phase::Move => {
@@ -392,7 +392,7 @@ impl Toy for Screw {
         let d = self.deck.lock().unwrap();
         let has = d.song.is_some();
         let speed = d.vel.abs();
-        let lean = if has { ((0.97 - d.pitch) / 0.3).clamp(0.0, 1.0) * if d.motor { 1.0 } else { 0.4 } } else { 0.0 };
+        let lean = if has { ((0.97 - d.pitch) / 0.3).clamp(0.0, 1.0) * (d.vel.abs() / d.pitch.max(0.1)).min(1.0) } else { 0.0 };
         let blur = ((speed - 0.2) * 0.05).clamp(0.0, 0.5) as f32;
         let params = BackdropParams {
             time: self.t as f32,
@@ -446,12 +446,16 @@ impl Toy for Screw {
         // the sleeve: a square jacket with the record peeking out of it, brighter while no song is on
         let s = self.sleeve_at();
         let (sx, sy) = (s[0] as f32 * k, s[1] as f32 * k);
-        let half = 12.0 * k;
+        let half = 14.0 * k;
         let ink = if has { 0.62 } else { 0.7 };
-        let peek = [sx + 6.0 * k, sy - 6.0 * k];
-        self.paint.disc(peek, 11.0 * k, 1.0, pm([0.10, 0.09, 0.11, 1.0]));
-        self.paint.ring(peek, 11.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.7]));
-        self.paint.disc(peek, 3.8 * k, 1.0, pm([0.42, 0.16, 0.52, 1.0]));
+        // the record half out of its jacket, its grooves and plum label showing
+        let peek = [sx + 11.0 * k, sy - 3.0 * k];
+        self.paint.disc(peek, 13.0 * k, 1.0, pm([0.07, 0.065, 0.08, 1.0]));
+        for g in [11.0, 8.5] {
+            self.paint.ring(peek, g * k, 0.5 * k, 1.0, pm([0.6, 0.58, 0.65, 0.35]));
+        }
+        self.paint.ring(peek, 13.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.7]));
+        self.paint.disc(peek, 4.5 * k, 1.0, pm([0.45, 0.17, 0.56, 1.0]));
         let (x0, y0, x1, y1) = (sx - half - 1.0 * k, sy - half + 1.0 * k, sx + half - 1.0 * k, sy + half + 1.0 * k);
         // (the jacket's face covers the record behind it)
         for i in 0..5 {
@@ -471,6 +475,15 @@ impl Toy for Screw {
             };
             self.paint.glow(fp, fp, 16.0 * k, 18.0 * k, pm(col));
             self.paint.ring(fp, 22.0 * k, 1.2 * k, 1.5, pm([1.0, 0.9, 1.0, 0.35]));
+            // a finger resting on the record: syrup runs down from it, the way to slow it
+            if matches!(f.kind, Kind::Open | Kind::Hold) && has && !self.reduce_motion {
+                let run = ((self.t - f.t0) * 70.0).clamp(0.0, 56.0) as f32 * k;
+                if run > 2.0 * k {
+                    let end = [fp[0], fp[1] + 20.0 * k + run];
+                    self.paint.glow([fp[0], fp[1] + 14.0 * k], end, 2.2 * k, 5.0 * k, pm([0.62, 0.25, 0.85, 0.55]));
+                    self.paint.disc(end, 4.2 * k, 1.5 * k, pm([0.70, 0.32, 0.95, 0.75]));
+                }
+            }
             if let Kind::Fader { .. } = f.kind {
                 let st = [f.start[0] as f32 * k, f.start[1] as f32 * k];
                 self.paint.glow(st, fp, 2.0 * k, 8.0 * k, pm([0.80, 0.50, 1.0, 0.45]));
