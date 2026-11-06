@@ -20,6 +20,9 @@ final class AdriftView: UIView {
         backgroundColor = UIColor(red: 0.957, green: 0.945, blue: 0.918, alpha: 1)
         (layer as? CAMetalLayer)?.framebufferOnly = true
         (layer as? CAMetalLayer)?.presentsWithTransaction = false
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, _: UITraitCollection) in
+            if let shell = self.shell { adrift_set_night(shell, self.traitCollection.userInterfaceStyle == .dark) }
+        }
     }
     required init?(coder: NSCoder) { fatalError() }
 
@@ -453,11 +456,6 @@ final class AdriftView: UIView {
         window?.rootViewController?.present(sheet, animated: true)
     }
 
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
-        if let shell { adrift_set_night(shell, traitCollection.userInterfaceStyle == .dark) }
-    }
-
     override var canBecomeFirstResponder: Bool { true }
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         if motion == .motionShake, let shell { adrift_shaken(shell) }
@@ -487,22 +485,35 @@ final class AdriftController: UIViewController {
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
 }
 
+// The scene lifecycle (an app built against the iOS 27 SDK must adopt it, or UIKit stops it at launch):
+// one scene (Info.plist's UIApplicationSceneManifest), its window made by SceneDelegate.
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+}
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-        let w = UIWindow(frame: UIScreen.main.bounds)
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let scene = scene as? UIWindowScene else { return }
+        let w = UIWindow(windowScene: scene)
         w.rootViewController = AdriftController()
         w.makeKeyAndVisible()
         window = w
-        return true
+        open(connectionOptions.urlContexts)        // a song that launched Adrift
     }
 
     /// An audio file opened in Adrift becomes the song takes are conducted to (R12).
-    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        guard let view = window?.rootViewController?.view as? AdriftView else { return false }
+    func scene(_ scene: UIScene, openURLContexts contexts: Set<UIOpenURLContext>) { open(contexts) }
+
+    private func open(_ contexts: Set<UIOpenURLContext>) {
+        guard let url = contexts.first?.url, let view = window?.rootViewController?.view as? AdriftView else { return }
         view.setSong(url)
-        return true
     }
 }
 
