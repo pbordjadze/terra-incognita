@@ -177,7 +177,7 @@ impl Screw {
     fn geometry(&self) -> ([f64; 2], f64) {
         let [w, h] = self.pts;
         let r = (w * 0.40).min(h * 0.28).min(330.0);
-        ([w * 0.5, h * 0.45], r)
+        ([w * 0.5, h * 0.42], r)
     }
 
     fn sleeve_at(&self) -> [f64; 2] {
@@ -448,22 +448,20 @@ impl Toy for Screw {
         let (sx, sy) = (s[0] as f32 * k, s[1] as f32 * k);
         let half = 14.0 * k;
         let ink = if has { 0.62 } else { 0.7 };
-        // the record half out of its jacket, its grooves and plum label showing
-        let peek = [sx + 11.0 * k, sy - 3.0 * k];
+        // a paper record sleeve: a square, its round die-cut hole showing the plum label, the record
+        // half out of it
+        let peek = [sx + 10.0 * k, sy - 4.0 * k];
         self.paint.disc(peek, 13.0 * k, 1.0, pm([0.07, 0.065, 0.08, 1.0]));
-        for g in [11.0, 8.5] {
-            self.paint.ring(peek, g * k, 0.5 * k, 1.0, pm([0.6, 0.58, 0.65, 0.35]));
+        self.paint.ring(peek, 13.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.6]));
+        let (x0, y0, x1, y1) = (sx - half, sy - half, sx + half, sy + half);
+        for i in 0..7 {
+            let y = y0 + (y1 - y0) * (i as f32 + 0.5) / 7.0;
+            self.paint.line([x0 + 1.0 * k, y], [x1 - 1.0 * k, y], (y1 - y0) / 14.0 + 0.6, 0.6, pm([0.50, 0.46, 0.43, 1.0]));
         }
-        self.paint.ring(peek, 13.0 * k, 0.9 * k, 1.0, pm([0.9, 0.88, 0.92, ink * 0.7]));
-        self.paint.disc(peek, 4.5 * k, 1.0, pm([0.45, 0.17, 0.56, 1.0]));
-        let (x0, y0, x1, y1) = (sx - half - 1.0 * k, sy - half + 1.0 * k, sx + half - 1.0 * k, sy + half + 1.0 * k);
-        // (the jacket's face covers the record behind it)
-        for i in 0..5 {
-            let y = y0 + (y1 - y0) * (i as f32 + 0.5) / 5.0;
-            self.paint.line([x0 + 1.0 * k, y], [x1 - 1.0 * k, y], (y1 - y0) / 10.0 + 0.5, 0.6, pm([0.06, 0.055, 0.065, 1.0]));
-        }
+        self.paint.disc([sx, sy], 5.2 * k, 1.0, pm([0.45, 0.17, 0.56, 1.0]));
+        self.paint.disc([sx, sy], 0.9 * k, 1.0, pm([0.08, 0.07, 0.09, 1.0]));
         for (a, b) in [([x0, y0], [x1, y0]), ([x1, y0], [x1, y1]), ([x1, y1], [x0, y1]), ([x0, y1], [x0, y0])] {
-            self.paint.line(a, b, 0.75 * k, 1.0, pm([0.9, 0.88, 0.92, ink]));
+            self.paint.line(a, b, 0.6 * k, 1.0, pm([0.85, 0.82, 0.78, ink]));
         }
         // a finger on the record: its light, and riding the fader, the way it has come
         if let Some(f) = self.finger {
@@ -477,7 +475,7 @@ impl Toy for Screw {
             self.paint.ring(fp, 22.0 * k, 1.2 * k, 1.5, pm([1.0, 0.9, 1.0, 0.35]));
             // a finger resting on the record: syrup runs down from it, the way to slow it
             if matches!(f.kind, Kind::Open | Kind::Hold) && has && !self.reduce_motion {
-                let run = ((self.t - f.t0) * 70.0).clamp(0.0, 56.0) as f32 * k;
+                let run = ((self.t - f.t0 - 0.06) * 110.0).clamp(0.0, 60.0) as f32 * k;
                 if run > 2.0 * k {
                     let end = [fp[0], fp[1] + 20.0 * k + run];
                     self.paint.glow([fp[0], fp[1] + 14.0 * k], end, 2.2 * k, 5.0 * k, pm([0.62, 0.25, 0.85, 0.55]));
@@ -556,7 +554,7 @@ impl Toy for Screw {
     fn rules(&self) -> Option<Rules> {
         Some(Rules::new(
             &[
-                "Put a finger anywhere on the record and push it down: it slows, the voice dropping with it. It stays where you leave it.",
+                "Put a finger anywhere on the record and push it down: it slows, the voice dropping with it. It stays where you leave it; push up to bring it back.",
                 "Tap and it says the last beat again, in time. Hold and it keeps saying it.",
                 "Flick it to the left and it spins back two bars.",
                 "Touch the label to stop it or start it. The sleeve, bottom left, opens a song of yours from Files.",

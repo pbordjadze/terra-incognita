@@ -1,7 +1,7 @@
 //! A practice record for the checks (and anyone without a song): synthesized here, nobody's music.
 //! 76 BPM, sixteen bars: a long 808-style kick, a clap on two and four, hats on the eighths, a bass
 //! line, an electric piano's chords, and a voice (a buzz through three vowel formants) singing a short
-//! phrase every other bar, so slowing it down drops something voice-like, as the screw does.
+//! phrase in two bars of every four, from the first, so slowing it down drops something voice-like, as the screw does.
 
 const BPM: f64 = 76.0;
 const BARS: usize = 16;
@@ -77,9 +77,9 @@ pub fn record() -> (f64, Vec<f32>, Vec<f32>) {
                     }
                 }
             }
-            // the voice, every other bar from the third
+            // the voice, from the first bar: two bars of every four
             let vb = b as usize / 4;
-            if vb >= 2 && vb.is_multiple_of(2) {
+            if vb.is_multiple_of(2) || vb % 4 == 3 {
                 let eighth = ((t / (beat / 2.0)).floor() as usize) % 8;
                 let p8 = t % (beat / 2.0);
                 let f0 = phrase[eighth];

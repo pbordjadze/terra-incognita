@@ -487,7 +487,7 @@ mod tests {
         assert!(!d.rewinding());
         let landed = from - 8.0 * 0.75;
         assert!((d.pos - landed).abs() < 0.01, "landed at {} for {landed}", d.pos);
-        eprintln!("measured: a rewind from {from:.2} s lands at {:.2} s (two bars back: {landed:.2})", d.pos);
+        eprintln!("measured: on a record at 80 BPM (a beat of 0.75 s), a rewind from {from:.2} s lands at {:.2} s (two bars, 8 beats, back: {landed:.2})", d.pos);
         run(&mut d, 1.0);
         assert!((d.vel - 1.0).abs() < 1e-3, "and plays on");
         // and a screwed record is still screwed after it
