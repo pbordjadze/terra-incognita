@@ -28,6 +28,8 @@ pub trait Room {
     fn card_at_top(&self) -> bool;
     fn synth(&mut self) -> Option<Box<dyn Synth>>;
     fn take_haptic(&mut self) -> bool;
+    /// The device was shaken (Frost sweeps its window clear).
+    fn shaken(&mut self);
     /// The toy's globe camera now, if it has a globe (read from what it saves: every globe toy keeps
     /// its camera, as `camera` or last in a list).
     fn camera(&self) -> Option<Camera>;
@@ -128,6 +130,9 @@ impl<T: Toy> Room for Inside<T> {
     }
     fn take_haptic(&mut self) -> bool {
         self.ctx.take_haptic()
+    }
+    fn shaken(&mut self) {
+        self.toy.shaken(&mut self.ctx);
     }
     fn camera(&self) -> Option<Camera> {
         self.toy.save().as_deref().and_then(saved_camera)

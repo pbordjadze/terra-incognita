@@ -882,6 +882,15 @@ impl Toy for Terra {
         }
     }
 
+    fn shaken(&mut self, _ctx: &mut Ctx) {
+        // a shake is the open toy's (Frost sweeps its window clear); on the Earth, nothing
+        if matches!(self.state, State::Inside) {
+            if let Some(r) = self.room.as_mut() {
+                r.shaken();
+            }
+        }
+    }
+
     fn synth(&mut self) -> Option<Box<dyn Synth>> {
         Some(Box::new(Mixer { bells: self.bells.synth(), room: self.room_sound.clone(), want: self.room_level.clone(), level: 0.0, buf: Vec::new() }))
     }
