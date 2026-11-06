@@ -18,6 +18,17 @@ Row 242 answered the owner's "it just keeps filling in". What a finger does now 
   mask and glaze reset; the creep from the frame restarts (`creep_from`).
 - Plan `play` (54 s) shows all of it; `full` was retired.
 
+Row 242's critic log (fresh critic each round, from renders): 1 "clear improvement" (a drag inside a
+clear patch drew frost: fixed by a still press), 2 "close to showable" (a pause could still draw frost:
+a second's rest and a bloom), 3 "beautiful, lasts; one gesture's rule muddled" (the print retired),
+4 "a keeper" (wiped glass too dark: minor), 5 "close to showable" (minor: healing holes grow loose
+specks mid-hole: `renew` seeds at the frontier the glaze allows, which the fronts may not have reached;
+seed nearer the surviving frost, or only where the probe finds ice close by). Also from 5: a soft smear
+where big feathers overlap at 54 s (pane.wgsl's `around` blur, probably).
+
+Next, if Frost is reworked: open with a little ice already at the foot (Terra's small window shows the
+toy's first frame; row 245); save/restore the pane.
+
 # Frost: row 218's handoff (Nov 4, 2026)
 
 painting-company row 218. A cabin window at Oymyakon at about −50 °C, the night outside. Frost grows by
