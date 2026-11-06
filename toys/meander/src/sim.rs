@@ -62,6 +62,9 @@ pub struct River {
     /// Pushes a finger gave the bank: (where, the year, strength). The ground there erodes faster for a
     /// few decades, so a pushed bend keeps swelling after the finger lifts.
     pub kicks: Vec<([f64; 2], f64, f64)>,
+    /// 0..1: how far the rest of the river is held back while a push is fresh, so the bend the finger
+    /// made is the one that moves (the toy sets it).
+    pub calm: f64,
     rng: u64,
     r0: Vec<f64>,
     r1: Vec<f64>,
@@ -76,7 +79,7 @@ pub fn rand(s: &mut u64) -> f64 {
 
 impl River {
     pub fn new(line: Vec<[f64; 2]>, seed: u64) -> River {
-        let mut r = River { line, oxbows: Vec::new(), year: 0.0, cuts: Vec::new(), kicks: Vec::new(), rng: seed | 1, r0: Vec::new(), r1: Vec::new() };
+        let mut r = River { line, oxbows: Vec::new(), year: 0.0, cuts: Vec::new(), kicks: Vec::new(), calm: 0.0, rng: seed | 1, r0: Vec::new(), r1: Vec::new() };
         r.line = resample(&r.line, DS);
         r
     }
@@ -163,11 +166,20 @@ impl River {
             let b: f64 = kicks.iter().map(|k| k.2 * (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * KICK_R * KICK_R)).exp() * (-(year - k.1) / KICK_LIFE).exp()).sum();
             1.0 + b.min(KICK_MAX)
         };
+        let calm = self.calm;
+        let held = |q: [f64; 2]| -> f64 {
+            if calm <= 0.0 {
+                return 1.0;
+            }
+            let r = KICK_R * 1.8;
+            let near: f64 = kicks.iter().map(|k| (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * r * r)).exp() * (-(year - k.1) / KICK_LIFE).exp() * 2.0).sum();
+            1.0 - calm * (1.0 - near.min(1.0))
+        };
         let mut q = self.line.clone();
         for i in HELD..n.saturating_sub(HELD) {
             let t = tang[i];
             let nrm = [-t[1], t[0]];
-            let m = (self.r1[i] * dt * erodible(p[i]) * boost(p[i])).clamp(-DS * 0.3, DS * 0.3);
+            let m = (self.r1[i] * dt * erodible(p[i]) * boost(p[i]) * held(p[i])).clamp(-DS * 0.3, DS * 0.3);
             q[i] = [p[i][0] - nrm[0] * m, p[i][1] - nrm[1] * m];
         }
         // a whisper of noise: the bank is never quite even
@@ -206,7 +218,7 @@ impl River {
             for &q in &o.line {
                 if near(q, &self.line) {
                     cut = true;
-                    if piece.len() >= 5 {
+                    if piece.len() >= 9 {
                         out.push(Oxbow { line: std::mem::take(&mut piece), born: o.born, course: o.course });
                     }
                     piece.clear();
@@ -216,7 +228,7 @@ impl River {
             }
             if !cut {
                 out.push(Oxbow { line: piece, born: o.born, course: o.course });
-            } else if piece.len() >= 5 {
+            } else if piece.len() >= 9 {
                 out.push(Oxbow { line: piece, born: o.born, course: o.course });
             }
         }

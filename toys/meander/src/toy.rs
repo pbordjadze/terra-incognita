@@ -16,7 +16,7 @@ const NEVER: f32 = -1.0e9;
 /// How long a lake lives on screen, years: dark water, then a marsh, then forest.
 /// The clock while nothing on screen is about to happen, years a second.
 const FAST_YEARS: f64 = 20.0;
-const LAKE_LIFE: f64 = 420.0; // a lake silts up and is forest again in under half a minute
+const LAKE_LIFE: f64 = 320.0; // a lake silts up and is forest again in under half a minute
 /// The screen's longer side, m: a few loops at a time, each big enough to watch.
 const VIEW_M: f64 = 13000.0;
 /// The finger's brush: points across (a fingertip, a little more), and metres of river gained a tick.
@@ -77,8 +77,9 @@ fn vnoise(p: vec2<f32>) -> f32 {
     let calm = 1.0 - smoothstep(0.06, 0.2, fw);
     let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.42;
     c = mix(c, vec3(0.78, 0.80, 0.62), arc);
-    let sand = (1.0 - smoothstep(1.0, 6.0, age)) * near;
-    c = mix(c, vec3(0.80, 0.72, 0.56), sand * 0.85);
+    // just swept: wet silt, darker than the forest's edge, drying within a few years
+    let sand = (1.0 - smoothstep(0.5, 4.0, age)) * near;
+    c = mix(c, vec3(0.36, 0.34, 0.26), sand * 0.55);
     c = c * (1.0 + 0.06 * near * fade);
   }
   return vec4<f32>(c, 1.0);
@@ -127,6 +128,8 @@ pub struct Meander {
     /// The finger in the river: its id, where it was last (m), how far it has gone (points), the river's
     /// length gained since it touched, and the ticks struck for that.
     hand: Option<Hand>,
+    /// When a finger last pushed the river (s).
+    pushed: f64,
     /// When the river was last laid (it swells from a thread to its width).
     laid: f64,
     ripples: Vec<Ripple>,
@@ -305,6 +308,7 @@ impl Toy for Meander {
             uni,
             painter,
             hand: None,
+            pushed: -100.0,
             laid: -10.0,
             ripples: Vec::new(),
             cuts_seen: 0,
@@ -357,6 +361,9 @@ impl Toy for Meander {
                 // the finger is a brush about a fingertip wide: whatever river it passes through is
                 // carried along, as a string is through wet sand
                 let gained = self.river.push(w, d, BRUSH_PT / s);
+                if gained.abs() > 1.0 {
+                    self.pushed = self.t;
+                }
                 let h = self.hand.as_mut().unwrap();
                 h.gained += gained.max(0.0);
                 // the river stretching: a rising tick every few hundred metres it gains
@@ -405,6 +412,8 @@ impl Toy for Meander {
         let target = if since_cut < 1.5 { YEARS_A_SECOND } else { target };
         let ease = 1.0 - (-dt * 2.0).exp();
         self.pace += (target - self.pace) * ease;
+        // while a push is fresh the rest of the river holds still-ish, so the next cut is the finger's
+        self.river.calm = 0.85 * (1.0 - smooth01(5.0, 11.0, t - self.pushed) as f64);
         let years = dt * self.pace;
         self.river.advance(years);
         if self.river.year - self.epoch > 30000.0 {
