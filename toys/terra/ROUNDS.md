@@ -13,3 +13,9 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   touch carried into the toy; the dive falls onto the light and the toy opens there (Bell, Swell and
   Whales at their own first sight); a pinch out past the whole Earth climbs back; VoiceOver buttons.
   Six fresh critics; released from main by hand as terra-build. Ghost Jam, Meander and Frost added with one line each (plans `jam`, `meander`, `frost`): ten toys.
+- Row 245 rounds 1–2 (Nov 6, 2026, ET): the passages. Murmuration without a cut: the Earth turns its top to the
+  dusk and falls to Ham Wall as the dusk comes down, the toy's own eye (`Toy::arrival`) takes over straight
+  above the reed beds still falling, and tilts up into the sunset as it falls; out the same way backward.
+  Each scene toy's light a small window onto its scene; a scene opens out of that window as the Earth
+  falls on toward it. The Simulator's check plays a passage on an iPhone and an iPad (`sim.env`). Plan
+  `murmuration`.

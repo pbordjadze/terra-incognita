@@ -66,6 +66,11 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   - A host that links several toys (Terra) turns on the kit's `hosted` feature, which leaves each toy's own
     C ABI out, and exports its own with `ios_shell!(host MyHost)`; it drives the toys it holds through
     `Toy` as a shell does (`terra/src/rooms.rs`), on its own device and data.
+  - `Toy::arrival` (painting-company row 245): a host's passage carrying the toy's own eye, from straight
+    above its place at the host globe's scale (`Arrival { k: 0, scale }`, metres a point) to its own first
+    view (`k` 1), then `None` to give the eye back; the toy returns the bearing the top of the glass faces
+    from above, so the host turns its globe to match. Murmuration takes it; a toy that doesn't is opened by
+    Terra out of its light through a widening disc (a scene) or by a crossfade on the same globe (a globe toy).
   - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
     mark); the shell reads them through `toy_buttons`. None by default.
 - `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a light for each toy it
