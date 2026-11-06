@@ -1,4 +1,24 @@
-# Frost: handoff (Nov 4, 2026)
+# Frost: handoff (Nov 6, 2026; row 242 over row 218's)
+
+Row 242 answered the owner's "it just keeps filling in". What a finger does now lasts:
+
+- **The glaze** (`frost.wgsl`: binding 7, `glaze`, one f32 a mask texel as u32 bits): where a melt froze
+  smooth, how deep inside its edge (points; `melt_pane` takes the max). `grow` treats a cell whose glaze
+  is deeper than `fringe_at` (FRINGE 14 pt, ragged by the flaws) as a sink, so frost creeps back only a
+  fringe deep. `relax` makes every glaze shallower by RELAX_PER_S (0.55 pt/s), so a hole heals in about
+  two minutes; `renew` (lib.rs) seeds a healing hole's edge every ~0.9 s from the CPU's `marks`.
+- **Seeds on the melt's true edge**: `edge_point` mirrors `melt_radius`'s wobble (change both together),
+  with each path point's own melt width (`Finger::radii`).
+- **What is under a finger** is read at touch-down (`probe`: ice in a 16 pt disc and the glaze under it,
+  stats words 48–50, read in the same frame). On frost or bare glass: Melt. Deep inside a clear patch:
+  Poised; moved, Melt (widens the wipe); still for PRESS_S 0.4 s, Pen (`pen`: a granular frozen core
+  owned by HOAR in the mask, the glaze given back three print-widths out, seeds one side then the other
+  every 30 pt).
+- **A shake** (`shaken` → `sweep`): `clear` sweeps a wet front from the lamp's side at 900 pt/s, the
+  mask and glaze reset; the creep from the frame restarts (`creep_from`).
+- Plan `play` (54 s) shows all of it; `full` was retired.
+
+# Frost: row 218's handoff (Nov 4, 2026)
 
 painting-company row 218. A cabin window at Oymyakon at about −50 °C, the night outside. Frost grows by
 itself from the frame by Reiter's hexagonal automaton for snow crystals (GPU compute), each crystal at its
