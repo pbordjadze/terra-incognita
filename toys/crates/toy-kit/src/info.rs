@@ -177,7 +177,7 @@ impl Info {
         [points[0] - 26.0 - 2.0 * Self::GAP, points[1] - 34.0]
     }
     /// A fingertip's reach for either, points (half the gap between them: no tap is both's).
-    const REACH: f64 = 22.0;
+    pub const REACH: f64 = 22.0;
     const GAP: f64 = 44.0;
 
     /// The demo, the rules or the origins showing.
@@ -248,10 +248,8 @@ impl Info {
         }
         if self.is_open() {
             // a tap anywhere closes it, and is not the toy's
+            self.close();
             self.taken.push(e.id);
-            self.close_pending = true;
-            self.rules = None;
-            self.origins = None;
             return Route::Taken;
         }
         if (m.demo && near(Self::spot(points), 1.0))
@@ -267,6 +265,15 @@ impl Info {
 
 // (the closing tap is carried out by the host, which can send the ghost's fingers up)
 impl Info {
+    /// Closes whatever shows (the demo, the rules, the origins), as a tap anywhere does.
+    pub fn close(&mut self) {
+        if self.is_open() {
+            self.close_pending = true;
+        }
+        self.rules = None;
+        self.origins = None;
+    }
+
     pub fn open(&mut self, demo: Demo, now: f64) {
         self.line = (!demo.line.is_empty()).then(|| std::ffi::CString::new(demo.line.replace('\0', "")).unwrap_or_default());
         self.open = Some((demo, now));

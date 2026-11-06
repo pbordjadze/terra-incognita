@@ -1,0 +1,4 @@
+{ "_": "One tap home with a card up (painting-company row 246): inside Fireflies the rules are opened, then the Earth mark is tapped once; it closes the card and goes home. Strict, so a tap that only closes the card fails CI.",
+  "seconds": 13, "fps": 20, "strict_taps": true,
+  "events": [{ "t": 0.5, "tap": "fireflies" }, { "t": 6.0, "tap": "rules" }, { "t": 8.0, "tap": "earth" }],
+  "shots": [{ "t": 7.8, "name": "rules" }, { "t": 12.5, "name": "home" }] }

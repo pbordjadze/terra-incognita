@@ -26,6 +26,18 @@ fn earth_spot(points: [f64; 2]) -> [f64; 2] {
     [26.0, points[1] - 34.0]
 }
 const EARTH_REACH: f64 = 24.0;
+/// The opening's zoom: on a tall phone the Earth a little wider than the screen, so its lights are large
+/// (1.4, its height well inside); on a squarer screen (the iPad) the Earth just the screen's width, so no
+/// light opens cut by the frame or hidden past it (painting-company row 246: at 1.4 the 13-inch iPad's
+/// Earth ran off all four sides). The kit's disc radius is (short side / 2 - 14) x zoom.
+pub fn opening_zoom(points: [f64; 2]) -> f64 {
+    let (w, h) = (points[0].min(points[1]), points[0].max(points[1]));
+    if h / w > 1.8 {
+        return 1.4;
+    }
+    ((w * 0.53) / (w / 2.0 - 14.0).max(40.0)).min(1.4)
+}
+
 /// Seconds of the crossfade between the Earth and a toy.
 const FADE: f64 = 0.7;
 
@@ -245,6 +257,8 @@ pub struct Terra {
     /// A finger on the Earth mark.
     earth_finger: Option<u64>,
     reduce_motion: bool,
+    /// The idle turn's pace now, degrees a second (eased toward what the lights in view ask).
+    drift: f64,
 }
 
 /// The month now (0 = January), from the clock (a fixed month without one).
@@ -258,6 +272,23 @@ fn this_month() -> u32 {
     let mp = (5 * doy + 2) / 153;
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     (m - 1) as u32
+}
+
+/// Where the Earth comes back to from a toy: the opening's own view, so the lights are where the reader
+/// first saw them, turned toward the toy just left only as far as keeps its light in view (55 degrees
+/// from the middle at most); painting-company row 246: newcomers came home to a turned Earth, the
+/// lights they had seen gone off it.
+fn homecoming(home: Camera, at: [f64; 2]) -> Camera {
+    let reach = 55f64.to_radians();
+    let (a, b) = (LonLat::new(home.lon, home.lat).to_xyz(), LonLat::new(at[0], at[1]).to_xyz());
+    let w = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos();
+    if w <= reach || w > std::f64::consts::PI - 1e-3 {
+        return Camera { roll: 0.0, ..home };
+    }
+    let u = (w - reach) / w;
+    let (sa, sb) = (((1.0 - u) * w).sin() / w.sin(), (u * w).sin() / w.sin());
+    let ll = LonLat::from_xyz([a[0] * sa + b[0] * sb, a[1] * sa + b[1] * sb, a[2] * sa + b[2] * sb]);
+    Camera { lon: ll.lon, lat: ll.lat, zoom: home.zoom, roll: 0.0 }
 }
 
 fn ease(u: f64) -> f64 {
@@ -504,7 +535,7 @@ impl Toy for Terra {
         let month = this_month();
         let mut globe = Globe::new(&ctx.gpu, assets.as_ref(), ctx.width, ctx.height, ctx.ppp, month)?;
         // over the Atlantic's west: the Americas' lights and Europe's in view, the Pacific's coming round
-        globe.camera = Camera::new(-66.0, 20.0, 1.4);
+        globe.camera = Camera::new(-66.0, 20.0, opening_zoom(ctx.points()));
         globe.set_home();
         let mut life = Life::new(assets.as_ref());
         let [w, h] = ctx.points();
@@ -528,6 +559,7 @@ impl Toy for Terra {
             inside_fingers: Default::default(),
             pinch: None,
             reduce_motion: ctx.reduce_motion,
+            drift: 1.6,
         })
     }
 
@@ -583,10 +615,26 @@ impl Toy for Terra {
         self.life.update(t, dt);
         match self.state {
             State::Atlas => {
-                // left alone, the Earth turns slowly under the reader (west to east, as it does)
+                // left alone, the Earth turns slowly under the reader (west to east, as it does), lingering
+                // where its lights face the reader and crossing the empty sea between them more briskly, so
+                // a minute's look never turns them all away (painting-company row 246: untouched, the
+                // opening had turned to bare Pacific by 40 s)
                 if !self.reduce_motion && !self.globe.hand.busy() && self.downs.is_empty() {
                     let k = ease((t - self.last_touch - 4.0) / 3.0);
-                    self.globe.camera.lon -= 1.6 * k * dt;
+                    let [w, h] = Self::points(ctx);
+                    let seen: f64 = self
+                        .visible_doors()
+                        .iter()
+                        .map(|&(_, p)| {
+                            // a light counts the more the nearer the middle of the screen it is
+                            let dx = (p[0] / w - 0.5).abs() * 2.0;
+                            let dy = (p[1] / h - 0.5).abs() * 2.0;
+                            (1.0 - dx.max(dy)).clamp(0.0, 1.0).sqrt()
+                        })
+                        .sum();
+                    let want = 1.6 * (2.6 / (1.0 + 1.3 * seen)).clamp(0.3, 2.6);
+                    self.drift += (want - self.drift) * (dt / 3.0).min(1.0);
+                    self.globe.camera.lon -= self.drift * k * dt;
                 }
             }
             State::Diving { from, to, t0, dur } => {
@@ -631,8 +679,13 @@ impl Toy for Terra {
                     *self.room_sound.lock().unwrap() = None;
                     self.veil.target = None;
                     let from = self.globe.camera;
-                    let to = Camera { zoom: 1.4, roll: 0.0, ..from };
-                    let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.3 * (from.zoom / to.zoom).ln().abs() };
+                    let home = self.globe.hand.home.unwrap_or(Camera::new(-66.0, 20.0, 1.4));
+                    let to = homecoming(home, self.life.doors[self.door].at);
+                    let w = {
+                        let (a, b) = (LonLat::new(from.lon, from.lat).to_xyz(), LonLat::new(to.lon, to.lat).to_xyz());
+                        (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos()
+                    };
+                    let dur = if self.reduce_motion { 0.01 } else { 1.2 + 0.4 * w + 0.3 * (from.zoom / to.zoom).ln().abs() };
                     self.state = State::Rising { from, to, t0: t, dur };
                 }
             }

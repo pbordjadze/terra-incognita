@@ -232,6 +232,18 @@ impl<T: Toy> Host<T> {
 
     /// A real finger: the info mark's (and the tap that closes its demo), or the toy's.
     pub fn pointer(&mut self, e: PointerEvent) {
+        // a finger going down on one of the toy's own buttons (Terra's Earth mark, its lights) while a card
+        // shows closes the card and is the button's too: one tap, not two (painting-company row 246: five
+        // of six newcomers tapped Terra's Earth mark with the rules up, and it only closed them). A toy
+        // without buttons keeps the rule that a closing tap is nobody's.
+        if e.phase == Phase::Down && self.info.is_open() {
+            let pts = self.toy.buttons(&self.ctx);
+            if pts.iter().any(|(_, p)| (e.x - p[0]).hypot(e.y - p[1]) <= info::Info::REACH) {
+                self.info.close();
+                self.toy.pointer(&mut self.ctx, e);
+                return;
+            }
+        }
         match self.info.route(&e, self.ctx.points(), self.marks) {
             info::Route::Toy => self.toy.pointer(&mut self.ctx, e),
             info::Route::Taken => {}
