@@ -24,7 +24,7 @@ const GAMMA: f64 = 2.5;
 const CUT: f64 = W * 1.0; // a neck narrower than this (centreline to centreline: the banks touch) is cut
 const HELD: usize = 3; // nodes held at each end
 /// The meander belt on the sheet (the young forest between the old terraces and pastures): its axis's
-/// x and half its width, m. Banks outside it (older, cohesive ground) give way a quarter as fast.
+/// x and half its width, m. Banks outside it (older, cohesive ground) give way an eighth as fast.
 /// Nodes apart along the river before two parts of it can be a neck (5 widths).
 const GAP: usize = (W * 5.0 / DS) as usize;
 
@@ -35,12 +35,13 @@ const KICK_LIFE: f64 = 45.0;
 const KICK_MAX: f64 = 2.5;
 
 pub const BELT_X: f64 = 1100.0;
-pub const BELT_HALF: f64 = 4600.0;
+pub const BELT_HALF: f64 = 1700.0;
 
-/// How easily the bank at `p` erodes, 0.25..1.
+/// How easily the bank at `p` erodes, 0.12..1 (the belt kept about the screen's width, so the river
+/// stays in its valley).
 pub fn erodible(p: [f64; 2]) -> f64 {
     let out = ((p[0] - BELT_X).abs() - BELT_HALF).max(0.0);
-    0.25 + 0.75 * (-out / 1200.0).exp()
+    0.12 + 0.88 * (-out / 700.0).exp()
 }
 
 #[derive(Clone)]

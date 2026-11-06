@@ -70,12 +70,12 @@ fn vnoise(p: vec2<f32>) -> f32 {
     let per = 22.0;
     let ph = d / per;
     let fw = max(fwidth(ph), 1e-4);
-    let line = smoothstep(0.0, 1.6 * fw + 0.04, abs(fract(ph) - 0.5) * 2.0 - (1.0 - 2.4 * fw));
+    let line = smoothstep(0.0, 3.0 * fw + 0.08, abs(fract(ph) - 0.5) * 2.0 - (1.0 - 4.0 * fw));
     let grain = vnoise(world / 30.0);
     let fade = 1.0 - smoothstep(50.0, 200.0, age + grain * 20.0);
     // where the ridges crowd together (a bend's tip, a neck) they would fan into a mesh: let them go
     let calm = 1.0 - smoothstep(0.06, 0.2, fw);
-    let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.42;
+    let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.22;
     c = mix(c, vec3(0.78, 0.80, 0.62), arc);
     // just swept: wet silt, darker than the forest's edge, drying within a few years
     let sand = (1.0 - smoothstep(0.5, 4.0, age)) * near;
@@ -238,7 +238,6 @@ fn smooth01(e0: f64, e1: f64, x: f64) -> f32 {
 }
 
 const WATER: [f32; 3] = [0.76, 0.63, 0.47]; // the Beni's café-au-lait: white water, full of the Andes
-const BANK: [f32; 3] = [0.88, 0.81, 0.66];
 const LAKE: [f32; 3] = [0.14, 0.18, 0.27]; // the photograph's own oxbow lakes, sampled // a cut-off loop, cleared: black water
 const MARSH: [f32; 3] = [0.22, 0.30, 0.19];
 
@@ -523,11 +522,27 @@ impl Toy for Meander {
         let line = &self.river.line;
         let step = ((wpx * 0.25 / (130.0 * s * ppp) as f32).floor() as usize).max(1);
         let pts: Vec<[f32; 2]> = line.iter().step_by(step).map(|&q| px(q)).collect();
-        for w in pts.windows(2) {
-            p.line(w[0], w[1], r + 1.0 * ppp as f32, 2.0 * ppp as f32, lin(mix3(BANK, [0.45, 0.50, 0.36], 0.35), 1.0));
+        // wider at a bend's apex, where the point bar shoals it, and paler there; a soft wet-sand edge
+        let bend: Vec<f32> = (0..pts.len())
+            .map(|i| {
+                let (a, b, c) = (pts[i.saturating_sub(2)], pts[i], pts[(i + 2).min(pts.len() - 1)]);
+                let (u, v) = ([b[0] - a[0], b[1] - a[1]], [c[0] - b[0], c[1] - b[1]]);
+                let (lu, lv) = ((u[0] * u[0] + u[1] * u[1]).sqrt(), (v[0] * v[0] + v[1] * v[1]).sqrt());
+                if lu < 1e-3 || lv < 1e-3 {
+                    return 0.0;
+                }
+                let turn = ((u[0] * v[1] - u[1] * v[0]) / (lu * lv)).abs().asin().abs();
+                // radians over the two steps' length, against a channel width: 0 straight, 1 a tight bend
+                (turn / ((lu + lv) * 0.5) * wpx * 1.6).min(1.0)
+            })
+            .collect();
+        let rw = |i: usize| r * (0.88 + 0.32 * bend[i]);
+        for (i, w) in pts.windows(2).enumerate() {
+            p.line(w[0], w[1], (rw(i) + rw(i + 1)) * 0.5 + 1.6 * ppp as f32, 3.0 * ppp as f32, lin([0.50, 0.47, 0.36], 0.85));
         }
-        for w in pts.windows(2) {
-            p.line(w[0], w[1], r, 1.2 * ppp as f32, lin(WATER, 1.0));
+        for (i, w) in pts.windows(2).enumerate() {
+            let k = (bend[i] + bend[i + 1]) * 0.5;
+            p.line(w[0], w[1], (rw(i) + rw(i + 1)) * 0.5, 1.8 * ppp as f32, lin(mix3(WATER, [0.80, 0.69, 0.54], k), 1.0));
         }
         // a cut: the new short channel through the neck flashes as the river takes it
         for &(t0, at) in &self.flashes {
