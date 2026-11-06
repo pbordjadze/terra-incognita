@@ -49,7 +49,9 @@ const RENEW_AFTER_S: f64 = 10.0;
 const PEN: f64 = 9.0;
 const PEN_STEP: f64 = 30.0;
 /// How long a finger rests inside a clear patch before its print starts to freeze.
-const PRESS_S: f64 = 0.4;
+const PRESS_S: f64 = 1.0;
+/// From when, while it rests, a cold bloom shows under it (a drag before PRESS_S melts it away).
+const BLOOM_S: f64 = 0.35;
 /// The stove's warmth (a shake): the clearing's speed, points a second.
 const SWEEP_SPEED: f64 = 900.0;
 
@@ -662,7 +664,17 @@ impl Toy for Frost {
                 }
             }
             match f.mode {
-                Mode::Poised => {}
+                Mode::Poised => {
+                    // the print beginning to freeze under the resting finger: a warning and a promise
+                    let k = (t - f.down_t - BLOOM_S) / (PRESS_S - BLOOM_S);
+                    if k > 0.0 {
+                        op.kind |= OP_PEN;
+                        op.radius = (PEN * 1.5 * k.min(1.0)) as f32;
+                        op.at = [f.at[0] as f32, f.at[1] as f32];
+                        op.to = op.at;
+                        op._c = 1.7;
+                    }
+                }
                 Mode::Undecided => {
                     op.kind |= OP_PROBE;
                     op._d = [f.at[0] as f32, f.at[1] as f32];
@@ -918,7 +930,7 @@ impl Toy for Frost {
                 "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
                 "Two crystals can't share water: they meet in a seam.",
                 "Your finger is warm: it melts the frost. The meltwater freezes again smooth, with nothing for frost to catch on: it creeps back only from the edge, slowly.",
-                "Rest it a moment inside a clear patch and it leaves a moist print instead: that freezes, and frost grows from it.",
+                "Rest it a second inside a clear patch and it leaves a moist print instead: that freezes, and frost grows from it.",
             ],
             "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
         ))

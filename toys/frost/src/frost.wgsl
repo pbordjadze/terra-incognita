@@ -325,7 +325,10 @@ fn melt_pane(@builtin(global_invocation_id) gid: vec3<u32>) {
     let i = f.y * i32(G.field_w) + f.x;
     let film = 0.55 + 0.35 * smoothstep(0.5 * rr, rr, d);
     let was = field[i];
-    field[i] = select(film, min(was, film), was > 0.3 && was < 0.98);
+    // (on dry glass there is no meltwater: it stays as it was)
+    if was >= 0.3 {
+      field[i] = select(film, min(was, film), was < 0.98);
+    }
     let m = mask_index(p);
     if m >= 0 {
       atomicStore(&mask[m], EMPTY);
