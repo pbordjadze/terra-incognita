@@ -1,5 +1,5 @@
 {
- "_": "Play: let it frost, wipe a winding streak, tap, rest a finger high (each stays clear, a lace creeping in from its rim); rest a finger inside the streak, then draw frost along it; a quick drag inside the high hole widens it; shake: the window clears and frosts again.",
+ "_": "Play: let it frost, wipe a winding streak, tap, rest a finger high (each stays clear, a lace creeping in from its rim, healing over minutes); inside the high hole a pause then a drag widens it; shake: the window clears and frosts again.",
  "size": [
   1179,
   2556
@@ -280,66 +280,60 @@
    "for": 2.0
   },
   {
-   "t": 34.0,
-   "down": [
-    120,
-    505
-   ],
-   "id": 9
-  },
-  {
-   "t": 34.7,
-   "move": [
-    128,
-    527
-   ],
-   "id": 9
-  },
-  {
-   "t": 34.82,
-   "move": [
-    140,
-    552
-   ],
-   "id": 9
-  },
-  {
-   "t": 34.94,
-   "move": [
-    160,
-    577
-   ],
-   "id": 9
-  },
-  {
-   "t": 35.06,
-   "move": [
-    185,
-    586
-   ],
-   "id": 9
-  },
-  {
-   "t": 35.3,
-   "up": [
-    185,
-    586
-   ],
-   "id": 9
-  },
-  {
    "t": 38.0,
-   "drag": [
-    [
-     150,
-     170
-    ],
-    [
-     235,
-     235
-    ]
+   "down": [
+    150,
+    170
    ],
-   "for": 0.4
+   "id": 11
+  },
+  {
+   "t": 38.68,
+   "move": [
+    167,
+    183
+   ],
+   "id": 11
+  },
+  {
+   "t": 38.76,
+   "move": [
+    184,
+    196
+   ],
+   "id": 11
+  },
+  {
+   "t": 38.84,
+   "move": [
+    201,
+    209
+   ],
+   "id": 11
+  },
+  {
+   "t": 38.92,
+   "move": [
+    218,
+    222
+   ],
+   "id": 11
+  },
+  {
+   "t": 39.0,
+   "move": [
+    235,
+    235
+   ],
+   "id": 11
+  },
+  {
+   "t": 39.1,
+   "up": [
+    235,
+    235
+   ],
+   "id": 11
   },
   {
    "t": 44.0,
@@ -350,12 +344,9 @@
   21.9,
   25.6,
   31.0,
-  33.9,
-  34.6,
-  35.5,
-  37.0,
-  38.6,
-  40.0,
+  35.0,
+  38.5,
+  39.5,
   43.9,
   44.4,
   45.0,

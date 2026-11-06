@@ -24,17 +24,24 @@ const GAMMA: f64 = 2.5;
 const CUT: f64 = W * 1.0; // a neck narrower than this (centreline to centreline: the banks touch) is cut
 const HELD: usize = 3; // nodes held at each end
 /// The meander belt on the sheet (the young forest between the old terraces and pastures): its axis's
-/// x and half its width, m. Banks outside it (older, cohesive ground) give way a quarter as fast.
+/// x and half its width, m. Banks outside it (older, cohesive ground) give way an eighth as fast.
 /// Nodes apart along the river before two parts of it can be a neck (5 widths).
 const GAP: usize = (W * 5.0 / DS) as usize;
 
-pub const BELT_X: f64 = 1100.0;
-pub const BELT_HALF: f64 = 4600.0;
+/// A finger's push: the ground it pushed erodes up to 1 + KICK_MAX times as fast, within about KICK_R
+/// m, the push fading over KICK_LIFE years.
+const KICK_R: f64 = 650.0;
+const KICK_LIFE: f64 = 45.0;
+const KICK_MAX: f64 = 2.5;
 
-/// How easily the bank at `p` erodes, 0.25..1.
+pub const BELT_X: f64 = 1100.0;
+pub const BELT_HALF: f64 = 1700.0;
+
+/// How easily the bank at `p` erodes, 0.12..1 (the belt kept about the screen's width, so the river
+/// stays in its valley).
 pub fn erodible(p: [f64; 2]) -> f64 {
     let out = ((p[0] - BELT_X).abs() - BELT_HALF).max(0.0);
-    0.25 + 0.75 * (-out / 1200.0).exp()
+    0.12 + 0.88 * (-out / 700.0).exp()
 }
 
 #[derive(Clone)]
@@ -53,6 +60,12 @@ pub struct River {
     pub year: f64,
     /// The years a cutoff happened (the toy flashes them), as (year, where).
     pub cuts: Vec<(f64, [f64; 2])>,
+    /// Pushes a finger gave the bank: (where, the year, strength). The ground there erodes faster for a
+    /// few decades, so a pushed bend keeps swelling after the finger lifts.
+    pub kicks: Vec<([f64; 2], f64, f64)>,
+    /// 0..1: how far the rest of the river is held back while a push is fresh, so the bend the finger
+    /// made is the one that moves (the toy sets it).
+    pub calm: f64,
     rng: u64,
     r0: Vec<f64>,
     r1: Vec<f64>,
@@ -67,7 +80,7 @@ pub fn rand(s: &mut u64) -> f64 {
 
 impl River {
     pub fn new(line: Vec<[f64; 2]>, seed: u64) -> River {
-        let mut r = River { line, oxbows: Vec::new(), year: 0.0, cuts: Vec::new(), rng: seed | 1, r0: Vec::new(), r1: Vec::new() };
+        let mut r = River { line, oxbows: Vec::new(), year: 0.0, cuts: Vec::new(), kicks: Vec::new(), calm: 0.0, rng: seed | 1, r0: Vec::new(), r1: Vec::new() };
         r.line = resample(&r.line, DS);
         r
     }
@@ -147,11 +160,27 @@ impl River {
             self.r1[i] = OMEGA * self.r0[i] + GAMMA * num / den.max(1e-9);
         }
         // move each node along its normal (the outer bank of a left turn is to the right)
+        let year = self.year;
+        self.kicks.retain(|k| year - k.1 < KICK_LIFE * 4.0);
+        let kicks = &self.kicks;
+        let boost = |q: [f64; 2]| -> f64 {
+            let b: f64 = kicks.iter().map(|k| k.2 * (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * KICK_R * KICK_R)).exp() * (-(year - k.1) / KICK_LIFE).exp()).sum();
+            1.0 + b.min(KICK_MAX)
+        };
+        let calm = self.calm;
+        let held = |q: [f64; 2]| -> f64 {
+            if calm <= 0.0 {
+                return 1.0;
+            }
+            let r = KICK_R * 1.8;
+            let near: f64 = kicks.iter().map(|k| (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * r * r)).exp() * (-(year - k.1) / KICK_LIFE).exp() * 2.0).sum();
+            1.0 - calm * (1.0 - near.min(1.0))
+        };
         let mut q = self.line.clone();
         for i in HELD..n.saturating_sub(HELD) {
             let t = tang[i];
             let nrm = [-t[1], t[0]];
-            let m = (self.r1[i] * dt * erodible(p[i])).clamp(-DS * 0.3, DS * 0.3);
+            let m = (self.r1[i] * dt * erodible(p[i]) * boost(p[i]) * held(p[i])).clamp(-DS * 0.3, DS * 0.3);
             q[i] = [p[i][0] - nrm[0] * m, p[i][1] - nrm[1] * m];
         }
         // a whisper of noise: the bank is never quite even
@@ -190,7 +219,7 @@ impl River {
             for &q in &o.line {
                 if near(q, &self.line) {
                     cut = true;
-                    if piece.len() >= 5 {
+                    if piece.len() >= 9 {
                         out.push(Oxbow { line: std::mem::take(&mut piece), born: o.born, course: o.course });
                     }
                     piece.clear();
@@ -200,11 +229,58 @@ impl River {
             }
             if !cut {
                 out.push(Oxbow { line: piece, born: o.born, course: o.course });
-            } else if piece.len() >= 5 {
+            } else if piece.len() >= 9 {
                 out.push(Oxbow { line: piece, born: o.born, course: o.course });
             }
         }
         self.oxbows = out;
+    }
+
+    /// A finger moving by `d` through the river at `at` (metres): the channel within `radius` of it is
+    /// carried along (most of the way: it lags, and slips off the finger when pushed far), cut where it
+    /// meets another reach, and the bank there given a push that keeps it eroding. Returns the length
+    /// the river gained.
+    pub fn push(&mut self, at: [f64; 2], d: [f64; 2], radius: f64) -> f64 {
+        let n = self.line.len();
+        if n < 8 {
+            return 0.0;
+        }
+        let before = self.length();
+        let l = (d[0] * d[0] + d[1] * d[1]).sqrt();
+        let steps = (l / 90.0).ceil().max(1.0) as usize;
+        let mut moved = 0.0f64;
+        for s in 0..steps {
+            let f = (s as f64 + 1.0) / steps as f64;
+            // the finger's place in this sub-step (it arrives at `at`)
+            let c = [at[0] - d[0] * (1.0 - f), at[1] - d[1] * (1.0 - f)];
+            let dd = [d[0] / steps as f64, d[1] / steps as f64];
+            let n = self.line.len();
+            for i in HELD..n.saturating_sub(HELD) {
+                let r = dist(self.line[i], c);
+                if r < radius {
+                    // the core (under the fingertip) carries the river almost all the way, so once
+                    // hooked it follows the finger and slips off only after a long pull
+                    let x = ((1.0 - r / radius) / 0.55).min(1.0);
+                    let w = 0.93 * x * x * (3.0 - 2.0 * x);
+                    self.line[i][0] += dd[0] * w;
+                    self.line[i][1] += dd[1] * w;
+                    moved = moved.max(w);
+                }
+            }
+            self.line = resample(&self.line, DS);
+            smooth(&mut self.line, 0.15);
+            self.cutoffs();
+            self.erase_crossed();
+        }
+        if moved > 0.05 {
+            self.kicks.push((at, self.year, (l / 500.0).min(0.5) * moved));
+        }
+        self.length() - before
+    }
+
+    /// The distance from `at` to the channel's centreline, m.
+    pub fn distance(&self, at: [f64; 2]) -> f64 {
+        self.line.iter().map(|p| dist(*p, at)).fold(f64::MAX, f64::min)
     }
 
     fn cutoffs(&mut self) {
@@ -302,8 +378,17 @@ impl River {
         if d > W * 6.0 || k < HELD || k >= n - HELD {
             return;
         }
-        let dir = [(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)];
-        let push = amount.min(d);
+        // a touch on the water itself bows the bank out on the side the finger is (a kink you see at
+        // once); a touch beside the river draws the bank toward the finger
+        let (dir, push) = if d < W * 0.8 {
+            let (a, b) = (self.line[k.saturating_sub(1)], self.line[(k + 1).min(n - 1)]);
+            let l = dist(a, b).max(1e-6);
+            let nrm = [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
+            let side = if (at[0] - self.line[k][0]) * nrm[0] + (at[1] - self.line[k][1]) * nrm[1] < 0.0 { -1.0 } else { 1.0 };
+            ([nrm[0] * side, nrm[1] * side], amount * 1.3)
+        } else {
+            ([(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)], amount.min(d))
+        };
         for i in HELD..n - HELD {
             let s = (i as f64 - k as f64) * DS;
             let g = (-(s * s) / (2.0 * 600.0 * 600.0)).exp();
