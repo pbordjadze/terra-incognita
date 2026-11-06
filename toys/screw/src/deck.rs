@@ -393,6 +393,7 @@ mod tests {
         let p0 = d.pos;
         let f = freq(&run(&mut d, 2.0));
         let moved = d.pos - p0;
+        eprintln!("measured: at pitch 0.7 a 440 Hz tone comes out at {f:.1} Hz, and the song moved {moved:.3} s in 2 s");
         assert!((f - 308.0).abs() < 1.0, "the tone at 0.7: {f}");
         assert!((moved - 1.4).abs() < 0.005, "the song moved {moved} s in 2 s at 0.7");
     }
@@ -430,6 +431,8 @@ mod tests {
                 assert!((gap - want).abs() < 0.0015, "pitch {pitch}: clicks {gap:.4} s apart, want {want:.4}: {at:?}");
             }
             assert!(at.len() >= 4);
+            let gaps: Vec<String> = at.windows(2).map(|w| format!("{:.4}", w[1] - w[0])).collect();
+            eprintln!("measured: at pitch {pitch}, two chops, the clicks heard {} s apart (a beat at this speed: {want:.4} s)", gaps.join(", "));
         }
     }
 
@@ -445,6 +448,9 @@ mod tests {
             d.chop();
             let cut = run(&mut d, 0.05);
             assert!(jerk(&cut) < calm * 1.6, "cut {k}: {} against {calm}", jerk(&cut));
+            if k == 11 {
+                eprintln!("measured: the sharpest bend in the wave across 12 cuts is at most 1.6x the tone's own (the last: {:.2}x)", jerk(&cut) / calm);
+            }
         }
     }
 
@@ -481,8 +487,19 @@ mod tests {
         assert!(!d.rewinding());
         let landed = from - 8.0 * 0.75;
         assert!((d.pos - landed).abs() < 0.01, "landed at {} for {landed}", d.pos);
+        eprintln!("measured: a rewind from {from:.2} s lands at {:.2} s (two bars back: {landed:.2})", d.pos);
         run(&mut d, 1.0);
         assert!((d.vel - 1.0).abs() < 1e-3, "and plays on");
+        // and a screwed record is still screwed after it
+        d.pitch = 0.7;
+        run(&mut d, 1.0);
+        d.rewind();
+        while d.rewinding() {
+            run(&mut d, 0.01);
+        }
+        run(&mut d, 1.0);
+        assert!((d.vel - 0.7).abs() < 1e-3);
+        eprintln!("measured: screwed to 0.7, rewound, it plays on at {:.3}", d.vel);
     }
 
     #[test]

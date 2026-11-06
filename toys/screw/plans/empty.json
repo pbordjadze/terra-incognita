@@ -1,8 +1,9 @@
 {
- "_": "The very first launch, no song yet: a blank record and the sleeve. A tap on the record or the sleeve asks the shell for Files (the check has no picker: the toy only asks).",
+ "_": "The very first launch, before any song of his own: the practice record is on the turntable, and the first tap plays it. A tap on the sleeve asks the shell for Files (the check has no picker: the toy only asks).",
  "size": [1179, 2556],
  "ppp": 3,
- "seconds": 5,
- "events": [{ "t": 3.0, "tap": "record", "inert": true }],
- "shots": [{ "t": 0.5, "name": "blank" }, { "t": 2.5, "name": "sleeve" }]
+ "seconds": 7,
+ "events": [{ "t": 3.0, "tap": "record" }, { "t": 6.0, "tap": "sleeve", "inert": true }],
+ "audio": true,
+ "shots": [{ "t": 0.5, "name": "blank" }, { "t": 2.5, "name": "untouched" }, { "t": 5.0, "name": "first-tap" }]
 }

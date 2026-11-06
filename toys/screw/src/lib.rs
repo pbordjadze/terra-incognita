@@ -33,6 +33,10 @@ const FLICK_V: f64 = 350.0;
 const FLICK_D: f64 = 70.0;
 /// The label's share of the record's radius.
 const LABEL: f64 = 0.34;
+/// The practice record's name (its title line).
+const PRACTICE: &str = "practice record";
+/// How long the needle's way back stays on the ring, seconds.
+const TRAIL_S: f64 = 1.2;
 
 const RECORD: &str = r#"
 fn hash1(x: f32) -> f32 { return fract(sin(x * 91.3458) * 47453.5453); }
@@ -132,6 +136,9 @@ pub struct Screw {
     /// The deck's chop and rewind counts as last seen, and the kick's glow.
     chops: u32,
     kick: f64,
+    /// Where the needle was over the last moments (seconds of the shell's clock, of the song): a
+    /// chop's or a rewind's way back is drawn along the ring as a fading streak.
+    trail: std::collections::VecDeque<(f64, f64)>,
     /// The deck's sound clock as last seen, and how long it has stood still while the record turns.
     rendered: u64,
     stalled: f64,
@@ -193,14 +200,21 @@ fn song_name(file: &str) -> String {
 impl Toy for Screw {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let body = RECORD.replace("LABEL", &format!("{LABEL:.3}"));
+        // the practice record is on the turntable from the first launch, so the first touch plays
+        // something; the reader's own song (the sleeve) takes its place
+        let mut deck = Deck::new();
+        let (rate, l, r) = practice::record();
+        deck.load(Arc::new(Song::new(PRACTICE, rate, l, r)));
+        toy_kit::step("the practice record");
         Ok(Screw {
-            deck: Arc::new(Mutex::new(Deck::new())),
+            deck: Arc::new(Mutex::new(deck)),
             record: Backdrop::new(&ctx.gpu, "record", &body),
             paint: Painter::new(&ctx.gpu),
             finger: None,
             shown: 0.0,
             chops: 0,
             kick: 0.0,
+            trail: Default::default(),
             rendered: 0,
             stalled: 0.0,
             ask: false,
@@ -343,6 +357,12 @@ impl Toy for Screw {
         }
         self.kick *= (-dt / 0.18).exp();
         let target = d.turns;
+        if d.song.is_some() {
+            self.trail.push_back((t, d.pos));
+        }
+        while self.trail.front().is_some_and(|f| t - f.0 > TRAIL_S) {
+            self.trail.pop_front();
+        }
         drop(d);
         // the angle follows the deck's quickly, so a chop's step back is a visible kick, not a jump
         self.shown += (target - self.shown) * (dt / 0.045).min(1.0);
@@ -379,6 +399,26 @@ impl Toy for Screw {
                 let played = u <= at;
                 let alpha = if played { 0.36 } else { 0.2 };
                 self.paint.line(p0, p1, 0.55 * k, 0.8, pm([0.93, 0.88, 0.95, alpha]));
+            }
+            // the way back: where the needle went backward, a streak along the ring, fading
+            let len_s = s.seconds();
+            for w in self.trail.iter().collect::<Vec<_>>().windows(2) {
+                let ((t0, p0), (_, p1)) = (*w[0], *w[1]);
+                if p1 >= p0 - 1e-6 {
+                    continue;
+                }
+                let fade = (1.0 - (self.t - t0) / TRAIL_S).clamp(0.0, 1.0) as f32;
+                let (u0, u1) = (p1 / len_s, p0 / len_s);
+                let steps = (((u1 - u0) * 720.0).ceil() as usize).clamp(1, 400);
+                for i in 0..steps {
+                    let ua = u0 + (u1 - u0) * i as f64 / steps as f64;
+                    let ub = u0 + (u1 - u0) * (i + 1) as f64 / steps as f64;
+                    let pt = |u: f64| {
+                        let a = u * std::f64::consts::TAU - std::f64::consts::FRAC_PI_2;
+                        [(c[0] + a.cos() * ring) as f32 * k, (c[1] + a.sin() * ring) as f32 * k]
+                    };
+                    self.paint.glow(pt(ua), pt(ub), 1.6 * k, 5.0 * k, pm([1.0, 0.72, 0.95, 0.55 * fade]));
+                }
             }
             let a = at * std::f64::consts::TAU - std::f64::consts::FRAC_PI_2;
             let np = [(c[0] + a.cos() * ring) as f32 * k, (c[1] + a.sin() * ring) as f32 * k];
@@ -483,10 +523,10 @@ impl Toy for Screw {
     fn rules(&self) -> Option<Rules> {
         Some(Rules::new(
             &[
-                "Push down on the record and it slows, the voice dropping with it. It stays where you leave it.",
+                "Put a finger anywhere on the record and push it down: it slows, the voice dropping with it. It stays where you leave it.",
                 "Tap and it says the last beat again, in time. Hold and it keeps saying it.",
                 "Flick it to the left and it spins back two bars.",
-                "Touch the label to stop it or start it. The sleeve opens a song from Files.",
+                "Touch the label to stop it or start it. The sleeve, bottom left, opens a song of yours from Files.",
             ],
             "",
         ))
