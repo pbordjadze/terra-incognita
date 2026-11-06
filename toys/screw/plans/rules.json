@@ -1,0 +1,14 @@
+{
+ "_": "The rules and where they came from (toy-kit info.rs): each tapped open, a tap closes it.",
+ "size": [1179, 2556],
+ "ppp": 3,
+ "seconds": 9,
+ "events": [
+  { "t": 0.2, "open": "build/screw/practice.wav" },
+  { "t": 1.0, "tap": "rules" },
+  { "t": 4.0, "tap": [196, 200], "inert": true },
+  { "t": 5.0, "tap": "origins" },
+  { "t": 8.0, "tap": [196, 200], "inert": true }
+ ],
+ "shots": [{ "t": 2.0, "name": "rules" }, { "t": 6.0, "name": "origins" }]
+}

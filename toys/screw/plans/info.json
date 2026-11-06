@@ -1,0 +1,14 @@
+{
+ "_": "The info mark: its ghost hand starts the record, pushes it down to a screw and chops it twice.",
+ "size": [1179, 2556],
+ "ppp": 3,
+ "seconds": 11,
+ "fps": 30,
+ "events": [
+  { "t": 0.2, "open": "build/screw/practice.wav" },
+  { "t": 1.0, "tap": "info" }
+ ],
+ "shots": [{ "t": 0.9, "name": "mark" }, { "t": 3.4, "name": "ghost" }, { "t": 6.5, "name": "screwed" }],
+ "film": { "from": 0, "to": 11, "every": 0.0333333 },
+ "audio": true
+}

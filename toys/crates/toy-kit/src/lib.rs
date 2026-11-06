@@ -194,6 +194,84 @@ pub trait Toy: 'static {
     }
     /// VoiceOver activated `buttons()[i]` (as it was this frame); `t` the shell's seconds.
     fn press(&mut self, _ctx: &mut Ctx, _i: usize, _t: f64) {}
+    /// Whether the toy asks the reader for a sound file of their own now (Screw's sleeve was touched):
+    /// asked once a frame, so return true once per ask. The shell shows the Files picker, decodes what is
+    /// chosen and hands it to `opened`; it keeps the file in the app's own storage and hands it again at
+    /// every launch, until another is chosen. Nothing is fetched or bundled: the file is the reader's.
+    fn wants_file(&mut self) -> bool {
+        false
+    }
+    /// A sound file the reader chose (`wants_file`), decoded: on the device by AVAudioFile (any format
+    /// iOS plays), in a plan by `"open": "<file.wav>"` (check.rs).
+    fn opened(&mut self, _ctx: &mut Ctx, _file: AudioFile) {}
+    /// Whether the toy's sound is music the reader asked for (Screw's record), so the shell plays it in the
+    /// playback category: heard with the silent switch on, other apps' audio paused. False (the default):
+    /// the ambient category, which the silent switch silences and other apps' audio plays over.
+    fn plays_music(&self) -> bool {
+        false
+    }
+    /// One quiet line the shell sets at the top in the system's text (VoiceOver reads it): Screw's
+    /// song's name. None (the default): nothing.
+    fn title(&self) -> Option<String> {
+        None
+    }
+}
+
+/// A decoded sound file (`Toy::opened`): its name (the file's, without its extension), its sample rate
+/// and its two channels (a mono file's are the same).
+pub struct AudioFile {
+    pub name: String,
+    pub rate: f64,
+    pub left: Vec<f32>,
+    pub right: Vec<f32>,
+}
+
+impl AudioFile {
+    /// A WAV file (PCM 8, 16, 24 or 32 bit, or 32-bit float; any channels, the first two kept).
+    pub fn wav(path: &std::path::Path) -> anyhow::Result<AudioFile> {
+        let b = std::fs::read(path)?;
+        anyhow::ensure!(b.len() > 12 && &b[0..4] == b"RIFF" && &b[8..12] == b"WAVE", "{}: not a WAV file", path.display());
+        let (mut fmt, mut data) = (None, None);
+        let mut i = 12;
+        while i + 8 <= b.len() {
+            let n = u32::from_le_bytes(b[i + 4..i + 8].try_into().unwrap()) as usize;
+            let body = &b[i + 8..(i + 8 + n).min(b.len())];
+            match &b[i..i + 4] {
+                b"fmt " => fmt = Some(body),
+                b"data" => data = Some(body),
+                _ => {}
+            }
+            i += 8 + n + (n & 1);
+        }
+        let (f, d) = (fmt.ok_or_else(|| anyhow::anyhow!("no fmt chunk"))?, data.ok_or_else(|| anyhow::anyhow!("no data chunk"))?);
+        anyhow::ensure!(f.len() >= 16, "short fmt chunk");
+        let tag = u16::from_le_bytes([f[0], f[1]]);
+        let ch = u16::from_le_bytes([f[2], f[3]]).max(1) as usize;
+        let rate = u32::from_le_bytes(f[4..8].try_into().unwrap()) as f64;
+        let bits = u16::from_le_bytes([f[14], f[15]]) as usize;
+        let tag = if tag == 0xFFFE && f.len() >= 26 { u16::from_le_bytes([f[24], f[25]]) } else { tag };
+        let w = bits / 8;
+        anyhow::ensure!(w > 0, "zero-width samples");
+        let sample = |s: &[u8]| -> f32 {
+            match (tag, bits) {
+                (3, 32) => f32::from_le_bytes(s.try_into().unwrap()),
+                (_, 8) => (s[0] as f32 - 128.0) / 128.0,
+                (_, 16) => i16::from_le_bytes([s[0], s[1]]) as f32 / 32768.0,
+                (_, 24) => (i32::from_le_bytes([0, s[0], s[1], s[2]]) >> 8) as f32 / 8388608.0,
+                (_, 32) => i32::from_le_bytes(s.try_into().unwrap()) as f32 / 2147483648.0,
+                _ => 0.0,
+            }
+        };
+        let frames = d.len() / (w * ch);
+        let (mut left, mut right) = (Vec::with_capacity(frames), Vec::with_capacity(frames));
+        for k in 0..frames {
+            let at = k * w * ch;
+            left.push(sample(&d[at..at + w]));
+            right.push(if ch > 1 { sample(&d[at + w..at + 2 * w]) } else { sample(&d[at..at + w]) });
+        }
+        let name = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        Ok(AudioFile { name, rate, left, right })
+    }
 }
 
 /// A toy's sound: fills interleaved samples (`channels` of them a frame, at `rate` Hz), -1..1.
@@ -214,6 +292,8 @@ pub struct Host<T: Toy> {
     marks: info::Marks,
     /// The toy's buttons for VoiceOver, as the shell reads them (`buttons_text`).
     buttons: std::ffi::CString,
+    /// The toy's title as the shell reads it (`title_text`).
+    title: std::ffi::CString,
 }
 
 impl<T: Toy> Host<T> {
@@ -222,7 +302,7 @@ impl<T: Toy> Host<T> {
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
         let marks = info::Marks { demo: toy.demo(&ctx).is_some(), rules: toy.rules().is_some(), origins: toy.origins().is_some() };
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks, buttons: Default::default() })
+        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks, buttons: Default::default(), title: Default::default() })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -309,6 +389,23 @@ impl<T: Toy> Host<T> {
     /// VoiceOver pressed button `i`.
     pub fn press(&mut self, i: usize, t: f64) {
         self.toy.press(&mut self.ctx, i, t);
+    }
+
+    /// Whether the toy asks for a sound file now (`Toy::wants_file`).
+    pub fn wants_file(&mut self) -> bool {
+        self.toy.wants_file()
+    }
+
+    /// Hands the toy the sound file the reader chose.
+    pub fn opened(&mut self, file: AudioFile) {
+        self.toy.opened(&mut self.ctx, file);
+    }
+
+    /// The toy's quiet line (`Toy::title`), valid until the next call.
+    pub fn title_text(&mut self) -> Option<&std::ffi::CStr> {
+        let t = self.toy.title()?;
+        self.title = std::ffi::CString::new(t.replace('\0', " ")).unwrap_or_default();
+        Some(&self.title)
     }
 
     /// The toy's named places, and the info mark's as `"info"`.
@@ -540,6 +637,29 @@ macro_rules! ios_shell {
             #[no_mangle]
             pub unsafe extern "C" fn toy_button_press(s: *mut S, i: u32, t: f64) {
                 if let Some(s) = s.as_mut() { s.host.press(i as usize, t) }
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_plays_music(s: *mut S) -> bool {
+                s.as_ref().map(|s| s.host.toy.plays_music()).unwrap_or(false)
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_wants_file(s: *mut S) -> bool {
+                s.as_mut().map(|s| s.host.wants_file()).unwrap_or(false)
+            }
+            /// A sound file the reader chose, decoded: `frames` samples a channel (`right` may be null
+            /// for a mono file), at `rate` Hz; copied, so the shell frees its buffers after.
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_opened_audio(s: *mut S, name: *const c_char, left: *const f32, right: *const f32, frames: u64, rate: f64) {
+                let Some(s) = s.as_mut() else { return };
+                if left.is_null() { return }
+                let l = std::slice::from_raw_parts(left, frames as usize).to_vec();
+                let r = if right.is_null() { l.clone() } else { std::slice::from_raw_parts(right, frames as usize).to_vec() };
+                let name = CStr::from_ptr(name).to_string_lossy().into_owned();
+                s.host.opened($crate::AudioFile { name, rate, left: l, right: r });
+            }
+            #[no_mangle]
+            pub unsafe extern "C" fn toy_title(s: *mut S) -> *const c_char {
+                s.as_mut().and_then(|s| s.host.title_text()).map(|l| l.as_ptr()).unwrap_or(std::ptr::null())
             }
             #[no_mangle]
             pub unsafe extern "C" fn toy_free(s: *mut S) {

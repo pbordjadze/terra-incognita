@@ -5,8 +5,9 @@
 import UIKit
 import QuartzCore
 import AVFoundation
+import UniformTypeIdentifiers
 
-final class ToyView: UIView {
+final class ToyView: UIView, UIDocumentPickerDelegate {
     override class var layerClass: AnyClass { CAMetalLayer.self }
     var shell: OpaquePointer?
     var synth: OpaquePointer?
@@ -38,6 +39,12 @@ final class ToyView: UIView {
     /// (TOY_OPEN=rules, origins or info, or several with commas, set by tools/toys/sim_launch.sh: opens
     /// each once, the first TOY_OPEN_AFTER seconds in, the next TOY_OPEN_EVERY seconds after)
     var openAt: [(String, Double)] = []
+    /// The toy's quiet line at the top (toy_title: Screw's song), in the system's text.
+    let title = UILabel()
+    var titleText: String?
+    /// The sound file the reader chose (toy_wants_file), kept in the app's own storage
+    /// (Application Support/opened/) and handed to the toy again at every launch.
+    var picking = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -58,6 +65,15 @@ final class ToyView: UIView {
         caption.alpha = 0
         caption.isUserInteractionEnabled = false
         addSubview(caption)
+        title.font = UIFont.preferredFont(forTextStyle: .footnote)
+        title.adjustsFontForContentSizeCategory = true
+        title.numberOfLines = 1
+        title.lineBreakMode = .byTruncatingTail
+        title.textAlignment = .center
+        title.textColor = UIColor(white: 1.0, alpha: 0.55)
+        title.isUserInteractionEnabled = false
+        title.alpha = 0
+        addSubview(title)
         rules.layer.cornerRadius = 16
         rules.layer.cornerCurve = .continuous
         rules.clipsToBounds = true
@@ -103,6 +119,7 @@ final class ToyView: UIView {
         toy_set_night(shell, traitCollection.userInterfaceStyle == .dark)
         let store = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("toy.json").path
         store.withCString { toy_store(shell, $0) }
+        if let kept = keptFile() { open(kept) }
         startSound()
         let center = NotificationCenter.default
         center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
@@ -135,7 +152,11 @@ final class ToyView: UIView {
     func startSound() {
         guard let shell, let s = toy_synth(shell) else { return }
         synth = s
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        if toy_plays_music(shell) {
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [])
+        } else {
+            try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        }
         try? AVAudioSession.sharedInstance().setActive(true)
         let engine = AVAudioEngine()
         let hw = engine.outputNode.outputFormat(forBus: 0).sampleRate
@@ -184,12 +205,15 @@ final class ToyView: UIView {
             toy_resize(shell, w, h, Double(metal.contentsScale))
         }
         if rulesText != nil { layoutRules() }
+        layoutTitle()
     }
 
     @objc func tick(_ link: CADisplayLink) {
         guard let shell else { return }
         toy_frame(shell, link.targetTimestamp)
         if toy_take_haptic(shell) { haptic.impactOccurred() }
+        if toy_wants_file(shell) { pickFile() }
+        showTitle(toy_title(shell).map { String(cString: $0) })
         if let o = openAt.first, CACurrentMediaTime() >= o.1 {
             openAt.removeFirst()
             switch o.0 {
@@ -248,6 +272,77 @@ final class ToyView: UIView {
         rulesScroll.contentSize = rulesLabel.frame.size
     }
 
+    func showTitle(_ text: String?) {
+        guard text != titleText else { return }
+        titleText = text
+        title.text = text
+        title.accessibilityLabel = text
+        layoutTitle()
+        UIView.animate(withDuration: 0.6) { self.title.alpha = text == nil ? 0 : 1 }
+    }
+
+    func layoutTitle() {
+        let w = min(bounds.width - 96, 420)
+        title.frame = CGRect(x: (bounds.width - w) / 2, y: safeAreaInsets.top + 14, width: w, height: 24)
+    }
+
+    /// Where the chosen file is kept: the app's own storage, not Documents (the Files app shows that).
+    var keptDir: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("opened", isDirectory: true)
+    }
+
+    func keptFile() -> URL? {
+        (try? FileManager.default.contentsOfDirectory(at: keptDir, includingPropertiesForKeys: nil))?.first
+    }
+
+    /// The Files picker, for a sound file of the reader's own.
+    func pickFile() {
+        guard !picking, let vc = window?.rootViewController else { return }
+        picking = true
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio], asCopy: true)
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        vc.present(picker, animated: true)
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { picking = false }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        picking = false
+        guard let url = urls.first else { return }
+        let fm = FileManager.default
+        try? fm.removeItem(at: keptDir)
+        try? fm.createDirectory(at: keptDir, withIntermediateDirectories: true)
+        let kept = keptDir.appendingPathComponent(url.lastPathComponent)
+        do { try fm.copyItem(at: url, to: kept) } catch { toyLog("could not keep \(url.lastPathComponent): \(error)"); return }
+        open(kept)
+    }
+
+    /// Decodes a sound file (any format AVAudioFile reads) off the main thread, then hands it to the toy.
+    func open(_ url: URL) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let file = try? AVAudioFile(forReading: url) else { DispatchQueue.main.async { self?.toyLog("could not read \(url.lastPathComponent)") }; return }
+            let format = file.processingFormat
+            guard let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(file.length)), (try? file.read(into: buf)) != nil, let ch = buf.floatChannelData else {
+                DispatchQueue.main.async { self?.toyLog("could not decode \(url.lastPathComponent)") }
+                return
+            }
+            let name = url.deletingPathExtension().lastPathComponent
+            DispatchQueue.main.async {
+                guard let shell = self?.shell else { return }
+                let right: UnsafePointer<Float>? = format.channelCount > 1 ? UnsafePointer(ch[1]) : nil
+                name.withCString { toy_opened_audio(shell, $0, ch[0], right, UInt64(buf.frameLength), format.sampleRate) }
+                _ = buf
+            }
+        }
+    }
+
+    func toyLog(_ line: String) {
+        NSLog("toy: \(line)")
+        let log = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("toy-log.txt")
+        if let h = try? FileHandle(forWritingTo: log) { h.seekToEndOfFile(); h.write("\(Int(Date().timeIntervalSince1970)) \(line)\n".data(using: .utf8)!); try? h.close() }
+    }
+
     func showCaption(_ text: String?) {
         guard text != captionText else { return }
         captionText = text
@@ -270,6 +365,7 @@ final class ToyView: UIView {
             var out: [Any] = []
             guard let shell else { return [] }
             if rulesText != nil { out.append(rulesLabel) }
+            if titleText != nil { title.isAccessibilityElement = true; out.append(title) }
             if let text = toy_buttons(shell).map({ String(cString: $0) }), !text.isEmpty {
                 for (i, line) in text.split(separator: "\n").enumerated() {
                     let f = line.split(separator: "\t")

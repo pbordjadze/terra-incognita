@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The device shell's text on the Linux check's screenshots: a stand-in for toys/ios/Sources/main.swift.
 
-The info mark's line, the rules and their origins (toy-kit's info.rs) are set by the iOS shell in the system's text,
+The info mark's line, the rules and their origins, the toy's title line (toy-kit's info.rs) are set by the iOS shell in the system's text,
 so a check's frame lacks them; the check writes what was showing beside each shot as
 `<shot>.shell.json` (size, ppp, line, rules, origins, top: the card hung from the top). This draws them as the shell lays them out, into
 `<shot>.shell.png`, so a screenshot shows what the reader sees:
@@ -86,6 +86,18 @@ def caption(img, text, k):
     ImageDraw.Draw(img, 'RGBA').text((x, y), text, font=f, fill=(255, 255, 255, 235))
 
 
+def title(img, text, k):
+    """The toy's quiet title line (Toy::title): footnote, white at 0.55, centred at the top."""
+    W = img.size[0] / k
+    f = ImageFont.truetype(FONT, round(13 * k))
+    d = ImageDraw.Draw(img, 'RGBA')
+    w = min(W - 96, 420) * k
+    while d.textlength(text, font=f) > w and len(text) > 2:
+        text = text[:-2] + '…'
+    tw = d.textlength(text, font=f)
+    d.text(((W * k - tw) / 2, (SAFE_TOP + 14 + 4) * k), text, font=f, fill=(255, 255, 255, 140))
+
+
 def main():
     for root in sys.argv[1:] or ['.']:
         for j in sorted(Path(root).rglob('*.shell.json')):
@@ -94,6 +106,8 @@ def main():
             img = Image.open(shot).convert('RGB')
             if s.get('rules') or s.get('origins'):
                 rules(img, s.get('rules') or s['origins'], s['ppp'], s.get('top', False))
+            if s.get('title'):
+                title(img, s['title'], s['ppp'])
             if s.get('line'):
                 caption(img, s['line'], s['ppp'])
             out = j.with_name(j.name[: -len('.shell.json')] + '.shell.png')

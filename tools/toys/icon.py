@@ -313,7 +313,38 @@ def walk():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk}
+def screw():
+    # a record on the dark, its plum label, the lamp's two wedges of light on the grooves
+    img = Image.new('RGBA', (N, N), (10, 9, 12, 255))
+    d = ImageDraw.Draw(img)
+    c, R = N / 2, 430
+    halo = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(halo).ellipse([c - R - 30, c - R - 30, c + R + 30, c + R + 30], fill=(90, 30, 130, 150))
+    img.alpha_composite(halo.filter(ImageFilter.GaussianBlur(40)))
+    d = ImageDraw.Draw(img)
+    d.ellipse([c - R, c - R, c + R, c + R], fill=(14, 13, 16, 255))
+    for i in range(70):
+        r = 150 + i * 3.9
+        g = 22 + (i * 37 % 11)
+        d.ellipse([c - r, c - r, c + r, c + r], outline=(g, g, g + 3, 255), width=1)
+    sheen = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    sd = ImageDraw.Draw(sheen)
+    for a0 in (-128, 52):
+        sd.pieslice([c - R + 20, c - R + 20, c + R - 20, c + R - 20], a0 - 9, a0 + 9, fill=(220, 210, 235, 70))
+    sheen = sheen.filter(ImageFilter.GaussianBlur(14))
+    mask = Image.new('L', img.size, 0)
+    ImageDraw.Draw(mask).ellipse([c - R + 10, c - R + 10, c + R - 10, c + R - 10], fill=255)
+    ImageDraw.Draw(mask).ellipse([c - 150, c - 150, c + 150, c + 150], fill=0)
+    img.paste(Image.alpha_composite(img, sheen), (0, 0), mask)
+    d = ImageDraw.Draw(img)
+    d.ellipse([c - 146, c - 146, c + 146, c + 146], fill=(92, 34, 112, 255))
+    d.arc([c - 108, c - 108, c + 108, c + 108], 200, 300, fill=(240, 205, 140, 255), width=9)
+    d.ellipse([c - 12, c - 12, c + 12, c + 12], fill=(140, 140, 148, 255))
+    d.ellipse([c - 6, c - 6, c + 6, c + 6], fill=(20, 20, 22, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

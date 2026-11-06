@@ -19,8 +19,11 @@ the owner's to decide):
 | Night Walk: one walker's footprints in the dark map a land no one can see, until dawn (row 224) | `walk/` | `com.pbordjadze.toy.walk` | `walk-build-<n>` |
 | Terra Incognita: the toy that holds the others, the whole Earth with a living light for each (row 217) | `terra/` | `com.pbordjadze.terraincognita` | `terra-build-<n>` |
 | Frost: frost on a cabin window at Oymyakon; your finger is warm, wipe it and it grows back (row 218) | `frost/` | `com.pbordjadze.toy.frost` | `frost-build-<n>` |
+| Screw: a record of your own song; push it down and it slows, voice and all; tap and it says the beat again (row 250) | `screw/` | `com.pbordjadze.toy.screw` | `screw-build-<n>` |
 
 Rust on wgpu, as Adrift is. Nothing is a web view; nothing is fetched at run time; no accounts, no analytics.
+One exception, by design: Screw plays a song that is the reader's own file, opened from Files (the kit's
+`Toy::wants_file`/`opened`), kept in the app's own storage and never bundled, committed or fetched.
 
 ## What a toy should be
 
@@ -66,6 +69,11 @@ randomness, and let it happen. Small and finished-feeling; safe to poke anywhere
   - A host that links several toys (Terra) turns on the kit's `hosted` feature, which leaves each toy's own
     C ABI out, and exports its own with `ios_shell!(host MyHost)`; it drives the toys it holds through
     `Toy` as a shell does (`terra/src/rooms.rs`), on its own device and data.
+  - A sound file of the reader's own (Screw): `Toy::wants_file` asks the shell for the Files picker,
+    `Toy::opened` gets the file decoded (AVAudioFile on the device; a plan's `"open": "<file.wav>"` in
+    the check); the shell keeps it and hands it back at each launch. `Toy::title` is one quiet line the
+    shell sets at the top (the song's name); `Toy::plays_music` puts the sound in the playback category
+    (heard with the silent switch on).
   - `Toy::buttons` / `press`: things on screen VoiceOver should offer as buttons (Terra's lights, its Earth
     mark); the shell reads them through `toy_buttons`. None by default.
 - `terra/`: Terra Incognita as a toy (painting-company row 217): the whole Earth with a light for each toy it

@@ -7,6 +7,12 @@ a patch never changes a public signature; a minor may, and its lines say how to 
 
 A minor: every toy builds unchanged (`Toy::demo` has a default), but the hand moves differently.
 
+- **A sound file of the reader's own** (painting-company row 250, Screw): `Toy::wants_file` (the shell
+  shows the Files picker), `Toy::opened(ctx, AudioFile)` (decoded: AVAudioFile on the device,
+  `AudioFile::wav` in a plan's `"open"`), `Toy::title` (a quiet line at the top, in the system's text;
+  `shell_text.py` draws it on the check's shots) and `Toy::plays_music` (the playback category). All
+  default to nothing. The C ABI adds `toy_wants_file`, `toy_opened_audio`, `toy_title`, `toy_plays_music`.
+
 - **One globe camera, Adrift's gestures** (`globe::Hand`; Paul, Nov 3: "all the globe ones should
   share the two finger rotate"): the drag keeps the place it took under the finger (a trackball over
   the poles), after an 8-point slop, so a tap never turns the globe; a fling glides on Adrift's decay

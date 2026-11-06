@@ -23,7 +23,8 @@
 //!     { "t": 4.0, "hold": [200, 300], "for": 1.5 },
 //!     { "t": 5.0, "down": [10, 10], "id": 7 }, { "t": 5.2, "move": [40, 10], "id": 7 }, { "t": 5.3, "up": [40, 10], "id": 7 },
 //!     { "t": 5.6, "tap": [20, 20], "inert": true },
-//!     { "t": 6.0, "shake": true }
+//!     { "t": 6.0, "shake": true },
+//!     { "t": 0.2, "open": "build/screw/song.wav" }
 //!   ],
 //!   "shots": [0.5, { "t": 3.5, "name": "pinched" }],
 //!   "film": { "from": 0, "to": 8, "every": 0.1 },
@@ -36,6 +37,9 @@
 //! (tools/toys/film.sh makes an MP4 and a contact sheet of them); `audio` as `<out>/audio.wav` (48 kHz
 //! stereo, the whole plan) and a line of its loudness (integrated LUFS, RMS and peak in dBFS). Each
 //! shot prints a line: its time and what the frame cost on the CPU.
+//!
+//! `open` hands the toy a WAV file (a path from where the check runs) as if the reader had chosen it
+//! from Files (`Toy::opened`; on the device the shell decodes any format iOS plays).
 //!
 //! **Places.** Wherever a plan gives a point (`tap`, `hold`, `drag`'s ends, `pinch`'s fingers,
 //! `down`/`move`/`up`) it may instead name a place, resolved at the moment the event starts: a name
@@ -110,6 +114,8 @@ pub struct Event {
     pub up: Option<[f64; 2]>,
     pub id: Option<u64>,
     pub shake: bool,
+    /// A sound file (WAV) handed to the toy as if the reader chose it from Files (`Toy::opened`).
+    pub open: Option<String>,
     /// The event is meant to change nothing on screen (the touch check leaves it alone).
     pub inert: bool,
     pub places: Places,
@@ -163,6 +169,7 @@ struct RawEvent {
     up: Option<Place>,
     id: Option<u64>,
     shake: bool,
+    open: Option<String>,
     inert: bool,
 }
 
@@ -189,6 +196,7 @@ impl From<RawEvent> for Event {
             up: pt(&r.up),
             id: r.id,
             shake: r.shake,
+            open: r.open,
             inert: r.inert,
             places: Places { tap: r.tap, hold: r.hold, drag: r.drag, pinch: r.pinch, down: r.down, mv: r.mv, up: r.up },
         }
@@ -318,6 +326,8 @@ impl Pos {
 enum What {
     Pointer { id: u64, phase: Phase, pos: Pos },
     Shake,
+    /// The event's `open`: a sound file handed to the toy as if the reader chose it.
+    Open,
 }
 
 /// One thing that happens at `t`, from the plan's event `ev`.
@@ -386,6 +396,9 @@ fn schedule(events: &[Event]) -> Vec<Item> {
         }
         if e.shake {
             out.push(Item { t, ev, what: What::Shake });
+        }
+        if e.open.is_some() {
+            out.push(Item { t, ev, what: What::Open });
         }
     }
     out.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
@@ -600,6 +613,11 @@ impl<T: Toy> Run<T> {
                     self.host.pointer(PointerEvent { id, phase, x, y, t: it.t });
                 }
                 What::Shake => self.host.toy.shaken(&mut self.host.ctx),
+                What::Open => {
+                    let path = events[it.ev].open.as_deref().unwrap_or_default();
+                    let f = crate::AudioFile::wav(Path::new(path)).map_err(|e| anyhow::anyhow!("event at t={}: open {path}: {e}", events[it.ev].t))?;
+                    self.host.opened(f);
+                }
             }
             self.next += 1;
         }
@@ -771,11 +789,12 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 writeln!(log, "shot {:>7.2}s {} (update {cost:.2} ms)", t, p.display())?;
                 // the shell's text showing then (the info line, the rules), which the shell sets in
                 // the system's text and this frame lacks: tools/kit/shell_text.py draws it on the shot
+                let title = host.toy.title();
                 let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
-                if line.is_some() || rules.is_some() || origins.is_some() {
+                if line.is_some() || rules.is_some() || origins.is_some() || title.is_some() {
                     let s = |c: Option<&std::ffi::CStr>| serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()));
                     let j = serde_json::json!({ "size": [w, h], "ppp": ppp, "line": s(line), "rules": s(rules),
-                        "origins": s(origins), "top": host.card_at_top() });
+                        "origins": s(origins), "top": host.card_at_top(), "title": title });
                     std::fs::write(out.join(format!("{}.shell.json", shots[si].1)), j.to_string())?;
                 }
                 si += 1;
