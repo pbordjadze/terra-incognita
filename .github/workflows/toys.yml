@@ -70,12 +70,15 @@ jobs:
         with: { workspaces: toys, key: '${{ matrix.toy }}' }
       - name: Software Vulkan, ffmpeg and the data
         run: |
-          # (a hosted runner's mirror can hang for the whole job: bounded, and tried again)
-          for i in 1 2 3; do
-            timeout 240 sudo apt-get update -qq -o Acquire::http::Timeout=20 -o Acquire::Retries=2 &&
-              timeout 480 sudo apt-get install -y -qq -o Acquire::http::Timeout=20 -o Acquire::Retries=2 mesa-vulkan-drivers ffmpeg > /dev/null && break
+          # (a hosted runner's mirror can be slow or hang: only what is needed, bounded, tried twice, and the
+          # driver checked after, so a check never runs on without Vulkan)
+          for i in 1 2; do
+            timeout 300 sudo apt-get update -qq -o Acquire::http::Timeout=30 -o Acquire::Retries=3 &&
+              timeout 1200 sudo apt-get install -y -qq --no-install-recommends -o Acquire::http::Timeout=30 -o Acquire::Retries=3 \
+                mesa-vulkan-drivers ffmpeg > /dev/null && break
             echo "::warning::apt attempt $i failed or timed out"; sleep 15
           done
+          ls /usr/share/vulkan/icd.d/lvp_icd*.json > /dev/null || { echo "::error::no software Vulkan (mesa-vulkan-drivers) installed"; exit 1; }
           python3 tools/toys/assets.py ${{ matrix.toy }} --link
       - name: Build and test
         working-directory: toys
