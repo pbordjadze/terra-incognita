@@ -125,22 +125,27 @@ impl Flat {
     /// night already under way.
     pub fn new(seed: u64, half: [f64; 2], n: usize) -> Flat {
         let mut f = Flat { cars: Vec::with_capacity(n), half, hands: Vec::new(), t: 0.0, rng: seed.max(1), left: 0.0 };
-        // a few convoys laid along gentle curves, and loners between
+        // the night under way: most cars already strung into a few long convoys spread over the salt,
+        // each laid along a gentle curve from its own part of the field, a few loners between
         let mut placed = 0;
-        let convoys = (n / 14).clamp(2, 6);
+        let convoys = (n / 11).clamp(2, 8);
+        let len = (n * 8 / 10 / convoys).max(4);
+        let cols = if convoys > 3 { 2 } else { 1 };
+        let rows = convoys.div_ceil(cols);
         for c in 0..convoys {
-            let len = (n / (convoys + 2)).clamp(5, 16);
-            let mut p = [(f.uni() - 0.5) * half[0] * 1.2, (f.uni() - 0.5) * half[1] * 1.4];
+            let (cx, cy) = (((c % cols) as f64 + 0.5) / cols as f64, ((c / cols) as f64 + 0.5) / rows as f64);
+            let mut p = [(cx - 0.5) * 1.3 * half[0] + (f.uni() - 0.5) * 20.0, (cy - 0.5) * 1.3 * half[1] + (f.uni() - 0.5) * 20.0];
             let mut h = f.uni() * std::f64::consts::TAU;
-            let bend = (f.uni() - 0.5) * 0.06 + if c % 2 == 0 { 0.02 } else { -0.02 };
-            // the head first, its followers laid out behind
+            let bend = (f.uni() - 0.5) * 0.05;
+            // the convoy laid back from its middle, so it sits in its own part of the salt
+            let gap = CAR + S0 + 5.0;
+            p = [p[0] + h.cos() * gap * len as f64 * 0.5, p[1] + h.sin() * gap * len as f64 * 0.5];
             for _ in 0..len {
                 if placed >= n {
                     break;
                 }
                 f.push_car(p, h);
                 placed += 1;
-                let gap = CAR + S0 + 6.0;
                 p = [p[0] - h.cos() * gap, p[1] - h.sin() * gap];
                 h -= bend * gap;
             }
@@ -559,7 +564,7 @@ mod tests {
     fn never_all_stuck() {
         // no gridlock: after the first minutes, the cars keep moving on the whole
         for seed in [1, 2, 3] {
-            let mut f = Flat::new(seed, [75.0, 164.0], 60);
+            let mut f = Flat::new(seed, [92.0, 199.0], 43);
             let mut slow = 0.0f64;
             for _ in 0..30 {
                 run(&mut f, 10.0);

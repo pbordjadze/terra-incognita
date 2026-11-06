@@ -32,9 +32,9 @@ const PAINT: [[f32; 3]; 9] = [
 const LONG: f64 = 1.3;
 const WIDE: f64 = 1.4;
 /// About one car to this many square metres of salt on screen.
-const AREA: f64 = 1300.0;
+const AREA: f64 = 1700.0;
 /// Seconds of night already run before the toy opens (so it opens mid-story).
-const BEFORE: f64 = 25.0;
+const BEFORE: f64 = 12.0;
 /// Tyre tracks: stamped every this many seconds, fading by half in HALF_LIFE.
 const STAMP: f64 = 0.1;
 const HALF_LIFE: f64 = 12.0;
@@ -451,7 +451,7 @@ impl Toy for Jam {
         // light on the salt: headlights ahead, tail lights behind, a held finger's light
         for c in cars.iter() {
             // headlights: a cone of warm light reaching ahead over the salt, the car's own light
-            for (d, w, a) in [(3.0, 1.1, 0.10), (7.0, 2.0, 0.07), (12.0, 3.2, 0.05), (18.0, 4.6, 0.03)] {
+            for (d, w, a) in [(3.0, 0.9, 0.08), (7.0, 1.5, 0.045), (12.0, 2.3, 0.028), (17.0, 3.1, 0.016)] {
                 self.painter.glow(at(c, half + 0.8, 0.0), at(c, half + d, 0.0), w * m, w * 0.9 * m, [1.0, 0.88, 0.66, a]);
             }
             let red = c.lights as f32;
