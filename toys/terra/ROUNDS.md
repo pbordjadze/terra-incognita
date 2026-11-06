@@ -33,3 +33,7 @@ One line a round: what changed (ET). Terra became the toy that holds the others 
   then a still pale globe; row 245 handed it over): in Bell itself, the idle Earth is struck from its great quakes 8 s
   after the last strike and every 11-17 s after (was 20 s, then 28-46 s), and the surface wave is a ring of warm gold
   laid over the ground (white light added to the pale globe read as nothing).
+- First minute, round 6 (Nov 6; row 246): judged only; the weakest still Bell's arrival (gold rings now, but a paler,
+  emptier globe than the one you came from: Bell's own look, unowned). Released as terra-build-174 with bell-build-174
+  (3:32 AM ET). Next: Bell's look on arrival; an answer at the finger inside the toys that reads as yours; Paul's tap with
+  sound on. The loop's tools: `tools/toys/newcomer/` (try.sh, regress.sh, NEWCOMER.md, CRITIC.md).
