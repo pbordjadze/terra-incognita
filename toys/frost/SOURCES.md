@@ -31,9 +31,13 @@ What is real, what is drawn, and from where (painting-company row 218).
   tips (not across the whole pane): a bound for the phone's GPU.
 - Frost starting by itself where the glass meets the frame (real: the frame's edge is the coldest
   glass), a seed every 0.7 s at first, the glass frosted over in about 20 s: the timing is drawn.
-- A fingertip's warmth melting the ice along its way (wider where it rests), and the wet glass
-  freezing again from the melt's edge once it lifts (real in kind: a moist print on cold glass
-  frosts over; the sizes and the pace are drawn).
+- A fingertip's warmth melting the ice along its way (wider where it rests); the meltwater freezing
+  again as smooth clear ice that frost finds hard to catch on, so it creeps back only from the
+  edge (real in kind: hoarfrost nucleates on flaws and on ice, and a wiped patch of a frosted window
+  stays clearer; the fringe's depth, ~14 points, and the healing, about two minutes, are drawn).
+  A finger set down inside a clear patch leaving a moist print that frosts (real in kind; its
+  look, a granular core with crystals grown from its sides, is drawn).
+- A shake as the stove's warmth sweeping the window clear: drawn.
 - The window (a wooden frame and crossbar), the night outside (sky, stars, snow, larches), the lamp
   behind the reader, the meltwater's film, the ice's colour and
   light: drawn in code, no photographs.
