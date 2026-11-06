@@ -1,12 +1,11 @@
 {
- "_": "A toy added with one line (Ghost Jam, no likeness of its own yet: a breathing light of its brake-light red over Nagoya): the Earth turned to Japan, the light touched, the ring at dusk comes up through the Earth; the Earth mark back.",
- "seconds": 12,
+ "_": "Salt Flat (painting-company row 244), its light over Bonneville, Utah: a window of pale salt at night with a convoy's headlights snaking across it. Touched, the window shows the toy itself and grows as the Earth turns Utah to the middle and falls toward it, until it is the glass; the Earth mark, and it shrinks back into its light (row 245).",
+ "seconds": 13,
  "fps": 20,
  "events": [
-  { "t": 0.5, "drag": [[330, 430], [60, 430]], "for": 0.8 },
-  { "t": 2.0, "drag": [[330, 430], [60, 430]], "for": 0.8 },
-  { "t": 4.0, "tap": "jam" },
-  { "t": 10.0, "tap": "earth" }
+  { "t": 1.0, "tap": "jam" },
+  { "t": 8.0, "tap": "earth" }
  ],
- "shots": [{ "t": 3.8, "name": "japan" }, { "t": 5.2, "name": "diving" }, { "t": 8.5, "name": "inside" }, { "t": 11.8, "name": "back" }]
+ "shots": [{ "t": 0.9, "name": "the-light" }, { "t": 2.2, "name": "window" }, { "t": 3.0, "name": "growing" }, { "t": 6.5, "name": "inside" }, { "t": 9.0, "name": "going-back" }, { "t": 12.8, "name": "back" }],
+ "film": { "from": 0.5, "to": 13, "every": 0.1 }
 }

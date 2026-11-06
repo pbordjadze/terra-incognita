@@ -73,7 +73,7 @@ pub fn doors() -> Vec<Door> {
         Door { id: "fireflies", name: "Fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
         Door { id: "bell", name: "Bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
         Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
-        Door { id: "jam", name: "Ghost Jam", at: [136.91, 35.18], tint: [0.86, 0.20, 0.12], night: true, degree: 5, open: rooms::open::<jam::Jam> },
+        Door { id: "jam", name: "Salt Flat", at: [-113.86, 40.76], tint: [0.96, 0.86, 0.70], night: true, degree: 5, open: rooms::open::<jam::Jam> },
         Door { id: "meander", name: "Meander", at: [-67.03, -12.97], tint: [0.30, 0.52, 0.62], night: false, degree: 7, open: rooms::open::<meander::Meander> },
         Door { id: "frost", name: "Frost", at: [142.79, 63.46], tint: [0.22, 0.42, 0.78], night: false, degree: 9, open: rooms::open::<frost::Frost> },
     ]
@@ -431,24 +431,35 @@ impl Life {
                     }
                 }
                 "jam" => {
-                    // a window onto the night ring: 22 cars round it, and the jam a touch starts, a knot of
-                    // brake lights running backward round the ring as the cars go forward
+                    // a window onto the salt at night: pale crust, and a convoy's headlights snaking across it,
+                    // its tail lights red behind, the tracks it leaves fading
                     let w = a * halo;
-                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.07, 0.08, 0.11, 0.95 * w]);
-                    p.ring(c, (r * 0.68 * k) as f32, (0.16 * r * k) as f32, 1.0, [0.22, 0.23, 0.27, 0.9 * a]);
-                    let jam_at = -tm * 0.35;
-                    for j in 0..22 {
-                        let base = j as f64 / 22.0 * std::f64::consts::TAU;
-                        let d = (base - jam_at).rem_euclid(std::f64::consts::TAU);
-                        let near = (-(d.min(std::f64::consts::TAU - d) / 0.55).powi(2)).exp();
-                        // the cars bunch at the knot and spread after it
-                        let ang = base + tm * 0.5 - 0.25 * near * (d - std::f64::consts::PI).signum();
-                        let q = [c[0] + (ang.cos() * r * 0.68 * k) as f32, c[1] + (ang.sin() * r * 0.68 * k) as f32];
-                        let red = near as f32;
-                        p.disc(q, (0.08 * r * k) as f32 + 0.6 * kf, 1.0, [0.95, 0.9 - 0.75 * red, 0.75 - 0.65 * red, 0.95 * a]);
-                        if red > 0.2 {
-                            p.glow(q, q, (0.12 * r * k) as f32, (0.2 * r * k) as f32, [1.0, 0.2, 0.1, 0.5 * red * a]);
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.16, 0.17, 0.21, 0.95 * w]);
+                    p.disc(c, (r * 0.8 * k) as f32, (r * 0.5 * k) as f32, [0.42, 0.42, 0.46, 0.35 * w]);
+                    let path = |s: f64| -> [f32; 2] {
+                        let x = s;
+                        let y = 0.32 * (s * 2.2 + 0.6 * (tm * 0.21).sin()).sin();
+                        [c[0] + (x * r * 0.85 * k) as f32, c[1] + (y * r * k) as f32]
+                    };
+                    // the tracks
+                    let mut prev: Option<[f32; 2]> = None;
+                    for j in 0..=24 {
+                        let q = path(j as f64 / 12.0 - 1.0);
+                        if let Some(pp) = prev {
+                            p.line(pp, q, 0.5 * kf, 0.8, [0.75, 0.74, 0.70, 0.35 * a]);
                         }
+                        prev = Some(q);
+                    }
+                    // six cars along it, going on and wrapping round
+                    for j in 0..6 {
+                        let s = ((tm * 0.12 + j as f64 * 0.11).rem_euclid(1.2)) * 1.8 - 0.95;
+                        if s.abs() > 0.9 {
+                            continue;
+                        }
+                        let (head, tail) = (path(s + 0.04), path(s - 0.03));
+                        p.glow(head, head, (0.12 * r * k) as f32, (0.18 * r * k) as f32, [1.0, 0.95, 0.8, 0.55 * a]);
+                        p.disc(head, 0.9 * kf, 1.0, [1.0, 0.97, 0.88, 0.95 * a]);
+                        p.disc(tail, 0.7 * kf, 1.0, [0.95, 0.15, 0.1, 0.9 * a]);
                     }
                 }
                 "frost" => {
