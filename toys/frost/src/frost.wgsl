@@ -342,7 +342,7 @@ fn pen(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (O.kind & 4u) == 0u {
     return;
   }
-  let lo = vec2<i32>(floor((min(O.at, O.to) - 2.4 * O.radius - 2.0 * G.fringe - 2.0) * G.fs));
+  let lo = vec2<i32>(floor((min(O.at, O.to) - 3.2 * O.radius - 2.0 * G.fringe - 2.0) * G.fs));
   let f = lo + vec2<i32>(gid.xy);
   if f.x < 0 || f.y < 0 || f.x >= i32(G.field_w) || f.y >= i32(G.field_h) {
     return;
@@ -351,11 +351,11 @@ fn pen(@builtin(global_invocation_id) gid: vec3<u32>) {
   let d = distance(p, melt_near(p));
   let rr = melt_radius(p);
   let m = mask_index(p);
-  if m < 0 || d > 2.2 * rr + 2.0 * G.fringe {
+  if m < 0 || d > 3.0 * rr + 2.0 * G.fringe {
     return;
   }
   // (frost may grow feathers out from it a little further than a melt's fringe)
-  atomicMin(&glaze[m], bitcast<u32>(max(d - 2.2 * rr, 0.0)));
+  atomicMin(&glaze[m], bitcast<u32>(max(d - 3.0 * rr, 0.0)));
   let i = f.y * i32(G.field_w) + f.x;
   // the print's middle freezes at once, granular, ragged at its edge
   let core = rr * (0.2 + 0.5 * flaws(p / 1.6));

@@ -47,7 +47,9 @@ const RENEW_AFTER_S: f64 = 10.0;
 /// A finger set down well inside a hole leaves its moist print, which frosts: its width, and a seed
 /// every so far along its way.
 const PEN: f64 = 9.0;
-const PEN_STEP: f64 = 20.0;
+const PEN_STEP: f64 = 30.0;
+/// How long a finger rests inside a clear patch before its print starts to freeze.
+const PRESS_S: f64 = 0.4;
 /// The stove's warmth (a shake): the clearing's speed, points a second.
 const SWEEP_SPEED: f64 = 900.0;
 
@@ -150,7 +152,10 @@ enum Mode {
     Undecided,
     /// On frost or glass: it melts.
     Melt,
-    /// Well inside a hole: its print frosts.
+    /// Well inside a clear patch, not yet moved: a drag from here is a wipe; held still a moment,
+    /// it becomes the print.
+    Poised,
+    /// Held still inside a clear patch: its print frosts, and a drag on draws frost.
     Pen,
 }
 
@@ -178,8 +183,10 @@ struct Finger {
     radius: f64,
     lifted: bool,
     mode: Mode,
-    /// Where the print last left a seed.
+    /// Where the print last left a seed, and on which side.
     seeded: [f64; 2],
+    side: f64,
+    down_t: f64,
 }
 
 pub struct Frost {
@@ -556,6 +563,8 @@ impl Toy for Frost {
                         lifted: false,
                         mode: Mode::Undecided,
                         seeded: p,
+                        side: 1.0,
+                        down_t: e.t,
                     });
                 }
             }
@@ -639,8 +648,21 @@ impl Toy for Frost {
         // the last frame, wider the longer it rests; or, well inside a hole, its moist print
         let mut lifted = None;
         let mut pen_seed = None;
+        let mut ring = None;
         if let Some(f) = &mut self.finger {
+            if f.mode == Mode::Poised {
+                let moved = (f.at[0] - f.path[0][0]).hypot(f.at[1] - f.path[0][1]) > 6.0;
+                if moved || f.lifted {
+                    f.mode = Mode::Melt;
+                    f.rest_since = t;
+                } else if t - f.down_t > PRESS_S {
+                    f.mode = Mode::Pen;
+                    f.seeded = f.at;
+                    ring = Some(f.at);
+                }
+            }
             match f.mode {
+                Mode::Poised => {}
                 Mode::Undecided => {
                     op.kind |= OP_PROBE;
                     op._d = [f.at[0] as f32, f.at[1] as f32];
@@ -661,14 +683,15 @@ impl Toy for Frost {
                     let (d0, d1) = (f.at[0] - f.seeded[0], f.at[1] - f.seeded[1]);
                     let l = d0.hypot(d1);
                     if l > PEN_STEP {
-                        // either side of the print, to grow feathers out from it
-                        let o = PEN + 2.5;
-                        pen_seed = Some([[f.at[0] - d1 / l * o, f.at[1] + d0 / l * o], [f.at[0] + d1 / l * o, f.at[1] - d0 / l * o]]);
+                        // beside the print, one side then the other, to grow feathers out from it
+                        let o = (PEN + 2.5) * f.side;
+                        pen_seed = Some([f.at[0] - d1 / l * o, f.at[1] + d0 / l * o]);
                         f.seeded = f.at;
+                        f.side = -f.side;
                     }
                 }
             }
-            if f.mode != Mode::Undecided {
+            if f.mode != Mode::Undecided && f.mode != Mode::Poised {
                 op.at = [f.melted_to[0] as f32, f.melted_to[1] as f32];
                 op.to = [f.at[0] as f32, f.at[1] as f32];
                 op._c = 1.7;
@@ -678,9 +701,16 @@ impl Toy for Frost {
                 }
             }
         }
-        if let Some([a, b]) = pen_seed {
+        if let Some(a) = pen_seed {
             self.start(a, t + 0.25);
-            self.start(b, t + 0.35);
+        }
+        if let Some(c) = ring {
+            let a0 = self.rand() * std::f64::consts::TAU;
+            for i in 0..4 {
+                let a = a0 + i as f64 * std::f64::consts::TAU / 4.0;
+                let o = PEN + 2.5;
+                self.start([c[0] + o * a.cos(), c[1] + o * a.sin()], t + 0.15 + 0.1 * i as f64);
+            }
         }
         if let Some(f) = lifted {
             if f.mode == Mode::Melt {
@@ -729,7 +759,7 @@ impl Toy for Frost {
                 cp.set_pipeline(&self.seed);
                 cp.dispatch_workgroups(wg, wg, 1);
             }
-            let reach = if o.kind & OP_PEN != 0 { 4.8 * o.radius + 4.0 * FRINGE as f32 + 6.0 } else { 2.8 * o.radius + 6.0 };
+            let reach = if o.kind & OP_PEN != 0 { 6.4 * o.radius + 4.0 * FRINGE as f32 + 6.0 } else { 2.8 * o.radius + 6.0 };
             let span = |a: f32, b: f32| (((a - b).abs() + reach) * FS).ceil() as u32;
             if o.kind & (OP_MELT | OP_PEN) != 0 {
                 cp.set_pipeline(if o.kind & OP_MELT != 0 { &self.melt_pane } else { &self.pen });
@@ -779,16 +809,7 @@ impl Toy for Frost {
                 // print; anywhere else, the warmth
                 let ice = counts[PROBE_AT] as f64 / counts[PROBE_AT + 1].max(1) as f64;
                 let depth = f32::from_bits(counts[PROBE_AT + 2]) as f64;
-                f.mode = if ice < 0.06 && depth > FRINGE * 1.4 { Mode::Pen } else { Mode::Melt };
-                if f.mode == Mode::Pen {
-                    f.seeded = f.at;
-                    let a0 = self.rng as f64 / u64::MAX as f64 * std::f64::consts::TAU;
-                    for i in 0..5 {
-                        let a = a0 + i as f64 * std::f64::consts::TAU / 5.0;
-                        let o = PEN + 2.5;
-                        self.pending.push(Pending { at: [f.at[0] + o * a.cos(), f.at[1] + o * a.sin()], after: t + 0.2 + 0.08 * i as f64 });
-                    }
-                }
+                f.mode = if ice < 0.06 && depth > FRINGE * 1.4 { Mode::Poised } else { Mode::Melt };
                 if std::env::var("FROST_LOG").is_ok() {
                     eprintln!("t {t:.2} probe ice {ice:.2} glaze {depth:.1}");
                 }
@@ -897,7 +918,7 @@ impl Toy for Frost {
                 "The air is wetter low on the glass: long ferns race there; higher up, slower, stubbier stars.",
                 "Two crystals can't share water: they meet in a seam.",
                 "Your finger is warm: it melts the frost. The meltwater freezes again smooth, with nothing for frost to catch on: it creeps back only from the edge, slowly.",
-                "Set down inside a clear patch, the finger leaves a moist print instead; it freezes, and frost grows from it.",
+                "Rest it a moment inside a clear patch and it leaves a moist print instead: that freezes, and frost grows from it.",
             ],
             "Real: Reiter's model of how snow crystals grow. Drawn: the night, the glass, the lamp, the sound.",
         ))

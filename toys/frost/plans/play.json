@@ -1,5 +1,5 @@
 {
- "_": "Play: let it frost, wipe a winding streak, tap, rest a finger high (each stays clear, a lace creeping in from its rim); draw frost back inside the streak; shake: the window clears and frosts again.",
+ "_": "Play: let it frost, wipe a winding streak, tap, rest a finger high (each stays clear, a lace creeping in from its rim); rest a finger inside the streak, then draw frost along it; a quick drag inside the high hole widens it; shake: the window clears and frosts again.",
  "size": [
   1179,
   2556
@@ -288,7 +288,7 @@
    "id": 9
   },
   {
-   "t": 34.1,
+   "t": 34.7,
    "move": [
     128,
     527
@@ -296,7 +296,7 @@
    "id": 9
   },
   {
-   "t": 34.2,
+   "t": 34.82,
    "move": [
     140,
     552
@@ -304,7 +304,7 @@
    "id": 9
   },
   {
-   "t": 34.3,
+   "t": 34.94,
    "move": [
     160,
     577
@@ -312,7 +312,7 @@
    "id": 9
   },
   {
-   "t": 34.4,
+   "t": 35.06,
    "move": [
     185,
     586
@@ -320,12 +320,26 @@
    "id": 9
   },
   {
-   "t": 34.6,
+   "t": 35.3,
    "up": [
     185,
     586
    ],
    "id": 9
+  },
+  {
+   "t": 38.0,
+   "drag": [
+    [
+     150,
+     170
+    ],
+    [
+     235,
+     235
+    ]
+   ],
+   "for": 0.4
   },
   {
    "t": 44.0,
@@ -335,13 +349,13 @@
  "shots": [
   21.9,
   25.6,
-  27.0,
   31.0,
   33.9,
-  34.3,
-  35.0,
-  36.0,
-  38.0,
+  34.6,
+  35.5,
+  37.0,
+  38.6,
+  40.0,
   43.9,
   44.4,
   45.0,
