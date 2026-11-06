@@ -57,7 +57,7 @@ jobs:
     if: ${{ needs.plan.outputs.check != '[]' }}
     name: Check ${{ matrix.toy }} on Linux
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -70,15 +70,18 @@ jobs:
         with: { workspaces: toys, key: '${{ matrix.toy }}' }
       - name: Software Vulkan, ffmpeg and the data
         run: |
-          # (a hosted runner's mirror can be slow or hang: only what is needed, bounded, tried twice, and the
-          # driver checked after, so a check never runs on without Vulkan)
+          # (a fresh runner's own apt-daily / unattended-upgrades can hold the package lock for half an hour,
+          # and a mirror can be slow: they are stopped, the lock waited on for a bounded time, the Vulkan driver
+          # installed first and required, ffmpeg (only for the films) after it and not required)
+          sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service unattended-upgrades 2> /dev/null || true
+          APT="-o DPkg::Lock::Timeout=240 -o Acquire::http::Timeout=30 -o Acquire::Retries=3"
           for i in 1 2; do
-            timeout 300 sudo apt-get update -qq -o Acquire::http::Timeout=30 -o Acquire::Retries=3 &&
-              timeout 1200 sudo apt-get install -y -qq --no-install-recommends -o Acquire::http::Timeout=30 -o Acquire::Retries=3 \
-                mesa-vulkan-drivers ffmpeg > /dev/null && break
-            echo "::warning::apt attempt $i failed or timed out"; sleep 15
+            timeout 300 sudo apt-get update -qq $APT || true
+            timeout 600 sudo apt-get install -y -qq --no-install-recommends $APT mesa-vulkan-drivers > /dev/null && break
+            echo "::warning::apt attempt $i for the Vulkan driver failed or timed out"; sleep 10
           done
           ls /usr/share/vulkan/icd.d/lvp_icd*.json > /dev/null || { echo "::error::no software Vulkan (mesa-vulkan-drivers) installed"; exit 1; }
+          timeout 600 sudo apt-get install -y -qq --no-install-recommends $APT ffmpeg > /dev/null || echo "::warning::no ffmpeg: the plans' films are kept as frames"
           python3 tools/toys/assets.py ${{ matrix.toy }} --link
       - name: Build and test
         working-directory: toys
@@ -101,7 +104,7 @@ jobs:
           for p in ${{ matrix.toy }}/plans/*.json; do
             n=$(basename "$p" .json)
             cargo run -q --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
-            if [ -d "build/out/$n/film" ]; then bash ../tools/toys/film.sh "build/out/$n" && rm -rf "build/out/$n/film"; fi
+            if [ -d "build/out/$n/film" ] && command -v ffmpeg > /dev/null; then bash ../tools/toys/film.sh "build/out/$n" && rm -rf "build/out/$n/film"; fi
           done
       - uses: actions/upload-artifact@v5
         if: always()
