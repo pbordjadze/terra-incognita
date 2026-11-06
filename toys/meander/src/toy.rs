@@ -76,7 +76,7 @@ fn vnoise(p: vec2<f32>) -> f32 {
     let fade = 1.0 - smoothstep(50.0, 200.0, age + grain * 20.0);
     // where the ridges crowd together (a bend's tip, a neck) they would fan into a mesh: let them go
     let calm = 1.0 - smoothstep(0.06, 0.2, fw);
-    let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.22;
+    let arc = clamp(line, 0.0, 1.0) * fade * near * calm * 0.08;
     c = mix(c, vec3(0.78, 0.80, 0.62), arc);
     // just swept: wet silt, darker than the forest's edge, drying within a few years
     // just left by the water: a point bar of pale sand on the inside of the bend, greening in a decade
@@ -90,16 +90,20 @@ fn vnoise(p: vec2<f32>) -> f32 {
   let m = textureSampleLevel(mask, smp, i.uv, 0.0);
   let grain = l - 0.25;
   let o = vec2<f32>(u.river * 0.22) / u.size;
-  var mid = 1.0;
-  mid = min(mid, textureSampleLevel(mask, smp, i.uv + vec2(o.x, 0.0), 0.0).r);
-  mid = min(mid, textureSampleLevel(mask, smp, i.uv - vec2(o.x, 0.0), 0.0).r);
-  mid = min(mid, textureSampleLevel(mask, smp, i.uv + vec2(0.0, o.y), 0.0).r);
-  mid = min(mid, textureSampleLevel(mask, smp, i.uv - vec2(0.0, o.y), 0.0).r);
+  // how far inside the channel: the mask averaged a third of a width around (smooth, no ridges)
+  var mid = 0.0;
+  mid += textureSampleLevel(mask, smp, i.uv + vec2(o.x, 0.0), 0.0).r;
+  mid += textureSampleLevel(mask, smp, i.uv - vec2(o.x, 0.0), 0.0).r;
+  mid += textureSampleLevel(mask, smp, i.uv + vec2(0.0, o.y), 0.0).r;
+  mid += textureSampleLevel(mask, smp, i.uv - vec2(0.0, o.y), 0.0).r;
+  mid = smoothstep(0.5, 1.0, mid * 0.25);
   c = mix(c, vec3(0.13, 0.17, 0.24) * (1.0 + grain * 0.8), clamp(m.b, 0.0, 1.0) * 0.9);
   c = mix(c, vec3(0.42, 0.39, 0.29), smoothstep(0.0, 0.5, m.r) * 0.3);
   // the deep water down the middle a shade darker, the shoals at the bends paler
   let water = mix(vec3(0.68, 0.56, 0.42), vec3(0.78, 0.67, 0.52), clamp(m.g * 1.4, 0.0, 1.0)) * (1.0 - 0.1 * mid * mid) + vec3(0.5, 0.46, 0.36) * smoothstep(0.62, 1.0, m.g);
-  c = mix(c, water * (1.0 + grain * 0.45), smoothstep(0.1, 1.0, m.r) * 0.92);
+  // the banks a shade darker (wet, shadowed by the trees), the water a little clear over them
+  let bank = smoothstep(0.1, 0.55, m.r) * (1.0 - mid);
+  c = mix(c, water * (1.0 + grain * 0.5) * (1.0 - 0.16 * bank), smoothstep(0.1, 1.0, m.r) * 0.86);
   return vec4<f32>(c, 1.0);
 }
 "#;
@@ -620,13 +624,6 @@ impl Toy for Meander {
                 let q = [q[0] - d[1] / dl * off, q[1] + d[0] / dl * off];
                 let tail = [q[0] - d[0] / dl * W * 0.6, q[1] - d[1] / dl * W * 0.6];
                 p.glow(px(tail), px(q), 0.6 * ppp as f32, 1.0, [0.22, 0.20, 0.16, 0.0]);
-            }
-        }
-        // a neck closing: a warm glow that grows as the banks come together
-        for (at, k) in self.river.necks() {
-            let k = (((k - 0.35) / 0.65).max(0.0).powi(2)) as f32;
-            if k > 0.02 {
-                p.glow(px(at), px(at), wpx * (0.6 + 0.8 * k), wpx * 0.8, [1.0, 0.85, 0.6, 0.22 * k]);
             }
         }
         // rings: where a neck broke (bright, wide), or where a finger touched
