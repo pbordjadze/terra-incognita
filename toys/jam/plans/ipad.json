@@ -1,4 +1,35 @@
-{ "_": "The 13-inch iPad: the ring at its size, a tap, the jam formed.",
-  "size": [2064, 2752], "ppp": 2, "seconds": 26, "fps": 30,
-  "events": [ { "t": 4.0, "tap": "near" } ],
-  "shots": [{ "t": 3.0, "name": "flow" }, { "t": 25.0, "name": "jam" }] }
+{
+ "_": "The 13-inch iPad: the salt at its size, a tap on the longest convoy's head, then a light held.",
+ "size": [
+  2064,
+  2752
+ ],
+ "ppp": 2,
+ "seconds": 30,
+ "fps": 30,
+ "events": [
+  {
+   "t": 4.0,
+   "tap": "head"
+  },
+  {
+   "t": 14.0,
+   "hold": "open",
+   "for": 14.0
+  }
+ ],
+ "shots": [
+  {
+   "t": 3.0,
+   "name": "flow"
+  },
+  {
+   "t": 10.0,
+   "name": "wave"
+  },
+  {
+   "t": 27.0,
+   "name": "light"
+  }
+ ]
+}
