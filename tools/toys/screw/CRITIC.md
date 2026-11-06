@@ -12,7 +12,8 @@ screw), and a phrase repeated by cutting between two copies of the record a beat
 
 The toy: a record turning on a dark page, his own song on it (opened from Files through a small
 sleeve, bottom left). A tap plays it. A finger pushed down the record slows it, voice and all, and it
-stays there. A tap says the last beat again; held, it keeps saying it. A flick to the left spins it back
+stays there; a finger resting on it drags it slower (a hand on a platter), until it lifts. A tap
+says the last beat again. A flick to the left spins it back
 two bars. A tap on the label is the brake. An "i" plays a ghost hand doing it; a "?" has the rules; an
 asterisk, where they came from. In the evidence a synthesized practice record (76 BPM, drums, bass,
 piano, a buzzy synthetic voice) stands in for his song.
@@ -24,7 +25,7 @@ AI-generated or templated; lost by text he didn't ask for, chrome, friction, dea
 
 The evidence (in the directory you're given): `start.mp4` (the first 24 s at phone size, with sound;
 you can't play it, but `1-…6-*.png` are strips of consecutive frames at each touch: the tap that starts
-it, the push down, a chop, the hold, the flick back, the brake; `start-plan.json` says what the finger
+it, the push down, a chop, a hand resting on it, the flick back, the brake; `start-plan.json` says what the finger
 did when), `shot-*.png` stills (the top line is the song's name, as the phone's system draws it),
 `listen.png` and `listen.txt` (the sound as a spectrogram, log frequency, the plan's touches marked
 under it: a slowed record's harmonics fall, a chop is a block said twice, a rewind a swoosh),

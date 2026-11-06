@@ -1,7 +1,7 @@
 //! Screw (a working title): a record turning on a dark page (EXPERIENCE.md; painting-company row 250).
 //! A tap plays it. A finger pushed down the record slows it, voice and all, as a turntable's pitch
-//! does (the screw), and it stays there. A tap says the last beat again (the chop); held, it keeps
-//! saying it. A flick to the left spins it back two bars (bring it back). A tap on the label is the
+//! does (the screw), and it stays there; a finger resting on it drags it, as a hand on a platter
+//! does. A tap says the last beat again (the chop). A flick to the left spins it back two bars (bring it back). A tap on the label is the
 //! brake. The song is the reader's own, opened from Files through the sleeve (bottom left); nothing
 //! is bundled or fetched.
 //!
@@ -22,8 +22,8 @@ use toy_kit::{AudioFile, Ctx, Phase, PointerEvent, Toy};
 
 /// A finger moved this far (points) is a drag, not a tap.
 const SLOP: f64 = 10.0;
-/// A finger resting this long on a turning record holds the chop.
-const HOLD_S: f64 = 0.32;
+/// A finger resting this long on a turning record is a hand on it: the record drags.
+const HAND_S: f64 = 0.22;
 /// Points of drag down for the pitch fader to fall by 1.0 (120 points down: about 0.7, a screw).
 const FADER: f64 = 400.0;
 const PITCH_MIN: f64 = 0.5;
@@ -113,14 +113,14 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
 /// A finger on the glass and what it is doing.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Kind {
-    /// Not yet a drag, a tap or a hold.
+    /// Not yet a drag, a tap or a hand.
     Open,
     /// Riding the pitch fader: the pitch and the finger's height it began from.
     Fader { p0: f64, y0: f64 },
     /// Sideways: a flick, maybe.
     Spin,
-    /// Resting on a turning record: the chop held.
-    Hold,
+    /// Resting on a turning record: a hand on it, dragging it slower.
+    Hand,
     /// On the sleeve.
     Sleeve,
 }
@@ -295,9 +295,12 @@ impl Toy for Screw {
                 f.tl = e.t;
                 f.at = p;
                 let (dx, dy) = (p[0] - f.start[0], p[1] - f.start[1]);
-                if f.kind == Kind::Open && dx.hypot(dy) > SLOP {
-                    let pitch = self.deck.lock().unwrap().pitch;
-                    f.kind = if dy.abs() >= dx.abs() { Kind::Fader { p0: pitch, y0: p[1] } } else { Kind::Spin };
+                if matches!(f.kind, Kind::Open | Kind::Hand) && dx.hypot(dy) > SLOP {
+                    let mut d = self.deck.lock().unwrap();
+                    // (from a hand on it, the fader takes up the speed the hand left it at)
+                    let p0 = if f.kind == Kind::Hand && d.motor { d.vel.clamp(PITCH_MIN, PITCH_MAX) } else { d.pitch };
+                    d.hand = false;
+                    f.kind = if dy.abs() >= dx.abs() { Kind::Fader { p0, y0: p[1] } } else { Kind::Spin };
                 }
                 if let Kind::Fader { p0, y0 } = f.kind {
                     let pitch = (p0 - (p[1] - y0) / FADER).clamp(PITCH_MIN, PITCH_MAX);
@@ -317,13 +320,13 @@ impl Toy for Screw {
                 let Some(f) = self.finger.filter(|f| f.id == e.id) else { return };
                 self.finger = None;
                 if e.phase == Phase::Cancel {
-                    self.deck.lock().unwrap().hold(false);
+                    self.deck.lock().unwrap().hand = false;
                     return;
                 }
                 match f.kind {
                     Kind::Sleeve => self.ask = true,
                     Kind::Open => self.tap(p),
-                    Kind::Hold => self.deck.lock().unwrap().hold(false),
+                    Kind::Hand => self.deck.lock().unwrap().hand = false,
                     Kind::Spin => {
                         let dx = p[0] - f.start[0];
                         if f.vx < -FLICK_V || dx < -FLICK_D {
@@ -346,11 +349,11 @@ impl Toy for Screw {
         self.t = t;
         // a finger resting on a turning record: the chop held
         if let Some(mut f) = self.finger {
-            if f.kind == Kind::Open && t - f.t0 >= HOLD_S {
+            if f.kind == Kind::Open && t - f.t0 >= HAND_S {
                 let mut d = self.deck.lock().unwrap();
                 if d.motor && d.song.is_some() && !d.rewinding() {
-                    d.hold(true);
-                    f.kind = Kind::Hold;
+                    d.hand = true;
+                    f.kind = Kind::Hand;
                     self.finger = Some(f);
                 }
             }
@@ -467,14 +470,14 @@ impl Toy for Screw {
         if let Some(f) = self.finger {
             let fp = [f.at[0] as f32 * k, f.at[1] as f32 * k];
             let col = match f.kind {
-                Kind::Hold => [1.0, 0.7, 0.95, 0.45 + 0.35 * self.kick as f32],
+                Kind::Hand => [1.0, 0.7, 0.95, 0.5],
                 Kind::Sleeve => [0.9, 0.9, 0.95, 0.35],
                 _ => [0.95, 0.85, 1.0, 0.38],
             };
             self.paint.glow(fp, fp, 16.0 * k, 18.0 * k, pm(col));
             self.paint.ring(fp, 22.0 * k, 1.2 * k, 1.5, pm([1.0, 0.9, 1.0, 0.35]));
             // a finger resting on the record: syrup runs down from it, the way to slow it
-            if matches!(f.kind, Kind::Open | Kind::Hold) && has && !self.reduce_motion {
+            if matches!(f.kind, Kind::Open | Kind::Hand) && has && !self.reduce_motion {
                 let run = ((self.t - f.t0 - 0.06) * 110.0).clamp(0.0, 60.0) as f32 * k;
                 if run > 2.0 * k {
                     let end = [fp[0], fp[1] + 20.0 * k + run];
@@ -544,18 +547,19 @@ impl Toy for Screw {
             strokes.push(Stroke::tap(t, [c[0] - r * 0.6, c[1] + r * 0.4]));
             t += 1.4;
         }
-        strokes.push(Stroke::drag(t, 2.2, on, [on[0], on[1] + 120.0]));
-        t += 3.2;
+        // a hand resting on it, then pushing it down
+        strokes.push(Stroke { start: t, seconds: 3.4, path: vec![on, on, on, [on[0], on[1] + 120.0]] });
+        t += 4.4;
         strokes.push(Stroke::tap(t, [c[0] - r * 0.55, c[1] + r * 0.45]));
         strokes.push(Stroke::tap(t + 1.6, [c[0] - r * 0.55, c[1] + r * 0.45]));
-        Some(Demo::new("Push it down to slow it. Tap to say the beat again.", strokes))
+        Some(Demo::new("Rest a finger on it, push it down. Tap to say the beat again.", strokes))
     }
 
     fn rules(&self) -> Option<Rules> {
         Some(Rules::new(
             &[
-                "Put a finger anywhere on the record and push it down: it slows, the voice dropping with it. It stays where you leave it; push up to bring it back.",
-                "Tap and it says the last beat again, in time. Hold and it keeps saying it.",
+                "Rest a finger on the record and it drags, the voice sinking. Push it down and it stays slow; push up to bring it back.",
+                "Tap and it says the last beat again, in time. Tap again and again and it keeps saying it.",
                 "Flick it to the left and it spins back two bars.",
                 "Touch the label to stop it or start it. The sleeve, bottom left, opens a song of yours from Files.",
             ],

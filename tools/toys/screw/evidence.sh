@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # A Screw critic's evidence from a round's played plans (painting-company row 250): the start plan's film
-# as strips of consecutive frames at each moment (a chop, the hold, the rewind, the brake), its sound as
+# as strips of consecutive frames at each moment (a chop, a hand on it, the rewind, the brake), its sound as
 # listen.py's picture and numbers, the info demo's sheet, the rules cards, and the deck's tests (the sound
 # measured sample by sample).
 #
@@ -21,7 +21,7 @@ strip() {  # name, first frame, frames, step
 strip 1-first-tap 40 6 3      # 1.33..1.93 s: the tap that starts it
 strip 2-push-down 150 6 10    # 5.0..6.7 s: the finger pushing the record down
 strip 3-chop 268 6 2          # 8.93..9.27 s: a chop's kick
-strip 4-hold 360 6 9          # 12.0..13.5 s: the chop held
+strip 4-hand 360 6 9          # 12.0..13.5 s: a hand resting on it
 strip 5-rewind 494 6 4        # 16.47..17.13 s: the flick back
 strip 6-brake 628 6 6         # 20.93..22.1 s: the label's brake
 for n in first playing screwed held rewind stopped; do cp "$S/$n.shell.png" "$EV/shot-$n.png" 2>/dev/null || cp "$S/$n.png" "$EV/shot-$n.png"; done

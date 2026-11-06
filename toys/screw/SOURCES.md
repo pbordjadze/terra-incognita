@@ -18,6 +18,8 @@ tapes):
   phrase repeats and the song keeps its time. Here the needle goes back exactly one beat of the song,
   with a 10 ms eased crossfade between the two places (the tests show no click at the cut and the
   beats staying evenly spaced across it, at 1.0 and at 0.7).
+- *A hand on the platter*: a palm resting on a turning record drags it slower and lower; lifted, the
+  motor pulls it back. Here a finger resting on the record drags it to 0.7×.
 - *Bring it back* (a rewind: the platter spun back by hand, here two bars) and *the brake* (the motor
   off: the platter slowing to a stop in about two thirds of a second, as a direct-drive deck's does).
   The platter turns at 33⅓ rpm times its speed.

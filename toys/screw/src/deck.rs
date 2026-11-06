@@ -8,7 +8,9 @@
 //! - **The chop.** Two copies of the same record a beat apart, cut between: the needle goes back
 //!   exactly one beat of the song (`chop`), so the phrase says itself again and the groove never loses
 //!   its place, at whatever speed. The cut is a short eased crossfade (`CUT_S`) between the two
-//!   copies, so it never clicks. Held (`hold`), it keeps going back each time the beat comes round.
+//!   copies, so it never clicks.
+//! - **A hand on the platter.** A palm resting on the turning record (`hand`) drags it slower and
+//!   lower; lifted, the motor pulls it back up.
 //! - **Bring it back.** The platter spun back by hand (`rewind`): two bars back along the record, fast,
 //!   with the whine of the music played backward, and dropped there.
 //! - **The brake.** The motor off (`stop`): the platter slows under its own weight to a stop, the pitch
@@ -28,6 +30,9 @@ const BRAKE: f64 = 1.5;
 const FOLLOW_S: f64 = 0.06;
 /// A rewind goes back this many beats (two bars of four).
 pub const REWIND_BEATS: f64 = 8.0;
+/// A hand resting on the record drags it to this share of its speed, over about this long.
+const HAND: f64 = 0.7;
+const HAND_S: f64 = 0.35;
 
 /// A record: the song's samples, its beat, and its shape for the ring.
 pub struct Song {
@@ -120,8 +125,8 @@ pub struct Deck {
     pub rendered: u64,
     /// The other copy, fading out at a cut: where its needle is, and how far the cut has gone (0..1).
     cut: Option<(f64, f64)>,
-    /// Held: where the needle goes back from each time (the end of the repeated beat).
-    hold: Option<f64>,
+    /// A hand resting on the turning record: it drags, slower and lower, until it lifts.
+    pub hand: bool,
     rewind: Option<Rewind>,
     /// The anti-aliasing filter's memory (when the record runs fast), and its gain's.
     lp: [f32; 2],
@@ -135,7 +140,7 @@ impl Deck {
 
     pub fn load(&mut self, song: Arc<Song>) {
         self.song = Some(song);
-        (self.pos, self.vel, self.motor, self.cut, self.hold, self.rewind) = (0.0, 0.0, false, None, None, None);
+        (self.pos, self.vel, self.motor, self.cut, self.hand, self.rewind) = (0.0, 0.0, false, None, false, None);
     }
 
     pub fn beat(&self) -> f64 {
@@ -155,7 +160,7 @@ impl Deck {
     /// The motor off: the brake.
     pub fn stop(&mut self) {
         self.motor = false;
-        self.hold = None;
+        self.hand = false;
     }
 
     /// The chop: back exactly one beat, cut across.
@@ -169,26 +174,13 @@ impl Deck {
         self.turns -= 0.05;
     }
 
-    /// Held: chop now, and again each time the needle comes back round to here.
-    pub fn hold(&mut self, on: bool) {
-        if on && self.song.is_some() && self.rewind.is_none() {
-            self.hold = Some(self.pos);
-            self.chop();
-        } else {
-            self.hold = None;
-        }
-    }
-
-    pub fn holding(&self) -> bool {
-        self.hold.is_some()
-    }
 
     /// Bring it back: spun back two bars by hand, then dropped.
     pub fn rewind(&mut self) {
         if self.song.is_none() || self.rewind.is_some() {
             return;
         }
-        self.hold = None;
+        self.hand = false;
         self.cut = None;
         let to = (self.pos - REWIND_BEATS * self.beat()).max(0.0);
         let back = self.pos - to;
@@ -228,9 +220,12 @@ impl Deck {
             }
         } else {
             if self.motor {
-                let d = self.pitch - self.vel;
+                // a hand on the record drags it down slowly, as a palm on a platter does; lifted, the
+                // motor pulls it back to the fader's speed
+                let (target, tau) = if self.hand { (self.pitch * HAND, HAND_S) } else { (self.pitch, FOLLOW_S) };
+                let d = target - self.vel;
                 let limit = PULL * dt;
-                self.vel += (d * (dt / FOLLOW_S).min(1.0)).clamp(-limit, limit);
+                self.vel += (d * (dt / tau).min(1.0)).clamp(-limit, limit);
             } else {
                 // the brake: a steady slowing to a stop
                 self.vel -= self.vel.signum() * self.vel.abs().min(BRAKE * dt);
@@ -238,14 +233,6 @@ impl Deck {
             self.pos += self.vel * dt;
             if let Some((p, _)) = &mut self.cut {
                 *p += self.vel * dt;
-            }
-            if let Some(end) = self.hold {
-                if self.vel > 0.0 && self.pos >= end {
-                    let to = (self.pos - self.beat()).max(0.0);
-                    self.cut_to(to);
-                    self.chops += 1;
-                    self.turns -= 0.05;
-                }
             }
         }
         if self.pos >= len {
@@ -455,17 +442,17 @@ mod tests {
     }
 
     #[test]
-    fn held_it_keeps_saying_the_last_beat() {
-        let mut d = deck(record(330.0, 80.0, 30.0, false));
-        run(&mut d, 3.0);
-        let end = d.pos;
-        d.hold(true);
-        run(&mut d, 4.0);
-        assert!(d.pos <= end + 0.01 && d.pos >= end - d.beat() - 0.01, "the needle stays in the last beat: {} vs {end}", d.pos);
-        assert!(d.chops >= 5);
-        d.hold(false);
-        run(&mut d, 2.0);
-        assert!(d.pos > end + 1.0);
+    fn a_hand_on_the_record_drags_it_and_lifted_it_comes_back() {
+        let mut d = deck(record(440.0, 80.0, 30.0, false));
+        run(&mut d, 1.0);
+        d.hand = true;
+        run(&mut d, 1.5);
+        let f = freq(&run(&mut d, 0.5));
+        assert!((d.vel - 0.7).abs() < 0.01 && (f - 308.0).abs() < 4.0, "under the hand: {} at {f}", d.vel);
+        d.hand = false;
+        run(&mut d, 0.6);
+        assert!((d.vel - 1.0).abs() < 1e-3);
+        eprintln!("measured: a hand resting on the record drags a 440 Hz tone to {f:.1} Hz; lifted, it plays on at {:.3}", d.vel);
     }
 
     #[test]
