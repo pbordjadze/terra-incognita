@@ -1,0 +1,4 @@
+# actionlint (https://github.com/rhysd/actionlint), run by the lint job in ci.yml.
+self-hosted-runner:
+  # the macOS runners' label (GitHub's xcode-27 image, and Paul's own Mac, ci/xcode.sh)
+  labels: [xcode-27]

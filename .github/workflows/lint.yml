@@ -1,0 +1,37 @@
+name: Lint
+
+# The standard linters (ci/lint.sh: rustfmt, clippy -D warnings, ruff, shellcheck, actionlint, SwiftLint) on
+# Linux, a few minutes. Called first by ci.yml, toys.yml, adrift.yml and packs.yml, whose other jobs wait for
+# it, so a lint failure stops a push before any macOS runner is taken.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: rustfmt, clippy, ruff, shellcheck, actionlint, SwiftLint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SWIFTLINT: 0.65.1 # bumped by hand (CLAUDE.md › Staying current)
+    steps:
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh aarch64-apple-ios wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "toys\nadrift", key: lint, save-if: "${{ github.ref_name == 'main' }}" }
+      - name: The Python linters (tools/requirements.txt) and SwiftLint
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r tools/requirements.txt
+          curl -sSLf -o "$RUNNER_TEMP/swiftlint.zip" "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT/swiftlint_linux_amd64.zip"
+          unzip -q -o "$RUNNER_TEMP/swiftlint.zip" swiftlint-static -d "$RUNNER_TEMP/swiftlint"
+          mv "$RUNNER_TEMP/swiftlint/swiftlint-static" "$RUNNER_TEMP/swiftlint/swiftlint"
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+      - name: Lint
+        run: bash ci/lint.sh

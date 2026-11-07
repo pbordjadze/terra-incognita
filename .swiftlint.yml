@@ -1,0 +1,21 @@
+# SwiftLint (https://github.com/realm/SwiftLint), its default rules, run by the lint job in ci.yml
+# (`swiftlint lint --strict`: a warning fails). Loosened only where a rule is plainly wrong for this code:
+included: [App, toys/ios, adrift/ios]
+identifier_name:
+  min_length: 1 # drawing and geometry are written in x, y, t, dx: one and two letters are the names
+line_length:
+  warning: 160 # the code's measure is one statement a line; 160 holds all but a few, which are wrapped
+  ignores_comments: true
+disabled_rules:
+  # size and complexity thresholds, not correctness: the globe's views are long by design, and
+  # splitting them would be a refactor of a frozen app, not a lint fix
+  - type_body_length
+  - file_length
+  - function_body_length
+  - cyclomatic_complexity
+  - function_parameter_count
+  - large_tuple
+  - nesting
+  # String(decoding:as:) is total (a bad byte becomes U+FFFD); the failable form it asks for would drop
+  # the whole string instead
+  - optional_data_string_conversion
