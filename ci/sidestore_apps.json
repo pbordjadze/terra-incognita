@@ -103,10 +103,10 @@
     },
     {
       "tag": "jam-build",
-      "name": "Ghost Jam",
+      "name": "Shortcut",
       "bundleIdentifier": "com.pbordjadze.toy.jam",
-      "subtitle": "Cars at night on the salt, with no roads",
-      "localizedDescription": "Cars at night on the Bonneville Salt Flats, from above, with no roads. Each driver only follows the tail lights ahead and keeps a safe gap; convoys find each other, snake across the salt and drift apart, their tyres drawing on the crust. Tap a car and its red passes down its convoy; drag one out; hold the open salt and they come to circle your light. Working title; a toy in the making.",
+      "subtitle": "Build a road, and watch traffic get worse",
+      "localizedDescription": "A small town at night round a lake, its cars each taking the way that looks quickest. Draw a road from one road to another, slash one closed, and see what the drivers do: the obvious bridge can make everyone's trip slower (Braess's paradox), and nothing tells you so but the colour of the cars. Working title; a toy in the making.",
       "icon": "jam-icon.png",
       "iconSource": "toys/jam/icon.png",
       "tintColor": "#D8321E",

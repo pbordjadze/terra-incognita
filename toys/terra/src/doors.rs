@@ -73,7 +73,7 @@ pub fn doors() -> Vec<Door> {
         Door { id: "fireflies", name: "Fireflies", at: [-81.5, 38.0], tint: [0.62, 0.92, 0.36], night: true, degree: 6, open: rooms::open::<fireflies::Fireflies> },
         Door { id: "bell", name: "Bell", at: [-73.05, -38.24], tint: [0.62, 0.42, 0.22], night: false, degree: -2, open: rooms::open::<bell::Bell> },
         Door { id: "swell", name: "Swell", at: [-178.0, 20.0], tint: [0.20, 0.45, 0.70], night: false, degree: 3, open: rooms::open::<swell::Swell> },
-        Door { id: "jam", name: "Salt Flat", at: [-113.86, 40.76], tint: [0.96, 0.86, 0.70], night: true, degree: 5, open: rooms::open::<jam::Jam> },
+        Door { id: "jam", name: "Shortcut", at: [9.18, 48.78], tint: [0.96, 0.86, 0.70], night: true, degree: 5, open: rooms::open::<jam::Jam> },
         Door { id: "meander", name: "Meander", at: [-67.03, -12.97], tint: [0.30, 0.52, 0.62], night: false, degree: 7, open: rooms::open::<meander::Meander> },
         Door { id: "frost", name: "Frost", at: [142.79, 63.46], tint: [0.22, 0.42, 0.78], night: false, degree: 9, open: rooms::open::<frost::Frost> },
     ]
@@ -476,38 +476,33 @@ impl Life {
                     }
                 }
                 "jam" => {
-                    // a window onto the salt at night: pale crust, and a convoy's headlights snaking across it,
-                    // its tail lights red behind, the tracks it leaves fading
+                    // a window onto a small town at night round a lake: two roads up either side of the
+                    // water, the cars on them small warm lights going up, one road out at the top
                     let w = a * halo;
-                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.16, 0.17, 0.21, 0.95 * w]);
-                    p.disc(c, (r * 0.8 * k) as f32, (r * 0.5 * k) as f32, [0.36, 0.34, 0.33, 0.35 * w]);
-                    let path = |s: f64| -> [f32; 2] {
-                        let x = s;
-                        let y = 0.32 * (s * 2.2 + 0.6 * (tm * 0.21).sin()).sin();
-                        [c[0] + (x * r * 0.85 * k) as f32, c[1] + (y * r * k) as f32]
+                    p.disc(c, (r * 1.05 * k) as f32, (r * 0.2 * k) as f32, [0.06, 0.075, 0.085, 0.95 * w]);
+                    p.disc(c, (r * 0.32 * k) as f32, (r * 0.12 * k) as f32, [0.02, 0.05, 0.09, 0.9 * a]);
+                    // either side: from the foot round the lake to the top
+                    let side = |s: f64, sd: f64| -> [f32; 2] {
+                        let th = std::f64::consts::PI * (1.0 - s);
+                        let x = sd * 0.52 * th.sin();
+                        let y = 0.78 * th.cos();
+                        [c[0] + (x * r * k) as f32, c[1] - (y * r * k) as f32]
                     };
-                    // the tracks
-                    let mut prev: Option<[f32; 2]> = None;
-                    for j in 0..=24 {
-                        let q = path(j as f64 / 12.0 - 1.0);
-                        if let Some(pp) = prev {
-                            p.line(pp, q, 0.5 * kf, 0.8, [0.75, 0.74, 0.70, 0.35 * a]);
+                    for sd in [-1.0, 1.0] {
+                        let mut prev: Option<[f32; 2]> = None;
+                        for j in 0..=20 {
+                            let q = side(j as f64 / 20.0, sd);
+                            if let Some(pp) = prev {
+                                p.line(pp, q, 0.55 * kf, 0.8, [0.22, 0.22, 0.25, 0.9 * a]);
+                            }
+                            prev = Some(q);
                         }
-                        prev = Some(q);
-                    }
-                    // six cars along it, going on and wrapping round
-                    for j in 0..6 {
-                        let s = ((tm * 0.12 + j as f64 * 0.11).rem_euclid(1.2)) * 1.8 - 0.95;
-                        if s.abs() > 0.9 {
-                            continue;
+                        for j in 0..5 {
+                            let s = (tm * 0.07 + j as f64 * 0.2 + if sd > 0.0 { 0.1 } else { 0.0 }).rem_euclid(1.0);
+                            let q = side(s, sd);
+                            p.glow(q, q, (0.05 * r * k) as f32, (0.12 * r * k) as f32, [1.0, 0.85, 0.6, 0.35 * a]);
+                            p.disc(q, 0.9 * kf, 1.0, [1.0, 0.95, 0.85, 0.95 * a]);
                         }
-                        let (head, tail) = (path(s + 0.04), path(s - 0.03));
-                        // its headlights' cone, warm on the dark salt ahead of it
-                        let ahead = path(s + 0.2);
-                        p.glow(head, ahead, (0.1 * r * k) as f32, (0.16 * r * k) as f32, [1.0, 0.82, 0.55, 0.45 * a]);
-                        p.glow(head, head, (0.12 * r * k) as f32, (0.18 * r * k) as f32, [1.0, 0.95, 0.8, 0.55 * a]);
-                        p.disc(head, 0.9 * kf, 1.0, [1.0, 0.97, 0.88, 0.95 * a]);
-                        p.disc(tail, 0.7 * kf, 1.0, [0.95, 0.15, 0.1, 0.9 * a]);
                     }
                 }
                 "frost" => {

@@ -1,44 +1,33 @@
 {
- "_": "First sight and the core moment: convoys already on the salt, a halo on the head of the longest; one tap on it and its convoy stops car by car; a finger takes a car and leads it slowly, twice, its convoy after it; then holds the open salt for a light the cars come to circle.",
+ "_": "First sight and the core moment: the town flowing round the lake, a faint road breathing across it; a finger draws the bridge from the west shore's junction to the east's, and over the next half minute the drivers crowd onto it and the town reddens; a slash across the bridge closes it and the colour cools; a tap on the water ripples it.",
  "size": [
   1179,
   2556
  ],
  "ppp": 3,
- "seconds": 60,
+ "seconds": 80,
  "fps": 30,
  "audio": true,
  "events": [
   {
-   "t": 5.0,
-   "tap": "invited"
-  },
-  {
-   "t": 20.0,
+   "t": 6.0,
    "drag": [
-    "head",
-    [
-     200,
-     520
-    ]
+    "west",
+    "east"
    ],
-   "for": 4.0
+   "for": 0.8
   },
   {
-   "t": 24.5,
+   "t": 45.0,
    "drag": [
-    "head",
-    [
-     150,
-     300
-    ]
+    "slash-a",
+    "slash-b"
    ],
-   "for": 4.0
+   "for": 0.35
   },
   {
-   "t": 34.0,
-   "hold": "open",
-   "for": 14.0
+   "t": 74.0,
+   "tap": "lake"
   }
  ],
  "shots": [
@@ -51,41 +40,45 @@
    "name": "invite"
   },
   {
-   "t": 5.5,
-   "name": "tap"
+   "t": 6.5,
+   "name": "drawing"
   },
   {
-   "t": 8.0,
-   "name": "wave"
+   "t": 7.5,
+   "name": "built"
   },
   {
-   "t": 12.0,
-   "name": "stopped"
+   "t": 15.0,
+   "name": "crowding"
   },
   {
-   "t": 24.0,
-   "name": "lead"
+   "t": 25.0,
+   "name": "slower"
   },
   {
-   "t": 30.0,
-   "name": "after-lead"
+   "t": 44.0,
+   "name": "jammed"
   },
   {
-   "t": 40.0,
-   "name": "light"
+   "t": 46.0,
+   "name": "cut"
   },
   {
-   "t": 47.0,
-   "name": "circling"
+   "t": 60.0,
+   "name": "cooling"
   },
   {
-   "t": 59.0,
-   "name": "end"
+   "t": 73.5,
+   "name": "cooled"
+  },
+  {
+   "t": 75.0,
+   "name": "ripple"
   }
  ],
  "film": {
   "from": 0,
-  "to": 60,
+  "to": 80,
   "every": 0.5
  }
 }

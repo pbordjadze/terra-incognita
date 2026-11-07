@@ -1,42 +1,71 @@
-# Salt Flat: sources
+# Shortcut: sources
 
-What is measured and what is drawn. The cars, the ground and the sound are drawn from code; nothing is
-a photograph or a recording. (The crate is still `jam`: the toy began as Ghost Jam, the Nagoya ring,
-painting-company row 218; row 244 opened it up. The ring's toy is whole in `main`'s history at 3032c9a.)
+What is real and what is drawn. Everything on screen and in the ear is drawn from code; nothing is a
+photograph, a map of a real place or a recording. (The crate is still `jam`: the toy began as Ghost Jam,
+the Nagoya ring, row 218, at 3032c9a in `main`'s history; row 244 made it Salt Flat, cars on the salt,
+whole in `main`'s history before row 255 replaced it with this.)
 
-## The drivers (a measured rule, on open ground)
+## The paradox (real)
 
-- Keeping the gap is the Intelligent Driver Model: M. Treiber, A. Hennecke and D. Helbing, "Congested
-  traffic states in empirical observations and microscopic simulations", *Physical Review E* 62 (2000)
-  1805. It is the rule Ghost Jam tuned to the Nagoya ring of Y. Sugiyama et al., "Traffic jams without
-  bottlenecks", *New Journal of Physics* 10 (2008) 033001, where 22 cars made a jam out of nothing.
-  Here: acceleration 1.6 m/s², comfortable braking 2.6 m/s², time gap 0.8 s, standstill gap 2.2 m, each
-  driver's own speed 27–38 km/h (drawn: a leisurely night drive). A braked car's followers slow one
-  after another, as on the ring.
-- A driver who sees brake lights come on ahead (within 30 m) dabs their own brakes (3 m/s² for 0.7 s)
-  after a reaction time of 0.35 s: the usual human reaction time is about 0.7–1.5 s to a surprise and
-  shorter to an expected cue; 0.35 s is drawn, short, so the ripple reads on a phone.
-- A small car's turning circle (about 5.5 m radius, so 11 m across) bounds every turn.
-- **Drawn:** everything else the drivers do. That they follow the nearest tail lights ahead in their
-  headlights' reach (42 m) and cone (about 55° either side), one follower to a car; that a driver with no
-  one to follow wanders and drifts back from the dark at the edge of the screen; that after 25–70 s
-  behind the same car a driver gets bored and peels off; that drivers go round one another on open
-  ground and brake only when about to touch; that a held light draws the drivers near it into circling
-  it. The convoys, their merging and splitting, the occasional ring a convoy closes on itself, and the
-  spiral round a held light are not in the code: they emerge.
+- D. Braess, "Über ein Paradoxon aus der Verkehrsplanung", *Unternehmensforschung* 12 (1968) 258–268;
+  in English as D. Braess, A. Nagurney and T. Wakolbinger, "On a paradox of traffic planning",
+  *Transportation Science* 39 (2005) 446–450. In a network where each driver picks their own quickest
+  route, adding a road can make every driver's trip slower. His example is the town's shape here: two
+  ways round, each a road that slows with its load and one that does not, and a link joining their
+  middles.
+- J. G. Wardrop, "Some theoretical aspects of road traffic research", *Proceedings of the Institution of
+  Civil Engineers* 1 (1952) 325–378: drivers choosing for themselves settle where no one can do better
+  by switching (the user equilibrium), which is not where they do best together (the system optimum).
+- T. Roughgarden and É. Tardos, "How bad is selfish routing?", *Journal of the ACM* 49 (2002) 236–259:
+  how much slower the selfish equilibrium can be; with steep, capacity-limited roads, as here, it can be
+  much slower than with gently rising ones.
+- The story often told with it: Stuttgart, 1969, where closing a street was reported to ease traffic
+  (Terra's light for this toy is there). Told, not measured; the toy doesn't depend on it.
 
-## The salt (drawn from what is real)
+## The roads' slowing (a real kind of rule, drawn numbers)
 
-- The Bonneville Salt Flats, Utah: a dry lake bed of salt crust, flat to the horizon, where people do
-  drive on the open salt. The crust's polygons (here about 2.6 m across with low raised ridges) are its
-  real pattern; their size and the damper patches are drawn. The night, headlights, the tyre tracks and their
-  fading (by half in 12 s) are drawn.
-- Cars drawn 1.3 times as long and 1.4 times as wide as life so they read on a phone; about one car to
-  1,700 m² of salt; the salt reaches 1.45 screens on every side. Brake lights glow while a driver dabs,
-  brakes harder than 3.4 m/s² behind the car it follows, or stands; tail lights are dim otherwise.
+- A road's speed falls as its cars crowd it: `v = vf / (1 + k vf / C)`, with `k` the cars a lane a
+  point, `vf` the road's free speed and `C` a lane's capacity. So a road's time is its free time plus a
+  fixed delay for every car on it, growing steeply as its flow nears its capacity: the shape of the
+  traffic engineers' volume-delay functions (Bureau of Public Roads, *Traffic Assignment Manual*, 1964;
+  Davidson's function, 1966) and of Braess's own increasing link costs.
+- Every lane carries at most the same `C` cars a second whatever its speed limit, as highway capacity
+  manuals put a lane's capacity at roughly 1,800–2,200 cars an hour fairly independent of its free speed
+  (Transportation Research Board, *Highway Capacity Manual*). Here `C` is 1.6 cars a second of the town's clock, which runs 1.7 times the screen's (`PACE` in
+  `lib.rs`): the toy's time runs fast, and a town of four roads stands for a city.
+- Cars keep a gap of 7 points a lane nose to nose and queue at a road's end when there is no room on
+  the next.
+- **Drawn:** the numbers. The narrow streets: two lanes, 200 points a second free. The long roads round:
+  out wide round the lake, 25 points a second on a phone (on a wider screen they swing further out and run faster in proportion, taking the same time), so wide they never fill. A road the reader draws: four
+  lanes, 220 points a second. Cars come in at 3.6 a second. They are tuned so the obvious bridge makes
+  the mean trip about a quarter slower (the test `a_bridge_slows_everyone` holds it at over a fifth) and
+  closing it brings it back.
 
-## The sound (drawn)
+## The drivers (the rule real, the people drawn)
 
-- The 24 engines nearest the middle of the screen, each a buzz whose pitch follows its speed and grows
-  louder pulling away; tyres' hiss with their speed; a short chirp for each car braking hard; a soft
-  thump for a tap.
+- At every junction each driver takes the next road whose time as it looks right now (its length at the
+  speed its crowd gives it), plus the quickest way on from its end, is least, each road seen with an
+  error of their own of up to 12 per cent either way, and the roads beyond the next weighed half by
+  what is seen now and half by what the drivers remember of the last 12 s (they can't see that far). That is selfish, myopic routing, the assumption
+  under Wardrop's equilibrium and the way a navigation app routes: nothing in it mentions bridges, and
+  the paradox, the crowding of the streets and the emptying of the long roads are not in the code.
+- After a change the town sloshes a little (everyone avoids the road that looked slow, then crowds it
+  once it empties) before it settles; the drivers' memory damps it (the test
+  `the_town_settles_after_a_cut` holds it within a tenth of the old after 16 s).
+
+## The colour (drawn from the rule)
+
+- A car's light is how long its whole way takes right now: the roads it came by, the one it is on and
+  the quickest way on from there, each at the speed its crowd gives it now (what a driver setting out on
+  the same way now would expect), against the town's usual: the mean of that over the half minute before
+  the toy opens, with the town's own roads. White when quicker, warm white at the usual, orange, then
+  red when about a quarter slower; eased, slow to redden (about a second and a half) and quick to cool, so
+  a moment's worsening as a closed road's cars go round doesn't flash. A road the reader drew
+  wears the mean light of the cars on it.
+
+## The town (drawn)
+
+- The lake, the fields and woods, the lit windows, the street lamps, the night: drawn from code. No
+  real place.
+- The sound: Ghost Jam's small engines (`src/sound.rs`), the cars nearest the middle heard, and a soft
+  thump when a road is built or closed. Drawn, not recorded.

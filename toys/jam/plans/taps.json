@@ -1,75 +1,99 @@
 {
- "_": "A restless hand: taps on three cars at once, a quick tap on the open salt (a light that flickers and goes), a tap on the middle of the longest convoy, a hold that turns into a drag.",
+ "_": "A restless hand: a tap on the water while the invitation shows (it builds the road it shows, and ripples), a tap on the west street and one on the east long road (a road is built between them), a slash across the west street (it closes behind a barrier; the drivers go round), a tap on the closed street (it opens), a road drawn up the middle from the way in to the way out, and a shake (the town's own roads back).",
  "size": [
   1179,
   2556
  ],
  "ppp": 3,
- "seconds": 40,
+ "seconds": 50,
  "fps": 30,
  "audio": true,
  "events": [
   {
    "t": 2.0,
-   "tap": "car3"
+   "tap": "lake"
   },
   {
-   "t": 2.6,
-   "tap": "car9"
+   "t": 4.0,
+   "tap": "west-street"
   },
   {
-   "t": 3.1,
-   "tap": "car15"
+   "t": 5.0,
+   "tap": "east-long"
   },
   {
-   "t": 12.0,
-   "tap": "open"
+   "t": 8.0,
+   "drag": [
+    [
+     40,
+     560
+    ],
+    [
+     150,
+     590
+    ]
+   ],
+   "for": 0.3
   },
   {
    "t": 20.0,
-   "tap": "middle"
+   "tap": "west-street"
   },
   {
-   "t": 28.0,
-   "down": "car20",
-   "id": 5
+   "t": 26.0,
+   "drag": [
+    [
+     196,
+     700
+    ],
+    [
+     196,
+     136
+    ]
+   ],
+   "for": 0.9
   },
   {
-   "t": 29.0,
-   "move": "centre",
-   "id": 5
-  },
-  {
-   "t": 33.0,
-   "up": "centre",
-   "id": 5
+   "t": 44.0,
+   "shake": true
   }
  ],
  "shots": [
   {
-   "t": 3.5,
-   "name": "three"
+   "t": 2.3,
+   "name": "water"
   },
   {
-   "t": 12.2,
-   "name": "flicker"
+   "t": 4.3,
+   "name": "pinned"
   },
   {
-   "t": 24.0,
+   "t": 5.6,
+   "name": "tapped-road"
+  },
+  {
+   "t": 8.5,
+   "name": "slash"
+  },
+  {
+   "t": 16.0,
+   "name": "round"
+  },
+  {
+   "t": 20.5,
+   "name": "reopened"
+  },
+  {
+   "t": 27.5,
    "name": "middle"
   },
   {
-   "t": 32.0,
-   "name": "held"
+   "t": 42.0,
+   "name": "middle-later"
   },
   {
-   "t": 39.0,
-   "name": "after"
+   "t": 45.0,
+   "name": "shaken"
   }
- ],
- "film": {
-  "from": 0,
-  "to": 40,
-  "every": 0.5
- }
+ ]
 }
