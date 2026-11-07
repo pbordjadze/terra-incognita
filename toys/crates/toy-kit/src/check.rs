@@ -825,8 +825,10 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
             worst = (cost, t);
         }
         let _ = host.take_haptic();
-        if plan.audio && f > 0 {
-            let n = ((t * rate) as usize).saturating_sub(sound.len() / 2);
+        // the sound up to the frame's end: what this update started sounds from t, as on the device
+        // (rendered up to t, it sounded a frame early)
+        if plan.audio {
+            let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(sound.len() / 2);
             let mut buf = vec![0.0f32; n * 2];
             Host::<T>::audio(host.synth.as_ref(), &mut buf, 2, rate);
             sound.extend_from_slice(&buf);
@@ -906,8 +908,8 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 run.host.update(t);
                 let _ = run.host.take_haptic();
                 // the sound is pulled as the real run pulled it (a synth may share state with the toy)
-                if plan.audio && f > 0 {
-                    let n = ((t * rate) as usize).saturating_sub(heard);
+                if plan.audio {
+                    let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(heard);
                     let mut buf = vec![0.0f32; n * 2];
                     Host::<T>::audio(run.host.synth.as_ref(), &mut buf, 2, rate);
                     heard += n;
