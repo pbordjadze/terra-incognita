@@ -29,12 +29,16 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' || contains(github.event.head_commit.message, '[no-publish]') }}
 
 jobs:
+  lint:
+    # the standard linters (lint.yml, ci/lint.sh) first; the macOS jobs wait for them
+    uses: ./.github/workflows/lint.yml
+
   packs:
     name: Validate and pack the prototypes
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - name: Validate
         run: python3 tools/playground/playground.py validate
@@ -48,19 +52,19 @@ jobs:
           exit $rc
       - name: Pack
         run: python3 tools/playground/playground.py pack --out build/packs
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with: { name: packs, path: build/packs, if-no-files-found: error }
 
   publish:
     name: Publish to the packs branch
-    needs: packs
+    needs: [packs, lint]
     if: ${{ github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[no-publish]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - name: Publish
         env:

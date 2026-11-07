@@ -64,12 +64,16 @@ env:
   SCHEME: TerraIncognita
 
 jobs:
+  lint:
+    # the standard linters (lint.yml, ci/lint.sh) first; the macOS jobs wait for them
+    uses: ./.github/workflows/lint.yml
+
   plates:
     name: The looks' plates, the globe's data and the tools
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - name: Check the globe's data and the tools
         run: |
@@ -93,19 +97,21 @@ jobs:
           # the Metal shaders compiled as C++ by clang, in seconds (tools/metal/README.md), and the
           # stand-in's own tests (numpy for its textures)
           python3 tools/metal/metal.py check 2>&1 | tee -a out/plates-check.log || rc=1
-          python3 -m pip install --quiet --break-system-packages numpy > /dev/null 2>&1 || python3 -m pip install --quiet numpy > /dev/null 2>&1 || true
+          python3 -m venv .venv && .venv/bin/pip install --quiet -r tools/requirements.txt > /dev/null 2>&1 || true
+          export PATH="$PWD/.venv/bin:$PATH"
           python3 tools/metal/tests/test_metal.py 2>&1 | tail -3 | tee -a out/plates-check.log || rc=1
           exit $rc
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: plates, path: out, if-no-files-found: ignore }
 
   apple:
     name: Simulator builds and encounter interactions
+    needs: [lint]
     runs-on: xcode-27
     timeout-minutes: 260
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - name: Xcode (the one version, ci/xcode.sh)
         run: bash ci/xcode.sh
@@ -134,7 +140,8 @@ jobs:
             D="ipad iphone"
           fi
           mkdir -p out
-          ci/simulators.sh $D > out/sims.txt
+          read -ra DEVICES <<< "$D"
+          ci/simulators.sh "${DEVICES[@]}" > out/sims.txt
           cat out/sims.txt
       - name: Build (Debug, simulator)
         id: build
@@ -168,7 +175,7 @@ jobs:
           # the globe's maps and the packs must reach the app byte for byte (an image tool would
           # bend the maps' distances)
           APP=build/dd/Build/Products/Debug-iphonesimulator/TerraIncognita.app
-          for f in $(find Globe Prototypes -type f); do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
+          while IFS= read -r f; do cmp "$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done < <(find Globe Prototypes -type f)
           for f in OceanCurrents.png OceanStream.png; do cmp "App/TerraIncognita/Ocean/$f" "$APP/$f" || { echo "::error::$f differs in the app bundle"; exit 1; }; done
           echo "bundled data identical"
       - name: UI tests and accessible text
@@ -228,7 +235,7 @@ jobs:
           mkdir -p out
           grep -hE "error:|warning:" out/*-build.log 2>/dev/null | sort -u > out/errors.txt || true
           echo "build=${{ steps.build.outcome }} tests_build=${{ steps.tests_build.outcome }} encounter=${{ steps.encounter.outcome }} stage=${{ steps.stage.outcome }} shots=${{ steps.shots.outcome }} release=${{ steps.release.outcome }}" > out/outcomes.txt
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: apple, path: out, if-no-files-found: ignore }
 
@@ -243,7 +250,7 @@ jobs:
     env:
       BUILD: ${{ github.run_number }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Xcode (the one version, ci/xcode.sh)
         run: bash ci/xcode.sh
       - name: Archive
@@ -289,7 +296,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash ci/retire_study2.sh
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ipa
@@ -298,7 +305,7 @@ jobs:
             !out/*.ipa
           if-no-files-found: ignore
       - name: Preserve isolated branch device build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         if: ${{ success() && github.ref_name != 'main' }}
         with:
           name: prototype-device-ipa
@@ -307,13 +314,13 @@ jobs:
 
   report:
     name: Publish report
-    needs: [plates, apple, ipa]
+    needs: [lint, plates, apple, ipa]
     if: ${{ !cancelled() }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with: { path: report }
       - name: Write status and push to refs/ci-shots/${{ github.ref_name }}
         run: |
@@ -323,6 +330,7 @@ jobs:
             echo "run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo "recordings: retained in the Actions artifact, outside this git report"
             echo
+            echo "lint: ${{ needs.lint.result }}"
             echo "plates: ${{ needs.plates.result }}"
             echo "apple: ${{ needs.apple.result }} ($(cat apple/outcomes.txt 2>/dev/null))"
             echo "ipa: ${{ needs.ipa.result }}"
