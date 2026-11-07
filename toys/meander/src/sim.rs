@@ -23,6 +23,13 @@ const OMEGA: f64 = -1.0;
 const GAMMA: f64 = 2.5;
 const CUT: f64 = W * 1.0; // a neck narrower than this (centreline to centreline: the banks touch) is cut
 const HELD: usize = 3; // nodes held at each end
+/// A finger's grip: the nodes each way along the channel from the one it holds that it can carry (a
+/// fingertip's reach is about four nodes, so this is room for the pushed reach to stretch), and how far
+/// along the channel the held node can move between sub-steps.
+const HOOK_SPAN: usize = 14;
+const HOOK_SLIP: usize = 6;
+/// How far along the channel either side of the grip the push still carries some of the river, nodes.
+const HOOK_ARC: f64 = 5.0;
 /// The meander belt on the sheet (the young forest between the old terraces and pastures): its axis's
 /// x and half its width, m. Banks outside it (older, cohesive ground) give way an eighth as fast.
 /// Nodes apart along the river before two parts of it can be a neck (5 widths).
@@ -236,11 +243,17 @@ impl River {
         self.oxbows = out;
     }
 
-    /// A finger moving by `d` through the river at `at` (metres): the channel within `radius` of it is
+    /// A finger moving by `d` through the river at `at` (metres): the reach within `radius` of it is
     /// carried along (most of the way: it lags, and slips off the finger when pushed far), cut where it
     /// meets another reach, and the bank there given a push that keeps it eroding. Returns the length
     /// the river gained.
-    pub fn push(&mut self, at: [f64; 2], d: [f64; 2], radius: f64) -> f64 {
+    ///
+    /// `hook` is the finger's grip: the node it holds, once the finger has met the river. A finger
+    /// carries only the run of river round its hook (HOOK_SPAN nodes each way along the channel), so a
+    /// finger swept across the valley pushes the one reach it caught over the others (and cuts through
+    /// where it meets them) instead of gathering every strand it crosses into a taut string; several
+    /// fingers each carry their own reach. `None` until the finger first meets the river.
+    pub fn push(&mut self, at: [f64; 2], d: [f64; 2], radius: f64, hook: &mut Option<usize>) -> f64 {
         let n = self.line.len();
         if n < 8 {
             return 0.0;
@@ -255,27 +268,84 @@ impl River {
             let c = [at[0] - d[0] * (1.0 - f), at[1] - d[1] * (1.0 - f)];
             let dd = [d[0] / steps as f64, d[1] / steps as f64];
             let n = self.line.len();
-            for i in HELD..n.saturating_sub(HELD) {
+            let (lo, hi) = (HELD, n.saturating_sub(HELD));
+            // the grip: the node nearest the finger, along the channel near the last one held (the
+            // reach moved with the finger, and resampling shifts indices by a few); or, for a finger
+            // not yet holding, the nearest node within reach anywhere
+            let near = |r: std::ops::Range<usize>| r.map(|i| (i, dist(self.line[i], c))).filter(|q| q.1 < radius).min_by(|a, b| a.1.total_cmp(&b.1));
+            *hook = match *hook {
+                Some(h) => near(h.saturating_sub(HOOK_SLIP).max(lo)..(h + HOOK_SLIP + 1).min(hi)).map(|q| q.0).or(Some(h.min(hi.saturating_sub(1)))),
+                None => near(lo..hi).map(|q| q.0),
+            };
+            let Some(h) = *hook else { continue };
+            for i in h.saturating_sub(HOOK_SPAN).max(lo)..(h + HOOK_SPAN + 1).min(hi) {
                 let r = dist(self.line[i], c);
-                if r < radius {
-                    // the core (under the fingertip) carries the river almost all the way, so once
-                    // hooked it follows the finger and slips off only after a long pull
-                    let x = ((1.0 - r / radius) / 0.55).min(1.0);
-                    let w = 0.93 * x * x * (3.0 - 2.0 * x);
+                // the core (under the fingertip) carries the river almost all the way, so once
+                // hooked it follows the finger and slips off only after a long pull
+                let x = ((1.0 - r / radius) / 0.55).clamp(0.0, 1.0);
+                let core = 0.93 * x * x * (3.0 - 2.0 * x);
+                // and the channel either side of the grip comes along less and less (its bends with
+                // it), so a reach pulled between two fingers bows rather than being drawn into a
+                // straight string (only while the grip itself is under the finger)
+                let k = (i as f64 - h as f64) / HOOK_ARC;
+                let held = dist(self.line[h], c) < radius;
+                let arc = if held { 0.8 * (-k * k).exp() } else { 0.0 };
+                let w = core.max(arc);
+                if w > 0.0 {
                     self.line[i][0] += dd[0] * w;
                     self.line[i][1] += dd[1] * w;
-                    moved = moved.max(w);
+                    moved = moved.max(core);
                 }
             }
+            // resampling keeps the line's start, so the hook moves by the nodes gained upstream of it
+            let len_to = |line: &[[f64; 2]], k: usize| line.windows(2).take(k).map(|w| dist(w[0], w[1])).sum::<f64>();
+            let upto = len_to(&self.line, h);
             self.line = resample(&self.line, DS);
             smooth(&mut self.line, 0.15);
+            let cuts = self.cuts.len();
             self.cutoffs();
             self.erase_crossed();
+            let n2 = self.line.len();
+            *hook = if self.cuts.len() != cuts {
+                // a cut renumbers the line: find the grip again by place
+                (HELD..n2.saturating_sub(HELD)).map(|i| (i, dist(self.line[i], c))).filter(|q| q.1 < radius).min_by(|a, b| a.1.total_cmp(&b.1)).map(|q| q.0)
+            } else {
+                Some(((upto / DS).round() as usize).min(n2.saturating_sub(HELD + 1)))
+            };
         }
         if moved > 0.05 {
-            self.kicks.push((at, self.year, (l / 500.0).min(0.5) * moved));
+            self.kick(at, (l / 500.0).min(0.5) * moved);
         }
         self.length() - before
+    }
+
+    /// Loosens the ground round `at` (a push or a tap). A kick close by and only just made takes this one
+    /// in (their weighted place, their strengths added), so several fingers moving every frame keep the
+    /// list, and the step's cost, about as short as one finger's.
+    pub fn kick(&mut self, at: [f64; 2], strength: f64) {
+        let year = self.year;
+        if let Some(k) = self.kicks.iter_mut().rev().take(16).find(|k| year - k.1 < 2.0 && dist(k.0, at) < KICK_R * 0.25) {
+            let s = k.2 + strength;
+            if s > 0.0 {
+                k.0 = [(k.0[0] * k.2 + at[0] * strength) / s, (k.0[1] * k.2 + at[1] * strength) / s];
+            }
+            k.2 = s;
+            return;
+        }
+        self.kicks.push((at, year, strength));
+    }
+
+    /// Which way the bend at node `i` bulges (a unit vector from its chord toward its outer bank), or
+    /// None where the channel there is near straight.
+    pub fn bend_out(&self, i: usize) -> Option<[f64; 2]> {
+        let n = self.line.len();
+        if i < 3 || i + 3 >= n {
+            return None;
+        }
+        let (a, b, p) = (self.line[i - 3], self.line[i + 3], self.line[i]);
+        let o = [p[0] - (a[0] + b[0]) * 0.5, p[1] - (a[1] + b[1]) * 0.5];
+        let l = (o[0] * o[0] + o[1] * o[1]).sqrt();
+        (l > DS * 0.4).then(|| [o[0] / l, o[1] / l])
     }
 
     /// The distance from `at` to the channel's centreline, m.

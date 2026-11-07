@@ -27,16 +27,18 @@
 //!     { "t": 0.2, "open": "build/screw/song.wav" }
 //!   ],
 //!   "shots": [0.5, { "t": 3.5, "name": "pinched" }],
-//!   "film": { "from": 0, "to": 8, "every": 0.1 },
+//!   "film": { "from": 0, "to": 8, "every": 0.1, "fingers": true },
 //!   "audio": true,
 //!   "strict_taps": false }
 //! ```
 //!
 //! `shots` are written as `<out>/<name or t>.png` (and, with `--stretch`, a contrast-stretched copy
-//! `<name>.stretch.png` that shows faint panels and seams); `film` as `<out>/film/0000.png…`
+//! `<name>.stretch.png` that shows faint panels and seams); `film` as `<out>/film/0000.png…`, with a
+//! soft ring where each finger is down when `fingers` is set (the plan's point events only)
 //! (tools/toys/film.sh makes an MP4 and a contact sheet of them); `audio` as `<out>/audio.wav` (48 kHz
 //! stereo, the whole plan) and a line of its loudness (integrated LUFS, RMS and peak in dBFS). Each
-//! shot prints a line: its time and what the frame cost on the CPU.
+//! shot prints a line: its time and what the frame cost on the CPU (the fingers' events handed to the toy and
+//! its update), and the run ends with its worst frame.
 //!
 //! `open` hands the toy a WAV file (a path from where the check runs) as if the reader had chosen it
 //! from Files (`Toy::opened`; on the device the shell decodes any format iOS plays).
@@ -216,6 +218,58 @@ pub struct Film {
     pub from: f64,
     pub to: f64,
     pub every: f64,
+    /// Draw a soft ring where each finger is down on the film's frames (not on shots), so a film of
+    /// several fingers shows which is where.
+    #[serde(default)]
+    pub fingers: bool,
+}
+
+/// Where each finger is down at `t` (points), from a plan's point events: a finger is down from its
+/// `down` (or a tap, hold or drag's start) to its `up`.
+pub fn fingers_at(pointers: &[(f64, Option<PointerEvent>)], t: f64) -> Vec<[f64; 2]> {
+    let mut down: BTreeMap<u64, [f64; 2]> = BTreeMap::new();
+    for (at, e) in pointers {
+        if *at > t + 1e-9 {
+            break;
+        }
+        let Some(e) = e else { continue };
+        match e.phase {
+            Phase::Down | Phase::Move => {
+                down.insert(e.id, [e.x, e.y]);
+            }
+            Phase::Up | Phase::Cancel => {
+                down.remove(&e.id);
+            }
+        }
+    }
+    down.into_values().collect()
+}
+
+/// A soft white ring a fingertip wide (44 pt) at each place, drawn over an RGBA frame.
+pub fn draw_fingers(px: &mut [u8], w: u32, h: u32, ppp: f64, at: &[[f64; 2]]) {
+    let r = 22.0 * ppp;
+    let lw = 2.5 * ppp;
+    for p in at {
+        let (cx, cy) = (p[0] * ppp, p[1] * ppp);
+        let (x0, x1) = (((cx - r - lw).floor().max(0.0)) as u32, ((cx + r + lw).ceil().min(w as f64 - 1.0)) as u32);
+        let (y0, y1) = (((cy - r - lw).floor().max(0.0)) as u32, ((cy + r + lw).ceil().min(h as f64 - 1.0)) as u32);
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let d = ((x as f64 + 0.5 - cx).powi(2) + (y as f64 + 0.5 - cy).powi(2)).sqrt();
+                // the ring, and a faint fill inside it
+                let ring = (1.0 - ((d - r).abs() / lw)).clamp(0.0, 1.0) * 0.85;
+                let fill = if d < r { 0.12 } else { 0.0 };
+                let a = ring.max(fill);
+                if a <= 0.0 {
+                    continue;
+                }
+                let i = ((y * w + x) * 4) as usize;
+                for c in 0..3 {
+                    px[i + c] = (px[i + c] as f64 * (1.0 - a) + 255.0 * a).round() as u8;
+                }
+            }
+        }
+    }
 }
 
 /// A plan's fingers as pointer events, in time order (the events whose places are all points; a
@@ -755,15 +809,21 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
     let mut si = 0;
     let mut film_next = plan.film.as_ref().map(|f| f.from);
     let mut film_i = 0;
+    let finger_track = pointers(&plan.events);
+    let mut worst = (0.0f64, 0.0f64);
     let rate = 48_000.0;
     let mut sound: Vec<f32> = Vec::new();
     for f in 0..=frames {
         let t = f as f64 / fps;
+        // a frame's CPU cost: the fingers' events handed to the toy (where a push does its work) and the update
+        let start = std::time::Instant::now();
         run.dispatch(&plan.events, t)?;
         let host = &mut run.host;
-        let start = std::time::Instant::now();
         host.update(t);
         let cost = start.elapsed().as_secs_f64() * 1000.0;
+        if cost > worst.0 {
+            worst = (cost, t);
+        }
         let _ = host.take_haptic();
         if plan.audio && f > 0 {
             let n = ((t * rate) as usize).saturating_sub(sound.len() / 2);
@@ -800,7 +860,14 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 si += 1;
             }
             if film_now {
-                write_png(&out.join("film").join(format!("{film_i:04}.png")), w, h, &px)?;
+                let film = plan.film.as_ref().unwrap();
+                if film.fingers {
+                    let mut px = px.clone();
+                    draw_fingers(&mut px, w, h, ppp, &fingers_at(&finger_track, t));
+                    write_png(&out.join("film").join(format!("{film_i:04}.png")), w, h, &px)?;
+                } else {
+                    write_png(&out.join("film").join(format!("{film_i:04}.png")), w, h, &px)?;
+                }
                 film_i += 1;
                 let every = plan.film.as_ref().unwrap().every;
                 film_next = film_next.map(|n| n + every);
@@ -818,6 +885,7 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
     if film_i > 0 {
         writeln!(log, "film {} frames in {}", film_i, out.join("film").display())?;
     }
+    writeln!(log, "worst frame {:.2} ms at {:.2}s (CPU: the fingers' events and the update)", worst.0, worst.1)?;
     let resolved = std::mem::take(&mut run.resolved);
     drop(run);
     let mut report = Report::default();

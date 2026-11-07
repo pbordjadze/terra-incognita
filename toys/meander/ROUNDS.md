@@ -25,3 +25,41 @@ and a rubber-band pull makes the river a puppet; push the bank and let the river
 - Round 5: a cut loop dark at once; the cut a pulse of light running along the water; point-bar sand. Critic: "ok, close":
   hairline scroll bars read as scratches; pale discs on the channel (the neck glow, which sat on the land between reaches).
 - Round 6: no neck glow, scroll bars almost gone, banks a shade darker, the water a little clear over them.
+
+## Row 253 (Nov 7, 2026): multitouch
+
+Paul on meander-build-169, on his phone: "Meander is incredible—just needs multitouch." What it should feel like, written
+before reading the tools:
+- Every finger is a push of its own, from the frame it lands to the frame it lifts: two thumbs pushing two bends apart
+  each carry their own reach of river, and neither waits for the other or steals its grip. A finger landing while
+  another is moving doesn't jerk, reset or cancel the first.
+- Two fingers on the same reach share it without tearing it: each moves the nodes nearest it; the river between them
+  stretches, never kinks or crosses itself.
+- Each push leaves its own kick, so two pushed bends each swell and each cut their own lake; the calm that holds the
+  rest of the river back holds while any finger is down or freshly lifted, and the river's cuts there still come
+  ~1.5 s after the lift.
+- A tap of one finger while another pushes is still a tap (a nudge and a ring), not part of the push.
+- Sound and touch stay readable with many fingers: the rising ticks are per finger (or shared, never a stutter of
+  doubled notes), and the haptic doesn't buzz continuously.
+- Pinch-like gestures don't zoom or pan: there is no camera to move; four or five fingers on a phone just push four
+  or five places. Nothing a single finger does today changes.
+- Frame rate holds with five fingers down (the deposit grid's changed rows grow with more pushed river; measure it).
+- Round 1 (Nov 7): a push per finger (each its own reach, kick, rising ticks panned to it, one note and one haptic at
+  most every 70 ms; a tap by another finger stays a tap); kicks made close together merge so many fingers cost about
+  what one does; the deposit grid sent by changed 40-cell tiles (it had been the whole 3 MB a frame: the river spans
+  every row). The kit's check films the fingers (`film.fingers`) and times a frame with its touches. Critic: "no": two
+  thumbs work (each carries its own reach, both bends grow, a lake at ~6.5 s), but five fingers swept across gather
+  every strand and pull the river into a straight string; two fingers on one reach draw it straight between them.
+- Round 2: a finger holds the one reach it first meets (the channel either side coming along less and less), so a sweep
+  pushes that reach over the others instead of gathering them; plans rub (five sweeping, as a hand rubs) and hand (five
+  fingertips pushing the same way). Critic: "no": two thumbs, a hand and one finger are all good enough to show (lakes at
+  ~3, 6.5, 7.5 s), but a rub still draws the whole river into a near-straight line for about three seconds.
+- Round 3: with several fingers down a finger lets its bend go after about a bend's width (35 pt when it is pushing the
+  bend in toward its middle, which would flatten it); one finger alone keeps its long pull. Critic: "yes, ship": every
+  finger moves its own reach and the river stays a river (lakes in two, hand, share, push); weakest, the rub combs the
+  big loops into small even wiggles that don't swell ("I tidied it", not "I did that").
+- Round 4: a bend a finger lets go keeps a loosened bank (a kick), so a rub's dented bends swell and cut. Critic: "yes,
+  ship": every plan ends in lakes the fingers caused; the rub's pulled reach grows back into loops and cuts at ~4.75 s
+  ("the first round where the rub ends in an 'I did that'"); weakest, polish again: late in `two` (10.5-13.5 s) two
+  swelling loops lie over each other without cutting, as the opening frame's upper loop does before any touch. Polish
+  two rounds running: done at round 4.
