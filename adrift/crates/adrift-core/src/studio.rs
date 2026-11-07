@@ -259,7 +259,7 @@ impl ClipCamera {
     /// in again as they near; out on a quick spring, in on a slow one. The opening starts `OPEN_WIDE`
     /// wider and eases in over `OPEN_SECS` of the clip; the end beat pulls out to the take's whole
     /// lines. The result lifted (`lifted`) so the lower third stays clear.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // the take, the clip and its beats: each argument is one thing the framing reads
     fn framed(
         &mut self,
         take: Camera,
@@ -1001,7 +1001,7 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // the lamps, the trail and the screen: each argument is one thing the frame reads
 fn frame_of(
     lamps: &[crate::model::LonLat],
     trail: &[crate::model::LonLat],

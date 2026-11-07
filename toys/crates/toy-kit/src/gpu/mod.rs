@@ -107,7 +107,7 @@ impl Gpu {
                 )
             }));
         }
-        // (on the web wgpu's device is neither Send nor Sync: one Arc type for every target)
+        // on the web the device is neither Send nor Sync: one Arc type for every target
         #[allow(clippy::arc_with_non_send_sync)]
         let device = Arc::new(device);
         crate::budget::start_report(device.clone());

@@ -169,7 +169,6 @@ impl Memory {
     }
 
     /// How much the reader holds forms like `y` when they are shown: the target the walk samples.
-    #[allow(clippy::needless_range_loop)]
     pub fn liking(&self, y: &Form) -> f64 {
         let k = -0.5 / (NEAR * NEAR);
         let (mut s, mut h) = (0.0, 0.0);

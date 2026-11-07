@@ -764,7 +764,7 @@ fn drag(
 
 /// Two fingers: zoom by `factor`, and the place under (ax, ay) moved to (bx, by). Returns the camera
 /// and the disc as it is drawn now (grown with the zoom).
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)] // the camera, the disc and two fingers' points: each argument is one thing the pinch reads
 fn pinch(
     cam: Camera,
     disc: &Disc,

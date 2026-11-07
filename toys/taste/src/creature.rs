@@ -37,7 +37,7 @@ pub fn body(f: &crate::walk::Form) -> [f64; 8] {
 }
 
 impl Instance {
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)] // one creature's instance: each argument is one field the shader reads
     pub fn new(
         c: [f32; 2],
         r: f32,

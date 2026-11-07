@@ -39,7 +39,7 @@ pub fn beater(k: u8) -> u8 {
 }
 
 pub struct Rng(pub u64);
-#[allow(clippy::should_implement_trait)]
+#[allow(clippy::should_implement_trait)] // next() is a number generator's step, not an Iterator's
 impl Rng {
     #[inline]
     pub fn next(&mut self) -> u64 {
@@ -295,7 +295,6 @@ impl Hill {
     }
 
     /// One step of the rule, read from `kind` as it is; the flips wait in `pending` to be shown.
-    #[allow(clippy::needless_range_loop)]
     pub fn step(&mut self) {
         // apply what is still waiting from the last step at once
         let rest: Vec<Flip> = std::mem::take(&mut self.pending);

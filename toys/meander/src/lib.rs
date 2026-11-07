@@ -2,7 +2,7 @@
 pub mod sim;
 
 /// A full turn as the river was tuned with it: 6.283, not TAU, so its opening course keeps its shape.
-#[allow(clippy::approx_constant)]
+#[allow(clippy::approx_constant)] // 6.283, not TAU: the river was tuned with it
 const TURN: f64 = 6.283;
 
 use sim::{dist, rand, resample};
