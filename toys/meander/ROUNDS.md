@@ -50,3 +50,7 @@ before reading the tools:
   every row). The kit's check films the fingers (`film.fingers`) and times a frame with its touches. Critic: "no": two
   thumbs work (each carries its own reach, both bends grow, a lake at ~6.5 s), but five fingers swept across gather
   every strand and pull the river into a straight string; two fingers on one reach draw it straight between them.
+- Round 2: a finger holds the one reach it first meets (the channel either side coming along less and less), so a sweep
+  pushes that reach over the others instead of gathering them; plans rub (five sweeping, as a hand rubs) and hand (five
+  fingertips pushing the same way). Critic: "no": two thumbs, a hand and one finger are all good enough to show (lakes at
+  ~3, 6.5, 7.5 s), but a rub still draws the whole river into a near-straight line for about three seconds.

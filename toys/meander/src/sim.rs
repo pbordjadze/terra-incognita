@@ -335,6 +335,19 @@ impl River {
         self.kicks.push((at, year, strength));
     }
 
+    /// Which way the bend at node `i` bulges (a unit vector from its chord toward its outer bank), or
+    /// None where the channel there is near straight.
+    pub fn bend_out(&self, i: usize) -> Option<[f64; 2]> {
+        let n = self.line.len();
+        if i < 3 || i + 3 >= n {
+            return None;
+        }
+        let (a, b, p) = (self.line[i - 3], self.line[i + 3], self.line[i]);
+        let o = [p[0] - (a[0] + b[0]) * 0.5, p[1] - (a[1] + b[1]) * 0.5];
+        let l = (o[0] * o[0] + o[1] * o[1]).sqrt();
+        (l > DS * 0.4).then(|| [o[0] / l, o[1] / l])
+    }
+
     /// The distance from `at` to the channel's centreline, m.
     pub fn distance(&self, at: [f64; 2]) -> f64 {
         self.line.iter().map(|p| dist(*p, at)).fold(f64::MAX, f64::min)

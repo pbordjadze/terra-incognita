@@ -305,7 +305,8 @@
  "film": {
   "from": 0,
   "to": 14,
-  "every": 0.1
+  "every": 0.1,
+  "fingers": true
  },
  "audio": true
 }

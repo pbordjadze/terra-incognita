@@ -25,6 +25,10 @@ const VIEW_M: f64 = 13000.0;
 /// The finger's brush: points across (a fingertip, a little more), and metres of river gained a tick.
 const BRUSH_PT: f64 = 38.0;
 const TICK_M: f64 = 450.0;
+/// With other fingers down, how far a finger carries its reach before letting it go: about a bend's width, points.
+const LET_GO_PT: f64 = 90.0;
+/// The same for a bend pushed in toward its middle, which would flatten it.
+const LET_GO_IN_PT: f64 = 35.0;
 const COURSE_LIFE: f64 = 28.0; // an abandoned course silts and greens over in under three seconds
 
 const WGSL: &str = r#"
@@ -130,8 +134,13 @@ struct Hand {
     travel: f64,
     gained: f64,
     ticks: i32,
-    /// The node of the river this finger holds (once it has met the river).
+    /// The node of the river this finger holds (once it has met the river), and how far (points) it
+    /// has carried it.
     hook: Option<usize>,
+    carried: f64,
+    /// Where the finger let its reach go, while it is still that close (it catches nothing more until
+    /// it has moved a fingertip clear).
+    dropped: Option<[f64; 2]>,
 }
 
 struct Ripple {
@@ -375,7 +384,7 @@ impl Toy for Meander {
             toy_kit::Phase::Down => {
                 // every finger is a push of its own (a stale one with the same id is replaced)
                 self.hands.retain(|h| h.id != e.id);
-                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0, hook: None });
+                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0, hook: None, carried: 0.0, dropped: None });
             }
             toy_kit::Phase::Move => {
                 let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
@@ -385,9 +394,36 @@ impl Toy for Meander {
                 h.at = w;
                 // the finger is a brush about a fingertip wide: whatever river it passes through is
                 // carried along, as a string is through wet sand
-                let mut hook = h.hook;
-                let gained = self.river.push(w, d, BRUSH_PT / s, &mut hook);
-                self.hands[k].hook = hook;
+                // with other fingers down, a finger lets its reach go after about a bend's width, so a
+                // hand rubbing across the valley dents each strand it meets instead of gathering them
+                // into one string (a finger alone keeps its long pull)
+                let many = self.hands.len() > 1;
+                let h = &mut self.hands[k];
+                if let Some(i) = h.hook {
+                    h.carried += dist(w, [w[0] - d[0], w[1] - d[1]]) * s;
+                    // a bend pushed in toward its own middle (being flattened) is let go sooner than
+                    // one pushed out
+                    let inward = self.river.bend_out(i).is_some_and(|o| o[0] * d[0] + o[1] * d[1] < 0.0);
+                    let limit = if inward { LET_GO_IN_PT } else { LET_GO_PT };
+                    if many && h.carried > limit {
+                        h.hook = None;
+                        h.carried = 0.0;
+                        h.dropped = Some(w);
+                    }
+                }
+                if let Some(q) = h.dropped {
+                    if dist(q, w) * s > BRUSH_PT * 1.5 {
+                        h.dropped = None;
+                    }
+                }
+                let gained = if h.dropped.is_none() {
+                    let mut hook = h.hook;
+                    let g = self.river.push(w, d, BRUSH_PT / s, &mut hook);
+                    self.hands[k].hook = hook;
+                    g
+                } else {
+                    0.0
+                };
                 if gained.abs() > 1.0 {
                     self.pushed = self.t;
                 }

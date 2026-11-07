@@ -36,7 +36,7 @@ plans = {
         "size": [1179, 2556], "ppp": 3, "seconds": 20, "fps": 30,
         "events": stroke(1.0, 0.9, [[40, 420], [200, 440], [340, 470]], n=30) + [{"t": 17.0, "tap": [200, 700]}],
         "shots": [{"t": 0.9, "name": "before"}, {"t": 1.5, "name": "pushing"}, {"t": 2.0, "name": "pushed"}, {"t": 4, "name": "4s"}, {"t": 7, "name": "7s"}, {"t": 11, "name": "11s"}, {"t": 17.3, "name": "tap"}],
-        "film": {"from": 0, "to": 14, "every": 0.1},
+        "film": {"from": 0, "to": 14, "every": 0.1, "fingers": True},
         "audio": True,
     },
     "ipad": {
@@ -71,6 +71,7 @@ plans = {
                    for e in stroke(1.0 + 0.05 * k, 2.5, [[x0, y], [(x0 + x1) / 2, y + 20], [x1, y + 10]], n=150, ident=k + 1)],
         "shots": [{"t": 0.9, "name": "before"}] + [{"t": round(1.3 + 0.2 * i, 2), "name": f"down{i}"} for i in range(11)] + [{"t": 6, "name": "6s"}, {"t": 12, "name": "12s"}],
         "film": {"from": 0, "to": 12, "every": 0.1, "fingers": True},
+        "audio": True,
     },
     "hand": {
         "_": "A hand's five fingertips land on the river at five places and push the same way (to the right) together for a little over a second, then lift: five pushed bends at once. Written by tools/toys/meander/plans.py.",

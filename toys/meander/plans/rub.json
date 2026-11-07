@@ -6152,5 +6152,6 @@
   "to": 12,
   "every": 0.1,
   "fingers": true
- }
+ },
+ "audio": true
 }
