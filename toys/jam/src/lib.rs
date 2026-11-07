@@ -18,6 +18,8 @@ use town::{dist, Kind, Town};
 
 /// The info mark's ghost fingers' ids start here (toy-kit info.rs).
 const GHOST: u64 = 1 << 48;
+/// How fast the town's clock runs against the screen's: every rule the same, sooner.
+const PACE: f64 = 1.7;
 /// Seconds the town has run before it opens, so it opens flowing.
 const BEFORE: f64 = 70.0;
 /// The lake, an ellipse at the middle (points).
@@ -388,15 +390,17 @@ impl Toy for Jam {
             self.born = Some(t);
         }
         let had = self.town.trips.len();
-        self.town.step(dt);
+        self.town.step(dt * PACE);
         let keep: Vec<usize> = self.lent.iter().map(|x| x.0).collect();
         self.town.tidy(&keep);
         // each car's light eases toward how long its trip will take
-        let ease = 1.0 - (-dt * 2.0).exp();
+        // slow to redden and quick to cool, so a moment's worsening (the few seconds a closed road's
+        // cars take to go round) doesn't flash, and a lasting jam or a relief both show
+        let (warm, cool) = (1.0 - (-dt * PACE * 0.45).exp(), 1.0 - (-dt * PACE * 3.0).exp());
         for i in 0..self.town.cars.len() {
             let want = self.town.way(i) / self.usual;
             let c = &mut self.town.cars[i];
-            c.late += (want - c.late) * ease;
+            c.late += (want - c.late) * if want > c.late { warm } else { cool };
         }
         let new = self.town.trips.len().saturating_sub(had);
         for &(_, trip) in &self.town.trips[self.town.trips.len() - new..] {

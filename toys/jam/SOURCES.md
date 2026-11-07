@@ -59,7 +59,8 @@ whole in `main`'s history before row 255 replaced it with this.)
   the quickest way on from there, each at the speed its crowd gives it now (what a driver setting out on
   the same way now would expect), against the town's usual: the mean of that over the half minute before
   the toy opens, with the town's own roads. White when quicker, warm white at the usual, orange, then
-  red when about a quarter slower; eased over half a second so it doesn't flicker. A road the reader drew
+  red when about a quarter slower; eased, slow to redden (about a second and a half) and quick to cool, so
+  a moment's worsening as a closed road's cars go round doesn't flash. A road the reader drew
   wears the mean light of the cars on it.
 
 ## The town (drawn)

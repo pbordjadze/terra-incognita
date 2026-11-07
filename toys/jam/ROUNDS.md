@@ -37,3 +37,8 @@ Salt Flat's six (row 244) in the history of this file before row 255.
   cars ("me, or night falling?"), the marks read as dead): while the invitation shows, any touch on it
   (a shore's ring, the dotted road, the water, a drag along it) builds the road it shows; the sky and the
   lake keep one warm light, so only the cars and the reader's roads change colour.
+- R6 (Nov 7, 02:05; R5 critic "no", weakest (more): undoing the bridge still not a clear win: cut early,
+  the cars herded onto one loop and stayed orange about 12 s while the jammed street drained): the town's
+  clock runs 1.7 times the screen's (every rule the same, sooner: the jam after the bridge in about 6 s,
+  the relief after a cut in 6–9 s); a car's light is slow to redden and quick to cool, so the few seconds
+  a closed road's cars take to go round don't flash red.
