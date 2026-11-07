@@ -537,9 +537,22 @@ impl Toy for Jam {
             }
             p.glow(px(q), px(q), 4.0 * m, 9.0 * m, [1.0, 0.3, 0.2, 0.12 * come]);
         }
-        // a pinned start: a light on the road, waiting for the other end
+        // a pinned start: a light on the road, waiting for the other end, and every other road a faint
+        // glow where it could go
         if let Some((w, at)) = self.pin {
             let age = tm - at;
+            let lit = (0.5 + 0.5 * (age * 3.0).cos()) as f32 * ((age / 0.3).min(1.0) as f32);
+            for r in town.roads.iter().filter(|r| r.alive && r.open) {
+                let mut u = 0.0;
+                while u < r.len {
+                    let v = (u + 8.0).min(r.len);
+                    let (a0, a1) = (r.at(u).0, r.at(v).0);
+                    if dist(a0, w) > 30.0 {
+                        p.glow(px(a0), px(a1), 3.0 * m, 5.0 * m, [0.80, 0.88, 1.0, 0.10 * lit]);
+                    }
+                    u = v;
+                }
+            }
             let breathe = if self.still { 1.0 } else { 0.75 + 0.25 * (age * 4.0).sin() as f32 };
             p.glow(px(w), px(w), 5.0 * m, 12.0 * m, [0.85, 0.92, 1.0, 0.25 * breathe]);
             p.disc(px(w), 4.0 * m, 1.0 * m, [0.95, 0.97, 1.0, 0.9]);
@@ -548,14 +561,14 @@ impl Toy for Jam {
         // the invitation: until the reader changes a road, a road of light keeps drawing itself across
         // the lake from shore to shore
         let since = tm - self.born.unwrap_or(tm);
-        if self.edits.is_empty() && self.pin.is_none() && self.fingers.is_empty() && since > 1.0 {
+        if self.edits.is_empty() && self.pin.is_none() && self.fingers.is_empty() {
             let (a, b) = (town.nodes[2], town.nodes[3]);
-            let come = ((since - 1.0) / 1.0).min(1.0) as f32;
+            let come = 1.0f32;
             let cycle = 3.2;
-            let ph = if self.still { 1.0 } else { ((since - 1.0) / cycle).fract() };
+            let ph = if self.still { 1.0 } else { (since / cycle + 0.45).fract() };
             // the drawing finger goes over in the first 40% of the cycle, the line it leaves fades after
             let reach = (ph / 0.4).min(1.0);
-            let fade = if ph < 0.4 { 1.0 } else { (1.0 - (ph - 0.4) / 0.6).max(0.0) } as f32;
+            let fade = if ph < 0.4 { 1.0 } else { 1.0 - 0.6 * ((ph - 0.4) / 0.6) } as f32;
             let n = 16;
             for i in 0..=n {
                 let f = i as f64 / n as f64;
