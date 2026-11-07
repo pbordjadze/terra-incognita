@@ -166,6 +166,17 @@
       "iconSource": "toys/screw/icon.png",
       "tintColor": "#8E4FB0",
       "minOSVersion": "17.0"
+    },
+    {
+      "tag": "throats-build",
+      "name": "Throats",
+      "bundleIdentifier": "com.pbordjadze.toy.throats",
+      "subtitle": "Rock, paper, scissors on a hillside of lizards",
+      "localizedDescription": "A sunny California slope seen from above, every rock held by a side-blotched lizard with an orange, blue or yellow throat. Orange takes blue's rock, blue takes yellow's, yellow takes orange's, and the colours chase each other round in spirals. Draw to pour in a colour; it breaks into new arms. Pinch out for the whole hill. Working title; a toy in the making.",
+      "icon": "throats-icon.png",
+      "iconSource": "toys/throats/icon.png",
+      "tintColor": "#F07A1A",
+      "minOSVersion": "17.0"
     }
   ]
 }

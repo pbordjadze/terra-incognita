@@ -1,0 +1,8 @@
+{ "_": "The first minute's shape: the opening (the whole hill's spirals), a stroke poured, then a pinch in to the lizards and back out.", "size": [1179, 2556], "ppp": 3, "seconds": 20, "fps": 30,
+  "events": [
+    { "t": 4.0, "drag": [[90, 300], [300, 560]], "for": 1.0 },
+    { "t": 10.0, "pinch": [[176, 426], [217, 426]], "to": 4.0, "for": 2.0 },
+    { "t": 15.0, "pinch": [[120, 426], [273, 426]], "to": 0.3, "for": 2.0 }
+  ],
+  "shots": [{ "t": 0.1, "name": "first" }, { "t": 5.2, "name": "poured" }, { "t": 9.5, "name": "after" }, { "t": 13.0, "name": "in" }, { "t": 19.5, "name": "out" }],
+  "film": { "from": 0, "to": 20, "every": 0.1 } }

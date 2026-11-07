@@ -348,7 +348,36 @@ def screw():
     return img
 
 
-DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw}
+def throats():
+    # a spiral of three throat colours turning on a sunny slope, one lizard in the middle of it
+    img = Image.new('RGBA', (N, N), (176, 146, 104, 255))
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(257)
+    cols = [(250, 118, 26, 255), (40, 108, 250, 255), (255, 228, 56, 255)]
+    c = N / 2
+    for y in range(0, N, 26):
+        for x in range(0, N, 26):
+            px, py = x + rnd.uniform(-8, 8), y + rnd.uniform(-8, 8)
+            a = math.atan2(py - c, px - c)
+            r = math.hypot(px - c, py - c)
+            k = int(((a / math.tau) * 3 + r / 170) % 3)
+            d.ellipse([px - 7, py - 7, px + 7, py + 7], fill=cols[k])
+    # the lizard: body, head, tail, legs, its orange throat
+    cx, cy = c, c
+    d.ellipse([cx - 150, cy - 46, cx + 80, cy + 46], fill=(112, 88, 60, 255))
+    d.ellipse([cx + 40, cy - 52, cx + 180, cy + 52], fill=(112, 88, 60, 255))
+    d.polygon([(cx - 130, cy - 26), (cx - 130, cy + 26), (cx - 420, cy + 60), (cx - 430, cy + 52)], fill=(112, 88, 60, 255))
+    for (x0, y0, x1, y1) in [(40, 0, 90, -120), (40, 0, 10, 120), (-90, 0, -150, -120), (-90, 0, -40, 120)]:
+        d.line([cx + x0, cy + y0, cx + x1, cy + y1], fill=(112, 88, 60, 255), width=26)
+    d.ellipse([cx + 70, cy - 44, cx + 176, cy + 44], fill=cols[0])
+    for i in range(5):
+        d.ellipse([cx - 120 + i * 40, cy - 14, cx - 96 + i * 40, cy + 14], fill=(60, 44, 30, 255))
+    d.ellipse([cx + 140, cy - 34, cx + 156, cy - 18], fill=(20, 16, 12, 255))
+    d.ellipse([cx + 140, cy + 18, cx + 156, cy + 34], fill=(20, 16, 12, 255))
+    return img
+
+
+DRAW = {'meander': meander, 'whales': whales, 'murmuration': murmuration, 'mold': mold, 'fireflies': fireflies, 'bell': bell, 'swell': swell, 'battle': battle, 'carol': carol, 'jam': jam, 'frost': frost, 'taste': taste, 'walk': walk, 'screw': screw, 'throats': throats}
 
 if __name__ == '__main__':
     for toy in sys.argv[1:] or DRAW:

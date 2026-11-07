@@ -962,6 +962,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "throats"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "image",
+ "toy-kit",
+ "wgpu",
+]
+
+[[package]]
 name = "tokio"
 version = "1.54.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,23 @@
+[package]
+name = "throats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Throats (a working title): side-blotched lizards on a California hillside, orange beats blue beats yellow beats orange, and the colours turn in spirals."
+
+[lib]
+crate-type = ["lib", "staticlib"]
+
+[dependencies]
+toy-kit = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }
+
+[[bin]]
+name = "throats-check"
+path = "src/bin/check.rs"
