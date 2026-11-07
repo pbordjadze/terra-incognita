@@ -39,7 +39,7 @@ impl<T: Toy> Shell<T> {
         // budget is checked against these)
         crate::log(&format!("launch: {} MB available to the app", available_mb()));
         crate::log(&format!("launch: {} {}x{} px at {scale}x", env!("CARGO_PKG_VERSION"), width, height));
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..Default::default() });
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
         let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
             Ok(s) => s,
             Err(e) => {
@@ -57,6 +57,7 @@ impl<T: Toy> Shell<T> {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: gpu.format,
+            color_space: wgpu::SurfaceColorSpace::Srgb,
             width: width.max(1),
             height: height.max(1),
             present_mode: wgpu::PresentMode::Fifo,
@@ -90,19 +91,19 @@ impl<T: Toy> Shell<T> {
         let start = std::time::Instant::now();
         self.host.update(t);
         let frame = match self.surface.get_current_texture() {
-            Ok(f) => f,
-            Err(wgpu::SurfaceError::Outdated) | Err(wgpu::SurfaceError::Lost) => {
+            wgpu::CurrentSurfaceTexture::Success(f) | wgpu::CurrentSurfaceTexture::Suboptimal(f) => f,
+            wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
                 self.surface.configure(&self.host.ctx.gpu.device, &self.config);
                 return;
             }
-            Err(e) => {
-                eprintln!("toy: frame: {e}");
+            other => {
+                eprintln!("toy: frame: {other:?}");
                 return;
             }
         };
         let view = frame.texture.create_view(&Default::default());
         self.host.draw(&view);
-        frame.present();
+        self.host.ctx.gpu.queue.present(frame);
         self.drawn += 1;
         let since = t - *self.started.get_or_insert(t);
         // the first frames and the first seconds, in the log: a toy that dies after it started says

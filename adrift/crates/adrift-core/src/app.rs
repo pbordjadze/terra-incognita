@@ -1691,6 +1691,7 @@ impl App {
                     depth_stencil_attachment: None,
                     timestamp_writes: None,
                     occlusion_query_set: None,
+                    multiview_mask: None,
                 });
                 self.ground.draw(&mut rp, &self.stage_view_bind);
                 self.sea.draw(&mut rp, &self.stage_view_bind);
@@ -1725,6 +1726,7 @@ impl App {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
             self.look.draw(&mut rp, &self.view_bind, &self.maybes);

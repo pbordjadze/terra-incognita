@@ -454,7 +454,7 @@ impl Toy for Frost {
             })
         });
         let shader = gpu.shader("frost sim", include_str!("frost.wgsl"));
-        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("frost sim"), bind_group_layouts: &[&layout], push_constant_ranges: &[] });
+        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("frost sim"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
         let compute = |entry: &str| {
             dev.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some(entry),
@@ -746,8 +746,8 @@ impl Toy for Frost {
         // what froze this frame (read back at once: a few bytes, and the same on every run)
         let slice = self.readback.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
-        let _ = gpu.device.poll(wgpu::PollType::Wait);
-        let counts: Vec<u32> = bytemuck::cast_slice(&slice.get_mapped_range()).to_vec();
+        let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
+        let counts: Vec<u32> = bytemuck::cast_slice(&slice.get_mapped_range().expect("mapped")).to_vec();
         self.readback.unmap();
         if let Some(f) = &mut self.finger {
             if f.mode == Mode::Undecided {
@@ -831,6 +831,7 @@ impl Toy for Frost {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.draw);
             rp.set_bind_group(0, &self.draw_bind, &[]);

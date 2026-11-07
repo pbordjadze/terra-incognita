@@ -13,7 +13,7 @@ end), under the environment toy-kit reads (toys/crates/toy-kit/src/budget.rs):
 
   (a) shaders: TOY_DUMP_SHADERS=<dir> makes the kit write every shader it builds; each is translated to
       Metal Shading Language 2.4 by naga, as wgpu does on iOS (Linux runs them through SPIR-V instead).
-      Needs naga-cli 26 (cargo install naga-cli --version 26.0.0 --locked).
+      Needs naga-cli 30, the naga of the toys' wgpu (cargo install naga-cli --version 30.0.1 --locked).
   (b) the iPhone's GPU: KIT_IPHONE_LIMITS=1, so the device is requested with the limits an Apple7 iPhone
       gives wgpu 26 and no feature it lacks, at the phone's pixel size (390x844 points at 3x: 1170x2532);
       a GPU validation error is fatal in the check (on the device it is logged).
@@ -28,7 +28,15 @@ The budget is --budget-mb, or the app JSON's "memory_mb", or DEFAULT_BUDGET_MB. 
 part fails; the last lines say which. It cannot run Apple's Metal compiler or the phone's memory
 pressure; the device's own log (toy-log.txt) is the last word.
 """
-import argparse, json, os, re, shutil, subprocess, sys, tempfile, zipfile
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
 from pathlib import Path
 
 # The oldest iPhones iOS 17 runs on (toys/ios/Info.plist: MinimumOSVersion 17.0) are the iPhone XS and
@@ -55,13 +63,13 @@ def say(ok, line):
 def shaders(dump: Path):
     naga = shutil.which("naga")
     if not naga:
-        return say(False, "shaders: naga not found (cargo install naga-cli --version 26.0.0 --locked)")
+        return say(False, "shaders: naga not found (cargo install naga-cli --version 30.0.1 --locked)")
     files = sorted(dump.glob("*.wgsl"))
     if not files:
         return say(False, f"shaders: none dumped in {dump} (does the app build them through toy-kit's Gpu::shader?)")
     bad = []
     for f in files:
-        r = subprocess.run([naga, "--metal-version", "2.4", str(f), str(f.with_suffix(".metal"))], capture_output=True, text=True)
+        r = subprocess.run([naga, "--metal-version", "2.4", str(f), str(f.with_suffix(".metal"))], capture_output=True, text=True, check=False)
         if r.returncode != 0:
             bad.append(f"{f.name}: {(r.stderr or r.stdout).strip()}")
             continue
@@ -78,7 +86,7 @@ def shaders(dump: Path):
 
 
 def bundle(ipa: Path, manifest: Path, data: str):
-    names = list(json.load(open(manifest))["files"])
+    names = list(json.loads(Path(manifest).read_text())["files"])
     with zipfile.ZipFile(ipa) as z:
         have = {m.split("/", 3)[3] for m in z.namelist() if re.match(rf"Payload/[^/]+\.app/{re.escape(data)}/[^/]+$", m)}
     missing = [n for n in names if n not in have]
@@ -125,7 +133,7 @@ def main():
             a.error("--check is needed without --ipa")
         budget = args.budget_mb
         if budget is None and args.app_json:
-            budget = json.load(open(args.app_json)).get("memory_mb")
+            budget = json.loads(Path(args.app_json).read_text()).get("memory_mb")
         budget = budget or DEFAULT_BUDGET_MB
         with tempfile.TemporaryDirectory() as w:
             ok, dump, rss, mem = launch(args, Path(w))

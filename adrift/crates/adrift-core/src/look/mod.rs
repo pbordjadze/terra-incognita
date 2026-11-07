@@ -58,15 +58,15 @@ pub fn view_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
 /// view's group 0 and the pass's own group 1 if it has one, premultiplied over the sea.
 pub fn mark_pipeline(gpu: &Gpu, name: &str, module: &wgpu::ShaderModule, instance: wgpu::VertexBufferLayout,
                      view: &wgpu::BindGroupLayout, own: Option<&wgpu::BindGroupLayout>) -> wgpu::RenderPipeline {
-    let mut layouts = vec![view];
+    let mut layouts = vec![Some(view)];
     if let Some(o) = own {
-        layouts.push(o);
+        layouts.push(Some(o));
     }
-    let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some(name), bind_group_layouts: &layouts, push_constant_ranges: &[] });
+    let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some(name), bind_group_layouts: &layouts, immediate_size: 0 });
     gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some(name),
         layout: Some(&layout),
-        vertex: wgpu::VertexState { module, entry_point: Some("vs"), buffers: &[instance], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module, entry_point: Some("vs"), buffers: &[Some(instance)], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module,
             entry_point: Some("fs"),
@@ -76,7 +76,7 @@ pub fn mark_pipeline(gpu: &Gpu, name: &str, module: &wgpu::ShaderModule, instanc
         primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, ..Default::default() },
         depth_stencil: None,
         multisample: Default::default(),
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     })
 }

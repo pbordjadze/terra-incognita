@@ -16,7 +16,7 @@ pub fn on() -> bool {
 }
 
 fn wait(gpu: &Gpu) {
-    let _ = gpu.device.poll(wgpu::PollType::wait());
+    let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
 }
 
 /// A pass begun alone: the GPU waited for, the clock started, an encoder.
@@ -38,6 +38,7 @@ pub fn render_pass<'e>(enc: &'e mut wgpu::CommandEncoder, target: &'e wgpu::Text
         depth_stencil_attachment: None,
         timestamp_writes: None,
         occlusion_query_set: None,
+        multiview_mask: None,
     })
 }
 

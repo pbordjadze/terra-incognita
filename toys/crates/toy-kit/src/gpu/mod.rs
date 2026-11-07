@@ -28,6 +28,7 @@ impl Gpu {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: surface,
                 force_fallback_adapter: false,
+                apply_limit_buckets: false,
             })
             .await
             .map_err(|e| anyhow::anyhow!("no adapter: {e}"))?;
@@ -63,6 +64,7 @@ impl Gpu {
                 required_limits,
                 memory_hints: wgpu::MemoryHints::Performance,
                 trace: wgpu::Trace::Off,
+                experimental_features: wgpu::ExperimentalFeatures::disabled(),
             })
             .await?;
         if surface.is_some() {
@@ -78,11 +80,11 @@ impl Gpu {
                 l.max_storage_buffer_binding_size >> 20,
                 l.max_texture_dimension_2d
             ));
-            device.on_uncaptured_error(Box::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
+            device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
             device.set_device_lost_callback(|reason, msg| crate::log(&format!("gpu: the device was lost ({reason:?}): {msg}")));
         } else {
             // the headless check: an error the device would only log is fatal here, so the check fails
-            device.on_uncaptured_error(Box::new(|e: wgpu::Error| {
+            device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| {
                 crate::log(&format!("gpu: {e}"));
                 panic!("a GPU validation error (logged, not fatal, on the device; fatal in the check)")
             }));
@@ -154,10 +156,11 @@ impl Gpu {
         layouts: &[&wgpu::BindGroupLayout],
         blend: Option<wgpu::BlendState>,
     ) -> wgpu::RenderPipeline {
+        let layouts: Vec<Option<&wgpu::BindGroupLayout>> = layouts.iter().copied().map(Some).collect();
         let layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(label),
-            bind_group_layouts: layouts,
-            push_constant_ranges: &[],
+            bind_group_layouts: &layouts,
+            immediate_size: 0,
         });
         self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
@@ -181,7 +184,7 @@ impl Gpu {
                 })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         })
     }
@@ -238,8 +241,8 @@ impl Offscreen {
         gpu.queue.submit([enc.finish()]);
         let slice = buf.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-        let data = slice.get_mapped_range();
+        gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        let data = slice.get_mapped_range().expect("mapped");
         let mut out = Vec::with_capacity((self.width * self.height * 4) as usize);
         for y in 0..self.height {
             let row = &data[(y * bpr) as usize..(y * bpr + self.width * 4) as usize];

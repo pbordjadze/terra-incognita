@@ -219,7 +219,7 @@ fn the_flight_off_hatteras_keeps_to_the_record() {
 fn the_gpu_steps_as_the_cpu_does() {
     use crate::gpu::{Gpu, Textures};
     use super::gpu::{GpuPath, Maybes, Params};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = match pollster_block(Gpu::new(&instance, None)) {
         Ok(g) => g,
         Err(e) => {
@@ -340,7 +340,7 @@ fn no_maybe_lies_on_land() {
     let ends = r.flights(Drift::put(from), day0, day0 + days, dt, seed, n);
     let ashore: Vec<_> = ends.iter().filter(|f| r.coast.is_land(f.drift.at)).collect();
     assert!(ashore.is_empty(), "{} of {n} CPU maybes end on land, e.g. {:?}", ashore.len(), ashore.first().map(|f| f.drift.at));
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = match pollster_block(Gpu::new(&instance, None)) {
         Ok(g) => g,
         Err(_) => return,
@@ -569,7 +569,7 @@ fn the_cheaper_sampling_changes_no_number() {
 fn a_kept_cloud_restores_and_steps_on_the_same() {
     use super::gpu::{GpuPath, Maybes, Params};
     use crate::gpu::{Gpu, Textures};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = match pollster_block(Gpu::new(&instance, None)) {
         Ok(g) => g,
         Err(_) => return,
@@ -788,7 +788,7 @@ fn centroid_spread(p: &[LonLat]) -> (LonLat, f64) {
 fn gpu_step_cost() {
     use crate::gpu::{Gpu, Textures};
     use super::gpu::{GpuPath, Maybes, Params};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let Ok(gpu) = pollster_block(Gpu::new(&instance, None)) else { return };
     let assets = DirAssets(assets());
     let textures = Textures::load(&gpu, &assets, 6).unwrap();
@@ -928,7 +928,7 @@ fn a_build_46_snapshot_loads_under_the_old_law() {
 fn the_gpu_keeps_the_law() {
     use crate::gpu::{Gpu, Textures};
     use super::gpu::{GpuPath, Maybes, Params};
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let Ok(gpu) = pollster_block(Gpu::new(&instance, None)) else { return };
     let assets = DirAssets(assets());
     let textures = Textures::load(&gpu, &assets, 6).unwrap();

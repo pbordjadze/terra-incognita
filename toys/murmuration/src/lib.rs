@@ -393,7 +393,7 @@ impl Toy for Murmuration {
             ],
         });
         let ms = wgpu::MultisampleState { count: MSAA, mask: !0, alpha_to_coverage_enabled: false };
-        let sky_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sky"), bind_group_layouts: &[&sky_layout], push_constant_ranges: &[] });
+        let sky_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sky"), bind_group_layouts: &[Some(&sky_layout)], immediate_size: 0 });
         let sky_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("sky"),
             layout: Some(&sky_pl),
@@ -407,7 +407,7 @@ impl Toy for Murmuration {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let reed_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -423,7 +423,7 @@ impl Toy for Murmuration {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let bird_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -435,7 +435,7 @@ impl Toy for Murmuration {
             layout: &bird_layout,
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: bird_buf.as_entire_binding() }],
         });
-        let bird_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("birds"), bind_group_layouts: &[&bird_layout], push_constant_ranges: &[] });
+        let bird_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("birds"), bind_group_layouts: &[Some(&bird_layout)], immediate_size: 0 });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4];
         let bird_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("birds"),
@@ -443,7 +443,7 @@ impl Toy for Murmuration {
             vertex: wgpu::VertexState {
                 module: &bird_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Inst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Inst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
@@ -455,7 +455,7 @@ impl Toy for Murmuration {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let inst = dev.create_buffer(&wgpu::BufferDescriptor {
@@ -819,6 +819,7 @@ impl Toy for Murmuration {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.sky_pipe);
             rp.set_bind_group(0, &self.sky_bind, &[]);

@@ -1,0 +1,5 @@
+# The one Rust every build uses (the toys, Adrift, CI and a Mac), named here and nowhere else.
+# Bumped by hand with the routine in CLAUDE.md › Staying current (Dependabot doesn't watch this file).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]

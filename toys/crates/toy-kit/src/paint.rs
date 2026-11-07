@@ -100,7 +100,7 @@ impl Painter {
             layout: &bgl,
             entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() }],
         });
-        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("paint"), bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("paint"), bind_group_layouts: &[Some(&bgl)], immediate_size: 0 });
         let attrs = wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x4];
         let pipe = |blend: wgpu::BlendState| {
             dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -109,7 +109,7 @@ impl Painter {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: Some("vs_main"),
-                    buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Shape>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                    buffers: &[Some(wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Shape>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs })],
                     compilation_options: Default::default(),
                 },
                 primitive: wgpu::PrimitiveState::default(),
@@ -121,7 +121,7 @@ impl Painter {
                     targets: &[Some(wgpu::ColorTargetState { format, blend: Some(blend), write_mask: wgpu::ColorWrites::ALL })],
                     compilation_options: Default::default(),
                 }),
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             })
         };
@@ -179,6 +179,7 @@ impl Painter {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             pass.set_bind_group(0, &self.bind, &[]);
             if let Some(b) = &over {

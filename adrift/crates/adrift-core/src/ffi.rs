@@ -25,7 +25,7 @@ pub struct Shell {
 #[no_mangle]
 pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32, scale: f64, assets: *const c_char) -> *mut Shell {
     let dir = CStr::from_ptr(assets).to_string_lossy().into_owned();
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
         Ok(s) => s,
         Err(e) => {
@@ -43,6 +43,7 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: gpu.format,
+        color_space: wgpu::SurfaceColorSpace::Srgb,
         width: width.max(1),
         height: height.max(1),
         present_mode: wgpu::PresentMode::Fifo,
@@ -75,19 +76,19 @@ pub unsafe extern "C" fn adrift_resize(shell: *mut Shell, width: u32, height: u3
 pub unsafe extern "C" fn adrift_frame(shell: *mut Shell, t: f64) {
     let Some(s) = shell.as_mut() else { return };
     let frame = match s.surface.get_current_texture() {
-        Ok(f) => f,
-        Err(wgpu::SurfaceError::Outdated) | Err(wgpu::SurfaceError::Lost) => {
+        wgpu::CurrentSurfaceTexture::Success(f) | wgpu::CurrentSurfaceTexture::Suboptimal(f) => f,
+        wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
             s.surface.configure(&s.app.gpu.device, &s.config);
             return;
         }
-        Err(e) => {
-            eprintln!("adrift: frame: {e}");
+        other => {
+            eprintln!("adrift: frame: {other:?}");
             return;
         }
     };
     let view = frame.texture.create_view(&Default::default());
     s.app.frame(&view, t);
-    frame.present();
+    s.app.gpu.queue.present(frame);
     // the frame's cost, every five seconds, in the device's log (Console.app, or Xcode's)
     if t - s.stats_at >= 5.0 {
         s.stats_at = t;

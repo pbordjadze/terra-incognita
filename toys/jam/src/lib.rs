@@ -416,6 +416,7 @@ impl Toy for Jam {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             pass.set_pipeline(&self.fade);
             pass.set_bind_group(0, &self.fade_bind, &[]);

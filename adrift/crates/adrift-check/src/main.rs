@@ -48,11 +48,11 @@ fn ensure_assets(dir: &Path) {
 
 /// Waits for the GPU's queue, so a frame's time includes its drawing (the software driver's).
 fn gpu_wait(app: &App) {
-    let _ = app.gpu.device.poll(wgpu::PollType::Wait);
+    let _ = app.gpu.device.poll(wgpu::PollType::wait_indefinitely());
 }
 
 fn gpu() -> Result<(wgpu::Instance, Gpu)> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
     let gpu = pollster::block_on(Gpu::new(&instance, None))?;
     Ok((instance, gpu))
 }

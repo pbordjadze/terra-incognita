@@ -28,6 +28,7 @@ impl Gpu {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: surface,
                 force_fallback_adapter: false,
+                apply_limit_buckets: false,
             })
             .await
             .map_err(|e| anyhow::anyhow!("no adapter: {e}"))?;
@@ -44,6 +45,7 @@ impl Gpu {
                 required_limits,
                 memory_hints: wgpu::MemoryHints::Performance,
                 trace: wgpu::Trace::Off,
+                experimental_features: wgpu::ExperimentalFeatures::disabled(),
             })
             .await?;
         let format = match surface {
@@ -92,10 +94,11 @@ impl Gpu {
         layouts: &[&wgpu::BindGroupLayout],
         blend: Option<wgpu::BlendState>,
     ) -> wgpu::RenderPipeline {
+        let layouts: Vec<Option<&wgpu::BindGroupLayout>> = layouts.iter().copied().map(Some).collect();
         let layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(label),
-            bind_group_layouts: layouts,
-            push_constant_ranges: &[],
+            bind_group_layouts: &layouts,
+            immediate_size: 0,
         });
         self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
@@ -119,7 +122,7 @@ impl Gpu {
                 })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         })
     }
@@ -175,8 +178,8 @@ impl Offscreen {
         gpu.queue.submit([enc.finish()]);
         let slice = buf.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-        let data = slice.get_mapped_range();
+        gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        let data = slice.get_mapped_range().expect("mapped");
         let mut out = Vec::with_capacity((self.width * self.height * 4) as usize);
         for y in 0..self.height {
             let row = &data[(y * bpr) as usize..(y * bpr + self.width * 4) as usize];
@@ -250,10 +253,10 @@ impl Readback {
     /// else RGBA; false if none is pending.
     pub fn take(&mut self, gpu: &Gpu, out: &mut [u8], stride: usize, bgra: bool) -> bool {
         let Some((i, idx)) = self.pending.pop_front() else { return false };
-        gpu.device.poll(wgpu::PollType::WaitForSubmissionIndex(idx)).expect("poll");
+        gpu.device.poll(wgpu::PollType::Wait { submission_index: Some(idx), timeout: None }).expect("poll");
         let row = (self.width * 4) as usize;
         {
-            let data = self.bufs[i].slice(..).get_mapped_range();
+            let data = self.bufs[i].slice(..).get_mapped_range().expect("mapped");
             let swap = bgra != (gpu.format == wgpu::TextureFormat::Bgra8Unorm || gpu.format == wgpu::TextureFormat::Bgra8UnormSrgb);
             for y in 0..self.height as usize {
                 let src = &data[y * self.bpr as usize..y * self.bpr as usize + row];
