@@ -14,6 +14,8 @@ updates:
       - dependency-name: wasm-bindgen
   - package-ecosystem: github-actions
     directory: /
+    # generated from painting-company's shared copy (CLAUDE.md › CI): its actions are bumped there
+    exclude-paths: [.github/workflows/qa-explore.yml]
     schedule: { interval: weekly, day: monday }
     groups:
       actions:
