@@ -163,7 +163,15 @@ pub struct Sky {
 
 impl Sky {
     pub fn new() -> Sky {
-        Sky { ready_for: None, table: vec![[0.0; 4]; AZ * EL], changed: false, work: vec![[0.0; 4]; AZ * EL], work_for: 0.0, work_ambient: [0.0; 3], next_row: EL }
+        Sky {
+            ready_for: None,
+            table: vec![[0.0; 4]; AZ * EL],
+            changed: false,
+            work: vec![[0.0; 4]; AZ * EL],
+            work_for: 0.0,
+            work_ambient: [0.0; 3],
+            next_row: EL,
+        }
     }
 
     fn row(work: &mut [[f32; 4]], j: usize, sun_el: f64, ambient: [f64; 3]) {
@@ -228,7 +236,8 @@ impl Sky {
             }
             let v0 = (j as f64) / EL as f64;
             let v1 = (j as f64 + 1.0) / EL as f64;
-            let dh = (EL_MIN + (90.0 - EL_MIN) * v1 * v1 - (EL_MIN + (90.0 - EL_MIN) * v0 * v0)).to_radians();
+            let dh = (EL_MIN + (90.0 - EL_MIN) * v1 * v1 - (EL_MIN + (90.0 - EL_MIN) * v0 * v0))
+                .to_radians();
             let w = e.to_radians().cos() * dh;
             for i in 0..AZ {
                 let c = self.table[j * AZ + i];

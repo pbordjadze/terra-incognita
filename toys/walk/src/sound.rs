@@ -33,7 +33,21 @@ impl Night {
         }
     }
     pub fn synth(&self) -> Box<dyn Synth> {
-        Box::new(Ears { shared: self.0.clone(), noise: 0x2468_ace1, falls: Vec::new(), pending: Vec::new(), wind: [0.0; 3], cricket: 0.0, chirp_t: 0.0, birds: Vec::new(), bird_wait: 1.0, dawn: 0.0, light: 1.0, fade: 0.0, clock: 0.0 })
+        Box::new(Ears {
+            shared: self.0.clone(),
+            noise: 0x2468_ace1,
+            falls: Vec::new(),
+            pending: Vec::new(),
+            wind: [0.0; 3],
+            cricket: 0.0,
+            chirp_t: 0.0,
+            birds: Vec::new(),
+            bird_wait: 1.0,
+            dawn: 0.0,
+            light: 1.0,
+            fade: 0.0,
+            clock: 0.0,
+        })
     }
 }
 
@@ -102,8 +116,16 @@ impl Synth for Ears {
             }
             // a step's loudness by its length: a shuffle under a hundredth of the screen, a footfall at a tenth
             let amp = (len / 0.12).sqrt().clamp(0.05, 1.0) * 0.5;
-            let tone = (0.25 + 0.5 * (len / stride.max(len)).min(1.0)) * (0.8 + 0.4 * self.white().abs());
-            self.falls.push(Fall { at: -(k as f32 + 0.5) / n.max(1) as f32 * span, amp, pan: pan.clamp(-1.0, 1.0) * 0.6, lp: [0.0; 2], body: 0.0, tone });
+            let tone =
+                (0.25 + 0.5 * (len / stride.max(len)).min(1.0)) * (0.8 + 0.4 * self.white().abs());
+            self.falls.push(Fall {
+                at: -(k as f32 + 0.5) / n.max(1) as f32 * span,
+                amp,
+                pan: pan.clamp(-1.0, 1.0) * 0.6,
+                lp: [0.0; 2],
+                body: 0.0,
+                tone,
+            });
         }
         self.pending.clear();
         let night = (1.0 - self.dawn) * self.light;
@@ -120,7 +142,11 @@ impl Synth for Ears {
             self.chirp_t += dt;
             let burst = (self.chirp_t % 0.9) < 0.22;
             self.cricket = (self.cricket + 4300.0 * dt).fract();
-            let pulse = if burst { (0.5 + 0.5 * (self.chirp_t * 2.0 * std::f32::consts::PI * 28.0).sin()).powi(3) } else { 0.0 };
+            let pulse = if burst {
+                (0.5 + 0.5 * (self.chirp_t * 2.0 * std::f32::consts::PI * 28.0).sin()).powi(3)
+            } else {
+                0.0
+            };
             let cr = (self.cricket * std::f32::consts::TAU).sin() * pulse * 0.010 * night;
             // footfalls
             let (mut l, mut r) = (0.0f32, 0.0f32);
@@ -147,7 +173,9 @@ impl Synth for Ears {
                 if b.age < 0.0 {
                     continue;
                 }
-                let f = b.f0 * (1.0 - 0.25 * (b.age / 0.12).min(1.0)) * (1.0 + 0.04 * (b.age * 90.0).sin());
+                let f = b.f0
+                    * (1.0 - 0.25 * (b.age / 0.12).min(1.0))
+                    * (1.0 + 0.04 * (b.age * 90.0).sin());
                 b.phase = (b.phase + f * dt).fract();
                 let env = (b.age / 0.01).min(1.0) * (-b.age / 0.05).exp();
                 let v = (b.phase * std::f32::consts::TAU).sin() * env * b.amp;
@@ -180,7 +208,13 @@ impl Synth for Ears {
                 let f0 = 2600.0 + 900.0 * x;
                 let pan = self.white() * 0.7;
                 for k in 0..calls {
-                    self.birds.push(Bird { age: -(k as f32) * 0.13, phase: 0.0, f0: f0 * (1.0 - 0.03 * k as f32), pan, amp: 0.05 });
+                    self.birds.push(Bird {
+                        age: -(k as f32) * 0.13,
+                        phase: 0.0,
+                        f0: f0 * (1.0 - 0.03 * k as f32),
+                        pan,
+                        amp: 0.05,
+                    });
                 }
                 self.bird_wait = 1.2 + 2.5 * self.white().abs();
             }

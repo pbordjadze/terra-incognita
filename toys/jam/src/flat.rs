@@ -136,7 +136,14 @@ impl Flat {
     /// A field of `half` (m) with about one car to `area` m², some already strung into convoys, the
     /// night already under way.
     pub fn new(seed: u64, half: [f64; 2], n: usize) -> Flat {
-        let mut f = Flat { cars: Vec::with_capacity(n), half, hands: Vec::new(), t: 0.0, rng: seed.max(1), left: 0.0 };
+        let mut f = Flat {
+            cars: Vec::with_capacity(n),
+            half,
+            hands: Vec::new(),
+            t: 0.0,
+            rng: seed.max(1),
+            left: 0.0,
+        };
         // the night under way: most cars already strung into a few long convoys spread over the salt,
         // each laid along a gentle curve from its own part of the field, a few loners between
         let mut placed = 0;
@@ -145,13 +152,22 @@ impl Flat {
         let cols = if convoys > 3 { 2 } else { 1 };
         let rows = convoys.div_ceil(cols);
         for c in 0..convoys {
-            let (cx, cy) = (((c % cols) as f64 + 0.5) / cols as f64, ((c / cols) as f64 + 0.5) / rows as f64);
-            let mut p = [(cx - 0.5) * 1.3 * half[0] + (f.uni() - 0.5) * 20.0, (cy - 0.5) * 1.3 * half[1] + (f.uni() - 0.5) * 20.0];
+            let (cx, cy) = (
+                ((c % cols) as f64 + 0.5) / cols as f64,
+                ((c / cols) as f64 + 0.5) / rows as f64,
+            );
+            let mut p = [
+                (cx - 0.5) * 1.3 * half[0] + (f.uni() - 0.5) * 20.0,
+                (cy - 0.5) * 1.3 * half[1] + (f.uni() - 0.5) * 20.0,
+            ];
             let mut h = f.uni() * std::f64::consts::TAU;
             let bend = (f.uni() - 0.5) * 0.05;
             // the convoy laid back from its middle, so it sits in its own part of the salt
             let gap = CAR + S0 + 5.0;
-            p = [p[0] + h.cos() * gap * len as f64 * 0.5, p[1] + h.sin() * gap * len as f64 * 0.5];
+            p = [
+                p[0] + h.cos() * gap * len as f64 * 0.5,
+                p[1] + h.sin() * gap * len as f64 * 0.5,
+            ];
             for _ in 0..len {
                 if placed >= n {
                     break;
@@ -163,13 +179,19 @@ impl Flat {
             }
         }
         while placed < n {
-            let p = [(f.uni() - 0.5) * 1.8 * half[0], (f.uni() - 0.5) * 1.8 * half[1]];
+            let p = [
+                (f.uni() - 0.5) * 1.8 * half[0],
+                (f.uni() - 0.5) * 1.8 * half[1],
+            ];
             let h = f.uni() * std::f64::consts::TAU;
             f.push_car(p, h);
             placed += 1;
         }
         for c in f.cars.iter_mut() {
-            c.p = [c.p[0].clamp(-0.85 * half[0], 0.85 * half[0]), c.p[1].clamp(-0.85 * half[1], 0.85 * half[1])];
+            c.p = [
+                c.p[0].clamp(-0.85 * half[0], 0.85 * half[0]),
+                c.p[1].clamp(-0.85 * half[1], 0.85 * half[1]),
+            ];
         }
         f.separate(60);
         f
@@ -180,7 +202,29 @@ impl Flat {
         let patience = self.patience();
         let wander = self.uni() * 100.0;
         let following = self.uni() * patience * 0.6;
-        self.cars.push(Car { p, h, v: v0 * 0.8, acc: 0.0, k: 0.0, v0, leader: None, following, patience, bored: 0.0, swerve: 0.0, stopping: false, brake: 0.0, lights: 0.0, blocked: 0.0, cause: 0, seen: false, react: 0.0, dab: 0.0, wander, aim: h });
+        self.cars.push(Car {
+            p,
+            h,
+            v: v0 * 0.8,
+            acc: 0.0,
+            k: 0.0,
+            v0,
+            leader: None,
+            following,
+            patience,
+            bored: 0.0,
+            swerve: 0.0,
+            stopping: false,
+            brake: 0.0,
+            lights: 0.0,
+            blocked: 0.0,
+            cause: 0,
+            seen: false,
+            react: 0.0,
+            dab: 0.0,
+            wander,
+            aim: h,
+        });
     }
 
     fn patience(&mut self) -> f64 {
@@ -202,10 +246,17 @@ impl Flat {
             let mut moved = false;
             for i in 0..n {
                 for j in i + 1..n {
-                    let d = [self.cars[j].p[0] - self.cars[i].p[0], self.cars[j].p[1] - self.cars[i].p[1]];
+                    let d = [
+                        self.cars[j].p[0] - self.cars[i].p[0],
+                        self.cars[j].p[1] - self.cars[i].p[1],
+                    ];
                     let l = d[0].hypot(d[1]);
                     if l < min {
-                        let u = if l > 1e-6 { [d[0] / l, d[1] / l] } else { [1.0, 0.0] };
+                        let u = if l > 1e-6 {
+                            [d[0] / l, d[1] / l]
+                        } else {
+                            [1.0, 0.0]
+                        };
                         let push = 0.5 * (min - l);
                         self.cars[i].p[0] -= u[0] * push;
                         self.cars[i].p[1] -= u[1] * push;
@@ -351,7 +402,17 @@ impl Flat {
             self.choose_leaders();
         }
         let n = self.cars.len();
-        let lamps: Vec<[f64; 2]> = self.hands.iter().filter_map(|h| if let Hand::Lamp(p) = h { Some(*p) } else { None }).collect();
+        let lamps: Vec<[f64; 2]> = self
+            .hands
+            .iter()
+            .filter_map(|h| {
+                if let Hand::Lamp(p) = h {
+                    Some(*p)
+                } else {
+                    None
+                }
+            })
+            .collect();
         // who is in a train behind a car the finger leads
         let mut pulled = vec![false; n];
         for h in &self.hands {
@@ -393,7 +454,8 @@ impl Flat {
             } else {
                 // wandering: a slow meander, a little slower than the driver would go behind someone
                 // a heading of its own that drifts slowly (never a steady turn: no curling up)
-                let w = (c.wander + self.t * 0.05).sin() * 0.5 + (c.wander * 1.7 + self.t * 0.11).sin() * 0.3;
+                let w = (c.wander + self.t * 0.05).sin() * 0.5
+                    + (c.wander * 1.7 + self.t * 0.11).sin() * 0.3;
                 want = c.aim + w + c.swerve * (c.bored / 4.0).min(1.0);
                 acc = idm(c.v, c.v0 * 0.78, 1e3, 0.0);
             }
@@ -417,7 +479,11 @@ impl Flat {
             // a driver on its own drifts back toward the middle well before the edge; a convoy's
             // follower only once it is nearly off the salt
             let u = (c.p[0].abs() / self.half[0]).max(c.p[1].abs() / self.half[1]);
-            let (from, over) = if c.leader.is_none() { (0.72, 0.3) } else { (0.9, 0.1) };
+            let (from, over) = if c.leader.is_none() {
+                (0.72, 0.3)
+            } else {
+                (0.9, 0.1)
+            };
             if u > from && led.is_none() {
                 let home = (-c.p[1]).atan2(-c.p[0]);
                 let wgt = ((u - from) / over).clamp(0.0, 1.0);
@@ -458,12 +524,22 @@ impl Flat {
                     let closing = c.v - o.v * same.max(0.0);
                     let brake = idm(c.v, c.v0, gap.max(0.2), closing.max(0.0) + 0.5);
                     // across your nose: ease off and swerve; only about to touch is a hard stop
-                    acc = acc.min(if same > 0.3 || gap < 0.8 { brake } else { brake.max(-2.5) });
+                    acc = acc.min(if same > 0.3 || gap < 0.8 {
+                        brake
+                    } else {
+                        brake.max(-2.5)
+                    });
                 }
                 held |= ahead && gap < 3.0 && !(same > 0.3 && o.v > 1.0);
-                let push = (1.0 - along / 26.0) * if same > 0.3 { 0.8 } else { 2.0 } * if c.blocked > 0.6 { 2.5 } else { 1.0 };
+                let push = (1.0 - along / 26.0)
+                    * if same > 0.3 { 0.8 } else { 2.0 }
+                    * if c.blocked > 0.6 { 2.5 } else { 1.0 };
                 // weave behind a crossing car: away from where it is, toward where it came from
-                let s = if side.abs() < 0.3 && same <= 0.3 { -((o.h - c.h).sin()).signum() } else { side.signum() };
+                let s = if side.abs() < 0.3 && same <= 0.3 {
+                    -((o.h - c.h).sin()).signum()
+                } else {
+                    side.signum()
+                };
                 want -= s * push;
             }
             if c.blocked > 0.6 && acc < follow_acc {
@@ -519,9 +595,22 @@ impl Flat {
             if c.dab > 0.0 {
                 c.dab -= dt;
             }
-            c.blocked = if held { c.blocked + dt } else { (c.blocked - dt * 2.0).max(0.0) };
+            c.blocked = if held {
+                c.blocked + dt
+            } else {
+                (c.blocked - dt * 2.0).max(0.0)
+            };
             let wobble = 0.0;
-            c.acc = (acc + wobble).clamp(if led { -40.0 } else { -9.0 }, if led { 40.0 } else if pulled[i] { A * 2.5 } else { A * 1.2 });
+            c.acc = (acc + wobble).clamp(
+                if led { -40.0 } else { -9.0 },
+                if led {
+                    40.0
+                } else if pulled[i] {
+                    A * 2.5
+                } else {
+                    A * 1.2
+                },
+            );
             c.v = (c.v + c.acc * dt).max(0.0);
             if c.stopping && c.v <= 0.0 {
                 c.stopping = false;
@@ -540,7 +629,10 @@ impl Flat {
             c.p[1] += c.h.sin() * c.v * dt;
             // brake lights for stamping on it behind the car you follow; easing off round a stranger barely shows
             let hard = if c.cause == 1 { -6.5 } else { -3.4 };
-            let braking = (c.dab > 0.0 && !led) || (c.acc < hard && !led) || (c.v < 0.4 && (c.brake > 0.0 || c.stopping || (c.leader.is_some() && c.cause != 1)));
+            let braking = (c.dab > 0.0 && !led)
+                || (c.acc < hard && !led)
+                || (c.v < 0.4
+                    && (c.brake > 0.0 || c.stopping || (c.leader.is_some() && c.cause != 1)));
             let target = if braking { 1.0 } else { 0.0 };
             c.lights += (target - c.lights) * (dt * if braking { 14.0 } else { 3.0 }).min(1.0);
             // patience: a while behind the same convoy, and the driver peels off
@@ -550,7 +642,13 @@ impl Flat {
             // whoever isn't wandering freely (following, led, turned back at the edge, circling a light)
             // carries on the way it was going when it is next on its own
             let edge = (c.p[0].abs() / half[0]).max(c.p[1].abs() / half[1]) > 0.72;
-            if c.leader.is_some() || led || edge || lamps.iter().any(|l| (l[0] - c.p[0]).hypot(l[1] - c.p[1]) < LAMP_SEE) {
+            if c.leader.is_some()
+                || led
+                || edge
+                || lamps
+                    .iter()
+                    .any(|l| (l[0] - c.p[0]).hypot(l[1] - c.p[1]) < LAMP_SEE)
+            {
                 c.aim = c.h;
             }
             if c.bored > 0.0 {
@@ -567,7 +665,10 @@ impl Flat {
         }
         // the bored
         for i in 0..n {
-            if self.cars[i].leader.is_some() && self.cars[i].following > self.cars[i].patience && self.cars[i].v > 1.0 {
+            if self.cars[i].leader.is_some()
+                && self.cars[i].following > self.cars[i].patience
+                && self.cars[i].v > 1.0
+            {
                 let sw = if self.uni() < 0.5 { -1.0 } else { 1.0 } * (0.5 + 0.5 * self.uni());
                 let bored = 4.0 + 4.0 * self.uni();
                 let patience = self.patience();
@@ -621,7 +722,8 @@ mod tests {
             for _ in 0..30 {
                 run(&mut f, 10.0);
                 let mean = f.cars.iter().map(|c| c.v / c.v0).sum::<f64>() / f.cars.len() as f64;
-                let still = f.cars.iter().filter(|c| c.v < 0.5).count() as f64 / f.cars.len() as f64;
+                let still =
+                    f.cars.iter().filter(|c| c.v < 0.5).count() as f64 / f.cars.len() as f64;
                 slow = slow.max(still);
                 assert!(mean > 0.4, "seed {seed} at {:.0}: mean {mean:.2}", f.t);
             }
@@ -637,7 +739,8 @@ mod tests {
             run(&mut f, 0.1);
             for i in 0..f.cars.len() {
                 for j in i + 1..f.cars.len() {
-                    let d = (f.cars[i].p[0] - f.cars[j].p[0]).hypot(f.cars[i].p[1] - f.cars[j].p[1]);
+                    let d =
+                        (f.cars[i].p[0] - f.cars[j].p[0]).hypot(f.cars[i].p[1] - f.cars[j].p[1]);
                     worst = worst.min(d);
                 }
             }
@@ -651,7 +754,11 @@ mod tests {
         for _ in 0..300 {
             run(&mut f, 1.0);
             for c in &f.cars {
-                assert!(c.p[0].abs() < 75.0 + 30.0 && c.p[1].abs() < 160.0 + 30.0, "{:?}", c.p);
+                assert!(
+                    c.p[0].abs() < 75.0 + 30.0 && c.p[1].abs() < 160.0 + 30.0,
+                    "{:?}",
+                    c.p
+                );
             }
         }
     }
@@ -661,7 +768,10 @@ mod tests {
         // the longest convoy after a while; tap its head and count the cars behind that come to a stop
         let mut f = Flat::new(5, [75.0, 160.0], 100);
         run(&mut f, 20.0);
-        let head = (0..f.cars.len()).filter(|&i| f.cars[i].leader.is_none()).max_by_key(|&i| f.behind(i).len()).unwrap();
+        let head = (0..f.cars.len())
+            .filter(|&i| f.cars[i].leader.is_none())
+            .max_by_key(|&i| f.behind(i).len())
+            .unwrap();
         let tail = f.behind(head);
         assert!(tail.len() >= 4, "a convoy of {}", tail.len());
         f.tap(head);
@@ -674,7 +784,12 @@ mod tests {
                 }
             }
         }
-        assert!(stopped.len() >= 3, "only {} of {} stopped", stopped.len(), tail.len());
+        assert!(
+            stopped.len() >= 3,
+            "only {} of {} stopped",
+            stopped.len(),
+            tail.len()
+        );
     }
 
     #[test]
@@ -700,7 +815,11 @@ mod tests {
         run(&mut f, 5.0);
         f.hands.push(Hand::Lamp([0.0, 0.0]));
         run(&mut f, 30.0);
-        let near = f.cars.iter().filter(|c| c.p[0].hypot(c.p[1]) < LAMP_R * 2.2).count();
+        let near = f
+            .cars
+            .iter()
+            .filter(|c| c.p[0].hypot(c.p[1]) < LAMP_R * 2.2)
+            .count();
         assert!(near >= 5, "{near} near the light");
     }
 }
@@ -727,7 +846,10 @@ mod lead {
     fn a_led_car_pulls_its_convoy() {
         let mut f = Flat::new(5, [92.0, 199.0], 43);
         f.step(12.0);
-        let head = (0..f.cars.len()).filter(|&i| f.cars[i].leader.is_none()).max_by_key(|&i| f.behind(i).len()).unwrap();
+        let head = (0..f.cars.len())
+            .filter(|&i| f.cars[i].leader.is_none())
+            .max_by_key(|&i| f.behind(i).len())
+            .unwrap();
         let before = f.behind(head).len();
         // the finger walks the head on a slow curve, about 12 m/s (a finger crossing the phone in 6 s)
         let p0 = f.cars[head].p;
@@ -735,7 +857,10 @@ mod lead {
         for k in 0..80 {
             let s = k as f64 * 0.1 * 12.0;
             let a = s / 60.0;
-            let to = [p0[0] + d[0] * 30.0 * a.sin() + -d[1] * 30.0 * (1.0 - a.cos()), p0[1] + d[1] * 30.0 * a.sin() + d[0] * 30.0 * (1.0 - a.cos())];
+            let to = [
+                p0[0] + d[0] * 30.0 * a.sin() + -d[1] * 30.0 * (1.0 - a.cos()),
+                p0[1] + d[1] * 30.0 * a.sin() + d[0] * 30.0 * (1.0 - a.cos()),
+            ];
             f.hands = vec![Hand::Lead(head, to)];
             f.step(0.1);
         }
@@ -754,20 +879,26 @@ mod quiet {
     fn untouched_brake_lights_are_rare() {
         let (mut lit, mut hard, mut stand, mut blocked, mut n) = (0, 0, 0, 0, 0);
         for seed in [21, 22, 23, 24] {
-        let mut f = Flat::new(seed, [110.0, 240.0], 62);
-        f.step(20.0);
-        for _ in 0..120 {
-            f.step(0.5);
-            for c in &f.cars {
-                n += 1;
-                if c.lights > 0.5 {
-                    lit += 1;
-                    if c.acc < -1.6 { hard += 1; }
-                    if c.v < 0.4 { stand += 1; }
-                    if c.cause == 1 { blocked += 1; }
+            let mut f = Flat::new(seed, [110.0, 240.0], 62);
+            f.step(20.0);
+            for _ in 0..120 {
+                f.step(0.5);
+                for c in &f.cars {
+                    n += 1;
+                    if c.lights > 0.5 {
+                        lit += 1;
+                        if c.acc < -1.6 {
+                            hard += 1;
+                        }
+                        if c.v < 0.4 {
+                            stand += 1;
+                        }
+                        if c.cause == 1 {
+                            blocked += 1;
+                        }
+                    }
                 }
             }
-        }
         }
         let q = lit as f64 / n as f64;
         eprintln!("lit {q:.3} (hard {hard} standing {stand} blocked {blocked} of {lit})");
@@ -784,7 +915,10 @@ mod chain {
     fn a_tap_lights_the_convoy_in_turn() {
         let mut f = Flat::new(5, [92.0, 199.0], 43);
         f.step(12.0);
-        let head = (0..f.cars.len()).filter(|&i| f.cars[i].leader.is_none()).max_by_key(|&i| f.behind(i).len()).unwrap();
+        let head = (0..f.cars.len())
+            .filter(|&i| f.cars[i].leader.is_none())
+            .max_by_key(|&i| f.behind(i).len())
+            .unwrap();
         let tail = f.behind(head);
         f.tap(head);
         let mut first = vec![f64::NAN; tail.len()];
@@ -798,6 +932,9 @@ mod chain {
         }
         eprintln!("convoy of {}: lit at {:?}", tail.len(), first);
         let lit = first.iter().take(4).filter(|t| !t.is_nan()).count();
-        assert!(lit >= 3.min(tail.len()), "only {lit} of the first cars behind lit");
+        assert!(
+            lit >= 3.min(tail.len()),
+            "only {lit} of the first cars behind lit"
+        );
     }
 }

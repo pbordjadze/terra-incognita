@@ -14,7 +14,10 @@ pub struct Board {
 
 impl Board {
     pub fn empty() -> Board {
-        Board { squares: [None; 64], white_to_move: true }
+        Board {
+            squares: [None; 64],
+            white_to_move: true,
+        }
     }
 
     pub fn from_fen(fen: &str) -> anyhow::Result<Board> {
@@ -28,7 +31,10 @@ impl Board {
                 if let Some(n) = ch.to_digit(10) {
                     file += n as i32;
                 } else {
-                    anyhow::ensure!((0..8).contains(&file) && (0..8).contains(&rank), "bad FEN {fen}");
+                    anyhow::ensure!(
+                        (0..8).contains(&file) && (0..8).contains(&rank),
+                        "bad FEN {fen}"
+                    );
                     b.squares[(rank * 8 + file) as usize] = Some(ch);
                     file += 1;
                 }
@@ -48,7 +54,10 @@ impl Board {
 
 pub fn parse_sq(s: &str) -> anyhow::Result<Sq> {
     let b = s.as_bytes();
-    anyhow::ensure!(b.len() == 2 && (b'a'..=b'h').contains(&b[0]) && (b'1'..=b'8').contains(&b[1]), "bad square {s}");
+    anyhow::ensure!(
+        b.len() == 2 && (b'a'..=b'h').contains(&b[0]) && (b'1'..=b'8').contains(&b[1]),
+        "bad square {s}"
+    );
     Ok((b[1] - b'1') * 8 + (b[0] - b'a'))
 }
 
@@ -95,7 +104,11 @@ impl Ply {
         let castles = king && (self.from as i32 - self.to as i32).abs() == 2;
         if castles {
             let rank = self.from / 8;
-            let rook = if self.to % 8 == 6 { rank * 8 + 7 } else { rank * 8 };
+            let rook = if self.to % 8 == 6 {
+                rank * 8 + 7
+            } else {
+                rank * 8
+            };
             return to == rook;
         }
         false
@@ -117,11 +130,19 @@ impl Drill {
     /// Where a square is drawn: column and row from the screen's top left.
     pub fn screen(&self, sq: Sq) -> (u8, u8) {
         let (f, r) = (sq % 8, sq / 8);
-        if self.white { (f, 7 - r) } else { (7 - f, r) }
+        if self.white {
+            (f, 7 - r)
+        } else {
+            (7 - f, r)
+        }
     }
 
     pub fn from_screen(&self, c: u8, r: u8) -> Sq {
-        if self.white { (7 - r) * 8 + c } else { r * 8 + (7 - c) }
+        if self.white {
+            (7 - r) * 8 + c
+        } else {
+            r * 8 + (7 - c)
+        }
     }
 }
 
@@ -154,9 +175,21 @@ pub fn load(bytes: &[u8]) -> anyhow::Result<Vec<Drill>> {
             let to = parse_sq(&p.uci[2..4])?;
             let capture = before.at(to).is_some() || p.san.contains('x');
             before = after.clone();
-            plies.push(Ply { from, to, san: p.san, after, capture });
+            plies.push(Ply {
+                from,
+                to,
+                san: p.san,
+                after,
+                capture,
+            });
         }
-        out.push(Drill { group: d.group, white: d.orient == "w", start, auto: d.auto, plies });
+        out.push(Drill {
+            group: d.group,
+            white: d.orient == "w",
+            start,
+            auto: d.auto,
+            plies,
+        });
     }
     Ok(out)
 }
@@ -174,8 +207,15 @@ mod tests {
         for (i, d) in drills().iter().enumerate() {
             let mut b = d.start.clone();
             for p in &d.plies {
-                let piece = b.at(p.from).unwrap_or_else(|| panic!("drill {i} {}: nothing on {}", p.san, name(p.from)));
-                assert_eq!(piece.is_ascii_uppercase(), b.white_to_move, "drill {i} {}: wrong side", p.san);
+                let piece = b
+                    .at(p.from)
+                    .unwrap_or_else(|| panic!("drill {i} {}: nothing on {}", p.san, name(p.from)));
+                assert_eq!(
+                    piece.is_ascii_uppercase(),
+                    b.white_to_move,
+                    "drill {i} {}: wrong side",
+                    p.san
+                );
                 assert!(p.after.at(p.from).is_none(), "drill {i} {}", p.san);
                 assert!(p.after.at(p.to).is_some(), "drill {i} {}", p.san);
                 assert_eq!(p.after.white_to_move, !b.white_to_move);
@@ -188,7 +228,11 @@ mod tests {
     #[test]
     fn the_reader_has_a_move_in_every_drill() {
         for d in drills() {
-            let b = if d.auto > 0 { d.plies[d.auto - 1].after.clone() } else { d.start.clone() };
+            let b = if d.auto > 0 {
+                d.plies[d.auto - 1].after.clone()
+            } else {
+                d.start.clone()
+            };
             let mut side = b.white_to_move;
             let mut yours = 0;
             for _ in d.auto..d.plies.len() {

@@ -24,7 +24,15 @@ impl Crackle {
         }
     }
     pub fn synth(&self) -> Box<dyn Synth> {
-        Box::new(CrackleSynth { want: self.0.clone(), rate: 0.0, pan: 0.0, rng: 0x2545_f491, clicks: Vec::new(), air: [0.0; 2], hp: [0.0; 2] })
+        Box::new(CrackleSynth {
+            want: self.0.clone(),
+            rate: 0.0,
+            pan: 0.0,
+            rng: 0x2545_f491,
+            clicks: Vec::new(),
+            air: [0.0; 2],
+            hp: [0.0; 2],
+        })
     }
 }
 
@@ -76,7 +84,14 @@ impl Synth for CrackleSynth {
                 let len = 0.0015 + 0.004 * self.rand();
                 let pan = (self.pan + (self.rand() - 0.5) * 0.9).clamp(-1.0, 1.0);
                 let f = 2600.0 + 5200.0 * self.rand();
-                self.clicks.push(Click { t: 0.0, len, amp, pan, f, ph: 0.0 });
+                self.clicks.push(Click {
+                    t: 0.0,
+                    len,
+                    amp,
+                    pan,
+                    f,
+                    ph: 0.0,
+                });
             }
             let (mut l, mut r) = (0.0f32, 0.0f32);
             let mut i = 0;
@@ -85,7 +100,8 @@ impl Synth for CrackleSynth {
                 let c = &mut self.clicks[i];
                 let env = (-c.t / c.len).exp();
                 c.ph = (c.ph + c.f * dt).fract();
-                let ring = (c.ph * std::f32::consts::TAU).sin() * (-c.t / (c.len * 3.0)).exp() * 0.5;
+                let ring =
+                    (c.ph * std::f32::consts::TAU).sin() * (-c.t / (c.len * 3.0)).exp() * 0.5;
                 let s = (n * env + ring) * c.amp;
                 let p = (c.pan + 1.0) * std::f32::consts::FRAC_PI_4;
                 l += s * p.cos();

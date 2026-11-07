@@ -28,11 +28,13 @@ pub struct SpritePass {
 impl SpritePass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout) -> SpritePass {
         let shader = gpu.shader("sprites", &super::wgsl(include_str!("sprites.wgsl")));
-        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("sprites"),
-            bind_group_layouts: &[Some(view_layout)],
-            immediate_size: 0,
-        });
+        let layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("sprites"),
+                bind_group_layouts: &[Some(view_layout)],
+                immediate_size: 0,
+            });
         let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("sprites"),
             layout: Some(&layout),
@@ -60,7 +62,12 @@ impl SpritePass {
         });
         let capacity = 4096;
         let buffer = Self::buffer(gpu, capacity);
-        SpritePass { pipeline, buffer, capacity, count: 0 }
+        SpritePass {
+            pipeline,
+            buffer,
+            capacity,
+            count: 0,
+        }
     }
 
     fn buffer(gpu: &Gpu, capacity: usize) -> wgpu::Buffer {
@@ -78,7 +85,8 @@ impl SpritePass {
             self.buffer = Self::buffer(gpu, self.capacity);
         }
         if !instances.is_empty() {
-            gpu.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(instances));
+            gpu.queue
+                .write_buffer(&self.buffer, 0, bytemuck::cast_slice(instances));
         }
         self.count = instances.len() as u32;
     }

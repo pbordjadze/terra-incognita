@@ -37,7 +37,10 @@ impl LonLat {
         if lon >= 180.0 {
             lon -= 360.0;
         }
-        Self { lon, lat: self.lat.clamp(-90.0, 90.0) }
+        Self {
+            lon,
+            lat: self.lat.clamp(-90.0, 90.0),
+        }
     }
 
     /// Great-circle distance, in metres (the Earth taken as a sphere of 6 371 km).
@@ -50,7 +53,6 @@ impl LonLat {
 }
 
 pub const EARTH_RADIUS_M: f64 = 6_371_000.0;
-
 
 /// The date: days since 2000-01-01 00:00 UTC, running or held.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -105,7 +107,12 @@ pub struct Camera {
 
 impl Camera {
     pub const fn new(lon: f64, lat: f64, zoom: f64) -> Camera {
-        Camera { lon, lat, zoom, roll: 0.0 }
+        Camera {
+            lon,
+            lat,
+            zoom,
+            roll: 0.0,
+        }
     }
 
     /// World from view: Ry(lon) · Rx(-lat) · Rz(roll), as columns `[c0, c1, c2]` (Terra's
@@ -121,8 +128,16 @@ impl Camera {
         }
         let (sr, cr) = self.roll.to_radians().sin_cos();
         [
-            [cr * c0[0] + sr * c1[0], cr * c0[1] + sr * c1[1], cr * c0[2] + sr * c1[2]],
-            [-sr * c0[0] + cr * c1[0], -sr * c0[1] + cr * c1[1], -sr * c0[2] + cr * c1[2]],
+            [
+                cr * c0[0] + sr * c1[0],
+                cr * c0[1] + sr * c1[1],
+                cr * c0[2] + sr * c1[2],
+            ],
+            [
+                -sr * c0[0] + cr * c1[0],
+                -sr * c0[1] + cr * c1[1],
+                -sr * c0[2] + cr * c1[2],
+            ],
             c2,
         ]
     }
@@ -133,11 +148,26 @@ impl Camera {
     pub fn from_rotation(m: [[f64; 3]; 3], zoom: f64) -> Camera {
         let c = m[2];
         let lat = c[1].clamp(-1.0, 1.0).asin().to_degrees();
-        let lon = if c[0].abs() < 1e-12 && c[2].abs() < 1e-12 { 0.0 } else { c[0].atan2(c[2]).to_degrees() };
-        let base = Camera { lon, lat, zoom, roll: 0.0 }.rotation();
+        let lon = if c[0].abs() < 1e-12 && c[2].abs() < 1e-12 {
+            0.0
+        } else {
+            c[0].atan2(c[2]).to_degrees()
+        };
+        let base = Camera {
+            lon,
+            lat,
+            zoom,
+            roll: 0.0,
+        }
+        .rotation();
         let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         let roll = dot(m[0], base[1]).atan2(dot(m[0], base[0])).to_degrees();
-        Camera { lon, lat, zoom, roll }
+        Camera {
+            lon,
+            lat,
+            zoom,
+            roll,
+        }
     }
 
     /// The globe turned on the screen by `angle` radians about `axis`, a direction in view space

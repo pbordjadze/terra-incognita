@@ -35,11 +35,19 @@ pub fn texture_bytes(desc: &wgpu::TextureDescriptor) -> u64 {
     let f = desc.format;
     let (bw, bh) = f.block_dimensions();
     let block = f.block_copy_size(None).unwrap_or(4) as u64;
-    let layers = if desc.dimension == wgpu::TextureDimension::D3 { 1 } else { desc.size.depth_or_array_layers as u64 };
+    let layers = if desc.dimension == wgpu::TextureDimension::D3 {
+        1
+    } else {
+        desc.size.depth_or_array_layers as u64
+    };
     let mut total = 0;
     for m in 0..desc.mip_level_count {
         let e = desc.size.mip_level_size(m, desc.dimension);
-        let d = if desc.dimension == wgpu::TextureDimension::D3 { e.depth_or_array_layers as u64 } else { 1 };
+        let d = if desc.dimension == wgpu::TextureDimension::D3 {
+            e.depth_or_array_layers as u64
+        } else {
+            1
+        };
         total += (e.width.div_ceil(bw) as u64) * (e.height.div_ceil(bh) as u64) * d * block;
     }
     total * layers * desc.sample_count as u64
@@ -70,13 +78,15 @@ pub fn iphone_limits() -> wgpu::Limits {
     wgpu::Limits {
         max_texture_dimension_1d: 16384, // :907–920 (iOS_GPUFamily3_v1 and later, below Apple10)
         max_texture_dimension_2d: 16384,
-        max_texture_dimension_3d: 2048, // :922
-        max_texture_array_layers: 2048, // :924
-        max_bind_groups: 8,             // auxil :130
+        max_texture_dimension_3d: 2048,          // :922
+        max_texture_array_layers: 2048,          // :924
+        max_bind_groups: 8,                      // auxil :130
         max_bind_groups_plus_vertex_buffers: 24, // auxil :138
         max_bindings_per_bind_group: 65535,
-        max_dynamic_uniform_buffers_per_pipeline_layout: base.max_dynamic_uniform_buffers_per_pipeline_layout,
-        max_dynamic_storage_buffers_per_pipeline_layout: base.max_dynamic_storage_buffers_per_pipeline_layout,
+        max_dynamic_uniform_buffers_per_pipeline_layout: base
+            .max_dynamic_uniform_buffers_per_pipeline_layout,
+        max_dynamic_storage_buffers_per_pipeline_layout: base
+            .max_dynamic_storage_buffers_per_pipeline_layout,
         max_sampled_textures_per_shader_stage: 96, // :847–855 (Apple6 and later: 96 sampled, 32 storage)
         max_samplers_per_shader_stage: 16,         // :1418
         max_storage_buffers_per_shader_stage: buffers,
@@ -85,16 +95,16 @@ pub fn iphone_limits() -> wgpu::Limits {
         max_binding_array_elements_per_shader_stage: 1_000_000, // :856–862 (argument buffers tier 2)
         max_binding_array_acceleration_structure_elements_per_shader_stage: 0,
         max_binding_array_sampler_elements_per_shader_stage: 1024, // :864–877 (Apple7)
-        max_uniform_buffer_binding_size: max_buffer, // :1426
-        max_storage_buffer_binding_size: max_buffer, // :1428
-        max_vertex_buffers: 16,                      // auxil :131–133, MAX_VERTEX_BUFFERS
+        max_uniform_buffer_binding_size: max_buffer,               // :1426
+        max_storage_buffer_binding_size: max_buffer,               // :1428
+        max_vertex_buffers: 16, // auxil :131–133, MAX_VERTEX_BUFFERS
         max_buffer_size: max_buffer,
         max_vertex_attributes: 31,
         max_vertex_buffer_array_stride: base.max_vertex_buffer_array_stride,
         min_uniform_buffer_offset_alignment: 64, // the phone's is 4 (:887–895)
         min_storage_buffer_offset_alignment: 64, // and 32 (:1431)
-        max_inter_stage_shader_variables: 31, // :981–988 (Apple4 and later; not the Mac's)
-        max_color_attachments: 8,             // :934–945
+        max_inter_stage_shader_variables: 31,    // :981–988 (Apple4 and later; not the Mac's)
+        max_color_attachments: 8,                // :934–945
         max_color_attachment_bytes_per_sample: 64, // :948–958 (Apple4 and later)
         max_compute_workgroup_storage_size: 32 << 10, // :1012–1022
         max_compute_invocations_per_workgroup: 1024, // :997–1007
@@ -164,7 +174,9 @@ pub fn start_report(_device: std::sync::Arc<wgpu::Device>) {}
 /// `KIT_MEMORY_REPORT=<file>`, natively.
 #[cfg(not(target_arch = "wasm32"))]
 pub fn start_report(device: std::sync::Arc<wgpu::Device>) {
-    let Ok(path) = std::env::var("KIT_MEMORY_REPORT") else { return };
+    let Ok(path) = std::env::var("KIT_MEMORY_REPORT") else {
+        return;
+    };
     let path = std::path::PathBuf::from(path);
     std::thread::spawn(move || {
         let (mut peak, mut kit_peak, mut written) = (0i64, 0u64, (-1i64, 0u64));
@@ -194,7 +206,11 @@ mod tests {
     fn texture_bytes_count_mips_and_layers() {
         let d = |w, h, layers, mips, format| wgpu::TextureDescriptor {
             label: None,
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: layers },
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: layers,
+            },
             mip_level_count: mips,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -202,9 +218,18 @@ mod tests {
             usage: wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
-        assert_eq!(texture_bytes(&d(4, 4, 1, 1, wgpu::TextureFormat::Rgba8Unorm)), 64);
-        assert_eq!(texture_bytes(&d(4, 4, 1, 3, wgpu::TextureFormat::R8Unorm)), 16 + 4 + 1);
-        assert_eq!(texture_bytes(&d(8, 2, 12, 1, wgpu::TextureFormat::R8Unorm)), 16 * 12);
+        assert_eq!(
+            texture_bytes(&d(4, 4, 1, 1, wgpu::TextureFormat::Rgba8Unorm)),
+            64
+        );
+        assert_eq!(
+            texture_bytes(&d(4, 4, 1, 3, wgpu::TextureFormat::R8Unorm)),
+            16 + 4 + 1
+        );
+        assert_eq!(
+            texture_bytes(&d(8, 2, 12, 1, wgpu::TextureFormat::R8Unorm)),
+            16 * 12
+        );
     }
 
     #[test]

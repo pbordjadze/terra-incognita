@@ -44,15 +44,21 @@ impl Sea {
 
     /// The distance to the coast at a place, in map pixels (land positive).
     pub fn coast(&self, at: LonLat) -> f64 {
-        let x = ((at.lon / 360.0 + 0.5) * self.w as f64).floor().rem_euclid(self.w as f64) as usize;
-        let y = (((0.5 - at.lat / 180.0) * self.h as f64).floor() as isize).clamp(0, self.h as isize - 1) as usize;
+        let x = ((at.lon / 360.0 + 0.5) * self.w as f64)
+            .floor()
+            .rem_euclid(self.w as f64) as usize;
+        let y = (((0.5 - at.lat / 180.0) * self.h as f64).floor() as isize)
+            .clamp(0, self.h as isize - 1) as usize;
         self.d[y * self.w + x] as f64
     }
 
     fn coast_blurred(&self, at: LonLat) -> f64 {
         let (bw, bh) = (self.w / 2, self.h / 2);
-        let x = ((at.lon / 360.0 + 0.5) * bw as f64).floor().rem_euclid(bw as f64) as usize;
-        let y = (((0.5 - at.lat / 180.0) * bh as f64).floor() as isize).clamp(0, bh as isize - 1) as usize;
+        let x = ((at.lon / 360.0 + 0.5) * bw as f64)
+            .floor()
+            .rem_euclid(bw as f64) as usize;
+        let y = (((0.5 - at.lat / 180.0) * bh as f64).floor() as isize).clamp(0, bh as isize - 1)
+            as usize;
         self.blur[y * bw + x] as f64
     }
 
@@ -85,7 +91,11 @@ impl Sea {
                 return true;
             }
             let (sn, cs) = s.sin_cos();
-            let q = [a[0] * cs + t[0] * sn, a[1] * cs + t[1] * sn, a[2] * cs + t[2] * sn];
+            let q = [
+                a[0] * cs + t[0] * sn,
+                a[1] * cs + t[1] * sn,
+                a[2] * cs + t[2] * sn,
+            ];
             let at = LonLat::from_xyz(q);
             let d = self.coast_blurred(at);
             if d > 1.4 {

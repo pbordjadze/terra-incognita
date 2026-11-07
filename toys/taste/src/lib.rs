@@ -135,7 +135,9 @@ impl Taste {
         }
         // on it, or near it: a fingertip's slack round its rim
         let v = self.view();
-        self.fingers.values().all(|f| (f.at[0] - v.c[0]).hypot(f.at[1] - v.c[1]) < v.r * 1.35 + 30.0)
+        self.fingers
+            .values()
+            .all(|f| (f.at[0] - v.c[0]).hypot(f.at[1] - v.c[1]) < v.r * 1.35 + 30.0)
     }
 
     fn reveal(&mut self) {
@@ -167,7 +169,10 @@ impl Taste {
                     for g in [0.15, 0.5, 0.85] {
                         // only what was held more than a form never tried counts as light: an untried place
                         // is not a liked one
-                        best = best.max(self.walker.memory.liking(&[h, sp, a, g]).powf(walk::SHARP) - walk::PRIOR.powf(walk::SHARP));
+                        best = best.max(
+                            self.walker.memory.liking(&[h, sp, a, g]).powf(walk::SHARP)
+                                - walk::PRIOR.powf(walk::SHARP),
+                        );
                     }
                 }
                 land.push((h, sp, best));
@@ -184,7 +189,12 @@ impl Taste {
 
     fn refresh_liking(&mut self) {
         if self.liked_for != self.walker.path.len() || self.liked.len() != self.walker.path.len() {
-            self.liked = self.walker.path.iter().map(|s| self.walker.memory.liking(&s.form)).collect();
+            self.liked = self
+                .walker
+                .path
+                .iter()
+                .map(|s| self.walker.memory.liking(&s.form))
+                .collect();
             self.liked_for = self.walker.path.len();
         }
     }
@@ -216,15 +226,33 @@ impl Taste {
     /// The small kept creatures on the wheel as they are now: (stop, centre, radius), points.
     fn keepsake_spots(&self) -> Vec<(usize, [f64; 2], f64)> {
         let v = self.view();
-        let small = View { r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15, ..v };
-        self.keepsakes(&small, self.walker.path.len()).into_iter().map(|i| (i, Self::map_point(&v, &self.walker.path[i].form), small.r * 0.9)).collect()
+        let small = View {
+            r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15,
+            ..v
+        };
+        self.keepsakes(&small, self.walker.path.len())
+            .into_iter()
+            .map(|i| {
+                (
+                    i,
+                    Self::map_point(&v, &self.walker.path[i].form),
+                    small.r * 0.9,
+                )
+            })
+            .collect()
     }
 
     fn sound_of(f: &Form, amp: f32) -> Note {
         // the colour picks the note (a pentatonic run round the wheel), the spikes its brightness, the
         // glow how long it rings
         let degree = (f[0] * 10.0).round() as i32 + 3;
-        Note { freq: pentatonic(196.0, degree), amp, decay: 1.4 + 2.6 * f[3] as f32, pan: 0.0, bright: 0.3 + 2.2 * f[1] as f32 }
+        Note {
+            freq: pentatonic(196.0, degree),
+            amp,
+            decay: 1.4 + 2.6 * f[3] as f32,
+            pan: 0.0,
+            bright: 0.3 + 2.2 * f[1] as f32,
+        }
     }
 }
 
@@ -274,7 +302,10 @@ impl Toy for Taste {
             Phase::Down => {
                 self.fingers.insert(e.id, Finger { at: p });
                 let v = self.view();
-                if self.fingers.len() == 1 && self.z > 0.9 && (p[0] - v.c[0]).hypot(p[1] - v.c[1]) < v.r * 1.35 + 30.0 {
+                if self.fingers.len() == 1
+                    && self.z > 0.9
+                    && (p[0] - v.c[0]).hypot(p[1] - v.c[1]) < v.r * 1.35 + 30.0
+                {
                     self.pats.push((p, e.t));
                     if self.pats.len() > 6 {
                         self.pats.remove(0);
@@ -286,7 +317,10 @@ impl Toy for Taste {
                 }
                 if self.fingers.len() == 2 {
                     let v: Vec<[f64; 2]> = self.fingers.values().map(|f| f.at).collect();
-                    self.pinch = Some(((v[0][0] - v[1][0]).hypot(v[0][1] - v[1][1]).max(10.0), self.z));
+                    self.pinch = Some((
+                        (v[0][0] - v[1][0]).hypot(v[0][1] - v[1][1]).max(10.0),
+                        self.z,
+                    ));
                 }
             }
             Phase::Move => {
@@ -383,7 +417,8 @@ impl Toy for Taste {
                 Some(Event::Keeps) => {
                     self.kept_at = t;
                     let f = self.walker.x;
-                    self.bells.strike(Self::sound_of(&f, if held { 0.16 } else { 0.09 }));
+                    self.bells
+                        .strike(Self::sound_of(&f, if held { 0.16 } else { 0.09 }));
                     if held {
                         ctx.haptic();
                     }
@@ -399,7 +434,11 @@ impl Toy for Taste {
                 _ => {}
             }
             // a few minutes in, it pulls back to show where it has been
-            let due = if self.reveals == 0 { REVEAL_FIRST } else { self.revealed_at + REVEAL_AGAIN };
+            let due = if self.reveals == 0 {
+                REVEAL_FIRST
+            } else {
+                self.revealed_at + REVEAL_AGAIN
+            };
             if self.walker.steps >= due
                 && self.walker.memory.held_total() >= REVEAL_HELD
                 && self.fingers.is_empty()
@@ -411,7 +450,8 @@ impl Toy for Taste {
         }
         // a hum while it is held, its pitch the creature's colour
         let f = self.walker.display();
-        self.bells.bed(if held { 0.35 } else { 0.0 }, 55.0 * 2f32.powf(f[0] as f32));
+        self.bells
+            .bed(if held { 0.35 } else { 0.0 }, 55.0 * 2f32.powf(f[0] as f32));
         // the replay's notes: each keepsake rings as the traveller passes it
         if self.replay.is_some() || self.z < 0.98 {
             self.refresh_liking();
@@ -432,7 +472,16 @@ impl Toy for Taste {
             time: self.t as f32,
             scale: (v.s * k) as f32,
             center: [0.0, 0.0],
-            p: [(v.o[0] * k) as f32, (v.o[1] * k) as f32, HUB as f32, away, now[0] as f32, now[3] as f32, (v.c[0] * k) as f32, (v.c[1] * k) as f32],
+            p: [
+                (v.o[0] * k) as f32,
+                (v.o[1] * k) as f32,
+                HUB as f32,
+                away,
+                now[0] as f32,
+                now[3] as f32,
+                (v.c[0] * k) as f32,
+                (v.c[1] * k) as f32,
+            ],
         };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         self.ground.render(gpu, &mut enc, target, size, &params);
@@ -466,7 +515,13 @@ impl Toy for Taste {
                 }
                 let p = Self::map_point(&v, &[h, sp, 0.5, 0.5]);
                 let col = hsv(h, 0.4, 1.0);
-                self.painter.glow(px(p), px(p), cell * 0.35, cell * 1.1, [col[0], col[1], col[2], 0.22 * l as f32 * away * rise]);
+                self.painter.glow(
+                    px(p),
+                    px(p),
+                    cell * 0.35,
+                    cell * 1.1,
+                    [col[0], col[1], col[2], 0.22 * l as f32 * away * rise],
+                );
             }
         }
         // the path: from each kept form to the next, in the colour it was; the tries it turned down,
@@ -481,7 +536,13 @@ impl Toy for Taste {
             for dcl in &path[i].declined {
                 let b = Self::map_point(&v, dcl);
                 let e = [a[0] + (b[0] - a[0]) * 0.32, a[1] + (b[1] - a[1]) * 0.32];
-                self.painter.line(px(a), px(e), line_w * 0.45, 0.8, [col[0], col[1], col[2], 0.22 * path_a]);
+                self.painter.line(
+                    px(a),
+                    px(e),
+                    line_w * 0.45,
+                    0.8,
+                    [col[0], col[1], col[2], 0.22 * path_a],
+                );
             }
             if i + 1 < n && !path[i + 1].jump {
                 let frac = (upto - i as f64).clamp(0.0, 1.0);
@@ -490,21 +551,43 @@ impl Toy for Taste {
                 }
                 let b = Self::map_point(&v, &path[i + 1].form);
                 let e = [a[0] + (b[0] - a[0]) * frac, a[1] + (b[1] - a[1]) * frac];
-                self.painter.line(px(a), px(e), line_w, 0.8, [col[0], col[1], col[2], 0.55 * path_a]);
+                self.painter.line(
+                    px(a),
+                    px(e),
+                    line_w,
+                    0.8,
+                    [col[0], col[1], col[2], 0.55 * path_a],
+                );
             }
         }
         // a touch on it: a ring spreading from the finger
         for &(p, at) in &self.pats {
             let a = ((self.t - at) / 0.9).clamp(0.0, 1.0) as f32;
             if a < 1.0 {
-                self.painter.glow_ring(px(p), ((18.0 + 50.0 * a as f64) * k) as f32, (2.5 * k) as f32, (5.0 * k) as f32, [1.0, 0.97, 0.92, 0.45 * (1.0 - a)]);
+                self.painter.glow_ring(
+                    px(p),
+                    ((18.0 + 50.0 * a as f64) * k) as f32,
+                    (2.5 * k) as f32,
+                    (5.0 * k) as f32,
+                    [1.0, 0.97, 0.92, 0.45 * (1.0 - a)],
+                );
             }
         }
         // a finger on it: a soft ring where it rests
         if self.touch > 0.02 {
             if let Some(f) = self.fingers.values().next() {
-                let br = if self.still { 1.0 } else { 0.85 + 0.15 * (self.t * 3.0).sin() } as f32;
-                self.painter.glow_ring(px(f.at), (26.0 * k) as f32, (3.0 * k) as f32, (6.0 * k) as f32, [1.0, 0.97, 0.92, 0.35 * self.touch as f32 * br]);
+                let br = if self.still {
+                    1.0
+                } else {
+                    0.85 + 0.15 * (self.t * 3.0).sin()
+                } as f32;
+                self.painter.glow_ring(
+                    px(f.at),
+                    (26.0 * k) as f32,
+                    (3.0 * k) as f32,
+                    (6.0 * k) as f32,
+                    [1.0, 0.97, 0.92, 0.35 * self.touch as f32 * br],
+                );
             }
         }
         self.painter.render(gpu, &mut enc, target, size, None);
@@ -512,7 +595,10 @@ impl Toy for Taste {
         // the keepsakes on the wheel (as it pulls back), then the traveller, then the creature itself
         let tclock = self.t as f32;
         if away > 0.02 {
-            let small = View { r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15, ..v };
+            let small = View {
+                r: v.r.min(0.06 * self.points[0].min(self.points[1] * 0.62)) * 1.15,
+                ..v
+            };
             let keep = self.keepsakes(&small, (upto.floor() as usize) + 1);
             // once the path has drawn and a few seconds pass, the small ones breathe: touch me
             let waited = match self.replay {
@@ -522,8 +608,22 @@ impl Toy for Taste {
             for (j, &i) in keep.iter().enumerate() {
                 let p = Self::map_point(&v, &path[i].form);
                 let appear = ((upto - i as f64) * 0.8).clamp(0.0, 1.0) as f32;
-                let breathe = if waited > 0.0 && !self.still { 1.0 + 0.09 * (waited.min(1.0)) * ((self.t * 2.2 - j as f64 * 0.7).sin() * 0.5 + 0.5) } else { 1.0 };
-                self.creatures.list.push(Instance::new(px(p), (small.r * 0.9 * breathe * k) as f32, away * appear, &path[i].form, i as f32 * 1.7, 0.0, [0.0, 0.0]));
+                let breathe = if waited > 0.0 && !self.still {
+                    1.0 + 0.09
+                        * (waited.min(1.0))
+                        * ((self.t * 2.2 - j as f64 * 0.7).sin() * 0.5 + 0.5)
+                } else {
+                    1.0
+                };
+                self.creatures.list.push(Instance::new(
+                    px(p),
+                    (small.r * 0.9 * breathe * k) as f32,
+                    away * appear,
+                    &path[i].form,
+                    i as f32 * 1.7,
+                    0.0,
+                    [0.0, 0.0],
+                ));
             }
             if let Some(x) = travel {
                 let i = (x.floor() as usize).min(n.saturating_sub(1));
@@ -532,7 +632,15 @@ impl Toy for Taste {
                 let p = Self::map_point(&v, &f);
                 let done = x >= (n.saturating_sub(1)) as f64 - 1e-6;
                 if !done {
-                    self.creatures.list.push(Instance::new(px(p), (small.r * 1.05 * k) as f32, away, &f, 0.0, 0.0, [0.0, 0.0]));
+                    self.creatures.list.push(Instance::new(
+                        px(p),
+                        (small.r * 1.05 * k) as f32,
+                        away,
+                        &f,
+                        0.0,
+                        0.0,
+                        [0.0, 0.0],
+                    ));
                 }
             }
         }
@@ -540,15 +648,28 @@ impl Toy for Taste {
             let a = ((self.t - self.kept_at) / 0.5).clamp(0.0, 1.0);
             1.0 + 0.05 * (a * std::f64::consts::PI).sin() * if self.still { 0.0 } else { 1.0 }
         };
-        let bob = if self.still { 0.0 } else { 3.0 * (self.t * 0.7).sin() * self.z };
+        let bob = if self.still {
+            0.0
+        } else {
+            3.0 * (self.t * 0.7).sin() * self.z
+        };
         let c = [v.c[0], v.c[1] + bob];
         // while the path is still drawing itself, the creature waits faint at its place
         let wait = match travel {
             Some(x) if x < (n.saturating_sub(1)) as f64 - 1e-6 => 0.35,
             _ => 1.0,
         };
-        self.creatures.list.push(Instance::new(px(c), (v.r * swell * k) as f32, wait, &now, 0.0, self.touch as f32, [self.look[0] as f32, self.look[1] as f32]));
-        self.creatures.render(gpu, &mut enc, target, size, tclock, self.still);
+        self.creatures.list.push(Instance::new(
+            px(c),
+            (v.r * swell * k) as f32,
+            wait,
+            &now,
+            0.0,
+            self.touch as f32,
+            [self.look[0] as f32, self.look[1] as f32],
+        ));
+        self.creatures
+            .render(gpu, &mut enc, target, size, tclock, self.still);
         gpu.queue.submit([enc.finish()]);
     }
 
@@ -562,7 +683,10 @@ impl Toy for Taste {
 
     fn shaken(&mut self, _ctx: &mut Ctx) {
         // a new creature, and a clean slate: nothing remembered
-        self.seed = self.seed.wrapping_mul(0x9e37_79b9_7f4a_7c15).wrapping_add(self.walker.steps as u64 + 1);
+        self.seed = self
+            .seed
+            .wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            .wrapping_add(self.walker.steps as u64 + 1);
         let mut r = walk::Rng(self.seed | 1);
         let start: Form = std::array::from_fn(|_| 0.15 + 0.7 * r.f());
         self.walker = Walker::new(self.seed, start);
@@ -576,7 +700,13 @@ impl Toy for Taste {
     }
 
     fn save(&self) -> Option<String> {
-        serde_json::to_string(&Saved { walker: self.walker.clone(), revealed_at: self.revealed_at, reveals: self.reveals, seed: self.seed }).ok()
+        serde_json::to_string(&Saved {
+            walker: self.walker.clone(),
+            revealed_at: self.revealed_at,
+            reveals: self.reveals,
+            seed: self.seed,
+        })
+        .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
@@ -594,11 +724,17 @@ impl Toy for Taste {
 
     fn anchors(&self) -> Vec<(String, [f64; 2])> {
         let v = self.view();
-        let mut a = vec![("creature".to_string(), v.c), ("centre".to_string(), self.focus())];
+        let mut a = vec![
+            ("creature".to_string(), v.c),
+            ("centre".to_string(), self.focus()),
+        ];
         let f = self.focus();
         a.push(("pinch-a".into(), [f[0] - 90.0, f[1] - 60.0]));
         a.push(("pinch-b".into(), [f[0] + 90.0, f[1] + 60.0]));
-        a.push(("aside".into(), [self.points[0] * 0.5, self.points[1] * 0.85]));
+        a.push((
+            "aside".into(),
+            [self.points[0] * 0.5, self.points[1] * 0.85],
+        ));
         if self.z_to < 0.5 {
             for (j, (_, q, _)) in self.keepsake_spots().into_iter().enumerate() {
                 a.push((format!("kept{j}"), q));
@@ -610,7 +746,10 @@ impl Toy for Taste {
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         let v = self.view();
         let p = [v.c[0] + v.r * 0.15, v.c[1] + v.r * 0.25];
-        Some(toy_kit::info::Demo::new("Rest a finger on it while you like it; lift it when you don't.", vec![toy_kit::info::Stroke::hold(0.4, 3.2, p)]))
+        Some(toy_kit::info::Demo::new(
+            "Rest a finger on it while you like it; lift it when you don't.",
+            vec![toy_kit::info::Stroke::hold(0.4, 3.2, p)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

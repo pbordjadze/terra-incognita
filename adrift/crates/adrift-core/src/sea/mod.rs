@@ -14,15 +14,15 @@ pub mod gpu;
 pub mod medium;
 pub mod rules;
 pub mod sheets;
-pub mod wind;
 #[cfg(test)]
 mod tests;
+pub mod wind;
 #[cfg(test)]
 mod wind_tests;
 
 pub use drifters::{Drifters, Nearest, Run, Track};
-pub use medium::{Media, MediumRules};
 pub use gpu::{GpuPath, Keep, Maybes, Params, MAX_STEPS};
+pub use medium::{Media, MediumRules};
 pub use rules::{Drift, Flight, Put, Rules, Step};
 pub use sheets::{Coast, Currents, Eddy, EddyTime, Ice, Wind};
 pub use wind::{Air, AirMaybes, AirParams, AirRules, Aloft, Gusts, Weather};
@@ -31,7 +31,8 @@ pub use wind::{Air, AirMaybes, AirParams, AirRules, Aloft, Gusts, Weather};
 /// (`adrift/SOURCES.md` › Credit owed; the GDP's licence asks for its sentence whole).
 /// One line, under 80 characters so it fits a phone's foot at the words' size (the date's note
 /// above it already says the sea is a typical year's).
-pub const CREDIT_LINE: &str = "NOAA Global Drifter Program · NCEP/NCAR Reanalysis · NSIDC · Natural Earth";
+pub const CREDIT_LINE: &str =
+    "NOAA Global Drifter Program · NCEP/NCAR Reanalysis · NSIDC · Natural Earth";
 pub const CREDITS: &[&str] = &[
     "The currents, their eddies and the real drifters: this study used data collected and made freely available by the NOAA Global Drifter Program (https://www.aoml.noaa.gov/phod/gdp/) accessed from https://erddap.aoml.noaa.gov/gdp/erddap/index.html (CC BY 4.0). Climatology: Laurindo, Mariano and Lumpkin (2017). Trajectories: Lumpkin and Centurioni, NOAA NCEI, doi:10.25921/7ntx-z961.",
     "The wind: NCEP/NCAR Reanalysis 1 data provided by the NOAA PSL, Boulder, Colorado, USA, from their website at https://psl.noaa.gov (Kalnay et al. 1996).",

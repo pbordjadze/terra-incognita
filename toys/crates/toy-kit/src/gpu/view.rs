@@ -33,20 +33,39 @@ impl View {
         let w = width as f64 / ppp;
         let h = height as f64 / ppp;
         let r = (w.min(h) / 2.0 - 14.0).max(40.0) * camera.zoom;
-        Disc { cx: w / 2.0, cy: h / 2.0, r }
+        Disc {
+            cx: w / 2.0,
+            cy: h / 2.0,
+            r,
+        }
     }
 
     pub fn uniform(&self) -> ViewUniform {
         let m = self.camera.rotation();
         let (ma, mb, mix) = self.clock.months();
         ViewUniform {
-            frame: [self.width as f32, self.height as f32, self.ppp as f32, self.reading as f32],
-            disc: [self.disc.cx as f32, self.disc.cy as f32, self.disc.r as f32, self.camera.zoom as f32],
+            frame: [
+                self.width as f32,
+                self.height as f32,
+                self.ppp as f32,
+                self.reading as f32,
+            ],
+            disc: [
+                self.disc.cx as f32,
+                self.disc.cy as f32,
+                self.disc.r as f32,
+                self.camera.zoom as f32,
+            ],
             rot0: [m[0][0] as f32, m[0][1] as f32, m[0][2] as f32, 0.0],
             rot1: [m[1][0] as f32, m[1][1] as f32, m[1][2] as f32, 0.0],
             rot2: [m[2][0] as f32, m[2][1] as f32, m[2][2] as f32, 0.0],
             time: [self.seconds as f32, ma as f32, mb as f32, mix as f32],
-            tone: [1.0, if self.clock.running { 1.0 } else { 0.0 }, self.seconds as f32, self.rest],
+            tone: [
+                1.0,
+                if self.clock.running { 1.0 } else { 0.0 },
+                self.seconds as f32,
+                self.rest,
+            ],
             _pad: [self.night, self.export, 0.0, 0.0],
         }
     }

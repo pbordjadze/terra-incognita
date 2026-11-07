@@ -118,7 +118,10 @@ impl Ear {
         let age = t - self.born;
         let life = if self.land { SILENCE_LIFE } else { EAR_LIFE };
         let lift = if self.land { 0.8 } else { 1.5 };
-        let early = self.lift.map(|l| ((l + EAR_LIFT - t) / EAR_LIFT).clamp(0.0, 1.0)).unwrap_or(1.0);
+        let early = self
+            .lift
+            .map(|l| ((l + EAR_LIFT - t) / EAR_LIFT).clamp(0.0, 1.0))
+            .unwrap_or(1.0);
         (age / 0.25).clamp(0.0, 1.0) * ((life - age) / lift).clamp(0.0, 1.0) * early
     }
 
@@ -178,25 +181,35 @@ fn norm(v: [f64; 3]) -> [f64; 3] {
 }
 
 fn slerp(a: [f64; 3], b: [f64; 3], k: f64) -> [f64; 3] {
-    norm([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k])
+    norm([
+        a[0] + (b[0] - a[0]) * k,
+        a[1] + (b[1] - a[1]) * k,
+        a[2] + (b[2] - a[2]) * k,
+    ])
 }
 
 impl Whales {
     fn new_passes(ctx: &Ctx, globe: &Globe) -> (Pass, wgpu::RenderPipeline, wgpu::Buffer) {
         let gpu = &ctx.gpu;
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("rings"),
-            entries: &[
-                toy_kit::globe::ground::tex2d(0),
-                toy_kit::globe::ground::sampler(1),
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                    count: None,
-                },
-            ],
-        });
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("rings"),
+                entries: &[
+                    toy_kit::globe::ground::tex2d(0),
+                    toy_kit::globe::ground::sampler(1),
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
         let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("rings"),
             size: std::mem::size_of::<RingsU>() as u64,
@@ -207,53 +220,83 @@ impl Whales {
             label: Some("rings"),
             layout: &layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&globe.textures.geo.view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&globe.textures.linear_wrap_x) },
-                wgpu::BindGroupEntry { binding: 2, resource: buf.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&globe.textures.geo.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&globe.textures.linear_wrap_x),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: buf.as_entire_binding(),
+                },
             ],
         });
         let shader = gpu.shader("rings", &toy_kit::globe::wgsl(include_str!("rings.wgsl")));
-        let pipeline = gpu.fullscreen_pipeline("rings", &shader, &[&globe.view_layout, &layout], Some(toy_kit::Gpu::over()));
+        let pipeline = gpu.fullscreen_pipeline(
+            "rings",
+            &shader,
+            &[&globe.view_layout, &layout],
+            Some(toy_kit::Gpu::over()),
+        );
 
         let mshader = gpu.shader("marks", &toy_kit::globe::wgsl(include_str!("marks.wgsl")));
-        let mlayout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("marks"),
-            bind_group_layouts: &[Some(&globe.view_layout)],
-            immediate_size: 0,
-        });
+        let mlayout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("marks"),
+                bind_group_layouts: &[Some(&globe.view_layout)],
+                immediate_size: 0,
+            });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
-        let marks_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("marks"),
-            layout: Some(&mlayout),
-            vertex: wgpu::VertexState {
-                module: &mshader,
-                entry_point: Some("vs_mark"),
-                buffers: &[Some(wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<MarkI>() as u64,
-                    step_mode: wgpu::VertexStepMode::Instance,
-                    attributes: &attrs,
-                })],
-                compilation_options: Default::default(),
-            },
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            fragment: Some(wgpu::FragmentState {
-                module: &mshader,
-                entry_point: Some("fs_mark"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
-                compilation_options: Default::default(),
-            }),
-            multiview_mask: None,
-            cache: None,
-        });
+        let marks_pipeline = gpu
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("marks"),
+                layout: Some(&mlayout),
+                vertex: wgpu::VertexState {
+                    module: &mshader,
+                    entry_point: Some("vs_mark"),
+                    buffers: &[Some(wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<MarkI>() as u64,
+                        step_mode: wgpu::VertexStepMode::Instance,
+                        attributes: &attrs,
+                    })],
+                    compilation_options: Default::default(),
+                },
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                fragment: Some(wgpu::FragmentState {
+                    module: &mshader,
+                    entry_point: Some("fs_mark"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: gpu.format,
+                        blend: Some(toy_kit::Gpu::over()),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: Default::default(),
+                }),
+                multiview_mask: None,
+                cache: None,
+            });
         let marks_buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("marks"),
             size: (std::mem::size_of::<MarkI>() * MAX_MARKS) as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        (Pass { pipeline, bind, buf }, marks_pipeline, marks_buf)
+        (
+            Pass {
+                pipeline,
+                bind,
+                buf,
+            },
+            marks_pipeline,
+            marks_buf,
+        )
     }
 
     /// The camera that holds both whales: their middle, as close as keeps them both well inside.
@@ -263,7 +306,8 @@ impl Whales {
         let mid = norm([a[0] + b[0], a[1] + b[1], a[2] + b[2]]);
         let ll = LonLat::from_xyz(mid);
         let half = dot(a, b).clamp(-1.0, 1.0).acos() / 2.0;
-        let disc1 = toy_kit::gpu::View::layout(self.w(), self.h(), self.ppp(), Camera::new(0.0, 0.0, 1.0));
+        let disc1 =
+            toy_kit::gpu::View::layout(self.w(), self.h(), self.ppp(), Camera::new(0.0, 0.0, 1.0));
         let [wp, hp] = [self.w() as f64 / self.ppp(), self.h() as f64 / self.ppp()];
         // which way they lie on the screen (seen from their middle), and the room that way
         let cam = Camera::new(ll.lon, ll.lat, 1.0);
@@ -281,7 +325,11 @@ impl Whales {
         // the camera's centre that far west of their middle
         let r = disc1.r * zoom;
         let west = (right / r).clamp(0.0, 0.6).asin().to_degrees();
-        let centre = LonLat { lon: ll.lon - west / ll.lat.to_radians().cos().max(0.2), lat: ll.lat }.to_xyz();
+        let centre = LonLat {
+            lon: ll.lon - west / ll.lat.to_radians().cos().max(0.2),
+            lat: ll.lat,
+        }
+        .to_xyz();
         (centre, zoom)
     }
 
@@ -313,7 +361,11 @@ impl Whales {
         // left alone, the camera comes back to hold both; soon when neither whale is in sight
         let in_sight = (0..2).any(|i| {
             let ([x, y], f) = self.whale_on_screen(i);
-            f > 0.0 && x > 0.0 && y > 0.0 && x < self.w() as f64 / self.ppp() && y < self.h() as f64 / self.ppp()
+            f > 0.0
+                && x > 0.0
+                && y > 0.0
+                && x < self.w() as f64 / self.ppp()
+                && y < self.h() as f64 / self.ppp()
         });
         let idle = if in_sight { IDLE_BACK } else { 4.0 };
         if self.mode == Mode::Free && self.t - self.last_touch > idle {
@@ -345,7 +397,11 @@ impl Whales {
         let w = self.w() as f64 / self.ppp();
         for i in 0..2 {
             let s = &mut self.singers[i];
-            s.pos = if sounding { self.mix.pos(i) } else { (s.pos + dt).rem_euclid(s.song.seconds()) };
+            s.pos = if sounding {
+                self.mix.pos(i)
+            } else {
+                (s.pos + dt).rem_euclid(s.song.seconds())
+            };
         }
         for i in 0..2 {
             let season = self.singers[i].route.sings(self.day).max(0.12);
@@ -403,7 +459,8 @@ impl Whales {
             s.loud_avg += (loud - s.loud_avg) * (1.0 - (-dt / 0.35).exp() as f32);
             let since = self.t - s.last_ring;
             let min_gap = if i == 0 { 0.2 } else { 0.35 };
-            let ring = (rise > 0.10 && loud > 0.25 && since > min_gap) || (loud > 0.45 && since > if i == 0 { 0.7 } else { 1.1 });
+            let ring = (rise > 0.10 && loud > 0.25 && since > min_gap)
+                || (loud > 0.45 && since > if i == 0 { 0.7 } else { 1.1 });
             if ring && gain > 0.02 {
                 s.last_ring = self.t;
                 let at = s.route.at(self.day);
@@ -471,7 +528,10 @@ impl Whales {
                 if f > 0.05 && (x - last[0]).hypot(y - last[1]) >= gap {
                     last = [x, y];
                     let fade = (1.0 - k as f64 / 73.0).powf(1.5) * (f / 0.2).min(1.0);
-                    self.marks.push(MarkI { at: [x as f32, y as f32, (2.6 * reading) as f32, 0.0], look: [2.0, (0.24 * fade) as f32, 0.0, 0.0] });
+                    self.marks.push(MarkI {
+                        at: [x as f32, y as f32, (2.6 * reading) as f32, 0.0],
+                        look: [2.0, (0.24 * fade) as f32, 0.0, 0.0],
+                    });
                 }
                 k += 1;
             }
@@ -489,7 +549,10 @@ impl Whales {
             let glow = 0.0;
             let phase = self.t * if i == 0 { 2.6 } else { 1.7 } + i as f64;
             let alpha = (f / 0.15).min(1.0);
-            self.marks.push(MarkI { at: [x as f32, y as f32, len as f32, heading as f32], look: [i as f32, alpha as f32, phase as f32, glow] });
+            self.marks.push(MarkI {
+                at: [x as f32, y as f32, len as f32, heading as f32],
+                look: [i as f32, alpha as f32, phase as f32, glow],
+            });
         }
         // the hydrophones, the one listened at a little larger and brighter; the land's silence
         let n = self.ears.len();
@@ -499,7 +562,10 @@ impl Whales {
                 let heard = ear.land || (j + 1 == n && ear.lift.is_none());
                 let k = (ear.strength(self.t) * if heard { 1.0 } else { 0.7 }) as f32;
                 let size = if heard { 30.0 } else { 25.0 } * reading * self.size_k();
-                self.marks.push(MarkI { at: [x as f32, y as f32, size as f32, 0.0], look: [3.0, k, ear.ping, if ear.land { 1.0 } else { 0.0 }] });
+                self.marks.push(MarkI {
+                    at: [x as f32, y as f32, size as f32, 0.0],
+                    look: [3.0, k, ear.ping, if ear.land { 1.0 } else { 0.0 }],
+                });
             }
         }
     }
@@ -507,7 +573,14 @@ impl Whales {
 
 impl Toy for Whales {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
+        let mut globe = Globe::new(
+            &ctx.gpu,
+            ctx.assets.as_ref(),
+            ctx.width,
+            ctx.height,
+            ctx.ppp,
+            10,
+        )?;
         // the night's Earth always: a dark sea the songs can glow on, the coast's towns along it
         globe.night = 1.0;
         globe.hand.min_zoom = 0.9;
@@ -519,7 +592,14 @@ impl Toy for Whales {
         let choir = Choir::new([hs.clone(), bs.clone()], mix.clone(), [0.0, 3.0]);
         let (rings_pass, marks_pipeline, marks_buf) = Self::new_passes(ctx, &globe);
         let sea = Sea::new(&ctx.assets.read("geo.png")?)?;
-        let singer = |route, song: Arc<Song>, pos| Singer { route, song, pos, last_ring: -10.0, loud_avg: 0.0, gain: 0.0 };
+        let singer = |route, song: Arc<Song>, pos| Singer {
+            route,
+            song,
+            pos,
+            last_ring: -10.0,
+            loud_avg: 0.0,
+            gain: 0.0,
+        };
         let mut toy = Whales {
             globe,
             sea,
@@ -557,8 +637,15 @@ impl Toy for Whales {
 
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         // a tap on a whale: followed, its song heard
-        let at = self.anchors().first().map(|a| a.1).unwrap_or_else(|| self.globe.spot_for(&[]));
-        Some(toy_kit::info::Demo::new("Two whales singing along their real routes. Tap one.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+        let at = self
+            .anchors()
+            .first()
+            .map(|a| a.1)
+            .unwrap_or_else(|| self.globe.spot_for(&[]));
+        Some(toy_kit::info::Demo::new(
+            "Two whales singing along their real routes. Tap one.",
+            vec![toy_kit::info::Stroke::tap(0.5, at)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -600,7 +687,11 @@ impl Toy for Whales {
         match e.phase {
             Phase::Down => {
                 self.fingers += 1;
-                self.press = if self.fingers == 1 { Some((e.id, [e.x, e.y], e.t, false)) } else { None };
+                self.press = if self.fingers == 1 {
+                    Some((e.id, [e.x, e.y], e.t, false))
+                } else {
+                    None
+                };
             }
             Phase::Move => {
                 if let Some((id, at, _, moved)) = self.press.as_mut() {
@@ -647,14 +738,30 @@ impl Toy for Whales {
         self.sing(dt);
         self.build_marks();
         if std::env::var("WHALES_DEBUG").is_ok() && (t * 30.0).round() as i64 % 30 == 0 {
-            let p: Vec<_> = (0..2).map(|i| self.whale_on_screen(i).0.map(|v| v.round())).collect();
-            eprintln!("t {t:.1} day {:.1} humpback {:?} blue {:?} zoom {:.2} rings {}", self.day, p[0], p[1], self.globe.camera.zoom, self.rings.len());
+            let p: Vec<_> = (0..2)
+                .map(|i| self.whale_on_screen(i).0.map(|v| v.round()))
+                .collect();
+            eprintln!(
+                "t {t:.1} day {:.1} humpback {:?} blue {:?} zoom {:.2} rings {}",
+                self.day,
+                p[0],
+                p[1],
+                self.globe.camera.zoom,
+                self.rings.len()
+            );
         }
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
-        let mut u = RingsU { at: [[0.0; 4]; MAX_RINGS], look: [[0.0; 4]; MAX_RINGS], n: [0.0; 4], ears: [[0.0; 4]; MAX_EARS], whale: [[0.0; 4]; 2], misc: [0.0; 4] };
+        let mut u = RingsU {
+            at: [[0.0; 4]; MAX_RINGS],
+            look: [[0.0; 4]; MAX_RINGS],
+            n: [0.0; 4],
+            ears: [[0.0; 4]; MAX_EARS],
+            whale: [[0.0; 4]; 2],
+            misc: [0.0; 4],
+        };
         for i in 0..2 {
             let w = self.singers[i].route.at(self.day);
             u.whale[i] = [w[0] as f32, w[1] as f32, w[2] as f32, 0.0];
@@ -665,7 +772,12 @@ impl Toy for Whales {
             let ear = &self.ears[j];
             let heard = j + 1 == n && ear.lift.is_none();
             let k = ear.strength(self.t) * if heard { 1.0 } else { 0.6 };
-            u.ears[slot] = [ear.at[0] as f32, ear.at[1] as f32, ear.at[2] as f32, k as f32];
+            u.ears[slot] = [
+                ear.at[0] as f32,
+                ear.at[1] as f32,
+                ear.at[2] as f32,
+                k as f32,
+            ];
         }
         u.misc[0] = (22.0 * self.globe.reading() * self.size_k() / self.globe.disc().r) as f32;
         let disc_r = self.globe.disc().r as f32;
@@ -676,13 +788,27 @@ impl Toy for Whales {
             let radius = r.speed * age;
             // a ring thins as it spreads (the sound's spreading loss), drawn wider as it goes
             let fade = (1.0 - life).max(0.0).powf(1.6) * (1.0 - (-age * 8.0).exp());
-            let width_pts = if r.kind == 0 { 0.9 + 0.7 * age } else { 1.5 + 1.2 * age } * reading * self.size_k() as f32;
+            let width_pts = if r.kind == 0 {
+                0.9 + 0.7 * age
+            } else {
+                1.5 + 1.2 * age
+            } * reading
+                * self.size_k() as f32;
             u.at[k] = [r.at[0], r.at[1], r.at[2], radius];
-            u.look[k] = [r.amp * fade * 0.9, r.pitch, r.kind as f32, width_pts / disc_r];
+            u.look[k] = [
+                r.amp * fade * 0.9,
+                r.pitch,
+                r.kind as f32,
+                width_pts / disc_r,
+            ];
             u.n[0] = (k + 1) as f32;
         }
-        ctx.gpu.queue.write_buffer(&self.rings_pass.buf, 0, bytemuck::bytes_of(&u));
-        ctx.gpu.queue.write_buffer(&self.marks_buf, 0, bytemuck::cast_slice(&self.marks));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.rings_pass.buf, 0, bytemuck::bytes_of(&u));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.marks_buf, 0, bytemuck::cast_slice(&self.marks));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -691,7 +817,10 @@ impl Toy for Whales {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -714,7 +843,12 @@ impl Toy for Whales {
     }
 
     fn save(&self) -> Option<String> {
-        serde_json::to_string(&Saved { day: self.day, mode: self.mode, camera: self.globe.camera }).ok()
+        serde_json::to_string(&Saved {
+            day: self.day,
+            mode: self.mode,
+            camera: self.globe.camera,
+        })
+        .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
@@ -757,16 +891,32 @@ impl Whales {
                 if self.rings.len() >= MAX_RINGS {
                     self.rings.remove(0);
                 }
-                self.rings.push(Ring { at: [p[0] as f32, p[1] as f32, p[2] as f32], born: self.t, amp: 0.8, pitch, kind: i as u32, speed: speed as f32 });
+                self.rings.push(Ring {
+                    at: [p[0] as f32, p[1] as f32, p[2] as f32],
+                    born: self.t,
+                    amp: 0.8,
+                    pitch,
+                    kind: i as u32,
+                    speed: speed as f32,
+                });
             }
             None => {
                 // the water: a hydrophone there (or, on one already down, listening there again);
                 // the land: its silence
-                let Some(place) = self.globe.unproject(at[0], at[1]) else { return };
+                let Some(place) = self.globe.unproject(at[0], at[1]) else {
+                    return;
+                };
                 let p = place.to_xyz();
                 let t = self.t;
                 if !self.sea.is_sea(p) {
-                    self.silence = Some(Ear { at: p, born: t, land: true, ping: 0.0, open: [false; 2], lift: None });
+                    self.silence = Some(Ear {
+                        at: p,
+                        born: t,
+                        land: true,
+                        ping: 0.0,
+                        open: [false; 2],
+                        lift: None,
+                    });
                     ctx.haptic();
                     return;
                 }
@@ -784,8 +934,16 @@ impl Whales {
                         self.ears.push(ear);
                     }
                     None => {
-                        let open = [0, 1].map(|i| self.sea.open(self.singers[i].route.at(self.day), p));
-                        self.ears.push(Ear { at: p, born: t, land: false, ping: 0.0, open, lift: None });
+                        let open =
+                            [0, 1].map(|i| self.sea.open(self.singers[i].route.at(self.day), p));
+                        self.ears.push(Ear {
+                            at: p,
+                            born: t,
+                            land: false,
+                            ping: 0.0,
+                            open,
+                            lift: None,
+                        });
                         let down = self.ears.iter().filter(|e| e.lift.is_none()).count();
                         if down > MAX_EARS {
                             if let Some(oldest) = self.ears.iter_mut().find(|e| e.lift.is_none()) {
@@ -816,17 +974,29 @@ mod tests {
     use super::*;
 
     fn data(name: &str) -> Vec<u8> {
-        std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data").join(name)).unwrap()
+        std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("data")
+                .join(name),
+        )
+        .unwrap()
     }
 
     #[test]
     fn the_songs_decode_whole() {
         for (name, secs) in [("humpback.song", 180.0), ("blue.song", 23.0)] {
             let s = Song::parse(&data(name)).unwrap();
-            assert!((s.seconds() - secs).abs() < 1.0, "{name} is {} s", s.seconds());
+            assert!(
+                (s.seconds() - secs).abs() < 1.0,
+                "{name} is {} s",
+                s.seconds()
+            );
             let peak = s.pcm.iter().fold(0.0f32, |m, x| m.max(x.abs()));
             assert!(peak > 0.25 && peak <= 1.0, "{name} peaks at {peak}");
-            assert!(s.env.iter().any(|e| e[0] > 0.8), "{name}'s envelope never rises");
+            assert!(
+                s.env.iter().any(|e| e[0] > 0.8),
+                "{name}'s envelope never rises"
+            );
         }
     }
 
@@ -837,7 +1007,10 @@ mod tests {
         assert!(h.lonlat(323.0).lat > 35.0 && h.lonlat(40.0).lat < 23.0);
         // blue whale: the Costa Rica Dome in February
         let dome = b.lonlat(45.0);
-        assert!((dome.lat - 9.0).abs() < 2.0 && (dome.lon + 89.5).abs() < 3.0, "{dome:?}");
+        assert!(
+            (dome.lat - 9.0).abs() < 2.0 && (dome.lon + 89.5).abs() < 3.0,
+            "{dome:?}"
+        );
         assert!(h.sings(330.0) > 0.8 && b.sings(280.0) > 0.8 && b.sings(60.0) < 0.2);
     }
 
@@ -862,19 +1035,33 @@ mod round2 {
 
     #[test]
     fn baja_stands_between_the_pacific_and_the_gulf() {
-        let geo = std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Globe/geo.png")).unwrap();
+        let geo = std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../Globe/geo.png"),
+        )
+        .unwrap();
         let sea = Sea::new(&geo).unwrap();
         let pacific = LonLat::new(-115.0, 26.0).to_xyz();
         let gulf = LonLat::new(-111.0, 26.5).to_xyz();
         let offshore = LonLat::new(-117.0, 28.0).to_xyz();
-        assert!(sea.is_sea(pacific) && sea.is_sea(gulf) && !sea.is_sea(LonLat::new(-112.5, 26.5).to_xyz()));
+        assert!(
+            sea.is_sea(pacific)
+                && sea.is_sea(gulf)
+                && !sea.is_sea(LonLat::new(-112.5, 26.5).to_xyz())
+        );
         assert!(!sea.open(pacific, gulf), "the sound crossed the peninsula");
         assert!(sea.open(pacific, offshore));
     }
 
     #[test]
     fn a_hydrophone_hears_late_and_muffled() {
-        let data = |n: &str| std::fs::read(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data").join(n)).unwrap();
+        let data = |n: &str| {
+            std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("data")
+                    .join(n),
+            )
+            .unwrap()
+        };
         let hs = Arc::new(Song::parse(&data("humpback.song")).unwrap());
         let bs = Arc::new(Song::parse(&data("blue.song")).unwrap());
         let mix = Arc::new(Mix::default());
@@ -889,11 +1076,17 @@ mod round2 {
         c.render(&mut out, 2, 48_000.0);
         // what is heard 3.5 s in is what the humpback sang at 1.5 s
         let s = Song::parse(&data("humpback.song")).unwrap();
-        let heard: Vec<f32> = (0..2400).map(|k| out[(24_000 + k) * 2] / std::f32::consts::FRAC_1_SQRT_2).collect();
-        let sung: Vec<f32> = (0..2400).map(|k| s.pcm[((1.5 + k as f64 / 48_000.0) * s.rate) as usize]).collect();
+        let heard: Vec<f32> = (0..2400)
+            .map(|k| out[(24_000 + k) * 2] / std::f32::consts::FRAC_1_SQRT_2)
+            .collect();
+        let sung: Vec<f32> = (0..2400)
+            .map(|k| s.pcm[((1.5 + k as f64 / 48_000.0) * s.rate) as usize])
+            .collect();
         let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>();
         let r = dot(&heard, &sung) / (dot(&heard, &heard) * dot(&sung, &sung)).sqrt().max(1e-9);
-        assert!(r > 0.9, "the song heard is not the song sung two seconds before (r {r})");
+        assert!(
+            r > 0.9,
+            "the song heard is not the song sung two seconds before (r {r})"
+        );
     }
 }
-

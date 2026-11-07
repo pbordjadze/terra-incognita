@@ -99,7 +99,10 @@ fn reading(points: [f64; 2]) -> f64 {
 }
 
 fn layout_of(points: [f64; 2]) -> Layout {
-    Layout { c: [points[0] * 0.5, points[1] * 0.5], s: 3.1 * reading(points) }
+    Layout {
+        c: [points[0] * 0.5, points[1] * 0.5],
+        s: 3.1 * reading(points),
+    }
 }
 
 /// The salt the cars drive on reaches past the screen on every side: convoys turn back out in the dark
@@ -108,7 +111,10 @@ const BEYOND: f64 = 1.45;
 
 fn half_of(points: [f64; 2]) -> [f64; 2] {
     let l = layout_of(points);
-    [points[0] * 0.5 / l.s * BEYOND, points[1] * 0.5 / l.s * BEYOND]
+    [
+        points[0] * 0.5 / l.s * BEYOND,
+        points[1] * 0.5 / l.s * BEYOND,
+    ]
 }
 
 impl Jam {
@@ -158,7 +164,9 @@ impl Jam {
                 let mid = 1.0 - 0.6 * (p[0] / h[0]).hypot(p[1] / h[1]).min(1.0);
                 (i, self.flat.behind(i).len(), mid)
             })
-            .max_by(|a, b| (a.1 as f64 * (0.75 + 0.25 * a.2)).total_cmp(&(b.1 as f64 * (0.75 + 0.25 * b.2))))
+            .max_by(|a, b| {
+                (a.1 as f64 * (0.75 + 0.25 * a.2)).total_cmp(&(b.1 as f64 * (0.75 + 0.25 * b.2)))
+            })
             .map(|(i, n, _)| (i, n))
             .unwrap_or((0, 0))
     }
@@ -183,8 +191,14 @@ impl Jam {
             let back = CAR * 0.3 * LONG;
             let side = 0.75 * WIDE;
             let w = [
-                [c.p[0] - d[0] * back + n[0] * side, c.p[1] - d[1] * back + n[1] * side],
-                [c.p[0] - d[0] * back - n[0] * side, c.p[1] - d[1] * back - n[1] * side],
+                [
+                    c.p[0] - d[0] * back + n[0] * side,
+                    c.p[1] - d[1] * back + n[1] * side,
+                ],
+                [
+                    c.p[0] - d[0] * back - n[0] * side,
+                    c.p[1] - d[1] * back - n[1] * side,
+                ],
             ];
             let was = self.wheels[i];
             let moved = (w[0][0] - was[0][0]).hypot(w[0][1] - was[0][1]);
@@ -213,20 +227,51 @@ struct VO { @builtin(position) pos: vec4<f32> };
 /// all the way rather than sticking at the last 8-bit step.
 fn fade_pipeline(gpu: &Gpu) -> (wgpu::RenderPipeline, wgpu::BindGroup) {
     let shader = gpu.shader("tracks fade", FADE_WGSL);
-    let bgl = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    let bgl = gpu
+        .device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("tracks fade"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+    use wgpu::util::DeviceExt;
+    let buf = gpu
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("tracks fade"),
+            contents: &[0u8; 16],
+            usage: wgpu::BufferUsages::UNIFORM,
+        });
+    let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("tracks fade"),
-        entries: &[wgpu::BindGroupLayoutEntry {
+        layout: &bgl,
+        entries: &[wgpu::BindGroupEntry {
             binding: 0,
-            visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-            count: None,
+            resource: buf.as_entire_binding(),
         }],
     });
-    use wgpu::util::DeviceExt;
-    let buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("tracks fade"), contents: &[0u8; 16], usage: wgpu::BufferUsages::UNIFORM });
-    let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("tracks fade"), layout: &bgl, entries: &[wgpu::BindGroupEntry { binding: 0, resource: buf.as_entire_binding() }] });
-    let comp = wgpu::BlendComponent { src_factor: wgpu::BlendFactor::One, dst_factor: wgpu::BlendFactor::Constant, operation: wgpu::BlendOperation::ReverseSubtract };
-    let pipe = gpu.fullscreen_pipeline("tracks fade", &shader, &[&bgl], Some(wgpu::BlendState { color: comp, alpha: comp }));
+    let comp = wgpu::BlendComponent {
+        src_factor: wgpu::BlendFactor::One,
+        dst_factor: wgpu::BlendFactor::Constant,
+        operation: wgpu::BlendOperation::ReverseSubtract,
+    };
+    let pipe = gpu.fullscreen_pipeline(
+        "tracks fade",
+        &shader,
+        &[&bgl],
+        Some(wgpu::BlendState {
+            color: comp,
+            alpha: comp,
+        }),
+    );
     (pipe, bind)
 }
 
@@ -237,7 +282,9 @@ impl Toy for Jam {
         let (fade, fade_bind) = fade_pipeline(&ctx.gpu);
         let points = ctx.points();
         let half = half_of(points);
-        let n = ((4.0 * half[0] * half[1]) / AREA).round().clamp(40.0, 400.0) as usize;
+        let n = ((4.0 * half[0] * half[1]) / AREA)
+            .round()
+            .clamp(40.0, 400.0) as usize;
         let mut flat = Flat::new(0x5a17_f1a7, half, n);
         let mut h: u32 = 0x9e3779b9;
         let paint = (0..n)
@@ -299,9 +346,20 @@ impl Toy for Jam {
             Phase::Down => {
                 self.touched = true;
                 let car = self.car_at(q, self.reach());
-                let mode = if car.is_some() { Mode::Pending } else { Mode::Lamp };
+                let mode = if car.is_some() {
+                    Mode::Pending
+                } else {
+                    Mode::Lamp
+                };
                 self.fingers.retain(|f| f.id != e.id);
-                self.fingers.push(Finger { id: e.id, down: q, at: q, t: e.t, car, mode });
+                self.fingers.push(Finger {
+                    id: e.id,
+                    down: q,
+                    at: q,
+                    t: e.t,
+                    car,
+                    mode,
+                });
                 if mode == Mode::Lamp {
                     ctx.haptic();
                 }
@@ -310,7 +368,8 @@ impl Toy for Jam {
                 let slop = 10.0;
                 if let Some(f) = self.fingers.iter_mut().find(|f| f.id == e.id) {
                     f.at = q;
-                    if f.mode == Mode::Pending && (q[0] - f.down[0]).hypot(q[1] - f.down[1]) > slop {
+                    if f.mode == Mode::Pending && (q[0] - f.down[0]).hypot(q[1] - f.down[1]) > slop
+                    {
                         f.mode = Mode::Lead;
                         if let Some(i) = f.car {
                             // a led car leaves its convoy (its followers stay with it)
@@ -381,7 +440,14 @@ impl Toy for Jam {
             .iter()
             .map(|c| {
                 let d = (c.p[0] / half[0]).hypot(c.p[1] / half[1]);
-                (d, (c.v as f32, c.acc as f32, (c.p[0] / half[0]).clamp(-1.0, 1.0) as f32))
+                (
+                    d,
+                    (
+                        c.v as f32,
+                        c.acc as f32,
+                        (c.p[0] / half[0]).clamp(-1.0, 1.0) as f32,
+                    ),
+                )
             })
             .collect();
         near.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -395,7 +461,12 @@ impl Toy for Jam {
         let size = [ctx.width, ctx.height];
         let l = self.layout();
         let m = (l.s * k) as f32; // pixels a metre
-        let px = |p: [f64; 2]| -> [f32; 2] { [((l.c[0] + l.s * p[0]) * k) as f32, ((l.c[1] - l.s * p[1]) * k) as f32] };
+        let px = |p: [f64; 2]| -> [f32; 2] {
+            [
+                ((l.c[0] + l.s * p[0]) * k) as f32,
+                ((l.c[1] - l.s * p[1]) * k) as f32,
+            ]
+        };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
 
         // the tracks: a layer that keeps what the tyres draw, fading slowly
@@ -412,7 +483,15 @@ impl Toy for Jam {
             let kf = 0.5f64.powf(steps * FADE_EVERY / HALF_LIFE);
             let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("tracks fade"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { view: &tracks.view, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store } })],
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &tracks.view,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
@@ -420,7 +499,12 @@ impl Toy for Jam {
             });
             pass.set_pipeline(&self.fade);
             pass.set_bind_group(0, &self.fade_bind, &[]);
-            pass.set_blend_constant(wgpu::Color { r: kf, g: kf, b: kf, a: kf });
+            pass.set_blend_constant(wgpu::Color {
+                r: kf,
+                g: kf,
+                b: kf,
+                a: kf,
+            });
             pass.draw(0..3, 0..1);
         }
         if !self.marks.is_empty() {
@@ -430,12 +514,32 @@ impl Toy for Jam {
                     continue;
                 }
                 let f = 0.5f64.powf(age / HALF_LIFE) as f32;
-                self.painter.line(px(a), px(b), r, 0.7 * m * 0.12 + 0.6, [0.02, 0.022, 0.03, 0.30 * f]);
+                self.painter.line(
+                    px(a),
+                    px(b),
+                    r,
+                    0.7 * m * 0.12 + 0.6,
+                    [0.02, 0.022, 0.03, 0.30 * f],
+                );
             }
             self.painter.render(gpu, &mut enc, &tracks.view, size, None);
         }
 
-        let params = BackdropParams { time: self.t as f32, scale: m, center: [0.0, 0.0], p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] };
+        let params = BackdropParams {
+            time: self.t as f32,
+            scale: m,
+            center: [0.0, 0.0],
+            p: [
+                (l.c[0] * k) as f32,
+                (l.c[1] * k) as f32,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+        };
         self.ground.render(gpu, &mut enc, target, size, &params);
         tracks.composite(&mut enc, target);
 
@@ -446,17 +550,37 @@ impl Toy for Jam {
             let d = c.dir();
             let r = [d[1], -d[0]];
             let (fwd, side) = (fwd * LONG, side * WIDE);
-            px([c.p[0] + d[0] * fwd + r[0] * side, c.p[1] + d[1] * fwd + r[1] * side])
+            px([
+                c.p[0] + d[0] * fwd + r[0] * side,
+                c.p[1] + d[1] * fwd + r[1] * side,
+            ])
         };
 
         // light on the salt: headlights ahead, tail lights behind, a held finger's light
         for c in cars.iter() {
             // headlights: a cone of warm light reaching ahead over the salt, the car's own light
-            for (d, w, a) in [(3.0, 0.9, 0.08), (7.0, 1.5, 0.045), (12.0, 2.3, 0.028), (17.0, 3.1, 0.016)] {
-                self.painter.glow(at(c, half + 0.8, 0.0), at(c, half + d, 0.0), w * m, w * 0.9 * m, [1.0, 0.88, 0.66, a]);
+            for (d, w, a) in [
+                (3.0, 0.9, 0.08),
+                (7.0, 1.5, 0.045),
+                (12.0, 2.3, 0.028),
+                (17.0, 3.1, 0.016),
+            ] {
+                self.painter.glow(
+                    at(c, half + 0.8, 0.0),
+                    at(c, half + d, 0.0),
+                    w * m,
+                    w * 0.9 * m,
+                    [1.0, 0.88, 0.66, a],
+                );
             }
             let red = c.lights as f32;
-            self.painter.glow(at(c, -half - 0.6, 0.0), at(c, -half - 2.4, 0.0), 1.3 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.03 + 0.6 * red]);
+            self.painter.glow(
+                at(c, -half - 0.6, 0.0),
+                at(c, -half - 2.4, 0.0),
+                1.3 * m,
+                2.2 * m,
+                [1.0, 0.07, 0.04, 0.03 + 0.6 * red],
+            );
         }
         let lamp_glow = |p: &mut Painter, w: [f64; 2], a: f32| {
             let q = px(w);
@@ -464,7 +588,17 @@ impl Toy for Jam {
             p.glow(q, q, 1.2 * m, 5.0 * m, [1.0, 0.86, 0.62, 0.35 * a]);
             p.glow(q, q, 0.5 * m, 1.2 * m, [1.0, 0.96, 0.88, 0.9 * a]);
         };
-        let held: Vec<([f64; 2], f32)> = self.fingers.iter().filter(|f| f.mode == Mode::Lamp).map(|f| (self.to_world(&l, f.at), ((self.t - f.t) / 0.3).clamp(0.0, 1.0) as f32)).collect();
+        let held: Vec<([f64; 2], f32)> = self
+            .fingers
+            .iter()
+            .filter(|f| f.mode == Mode::Lamp)
+            .map(|f| {
+                (
+                    self.to_world(&l, f.at),
+                    ((self.t - f.t) / 0.3).clamp(0.0, 1.0) as f32,
+                )
+            })
+            .collect();
         for (w, come) in held {
             lamp_glow(&mut self.painter, w, come);
         }
@@ -481,27 +615,80 @@ impl Toy for Jam {
             let dim = |c: [f32; 3], f: f32, a: f32| [c[0] * f, c[1] * f, c[2] * f, a];
             // shadow (the moon's, from the upper left)
             let sh = |q: [f32; 2]| [q[0] + 0.3 * m, q[1] + 0.4 * m];
-            self.painter.line(sh(at(c, -1.75, 0.0)), sh(at(c, 1.75, 0.0)), 0.95 * m * wd, 0.6 * m, [0.0, 0.0, 0.03, 0.45]);
+            self.painter.line(
+                sh(at(c, -1.75, 0.0)),
+                sh(at(c, 1.75, 0.0)),
+                0.95 * m * wd,
+                0.6 * m,
+                [0.0, 0.0, 0.03, 0.45],
+            );
             for side in [-0.36, 0.36] {
-                self.painter.line(at(c, -1.72, side), at(c, 1.72, side), 0.48 * m * wd, 0.6, dim(col, 0.80, 1.0));
+                self.painter.line(
+                    at(c, -1.72, side),
+                    at(c, 1.72, side),
+                    0.48 * m * wd,
+                    0.6,
+                    dim(col, 0.80, 1.0),
+                );
             }
-            self.painter.line(at(c, -0.95, 0.0), at(c, 0.45, 0.0), 0.56 * m * wd, 0.08 * m, dim(col, 0.95, 1.0));
-            self.painter.line(at(c, 0.86, -0.50), at(c, 0.86, 0.50), 0.24 * m * wd, 0.6, [0.05, 0.07, 0.10, 0.95]);
-            self.painter.line(at(c, -1.30, -0.46), at(c, -1.30, 0.46), 0.17 * m * wd, 0.6, [0.05, 0.07, 0.10, 0.9]);
+            self.painter.line(
+                at(c, -0.95, 0.0),
+                at(c, 0.45, 0.0),
+                0.56 * m * wd,
+                0.08 * m,
+                dim(col, 0.95, 1.0),
+            );
+            self.painter.line(
+                at(c, 0.86, -0.50),
+                at(c, 0.86, 0.50),
+                0.24 * m * wd,
+                0.6,
+                [0.05, 0.07, 0.10, 0.95],
+            );
+            self.painter.line(
+                at(c, -1.30, -0.46),
+                at(c, -1.30, 0.46),
+                0.17 * m * wd,
+                0.6,
+                [0.05, 0.07, 0.10, 0.9],
+            );
             for side in [-0.6, 0.6] {
-                self.painter.disc(at(c, -2.08, side), 0.17 * m * wd, 0.6, [0.35, 0.04, 0.04, 1.0]);
-                self.painter.disc(at(c, 2.10, side), 0.16 * m * wd, 0.6, [0.85, 0.84, 0.78, 1.0]);
+                self.painter.disc(
+                    at(c, -2.08, side),
+                    0.17 * m * wd,
+                    0.6,
+                    [0.35, 0.04, 0.04, 1.0],
+                );
+                self.painter.disc(
+                    at(c, 2.10, side),
+                    0.16 * m * wd,
+                    0.6,
+                    [0.85, 0.84, 0.78, 1.0],
+                );
             }
         }
         // lamps alight
         for c in cars.iter() {
             for side in [-0.6, 0.6] {
-                self.painter.glow(at(c, 2.15, side), at(c, 2.15, side), 0.12 * m, 0.35 * m, [1.0, 0.92, 0.75, 0.5]);
+                self.painter.glow(
+                    at(c, 2.15, side),
+                    at(c, 2.15, side),
+                    0.12 * m,
+                    0.35 * m,
+                    [1.0, 0.92, 0.75, 0.5],
+                );
                 let red = c.lights as f32;
                 let q = at(c, -2.1, side);
-                self.painter.glow(q, q, 0.2 * m * wd, 0.25 * m, [1.0, 0.25, 0.15, 0.18 + 0.82 * red]);
+                self.painter.glow(
+                    q,
+                    q,
+                    0.2 * m * wd,
+                    0.25 * m,
+                    [1.0, 0.25, 0.15, 0.18 + 0.82 * red],
+                );
                 if red > 0.01 {
-                    self.painter.glow(q, q, 0.4 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.55 * red]);
+                    self.painter
+                        .glow(q, q, 0.4 * m, 2.2 * m, [1.0, 0.07, 0.04, 0.55 * red]);
                 }
             }
         }
@@ -509,7 +696,8 @@ impl Toy for Jam {
         for f in &self.fingers {
             if f.mode == Mode::Lead {
                 let q = [(f.at[0] * k) as f32, (f.at[1] * k) as f32];
-                self.painter.glow_ring(q, 5.0 * m, 0.18 * m, 0.4 * m, [1.0, 0.95, 0.88, 0.3]);
+                self.painter
+                    .glow_ring(q, 5.0 * m, 0.18 * m, 0.4 * m, [1.0, 0.95, 0.88, 0.3]);
             }
         }
         // the invitation: until the first touch, the head of the longest convoy breathes a soft halo
@@ -517,17 +705,39 @@ impl Toy for Jam {
         if let (false, Some(i), true) = (self.touched, self.invite, since > 1.2) {
             let p = px(cars[i].p);
             let come = ((since - 1.2) / 0.6).min(1.0) as f32;
-            let breathe = if self.still { 0.8 } else { 0.55 + 0.45 * (0.5 + 0.5 * ((since - 1.2) * 2.4).sin()) as f32 };
+            let breathe = if self.still {
+                0.8
+            } else {
+                0.55 + 0.45 * (0.5 + 0.5 * ((since - 1.2) * 2.4).sin()) as f32
+            };
             let r = (4.6 + 0.5 * breathe) * m;
-            self.painter.glow_ring(p, r, 0.22 * m, 0.35 * m, [1.0, 0.97, 0.90, 0.55 * come * breathe]);
-            self.painter.glow(p, p, r * 0.8, r * 0.6, [1.0, 0.95, 0.85, 0.05 * come * breathe]);
+            self.painter.glow_ring(
+                p,
+                r,
+                0.22 * m,
+                0.35 * m,
+                [1.0, 0.97, 0.90, 0.55 * come * breathe],
+            );
+            self.painter.glow(
+                p,
+                p,
+                r * 0.8,
+                r * 0.6,
+                [1.0, 0.95, 0.85, 0.05 * come * breathe],
+            );
         }
         // a tap: a soft ring from the car
         for &(p, at_t) in &self.taps {
             let a = ((self.t - at_t) / 0.9).clamp(0.0, 1.0) as f32;
             if a < 1.0 {
                 let q = [(p[0] * k) as f32, (p[1] * k) as f32];
-                self.painter.glow_ring(q, (3.0 + 6.0 * a) * m, 0.25 * m, 0.4 * m, [1.0, 0.95, 0.9, 0.5 * (1.0 - a)]);
+                self.painter.glow_ring(
+                    q,
+                    (3.0 + 6.0 * a) * m,
+                    0.25 * m,
+                    0.4 * m,
+                    [1.0, 0.95, 0.9, 0.5 * (1.0 - a)],
+                );
             }
         }
         self.painter.render(gpu, &mut enc, target, size, None);
@@ -544,7 +754,13 @@ impl Toy for Jam {
 
     fn anchors(&self) -> Vec<(String, [f64; 2])> {
         let l = self.layout();
-        let mut a: Vec<(String, [f64; 2])> = self.flat.cars.iter().enumerate().map(|(i, c)| (format!("car{i}"), self.to_screen(&l, c.p))).collect();
+        let mut a: Vec<(String, [f64; 2])> = self
+            .flat
+            .cars
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (format!("car{i}"), self.to_screen(&l, c.p)))
+            .collect();
         let (head, _) = self.longest();
         a.push(("head".into(), self.to_screen(&l, self.flat.cars[head].p)));
         // a car well back in the longest convoy
@@ -557,9 +773,17 @@ impl Toy for Jam {
         let mut best = (0.0, l.c);
         for gy in 3..10 {
             for gx in 1..5 {
-                let q = [self.points[0] * gx as f64 / 5.0, self.points[1] * gy as f64 / 12.0];
+                let q = [
+                    self.points[0] * gx as f64 / 5.0,
+                    self.points[1] * gy as f64 / 12.0,
+                ];
                 let w = self.to_world(&l, q);
-                let d = self.flat.cars.iter().map(|c| (c.p[0] - w[0]).hypot(c.p[1] - w[1])).fold(f64::MAX, f64::min);
+                let d = self
+                    .flat
+                    .cars
+                    .iter()
+                    .map(|c| (c.p[0] - w[0]).hypot(c.p[1] - w[1]))
+                    .fold(f64::MAX, f64::min);
                 if d > best.0 {
                     best = (d, q);
                 }
@@ -578,7 +802,10 @@ impl Toy for Jam {
         let c = &self.flat.cars[head];
         let d = c.dir();
         let p = self.to_screen(&l, [c.p[0] + d[0] * c.v * 0.5, c.p[1] + d[1] * c.v * 0.5]);
-        Some(toy_kit::info::Demo::new("Tap a car, and everyone behind it stops.", vec![toy_kit::info::Stroke::tap(0.5, p)]))
+        Some(toy_kit::info::Demo::new(
+            "Tap a car, and everyone behind it stops.",
+            vec![toy_kit::info::Stroke::tap(0.5, p)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

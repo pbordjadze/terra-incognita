@@ -49,17 +49,35 @@ pub struct Inside<T: Toy> {
 /// A new context on the same device and data, the screen's size and settings.
 pub fn context(from: &Ctx, assets: &Arc<dyn Assets>) -> Ctx {
     let g = &from.gpu;
-    let gpu = Gpu { device: g.device.clone(), queue: g.queue.clone(), format: g.format, adapter_info: g.adapter_info.clone() };
-    let mut ctx = Ctx::new(gpu, Box::new(Shared(assets.clone())), from.width, from.height, from.ppp);
+    let gpu = Gpu {
+        device: g.device.clone(),
+        queue: g.queue.clone(),
+        format: g.format,
+        adapter_info: g.adapter_info.clone(),
+    };
+    let mut ctx = Ctx::new(
+        gpu,
+        Box::new(Shared(assets.clone())),
+        from.width,
+        from.height,
+        from.ppp,
+    );
     ctx.night = from.night;
     ctx.reduce_motion = from.reduce_motion;
     ctx
 }
 
-pub fn open<T: Toy + 'static>(from: &Ctx, assets: &Arc<dyn Assets>) -> anyhow::Result<Box<dyn Room>> {
+pub fn open<T: Toy + 'static>(
+    from: &Ctx,
+    assets: &Arc<dyn Assets>,
+) -> anyhow::Result<Box<dyn Room>> {
     let mut ctx = context(from, assets);
     let toy = T::new(&mut ctx)?;
-    Ok(Box::new(Inside { ctx, toy, last_t: None }))
+    Ok(Box::new(Inside {
+        ctx,
+        toy,
+        last_t: None,
+    }))
 }
 
 /// What a toy saves with its camera changed to `cam` (None: no camera in it).
@@ -70,7 +88,10 @@ pub fn with_camera(saved: &str, cam: Camera) -> Option<String> {
         serde_json::Value::Object(m) if m.contains_key("camera") => {
             m.insert("camera".into(), c);
         }
-        serde_json::Value::Array(a) if a.last().is_some_and(|l| serde_json::from_value::<Camera>(l.clone()).is_ok()) => {
+        serde_json::Value::Array(a)
+            if a.last()
+                .is_some_and(|l| serde_json::from_value::<Camera>(l.clone()).is_ok()) =>
+        {
             *a.last_mut()? = c;
         }
         _ => return None,
@@ -138,7 +159,9 @@ impl<T: Toy> Room for Inside<T> {
         self.toy.save().as_deref().and_then(saved_camera)
     }
     fn set_camera(&mut self, cam: Camera) -> bool {
-        let Some(s) = self.toy.save().and_then(|s| with_camera(&s, cam)) else { return false };
+        let Some(s) = self.toy.save().and_then(|s| with_camera(&s, cam)) else {
+            return false;
+        };
         self.toy.restore(&mut self.ctx, &s);
         true
     }

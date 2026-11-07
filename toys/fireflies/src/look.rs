@@ -271,9 +271,19 @@ impl Look {
         u[5] = width as f32;
         for (k, r) in rings.iter().take(MAX_RINGS).enumerate() {
             let o = 8 + k * 8;
-            u[o..o + 8].copy_from_slice(&[r.at[0] as f32, r.at[1] as f32, r.at[2] as f32, r.t0 as f32, r.speed as f32, r.life as f32, 1.0, 0.0]);
+            u[o..o + 8].copy_from_slice(&[
+                r.at[0] as f32,
+                r.at[1] as f32,
+                r.at[2] as f32,
+                r.t0 as f32,
+                r.speed as f32,
+                r.life as f32,
+                1.0,
+                0.0,
+            ]);
         }
-        gpu.queue.write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&u));
+        gpu.queue
+            .write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&u));
     }
 
     /// The flash field, then the night with it, into `target`.

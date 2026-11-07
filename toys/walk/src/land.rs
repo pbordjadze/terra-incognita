@@ -82,28 +82,58 @@ impl Land {
             tries += 1;
             let c = [r.range(0.2, 0.8), r.range(0.16, 0.84) * aspect];
             let need = gap * (1.0 - tries as f64 / 8000.0);
-            if hills.iter().all(|h| (h[0] - c[0]).hypot(h[1] - c[1]) > need) {
+            if hills
+                .iter()
+                .all(|h| (h[0] - c[0]).hypot(h[1] - c[1]) > need)
+            {
                 hills.push(c);
             }
         }
-        let heights = [1.0, r.range(0.80, 0.94), r.range(0.66, 0.84), r.range(0.62, 0.76)];
+        let heights = [
+            1.0,
+            r.range(0.80, 0.94),
+            r.range(0.66, 0.84),
+            r.range(0.62, 0.76),
+        ];
         for (i, &c) in hills.iter().enumerate() {
             let sigma = r.range(0.10, 0.13);
-            bumps.push(Bump { c, sigma, amp: heights[i] });
+            bumps.push(Bump {
+                c,
+                sigma,
+                amp: heights[i],
+            });
             // its shoulders, spurs and hollows: the fine detail small steps find
             for _ in 0..6 {
                 let a = r.range(0.0, std::f64::consts::TAU);
                 let d = r.range(0.3, 1.5) * sigma;
                 let s = r.range(0.022, 0.04);
-                let amp = if r.f() < 0.65 { r.range(0.08, 0.15) } else { -r.range(0.06, 0.11) };
-                bumps.push(Bump { c: [c[0] + d * a.cos(), c[1] + d * a.sin()], sigma: s, amp });
+                let amp = if r.f() < 0.65 {
+                    r.range(0.08, 0.15)
+                } else {
+                    -r.range(0.06, 0.11)
+                };
+                bumps.push(Bump {
+                    c: [c[0] + d * a.cos(), c[1] + d * a.sin()],
+                    sigma: s,
+                    amp,
+                });
             }
         }
         // the plain between: gentle swells, low
         for _ in 0..4 {
-            bumps.push(Bump { c: [r.range(0.0, 1.0), r.range(0.0, aspect)], sigma: r.range(0.18, 0.28), amp: r.range(0.04, 0.09) });
+            bumps.push(Bump {
+                c: [r.range(0.0, 1.0), r.range(0.0, aspect)],
+                sigma: r.range(0.18, 0.28),
+                amp: r.range(0.04, 0.09),
+            });
         }
-        let mut land = Land { aspect, bumps, hills, top: 1.0, log_z: 0.0 };
+        let mut land = Land {
+            aspect,
+            bumps,
+            hills,
+            top: 1.0,
+            log_z: 0.0,
+        };
         // the summit and the normalising constant, on a fine grid
         let (nx, ny) = (360, (360.0 * aspect) as usize);
         let da = (1.0 / nx as f64) * (aspect / ny as f64);
@@ -111,7 +141,10 @@ impl Land {
         let mut hs = Vec::with_capacity(nx * ny);
         for j in 0..ny {
             for i in 0..nx {
-                let h = land.h([(i as f64 + 0.5) / nx as f64, (j as f64 + 0.5) / ny as f64 * aspect]);
+                let h = land.h([
+                    (i as f64 + 0.5) / nx as f64,
+                    (j as f64 + 0.5) / ny as f64 * aspect,
+                ]);
                 top = top.max(h);
                 hs.push(h);
             }
@@ -152,15 +185,21 @@ impl Land {
     /// The hill nearest the screen's middle (the first night's, so the others lie above and below it).
     pub fn middle_hill(&self) -> usize {
         let m = [0.5, 0.5 * self.aspect];
-        (0..self.hills.len()).min_by(|&a, &b| {
-            let d = |i: usize| (self.hills[i][0] - m[0]).hypot(self.hills[i][1] - m[1]);
-            d(a).total_cmp(&d(b))
-        }).unwrap_or(0)
+        (0..self.hills.len())
+            .min_by(|&a, &b| {
+                let d = |i: usize| (self.hills[i][0] - m[0]).hypot(self.hills[i][1] - m[1]);
+                d(a).total_cmp(&d(b))
+            })
+            .unwrap_or(0)
     }
 
     /// A place on hill `k`'s shoulder.
     pub fn start_on(&self, k: usize, r: &mut Rng) -> [f64; 2] {
-        let c = self.hills.get(k).copied().unwrap_or([0.5, 0.5 * self.aspect]);
+        let c = self
+            .hills
+            .get(k)
+            .copied()
+            .unwrap_or([0.5, 0.5 * self.aspect]);
         for _ in 0..200 {
             let a = r.range(0.0, std::f64::consts::TAU);
             let d = r.range(0.07, 0.12);
@@ -202,7 +241,17 @@ impl Walker {
         let mut rng = Rng::new(seed);
         let at = land.start(&mut rng);
         let gh = ((GW as f64) * land.aspect).ceil() as usize;
-        Walker { at, h: land.h(at), stride, rng, tries: 0, went: 0, gh, prints: vec![0.0; GW * gh], count: 0 }
+        Walker {
+            at,
+            h: land.h(at),
+            stride,
+            rng,
+            tries: 0,
+            went: 0,
+            gh,
+            prints: vec![0.0; GW * gh],
+            count: 0,
+        }
     }
 
     /// One try: Metropolis's rule, exactly.
@@ -249,7 +298,8 @@ impl Walker {
             for dx in -REACH..=REACH {
                 let (cx, cy) = (ix + dx, iy + dy);
                 if cx >= 0 && cy >= 0 && (cx as usize) < GW && (cy as usize) < self.gh {
-                    self.prints[cy as usize * GW + cx as usize] += (w[(dy + REACH) as usize][(dx + REACH) as usize] / sum) as f32;
+                    self.prints[cy as usize * GW + cx as usize] +=
+                        (w[(dy + REACH) as usize][(dx + REACH) as usize] / sum) as f32;
                 }
             }
         }
@@ -270,7 +320,13 @@ mod tests {
 
     /// Which hill a place belongs to (the nearest summit), or none on the plain.
     fn hill_of(land: &Land, p: [f64; 2]) -> Option<usize> {
-        land.hills.iter().enumerate().map(|(i, c)| (i, (c[0] - p[0]).hypot(c[1] - p[1]))).filter(|(_, d)| *d < 0.2).min_by(|a, b| a.1.total_cmp(&b.1)).map(|(i, _)| i)
+        land.hills
+            .iter()
+            .enumerate()
+            .map(|(i, c)| (i, (c[0] - p[0]).hypot(c[1] - p[1])))
+            .filter(|(_, d)| *d < 0.2)
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+            .map(|(i, _)| i)
     }
 
     /// One night (40 s at the toy's pace): the share of tries that went, the hills visited, the times
@@ -291,12 +347,21 @@ mod tests {
                 last = Some(k);
             }
         }
-        (w.went_share(), seen.iter().filter(|s| **s).count(), crossings)
+        (
+            w.went_share(),
+            seen.iter().filter(|s| **s).count(),
+            crossings,
+        )
     }
 
     #[test]
     fn strides_feel_different() {
-        for (name, stride) in [("tiny", 0.008), ("small", 0.035), ("good", 0.3), ("huge", 2.0)] {
+        for (name, stride) in [
+            ("tiny", 0.008),
+            ("small", 0.035),
+            ("good", 0.3),
+            ("huge", 2.0),
+        ] {
             let mut sum = (0.0, 0.0, 0.0);
             let n = 24;
             for s in 0..n {
@@ -305,13 +370,19 @@ mod tests {
                 sum.1 += h as f64 / n as f64;
                 sum.2 += c as f64 / n as f64;
             }
-            eprintln!("{name:6} stride {stride:5}: went {:.2}, hills seen {:.2}, crossings {:.1}", sum.0, sum.1, sum.2);
+            eprintln!(
+                "{name:6} stride {stride:5}: went {:.2}, hills seen {:.2}, crossings {:.1}",
+                sum.0, sum.1, sum.2
+            );
             match name {
                 // tiny steps: nearly every one goes, and the walker stays on its first hill
                 "tiny" => assert!(sum.0 > 0.9 && sum.1 < 1.3, "tiny"),
                 "small" => assert!(sum.0 > 0.6 && sum.1 < 1.8, "small"),
                 // a good stride: about half go, and the walker crosses between hills many times
-                "good" => assert!(sum.0 > 0.12 && sum.0 < 0.6 && sum.1 > 2.5 && sum.2 > 10.0, "good"),
+                "good" => assert!(
+                    sum.0 > 0.12 && sum.0 < 0.6 && sum.1 > 2.5 && sum.2 > 10.0,
+                    "good"
+                ),
                 // huge strides: almost every one is refused
                 _ => assert!(sum.0 < 0.06, "huge"),
             }

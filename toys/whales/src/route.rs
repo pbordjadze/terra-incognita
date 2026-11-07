@@ -27,9 +27,23 @@ pub struct Route {
 pub fn load(json: &[u8], names: [&str; 2]) -> anyhow::Result<[Route; 2]> {
     let f: File = serde_json::from_slice(json)?;
     let one = |n: &str| -> anyhow::Result<Route> {
-        let r = f.whales.get(n).ok_or_else(|| anyhow::anyhow!("no route for {n}"))?;
-        anyhow::ensure!(r.track.len() >= 2 && r.sings.len() == 12, "a short route for {n}");
-        Ok(Route { per_day: f.per_day, track: r.track.iter().map(|p| LonLat::new(p[0], p[1]).to_xyz()).collect(), sings: r.sings.clone() })
+        let r = f
+            .whales
+            .get(n)
+            .ok_or_else(|| anyhow::anyhow!("no route for {n}"))?;
+        anyhow::ensure!(
+            r.track.len() >= 2 && r.sings.len() == 12,
+            "a short route for {n}"
+        );
+        Ok(Route {
+            per_day: f.per_day,
+            track: r
+                .track
+                .iter()
+                .map(|p| LonLat::new(p[0], p[1]).to_xyz())
+                .collect(),
+            sings: r.sings.clone(),
+        })
     };
     Ok([one(names[0])?, one(names[1])?])
 }
@@ -52,7 +66,12 @@ impl Route {
         let (p1, p2) = (self.track[i], self.track[j]);
         let p3 = self.track[(j + 1) % n];
         let (t2, t3) = (t * t, t * t * t);
-        let c = |k: usize| 0.5 * (2.0 * p1[k] + (-p0[k] + p2[k]) * t + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * t2 + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * t3);
+        let c = |k: usize| {
+            0.5 * (2.0 * p1[k]
+                + (-p0[k] + p2[k]) * t
+                + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * t2
+                + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * t3)
+        };
         norm([c(0), c(1), c(2)])
     }
 

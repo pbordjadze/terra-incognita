@@ -53,7 +53,15 @@ impl Song {
     pub fn new(name: &str, rate: f64, l: Vec<f32>, r: Vec<f32>) -> Song {
         let (beat, first) = crate::tempo::beat(&l, &r, rate);
         let shape = shape(&l, &r);
-        Song { name: name.into(), rate, l, r, beat, first, shape }
+        Song {
+            name: name.into(),
+            rate,
+            l,
+            r,
+            beat,
+            first,
+            shape,
+        }
     }
 
     pub fn seconds(&self) -> f64 {
@@ -71,7 +79,9 @@ impl Song {
         let cubic = |v: &Vec<f32>| {
             let (a, b, c, d) = (get(v, i - 1), get(v, i), get(v, i + 1), get(v, i + 2));
             // Catmull-Rom
-            b + 0.5 * f * (c - a + f * (2.0 * a - 5.0 * b + 4.0 * c - d + f * (3.0 * (b - c) + d - a)))
+            b + 0.5
+                * f
+                * (c - a + f * (2.0 * a - 5.0 * b + 4.0 * c - d + f * (3.0 * (b - c) + d - a)))
         };
         (cubic(&self.l), cubic(&self.r))
     }
@@ -135,12 +145,22 @@ pub struct Deck {
 
 impl Deck {
     pub fn new() -> Deck {
-        Deck { pitch: 1.0, ..Default::default() }
+        Deck {
+            pitch: 1.0,
+            ..Default::default()
+        }
     }
 
     pub fn load(&mut self, song: Arc<Song>) {
         self.song = Some(song);
-        (self.pos, self.vel, self.motor, self.cut, self.hand, self.rewind) = (0.0, 0.0, false, None, false, None);
+        (
+            self.pos,
+            self.vel,
+            self.motor,
+            self.cut,
+            self.hand,
+            self.rewind,
+        ) = (0.0, 0.0, false, None, false, None);
     }
 
     pub fn beat(&self) -> f64 {
@@ -174,7 +194,6 @@ impl Deck {
         self.turns -= 0.05;
     }
 
-
     /// Bring it back: spun back two bars by hand, then dropped.
     pub fn rewind(&mut self) {
         if self.song.is_none() || self.rewind.is_some() {
@@ -188,7 +207,12 @@ impl Deck {
             return;
         }
         let share = back / (REWIND_BEATS * self.beat());
-        self.rewind = Some(Rewind { from: self.pos, to, t: 0.0, dur: 0.30 + 0.45 * share });
+        self.rewind = Some(Rewind {
+            from: self.pos,
+            to,
+            t: 0.0,
+            dur: 0.30 + 0.45 * share,
+        });
         self.rewinds += 1;
         self.motor = true;
     }
@@ -222,7 +246,11 @@ impl Deck {
             if self.motor {
                 // a hand on the record drags it down slowly, as a palm on a platter does; lifted, the
                 // motor pulls it back to the fader's speed
-                let (target, tau) = if self.hand { (self.pitch * HAND, HAND_S) } else { (self.pitch, FOLLOW_S) };
+                let (target, tau) = if self.hand {
+                    (self.pitch * HAND, HAND_S)
+                } else {
+                    (self.pitch, FOLLOW_S)
+                };
                 let d = target - self.vel;
                 let limit = PULL * dt;
                 self.vel += (d * (dt / tau).min(1.0)).clamp(-limit, limit);
@@ -348,7 +376,15 @@ mod tests {
                 }
             }
         }
-        Arc::new(Song { name: "test".into(), rate, r: l.clone(), l, beat, first: 0.0, shape: vec![0.5; SHAPE] })
+        Arc::new(Song {
+            name: "test".into(),
+            rate,
+            r: l.clone(),
+            l,
+            beat,
+            first: 0.0,
+            shape: vec![0.5; SHAPE],
+        })
     }
 
     fn deck(song: Arc<Song>) -> Deck {
@@ -366,7 +402,12 @@ mod tests {
 
     /// The tone's frequency by its rising zero crossings.
     fn freq(x: &[f32]) -> f64 {
-        let ups: Vec<f64> = x.windows(2).enumerate().filter(|(_, w)| w[0] <= 0.0 && w[1] > 0.0).map(|(i, w)| i as f64 + (-w[0] / (w[1] - w[0])) as f64).collect();
+        let ups: Vec<f64> = x
+            .windows(2)
+            .enumerate()
+            .filter(|(_, w)| w[0] <= 0.0 && w[1] > 0.0)
+            .map(|(i, w)| i as f64 + (-w[0] / (w[1] - w[0])) as f64)
+            .collect();
         (ups.len() - 1) as f64 / ((ups[ups.len() - 1] - ups[0]) / R)
     }
 
@@ -382,7 +423,10 @@ mod tests {
         let moved = d.pos - p0;
         eprintln!("measured: at pitch 0.7 a 440 Hz tone comes out at {f:.1} Hz, and the song moved {moved:.3} s in 2 s");
         assert!((f - 308.0).abs() < 1.0, "the tone at 0.7: {f}");
-        assert!((moved - 1.4).abs() < 0.005, "the song moved {moved} s in 2 s at 0.7");
+        assert!(
+            (moved - 1.4).abs() < 0.005,
+            "the song moved {moved} s in 2 s at 0.7"
+        );
     }
 
     #[test]
@@ -415,10 +459,16 @@ mod tests {
             let want = beat / pitch;
             for w in at.windows(2) {
                 let gap = w[1] - w[0];
-                assert!((gap - want).abs() < 0.0015, "pitch {pitch}: clicks {gap:.4} s apart, want {want:.4}: {at:?}");
+                assert!(
+                    (gap - want).abs() < 0.0015,
+                    "pitch {pitch}: clicks {gap:.4} s apart, want {want:.4}: {at:?}"
+                );
             }
             assert!(at.len() >= 4);
-            let gaps: Vec<String> = at.windows(2).map(|w| format!("{:.4}", w[1] - w[0])).collect();
+            let gaps: Vec<String> = at
+                .windows(2)
+                .map(|w| format!("{:.4}", w[1] - w[0]))
+                .collect();
             eprintln!("measured: at pitch {pitch}, two chops, the clicks heard {} s apart (a beat at this speed: {want:.4} s)", gaps.join(", "));
         }
     }
@@ -428,13 +478,21 @@ mod tests {
         let mut d = deck(record(220.0, 87.0, 20.0, false));
         run(&mut d, 1.0);
         let steady = run(&mut d, 0.5);
-        let jerk = |x: &[f32]| x.windows(3).map(|w| (w[2] - 2.0 * w[1] + w[0]).abs()).fold(0.0f32, f32::max);
+        let jerk = |x: &[f32]| {
+            x.windows(3)
+                .map(|w| (w[2] - 2.0 * w[1] + w[0]).abs())
+                .fold(0.0f32, f32::max)
+        };
         let calm = jerk(&steady);
         for k in 0..12 {
             run(&mut d, 0.13 + 0.07 * k as f64);
             d.chop();
             let cut = run(&mut d, 0.05);
-            assert!(jerk(&cut) < calm * 1.6, "cut {k}: {} against {calm}", jerk(&cut));
+            assert!(
+                jerk(&cut) < calm * 1.6,
+                "cut {k}: {} against {calm}",
+                jerk(&cut)
+            );
             if k == 11 {
                 eprintln!("measured: the sharpest bend in the wave across 12 cuts is at most 1.6x the tone's own (the last: {:.2}x)", jerk(&cut) / calm);
             }
@@ -448,7 +506,11 @@ mod tests {
         d.hand = true;
         run(&mut d, 1.5);
         let f = freq(&run(&mut d, 0.5));
-        assert!((d.vel - 0.7).abs() < 0.01 && (f - 308.0).abs() < 4.0, "under the hand: {} at {f}", d.vel);
+        assert!(
+            (d.vel - 0.7).abs() < 0.01 && (f - 308.0).abs() < 4.0,
+            "under the hand: {} at {f}",
+            d.vel
+        );
         d.hand = false;
         run(&mut d, 0.6);
         assert!((d.vel - 1.0).abs() < 1e-3);
@@ -473,7 +535,11 @@ mod tests {
         assert!(d.turns < turns, "the record turned backward");
         assert!(!d.rewinding());
         let landed = from - 8.0 * 0.75;
-        assert!((d.pos - landed).abs() < 0.01, "landed at {} for {landed}", d.pos);
+        assert!(
+            (d.pos - landed).abs() < 0.01,
+            "landed at {} for {landed}",
+            d.pos
+        );
         eprintln!("measured: on a record at 80 BPM (a beat of 0.75 s), a rewind from {from:.2} s lands at {:.2} s (two bars, 8 beats, back: {landed:.2})", d.pos);
         run(&mut d, 1.0);
         assert!((d.vel - 1.0).abs() < 1e-3, "and plays on");
@@ -486,7 +552,10 @@ mod tests {
         }
         run(&mut d, 1.0);
         assert!((d.vel - 0.7).abs() < 1e-3);
-        eprintln!("measured: screwed to 0.7, rewound, it plays on at {:.3}", d.vel);
+        eprintln!(
+            "measured: screwed to 0.7, rewound, it plays on at {:.3}",
+            d.vel
+        );
     }
 
     #[test]

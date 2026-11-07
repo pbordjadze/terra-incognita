@@ -23,10 +23,21 @@ pub struct Shell {
 /// Makes the app over a CAMetalLayer. `scale` is the screen's pixels a point; `assets` the bundle's
 /// resource directory. Null on failure (the reason is logged).
 #[no_mangle]
-pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32, scale: f64, assets: *const c_char) -> *mut Shell {
+pub unsafe extern "C" fn adrift_new(
+    layer: *mut c_void,
+    width: u32,
+    height: u32,
+    scale: f64,
+    assets: *const c_char,
+) -> *mut Shell {
     let dir = CStr::from_ptr(assets).to_string_lossy().into_owned();
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
-    let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::METAL,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    });
+    let surface = match instance
+        .create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer))
+    {
         Ok(s) => s,
         Err(e) => {
             eprintln!("adrift: no surface: {e}");
@@ -59,7 +70,16 @@ pub unsafe extern "C" fn adrift_new(layer: *mut c_void, width: u32, height: u32,
             return std::ptr::null_mut();
         }
     };
-    Box::into_raw(Box::new(Shell { _instance: instance, surface, config, app, store: None, stats_at: 0.0, export: None, readback: None }))
+    Box::into_raw(Box::new(Shell {
+        _instance: instance,
+        surface,
+        config,
+        app,
+        store: None,
+        stats_at: 0.0,
+        export: None,
+        readback: None,
+    }))
 }
 
 #[no_mangle]
@@ -98,7 +118,14 @@ pub unsafe extern "C" fn adrift_frame(shell: *mut Shell, t: f64) {
 
 /// A touch: `phase` 0 down, 1 move, 2 up, 3 cancel; x, y in points; t seconds.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_pointer(shell: *mut Shell, id: u64, phase: u32, x: f64, y: f64, t: f64) {
+pub unsafe extern "C" fn adrift_pointer(
+    shell: *mut Shell,
+    id: u64,
+    phase: u32,
+    x: f64,
+    y: f64,
+    t: f64,
+) {
     let Some(s) = shell.as_mut() else { return };
     // (R24) while an export renders, a touch does nothing to the world (the clip is the take's)
     if s.export.is_some() {
@@ -182,7 +209,12 @@ pub unsafe extern "C" fn adrift_take_export(shell: *mut Shell) -> bool {
 /// Begins exporting the newest take at `fps`: the frames to come (0: nothing to export), and the
 /// video's size in pixels written to `width`, `height` (even sides).
 #[no_mangle]
-pub unsafe extern "C" fn adrift_export_begin(shell: *mut Shell, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+pub unsafe extern "C" fn adrift_export_begin(
+    shell: *mut Shell,
+    fps: f64,
+    width: *mut u32,
+    height: *mut u32,
+) -> u32 {
     let Some(s) = shell.as_mut() else { return 0 };
     let frames = s.app.export_begin(None, fps);
     if frames == 0 {
@@ -204,13 +236,25 @@ pub unsafe extern "C" fn adrift_export_begin(shell: *mut Shell, fps: f64, width:
 /// Renders the export's next frame into `out`: BGRA, rows top down, `stride` bytes apart (a
 /// CVPixelBuffer's bytes per row). False when the export is done.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_export_frame(shell: *mut Shell, out: *mut u8, stride: usize) -> bool {
-    let Some(s) = shell.as_mut() else { return false };
-    let Some(target) = s.export.as_ref() else { return false };
-    let Some((w, h)) = s.app.export_size() else { return false };
+pub unsafe extern "C" fn adrift_export_frame(
+    shell: *mut Shell,
+    out: *mut u8,
+    stride: usize,
+) -> bool {
+    let Some(s) = shell.as_mut() else {
+        return false;
+    };
+    let Some(target) = s.export.as_ref() else {
+        return false;
+    };
+    let Some((w, h)) = s.app.export_size() else {
+        return false;
+    };
     // (R24) two frames in flight: the next is drawn while the last is read back, straight into the
     // encoder's buffer, BGRA as it is drawn (no allocation, no swizzle on the phone)
-    let rb = s.readback.get_or_insert_with(|| crate::gpu::Readback::new(&s.app.gpu, target, 2));
+    let rb = s
+        .readback
+        .get_or_insert_with(|| crate::gpu::Readback::new(&s.app.gpu, target, 2));
     while rb.has_room() {
         match s.app.export_render(target) {
             Some(true) => rb.submit(&s.app.gpu, target),
@@ -244,15 +288,31 @@ pub unsafe extern "C" fn adrift_panel_count(shell: *mut Shell) -> u32 {
 /// The panel's `i`th mark: its rect in points written to `rect` (x, y, w, h) and its words, UTF-8 and
 /// NUL-terminated, into `words` (at most `len` bytes). False past the last.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_panel_item(shell: *mut Shell, i: u32, rect: *mut f32, words: *mut u8, len: usize) -> bool {
-    let Some(s) = shell.as_ref() else { return false };
+pub unsafe extern "C" fn adrift_panel_item(
+    shell: *mut Shell,
+    i: u32,
+    rect: *mut f32,
+    words: *mut u8,
+    len: usize,
+) -> bool {
+    let Some(s) = shell.as_ref() else {
+        return false;
+    };
     let bounds = s.app.panel_bounds();
-    let Some((id, r)) = bounds.get(i as usize) else { return false };
+    let Some((id, r)) = bounds.get(i as usize) else {
+        return false;
+    };
     if !rect.is_null() {
         std::ptr::copy_nonoverlapping(r.as_ptr(), rect, 4);
     }
     if !words.is_null() && len > 0 {
-        let text = s.app.panel_words().into_iter().find(|(w, _)| w == id).map(|(_, t)| t).unwrap_or_else(|| format!("Lamp {id}"));
+        let text = s
+            .app
+            .panel_words()
+            .into_iter()
+            .find(|(w, _)| w == id)
+            .map(|(_, t)| t)
+            .unwrap_or_else(|| format!("Lamp {id}"));
         let b = text.as_bytes();
         let n = b.len().min(len - 1);
         std::ptr::copy_nonoverlapping(b.as_ptr(), words, n);
@@ -266,7 +326,15 @@ pub unsafe extern "C" fn adrift_panel_item(shell: *mut Shell, i: u32, rect: *mut
 #[no_mangle]
 pub unsafe extern "C" fn adrift_set_song(shell: *mut Shell, name: *const std::os::raw::c_char) {
     let Some(s) = shell.as_mut() else { return };
-    let name = if name.is_null() { None } else { Some(std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned()) };
+    let name = if name.is_null() {
+        None
+    } else {
+        Some(
+            std::ffi::CStr::from_ptr(name)
+                .to_string_lossy()
+                .into_owned(),
+        )
+    };
     s.app.set_song(name);
 }
 
@@ -280,9 +348,17 @@ pub unsafe extern "C" fn adrift_recording(shell: *mut Shell) -> bool {
 /// While exporting: whether the take had a song, and if so where it begins in the clip and how long
 /// it runs, seconds, written to `start` and `length` (R12).
 #[no_mangle]
-pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, length: *mut f64) -> bool {
-    let Some(s) = shell.as_ref() else { return false };
-    let Some((a, n)) = s.app.export_song() else { return false };
+pub unsafe extern "C" fn adrift_export_song(
+    shell: *mut Shell,
+    start: *mut f64,
+    length: *mut f64,
+) -> bool {
+    let Some(s) = shell.as_ref() else {
+        return false;
+    };
+    let Some((a, n)) = s.app.export_song() else {
+        return false;
+    };
     if let Some(p) = start.as_mut() {
         *p = a;
     }
@@ -295,8 +371,16 @@ pub unsafe extern "C" fn adrift_export_song(shell: *mut Shell, start: *mut f64, 
 /// Whether the studio's menu was asked for since last asked (R13), and what it can offer: how many
 /// lamps a journey clip or a copy would take (`picked`) and how many takes are kept (`takes`).
 #[no_mangle]
-pub unsafe extern "C" fn adrift_menu(shell: *mut Shell, picked: *mut u32, takes: *mut u32, chosen: *mut u32, kept: *mut u32) -> bool {
-    let Some(s) = shell.as_mut() else { return false };
+pub unsafe extern "C" fn adrift_menu(
+    shell: *mut Shell,
+    picked: *mut u32,
+    takes: *mut u32,
+    chosen: *mut u32,
+    kept: *mut u32,
+) -> bool {
+    let Some(s) = shell.as_mut() else {
+        return false;
+    };
     if !s.app.menu_wanted() {
         return false;
     }
@@ -329,7 +413,11 @@ pub unsafe extern "C" fn adrift_medium(shell: *mut Shell) -> u32 {
 #[no_mangle]
 pub unsafe extern "C" fn adrift_set_medium(shell: *mut Shell, medium: u32) {
     if let Some(s) = shell.as_mut() {
-        let medium = if medium == 1 { crate::model::Medium::Wind } else { crate::model::Medium::Sea };
+        let medium = if medium == 1 {
+            crate::model::Medium::Wind
+        } else {
+            crate::model::Medium::Sea
+        };
         s.app.command(crate::model::Intent::Medium { medium });
     }
 }
@@ -344,16 +432,42 @@ pub unsafe extern "C" fn adrift_keep(shell: *mut Shell, on: bool) -> u32 {
 /// to come (0: nothing to make), the video's size written to `width`, `height`. Then
 /// `adrift_export_frame` until false and `adrift_export_end`, as for a take.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_journey_begin(shell: *mut Shell, seconds: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
-    adrift_journey_begin_edit(shell, seconds, f64::NAN, f64::NAN, f64::NAN, fps, width, height)
+pub unsafe extern "C" fn adrift_journey_begin(
+    shell: *mut Shell,
+    seconds: f64,
+    fps: f64,
+    width: *mut u32,
+    height: *mut u32,
+) -> u32 {
+    adrift_journey_begin_edit(
+        shell,
+        seconds,
+        f64::NAN,
+        f64::NAN,
+        f64::NAN,
+        fps,
+        width,
+        height,
+    )
 }
 
 /// The edit view's days (R23): the first day the picked lamps are all out, the app's date, and the
 /// days a journey of `seconds` shows by default; false when no lamp is picked.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_journey_bounds(shell: *mut Shell, seconds: f64, born: *mut f64, now: *mut f64, from: *mut f64, to: *mut f64) -> bool {
-    let Some(s) = shell.as_mut() else { return false };
-    let Some((b, n, f, t)) = s.app.journey_bounds(seconds) else { return false };
+pub unsafe extern "C" fn adrift_journey_bounds(
+    shell: *mut Shell,
+    seconds: f64,
+    born: *mut f64,
+    now: *mut f64,
+    from: *mut f64,
+    to: *mut f64,
+) -> bool {
+    let Some(s) = shell.as_mut() else {
+        return false;
+    };
+    let Some((b, n, f, t)) = s.app.journey_bounds(seconds) else {
+        return false;
+    };
     for (p, v) in [(born, b), (now, n), (from, f), (to, t)] {
         if let Some(p) = p.as_mut() {
             *p = v;
@@ -399,10 +513,24 @@ pub unsafe extern "C" fn adrift_day(shell: *mut Shell) -> f64 {
 /// Begins exporting a journey clip as the edit view sets it (R22): its first and last days and its
 /// pace (days a second), each NaN for the app's own choice; the frames to come, the size as above.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_journey_begin_edit(shell: *mut Shell, seconds: f64, from: f64, to: f64, pace: f64, fps: f64, width: *mut u32, height: *mut u32) -> u32 {
+pub unsafe extern "C" fn adrift_journey_begin_edit(
+    shell: *mut Shell,
+    seconds: f64,
+    from: f64,
+    to: f64,
+    pace: f64,
+    fps: f64,
+    width: *mut u32,
+    height: *mut u32,
+) -> u32 {
     let Some(s) = shell.as_mut() else { return 0 };
     let some = |x: f64| (!x.is_nan()).then_some(x);
-    let edit = crate::app::JourneyEdit { seconds, from: some(from), to: some(to), pace: some(pace) };
+    let edit = crate::app::JourneyEdit {
+        seconds,
+        from: some(from),
+        to: some(to),
+        pace: some(pace),
+    };
     let frames = s.app.journey_begin_edit(&edit, fps);
     if frames == 0 {
         return 0;
@@ -426,7 +554,9 @@ pub unsafe extern "C" fn adrift_journey_begin_edit(shell: *mut Shell, seconds: f
 #[no_mangle]
 pub unsafe extern "C" fn adrift_lamps_text(shell: *mut Shell, out: *mut u8, len: usize) -> usize {
     let Some(s) = shell.as_ref() else { return 0 };
-    let Some(text) = s.app.lamps_text() else { return 0 };
+    let Some(text) = s.app.lamps_text() else {
+        return 0;
+    };
     let b = text.as_bytes();
     if !out.is_null() && len > b.len() {
         std::ptr::copy_nonoverlapping(b.as_ptr(), out, b.len());
@@ -438,7 +568,10 @@ pub unsafe extern "C" fn adrift_lamps_text(shell: *mut Shell, out: *mut u8, len:
 /// Lamps pasted from copied text (R13); how many came (0: the text isn't Adrift's lamps). The date
 /// goes to the day they were copied on, so they are where they were.
 #[no_mangle]
-pub unsafe extern "C" fn adrift_lamps_paste(shell: *mut Shell, text: *const std::os::raw::c_char) -> u32 {
+pub unsafe extern "C" fn adrift_lamps_paste(
+    shell: *mut Shell,
+    text: *const std::os::raw::c_char,
+) -> u32 {
     let Some(s) = shell.as_mut() else { return 0 };
     if text.is_null() {
         return 0;
