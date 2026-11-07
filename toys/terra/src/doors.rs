@@ -414,6 +414,7 @@ impl Life {
 
     /// Every light into the painter (pixels: `k` pixels a point). `fade` dims them all (a dive under way).
     /// `focus`: only that light, at that size (points) and its halo's strength, as a passage carries it down into its toy.
+    #[allow(clippy::too_many_arguments)] // a drawing call: each argument is one thing it draws with
     pub fn paint(
         &self,
         p: &mut Painter,
@@ -876,6 +877,7 @@ impl Life {
 }
 
 /// A circle on the sphere: the places `theta` radians from `centre`, drawn where they face the reader.
+#[allow(clippy::too_many_arguments)] // a drawing call: each argument is one thing it draws with
 fn sphere_ring(
     p: &mut Painter,
     globe: &Globe,

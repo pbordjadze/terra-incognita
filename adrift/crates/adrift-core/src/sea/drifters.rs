@@ -124,7 +124,7 @@ impl Drifters {
                     for &(r, i) in &self.cells[y as usize * NX + x as usize] {
                         let (plon, plat) = self.runs[r as usize].points[i as usize];
                         let km = distance_km(lon, lat, plon, plat);
-                        if km <= within_km && best.map_or(true, |b| km < b.km) {
+                        if km <= within_km && best.is_none_or(|b| km < b.km) {
                             best = Some(Nearest {
                                 run: r as usize,
                                 point: i as usize,

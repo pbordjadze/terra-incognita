@@ -151,7 +151,7 @@ impl<T: Toy> Shell<T> {
         let since = t - *self.started.get_or_insert(t);
         // the first frames and the first seconds, in the log: a toy that dies after it started says
         // whether it ever drew, and how its memory went
-        if self.drawn <= 3 || (self.drawn % 60 == 0 && since < 20.0) {
+        if self.drawn <= 3 || (self.drawn.is_multiple_of(60) && since < 20.0) {
             crate::step(&format!("frame {} drawn at {since:.1} s", self.drawn));
         }
         self.frames += 1;

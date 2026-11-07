@@ -277,6 +277,7 @@ fn smooth_with(
 /// chosen as itself (`follow`, R8) carries its whole journey, fuller and never fading below a third,
 /// so it reads as a line of its colour at any zoom. `fade` dims the whole line (0..1); `heavy` widens
 /// it (2 in a clip, R12, where the line must carry the frame).
+#[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
 pub fn wake(
     out: &mut Vec<StrokeInstance>,
     path: &[super::LookBead],
@@ -514,6 +515,7 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
 /// the same curve; long and light, a wind line not a wake: thin, widest at the head, fading along its
 /// length but never to nothing within its short life. Drawn by the airy strokes (`Wake::airy`). `fade`
 /// dims it (a seed come down lets its line go quiet).
+#[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
 pub fn air_line(
     out: &mut Vec<StrokeInstance>,
     path: &[super::LookBead],

@@ -292,6 +292,7 @@ impl CameraControl {
 
     /// Two fingers: zoom by `factor`, and move the point of the globe that was under (ax, ay) to
     /// (bx, by), so what the fingers hold stays under them.
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
     fn pinch(
         &mut self,
         disc: &Disc,

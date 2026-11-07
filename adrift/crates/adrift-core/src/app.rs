@@ -533,7 +533,7 @@ impl App {
                 continue;
             }
             let d = ((p[0] - x).powi(2) + (p[1] - y).powi(2)).sqrt();
-            if d < reach && best.map_or(true, |b| d < b.0) {
+            if d < reach && best.is_none_or(|b| d < b.0) {
                 best = Some((d, f.id, f.at));
             }
         }
@@ -603,7 +603,7 @@ impl App {
             Intent::SetRunning { running: false } => "Pause".to_string(),
             Intent::SetRunning { running: true } => "Play".to_string(),
             other => format!("{other:?}")
-                .split(|c| c == ' ' || c == '{' || c == '(')
+                .split([' ', '{', '('])
                 .next()
                 .unwrap_or("")
                 .to_string(),
@@ -2020,7 +2020,6 @@ impl App {
             // the frame's steps in one submit (Truth's step_many), a keep where one falls due
             let mut steps = 0;
             let mut batch: Vec<Params> = Vec::new();
-            let budget = budget;
             while reached < target - 1e-6 && steps < budget {
                 let dt = MAYBES_STEP.min(target - reached);
                 batch.push(
@@ -2103,9 +2102,10 @@ impl App {
                 && s.width == ((w as f64 * scale).round() as u32).max(1)
                 && s.height == ((h as f64 * scale).round() as u32).max(1)
         };
-        let rescaled = self.stage.as_ref().map_or(true, |s| {
-            !wanted(s, self.budget.scale, view.width, view.height)
-        });
+        let rescaled = self
+            .stage
+            .as_ref()
+            .is_none_or(|s| !wanted(s, self.budget.scale, view.width, view.height));
         if rescaled {
             self.stage =
                 Some(
@@ -2409,7 +2409,7 @@ impl App {
                 .iter()
                 .copied()
                 .filter(|f| {
-                    down_since(f).map_or(true, |d| day - d <= crate::studio::DOWN_FRAMED_DAYS)
+                    down_since(f).is_none_or(|d| day - d <= crate::studio::DOWN_FRAMED_DAYS)
                 })
                 .collect();
             if up.is_empty() {
@@ -3365,7 +3365,7 @@ impl App {
         let rgba = target.read(&self.gpu);
         // RGBA in, BGRA out
         let mut out = rgba;
-        for p in out.chunks_exact_mut(4) {
+        for p in out.as_chunks_mut::<4>().0 {
             p.swap(0, 2);
         }
         Some(out)

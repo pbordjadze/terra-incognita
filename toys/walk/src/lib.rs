@@ -227,12 +227,12 @@ impl Walk {
     fn pt(&self, p: [f64; 2]) -> [f64; 2] {
         [p[0] * self.points[0], p[1] * self.points[0]]
     }
-    fn from_pt(&self, p: [f64; 2]) -> [f64; 2] {
+    fn unpt(&self, p: [f64; 2]) -> [f64; 2] {
         [p[0] / self.points[0], p[1] / self.points[0]]
     }
 
     fn reach_to(&mut self, p: [f64; 2]) {
-        let q = self.from_pt(p);
+        let q = self.unpt(p);
         let d = (q[0] - self.anchor[0]).hypot(q[1] - self.anchor[1]);
         self.walker.stride = d.max(MIN_STRIDE);
         if self.walking() {

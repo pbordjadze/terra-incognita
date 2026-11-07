@@ -276,6 +276,12 @@ impl Sky {
     }
 }
 
+impl Default for Sky {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// f32 to IEEE half (round to nearest; no NaNs here).
 pub fn half(x: f32) -> u16 {
     let b = x.to_bits();

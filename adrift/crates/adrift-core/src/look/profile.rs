@@ -12,7 +12,7 @@ static TIMES: Mutex<Vec<(&'static str, f64, u32)>> = Mutex::new(Vec::new());
 /// Whether the passes are timed (`ADRIFT_PROFILE=1`).
 pub fn on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var("ADRIFT_PROFILE").map_or(false, |v| v == "1"))
+    *ON.get_or_init(|| std::env::var("ADRIFT_PROFILE").is_ok_and(|v| v == "1"))
 }
 
 fn wait(gpu: &Gpu) {

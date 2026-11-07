@@ -167,7 +167,7 @@ impl toy_kit::Synth for Voice {
             .ear
             .try_lock()
             .ok()
-            .map(|mut ear| (ear.listener, ear.new.drain(..).collect::<Vec<_>>()));
+            .map(|mut ear| (ear.listener, std::mem::take(&mut ear.new)));
         if let Some((listener, new)) = got {
             self.listener = listener;
             for (p, s) in new {

@@ -409,7 +409,7 @@ fn step_back(state: &LookState, f: &LookFloat) -> bool {
     !state.exporting
         && !(f.followed || f.shown || f.held || f.chosen)
         && state.floats.iter().any(|g| g.followed || g.shown)
-        && state.panel_press.map_or(true, |p| p.0 != f.id)
+        && state.panel_press.is_none_or(|p| p.0 != f.id)
 }
 
 fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
@@ -443,6 +443,7 @@ fn glide(c: &LookCue) -> [f32; 3] {
 }
 
 /// A thin ring on the globe round `at`, `radius` points across the screen (at the globe's scale).
+#[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
 fn ring_on_globe(
     out: &mut Vec<wake::StrokeInstance>,
     at: LonLat,
@@ -853,7 +854,7 @@ impl Look {
                         .iter()
                         .rev()
                         .find(|c| c.id == f.id)
-                        .map_or(unit(f.at), |c| glide(c)),
+                        .map_or(unit(f.at), glide),
                     beat: 1.0,
                     hue: lamp_hue(f.id),
                     night: n as u8 as f32,
@@ -881,7 +882,7 @@ impl Look {
                     .iter()
                     .rev()
                     .find(|c| c.id == f.id)
-                    .map_or(unit(f.at), |c| glide(c)),
+                    .map_or(unit(f.at), glide),
                 beat: 1.0,
                 lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)))
                     .max(breathe_in),

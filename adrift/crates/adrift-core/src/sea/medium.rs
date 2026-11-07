@@ -16,6 +16,7 @@ pub trait MediumRules {
     fn put(&self, at: LonLat, day: f64, seed: u64, k: u32) -> Drift;
     /// One step of `dt_days` under `law` (the sea's laws; the wind has one) from `d`, which `held`
     /// held after the step before (a thing come down stays down).
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
     fn flight(
         &self,
         law: u32,

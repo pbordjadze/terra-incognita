@@ -168,7 +168,7 @@ impl Sea {
             .map(|n| n.get())
             .unwrap_or(1)
             .clamp(1, 4);
-        let rows = (H + bands - 1) / bands;
+        let rows = H.div_ceil(bands);
         let mut prev = std::mem::take(&mut self.prev);
         let (eta, ke, kn, ic, damp) = (&self.eta, &self.ke, &self.kn, &self.inv_cos, &self.damp);
         std::thread::scope(|s| {
@@ -207,7 +207,7 @@ impl Sea {
         });
         self.prev = std::mem::replace(&mut self.eta, prev);
         self.steps += 1;
-        if self.steps % 16 == 0 {
+        if self.steps.is_multiple_of(16) {
             // the grid's own ripples (a few cells long, which no real long wave has) taken out: a
             // second-order Shapiro filter, alike on both levels so only the shortest waves lose
             let wet = &self.wet;

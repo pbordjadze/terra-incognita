@@ -31,3 +31,6 @@ wgpu = { workspace = true, features = ["vulkan", "metal"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { workspace = true, features = ["webgpu"] }
+
+[lints]
+workspace = true

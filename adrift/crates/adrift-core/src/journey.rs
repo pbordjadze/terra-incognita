@@ -724,7 +724,7 @@ mod tests {
         assert!(after.windows(2).all(|w| w[0] == w[1]));
         // a lamp never ends; nor does a mix of a lamp and seeds
         let l = lamp(3, LonLat::new(-30.0, 40.0), day0, 3);
-        assert_eq!(all_down(r, &[l.clone()], day0 + 12.0), None);
+        assert_eq!(all_down(r, std::slice::from_ref(&l), day0 + 12.0), None);
         assert_eq!(all_down(r, &[f[0].clone(), l], day0 + 12.0), None);
         let days = pace(r, &f, day0, down, 300, 30.0);
         assert!(days.windows(2).all(|w| w[1] >= w[0]) && *days.last().unwrap() == down);

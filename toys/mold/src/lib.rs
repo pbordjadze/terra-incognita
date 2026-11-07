@@ -212,7 +212,9 @@ impl Toy for Mold {
         // holds it) set as the agents are placed. The decoded picture is let go at once.
         let mut cells: Vec<u32> = gp
             .data
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .map(|px| {
                 if px[1] > 127 {
                     2 | (px[0] as u32) << 8

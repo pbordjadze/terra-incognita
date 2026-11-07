@@ -1582,7 +1582,7 @@ impl Gestures {
         if next == Some(Shown::Lamp) {
             out.camera.push(CameraMove::Follow { float });
         } else if next.is_none() && probe.riding() == Some(float) {
-            match probe.choices().into_iter().filter(|&c| c != float).last() {
+            match probe.choices().into_iter().rfind(|&c| c != float) {
                 Some(other) => out.camera.push(CameraMove::Follow { float: other }),
                 None => out.camera.push(CameraMove::Leave),
             }
@@ -2110,6 +2110,9 @@ mod tests {
         assert!(conducts(&o).is_empty());
     }
 
+    /// A Conduct given, by finger (or none).
+    type Given = (Option<u32>, ConductGesture);
+
     /// Feeds one finger along `path(u)`, u 0..1 over `secs`, at `hz` events a second; returns every
     /// Conduct given with the time it came, and the lift's.
     fn draw(
@@ -2119,10 +2122,7 @@ mod tests {
         secs: f64,
         hz: f64,
         path: impl Fn(f64) -> (f64, f64),
-    ) -> (
-        Vec<(f64, (Option<u32>, ConductGesture))>,
-        Vec<(Option<u32>, ConductGesture)>,
-    ) {
+    ) -> (Vec<(f64, Given)>, Vec<Given>) {
         let (x0, y0) = path(0.0);
         let mut got = Vec::new();
         got.extend(

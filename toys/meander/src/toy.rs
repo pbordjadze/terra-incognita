@@ -698,7 +698,7 @@ impl Toy for Meander {
         let year = self.river.year;
         // the mask, half the screen's pixels
         let msize = [(ctx.width / 2).max(1), (ctx.height / 2).max(1)];
-        if self.mask.as_ref().map_or(true, |m| m.1 != msize) {
+        if self.mask.as_ref().is_none_or(|m| m.1 != msize) {
             let tex = gpu.texture(&wgpu::TextureDescriptor {
                 label: Some("water"),
                 size: wgpu::Extent3d {
@@ -796,7 +796,7 @@ impl Toy for Meander {
         }
         // the river: a pale bank of wet sand, then the water; a new course swells from a thread
         let swell = smooth01(0.0, 0.7, self.t - self.laid) * 0.75 + 0.25;
-        let r = wpx * 0.5 * swell as f32 * if self.t - self.laid < 0.7 { 1.0 } else { 1.0 };
+        let r = wpx * 0.5 * swell;
         let line = &self.river.line;
         let step = ((wpx * 0.25 / (130.0 * s * ppp) as f32).floor() as usize).max(1);
         let pts: Vec<[f32; 2]> = line.iter().step_by(step).map(|&q| px(q)).collect();

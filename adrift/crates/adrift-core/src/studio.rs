@@ -596,19 +596,20 @@ impl ClipCamera {
         if dt <= 0.0 {
             return prev;
         }
-        let ease = |err: f64, v: f64, rate: f64, accel: f64| {
+        fn ease(err: f64, v: f64, rate: f64, accel: f64, dt: f64) -> f64 {
             let want = err.signum()
                 * (err.abs() / dt)
                     .min((2.0 * accel * err.abs()).sqrt())
                     .min(rate);
             v + (want - v).clamp(-accel * dt, accel * dt)
-        };
+        }
         // the zoom, in its log
         self.lim_vz = ease(
             (next.zoom / prev.zoom).ln(),
             self.lim_vz,
             ZOOM_RATE,
             ZOOM_ACCEL,
+            dt,
         );
         let zoom = prev.zoom * (self.lim_vz * dt).exp();
         // the turn, as a vector (world frame), its limits in screen points at this zoom
@@ -1148,7 +1149,7 @@ pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
     if !first.is_finite() {
         return l.clone();
     }
-    let fits = |from: f64| frame(&with(from)).map_or(true, |(_, z)| z >= floor * 0.999);
+    let fits = |from: f64| frame(&with(from)).is_none_or(|(_, z)| z >= floor * 0.999);
     if fits(first) {
         return with(first);
     }

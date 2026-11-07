@@ -61,9 +61,11 @@ impl Probe for App {
                     .iter()
                     .any(|f| f.id == id && f.hand == Hand::Carried) =>
             {
-                let lamp = self.floats.iter().find(|f| f.id == id).map_or(true, |f| {
-                    f.legs().last().map_or(true, |l| l.medium == Medium::Sea)
-                });
+                let lamp = self
+                    .floats
+                    .iter()
+                    .find(|f| f.id == id)
+                    .is_none_or(|f| f.legs().last().is_none_or(|l| l.medium == Medium::Sea));
                 if lamp && self.rules.coast.is_land(p) {
                     Hit::Land(p)
                 } else {

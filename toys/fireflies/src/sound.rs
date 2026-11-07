@@ -165,6 +165,12 @@ impl Ear {
     }
 }
 
+impl Default for Ear {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 struct Voice {
     s: Strike,
     t: f64,

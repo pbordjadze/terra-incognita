@@ -112,11 +112,7 @@ pub async fn start() -> Result<(), JsValue> {
         }
     }
     // `?wind` opens with the wind's preset (R21): a put lifts a seed, anywhere, land too
-    if window
-        .location()
-        .search()
-        .map_or(false, |q| q.contains("wind"))
-    {
+    if window.location().search().is_ok_and(|q| q.contains("wind")) {
         app.command(adrift_core::Intent::Medium {
             medium: adrift_core::Medium::Wind,
         });
@@ -229,7 +225,7 @@ pub async fn start() -> Result<(), JsValue> {
     }
 
     // the frame loop
-    let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
+    let f: Rc<RefCell<Option<Frame>>> = Rc::new(RefCell::new(None));
     let g = f.clone();
     let surface = Rc::new(surface);
     let gpu_device = app.borrow().gpu.device.clone();
@@ -273,3 +269,6 @@ pub async fn start() -> Result<(), JsValue> {
     window.request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())?;
     Ok(())
 }
+
+/// The animation frame's callback, which schedules itself again.
+type Frame = Closure<dyn FnMut()>;

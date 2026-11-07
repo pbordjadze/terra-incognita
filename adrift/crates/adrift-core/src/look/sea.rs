@@ -206,7 +206,7 @@ impl SeaPass {
         height: u32,
     ) {
         let (w, h) = (width.div_ceil(2).max(1), height.div_ceil(2).max(1));
-        if self.glow.as_ref().map_or(true, |g| (g.0, g.1) != (w, h)) {
+        if self.glow.as_ref().is_none_or(|g| (g.0, g.1) != (w, h)) {
             let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("sea glow"),
                 size: wgpu::Extent3d {

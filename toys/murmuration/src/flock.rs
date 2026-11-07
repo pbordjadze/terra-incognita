@@ -74,14 +74,14 @@ impl Rng {
     pub fn new(seed: u64) -> Rng {
         Rng(seed.max(1))
     }
-    pub fn next(&mut self) -> f32 {
+    pub fn next_f32(&mut self) -> f32 {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
         (self.0 >> 40) as f32 / (1u64 << 24) as f32
     }
     pub fn signed(&mut self) -> f32 {
-        self.next() * 2.0 - 1.0
+        self.next_f32() * 2.0 - 1.0
     }
     pub fn gauss3(&mut self) -> V3 {
         let mut v = [0.0; 3];
@@ -157,11 +157,11 @@ impl Flock {
                 pos,
                 vel,
                 lift: [0.0, 1.0, 0.0],
-                phase: rng.next() * std::f32::consts::TAU,
+                phase: rng.next_f32() * std::f32::consts::TAU,
                 rate: 10.0 + rng.signed() * 1.5,
                 flap: 1.0,
                 flap_to: 1.0,
-                flap_left: rng.next() * 1.5,
+                flap_left: rng.next_f32() * 1.5,
                 wander: [0.0; 3],
                 size: 1.3 + rng.signed() * 0.1,
             });
@@ -391,16 +391,16 @@ impl Flock {
         // flock as a wave (Procaccini et al. 2011), and the flock folds.
         self.startle_in -= dt;
         if self.startle_in <= 0.0 {
-            let i = (self.rng.next() * n as f32) as usize % n;
+            let i = (self.rng.next_f32() * n as f32) as usize % n;
             let v = norm(self.birds[i].vel);
             let side = norm(cross([0.0, 1.0, 0.0], v));
-            let sgn = if self.rng.next() < 0.5 { -1.0 } else { 1.0 };
+            let sgn = if self.rng.next_f32() < 0.5 { -1.0 } else { 1.0 };
             self.startle = Some((
                 self.birds[i].pos,
                 scale(addv(side, [0.0, self.rng.signed() * 0.4, 0.0]), sgn),
                 0.45,
             ));
-            self.startle_in = 3.0 + self.rng.next() * 5.0;
+            self.startle_in = 3.0 + self.rng.next_f32() * 5.0;
         }
         if let Some((at, dir, left)) = self.startle {
             for (k, b) in self.birds.iter().enumerate() {
@@ -464,9 +464,9 @@ impl Flock {
             // Wingbeats: bouts of flapping and gliding; flapping harder when slow or climbing.
             b.flap_left -= dt;
             if b.flap_left <= 0.0 {
-                let r = self.rng.next();
+                let r = self.rng.next_f32();
                 b.flap_to = if r < 0.7 { 1.0 } else { 0.0 };
-                b.flap_left = 0.3 + self.rng.next() * 1.4;
+                b.flap_left = 0.3 + self.rng.next_f32() * 1.4;
             }
             let speed = length(b.vel);
             let need = ((V0 - speed) * 0.5 + f[1] * 2.0).clamp(0.0, 1.0);
