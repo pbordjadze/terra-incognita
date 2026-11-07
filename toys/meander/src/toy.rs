@@ -409,6 +409,11 @@ impl Toy for Meander {
                         h.hook = None;
                         h.carried = 0.0;
                         h.dropped = Some(w);
+                        // the bend it let go keeps the finger's push: its bank loosened, as a lifted
+                        // finger's is, so it swells and cuts rather than being smoothed away
+                        let at = self.river.line[i.min(self.river.line.len() - 1)];
+                        self.river.kick(at, 0.9);
+                        self.pushed = self.t;
                     }
                 }
                 if let Some(q) = h.dropped {

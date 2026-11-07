@@ -54,3 +54,7 @@ before reading the tools:
   pushes that reach over the others instead of gathering them; plans rub (five sweeping, as a hand rubs) and hand (five
   fingertips pushing the same way). Critic: "no": two thumbs, a hand and one finger are all good enough to show (lakes at
   ~3, 6.5, 7.5 s), but a rub still draws the whole river into a near-straight line for about three seconds.
+- Round 3: with several fingers down a finger lets its bend go after about a bend's width (35 pt when it is pushing the
+  bend in toward its middle, which would flatten it); one finger alone keeps its long pull. Critic: "yes, ship": every
+  finger moves its own reach and the river stays a river (lakes in two, hand, share, push); weakest, the rub combs the
+  big loops into small even wiggles that don't swell ("I tidied it", not "I did that").
