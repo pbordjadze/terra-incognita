@@ -36,7 +36,14 @@ pub fn heard(i: usize) -> (f64, f64) {
     let (_, mhz, q) = MODES[i];
     let f = mhz * 1e-3 * PITCH;
     let tau = q / (std::f64::consts::PI * f) * LINGER;
-    (f, if MODES[i].0 == 0 { tau.min(BREATH) } else { tau })
+    (
+        f,
+        if MODES[i].0 == 0 {
+            tau.min(BREATH)
+        } else {
+            tau
+        },
+    )
 }
 
 /// The breathing mode's decay at most (its Q of 5300 would hold it as a drone over all the rest).
@@ -93,7 +100,8 @@ pub fn schmidt(l: usize, x: f64) -> Vec<f64> {
             let mut p0 = pmm;
             let mut p1 = x * (2 * m + 1) as f64 * pmm;
             for ll in (m + 2)..=l {
-                let p2 = ((2 * ll - 1) as f64 * x * p1 - (ll + m - 1) as f64 * p0) / (ll - m) as f64;
+                let p2 =
+                    ((2 * ll - 1) as f64 * x * p1 - (ll + m - 1) as f64 * p0) / (ll - m) as f64;
                 p0 = p1;
                 p1 = p2;
             }
@@ -124,7 +132,9 @@ mod tests {
         for l in [2usize, 5, 12] {
             let a = schmidt(l, ta.cos());
             let b = schmidt(l, tb.cos());
-            let s: f64 = (0..=l).map(|m| a[m] * b[m] * (m as f64 * (pa - pb)).cos()).sum();
+            let s: f64 = (0..=l)
+                .map(|m| a[m] * b[m] * (m as f64 * (pa - pb)).cos())
+                .sum();
             assert!((s - p[l]).abs() < 1e-9, "l {l}: {s} vs {}", p[l]);
         }
     }

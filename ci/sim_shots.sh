@@ -58,4 +58,4 @@ if [ "${GLOBE:-}" = 1 ]; then
   shot globe-night -prototype night -globe-at 78 26 3.2 -night-time 0
 fi
 run 60 xcrun simctl spawn "$UDID" log show --start "$SINCE" --style compact --predicate 'process == "TerraIncognita"' > "$OUT/sim-app.log" 2>&1 || true
-step done
+step "done"

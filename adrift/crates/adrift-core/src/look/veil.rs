@@ -29,24 +29,61 @@ impl Veil {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Veil {
         let module = gpu.shader("veil", &marks_wgsl(include_str!("veil.wgsl")));
         let uniform = Uniform::new(gpu, "veil");
-        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("veil"), bind_group_layouts: &[view, &uniform.layout], push_constant_ranges: &[] });
-        let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("veil"),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState { module: &module, entry_point: Some("vs"), buffers: &[], compilation_options: Default::default() },
-            fragment: Some(wgpu::FragmentState { module: &module, entry_point: Some("fs"), compilation_options: Default::default(), targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })] }),
-            primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, ..Default::default() },
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview: None,
-            cache: None,
-        });
-        Veil { pipeline, uniform, on: false, last: VeilUniform::default() }
+        let layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("veil"),
+                bind_group_layouts: &[Some(view), Some(&uniform.layout)],
+                immediate_size: 0,
+            });
+        let pipeline = gpu
+            .device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("veil"),
+                layout: Some(&layout),
+                vertex: wgpu::VertexState {
+                    module: &module,
+                    entry_point: Some("vs"),
+                    buffers: &[],
+                    compilation_options: Default::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &module,
+                    entry_point: Some("fs"),
+                    compilation_options: Default::default(),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: gpu.format,
+                        blend: Some(Gpu::over()),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    ..Default::default()
+                },
+                depth_stencil: None,
+                multisample: Default::default(),
+                multiview_mask: None,
+                cache: None,
+            });
+        Veil {
+            pipeline,
+            uniform,
+            on: false,
+            last: VeilUniform::default(),
+        }
     }
 
     /// The window round `centre` (a unit vector), `strength` 0..1 with the cloud's bloom.
     pub fn prepare(&mut self, gpu: &Gpu, centre: [f32; 3], strength: f32, night: bool) {
-        self.last = VeilUniform { centre: [centre[0], centre[1], centre[2], 0.0], radius: 120.0, soft: 110.0, strength, night: night as u8 as f32, ..Default::default() };
+        self.last = VeilUniform {
+            centre: [centre[0], centre[1], centre[2], 0.0],
+            radius: 120.0,
+            soft: 110.0,
+            strength,
+            night: night as u8 as f32,
+            ..Default::default()
+        };
         self.on = strength > 0.0;
         self.uniform.write(gpu, &self.last);
     }

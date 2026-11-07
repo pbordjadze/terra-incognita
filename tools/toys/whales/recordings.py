@@ -26,7 +26,14 @@ the spectral peak's frequency on a log scale 0 = 12 Hz .. 255 = 4 kHz, of the so
 any speeding); then ADPCM blocks of 1024 samples, each i16 predictor, u8 step index, u8 0, then 512
 bytes of nibbles, the low nibble first.
 """
-import argparse, io, os, struct, sys, urllib.request
+import argparse
+import io
+import os
+import struct
+import sys
+import urllib.request
+from pathlib import Path
+
 import numpy as np
 from scipy import signal
 from scipy.io import wavfile
@@ -45,8 +52,8 @@ def fetch(url, cache, name, rng=None):
     if not os.path.exists(p):
         h = {"Range": f"bytes={rng[0]}-{rng[1]}"} if rng else {}
         data = urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=300).read()
-        open(p, "wb").write(data)
-    return open(p, "rb").read()
+        Path(p).write_bytes(data)
+    return Path(p).read_bytes()
 
 
 def mbari(cache, start_s, seconds):
@@ -67,7 +74,7 @@ def band(x, rate, lo, hi):
 
 def denoise(x, rate, strength):
     """Lowers the steady floor: each bin less `strength` times its median level, never below 25 %."""
-    f, t, Z = signal.stft(x, rate, nperseg=1024, noverlap=768)
+    _f, _t, Z = signal.stft(x, rate, nperseg=1024, noverlap=768)
     mag = np.abs(Z)
     floor = np.median(mag, axis=1, keepdims=True)
     gain = np.maximum(1.0 - strength * floor / (mag + 1e-12), 0.25)
@@ -150,7 +157,7 @@ def write(name, x, rate, env):
     envb = bytes(np.stack([loud, pitch], 1).reshape(-1))
     data = head + envb + adpcm(pcm)
     os.makedirs(OUT, exist_ok=True)
-    open(os.path.join(OUT, name), "wb").write(data)
+    Path(OUT, name).write_bytes(data)
     print(f"{name}: {len(pcm) / rate:.1f} s at {rate} Hz, {len(data) / 1e3:.0f} kB")
 
 

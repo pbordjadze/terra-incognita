@@ -45,7 +45,7 @@ struct GlobeCamera: Equatable {
 /// zoom, double-tap to fly in, tap a country to light it (in the locator's red, or gilded). Left alone
 /// it turns slowly, as the Earth does.
 final class GlobeView: UIView, UIGestureRecognizerDelegate {
-    override class var layerClass: AnyClass { CAMetalLayer.self }
+    override static var layerClass: AnyClass { CAMetalLayer.self }
 
     /// A country was tapped (nil: the selection was cleared).
     var onSelect: ((GlobeData.Country?) -> Void)?
@@ -814,7 +814,8 @@ final class GlobeView: UIView, UIGestureRecognizerDelegate {
         let nightShown = night != nil ? nightMix : 0
         let ring = (1 - smoothstep(1.25, 1.7, zoom)) * (1 - groundShown)
         var u = Uniforms(
-            u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale), Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
+            u0: SIMD4(Float(Double(bounds.width) * scale), Float(Double(bounds.height) * scale),
+                      Float(Double(centre.x) * scale), Float(Double(centre.y) * scale)),
             u1: SIMD4(Float(radius * scale), Float(scale * Double(reading)), Float(zoom), Float(ring)),
             u2: SIMD4(Float(shown.map { $0 + 1 } ?? 0), Float(highlight), Float(styleMix), Float(pageFrame)),
             r0: SIMD4(Float(m[0][0]), Float(m[1][0]), Float(m[2][0]), 0),

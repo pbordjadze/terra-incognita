@@ -15,7 +15,7 @@ name: Adrift
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
-    paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh', 'ci/xcode.sh']
+    paths: ['adrift/**', 'tools/adrift/**', '.github/workflows/adrift.yml', 'ci/sidestore_apps.json', 'ci/sidestore_source.py', 'ci/sidestore_publish.sh', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
       ipa:
@@ -31,15 +31,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    # the standard linters (lint.yml, ci/lint.sh) first; the macOS jobs wait for them
+    uses: ./.github/workflows/lint.yml
+
   check:
     name: Build, test, render on Linux; the web build
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
-      - uses: dtolnay/rust-toolchain@stable
-        with: { targets: wasm32-unknown-unknown }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: adrift }
       - name: Software Vulkan and the data
@@ -51,7 +55,6 @@ jobs:
         run: |
           cargo build --release -p adrift-check -p adrift-core
           cargo test --release -p adrift-core
-          cargo clippy --release -p adrift-core -p adrift-check -- -D warnings || echo "::warning::clippy has findings"
       - name: Render every scene and play every plan
         working-directory: adrift
         run: |
@@ -65,20 +68,20 @@ jobs:
             n=$(basename "$p" .json)
             cargo run -q --release -p adrift-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
           done
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: adrift-check, path: adrift/build/out, if-no-files-found: error }
       - name: The web build
         run: |
           cargo install wasm-bindgen-cli --version 0.2.130 --locked
           bash tools/adrift/web-build.sh adrift/build/web
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with: { name: adrift-web, path: adrift/build/web, if-no-files-found: error }
 
   ipa:
     name: IPA for SideStore (unsigned device build)
-    needs: [check]
-    if: ${{ !cancelled() && needs.check.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
+    needs: [check, lint]
+    if: ${{ !cancelled() && needs.check.result == 'success' && needs.lint.result == 'success' && (github.ref_name == 'main' || contains(github.event.head_commit.message, '[adrift-ipa]') || inputs.ipa) }}
     permissions:
       contents: write
     runs-on: xcode-27
@@ -86,11 +89,11 @@ jobs:
     env:
       BUILD: ${{ github.run_number }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Xcode (the one version, ci/xcode.sh)
         run: bash ci/xcode.sh
-      - uses: dtolnay/rust-toolchain@stable
-        with: { targets: aarch64-apple-ios }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh aarch64-apple-ios
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: adrift }
       - name: Build the IPA
@@ -114,6 +117,6 @@ jobs:
             while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
           bash ci/sidestore_publish.sh build/source "SideStore source after Adrift build $BUILD"
           cp build/source/source.json out/
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: adrift-ipa, path: out, if-no-files-found: error }

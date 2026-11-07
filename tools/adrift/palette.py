@@ -11,7 +11,8 @@ glow, laid over something else, and owes nothing on its own. A ground may be a c
 (the lamp against the rim) or one of the sea's tones. Alpha is ignored for the rule: an ink is read at
 full strength or not shown.
 """
-import json, sys
+import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,7 +54,7 @@ def check(spec):
         k = contrast(hx, spec['day']['glass_rim']['hex'])
         rows.append(('day', f'hue{i + 1}', hx, 'glass_rim', spec['day']['glass_rim']['hex'], 'mark', k, k >= RULE['mark']))
         bad += k < RULE['mark']
-        edge = '#' + ''.join(f'{int(round(int(hx[j:j + 2], 16) * 0.42)):02X}' for j in (1, 3, 5))
+        edge = '#' + ''.join(f'{round(int(hx[j:j + 2], 16) * 0.42):02X}' for j in (1, 3, 5))
         for g in ('shelf', 'open', 'deep'):
             k = contrast(edge, spec['grounds']['day'][g])
             rows.append(('day', f'hue{i + 1} edge', edge, g, spec['grounds']['day'][g], 'mark', k, k >= RULE['mark']))

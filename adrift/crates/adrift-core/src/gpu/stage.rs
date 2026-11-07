@@ -36,17 +36,43 @@ struct Out { @builtin(position) position: vec4f, @location(0) uv: vec2f };
 
 impl Blit {
     pub fn new(gpu: &Gpu) -> Blit {
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("stage"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
-            ],
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("stage"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+        let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            ..Default::default()
         });
-        let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor { mag_filter: wgpu::FilterMode::Linear, min_filter: wgpu::FilterMode::Linear, address_mode_u: wgpu::AddressMode::ClampToEdge, address_mode_v: wgpu::AddressMode::ClampToEdge, ..Default::default() });
         let shader = gpu.shader("blit", BLIT_WGSL);
         let pipeline = gpu.fullscreen_pipeline("blit", &shader, &[&layout], None);
-        Blit { pipeline, layout, sampler }
+        Blit {
+            pipeline,
+            layout,
+            sampler,
+        }
     }
 
     /// A stage of the target's size times `scale`.
@@ -55,7 +81,11 @@ impl Blit {
         let h = ((height as f64 * scale).round() as u32).max(1);
         let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("stage"),
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: w,
+                height: h,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -68,11 +98,24 @@ impl Blit {
             label: Some("stage"),
             layout: &self.layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&self.sampler) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
             ],
         });
-        Stage { texture, view, width: w, height: h, scale, bind }
+        Stage {
+            texture,
+            view,
+            width: w,
+            height: h,
+            scale,
+            bind,
+        }
     }
 
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, stage: &'a Stage) {
@@ -94,7 +137,12 @@ pub struct Budget {
 impl Budget {
     pub fn new(ppp: f64) -> Budget {
         // a 3x phone starts a notch down and earns its way up
-        Budget { scale: if ppp >= 2.5 { 0.75 } else { 1.0 }, locked: false, recent: Default::default(), since_change: 0 }
+        Budget {
+            scale: if ppp >= 2.5 { 0.75 } else { 1.0 },
+            locked: false,
+            recent: Default::default(),
+            since_change: 0,
+        }
     }
 
     /// A frame of `dt` seconds while the stage was redrawn; returns true when the scale changed.

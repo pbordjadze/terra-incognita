@@ -82,7 +82,7 @@ final class GlobeMarker {
             guard points.count > 1, let total = along.last, total > 0 else { return places.first ?? (0, 0) }
             var u = t / seconds
             switch loop {
-            case .repeat: u = u - floor(u)
+            case .repeat: u -= floor(u)
             case .back:
                 let v = u.truncatingRemainder(dividingBy: 2)
                 u = v <= 1 ? v : 2 - v

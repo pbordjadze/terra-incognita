@@ -27,6 +27,7 @@ Global Drifter Program's monthly climatology; its docstring is the sheet's layou
 
 Never hand-edit those files; change this script and run it again. No network is used.
 """
+import itertools
 import json
 import math
 import shutil
@@ -85,7 +86,7 @@ def sample(field, lon, lat):
     u, v, b = field
     x = (lon + 179.75) / 0.5
     y = (89.75 - lat) / 0.5
-    i, j = int(math.floor(x)), int(math.floor(y))
+    i, j = math.floor(x), math.floor(y)
     fx, fy = x - i, y - j
     if not (0 <= j < H - 1):
         return 0.0, 0.0, 0.0
@@ -140,7 +141,7 @@ def span(a, b):
 
 def thin(points, every=0.12):
     out, run = [points[0]], 0.0
-    for a, b in zip(points, points[1:]):
+    for a, b in itertools.pairwise(points):
         run += span(a, b)
         if run >= every:
             out.append(b)
@@ -151,7 +152,7 @@ def thin(points, every=0.12):
 
 
 def length(points):
-    return sum(span(a, b) for a, b in zip(points, points[1:]))
+    return sum(span(a, b) for a, b in itertools.pairwise(points))
 
 
 def joined(field, estuary, seed):
@@ -192,7 +193,7 @@ def sea(months):
             per_month.append(paths)
         entry = {'name': mouth['name'], 'length': round(longest, 2), 'months': per_month}
         if mouth.get('plume'):
-            entry['picture'] = {'images': ['plume-%02d.png' % (m + 1) for m in range(12)],
+            entry['picture'] = {'images': [f'plume-{m + 1:02d}.png' for m in range(12)],
                                 'bounds': PLUME_BOUNDS, 'opacity': 0.95}
         outlets[id] = entry
     out = {'about': 'Where the lit water goes in the sea: a drawn way out of each estuary, then streamlines of '
@@ -248,7 +249,7 @@ def plume(months):
         rgb = silt * (1 - t) + green * t
         # (the silt is thickest near the mouth; the green thins out to sea)
         image = np.dstack([rgb, alpha * (235 - 90 * t[..., 0])]).clip(0, 255).astype(np.uint8)
-        Image.fromarray(image, 'RGBA').save(OUT / ('plume-%02d.png' % (m + 1)), optimize=True)
+        Image.fromarray(image, 'RGBA').save(OUT / f'plume-{m + 1:02d}.png', optimize=True)
 
 
 def doorway():
@@ -307,7 +308,7 @@ def main():
         shutil.copyfile(SRC / name, OUT / name)
     months = currents()
     outlets = sea(months)
-    for id, o in outlets.items():
+    for o in outlets.values():
         print(o['name'], 'longest way', o['length'], 'degrees; paths a month', [len(p) for p in o['months']])
     plume(months)
     doorway()

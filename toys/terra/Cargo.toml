@@ -30,3 +30,6 @@ frost = { path = "../frost" }
 [[bin]]
 name = "terra-check"
 path = "src/bin/check.rs"
+
+[lints]
+workspace = true

@@ -58,11 +58,32 @@ impl Wake {
 
     fn with(gpu: &Gpu, view: &wgpu::BindGroupLayout, airy: bool) -> Self {
         let module = gpu.shader("wake", &marks_wgsl(include_str!("wake.wgsl")));
-        let uniforms = [Uniform::new(gpu, "wake edges"), Uniform::new(gpu, "wake lines")];
+        let uniforms = [
+            Uniform::new(gpu, "wake edges"),
+            Uniform::new(gpu, "wake lines"),
+        ];
         for (i, u) in uniforms.iter().enumerate() {
-            u.write(gpu, &WakeUniform { layer: i as f32, airy: airy as u8 as f32, _pad: [0.0; 2] });
+            u.write(
+                gpu,
+                &WakeUniform {
+                    layer: i as f32,
+                    airy: airy as u8 as f32,
+                    _pad: [0.0; 2],
+                },
+            );
         }
-        Self { pipeline: mark_pipeline(gpu, "wake", &module, LAYOUT, view, Some(&uniforms[0].layout)), instances: Instances::new(gpu, "wake", 1024), uniforms }
+        Self {
+            pipeline: mark_pipeline(
+                gpu,
+                "wake",
+                &module,
+                LAYOUT,
+                view,
+                Some(&uniforms[0].layout),
+            ),
+            instances: Instances::new(gpu, "wake", 1024),
+            uniforms,
+        }
     }
 
     pub fn prepare(&mut self, gpu: &Gpu, segments: &[StrokeInstance]) {
@@ -70,7 +91,9 @@ impl Wake {
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {
-        if self.instances.count == 0 { return; }
+        if self.instances.count == 0 {
+            return;
+        }
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, view, &[]);
         pass.set_vertex_buffer(0, self.instances.slice());
@@ -93,34 +116,70 @@ pub struct Pt {
 
 /// The segments of one line through `pts`: open with round caps at its ends, or `closed` (a ring).
 /// One point is a dot of its width.
-pub fn line(out: &mut Vec<StrokeInstance>, pts: &[Pt], hue: [f32; 3], screen: bool, night: bool, closed: bool) {
+pub fn line(
+    out: &mut Vec<StrokeInstance>,
+    pts: &[Pt],
+    hue: [f32; 3],
+    screen: bool,
+    night: bool,
+    closed: bool,
+) {
     let s = screen as u8 as f32;
     let nf = night as u8 as f32;
     let h4 = [hue[0], hue[1], hue[2], s];
-    let seg = |a: &Pt, b: &Pt, prev: [f32; 3], next: [f32; 3], cap_a: bool, cap_b: bool| StrokeInstance {
-        prev: [prev[0], prev[1], prev[2], a.w],
-        a: [a.p[0], a.p[1], a.p[2], a.a],
-        b: [b.p[0], b.p[1], b.p[2], b.w],
-        next: [next[0], next[1], next[2], b.a],
-        hue: h4,
-        flags: [cap_a as u8 as f32, cap_b as u8 as f32, nf, 0.5 * (a.hollow + b.hollow)],
-    };
+    let seg =
+        |a: &Pt, b: &Pt, prev: [f32; 3], next: [f32; 3], cap_a: bool, cap_b: bool| StrokeInstance {
+            prev: [prev[0], prev[1], prev[2], a.w],
+            a: [a.p[0], a.p[1], a.p[2], a.a],
+            b: [b.p[0], b.p[1], b.p[2], b.w],
+            next: [next[0], next[1], next[2], b.a],
+            hue: h4,
+            flags: [
+                cap_a as u8 as f32,
+                cap_b as u8 as f32,
+                nf,
+                0.5 * (a.hollow + b.hollow),
+            ],
+        };
     match pts.len() {
         0 => {}
         1 => {
             let a = pts[0];
             let mut b = a;
             // (a dot: a segment too short to see, round at both ends)
-            if screen { b.p[0] += 0.01 } else { b.p[0] += 1e-6 }
+            if screen {
+                b.p[0] += 0.01
+            } else {
+                b.p[0] += 1e-6
+            }
             out.push(seg(&a, &b, a.p, b.p, true, true));
         }
         n => {
             let segs = if closed { n } else { n - 1 };
             for i in 0..segs {
                 let (a, b) = (&pts[i], &pts[(i + 1) % n]);
-                let prev = if i > 0 { pts[i - 1].p } else if closed { pts[n - 1].p } else { a.p };
-                let next = if i + 2 < n { pts[i + 2].p } else if closed { pts[(i + 2) % n].p } else { b.p };
-                out.push(seg(a, b, prev, next, !closed && i == 0, !closed && i + 1 == segs));
+                let prev = if i > 0 {
+                    pts[i - 1].p
+                } else if closed {
+                    pts[n - 1].p
+                } else {
+                    a.p
+                };
+                let next = if i + 2 < n {
+                    pts[i + 2].p
+                } else if closed {
+                    pts[(i + 2) % n].p
+                } else {
+                    b.p
+                };
+                out.push(seg(
+                    a,
+                    b,
+                    prev,
+                    next,
+                    !closed && i == 0,
+                    !closed && i + 1 == segs,
+                ));
             }
         }
     }
@@ -141,16 +200,26 @@ pub fn smooth(places: &[([f32; 3], f32)], passes: usize, sub: usize) -> Vec<([f3
 
 /// The same for points on a plane (the panel's journeys): each point and how far along, 0..1.
 pub fn smooth_flat(places: &[([f32; 3], f32)], passes: usize, sub: usize) -> Vec<([f32; 3], f32)> {
-    smooth_with(places, passes, sub, false).into_iter().map(|(p, _, f)| (p, f)).collect()
+    smooth_with(places, passes, sub, false)
+        .into_iter()
+        .map(|(p, _, f)| (p, f))
+        .collect()
 }
 
-fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool) -> Vec<([f32; 3], f32, f32)> {
+fn smooth_with(
+    places: &[([f32; 3], f32)],
+    passes: usize,
+    sub: usize,
+    unit: bool,
+) -> Vec<([f32; 3], f32, f32)> {
     let norm = |v: [f32; 3]| if unit { norm(v) } else { v };
     // (points closer than a few hundred metres are one: a float held at a coast for days)
     let mut p: Vec<([f32; 3], f32)> = Vec::with_capacity(places.len());
     for &q in places {
         if let Some(l) = p.last() {
-            let d = ((l.0[0] - q.0[0]).powi(2) + (l.0[1] - q.0[1]).powi(2) + (l.0[2] - q.0[2]).powi(2)).sqrt();
+            let d =
+                ((l.0[0] - q.0[0]).powi(2) + (l.0[1] - q.0[1]).powi(2) + (l.0[2] - q.0[2]).powi(2))
+                    .sqrt();
             if d < if unit { 5e-5 } else { 0.03 } {
                 continue;
             }
@@ -159,13 +228,21 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
     }
     if p.len() < 3 {
         let n = p.len().saturating_sub(1).max(1) as f32;
-        return p.iter().enumerate().map(|(i, q)| (q.0, q.1, i as f32 / n)).collect();
+        return p
+            .iter()
+            .enumerate()
+            .map(|(i, q)| (q.0, q.1, i as f32 / n))
+            .collect();
     }
     for _ in 0..passes {
         let q = p.clone();
         for i in 1..q.len() - 1 {
-            let v = [0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]);
-            p[i] = (norm(v), 0.25 * q[i - 1].1 + 0.5 * q[i].1 + 0.25 * q[i + 1].1);
+            let v =
+                [0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]);
+            p[i] = (
+                norm(v),
+                0.25 * q[i - 1].1 + 0.5 * q[i].1 + 0.25 * q[i + 1].1,
+            );
         }
     }
     let n = p.len();
@@ -178,8 +255,17 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
         for j in 0..sub {
             let t = j as f32 / sub as f32;
             let (t2, t3) = (t * t, t * t * t);
-            let v = [0, 1, 2].map(|k| 0.5 * (2.0 * p1[k] + (-p0[k] + p2[k]) * t + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * t2 + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * t3));
-            out.push((norm(v), p[i].1 + (p[i + 1].1 - p[i].1) * t, (i as f32 + t) / last));
+            let v = [0, 1, 2].map(|k| {
+                0.5 * (2.0 * p1[k]
+                    + (-p0[k] + p2[k]) * t
+                    + (2.0 * p0[k] - 5.0 * p1[k] + 4.0 * p2[k] - p3[k]) * t2
+                    + (-p0[k] + 3.0 * p1[k] - 3.0 * p2[k] + p3[k]) * t3)
+            });
+            out.push((
+                norm(v),
+                p[i].1 + (p[i + 1].1 - p[i].1) * t,
+                (i as f32 + t) / last,
+            ));
         }
     }
     out.push((p[n - 1].0, p[n - 1].1, 1.0));
@@ -191,40 +277,66 @@ fn smooth_with(places: &[([f32; 3], f32)], passes: usize, sub: usize, unit: bool
 /// chosen as itself (`follow`, R8) carries its whole journey, fuller and never fading below a third,
 /// so it reads as a line of its colour at any zoom. `fade` dims the whole line (0..1); `heavy` widens
 /// it (2 in a clip, R12, where the line must carry the frame).
-pub fn wake(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], now: crate::model::LonLat, night: bool, hue: [f32; 3], follow: bool, fade: f32, heavy: f32, rad_per_pt: f32) {
-    let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), b.measured)).collect();
+#[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
+pub fn wake(
+    out: &mut Vec<StrokeInstance>,
+    path: &[super::LookBead],
+    now: crate::model::LonLat,
+    night: bool,
+    hue: [f32; 3],
+    follow: bool,
+    fade: f32,
+    heavy: f32,
+    rad_per_pt: f32,
+) {
+    let mut places: Vec<([f32; 3], f32)> = path
+        .iter()
+        .map(|b| (super::unit(b.at), b.measured))
+        .collect();
     // (R15: steps kept a little ahead of where the lamp is drawn would send the line past the lamp
     // and back, a hook at its head: the line is cut at the step nearest the lamp, among the last few)
     let here = super::unit(now);
-    let d2 = |p: [f32; 3]| (p[0] - here[0]).powi(2) + (p[1] - here[1]).powi(2) + (p[2] - here[2]).powi(2);
+    let d2 = |p: [f32; 3]| {
+        (p[0] - here[0]).powi(2) + (p[1] - here[1]).powi(2) + (p[2] - here[2]).powi(2)
+    };
     let tail = places.len().saturating_sub(16);
-    if let Some(k) = (tail..places.len()).min_by(|&i, &j| d2(places[i].0).partial_cmp(&d2(places[j].0)).unwrap()) {
+    if let Some(k) =
+        (tail..places.len()).min_by(|&i, &j| d2(places[i].0).partial_cmp(&d2(places[j].0)).unwrap())
+    {
         places.truncate(k + 1);
     }
     places.push((here, path.last().map_or(1.0, |b| b.measured)));
     // (R17: a centripetal Catmull-Rom through the steps, cut into pieces of about two reading points,
     // so however far apart the steps are on the screen the line is a curve, never a polyline)
-    let line_pts: Vec<Pt> = round_corners(spline(&places, 1, 2.0 * rad_per_pt), 10.0 * heavy * rad_per_pt)
-        .into_iter()
-        .map(|(p, measured, f)| {
-            let age = 1.0 - f;
-            let (w, a) = if follow && heavy > 1.0 {
-                // (a journey clip, R14: the whole journey drawn and held, the dance's shape
-                // accumulating; the newest part brightest and widest, nothing fading off the tail,
-                // and the line nearly opaque so two lamps' lines cross cleanly, each in its own hue
-                // on its own dark edge, the later over the earlier, never a muddy mix)
-                (2.3 + 1.0 * (1.0 - age), 0.82 + 0.18 * (1.0 - age).powf(2.0))
-            } else if follow {
-                (3.0 - 1.5 * age, 1.0 - 0.62 * age.powf(1.5))
-            } else if heavy > 1.0 {
-                // (in a clip, R12: the tail held longer, so a take's whole line is there)
-                (3.2 - 2.0 * age, 0.95 * (1.0 - age).powf(0.7))
-            } else {
-                (3.2 - 2.4 * age, 0.92 * (1.0 - age).powf(1.3))
-            };
-            Pt { p, w: w * heavy, a: a * fade, hollow: if measured < 0.5 { 1.0 } else { 0.0 } }
-        })
-        .collect();
+    let line_pts: Vec<Pt> = round_corners(
+        spline(&places, 1, 2.0 * rad_per_pt),
+        10.0 * heavy * rad_per_pt,
+    )
+    .into_iter()
+    .map(|(p, measured, f)| {
+        let age = 1.0 - f;
+        let (w, a) = if follow && heavy > 1.0 {
+            // (a journey clip, R14: the whole journey drawn and held, the dance's shape
+            // accumulating; the newest part brightest and widest, nothing fading off the tail,
+            // and the line nearly opaque so two lamps' lines cross cleanly, each in its own hue
+            // on its own dark edge, the later over the earlier, never a muddy mix)
+            (2.3 + 1.0 * (1.0 - age), 0.82 + 0.18 * (1.0 - age).powf(2.0))
+        } else if follow {
+            (3.0 - 1.5 * age, 1.0 - 0.62 * age.powf(1.5))
+        } else if heavy > 1.0 {
+            // (in a clip, R12: the tail held longer, so a take's whole line is there)
+            (3.2 - 2.0 * age, 0.95 * (1.0 - age).powf(0.7))
+        } else {
+            (3.2 - 2.4 * age, 0.92 * (1.0 - age).powf(1.3))
+        };
+        Pt {
+            p,
+            w: w * heavy,
+            a: a * fade,
+            hollow: if measured < 0.5 { 1.0 } else { 0.0 },
+        }
+    })
+    .collect();
     line(out, &line_pts, hue, false, night, false);
 }
 
@@ -238,7 +350,9 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
         return pts;
     }
     let step = radius / 3.0;
-    let dist = |a: [f32; 3], b: [f32; 3]| ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt();
+    let dist = |a: [f32; 3], b: [f32; 3]| {
+        ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2) + (a[2] - b[2]).powi(2)).sqrt()
+    };
     let total: f32 = pts.windows(2).map(|w| dist(w[0].0, w[1].0)).sum();
     // (never more than a few thousand points a line: from afar the step is coarse, close in the
     // line is shorter on the screen than it is long)
@@ -254,7 +368,11 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
         let mut t = step - carry;
         while t < d {
             let u = t / d;
-            out.push((norm([0, 1, 2].map(|k| a.0[k] + (b.0[k] - a.0[k]) * u)), a.1 + (b.1 - a.1) * u, a.2 + (b.2 - a.2) * u));
+            out.push((
+                norm([0, 1, 2].map(|k| a.0[k] + (b.0[k] - a.0[k]) * u)),
+                a.1 + (b.1 - a.1) * u,
+                a.2 + (b.2 - a.2) * u,
+            ));
             t += step;
         }
         carry = d - (t - step);
@@ -268,7 +386,9 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
     for _ in 0..6 {
         let q = out.clone();
         for i in 1..q.len() - 1 {
-            out[i].0 = norm([0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]));
+            out[i].0 = norm(
+                [0, 1, 2].map(|k| 0.25 * q[i - 1].0[k] + 0.5 * q[i].0[k] + 0.25 * q[i + 1].0[k]),
+            );
         }
     }
     // (R17) a turn sharper than the soft passes can round (a lamp reversing within one step, its legs
@@ -286,7 +406,10 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
         let mut corner = vec![0.0f32; m];
         for i in 2..m - 2 {
             let (a, b) = (dir(out[i - 2].0, out[i].0), dir(out[i].0, out[i + 2].0));
-            let ang = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0).acos().to_degrees();
+            let ang = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2])
+                .clamp(-1.0, 1.0)
+                .acos()
+                .to_degrees();
             corner[i] = ((ang - 60.0) / 40.0).clamp(0.0, 1.0);
         }
         let reach = 8isize;
@@ -295,7 +418,9 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
             for d in -reach..=reach {
                 let j = i as isize + d;
                 if j >= 0 && (j as usize) < m {
-                    w[i] = w[i].max(corner[j as usize] * (1.0 - d.unsigned_abs() as f32 / (reach as f32 + 1.0)));
+                    w[i] = w[i].max(
+                        corner[j as usize] * (1.0 - d.unsigned_abs() as f32 / (reach as f32 + 1.0)),
+                    );
                 }
             }
         }
@@ -321,7 +446,10 @@ pub fn round_corners(pts: Vec<([f32; 3], f32, f32)>, radius: f32) -> Vec<([f32; 
 /// along the places it is, 0..1.
 pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f32; 3], f32, f32)> {
     // the softening and the merging of near-duplicates, as `smooth` does them, with no subdivision
-    let p: Vec<([f32; 3], f32)> = smooth_with(places, passes, 1, true).into_iter().map(|(q, m, _)| (q, m)).collect();
+    let p: Vec<([f32; 3], f32)> = smooth_with(places, passes, 1, true)
+        .into_iter()
+        .map(|(q, m, _)| (q, m))
+        .collect();
     let n = p.len();
     if n < 3 {
         return smooth_with(places, passes, 1, true);
@@ -329,8 +457,16 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
     let sub3 = |a: [f32; 3], b: [f32; 3]| [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
     let len3 = |v: [f32; 3]| (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
     let lerp = |a: [f32; 3], b: [f32; 3], ta: f32, tb: f32, t: f32| {
-        let w = if (tb - ta).abs() < 1e-12 { 0.0 } else { (t - ta) / (tb - ta) };
-        [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w]
+        let w = if (tb - ta).abs() < 1e-12 {
+            0.0
+        } else {
+            (t - ta) / (tb - ta)
+        };
+        [
+            a[0] + (b[0] - a[0]) * w,
+            a[1] + (b[1] - a[1]) * w,
+            a[2] + (b[2] - a[2]) * w,
+        ]
     };
     let last = (n - 1) as f32;
     let mut out = Vec::new();
@@ -338,8 +474,16 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
         let p1 = p[i].0;
         let p2 = p[i + 1].0;
         // (past an end, the end reflected: the curve leaves and arrives straight)
-        let p0 = if i > 0 { p[i - 1].0 } else { sub3([2.0 * p1[0], 2.0 * p1[1], 2.0 * p1[2]], p2) };
-        let p3 = if i + 2 < n { p[i + 2].0 } else { sub3([2.0 * p2[0], 2.0 * p2[1], 2.0 * p2[2]], p1) };
+        let p0 = if i > 0 {
+            p[i - 1].0
+        } else {
+            sub3([2.0 * p1[0], 2.0 * p1[1], 2.0 * p1[2]], p2)
+        };
+        let p3 = if i + 2 < n {
+            p[i + 2].0
+        } else {
+            sub3([2.0 * p2[0], 2.0 * p2[1], 2.0 * p2[2]], p1)
+        };
         let knot = |a: [f32; 3], b: [f32; 3]| len3(sub3(b, a)).max(1e-9).sqrt();
         let t0 = 0.0;
         let t1 = t0 + knot(p0, p1);
@@ -355,7 +499,11 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
             let b1 = lerp(a1, a2, t0, t2, t);
             let b2 = lerp(a2, a3, t1, t3, t);
             let c = lerp(b1, b2, t1, t2, t);
-            out.push((norm(c), p[i].1 + (p[i + 1].1 - p[i].1) * u, (i as f32 + u) / last));
+            out.push((
+                norm(c),
+                p[i].1 + (p[i + 1].1 - p[i].1) * u,
+                (i as f32 + u) / last,
+            ));
         }
     }
     out.push((p[n - 1].0, p[n - 1].1, 1.0));
@@ -367,7 +515,17 @@ pub fn spline(places: &[([f32; 3], f32)], passes: usize, piece: f32) -> Vec<([f3
 /// the same curve; long and light, a wind line not a wake: thin, widest at the head, fading along its
 /// length but never to nothing within its short life. Drawn by the airy strokes (`Wake::airy`). `fade`
 /// dims it (a seed come down lets its line go quiet).
-pub fn air_line(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], head: crate::model::LonLat, night: bool, hue: [f32; 3], fade: f32, heavy: f32, rad_per_pt: f32) {
+#[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
+pub fn air_line(
+    out: &mut Vec<StrokeInstance>,
+    path: &[super::LookBead],
+    head: crate::model::LonLat,
+    night: bool,
+    hue: [f32; 3],
+    fade: f32,
+    heavy: f32,
+    rad_per_pt: f32,
+) {
     let mut places: Vec<([f32; 3], f32)> = path.iter().map(|b| (super::unit(b.at), 1.0)).collect();
     places.push((super::unit(head), 1.0));
     let pts: Vec<Pt> = spline(&places, 0, 2.0 * rad_per_pt)
@@ -375,7 +533,12 @@ pub fn air_line(out: &mut Vec<StrokeInstance>, path: &[super::LookBead], head: c
         .map(|(p, _, f)| {
             let age = 1.0 - f;
             let (w, a) = (2.0 - 1.2 * age, 0.85 * (1.0 - 0.75 * age.powf(0.8)));
-            Pt { p, w: w * heavy.sqrt(), a: a * fade, hollow: 0.0 }
+            Pt {
+                p,
+                w: w * heavy.sqrt(),
+                a: a * fade,
+                hollow: 0.0,
+            }
         })
         .collect();
     line(out, &pts, hue, false, night, false);

@@ -14,7 +14,11 @@ with their licences, and the type (type.json) keeps the design rules: bundled fo
 the smallest size, every ink at least the set contrast against its halo or ground. Reads PNG
 headers itself (no image library on the runner).
 """
-import json, os, struct, sys
+import json
+import os
+import struct
+import sys
+from pathlib import Path
 
 root = sys.argv[1] if len(sys.argv) > 1 else 'Globe'
 errors = []
@@ -89,7 +93,7 @@ def no_nan(name):
 
 
 try:
-    data = json.load(open(os.path.join(root, 'globe.json')), parse_constant=no_nan)
+    data = json.loads(Path(os.path.join(root, 'globe.json')).read_text(), parse_constant=no_nan)
 except (OSError, ValueError) as e:
     err(f'globe.json: {e}')
     data = {}
@@ -119,7 +123,7 @@ for i, s in enumerate(data.get('seas') or []):
 for i, c in enumerate(data.get('capitals') or []):
     need(f'capital {i}', c, {'n': str, 'c': list})
 try:
-    regions = json.load(open(os.path.join(root, 'regions.json')), parse_constant=no_nan).get('regions')
+    regions = json.loads(Path(os.path.join(root, 'regions.json')).read_text(), parse_constant=no_nan).get('regions')
 except (OSError, ValueError, AttributeError) as e:
     err(f'regions.json: {e}')
     regions = []
@@ -154,7 +158,7 @@ def font_file(name):
 
 
 try:
-    t = json.load(open(os.path.join(root, 'type.json')), parse_constant=no_nan)
+    t = json.loads(Path(os.path.join(root, 'type.json')).read_text(), parse_constant=no_nan)
 except (OSError, ValueError) as e:
     err(f'type.json: {e}')
     t = {}

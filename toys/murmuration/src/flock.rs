@@ -48,7 +48,11 @@ pub fn dot(a: V3, b: V3) -> f32 {
 }
 #[inline]
 pub fn cross(a: V3, b: V3) -> V3 {
-    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
 }
 #[inline]
 pub fn length(a: V3) -> f32 {
@@ -70,14 +74,14 @@ impl Rng {
     pub fn new(seed: u64) -> Rng {
         Rng(seed.max(1))
     }
-    pub fn next(&mut self) -> f32 {
+    pub fn next_f32(&mut self) -> f32 {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
         (self.0 >> 40) as f32 / (1u64 << 24) as f32
     }
     pub fn signed(&mut self) -> f32 {
-        self.next() * 2.0 - 1.0
+        self.next_f32() * 2.0 - 1.0
     }
     pub fn gauss3(&mut self) -> V3 {
         let mut v = [0.0; 3];
@@ -142,18 +146,22 @@ impl Flock {
         // A wheeling sheet, as a flock arrives: flattened, moving round the roost.
         let r = (n as f32).cbrt() * 1.2;
         for _ in 0..n {
-            let p = [rng.signed() * r * 2.2, rng.signed() * r * 0.5, rng.signed() * r * 1.2];
+            let p = [
+                rng.signed() * r * 2.2,
+                rng.signed() * r * 0.5,
+                rng.signed() * r * 1.2,
+            ];
             let pos = addv([ROOST_R * 0.7, ALT, 0.0], p);
             let vel = addv([0.0, 0.0, V0], scale(rng.gauss3(), 0.8));
             birds.push(Bird {
                 pos,
                 vel,
                 lift: [0.0, 1.0, 0.0],
-                phase: rng.next() * std::f32::consts::TAU,
+                phase: rng.next_f32() * std::f32::consts::TAU,
                 rate: 10.0 + rng.signed() * 1.5,
                 flap: 1.0,
                 flap_to: 1.0,
-                flap_left: rng.next() * 1.5,
+                flap_left: rng.next_f32() * 1.5,
                 wander: [0.0; 3],
                 size: 1.3 + rng.signed() * 0.1,
             });
@@ -318,7 +326,11 @@ impl Flock {
         // The flock's pull wanders over the reed bed: a slow figure (StarDisplay's roost is fixed; a
         // real flock ranges over it, sweeping out and back).
         let tt = self.time as f32;
-        self.roost = [45.0 * (tt * 0.047).sin(), ALT + 7.0 * (tt * 0.083).sin(), 35.0 * (tt * 0.031 + 1.0).sin()];
+        self.roost = [
+            45.0 * (tt * 0.047).sin(),
+            ALT + 7.0 * (tt * 0.083).sin(),
+            35.0 * (tt * 0.031 + 1.0).sin(),
+        ];
         self.build_grid();
         self.centre_now = self.centre().0;
         let n = self.birds.len();
@@ -326,7 +338,10 @@ impl Flock {
         // The neighbours, found on every core (the search only reads), then the rules in turn.
         let mut nbs = std::mem::take(&mut self.nbs);
         nbs.resize(n, ([(0.0, 0); NEIGHBOURS], 0));
-        let threads = std::thread::available_parallelism().map(|t| t.get()).unwrap_or(1).clamp(1, 6);
+        let threads = std::thread::available_parallelism()
+            .map(|t| t.get())
+            .unwrap_or(1)
+            .clamp(1, 6);
         let chunk = n.div_ceil(threads);
         {
             let me = &*self;
@@ -376,12 +391,16 @@ impl Flock {
         // flock as a wave (Procaccini et al. 2011), and the flock folds.
         self.startle_in -= dt;
         if self.startle_in <= 0.0 {
-            let i = (self.rng.next() * n as f32) as usize % n;
+            let i = (self.rng.next_f32() * n as f32) as usize % n;
             let v = norm(self.birds[i].vel);
             let side = norm(cross([0.0, 1.0, 0.0], v));
-            let sgn = if self.rng.next() < 0.5 { -1.0 } else { 1.0 };
-            self.startle = Some((self.birds[i].pos, scale(addv(side, [0.0, self.rng.signed() * 0.4, 0.0]), sgn), 0.45));
-            self.startle_in = 3.0 + self.rng.next() * 5.0;
+            let sgn = if self.rng.next_f32() < 0.5 { -1.0 } else { 1.0 };
+            self.startle = Some((
+                self.birds[i].pos,
+                scale(addv(side, [0.0, self.rng.signed() * 0.4, 0.0]), sgn),
+                0.45,
+            ));
+            self.startle_in = 3.0 + self.rng.next_f32() * 5.0;
         }
         if let Some((at, dir, left)) = self.startle {
             for (k, b) in self.birds.iter().enumerate() {
@@ -396,7 +415,11 @@ impl Flock {
                 }
             }
             let left = left - dt;
-            self.startle = if left > 0.0 { Some((at, dir, left)) } else { None };
+            self.startle = if left > 0.0 {
+                Some((at, dir, left))
+            } else {
+                None
+            };
         }
         // Your lean: asked of your bird, over the rules as strongly as the finger leans; and felt by
         // the birds round you, most by the nearest, so the flock bends with you rather than letting
@@ -441,15 +464,16 @@ impl Flock {
             // Wingbeats: bouts of flapping and gliding; flapping harder when slow or climbing.
             b.flap_left -= dt;
             if b.flap_left <= 0.0 {
-                let r = self.rng.next();
+                let r = self.rng.next_f32();
                 b.flap_to = if r < 0.7 { 1.0 } else { 0.0 };
-                b.flap_left = 0.3 + self.rng.next() * 1.4;
+                b.flap_left = 0.3 + self.rng.next_f32() * 1.4;
             }
             let speed = length(b.vel);
             let need = ((V0 - speed) * 0.5 + f[1] * 2.0).clamp(0.0, 1.0);
             let to = b.flap_to.max(need);
             b.flap += (to - b.flap) * (dt * 6.0).min(1.0);
-            b.phase = (b.phase + dt * b.rate * std::f32::consts::TAU * (0.4 + 0.6 * b.flap)) % std::f32::consts::TAU;
+            b.phase = (b.phase + dt * b.rate * std::f32::consts::TAU * (0.4 + 0.6 * b.flap))
+                % std::f32::consts::TAU;
         }
     }
 
@@ -464,7 +488,11 @@ impl Flock {
         let mut wsum = 0.0;
         for &(d2, j) in nb {
             let o = &self.birds[j as usize];
-            let w = if j as usize == self.you { YOU_WEIGHT } else { 1.0 };
+            let w = if j as usize == self.you {
+                YOU_WEIGHT
+            } else {
+                1.0
+            };
             let d = sub(o.pos, p);
             let dist = d2.sqrt().max(1e-3);
             if dist < SEP_R {
@@ -490,11 +518,17 @@ impl Flock {
         let f = scale(v, 1.0 / speed);
         a = addv(a, scale(f, (V0 - speed) * W_SPEED));
         // The roost: turn back toward it beyond its circle (horizontally), and keep the height.
-        let to = addv(scale(sub(self.roost, self.centre_now), 0.6), scale(sub(self.roost, p), 0.4));
+        let to = addv(
+            scale(sub(self.roost, self.centre_now), 0.6),
+            scale(sub(self.roost, p), 0.4),
+        );
         let hd = (to[0] * to[0] + to[2] * to[2]).sqrt();
         if hd > ROOST_R {
             let k = W_ROOST * (hd - ROOST_R);
-            a = addv(a, [to[0] / hd * k * V0 * 0.2, 0.0, to[2] / hd * k * V0 * 0.2]);
+            a = addv(
+                a,
+                [to[0] / hd * k * V0 * 0.2, 0.0, to[2] / hd * k * V0 * 0.2],
+            );
         }
         a[1] += W_ALT * (self.roost[1] - p[1]) * 3.0 - 0.5 * v[1];
         // A little randomness: a slowly wandering urge in every bird.
@@ -524,7 +558,16 @@ mod bench {
         }
         let (c, _) = f.centre();
         let mut ext = [0.0f32; 3];
-        for b in &f.birds { for k in 0..3 { ext[k] = ext[k].max((b.pos[k] - c[k]).abs()); } }
-        println!("step {:.2} ms, found {:?}, extent {:?}", t.elapsed().as_secs_f64() * 1000.0 / 60.0, found, ext);
+        for b in &f.birds {
+            for k in 0..3 {
+                ext[k] = ext[k].max((b.pos[k] - c[k]).abs());
+            }
+        }
+        println!(
+            "step {:.2} ms, found {:?}, extent {:?}",
+            t.elapsed().as_secs_f64() * 1000.0 / 60.0,
+            found,
+            ext
+        );
     }
 }

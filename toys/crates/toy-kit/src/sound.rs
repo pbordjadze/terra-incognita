@@ -50,7 +50,13 @@ impl Bells {
         }
     }
     pub fn synth(&self) -> Box<dyn Synth> {
-        Box::new(BellSynth { shared: self.0.clone(), voices: Vec::new(), bed: 0.0, bed_phase: [0.0; 3], bed_freq: 55.0 })
+        Box::new(BellSynth {
+            shared: self.0.clone(),
+            voices: Vec::new(),
+            bed: 0.0,
+            bed_phase: [0.0; 3],
+            bed_freq: 55.0,
+        })
     }
 }
 
@@ -77,10 +83,19 @@ impl Synth for BellSynth {
                 if self.voices.len() >= 24 {
                     self.voices.remove(0);
                 }
-                self.voices.push(Voice { n, phase: 0.0, mphase: 0.0, t: 0.0 });
+                self.voices.push(Voice {
+                    n,
+                    phase: 0.0,
+                    mphase: 0.0,
+                    t: 0.0,
+                });
             }
             target_bed = s.bed;
-            target_freq = if s.bed_freq > 0.0 { s.bed_freq } else { self.bed_freq };
+            target_freq = if s.bed_freq > 0.0 {
+                s.bed_freq
+            } else {
+                self.bed_freq
+            };
         }
         let dt = 1.0 / rate;
         let tau = std::f64::consts::TAU;
@@ -89,7 +104,9 @@ impl Synth for BellSynth {
             for v in &mut self.voices {
                 let env_a = (v.t / 0.004).min(1.0);
                 let env = env_a * (-6.9 * v.t / v.n.decay as f64).exp();
-                let m = (v.mphase * tau).sin() * v.n.bright as f64 * (-3.0 * v.t / v.n.decay as f64).exp();
+                let m = (v.mphase * tau).sin()
+                    * v.n.bright as f64
+                    * (-3.0 * v.t / v.n.decay as f64).exp();
                 let s = ((v.phase * tau) + m).sin() * env * v.n.amp as f64;
                 let p = (v.n.pan.clamp(-1.0, 1.0) + 1.0) * 0.25 * std::f32::consts::PI;
                 l += s as f32 * p.cos();
@@ -151,9 +168,17 @@ mod tests {
         let mut out = vec![0.0f32; 2 * 4800];
         synth.render(&mut out, 2, 48000.0);
         assert!(out.iter().all(|s| *s == 0.0), "silent before a strike");
-        bells.strike(Note { freq: 440.0, amp: 0.5, decay: 0.2, pan: -1.0, bright: 1.0 });
+        bells.strike(Note {
+            freq: 440.0,
+            amp: 0.5,
+            decay: 0.2,
+            pan: -1.0,
+            bright: 1.0,
+        });
         synth.render(&mut out, 2, 48000.0);
-        let (l, r) = out.chunks(2).fold((0.0f32, 0.0f32), |(l, r), f| (l.max(f[0].abs()), r.max(f[1].abs())));
+        let (l, r) = out.chunks(2).fold((0.0f32, 0.0f32), |(l, r), f| {
+            (l.max(f[0].abs()), r.max(f[1].abs()))
+        });
         assert!(l > 0.1 && l < 1.0, "left {l}");
         assert!(r < 1e-3, "panned hard left, right {r}");
         for _ in 0..10 {

@@ -6,7 +6,9 @@
 
 use crate::assets::Assets;
 use crate::gpu::{Blit, Budget, Gpu, Stage, Textures, View, ViewUniform};
-use crate::look::{sea::Ripple, GroundPass, Look, LookBead, LookCloud, LookFloat, LookState, SeaPass};
+use crate::look::{
+    sea::Ripple, GroundPass, Look, LookBead, LookCloud, LookFloat, LookState, SeaPass,
+};
 use crate::model::*;
 use crate::sea::{AirRules, Drift, Drifters, GpuPath, Maybes, Media, MediumRules, Params, Rules};
 use crate::touch::{CameraControl, Gestures, Key, Motion, Out};
@@ -29,7 +31,10 @@ pub struct Stash {
 #[derive(Clone, Debug)]
 enum Undo {
     Put(u32),
-    Moved { id: u32, from: Float },
+    Moved {
+        id: u32,
+        from: Float,
+    },
     Removed(Float),
     /// Every float taken out at once (`Intent::ClearAll`); on the redo stack, the clearing itself.
     Cleared(Vec<Float>),
@@ -351,16 +356,30 @@ pub(crate) fn lerp_place(a: LonLat, b: LonLat, f: f64) -> LonLat {
     } else if lon < -180.0 {
         lon += 360.0;
     }
-    LonLat { lon, lat: a.lat + (b.lat - a.lat) * f }
+    LonLat {
+        lon,
+        lat: a.lat + (b.lat - a.lat) * f,
+    }
 }
 
 impl App {
-    pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> anyhow::Result<App> {
-        let clock = Clock { day: 0.0, running: true, rate: RATE };
+    pub fn new(
+        gpu: Gpu,
+        assets: Box<dyn Assets>,
+        width: u32,
+        height: u32,
+        ppp: f64,
+    ) -> anyhow::Result<App> {
+        let clock = Clock {
+            day: 0.0,
+            running: true,
+            rate: RATE,
+        };
         let textures = Textures::load(&gpu, assets.as_ref(), clock.months().0)?;
         let rules = Rules::load(assets.as_ref())?;
         let air = AirRules::sharing(&rules, assets.as_ref())?;
-        let drifters = Drifters::parse(&assets.read("drifters.bin")?).map_err(|e| anyhow::anyhow!("drifters.bin: {e}"))?;
+        let drifters = Drifters::parse(&assets.read("drifters.bin")?)
+            .map_err(|e| anyhow::anyhow!("drifters.bin: {e}"))?;
         let view_layout = crate::look::view_layout(&gpu);
         let make_view = |label: &str| {
             let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -372,7 +391,10 @@ impl App {
             let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some(label),
                 layout: &view_layout,
-                entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
             });
             (buffer, bind)
         };
@@ -480,14 +502,20 @@ impl App {
             camera: self.camera.camera,
             seconds: self.seconds,
             clock: self.clock,
-            rest: if self.clock.running { self.rest * self.rest } else { 1.0 - (1.0 - self.rest) * (1.0 - self.rest) },
+            rest: if self.clock.running {
+                self.rest * self.rest
+            } else {
+                1.0 - (1.0 - self.rest) * (1.0 - self.rest)
+            },
             night: if self.night { 1.0 } else { 0.0 },
             export: 0.0,
         }
     }
 
     fn motion(&self) -> Motion {
-        Motion { reduce: self.reduce_motion }
+        Motion {
+            reduce: self.reduce_motion,
+        }
     }
 
     /// What is under a point of the screen (points): the nearest float within reach and the place
@@ -505,7 +533,7 @@ impl App {
                 continue;
             }
             let d = ((p[0] - x).powi(2) + (p[1] - y).powi(2)).sqrt();
-            if d < reach && best.map_or(true, |b| d < b.0) {
+            if d < reach && best.is_none_or(|b| d < b.0) {
                 best = Some((d, f.id, f.at));
             }
         }
@@ -538,7 +566,12 @@ impl App {
 
     /// A wheel or trackpad pinch: zoom by `factor` about the point.
     pub fn wheel(&mut self, x: f64, y: f64, factor: f64) {
-        self.record(crate::studio::TakeEvent::Wheel { t: self.now, x, y, factor });
+        self.record(crate::studio::TakeEvent::Wheel {
+            t: self.now,
+            x,
+            y,
+            factor,
+        });
         let mut gestures = std::mem::take(&mut self.gestures);
         let out = gestures.wheel(x, y, factor, &*self);
         self.gestures = gestures;
@@ -569,7 +602,11 @@ impl App {
             Intent::Release { at: None, .. } => "ReleaseBack".to_string(),
             Intent::SetRunning { running: false } => "Pause".to_string(),
             Intent::SetRunning { running: true } => "Play".to_string(),
-            other => format!("{other:?}").split(|c| c == ' ' || c == '{' || c == '(').next().unwrap_or("").to_string(),
+            other => format!("{other:?}")
+                .split([' ', '{', '('])
+                .next()
+                .unwrap_or("")
+                .to_string(),
         };
         if self.seen.last() != Some(&name) {
             self.seen.push(name);
@@ -577,7 +614,11 @@ impl App {
         let day = self.clock.day;
         match intent {
             // (D10: a ring at touch-down keeps the choice; `Unchoose` is the tap's carrier)
-            Intent::Ring { at } => self.ripples.push(Ripple { at, when: self.seconds, strength: 1.0 }),
+            Intent::Ring { at } => self.ripples.push(Ripple {
+                at,
+                when: self.seconds,
+                strength: 1.0,
+            }),
             Intent::Choose { float } => {
                 if self.floats.iter().any(|f| f.id == float) {
                     self.chosen = vec![float];
@@ -653,7 +694,11 @@ impl App {
                 self.gestures.float_put(id);
                 self.undo.push(Undo::Put(id));
                 self.redo.clear();
-                self.ripples.push(Ripple { at, when: self.seconds, strength: 0.6 });
+                self.ripples.push(Ripple {
+                    at,
+                    when: self.seconds,
+                    strength: 0.6,
+                });
             }
             Intent::Hold { float } => {
                 self.haptic = true;
@@ -671,7 +716,9 @@ impl App {
                 }
             }
             Intent::Release { float, at } => {
-                let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
+                let Some(i) = self.floats.iter().position(|f| f.id == float) else {
+                    return;
+                };
                 let moved = self.floats[i].hand == Hand::Carried;
                 match (at, moved) {
                     (None, true) => {
@@ -688,16 +735,28 @@ impl App {
                         f.held = Held::No;
                         // a new leg from here, its own seed: the path before it stays what it was
                         let mut legs = f.legs();
-                        f.seed = (f.seed ^ day.to_bits()).rotate_left(23).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+                        f.seed = (f.seed ^ day.to_bits())
+                            .rotate_left(23)
+                            .wrapping_mul(0x9E37_79B9_7F4A_7C15);
                         // set down: the law of the leg it continues (a lamp from an older build keeps its own, R13)
                         let law = legs.last().map_or(crate::sea::rules::LAW, |l| l.law);
                         let medium = legs.last().map_or(Medium::Sea, |l| l.medium);
                         legs.push(Leg::new(p, day, f.seed).under(law).on(medium));
                         f.legs = legs;
-                        let e = Media { sea: &self.rules, air: &self.air }.of(medium).put(p, day, f.seed, 0).eddy;
+                        let e = Media {
+                            sea: &self.rules,
+                            air: &self.air,
+                        }
+                        .of(medium)
+                        .put(p, day, f.seed, 0)
+                        .eddy;
                         f.eddy = [e.0, e.1];
                         self.redo.clear();
-                        self.ripples.push(Ripple { at: p, when: self.seconds, strength: 0.6 });
+                        self.ripples.push(Ripple {
+                            at: p,
+                            when: self.seconds,
+                            strength: 0.6,
+                        });
                     }
                     _ => {
                         // let go where it was, or over land, or past the beat without moving: back as
@@ -745,11 +804,17 @@ impl App {
             Intent::ClearAll => self.clear_all(),
             Intent::Medium { medium } => {
                 self.medium = medium;
-                self.clock.rate = if self.conducting() { self.tempo() } else { self.free_rate() };
+                self.clock.rate = if self.conducting() {
+                    self.tempo()
+                } else {
+                    self.free_rate()
+                };
             }
             Intent::Home => {
                 self.camera.riding = None;
-                let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
+                let motion = crate::touch::motion::Motion {
+                    reduce: self.reduce_motion,
+                };
                 self.camera.fly_to(HOME, self.now, motion);
             }
         }
@@ -758,19 +823,40 @@ impl App {
     fn put(&mut self, at: LonLat) -> u32 {
         let id = self.next_id;
         self.next_id += 1;
-        let seed = (self.clock.day.to_bits() ^ (id as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)).rotate_left(17);
+        let seed = (self.clock.day.to_bits() ^ (id as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15))
+            .rotate_left(17);
         // the water there is already moving: the first eddy velocity is drawn from the measured
         // variance (Truth's `Rules::put`), deterministic for the seed
         // (a seed on the wind takes the gust world 0's air has there: R21)
-        let e = self.media().of(self.medium).put(at, self.clock.day, seed, 0).eddy;
-        self.floats.push(Float { id, at, put_day: self.clock.day, seed, held: Held::No, hand: Hand::Held, eddy: [e.0, e.1], measured: 1.0, wake: Vec::new(), kept: false, trail: Vec::new(), lit_for: 0.0, legs: vec![Leg::new(at, self.clock.day, seed).on(self.medium)] });
+        let e = self
+            .media()
+            .of(self.medium)
+            .put(at, self.clock.day, seed, 0)
+            .eddy;
+        self.floats.push(Float {
+            id,
+            at,
+            put_day: self.clock.day,
+            seed,
+            held: Held::No,
+            hand: Hand::Held,
+            eddy: [e.0, e.1],
+            measured: 1.0,
+            wake: Vec::new(),
+            kept: false,
+            trail: Vec::new(),
+            lit_for: 0.0,
+            legs: vec![Leg::new(at, self.clock.day, seed).on(self.medium)],
+        });
         id
     }
 
     /// A float taken out past the rim (Motion's `Release { at: None }` while carried, or its own
     /// intent): undo gives it back as it was before the touch began.
     fn take_out(&mut self, float: u32) {
-        let Some(i) = self.floats.iter().position(|f| f.id == float) else { return };
+        let Some(i) = self.floats.iter().position(|f| f.id == float) else {
+            return;
+        };
         let mut f = self.floats.remove(i);
         self.chosen.retain(|&c| c != float);
         self.followed.retain(|&c| c != float);
@@ -791,7 +877,9 @@ impl App {
             return;
         }
         // the kept lamps stay (R13)
-        let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+        let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats)
+            .into_iter()
+            .partition(|f| f.kept);
         self.floats = kept;
         if gone.is_empty() {
             return;
@@ -851,7 +939,9 @@ impl App {
     fn redo(&mut self) {
         match self.redo.pop() {
             Some(Undo::Cleared(_)) => {
-                let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats).into_iter().partition(|f| f.kept);
+                let (kept, mut gone): (Vec<Float>, Vec<Float>) = std::mem::take(&mut self.floats)
+                    .into_iter()
+                    .partition(|f| f.kept);
                 self.floats = kept;
                 for f in &mut gone {
                     f.hand = Hand::Free;
@@ -920,7 +1010,12 @@ impl App {
         self.apply(out, now);
         // a float carried off the disc and let go is taken out (the gestures say so with a release
         // without a place while it is carried)
-        let gone: Vec<u32> = self.floats.iter().filter(|f| f.hand == Hand::Carried && self.gestures.is_holding() != Some(f.id)).map(|f| f.id).collect();
+        let gone: Vec<u32> = self
+            .floats
+            .iter()
+            .filter(|f| f.hand == Hand::Carried && self.gestures.is_holding() != Some(f.id))
+            .map(|f| f.id)
+            .collect();
         for id in gone {
             self.take_out(id);
         }
@@ -937,7 +1032,12 @@ impl App {
         for f in &mut self.floats {
             f.lit_for += dt;
         }
-        let ride_at = self.camera.riding.and_then(|id| self.floats.iter().find(|f| f.id == id && f.born(self.clock.day)).map(|f| f.at));
+        let ride_at = self.camera.riding.and_then(|id| {
+            self.floats
+                .iter()
+                .find(|f| f.id == id && f.born(self.clock.day))
+                .map(|f| f.at)
+        });
         if self.camera.riding.is_some() && ride_at.is_none() {
             self.camera.riding = None;
         }
@@ -952,7 +1052,14 @@ impl App {
             None
         };
         self.camera.hold_frame(hold, now, motion);
-        self.camera.tick(now, dt, ride_at, self.floats.is_empty(), self.gestures.touching(), motion);
+        self.camera.tick(
+            now,
+            dt,
+            ride_at,
+            self.floats.is_empty(),
+            self.gestures.touching(),
+            motion,
+        );
         let horizon = self.seconds - 6.0;
         self.ripples.retain(|r| r.when > horizon);
         // the sea settles to rest when the date is held (0.6 s, eased out) and wakes when it runs
@@ -966,7 +1073,11 @@ impl App {
         // (0.25 s); a folded cloud gives its slot back (R6)
         self.open_clouds();
         for c in &mut self.clouds {
-            c.bloom = if c.wanted { (c.bloom + (dt / 0.35) as f32).min(1.0) } else { (c.bloom - (dt / 0.25) as f32).max(0.0) };
+            c.bloom = if c.wanted {
+                (c.bloom + (dt / 0.35) as f32).min(1.0)
+            } else {
+                (c.bloom - (dt / 0.25) as f32).max(0.0)
+            };
         }
         self.clouds.retain(|c| c.wanted || c.bloom > 0.0);
         // the front's maybes bloom out as a float is held (0.35 s, eased out) and fold back when it
@@ -982,7 +1093,10 @@ impl App {
                             let w = t.window(45);
                             self.drifter_label = t.label_window(w.clone());
                             self.drifter_nearest = t.point.saturating_sub(w.start);
-                            t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect()
+                            t.xyz[w]
+                                .iter()
+                                .map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64]))
+                                .collect()
                         }
                         None => Vec::new(),
                     };
@@ -1001,7 +1115,11 @@ impl App {
     /// The bloom as drawn: eased out while opening, eased in while folding.
     fn bloom_eased(&self) -> f32 {
         let b = self.bloom;
-        if self.shown().is_some() { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b }
+        if self.shown().is_some() {
+            1.0 - (1.0 - b) * (1.0 - b)
+        } else {
+            b * b
+        }
     }
 
     /// The float in front, whose nearest drifter shows: the one held by a finger, else the one
@@ -1014,7 +1132,16 @@ impl App {
             .find(|f| f.hand == Hand::Held)
             .or_else(|| self.pressing_float.and_then(|(id, _)| by_id(id)))
             .or_else(|| self.chosen.last().copied().and_then(by_id))
-            .or_else(|| if SHOW_RIDDEN { self.camera.riding.filter(|id| !self.followed.contains(id)).and_then(by_id) } else { None })
+            .or_else(|| {
+                if SHOW_RIDDEN {
+                    self.camera
+                        .riding
+                        .filter(|id| !self.followed.contains(id))
+                        .and_then(by_id)
+                } else {
+                    None
+                }
+            })
     }
 
     /// Every float whose cloud is out (R6), the front one last: the chosen in order, the ridden, the
@@ -1058,14 +1185,32 @@ impl App {
         }
         for &id in &ids {
             if !self.clouds.iter().any(|c| c.id == id) {
-                if let Some(slot) = (0..MAX_CLOUDS as u32).find(|s| !self.clouds.iter().any(|c| c.slot == *s)) {
-                    let leg = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(self.clock.day).map(|li| f.legs[li])).unwrap_or(Leg::new(LonLat::new(0.0, 0.0), f64::NAN, 0));
-                    self.clouds.push(Cloud { id, leg, slot, n: 0, reached: f64::INFINITY, keeps: Vec::new(), next_keep: 0.0, bloom: 0.0, wanted: true });
+                if let Some(slot) =
+                    (0..MAX_CLOUDS as u32).find(|s| !self.clouds.iter().any(|c| c.slot == *s))
+                {
+                    let leg = self
+                        .floats
+                        .iter()
+                        .find(|f| f.id == id)
+                        .and_then(|f| f.leg_at(self.clock.day).map(|li| f.legs[li]))
+                        .unwrap_or(Leg::new(LonLat::new(0.0, 0.0), f64::NAN, 0));
+                    self.clouds.push(Cloud {
+                        id,
+                        leg,
+                        slot,
+                        n: 0,
+                        reached: f64::INFINITY,
+                        keeps: Vec::new(),
+                        next_keep: 0.0,
+                        bloom: 0.0,
+                        wanted: true,
+                    });
                 }
             }
         }
         // in the order shown, the front one last (a folding one first)
-        self.clouds.sort_by_key(|c| ids.iter().position(|&i| i == c.id).map_or(0, |p| p + 1));
+        self.clouds
+            .sort_by_key(|c| ids.iter().position(|&i| i == c.id).map_or(0, |p| p + 1));
         ids
     }
 
@@ -1073,7 +1218,11 @@ impl App {
     /// a scrub faster than `MAYBES_BUDGET` half-days a frame shows here).
     pub fn behind(&self) -> f64 {
         let day = self.clock.day;
-        self.clouds.iter().filter(|c| c.wanted && c.reached.is_finite()).map(|c| (day.max(c.leg.day) - c.reached).abs()).fold(0.0, f64::max)
+        self.clouds
+            .iter()
+            .filter(|c| c.wanted && c.reached.is_finite())
+            .map(|c| (day.max(c.leg.day) - c.reached).abs())
+            .fold(0.0, f64::max)
     }
 
     /// The record control's rect as the look drew it (R9; Motion's probe), x, y, w, h in points.
@@ -1123,7 +1272,10 @@ impl App {
             let leg = f.legs[li];
             self.ensure_path(f.id, li, leg, day, &mut budget);
             let path = &self.paths[&(f.id, li)];
-            let k = path.samples.partition_point(|s| s.day <= day + 1e-9).saturating_sub(1);
+            let k = path
+                .samples
+                .partition_point(|s| s.day <= day + 1e-9)
+                .saturating_sub(1);
             let a = path.samples[k];
             if let Some(b) = path.samples.get(k + 1) {
                 let fr = ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0);
@@ -1145,9 +1297,17 @@ impl App {
                             break;
                         }
                         if s.day.fract() == 0.0 {
-                            f.wake.push(Bead { at: s.at, day: s.day, measured: s.measured });
+                            f.wake.push(Bead {
+                                at: s.at,
+                                day: s.day,
+                                measured: s.measured,
+                            });
                         }
-                        f.trail.push(Bead { at: s.at, day: s.day, measured: s.measured });
+                        f.trail.push(Bead {
+                            at: s.at,
+                            day: s.day,
+                            measured: s.measured,
+                        });
                     }
                 }
             }
@@ -1155,7 +1315,11 @@ impl App {
                 f.wake.drain(0..f.wake.len() - WAKE_MAX);
             }
             if let Some(first) = f.wake.first().map(|b| b.day) {
-                let cut = f.trail.iter().position(|b| b.day >= first - 1e-9).unwrap_or(0);
+                let cut = f
+                    .trail
+                    .iter()
+                    .position(|b| b.day >= first - 1e-9)
+                    .unwrap_or(0);
                 f.trail.drain(0..cut);
             }
         }
@@ -1164,12 +1328,33 @@ impl App {
 
     /// A leg's path computed to `upto` (as far as the budget allows this frame).
     fn ensure_path(&mut self, id: u32, li: usize, leg: Leg, upto: f64, budget: &mut usize) {
-        let path = self.paths.entry((id, li)).or_insert_with(|| Path { leg, samples: Vec::new() });
-        Self::extend_path(Media { sea: &self.rules, air: &self.air }.of(leg.medium), path, leg, leg.world, upto, budget);
+        let path = self.paths.entry((id, li)).or_insert_with(|| Path {
+            leg,
+            samples: Vec::new(),
+        });
+        Self::extend_path(
+            Media {
+                sea: &self.rules,
+                air: &self.air,
+            }
+            .of(leg.medium),
+            path,
+            leg,
+            leg.world,
+            upto,
+            budget,
+        );
     }
 
     /// A path of leg `leg` for maybe `k` (0 the float itself) stepped to `upto` on the quarter-day grid.
-    fn extend_path(rules: &dyn MediumRules, path: &mut Path, leg: Leg, k: u32, upto: f64, budget: &mut usize) {
+    fn extend_path(
+        rules: &dyn MediumRules,
+        path: &mut Path,
+        leg: Leg,
+        k: u32,
+        upto: f64,
+        budget: &mut usize,
+    ) {
         if path.leg != leg || path.samples.is_empty() {
             let e = match leg.eddy {
                 Some(e) => (e[0], e[1]),
@@ -1177,7 +1362,13 @@ impl App {
             };
             path.leg = leg;
             path.samples.clear();
-            path.samples.push(Sample { day: leg.day, at: leg.at, eddy: [e.0, e.1], measured: 1.0, held: Held::No });
+            path.samples.push(Sample {
+                day: leg.day,
+                at: leg.at,
+                eddy: [e.0, e.1],
+                measured: 1.0,
+                held: Held::No,
+            });
         }
         while *budget > 0 {
             let last = *path.samples.last().unwrap();
@@ -1185,8 +1376,25 @@ impl App {
                 break;
             }
             let next = grid_next(last.day);
-            let s = rules.flight(leg.law, Drift { at: last.at, eddy: (last.eddy[0], last.eddy[1]) }, last.held, last.day, next - last.day, leg.seed, k);
-            path.samples.push(Sample { day: next, at: s.drift.at, eddy: [s.drift.eddy.0, s.drift.eddy.1], measured: s.measured, held: s.held });
+            let s = rules.flight(
+                leg.law,
+                Drift {
+                    at: last.at,
+                    eddy: (last.eddy[0], last.eddy[1]),
+                },
+                last.held,
+                last.day,
+                next - last.day,
+                leg.seed,
+                k,
+            );
+            path.samples.push(Sample {
+                day: next,
+                at: s.drift.at,
+                eddy: [s.drift.eddy.0, s.drift.eddy.1],
+                measured: s.measured,
+                held: s.held,
+            });
             *budget -= 1;
         }
     }
@@ -1198,10 +1406,31 @@ impl App {
         let chosen = self.chosen.clone();
         self.samples.retain(|(id, _), _| chosen.contains(id));
         for id in chosen {
-            let Some(leg) = self.floats.iter().find(|f| f.id == id).and_then(|f| f.leg_at(day).map(|li| f.legs[li])) else { continue };
+            let Some(leg) = self
+                .floats
+                .iter()
+                .find(|f| f.id == id)
+                .and_then(|f| f.leg_at(day).map(|li| f.legs[li]))
+            else {
+                continue;
+            };
             for k in 1..=FRAME_SAMPLES {
-                let path = self.samples.entry((id, k)).or_insert_with(|| Path { leg, samples: Vec::new() });
-                Self::extend_path(Media { sea: &self.rules, air: &self.air }.of(leg.medium), path, leg, k, day, &mut budget);
+                let path = self.samples.entry((id, k)).or_insert_with(|| Path {
+                    leg,
+                    samples: Vec::new(),
+                });
+                Self::extend_path(
+                    Media {
+                        sea: &self.rules,
+                        air: &self.air,
+                    }
+                    .of(leg.medium),
+                    path,
+                    leg,
+                    k,
+                    day,
+                    &mut budget,
+                );
             }
         }
     }
@@ -1223,14 +1452,23 @@ impl App {
     pub fn frame_points(&self) -> Vec<LonLat> {
         let day = self.clock.day;
         let mut out = Vec::new();
-        for f in self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))) {
+        for f in self.floats.iter().filter(|f| {
+            f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))
+        }) {
             out.push(f.at);
         }
-        for ((_, _), p) in self.samples.iter().filter(|((id, _), _)| self.chosen.contains(id)) {
+        for ((_, _), p) in self
+            .samples
+            .iter()
+            .filter(|((id, _), _)| self.chosen.contains(id))
+        {
             if p.samples.is_empty() || p.leg.day > day + 1e-9 {
                 continue;
             }
-            let k = p.samples.partition_point(|s| s.day <= day + 1e-9).saturating_sub(1);
+            let k = p
+                .samples
+                .partition_point(|s| s.day <= day + 1e-9)
+                .saturating_sub(1);
             let a = p.samples[k];
             // (R21, Motion) a seed's maybe come down is done: the frame follows what still flies (the
             // wind's maybes mostly come down within hours near the start, and held a ride back there)
@@ -1238,7 +1476,11 @@ impl App {
                 continue;
             }
             out.push(match p.samples.get(k + 1) {
-                Some(b) => lerp_place(a.at, b.at, ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0)),
+                Some(b) => lerp_place(
+                    a.at,
+                    b.at,
+                    ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0),
+                ),
                 None => a.at,
             });
         }
@@ -1268,25 +1510,50 @@ impl App {
                 (s.floats.clone(), s.next_id, s.clock, s.camera, s.medium)
             }
             None => match &self.preview {
-                Some(p) => (self.floats.clone(), self.next_id, p.clock, p.camera, self.medium),
-                None => (self.floats.clone(), self.next_id, self.clock, self.camera.camera, self.medium),
+                Some(p) => (
+                    self.floats.clone(),
+                    self.next_id,
+                    p.clock,
+                    p.camera,
+                    self.medium,
+                ),
+                None => (
+                    self.floats.clone(),
+                    self.next_id,
+                    self.clock,
+                    self.camera.camera,
+                    self.medium,
+                ),
             },
         };
         for f in &mut floats {
             f.hand = Hand::Free;
             f.lit_for = 10.0;
         }
-        serde_json::to_string(&Snapshot { version: 1, floats, next_id, day: clock.day, running: clock.running, camera, medium }).unwrap_or_default()
+        serde_json::to_string(&Snapshot {
+            version: 1,
+            floats,
+            next_id,
+            day: clock.day,
+            running: clock.running,
+            camera,
+            medium,
+        })
+        .unwrap_or_default()
     }
 
     /// Takes a kept state back; a state that can't be read is ignored.
     pub fn restore(&mut self, json: &str) -> bool {
-        let Ok(s) = serde_json::from_str::<Snapshot>(json) else { return false };
+        let Ok(s) = serde_json::from_str::<Snapshot>(json) else {
+            return false;
+        };
         if s.version != 1 {
             return false;
         }
         self.floats = s.floats;
-        self.next_id = s.next_id.max(self.floats.iter().map(|f| f.id + 1).max().unwrap_or(1));
+        self.next_id = s
+            .next_id
+            .max(self.floats.iter().map(|f| f.id + 1).max().unwrap_or(1));
         self.clock.day = s.day;
         self.clock.running = s.running;
         self.medium = s.medium;
@@ -1310,7 +1577,11 @@ impl App {
         self.camera = CameraControl::new(scene.camera);
         self.gestures = Gestures::new();
         self.medium = scene.medium;
-        self.clock = Clock { day: scene.day, running: scene.running, rate: self.free_rate() };
+        self.clock = Clock {
+            day: scene.day,
+            running: scene.running,
+            rate: self.free_rate(),
+        };
         self.seconds = scene.seconds;
         self.night = scene.night;
         self.credits_open = scene.credits_open;
@@ -1319,15 +1590,28 @@ impl App {
             self.clock.day = scene.day - sf.days_ago;
             let id = self.put(LonLat::new(sf.lon, sf.lat));
             if let Some(f) = self.floats.iter_mut().find(|f| f.id == id) {
-                f.hand = if scene.hold == Some(i) { Hand::Held } else { Hand::Free };
+                f.hand = if scene.hold == Some(i) {
+                    Hand::Held
+                } else {
+                    Hand::Free
+                };
                 f.lit_for = 10.0;
             }
         }
         self.clock.day = scene.day;
         self.step_floats_with(usize::MAX);
         let ids: Vec<u32> = self.floats.iter().map(|f| f.id).collect();
-        self.chosen = scene.choose.iter().filter_map(|&i| ids.get(i).copied()).collect();
-        self.followed = scene.follow.iter().filter_map(|&i| ids.get(i).copied()).filter(|id| !self.chosen.contains(id)).collect();
+        self.chosen = scene
+            .choose
+            .iter()
+            .filter_map(|&i| ids.get(i).copied())
+            .collect();
+        self.followed = scene
+            .follow
+            .iter()
+            .filter_map(|&i| ids.get(i).copied())
+            .filter(|id| !self.chosen.contains(id))
+            .collect();
         for &i in &scene.keep {
             if let Some(f) = self.floats.get_mut(i) {
                 f.kept = true;
@@ -1336,7 +1620,11 @@ impl App {
         self.samples.clear();
         self.step_samples(usize::MAX);
         self.clouds.clear();
-        self.bloom = if scene.hold.is_some() || !self.chosen.is_empty() { 1.0 } else { 0.0 };
+        self.bloom = if scene.hold.is_some() || !self.chosen.is_empty() {
+            1.0
+        } else {
+            0.0
+        };
         // the clouds out at full bloom, caught up to the date (a scene is a still)
         self.open_clouds();
         for c in &mut self.clouds {
@@ -1348,25 +1636,58 @@ impl App {
                 let w = t.window(45);
                 self.drifter_label = t.label_window(w.clone());
                 self.drifter_nearest = t.point.saturating_sub(w.start);
-                self.drifter = t.xyz[w].iter().map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64])).collect();
+                self.drifter = t.xyz[w]
+                    .iter()
+                    .map(|v| LonLat::from_xyz([v[0] as f64, v[1] as f64, v[2] as f64]))
+                    .collect();
             }
         }
     }
 
     /// What the look draws this frame, from the state (look/README.md › Wiring).
     fn look_state(&self) -> LookState {
-        const MONTHS: [&str; 12] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const MONTHS: [&str; 12] = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ];
         let (month, day) = self.clock.calendar();
-        let resting = self.pressing.map(|(at, since)| (at, crate::touch::motion::thicken(self.now - since) as f32));
+        let resting = self
+            .pressing
+            .map(|(at, since)| (at, crate::touch::motion::thicken(self.now - since) as f32));
         let front = self.shown().map(|f| f.id);
-        let ease = |b: f32, opening: bool| if opening { 1.0 - (1.0 - b) * (1.0 - b) } else { b * b };
+        let ease = |b: f32, opening: bool| {
+            if opening {
+                1.0 - (1.0 - b) * (1.0 - b)
+            } else {
+                b * b
+            }
+        };
         let clouds: Vec<LookCloud> = self
             .clouds
             .iter()
             .filter(|c| c.n > 0)
             .filter_map(|c| {
                 let f = self.floats.iter().find(|f| f.id == c.id)?;
-                Some(LookCloud { id: c.id, at: f.at, origin: c.leg.at, base: c.slot * MAYBES, count: c.n, bloom: ease(c.bloom, c.wanted), front: front == Some(c.id), wind: c.leg.medium == Medium::Wind })
+                Some(LookCloud {
+                    id: c.id,
+                    at: f.at,
+                    origin: c.leg.at,
+                    base: c.slot * MAYBES,
+                    count: c.n,
+                    bloom: ease(c.bloom, c.wanted),
+                    front: front == Some(c.id),
+                    wind: c.leg.medium == Medium::Wind,
+                })
             })
             .collect();
         LookState {
@@ -1375,10 +1696,16 @@ impl App {
                 .iter()
                 .filter(|f| f.born(self.clock.day))
                 .map(|f| {
-                    let first = f.legs.first().copied().unwrap_or(Leg::new(f.at, f.put_day, f.seed));
+                    let first = f
+                        .legs
+                        .first()
+                        .copied()
+                        .unwrap_or(Leg::new(f.at, f.put_day, f.seed));
                     // a seed on the wind (R21): its head on its line's spline, and its coming down
                     let li = f.leg_at(self.clock.day);
-                    let medium = li.map_or(first.medium, |i| f.legs.get(i).map_or(first.medium, |l| l.medium));
+                    let medium = li.map_or(first.medium, |i| {
+                        f.legs.get(i).map_or(first.medium, |l| l.medium)
+                    });
                     let (mut at, mut down, mut down_days) = (f.at, Held::No, 0.0f32);
                     // (its whole flight since it was lifted, every step: the app's trail starts at its
                     // first whole day, a seed's life is a day or two)
@@ -1386,9 +1713,20 @@ impl App {
                     if medium == Medium::Wind {
                         if let Some(li) = li {
                             for i in 0..=li {
-                                let until = if i < li { f.legs[i + 1].day } else { self.clock.day };
+                                let until = if i < li {
+                                    f.legs[i + 1].day
+                                } else {
+                                    self.clock.day
+                                };
                                 if let Some(p) = self.paths.get(&(f.id, i)) {
-                                    flight.extend(p.samples.iter().take_while(|x| x.day <= until + 1e-9).map(|x| LookBead { at: x.at, measured: 1.0 }));
+                                    flight.extend(
+                                        p.samples.iter().take_while(|x| x.day <= until + 1e-9).map(
+                                            |x| LookBead {
+                                                at: x.at,
+                                                measured: 1.0,
+                                            },
+                                        ),
+                                    );
                                 }
                             }
                         }
@@ -1407,38 +1745,97 @@ impl App {
                             if k + 1 < s.len() && !s[k].held.down() {
                                 let fr = (day - s[k].day) / (s[k + 1].day - s[k].day).max(1e-9);
                                 let q = |i: usize| s[i.min(s.len() - 1)].at;
-                                at = crate::look::seeds::spline_head([q(k.saturating_sub(1)), q(k), q(k + 1), q(k + 2)], fr);
+                                at = crate::look::seeds::spline_head(
+                                    [q(k.saturating_sub(1)), q(k), q(k + 1), q(k + 2)],
+                                    fr,
+                                );
                             }
                         }
                     }
-                    LookFloat { medium, down, down_days, id: f.id, at, lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32, held: f.hand == Hand::Held, chosen: front == Some(f.id), shown: clouds.iter().any(|c| c.id == f.id), followed: self.followed.contains(&f.id), origin: first.at, put_day: first.day, wake: if medium == Medium::Wind { flight } else { f.trail.iter().map(|b| LookBead { at: b.at, measured: b.measured }).collect() }, measured: f.measured, kept: f.kept }
+                    LookFloat {
+                        medium,
+                        down,
+                        down_days,
+                        id: f.id,
+                        at,
+                        lit: (1.0 - (f.lit_for / 3.0)).clamp(0.0, 1.0) as f32,
+                        held: f.hand == Hand::Held,
+                        chosen: front == Some(f.id),
+                        shown: clouds.iter().any(|c| c.id == f.id),
+                        followed: self.followed.contains(&f.id),
+                        origin: first.at,
+                        put_day: first.day,
+                        wake: if medium == Medium::Wind {
+                            flight
+                        } else {
+                            f.trail
+                                .iter()
+                                .map(|b| LookBead {
+                                    at: b.at,
+                                    measured: b.measured,
+                                })
+                                .collect()
+                        },
+                        measured: f.measured,
+                        kept: f.kept,
+                    }
                 })
                 .collect(),
             behind: self.behind() as f32,
-            recording: self.studio.recording.as_ref().map(|t| (self.now - t.t0) as f32),
+            recording: self
+                .studio
+                .recording
+                .as_ref()
+                .map(|t| (self.now - t.t0) as f32),
             exporting: self.exporting,
-            opening: if self.exporting { self.clip_phase.0 } else { 1.0 },
-            ending: if self.exporting { self.clip_phase.1 } else { 0.0 },
+            opening: if self.exporting {
+                self.clip_phase.0
+            } else {
+                1.0
+            },
+            ending: if self.exporting {
+                self.clip_phase.1
+            } else {
+                0.0
+            },
             lamp_rings: if self.exporting {
                 Vec::new()
             } else {
                 // (a ring within a few km of a lamp: a tap on it or on its mark)
                 self.ripples
                     .iter()
-                    .filter_map(|r| self.floats.iter().filter(|f| f.born(self.clock.day)).find(|f| f.at.distance_m(r.at) < 30_000.0).map(|f| (f.id, f.at, (self.seconds - r.when) as f32)))
+                    .filter_map(|r| {
+                        self.floats
+                            .iter()
+                            .filter(|f| f.born(self.clock.day))
+                            .find(|f| f.at.distance_m(r.at) < 30_000.0)
+                            .map(|f| (f.id, f.at, (self.seconds - r.when) as f32))
+                    })
                     .collect()
             },
             conducting: self.conducting(),
             song: self.song.is_some(),
             fermata: self.conducting() && self.gestures.fermata(),
-            cues: self.cues.iter().map(|(c, when)| {
-                let mut c = c.clone();
-                c.age = (self.seconds - when) as f32;
-                c
-            }).collect(),
-            panel_press: self.gestures.panel_pressing_since(self.now).map(|(id, secs)| (id, crate::touch::motion::thicken(secs) as f32)),
+            cues: self
+                .cues
+                .iter()
+                .map(|(c, when)| {
+                    let mut c = c.clone();
+                    c.age = (self.seconds - when) as f32;
+                    c
+                })
+                .collect(),
+            panel_press: self
+                .gestures
+                .panel_pressing_since(self.now)
+                .map(|(id, secs)| (id, crate::touch::motion::thicken(secs) as f32)),
             clip: if self.exporting {
-                Some([0.0, 0.0, (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32, (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32])
+                Some([
+                    0.0,
+                    0.0,
+                    (crate::studio::CLIP.0 as f64 / crate::studio::CLIP_PPP) as f32,
+                    (crate::studio::CLIP.1 as f64 / crate::studio::CLIP_PPP) as f32,
+                ])
             } else {
                 None
             },
@@ -1448,7 +1845,11 @@ impl App {
             clouds,
             drifter: self.drifter.clone(),
             drifter_label: self.drifter_label.clone(),
-            drifter_nearest: if self.drifter.is_empty() { None } else { Some(self.drifter_nearest.min(self.drifter.len() - 1)) },
+            drifter_nearest: if self.drifter.is_empty() {
+                None
+            } else {
+                Some(self.drifter_nearest.min(self.drifter.len() - 1))
+            },
             rise: self.bloom_eased(),
             night: self.night,
             wind: self.medium == Medium::Wind,
@@ -1457,7 +1858,10 @@ impl App {
             date_running: self.clock.running,
             year_day: (self.clock.year_day() / 365.25) as f32,
             seconds: self.seconds as f32,
-            date_press: self.gestures.date_pressing_since(self.now).map_or(0.0, |secs| crate::touch::motion::thicken(secs) as f32),
+            date_press: self
+                .gestures
+                .date_pressing_since(self.now)
+                .map_or(0.0, |secs| crate::touch::motion::thicken(secs) as f32),
             truth_marks: false,
             credits: crate::sea::CREDIT_LINE.to_string(),
             credits_full: crate::sea::CREDITS.iter().map(|s| s.to_string()).collect(),
@@ -1471,13 +1875,19 @@ impl App {
         // put, stepped on from the day they have reached, a budget of steps a frame each; a rewind
         // restores the nearest keep and steps from there, so a scrub never re-runs a cloud from the put
         let day = self.clock.day;
-        let n = if self.budget.scale < 0.75 { MAYBES / 2 } else { MAYBES };
+        let n = if self.budget.scale < 0.75 {
+            MAYBES / 2
+        } else {
+            MAYBES
+        };
         let mut clouds = std::mem::take(&mut self.clouds);
         for c in &mut clouds {
             if !c.wanted {
                 continue; // folding: drawn as it stands
             }
-            let Some(f) = self.floats.iter().find(|f| f.id == c.id) else { continue };
+            let Some(f) = self.floats.iter().find(|f| f.id == c.id) else {
+                continue;
+            };
             let Some(li) = f.leg_at(day) else { continue };
             let leg = f.legs[li];
             let base = c.slot * MAYBES;
@@ -1492,7 +1902,11 @@ impl App {
                 let target = day.max(leg.day);
                 let mut reached = if same { c.reached } else { f64::INFINITY };
                 if reached > target + 1e-9 {
-                    let keep = if same { c.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
+                    let keep = if same {
+                        c.keeps.iter().rposition(|k| k.day <= target + 1e-9)
+                    } else {
+                        None
+                    };
                     match keep {
                         Some(k) => {
                             air.restore(&self.gpu, &c.keeps[k].keep);
@@ -1507,7 +1921,14 @@ impl App {
                                         Some(e) => (e[0], e[1]),
                                         None => self.air.put(leg.at, leg.day, leg.seed, k).eddy,
                                     };
-                                    GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 0.0, eddy_u: e.0, eddy_v: e.1 }
+                                    GpuPath {
+                                        lon: leg.at.lon as f32,
+                                        lat: leg.at.lat as f32,
+                                        held: 0,
+                                        measured: 0.0,
+                                        eddy_u: e.0,
+                                        eddy_v: e.1,
+                                    }
                                 })
                                 .collect();
                             air.seed_at(&self.gpu, base, &paths);
@@ -1521,7 +1942,9 @@ impl App {
                 } else {
                     air.unpark(&self.gpu, base, n);
                 }
-                let steps = crate::sea::wind::grid_steps(&self.air, reached, target, leg.seed, n, base, budget);
+                let steps = crate::sea::wind::grid_steps(
+                    &self.air, reached, target, leg.seed, n, base, budget,
+                );
                 let mut from = 0;
                 for (i, &(_, to)) in steps.iter().enumerate() {
                     reached = to;
@@ -1532,7 +1955,10 @@ impl App {
                         from = i + 1;
                     }
                     if due {
-                        c.keeps.push(Kept { day: reached, keep: air.keep_at(&self.gpu, base, n) });
+                        c.keeps.push(Kept {
+                            day: reached,
+                            keep: air.keep_at(&self.gpu, base, n),
+                        });
                         if c.keeps.len() > KEEPS_MAX {
                             c.keeps.remove(0);
                         }
@@ -1540,7 +1966,9 @@ impl App {
                     }
                 }
                 air.park(&self.gpu, base, n);
-                if let Some(g) = crate::sea::wind::glide(&self.air, reached, target, leg.seed, n, base) {
+                if let Some(g) =
+                    crate::sea::wind::glide(&self.air, reached, target, leg.seed, n, base)
+                {
                     air.step(&self.gpu, g);
                 }
                 c.reached = reached;
@@ -1551,7 +1979,11 @@ impl App {
             let mut reached = if same { c.reached } else { f64::INFINITY };
             if reached > target + 1e-9 {
                 // behind us: the nearest keep at or before the target, else the put itself
-                let keep = if same { c.keeps.iter().rposition(|k| k.day <= target + 1e-9) } else { None };
+                let keep = if same {
+                    c.keeps.iter().rposition(|k| k.day <= target + 1e-9)
+                } else {
+                    None
+                };
                 match keep {
                     Some(k) => {
                         self.maybes.restore(&self.gpu, &c.keeps[k].keep);
@@ -1566,7 +1998,14 @@ impl App {
                                     Some(e) => (e[0], e[1]),
                                     None => self.rules.put(leg.at, leg.day, leg.seed, k).eddy,
                                 };
-                                GpuPath { lon: leg.at.lon as f32, lat: leg.at.lat as f32, held: 0, measured: 1.0, eddy_u: e.0, eddy_v: e.1 }
+                                GpuPath {
+                                    lon: leg.at.lon as f32,
+                                    lat: leg.at.lat as f32,
+                                    held: 0,
+                                    measured: 1.0,
+                                    eddy_u: e.0,
+                                    eddy_v: e.1,
+                                }
                             })
                             .collect();
                         self.maybes.seed_at(&self.gpu, base, &paths);
@@ -1581,10 +2020,13 @@ impl App {
             // the frame's steps in one submit (Truth's step_many), a keep where one falls due
             let mut steps = 0;
             let mut batch: Vec<Params> = Vec::new();
-            let budget = budget;
             while reached < target - 1e-6 && steps < budget {
                 let dt = MAYBES_STEP.min(target - reached);
-                batch.push(Params::new(&self.rules, reached, dt, leg.seed, n).at_base(base).under(leg.law));
+                batch.push(
+                    Params::new(&self.rules, reached, dt, leg.seed, n)
+                        .at_base(base)
+                        .under(leg.law),
+                );
                 reached += dt;
                 steps += 1;
                 if reached >= c.next_keep - 1e-9 || batch.len() as u32 >= crate::sea::MAX_STEPS {
@@ -1593,7 +2035,10 @@ impl App {
                     if reached < c.next_keep - 1e-9 {
                         continue;
                     }
-                    c.keeps.push(Kept { day: reached, keep: self.maybes.keep_at(&self.gpu, base, n) });
+                    c.keeps.push(Kept {
+                        day: reached,
+                        keep: self.maybes.keep_at(&self.gpu, base, n),
+                    });
                     if c.keeps.len() > KEEPS_MAX {
                         c.keeps.remove(0);
                     }
@@ -1624,13 +2069,18 @@ impl App {
     /// clip is drawn at 9:16 with a camera of its own, not cropped from the take's screen).
     fn render_view(&mut self, target: &wgpu::TextureView, view: View, step: bool) {
         let (ma, mb, _) = self.clock.months();
-        match self.textures.set_months(&self.gpu, self.assets.as_ref(), ma, mb) {
+        match self
+            .textures
+            .set_months(&self.gpu, self.assets.as_ref(), ma, mb)
+        {
             Ok(true) => self.ground.rebind(&self.gpu, &self.textures),
             Ok(false) => {}
             Err(e) => log::error!("land for month {ma}: {e}"),
         }
         let uniform = view.uniform();
-        self.gpu.queue.write_buffer(&self.view_buffer, 0, bytemuck::bytes_of(&uniform));
+        self.gpu
+            .queue
+            .write_buffer(&self.view_buffer, 0, bytemuck::bytes_of(&uniform));
         // the stage: the ground and the sea, redrawn when the view, the months or the sea's clock
         // moved (the clock at most thirty times a second), at the budget's scale
         let months = self.textures.land_months;
@@ -1645,57 +2095,123 @@ impl App {
             }
             None => true,
         };
-        let sea_ticked = (self.clock.running || !self.ripples.is_empty()) && self.seconds - self.stage_seconds >= 1.0 / 30.0 - 1e-6;
-        let wanted = |s: &Stage, scale: f64, w: u32, h: u32| s.scale == scale && s.width == ((w as f64 * scale).round() as u32).max(1) && s.height == ((h as f64 * scale).round() as u32).max(1);
-        let rescaled = self.stage.as_ref().map_or(true, |s| !wanted(s, self.budget.scale, view.width, view.height));
+        let sea_ticked = (self.clock.running || !self.ripples.is_empty())
+            && self.seconds - self.stage_seconds >= 1.0 / 30.0 - 1e-6;
+        let wanted = |s: &Stage, scale: f64, w: u32, h: u32| {
+            s.scale == scale
+                && s.width == ((w as f64 * scale).round() as u32).max(1)
+                && s.height == ((h as f64 * scale).round() as u32).max(1)
+        };
+        let rescaled = self
+            .stage
+            .as_ref()
+            .is_none_or(|s| !wanted(s, self.budget.scale, view.width, view.height));
         if rescaled {
-            self.stage = Some(self.blit.stage(&self.gpu, view.width, view.height, self.budget.scale));
+            self.stage =
+                Some(
+                    self.blit
+                        .stage(&self.gpu, view.width, view.height, self.budget.scale),
+                );
         }
         if moved || sea_ticked || rescaled {
             if moved && self.budget.frame(self.last_dt) {
-                self.stage = Some(self.blit.stage(&self.gpu, view.width, view.height, self.budget.scale));
+                self.stage =
+                    Some(
+                        self.blit
+                            .stage(&self.gpu, view.width, view.height, self.budget.scale),
+                    );
             }
             let stage = self.stage.as_ref().unwrap();
             let mut u = uniform;
-            u.frame = [stage.width as f32, stage.height as f32, (stage.width as f64 / view.width as f64 * view.ppp) as f32, view.reading as f32];
-            self.gpu.queue.write_buffer(&self.stage_view_buffer, 0, bytemuck::bytes_of(&u));
+            u.frame = [
+                stage.width as f32,
+                stage.height as f32,
+                (stage.width as f64 / view.width as f64 * view.ppp) as f32,
+                view.reading as f32,
+            ];
+            self.gpu
+                .queue
+                .write_buffer(&self.stage_view_buffer, 0, bytemuck::bytes_of(&u));
             if self.exporting && self.clip_phase.1 > 0.0 {
                 // the clip's last beat: touch feedback fades out with it (R10)
                 let fade = 1.0 - self.clip_phase.1;
-                let rings: Vec<_> = self.ripples.iter().map(|r| crate::look::sea::Ripple { at: r.at, when: r.when, strength: r.strength * fade }).collect();
+                let rings: Vec<_> = self
+                    .ripples
+                    .iter()
+                    .map(|r| crate::look::sea::Ripple {
+                        at: r.at,
+                        when: r.when,
+                        strength: r.strength * fade,
+                    })
+                    .collect();
                 self.sea.prepare(&self.gpu, &rings);
             } else {
                 self.sea.prepare(&self.gpu, &self.ripples);
             }
             if crate::look::profile::on() {
                 // (R24) each pass alone and timed (look/profile.rs); the same pixels
-                let clear = wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 };
+                let clear = wgpu::Color {
+                    r: 0.96,
+                    g: 0.95,
+                    b: 0.92,
+                    a: 1.0,
+                };
                 let b = crate::look::profile::begin(&self.gpu);
                 let mut b = b;
-                self.sea.glow_pass(&self.gpu, &mut b.0, &self.stage_view_bind, stage.width, stage.height);
+                self.sea.glow_pass(
+                    &self.gpu,
+                    &mut b.0,
+                    &self.stage_view_bind,
+                    stage.width,
+                    stage.height,
+                );
                 crate::look::profile::end(&self.gpu, "sea glow", b);
-                crate::timed!(&self.gpu, "ground", &stage.view, Some(clear), |rp| self.ground.draw(rp, &self.stage_view_bind));
-                crate::timed!(&self.gpu, "sea", &stage.view, None, |rp| self.sea.draw(rp, &self.stage_view_bind));
+                crate::timed!(&self.gpu, "ground", &stage.view, Some(clear), |rp| self
+                    .ground
+                    .draw(rp, &self.stage_view_bind));
+                crate::timed!(&self.gpu, "sea", &stage.view, None, |rp| self
+                    .sea
+                    .draw(rp, &self.stage_view_bind));
             } else {
-            let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stage") });
-            self.sea.glow_pass(&self.gpu, &mut enc, &self.stage_view_bind, stage.width, stage.height);
-            {
-                let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("stage"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &stage.view,
-                        resolve_target: None,
-                        ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.96, g: 0.95, b: 0.92, a: 1.0 }), store: wgpu::StoreOp::Store },
-                        depth_slice: None,
-                    })],
-                    depth_stencil_attachment: None,
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-                self.ground.draw(&mut rp, &self.stage_view_bind);
-                self.sea.draw(&mut rp, &self.stage_view_bind);
-            }
-            self.gpu.queue.submit([enc.finish()]);
+                let mut enc =
+                    self.gpu
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("stage"),
+                        });
+                self.sea.glow_pass(
+                    &self.gpu,
+                    &mut enc,
+                    &self.stage_view_bind,
+                    stage.width,
+                    stage.height,
+                );
+                {
+                    let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("stage"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &stage.view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.96,
+                                    g: 0.95,
+                                    b: 0.92,
+                                    a: 1.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                            depth_slice: None,
+                        })],
+                        depth_stencil_attachment: None,
+                        timestamp_writes: None,
+                        occlusion_query_set: None,
+                        multiview_mask: None,
+                    });
+                    self.ground.draw(&mut rp, &self.stage_view_bind);
+                    self.sea.draw(&mut rp, &self.stage_view_bind);
+                }
+                self.gpu.queue.submit([enc.finish()]);
             }
             self.stage_shown = Some((uniform, months));
             self.stage_seconds = self.seconds;
@@ -1706,25 +2222,44 @@ impl App {
         }
         let state = self.look_state();
         let d = view.disc;
-        self.look.prepare(&self.gpu, &state, (view.width as f64 / view.ppp) as f32, (view.height as f64 / view.ppp) as f32, view.reading as f32, [d.cx as f32, d.cy as f32, d.r as f32]);
+        self.look.prepare(
+            &self.gpu,
+            &state,
+            (view.width as f64 / view.ppp) as f32,
+            (view.height as f64 / view.ppp) as f32,
+            view.reading as f32,
+            [d.cx as f32, d.cy as f32, d.r as f32],
+        );
         if crate::look::profile::on() {
-            crate::timed!(&self.gpu, "blit", target, None, |rp| self.blit.draw(rp, self.stage.as_ref().unwrap()));
-            self.look.draw_profiled(&self.gpu, target, &self.view_bind, &self.maybes);
+            crate::timed!(&self.gpu, "blit", target, None, |rp| self
+                .blit
+                .draw(rp, self.stage.as_ref().unwrap()));
+            self.look
+                .draw_profiled(&self.gpu, target, &self.view_bind, &self.maybes);
             return;
         }
-        let mut enc = self.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame") });
+        let mut enc = self
+            .gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("frame"),
+            });
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("frame"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: target,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
                     depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.blit.draw(&mut rp, self.stage.as_ref().unwrap());
             self.look.draw(&mut rp, &self.view_bind, &self.maybes);
@@ -1746,7 +2281,10 @@ impl App {
     /// An intent from outside the touch (the checks, a shell's button): applied, and recorded in a
     /// take as it runs (R9).
     pub fn command(&mut self, intent: Intent) {
-        self.record(crate::studio::TakeEvent::Intent { t: self.now, intent });
+        self.record(crate::studio::TakeEvent::Intent {
+            t: self.now,
+            intent,
+        });
         self.intend(intent);
     }
 
@@ -1844,7 +2382,11 @@ impl App {
     /// at zoom 1 and half-width `half`, points.
     pub fn lean_for(&self, r1: f64, half: f64, focus: bool) -> crate::studio::Lean {
         let day = self.clock.day;
-        let all: Vec<&Float> = self.floats.iter().filter(|f| f.born(day) && f.hand == Hand::Free).collect();
+        let all: Vec<&Float> = self
+            .floats
+            .iter()
+            .filter(|f| f.born(day) && f.hand == Hand::Free)
+            .collect();
         // (R21) a thing's medium now, and the day a seed came down (None aloft, or a lamp)
         let medium = |f: &Float| f.leg_at(day).map_or(Medium::Sea, |li| f.legs()[li].medium);
         let down_since = |f: &Float| -> Option<f64> {
@@ -1854,17 +2396,35 @@ impl App {
             let li = f.leg_at(day)?;
             let path = self.paths.get(&(f.id, li))?;
             let upto = path.samples.partition_point(|s| s.day <= day + 1e-9);
-            path.samples[..upto].iter().rev().take_while(|s| s.held.down()).last().map(|s| s.day)
+            path.samples[..upto]
+                .iter()
+                .rev()
+                .take_while(|s| s.held.down())
+                .last()
+                .map(|s| s.day)
         };
         // a seed down for more than `DOWN_FRAMED_DAYS` is let go of while any other still flies
         let these: Vec<&Float> = {
-            let up: Vec<&Float> = all.iter().copied().filter(|f| down_since(f).map_or(true, |d| day - d <= crate::studio::DOWN_FRAMED_DAYS)).collect();
-            if up.is_empty() { all.clone() } else { up }
+            let up: Vec<&Float> = all
+                .iter()
+                .copied()
+                .filter(|f| {
+                    down_since(f).is_none_or(|d| day - d <= crate::studio::DOWN_FRAMED_DAYS)
+                })
+                .collect();
+            if up.is_empty() {
+                all.clone()
+            } else {
+                up
+            }
         };
         let wind = !these.is_empty() && these.iter().all(|f| medium(f) == Medium::Wind);
         // (R21) the days of line held: a seed's are the wind's, shorter
         let (trail_days, trail_full) = if wind {
-            (crate::studio::FRAME_TRAIL * crate::studio::WIND_TRAIL, crate::studio::FRAME_TRAIL_FULL * crate::studio::WIND_TRAIL)
+            (
+                crate::studio::FRAME_TRAIL * crate::studio::WIND_TRAIL,
+                crate::studio::FRAME_TRAIL_FULL * crate::studio::WIND_TRAIL,
+            )
         } else {
             (crate::studio::FRAME_TRAIL, crate::studio::FRAME_TRAIL_FULL)
         };
@@ -1874,7 +2434,9 @@ impl App {
             for f in fs {
                 let mut prev: Option<&Sample> = None;
                 for li in 0..f.legs().len() {
-                    let Some(path) = self.paths.get(&(f.id, li)) else { continue };
+                    let Some(path) = self.paths.get(&(f.id, li)) else {
+                        continue;
+                    };
                     for s in &path.samples {
                         if s.day > day {
                             break;
@@ -1883,11 +2445,16 @@ impl App {
                             // (R15) weighted: the newest days whole, older ones drawn in toward the lamp
                             let near = |at: LonLat, d: f64| {
                                 let age = day - d;
-                                let w = if age <= trail_full { 1.0 } else { 1.0 - 0.5 * (age - trail_full) / (trail_days - trail_full) };
+                                let w = if age <= trail_full {
+                                    1.0
+                                } else {
+                                    1.0 - 0.5 * (age - trail_full) / (trail_days - trail_full)
+                                };
                                 lerp_place(f.at, at, w.clamp(0.5, 1.0))
                             };
                             if let Some(p) = prev.filter(|p| p.day < since) {
-                                let fr = ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
+                                let fr =
+                                    ((since - p.day) / (s.day - p.day).max(1e-9)).clamp(0.0, 1.0);
                                 trail.push(near(lerp_place(p.at, s.at, fr), since));
                             }
                             trail.push(near(s.at, s.day));
@@ -1909,11 +2476,24 @@ impl App {
         .filter(|(_, _, w)| *w > 0.0);
         // (R15) the whole lines since the take began, every quarter day, for the end beat's pull-out
         let mut whole = Vec::new();
-        if let Some(from) = self.studio.replay.as_ref().map(|r| r.take.start.clock.day).or(self.studio.recording.as_ref().map(|r| r.start.clock.day)) {
+        if let Some(from) = self
+            .studio
+            .replay
+            .as_ref()
+            .map(|r| r.take.start.clock.day)
+            .or(self.studio.recording.as_ref().map(|r| r.start.clock.day))
+        {
             for f in &these {
                 for li in 0..f.legs().len() {
-                    let Some(path) = self.paths.get(&(f.id, li)) else { continue };
-                    whole.extend(path.samples.iter().filter(|s| s.day >= from && s.day <= day).map(|s| (s.day, s.at)));
+                    let Some(path) = self.paths.get(&(f.id, li)) else {
+                        continue;
+                    };
+                    whole.extend(
+                        path.samples
+                            .iter()
+                            .filter(|s| s.day >= from && s.day <= day)
+                            .map(|s| (s.day, s.at)),
+                    );
                 }
             }
         }
@@ -1925,15 +2505,22 @@ impl App {
             });
             let c = LonLat::from_xyz(sum);
             let (lat, lon) = (c.lat.to_radians(), c.lon.to_radians());
-            (1..=(crate::studio::LAND_LOOK_KM / 50.0) as usize).map(|i| i as f64 * 50.0).filter(|_| !these.is_empty()).find(|km| {
-                (0..16).any(|k| {
-                    let b = k as f64 * std::f64::consts::PI / 8.0;
-                    let d = km / 6371.0;
-                    let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
-                    let lon2 = lon + (b.sin() * d.sin() * lat.cos()).atan2(d.cos() - lat.sin() * lat2.sin());
-                    self.rules.coast.is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+            (1..=(crate::studio::LAND_LOOK_KM / 50.0) as usize)
+                .map(|i| i as f64 * 50.0)
+                .filter(|_| !these.is_empty())
+                .find(|km| {
+                    (0..16).any(|k| {
+                        let b = k as f64 * std::f64::consts::PI / 8.0;
+                        let d = km / 6371.0;
+                        let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
+                        let lon2 = lon
+                            + (b.sin() * d.sin() * lat.cos())
+                                .atan2(d.cos() - lat.sin() * lat2.sin());
+                        self.rules
+                            .coast
+                            .is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+                    })
                 })
-            })
         };
         // (R18) beyond that, coarser rings to `OPEN_LOOK_KM` for a journey's establishing opening
         let land_far_km = land_km.or_else(|| {
@@ -1944,25 +2531,47 @@ impl App {
             let c = LonLat::from_xyz(sum);
             let (lat, lon) = (c.lat.to_radians(), c.lon.to_radians());
             let first = crate::studio::LAND_LOOK_KM + 100.0;
-            (0..).map(|i| first + i as f64 * 100.0).take_while(|km| *km <= crate::studio::OPEN_LOOK_KM).filter(|_| !these.is_empty()).find(|km| {
-                (0..48).any(|k| {
-                    let b = k as f64 * std::f64::consts::PI / 24.0;
-                    let d = km / 6371.0;
-                    let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
-                    let lon2 = lon + (b.sin() * d.sin() * lat.cos()).atan2(d.cos() - lat.sin() * lat2.sin());
-                    self.rules.coast.is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+            (0..)
+                .map(|i| first + i as f64 * 100.0)
+                .take_while(|km| *km <= crate::studio::OPEN_LOOK_KM)
+                .filter(|_| !these.is_empty())
+                .find(|km| {
+                    (0..48).any(|k| {
+                        let b = k as f64 * std::f64::consts::PI / 24.0;
+                        let d = km / 6371.0;
+                        let lat2 = (lat.sin() * d.cos() + lat.cos() * d.sin() * b.cos()).asin();
+                        let lon2 = lon
+                            + (b.sin() * d.sin() * lat.cos())
+                                .atan2(d.cos() - lat.sin() * lat2.sin());
+                        self.rules
+                            .coast
+                            .is_land(LonLat::new(lon2.to_degrees(), lat2.to_degrees()))
+                    })
                 })
-            })
         });
-        crate::studio::Lean { lamps: these.iter().map(|f| f.at).collect(), trail: lines(&these), r1, half, focus, whole, zoom_cap: crate::studio::coast_cap(land_km), land_km, land_far_km, scale: if wind { crate::studio::WIND_SCALE } else { 1.0 }, journey: false }
-
+        crate::studio::Lean {
+            lamps: these.iter().map(|f| f.at).collect(),
+            trail: lines(&these),
+            r1,
+            half,
+            focus,
+            whole,
+            zoom_cap: crate::studio::coast_cap(land_km),
+            land_km,
+            land_far_km,
+            scale: if wind { crate::studio::WIND_SCALE } else { 1.0 },
+            journey: false,
+        }
     }
 
     /// Whether the hand conducts (R11): while a take is recorded, and while one is replayed for its
     /// export.
     /// Both media's rules (R21).
     pub fn media(&self) -> Media<'_> {
-        Media { sea: &self.rules, air: &self.air }
+        Media {
+            sea: &self.rules,
+            air: &self.air,
+        }
     }
 
     /// The date's free pace for the preset (R21): the sea's `RATE`, the wind's `AIR_RATE`.
@@ -2005,13 +2614,27 @@ impl App {
         for (id, li, leg) in cuts {
             let mut budget = usize::MAX;
             self.ensure_path(id, li, leg, day, &mut budget);
-            let s = self.paths[&(id, li)].samples.iter().copied().find(|s| s.day >= day - 1e-9);
-            let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else { continue };
+            let s = self.paths[&(id, li)]
+                .samples
+                .iter()
+                .copied()
+                .find(|s| s.day >= day - 1e-9);
+            let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else {
+                continue;
+            };
             let mut legs = f.legs();
             legs.truncate(li + 1);
             // (a seed come down is not cut: it stays where it came down, R21)
             if let Some(s) = s.filter(|s| s.day > leg.day + 1e-9 && !s.held.down()) {
-                legs.push(Leg { at: s.at, day: s.day, seed: leg.seed, world: leg.world, eddy: Some(s.eddy), law: leg.law, medium: leg.medium });
+                legs.push(Leg {
+                    at: s.at,
+                    day: s.day,
+                    seed: leg.seed,
+                    world: leg.world,
+                    eddy: Some(s.eddy),
+                    law: leg.law,
+                    medium: leg.medium,
+                });
             }
             f.legs = legs;
         }
@@ -2033,8 +2656,15 @@ impl App {
             let legs = f.legs();
             let leg = legs[li];
             live.push(f.id);
-            let rules = Media { sea: &self.rules, air: &self.air }.of(leg.medium);
-            let w = self.conduct.entry(f.id).or_insert_with(|| crate::conduct::Worlds::new(rules, leg, li));
+            let rules = Media {
+                sea: &self.rules,
+                air: &self.air,
+            }
+            .of(leg.medium);
+            let w = self
+                .conduct
+                .entry(f.id)
+                .or_insert_with(|| crate::conduct::Worlds::new(rules, leg, li));
             if !w.serves(&leg, li) {
                 *w = crate::conduct::Worlds::new(rules, leg, li);
             }
@@ -2062,13 +2692,27 @@ impl App {
         };
         let targets: Vec<u32> = match float {
             Some(id) => vec![id],
-            None => self.conduct.keys().copied().collect::<std::collections::BTreeSet<_>>().into_iter().collect(),
+            None => self
+                .conduct
+                .keys()
+                .copied()
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect(),
         };
         let mut before = Vec::new();
         for id in targets {
-            let Some(w) = self.conduct.get(&id) else { continue };
-            let rules = Media { sea: &self.rules, air: &self.air }.of(w.leg.medium);
-            let Some(choice) = w.choose(rules, gesture, day, self.clock.rate, &project) else { continue };
+            let Some(w) = self.conduct.get(&id) else {
+                continue;
+            };
+            let rules = Media {
+                sea: &self.rules,
+                air: &self.air,
+            }
+            .of(w.leg.medium);
+            let Some(choice) = w.choose(rules, gesture, day, self.clock.rate, &project) else {
+                continue;
+            };
             let chosen = w.place(choice.k, day);
             let places = w.places(day);
             let fan: Vec<LonLat> = choice.fan.iter().map(|k| w.place(*k, day).at).collect();
@@ -2076,7 +2720,9 @@ impl App {
             // the leg becomes world k to the next grid mark, and the next leg begins there with world
             // k's exact state, still in world k: the lamp's path is that world's, bit for bit (Truth)
             let (cut_day, cut) = w.cut(choice.k, day);
-            let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else { continue };
+            let Some(f) = self.floats.iter_mut().find(|f| f.id == id) else {
+                continue;
+            };
             before.push(f.clone());
             let mut legs = f.legs();
             legs.truncate(li + 1);
@@ -2085,14 +2731,31 @@ impl App {
             if cut_day > legs[li].day + 1e-9 && !cut.held.down() {
                 let seed = legs[li].seed;
                 let law = legs[li].law;
-                legs.push(Leg { at: cut.at, day: cut_day, seed, world: choice.k, eddy: Some([cut.eddy.0, cut.eddy.1]), law, medium: legs[li].medium });
+                legs.push(Leg {
+                    at: cut.at,
+                    day: cut_day,
+                    seed,
+                    world: choice.k,
+                    eddy: Some([cut.eddy.0, cut.eddy.1]),
+                    law,
+                    medium: legs[li].medium,
+                });
             }
             f.legs = legs;
             let from = f.at;
             f.at = chosen.at;
             f.eddy = [chosen.eddy.0, chosen.eddy.1];
             f.lit_for = 0.0;
-            let cue = crate::look::LookCue { id, worlds: places, near: choice.near, chosen: choice.k, at: chosen.at, from, fan, age: 0.0 };
+            let cue = crate::look::LookCue {
+                id,
+                worlds: places,
+                near: choice.near,
+                chosen: choice.k,
+                at: chosen.at,
+                from,
+                fan,
+                age: 0.0,
+            };
             self.cues.push((cue, self.seconds));
         }
         if !before.is_empty() {
@@ -2123,7 +2786,20 @@ impl App {
         self.clock.rate = self.tempo();
         let start = self.take_start();
         self.apply_start(&start, now);
-        self.studio.recording = Some(crate::studio::Take { start, events: Vec::new(), t0: now, t1: now, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing::default(), song: self.song.clone() });
+        self.studio.recording = Some(crate::studio::Take {
+            start,
+            events: Vec::new(),
+            t0: now,
+            t1: now,
+            width: self.width,
+            height: self.height,
+            ppp: self.ppp,
+            trim: None,
+            end: None,
+            speed: 1.0,
+            framing: crate::studio::Framing::default(),
+            song: self.song.clone(),
+        });
     }
 
     /// The take ends and is kept, the newest last (R9).
@@ -2152,7 +2828,12 @@ impl App {
         if self.studio.replay.is_some() {
             return 0;
         }
-        let Some(take) = index.map_or(self.studio.takes.last(), |i| self.studio.takes.get(i)).cloned() else { return 0 };
+        let Some(take) = index
+            .map_or(self.studio.takes.last(), |i| self.studio.takes.get(i))
+            .cloned()
+        else {
+            return 0;
+        };
         self.export_begin_take(take, fps)
     }
 
@@ -2165,12 +2846,29 @@ impl App {
     /// out, by id.
     pub fn picked_lamps(&self) -> Vec<u32> {
         let day = self.clock.day;
-        let mut ids: Vec<u32> = self.floats.iter().filter(|f| f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))).map(|f| f.id).collect();
+        let mut ids: Vec<u32> = self
+            .floats
+            .iter()
+            .filter(|f| {
+                f.born(day) && (self.chosen.contains(&f.id) || self.followed.contains(&f.id))
+            })
+            .map(|f| f.id)
+            .collect();
         if ids.is_empty() {
-            ids = self.floats.iter().filter(|f| f.born(day) && f.kept).map(|f| f.id).collect();
+            ids = self
+                .floats
+                .iter()
+                .filter(|f| f.born(day) && f.kept)
+                .map(|f| f.id)
+                .collect();
         }
         if ids.is_empty() {
-            ids = self.floats.iter().filter(|f| f.born(day)).map(|f| f.id).collect();
+            ids = self
+                .floats
+                .iter()
+                .filter(|f| f.born(day))
+                .map(|f| f.id)
+                .collect();
         }
         ids
     }
@@ -2181,7 +2879,10 @@ impl App {
     /// journey is short), the clip's camera framing them as it does any take. A take with no touches,
     /// exported like any other.
     pub fn journey_take(&self, seconds: f64) -> Option<crate::studio::Take> {
-        self.journey_take_edit(&JourneyEdit { seconds, ..Default::default() })
+        self.journey_take_edit(&JourneyEdit {
+            seconds,
+            ..Default::default()
+        })
     }
 
     /// The picked lamps' journey as an edit sets it (R22, the edit view's model): its first and last
@@ -2206,20 +2907,32 @@ impl App {
             .collect();
         // from the day the last of them was put, so they are all out from the first frame (each drawn with
         // its whole line, the days before included)
-        let first = floats.iter().map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
+        let first = floats
+            .iter()
+            .map(|f| f.legs().first().map_or(f.put_day, |l| l.day))
+            .fold(f64::NEG_INFINITY, f64::max);
         // (R21, Motion) a journey of seeds ends when the last of them has come down (`journey::all_down`):
         // its end beat begins there, not on days of still seeds; its pace's range is the wind's
-        let wind = floats.iter().all(|f| f.legs().last().is_some_and(|l| l.medium == Medium::Wind));
+        let wind = floats
+            .iter()
+            .all(|f| f.legs().last().is_some_and(|l| l.medium == Medium::Wind));
         // (R21, Engineering) a journey runs at the app's own pace (the medium's free rate) for as long as
         // the clip runs, carrying the lamps on past today: a longer clip is a longer journey, never a
         // slower one (before, the span from the put to today was stretched over the clip, so a 4-minute
         // clip of a 214-day pair crawled at 0.9 days a second and stopped at today). Paths past today are
         // the same pure function of the legs and the rules. Seeds end when the last comes down.
         let born = first;
-        let mut rate = edit.pace.unwrap_or(if wind { AIR_RATE } else { RATE }).clamp(0.01, 60.0);
+        let mut rate = edit
+            .pace
+            .unwrap_or(if wind { AIR_RATE } else { RATE })
+            .clamp(0.01, 60.0);
         // it arrives at the app's date (where the reader sees the lamps as he makes it) 80% of the way
         // through and goes on past it: from the later put, or from as far back as the clip has room for
-        let mut first = if wind { first } else { first.max(self.clock.day - rate * seconds * JOURNEY_ARRIVES) };
+        let mut first = if wind {
+            first
+        } else {
+            first.max(self.clock.day - rate * seconds * JOURNEY_ARRIVES)
+        };
         let mut to = first + rate * seconds;
         if wind {
             if let Some(d) = crate::journey::all_down(self.media(), &floats, to) {
@@ -2252,7 +2965,11 @@ impl App {
         // the date slows; elsewhere it hurries; its mean is the normal pace), as a pace before each frame
         let days = crate::journey::pace(self.media(), &floats, first, to, frames, fps);
         let mut start = self.take_start();
-        start.clock = Clock { day: first, running: true, rate };
+        start.clock = Clock {
+            day: first,
+            running: true,
+            rate,
+        };
         start.chosen = Vec::new();
         start.followed = ids.clone();
         start.riding = None;
@@ -2266,7 +2983,10 @@ impl App {
             z += at[2];
         }
         let n = (x * x + y * y + z * z).sqrt().max(1e-9);
-        let (lat, lon) = ((y / n).asin().to_degrees(), (x / n).atan2(z / n).to_degrees());
+        let (lat, lon) = (
+            (y / n).asin().to_degrees(),
+            (x / n).atan2(z / n).to_degrees(),
+        );
         start.camera = Camera::new(lon, lat, 3.0);
         start.floats = floats;
         let mut events = Vec::with_capacity(frames * 2);
@@ -2275,16 +2995,44 @@ impl App {
             let t = i as f64 / fps;
             let day = days.get(i - 1).copied().unwrap_or(last);
             let pace = ((day - last) * fps).max(0.0);
-            events.push(crate::studio::TakeEvent::Intent { t: t - 0.5 / fps, intent: Intent::Rate { days_per_second: pace } });
+            events.push(crate::studio::TakeEvent::Intent {
+                t: t - 0.5 / fps,
+                intent: Intent::Rate {
+                    days_per_second: pace,
+                },
+            });
             events.push(crate::studio::TakeEvent::Frame { t });
             last = day;
         }
-        Some(crate::studio::Take { start, events, t0: 0.0, t1: frames as f64 / fps, width: self.width, height: self.height, ppp: self.ppp, trim: None, end: None, speed: 1.0, framing: crate::studio::Framing { hold_out: crate::studio::JOURNEY_HOLD_OUT, braid: true, ..Default::default() }, song: None })
+        Some(crate::studio::Take {
+            start,
+            events,
+            t0: 0.0,
+            t1: frames as f64 / fps,
+            width: self.width,
+            height: self.height,
+            ppp: self.ppp,
+            trim: None,
+            end: None,
+            speed: 1.0,
+            framing: crate::studio::Framing {
+                hold_out: crate::studio::JOURNEY_HOLD_OUT,
+                braid: true,
+                ..Default::default()
+            },
+            song: None,
+        })
     }
 
     /// Begins exporting a journey clip of the picked lamps, `seconds` long (R13); the frames to come.
     pub fn journey_begin(&mut self, seconds: f64, fps: f64) -> u32 {
-        self.journey_begin_edit(&JourneyEdit { seconds, ..Default::default() }, fps)
+        self.journey_begin_edit(
+            &JourneyEdit {
+                seconds,
+                ..Default::default()
+            },
+            fps,
+        )
     }
 
     /// The picked lamps' days for the edit view (R23): the first day they are all out, the app's date,
@@ -2292,10 +3040,19 @@ impl App {
     pub fn journey_bounds(&self, seconds: f64) -> Option<(f64, f64, f64, f64)> {
         let take = self.journey_take(seconds)?;
         let ids = self.picked_lamps();
-        let born = self.floats.iter().filter(|f| ids.contains(&f.id)).map(|f| f.legs().first().map_or(f.put_day, |l| l.day)).fold(f64::NEG_INFINITY, f64::max);
+        let born = self
+            .floats
+            .iter()
+            .filter(|f| ids.contains(&f.id))
+            .map(|f| f.legs().first().map_or(f.put_day, |l| l.day))
+            .fold(f64::NEG_INFINITY, f64::max);
         let mut day = take.start.clock.day;
         for e in &take.events {
-            if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+            if let crate::studio::TakeEvent::Intent {
+                intent: Intent::Rate { days_per_second },
+                ..
+            } = e
+            {
                 day += days_per_second / JOURNEY_FPS;
             }
         }
@@ -2305,14 +3062,23 @@ impl App {
     /// The edit view opens (R23): the live state is put aside, the picked lamps followed and the date
     /// held; `preview_at` and `preview_play` show their journey; `preview_end` puts everything back.
     pub fn preview_begin(&mut self) -> bool {
-        if self.preview.is_some() || self.studio.replay.is_some() || self.studio.recording.is_some() {
+        if self.preview.is_some() || self.studio.replay.is_some() || self.studio.recording.is_some()
+        {
             return false;
         }
         let ids = self.picked_lamps();
         if ids.is_empty() {
             return false;
         }
-        self.preview = Some(Preview { clock: self.clock, camera: self.camera.camera, chosen: self.chosen.clone(), followed: self.followed.clone(), riding: self.camera.riding, ids: ids.clone(), until: None });
+        self.preview = Some(Preview {
+            clock: self.clock,
+            camera: self.camera.camera,
+            chosen: self.chosen.clone(),
+            followed: self.followed.clone(),
+            riding: self.camera.riding,
+            ids: ids.clone(),
+            until: None,
+        });
         self.chosen.clear();
         self.followed = ids;
         self.camera.riding = None;
@@ -2354,7 +3120,12 @@ impl App {
     fn preview_frame(&mut self, now: bool) {
         let Some(p) = &self.preview else { return };
         let day = self.clock.day;
-        let pts: Vec<LonLat> = self.floats.iter().filter(|f| p.ids.contains(&f.id) && f.born(day)).map(|f| f.at).collect();
+        let pts: Vec<LonLat> = self
+            .floats
+            .iter()
+            .filter(|f| p.ids.contains(&f.id) && f.born(day))
+            .map(|f| f.at)
+            .collect();
         if pts.is_empty() {
             return;
         }
@@ -2367,15 +3138,26 @@ impl App {
         }
         let n = (x * x + y * y + z * z).sqrt().max(1e-9);
         let c = LonLat::from_xyz([x / n, y / n, z / n]);
-        let spread = pts.iter().map(|q| q.distance_m(c) / EARTH_RADIUS_M).fold(0.0f64, f64::max).max(0.004);
-        let disc = View::layout(self.width, self.height, self.ppp, Camera::new(c.lon, c.lat, 1.0));
+        let spread = pts
+            .iter()
+            .map(|q| q.distance_m(c) / EARTH_RADIUS_M)
+            .fold(0.0f64, f64::max)
+            .max(0.004);
+        let disc = View::layout(
+            self.width,
+            self.height,
+            self.ppp,
+            Camera::new(c.lon, c.lat, 1.0),
+        );
         let half = (self.width.min(self.height) as f64 / self.ppp) / 2.0;
         let zoom = (0.6 * half / (disc.r * spread.sin())).clamp(1.0, 40.0);
         let to = Camera::new(c.lon, c.lat, zoom);
         if now {
             self.camera = CameraControl::new(to);
         } else {
-            let motion = crate::touch::motion::Motion { reduce: self.reduce_motion };
+            let motion = crate::touch::motion::Motion {
+                reduce: self.reduce_motion,
+            };
             self.camera.fly_to(to, self.now, motion);
         }
     }
@@ -2422,7 +3204,11 @@ impl App {
 
     /// Of the chosen lamps: how many there are and how many are kept (R13, the menu's offer).
     pub fn chosen_kept(&self) -> (usize, usize) {
-        let chosen: Vec<&Float> = self.floats.iter().filter(|f| self.chosen.contains(&f.id) || self.followed.contains(&f.id)).collect();
+        let chosen: Vec<&Float> = self
+            .floats
+            .iter()
+            .filter(|f| self.chosen.contains(&f.id) || self.followed.contains(&f.id))
+            .collect();
         (chosen.len(), chosen.iter().filter(|f| f.kept).count())
     }
 
@@ -2433,22 +3219,39 @@ impl App {
         if ids.is_empty() {
             return None;
         }
-        let floats: Vec<Float> = self.floats.iter().filter(|f| ids.contains(&f.id)).cloned().map(|mut f| {
-            f.hand = Hand::Free;
-            f.lit_for = 10.0;
-            f.wake.clear();
-            f
-        }).collect();
-        let copy = LampsCopy { version: 1, day: self.clock.day, floats };
-        Some(format!("{LAMPS_HEADER}\n{}", serde_json::to_string(&copy).ok()?))
+        let floats: Vec<Float> = self
+            .floats
+            .iter()
+            .filter(|f| ids.contains(&f.id))
+            .cloned()
+            .map(|mut f| {
+                f.hand = Hand::Free;
+                f.lit_for = 10.0;
+                f.wake.clear();
+                f
+            })
+            .collect();
+        let copy = LampsCopy {
+            version: 1,
+            day: self.clock.day,
+            floats,
+        };
+        Some(format!(
+            "{LAMPS_HEADER}\n{}",
+            serde_json::to_string(&copy).ok()?
+        ))
     }
 
     /// Lamps pasted from `lamps_text` (R13): added as they were (their ids kept when free, so their
     /// hues; else new ones), undoable one by one; the date is left where it is unless `go_to_day`.
     /// How many came.
     pub fn paste_lamps(&mut self, text: &str, go_to_day: bool) -> usize {
-        let Some(json) = text.trim_start().strip_prefix(LAMPS_HEADER) else { return 0 };
-        let Ok(copy) = serde_json::from_str::<LampsCopy>(json.trim()) else { return 0 };
+        let Some(json) = text.trim_start().strip_prefix(LAMPS_HEADER) else {
+            return 0;
+        };
+        let Ok(copy) = serde_json::from_str::<LampsCopy>(json.trim()) else {
+            return 0;
+        };
         if copy.version != 1 {
             return 0;
         }
@@ -2494,14 +3297,26 @@ impl App {
         self.apply_start(&take.start, take.t0);
         let frames = ((take.clip_seconds() * fps).ceil() as u32).max(1);
         let cam = crate::studio::ClipCamera::new(take.start.camera);
-        self.studio.replay = Some(crate::studio::Replay { take, next_event: 0, frame: 0, frames, fps, live, cam, held: 0.0 });
+        self.studio.replay = Some(crate::studio::Replay {
+            take,
+            next_event: 0,
+            frame: 0,
+            frames,
+            fps,
+            live,
+            cam,
+            held: 0.0,
+        });
         frames
     }
 
     /// The clip's camera for the frame last exported, and the take's camera it follows (R10: the check
     /// writes them to a trace, so a lurch can be plotted rather than eyed).
     pub fn export_camera(&self) -> Option<(Camera, Camera)> {
-        self.studio.replay.as_ref().map(|r| (r.cam.cam, self.camera.camera))
+        self.studio
+            .replay
+            .as_ref()
+            .map(|r| (r.cam.cam, self.camera.camera))
     }
 
     /// The export's size in pixels: the clip's 9:16 (`studio::CLIP`).
@@ -2550,7 +3365,7 @@ impl App {
         let rgba = target.read(&self.gpu);
         // RGBA in, BGRA out
         let mut out = rgba;
-        for p in out.chunks_exact_mut(4) {
+        for p in out.as_chunks_mut::<4>().0 {
             p.swap(0, 2);
         }
         Some(out)
@@ -2610,14 +3425,18 @@ impl App {
         };
         // what the clip frames (R11, R12): the lamps a cue has touched, else every lamp out, and their lines
         let lamps = {
-            let view = self.clip_view(Camera { zoom: 1.0, ..self.camera.camera });
+            let view = self.clip_view(Camera {
+                zoom: 1.0,
+                ..self.camera.camera
+            });
             let (w, _) = crate::studio::CLIP;
             self.lean_for(view.disc.r, w as f64 / crate::studio::CLIP_PPP / 2.0, true)
         };
         let cam = {
             let r = self.studio.replay.as_mut().unwrap();
             let framing = r.take.framing;
-            r.cam.step(self.camera.camera, part, through, dt, &framing, &lamps)
+            r.cam
+                .step(self.camera.camera, part, through, dt, &framing, &lamps)
         };
         if self.export_dry {
             self.seconds = seconds;
@@ -2664,7 +3483,8 @@ impl App {
             }
         }
         let end = self.studio.replay.as_ref()?.take.end.clone()?;
-        let mut worst = LonLat::new(end.camera.lon, end.camera.lat).distance_m(LonLat::new(self.camera.camera.lon, self.camera.camera.lat));
+        let mut worst = LonLat::new(end.camera.lon, end.camera.lat)
+            .distance_m(LonLat::new(self.camera.camera.lon, self.camera.camera.lat));
         if end.floats.len() != self.floats.len() {
             return Some(f64::INFINITY);
         }
@@ -2676,7 +3496,9 @@ impl App {
 
     /// Ends an export: the live state put back as it was (R9).
     pub fn export_end(&mut self) {
-        let Some(r) = self.studio.replay.take() else { return };
+        let Some(r) = self.studio.replay.take() else {
+            return;
+        };
         let live = r.live;
         self.resize(live.size.0, live.size.1, live.size.2);
         self.apply_start(&live.start, live.now);

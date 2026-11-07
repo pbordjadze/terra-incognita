@@ -123,7 +123,7 @@ impl Hill {
         for _ in 0..steps {
             self.step();
         }
-        let rest: Vec<Flip> = self.pending.drain(..).collect();
+        let rest: Vec<Flip> = std::mem::take(&mut self.pending);
         for f in rest {
             self.show(f);
         }
@@ -167,7 +167,11 @@ impl Hill {
                 let (cx, cy, turn, hand) = centres[best];
                 let a = hand * wrap(y as f32 - cy, h).atan2(wrap(x as f32 - cx, w)) + turn;
                 let k = 1 + ((a / std::f32::consts::TAU).rem_euclid(1.0) * 3.0) as u8 % 3;
-                let k = if rng.unit() < 0.06 { 1 + rng.below(3) as u8 } else { k };
+                let k = if rng.unit() < 0.06 {
+                    1 + rng.below(3) as u8
+                } else {
+                    k
+                };
                 let i = y * self.w + x;
                 self.kind[i] = k;
             }
@@ -175,20 +179,33 @@ impl Hill {
         // the ground no lizard holds: granite outcrops (big, few) and shrubs (small, more)
         self.ground = vec![0; self.w * self.h];
         let area = w * h;
-        let blobs = [(OUTCROP, (area / 3800.0) as usize, 2.5, 8.0), (SHRUB, (area / 2500.0) as usize, 1.0, 2.4)];
+        let blobs = [
+            (OUTCROP, (area / 3800.0) as usize, 2.5, 8.0),
+            (SHRUB, (area / 2500.0) as usize, 1.0, 2.4),
+        ];
         for &(kind, count, r0, r1) in &blobs {
             for _ in 0..count {
                 let cx = rng.unit() * w;
                 let cy = rng.unit() * h;
                 let r = r0 + rng.unit() * (r1 - r0);
                 // a few lobes, so an outcrop is no circle
-                let lobes: Vec<(f32, f32, f32)> = (0..3).map(|_| ((rng.unit() - 0.5) * r, (rng.unit() - 0.5) * r, r * (0.5 + 0.5 * rng.unit()))).collect();
+                let lobes: Vec<(f32, f32, f32)> = (0..3)
+                    .map(|_| {
+                        (
+                            (rng.unit() - 0.5) * r,
+                            (rng.unit() - 0.5) * r,
+                            r * (0.5 + 0.5 * rng.unit()),
+                        )
+                    })
+                    .collect();
                 let ri = (r * 2.0).ceil() as i32 + 1;
                 for dy in -ri..=ri {
                     for dx in -ri..=ri {
                         let fx = dx as f32 + 0.5 - cx.fract();
                         let fy = dy as f32 + 0.5 - cy.fract();
-                        let inside = lobes.iter().any(|&(lx, ly, lr)| (fx - lx).powi(2) + (fy - ly).powi(2) < lr * lr);
+                        let inside = lobes
+                            .iter()
+                            .any(|&(lx, ly, lr)| (fx - lx).powi(2) + (fy - ly).powi(2) < lr * lr);
                         if inside {
                             let x = (cx as i32 + dx).rem_euclid(self.w as i32) as usize;
                             let y = (cy as i32 + dy).rem_euclid(self.h as i32) as usize;
@@ -201,14 +218,34 @@ impl Hill {
             }
         }
         // the grass: where a smooth noise is low, less near the outcrops (lizards gather on rock)
-        let near_rock = self.blur(&self.ground.iter().map(|&g| (g == OUTCROP) as u8 as f32).collect::<Vec<f32>>(), 6);
+        let near_rock = self.blur(
+            &self
+                .ground
+                .iter()
+                .map(|&g| (g == OUTCROP) as u8 as f32)
+                .collect::<Vec<f32>>(),
+            6,
+        );
         let salt = rng.next();
         let mut v: Vec<(f32, usize)> = (0..self.w * self.h)
             .filter(|&i| self.ground[i] == 0)
             .map(|i| {
                 let (x, y) = ((i % self.w) as f32, (i / self.w) as f32);
-                let n = 0.8 * vnoise(x / 24.0, y / 24.0, salt, self.w as f32 / 24.0, self.h as f32 / 24.0)
-                    + 0.2 * vnoise(x / 8.0, y / 8.0, salt ^ 0xABCD, self.w as f32 / 8.0, self.h as f32 / 8.0);
+                let n =
+                    0.8 * vnoise(
+                        x / 24.0,
+                        y / 24.0,
+                        salt,
+                        self.w as f32 / 24.0,
+                        self.h as f32 / 24.0,
+                    ) + 0.2
+                        * vnoise(
+                            x / 8.0,
+                            y / 8.0,
+                            salt ^ 0xABCD,
+                            self.w as f32 / 8.0,
+                            self.h as f32 / 8.0,
+                        );
                 (n + 2.5 * near_rock[i], i)
             })
             .collect();
@@ -231,7 +268,8 @@ impl Hill {
                 patch.push(i);
                 let (x, y) = ((i % self.w) as i32, (i / self.w) as i32);
                 for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    let j = ((y + dy).rem_euclid(self.h as i32) as usize) * self.w + (x + dx).rem_euclid(self.w as i32) as usize;
+                    let j = ((y + dy).rem_euclid(self.h as i32) as usize) * self.w
+                        + (x + dx).rem_euclid(self.w as i32) as usize;
                     if !seen[j] && self.kind[j] != BOULDER {
                         seen[j] = true;
                         stack.push(j);
@@ -260,7 +298,7 @@ impl Hill {
     #[allow(clippy::needless_range_loop)]
     pub fn step(&mut self) {
         // apply what is still waiting from the last step at once
-        let rest: Vec<Flip> = self.pending.drain(..).collect();
+        let rest: Vec<Flip> = std::mem::take(&mut self.pending);
         for f in rest {
             self.show(f);
         }
@@ -312,7 +350,12 @@ impl Hill {
                 next[i] = p;
                 let from = self.nearest(i, p);
                 let at = self.rng.unit();
-                self.pending.push(Flip { i: i as u32, to: p, from, at });
+                self.pending.push(Flip {
+                    i: i as u32,
+                    to: p,
+                    from,
+                    at,
+                });
             }
         }
         self.kind = next;
@@ -322,7 +365,16 @@ impl Hill {
     fn nearest(&mut self, i: usize, k: u8) -> [i8; 2] {
         let (x, y) = ((i % self.w) as i32, (i / self.w) as i32);
         let start = self.rng.below(8) as usize;
-        const RING1: [(i32, i32); 8] = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)];
+        const RING1: [(i32, i32); 8] = [
+            (1, 0),
+            (1, 1),
+            (0, 1),
+            (-1, 1),
+            (-1, 0),
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+        ];
         for n in 0..8 {
             let (dx, dy) = RING1[(start + n) % 8];
             if self.at(x + dx, y + dy) == k {
@@ -352,7 +404,8 @@ impl Hill {
         self.shown[i] = f.to;
         self.look[i] = self.rng.below(64) as u8;
         self.from[i] = [f.from[0] as f32, f.from[1] as f32];
-        self.heading[i] = (-(f.from[1] as f32)).atan2(-(f.from[0] as f32)) + (self.rng.unit() - 0.5) * 0.8;
+        self.heading[i] =
+            (-(f.from[1] as f32)).atan2(-(f.from[0] as f32)) + (self.rng.unit() - 0.5) * 0.8;
         self.since[i] = 0.0;
     }
 
@@ -397,8 +450,16 @@ impl Hill {
                 self.kind[i] = k;
                 let jx = (self.rng.unit() - 0.5) * 1.2;
                 let jy = (self.rng.unit() - 0.5) * 1.2;
-                let from = [(-fx * 0.6 - dir[0] * 1.2 + jx).round() as i8, (-fy * 0.6 - dir[1] * 1.2 + jy).round() as i8];
-                self.show(Flip { i: i as u32, to: k, from, at: 0.0 });
+                let from = [
+                    (-fx * 0.6 - dir[0] * 1.2 + jx).round() as i8,
+                    (-fy * 0.6 - dir[1] * 1.2 + jy).round() as i8,
+                ];
+                self.show(Flip {
+                    i: i as u32,
+                    to: k,
+                    from,
+                    at: 0.0,
+                });
                 laid += 1;
             }
         }
@@ -413,7 +474,17 @@ impl Hill {
             for y in 0..h {
                 for x in 0..w {
                     let mut s = 0.0;
-                    for (dx, dy, k) in [(0i32, 0i32, 4.0f32), (1, 0, 2.0), (-1, 0, 2.0), (0, 1, 2.0), (0, -1, 2.0), (1, 1, 1.0), (-1, 1, 1.0), (1, -1, 1.0), (-1, -1, 1.0)] {
+                    for (dx, dy, k) in [
+                        (0i32, 0i32, 4.0f32),
+                        (1, 0, 2.0),
+                        (-1, 0, 2.0),
+                        (0, 1, 2.0),
+                        (0, -1, 2.0),
+                        (1, 1, 1.0),
+                        (-1, 1, 1.0),
+                        (1, -1, 1.0),
+                        (-1, -1, 1.0),
+                    ] {
                         let xx = (x as i32 + dx).rem_euclid(w as i32) as usize;
                         let yy = (y as i32 + dy).rem_euclid(h as i32) as usize;
                         s += a[yy * w + xx] * k;
@@ -429,13 +500,34 @@ impl Hill {
     /// The ground's relief for the drawing, one texel a rock (RGBA8): the outcrops' height and the
     /// shrubs' and the grass's, each the mask blurred so the shapes come out round.
     pub fn relief(&self) -> Vec<[u8; 4]> {
-        let out: Vec<f32> = self.ground.iter().map(|&g| (g == OUTCROP) as u8 as f32).collect();
-        let shrub: Vec<f32> = self.ground.iter().map(|&g| (g == SHRUB) as u8 as f32).collect();
-        let grass: Vec<f32> = self.ground.iter().map(|&g| (g == GRASS) as u8 as f32).collect();
+        let out: Vec<f32> = self
+            .ground
+            .iter()
+            .map(|&g| (g == OUTCROP) as u8 as f32)
+            .collect();
+        let shrub: Vec<f32> = self
+            .ground
+            .iter()
+            .map(|&g| (g == SHRUB) as u8 as f32)
+            .collect();
+        let grass: Vec<f32> = self
+            .ground
+            .iter()
+            .map(|&g| (g == GRASS) as u8 as f32)
+            .collect();
         let out = self.blur(&out, 3);
         let shrub = self.blur(&shrub, 3);
         let grass = self.blur(&grass, 2);
-        (0..self.w * self.h).map(|i| [(out[i] * 255.0) as u8, (shrub[i] * 255.0) as u8, (grass[i] * 255.0) as u8, 255]).collect()
+        (0..self.w * self.h)
+            .map(|i| {
+                [
+                    (out[i] * 255.0) as u8,
+                    (shrub[i] * 255.0) as u8,
+                    (grass[i] * 255.0) as u8,
+                    255,
+                ]
+            })
+            .collect()
     }
 
     pub fn counts(&self) -> [usize; 4] {
@@ -456,7 +548,9 @@ fn wrap(d: f32, n: f32) -> f32 {
 fn vnoise(x: f32, y: f32, salt: u64, pw: f32, ph: f32) -> f32 {
     let (pw, ph) = (pw.round().max(1.0) as i64, ph.round().max(1.0) as i64);
     let h = |ix: i64, iy: i64| -> f32 {
-        let mut z = (ix.rem_euclid(pw) as u64).wrapping_mul(0x9E3779B97F4A7C15) ^ (iy.rem_euclid(ph) as u64).wrapping_mul(0xC2B2AE3D27D4EB4F) ^ salt;
+        let mut z = (ix.rem_euclid(pw) as u64).wrapping_mul(0x9E3779B97F4A7C15)
+            ^ (iy.rem_euclid(ph) as u64).wrapping_mul(0xC2B2AE3D27D4EB4F)
+            ^ salt;
         z ^= z >> 31;
         z = z.wrapping_mul(0xBF58476D1CE4E5B9);
         z ^= z >> 29;
@@ -494,7 +588,10 @@ mod tests {
         let held = (c[1] + c[2] + c[3]) as f64;
         for k in 1..4 {
             let share = c[k] as f64 / held;
-            assert!(share > 0.15 && share < 0.55, "colour {k} holds {share:.2} of the hill");
+            assert!(
+                share > 0.15 && share < 0.55,
+                "colour {k} holds {share:.2} of the hill"
+            );
         }
     }
 }

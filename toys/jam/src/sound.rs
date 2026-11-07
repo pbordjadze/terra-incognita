@@ -50,7 +50,11 @@ impl Engines {
         let table: Vec<f32> = (0..TABLE)
             .map(|i| {
                 let x = i as f32 / TABLE as f32 * std::f32::consts::TAU;
-                amps.iter().enumerate().map(|(k, a)| a * ((k + 1) as f32 * x + k as f32 * 0.7).sin()).sum::<f32>() * 0.35
+                amps.iter()
+                    .enumerate()
+                    .map(|(k, a)| a * ((k + 1) as f32 * x + k as f32 * 0.7).sin())
+                    .sum::<f32>()
+                    * 0.35
             })
             .collect();
         Box::new(Hum {
@@ -133,7 +137,13 @@ impl Synth for Hum {
                 let hard = c.acc < -1.8 && c.v > 1.5;
                 if hard && !self.braking[i] && self.squeals.len() < 8 {
                     let sev = ((-c.acc - 1.8) / 4.0).clamp(0.3, 1.0);
-                    self.squeals.push(Squeal { phase: 0.0, freq: 1250.0 + 90.0 * (i % 5) as f32 + 250.0 * sev, amp: 0.07 * sev, pan: c.pan, age: 0.0 });
+                    self.squeals.push(Squeal {
+                        phase: 0.0,
+                        freq: 1250.0 + 90.0 * (i % 5) as f32 + 250.0 * sev,
+                        amp: 0.07 * sev,
+                        pan: c.pan,
+                        age: 0.0,
+                    });
                 }
                 self.braking[i] = hard || (self.braking[i] && c.acc < -1.2);
             }
@@ -168,14 +178,19 @@ impl Synth for Hum {
             if self.thump > 1e-4 {
                 self.thump_phase += (70.0 + 60.0 * self.thump) / rate;
                 th = (self.thump_phase * std::f32::consts::TAU).sin() * self.thump * 0.22
-                    + (self.thump_phase * 3.0 * std::f32::consts::TAU).sin() * self.thump * self.thump * 0.08;
+                    + (self.thump_phase * 3.0 * std::f32::consts::TAU).sin()
+                        * self.thump
+                        * self.thump
+                        * 0.08;
                 self.thump *= (-1.0 / (0.09 * rate)).exp();
             }
             // the chirps
             let dtr = 1.0 / rate;
             for s in self.squeals.iter_mut() {
                 s.age += dtr;
-                let f = s.freq * (1.0 - 0.12 * (s.age / 0.4).min(1.0)) * (1.0 + 0.006 * (s.age * 37.0).sin());
+                let f = s.freq
+                    * (1.0 - 0.12 * (s.age / 0.4).min(1.0))
+                    * (1.0 + 0.006 * (s.age * 37.0).sin());
                 s.phase = (s.phase + f * dtr).fract();
             }
             let (mut sl, mut sr) = (0.0f32, 0.0f32);
@@ -188,7 +203,10 @@ impl Synth for Hum {
             }
             self.squeals.retain(|s| s.age < 0.9);
             let g = gain * self.fade;
-            let (lo, ro) = ((l * g + h + th + sl * self.fade).tanh(), (r * g + h + th + sr * self.fade).tanh());
+            let (lo, ro) = (
+                (l * g + h + th + sl * self.fade).tanh(),
+                (r * g + h + th + sr * self.fade).tanh(),
+            );
             if channels >= 2 {
                 out[f * channels] = lo;
                 out[f * channels + 1] = ro;

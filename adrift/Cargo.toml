@@ -8,15 +8,21 @@ edition = "2021"
 license = "MIT"
 publish = false
 
+[workspace.lints.clippy]
+# numeric loops here index several arrays in step (a field, its neighbours, its output); an index is clearer
+needless_range_loop = "allow"
+# `!(a > b)` is written so that a NaN falls through to the guard, which partial_cmp would hide
+neg_cmp_op_on_partial_ord = "allow"
+
 [workspace.dependencies]
-wgpu = { version = "26", default-features = false, features = ["wgsl"] }
+wgpu = { version = "30", default-features = false, features = ["wgsl"] }
 bytemuck = { version = "1", features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 log = "0.4"
 anyhow = "1"
-pollster = "0.4"
+pollster = "1"
 
 [profile.release]
 opt-level = 3

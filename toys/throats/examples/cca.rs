@@ -23,18 +23,34 @@ fn main() {
                 let i = y as usize * w + x as usize;
                 let p = beater(k[i]);
                 let mut c = 0;
-                for dy in -r..=r { for dx in -r..=r {
-                    let j = ((y + dy).rem_euclid(h as i32) as usize) * w + (x + dx).rem_euclid(w as i32) as usize;
-                    if k[j] == p { c += 1; }
-                }}
-                if c >= t && rng.unit() < q { next[i] = p; }
+                for dy in -r..=r {
+                    for dx in -r..=r {
+                        let j = ((y + dy).rem_euclid(h as i32) as usize) * w
+                            + (x + dx).rem_euclid(w as i32) as usize;
+                        if k[j] == p {
+                            c += 1;
+                        }
+                    }
+                }
+                if c >= t && rng.unit() < q {
+                    next[i] = p;
+                }
             }
         }
         k = next;
         if shots.contains(&s) {
             for (i, &v) in k.iter().enumerate() {
-                let c = match v { 1 => [230, 120, 30], 2 => [40, 90, 220], 3 => [235, 210, 40], _ => [30, 25, 20] };
-                img.put_pixel((col * (w + 4) + i % w) as u32, (i / w) as u32, image::Rgb(c));
+                let c = match v {
+                    1 => [230, 120, 30],
+                    2 => [40, 90, 220],
+                    3 => [235, 210, 40],
+                    _ => [30, 25, 20],
+                };
+                img.put_pixel(
+                    (col * (w + 4) + i % w) as u32,
+                    (i / w) as u32,
+                    image::Rgb(c),
+                );
             }
             col += 1;
         }

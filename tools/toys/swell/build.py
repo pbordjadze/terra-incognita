@@ -9,6 +9,7 @@ when half or more of it is). Depths from Globe/terrain.png's G (sea: 127 - depth
 tools/globe/build.py), land from Globe/geo.png's R (the coast's signed distance, land >= 128).
 """
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 

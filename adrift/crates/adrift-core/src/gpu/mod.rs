@@ -7,8 +7,8 @@ pub mod view;
 
 use std::sync::Arc;
 
-pub use textures::{Texture, Textures};
 pub use stage::{Blit, Budget, Stage};
+pub use textures::{Texture, Textures};
 pub use view::{View, ViewUniform};
 
 /// The device and its queue, shared by every pass.
@@ -22,12 +22,16 @@ pub struct Gpu {
 
 impl Gpu {
     /// A device for a surface (or none: offscreen). Prefers the platform's own backend.
-    pub async fn new(instance: &wgpu::Instance, surface: Option<&wgpu::Surface<'_>>) -> anyhow::Result<Gpu> {
+    pub async fn new(
+        instance: &wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+    ) -> anyhow::Result<Gpu> {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: surface,
                 force_fallback_adapter: false,
+                apply_limit_buckets: false,
             })
             .await
             .map_err(|e| anyhow::anyhow!("no adapter: {e}"))?;
@@ -35,7 +39,8 @@ impl Gpu {
         log::info!("adapter: {adapter_info:?}");
         let limits = wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits());
         let mut required_limits = wgpu::Limits::default().using_resolution(adapter.limits());
-        required_limits.max_texture_dimension_2d = required_limits.max_texture_dimension_2d.max(4096);
+        required_limits.max_texture_dimension_2d =
+            required_limits.max_texture_dimension_2d.max(4096);
         let _ = limits;
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -44,6 +49,7 @@ impl Gpu {
                 required_limits,
                 memory_hints: wgpu::MemoryHints::Performance,
                 trace: wgpu::Trace::Off,
+                experimental_features: wgpu::ExperimentalFeatures::disabled(),
             })
             .await?;
         let format = match surface {
@@ -52,19 +58,32 @@ impl Gpu {
                 caps.formats
                     .iter()
                     .copied()
-                    .find(|f| matches!(f, wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Rgba8Unorm))
+                    .find(|f| {
+                        matches!(
+                            f,
+                            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Rgba8Unorm
+                        )
+                    })
                     .unwrap_or(caps.formats[0])
             }
             None => wgpu::TextureFormat::Rgba8Unorm,
         };
-        Ok(Gpu { device: Arc::new(device), queue: Arc::new(queue), format, adapter_info })
+        // (on the web wgpu's device is neither Send nor Sync: one Arc type for every target)
+        #[allow(clippy::arc_with_non_send_sync)]
+        Ok(Gpu {
+            device: Arc::new(device),
+            queue: Arc::new(queue),
+            format,
+            adapter_info,
+        })
     }
 
     pub fn shader(&self, label: &str, wgsl: &str) -> wgpu::ShaderModule {
-        self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some(label),
-            source: wgpu::ShaderSource::Wgsl(wgsl.into()),
-        })
+        self.device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some(label),
+                source: wgpu::ShaderSource::Wgsl(wgsl.into()),
+            })
     }
 
     /// The usual blend: the pass's colour over what is there (premultiplied).
@@ -92,36 +111,41 @@ impl Gpu {
         layouts: &[&wgpu::BindGroupLayout],
         blend: Option<wgpu::BlendState>,
     ) -> wgpu::RenderPipeline {
-        let layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some(label),
-            bind_group_layouts: layouts,
-            push_constant_ranges: &[],
-        });
-        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(label),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState {
-                module: shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: Default::default(),
-            },
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            fragment: Some(wgpu::FragmentState {
-                module: shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: self.format,
-                    blend,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            multiview: None,
-            cache: None,
-        })
+        let layouts: Vec<Option<&wgpu::BindGroupLayout>> =
+            layouts.iter().copied().map(Some).collect();
+        let layout = self
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some(label),
+                bind_group_layouts: &layouts,
+                immediate_size: 0,
+            });
+        self.device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some(label),
+                layout: Some(&layout),
+                vertex: wgpu::VertexState {
+                    module: shader,
+                    entry_point: Some("vs_main"),
+                    buffers: &[],
+                    compilation_options: Default::default(),
+                },
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                fragment: Some(wgpu::FragmentState {
+                    module: shader,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: self.format,
+                        blend,
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: Default::default(),
+                }),
+                multiview_mask: None,
+                cache: None,
+            })
     }
 }
 
@@ -137,7 +161,11 @@ impl Offscreen {
     pub fn new(gpu: &Gpu, width: u32, height: u32) -> Offscreen {
         let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("offscreen"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -146,12 +174,17 @@ impl Offscreen {
             view_formats: &[],
         });
         let view = texture.create_view(&Default::default());
-        Offscreen { texture, view, width, height }
+        Offscreen {
+            texture,
+            view,
+            width,
+            height,
+        }
     }
 
     /// The pixels, RGBA8, rows top down.
     pub fn read(&self, gpu: &Gpu) -> Vec<u8> {
-        let bpr = (self.width * 4 + 255) / 256 * 256;
+        let bpr = (self.width * 4).div_ceil(256) * 256;
         let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("readback"),
             size: (bpr * self.height) as u64,
@@ -168,22 +201,32 @@ impl Offscreen {
             },
             wgpu::TexelCopyBufferInfo {
                 buffer: &buf,
-                layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(bpr), rows_per_image: None },
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(bpr),
+                    rows_per_image: None,
+                },
             },
-            wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
         );
         gpu.queue.submit([enc.finish()]);
         let slice = buf.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait()).expect("poll");
-        let data = slice.get_mapped_range();
+        gpu.device
+            .poll(wgpu::PollType::wait_indefinitely())
+            .expect("poll");
+        let data = slice.get_mapped_range().expect("mapped");
         let mut out = Vec::with_capacity((self.width * self.height * 4) as usize);
         for y in 0..self.height {
             let row = &data[(y * bpr) as usize..(y * bpr + self.width * 4) as usize];
             out.extend_from_slice(row);
         }
         if gpu.format == wgpu::TextureFormat::Bgra8Unorm {
-            for px in out.chunks_exact_mut(4) {
+            for px in out.as_chunks_mut::<4>().0 {
                 px.swap(0, 2);
             }
         }
@@ -207,7 +250,7 @@ pub struct Readback {
 
 impl Readback {
     pub fn new(gpu: &Gpu, target: &Offscreen, depth: usize) -> Readback {
-        let bpr = (target.width * 4 + 255) / 256 * 256;
+        let bpr = (target.width * 4).div_ceil(256) * 256;
         let bufs = (0..depth.max(1))
             .map(|_| {
                 gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -218,7 +261,14 @@ impl Readback {
                 })
             })
             .collect();
-        Readback { bufs, bpr, width: target.width, height: target.height, pending: Default::default(), next: 0 }
+        Readback {
+            bufs,
+            bpr,
+            width: target.width,
+            height: target.height,
+            pending: Default::default(),
+            next: 0,
+        }
     }
 
     /// Copies were submitted and not yet taken.
@@ -237,30 +287,57 @@ impl Readback {
         self.next = (self.next + 1) % self.bufs.len();
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         enc.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo { texture: &target.texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            wgpu::TexelCopyBufferInfo { buffer: &self.bufs[i], layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(self.bpr), rows_per_image: None } },
-            wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            wgpu::TexelCopyTextureInfo {
+                texture: &target.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyBufferInfo {
+                buffer: &self.bufs[i],
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(self.bpr),
+                    rows_per_image: None,
+                },
+            },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
         );
         let idx = gpu.queue.submit([enc.finish()]);
-        self.bufs[i].slice(..).map_async(wgpu::MapMode::Read, |_| {});
+        self.bufs[i]
+            .slice(..)
+            .map_async(wgpu::MapMode::Read, |_| {});
         self.pending.push_back((i, idx));
     }
 
     /// The oldest frame's pixels written to `out` (rows `stride` bytes apart), as BGRA when `bgra`
     /// else RGBA; false if none is pending.
     pub fn take(&mut self, gpu: &Gpu, out: &mut [u8], stride: usize, bgra: bool) -> bool {
-        let Some((i, idx)) = self.pending.pop_front() else { return false };
-        gpu.device.poll(wgpu::PollType::WaitForSubmissionIndex(idx)).expect("poll");
+        let Some((i, idx)) = self.pending.pop_front() else {
+            return false;
+        };
+        gpu.device
+            .poll(wgpu::PollType::Wait {
+                submission_index: Some(idx),
+                timeout: None,
+            })
+            .expect("poll");
         let row = (self.width * 4) as usize;
         {
-            let data = self.bufs[i].slice(..).get_mapped_range();
-            let swap = bgra != (gpu.format == wgpu::TextureFormat::Bgra8Unorm || gpu.format == wgpu::TextureFormat::Bgra8UnormSrgb);
+            let data = self.bufs[i].slice(..).get_mapped_range().expect("mapped");
+            let swap = bgra
+                != (gpu.format == wgpu::TextureFormat::Bgra8Unorm
+                    || gpu.format == wgpu::TextureFormat::Bgra8UnormSrgb);
             for y in 0..self.height as usize {
                 let src = &data[y * self.bpr as usize..y * self.bpr as usize + row];
                 let dst = &mut out[y * stride..y * stride + row];
                 dst.copy_from_slice(src);
                 if swap {
-                    for px in dst.chunks_exact_mut(4) {
+                    for px in dst.as_chunks_mut::<4>().0 {
                         px.swap(0, 2);
                     }
                 }
@@ -270,4 +347,3 @@ impl Readback {
         true
     }
 }
-

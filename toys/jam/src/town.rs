@@ -81,7 +81,18 @@ impl Road {
             cum.push(cum.last().unwrap() + dist(w[0], w[1]));
         }
         let len = *cum.last().unwrap();
-        Road { a, b, pts, cum, len, kind, vf: kind.vf(), open: true, alive: true, changed: -99.0 }
+        Road {
+            a,
+            b,
+            pts,
+            cum,
+            len,
+            kind,
+            vf: kind.vf(),
+            open: true,
+            alive: true,
+            changed: -99.0,
+        }
     }
 
     /// The point `u` points along from `a`, and the way it runs there.
@@ -223,17 +234,28 @@ pub fn first_roads(wide: f64) -> (Vec<[f64; 2]>, Vec<Road>) {
 
 fn long_at(p: [f64; 2], q: [f64; 2], side: f64, wide: f64) -> Vec<[f64; 2]> {
     let dy = (q[1] - p[1]).signum();
-    bezier(p, [side * 228.0 * wide, p[1] + 40.0 * dy], [side * 228.0 * wide, q[1] - 10.0 * dy], q, 60)
+    bezier(
+        p,
+        [side * 228.0 * wide, p[1] + 40.0 * dy],
+        [side * 228.0 * wide, q[1] - 10.0 * dy],
+        q,
+        60,
+    )
 }
 
 fn bez(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], t: f64) -> [f64; 2] {
     let u = 1.0 - t;
     let w = [u * u * u, 3.0 * u * u * t, 3.0 * u * t * t, t * t * t];
-    [w[0] * p0[0] + w[1] * p1[0] + w[2] * p2[0] + w[3] * p3[0], w[0] * p0[1] + w[1] * p1[1] + w[2] * p2[1] + w[3] * p3[1]]
+    [
+        w[0] * p0[0] + w[1] * p1[0] + w[2] * p2[0] + w[3] * p3[0],
+        w[0] * p0[1] + w[1] * p1[1] + w[2] * p2[1] + w[3] * p3[1],
+    ]
 }
 
 fn bezier(p0: [f64; 2], p1: [f64; 2], p2: [f64; 2], p3: [f64; 2], n: usize) -> Vec<[f64; 2]> {
-    (0..=n).map(|i| bez(p0, p1, p2, p3, i as f64 / n as f64)).collect()
+    (0..=n)
+        .map(|i| bez(p0, p1, p2, p3, i as f64 / n as f64))
+        .collect()
 }
 
 impl Town {
@@ -277,13 +299,17 @@ impl Town {
     /// A link's start and end nodes.
     pub fn ends(&self, link: usize) -> (usize, usize) {
         let r = &self.roads[link / 2];
-        if link % 2 == 0 { (r.a, r.b) } else { (r.b, r.a) }
+        if link.is_multiple_of(2) {
+            (r.a, r.b)
+        } else {
+            (r.b, r.a)
+        }
     }
 
     /// Where a car is, and the way it faces.
     pub fn place(&self, c: &Car) -> ([f64; 2], [f64; 2]) {
         let r = &self.roads[c.link / 2];
-        if c.link % 2 == 0 {
+        if c.link.is_multiple_of(2) {
             r.at(c.s)
         } else {
             let (p, d) = r.at(r.len - c.s);
@@ -349,7 +375,11 @@ impl Town {
         self.usual.resize(nn, f64::NAN);
         for i in 0..nn {
             let (u, b) = (self.usual[i], best[i]);
-            self.usual[i] = if !u.is_finite() || !b.is_finite() { b } else { u + (b - u) * k };
+            self.usual[i] = if !u.is_finite() || !b.is_finite() {
+                b
+            } else {
+                u + (b - u) * k
+            };
         }
         self.ahead = best;
     }
@@ -365,7 +395,11 @@ impl Town {
             }
             let end = self.ends(l).1;
             // the next road as it looks now; beyond it, half what is seen now and half what is usual
-            let on = if self.ahead[end].is_finite() && self.usual[end].is_finite() { (1.0 - RECALL) * self.ahead[end] + RECALL * self.usual[end] } else { self.ahead[end] };
+            let on = if self.ahead[end].is_finite() && self.usual[end].is_finite() {
+                (1.0 - RECALL) * self.ahead[end] + RECALL * self.usual[end]
+            } else {
+                self.ahead[end]
+            };
             if !on.is_finite() {
                 continue;
             }
@@ -420,7 +454,9 @@ impl Town {
 
     /// Room at the start of a link.
     fn room(&self, link: usize, q: &[Vec<usize>]) -> bool {
-        q[link].last().is_none_or(|&j| self.cars[j].s >= self.gap(link))
+        q[link]
+            .last()
+            .is_none_or(|&j| self.cars[j].s >= self.gap(link))
     }
 
     pub fn step(&mut self, dt: f64) {
@@ -502,10 +538,21 @@ impl Town {
             let gap = 1.0 / DEMAND;
             self.next_car += gap * (0.45 + 1.1 * self.rand());
             let q = self.queues();
-            let first = self.choose(None, self.from, 0).filter(|&l| self.room(l, &q));
+            let first = self
+                .choose(None, self.from, 0)
+                .filter(|&l| self.room(l, &q));
             if let Some(l) = first {
                 let seed = hash((self.t * 1000.0) as u32 ^ self.rng);
-                self.cars.push(Car { link: l, s: 0.0, v: self.roads[l / 2].vf * 0.7, born: self.t, seed, waiting: false, late: 1.0, past: Vec::new() });
+                self.cars.push(Car {
+                    link: l,
+                    s: 0.0,
+                    v: self.roads[l / 2].vf * 0.7,
+                    born: self.t,
+                    seed,
+                    waiting: false,
+                    late: 1.0,
+                    past: Vec::new(),
+                });
             }
             if self.next_car < self.t - 1.0 {
                 self.next_car = self.t;
@@ -535,12 +582,22 @@ impl Town {
 
     /// The mean trip of those finished in the last `secs` seconds.
     pub fn mean_trip(&self, secs: f64) -> Option<f64> {
-        let r: Vec<f64> = self.trips.iter().filter(|(at, _)| *at > self.t - secs).map(|x| x.1).collect();
+        let r: Vec<f64> = self
+            .trips
+            .iter()
+            .filter(|(at, _)| *at > self.t - secs)
+            .map(|x| x.1)
+            .collect();
         (!r.is_empty()).then(|| r.iter().sum::<f64>() / r.len() as f64)
     }
 
     /// The nearest road to `q` within `reach`: (road, distance along, distance away).
-    pub fn road_near(&self, q: [f64; 2], reach: f64, with_closed: bool) -> Option<(usize, f64, f64)> {
+    pub fn road_near(
+        &self,
+        q: [f64; 2],
+        reach: f64,
+        with_closed: bool,
+    ) -> Option<(usize, f64, f64)> {
         let mut best: Option<(usize, f64, f64)> = None;
         for (i, r) in self.roads.iter().enumerate() {
             if !r.alive || (!r.open && !with_closed) {
@@ -623,7 +680,10 @@ impl Town {
             for w in r.pts.windows(2) {
                 if let Some((f, x)) = meet(na, nb, w[0], w[1]) {
                     let along = f * dist(na, nb);
-                    if along > snap && along < dist(na, nb) - snap && cross.iter().all(|c| dist(c.1, x) > snap) {
+                    if along > snap
+                        && along < dist(na, nb) - snap
+                        && cross.iter().all(|c| dist(c.1, x) > snap)
+                    {
                         cross.push((f, x));
                     }
                 }
@@ -691,7 +751,13 @@ impl Town {
             n[c.link / 2] += 1;
         }
         for (i, r) in self.roads.iter_mut().enumerate() {
-            if r.kind == Kind::Built && !r.open && r.alive && n[i] == 0 && self.t - r.changed > 1.2 && !keep.contains(&i) {
+            if r.kind == Kind::Built
+                && !r.open
+                && r.alive
+                && n[i] == 0
+                && self.t - r.changed > 1.2
+                && !keep.contains(&i)
+            {
                 r.alive = false;
             }
         }
@@ -718,11 +784,14 @@ fn meet(p: [f64; 2], q: [f64; 2], a: [f64; 2], b: [f64; 2]) -> Option<(f64, [f64
     let ap = [a[0] - p[0], a[1] - p[1]];
     let t = (ap[0] * s[1] - ap[1] * s[0]) / den;
     let u = (ap[0] * r[1] - ap[1] * r[0]) / den;
-    ((0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)).then(|| (t, [p[0] + r[0] * t, p[1] + r[1] * t]))
+    ((0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u))
+        .then(|| (t, [p[0] + r[0] * t, p[1] + r[1] * t]))
 }
 
 fn crosses(p: [f64; 2], q: [f64; 2], a: [f64; 2], b: [f64; 2]) -> bool {
-    let o = |p: [f64; 2], q: [f64; 2], r: [f64; 2]| (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+    let o = |p: [f64; 2], q: [f64; 2], r: [f64; 2]| {
+        (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    };
     let (d1, d2, d3, d4) = (o(p, q, a), o(p, q, b), o(a, b, p), o(a, b, q));
     (d1 > 0.0) != (d2 > 0.0) && (d3 > 0.0) != (d4 > 0.0)
 }
@@ -758,11 +827,16 @@ mod tests {
         assert!(!t.roads[br].open);
         let again = settle(&mut t, 150.0);
         eprintln!("cut again {again:.1}s {} cars", t.cars.len());
-        assert!(after > before * 1.2, "the bridge slows everyone: {before:.1} -> {after:.1}");
-        assert!(again < after * 0.85, "cutting it helps: {after:.1} -> {again:.1}");
+        assert!(
+            after > before * 1.2,
+            "the bridge slows everyone: {before:.1} -> {after:.1}"
+        );
+        assert!(
+            again < after * 0.85,
+            "cutting it helps: {after:.1} -> {again:.1}"
+        );
     }
 }
-
 
 #[cfg(test)]
 mod settle {
@@ -774,7 +848,9 @@ mod settle {
     fn the_town_settles_after_a_cut() {
         let mut t = Town::new(0x5107_c0de);
         t.step(70.0);
-        let eta = |t: &Town| (0..t.cars.len()).map(|i| t.way(i)).sum::<f64>() / t.cars.len().max(1) as f64;
+        let eta = |t: &Town| {
+            (0..t.cars.len()).map(|i| t.way(i)).sum::<f64>() / t.cars.len().max(1) as f64
+        };
         let base = eta(&t);
         let (a, b) = (t.nodes[2], t.nodes[3]);
         t.build(a, b, 10.0);
@@ -794,4 +870,3 @@ mod settle {
         assert!(worst < 0.1, "still sloshing: {line}");
     }
 }
-

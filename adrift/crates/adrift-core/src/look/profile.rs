@@ -12,32 +12,46 @@ static TIMES: Mutex<Vec<(&'static str, f64, u32)>> = Mutex::new(Vec::new());
 /// Whether the passes are timed (`ADRIFT_PROFILE=1`).
 pub fn on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var("ADRIFT_PROFILE").map_or(false, |v| v == "1"))
+    *ON.get_or_init(|| std::env::var("ADRIFT_PROFILE").is_ok_and(|v| v == "1"))
 }
 
 fn wait(gpu: &Gpu) {
-    let _ = gpu.device.poll(wgpu::PollType::wait());
+    let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
 }
 
 /// A pass begun alone: the GPU waited for, the clock started, an encoder.
 pub fn begin(gpu: &Gpu) -> (wgpu::CommandEncoder, std::time::Instant) {
     wait(gpu);
-    (gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("profiled") }), std::time::Instant::now())
+    (
+        gpu.device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("profiled"),
+            }),
+        std::time::Instant::now(),
+    )
 }
 
 /// Its render pass into `target`, cleared to `clear` if given, else loading what is there.
-pub fn render_pass<'e>(enc: &'e mut wgpu::CommandEncoder, target: &'e wgpu::TextureView, clear: Option<wgpu::Color>) -> wgpu::RenderPass<'e> {
+pub fn render_pass<'e>(
+    enc: &'e mut wgpu::CommandEncoder,
+    target: &'e wgpu::TextureView,
+    clear: Option<wgpu::Color>,
+) -> wgpu::RenderPass<'e> {
     enc.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("profiled"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: target,
             resolve_target: None,
-            ops: wgpu::Operations { load: clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear), store: wgpu::StoreOp::Store },
+            ops: wgpu::Operations {
+                load: clear.map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear),
+                store: wgpu::StoreOp::Store,
+            },
             depth_slice: None,
         })],
         depth_stencil_attachment: None,
         timestamp_writes: None,
         occlusion_query_set: None,
+        multiview_mask: None,
     })
 }
 
@@ -81,7 +95,12 @@ pub fn report() -> String {
     let mut s = format!("{:<10} {:>9} {:>7}\n", "pass", "ms/frame", "share");
     for (name, secs, n) in t.iter() {
         let ms = secs / (*n).max(1) as f64 * 1e3;
-        s += &format!("{:<10} {:>9.2} {:>6.1}%\n", name, ms, ms / (total * 1e3).max(1e-9) * 100.0);
+        s += &format!(
+            "{:<10} {:>9.2} {:>6.1}%\n",
+            name,
+            ms,
+            ms / (total * 1e3).max(1e-9) * 100.0
+        );
     }
     s += &format!("{:<10} {:>9.2}\n", "total", total * 1e3);
     t.clear();

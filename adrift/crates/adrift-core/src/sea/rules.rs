@@ -72,7 +72,11 @@ impl Rules {
         let dt = dt_days as f32;
         let (u, v, measured) = self.currents.at(day, lon, lat);
         if self.ice.at(day, lon, lat) >= self.ice_hold {
-            return Step { at, held: Held::Ice, measured };
+            return Step {
+                at,
+                held: Held::Ice,
+                measured,
+            };
         }
         let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
@@ -89,10 +93,21 @@ impl Rules {
         let nlon = wrap(lon + dlon);
         let nlat = (lat + dlat).clamp(-89.5, 89.5);
         if self.ice.at(day, nlon, nlat) >= self.ice_hold {
-            return Step { at, held: Held::Ice, measured };
+            return Step {
+                at,
+                held: Held::Ice,
+                measured,
+            };
         }
         let (slon, slat, held) = self.ashore(lon, lat, nlon, nlat);
-        Step { at: LonLat { lon: slon as f64, lat: slat as f64 }, held, measured }
+        Step {
+            at: LonLat {
+                lon: slon as f64,
+                lat: slat as f64,
+            },
+            held,
+            measured,
+        }
     }
 
     /// Keeps a step off the land: a point that would be ashore (or within `shore` pixels of it) is
@@ -122,12 +137,24 @@ impl Rules {
 
     /// A float's maybes on the CPU: n paths from `from` on `day0`, stepping `dt_days` until
     /// `until`, each the position reached (k = 1..=n). The GPU does the same in `rules.wgsl`.
-    pub fn maybes(&self, from: LonLat, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Step> {
+    pub fn maybes(
+        &self,
+        from: LonLat,
+        day0: f64,
+        until: f64,
+        dt_days: f64,
+        seed: u64,
+        n: u32,
+    ) -> Vec<Step> {
         (1..=n)
             .map(|k| {
                 let mut at = from;
                 let mut day = day0;
-                let mut last = Step { at, held: Held::No, measured: 1.0 };
+                let mut last = Step {
+                    at,
+                    held: Held::No,
+                    measured: 1.0,
+                };
                 while day < until - 1e-9 {
                     let dt = dt_days.min(until - day);
                     last = self.step(at, day, dt, seed, k);
@@ -161,7 +188,9 @@ impl Rules {
     /// How far the record reaches a place, 0..1: the most measured month's `measured` there.
     pub fn record(&self, at: LonLat) -> f32 {
         let (lon, lat) = (at.lon as f32, at.lat as f32);
-        (0..12).map(|m| self.currents.0.sample(m, 2, lon, lat) / 255.0).fold(0.0, f32::max)
+        (0..12)
+            .map(|m| self.currents.0.sample(m, 2, lon, lat) / 255.0)
+            .fold(0.0, f32::max)
     }
 
     /// Whether a float may be put at `at`, and on what footing.
@@ -196,7 +225,10 @@ pub struct Drift {
 
 impl Drift {
     pub fn put(at: LonLat) -> Drift {
-        Drift { at, eddy: (0.0, 0.0) }
+        Drift {
+            at,
+            eddy: (0.0, 0.0),
+        }
     }
 }
 
@@ -222,13 +254,28 @@ impl Rules {
 
     /// `flight` under a given law (R13: a leg's own, `Leg::law`): law 0 is the flight as shipped up
     /// to build 49, without the spinning eddies, bit for bit (`sea::tests::law_zero_is_the_old_flight`).
-    pub fn flight_under(&self, law: u32, d: Drift, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
+    pub fn flight_under(
+        &self,
+        law: u32,
+        d: Drift,
+        day: f64,
+        dt_days: f64,
+        seed: u64,
+        k: u32,
+    ) -> Flight {
         let (lon, lat) = (d.at.lon as f32, d.at.lat as f32);
         let day = day as f32;
         let dt = dt_days as f32;
         let (u, v, measured) = self.currents.at(day, lon, lat);
         if self.ice.at(day, lon, lat) >= self.ice_hold {
-            return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
+            return Flight {
+                drift: Drift {
+                    at: d.at,
+                    eddy: (0.0, 0.0),
+                },
+                held: Held::Ice,
+                measured,
+            };
         }
         let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
@@ -240,7 +287,11 @@ impl Rules {
         let (tu, tv) = (tu.max(0.25) * SECONDS_A_DAY, tv.max(0.25) * SECONDS_A_DAY);
         let (au, av) = ((-secs / tu).exp(), (-secs / tv).exp());
         // in world k's spinning eddies the velocity turns as it decays (R12: the spinning flight)
-        let om = if law >= 1 { spin(k, day, lon, lat) } else { 0.0 };
+        let om = if law >= 1 {
+            spin(k, day, lon, lat)
+        } else {
+            0.0
+        };
         let (ru, rv) = if om == 0.0 {
             d.eddy
         } else {
@@ -258,15 +309,41 @@ impl Rules {
         let nlon = wrap(lon + dlon);
         let nlat = (lat + dlat).clamp(-89.5, 89.5);
         if self.ice.at(day, nlon, nlat) >= self.ice_hold {
-            return Flight { drift: Drift { at: d.at, eddy: (0.0, 0.0) }, held: Held::Ice, measured };
+            return Flight {
+                drift: Drift {
+                    at: d.at,
+                    eddy: (0.0, 0.0),
+                },
+                held: Held::Ice,
+                measured,
+            };
         }
         let (slon, slat, held, eddy) = if law >= 2 {
             self.slide(lon, lat, nlon, nlat, (eu, ev))
         } else {
             let (slon, slat, held) = self.ashore(lon, lat, nlon, nlat);
-            (slon, slat, held, if held == Held::Coast { (0.0, 0.0) } else { (eu, ev) })
+            (
+                slon,
+                slat,
+                held,
+                if held == Held::Coast {
+                    (0.0, 0.0)
+                } else {
+                    (eu, ev)
+                },
+            )
         };
-        Flight { drift: Drift { at: LonLat { lon: slon as f64, lat: slat as f64 }, eddy }, held, measured }
+        Flight {
+            drift: Drift {
+                at: LonLat {
+                    lon: slon as f64,
+                    lat: slat as f64,
+                },
+                eddy,
+            },
+            held,
+            measured,
+        }
     }
 
     /// The coast under law 2 (R15): no water flows through it. A step that would end ashore (or
@@ -275,7 +352,14 @@ impl Rules {
     /// rest of its motion; its eddy velocity loses its landward part too, and keeps the rest. Law 1
     /// put the end back along the gradient and stopped the eddy, which drew a V or an elbow at every
     /// touch. If the slid end is still too near (a headland, a strait), law 1's hold is the fallback.
-    pub fn slide(&self, lon: f32, lat: f32, nlon: f32, nlat: f32, eddy: (f32, f32)) -> (f32, f32, Held, (f32, f32)) {
+    pub fn slide(
+        &self,
+        lon: f32,
+        lat: f32,
+        nlon: f32,
+        nlat: f32,
+        eddy: (f32, f32),
+    ) -> (f32, f32, Held, (f32, f32)) {
         let coast = &self.coast;
         if coast.distance(nlon, nlat) < -self.shore {
             return (nlon, nlat, Held::No, eddy);
@@ -284,22 +368,40 @@ impl Rules {
         let c = lat.to_radians().cos().max(0.01);
         // the landward normal where the step began, east and north in metres' proportions
         let gx = (coast.distance(lon + px, lat) - coast.distance(lon - px, lat)) / c;
-        let gy = coast.distance(lon, (lat + px).min(89.9)) - coast.distance(lon, (lat - px).max(-89.9));
+        let gy =
+            coast.distance(lon, (lat + px).min(89.9)) - coast.distance(lon, (lat - px).max(-89.9));
         let g = (gx * gx + gy * gy).sqrt();
         if g > 1e-6 {
             let (nx, ny) = (gx / g, gy / g);
             let (sx, sy) = ((nlon - lon) * c, nlat - lat);
             let sn = sx * nx + sy * ny;
-            let (sx, sy) = if sn > 0.0 { (sx - sn * nx, sy - sn * ny) } else { (sx, sy) };
+            let (sx, sy) = if sn > 0.0 {
+                (sx - sn * nx, sy - sn * ny)
+            } else {
+                (sx, sy)
+            };
             let (blon, blat) = (wrap(lon + sx / c), (lat + sy).clamp(-89.5, 89.5));
             if coast.distance(blon, blat) < -self.shore * 0.5 {
                 let en = eddy.0 * nx + eddy.1 * ny;
-                let e = if en > 0.0 { (eddy.0 - en * nx, eddy.1 - en * ny) } else { eddy };
+                let e = if en > 0.0 {
+                    (eddy.0 - en * nx, eddy.1 - en * ny)
+                } else {
+                    eddy
+                };
                 return (blon, blat, Held::Coast, e);
             }
         }
         let (blon, blat, held) = self.ashore(lon, lat, nlon, nlat);
-        (blon, blat, held, if held == Held::Coast { (0.0, 0.0) } else { eddy })
+        (
+            blon,
+            blat,
+            held,
+            if held == Held::Coast {
+                (0.0, 0.0)
+            } else {
+                eddy
+            },
+        )
     }
 
     /// A float as it is put: at `at`, with a first eddy velocity drawn from what the drifters
@@ -336,7 +438,10 @@ impl Rules {
         let (u, v, measured) = self.currents.at(day, lon, lat);
         let (u, v) = (u * reach(measured), v * reach(measured));
         let (wu, wv) = self.wind.at(day, lon, lat);
-        (u + self.leeway * wu + d.eddy.0, v + self.leeway * wv + d.eddy.1)
+        (
+            u + self.leeway * wu + d.eddy.0,
+            v + self.leeway * wv + d.eddy.1,
+        )
     }
 
     /// Where a float drawn between steps is: `at` carried by `velocity` for `days` (a fraction
@@ -347,18 +452,35 @@ impl Rules {
         let coslat = (d.at.lat as f32).to_radians().cos().max(0.01);
         LonLat {
             lon: wrap(d.at.lon as f32 + (u * secs / (EARTH_RADIUS * coslat)).to_degrees()) as f64,
-            lat: (d.at.lat as f32 + (v * secs / EARTH_RADIUS).to_degrees()).clamp(-89.5, 89.5) as f64,
+            lat: (d.at.lat as f32 + (v * secs / EARTH_RADIUS).to_degrees()).clamp(-89.5, 89.5)
+                as f64,
         }
     }
 
     /// A float's maybes with memory, as `maybes` (k = 1..=n), each the flight reached.
-    pub fn flights(&self, from: Drift, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Flight> {
+    pub fn flights(
+        &self,
+        from: Drift,
+        day0: f64,
+        until: f64,
+        dt_days: f64,
+        seed: u64,
+        n: u32,
+    ) -> Vec<Flight> {
         (1..=n)
             .map(|k| {
                 // each maybe is put afresh at the float's place, with its own first draw
-                let mut d = if from.eddy == (0.0, 0.0) { self.put(from.at, day0, seed, k) } else { from };
+                let mut d = if from.eddy == (0.0, 0.0) {
+                    self.put(from.at, day0, seed, k)
+                } else {
+                    from
+                };
                 let mut day = day0;
-                let mut last = Flight { drift: d, held: Held::No, measured: 1.0 };
+                let mut last = Flight {
+                    drift: d,
+                    held: Held::No,
+                    measured: 1.0,
+                };
                 while day < until - 1e-9 {
                     let dt = dt_days.min(until - day);
                     last = self.flight(d, day, dt, seed, k);
@@ -479,7 +601,12 @@ pub fn world_field(k: u32, cell: i32, lon: f32, lat: f32) -> (f32, f32) {
     let base = mix(mix(k ^ 0x5eed_c0de) ^ cell as u32);
     let (x0, y0) = (x0 as i32, y0 as i32);
     let (mut gu, mut gv) = (0.0f32, 0.0f32);
-    for (dx, dy, w) in [(0, 0, (1.0 - tx) * (1.0 - ty)), (1, 0, tx * (1.0 - ty)), (0, 1, (1.0 - tx) * ty), (1, 1, tx * ty)] {
+    for (dx, dy, w) in [
+        (0, 0, (1.0 - tx) * (1.0 - ty)),
+        (1, 0, tx * (1.0 - ty)),
+        (0, 1, (1.0 - tx) * ty),
+        (1, 1, tx * ty),
+    ] {
         let ix = (x0 + dx).rem_euclid(n) as u32;
         let h = mix(mix(base ^ ix) ^ (y0 + dy) as u32);
         gu += w * bytes_gaussian(h);
@@ -497,7 +624,11 @@ pub fn world_field(k: u32, cell: i32, lon: f32, lat: f32) -> (f32, f32) {
 pub fn world_kick(k: u32, day: f32, dt: f32, lon: f32, lat: f32) -> (f32, f32) {
     let first = ((day - 0.125) * 4.0).ceil() as i32;
     let end = ((day + dt - 0.125) * 4.0).ceil() as i32;
-    let (first, count) = if end > first { (first, ((end - first) as u32).min(WORLD_SPAN)) } else { (quarter_cell(day), 1) };
+    let (first, count) = if end > first {
+        (first, ((end - first) as u32).min(WORLD_SPAN))
+    } else {
+        (quarter_cell(day), 1)
+    };
     let (mut gu, mut gv) = (0.0f32, 0.0f32);
     for i in 0..count {
         let (u, v) = world_field(k, first + i as i32, lon, lat);

@@ -286,10 +286,19 @@ impl Toy for Meander {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
         let gpu = &ctx.gpu;
         toy_kit::step("the floodplain");
-        let plain = Texture::from_pixels(gpu, "plain", &decode(&ctx.assets.read("plain.jpg")?, 4)?, false);
+        let plain = Texture::from_pixels(
+            gpu,
+            "plain",
+            &decode(&ctx.assets.read("plain.jpg")?, 4)?,
+            false,
+        );
         let dep_tex = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("deposits"),
-            size: wgpu::Extent3d { width: NG as u32, height: NG as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: NG as u32,
+                height: NG as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -297,11 +306,16 @@ impl Toy for Meander {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        let uni = gpu.buffer(&wgpu::BufferDescriptor { label: Some("meander"), size: std::mem::size_of::<Uni>() as u64, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let uni = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("meander"),
+            size: std::mem::size_of::<Uni>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let smp = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             ..Default::default()
@@ -309,19 +323,39 @@ impl Toy for Meander {
         let tex = |b: u32| wgpu::BindGroupLayoutEntry {
             binding: b,
             visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            },
             count: None,
         };
-        let bgl = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("meander"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
-                tex(1),
-                tex(2),
-                wgpu::BindGroupLayoutEntry { binding: 3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
-                tex(4),
-            ],
-        });
+        let bgl = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("meander"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    tex(1),
+                    tex(2),
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    tex(4),
+                ],
+            });
         let dep_view = dep_tex.create_view(&Default::default());
         let shader = gpu.shader("meander-plain", WGSL);
         let pipeline = gpu.fullscreen_pipeline("meander-plain", &shader, &[&bgl], None);
@@ -359,7 +393,9 @@ impl Toy for Meander {
         let b = toy.view_bounds(ctx);
         toy.river = River::new(seed_wobble(&extend(&opening_course(7), b), 3), 7);
         let mut s = 0x51u64;
-        toy.flecks = (0..90).map(|_| (crate::sim::rand(&mut s), crate::sim::rand(&mut s))).collect();
+        toy.flecks = (0..90)
+            .map(|_| (crate::sim::rand(&mut s), crate::sim::rand(&mut s)))
+            .collect();
         // the river has been running a while when the toy opens: its bends are already growing
         for _ in 0..60 {
             toy.river.advance(1.0);
@@ -384,10 +420,21 @@ impl Toy for Meander {
             toy_kit::Phase::Down => {
                 // every finger is a push of its own (a stale one with the same id is replaced)
                 self.hands.retain(|h| h.id != e.id);
-                self.hands.push(Hand { id: e.id, at: w, travel: 0.0, gained: 0.0, ticks: 0, hook: None, carried: 0.0, dropped: None });
+                self.hands.push(Hand {
+                    id: e.id,
+                    at: w,
+                    travel: 0.0,
+                    gained: 0.0,
+                    ticks: 0,
+                    hook: None,
+                    carried: 0.0,
+                    dropped: None,
+                });
             }
             toy_kit::Phase::Move => {
-                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
+                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else {
+                    return;
+                };
                 let h = &mut self.hands[k];
                 let d = [w[0] - h.at[0], w[1] - h.at[1]];
                 h.travel += dist(w, h.at) * s;
@@ -403,7 +450,10 @@ impl Toy for Meander {
                     h.carried += dist(w, [w[0] - d[0], w[1] - d[1]]) * s;
                     // a bend pushed in toward its own middle (being flattened) is let go sooner than
                     // one pushed out
-                    let inward = self.river.bend_out(i).is_some_and(|o| o[0] * d[0] + o[1] * d[1] < 0.0);
+                    let inward = self
+                        .river
+                        .bend_out(i)
+                        .is_some_and(|o| o[0] * d[0] + o[1] * d[1] < 0.0);
                     let limit = if inward { LET_GO_IN_PT } else { LET_GO_PT };
                     if many && h.carried > limit {
                         h.hook = None;
@@ -445,22 +495,42 @@ impl Toy for Meander {
                     if self.t - self.ticked > 0.07 {
                         self.ticked = self.t;
                         let f = toy_kit::sound::pentatonic(392.0, n - 1);
-                        let pan = ((e.x / ctx.points()[0].max(1.0)) * 2.0 - 1.0).clamp(-1.0, 1.0) as f32 * 0.5;
-                        self.bells.strike(Note { freq: f, amp: 0.07, decay: 0.35, pan, bright: 0.8 });
+                        let pan = ((e.x / ctx.points()[0].max(1.0)) * 2.0 - 1.0).clamp(-1.0, 1.0)
+                            as f32
+                            * 0.5;
+                        self.bells.strike(Note {
+                            freq: f,
+                            amp: 0.07,
+                            decay: 0.35,
+                            pan,
+                            bright: 0.8,
+                        });
                         ctx.haptic();
                     }
                 }
             }
             toy_kit::Phase::Up | toy_kit::Phase::Cancel => {
-                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else { return };
+                let Some(k) = self.hands.iter().position(|h| h.id == e.id) else {
+                    return;
+                };
                 let h = self.hands.remove(k);
                 if h.travel < 12.0 && e.phase == toy_kit::Phase::Up {
                     // a touch: the nearest bank nudged toward the finger and loosened, so a bend starts there
                     self.river.nudge(w, W * 1.2);
                     self.river.kick(w, 1.2);
-                    self.ripples.push(Ripple { at: w, t: self.t, strong: false });
+                    self.ripples.push(Ripple {
+                        at: w,
+                        t: self.t,
+                        strong: false,
+                    });
                     if self.river.distance(w) < W * 6.0 {
-                        self.bells.strike(Note { freq: 196.0, amp: 0.08, decay: 0.8, pan: 0.0, bright: 0.4 });
+                        self.bells.strike(Note {
+                            freq: 196.0,
+                            amp: 0.08,
+                            decay: 0.8,
+                            pan: 0.0,
+                            bright: 0.4,
+                        });
                     }
                 }
             }
@@ -481,9 +551,14 @@ impl Toy for Meander {
             .filter(|(at, _)| at[0] > b[0] && at[0] < b[2] && at[1] > b[1] && at[1] < b[3])
             .map(|n| n.1)
             .fold(0.0f64, f64::max);
-        let target = FAST_YEARS + (YEARS_A_SECOND - FAST_YEARS) * smooth01(0.0, 0.5, closing) as f64;
+        let target =
+            FAST_YEARS + (YEARS_A_SECOND - FAST_YEARS) * smooth01(0.0, 0.5, closing) as f64;
         let since_cut = self.flashes.last().map_or(9.0, |f| t - f.0);
-        let target = if since_cut < 1.5 { YEARS_A_SECOND } else { target };
+        let target = if since_cut < 1.5 {
+            YEARS_A_SECOND
+        } else {
+            target
+        };
         let ease = 1.0 - (-dt * 2.0).exp();
         self.pace += (target - self.pace) * ease;
         // while a push is fresh the rest of the river holds still-ish, so the next cut is the finger's
@@ -514,16 +589,31 @@ impl Toy for Meander {
                 ctx.haptic();
                 let pan = (((at[0] - b[0]) / (b[2] - b[0])) * 2.0 - 1.0) as f32;
                 let mut s = self.frame ^ 0x77;
-                let f = [196.0, 220.0, 261.6, 293.7, 329.6][(crate::sim::rand(&mut s) * 5.0) as usize % 5];
-                self.bells.strike(Note { freq: f, amp: 0.22, decay: 3.5, pan: pan * 0.6, bright: 0.6 });
-                self.bells.strike(Note { freq: f * 0.5, amp: 0.12, decay: 4.0, pan: pan * 0.6, bright: 0.1 });
+                let f = [196.0, 220.0, 261.6, 293.7, 329.6]
+                    [(crate::sim::rand(&mut s) * 5.0) as usize % 5];
+                self.bells.strike(Note {
+                    freq: f,
+                    amp: 0.22,
+                    decay: 3.5,
+                    pan: pan * 0.6,
+                    bright: 0.6,
+                });
+                self.bells.strike(Note {
+                    freq: f * 0.5,
+                    amp: 0.12,
+                    decay: 4.0,
+                    pan: pan * 0.6,
+                    bright: 0.1,
+                });
             }
         }
         self.ripples.retain(|r| t - r.t < 2.0);
         self.flashes.retain(|f| t - f.0 < 0.9);
         // the lakes age out
         let year = self.river.year;
-        self.river.oxbows.retain(|o| year - o.born < if o.course { COURSE_LIFE } else { LAKE_LIFE });
+        self.river
+            .oxbows
+            .retain(|o| year - o.born < if o.course { COURSE_LIFE } else { LAKE_LIFE });
         // the flecks ride the current downstream
         let len = self.river.length().max(1.0);
         let speed = if self.reduce_motion { 0.0 } else { 900.0 }; // metres a second, on screen
@@ -557,10 +647,27 @@ impl Toy for Meander {
                 let start = (y0 * NG + x0) * 2;
                 let end = ((y0 + h - 1) * NG + x0 + w) * 2;
                 gpu.queue.write_texture(
-                    wgpu::TexelCopyTextureInfo { texture: &self.dep_tex, mip_level: 0, origin: wgpu::Origin3d { x: x0 as u32, y: y0 as u32, z: 0 }, aspect: wgpu::TextureAspect::All },
+                    wgpu::TexelCopyTextureInfo {
+                        texture: &self.dep_tex,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d {
+                            x: x0 as u32,
+                            y: y0 as u32,
+                            z: 0,
+                        },
+                        aspect: wgpu::TextureAspect::All,
+                    },
                     bytemuck::cast_slice(&self.half[start..end]),
-                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(NG as u32 * 4), rows_per_image: Some(h as u32) },
-                    wgpu::Extent3d { width: w as u32, height: h as u32, depth_or_array_layers: 1 },
+                    wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(NG as u32 * 4),
+                        rows_per_image: Some(h as u32),
+                    },
+                    wgpu::Extent3d {
+                        width: w as u32,
+                        height: h as u32,
+                        depth_or_array_layers: 1,
+                    },
                 );
                 sent += w * h * 4;
             }
@@ -582,19 +689,29 @@ impl Toy for Meander {
         gpu.queue.write_buffer(&self.uni, 0, bytemuck::bytes_of(&u));
 
         let [wp, hp] = ctx.points();
-        let px = move |w: [f64; 2]| -> [f32; 2] { [(((w[0] - c[0]) * s + wp * 0.5) * ppp) as f32, (((w[1] - c[1]) * s + hp * 0.5) * ppp) as f32] };
+        let px = move |w: [f64; 2]| -> [f32; 2] {
+            [
+                (((w[0] - c[0]) * s + wp * 0.5) * ppp) as f32,
+                (((w[1] - c[1]) * s + hp * 0.5) * ppp) as f32,
+            ]
+        };
         let year = self.river.year;
         // the mask, half the screen's pixels
         let msize = [(ctx.width / 2).max(1), (ctx.height / 2).max(1)];
-        if self.mask.as_ref().map_or(true, |m| m.1 != msize) {
+        if self.mask.as_ref().is_none_or(|m| m.1 != msize) {
             let tex = gpu.texture(&wgpu::TextureDescriptor {
                 label: Some("water"),
-                size: wgpu::Extent3d { width: msize[0], height: msize[1], depth_or_array_layers: 1 },
+                size: wgpu::Extent3d {
+                    width: msize[0],
+                    height: msize[1],
+                    depth_or_array_layers: 1,
+                },
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
             let view = tex.create_view(&Default::default());
@@ -602,11 +719,26 @@ impl Toy for Meander {
                 label: Some("meander"),
                 layout: &self.bgl,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: self.uni.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&self._plain.view) },
-                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&self.dep_view) },
-                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&self.smp) },
-                    wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&view) },
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: self.uni.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&self._plain.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&self.dep_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::Sampler(&self.smp),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: wgpu::BindingResource::TextureView(&view),
+                    },
                 ],
             });
             self.mask = Some((tex, msize, bind));
@@ -628,9 +760,22 @@ impl Toy for Meander {
             let cut = ((n as f64) * silt) as usize;
             let (a, b) = (cut.min(n / 2 - 1), (n - cut).max(n / 2 + 1));
             let clear = smooth01(0.0, if o.course { 6.0 } else { 1.5 }, age);
-            let marsh = if o.course { smooth01(4.0, 18.0, age) } else { smooth01(life * 0.45, life * 0.9, age) };
-            let fade = 1.0 - if o.course { smooth01(8.0, life, age) } else { smooth01(life * 0.55, life, age) };
-            let thin = if o.course { (smooth01(0.0, 14.0, age) * 1.6).min(0.92) } else { 0.15 * smooth01(0.0, 30.0, age) + 0.3 * smooth01(life * 0.3, life, age) };
+            let marsh = if o.course {
+                smooth01(4.0, 18.0, age)
+            } else {
+                smooth01(life * 0.45, life * 0.9, age)
+            };
+            let fade = 1.0
+                - if o.course {
+                    smooth01(8.0, life, age)
+                } else {
+                    smooth01(life * 0.55, life, age)
+                };
+            let thin = if o.course {
+                (smooth01(0.0, 14.0, age) * 1.6).min(0.92)
+            } else {
+                0.15 * smooth01(0.0, 30.0, age) + 0.3 * smooth01(life * 0.3, life, age)
+            };
             let width = wpx * 0.5 * (1.0 - thin);
             let span = (b - a).max(2) as f32;
             for i in a..b - 1 {
@@ -640,21 +785,34 @@ impl Toy for Meander {
                 // opaque in the mask (no seams where pieces overlap): r the river's water still in
                 // it, b the lake's darkness, both fading as it silts
                 let f = fade * (1.0 - 0.55 * marsh);
-                p.line(mp(px(o.line[i])), mp(px(o.line[i + 1])), (width * taper * mk).max(0.5), 1.6 * ppp as f32 * mk, [(1.0 - clear) * f, 0.0, clear * f, 1.0]);
+                p.line(
+                    mp(px(o.line[i])),
+                    mp(px(o.line[i + 1])),
+                    (width * taper * mk).max(0.5),
+                    1.6 * ppp as f32 * mk,
+                    [(1.0 - clear) * f, 0.0, clear * f, 1.0],
+                );
             }
         }
         // the river: a pale bank of wet sand, then the water; a new course swells from a thread
         let swell = smooth01(0.0, 0.7, self.t - self.laid) * 0.75 + 0.25;
-        let r = wpx * 0.5 * swell as f32 * if self.t - self.laid < 0.7 { 1.0 } else { 1.0 };
+        let r = wpx * 0.5 * swell;
         let line = &self.river.line;
         let step = ((wpx * 0.25 / (130.0 * s * ppp) as f32).floor() as usize).max(1);
         let pts: Vec<[f32; 2]> = line.iter().step_by(step).map(|&q| px(q)).collect();
         // wider at a bend's apex, where the point bar shoals it, and paler there; a soft wet-sand edge
         let bend: Vec<f32> = (0..pts.len())
             .map(|i| {
-                let (a, b, c) = (pts[i.saturating_sub(2)], pts[i], pts[(i + 2).min(pts.len() - 1)]);
+                let (a, b, c) = (
+                    pts[i.saturating_sub(2)],
+                    pts[i],
+                    pts[(i + 2).min(pts.len() - 1)],
+                );
                 let (u, v) = ([b[0] - a[0], b[1] - a[1]], [c[0] - b[0], c[1] - b[1]]);
-                let (lu, lv) = ((u[0] * u[0] + u[1] * u[1]).sqrt(), (v[0] * v[0] + v[1] * v[1]).sqrt());
+                let (lu, lv) = (
+                    (u[0] * u[0] + u[1] * u[1]).sqrt(),
+                    (v[0] * v[0] + v[1] * v[1]).sqrt(),
+                );
                 if lu < 1e-3 || lv < 1e-3 {
                     return 0.0;
                 }
@@ -666,7 +824,13 @@ impl Toy for Meander {
         let rw = |i: usize| r * (0.85 + 0.5 * bend[i]);
         for (i, w) in pts.windows(2).enumerate() {
             let k = (bend[i] + bend[i + 1]) * 0.5;
-            p.line(mp(w[0]), mp(w[1]), (rw(i) + rw(i + 1)) * 0.5 * mk + 2.0 * ppp as f32 * mk, wpx * 0.3 * mk, [1.0, k * 0.55, 0.0, 1.0]);
+            p.line(
+                mp(w[0]),
+                mp(w[1]),
+                (rw(i) + rw(i + 1)) * 0.5 * mk + 2.0 * ppp as f32 * mk,
+                wpx * 0.3 * mk,
+                [1.0, k * 0.55, 0.0, 1.0],
+            );
         }
         let p = &mut self.mask_painter;
         // a cut: the new short channel through the neck flashes as the river takes it
@@ -677,10 +841,17 @@ impl Toy for Meander {
             let front = (self.t - t0) * 2600.0;
             for w in line.windows(2) {
                 let d = dist(w[0], at);
-                let f = (1.0 - ((d - front) / 500.0).powi(2)).max(0.0) as f32 + if d < 300.0 { 0.6 } else { 0.0 };
+                let f = (1.0 - ((d - front) / 500.0).powi(2)).max(0.0) as f32
+                    + if d < 300.0 { 0.6 } else { 0.0 };
                 if f > 0.0 {
                     // into the mask's g, as light in the water itself (opaque there: no seams)
-                    p.line(mp(px(w[0])), mp(px(w[1])), r * 0.5 * mk, wpx * 0.25 * mk, [1.0, 0.6 + 0.4 * k * f.min(1.0), 0.0, 1.0]);
+                    p.line(
+                        mp(px(w[0])),
+                        mp(px(w[1])),
+                        r * 0.5 * mk,
+                        wpx * 0.25 * mk,
+                        [1.0, 0.6 + 0.4 * k * f.min(1.0), 0.0, 1.0],
+                    );
                 }
             }
         }
@@ -696,28 +867,48 @@ impl Toy for Meander {
                 let at = f * len;
                 let i = acc.partition_point(|&a| a < at).clamp(1, line.len() - 1);
                 let t0 = ((at - acc[i - 1]) / (acc[i] - acc[i - 1]).max(1e-6)).clamp(0.0, 1.0);
-                let q = [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t0, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t0];
+                let q = [
+                    line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t0,
+                    line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t0,
+                ];
                 let d = [line[i][0] - line[i - 1][0], line[i][1] - line[i - 1][1]];
                 let dl = (d[0] * d[0] + d[1] * d[1]).sqrt().max(1e-6);
                 let off = (k - 0.5) * W * 0.5;
                 let q = [q[0] - d[1] / dl * off, q[1] + d[0] / dl * off];
                 let tail = [q[0] - d[0] / dl * W * 0.6, q[1] - d[1] / dl * W * 0.6];
-                p.glow(px(tail), px(q), 0.6 * ppp as f32, 1.0, [0.22, 0.20, 0.16, 0.0]);
+                p.glow(
+                    px(tail),
+                    px(q),
+                    0.6 * ppp as f32,
+                    1.0,
+                    [0.22, 0.20, 0.16, 0.0],
+                );
             }
         }
         // rings: where a neck broke (bright, wide), or where a finger touched
         for rp in &self.ripples {
             let a = ((self.t - rp.t) / 2.0).clamp(0.0, 1.0) as f32;
             let c = px(rp.at);
-            let (r0, r1, i) = if rp.strong { (0.5, 7.0, 0.7) } else { (0.3, 2.5, 0.45) };
+            let (r0, r1, i) = if rp.strong {
+                (0.5, 7.0, 0.7)
+            } else {
+                (0.3, 2.5, 0.45)
+            };
             let rad = wpx * (r0 + (r1 - r0) * (1.0 - (1.0 - a) * (1.0 - a)));
-            p.glow_ring(c, rad, (1.5 * ppp) as f32, 2.0 * ppp as f32, [1.0, 0.95, 0.85, i * (1.0 - a)]);
+            p.glow_ring(
+                c,
+                rad,
+                (1.5 * ppp) as f32,
+                2.0 * ppp as f32,
+                [1.0, 0.95, 0.85, i * (1.0 - a)],
+            );
         }
 
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         let (mtex, msize, _) = self.mask.as_ref().unwrap();
         let mview = mtex.create_view(&Default::default());
-        self.mask_painter.render(gpu, &mut enc, &mview, *msize, Some([0.0, 0.0, 0.0, 0.0]));
+        self.mask_painter
+            .render(gpu, &mut enc, &mview, *msize, Some([0.0, 0.0, 0.0, 0.0]));
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("meander"),
@@ -725,17 +916,22 @@ impl Toy for Meander {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.pipeline);
             rp.set_bind_group(0, &self.mask.as_ref().unwrap().2, &[]);
             rp.draw(0..3, 0..1);
         }
-        self.painter.render(gpu, &mut enc, target, [ctx.width, ctx.height], None);
+        self.painter
+            .render(gpu, &mut enc, target, [ctx.width, ctx.height], None);
         gpu.queue.submit([enc.finish()]);
     }
 
@@ -747,7 +943,14 @@ impl Toy for Meander {
                 [wp * (0.1 + 0.8 * f), hp * (0.5 + 0.03 * (f * 5.0).sin())]
             })
             .collect();
-        Some(toy_kit::info::Demo::new("Push the river with your finger.", vec![toy_kit::info::Stroke { start: 0.4, seconds: 1.2, path }]))
+        Some(toy_kit::info::Demo::new(
+            "Push the river with your finger.",
+            vec![toy_kit::info::Stroke {
+                start: 0.4,
+                seconds: 1.2,
+                path,
+            }],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -764,6 +967,5 @@ impl Toy for Meander {
         Vec::new()
     }
 }
-
 
 toy_kit::ios_shell!(Meander);

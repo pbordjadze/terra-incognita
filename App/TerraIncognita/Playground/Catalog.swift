@@ -48,7 +48,7 @@ enum Glint {
             }
             c.setLineCap(.round)
             let rays: [(dx: CGFloat, dy: CGFloat, reach: CGFloat, width: CGFloat)] = [
-                (1, 0, 0.46, 1.8), (0, 1, 0.46, 1.8), (0.7071, 0.7071, 0.22, 1.2), (-0.7071, 0.7071, 0.22, 1.2),
+                (1, 0, 0.46, 1.8), (0, 1, 0.46, 1.8), (0.7071, 0.7071, 0.22, 1.2), (-0.7071, 0.7071, 0.22, 1.2)
             ]
             for ray in rays {
                 c.setStrokeColor(UIColor.white.withAlphaComponent(0.92).cgColor)

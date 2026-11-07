@@ -16,7 +16,17 @@ pub trait MediumRules {
     fn put(&self, at: LonLat, day: f64, seed: u64, k: u32) -> Drift;
     /// One step of `dt_days` under `law` (the sea's laws; the wind has one) from `d`, which `held`
     /// held after the step before (a thing come down stays down).
-    fn flight(&self, law: u32, d: Drift, held: Held, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight;
+    #[allow(clippy::too_many_arguments)] // each argument is one thing the call draws or reads
+    fn flight(
+        &self,
+        law: u32,
+        d: Drift,
+        held: Held,
+        day: f64,
+        dt_days: f64,
+        seed: u64,
+        k: u32,
+    ) -> Flight;
     /// The velocity between steps (m/s east, north), for a glide.
     fn velocity(&self, d: Drift, held: Held, day: f64) -> (f32, f32);
     /// Whether a thing may be put here.
@@ -27,7 +37,16 @@ impl MediumRules for Rules {
     fn put(&self, at: LonLat, day: f64, seed: u64, k: u32) -> Drift {
         Rules::put(self, at, day, seed, k)
     }
-    fn flight(&self, law: u32, d: Drift, _held: Held, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
+    fn flight(
+        &self,
+        law: u32,
+        d: Drift,
+        _held: Held,
+        day: f64,
+        dt_days: f64,
+        seed: u64,
+        k: u32,
+    ) -> Flight {
         self.flight_under(law, d, day, dt_days, seed, k)
     }
     fn velocity(&self, d: Drift, _held: Held, day: f64) -> (f32, f32) {
@@ -57,14 +76,51 @@ fn held(a: Aloft) -> Held {
 impl MediumRules for AirRules {
     fn put(&self, at: LonLat, day: f64, _seed: u64, k: u32) -> Drift {
         let a = self.rise(at, day, k);
-        Drift { at: a.at, eddy: a.gust }
+        Drift {
+            at: a.at,
+            eddy: a.gust,
+        }
     }
-    fn flight(&self, _law: u32, d: Drift, h: Held, day: f64, dt_days: f64, seed: u64, k: u32) -> Flight {
-        let a = self.step(Air { at: d.at, gust: d.eddy, aloft: aloft(h) }, day, dt_days, seed, k);
-        Flight { drift: Drift { at: a.at, eddy: a.gust }, held: held(a.aloft), measured: 1.0 }
+    fn flight(
+        &self,
+        _law: u32,
+        d: Drift,
+        h: Held,
+        day: f64,
+        dt_days: f64,
+        seed: u64,
+        k: u32,
+    ) -> Flight {
+        let a = self.step(
+            Air {
+                at: d.at,
+                gust: d.eddy,
+                aloft: aloft(h),
+            },
+            day,
+            dt_days,
+            seed,
+            k,
+        );
+        Flight {
+            drift: Drift {
+                at: a.at,
+                eddy: a.gust,
+            },
+            held: held(a.aloft),
+            measured: 1.0,
+        }
     }
     fn velocity(&self, d: Drift, h: Held, day: f64) -> (f32, f32) {
-        AirRules::velocity(self, Air { at: d.at, gust: d.eddy, aloft: aloft(h) }, day)
+        AirRules::velocity(
+            self,
+            Air {
+                at: d.at,
+                gust: d.eddy,
+                aloft: aloft(h),
+            },
+            day,
+        )
     }
     fn may_put(&self, _at: LonLat) -> Put {
         // the wind takes anything, anywhere: over land as over the sea

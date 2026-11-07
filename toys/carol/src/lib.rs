@@ -129,11 +129,17 @@ impl Carol {
         let (top, bottom) = (54.0, 30.0);
         let above = 44.0 * ui;
         let below = 24.0 * ui + 2.0 * 30.0 * ui;
-        let s = (w - 28.0).min(h - top - bottom - above - below - 24.0).min(820.0).max(200.0);
+        let s = (w - 28.0)
+            .min(h - top - bottom - above - below - 24.0)
+            .clamp(200.0, 820.0);
         let x0 = (w - s) / 2.0;
         let y0 = top + ((h - top - bottom) - (above + s + below)) / 2.0 + above;
         let span = (s - 8.0).min(w - 40.0);
-        let gaps = self.drills.windows(2).filter(|p| p[0].group != p[1].group).count();
+        let gaps = self
+            .drills
+            .windows(2)
+            .filter(|p| p[0].group != p[1].group)
+            .count();
         let slots = (self.drills.len() + gaps).max(2) as f64;
         let beads_dx = span / (slots - 1.0);
         let beads_x0 = (w - span) / 2.0;
@@ -187,7 +193,10 @@ impl Carol {
     }
 
     fn rnd(&mut self) -> f64 {
-        self.seed = self.seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.seed = self
+            .seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         ((self.seed >> 33) as f64) / (1u64 << 31) as f64
     }
 
@@ -197,9 +206,23 @@ impl Carol {
         let mut order: Vec<usize> = (0..stats.len()).collect();
         order.sort_by_key(|&i| {
             let s = stats[i];
-            (if s.done == 0 { 0 } else if s.last > 0 { 1 } else { 2 }, std::cmp::Reverse(if s.done > 0 { s.last } else { 0 }), s.done, i)
+            (
+                if s.done == 0 {
+                    0
+                } else if s.last > 0 {
+                    1
+                } else {
+                    2
+                },
+                std::cmp::Reverse(if s.done > 0 { s.last } else { 0 }),
+                s.done,
+                i,
+            )
         });
-        order.into_iter().find(|&i| i != current || stats.len() == 1).unwrap_or(0)
+        order
+            .into_iter()
+            .find(|&i| i != current || stats.len() == 1)
+            .unwrap_or(0)
     }
 
     fn start(&mut self, d: usize, ctx: &Ctx) {
@@ -217,7 +240,11 @@ impl Carol {
         self.hint_at = None;
         self.selected = None;
         self.drag = None;
-        self.last_move = if auto > 0 { Some(drill.plies[auto - 1].squares()) } else { None };
+        self.last_move = if auto > 0 {
+            Some(drill.plies[auto - 1].squares())
+        } else {
+            None
+        };
         self.red = None;
         // the pieces drop in, a wave from the reader's side
         let l = self.layout(ctx.points());
@@ -225,8 +252,19 @@ impl Carol {
         for sq in 0..64u8 {
             if let Some(p) = self.board.at(sq) {
                 let (_, r) = self.drills[d].screen(sq);
-                let delay = if self.reduce_motion { 0.0 } else { (7 - r) as f64 * 0.045 + 0.05 };
-                self.shown.push(Shown { piece: p, sq, pos: self.sq_pos(&l, sq), born: self.now + delay, gone: None, bump: -9.0 });
+                let delay = if self.reduce_motion {
+                    0.0
+                } else {
+                    (7 - r) as f64 * 0.045 + 0.05
+                };
+                self.shown.push(Shown {
+                    piece: p,
+                    sq,
+                    pos: self.sq_pos(&l, sq),
+                    born: self.now + delay,
+                    gone: None,
+                    bump: -9.0,
+                });
             }
         }
         self.after_ply();
@@ -241,7 +279,8 @@ impl Carol {
         } else if self.board.white_to_move == drill.white {
             self.turn = Turn::Yours;
         } else {
-            self.turn = Turn::Answer(self.now + ANSWER + if self.ply == drill.auto { 0.5 } else { 0.0 });
+            self.turn =
+                Turn::Answer(self.now + ANSWER + if self.ply == drill.auto { 0.5 } else { 0.0 });
         }
         self.hinted = false;
         self.hint_at = None;
@@ -253,9 +292,22 @@ impl Carol {
         s.last = self.misses;
         let clean = self.misses == 0;
         // a chord climbing, brighter when clean
-        let notes: &[f32] = if clean { &[523.25, 659.25, 783.99, 1046.5] } else { &[440.0, 523.25, 659.25] };
+        let notes: &[f32] = if clean {
+            &[523.25, 659.25, 783.99, 1046.5]
+        } else {
+            &[440.0, 523.25, 659.25]
+        };
         for (i, f) in notes.iter().enumerate() {
-            self.pending_notes.push((self.now + 0.12 * i as f64, Note { freq: *f, amp: 0.22, decay: 1.6, pan: -0.3 + 0.2 * i as f32, bright: 0.8 }));
+            self.pending_notes.push((
+                self.now + 0.12 * i as f64,
+                Note {
+                    freq: *f,
+                    amp: 0.22,
+                    decay: 1.6,
+                    pan: -0.3 + 0.2 * i as f32,
+                    bright: 0.8,
+                },
+            ));
         }
         if !self.reduce_motion {
             let centre = self.last_move.map(|(_, to)| to);
@@ -266,20 +318,46 @@ impl Carol {
     fn burst(&mut self, at: Option<Sq>, clean: bool) {
         let n = if clean { 70 } else { 28 };
         let palette: [[f32; 4]; 5] = if clean {
-            [[0.98, 0.78, 0.30, 1.0], [0.95, 0.45, 0.38, 1.0], [0.45, 0.75, 0.62, 1.0], [0.99, 0.95, 0.85, 1.0], [0.55, 0.65, 0.95, 1.0]]
+            [
+                [0.98, 0.78, 0.30, 1.0],
+                [0.95, 0.45, 0.38, 1.0],
+                [0.45, 0.75, 0.62, 1.0],
+                [0.99, 0.95, 0.85, 1.0],
+                [0.55, 0.65, 0.95, 1.0],
+            ]
         } else {
-            [[0.99, 0.95, 0.85, 1.0], [0.98, 0.78, 0.30, 1.0], [0.99, 0.95, 0.85, 1.0], [0.85, 0.80, 0.70, 1.0], [0.98, 0.78, 0.30, 1.0]]
+            [
+                [0.99, 0.95, 0.85, 1.0],
+                [0.98, 0.78, 0.30, 1.0],
+                [0.99, 0.95, 0.85, 1.0],
+                [0.85, 0.80, 0.70, 1.0],
+                [0.98, 0.78, 0.30, 1.0],
+            ]
         };
         for i in 0..n {
             let a = self.rnd() * std::f64::consts::TAU;
             let sp = 120.0 + 380.0 * self.rnd();
             let r = 2.5 + 3.5 * self.rnd() as f32;
-            self.sparks.push(Spark { origin: at, placed: false, p: [0.0, 0.0], v: [a.cos() * sp, a.sin() * sp - 260.0], born: self.now + 0.004 * i as f64, color: palette[i % 5], r });
+            self.sparks.push(Spark {
+                origin: at,
+                placed: false,
+                p: [0.0, 0.0],
+                v: [a.cos() * sp, a.sin() * sp - 260.0],
+                born: self.now + 0.004 * i as f64,
+                color: palette[i % 5],
+                r,
+            });
         }
     }
 
     fn strike(&self, freq: f32, amp: f32, decay: f32, bright: f32) {
-        self.bells.strike(Note { freq, amp, decay, pan: 0.0, bright });
+        self.bells.strike(Note {
+            freq,
+            amp,
+            decay,
+            pan: 0.0,
+            bright,
+        });
     }
 
     /// Plays a ply onto the board (the user's, the other side's, or shown).
@@ -290,7 +368,9 @@ impl Carol {
         self.ply += 1;
         self.selected = None;
         self.retarget(ctx);
-        let scale = [523.25f32, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.7, 1318.5];
+        let scale = [
+            523.25f32, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.7, 1318.5,
+        ];
         if yours {
             let k = (self.ply / 2).min(7);
             self.strike(scale[k], 0.28, 0.9, 1.2);
@@ -314,7 +394,11 @@ impl Carol {
         let mut unmatched: Vec<(Sq, char)> = Vec::new();
         for sq in 0..64u8 {
             if let Some(p) = self.board.at(sq) {
-                if let Some(i) = self.shown.iter().position(|s| s.gone.is_none() && s.sq == sq && s.piece == p) {
+                if let Some(i) = self
+                    .shown
+                    .iter()
+                    .position(|s| s.gone.is_none() && s.sq == sq && s.piece == p)
+                {
                     used[i] = true;
                     placed.push((i, sq));
                 } else {
@@ -329,7 +413,9 @@ impl Carol {
                 .shown
                 .iter()
                 .enumerate()
-                .filter(|(i, s)| !used[*i] && s.gone.is_none() && s.piece == p && self.board.at(s.sq) != Some(p))
+                .filter(|(i, s)| {
+                    !used[*i] && s.gone.is_none() && s.piece == p && self.board.at(s.sq) != Some(p)
+                })
                 .min_by(|a, b| dist(a.1.pos, to).total_cmp(&dist(b.1.pos, to)))
                 .map(|(i, _)| i);
             match best {
@@ -341,7 +427,14 @@ impl Carol {
                     }
                 }
                 None => {
-                    self.shown.push(Shown { piece: p, sq, pos: to, born: self.now, gone: None, bump: -9.0 });
+                    self.shown.push(Shown {
+                        piece: p,
+                        sq,
+                        pos: to,
+                        born: self.now,
+                        gone: None,
+                        bump: -9.0,
+                    });
                     used.push(true);
                 }
             }
@@ -361,7 +454,11 @@ impl Carol {
         } else {
             self.misses += 1;
             self.red = Some((to, self.now));
-            if let Some(s) = self.shown.iter_mut().find(|s| s.gone.is_none() && s.sq == from) {
+            if let Some(s) = self
+                .shown
+                .iter_mut()
+                .find(|s| s.gone.is_none() && s.sq == from)
+            {
                 s.bump = self.now;
             }
             self.selected = None;
@@ -394,12 +491,18 @@ impl Carol {
 
     fn ripple(&mut self, p: [f64; 2], color: [f32; 4]) {
         if self.ripples.len() < 12 {
-            self.ripples.push(Ripple { p, born: self.now, color });
+            self.ripples.push(Ripple {
+                p,
+                born: self.now,
+                color,
+            });
         }
     }
 
     fn own(&self, sq: Sq) -> bool {
-        self.board.at(sq).is_some_and(|p| p.is_ascii_uppercase() == self.drill().white)
+        self.board
+            .at(sq)
+            .is_some_and(|p| p.is_ascii_uppercase() == self.drill().white)
     }
 }
 
@@ -469,7 +572,11 @@ impl Toy for Carol {
                     if dist(p, [x, l.buttons_y]) < l.button_r + 12.0 {
                         self.pressed = Some((k, self.now));
                         if self.turn == Turn::Yours {
-                            if k == 0 { self.hint(ctx) } else { self.show(ctx) }
+                            if k == 0 {
+                                self.hint(ctx)
+                            } else {
+                                self.show(ctx)
+                            }
                         } else {
                             self.ripple([x, l.buttons_y], [1.0, 0.95, 0.85, 0.5]);
                         }
@@ -478,7 +585,9 @@ impl Toy for Carol {
                 }
                 // the beads
                 if (p[1] - l.beads_y).abs() < 22.0 * l.ui {
-                    let near = (0..self.drills.len()).map(|i| (i, dist(p, self.bead_pos(&l, i)))).min_by(|a, b| a.1.total_cmp(&b.1));
+                    let near = (0..self.drills.len())
+                        .map(|i| (i, dist(p, self.bead_pos(&l, i))))
+                        .min_by(|a, b| a.1.total_cmp(&b.1));
                     if let Some((i, d)) = near {
                         if d < l.beads_dx.max(14.0) {
                             self.strike(987.8, 0.15, 0.5, 0.6);
@@ -557,16 +666,26 @@ impl Toy for Carol {
         }
         // the pieces ease toward their squares
         let l = self.layout(ctx.points());
-        let k = if self.reduce_motion { 1.0 } else { 1.0 - (-dt * 16.0).exp() };
+        let k = if self.reduce_motion {
+            1.0
+        } else {
+            1.0 - (-dt * 16.0).exp()
+        };
         let targets: Vec<[f64; 2]> = self.shown.iter().map(|s| self.sq_pos(&l, s.sq)).collect();
         for (s, to) in self.shown.iter_mut().zip(targets) {
-            s.pos = [s.pos[0] + (to[0] - s.pos[0]) * k, s.pos[1] + (to[1] - s.pos[1]) * k];
+            s.pos = [
+                s.pos[0] + (to[0] - s.pos[0]) * k,
+                s.pos[1] + (to[1] - s.pos[1]) * k,
+            ];
         }
         self.shown.retain(|s| s.gone.is_none_or(|g| t - g < 0.5));
         let centre = [l.x0 + l.s / 2.0, l.y0 + l.s / 2.0];
         for i in 0..self.sparks.len() {
             if !self.sparks[i].placed {
-                self.sparks[i].p = self.sparks[i].origin.map(|q| self.sq_pos(&l, q)).unwrap_or(centre);
+                self.sparks[i].p = self.sparks[i]
+                    .origin
+                    .map(|q| self.sq_pos(&l, q))
+                    .unwrap_or(centre);
                 self.sparks[i].placed = true;
             }
             let s = &mut self.sparks[i];
@@ -589,13 +708,28 @@ impl Toy for Carol {
         let k = ppp as f32;
         let px = |p: [f64; 2]| [(p[0] * ppp) as f32, (p[1] * ppp) as f32];
         let drill = &self.drills[self.current];
-        let idx = |sq: Option<Sq>| sq.map(|s| { let (c, r) = drill.screen(s); (r as u32 * 8 + c as u32) as f32 }).unwrap_or(-1.0);
+        let idx = |sq: Option<Sq>| {
+            sq.map(|s| {
+                let (c, r) = drill.screen(s);
+                (r as u32 * 8 + c as u32) as f32
+            })
+            .unwrap_or(-1.0)
+        };
         let (red_sq, red_k) = match self.red {
             Some((s, at)) if t - at < 0.7 => (idx(Some(s)), (1.0 - (t - at) / 0.7) as f32),
             _ => (-1.0, 0.0),
         };
         let glow = match self.turn {
-            Turn::Done(at) => (((t - at) * 3.0).min(1.0) * (1.0 - ((t - at - LINGER + 0.5) * 2.0).clamp(0.0, 1.0))) as f32 * if self.stats[self.current].last == 0 { 1.0 } else { 0.4 },
+            Turn::Done(at) => {
+                (((t - at) * 3.0).min(1.0)
+                    * (1.0 - ((t - at - LINGER + 0.5) * 2.0).clamp(0.0, 1.0)))
+                    as f32
+                    * if self.stats[self.current].last == 0 {
+                        1.0
+                    } else {
+                        0.4
+                    }
+            }
             _ => 0.0,
         };
         let params = BackdropParams {
@@ -620,14 +754,17 @@ impl Toy for Carol {
         let q = (l.s / 8.0) as f32 * k;
         if let Some(sq) = self.selected {
             let c = px(self.sq_pos(&l, sq));
-            self.painter.ring(c, q * 0.46, 3.0 * k, 1.2 * k, [1.0, 0.97, 0.88, 0.95]);
+            self.painter
+                .ring(c, q * 0.46, 3.0 * k, 1.2 * k, [1.0, 0.97, 0.88, 0.95]);
         }
         if let (Some(at), Turn::Yours) = (self.hint_at, self.turn) {
             let from = drill.plies[self.ply].squares().0;
             let c = px(self.sq_pos(&l, from));
             let breathe = 0.65 + 0.35 * ((t - at) * 4.0).cos() as f32;
-            self.painter.glow(c, c, q * 0.30, q * 0.25, [1.0, 0.80, 0.30, 0.55 * breathe]);
-            self.painter.glow_ring(c, q * 0.44, 2.5 * k, 2.0 * k, [1.0, 0.85, 0.40, 0.9]);
+            self.painter
+                .glow(c, c, q * 0.30, q * 0.25, [1.0, 0.80, 0.30, 0.55 * breathe]);
+            self.painter
+                .glow_ring(c, q * 0.44, 2.5 * k, 2.0 * k, [1.0, 0.85, 0.40, 0.9]);
         }
         self.painter.render(gpu, &mut enc, target, size, None);
 
@@ -640,7 +777,11 @@ impl Toy for Carol {
             if age < 0.0 {
                 continue;
             }
-            let mut scale = if self.reduce_motion { 1.0 } else { pop(age / 0.45) };
+            let mut scale = if self.reduce_motion {
+                1.0
+            } else {
+                pop(age / 0.45)
+            };
             let mut alpha = 1.0;
             let mut lift = 0.0;
             let mut pos = s.pos;
@@ -670,8 +811,29 @@ impl Toy for Carol {
                 scale *= 1.2;
             }
             let p = px(pos);
-            let one = PieceInst { a: [p[0], p[1], q * 0.6 * scale as f32, chess::cell(s.piece) as f32], b: [if s.piece.is_ascii_uppercase() { 0.0 } else { 1.0 }, alpha as f32, lift as f32, k] };
-            if is_drag || lift > 0.05 { top.push(one) } else { inst.push(one) }
+            let one = PieceInst {
+                a: [
+                    p[0],
+                    p[1],
+                    q * 0.6 * scale as f32,
+                    chess::cell(s.piece) as f32,
+                ],
+                b: [
+                    if s.piece.is_ascii_uppercase() {
+                        0.0
+                    } else {
+                        1.0
+                    },
+                    alpha as f32,
+                    lift as f32,
+                    k,
+                ],
+            };
+            if is_drag || lift > 0.05 {
+                top.push(one)
+            } else {
+                inst.push(one)
+            }
         }
         inst.extend(top);
         self.pieces.render(gpu, &mut enc, target, size, &inst);
@@ -688,21 +850,30 @@ impl Toy for Carol {
             };
             let st = self.stats[i];
             if i == self.current {
-                self.painter.ring(c, r + 4.0 * ku, 1.6 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.9]);
+                self.painter
+                    .ring(c, r + 4.0 * ku, 1.6 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.9]);
             }
             if st.done == 0 {
                 self.painter.ring(c, r - 0.9 * ku, 1.8 * ku, 0.6 * ku, col);
                 if self.drills[i].group == "black" {
-                    self.painter.ring(c, r + 0.4 * ku, 0.8 * ku, 0.6 * ku, [0.99, 0.96, 0.90, 0.35]);
+                    self.painter.ring(
+                        c,
+                        r + 0.4 * ku,
+                        0.8 * ku,
+                        0.6 * ku,
+                        [0.99, 0.96, 0.90, 0.35],
+                    );
                 }
             } else {
                 if self.drills[i].group == "black" {
-                    self.painter.disc(c, r + 0.9 * ku, 0.6 * ku, [0.99, 0.96, 0.90, 0.35]);
+                    self.painter
+                        .disc(c, r + 0.9 * ku, 0.6 * ku, [0.99, 0.96, 0.90, 0.35]);
                 }
                 self.painter.disc(c, r, 0.7 * ku, col);
                 if st.last > 0 {
                     let d = [c[0], c[1] + r + 5.0 * ku];
-                    self.painter.disc(d, 1.9 * ku, 0.6 * ku, [0.93, 0.36, 0.30, 1.0]);
+                    self.painter
+                        .disc(d, 1.9 * ku, 0.6 * ku, [0.93, 0.36, 0.30, 1.0]);
                 }
             }
         }
@@ -710,7 +881,13 @@ impl Toy for Carol {
         let frac = (self.ply as f64 / drill.plies.len().max(1) as f64).min(1.0);
         if frac > 0.0 {
             let y = l.y0 + l.s + 5.0;
-            self.painter.line(px([l.x0 + 4.0, y]), px([l.x0 + 4.0 + (l.s - 8.0) * frac, y]), 1.3 * k, 0.8 * k, [0.99, 0.82, 0.42, 0.9]);
+            self.painter.line(
+                px([l.x0 + 4.0, y]),
+                px([l.x0 + 4.0 + (l.s - 8.0) * frac, y]),
+                1.3 * k,
+                0.8 * k,
+                [0.99, 0.82, 0.42, 0.9],
+            );
         }
         // the buttons: a bulb (the hint) and a play mark (show it)
         let live = self.turn == Turn::Yours;
@@ -723,18 +900,46 @@ impl Toy for Carol {
             } as f32;
             let r = (l.button_r as f32) * k * (1.0 - 0.08 * press);
             let a = if live { 1.0 } else { 0.4 };
-            self.painter.disc([c[0], c[1] + 3.0 * ku], r, 5.0 * ku, [0.0, 0.0, 0.0, 0.25 * a]);
-            self.painter.disc(c, r, 0.8 * ku, [0.99, 0.96, 0.90, 0.10 + 0.08 * a + 0.2 * press]);
-            self.painter.ring(c, r, 1.5 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.55 * a]);
-            let ink = if live { [0.99, 0.94, 0.80, 1.0] } else { [0.45, 0.49, 0.54, 1.0] };
+            self.painter.disc(
+                [c[0], c[1] + 3.0 * ku],
+                r,
+                5.0 * ku,
+                [0.0, 0.0, 0.0, 0.25 * a],
+            );
+            self.painter.disc(
+                c,
+                r,
+                0.8 * ku,
+                [0.99, 0.96, 0.90, 0.10 + 0.08 * a + 0.2 * press],
+            );
+            self.painter
+                .ring(c, r, 1.5 * ku, 0.8 * ku, [0.99, 0.96, 0.90, 0.55 * a]);
+            let ink = if live {
+                [0.99, 0.94, 0.80, 1.0]
+            } else {
+                [0.45, 0.49, 0.54, 1.0]
+            };
             if kind == 0 {
                 // a bulb: a round glass, two lines of its screw
                 let g = [c[0], c[1] - 3.5 * ku];
                 self.painter.ring(g, 7.0 * ku, 2.2 * ku, 0.7 * ku, ink);
-                self.painter.line([c[0] - 3.5 * ku, c[1] + 7.0 * ku], [c[0] + 3.5 * ku, c[1] + 7.0 * ku], 1.2 * ku, 0.6 * ku, ink);
-                self.painter.line([c[0] - 2.5 * ku, c[1] + 10.5 * ku], [c[0] + 2.5 * ku, c[1] + 10.5 * ku], 1.2 * ku, 0.6 * ku, ink);
+                self.painter.line(
+                    [c[0] - 3.5 * ku, c[1] + 7.0 * ku],
+                    [c[0] + 3.5 * ku, c[1] + 7.0 * ku],
+                    1.2 * ku,
+                    0.6 * ku,
+                    ink,
+                );
+                self.painter.line(
+                    [c[0] - 2.5 * ku, c[1] + 10.5 * ku],
+                    [c[0] + 2.5 * ku, c[1] + 10.5 * ku],
+                    1.2 * ku,
+                    0.6 * ku,
+                    ink,
+                );
                 if self.hint_at.is_some() && live {
-                    self.painter.glow(g, g, 6.0 * ku, 6.0 * ku, [1.0, 0.8, 0.3, 0.8]);
+                    self.painter
+                        .glow(g, g, 6.0 * ku, 6.0 * ku, [1.0, 0.8, 0.3, 0.8]);
                 }
             } else {
                 // a play mark: a triangle, filled by strokes
@@ -746,20 +951,31 @@ impl Toy for Carol {
                     let x = x0 + (x1 - x0) * u * 0.92;
                     self.painter.line([x, y], [x, y2], 1.6 * ku, 0.6 * ku, ink);
                 }
-                self.painter.line([x0, c[1] - h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
-                self.painter.line([x0, c[1] + h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
+                self.painter
+                    .line([x0, c[1] - h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
+                self.painter
+                    .line([x0, c[1] + h], [x1, c[1]], 1.4 * ku, 0.6 * ku, ink);
             }
         }
         // the misses so far: red pips between the buttons
         let n = self.misses.min(6) as usize;
         for i in 0..n {
-            let x = l.show_x.min(l.hint_x) + (l.show_x - l.hint_x).abs() / 2.0 + (i as f64 - (n as f64 - 1.0) / 2.0) * 8.0 * l.ui;
+            let x = l.show_x.min(l.hint_x)
+                + (l.show_x - l.hint_x).abs() / 2.0
+                + (i as f64 - (n as f64 - 1.0) / 2.0) * 8.0 * l.ui;
             let c = px([x, l.buttons_y]);
-            self.painter.disc(c, 3.0 * ku, 0.7 * ku, [0.93, 0.36, 0.30, 1.0]);
+            self.painter
+                .disc(c, 3.0 * ku, 0.7 * ku, [0.93, 0.36, 0.30, 1.0]);
         }
         for r in &self.ripples {
             let u = ((t - r.born) / 0.6) as f32;
-            self.painter.ring(px(r.p), (6.0 + 26.0 * u) * k, 2.0 * k * (1.0 - u), 1.0 * k, [r.color[0], r.color[1], r.color[2], r.color[3] * (1.0 - u)]);
+            self.painter.ring(
+                px(r.p),
+                (6.0 + 26.0 * u) * k,
+                2.0 * k * (1.0 - u),
+                1.0 * k,
+                [r.color[0], r.color[1], r.color[2], r.color[3] * (1.0 - u)],
+            );
         }
         for s in &self.sparks {
             if t < s.born || !s.placed {
@@ -767,7 +983,12 @@ impl Toy for Carol {
             }
             let u = ((t - s.born) / 1.8) as f32;
             let c = px(s.p);
-            self.painter.disc(c, s.r * k * (1.0 - 0.5 * u), 0.8 * k, [s.color[0], s.color[1], s.color[2], (1.0 - u * u)]);
+            self.painter.disc(
+                c,
+                s.r * k * (1.0 - 0.5 * u),
+                0.8 * k,
+                [s.color[0], s.color[1], s.color[2], (1.0 - u * u)],
+            );
         }
         self.painter.render(gpu, &mut enc, target, size, None);
         gpu.queue.submit([enc.finish()]);
@@ -822,7 +1043,10 @@ impl Toy for Carol {
         let l = self.layout(ctx.points());
         let strokes = if self.turn == Turn::Yours {
             let (f, t) = self.drills[self.current].plies[self.ply].squares();
-            vec![Stroke::tap(0.7, self.sq_pos(&l, f)), Stroke::tap(1.7, self.sq_pos(&l, t))]
+            vec![
+                Stroke::tap(0.7, self.sq_pos(&l, f)),
+                Stroke::tap(1.7, self.sq_pos(&l, t)),
+            ]
         } else {
             vec![Stroke::tap(0.7, [l.x0 + l.s / 2.0, l.y0 + l.s / 2.0])]
         };
@@ -969,32 +1193,73 @@ impl PiecePass {
     fn new(gpu: &Gpu, atlas: &Texture) -> PiecePass {
         let dev = &gpu.device;
         let shader = gpu.shader("carol pieces", PIECES_WGSL);
-        let uniform = gpu.buffer(&wgpu::BufferDescriptor { label: Some("pieces u"), size: 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let uniform = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("pieces u"),
+            size: 16,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let sampler = dev.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("pieces"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             ..Default::default()
         });
         let bgl = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("pieces"),
             entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::VERTEX, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         });
         let bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("pieces"),
             layout: &bgl,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&atlas.view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&sampler) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&atlas.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
             ],
         });
-        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("pieces"), bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("pieces"),
+            bind_group_layouts: &[Some(&bgl)],
+            immediate_size: 0,
+        });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
         let pipeline = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pieces"),
@@ -1002,7 +1267,11 @@ impl PiecePass {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<PieceInst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<PieceInst>() as u64,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &attrs,
+                })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
@@ -1011,28 +1280,62 @@ impl PiecePass {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(Gpu::over()),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
-        PiecePass { pipeline, bind, uniform }
+        PiecePass {
+            pipeline,
+            bind,
+            uniform,
+        }
     }
 
-    fn render(&self, gpu: &Gpu, enc: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, size: [u32; 2], inst: &[PieceInst]) {
+    fn render(
+        &self,
+        gpu: &Gpu,
+        enc: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        size: [u32; 2],
+        inst: &[PieceInst],
+    ) {
         use wgpu::util::DeviceExt;
         if inst.is_empty() {
             return;
         }
-        gpu.queue.write_buffer(&self.uniform, 0, bytemuck::cast_slice(&[size[0] as f32, size[1] as f32, 0.0, 0.0]));
-        let buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("pieces"), contents: bytemuck::cast_slice(inst), usage: wgpu::BufferUsages::VERTEX });
+        gpu.queue.write_buffer(
+            &self.uniform,
+            0,
+            bytemuck::cast_slice(&[size[0] as f32, size[1] as f32, 0.0, 0.0]),
+        );
+        let buf = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("pieces"),
+                contents: bytemuck::cast_slice(inst),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
         let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("pieces"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment { view, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store } })],
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                depth_slice: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind, &[]);

@@ -16,10 +16,12 @@ A monthly mean is the mean of a wind that veers and gusts: a float's leeway on i
 of a typical month, smoother than any real month's. Over land the wind is drawn too (a float is
 never there; the sheet is simply complete).
 """
-import sys, urllib.request
+import sys
+import urllib.request
 from pathlib import Path
-import numpy as np
+
 import netCDF4
+import numpy as np
 from sheets import months, regrid, save, tile
 
 PSL = 'https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis.derived/surface_gauss/'

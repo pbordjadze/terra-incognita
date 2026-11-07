@@ -12,8 +12,10 @@ Stand-ins, not the device: Inter for SF (close in width), the system's default t
 16 pt, footnote 13 pt), an iPhone's 34-point bottom safe area, and a blur with a dark tint for
 UIKit's ultra-thin dark material. The layout numbers are main.swift's: change both together.
 """
-import json, sys
+import json
+import sys
 from pathlib import Path
+
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 FONT = '/usr/share/fonts/opentype/inter/Inter-Regular.otf'

@@ -8,7 +8,7 @@ import CoreMedia
 import CoreVideo
 
 final class AdriftView: UIView {
-    override class var layerClass: AnyClass { CAMetalLayer.self }
+    override static var layerClass: AnyClass { CAMetalLayer.self }
     var shell: OpaquePointer?
     var link: CADisplayLink?
     var touchIds: [ObjectIdentifier: UInt64] = [:]
@@ -184,13 +184,16 @@ final class AdriftView: UIView {
         do {
             try cv.insertTimeRange(videoRange, of: vt, at: .zero)
             if songLength > 0 {
-                try ca.insertTimeRange(CMTimeRange(start: .zero, duration: CMTime(seconds: songLength, preferredTimescale: scale)), of: at, at: CMTime(seconds: start, preferredTimescale: scale))
+                let song = CMTimeRange(start: .zero, duration: CMTime(seconds: songLength, preferredTimescale: scale))
+                try ca.insertTimeRange(song, of: at, at: CMTime(seconds: start, preferredTimescale: scale))
             }
         } catch { done(clip); return }
         let mix = AVMutableAudioMix()
         let params = AVMutableAudioMixInputParameters(track: ca)
         let fade = min(1.0, songLength)
-        params.setVolumeRamp(fromStartVolume: 1, toEndVolume: 0, timeRange: CMTimeRange(start: CMTime(seconds: start + songLength - fade, preferredTimescale: scale), duration: CMTime(seconds: fade, preferredTimescale: scale)))
+        let fadeRange = CMTimeRange(start: CMTime(seconds: start + songLength - fade, preferredTimescale: scale),
+                                    duration: CMTime(seconds: fade, preferredTimescale: scale))
+        params.setVolumeRamp(fromStartVolume: 1, toEndVolume: 0, timeRange: fadeRange)
         mix.inputParameters = [params]
         let out = clip.deletingPathExtension().appendingPathExtension("song.mp4")
         try? FileManager.default.removeItem(at: out)
@@ -292,7 +295,9 @@ final class AdriftView: UIView {
         // the preset (R21): what a put makes from now on; things already out keep their own
         if let shell {
             let wind = adrift_medium(shell) == 1
-            sheet.addAction(UIAlertAction(title: wind ? "Lamps on the sea" : "Seeds on the wind", style: .default) { [weak self] _ in if let s = self?.shell { adrift_set_medium(s, wind ? 0 : 1) } })
+            sheet.addAction(UIAlertAction(title: wind ? "Lamps on the sea" : "Seeds on the wind", style: .default) { [weak self] _ in
+                if let s = self?.shell { adrift_set_medium(s, wind ? 0 : 1) }
+            })
         }
         sheet.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(sheet)
@@ -335,7 +340,8 @@ final class AdriftView: UIView {
     func exportTake(journey: Double? = nil, from: Double = .nan, to: Double = .nan) {
         guard let shell, !exporting else { return }
         var w: UInt32 = 0, h: UInt32 = 0
-        let frames = journey.map { adrift_journey_begin_edit(shell, $0, from, to, .nan, Self.exportFps, &w, &h) } ?? adrift_export_begin(shell, Self.exportFps, &w, &h)
+        let frames = journey.map { adrift_journey_begin_edit(shell, $0, from, to, .nan, Self.exportFps, &w, &h) }
+            ?? adrift_export_begin(shell, Self.exportFps, &w, &h)
         guard frames > 0 else { return }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Adrift-\(Int(Date().timeIntervalSince1970)).mp4")
         try? FileManager.default.removeItem(at: url)
@@ -347,13 +353,15 @@ final class AdriftView: UIView {
             AVVideoCodecKey: AVVideoCodecType.hevc,
             AVVideoWidthKey: Int(w),
             AVVideoHeightKey: Int(h),
-            AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: 12_000_000, AVVideoExpectedSourceFrameRateKey: Int(Self.exportFps), AVVideoMaxKeyFrameIntervalKey: 120],
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: 12_000_000, AVVideoExpectedSourceFrameRateKey: Int(Self.exportFps), AVVideoMaxKeyFrameIntervalKey: 120
+            ]
         ])
         input.expectsMediaDataInRealTime = false
         let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
             kCVPixelBufferWidthKey as String: Int(w),
-            kCVPixelBufferHeightKey as String: Int(h),
+            kCVPixelBufferHeightKey as String: Int(h)
         ])
         writer.add(input)
         guard writer.startWriting() else { adrift_export_end(shell); return }
@@ -526,7 +534,6 @@ final class PanelElement: UIAccessibilityElement {
         return true
     }
 }
-
 
 /// The edit view's panel (R23): the lamps' days as a line, the clip's first and last days as two
 /// handles on it, its speed, play, Export and close. The length follows from the days and the speed.

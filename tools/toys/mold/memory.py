@@ -7,7 +7,10 @@ iPhone, where the GPU's memory counts toward the app's limit).
 
 Plays a two-second plan and prints the check's peak resident set (resource.getrusage of the child).
 """
-import json, resource, subprocess, sys, tempfile
+import json
+import resource
+import subprocess
+import tempfile
 from pathlib import Path
 
 TOYS = Path(__file__).resolve().parents[3] / 'toys'

@@ -10,13 +10,23 @@ impl Probe for App {
         let frame = self.frame();
         // the date's rect: the look's, as drawn last frame; the stand-in band until it has drawn
         let date = match self.date_bounds() {
-            Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
+            Some([bx, by, bw, bh]) => Rect {
+                x: bx as f64,
+                y: by as f64,
+                w: bw as f64,
+                h: bh as f64,
+            },
             None => date_band(&frame),
         };
         // the record control (R9), before anything: the look's rect once it draws one
         // (`App::record_bounds`, D12), the stand-in corner until then
         let record = match self.record_bounds() {
-            Some([bx, by, bw, bh]) => Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 },
+            Some([bx, by, bw, bh]) => Rect {
+                x: bx as f64,
+                y: by as f64,
+                w: bw as f64,
+                h: bh as f64,
+            },
             None => super::gestures::record_spot(&frame),
         };
         if record.contains(x, y) {
@@ -25,16 +35,37 @@ impl Probe for App {
         // the panel off the globe (R6): its rows come before anything under them, so a touch there
         // never rings the sea, puts a float or sets one down
         for (id, [bx, by, bw, bh]) in self.panel_bounds() {
-            if (Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 }).contains(x, y) {
+            if (Rect {
+                x: bx as f64,
+                y: by as f64,
+                w: bw as f64,
+                h: bh as f64,
+            })
+            .contains(x, y)
+            {
                 return Hit::Panel(id);
             }
         }
-        let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect { x: bx as f64, y: by as f64, w: bw as f64, h: bh as f64 });
+        let credits = self.credit_bounds().map(|[bx, by, bw, bh]| Rect {
+            x: bx as f64,
+            y: by as f64,
+            w: bw as f64,
+            h: bh as f64,
+        });
         match App::hit(self, x, y) {
             // the float in hand lies under the finger: what matters is the water under it
             // (R21) a seed on the wind is set down over land as over the sea: only a lamp's water matters
-            Under::Float(id, p) if self.floats.iter().any(|f| f.id == id && f.hand == Hand::Carried) => {
-                let lamp = self.floats.iter().find(|f| f.id == id).map_or(true, |f| f.legs().last().map_or(true, |l| l.medium == Medium::Sea));
+            Under::Float(id, p)
+                if self
+                    .floats
+                    .iter()
+                    .any(|f| f.id == id && f.hand == Hand::Carried) =>
+            {
+                let lamp = self
+                    .floats
+                    .iter()
+                    .find(|f| f.id == id)
+                    .is_none_or(|f| f.legs().last().is_none_or(|l| l.medium == Medium::Sea));
                 if lamp && self.rules.coast.is_land(p) {
                     Hit::Land(p)
                 } else {
@@ -79,10 +110,18 @@ impl Probe for App {
     }
     fn frame(&self) -> Frame {
         let v = self.view();
-        Frame { width: v.width as f64 / v.ppp, height: v.height as f64 / v.ppp, reading: v.reading, disc: v.disc, zoom: v.camera.zoom }
+        Frame {
+            width: v.width as f64 / v.ppp,
+            height: v.height as f64 / v.ppp,
+            reading: v.reading,
+            disc: v.disc,
+            zoom: v.camera.zoom,
+        }
     }
     fn motion(&self) -> Motion {
-        Motion { reduce: self.reduce_motion }
+        Motion {
+            reduce: self.reduce_motion,
+        }
     }
     fn credits_open(&self) -> bool {
         self.credits_open
@@ -94,7 +133,11 @@ impl Probe for App {
         App::shown_as(self, id)
     }
     fn choices(&self) -> Vec<u32> {
-        self.followed.iter().chain(self.chosen.iter()).copied().collect()
+        self.followed
+            .iter()
+            .chain(self.chosen.iter())
+            .copied()
+            .collect()
     }
     fn frame_points(&self) -> Vec<LonLat> {
         App::frame_points(self)

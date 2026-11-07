@@ -11,10 +11,10 @@
 mod sound;
 pub mod town;
 
+use town::{dist, Kind, Town};
 use toy_kit::backdrop::{Backdrop, BackdropParams};
 use toy_kit::paint::Painter;
 use toy_kit::{Ctx, Phase, PointerEvent, Toy};
-use town::{dist, Kind, Town};
 
 /// The info mark's ghost fingers' ids start here (toy-kit info.rs).
 const GHOST: u64 = 1 << 48;
@@ -38,7 +38,10 @@ struct Layout {
 
 fn layout_of(points: [f64; 2]) -> Layout {
     let s = (points[0] / 393.0).min(points[1] / 852.0);
-    Layout { c: [points[0] * 0.5, points[1] * 0.5], s: s.max(0.3) }
+    Layout {
+        c: [points[0] * 0.5, points[1] * 0.5],
+        s: s.max(0.3),
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -212,7 +215,13 @@ impl Jam {
 
     /// The newest open road the reader drew, if any.
     fn bridge(&self) -> Option<usize> {
-        self.town.roads.iter().enumerate().rev().find(|(_, r)| r.kind == Kind::Built && r.open && r.alive).map(|(i, _)| i)
+        self.town
+            .roads
+            .iter()
+            .enumerate()
+            .rev()
+            .find(|(_, r)| r.kind == Kind::Built && r.open && r.alive)
+            .map(|(i, _)| i)
     }
 }
 
@@ -272,9 +281,20 @@ impl Toy for Jam {
             Phase::Down => {
                 self.touched = true;
                 let w = self.to_town(q);
-                let kind = if self.town.road_near(w, self.reach(), true).is_some() { Stroke::Build } else { Stroke::Cut };
+                let kind = if self.town.road_near(w, self.reach(), true).is_some() {
+                    Stroke::Build
+                } else {
+                    Stroke::Cut
+                };
                 self.fingers.retain(|f| f.id != e.id);
-                self.fingers.push(Finger { id: e.id, down: q, at: q, t: e.t, kind, path: vec![q] });
+                self.fingers.push(Finger {
+                    id: e.id,
+                    down: q,
+                    at: q,
+                    t: e.t,
+                    kind,
+                    path: vec![q],
+                });
             }
             Phase::Move => {
                 if let Some(f) = self.fingers.iter_mut().find(|f| f.id == e.id) {
@@ -285,7 +305,9 @@ impl Toy for Jam {
                 }
             }
             Phase::Up | Phase::Cancel => {
-                let Some(k) = self.fingers.iter().position(|f| f.id == e.id) else { return };
+                let Some(k) = self.fingers.iter().position(|f| f.id == e.id) else {
+                    return;
+                };
                 let f = self.fingers.remove(k);
                 if e.phase == Phase::Cancel {
                     return;
@@ -331,7 +353,11 @@ impl Toy for Jam {
                             }
                             Some(_) => self.pin = None,
                             None => {
-                                let at = self.town.road_near(a, self.reach(), false).map(|(r, u, _)| self.town.roads[r].at(u).0).unwrap_or(a);
+                                let at = self
+                                    .town
+                                    .road_near(a, self.reach(), false)
+                                    .map(|(r, u, _)| self.town.roads[r].at(u).0)
+                                    .unwrap_or(a);
                                 self.pin = Some((at, self.t));
                                 ctx.haptic();
                             }
@@ -396,7 +422,10 @@ impl Toy for Jam {
         // each car's light eases toward how long its trip will take
         // slow to redden and quick to cool, so a moment's worsening (the few seconds a closed road's
         // cars take to go round) doesn't flash, and a lasting jam or a relief both show
-        let (warm, cool) = (1.0 - (-dt * PACE * 0.45).exp(), 1.0 - (-dt * PACE * 3.0).exp());
+        let (warm, cool) = (
+            1.0 - (-dt * PACE * 0.45).exp(),
+            1.0 - (-dt * PACE * 3.0).exp(),
+        );
         for i in 0..self.town.cars.len() {
             let want = self.town.way(i) / self.usual;
             let c = &mut self.town.cars[i];
@@ -415,7 +444,11 @@ impl Toy for Jam {
         }
         for (i, r) in self.town.roads.iter().enumerate() {
             if r.kind == Kind::Built {
-                let want = if tint[i].1 > 0 { tint[i].0 / tint[i].1 as f64 } else { 1.0 };
+                let want = if tint[i].1 > 0 {
+                    tint[i].0 / tint[i].1 as f64
+                } else {
+                    1.0
+                };
                 if self.road_tint.len() <= i {
                     self.road_tint.resize(i + 1, 1.0);
                 }
@@ -425,7 +458,12 @@ impl Toy for Jam {
         }
         self.rings.retain(|(_, at)| t - at < 1.2);
         self.slashes.retain(|(_, _, at)| t - at < 0.8);
-        let due: Vec<usize> = self.lent.iter().filter(|(_, at)| t >= *at).map(|x| x.0).collect();
+        let due: Vec<usize> = self
+            .lent
+            .iter()
+            .filter(|(_, at)| t >= *at)
+            .map(|x| x.0)
+            .collect();
         self.lent.retain(|(_, at)| t < *at);
         for r in due {
             if self.town.roads.get(r).is_some_and(|x| !x.open && x.alive) {
@@ -440,7 +478,8 @@ impl Toy for Jam {
             self.pin = None;
         }
         let town = &self.town;
-        self.barriers.retain(|&(r, _, _)| town.roads.get(r).is_some_and(|x| !x.open && x.alive));
+        self.barriers
+            .retain(|&(r, _, _)| town.roads.get(r).is_some_and(|x| !x.open && x.alive));
         // the engines heard: the cars nearest the middle of the screen
         let l = self.layout();
         let mut near: Vec<(f64, (f32, f32, f32))> = self
@@ -465,7 +504,12 @@ impl Toy for Jam {
         let size = [ctx.width, ctx.height];
         let l = self.layout();
         let m = (l.s * k) as f32; // pixels a town point
-        let px = |p: [f64; 2]| -> [f32; 2] { [((l.c[0] + l.s * p[0]) * k) as f32, ((l.c[1] + l.s * p[1]) * k) as f32] };
+        let px = |p: [f64; 2]| -> [f32; 2] {
+            [
+                ((l.c[0] + l.s * p[0]) * k) as f32,
+                ((l.c[1] + l.s * p[1]) * k) as f32,
+            ]
+        };
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         let tm = self.t;
 
@@ -474,7 +518,16 @@ impl Toy for Jam {
             time: tm as f32,
             scale: m,
             center: [(self.splash.0[0] * k) as f32, (self.splash.0[1] * k) as f32],
-            p: [(l.c[0] * k) as f32, (l.c[1] * k) as f32, LAKE[0] as f32, LAKE[1] as f32, arrive[0], arrive[1], arrive[2], (tm - self.splash.1) as f32],
+            p: [
+                (l.c[0] * k) as f32,
+                (l.c[1] * k) as f32,
+                LAKE[0] as f32,
+                LAKE[1] as f32,
+                arrive[0],
+                arrive[1],
+                arrive[2],
+                (tm - self.splash.1) as f32,
+            ],
         };
         self.ground.render(gpu, &mut enc, target, size, &params);
 
@@ -483,9 +536,19 @@ impl Toy for Jam {
         let town = &self.town;
         // the windows, a few going dark or coming on as the evening goes
         for &(w, bright, phase) in &self.windows {
-            let on = if self.still { 1.0 } else { (((tm + phase) / 37.0).fract() < 0.92) as i32 as f32 };
+            let on = if self.still {
+                1.0
+            } else {
+                (((tm + phase) / 37.0).fract() < 0.92) as i32 as f32
+            };
             if on > 0.0 {
-                p.glow(px(w), px(w), 2.0 * m, 5.0 * m, [1.0, 0.72, 0.40, 0.05 * bright]);
+                p.glow(
+                    px(w),
+                    px(w),
+                    2.0 * m,
+                    5.0 * m,
+                    [1.0, 0.72, 0.40, 0.05 * bright],
+                );
                 p.disc(px(w), 0.75 * m, 0.4 * m, [1.0, 0.80, 0.52, 0.55 * bright]);
             }
         }
@@ -503,7 +566,11 @@ impl Toy for Jam {
                 };
                 let since = (town.t - r.changed).max(0.0);
                 // a new road is laid from its start, quickly
-                let laid = if r.kind == Kind::Built && r.open { (since / 0.45).min(1.0) } else { 1.0 };
+                let laid = if r.kind == Kind::Built && r.open {
+                    (since / 0.45).min(1.0)
+                } else {
+                    1.0
+                };
                 let fade = if r.open {
                     1.0
                 } else if r.kind == Kind::Built {
@@ -519,16 +586,35 @@ impl Toy for Jam {
                     if !dash {
                         let (a, b) = (px(r.at(u).0), px(r.at(v).0));
                         match pass {
-                            0 => p.line(a, b, (w + 1.6) as f32 * m, 1.6 * m, [0.0, 0.0, 0.01, 0.45 * fade]),
+                            0 => p.line(
+                                a,
+                                b,
+                                (w + 1.6) as f32 * m,
+                                1.6 * m,
+                                [0.0, 0.0, 0.01, 0.45 * fade],
+                            ),
                             1 => {
                                 let mut col = asphalt;
                                 if r.kind == Kind::Built {
                                     if let Some(&tl) = self.road_tint.get(ri) {
                                         let c = trip_colour(tl);
-                                        let k = (0.35 * ((tl - 1.0) / 0.25).clamp(0.0, 1.0) + 0.25) as f32;
+                                        let k = (0.35 * ((tl - 1.0) / 0.25).clamp(0.0, 1.0) + 0.25)
+                                            as f32;
                                         col = [0, 1, 2].map(|j| col[j] * (1.0 - k) + c[j] * k);
                                         if r.open && tl > 1.05 {
-                                            p.glow(a, b, w as f32 * m, 5.0 * m, [c[0], c[1], c[2], 0.10 * ((tl - 1.05) / 0.2).clamp(0.0, 1.0) as f32]);
+                                            p.glow(
+                                                a,
+                                                b,
+                                                w as f32 * m,
+                                                5.0 * m,
+                                                [
+                                                    c[0],
+                                                    c[1],
+                                                    c[2],
+                                                    0.10 * ((tl - 1.05) / 0.2).clamp(0.0, 1.0)
+                                                        as f32,
+                                                ],
+                                            );
                                         }
                                     }
                                 }
@@ -540,12 +626,20 @@ impl Toy for Jam {
                                 if r.kind == Kind::Built && r.open && wet {
                                     // over the water: a bridge's two rails, pale
                                     for side in [-1.0, 1.0] {
-                                        let o = [-dir[1] * side * (w + 0.9), dir[0] * side * (w + 0.9)];
+                                        let o =
+                                            [-dir[1] * side * (w + 0.9), dir[0] * side * (w + 0.9)];
                                         let (ra, rb) = (r.at(u).0, r.at(v).0);
-                                        p.line(px([ra[0] + o[0], ra[1] + o[1]]), px([rb[0] + o[0], rb[1] + o[1]]), 0.55 * m, 0.4 * m, [0.62, 0.64, 0.68, 0.85]);
+                                        p.line(
+                                            px([ra[0] + o[0], ra[1] + o[1]]),
+                                            px([rb[0] + o[0], rb[1] + o[1]]),
+                                            0.55 * m,
+                                            0.4 * m,
+                                            [0.62, 0.64, 0.68, 0.85],
+                                        );
                                     }
                                 }
-                                if r.kind != Kind::Street && r.open && ((u / 14.0) as i64) % 2 == 0 {
+                                if r.kind != Kind::Street && r.open && ((u / 14.0) as i64) % 2 == 0
+                                {
                                     // the centre line, faint
                                     p.line(a, b, 0.35 * m, 0.4 * m, [0.55, 0.52, 0.42, 0.12]);
                                 }
@@ -559,9 +653,22 @@ impl Toy for Jam {
                     let mut u = 10.0;
                     while u < r.len - 6.0 {
                         let (q, d) = r.at(u);
-                        let side = if ((u / 34.0) as i64) % 2 == 0 { 1.0 } else { -1.0 };
-                        let lamp = [q[0] - d[1] * side * (w + 3.0), q[1] + d[0] * side * (w + 3.0)];
-                        p.glow(px(lamp), px(lamp), 9.0 * m, 9.0 * m, [1.0, 0.80, 0.50, 0.035]);
+                        let side = if ((u / 34.0) as i64) % 2 == 0 {
+                            1.0
+                        } else {
+                            -1.0
+                        };
+                        let lamp = [
+                            q[0] - d[1] * side * (w + 3.0),
+                            q[1] + d[0] * side * (w + 3.0),
+                        ];
+                        p.glow(
+                            px(lamp),
+                            px(lamp),
+                            9.0 * m,
+                            9.0 * m,
+                            [1.0, 0.80, 0.50, 0.035],
+                        );
                         p.disc(px(lamp), 0.9 * m, 0.5 * m, [1.0, 0.86, 0.62, 0.8]);
                         u += 34.0;
                     }
@@ -577,10 +684,28 @@ impl Toy for Jam {
             let head = [q[0] + d[0] * 1.6, q[1] + d[1] * 1.6];
             let tail = [q[0] - d[0] * 1.6, q[1] - d[1] * 1.6];
             // its light on the road round it, its headlights ahead, itself
-            p.glow(px(q), px(q), 3.0 * m, 9.0 * m, [col[0], col[1], col[2], 0.16]);
+            p.glow(
+                px(q),
+                px(q),
+                3.0 * m,
+                9.0 * m,
+                [col[0], col[1], col[2], 0.16],
+            );
             let ahead = [q[0] + d[0] * 11.0, q[1] + d[1] * 11.0];
-            p.glow(px(head), px(ahead), 1.4 * m, 4.0 * m, [1.0, 0.95, 0.85, 0.06]);
-            p.line(px(tail), px(head), 1.9 * m, 0.9 * m, [col[0], col[1], col[2], 1.0]);
+            p.glow(
+                px(head),
+                px(ahead),
+                1.4 * m,
+                4.0 * m,
+                [1.0, 0.95, 0.85, 0.06],
+            );
+            p.line(
+                px(tail),
+                px(head),
+                1.9 * m,
+                0.9 * m,
+                [col[0], col[1], col[2], 1.0],
+            );
             p.disc(px(q), 0.9 * m, 0.6 * m, [1.0, 1.0, 1.0, 0.45]);
         }
 
@@ -591,10 +716,18 @@ impl Toy for Jam {
             let a = ((tm - f.t) / 0.15).min(1.0) as f32;
             match f.kind {
                 Stroke::Build => {
-                    let s = town.road_near(to_town(f.down), reach, true).map(|(r, u, _)| town.roads[r].at(u).0);
-                    let from = s.map(px).unwrap_or([(f.down[0] * k) as f32, (f.down[1] * k) as f32]);
-                    let end = town.road_near(to_town(f.at), reach, true).map(|(r, u, _)| town.roads[r].at(u).0);
-                    let to = end.map(px).unwrap_or([(f.at[0] * k) as f32, (f.at[1] * k) as f32]);
+                    let s = town
+                        .road_near(to_town(f.down), reach, true)
+                        .map(|(r, u, _)| town.roads[r].at(u).0);
+                    let from = s
+                        .map(px)
+                        .unwrap_or([(f.down[0] * k) as f32, (f.down[1] * k) as f32]);
+                    let end = town
+                        .road_near(to_town(f.at), reach, true)
+                        .map(|(r, u, _)| town.roads[r].at(u).0);
+                    let to = end
+                        .map(px)
+                        .unwrap_or([(f.at[0] * k) as f32, (f.at[1] * k) as f32]);
                     p.line(from, to, 3.3 * m, 1.2 * m, [0.85, 0.88, 0.95, 0.30 * a]);
                     p.disc(from, 4.0 * m, 1.0 * m, [0.95, 0.97, 1.0, 0.8 * a]);
                     if end.is_some() {
@@ -605,18 +738,36 @@ impl Toy for Jam {
                 }
                 Stroke::Cut => {
                     for w in f.path.windows(2) {
-                        p.line([w[0][0] as f32 * kk, w[0][1] as f32 * kk], [w[1][0] as f32 * kk, w[1][1] as f32 * kk], 1.2 * m, 1.0 * m, [1.0, 0.55, 0.45, 0.55 * a]);
+                        p.line(
+                            [w[0][0] as f32 * kk, w[0][1] as f32 * kk],
+                            [w[1][0] as f32 * kk, w[1][1] as f32 * kk],
+                            1.2 * m,
+                            1.0 * m,
+                            [1.0, 0.55, 0.45, 0.55 * a],
+                        );
                     }
                 }
             }
         }
         for &(a, b, at) in &self.slashes {
             let f = (1.0 - (tm - at) / 0.8).clamp(0.0, 1.0) as f32;
-            p.line(px(a), px(b), 1.2 * m, 1.0 * m, [1.0, 0.55, 0.45, 0.5 * f * f]);
+            p.line(
+                px(a),
+                px(b),
+                1.2 * m,
+                1.0 * m,
+                [1.0, 0.55, 0.45, 0.5 * f * f],
+            );
         }
         for &(q, at) in &self.rings {
             let f = ((tm - at) / 1.2).clamp(0.0, 1.0) as f32;
-            p.glow_ring([q[0] as f32 * kk, q[1] as f32 * kk], (6.0 + 14.0 * f) * m, 0.7 * m, 1.2 * m, [1.0, 0.97, 0.92, 0.45 * (1.0 - f)]);
+            p.glow_ring(
+                [q[0] as f32 * kk, q[1] as f32 * kk],
+                (6.0 + 14.0 * f) * m,
+                0.7 * m,
+                1.2 * m,
+                [1.0, 0.97, 0.92, 0.45 * (1.0 - f)],
+            );
         }
         // closed roads: a barrier where they were cut
         for &(r, at, when) in &self.barriers {
@@ -626,12 +777,22 @@ impl Toy for Jam {
             let come = ((town.t - when) / 0.25).clamp(0.0, 1.0) as f32;
             let n = [-d[1] * 7.5, d[0] * 7.5];
             let (e0, e1) = ([q[0] - n[0], q[1] - n[1]], [q[0] + n[0], q[1] + n[1]]);
-            p.line(px(e0), px(e1), 2.0 * m, 0.6 * m, [0.05, 0.03, 0.03, 0.9 * come]);
+            p.line(
+                px(e0),
+                px(e1),
+                2.0 * m,
+                0.6 * m,
+                [0.05, 0.03, 0.03, 0.9 * come],
+            );
             for j in 0..4 {
                 let (f0, f1) = (j as f64 / 4.0, (j as f64 + 1.0) / 4.0);
                 let a0 = [e0[0] + (e1[0] - e0[0]) * f0, e0[1] + (e1[1] - e0[1]) * f0];
                 let a1 = [e0[0] + (e1[0] - e0[0]) * f1, e0[1] + (e1[1] - e0[1]) * f1];
-                let col = if j % 2 == 0 { [1.0, 0.30, 0.20, come] } else { [0.95, 0.92, 0.88, come] };
+                let col = if j % 2 == 0 {
+                    [1.0, 0.30, 0.20, come]
+                } else {
+                    [0.95, 0.92, 0.88, come]
+                };
                 p.line(px(a0), px(a1), 1.3 * m, 0.4 * m, col);
             }
             p.glow(px(q), px(q), 4.0 * m, 9.0 * m, [1.0, 0.3, 0.2, 0.12 * come]);
@@ -647,15 +808,37 @@ impl Toy for Jam {
                     let v = (u + 8.0).min(r.len);
                     let (a0, a1) = (r.at(u).0, r.at(v).0);
                     if dist(a0, w) > 30.0 {
-                        p.glow(px(a0), px(a1), 3.0 * m, 5.0 * m, [0.80, 0.88, 1.0, 0.10 * lit]);
+                        p.glow(
+                            px(a0),
+                            px(a1),
+                            3.0 * m,
+                            5.0 * m,
+                            [0.80, 0.88, 1.0, 0.10 * lit],
+                        );
                     }
                     u = v;
                 }
             }
-            let breathe = if self.still { 1.0 } else { 0.75 + 0.25 * (age * 4.0).sin() as f32 };
-            p.glow(px(w), px(w), 5.0 * m, 12.0 * m, [0.85, 0.92, 1.0, 0.25 * breathe]);
+            let breathe = if self.still {
+                1.0
+            } else {
+                0.75 + 0.25 * (age * 4.0).sin() as f32
+            };
+            p.glow(
+                px(w),
+                px(w),
+                5.0 * m,
+                12.0 * m,
+                [0.85, 0.92, 1.0, 0.25 * breathe],
+            );
             p.disc(px(w), 4.0 * m, 1.0 * m, [0.95, 0.97, 1.0, 0.9]);
-            p.glow_ring(px(w), (8.0 + 3.0 * breathe) * m, 0.6 * m, 1.2 * m, [0.95, 0.97, 1.0, 0.5]);
+            p.glow_ring(
+                px(w),
+                (8.0 + 3.0 * breathe) * m,
+                0.6 * m,
+                1.2 * m,
+                [0.95, 0.97, 1.0, 0.5],
+            );
         }
         // the invitation: until the reader changes a road, a road of light keeps drawing itself across
         // the lake from shore to shore
@@ -664,10 +847,18 @@ impl Toy for Jam {
             let (a, b) = (town.nodes[2], town.nodes[3]);
             let come = 1.0f32;
             let cycle = 3.2;
-            let ph = if self.still { 1.0 } else { (since / cycle + 0.45).fract() };
+            let ph = if self.still {
+                1.0
+            } else {
+                (since / cycle + 0.45).fract()
+            };
             // the drawing finger goes over in the first 40% of the cycle, the line it leaves fades after
             let reach = (ph / 0.4).min(1.0);
-            let fade = if ph < 0.4 { 1.0 } else { 1.0 - 0.6 * ((ph - 0.4) / 0.6) } as f32;
+            let fade = if ph < 0.4 {
+                1.0
+            } else {
+                1.0 - 0.6 * ((ph - 0.4) / 0.6)
+            } as f32;
             let n = 16;
             for i in 0..=n {
                 let f = i as f64 / n as f64;
@@ -675,15 +866,32 @@ impl Toy for Jam {
                     break;
                 }
                 let q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-                p.disc(px(q), 1.5 * m, 0.7 * m, [0.92, 0.95, 1.0, 0.55 * come * fade]);
+                p.disc(
+                    px(q),
+                    1.5 * m,
+                    0.7 * m,
+                    [0.92, 0.95, 1.0, 0.55 * come * fade],
+                );
             }
             for end in [a, b] {
-                p.glow_ring(px(end), 7.0 * m, 0.6 * m, 1.4 * m, [0.92, 0.95, 1.0, 0.35 * come]);
+                p.glow_ring(
+                    px(end),
+                    7.0 * m,
+                    0.6 * m,
+                    1.4 * m,
+                    [0.92, 0.95, 1.0, 0.35 * come],
+                );
             }
             if ph < 0.45 {
                 let f = reach;
                 let q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-                p.glow(px(q), px(q), 3.0 * m, 9.0 * m, [0.92, 0.95, 1.0, 0.5 * come]);
+                p.glow(
+                    px(q),
+                    px(q),
+                    3.0 * m,
+                    9.0 * m,
+                    [0.92, 0.95, 1.0, 0.5 * come],
+                );
                 p.disc(px(q), 2.4 * m, 0.8 * m, [1.0, 1.0, 1.0, 0.9 * come]);
             }
         }
@@ -727,8 +935,14 @@ impl Toy for Jam {
             ("west".into(), self.to_screen(a)),
             ("east".into(), self.to_screen(b)),
             ("lake".into(), self.to_screen(mid)),
-            ("slash-a".into(), self.to_screen([mid[0] - 10.0, mid[1] - 34.0])),
-            ("slash-b".into(), self.to_screen([mid[0] + 10.0, mid[1] + 34.0])),
+            (
+                "slash-a".into(),
+                self.to_screen([mid[0] - 10.0, mid[1] - 34.0]),
+            ),
+            (
+                "slash-b".into(),
+                self.to_screen([mid[0] + 10.0, mid[1] + 34.0]),
+            ),
             ("centre".into(), self.layout().c),
         ];
         // a car on screen, partway
@@ -739,7 +953,12 @@ impl Toy for Jam {
             out.push(("car".into(), self.to_screen(self.lane_place(c).0)));
         }
         // the narrow streets' and the long roads' middles
-        for (name, r) in [("west-street", 1), ("west-long", 2), ("east-long", 3), ("east-street", 4)] {
+        for (name, r) in [
+            ("west-street", 1),
+            ("west-long", 2),
+            ("east-long", 3),
+            ("east-street", 4),
+        ] {
             if let Some(road) = self.town.roads.get(r) {
                 out.push((name.into(), self.to_screen(road.at(road.len * 0.5).0)));
             }
@@ -754,10 +973,18 @@ impl Toy for Jam {
         if self.bridge().is_some() {
             return Some(Demo::new(
                 "Slash across a road to close it. Draw from road to road to build one.",
-                vec![S::drag(0.5, 0.5, self.to_screen([mid[0] - 12.0, mid[1] - 40.0]), self.to_screen([mid[0] + 12.0, mid[1] + 40.0]))],
+                vec![S::drag(
+                    0.5,
+                    0.5,
+                    self.to_screen([mid[0] - 12.0, mid[1] - 40.0]),
+                    self.to_screen([mid[0] + 12.0, mid[1] + 40.0]),
+                )],
             ));
         }
-        Some(Demo::new("Draw from road to road to build one. Slash across a road to close it.", vec![S::drag(0.5, 1.4, self.to_screen(a), self.to_screen(b))]))
+        Some(Demo::new(
+            "Draw from road to road to build one. Slash across a road to close it.",
+            vec![S::drag(0.5, 1.4, self.to_screen(a), self.to_screen(b))],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -786,7 +1013,6 @@ impl Toy for Jam {
         ))
     }
 }
-
 
 /// A car's place on its lane (drive on the right), and the way it faces.
 /// How far `p` is from the segment `a`-`b`.
@@ -842,7 +1068,10 @@ fn windows(town: &Town) -> Vec<([f64; 2], f32, f64)> {
         }
     }
     // the town at the top, the houses at the bottom
-    for (c, n, spread) in [([0.0, -390.0], 260, [150.0, 70.0]), ([0.0, 400.0], 120, [130.0, 50.0])] {
+    for (c, n, spread) in [
+        ([0.0, -390.0], 260, [150.0, 70.0]),
+        ([0.0, 400.0], 120, [130.0, 50.0]),
+    ] {
         for _ in 0..n {
             let g = [rnd() + rnd() + rnd() - 1.5, rnd() + rnd() + rnd() - 1.5];
             let w = [c[0] + g[0] * spread[0], c[1] + g[1] * spread[1]];

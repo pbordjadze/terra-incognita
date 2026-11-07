@@ -34,7 +34,9 @@ const REST: u32 = 4;
 /// lone city's flash is not a patch in step.
 const MIN_LIGHT: f32 = 2.0;
 /// The scale (A minor pentatonic, two octaves), high notes at the top of the screen.
-const NOTES: [f32; 10] = [220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
+const NOTES: [f32; 10] = [
+    220.0, 261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99,
+];
 
 #[derive(Clone, Copy)]
 pub struct Strike {
@@ -64,7 +66,18 @@ pub struct Ear {
 
 impl Ear {
     pub fn new() -> Ear {
-        Ear { armed: [true; COLS * ROWS], run: [0; COLS * ROWS], rest: [0; COLS * ROWS], step: [0; COLS * ROWS], usual: [0.0; COLS * ROWS], heard: false, start: 0.0, last: -1.0, queue: Arc::new(Mutex::new(Vec::new())), t: 0.0 }
+        Ear {
+            armed: [true; COLS * ROWS],
+            run: [0; COLS * ROWS],
+            rest: [0; COLS * ROWS],
+            step: [0; COLS * ROWS],
+            usual: [0.0; COLS * ROWS],
+            heard: false,
+            start: 0.0,
+            last: -1.0,
+            queue: Arc::new(Mutex::new(Vec::new())),
+            t: 0.0,
+        }
     }
 
     /// One frame: `cells` is each patch's (sum of weight x glow, sum of weight, how many fireflies
@@ -91,7 +104,12 @@ impl Ear {
             }
             let n = nb as f32;
             let g = n;
-            if warm && self.armed[k] && nb >= MIN_BRIGHT && n > ON_TIMES * usual + ON_MORE && t - self.last >= GAP_S {
+            if warm
+                && self.armed[k]
+                && nb >= MIN_BRIGHT
+                && n > ON_TIMES * usual + ON_MORE
+                && t - self.last >= GAP_S
+            {
                 self.last = t;
                 self.armed[k] = false;
                 if self.rest[k] > 0 {
@@ -111,11 +129,19 @@ impl Ear {
                 let note = NOTES[i.clamp(0, NOTES.len() as i32 - 1) as usize];
                 // the middle of the screen sings, the edges are quieter
                 let edge = if c == COLS / 2 { 1.0 } else { 0.55 };
-                let amp = edge * (0.07 + 0.08 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
+                let amp =
+                    edge * (0.07 + 0.08 * (w / 15.0).min(1.0)) * if quiet { 0.6 } else { 1.0 };
                 if std::env::var_os("FIREFLIES_SOUND").is_some() {
-                    eprintln!("strike patch {k} bright {g} usual {usual:.1} light {w:.1} at {:.2}", self.t);
+                    eprintln!(
+                        "strike patch {k} bright {g} usual {usual:.1} light {w:.1} at {:.2}",
+                        self.t
+                    );
                 }
-                out.push(Strike { freq: note, amp, pan: (c as f32 - (COLS as f32 - 1.0) / 2.0) * 0.45 });
+                out.push(Strike {
+                    freq: note,
+                    amp,
+                    pan: (c as f32 - (COLS as f32 - 1.0) / 2.0) * 0.45,
+                });
             } else if n < OFF_TIMES * usual + 1.0 {
                 self.armed[k] = true;
             }
@@ -130,8 +156,18 @@ impl Ear {
     /// A finger's touch: a high note where it touched (x 0..1 across the screen).
     pub fn touch(&self, x: f32) {
         if let Ok(mut q) = self.queue.lock() {
-            q.push(Strike { freq: 1046.5, amp: 0.05, pan: (x * 2.0 - 1.0) * 0.6 });
+            q.push(Strike {
+                freq: 1046.5,
+                amp: 0.05,
+                pan: (x * 2.0 - 1.0) * 0.6,
+            });
         }
+    }
+}
+
+impl Default for Ear {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -148,7 +184,10 @@ pub struct Chimes {
 
 impl Chimes {
     pub fn new(queue: Queue) -> Chimes {
-        Chimes { queue, voices: Vec::new() }
+        Chimes {
+            queue,
+            voices: Vec::new(),
+        }
     }
 }
 
@@ -175,7 +214,9 @@ impl Synth for Chimes {
                 let attack = (t / 0.008).min(1.0);
                 let mut x = 0.0;
                 for &(ratio, level, decay) in &PARTIALS {
-                    x += level * (std::f64::consts::TAU * v.s.freq as f64 * ratio * t).sin() * (-t / decay).exp();
+                    x += level
+                        * (std::f64::consts::TAU * v.s.freq as f64 * ratio * t).sin()
+                        * (-t / decay).exp();
                 }
                 let y = (x * attack * v.s.amp as f64) as f32;
                 if channels >= 2 {

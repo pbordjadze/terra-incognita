@@ -7,7 +7,10 @@ The default out-dir is toys/build/<toy>/assets, where the headless check looks (
 Each file is copied (or hard-linked with --link) under the name the code uses; the IPA bundles the same
 directory as data/.
 """
-import json, os, shutil, sys
+import json
+import os
+import shutil
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +23,7 @@ def main():
     toy = args[0]
     out = Path(args[1]) if len(args) == 2 else ROOT / 'toys' / 'build' / toy / 'assets'
     out.mkdir(parents=True, exist_ok=True)
-    manifest = json.load(open(ROOT / 'toys' / toy / 'manifest.json'))
+    manifest = json.loads(Path(ROOT / 'toys' / toy / 'manifest.json').read_text())
     total = 0
     for name, src in manifest['files'].items():
         s, d = ROOT / src, out / name

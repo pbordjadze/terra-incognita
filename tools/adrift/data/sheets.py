@@ -11,6 +11,7 @@ how each sheet is decoded and the credit it is owed (`sheets`); every builder wr
 """
 import json
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 

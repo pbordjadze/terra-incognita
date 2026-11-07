@@ -43,7 +43,11 @@ impl Gusts {
     pub const PMAX: f32 = 25.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<Gusts> {
-        Ok(Gusts(Tiled::new(Sheet::load(assets, "gusts.png", false)?, (360, 180), (4, 3))?))
+        Ok(Gusts(Tiled::new(
+            Sheet::load(assets, "gusts.png", false)?,
+            (360, 180),
+            (4, 3),
+        )?))
     }
 
     /// The day's mix of months, each decoded then mixed.
@@ -160,13 +164,29 @@ impl AirRules {
     /// weather and wind, with a seed's life `LIFE` times the measured one (fall and washout both
     /// divided by it), so a seed stays up about five days instead of one: chosen, not measured.
     pub fn preset(&self) -> AirRules {
-        AirRules { wind: self.wind.clone(), gusts: Gusts(self.gusts.0.clone()), coast: self.coast.clone(), carry: self.carry, gust: self.gust, fall: Self::FALL / Self::LIFE, washout: Self::WASHOUT / Self::LIFE }
+        AirRules {
+            wind: self.wind.clone(),
+            gusts: Gusts(self.gusts.0.clone()),
+            coast: self.coast.clone(),
+            carry: self.carry,
+            gust: self.gust,
+            fall: Self::FALL / Self::LIFE,
+            washout: Self::WASHOUT / Self::LIFE,
+        }
     }
 
     /// The app's wind (R21): the preset's rules (`preset`, a seed's life `LIFE` times the measured)
     /// reading the sea's own wind and coast sheets (one copy of each).
     pub fn sharing(sea: &super::Rules, assets: &dyn Assets) -> anyhow::Result<AirRules> {
-        Ok(AirRules { wind: sea.wind.clone(), gusts: Gusts::load(assets)?, coast: sea.coast.clone(), carry: 1.0, gust: 1.0, fall: Self::FALL / Self::LIFE, washout: Self::WASHOUT / Self::LIFE })
+        Ok(AirRules {
+            wind: sea.wind.clone(),
+            gusts: Gusts::load(assets)?,
+            coast: sea.coast.clone(),
+            carry: 1.0,
+            gust: 1.0,
+            fall: Self::FALL / Self::LIFE,
+            washout: Self::WASHOUT / Self::LIFE,
+        })
     }
 
     /// A thing as it is lifted at `at` on `day`: with the gust world k's air has there at that
@@ -175,7 +195,11 @@ impl AirRules {
         let (lon, lat) = (at.lon as f32, at.lat as f32);
         let w = self.gusts.at(day as f32, lon, lat);
         let (gu, gv) = air_field(k ^ RISE_STREAM, quarter(day as f32), lon, lat);
-        Air { at, gust: (gu * w.sigma.0 * self.gust, gv * w.sigma.1 * self.gust), aloft: Aloft::Flying }
+        Air {
+            at,
+            gust: (gu * w.sigma.0 * self.gust, gv * w.sigma.1 * self.gust),
+            aloft: Aloft::Flying,
+        }
     }
 
     /// One step of `dt_days`: the gust decays over the time scale and is kicked by world k's
@@ -200,7 +224,10 @@ impl AirRules {
         let dx = (self.carry * wu + gu) * secs;
         let dy = (self.carry * wv + gv) * secs;
         let (nlon, nlat) = great_circle(lon, lat, dx, dy);
-        let at = LonLat { lon: nlon as f64, lat: nlat as f64 };
+        let at = LonLat {
+            lon: nlon as f64,
+            lat: nlat as f64,
+        };
         let down = air_rain(k, day, dt, lon, lat, self.washout * w.rain)
             || uniform(hash_seed(seed, k, day.to_bits()), 0) < 1.0 - (-self.fall * dt).exp();
         let aloft = if !down {
@@ -210,7 +237,11 @@ impl AirRules {
         } else {
             Aloft::Sea
         };
-        Air { at, gust: if down { (0.0, 0.0) } else { (gu, gv) }, aloft }
+        Air {
+            at,
+            gust: if down { (0.0, 0.0) } else { (gu, gv) },
+            aloft,
+        }
     }
 
     /// The velocity a thing has between steps (m/s east, north), for the look's glide.
@@ -224,12 +255,34 @@ impl AirRules {
 
     /// A thing's maybes (k = 1..=n), each lifted afresh at `from` on `day0` and stepped `dt_days`
     /// at a time until `until`: where each is (in the air or come down).
-    pub fn maybes(&self, from: LonLat, day0: f64, until: f64, dt_days: f64, seed: u64, n: u32) -> Vec<Air> {
-        (1..=n).map(|k| self.path(from, day0, until, dt_days, seed, k).pop().unwrap()).collect()
+    pub fn maybes(
+        &self,
+        from: LonLat,
+        day0: f64,
+        until: f64,
+        dt_days: f64,
+        seed: u64,
+        n: u32,
+    ) -> Vec<Air> {
+        (1..=n)
+            .map(|k| {
+                self.path(from, day0, until, dt_days, seed, k)
+                    .pop()
+                    .unwrap()
+            })
+            .collect()
     }
 
     /// Path k from `from`: every step's place, the lift first.
-    pub fn path(&self, from: LonLat, day0: f64, until: f64, dt_days: f64, seed: u64, k: u32) -> Vec<Air> {
+    pub fn path(
+        &self,
+        from: LonLat,
+        day0: f64,
+        until: f64,
+        dt_days: f64,
+        seed: u64,
+        k: u32,
+    ) -> Vec<Air> {
         let mut a = self.rise(from, day0, k);
         let mut out = vec![a];
         let mut day = day0;
@@ -251,7 +304,10 @@ impl AirRules {
 pub fn great_circle(lon: f32, lat: f32, dx: f32, dy: f32) -> (f32, f32) {
     if lat.abs() < 75.0 {
         let coslat = lat.to_radians().cos();
-        return (wrap(lon + (dx / (EARTH_RADIUS * coslat)).to_degrees()), lat + (dy / EARTH_RADIUS).to_degrees());
+        return (
+            wrap(lon + (dx / (EARTH_RADIUS * coslat)).to_degrees()),
+            lat + (dy / EARTH_RADIUS).to_degrees(),
+        );
     }
     let d = (dx * dx + dy * dy).sqrt() / EARTH_RADIUS;
     if d < 1e-9 {
@@ -290,7 +346,12 @@ pub fn air_field(k: u32, cell: i32, lon: f32, lat: f32) -> (f32, f32) {
     let base = mix(mix(k ^ 0xa1e5_0b0e) ^ cell as u32);
     let (x0, y0) = (x0 as i32, y0 as i32);
     let (mut gu, mut gv) = (0.0f32, 0.0f32);
-    for (dx, dy, w) in [(0, 0, (1.0 - tx) * (1.0 - ty)), (1, 0, tx * (1.0 - ty)), (0, 1, (1.0 - tx) * ty), (1, 1, tx * ty)] {
+    for (dx, dy, w) in [
+        (0, 0, (1.0 - tx) * (1.0 - ty)),
+        (1, 0, tx * (1.0 - ty)),
+        (0, 1, (1.0 - tx) * ty),
+        (1, 1, tx * ty),
+    ] {
         let ix = (x0 + dx).rem_euclid(n) as u32;
         let h = mix(mix(base ^ ix) ^ (y0 + dy) as u32);
         gu += w * bytes_gaussian(h);
@@ -339,7 +400,9 @@ pub fn air_rain(k: u32, day: f32, dt: f32, lon: f32, lat: f32, rate: f32) -> boo
     let ix = (((lon + 180.0) / RAIN_CELL + 0.5).floor() as i32).rem_euclid(n) as u32;
     let iy = ((lat + 90.0) / RAIN_CELL + 0.5).floor() as i32 as u32;
     for i in 0..count {
-        let h = mix(mix(mix(mix((k ^ RAIN_STREAM) ^ 0xa1e5_0b0e) ^ (first + i as i32) as u32) ^ ix) ^ iy);
+        let h = mix(mix(
+            mix(mix((k ^ RAIN_STREAM) ^ 0xa1e5_0b0e) ^ (first + i as i32) as u32) ^ ix,
+        ) ^ iy);
         if ((h >> 8) as f32 / 16_777_216.0) < p {
             return true;
         }
@@ -385,7 +448,14 @@ impl AirParams {
 /// A thing as the GPU holds it: the sea's `GpuPath` layout (24 bytes), `held` the `Aloft` code,
 /// `measured` the month's mean rain where it last was, `eddy_u`, `eddy_v` its gust.
 pub fn gpu_path(a: &Air) -> super::GpuPath {
-    super::GpuPath { lon: a.at.lon as f32, lat: a.at.lat as f32, held: a.aloft.code(), measured: 0.0, eddy_u: a.gust.0, eddy_v: a.gust.1 }
+    super::GpuPath {
+        lon: a.at.lon as f32,
+        lat: a.at.lat as f32,
+        held: a.aloft.code(),
+        measured: 0.0,
+        eddy_u: a.gust.0,
+        eddy_v: a.gust.1,
+    }
 }
 
 /// The steps a wind cloud takes from `reached` toward `target` (R21, Truth): on the quarter-day
@@ -393,7 +463,15 @@ pub fn gpu_path(a: &Air) -> super::GpuPath {
 /// mark, then a quarter day each), at most `max`. A step never ends between
 /// marks: one that did would read the same quarter day's weather on the next (`air_span`), and its
 /// kicks would add up as one, too big. Each step with the day it reaches.
-pub fn grid_steps(rules: &AirRules, reached: f64, target: f64, seed: u64, count: u32, base: u32, max: usize) -> Vec<(AirParams, f64)> {
+pub fn grid_steps(
+    rules: &AirRules,
+    reached: f64,
+    target: f64,
+    seed: u64,
+    count: u32,
+    base: u32,
+    max: usize,
+) -> Vec<(AirParams, f64)> {
     let mut out = Vec::new();
     let mut day = reached;
     while out.len() < max {
@@ -401,7 +479,10 @@ pub fn grid_steps(rules: &AirRules, reached: f64, target: f64, seed: u64, count:
         if next > target + 1e-9 {
             break;
         }
-        out.push((AirParams::new(rules, day, next - day, seed, count).at_base(base), next));
+        out.push((
+            AirParams::new(rules, day, next - day, seed, count).at_base(base),
+            next,
+        ));
         day = next;
     }
     out
@@ -411,12 +492,23 @@ pub fn grid_steps(rules: &AirRules, reached: f64, target: f64, seed: u64, count:
 /// made unable to come down (fall and washout 0), so a cloud moves smoothly between marks and
 /// arrives at the mark where the full step puts it (the same start, mean wind and weather draw).
 /// It is drawn, never kept: the next frame steps from the mark again (`AirMaybes::park`).
-pub fn glide(rules: &AirRules, mark: f64, day: f64, seed: u64, count: u32, base: u32) -> Option<AirParams> {
+pub fn glide(
+    rules: &AirRules,
+    mark: f64,
+    day: f64,
+    seed: u64,
+    count: u32,
+    base: u32,
+) -> Option<AirParams> {
     let dt = day - mark;
     if dt <= 1e-6 || crate::app::grid_next(mark) < day - 1e-9 {
         return None;
     }
-    Some(AirParams { fall: 0.0, washout: 0.0, ..AirParams::new(rules, mark, dt, seed, count).at_base(base) })
+    Some(AirParams {
+        fall: 0.0,
+        washout: 0.0,
+        ..AirParams::new(rules, mark, dt, seed, count).at_base(base)
+    })
 }
 
 impl AirParams {
@@ -446,14 +538,22 @@ pub struct AirMaybes {
 
 impl AirMaybes {
     /// Room for `capacity` paths in a buffer of its own (the tests'; the app's shares the sea's).
-    pub fn new(gpu: &crate::gpu::Gpu, assets: &dyn Assets, textures: &crate::gpu::Textures, capacity: u32) -> anyhow::Result<AirMaybes> {
+    pub fn new(
+        gpu: &crate::gpu::Gpu,
+        assets: &dyn Assets,
+        textures: &crate::gpu::Textures,
+        capacity: u32,
+    ) -> anyhow::Result<AirMaybes> {
         use crate::gpu::textures::{decode, Texture};
         let wind = Texture::flat(gpu, "wind", &decode(&assets.read("wind.png")?, 4)?);
         let size = capacity as u64 * std::mem::size_of::<super::GpuPath>() as u64;
         let paths = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("air paths"),
             size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
         let mut m = Self::sharing(gpu, assets, textures, &wind.view, paths, capacity)?;
@@ -463,36 +563,57 @@ impl AirMaybes {
 
     /// The wind's pipeline over `paths` (the sea's maybes' buffer, `capacity` paths), reading the
     /// wind sheet the sea's maybes already hold.
-    pub fn sharing(gpu: &crate::gpu::Gpu, assets: &dyn Assets, textures: &crate::gpu::Textures, wind: &wgpu::TextureView, paths: wgpu::Buffer, capacity: u32) -> anyhow::Result<AirMaybes> {
+    pub fn sharing(
+        gpu: &crate::gpu::Gpu,
+        assets: &dyn Assets,
+        textures: &crate::gpu::Textures,
+        wind: &wgpu::TextureView,
+        paths: wgpu::Buffer,
+        capacity: u32,
+    ) -> anyhow::Result<AirMaybes> {
         use crate::gpu::textures::{decode, Texture};
         let gusts = Texture::flat(gpu, "gusts", &decode(&assets.read("gusts.png")?, 4)?);
         let tex = |binding| wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::COMPUTE,
-            ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false,
+            },
             count: None,
         };
         let psize = wgpu::BufferSize::new(std::mem::size_of::<AirParams>() as u64);
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("air maybes"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: true, min_binding_size: psize },
-                    count: None,
-                },
-                tex(1),
-                tex(2),
-                tex(3),
-                wgpu::BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset: false, min_binding_size: None },
-                    count: None,
-                },
-            ],
-        });
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("air maybes"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: true,
+                            min_binding_size: psize,
+                        },
+                        count: None,
+                    },
+                    tex(1),
+                    tex(2),
+                    tex(3),
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
         let params = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("air params"),
             size: super::gpu::SLOT * super::MAX_STEPS as u64,
@@ -516,24 +637,61 @@ impl AirMaybes {
             label: Some("air maybes"),
             layout: &layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &params, offset: 0, size: psize }) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(wind) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&gusts.view) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&textures.geo.view) },
-                wgpu::BindGroupEntry { binding: 4, resource: paths.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &params,
+                        offset: 0,
+                        size: psize,
+                    }),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(wind),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&gusts.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&textures.geo.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: paths.as_entire_binding(),
+                },
             ],
         });
         let shader = gpu.shader("wind", super::WIND_WGSL);
-        let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("air maybes"), bind_group_layouts: &[&layout], push_constant_ranges: &[] });
-        let pipeline = gpu.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("air maybes"),
-            layout: Some(&pipeline_layout),
-            module: &shader,
-            entry_point: Some("maybes"),
-            compilation_options: Default::default(),
-            cache: None,
-        });
-        Ok(AirMaybes { pipeline, bind, params, paths, readback, park, capacity, _wind: None, _gusts: gusts })
+        let pipeline_layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("air maybes"),
+                bind_group_layouts: &[Some(&layout)],
+                immediate_size: 0,
+            });
+        let pipeline = gpu
+            .device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("air maybes"),
+                layout: Some(&pipeline_layout),
+                module: &shader,
+                entry_point: Some("maybes"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+        Ok(AirMaybes {
+            pipeline,
+            bind,
+            params,
+            paths,
+            readback,
+            park,
+            capacity,
+            _wind: None,
+            _gusts: gusts,
+        })
     }
 
     /// Writes the paths to step from 0.
@@ -544,7 +702,11 @@ impl AirMaybes {
     /// Writes a cloud's paths from `base`.
     pub fn seed_at(&self, gpu: &crate::gpu::Gpu, base: u32, paths: &[super::GpuPath]) {
         assert!(base + paths.len() as u32 <= self.capacity);
-        gpu.queue.write_buffer(&self.paths, base as u64 * std::mem::size_of::<super::GpuPath>() as u64, bytemuck::cast_slice(paths));
+        gpu.queue.write_buffer(
+            &self.paths,
+            base as u64 * std::mem::size_of::<super::GpuPath>() as u64,
+            bytemuck::cast_slice(paths),
+        );
     }
 
     /// One step of a cloud's paths (k = its index from its base + 1).
@@ -556,18 +718,30 @@ impl AirMaybes {
     /// the steps one by one.
     pub fn step_many(&self, gpu: &crate::gpu::Gpu, steps: &[AirParams]) {
         let slot = super::gpu::SLOT as usize;
-        assert!(steps.len() as u32 <= super::MAX_STEPS, "at most {} steps a call", super::MAX_STEPS);
+        assert!(
+            steps.len() as u32 <= super::MAX_STEPS,
+            "at most {} steps a call",
+            super::MAX_STEPS
+        );
         if steps.is_empty() {
             return;
         }
         let mut bytes = vec![0u8; slot * steps.len()];
         for (i, p) in steps.iter().enumerate() {
-            bytes[i * slot..i * slot + std::mem::size_of::<AirParams>()].copy_from_slice(bytemuck::bytes_of(p));
+            bytes[i * slot..i * slot + std::mem::size_of::<AirParams>()]
+                .copy_from_slice(bytemuck::bytes_of(p));
         }
         gpu.queue.write_buffer(&self.params, 0, &bytes);
-        let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("air maybes") });
+        let mut enc = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("air maybes"),
+            });
         {
-            let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("air maybes"), timestamp_writes: None });
+            let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("air maybes"),
+                timestamp_writes: None,
+            });
             pass.set_pipeline(&self.pipeline);
             for (i, p) in steps.iter().enumerate() {
                 pass.set_bind_group(0, &self.bind, &[(i * slot) as u32]);
@@ -597,7 +771,14 @@ impl AirMaybes {
         self.copy(gpu, &self.park, &self.paths, base, count);
     }
 
-    fn copy(&self, gpu: &crate::gpu::Gpu, from: &wgpu::Buffer, to: &wgpu::Buffer, base: u32, count: u32) {
+    fn copy(
+        &self,
+        gpu: &crate::gpu::Gpu,
+        from: &wgpu::Buffer,
+        to: &wgpu::Buffer,
+        base: u32,
+        count: u32,
+    ) {
         let at = base as u64 * std::mem::size_of::<super::GpuPath>() as u64;
         let size = count as u64 * std::mem::size_of::<super::GpuPath>() as u64;
         let mut enc = gpu.device.create_command_encoder(&Default::default());

@@ -65,12 +65,18 @@ impl Drifters {
                 .map(|i| {
                     let q = p + 4 * i;
                     let x = i16::from_le_bytes(bytes[q..q + 2].try_into().unwrap()) as f32 / SCALE;
-                    let y = i16::from_le_bytes(bytes[q + 2..q + 4].try_into().unwrap()) as f32 / SCALE;
+                    let y =
+                        i16::from_le_bytes(bytes[q + 2..q + 4].try_into().unwrap()) as f32 / SCALE;
                     (x, y)
                 })
                 .collect();
             p += 4 * n;
-            runs.push(Run { id, day0, drogued: flags & 1 != 0, points });
+            runs.push(Run {
+                id,
+                day0,
+                drogued: flags & 1 != 0,
+                points,
+            });
         }
         let mut cells = vec![Vec::new(); NX * NY];
         for (r, run) in runs.iter().enumerate() {
@@ -118,8 +124,12 @@ impl Drifters {
                     for &(r, i) in &self.cells[y as usize * NX + x as usize] {
                         let (plon, plat) = self.runs[r as usize].points[i as usize];
                         let km = distance_km(lon, lat, plon, plat);
-                        if km <= within_km && best.map_or(true, |b| km < b.km) {
-                            best = Some(Nearest { run: r as usize, point: i as usize, km });
+                        if km <= within_km && best.is_none_or(|b| km < b.km) {
+                            best = Some(Nearest {
+                                run: r as usize,
+                                point: i as usize,
+                                km,
+                            });
                         }
                     }
                 }
@@ -147,12 +157,28 @@ impl Track<'_> {
         let n = self.run.points.len() as f64;
         let (y0, m0, d0) = civil(self.run.day0 as f64);
         let (y1, m1, d1) = civil(self.run.day0 as f64 + (n - 1.0));
-        format!("Drifter {}, {} {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], y0, d1, MONTHS[m1 - 1], y1)
+        format!(
+            "Drifter {}, {} {} {} to {} {} {}",
+            self.run.id,
+            d0,
+            MONTHS[m0 - 1],
+            y0,
+            d1,
+            MONTHS[m1 - 1],
+            y1
+        )
     }
 
     /// Every point of the run, in order, as places (for a look that wants degrees).
     pub fn lonlat(&self) -> Vec<LonLat> {
-        self.run.points.iter().map(|&(lon, lat)| LonLat { lon: lon as f64, lat: lat as f64 }).collect()
+        self.run
+            .points
+            .iter()
+            .map(|&(lon, lat)| LonLat {
+                lon: lon as f64,
+                lat: lat as f64,
+            })
+            .collect()
     }
 
     /// The run's points within `days` of where it passed nearest the float, as a range of
@@ -170,11 +196,35 @@ impl Track<'_> {
         let (y0, m0, d0) = civil(self.run.day0 as f64 + w.start as f64);
         let (y1, m1, d1) = civil(self.run.day0 as f64 + (w.end.max(1) - 1) as f64);
         if (y0, m0) == (y1, m1) {
-            format!("Drifter {}, {} to {} {} {}", self.run.id, d0, d1, MONTHS[m0 - 1], y0)
+            format!(
+                "Drifter {}, {} to {} {} {}",
+                self.run.id,
+                d0,
+                d1,
+                MONTHS[m0 - 1],
+                y0
+            )
         } else if y0 == y1 {
-            format!("Drifter {}, {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], d1, MONTHS[m1 - 1], y0)
+            format!(
+                "Drifter {}, {} {} to {} {} {}",
+                self.run.id,
+                d0,
+                MONTHS[m0 - 1],
+                d1,
+                MONTHS[m1 - 1],
+                y0
+            )
         } else {
-            format!("Drifter {}, {} {} {} to {} {} {}", self.run.id, d0, MONTHS[m0 - 1], y0, d1, MONTHS[m1 - 1], y1)
+            format!(
+                "Drifter {}, {} {} {} to {} {} {}",
+                self.run.id,
+                d0,
+                MONTHS[m0 - 1],
+                y0,
+                d1,
+                MONTHS[m1 - 1],
+                y1
+            )
         }
     }
 
@@ -184,7 +234,9 @@ impl Track<'_> {
     }
 }
 
-const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS: [&str; 12] = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 /// The calendar date of a day since 2000-01-01 00:00 UTC (the real calendar, with its leap
 /// days: a run's dates are real dates, unlike the climatology's typical year).
@@ -211,11 +263,20 @@ impl Drifters {
             .points
             .iter()
             .map(|&(lon, lat)| {
-                let v = LonLat { lon: lon as f64, lat: lat as f64 }.to_xyz();
+                let v = LonLat {
+                    lon: lon as f64,
+                    lat: lat as f64,
+                }
+                .to_xyz();
                 [v[0] as f32, v[1] as f32, v[2] as f32]
             })
             .collect();
-        Some(Track { run, point: n.point, km: n.km, xyz })
+        Some(Track {
+            run,
+            point: n.point,
+            km: n.km,
+            xyz,
+        })
     }
 }
 

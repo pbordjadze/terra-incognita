@@ -3,12 +3,15 @@ computes what the GPU computes where that is known.
 
     python3 tools/metal/tests/test_metal.py
 """
-import struct, sys, tempfile, unittest
+import struct
+import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-import metal  # noqa: E402
+import metal
 
 CLOUDS = metal.ROOT / 'App/TerraIncognita/Clouds/Clouds.metal'
 PROBE = HERE / 'probe.metal'
@@ -26,7 +29,7 @@ def compiles(src):
 class Refuses(unittest.TestCase):
     """Mistakes a session makes, often carried over from a GLSL twin: each must fail here as on the Mac."""
 
-    MUTATIONS = [
+    MUTATIONS = (
         ('a GLSL vector type', 'float3 g = normalize(', 'vec3 g = normalize('),
         ("GLSL's mod", 'fmod(time.y, 4.0)', 'mod(time.y, 4.0)'),
         ("GLSL's two-argument atan", 'atan2(g.x, g.z)', 'atan(g.x, g.z)'),
@@ -41,20 +44,20 @@ class Refuses(unittest.TestCase):
         ('an undeclared variable', 'float px = 1.0 / (U.frame.z * R);', 'float px = 1.0 / (U.frame.z * radius);'),
         ("GLSL's inout", 'static void over(thread float4 &acc,', 'static void over(inout float4 acc,'),
         ('a float vector where an int vector is wanted', 'int3 cell = (int3(i) + d) % 16;', 'int3 cell = (i + d) % 16;'),
-    ]
+    )
 
     def test_each_mutation_fails(self):
         src = CLOUDS.read_text()
         for name, old, new in self.MUTATIONS:
             with self.subTest(name):
                 self.assertIn(old, src, f'{name}: the shader changed; update the mutation')
-                ok, msg = compiles(src.replace(old, new, 1))
+                ok, _msg = compiles(src.replace(old, new, 1))
                 self.assertFalse(ok, f'{name} compiled: the stand-in is laxer than Metal here')
 
     def test_errors_name_the_metal_line(self):
         src = CLOUDS.read_text().replace('U.disc.z', 'U.disk.z', 1)
         line = src[:src.index('U.disk.z')].count('\n') + 1
-        ok, msg = compiles(src)
+        _ok, msg = compiles(src)
         self.assertIn(f'.metal:{line}:', msg)
 
 
@@ -138,7 +141,7 @@ fragment float4 f(P in [[stage_in]]) {
         with tempfile.NamedTemporaryFile('w', suffix='.metal', delete=False) as fh:
             fh.write(src)
         try:
-            img, report = metal.run(Path(fh.name), 'f', (4, 2))
+            _img, report = metal.run(Path(fh.name), 'f', (4, 2))
         finally:
             Path(fh.name).unlink()
         self.assertIn('line 6', report)

@@ -15,7 +15,7 @@ name: Toys
 on:
   push:
     branches-ignore: ['ci-shots/**', 'sidestore', 'packs']
-    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml', 'ci/xcode.sh']
+    paths: ['toys/**', 'tools/toys/**', 'tools/kit/**', '.github/workflows/toys.yml', 'ci/xcode.sh', 'ci/rust.sh', 'rust-toolchain.toml']
   workflow_dispatch:
     inputs:
       toy:
@@ -37,6 +37,10 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != 'main' }}
 
 jobs:
+  lint:
+    # the standard linters (lint.yml, ci/lint.sh) first; the macOS jobs wait for them
+    uses: ./.github/workflows/lint.yml
+
   plan:
     runs-on: ubuntu-latest
     outputs:
@@ -44,7 +48,7 @@ jobs:
       ipa: ${{ steps.plan.outputs.ipa }}
       kit: ${{ steps.plan.outputs.kit }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false, fetch-depth: 0, filter: 'blob:none' }
       - id: plan
         env:
@@ -63,9 +67,10 @@ jobs:
       matrix:
         toy: ${{ fromJSON(needs.plan.outputs.check) }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: toys, key: '${{ matrix.toy }}' }
       - name: Software Vulkan, ffmpeg and the data
@@ -74,14 +79,14 @@ jobs:
           # and a mirror can be slow: they are stopped, the lock waited on for a bounded time, the Vulkan driver
           # installed first and required, ffmpeg (only for the films) after it and not required)
           sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service unattended-upgrades 2> /dev/null || true
-          APT="-o DPkg::Lock::Timeout=240 -o Acquire::http::Timeout=30 -o Acquire::Retries=3"
+          APT=(-o DPkg::Lock::Timeout=240 -o Acquire::http::Timeout=30 -o Acquire::Retries=3)
           for i in 1 2; do
-            timeout 300 sudo apt-get update -qq $APT || true
-            timeout 600 sudo apt-get install -y -qq --no-install-recommends $APT mesa-vulkan-drivers > /dev/null && break
+            timeout 300 sudo apt-get update -qq "${APT[@]}" || true
+            timeout 600 sudo apt-get install -y -qq --no-install-recommends "${APT[@]}" mesa-vulkan-drivers > /dev/null && break
             echo "::warning::apt attempt $i for the Vulkan driver failed or timed out"; sleep 10
           done
           ls /usr/share/vulkan/icd.d/lvp_icd*.json > /dev/null || { echo "::error::no software Vulkan (mesa-vulkan-drivers) installed"; exit 1; }
-          timeout 600 sudo apt-get install -y -qq --no-install-recommends $APT ffmpeg > /dev/null || echo "::warning::no ffmpeg: the plans' films are kept as frames"
+          timeout 600 sudo apt-get install -y -qq --no-install-recommends "${APT[@]}" ffmpeg > /dev/null || echo "::warning::no ffmpeg: the plans' films are kept as frames"
           python3 tools/toys/assets.py ${{ matrix.toy }} --link
       - name: Build and test
         working-directory: toys
@@ -90,10 +95,9 @@ jobs:
           cargo test --release -p toy-kit -p ${{ matrix.toy }}
           # Terra holds the others: its data is theirs, merged (tools/toys/terra/manifest.py)
           if [ "${{ matrix.toy }}" = terra ]; then python3 ../tools/toys/terra/manifest.py --check; fi
-          cargo clippy --release -p ${{ matrix.toy }} -- -D warnings || echo "::warning::clippy has findings"
       - name: Launch check (every shader translated to Metal as on the iPhone)
         run: |
-          command -v naga > /dev/null || cargo install -q naga-cli --version 26.0.0 --locked
+          command -v naga > /dev/null || cargo install -q naga-cli --version 30.0.1 --locked
           bash tools/toys/launch_check.sh ${{ matrix.toy }}
       - name: Play every plan
         working-directory: toys
@@ -106,7 +110,7 @@ jobs:
             cargo run -q --release -p ${{ matrix.toy }} --bin ${{ matrix.toy }}-check -- play "$p" "build/out/$n" | tee "build/out/$n.log"
             if [ -d "build/out/$n/film" ] && command -v ffmpeg > /dev/null; then bash ../tools/toys/film.sh "build/out/$n" && rm -rf "build/out/$n/film"; fi
           done
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: '${{ matrix.toy }}-check', path: toys/build/out, if-no-files-found: error }
 
@@ -119,21 +123,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh wasm32-unknown-unknown
       - name: Build
         working-directory: toys
         run: |
           # the budget's test makes a device (Mesa's software Vulkan, as the check jobs)
           sudo apt-get update -qq && sudo apt-get install -y -qq mesa-vulkan-drivers > /dev/null
-          rustup target add wasm32-unknown-unknown
           cargo build -p toy-kit --no-default-features
           cargo test -q -p toy-kit --no-default-features
           cargo check -p toy-kit --no-default-features --features web --target wasm32-unknown-unknown
 
   ipa:
-    needs: [plan, check]
-    if: ${{ !cancelled() && needs.plan.outputs.ipa != '[]' && needs.check.result == 'success' }}
+    needs: [plan, check, lint]
+    if: ${{ !cancelled() && needs.plan.outputs.ipa != '[]' && needs.check.result == 'success' && needs.lint.result == 'success' }}
     name: IPA for ${{ matrix.toy }} (unsigned device build)
     permissions:
       contents: write
@@ -146,11 +151,11 @@ jobs:
     env:
       BUILD: ${{ github.run_number }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Xcode (the one version, ci/xcode.sh)
         run: bash ci/xcode.sh
-      - uses: dtolnay/rust-toolchain@stable
-        with: { targets: 'aarch64-apple-ios,aarch64-apple-ios-sim' }
+      - name: Rust (the version rust-toolchain.toml names)
+        run: bash ci/rust.sh aarch64-apple-ios aarch64-apple-ios-sim
       - uses: Swatinem/rust-cache@v2
         with: { workspaces: toys, key: 'ios-${{ matrix.toy }}' }
       - name: Build the IPA
@@ -182,7 +187,7 @@ jobs:
           fi
           gh release list --limit 200 --json tagName -q '.[].tagName' | grep "^$TOY-build-[0-9]*$" | sort -t- -k3 -n -r | tail -n +6 |
             while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with: { name: '${{ matrix.toy }}-ipa', path: out, if-no-files-found: error }
 
@@ -196,7 +201,7 @@ jobs:
     # one publish at a time; a newer one waiting replaces an older one waiting (it reads every release)
     concurrency: { group: toys-sidestore-source, cancel-in-progress: false }
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Regenerate and push the source
         env:
           GH_TOKEN: ${{ github.token }}

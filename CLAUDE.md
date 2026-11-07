@@ -186,6 +186,8 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
   and `tests`). An untagged branch push runs every UI test on both devices: an hour and more. Main
   ignores the narrowing tags; merge into it with a merge commit whose message carries none (a
   fast-forward brings the branch head's `[skip ci]` with it).
+  - `lint` (`lint.yml`, Linux, first in `ci.yml`, `toys.yml`, `adrift.yml` and `packs.yml`; their macOS jobs wait
+    for it): `ci/lint.sh`, the standard linters (Staying current).
   - `plates`: the globe's data checked by `ci/check_globe.py`, the tools' syntax, and every Metal
     shader by `tools/metal/metal.py check` with the stand-in's tests.
   - `apple`: Debug and Release builds. The globe's maps and the packs are compared byte for byte
@@ -207,6 +209,20 @@ Every tool, what it does, who uses it and where it stops: `docs/tools.md` (read 
     which the app reads through raw.githubusercontent.com (`[no-publish]` holds it back). A pack
     deleted from `Prototypes/` is retired in the branch's catalog by main's next publish (its files
     stay; `Prototypes/README.md`).
+
+## Staying current
+
+Every version is named in one place: Rust in `rust-toolchain.toml` (`ci/rust.sh` installs it in CI), Xcode
+in `ci/xcode.sh`, crates in each workspace's `Cargo.toml` with `Cargo.lock`, actions at their major tag
+in the workflows, Python's in `tools/requirements.txt`; naga-cli, wasm-bindgen-cli and SwiftLint at their
+install lines (`toys.yml`, `adrift.yml`, `lint.yml`).
+- Dependabot (`.github/dependabot.yml`) opens one grouped pull request a week per ecosystem (cargo,
+  actions, pip). Take one onto a branch with a `[toys-ipa terra]` tag in its first line, let the Linux
+  checks and lint pass, then merge as usual; a wgpu major goes on its own branch (it moves toy-kit's
+  iPhone limits in `budget.rs` and the launch check's naga), proven by `tools/toys/same_pictures.py`.
+- By hand, about monthly: Rust's newest stable into `rust-toolchain.toml`, Xcode's into `ci/xcode.sh`
+  (and qa-explore.yml's, in painting-company's shared copy), then `bash ci/lint.sh` and fix what a newer clippy or ruff finds.
+- Lint before pushing: `bash ci/lint.sh` (`fix` formats). Formatting goes in its own commit.
 
 ## The runtime: one library that grows
 

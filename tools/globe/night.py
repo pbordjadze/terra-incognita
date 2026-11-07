@@ -15,8 +15,10 @@ Source (fetched into the cache if missing): NASA Earth Observatory, Earth at Nig
 gray" image (images by Joshua Stevens, using Suomi NPP VIIRS data from Miguel Román, NASA GSFC;
 NASA imagery is in the public domain). Needs numpy and Pillow.
 """
-import sys, urllib.request
+import sys
+import urllib.request
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 

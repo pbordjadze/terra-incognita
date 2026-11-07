@@ -110,7 +110,9 @@ fn finish(mut scored: Vec<(f64, usize)>, q: f64, near: Vec<u32>) -> Option<Choic
     let k = scored[pi].1 as u32 + 1;
     // the fan: evenly through the band of worlds scored nearest the pick, the pick left out
     let band = (FAN * 4).max(near.len()).min(scored.len() - 1);
-    let lo = pi.saturating_sub(band / 2).min(scored.len() - 1 - band.min(scored.len() - 1));
+    let lo = pi
+        .saturating_sub(band / 2)
+        .min(scored.len() - 1 - band.min(scored.len() - 1));
     let hi = (lo + band).min(scored.len() - 1);
     let mut fan = Vec::new();
     for i in 0..FAN {
@@ -120,7 +122,12 @@ fn finish(mut scored: Vec<(f64, usize)>, q: f64, near: Vec<u32>) -> Option<Choic
             fan.push(w);
         }
     }
-    Some(Choice { k, matches: near.len() as u32, near, fan })
+    Some(Choice {
+        k,
+        matches: near.len() as u32,
+        near,
+        fan,
+    })
 }
 
 /// How much a path looped, radians (positive anticlockwise on a y-down screen's cross, as the
@@ -129,7 +136,10 @@ fn finish(mut scored: Vec<(f64, usize)>, q: f64, near: Vec<u32>) -> Option<Choic
 /// the turns' sizes). A loop's steady turning counts in full; a stall's flips (tiny steps, turns
 /// of both senses) count for little (R12: the plain sum was won by stalls, not loops).
 pub fn looping(pts: &[[f64; 2]]) -> f64 {
-    let d: Vec<[f64; 2]> = pts.windows(2).map(|w| [w[1][0] - w[0][0], w[1][1] - w[0][1]]).collect();
+    let d: Vec<[f64; 2]> = pts
+        .windows(2)
+        .map(|w| [w[1][0] - w[0][0], w[1][1] - w[0][1]])
+        .collect();
     if d.len() < 2 {
         return 0.0;
     }
@@ -146,7 +156,8 @@ pub fn looping(pts: &[[f64; 2]]) -> f64 {
         if a[0].hypot(a[1]) < 1e-9 || b[0].hypot(b[1]) < 1e-9 {
             continue;
         }
-        let t = (a[0] * b[1] - a[1] * b[0]).atan2(a[0] * b[0] + a[1] * b[1]) * lens[i - 1].min(lens[i]);
+        let t =
+            (a[0] * b[1] - a[1] * b[0]).atan2(a[0] * b[0] + a[1] * b[1]) * lens[i - 1].min(lens[i]);
         net += t;
         total += t.abs();
     }
@@ -167,12 +178,21 @@ impl Worlds {
                     Some(e) => (e[0], e[1]),
                     None => rules.put(leg.at, leg.day, leg.seed, k).eddy,
                 };
-                W { at: leg.at, eddy: e, held: Held::No }
+                W {
+                    at: leg.at,
+                    eddy: e,
+                    held: Held::No,
+                }
             })
             .collect();
         let mut marks = VecDeque::new();
         marks.push_back(Mark { day: leg.day, w });
-        Worlds { leg, leg_index, marks, pending: None }
+        Worlds {
+            leg,
+            leg_index,
+            marks,
+            pending: None,
+        }
     }
 
     /// Steps every world to the first grid mark at or after `day` (unbudgeted, so a replay steps
@@ -194,12 +214,30 @@ impl Worlds {
         let last = self.marks.back().unwrap();
         let next = crate::app::grid_next(last.day);
         let dt = next - last.day;
-        let p = self.pending.get_or_insert_with(|| Pending { day: next, w: Vec::with_capacity(WORLDS as usize) });
+        let p = self.pending.get_or_insert_with(|| Pending {
+            day: next,
+            w: Vec::with_capacity(WORLDS as usize),
+        });
         let from = p.w.len();
         let to = (from + budget.min(WORLDS as usize)).min(WORLDS as usize);
         for (i, x) in last.w[from..to].iter().enumerate() {
-            let s = rules.flight(self.leg.law, Drift { at: x.at, eddy: x.eddy }, x.held, last.day, dt, self.leg.seed, (from + i) as u32 + 1);
-            p.w.push(W { at: s.drift.at, eddy: s.drift.eddy, held: s.held });
+            let s = rules.flight(
+                self.leg.law,
+                Drift {
+                    at: x.at,
+                    eddy: x.eddy,
+                },
+                x.held,
+                last.day,
+                dt,
+                self.leg.seed,
+                (from + i) as u32 + 1,
+            );
+            p.w.push(W {
+                at: s.drift.at,
+                eddy: s.drift.eddy,
+                held: s.held,
+            });
         }
         if p.w.len() == WORLDS as usize {
             let p = self.pending.take().unwrap();
@@ -215,7 +253,11 @@ impl Worlds {
     /// given it (`Leg::world` names which of these the lamp follows; the worlds themselves are the
     /// same), so a cue does not rebuild them from the leg's start.
     pub fn serves(&self, leg: &Leg, li: usize) -> bool {
-        self.leg_index == li && Leg { world: leg.world, ..self.leg } == *leg
+        self.leg_index == li
+            && Leg {
+                world: leg.world,
+                ..self.leg
+            } == *leg
     }
 
     /// Where a cue on `day` cuts the leg for world `k` (1-based): the first quarter-day mark at or
@@ -224,14 +266,21 @@ impl Worlds {
     /// place and eddy, in world k, so the lamp's path is world k's step for step, bit for bit, until
     /// the next cue: nothing interpolated becomes a leg's start (R11, Truth).
     pub fn cut(&self, k: u32, day: f64) -> (f64, W) {
-        let i = self.marks.iter().position(|m| m.day >= day - 1e-9).unwrap_or(self.marks.len() - 1);
+        let i = self
+            .marks
+            .iter()
+            .position(|m| m.day >= day - 1e-9)
+            .unwrap_or(self.marks.len() - 1);
         let m = &self.marks[i];
         (m.day, m.w[(k - 1) as usize])
     }
 
     /// The index of the newest mark at or before `day`.
     fn at_or_before(&self, day: f64) -> usize {
-        self.marks.iter().rposition(|m| m.day <= day + 1e-9).unwrap_or(0)
+        self.marks
+            .iter()
+            .rposition(|m| m.day <= day + 1e-9)
+            .unwrap_or(0)
     }
 
     /// World `k`'s place (1-based) on `day`, between its marks as the lamp's own is, and the eddy it
@@ -243,7 +292,11 @@ impl Worlds {
         match self.marks.get(i + 1) {
             Some(b) if b.day > a.day => {
                 let f = ((day - a.day) / (b.day - a.day)).clamp(0.0, 1.0);
-                W { at: crate::app::lerp_place(wa.at, b.w[(k - 1) as usize].at, f), eddy: wa.eddy, held: wa.held }
+                W {
+                    at: crate::app::lerp_place(wa.at, b.w[(k - 1) as usize].at, f),
+                    eddy: wa.eddy,
+                    held: wa.held,
+                }
             }
             _ => wa,
         }
@@ -274,8 +327,23 @@ impl Worlds {
                 .iter()
                 .enumerate()
                 .map(|(i, x)| {
-                    let s = rules.flight(self.leg.law, Drift { at: x.at, eddy: x.eddy }, x.held, day, dt, self.leg.seed, i as u32 + 1);
-                    W { at: s.drift.at, eddy: s.drift.eddy, held: s.held }
+                    let s = rules.flight(
+                        self.leg.law,
+                        Drift {
+                            at: x.at,
+                            eddy: x.eddy,
+                        },
+                        x.held,
+                        day,
+                        dt,
+                        self.leg.seed,
+                        i as u32 + 1,
+                    );
+                    W {
+                        at: s.drift.at,
+                        eddy: s.drift.eddy,
+                        held: s.held,
+                    }
                 })
                 .collect();
             day = next;
@@ -289,18 +357,37 @@ impl Worlds {
     /// A tap and a circle also look ahead (`TAP_AHEAD`, `CIRCLE_AHEAD` days on the sea, `AIR_` on the wind; the worlds' own
     /// future steps, `rules`): the world chosen is the one that will reach the finger, or that is
     /// looping that way, so the lamp is seen to obey after the cue, not only to have obeyed.
-    pub fn choose(&self, rules: &dyn MediumRules, g: ConductGesture, day: f64, rate: f64, project: &dyn Fn(LonLat) -> Option<[f64; 2]>) -> Option<Choice> {
+    pub fn choose(
+        &self,
+        rules: &dyn MediumRules,
+        g: ConductGesture,
+        day: f64,
+        rate: f64,
+        project: &dyn Fn(LonLat) -> Option<[f64; 2]>,
+    ) -> Option<Choice> {
         let n = WORLDS as usize;
         // (R21, Truth) a seed come down is no world to choose: it neither went the hand's way nor
         // can be followed, so it is left out of the scores and the matches (no sea world is ever
         // down, so the sea's choices are unchanged), and a world's look ahead ends where it comes down
-        let up: Vec<bool> = (1..=WORLDS).map(|k| !self.place(k, day).held.down()).collect();
-        let now: Vec<Option<[f64; 2]>> = (1..=WORLDS).map(|k| if up[k as usize - 1] { project(self.place(k, day).at) } else { None }).collect();
+        let up: Vec<bool> = (1..=WORLDS)
+            .map(|k| !self.place(k, day).held.down())
+            .collect();
+        let now: Vec<Option<[f64; 2]>> = (1..=WORLDS)
+            .map(|k| {
+                if up[k as usize - 1] {
+                    project(self.place(k, day).at)
+                } else {
+                    None
+                }
+            })
+            .collect();
         let (tap_ahead, circle_ahead) = match self.leg.medium {
             crate::model::Medium::Sea => (TAP_AHEAD, CIRCLE_AHEAD),
             crate::model::Medium::Wind => (AIR_TAP_AHEAD, AIR_CIRCLE_AHEAD),
         };
-        let marks_for = |secs: f64, least: usize| ((secs * rate * 4.0).round() as usize).clamp(least, HISTORY - 1);
+        let marks_for = |secs: f64, least: usize| {
+            ((secs * rate * 4.0).round() as usize).clamp(least, HISTORY - 1)
+        };
         // the marks after the newest kept one (which is at or just after `day`)
         let newest = self.marks.len() - 1;
         match g {
@@ -315,7 +402,19 @@ impl Worlds {
                     // the nearest the world comes to the finger, from now through the look ahead
                     let mut best = f64::INFINITY;
                     let newest_up = !self.marks[newest].w[k].held.down();
-                    let pts = now[k].into_iter().chain(std::iter::once(project(self.marks[newest].w[k].at)).flatten().filter(|_| newest_up)).chain(ahead.iter().take_while(|m| newest_up && !m[k].held.down()).filter_map(|m| project(m[k].at)));
+                    let pts = now[k]
+                        .into_iter()
+                        .chain(
+                            std::iter::once(project(self.marks[newest].w[k].at))
+                                .flatten()
+                                .filter(|_| newest_up),
+                        )
+                        .chain(
+                            ahead
+                                .iter()
+                                .take_while(|m| newest_up && !m[k].held.down())
+                                .filter_map(|m| project(m[k].at)),
+                        );
                     for [sx, sy] in pts {
                         best = best.min((sx - x).hypot(sy - y));
                     }
@@ -333,10 +432,12 @@ impl Worlds {
                 let len = dx.hypot(dy).max(1e-9);
                 let (ux, uy) = (dx / len, dy / len);
                 let m = marks_for(secs, 1);
-                let disp: Vec<Option<[f64; 2]>> = (0..n).map(|k| match (now[k], project(self.back(m, k, day))) {
-                    (Some(s), Some(t)) => Some([s[0] - t[0], s[1] - t[1]]),
-                    _ => None,
-                }).collect();
+                let disp: Vec<Option<[f64; 2]>> = (0..n)
+                    .map(|k| match (now[k], project(self.back(m, k, day))) {
+                        (Some(s), Some(t)) => Some([s[0] - t[0], s[1] - t[1]]),
+                        _ => None,
+                    })
+                    .collect();
                 let (mut mx, mut my, mut c) = (0.0, 0.0, 0.0);
                 for d in disp.iter().flatten() {
                     mx += d[0];
@@ -374,10 +475,21 @@ impl Worlds {
                         continue;
                     }
                     // the world's path over the stroke's look back and the look ahead, a mark apart
-                    let mut pts: Vec<[f64; 2]> = (1..=m).rev().filter_map(|b| project(self.back(b, k, day))).collect();
+                    let mut pts: Vec<[f64; 2]> = (1..=m)
+                        .rev()
+                        .filter_map(|b| project(self.back(b, k, day)))
+                        .collect();
                     pts.extend(project(self.marks[self.at_or_before(day)].w[k].at));
-                    let later = self.marks.range(self.at_or_before(day) + 1..).map(|mk| &mk.w[k]).chain(ahead.iter().map(|mk| &mk[k]));
-                    pts.extend(later.take_while(|w| !w.held.down()).filter_map(|w| project(w.at)));
+                    let later = self
+                        .marks
+                        .range(self.at_or_before(day) + 1..)
+                        .map(|mk| &mk.w[k])
+                        .chain(ahead.iter().map(|mk| &mk[k]));
+                    pts.extend(
+                        later
+                            .take_while(|w| !w.held.down())
+                            .filter_map(|w| project(w.at)),
+                    );
                     let s = looping(&pts) * sense;
                     if s > std::f64::consts::FRAC_PI_2 {
                         near.push(k as u32 + 1);
@@ -388,7 +500,6 @@ impl Worlds {
             }
         }
     }
-
 }
 
 /// The conductor held to its honesty (R11, Truth): the App driven as a take is, with its lamps'
@@ -397,15 +508,17 @@ impl Worlds {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sea::Rules;
     use crate::app::{lerp_place, App, Scene};
     use crate::assets::DirAssets;
     use crate::gpu::Gpu;
     use crate::model::{ConductGesture, Intent};
+    use crate::sea::Rules;
     use std::path::{Path, PathBuf};
 
     fn assets() -> PathBuf {
-        std::env::var_os("ADRIFT_ASSETS").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"))
+        std::env::var_os("ADRIFT_ASSETS")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build/assets"))
     }
 
     fn block<F: std::future::Future>(f: F) -> F::Output {
@@ -429,7 +542,10 @@ mod tests {
     /// An App on the conduct plan's scene (two lamps off Hatteras in a typical June), or None
     /// without a GPU.
     fn app() -> Option<App> {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..Default::default() });
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL,
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
+        });
         let gpu = match block(Gpu::new(&instance, None)) {
             Ok(g) => g,
             Err(e) => {
@@ -450,7 +566,10 @@ mod tests {
     /// A leg's own flight in world `k` on the quarter-day grid to `upto`: (day, place, eddy) at every
     /// mark, as the lamp's path and the worlds compute it.
     fn flight(rules: &Rules, leg: Leg, k: u32, upto: f64) -> Vec<(f64, LonLat, (f32, f32))> {
-        let e = leg.eddy.map(|e| (e[0], e[1])).unwrap_or_else(|| rules.put(leg.at, leg.day, leg.seed, k).eddy);
+        let e = leg
+            .eddy
+            .map(|e| (e[0], e[1]))
+            .unwrap_or_else(|| rules.put(leg.at, leg.day, leg.seed, k).eddy);
         let mut out = vec![(leg.day, leg.at, e)];
         while out.last().unwrap().0 < upto - 1e-9 {
             let (day, at, eddy) = *out.last().unwrap();
@@ -464,7 +583,11 @@ mod tests {
     fn place_on(path: &[(f64, LonLat, (f32, f32))], day: f64) -> LonLat {
         let i = path.iter().rposition(|p| p.0 <= day + 1e-9).unwrap();
         match path.get(i + 1) {
-            Some(b) => lerp_place(path[i].1, b.1, ((day - path[i].0) / (b.0 - path[i].0)).clamp(0.0, 1.0)),
+            Some(b) => lerp_place(
+                path[i].1,
+                b.1,
+                ((day - path[i].0) / (b.0 - path[i].0)).clamp(0.0, 1.0),
+            ),
             None => path[i].1,
         }
     }
@@ -484,7 +607,9 @@ mod tests {
     fn copied_lamps_go_on_the_same_and_make_a_journey() {
         // R13: lamps copied as text and pasted into another app are the same lamps, to the bit, and a
         // journey clip of them has its frames; the text is written for the check's `journey`
-        let (Some(mut a), Some(mut b)) = (app(), app()) else { return };
+        let (Some(mut a), Some(mut b)) = (app(), app()) else {
+            return;
+        };
         run(&mut a, 0.0, 1.0, |_| {});
         run(&mut b, 0.0, 1.0, |_| {});
         let text = a.lamps_text().expect("lamps to copy");
@@ -492,19 +617,54 @@ mod tests {
         let _ = std::fs::write("../../build/out/lamps.txt", &text);
         b.clock.day += 300.0;
         assert_eq!(b.paste_lamps(&text, true), 2);
-        assert_eq!(b.clock.day, a.clock.day, "the date goes to the day they were copied on");
+        assert_eq!(
+            b.clock.day, a.clock.day,
+            "the date goes to the day they were copied on"
+        );
         // b had lamps 1 and 2 already, so the pasted ones are new ids, the same legs
-        let pasted: Vec<_> = b.floats.iter().rev().take(2).map(|f| f.legs.clone()).collect();
-        let mine: Vec<_> = a.floats.iter().rev().take(2).map(|f| f.legs.clone()).collect();
+        let pasted: Vec<_> = b
+            .floats
+            .iter()
+            .rev()
+            .take(2)
+            .map(|f| f.legs.clone())
+            .collect();
+        let mine: Vec<_> = a
+            .floats
+            .iter()
+            .rev()
+            .take(2)
+            .map(|f| f.legs.clone())
+            .collect();
         assert_eq!(pasted, mine);
         run(&mut a, 1.0, 3.0, |_| {});
         run(&mut b, 1.0, 3.0, |_| {});
-        let at = |app: &App| app.floats.iter().rev().take(2).map(|f| f.at).collect::<Vec<_>>();
-        assert_eq!(at(&a), at(&b), "pasted lamps go on exactly as the copied ones");
+        let at = |app: &App| {
+            app.floats
+                .iter()
+                .rev()
+                .take(2)
+                .map(|f| f.at)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            at(&a),
+            at(&b),
+            "pasted lamps go on exactly as the copied ones"
+        );
         let take = a.journey_take(4.0).expect("a journey");
-        assert_eq!(take.events.iter().filter(|e| matches!(e, crate::studio::TakeEvent::Frame { .. })).count(), (4.0 * crate::app::JOURNEY_FPS) as usize);
+        assert_eq!(
+            take.events
+                .iter()
+                .filter(|e| matches!(e, crate::studio::TakeEvent::Frame { .. }))
+                .count(),
+            (4.0 * crate::app::JOURNEY_FPS) as usize
+        );
         assert_eq!(take.start.floats.len(), 2);
-        assert!(take.start.clock.day < a.clock.day - 5.0, "the journey starts where they were put");
+        assert!(
+            take.start.clock.day < a.clock.day - 5.0,
+            "the journey starts where they were put"
+        );
         assert!(b.paste_lamps("not lamps", false) == 0);
     }
 
@@ -522,15 +682,25 @@ mod tests {
             let mut day = take.start.clock.day;
             let mut paces = Vec::new();
             for e in &take.events {
-                if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+                if let crate::studio::TakeEvent::Intent {
+                    intent: Intent::Rate { days_per_second },
+                    ..
+                } = e
+                {
                     day += days_per_second / crate::app::JOURNEY_FPS;
                     paces.push(*days_per_second);
                 }
             }
             let mean = (day - take.start.clock.day) / secs;
             eprintln!("lamps {:.0} days old, a {secs} s clip: day {:.1} -> {day:.1} (the app's date {now:.1}), {mean:.2} days a second", now - 154.0, take.start.clock.day);
-            assert!(day >= now - 1e-6, "the clip ends at {day:.1}, before the app's date {now:.1}");
-            assert!((mean - crate::app::RATE).abs() < 0.05, "the journey's mean pace is the app's: {mean}");
+            assert!(
+                day >= now - 1e-6,
+                "the clip ends at {day:.1}, before the app's date {now:.1}"
+            );
+            assert!(
+                (mean - crate::app::RATE).abs() < 0.05,
+                "the journey's mean pace is the app's: {mean}"
+            );
         }
     }
 
@@ -545,19 +715,56 @@ mod tests {
         let span = |take: &crate::studio::Take| {
             let mut day = take.start.clock.day;
             for e in &take.events {
-                if let crate::studio::TakeEvent::Intent { intent: Intent::Rate { days_per_second }, .. } = e {
+                if let crate::studio::TakeEvent::Intent {
+                    intent: Intent::Rate { days_per_second },
+                    ..
+                } = e
+                {
                     day += days_per_second / JOURNEY_FPS;
                 }
             }
             (take.start.clock.day, day)
         };
         let now = app.clock.day;
-        let (a, b) = span(&app.journey_take_edit(&JourneyEdit { seconds: 20.0, from: Some(now - 3.0), to: Some(now + 37.0), pace: None }).unwrap());
-        assert!((a - (now - 3.0)).abs() < 1e-9 && (b - (now + 37.0)).abs() < 1e-6, "{a} {b}");
-        let (a, b) = span(&app.journey_take_edit(&JourneyEdit { seconds: 10.0, from: Some(now), to: None, pace: Some(5.0) }).unwrap());
-        assert!((a - now).abs() < 1e-9 && (b - (now + 50.0)).abs() < 1e-6, "{a} {b}");
-        let (a, _) = span(&app.journey_take_edit(&JourneyEdit { seconds: 10.0, from: Some(0.0), to: None, pace: None }).unwrap());
-        assert!((a - 154.0).abs() < 1.0, "begins when the lamps were all out: {a}");
+        let (a, b) = span(
+            &app.journey_take_edit(&JourneyEdit {
+                seconds: 20.0,
+                from: Some(now - 3.0),
+                to: Some(now + 37.0),
+                pace: None,
+            })
+            .unwrap(),
+        );
+        assert!(
+            (a - (now - 3.0)).abs() < 1e-9 && (b - (now + 37.0)).abs() < 1e-6,
+            "{a} {b}"
+        );
+        let (a, b) = span(
+            &app.journey_take_edit(&JourneyEdit {
+                seconds: 10.0,
+                from: Some(now),
+                to: None,
+                pace: Some(5.0),
+            })
+            .unwrap(),
+        );
+        assert!(
+            (a - now).abs() < 1e-9 && (b - (now + 50.0)).abs() < 1e-6,
+            "{a} {b}"
+        );
+        let (a, _) = span(
+            &app.journey_take_edit(&JourneyEdit {
+                seconds: 10.0,
+                from: Some(0.0),
+                to: None,
+                pace: None,
+            })
+            .unwrap(),
+        );
+        assert!(
+            (a - 154.0).abs() < 1.0,
+            "begins when the lamps were all out: {a}"
+        );
     }
 
     /// R23, the edit view's preview: it shows the lamps at a day, plays to a day and stops there, and
@@ -568,14 +775,21 @@ mod tests {
         let t = run(&mut app, 0.0, 0.5, |_| {});
         app.command(Intent::Choose { float: 1 });
         let (born, now, from, to) = app.journey_bounds(30.0).expect("bounds");
-        assert!(born <= from && from < to && (now - app.clock.day).abs() < 1e-9, "{born} {now} {from} {to}");
+        assert!(
+            born <= from && from < to && (now - app.clock.day).abs() < 1e-9,
+            "{born} {now} {from} {to}"
+        );
         let (day0, cam0, chosen0) = (app.clock.day, app.camera.camera, app.chosen.clone());
         assert!(app.preview_begin());
         app.preview_at(from);
         assert_eq!(app.clock.day, from);
         app.preview_play(from, from + 3.0, 6.0);
         let t = run(&mut app, t, t + 1.5, |_| {});
-        assert!((app.clock.day - (from + 3.0)).abs() < 1e-9 && !app.clock.running, "stopped on its last day: {}", app.clock.day);
+        assert!(
+            (app.clock.day - (from + 3.0)).abs() < 1e-9 && !app.clock.running,
+            "stopped on its last day: {}",
+            app.clock.day
+        );
         app.preview_end();
         let _ = t;
         assert_eq!((app.clock.day, app.chosen.clone()), (day0, chosen0));
@@ -589,7 +803,9 @@ mod tests {
     #[test]
     fn touches_during_an_export_change_no_lamp() {
         use crate::model::{Phase, PointerEvent};
-        let (Some(mut a), Some(mut b)) = (app(), app()) else { return };
+        let (Some(mut a), Some(mut b)) = (app(), app()) else {
+            return;
+        };
         let t = run(&mut a, 0.0, 0.5, |_| {});
         run(&mut b, 0.0, 0.5, |_| {});
         a.command(Intent::Choose { float: 1 });
@@ -605,22 +821,49 @@ mod tests {
             a.export_render(&shot);
             // a finger lands on the lamp, drags it across the screen and lifts, mid-render
             if i == 20 || i == 50 {
-                let p = a.floats.first().map(|f| a.disc().project(&a.camera.camera, f.at).0).unwrap_or([100.0, 300.0]);
-                let ev = |phase, x, y, t| PointerEvent { id: 7, phase, x, y, t };
+                let p = a
+                    .floats
+                    .first()
+                    .map(|f| a.disc().project(&a.camera.camera, f.at).0)
+                    .unwrap_or([100.0, 300.0]);
+                let ev = |phase, x, y, t| PointerEvent {
+                    id: 7,
+                    phase,
+                    x,
+                    y,
+                    t,
+                };
                 a.pointer(ev(Phase::Down, p[0], p[1], tt));
                 for k in 1..=40 {
                     tt += 1.0 / 60.0;
-                    a.pointer(ev(Phase::Move, p[0] + 3.0 * k as f64, p[1] + 4.0 * k as f64, tt));
+                    a.pointer(ev(
+                        Phase::Move,
+                        p[0] + 3.0 * k as f64,
+                        p[1] + 4.0 * k as f64,
+                        tt,
+                    ));
                 }
                 tt += 0.05;
                 a.pointer(ev(Phase::Up, p[0] + 120.0, p[1] + 160.0, tt));
             }
             // and a finger rests on open water for a second (a put, in the live app)
             if i == 80 {
-                a.pointer(PointerEvent { id: 8, phase: Phase::Down, x: 60.0, y: 700.0, t: tt });
+                a.pointer(PointerEvent {
+                    id: 8,
+                    phase: Phase::Down,
+                    x: 60.0,
+                    y: 700.0,
+                    t: tt,
+                });
             }
             if i == 130 {
-                a.pointer(PointerEvent { id: 8, phase: Phase::Up, x: 60.0, y: 700.0, t: tt + 1.2 });
+                a.pointer(PointerEvent {
+                    id: 8,
+                    phase: Phase::Up,
+                    x: 60.0,
+                    y: 700.0,
+                    t: tt + 1.2,
+                });
             }
             tt += 1.0 / 60.0;
         }
@@ -629,11 +872,22 @@ mod tests {
         let mut c = app().unwrap();
         assert!(c.restore(&kept));
         let mid: Vec<_> = c.floats.iter().map(|f| (f.id, f.legs.clone())).collect();
-        assert_eq!(mid, legs, "a snapshot taken mid-export kept the clip's lamps");
-        assert!((c.clock.day - b.clock.day).abs() < 1e-9, "a snapshot taken mid-export kept the clip's date: {} not {}", c.clock.day, b.clock.day);
+        assert_eq!(
+            mid, legs,
+            "a snapshot taken mid-export kept the clip's lamps"
+        );
+        assert!(
+            (c.clock.day - b.clock.day).abs() < 1e-9,
+            "a snapshot taken mid-export kept the clip's date: {} not {}",
+            c.clock.day,
+            b.clock.day
+        );
         a.export_end();
         let after: Vec<_> = a.floats.iter().map(|f| (f.id, f.legs.clone())).collect();
-        assert_eq!(after, legs, "an export with touches in it changed a lamp's legs");
+        assert_eq!(
+            after, legs,
+            "an export with touches in it changed a lamp's legs"
+        );
         // and from here on, frame by frame, the lamps are where a twin's are
         let mut worst = 0.0f64;
         let t2 = run(&mut a, t, t + 2.0, |_| {});
@@ -670,7 +924,9 @@ mod tests {
     fn a_take_start_is_invisible() {
         // the same scene run twice, once with a take begun at an off-grid moment: every frame's
         // lamps are where they would have been, to the bit, and the cut sits on the grid
-        let (Some(mut plain), Some(mut taken)) = (app(), app()) else { return };
+        let (Some(mut plain), Some(mut taken)) = (app(), app()) else {
+            return;
+        };
         let (mut a, mut b) = (Vec::new(), Vec::new());
         let t = run(&mut plain, 0.0, 0.53, |_| {});
         run(&mut taken, 0.0, 0.53, |_| {});
@@ -678,14 +934,37 @@ mod tests {
         // a take runs at the conductor's tempo: the plain run is set to it too
         plain.clock.rate = TEMPO;
         let day = taken.clock.day;
-        assert!((day * 4.0).fract().abs() > 1e-6, "the take starts between grid marks ({day})");
+        assert!(
+            (day * 4.0).fract().abs() > 1e-6,
+            "the take starts between grid marks ({day})"
+        );
         for f in &taken.floats {
             let cut = f.legs.last().unwrap();
-            assert!(cut.day >= day && cut.day - day < 0.25 + 1e-9 && (cut.day * 4.0).fract() == 0.0, "the cut is the next grid mark: {cut:?} at {day}");
+            assert!(
+                cut.day >= day && cut.day - day < 0.25 + 1e-9 && (cut.day * 4.0).fract() == 0.0,
+                "the cut is the next grid mark: {cut:?} at {day}"
+            );
         }
-        run(&mut plain, t, 4.0, |app| a.push(app.floats.iter().map(|f| (f.at, f.eddy)).collect::<Vec<_>>()));
-        run(&mut taken, t, 4.0, |app| b.push(app.floats.iter().map(|f| (f.at, f.eddy)).collect::<Vec<_>>()));
-        assert_eq!(a, b, "every frame of 3.5 s (7 days) after the take began: the lamps as they were");
+        run(&mut plain, t, 4.0, |app| {
+            a.push(
+                app.floats
+                    .iter()
+                    .map(|f| (f.at, f.eddy))
+                    .collect::<Vec<_>>(),
+            )
+        });
+        run(&mut taken, t, 4.0, |app| {
+            b.push(
+                app.floats
+                    .iter()
+                    .map(|f| (f.at, f.eddy))
+                    .collect::<Vec<_>>(),
+            )
+        });
+        assert_eq!(
+            a, b,
+            "every frame of 3.5 s (7 days) after the take began: the lamps as they were"
+        );
     }
 
     #[test]
@@ -696,20 +975,41 @@ mod tests {
         let t = run(&mut app, 0.3, 1.71, |_| {});
         let day = app.clock.day;
         let before = app.floats[0].legs.clone();
-        app.command(Intent::Conduct { float: Some(1), gesture: ConductGesture::Sweep { dx: 0.0, dy: -160.0, secs: 0.4 } });
+        app.command(Intent::Conduct {
+            float: Some(1),
+            gesture: ConductGesture::Sweep {
+                dx: 0.0,
+                dy: -160.0,
+                secs: 0.4,
+            },
+        });
         let legs = app.floats[0].legs.clone();
         let li = before.len() - 1;
         let (leg, next) = (legs[li], legs[li + 1]);
         let k = leg.world;
-        assert!(k >= 1 && k <= WORLDS, "the cue chose a world: {legs:?}");
-        assert_eq!(Leg { world: before[li].world, ..leg }, before[li], "the leg is the same leg, now world {k}");
+        assert!((1..=WORLDS).contains(&k), "the cue chose a world: {legs:?}");
+        assert_eq!(
+            Leg {
+                world: before[li].world,
+                ..leg
+            },
+            before[li],
+            "the leg is the same leg, now world {k}"
+        );
         assert_eq!(next.world, k, "the next leg goes on in world {k}");
         // world k's unbroken flight from the leg's start: the cut is its mark, to the bit
         let rules = &app.rules;
         let world = flight(rules, leg, k, day + 4.0 * TEMPO);
-        let mark = world.iter().find(|p| (p.0 - next.day).abs() < 1e-9).expect("the cut is on world k's grid");
+        let mark = world
+            .iter()
+            .find(|p| (p.0 - next.day).abs() < 1e-9)
+            .expect("the cut is on world k's grid");
         assert!(next.day >= day && next.day - day < 0.25 + 1e-9);
-        assert_eq!((mark.1, mark.2), (next.at, (next.eddy.unwrap()[0], next.eddy.unwrap()[1])), "the next leg starts in world {k}'s exact state");
+        assert_eq!(
+            (mark.1, mark.2),
+            (next.at, (next.eddy.unwrap()[0], next.eddy.unwrap()[1])),
+            "the next leg starts in world {k}'s exact state"
+        );
         // and the lamp, frame by frame for 3 s (6 days), is world k's place
         let mut worst = 0.0f64;
         run(&mut app, t, t + 3.0, |app| {
@@ -730,38 +1030,82 @@ mod tests {
         use crate::sea::MediumRules;
         let Some(mut app) = app() else { return };
         // a lamp from the scene (the sea's), then the wind's preset and a seed lifted over the Carolinas
-        app.command(Intent::Medium { medium: Medium::Wind });
+        app.command(Intent::Medium {
+            medium: Medium::Wind,
+        });
         assert_eq!(app.clock.rate, crate::app::AIR_RATE);
         let land = LonLat::new(-79.0, 35.5);
         assert!(app.rules.coast.is_land(land));
         app.command(Intent::Put { at: land });
-        app.command(Intent::Release { float: app.floats.last().unwrap().id, at: None });
+        app.command(Intent::Release {
+            float: app.floats.last().unwrap().id,
+            at: None,
+        });
         let seed_id = app.floats.last().unwrap().id;
         if let Some(f) = app.floats.iter_mut().find(|f| f.id == seed_id) {
             f.hand = crate::model::Hand::Free;
         }
-        assert!(app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.iter().all(|l| l.medium == Medium::Wind));
-        assert!(app.floats[0].legs.iter().all(|l| l.medium == Medium::Sea), "the lamp stays the sea's");
+        assert!(app
+            .floats
+            .iter()
+            .find(|f| f.id == seed_id)
+            .unwrap()
+            .legs
+            .iter()
+            .all(|l| l.medium == Medium::Wind));
+        assert!(
+            app.floats[0].legs.iter().all(|l| l.medium == Medium::Sea),
+            "the lamp stays the sea's"
+        );
         let t = run(&mut app, 0.0, 2.0, |_| {});
         let f = app.floats.iter().find(|f| f.id == seed_id).unwrap();
         let km = f.at.distance_m(land) / 1000.0;
-        eprintln!("a seed lifted at {land:?}: after {:.2} days {km:.0} km, {:?}", app.clock.day - f.put_day, f.held);
+        eprintln!(
+            "a seed lifted at {land:?}: after {:.2} days {km:.0} km, {:?}",
+            app.clock.day - f.put_day,
+            f.held
+        );
         assert!(km > 20.0, "the seed went with the wind: {km} km");
         // conducted: its leg becomes world k of the wind's rules
         app.command(Intent::Record { on: true });
         assert_eq!(app.clock.rate, AIR_TEMPO);
         let t = run(&mut app, t, t + 1.5, |_| {});
-        let before = app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.clone();
-        app.command(Intent::Conduct { float: Some(seed_id), gesture: ConductGesture::Sweep { dx: 160.0, dy: 0.0, secs: 0.4 } });
-        let legs = app.floats.iter().find(|f| f.id == seed_id).unwrap().legs.clone();
+        let before = app
+            .floats
+            .iter()
+            .find(|f| f.id == seed_id)
+            .unwrap()
+            .legs
+            .clone();
+        app.command(Intent::Conduct {
+            float: Some(seed_id),
+            gesture: ConductGesture::Sweep {
+                dx: 160.0,
+                dy: 0.0,
+                secs: 0.4,
+            },
+        });
+        let legs = app
+            .floats
+            .iter()
+            .find(|f| f.id == seed_id)
+            .unwrap()
+            .legs
+            .clone();
         let li = before.len() - 1;
         let leg = legs[li];
         let k = leg.world;
-        assert!(k >= 1 && leg.medium == Medium::Wind, "the cue chose a world of the wind: {legs:?}");
+        assert!(
+            k >= 1 && leg.medium == Medium::Wind,
+            "the cue chose a world of the wind: {legs:?}"
+        );
         // world k's unbroken flight by the wind's rules, from the leg's start
         let air = &app.air;
         let mut d = match leg.eddy {
-            Some(e) => crate::sea::Drift { at: leg.at, eddy: (e[0], e[1]) },
+            Some(e) => crate::sea::Drift {
+                at: leg.at,
+                eddy: (e[0], e[1]),
+            },
             None => air.put(leg.at, leg.day, leg.seed, k),
         };
         let (mut day, mut held) = (leg.day, crate::model::Held::No);
@@ -777,10 +1121,17 @@ mod tests {
         let mut worst = 0.0f64;
         run(&mut app, t, t + 2.0, |app| {
             let f = app.floats.iter().find(|f| f.id == seed_id).unwrap();
-            let w = world.iter().rposition(|p| p.0 <= app.clock.day + 1e-9).map(|i| match world.get(i + 1) {
-                Some(b) => lerp_place(world[i].1, b.1, ((app.clock.day - world[i].0) / (b.0 - world[i].0)).clamp(0.0, 1.0)),
-                None => world[i].1,
-            });
+            let w = world
+                .iter()
+                .rposition(|p| p.0 <= app.clock.day + 1e-9)
+                .map(|i| match world.get(i + 1) {
+                    Some(b) => lerp_place(
+                        world[i].1,
+                        b.1,
+                        ((app.clock.day - world[i].0) / (b.0 - world[i].0)).clamp(0.0, 1.0),
+                    ),
+                    None => world[i].1,
+                });
             if let Some(w) = w {
                 worst = worst.max((f.at.lon - w.lon).abs().max((f.at.lat - w.lat).abs()));
             }
@@ -795,15 +1146,38 @@ mod tests {
     fn the_old_cut_moved_a_lamp_by() {
         let rules = Rules::load(&DirAssets(assets())).unwrap();
         let (mut worst, mut sum, mut n) = (0.0f64, 0.0, 0.0);
-        for (i, (lon, lat)) in [(-72.0, 35.0), (-62.0, 37.0), (-40.0, 40.0), (-20.0, -30.0), (60.0, -45.0), (150.0, 35.0)].into_iter().enumerate() {
+        for (i, (lon, lat)) in [
+            (-72.0, 35.0),
+            (-62.0, 37.0),
+            (-40.0, 40.0),
+            (-20.0, -30.0),
+            (60.0, -45.0),
+            (150.0, 35.0),
+        ]
+        .into_iter()
+        .enumerate()
+        {
             let leg = Leg::new(LonLat { lon, lat }, 150.0, i as u64);
             let unbroken = flight(&rules, leg, 0, 170.0);
             for d in [153.1, 155.37, 158.2] {
                 let j = unbroken.iter().rposition(|p| p.0 <= d).unwrap();
-                let cut = Leg { at: place_on(&unbroken, d), day: d, seed: leg.seed, world: 0, eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]), law: leg.law, medium: leg.medium };
+                let cut = Leg {
+                    at: place_on(&unbroken, d),
+                    day: d,
+                    seed: leg.seed,
+                    world: 0,
+                    eddy: Some([unbroken[j].2 .0, unbroken[j].2 .1]),
+                    law: leg.law,
+                    medium: leg.medium,
+                };
                 let after = flight(&rules, cut, 0, d + 7.0);
                 let (a, b) = (place_on(&after, d + 7.0), place_on(&unbroken, d + 7.0));
-                let km = crate::sea::drifters::distance_km(a.lon as f32, a.lat as f32, b.lon as f32, b.lat as f32) as f64;
+                let km = crate::sea::drifters::distance_km(
+                    a.lon as f32,
+                    a.lat as f32,
+                    b.lon as f32,
+                    b.lat as f32,
+                ) as f64;
                 worst = worst.max(km);
                 sum += km;
                 n += 1.0;
@@ -816,7 +1190,14 @@ mod tests {
     /// conduct plan's scale (about 30 points a degree, y down).
     fn worlds(days: f64) -> (Rules, Worlds, f64) {
         let rules = Rules::load(&DirAssets(assets())).unwrap();
-        let leg = Leg::new(LonLat { lon: -72.0, lat: 35.0 }, 160.0, 7);
+        let leg = Leg::new(
+            LonLat {
+                lon: -72.0,
+                lat: 35.0,
+            },
+            160.0,
+            7,
+        );
         let mut w = Worlds::new(&rules, leg, 0);
         let day = 160.0 + days;
         w.step_to(&rules, day);
@@ -837,14 +1218,34 @@ mod tests {
         for i in [17usize, 600, 1000] {
             // a finger where a world will be at the end of the look ahead: the pick gets there too
             let [fx, fy] = flat(ahead.last().unwrap()[i].at).unwrap();
-            let c = w.choose(&rules, ConductGesture::Tap { x: fx, y: fy }, day, 3.0, &flat).unwrap();
+            let c = w
+                .choose(
+                    &rules,
+                    ConductGesture::Tap { x: fx, y: fy },
+                    day,
+                    3.0,
+                    &flat,
+                )
+                .unwrap();
             let dist = |p: LonLat| {
                 let [a, b] = flat(p).unwrap();
                 (a - fx).hypot(b - fy)
             };
-            let nearest = |k: usize| ahead.iter().map(|m| dist(m[k].at)).fold(dist(places[k]), f64::min);
-            assert!(nearest(c.k as usize - 1) < TAP_NEAR, "the pick reaches the finger within the look ahead");
-            assert!(c.fan.len() >= 4 && !c.fan.contains(&c.k), "a fan of runners-up: {:?}", c.fan);
+            let nearest = |k: usize| {
+                ahead
+                    .iter()
+                    .map(|m| dist(m[k].at))
+                    .fold(dist(places[k]), f64::min)
+            };
+            assert!(
+                nearest(c.k as usize - 1) < TAP_NEAR,
+                "the pick reaches the finger within the look ahead"
+            );
+            assert!(
+                c.fan.len() >= 4 && !c.fan.contains(&c.k),
+                "a fan of runners-up: {:?}",
+                c.fan
+            );
             // it is seen to go toward the finger: how far it closes in the look ahead, against the cloud's median
             let close = |k: usize| dist(places[k]) - nearest(k);
             closed.push(close(c.k as usize - 1));
@@ -854,9 +1255,23 @@ mod tests {
             counts.push(c.matches);
         }
         eprintln!("taps matched {counts:?} of {WORLDS} worlds; the pick closed on the finger by {closed:.0?} pt in {TAP_AHEAD} days (the median world {median_closed:.0?})");
-        assert!(closed.iter().zip(&median_closed).all(|(c, m)| c > m), "the pick heads for the finger more than the cloud does");
-        let c = w.choose(&rules, ConductGesture::Tap { x: 1e5, y: 0.0 }, day, 3.0, &flat).unwrap();
-        assert_eq!(c.matches, 0, "far from every world: still a pick, but none did it");
+        assert!(
+            closed.iter().zip(&median_closed).all(|(c, m)| c > m),
+            "the pick heads for the finger more than the cloud does"
+        );
+        let c = w
+            .choose(
+                &rules,
+                ConductGesture::Tap { x: 1e5, y: 0.0 },
+                day,
+                3.0,
+                &flat,
+            )
+            .unwrap();
+        assert_eq!(
+            c.matches, 0,
+            "far from every world: still a pick, but none did it"
+        );
     }
 
     #[test]
@@ -865,23 +1280,45 @@ mod tests {
         let mut fr = Vec::new();
         for (dx, dy) in [(0.0, -160.0), (160.0, 0.0), (0.0, 120.0), (-200.0, 40.0)] {
             let secs = 0.5;
-            let c = w.choose(&rules, ConductGesture::Sweep { dx, dy, secs }, day, 2.0, &flat).unwrap();
+            let c = w
+                .choose(
+                    &rules,
+                    ConductGesture::Sweep { dx, dy, secs },
+                    day,
+                    2.0,
+                    &flat,
+                )
+                .unwrap();
             let m = ((secs * 2.0 * 4.0) as usize).max(1);
             let disp = |k: usize| {
-                let (a, b) = (flat(w.place(k as u32 + 1, day).at).unwrap(), flat(w.back(m, k, day)).unwrap());
+                let (a, b) = (
+                    flat(w.place(k as u32 + 1, day).at).unwrap(),
+                    flat(w.back(m, k, day)).unwrap(),
+                );
                 [a[0] - b[0], a[1] - b[1]]
             };
             let all: Vec<_> = (0..WORLDS as usize).map(disp).collect();
-            let mean = [all.iter().map(|d| d[0]).sum::<f64>() / all.len() as f64, all.iter().map(|d| d[1]).sum::<f64>() / all.len() as f64];
+            let mean = [
+                all.iter().map(|d| d[0]).sum::<f64>() / all.len() as f64,
+                all.iter().map(|d| d[1]).sum::<f64>() / all.len() as f64,
+            ];
             let d = disp(c.k as usize - 1);
             let len = dx.hypot(dy);
             let along = ((d[0] - mean[0]) * dx + (d[1] - mean[1]) * dy) / len;
-            let alongs: Vec<f64> = all.iter().map(|e| ((e[0] - mean[0]) * dx + (e[1] - mean[1]) * dy) / len).collect();
+            let alongs: Vec<f64> = all
+                .iter()
+                .map(|e| ((e[0] - mean[0]) * dx + (e[1] - mean[1]) * dy) / len)
+                .collect();
             let beaten = alongs.iter().filter(|a| **a < along).count() as f64 / alongs.len() as f64;
             assert!(along > 0.0 && beaten > 0.7, "the pick moved the stroke's way against the mean: along {along:.1} pt, beyond {beaten:.2} of the worlds");
             fr.push(c.matches as f64 / WORLDS as f64);
         }
-        eprintln!("sweeps matched {:?} of the worlds (within 30 degrees of the stroke)", fr.iter().map(|f| (f * 1000.0).round() / 10.0).collect::<Vec<_>>());
+        eprintln!(
+            "sweeps matched {:?} of the worlds (within 30 degrees of the stroke)",
+            fr.iter()
+                .map(|f| (f * 1000.0).round() / 10.0)
+                .collect::<Vec<_>>()
+        );
         assert!(fr.iter().all(|f| *f > 0.03 && *f < 0.4));
     }
 
@@ -889,25 +1326,56 @@ mod tests {
     fn a_circle_picks_a_world_that_loops_that_way() {
         // in the open Atlantic (the blue lamp's sea), where the eddies outrun the mean current
         let rules = Rules::load(&DirAssets(assets())).unwrap();
-        let leg = Leg::new(LonLat { lon: -40.0, lat: 38.0 }, 160.0, 7);
+        let leg = Leg::new(
+            LonLat {
+                lon: -40.0,
+                lat: 38.0,
+            },
+            160.0,
+            7,
+        );
         let mut w = Worlds::new(&rules, leg, 0);
         let day = 168.0;
         w.step_to(&rules, day);
         let mut dump = Vec::new();
         for turn in [5.0, -5.0] {
-            let c = w.choose(&rules, ConductGesture::Circle { turn, secs: 1.0 }, day, 3.0, &flat).unwrap();
+            let c = w
+                .choose(
+                    &rules,
+                    ConductGesture::Circle { turn, secs: 1.0 },
+                    day,
+                    3.0,
+                    &flat,
+                )
+                .unwrap();
             // the chosen world's look back and its next six days: the lamp's line through the cue
             let ahead = w.ahead(&rules, 24);
             let line = |k: u32| -> Vec<[f64; 2]> {
-                let mut p: Vec<[f64; 2]> = (1..=12).rev().map(|b| flat(w.back(b, k as usize - 1, day)).unwrap()).collect();
+                let mut p: Vec<[f64; 2]> = (1..=12)
+                    .rev()
+                    .map(|b| flat(w.back(b, k as usize - 1, day)).unwrap())
+                    .collect();
                 p.extend(ahead.iter().map(|m| flat(m[k as usize - 1].at).unwrap()));
                 p
             };
-            let after: Vec<[f64; 2]> = ahead.iter().map(|m| flat(m[c.k as usize - 1].at).unwrap()).collect();
+            let after: Vec<[f64; 2]> = ahead
+                .iter()
+                .map(|m| flat(m[c.k as usize - 1].at).unwrap())
+                .collect();
             let t = looping(&after);
-            let mut all: Vec<f64> = (1..=WORLDS).map(|k| looping(&ahead.iter().map(|m| flat(m[k as usize - 1].at).unwrap()).collect::<Vec<_>>()) * turn.signum()).collect();
+            let mut all: Vec<f64> = (1..=WORLDS)
+                .map(|k| {
+                    looping(
+                        &ahead
+                            .iter()
+                            .map(|m| flat(m[k as usize - 1].at).unwrap())
+                            .collect::<Vec<_>>(),
+                    ) * turn.signum()
+                })
+                .collect();
             all.sort_by(|a, b| a.partial_cmp(b).unwrap());
-            let beaten = all.iter().filter(|a| **a < t * turn.signum()).count() as f64 / all.len() as f64;
+            let beaten =
+                all.iter().filter(|a| **a < t * turn.signum()).count() as f64 / all.len() as f64;
             let p = w.place(c.k, day).at;
             let spinning = crate::sea::rules::spin(c.k, day as f32, p.lon as f32, p.lat as f32);
             let f = c.matches as f64 / WORLDS as f64;
@@ -934,8 +1402,16 @@ mod tests {
             w.step_to(&rules, d);
         }
         let mark = t.elapsed().as_secs_f64() / 40.0;
-        eprintln!("a mark of {WORLDS} worlds: {:.2} ms ({:.0} ns a flight step)", mark * 1e3, mark / WORLDS as f64 * 1e9);
-        let pts: Vec<(f32, f32)> = w.places(d).iter().map(|p| (p.lon as f32, p.lat as f32)).collect();
+        eprintln!(
+            "a mark of {WORLDS} worlds: {:.2} ms ({:.0} ns a flight step)",
+            mark * 1e3,
+            mark / WORLDS as f64 * 1e9
+        );
+        let pts: Vec<(f32, f32)> = w
+            .places(d)
+            .iter()
+            .map(|p| (p.lon as f32, p.lat as f32))
+            .collect();
         let time = |name: &str, f: &dyn Fn(f32, f32) -> f32| {
             let t = std::time::Instant::now();
             let mut acc = 0.0;
@@ -945,7 +1421,10 @@ mod tests {
                 }
             }
             std::hint::black_box(acc);
-            eprintln!("  {name}: {:.0} ns", t.elapsed().as_secs_f64() / 20.0 / pts.len() as f64 * 1e9);
+            eprintln!(
+                "  {name}: {:.0} ns",
+                t.elapsed().as_secs_f64() / 20.0 / pts.len() as f64 * 1e9
+            );
         };
         let df = d as f32;
         time("currents", &|lon, lat| rules.currents.at(df, lon, lat).0);
@@ -954,18 +1433,48 @@ mod tests {
         time("eddy time", &|lon, lat| rules.eddy_time.at(lon, lat).0);
         time("ice", &|lon, lat| rules.ice.at(df, lon, lat));
         time("coast", &|lon, lat| rules.coast.distance(lon, lat));
-        time("world kick", &|lon, lat| crate::sea::rules::world_kick(5, df, 0.25, lon, lat).0);
+        time("world kick", &|lon, lat| {
+            crate::sea::rules::world_kick(5, df, 0.25, lon, lat).0
+        });
         for (name, g) in [
-            ("tap", ConductGesture::Tap { x: -1700.0, y: -1100.0 }),
-            ("sweep", ConductGesture::Sweep { dx: 0.0, dy: -160.0, secs: 0.5 }),
-            ("circle 1 s", ConductGesture::Circle { turn: 5.0, secs: 1.0 }),
-            ("circle 3 s", ConductGesture::Circle { turn: 5.0, secs: 3.0 }),
+            (
+                "tap",
+                ConductGesture::Tap {
+                    x: -1700.0,
+                    y: -1100.0,
+                },
+            ),
+            (
+                "sweep",
+                ConductGesture::Sweep {
+                    dx: 0.0,
+                    dy: -160.0,
+                    secs: 0.5,
+                },
+            ),
+            (
+                "circle 1 s",
+                ConductGesture::Circle {
+                    turn: 5.0,
+                    secs: 1.0,
+                },
+            ),
+            (
+                "circle 3 s",
+                ConductGesture::Circle {
+                    turn: 5.0,
+                    secs: 3.0,
+                },
+            ),
         ] {
             let t = std::time::Instant::now();
             for _ in 0..10 {
                 std::hint::black_box(w.choose(&rules, g, d, 2.0, &flat));
             }
-            eprintln!("choose {name}: {:.2} ms", t.elapsed().as_secs_f64() / 10.0 * 1e3);
+            eprintln!(
+                "choose {name}: {:.2} ms",
+                t.elapsed().as_secs_f64() / 10.0 * 1e3
+            );
         }
     }
 
@@ -984,23 +1493,46 @@ mod tests {
                 let m = ((secs * rate * 4.0) as usize).clamp(1, HISTORY - 1);
                 let d: Vec<[f64; 2]> = (0..WORLDS as usize)
                     .map(|k| {
-                        let (a, b) = (flat(w.place(k as u32 + 1, day).at).unwrap(), flat(w.back(m, k, day)).unwrap());
+                        let (a, b) = (
+                            flat(w.place(k as u32 + 1, day).at).unwrap(),
+                            flat(w.back(m, k, day)).unwrap(),
+                        );
                         [a[0] - b[0], a[1] - b[1]]
                     })
                     .collect();
                 let n = d.len() as f64;
-                let mean = [d.iter().map(|x| x[0]).sum::<f64>() / n, d.iter().map(|x| x[1]).sum::<f64>() / n];
-                let spread = (d.iter().map(|x| (x[0] - mean[0]).powi(2) + (x[1] - mean[1]).powi(2)).sum::<f64>() / n).sqrt();
+                let mean = [
+                    d.iter().map(|x| x[0]).sum::<f64>() / n,
+                    d.iter().map(|x| x[1]).sum::<f64>() / n,
+                ];
+                let spread = (d
+                    .iter()
+                    .map(|x| (x[0] - mean[0]).powi(2) + (x[1] - mean[1]).powi(2))
+                    .sum::<f64>()
+                    / n)
+                    .sqrt();
                 let mut north: Vec<f64> = d.iter().map(|x| -(x[1] - mean[1])).collect();
                 north.sort_by(|a, b| a.partial_cmp(b).unwrap());
                 let q95 = north[(0.95 * (n - 1.0)) as usize];
                 let turned = if secs == 1.0 {
-                    let c = w.choose(&rules, ConductGesture::Circle { turn: 5.0, secs }, day, rate, &flat).unwrap();
+                    let c = w
+                        .choose(
+                            &rules,
+                            ConductGesture::Circle { turn: 5.0, secs },
+                            day,
+                            rate,
+                            &flat,
+                        )
+                        .unwrap();
                     format!("{:.0}%", c.matches as f64 / n * 100.0)
                 } else {
                     String::new()
                 };
-                eprintln!("{rate:4}  {secs:4}  {:4.1}  {:8.0}  {spread:9.0}  {q95:13.0}  {turned}", m as f64 / 4.0, mean[0].hypot(mean[1]));
+                eprintln!(
+                    "{rate:4}  {secs:4}  {:4.1}  {:8.0}  {spread:9.0}  {q95:13.0}  {turned}",
+                    m as f64 / 4.0,
+                    mean[0].hypot(mean[1])
+                );
             }
         }
     }

@@ -58,13 +58,25 @@ fn polar(p: [f64; 3]) -> (f64, f64) {
 
 impl Voice {
     pub fn new(ear: Arc<Mutex<Ear>>) -> Voice {
-        Voice { ear, ringing: Vec::new(), listener: [0.0, 0.0, 1.0], seed: 12345, lp: 0.0, aimed: [9.0; 3], level: 0.0 }
+        Voice {
+            ear,
+            ringing: Vec::new(),
+            listener: [0.0, 0.0, 1.0],
+            seed: 12345,
+            lp: 0.0,
+            aimed: [9.0; 3],
+            level: 0.0,
+        }
     }
 
     fn strike(&mut self, pos: [f64; 3], strength: f64) {
         let mut partials = Vec::new();
         for (i, &(l, _, _)) in MODES.iter().enumerate() {
-            let ms: Vec<i32> = if (2..=6).contains(&l) { (-(l as i32)..=l as i32).collect() } else { vec![0] };
+            let ms: Vec<i32> = if (2..=6).contains(&l) {
+                (-(l as i32)..=l as i32).collect()
+            } else {
+                vec![0]
+            };
             for m in ms {
                 partials.push(Partial {
                     mode: i,
@@ -89,13 +101,27 @@ impl Voice {
                 .ringing
                 .iter()
                 .enumerate()
-                .map(|(k, r)| (k, r.partials.iter().map(|p| p.env * (p.tc.abs() + p.ts.abs())).sum::<f64>()))
+                .map(|(k, r)| {
+                    (
+                        k,
+                        r.partials
+                            .iter()
+                            .map(|p| p.env * (p.tc.abs() + p.ts.abs()))
+                            .sum::<f64>(),
+                    )
+                })
                 .min_by(|a, b| a.1.total_cmp(&b.1))
                 .map(|(k, _)| k)
                 .unwrap_or(0);
             self.ringing.remove(quiet);
         }
-        let mut r = Ringing { pos, strength, partials, knock: 1.0, age: 0.0 };
+        let mut r = Ringing {
+            pos,
+            strength,
+            partials,
+            knock: 1.0,
+            age: 0.0,
+        };
         Self::aim(&mut r, self.listener);
         for p in &mut r.partials {
             (p.c, p.s) = (p.tc, p.ts);
@@ -108,7 +134,8 @@ impl Voice {
         let (xs, ps) = polar(r.pos);
         let (xr, pr) = polar(listener);
         let dphi = pr - ps;
-        let cosg = (r.pos[0] * listener[0] + r.pos[1] * listener[1] + r.pos[2] * listener[2]).clamp(-1.0, 1.0);
+        let cosg = (r.pos[0] * listener[0] + r.pos[1] * listener[1] + r.pos[2] * listener[2])
+            .clamp(-1.0, 1.0);
         let mut pl = [0.0; 13];
         modes::legendre(cosg, &mut pl);
         let mut cache: Vec<Option<(Vec<f64>, Vec<f64>)>> = vec![None; MODES.len()];
@@ -119,7 +146,8 @@ impl Voice {
                 (p.tc, p.ts) = (w * pl[l], 0.0);
                 continue;
             }
-            let (a, b) = cache[p.mode].get_or_insert_with(|| (modes::schmidt(l, xs), modes::schmidt(l, xr)));
+            let (a, b) =
+                cache[p.mode].get_or_insert_with(|| (modes::schmidt(l, xs), modes::schmidt(l, xr)));
             let k = p.m.unsigned_abs() as usize;
             let prod = a[k] * b[k];
             if p.m == 0 {
@@ -135,7 +163,11 @@ impl Voice {
 
 impl toy_kit::Synth for Voice {
     fn render(&mut self, out: &mut [f32], channels: usize, rate: f64) {
-        let got = self.ear.try_lock().ok().map(|mut ear| (ear.listener, ear.new.drain(..).collect::<Vec<_>>()));
+        let got = self
+            .ear
+            .try_lock()
+            .ok()
+            .map(|mut ear| (ear.listener, std::mem::take(&mut ear.new)));
         if let Some((listener, new)) = got {
             self.listener = listener;
             for (p, s) in new {
@@ -143,7 +175,10 @@ impl toy_kit::Synth for Voice {
             }
         }
         let listener = self.listener;
-        let moved = (0..3).map(|k| (listener[k] - self.aimed[k]).abs()).sum::<f64>() > 1e-3;
+        let moved = (0..3)
+            .map(|k| (listener[k] - self.aimed[k]).abs())
+            .sum::<f64>()
+            > 1e-3;
         if moved {
             self.aimed = listener;
         }
@@ -176,7 +211,10 @@ impl toy_kit::Synth for Voice {
                 for f in 0..frames {
                     // a 4 ms rise, so the strike never clicks
                     let rise = ((a0 + f as f64 / rate) / 0.004).min(1.0);
-                    let (re, im) = (p.re * p.rot.0 - p.im * p.rot.1, p.re * p.rot.1 + p.im * p.rot.0);
+                    let (re, im) = (
+                        p.re * p.rot.0 - p.im * p.rot.1,
+                        p.re * p.rot.1 + p.im * p.rot.0,
+                    );
                     p.re = re;
                     p.im = im;
                     p.env *= p.decay_k;
@@ -198,15 +236,30 @@ impl toy_kit::Synth for Voice {
             // on the bell), rising in 3 ms and gone in about 60
             if r.knock > 1e-3 {
                 let k = (-1.0 / (0.05 * rate)).exp();
-                const TINK: [(f64, f64); 4] = [(1187.0, 0.5), (1733.0, 0.35), (2411.0, 0.25), (3167.0, 0.15)];
+                const TINK: [(f64, f64); 4] = [
+                    (1187.0, 0.5),
+                    (1733.0, 0.35),
+                    (2411.0, 0.25),
+                    (3167.0, 0.15),
+                ];
                 for f in 0..frames {
                     self.seed = self.seed.wrapping_mul(1664525).wrapping_add(1013904223);
                     let w = (self.seed >> 8) as f64 / (1u32 << 24) as f64 * 2.0 - 1.0;
                     self.lp += (w - self.lp) * 0.08;
                     let age = a0 + f as f64 / rate;
                     let rise = (age / 0.003).min(1.0);
-                    let tink: f64 = TINK.iter().map(|&(fr, a)| a * (2.0 * std::f64::consts::PI * fr * age).sin() * (-age * fr / 60.0).exp()).sum();
-                    let v = (rise * r.knock * r.strength * (0.5 * self.lp * (-age / 0.012).exp() + 0.22 * tink)) as f32;
+                    let tink: f64 = TINK
+                        .iter()
+                        .map(|&(fr, a)| {
+                            a * (2.0 * std::f64::consts::PI * fr * age).sin()
+                                * (-age * fr / 60.0).exp()
+                        })
+                        .sum();
+                    let v = (rise
+                        * r.knock
+                        * r.strength
+                        * (0.5 * self.lp * (-age / 0.012).exp() + 0.22 * tink))
+                        as f32;
                     r.knock *= k;
                     for c in 0..channels {
                         out[f * channels + c] += v;
@@ -217,7 +270,8 @@ impl toy_kit::Synth for Voice {
         for r in &mut self.ringing {
             r.age += frames as f64 / rate;
         }
-        self.ringing.retain(|r| r.knock > 1e-3 || r.partials.iter().any(|p| p.env > 2e-3));
+        self.ringing
+            .retain(|r| r.knock > 1e-3 || r.partials.iter().any(|p| p.env > 2e-3));
         // a slow level follower over the whole: piled strikes stay near one loudness
         let peak = out.iter().fold(0f32, |m, v| m.max(v.abs())) as f64;
         let k = if peak > self.level { 0.3 } else { 0.02 };

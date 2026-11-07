@@ -27,8 +27,12 @@ Earth Observatory); NSIDC G02135 v4 monthly concentration GeoTIFFs (polar stereo
 Natural Earth 1:10m lakes and 1:50m geography regions (public domain). Needs numpy, scipy, Pillow,
 shapely, pyproj and tifffile.
 """
-import json, sys, urllib.request, warnings
+import json
+import sys
+import urllib.request
+import warnings
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy import ndimage

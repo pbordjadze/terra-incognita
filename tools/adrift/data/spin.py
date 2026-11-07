@@ -5,8 +5,12 @@ random flights with no spin (the null) and one that spins, sampled the same way.
 
     python3 tools/adrift/data/spin.py        (from the repository root; reads adrift/data/drifters.bin)
 """
-import struct, numpy as np
-b=open('adrift/data/drifters.bin','rb').read()
+import struct
+from pathlib import Path
+
+import numpy as np
+
+b=Path('adrift/data/drifters.bin').read_bytes()
 assert b[:4]==b'ADRF'; ver,count=struct.unpack_from('<II',b,4); o=12
 R=6371000.0
 rots=[];cons=[];spd=[];lats=[];allspd=[]

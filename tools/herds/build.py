@@ -24,7 +24,10 @@ Output (data.js, `window.HERDS`): `animals` (id, lineages by date, leader, path 
 `lineages` (id, kinds by date, name), `beringia` (its picture and bounds, and the dates it is shown),
 `ticks` and `pace` for the date. Deterministic: the same lineages give the same file.
 """
-import json, math, random, sys
+import json
+import math
+import random
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -32,7 +35,9 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import lineages as L  # noqa: E402  (the authored history, beside this file)
+import itertools
+
+import lineages as L
 
 OUT = ROOT / 'Prototypes' / 'herds' / 'data.js'
 EARTH_KM = 6371.0
@@ -172,7 +177,7 @@ def bridge_open(date):
 def densify(way, rng, meander_km, sea_ok=False):
     """An author's turns [[lon, lat, date], ...] with points about every 250 km between them, meandering."""
     out = [list(way[0])]
-    for (lo0, la0, d0), (lo1, la1, d1) in zip(way, way[1:]):
+    for (lo0, la0, d0), (lo1, la1, d1) in itertools.pairwise(way):
         a, b = unit(lo0, la0), unit(lo1, la1)
         dist = km_between((lo0, la0), (lo1, la1))
         n = max(1, int(dist / 250))
@@ -196,7 +201,7 @@ def position_at(way, date):
     """Where a dense way is at a date (between its turns, on the great circle)."""
     if date <= way[0][2]:
         return way[0][0], way[0][1]
-    for (lo0, la0, d0), (lo1, la1, d1) in zip(way, way[1:]):
+    for (lo0, la0, d0), (lo1, la1, d1) in itertools.pairwise(way):
         if d0 <= date <= d1:
             f = (date - d0) / (d1 - d0) if d1 > d0 else 1
             return place(slerp(unit(lo0, la0), unit(lo1, la1), f))
@@ -267,7 +272,7 @@ def build():
             if moved:
                 lead(lid, start, moved[0])
             if head in moved and pool:
-                lead(parent, start, sorted(pool, key=lambda m: m['id'])[0])
+                lead(parent, start, min(pool, key=lambda m: m['id']))
             born(lid, start, max(0, x['members'] - len(moved)), leader=not moved)
         else:
             born(lid, start, x['members'], leader=True)

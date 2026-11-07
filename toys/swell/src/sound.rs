@@ -31,7 +31,10 @@ pub struct Chimes {
 
 impl Chimes {
     pub fn new(queue: Queue) -> Chimes {
-        Chimes { queue, voices: Vec::new() }
+        Chimes {
+            queue,
+            voices: Vec::new(),
+        }
     }
 }
 
@@ -43,12 +46,38 @@ impl toy_kit::Synth for Chimes {
             for n in q.drain(..) {
                 if self.voices.len() >= 28 {
                     // the oldest gives way
-                    let k = self.voices.iter().enumerate().max_by(|a, b| a.1.t.total_cmp(&b.1.t)).map(|(k, _)| k).unwrap_or(0);
+                    let k = self
+                        .voices
+                        .iter()
+                        .enumerate()
+                        .max_by(|a, b| a.1.t.total_cmp(&b.1.t))
+                        .map(|(k, _)| k)
+                        .unwrap_or(0);
                     self.voices.remove(k);
                 }
                 self.voices.push(match n {
-                    Note::Plunk { amp, pan, freq } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 0.22, pan, plunk: true, lp: 0.0, seed: 7 },
-                    Note::Chime { freq, amp, pan } => Voice { freq, phase: [0.0; 3], amp, t: 0.0, decay: 1.5, pan, plunk: false, lp: 0.0, seed: (freq * 13.0) as u32 | 1 },
+                    Note::Plunk { amp, pan, freq } => Voice {
+                        freq,
+                        phase: [0.0; 3],
+                        amp,
+                        t: 0.0,
+                        decay: 0.22,
+                        pan,
+                        plunk: true,
+                        lp: 0.0,
+                        seed: 7,
+                    },
+                    Note::Chime { freq, amp, pan } => Voice {
+                        freq,
+                        phase: [0.0; 3],
+                        amp,
+                        t: 0.0,
+                        decay: 1.5,
+                        pan,
+                        plunk: false,
+                        lp: 0.0,
+                        seed: (freq * 13.0) as u32 | 1,
+                    },
                 });
             }
         }

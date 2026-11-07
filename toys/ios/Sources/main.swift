@@ -8,7 +8,7 @@ import AVFoundation
 import UniformTypeIdentifiers
 
 final class ToyView: UIView, UIDocumentPickerDelegate {
-    override class var layerClass: AnyClass { CAMetalLayer.self }
+    override static var layerClass: AnyClass { CAMetalLayer.self }
     var shell: OpaquePointer?
     var synth: OpaquePointer?
     var link: CADisplayLink?
@@ -238,7 +238,9 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         guard text != rulesText else { return }
         rulesText = text
         guard let text else {
-            UIView.animate(withDuration: 0.3, animations: { self.rules.alpha = 0 }) { _ in if self.rulesText == nil { self.rules.isHidden = true } }
+            UIView.animate(withDuration: 0.3, animations: { self.rules.alpha = 0 }, completion: { _ in
+                if self.rulesText == nil { self.rules.isHidden = true }
+            })
             UIAccessibility.post(notification: .layoutChanged, argument: nil)
             return
         }
@@ -250,7 +252,8 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
         noteStyle.paragraphSpacingBefore = 6
         let s = NSMutableAttributedString(string: parts[0], attributes: [.font: body, .foregroundColor: UIColor(white: 1, alpha: 0.95), .paragraphStyle: lines])
         if parts.count > 1, !parts[1...].joined().isEmpty {
-            s.append(NSAttributedString(string: "\n" + parts[1...].joined(separator: "\n"), attributes: [.font: note, .foregroundColor: UIColor(white: 1, alpha: 0.64), .paragraphStyle: noteStyle]))
+            let noteAttributes: [NSAttributedString.Key: Any] = [.font: note, .foregroundColor: UIColor(white: 1, alpha: 0.64), .paragraphStyle: noteStyle]
+            s.append(NSAttributedString(string: "\n" + parts[1...].joined(separator: "\n"), attributes: noteAttributes))
         }
         rulesLabel.attributedText = s
         rulesLabel.accessibilityLabel = parts.joined(separator: ". ")
@@ -324,9 +327,13 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     /// Decodes a sound file (any format AVAudioFile reads) off the main thread, then hands it to the toy.
     func open(_ url: URL) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let file = try? AVAudioFile(forReading: url) else { DispatchQueue.main.async { self?.toyLog("could not read \(url.lastPathComponent)") }; return }
+            guard let file = try? AVAudioFile(forReading: url) else {
+                DispatchQueue.main.async { self?.toyLog("could not read \(url.lastPathComponent)") }
+                return
+            }
             let format = file.processingFormat
-            guard let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(file.length)), (try? file.read(into: buf)) != nil, let ch = buf.floatChannelData else {
+            guard let buf = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(file.length)),
+                  (try? file.read(into: buf)) != nil, let ch = buf.floatChannelData else {
                 DispatchQueue.main.async { self?.toyLog("could not decode \(url.lastPathComponent)") }
                 return
             }
@@ -343,7 +350,11 @@ final class ToyView: UIView, UIDocumentPickerDelegate {
     func toyLog(_ line: String) {
         NSLog("toy: \(line)")
         let log = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("toy-log.txt")
-        if let h = try? FileHandle(forWritingTo: log) { h.seekToEndOfFile(); h.write("\(Int(Date().timeIntervalSince1970)) \(line)\n".data(using: .utf8)!); try? h.close() }
+        if let h = try? FileHandle(forWritingTo: log) {
+            h.seekToEndOfFile()
+            h.write(Data("\(Int(Date().timeIntervalSince1970)) \(line)\n".utf8))
+            try? h.close()
+        }
     }
 
     func showCaption(_ text: String?) {

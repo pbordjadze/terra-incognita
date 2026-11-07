@@ -144,7 +144,11 @@ impl Memory {
                 return;
             }
         }
-        self.moments.push(Moment { form: f, shown: dt as f32, held: held as f32 });
+        self.moments.push(Moment {
+            form: f,
+            shown: dt as f32,
+            held: held as f32,
+        });
         if self.moments.len() > MOMENTS {
             // the oldest half merged pairwise (a form and the next are close: the walk is continuous)
             let half = MOMENTS / 2;
@@ -249,7 +253,12 @@ impl Walker {
             clock: 0.0,
             rng: Rng(seed | 1),
             memory: Memory::default(),
-            path: vec![Stop { form: start, dwell: 0.0, declined: Vec::new(), jump: false }],
+            path: vec![Stop {
+                form: start,
+                dwell: 0.0,
+                declined: Vec::new(),
+                jump: false,
+            }],
             steps: 0,
             shown: Default::default(),
             time: 0.0,
@@ -271,7 +280,13 @@ impl Walker {
     /// reader's (`Memory::liking`) in the toy; any function in the tests.
     /// `engaged`: whether the reader is with it (a finger on it now or a moment ago); only then is the
     /// moment remembered, so watching without touching neither teaches nor unteaches it.
-    pub fn step_with(&mut self, dt: f64, held: f64, engaged: bool, liking: &dyn Fn(&Memory, &Form) -> f64) -> Option<Event> {
+    pub fn step_with(
+        &mut self,
+        dt: f64,
+        held: f64,
+        engaged: bool,
+        liking: &dyn Fn(&Memory, &Form) -> f64,
+    ) -> Option<Event> {
         self.time += dt;
         // remember what the reader saw a moment ago, and whether they held it
         let now = self.display();
@@ -307,11 +322,23 @@ impl Walker {
                 let keep = self.rng.f() < ratio.min(1.0);
                 self.last = (ratio, keep);
                 if std::env::var("TASTE_TRACE").is_ok() {
-                    eprintln!("trace {:.3} {} {:.3} {:.3} held {:.2}", self.time, keep, self.y[0], ratio, self.memory.held_total());
+                    eprintln!(
+                        "trace {:.3} {} {:.3} {:.3} held {:.2}",
+                        self.time,
+                        keep,
+                        self.y[0],
+                        ratio,
+                        self.memory.held_total()
+                    );
                 }
                 if keep {
                     self.x = self.y;
-                    self.path.push(Stop { form: self.x, dwell: 0.0, declined: Vec::new(), jump: false });
+                    self.path.push(Stop {
+                        form: self.x,
+                        dwell: 0.0,
+                        declined: Vec::new(),
+                        jump: false,
+                    });
                     self.phase = Phase::Rest;
                     // every step lasts as long, kept or not, so time is shared as the rule shares it
                     self.clock = -BACK;
@@ -344,7 +371,12 @@ impl Walker {
         self.y = f;
         self.phase = Phase::Rest;
         self.clock = 0.0;
-        self.path.push(Stop { form: f, dwell: 0.0, declined: Vec::new(), jump: true });
+        self.path.push(Stop {
+            form: f,
+            dwell: 0.0,
+            declined: Vec::new(),
+            jump: true,
+        });
         // a longer first rest on the form chosen: the same rule, only a slower first step
         self.clock = -2.0;
     }
@@ -388,7 +420,10 @@ mod tests {
         let share = above / all;
         let r = 1.5f64.powf(SHARP);
         let want = r / (r + 1.0);
-        assert!((share - want).abs() < 0.03, "share above {share}, want {want}");
+        assert!(
+            (share - want).abs() < 0.03,
+            "share above {share}, want {want}"
+        );
     }
 
     /// The reader's liking: held more near where they held.

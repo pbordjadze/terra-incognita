@@ -36,8 +36,12 @@ grid's blocks and its satellites' seams), widening to about 330 km towards the p
 distance east-west as north-south: cloud over snow and ice is the least certain part of the record,
 and the smoothing keeps its blocks and seams from looking like weather.
 """
-import argparse, sys, time, urllib.request
+import argparse
+import sys
+import time
+import urllib.request
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 

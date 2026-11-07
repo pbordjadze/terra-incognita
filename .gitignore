@@ -9,3 +9,5 @@ __pycache__/
 node_modules/
 adrift/target/
 adrift/build/
+/.venv/
+.ruff_cache/

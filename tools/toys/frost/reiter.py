@@ -10,8 +10,11 @@ Axial hex coordinates (q, r) on an n x n array; a cell's neighbours are (q±1, r
 the rest's water diffuses (u += alpha/2 (mean of the six - u), receptive cells counting 0); the edge
 is held at beta. Prints the steps to reach each radius.
 """
-import argparse, numpy as np
+import argparse
+
+import numpy as np
 from PIL import Image
+
 
 def nbrs(a):
     return [np.roll(a, 1, 0), np.roll(a, -1, 0), np.roll(a, 1, 1), np.roll(a, -1, 1),
@@ -47,7 +50,6 @@ def run(n, alpha, beta, gamma, steps, every=None, edge=None):
 def picture(s, n, scale=3):
     # the hex array drawn in the plane: x = q + r/2, y = r sqrt(3)/2
     W = int(n * scale * 1.0)
-    img = np.zeros((W, W))
     ys, xs = np.mgrid[0:W, 0:W]
     X = (xs - W / 2) / scale
     Y = (ys - W / 2) / scale

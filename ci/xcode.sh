@@ -13,11 +13,12 @@ set -euo pipefail
 VERSION=27.2
 [[ "${1:-}" == --version ]] && { echo "$VERSION"; exit 0; }
 DIR="/Applications/Xcode_$VERSION.app/Contents/Developer"
-[[ -d "$DIR" ]] || { echo "::error::Xcode $VERSION is not on this runner ($DIR); installed: $(ls -d /Applications/Xcode*.app 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"; exit 1; }
+installed() { for a in /Applications/Xcode*.app; do [ -e "$a" ] && printf '%s ' "${a##*/}"; done; }
+[[ -d "$DIR" ]] || { echo "::error::Xcode $VERSION is not on this runner ($DIR); installed: $(installed)"; exit 1; }
 echo "DEVELOPER_DIR=$DIR" >> "${GITHUB_ENV:-/dev/null}"
 export DEVELOPER_DIR="$DIR"
 xcodebuild -version
-echo "Xcodes on this runner: $(ls -d /Applications/Xcode*.app 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"
+echo "Xcodes on this runner: $(installed)"
 if xcrun -sdk iphoneos metal --version > /dev/null 2>&1; then
   echo "Metal toolchain: $(xcrun -sdk iphoneos metal --version 2>&1 | head -1)"
 else

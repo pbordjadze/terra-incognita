@@ -121,14 +121,22 @@ impl Fireflies {
         let km_pt = sim::EARTH_KM / r;
         let r_km = (NUDGE_PT * self.globe.reading() * km_pt).max(40.0);
         let speed = RING_PT_S * km_pt;
-        let (_, last) = self.swarm.touch(at.to_xyz(), r_km, RING_REACH_S * speed, speed);
+        let (_, last) = self
+            .swarm
+            .touch(at.to_xyz(), r_km, RING_REACH_S * speed, speed);
         self.rings.retain(|g| self.swarm.t - g.t0 < g.life);
         if self.rings.len() >= look::MAX_RINGS {
             self.rings.remove(0);
         }
-        self.rings.push(look::Ring { at: at.to_xyz(), t0: self.swarm.t, speed: RING_PT_S / r, life: (last + 0.6).clamp(1.2, 4.0) });
+        self.rings.push(look::Ring {
+            at: at.to_xyz(),
+            t0: self.swarm.t,
+            speed: RING_PT_S / r,
+            life: (last + 0.6).clamp(1.2, 4.0),
+        });
         ctx.haptic();
-        self.ear.touch((x / (self.globe.view().width as f64 / self.globe.view().ppp)) as f32);
+        self.ear
+            .touch((x / (self.globe.view().width as f64 / self.globe.view().ppp)) as f32);
     }
 
     /// Listens to the screen: each patch's glow, for the chimes (sound.rs).
@@ -145,7 +153,8 @@ impl Fireflies {
             if facing <= 0.05 || x < 0.0 || y < 0.0 || x >= w || y >= h {
                 continue;
             }
-            let k = ((y / h * sound::ROWS as f64) as usize).min(sound::ROWS - 1) * sound::COLS + ((x / w * sound::COLS as f64) as usize).min(sound::COLS - 1);
+            let k = ((y / h * sound::ROWS as f64) as usize).min(sound::ROWS - 1) * sound::COLS
+                + ((x / w * sound::COLS as f64) as usize).min(sound::COLS - 1);
             let wt = f.weight as f32;
             let g = self.swarm.glow(i, false);
             cells[k].0 += wt * g;
@@ -170,7 +179,11 @@ impl Fireflies {
         let (mut best, mut bd) = (0, f64::MIN);
         for (i, f) in self.swarm.flies.iter().enumerate() {
             let d = c[0] * f.xyz[0] + c[1] * f.xyz[1] + c[2] * f.xyz[2];
-            if d > bd && self.crowd[i] >= CROWD_LIGHT && f.lat > SETTLE_LAT.0 && f.lat < SETTLE_LAT.1 {
+            if d > bd
+                && self.crowd[i] >= CROWD_LIGHT
+                && f.lat > SETTLE_LAT.0
+                && f.lat < SETTLE_LAT.1
+            {
                 (bd, best) = (d, i);
             }
         }
@@ -184,7 +197,9 @@ impl Fireflies {
         let mut best = (f64::MIN, (0.0, 0.0), 0.0);
         for l in &self.lights {
             let x = toy_kit::LonLat::new(l.0, l.1).to_xyz();
-            let d = (c[0] * x[0] + c[1] * x[1] + c[2] * x[2]).clamp(-1.0, 1.0).acos();
+            let d = (c[0] * x[0] + c[1] * x[1] + c[2] * x[2])
+                .clamp(-1.0, 1.0)
+                .acos();
             let score = l.2 * (-d / LIGHT_REACH.to_radians()).exp();
             if score > best.0 {
                 best = (score, (l.0, l.1), d);
@@ -269,7 +284,17 @@ impl Toy for Fireflies {
         let swarm = Swarm::from_bytes(&ctx.assets.read("fireflies.bin")?, Tune::default(), seed)?;
         let look = look::Look::new(&ctx.gpu, &globe, swarm.flies.len());
         let lights = light_centres(&swarm);
-        let crowd = swarm.flies.iter().map(|f| f.weight + f.near.iter().map(|&(j, _)| swarm.flies[j as usize].weight).sum::<f64>()).collect();
+        let crowd = swarm
+            .flies
+            .iter()
+            .map(|f| {
+                f.weight
+                    + f.near
+                        .iter()
+                        .map(|&(j, _)| swarm.flies[j as usize].weight)
+                        .sum::<f64>()
+            })
+            .collect();
         Ok(Fireflies {
             globe,
             swarm,
@@ -354,7 +379,8 @@ impl Toy for Fireflies {
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
         let width = RING_WIDTH_PT / self.globe.disc().r;
-        self.look.upload(&ctx.gpu, &self.swarm, self.soft, &self.rings, width);
+        self.look
+            .upload(&ctx.gpu, &self.swarm, self.soft, &self.rings, width);
         self.look.draw(&ctx.gpu, &self.globe, target);
     }
 
@@ -364,8 +390,22 @@ impl Toy for Fireflies {
 
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         // a tap on a lit crowd: its lights sparkle out of step and the field pulls them back
-        let at = self.globe.spot_for(&[[2.35, 48.86], [9.19, 45.46], [-0.13, 51.51], [31.24, 30.04], [3.38, 6.52], [77.21, 28.61], [139.69, 35.69], [-74.0, 40.71], [-99.13, 19.43], [-46.63, -23.55]]);
-        Some(toy_kit::info::Demo::new("Every city a firefly, falling into step. Tap one.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+        let at = self.globe.spot_for(&[
+            [2.35, 48.86],
+            [9.19, 45.46],
+            [-0.13, 51.51],
+            [31.24, 30.04],
+            [3.38, 6.52],
+            [77.21, 28.61],
+            [139.69, 35.69],
+            [-74.0, 40.71],
+            [-99.13, 19.43],
+            [-46.63, -23.55],
+        ]);
+        Some(toy_kit::info::Demo::new(
+            "Every city a firefly, falling into step. Tap one.",
+            vec![toy_kit::info::Stroke::tap(0.5, at)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

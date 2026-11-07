@@ -10,8 +10,11 @@ sample between them. A fire is taken to burn 4 m above its peak.
 
 Rebuild, never hand-edit. Coarse ground means a thin ridge may be missed; a broad range is not.
 """
-import json, math, re
+import json
+import math
+import re
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
 

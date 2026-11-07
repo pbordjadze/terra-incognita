@@ -87,7 +87,17 @@ pub fn rand(s: &mut u64) -> f64 {
 
 impl River {
     pub fn new(line: Vec<[f64; 2]>, seed: u64) -> River {
-        let mut r = River { line, oxbows: Vec::new(), year: 0.0, cuts: Vec::new(), kicks: Vec::new(), calm: 0.0, rng: seed | 1, r0: Vec::new(), r1: Vec::new() };
+        let mut r = River {
+            line,
+            oxbows: Vec::new(),
+            year: 0.0,
+            cuts: Vec::new(),
+            kicks: Vec::new(),
+            calm: 0.0,
+            rng: seed | 1,
+            r0: Vec::new(),
+            r1: Vec::new(),
+        };
         r.line = resample(&r.line, DS);
         r
     }
@@ -96,7 +106,11 @@ impl River {
     pub fn relay(&mut self, line: Vec<[f64; 2]>) {
         let old = std::mem::take(&mut self.line);
         if old.len() > 4 {
-            self.oxbows.push(Oxbow { line: old, born: self.year, course: true });
+            self.oxbows.push(Oxbow {
+                line: old,
+                born: self.year,
+                course: true,
+            });
         }
         self.line = resample(&line, DS);
     }
@@ -171,7 +185,15 @@ impl River {
         self.kicks.retain(|k| year - k.1 < KICK_LIFE * 4.0);
         let kicks = &self.kicks;
         let boost = |q: [f64; 2]| -> f64 {
-            let b: f64 = kicks.iter().map(|k| k.2 * (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * KICK_R * KICK_R)).exp() * (-(year - k.1) / KICK_LIFE).exp()).sum();
+            let b: f64 = kicks
+                .iter()
+                .map(|k| {
+                    k.2 * (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2))
+                        / (2.0 * KICK_R * KICK_R))
+                        .exp()
+                        * (-(year - k.1) / KICK_LIFE).exp()
+                })
+                .sum();
             1.0 + b.min(KICK_MAX)
         };
         let calm = self.calm;
@@ -180,14 +202,22 @@ impl River {
                 return 1.0;
             }
             let r = KICK_R * 1.8;
-            let near: f64 = kicks.iter().map(|k| (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * r * r)).exp() * (-(year - k.1) / KICK_LIFE).exp() * 2.0).sum();
+            let near: f64 = kicks
+                .iter()
+                .map(|k| {
+                    (-((q[0] - k.0[0]).powi(2) + (q[1] - k.0[1]).powi(2)) / (2.0 * r * r)).exp()
+                        * (-(year - k.1) / KICK_LIFE).exp()
+                        * 2.0
+                })
+                .sum();
             1.0 - calm * (1.0 - near.min(1.0))
         };
         let mut q = self.line.clone();
         for i in HELD..n.saturating_sub(HELD) {
             let t = tang[i];
             let nrm = [-t[1], t[0]];
-            let m = (self.r1[i] * dt * erodible(p[i]) * boost(p[i]) * held(p[i])).clamp(-DS * 0.3, DS * 0.3);
+            let m = (self.r1[i] * dt * erodible(p[i]) * boost(p[i]) * held(p[i]))
+                .clamp(-DS * 0.3, DS * 0.3);
             q[i] = [p[i][0] - nrm[0] * m, p[i][1] - nrm[1] * m];
         }
         // a whisper of noise: the bank is never quite even
@@ -217,7 +247,8 @@ impl River {
         }
         let near = |q: [f64; 2], line: &[[f64; 2]]| {
             let (cx, cy) = ((q[0] / cell).floor() as i64, (q[1] / cell).floor() as i64);
-            (-1..=1).any(|dx| (-1..=1).any(|dy| grid.contains(&(cx + dx, cy + dy)))) && line.iter().any(|p| dist(*p, q) < W * 0.75)
+            (-1..=1).any(|dx| (-1..=1).any(|dy| grid.contains(&(cx + dx, cy + dy))))
+                && line.iter().any(|p| dist(*p, q) < W * 0.75)
         };
         let mut out = Vec::with_capacity(self.oxbows.len());
         for o in self.oxbows.drain(..) {
@@ -227,17 +258,23 @@ impl River {
                 if near(q, &self.line) {
                     cut = true;
                     if piece.len() >= 9 {
-                        out.push(Oxbow { line: std::mem::take(&mut piece), born: o.born, course: o.course });
+                        out.push(Oxbow {
+                            line: std::mem::take(&mut piece),
+                            born: o.born,
+                            course: o.course,
+                        });
                     }
                     piece.clear();
                 } else {
                     piece.push(q);
                 }
             }
-            if !cut {
-                out.push(Oxbow { line: piece, born: o.born, course: o.course });
-            } else if piece.len() >= 9 {
-                out.push(Oxbow { line: piece, born: o.born, course: o.course });
+            if !cut || piece.len() >= 9 {
+                out.push(Oxbow {
+                    line: piece,
+                    born: o.born,
+                    course: o.course,
+                });
             }
         }
         self.oxbows = out;
@@ -253,7 +290,13 @@ impl River {
     /// finger swept across the valley pushes the one reach it caught over the others (and cuts through
     /// where it meets them) instead of gathering every strand it crosses into a taut string; several
     /// fingers each carry their own reach. `None` until the finger first meets the river.
-    pub fn push(&mut self, at: [f64; 2], d: [f64; 2], radius: f64, hook: &mut Option<usize>) -> f64 {
+    pub fn push(
+        &mut self,
+        at: [f64; 2],
+        d: [f64; 2],
+        radius: f64,
+        hook: &mut Option<usize>,
+    ) -> f64 {
         let n = self.line.len();
         if n < 8 {
             return 0.0;
@@ -272,9 +315,15 @@ impl River {
             // the grip: the node nearest the finger, along the channel near the last one held (the
             // reach moved with the finger, and resampling shifts indices by a few); or, for a finger
             // not yet holding, the nearest node within reach anywhere
-            let near = |r: std::ops::Range<usize>| r.map(|i| (i, dist(self.line[i], c))).filter(|q| q.1 < radius).min_by(|a, b| a.1.total_cmp(&b.1));
+            let near = |r: std::ops::Range<usize>| {
+                r.map(|i| (i, dist(self.line[i], c)))
+                    .filter(|q| q.1 < radius)
+                    .min_by(|a, b| a.1.total_cmp(&b.1))
+            };
             *hook = match *hook {
-                Some(h) => near(h.saturating_sub(HOOK_SLIP).max(lo)..(h + HOOK_SLIP + 1).min(hi)).map(|q| q.0).or(Some(h.min(hi.saturating_sub(1)))),
+                Some(h) => near(h.saturating_sub(HOOK_SLIP).max(lo)..(h + HOOK_SLIP + 1).min(hi))
+                    .map(|q| q.0)
+                    .or(Some(h.min(hi.saturating_sub(1)))),
                 None => near(lo..hi).map(|q| q.0),
             };
             let Some(h) = *hook else { continue };
@@ -298,7 +347,12 @@ impl River {
                 }
             }
             // resampling keeps the line's start, so the hook moves by the nodes gained upstream of it
-            let len_to = |line: &[[f64; 2]], k: usize| line.windows(2).take(k).map(|w| dist(w[0], w[1])).sum::<f64>();
+            let len_to = |line: &[[f64; 2]], k: usize| {
+                line.windows(2)
+                    .take(k)
+                    .map(|w| dist(w[0], w[1]))
+                    .sum::<f64>()
+            };
             let upto = len_to(&self.line, h);
             self.line = resample(&self.line, DS);
             smooth(&mut self.line, 0.15);
@@ -308,7 +362,11 @@ impl River {
             let n2 = self.line.len();
             *hook = if self.cuts.len() != cuts {
                 // a cut renumbers the line: find the grip again by place
-                (HELD..n2.saturating_sub(HELD)).map(|i| (i, dist(self.line[i], c))).filter(|q| q.1 < radius).min_by(|a, b| a.1.total_cmp(&b.1)).map(|q| q.0)
+                (HELD..n2.saturating_sub(HELD))
+                    .map(|i| (i, dist(self.line[i], c)))
+                    .filter(|q| q.1 < radius)
+                    .min_by(|a, b| a.1.total_cmp(&b.1))
+                    .map(|q| q.0)
             } else {
                 Some(((upto / DS).round() as usize).min(n2.saturating_sub(HELD + 1)))
             };
@@ -324,10 +382,19 @@ impl River {
     /// list, and the step's cost, about as short as one finger's.
     pub fn kick(&mut self, at: [f64; 2], strength: f64) {
         let year = self.year;
-        if let Some(k) = self.kicks.iter_mut().rev().take(16).find(|k| year - k.1 < 2.0 && dist(k.0, at) < KICK_R * 0.25) {
+        if let Some(k) = self
+            .kicks
+            .iter_mut()
+            .rev()
+            .take(16)
+            .find(|k| year - k.1 < 2.0 && dist(k.0, at) < KICK_R * 0.25)
+        {
             let s = k.2 + strength;
             if s > 0.0 {
-                k.0 = [(k.0[0] * k.2 + at[0] * strength) / s, (k.0[1] * k.2 + at[1] * strength) / s];
+                k.0 = [
+                    (k.0[0] * k.2 + at[0] * strength) / s,
+                    (k.0[1] * k.2 + at[1] * strength) / s,
+                ];
             }
             k.2 = s;
             return;
@@ -350,16 +417,22 @@ impl River {
 
     /// The distance from `at` to the channel's centreline, m.
     pub fn distance(&self, at: [f64; 2]) -> f64 {
-        self.line.iter().map(|p| dist(*p, at)).fold(f64::MAX, f64::min)
+        self.line
+            .iter()
+            .map(|p| dist(*p, at))
+            .fold(f64::MAX, f64::min)
     }
 
     fn cutoffs(&mut self) {
         loop {
             let n = self.line.len();
             let cell = CUT;
-            let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> = std::collections::HashMap::new();
+            let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> =
+                std::collections::HashMap::new();
             for (i, p) in self.line.iter().enumerate() {
-                grid.entry(((p[0] / cell).floor() as i64, (p[1] / cell).floor() as i64)).or_default().push(i);
+                grid.entry(((p[0] / cell).floor() as i64, (p[1] / cell).floor() as i64))
+                    .or_default()
+                    .push(i);
             }
             // the first (most upstream) neck: i < j, far apart along the line, close on the ground
             let gap = GAP;
@@ -386,12 +459,19 @@ impl River {
             }
             let Some((i, j)) = found else { return };
             let loop_line: Vec<[f64; 2]> = self.line[i..=j].to_vec();
-            let at = [(self.line[i][0] + self.line[j][0]) * 0.5, (self.line[i][1] + self.line[j][1]) * 0.5];
+            let at = [
+                (self.line[i][0] + self.line[j][0]) * 0.5,
+                (self.line[i][1] + self.line[j][1]) * 0.5,
+            ];
             let mut new_line = self.line[..=i].to_vec();
             new_line.extend_from_slice(&self.line[j..]);
             self.line = resample(&new_line, DS);
             smooth(&mut self.line, 0.25);
-            self.oxbows.push(Oxbow { line: loop_line, born: self.year, course: false });
+            self.oxbows.push(Oxbow {
+                line: loop_line,
+                born: self.year,
+                course: false,
+            });
             self.cuts.push((self.year, at));
         }
     }
@@ -401,9 +481,12 @@ impl River {
     pub fn necks(&self) -> Vec<([f64; 2], f64)> {
         let n = self.line.len();
         let reach = W * 2.5;
-        let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> = std::collections::HashMap::new();
+        let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> =
+            std::collections::HashMap::new();
         for (i, p) in self.line.iter().enumerate() {
-            grid.entry(((p[0] / reach).floor() as i64, (p[1] / reach).floor() as i64)).or_default().push(i);
+            grid.entry(((p[0] / reach).floor() as i64, (p[1] / reach).floor() as i64))
+                .or_default()
+                .push(i);
         }
         let mut best: Vec<(usize, usize, f64)> = Vec::new();
         for i in 0..n {
@@ -417,7 +500,10 @@ impl River {
                                 let d = dist(p, self.line[j]);
                                 if d < reach {
                                     // the same neck if both ends are near one already found
-                                    match best.iter_mut().find(|b| b.0.abs_diff(i) < GAP && b.1.abs_diff(j) < GAP) {
+                                    match best
+                                        .iter_mut()
+                                        .find(|b| b.0.abs_diff(i) < GAP && b.1.abs_diff(j) < GAP)
+                                    {
                                         Some(b) if b.2 <= d => {}
                                         Some(b) => *b = (i, j, d),
                                         None => best.push((i, j, d)),
@@ -432,7 +518,10 @@ impl River {
         best.iter()
             .map(|&(i, j, d)| {
                 let (a, b) = (self.line[i], self.line[j]);
-                ([(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5], ((reach - d) / (reach - CUT)).clamp(0.0, 1.0))
+                (
+                    [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5],
+                    ((reach - d) / (reach - CUT)).clamp(0.0, 1.0),
+                )
             })
             .collect()
     }
@@ -444,20 +533,42 @@ impl River {
         if n < 8 {
             return;
         }
-        let Some((k, d)) = self.line.iter().enumerate().map(|(i, p)| (i, dist(*p, at))).min_by(|a, b| a.1.total_cmp(&b.1)) else { return };
+        let Some((k, d)) = self
+            .line
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (i, dist(*p, at)))
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+        else {
+            return;
+        };
         if d > W * 6.0 || k < HELD || k >= n - HELD {
             return;
         }
         // a touch on the water itself bows the bank out on the side the finger is (a kink you see at
         // once); a touch beside the river draws the bank toward the finger
         let (dir, push) = if d < W * 0.8 {
-            let (a, b) = (self.line[k.saturating_sub(1)], self.line[(k + 1).min(n - 1)]);
+            let (a, b) = (
+                self.line[k.saturating_sub(1)],
+                self.line[(k + 1).min(n - 1)],
+            );
             let l = dist(a, b).max(1e-6);
             let nrm = [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
-            let side = if (at[0] - self.line[k][0]) * nrm[0] + (at[1] - self.line[k][1]) * nrm[1] < 0.0 { -1.0 } else { 1.0 };
+            let side =
+                if (at[0] - self.line[k][0]) * nrm[0] + (at[1] - self.line[k][1]) * nrm[1] < 0.0 {
+                    -1.0
+                } else {
+                    1.0
+                };
             ([nrm[0] * side, nrm[1] * side], amount * 1.3)
         } else {
-            ([(at[0] - self.line[k][0]) / d.max(1.0), (at[1] - self.line[k][1]) / d.max(1.0)], amount.min(d))
+            (
+                [
+                    (at[0] - self.line[k][0]) / d.max(1.0),
+                    (at[1] - self.line[k][1]) / d.max(1.0),
+                ],
+                amount.min(d),
+            )
         };
         for i in HELD..n - HELD {
             let s = (i as f64 - k as f64) * DS;
@@ -507,7 +618,10 @@ pub fn resample(p: &[[f64; 2]], ds: f64) -> Vec<[f64; 2]> {
         let mut s = ds - carry;
         while s <= l {
             let t = s / l;
-            out.push([w[0][0] + (w[1][0] - w[0][0]) * t, w[0][1] + (w[1][1] - w[0][1]) * t]);
+            out.push([
+                w[0][0] + (w[1][0] - w[0][0]) * t,
+                w[0][1] + (w[1][1] - w[0][1]) * t,
+            ]);
             s += ds;
         }
         carry = l - (s - ds);

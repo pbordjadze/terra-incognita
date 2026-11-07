@@ -28,22 +28,24 @@ pub struct SpritePass {
 impl SpritePass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout) -> SpritePass {
         let shader = gpu.shader("sprites", &super::wgsl(include_str!("sprites.wgsl")));
-        let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("sprites"),
-            bind_group_layouts: &[view_layout],
-            push_constant_ranges: &[],
-        });
+        let layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("sprites"),
+                bind_group_layouts: &[Some(view_layout)],
+                immediate_size: 0,
+            });
         let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("sprites"),
             layout: Some(&layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_sprite"),
-                buffers: &[wgpu::VertexBufferLayout {
+                buffers: &[Some(wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Instance>() as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32, 2 => Uint32, 3 => Float32x4, 4 => Float32],
-                }],
+                })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleStrip, ..Default::default() },
@@ -55,12 +57,17 @@ impl SpritePass {
                 targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let capacity = 4096;
         let buffer = Self::buffer(gpu, capacity);
-        SpritePass { pipeline, buffer, capacity, count: 0 }
+        SpritePass {
+            pipeline,
+            buffer,
+            capacity,
+            count: 0,
+        }
     }
 
     fn buffer(gpu: &Gpu, capacity: usize) -> wgpu::Buffer {
@@ -78,7 +85,8 @@ impl SpritePass {
             self.buffer = Self::buffer(gpu, self.capacity);
         }
         if !instances.is_empty() {
-            gpu.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(instances));
+            gpu.queue
+                .write_buffer(&self.buffer, 0, bytemuck::cast_slice(instances));
         }
         self.count = instances.len() as u32;
     }

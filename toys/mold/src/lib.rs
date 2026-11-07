@@ -119,7 +119,11 @@ fn storage(binding: u32, read_only: bool, vis: wgpu::ShaderStages) -> wgpu::Bind
     wgpu::BindGroupLayoutEntry {
         binding,
         visibility: vis,
-        ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only }, has_dynamic_offset: false, min_binding_size: None },
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
         count: None,
     }
 }
@@ -127,7 +131,11 @@ fn uniform(binding: u32, vis: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry 
     wgpu::BindGroupLayoutEntry {
         binding,
         visibility: vis,
-        ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
         count: None,
     }
 }
@@ -147,7 +155,12 @@ impl Mold {
     fn params(&self) -> Params {
         let mut feeds = [[0.0f32; 4]; MAX_FEEDS];
         for (i, f) in self.feeds.iter().rev().take(MAX_FEEDS).enumerate() {
-            feeds[i] = [f.lon.to_radians() as f32, f.lat.to_radians() as f32, 3.0, 5.0];
+            feeds[i] = [
+                f.lon.to_radians() as f32,
+                f.lat.to_radians() as f32,
+                3.0,
+                5.0,
+            ];
         }
         Params {
             grid: [W, H, AGENTS, self.steps as u32],
@@ -155,7 +168,12 @@ impl Mold {
             mv: [0.4, 9.0, 0.785, 1.0],
             // deposit, decay, diffusion, food gain
             tr: [1.0, 0.9, 0.3, 2.0],
-            misc: [0.0005, self.feeds.len().min(MAX_FEEDS) as f32, -1.0, BODY_EASE],
+            misc: [
+                0.0005,
+                self.feeds.len().min(MAX_FEEDS) as f32,
+                -1.0,
+                BODY_EASE,
+            ],
             ex: [0.03, 0.0, 0.0, 0.0],
             feeds,
         }
@@ -164,7 +182,14 @@ impl Mold {
 
 impl Toy for Mold {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
+        let mut globe = Globe::new(
+            &ctx.gpu,
+            ctx.assets.as_ref(),
+            ctx.width,
+            ctx.height,
+            ctx.ppp,
+            10,
+        )?;
         globe.night = 1.0;
         // as close as the mold still reads as tubes and the ground's lights as lights: a pinch past it
         // goes a little further, then eases back when the fingers lift
@@ -177,12 +202,35 @@ impl Toy for Mold {
         toy_kit::step("mold: the ground");
         // the ground: food on land (the lights), and the sea
         let gp = decode(&ctx.assets.read("mold-ground.png")?, 4)?;
-        anyhow::ensure!(gp.width == W && gp.height == H, "mold-ground.png is {}x{}, not {W}x{H}", gp.width, gp.height);
+        anyhow::ensure!(
+            gp.width == W && gp.height == H,
+            "mold-ground.png is {}x{}, not {W}x{H}",
+            gp.width,
+            gp.height
+        );
         // one packed word a cell (sim.wgsl's `cells`): bit 1 land, bits 8..15 the food; bit 0 (an agent
         // holds it) set as the agents are placed. The decoded picture is let go at once.
-        let mut cells: Vec<u32> = gp.data.chunks_exact(4).map(|px| if px[1] > 127 { 2 | (px[0] as u32) << 8 } else { 0 }).collect();
+        let mut cells: Vec<u32> = gp
+            .data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|px| {
+                if px[1] > 127 {
+                    2 | (px[0] as u32) << 8
+                } else {
+                    0
+                }
+            })
+            .collect();
         drop(gp);
-        let food = |v: u32| -> f32 { if v & 2 == 0 { -1.0 } else { ((v >> 8) & 255) as f32 / 255.0 } };
+        let food = |v: u32| -> f32 {
+            if v & 2 == 0 {
+                -1.0
+            } else {
+                ((v >> 8) & 255) as f32 / 255.0
+            }
+        };
         // the lit places, the brightest likeliest: where the mold starts, and where an agent buds again
         let mut rng = Rng(0x9E3779B97F4A7C15);
         let mut lit: Vec<(u32, f64)> = Vec::new();
@@ -201,9 +249,17 @@ impl Toy for Mold {
         };
         let place = |i: u32, r: &mut Rng| -> [f32; 2] {
             let (x, y) = ((i % W) as f64 + r.next(), (i / W) as f64 + r.next());
-            [((x / W as f64 - 0.5) * std::f64::consts::TAU) as f32, ((0.5 - y / H as f64) * std::f64::consts::PI) as f32]
+            [
+                ((x / W as f64 - 0.5) * std::f64::consts::TAU) as f32,
+                ((0.5 - y / H as f64) * std::f64::consts::PI) as f32,
+            ]
         };
-        let spawn: Vec<[f32; 2]> = (0..SPAWNS).map(|_| { let i = pick(&mut rng); place(i, &mut rng) }).collect();
+        let spawn: Vec<[f32; 2]> = (0..SPAWNS)
+            .map(|_| {
+                let i = pick(&mut rng);
+                place(i, &mut rng)
+            })
+            .collect();
         let lit = spawn[..2048].to_vec();
         // the start: a mist over the lit land, each agent in a cell of its own (Jones's start, a sparse
         // population that condenses into tubes), a cell taken already passing to one beside it
@@ -220,17 +276,37 @@ impl Toy for Mold {
             cells[i] |= 1;
             let p = place(i as u32, &mut rng);
             let n = agents.len() as u32;
-            agents.push([p[0].to_bits(), p[1].to_bits(), ((rng.next() * std::f64::consts::TAU) as f32).to_bits(), n ^ 0x5bd1e995, i as u32, 0]);
+            agents.push([
+                p[0].to_bits(),
+                p[1].to_bits(),
+                ((rng.next() * std::f64::consts::TAU) as f32).to_bits(),
+                n ^ 0x5bd1e995,
+                i as u32,
+                0,
+            ]);
         }
 
         toy_kit::step("mold: the buffers");
-        let init = |label, contents: &[u8], usage| dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some(label), contents, usage });
+        let init = |label, contents: &[u8], usage| {
+            dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(label),
+                contents,
+                usage,
+            })
+        };
         let st = wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST;
         let agents_buf = init("agents", bytemuck::cast_slice(&agents), st);
         let spawn_buf = init("spawn", bytemuck::cast_slice(&spawn), st);
         // (wgpu zeroes a new buffer: no zeros made on the CPU; the body's start is the first step's, on
         // the GPU)
-        let zeroed = |label, n: u32| dev.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size: n as u64 * 4, usage: st, mapped_at_creation: false });
+        let zeroed = |label, n: u32| {
+            dev.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size: n as u64 * 4,
+                usage: st,
+                mapped_at_creation: false,
+            })
+        };
         let trails = [zeroed("trail a", W * H), zeroed("trail b", W * H)];
         let body = zeroed("body", W * H);
         let glow = zeroed("glow", (W / GLOW) * (H / GLOW));
@@ -277,19 +353,47 @@ impl Toy for Mold {
                 label: Some("mold sim"),
                 layout: &sim_layout,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: params.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: agents_buf.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 2, resource: a.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 3, resource: b.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 4, resource: body.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 6, resource: spawn_buf.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 7, resource: glow.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 8, resource: cells_buf.as_entire_binding() },
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: params.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: agents_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: a.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: b.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: body.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 6,
+                        resource: spawn_buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: glow.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 8,
+                        resource: cells_buf.as_entire_binding(),
+                    },
                 ],
             })
         });
         let sim_shader = gpu.shader("mold sim", include_str!("sim.wgsl"));
-        let sim_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold sim"), bind_group_layouts: &[&sim_layout], push_constant_ranges: &[] });
+        let sim_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("mold sim"),
+            bind_group_layouts: &[Some(&sim_layout)],
+            immediate_size: 0,
+        });
         let compute = |entry: &str| {
             dev.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some(entry),
@@ -300,13 +404,23 @@ impl Toy for Mold {
                 cache: None,
             })
         };
-        let (agents_pipe, diffuse_pipe, feed_pipe, blur_pipe) = (compute("step_agents"), compute("diffuse"), compute("feed"), compute("blur"));
+        let (agents_pipe, diffuse_pipe, feed_pipe, blur_pipe) = (
+            compute("step_agents"),
+            compute("diffuse"),
+            compute("feed"),
+            compute("blur"),
+        );
 
         toy_kit::step("mold: the drawing's pipelines");
         let fs = wgpu::ShaderStages::FRAGMENT;
         let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold draw"),
-            entries: &[uniform(0, fs), storage(1, true, fs), storage(2, true, fs), uniform(3, fs)],
+            entries: &[
+                uniform(0, fs),
+                storage(1, true, fs),
+                storage(2, true, fs),
+                uniform(3, fs),
+            ],
         });
         // (one for each parity, the same: the body is one buffer, eased in place)
         let draw_binds = [0, 1].map(|_| {
@@ -314,51 +428,114 @@ impl Toy for Mold {
                 label: Some("mold draw"),
                 layout: &draw_layout,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: params.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: body.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 2, resource: glow.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 3, resource: look.as_entire_binding() },
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: params.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: body.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: glow.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: look.as_entire_binding(),
+                    },
                 ],
             })
         });
         let add = wgpu::BlendState {
-            color: wgpu::BlendComponent { src_factor: wgpu::BlendFactor::One, dst_factor: wgpu::BlendFactor::One, operation: wgpu::BlendOperation::Add },
-            alpha: wgpu::BlendComponent { src_factor: wgpu::BlendFactor::Zero, dst_factor: wgpu::BlendFactor::One, operation: wgpu::BlendOperation::Add },
+            color: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::One,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent {
+                src_factor: wgpu::BlendFactor::Zero,
+                dst_factor: wgpu::BlendFactor::One,
+                operation: wgpu::BlendOperation::Add,
+            },
         };
-        let draw_shader = gpu.shader("mold draw", &toy_kit::globe::wgsl(&format!("@group(0) @binding(0) var<uniform> U: View;\n{}", include_str!("mold.wgsl"))));
-        let draw_pipe = gpu.fullscreen_pipeline("mold draw", &draw_shader, &[&globe.view_layout, &draw_layout], Some(add));
+        let draw_shader = gpu.shader(
+            "mold draw",
+            &toy_kit::globe::wgsl(&format!(
+                "@group(0) @binding(0) var<uniform> U: View;\n{}",
+                include_str!("mold.wgsl")
+            )),
+        );
+        let draw_pipe = gpu.fullscreen_pipeline(
+            "mold draw",
+            &draw_shader,
+            &[&globe.view_layout, &draw_layout],
+            Some(add),
+        );
 
         // the agents themselves, close in (streaks.wgsl): six vertices an agent, no vertex buffers
         let vf = wgpu::ShaderStages::VERTEX_FRAGMENT;
         let streak_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("mold streaks"),
-            entries: &[storage(0, true, wgpu::ShaderStages::VERTEX), uniform(1, vf), uniform(2, vf)],
+            entries: &[
+                storage(0, true, wgpu::ShaderStages::VERTEX),
+                uniform(1, vf),
+                uniform(2, vf),
+            ],
         });
         let streak_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("mold streaks"),
             layout: &streak_layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: agents_buf.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: look.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 2, resource: params.as_entire_binding() },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: agents_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: look.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: params.as_entire_binding(),
+                },
             ],
         });
-        let streak_shader = gpu.shader("mold streaks", &toy_kit::globe::wgsl(&format!("@group(0) @binding(0) var<uniform> U: View;\n{}", include_str!("streaks.wgsl"))));
-        let streak_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("mold streaks"), bind_group_layouts: &[&globe.view_layout, &streak_layout], push_constant_ranges: &[] });
+        let streak_shader = gpu.shader(
+            "mold streaks",
+            &toy_kit::globe::wgsl(&format!(
+                "@group(0) @binding(0) var<uniform> U: View;\n{}",
+                include_str!("streaks.wgsl")
+            )),
+        );
+        let streak_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("mold streaks"),
+            bind_group_layouts: &[Some(&globe.view_layout), Some(&streak_layout)],
+            immediate_size: 0,
+        });
         let streak_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("mold streaks"),
             layout: Some(&streak_pl),
-            vertex: wgpu::VertexState { module: &streak_shader, entry_point: Some("vs_streak"), buffers: &[], compilation_options: Default::default() },
+            vertex: wgpu::VertexState {
+                module: &streak_shader,
+                entry_point: Some("vs_streak"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &streak_shader,
                 entry_point: Some("fs_streak"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(add), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(add),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
 
@@ -404,7 +581,17 @@ impl Toy for Mold {
         match e.phase {
             Phase::Down => {
                 // a second finger makes it a pinch, never a feed
-                self.touch = if self.globe.hand.fingers() == 1 { Some(Touch { id: e.id, x: e.x, y: e.y, t: e.t, moved: false }) } else { None };
+                self.touch = if self.globe.hand.fingers() == 1 {
+                    Some(Touch {
+                        id: e.id,
+                        x: e.x,
+                        y: e.y,
+                        t: e.t,
+                        moved: false,
+                    })
+                } else {
+                    None
+                };
             }
             Phase::Move => {
                 if let Some(t) = &mut self.touch {
@@ -421,7 +608,12 @@ impl Toy for Mold {
                             if self.on_land(at) {
                                 self.feed(at);
                             }
-                            self.ripples.push(Ripple { lon: at.lon, lat: at.lat, at: self.seconds, land: self.on_land(at) });
+                            self.ripples.push(Ripple {
+                                lon: at.lon,
+                                lat: at.lat,
+                                at: self.seconds,
+                                land: self.on_land(at),
+                            });
                             if self.ripples.len() > MAX_RIPPLES {
                                 self.ripples.remove(0);
                             }
@@ -447,7 +639,11 @@ impl Toy for Mold {
             // and turns toward lit land when it rests over an empty ocean: the nearest of the
             // longitudes where the mold lives, when none is within 30 degrees
             let off = |a: f64| (a - cam.lon + 540.0).rem_euclid(360.0) - 180.0;
-            let near = LIT_LONGITUDES.iter().map(|&a| off(a)).min_by(|a, b| a.abs().total_cmp(&b.abs())).unwrap_or(0.0);
+            let near = LIT_LONGITUDES
+                .iter()
+                .map(|&a| off(a))
+                .min_by(|a, b| a.abs().total_cmp(&b.abs()))
+                .unwrap_or(0.0);
             if near.abs() > 30.0 {
                 cam.lon += near * k * 0.6;
             }
@@ -474,8 +670,20 @@ impl Toy for Mold {
         for _ in 0..n {
             // each step its own params (the step's number seeds the agents' chances)
             let p = self.params();
-            let staging = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("mold step"), contents: bytemuck::bytes_of(&p), usage: wgpu::BufferUsages::COPY_SRC });
-            enc.copy_buffer_to_buffer(&staging, 0, &self.params, 0, std::mem::size_of::<Params>() as u64);
+            let staging = gpu
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("mold step"),
+                    contents: bytemuck::bytes_of(&p),
+                    usage: wgpu::BufferUsages::COPY_SRC,
+                });
+            enc.copy_buffer_to_buffer(
+                &staging,
+                0,
+                &self.params,
+                0,
+                std::mem::size_of::<Params>() as u64,
+            );
             let mut cp = enc.begin_compute_pass(&Default::default());
             cp.set_bind_group(0, &self.sim_binds[self.parity], &[]);
             cp.set_pipeline(&self.agents_pipe);
@@ -485,7 +693,11 @@ impl Toy for Mold {
             let nf = self.feeds.len().min(MAX_FEEDS) as u32;
             if nf > 0 {
                 cp.set_pipeline(&self.feed_pipe);
-                cp.dispatch_workgroups((4 * FEED_REACH).div_ceil(16), (2 * FEED_REACH).div_ceil(16), nf);
+                cp.dispatch_workgroups(
+                    (4 * FEED_REACH).div_ceil(16),
+                    (2 * FEED_REACH).div_ceil(16),
+                    nf,
+                );
             }
             drop(cp);
             self.parity = 1 - self.parity;
@@ -503,7 +715,9 @@ impl Toy for Mold {
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
         self.globe.upload(&ctx.gpu);
         self.night.follow(&ctx.gpu, &self.globe);
-        ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::bytes_of(&self.look()));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.look, 0, bytemuck::bytes_of(&self.look()));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -512,11 +726,15 @@ impl Toy for Mold {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.night.draw(&mut rp, &self.globe);
             rp.set_pipeline(&self.draw_pipe);
@@ -534,8 +752,22 @@ impl Toy for Mold {
 
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         // a tap on a lit city: a flake laid, the mold reaching for it
-        let at = self.globe.spot_for(&[[2.35, 48.86], [9.19, 45.46], [-0.13, 51.51], [31.24, 30.04], [3.38, 6.52], [77.21, 28.61], [139.69, 35.69], [-74.0, 40.71], [-99.13, 19.43], [-46.63, -23.55]]);
-        Some(toy_kit::info::Demo::new("A slime mold between the cities. Tap to feed it.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+        let at = self.globe.spot_for(&[
+            [2.35, 48.86],
+            [9.19, 45.46],
+            [-0.13, 51.51],
+            [31.24, 30.04],
+            [3.38, 6.52],
+            [77.21, 28.61],
+            [139.69, 35.69],
+            [-74.0, 40.71],
+            [-99.13, 19.43],
+            [-46.63, -23.55],
+        ]);
+        Some(toy_kit::info::Demo::new(
+            "A slime mold between the cities. Tap to feed it.",
+            vec![toy_kit::info::Stroke::tap(0.5, at)],
+        ))
     }
 
     // The "?": the rules alone, as sim.wgsl runs them. Where they came from is the asterisk's.
@@ -570,9 +802,16 @@ impl Toy for Mold {
         let h = ctx.points()[1];
         let (mut top, mut foot) = (0.0, 0.0);
         for p in &self.lit {
-            let (at, facing) = self.globe.project(LonLat::new((p[0] as f64).to_degrees(), (p[1] as f64).to_degrees()));
+            let (at, facing) = self.globe.project(LonLat::new(
+                (p[0] as f64).to_degrees(),
+                (p[1] as f64).to_degrees(),
+            ));
             if facing > 0.0 && (0.0..h).contains(&at[1]) {
-                if at[1] < h / 2.0 { top += facing } else { foot += facing }
+                if at[1] < h / 2.0 {
+                    top += facing
+                } else {
+                    foot += facing
+                }
             }
         }
         top < foot
@@ -590,7 +829,13 @@ impl Toy for Mold {
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {
         if let Ok((feeds, cam)) = serde_json::from_str::<(Vec<Feed>, Camera)>(saved) {
             // (laid before: long fed, on this launch's clock)
-            self.feeds = feeds.into_iter().map(|f| Feed { at: self.seconds - 600.0, ..f }).collect();
+            self.feeds = feeds
+                .into_iter()
+                .map(|f| Feed {
+                    at: self.seconds - 600.0,
+                    ..f
+                })
+                .collect();
             self.globe.camera = cam;
         }
     }
@@ -612,20 +857,34 @@ impl Mold {
         }
         let mut ripples = [[0.0f32, 0.0, 99.0, 0.0]; MAX_RIPPLES];
         for (i, r) in self.ripples.iter().enumerate() {
-            ripples[i] = [r.lon.to_radians() as f32, r.lat.to_radians() as f32, (self.seconds - r.at) as f32, if r.land { 1.0 } else { 0.0 }];
+            ripples[i] = [
+                r.lon.to_radians() as f32,
+                r.lat.to_radians() as f32,
+                (self.seconds - r.at) as f32,
+                if r.land { 1.0 } else { 0.0 },
+            ];
         }
-        Look { a: [1.0, 0.125, self.streak_share(), H as f32], ages, ripples }
+        Look {
+            a: [1.0, 0.125, self.streak_share(), H as f32],
+            ages,
+            ripples,
+        }
     }
 
     fn on_land(&self, at: LonLat) -> bool {
         let x = (((at.lon / 360.0 + 0.5) * W as f64).floor() as i64).rem_euclid(W as i64) as usize;
-        let y = (((0.5 - at.lat / 180.0) * H as f64).floor() as i64).clamp(0, H as i64 - 1) as usize;
+        let y =
+            (((0.5 - at.lat / 180.0) * H as f64).floor() as i64).clamp(0, H as i64 - 1) as usize;
         let i = y * W as usize + x;
         self.land[i / 64] >> (i % 64) & 1 == 1
     }
 
     fn feed(&mut self, at: LonLat) {
-        self.feeds.push(Feed { lon: at.lon, lat: at.lat, at: self.seconds });
+        self.feeds.push(Feed {
+            lon: at.lon,
+            lat: at.lat,
+            at: self.seconds,
+        });
         if self.feeds.len() > MAX_FEEDS {
             self.feeds.remove(0);
         }
@@ -644,14 +903,34 @@ struct Night {
 impl Night {
     fn new(gpu: &toy_kit::Gpu, globe: &Globe) -> Night {
         use toy_kit::globe::ground::{sampler, tex2d, tex_array};
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("mold night"),
-            entries: &[tex2d(0), tex2d(1), tex2d(2), tex_array(3), tex2d(4), tex2d(5), sampler(6), tex2d(7)],
-        });
-        let shader = gpu.shader("mold night", &toy_kit::globe::wgsl(include_str!("night.wgsl")));
-        let pipeline = gpu.fullscreen_pipeline("mold night", &shader, &[&globe.view_layout, &layout], None);
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("mold night"),
+                entries: &[
+                    tex2d(0),
+                    tex2d(1),
+                    tex2d(2),
+                    tex_array(3),
+                    tex2d(4),
+                    tex2d(5),
+                    sampler(6),
+                    tex2d(7),
+                ],
+            });
+        let shader = gpu.shader(
+            "mold night",
+            &toy_kit::globe::wgsl(include_str!("night.wgsl")),
+        );
+        let pipeline =
+            gpu.fullscreen_pipeline("mold night", &shader, &[&globe.view_layout, &layout], None);
         let bind = Self::bind(gpu, &layout, globe);
-        Night { pipeline, layout, bind, months: globe.textures.land_months }
+        Night {
+            pipeline,
+            layout,
+            bind,
+            months: globe.textures.land_months,
+        }
     }
 
     fn bind(gpu: &toy_kit::Gpu, layout: &wgpu::BindGroupLayout, globe: &Globe) -> wgpu::BindGroup {
@@ -663,14 +942,38 @@ impl Night {
             label: Some("mold night"),
             layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: tv(&tx.geo) },
-                wgpu::BindGroupEntry { binding: 1, resource: tv(&tx.terrain) },
-                wgpu::BindGroupEntry { binding: 2, resource: tv(&tx.floor) },
-                wgpu::BindGroupEntry { binding: 3, resource: tv(&tx.ice) },
-                wgpu::BindGroupEntry { binding: 4, resource: tv(&tx.land_a) },
-                wgpu::BindGroupEntry { binding: 5, resource: tv(&tx.land_b) },
-                wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x) },
-                wgpu::BindGroupEntry { binding: 7, resource: tv(&tx.lights) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: tv(&tx.geo),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: tv(&tx.terrain),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: tv(&tx.floor),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: tv(&tx.ice),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: tv(&tx.land_a),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: tv(&tx.land_b),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: tv(&tx.lights),
+                },
             ],
         })
     }

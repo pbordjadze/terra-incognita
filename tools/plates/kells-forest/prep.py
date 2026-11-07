@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import urllib.request
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -72,7 +73,7 @@ def main():
     Image.fromarray(rgb).resize((1024, 512), Image.BOX).save(os.path.join(OUT, 'biome.png'), optimize=True)
 
     ranges = []
-    for f in json.load(open(src['regions.geojson']))['features']:
+    for f in json.loads(Path(src['regions.geojson']).read_text())['features']:
         p = f['properties']
         if p['FEATURECLA'] == 'Range/mtn' and (p.get('SCALERANK') or 9) <= 4:
             geom = shape(f['geometry']).simplify(0.04, preserve_topology=True)
@@ -82,13 +83,13 @@ def main():
                 geom = MultiPolygon([orient(q, -1.0) for q in geom.geoms])
             ranges.append({'name': p['NAME'].title(), 'rank': p['SCALERANK'], 'geometry': rounded(geom, 2)})
     rivers = []
-    for f in json.load(open(src['rivers.geojson']))['features']:
+    for f in json.loads(Path(src['rivers.geojson']).read_text())['features']:
         p = f['properties']
         if p.get('featurecla') == 'River' and (p.get('scalerank') or 9) <= 3:
             rivers.append({'rank': p['scalerank'], 'geometry': rounded(shape(f['geometry']).simplify(0.03), 2)})
     save('world-extra.json', {'ranges': ranges, 'rivers': rivers})
 
-    states = json.load(open(os.path.join(DATA, 'america-states.geojson')))['features']
+    states = json.loads(Path(os.path.join(DATA, 'america-states.geojson')).read_text())['features']
     countries = {c: unary_union([shape(f['geometry']).buffer(0) for f in states if f['properties'].get('country') == c])
                  for c in ('USA', 'CAN', 'MEX')}
     borders = []
@@ -97,7 +98,7 @@ def main():
         borders.append({'type': 'Feature', 'properties': {'between': f'{a}-{bb}'}, 'geometry': rounded(line, 3)})
     save('na-borders.geojson', {'type': 'FeatureCollection', 'features': borders})
 
-    ring = [shape(f['geometry']) for f in json.load(open(os.path.join(DATA, 'columbus-roads.geojson')))['features']
+    ring = [shape(f['geometry']) for f in json.loads(Path(os.path.join(DATA, 'columbus-roads.geojson')).read_text())['features']
             if f['properties'].get('class') == 'interstate' and f['properties'].get('name') in ('Outerbelt', 'I- 270', 'Jack Nicklaus Fwy')]
     band = unary_union(ring).buffer(0.006)            # both carriageways and every name, as one band
     hole = max(band.interiors, key=lambda h: Polygon(h).area)

@@ -59,7 +59,8 @@ def screen(row):
 
 def main(argv):
     every = int(argv[argv.index("--every") + 1]) if "--every" in argv else 0
-    rows = list(csv.DictReader(open(argv[0])))
+    with open(argv[0]) as f:
+        rows = list(csv.DictReader(f))
     stats = {"out": 0, "low": 0, "fill": [], "cx": [], "cy": [], "pan": []}
     prev = None
     max_step = float(argv[argv.index("--max-step") + 1]) if "--max-step" in argv else None

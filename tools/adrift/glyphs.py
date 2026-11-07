@@ -17,6 +17,7 @@ Rust gives it mipmaps for the rest. Needs numpy and Pillow only. Never hand-edit
 """
 import json
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 

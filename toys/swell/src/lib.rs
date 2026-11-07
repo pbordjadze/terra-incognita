@@ -16,11 +16,11 @@ const DROP_KM: f64 = 260.0;
 const THRESHOLD: f32 = 0.06;
 /// Where the great tsunamis of the record began (offshore of their earthquakes, USGS / NOAA NCEI).
 const SOURCES: [(f64, f64); 5] = [
-    (143.2, 38.1),   // Tōhoku, 2011
-    (-75.0, -38.5),  // Valdivia, 1960
-    (94.2, 3.5),     // Sumatra–Andaman, 2004
-    (-147.0, 58.6),  // Alaska, 1964
-    (-73.2, -35.8),  // Maule, 2010
+    (143.2, 38.1),  // Tōhoku, 2011
+    (-75.0, -38.5), // Valdivia, 1960
+    (94.2, 3.5),    // Sumatra–Andaman, 2004
+    (-147.0, 58.6), // Alaska, 1964
+    (-73.2, -35.8), // Maule, 2010
 ];
 /// The month the globe and the sea's ice are drawn in (0 = January): September, the north's ice least.
 const MONTH: u32 = 8;
@@ -101,7 +101,11 @@ impl Swell {
         let depth = self.sea.depth_at(at.lon, at.lat).max(20.0);
         let freq = (120.0 * (4000.0 / depth).powf(0.25)).clamp(90.0, 420.0);
         if let Ok(mut q) = self.queue.lock() {
-            q.push(sound::Note::Plunk { amp: loud * if facing > 0.0 { 1.0 } else { 0.3 }, pan, freq });
+            q.push(sound::Note::Plunk {
+                amp: loud * if facing > 0.0 { 1.0 } else { 0.3 },
+                pan,
+                freq,
+            });
         }
         true
     }
@@ -125,7 +129,13 @@ impl Swell {
             let base = reg.base;
             reg.base += (a - reg.base) * k;
             reg.last *= (-dt / 8.0).exp() as f32;
-            if reg.armed && a > THRESHOLD && a > 2.5 * base && a > 1.15 * reg.last && self.t >= reg.quiet_until && self.tokens >= 1.0 {
+            if reg.armed
+                && a > THRESHOLD
+                && a > 2.5 * base
+                && a > 1.15 * reg.last
+                && self.t >= reg.quiet_until
+                && self.tokens >= 1.0
+            {
                 reg.armed = false;
                 reg.last = a;
                 reg.quiet_until = self.t + 5.0;
@@ -135,10 +145,14 @@ impl Swell {
                 let idx = (((reg.lat + 78.0) / 156.0) * 14.0).round().clamp(0.0, 14.0) as usize;
                 let semis = 12.0 * (idx / 5) as f64 + PENTA[idx % 5];
                 let freq = 196.0 * 2f64.powf(semis / 12.0);
-                let amp = ((a / THRESHOLD) as f64 / 5.0).clamp(0.2, 1.0) * if facing > 0.0 { 0.9 } else { 0.25 };
+                let amp = ((a / THRESHOLD) as f64 / 5.0).clamp(0.2, 1.0)
+                    * if facing > 0.0 { 0.9 } else { 0.25 };
                 let pan = ((x / w) * 2.0 - 1.0).clamp(-0.8, 0.8);
                 if std::env::var_os("SWELL_LOG").is_some() {
-                    eprintln!("chime t {:5.2} at {:7.1} {:6.1} {:4.0} Hz amp {:.2}", self.t, reg.lon, reg.lat, freq, amp);
+                    eprintln!(
+                        "chime t {:5.2} at {:7.1} {:6.1} {:4.0} Hz amp {:.2}",
+                        self.t, reg.lon, reg.lat, freq, amp
+                    );
                 }
                 if let Ok(mut q) = self.queue.lock() {
                     q.push(sound::Note::Chime { freq, amp, pan });
@@ -152,12 +166,27 @@ impl Swell {
 
 impl Toy for Swell {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, MONTH)?;
+        let mut globe = Globe::new(
+            &ctx.gpu,
+            ctx.assets.as_ref(),
+            ctx.width,
+            ctx.height,
+            ctx.ppp,
+            MONTH,
+        )?;
         globe.camera = Camera::new(-178.0, 20.0, 1.45);
         globe.hand.max_zoom = 8.0;
         globe.set_home();
-        let ice = ctx.assets.read(&format!("ice-{:02}.png", MONTH + 1)).ok().and_then(|b| toy_kit::gpu::textures::decode(&b, 1).ok());
-        let sea = sea::Sea::new(&ctx.assets.read("depth.bin")?, ice.as_ref().map(|p| (&p.data[..], p.width as usize, p.height as usize)));
+        let ice = ctx
+            .assets
+            .read(&format!("ice-{:02}.png", MONTH + 1))
+            .ok()
+            .and_then(|b| toy_kit::gpu::textures::decode(&b, 1).ok());
+        let sea = sea::Sea::new(
+            &ctx.assets.read("depth.bin")?,
+            ice.as_ref()
+                .map(|p| (&p.data[..], p.width as usize, p.height as usize)),
+        );
         // the coast's cells gathered by 4-degree tiles: each tile one voice
         let mut coast_region = Vec::with_capacity(sea.coast.len());
         let mut regions: Vec<Region> = Vec::new();
@@ -166,14 +195,25 @@ impl Toy for Swell {
             let (i, j) = (k as usize % sea::W, k as usize / sea::W);
             let tile = (i / 8, j / 8);
             let r = *index.entry(tile).or_insert_with(|| {
-                regions.push(Region { armed: true, base: 0.0, last: 0.0, quiet_until: 0.0, lon: sea::lon_of(tile.0 * 8 + 4), lat: sea::lat_of(tile.1 * 8 + 4) });
+                regions.push(Region {
+                    armed: true,
+                    base: 0.0,
+                    last: 0.0,
+                    quiet_until: 0.0,
+                    lon: sea::lon_of(tile.0 * 8 + 4),
+                    lat: sea::lat_of(tile.1 * 8 + 4),
+                });
                 regions.len() - 1
             });
             coast_region.push(r as u16);
         }
         let tex = ctx.gpu.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("swell eta"),
-            size: wgpu::Extent3d { width: sea::W as u32, height: sea::H as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: sea::W as u32,
+                height: sea::H as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -195,55 +235,84 @@ impl Toy for Swell {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        let layout = ctx.gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("swell"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let layout = ctx
+            .gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("swell"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
-        let bind = ctx.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("swell"),
-            layout: &layout,
-            entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
-                wgpu::BindGroupEntry { binding: 2, resource: buf.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&globe.textures.geo.view) },
-            ],
-        });
-        let shader = ctx.gpu.shader("swell", &toy_kit::globe::wgsl(include_str!("swell.wgsl")));
-        let pipe = ctx.gpu.fullscreen_pipeline("swell", &shader, &[&globe.view_layout, &layout], Some(toy_kit::Gpu::over()));
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+        let bind = ctx
+            .gpu
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("swell"),
+                layout: &layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: buf.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::TextureView(&globe.textures.geo.view),
+                    },
+                ],
+            });
+        let shader = ctx
+            .gpu
+            .shader("swell", &toy_kit::globe::wgsl(include_str!("swell.wgsl")));
+        let pipe = ctx.gpu.fullscreen_pipeline(
+            "swell",
+            &shader,
+            &[&globe.view_layout, &layout],
+            Some(toy_kit::Gpu::over()),
+        );
         let n_regions = regions.len();
         let mut shore = Vec::new();
         for j in 1..sea::H - 1 {
@@ -254,7 +323,12 @@ impl Toy for Swell {
                 }
                 let mut nb = [0u32; 4];
                 let mut c = 0u8;
-                for q in [j * sea::W + (i + sea::W - 1) % sea::W, j * sea::W + (i + 1) % sea::W, k - sea::W, k + sea::W] {
+                for q in [
+                    j * sea::W + (i + sea::W - 1) % sea::W,
+                    j * sea::W + (i + 1) % sea::W,
+                    k - sea::W,
+                    k + sea::W,
+                ] {
                     if sea.wet[q] {
                         nb[c as usize] = q as u32;
                         c += 1;
@@ -367,7 +441,11 @@ impl Toy for Swell {
             let (lon, lat) = SOURCES[self.idle_k % SOURCES.len()];
             let first = self.idle_k == 0;
             self.idle_k += 1;
-            self.drop_at(LonLat::new(lon, lat), if first { 1.2 } else { 0.8 }, if first { 0.8 } else { 0.4 });
+            self.drop_at(
+                LonLat::new(lon, lat),
+                if first { 1.2 } else { 0.8 },
+                if first { 0.8 } else { 0.4 },
+            );
             self.next_idle = t + 30.0 + 8.0 * ((self.idle_k as f64 * 1.7).sin() + 1.0);
         }
         self.acc += dt * RATE;
@@ -389,17 +467,41 @@ impl Toy for Swell {
             *h = half(e);
         }
         for &(k, nb, c) in &self.shore {
-            let m: f32 = nb[..c as usize].iter().map(|&q| self.sea.eta[q as usize]).sum::<f32>() / c as f32;
+            let m: f32 = nb[..c as usize]
+                .iter()
+                .map(|&q| self.sea.eta[q as usize])
+                .sum::<f32>()
+                / c as f32;
             self.half[k as usize] = half(m);
         }
         ctx.gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
             bytemuck::cast_slice(&self.half),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(sea::W as u32 * 2), rows_per_image: Some(sea::H as u32) },
-            wgpu::Extent3d { width: sea::W as u32, height: sea::H as u32, depth_or_array_layers: 1 },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(sea::W as u32 * 2),
+                rows_per_image: Some(sea::H as u32),
+            },
+            wgpu::Extent3d {
+                width: sea::W as u32,
+                height: sea::H as u32,
+                depth_or_array_layers: 1,
+            },
         );
-        let info = [if self.soft { 0.25f32 } else { 0.5 }, 25.0, 1.0 / sea::W as f32, 1.0 / sea::H as f32];
-        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&info));
+        let info = [
+            if self.soft { 0.25f32 } else { 0.5 },
+            25.0,
+            1.0 / sea::W as f32,
+            1.0 / sea::H as f32,
+        ];
+        ctx.gpu
+            .queue
+            .write_buffer(&self.buf, 0, bytemuck::cast_slice(&info));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -408,11 +510,15 @@ impl Toy for Swell {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             self.globe.draw(&mut rp);
             rp.set_pipeline(&self.pipe);
@@ -429,8 +535,18 @@ impl Toy for Swell {
 
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         // a tap on the open sea in view: a wave dropped, carried at the speed its depth gives it
-        let at = self.globe.spot_for(&[[-150.0, 15.0], [-178.0, 20.0], [-30.0, 25.0], [80.0, -15.0], [160.0, 10.0], [-120.0, -20.0]]);
-        Some(toy_kit::info::Demo::new("Drop a wave into the real sea.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+        let at = self.globe.spot_for(&[
+            [-150.0, 15.0],
+            [-178.0, 20.0],
+            [-30.0, 25.0],
+            [80.0, -15.0],
+            [160.0, 10.0],
+            [-120.0, -20.0],
+        ]);
+        Some(toy_kit::info::Demo::new(
+            "Drop a wave into the real sea.",
+            vec![toy_kit::info::Stroke::tap(0.5, at)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -449,7 +565,10 @@ impl Toy for Swell {
     }
 
     fn save(&self) -> Option<String> {
-        serde_json::to_string(&Saved { camera: self.globe.camera }).ok()
+        serde_json::to_string(&Saved {
+            camera: self.globe.camera,
+        })
+        .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {

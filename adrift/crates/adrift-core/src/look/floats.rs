@@ -49,7 +49,10 @@ pub struct Floats {
 impl Floats {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
         let module = gpu.shader("floats", &marks_wgsl(include_str!("floats.wgsl")));
-        Self { pipeline: mark_pipeline(gpu, "floats", &module, LAYOUT, view, None), instances: Instances::new(gpu, "floats", 16) }
+        Self {
+            pipeline: mark_pipeline(gpu, "floats", &module, LAYOUT, view, None),
+            instances: Instances::new(gpu, "floats", 16),
+        }
     }
 
     pub fn prepare(&mut self, gpu: &Gpu, floats: &[FloatInstance]) {
@@ -57,7 +60,9 @@ impl Floats {
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>, view: &'a wgpu::BindGroup) {
-        if self.instances.count == 0 { return; }
+        if self.instances.count == 0 {
+            return;
+        }
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, view, &[]);
         pass.set_vertex_buffer(0, self.instances.slice());

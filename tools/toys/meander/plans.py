@@ -5,7 +5,9 @@ down/move/up events (the check's drag has only two ends), a slightly wavy stroke
 
     python3 tools/toys/meander/plans.py
 """
-import json, math
+import itertools
+import json
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -13,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def stroke(t0, secs, pts, n=40, ident=1):
     """Raw events along a polyline through `pts` (points), `n` moves over `secs`."""
-    seg = [math.dist(a, b) for a, b in zip(pts, pts[1:])]
+    seg = [math.dist(a, b) for a, b in itertools.pairwise(pts)]
     total = sum(seg)
     out = [{"t": round(t0, 3), "down": list(pts[0]), "id": ident}]
     for k in range(1, n + 1):

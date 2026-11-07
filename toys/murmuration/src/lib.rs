@@ -184,11 +184,19 @@ fn local(f: &Flock, r: f32) -> (V3, V3, usize) {
 
 /// The tone curve the sky's shader uses, for colours worked out here (linear in, display out).
 fn tone(c: [f32; 3], exposure: f32) -> [f32; 3] {
-    let x = [c[0] * exposure * 0.84, c[1] * exposure, c[2] * exposure * 1.3];
+    let x = [
+        c[0] * exposure * 0.84,
+        c[1] * exposure,
+        c[2] * exposure * 1.3,
+    ];
     let l = 0.2126 * x[0] + 0.7152 * x[1] + 0.0722 * x[2];
     let lt = l * (1.0 + l / 9.0) / (1.0 + l);
     let k = lt / l.max(1e-6);
-    [(x[0] * k).min(1.0).powf(1.0 / 2.2), (x[1] * k).min(1.0).powf(1.0 / 2.2), (x[2] * k).min(1.0).powf(1.0 / 2.2)]
+    [
+        (x[0] * k).min(1.0).powf(1.0 / 2.2),
+        (x[1] * k).min(1.0).powf(1.0 / 2.2),
+        (x[2] * k).min(1.0).powf(1.0 / 2.2),
+    ]
 }
 
 fn msaa_view(ctx: &Ctx) -> wgpu::TextureView {
@@ -196,7 +204,11 @@ fn msaa_view(ctx: &Ctx) -> wgpu::TextureView {
         .device
         .create_texture(&wgpu::TextureDescriptor {
             label: Some("murmuration msaa"),
-            size: wgpu::Extent3d { width: ctx.width, height: ctx.height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: ctx.width,
+                height: ctx.height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: MSAA,
             dimension: wgpu::TextureDimension::D2,
@@ -258,7 +270,11 @@ impl Murmuration {
         // watches the flock wheel against the sunset.
         let sa = (self.sun_az as f32).to_radians();
         let dh = WATCHER.max((self.look[1] - 2.0) / (24.0f32).to_radians().tan());
-        let far = [self.look[0] - sa.sin() * dh, 2.0, self.look[2] - sa.cos() * dh];
+        let far = [
+            self.look[0] - sa.sin() * dh,
+            2.0,
+            self.look[2] - sa.cos() * dh,
+        ];
         // From behind you, a little below, looking where you go and toward the birds round you,
         // so the flock fills the glass while you fly in it.
         let (_, c_loc, n_loc) = local(&self.flock, 30.0);
@@ -278,7 +294,10 @@ impl Murmuration {
         let pos = addv(scale(far, 1.0 - e), scale(near, e));
         let look = addv(scale(look_far, 1.0 - e), scale(look_near, e));
         let roll = if self.reduce_motion { 0.0 } else { 0.3 * e };
-        let upv = norm(addv(scale([0.0, 1.0, 0.0], 1.0 - roll), scale(you.lift, roll)));
+        let upv = norm(addv(
+            scale([0.0, 1.0, 0.0], 1.0 - roll),
+            scale(you.lift, roll),
+        ));
         let [w, h] = [ctx.width as f32, ctx.height as f32];
         // The lens: the same sense of size on a phone and an iPad (by the screen's mean side).
         let focal = (w * h).sqrt() / (2.0 * (28.0f32).to_radians().tan());
@@ -293,7 +312,10 @@ impl Murmuration {
         let max_down = -(6.0f32).to_radians().sin() * e;
         if fwd[1] < max_down {
             let h = norm([fwd[0], 0.0, fwd[2]]);
-            fwd = addv(scale(h, (1.0 - max_down * max_down).sqrt()), [0.0, max_down, 0.0]);
+            fwd = addv(
+                scale(h, (1.0 - max_down * max_down).sqrt()),
+                [0.0, max_down, 0.0],
+            );
         }
         if fwd[1] > max_up {
             let h = norm([fwd[0], 0.0, fwd[2]]);
@@ -304,9 +326,13 @@ impl Murmuration {
         // middle of the glass against the sky, the dusk's band low, the flock round and above.
         // ...unless the flock round you is below: then the eye looks down with it, never losing it.
         let to_flock = sub(self.flock_look, pos);
-        let flock_el = (to_flock[1] / length(to_flock).max(1.0)).clamp(-1.0, 1.0).asin();
+        let flock_el = (to_flock[1] / length(to_flock).max(1.0))
+            .clamp(-1.0, 1.0)
+            .asin();
         let to_you = sub(you.pos, pos);
-        let you_el = (to_you[1] / length(to_you).max(0.1)).clamp(-1.0, 1.0).asin();
+        let you_el = (to_you[1] / length(to_you).max(0.1))
+            .clamp(-1.0, 1.0)
+            .asin();
         let fly_pitch = (you_el + (6.0f32).to_radians())
             .min((0.5 * h / focal).atan() - (4.0f32).to_radians())
             .min(flock_el + (20.0f32).to_radians())
@@ -317,7 +343,13 @@ impl Murmuration {
         fwd = addv(scale(hz, p1.cos()), [0.0, p1.sin(), 0.0]);
         let right = norm(cross(upv, fwd));
         let up = cross(fwd, right);
-        self.eye = Eye { pos, right, up, fwd, focal };
+        self.eye = Eye {
+            pos,
+            right,
+            up,
+            fwd,
+            focal,
+        };
     }
 
     fn upload_sky(&mut self, ctx: &Ctx) {
@@ -328,10 +360,23 @@ impl Murmuration {
             }
         }
         ctx.gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.sky_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.sky_tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
             &data,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(sky::AZ as u32 * 8), rows_per_image: None },
-            wgpu::Extent3d { width: sky::AZ as u32, height: sky::EL as u32, depth_or_array_layers: 1 },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(sky::AZ as u32 * 8),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                width: sky::AZ as u32,
+                height: sky::EL as u32,
+                depth_or_array_layers: 1,
+            },
         );
         // The eye adapts to the sky (not wholly: dusk still darkens).
         let l = self.sky.adaptation().max(1e-9);
@@ -347,13 +392,22 @@ impl Toy for Murmuration {
         let sky_shader = gpu.shader("sky", include_str!("sky.wgsl"));
         let bird_shader = gpu.shader("birds", include_str!("birds.wgsl"));
         let uni = |size: u64, label: &str| {
-            dev.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false })
+            dev.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
         };
         let sky_buf = uni(std::mem::size_of::<SkyU>() as u64, "sky u");
         let bird_buf = uni(std::mem::size_of::<BirdU>() as u64, "bird u");
         let sky_tex = dev.create_texture(&wgpu::TextureDescriptor {
             label: Some("sky table"),
-            size: wgpu::Extent3d { width: sky::AZ as u32, height: sky::EL as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: sky::AZ as u32,
+                height: sky::EL as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -372,14 +426,32 @@ impl Toy for Murmuration {
         let sky_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("sky"),
             entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: frag, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: frag,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: frag,
-                    ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
                     count: None,
                 },
-                wgpu::BindGroupLayoutEntry { binding: 2, visibility: frag, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: frag,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         });
         let tex_view = sky_tex.create_view(&Default::default());
@@ -387,55 +459,106 @@ impl Toy for Murmuration {
             label: Some("sky"),
             layout: &sky_layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: sky_buf.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&tex_view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&samp) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: sky_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&tex_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&samp),
+                },
             ],
         });
-        let ms = wgpu::MultisampleState { count: MSAA, mask: !0, alpha_to_coverage_enabled: false };
-        let sky_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sky"), bind_group_layouts: &[&sky_layout], push_constant_ranges: &[] });
+        let ms = wgpu::MultisampleState {
+            count: MSAA,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        };
+        let sky_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("sky"),
+            bind_group_layouts: &[Some(&sky_layout)],
+            immediate_size: 0,
+        });
         let sky_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("sky"),
             layout: Some(&sky_pl),
-            vertex: wgpu::VertexState { module: &sky_shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+            vertex: wgpu::VertexState {
+                module: &sky_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: ms,
             fragment: Some(wgpu::FragmentState {
                 module: &sky_shader,
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let reed_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("reeds"),
             layout: Some(&sky_pl),
-            vertex: wgpu::VertexState { module: &sky_shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+            vertex: wgpu::VertexState {
+                module: &sky_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: ms,
             fragment: Some(wgpu::FragmentState {
                 module: &sky_shader,
                 entry_point: Some("fs_reeds"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(toy_kit::Gpu::over()),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let bird_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("birds"),
-            entries: &[wgpu::BindGroupLayoutEntry { binding: 0, visibility: frag, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None }],
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: frag,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
         });
         let bird_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("birds"),
             layout: &bird_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: bird_buf.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: bird_buf.as_entire_binding(),
+            }],
         });
-        let bird_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("birds"), bind_group_layouts: &[&bird_layout], push_constant_ranges: &[] });
+        let bird_pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("birds"),
+            bind_group_layouts: &[Some(&bird_layout)],
+            immediate_size: 0,
+        });
         let attrs = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4];
         let bird_pipe = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("birds"),
@@ -443,19 +566,30 @@ impl Toy for Murmuration {
             vertex: wgpu::VertexState {
                 module: &bird_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Inst>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Inst>() as u64,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &attrs,
+                })],
                 compilation_options: Default::default(),
             },
-            primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
+            primitive: wgpu::PrimitiveState {
+                cull_mode: None,
+                ..Default::default()
+            },
             depth_stencil: None,
             multisample: ms,
             fragment: Some(wgpu::FragmentState {
                 module: &bird_shader,
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(toy_kit::Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(toy_kit::Gpu::over()),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let inst = dev.create_buffer(&wgpu::BufferDescriptor {
@@ -476,7 +610,13 @@ impl Toy for Murmuration {
         let dir3 = norm(flock.birds[flock.you].vel);
         let look = flock.centre().0;
         let day = sun::now_days().floor();
-        let eye = Eye { pos: [0.0; 3], right: [1.0, 0.0, 0.0], up: [0.0, 1.0, 0.0], fwd: [0.0, 0.0, 1.0], focal: 1000.0 };
+        let eye = Eye {
+            pos: [0.0; 3],
+            right: [1.0, 0.0, 0.0],
+            up: [0.0, 1.0, 0.0],
+            fwd: [0.0, 0.0, 1.0],
+            focal: 1000.0,
+        };
         let mut m = Murmuration {
             flock,
             sky: sky::Sky::new(),
@@ -530,8 +670,15 @@ impl Toy for Murmuration {
         // a touch held, then leaning: the eye drops in behind your bird and the flock bends round you
         let [w, h] = ctx.points();
         let c = [w * 0.5, h * 0.55];
-        let stroke = toy_kit::info::Stroke { start: 0.4, seconds: 2.6, path: vec![c, c, [w * 0.68, h * 0.45], [w * 0.62, h * 0.38]] };
-        Some(toy_kit::info::Demo::new("Starlings at dusk. Touch to fly as one of them.", vec![stroke]))
+        let stroke = toy_kit::info::Stroke {
+            start: 0.4,
+            seconds: 2.6,
+            path: vec![c, c, [w * 0.68, h * 0.45], [w * 0.62, h * 0.38]],
+        };
+        Some(toy_kit::info::Demo::new(
+            "Starlings at dusk. Touch to fly as one of them.",
+            vec![stroke],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -600,7 +747,11 @@ impl Toy for Murmuration {
             let dy = ((p[1] - from[1]) / LEAN_PT) as f32;
             // The thick of the flock round you: its centre, and how far you are from it.
             let (_, c_near, n_near) = local(&self.flock, 60.0);
-            let c = if n_near > 300 { c_near } else { self.flock.centre().0 };
+            let c = if n_near > 300 {
+                c_near
+            } else {
+                self.flock.centre().0
+            };
             let you_p = self.flock.birds[self.flock.you].pos;
             let off = length(sub(c, you_p));
             // A lean pulls against the flock but never leaves it: the farther you are from its
@@ -618,7 +769,11 @@ impl Toy for Murmuration {
             let up_ok = ((2.0 - above) / 3.0).clamp(0.0, 1.0);
             let down_ok = ((above + 2.0) / 3.0).clamp(0.0, 1.0);
             let lift = -dy.clamp(-1.0, 1.0);
-            let lift = if lift > 0.0 { lift * up_ok } else { lift * down_ok };
+            let lift = if lift > 0.0 {
+                lift * up_ok
+            } else {
+                lift * down_ok
+            };
             let pitch = (lift * 7.0 * reach).to_radians() + h[1].asin();
             let flat = addv(scale(hh, yaw.cos()), scale(right, yaw.sin()));
             let mut r = norm(addv(scale(flat, pitch.cos()), [0.0, pitch.sin(), 0.0]));
@@ -627,7 +782,10 @@ impl Toy for Murmuration {
             // The reeds are no place to fly: below 30 m the lean turns up, firmly near the ground.
             let alt = you.pos[1];
             if alt < 30.0 {
-                r[1] = r[1].max(-0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0) + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0));
+                r[1] = r[1].max(
+                    -0.6 * ((alt - 12.0) / 18.0).clamp(0.0, 1.0)
+                        + 0.4 * (1.0 - (alt - 12.0) / 18.0).clamp(0.0, 1.0),
+                );
                 r = norm(r);
             }
             // Home: gentle while you are in the thick, strong once you stray, and strongest when
@@ -682,7 +840,15 @@ impl Toy for Murmuration {
             }
         }
         // The eye drops in quickly and rises out slowly.
-        let rate = if self.near_to > self.near { if self.finger.is_some() { 1.0 / 0.6 } else { 1.0 / 1.4 } } else { 1.0 / 2.6 };
+        let rate = if self.near_to > self.near {
+            if self.finger.is_some() {
+                1.0 / 0.6
+            } else {
+                1.0 / 1.4
+            }
+        } else {
+            1.0 / 2.6
+        };
         let step = (dt as f32 * rate).min((self.near_to - self.near).abs());
         self.near += step * (self.near_to - self.near).signum();
         self.place_eye(ctx, dt as f32);
@@ -707,7 +873,10 @@ impl Toy for Murmuration {
         let dc = length(sub(c, self.eye.pos));
         let you = &self.flock.birds[self.flock.you];
         put(&self.ears.rush, rush.min(1.6));
-        put(&self.ears.murmur, (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.3 * self.near));
+        put(
+            &self.ears.murmur,
+            (0.55 * (90.0 / dc.max(1.0)).powf(0.7)).min(1.0) * (1.0 - 0.3 * self.near),
+        );
         put(&self.ears.wings, self.near * (0.15 + 0.5 * you.flap));
         put(&self.ears.rate, you.rate);
         put(&self.ears.phase, you.phase);
@@ -736,16 +905,35 @@ impl Toy for Murmuration {
             up: [e.up[0], e.up[1], e.up[2], w],
             fwd: [e.fwd[0], e.fwd[1], e.fwd[2], h],
             sun: [sun[0], sun[1], sun[2], sa],
-            sun_col: [trans[0] as f32, trans[1] as f32, trans[2] as f32, self.exposure],
-            ground: [ground[0], ground[1], ground[2], (self.t % (std::f64::consts::TAU * 100.0)) as f32],
+            sun_col: [
+                trans[0] as f32,
+                trans[1] as f32,
+                trans[2] as f32,
+                self.exposure,
+            ],
+            ground: [
+                ground[0],
+                ground[1],
+                ground[2],
+                (self.t % (std::f64::consts::TAU * 100.0)) as f32,
+            ],
             horizon: [h0[0], h0[1], h0[2], e.pos[1].max(2.0)],
             horizon2: [h1[0], h1[1], h1[2], 1.0 - self.near.min(1.0) * 2.0],
             eye: [e.pos[0], e.pos[1], e.pos[2], 0.0],
         };
-        ctx.gpu.queue.write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.sky_buf, 0, bytemuck::bytes_of(&u));
         // The birds: dark against the sky, a little hazed with distance.
-        let hz = [(h0[0] + h1[0]) * 0.5, (h0[1] + h1[1]) * 0.5, (h0[2] + h1[2]) * 0.5];
-        let ink = tone([ground[0] * 0.3, ground[1] * 0.3, ground[2] * 0.35], self.exposure);
+        let hz = [
+            (h0[0] + h1[0]) * 0.5,
+            (h0[1] + h1[1]) * 0.5,
+            (h0[2] + h1[2]) * 0.5,
+        ];
+        let ink = tone(
+            [ground[0] * 0.3, ground[1] * 0.3, ground[2] * 0.35],
+            self.exposure,
+        );
         let haze = tone(hz, self.exposure);
         let min_px = (3.0 * ctx.ppp as f32 / 3.0).max(2.0);
         let bu = BirdU {
@@ -756,17 +944,25 @@ impl Toy for Murmuration {
             ink: [ink[0], ink[1], ink[2], self.flock.you as f32],
             haze: [haze[0], haze[1], haze[2], 4000.0],
         };
-        ctx.gpu.queue.write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.bird_buf, 0, bytemuck::bytes_of(&bu));
         let inst: Vec<Inst> = self
             .flock
             .birds
             .iter()
             .map(|b| {
                 let f = norm(b.vel);
-                Inst { pos: [b.pos[0], b.pos[1], b.pos[2], b.phase], fwd: [f[0], f[1], f[2], b.size], lift: [b.lift[0], b.lift[1], b.lift[2], b.flap] }
+                Inst {
+                    pos: [b.pos[0], b.pos[1], b.pos[2], b.phase],
+                    fwd: [f[0], f[1], f[2], b.size],
+                    lift: [b.lift[0], b.lift[1], b.lift[2], b.flap],
+                }
             })
             .collect();
-        ctx.gpu.queue.write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.inst, 0, bytemuck::cast_slice(&inst));
         if std::env::var_os("MURMURATION_COUNT").is_some() {
             // For tools/toys/murmuration/holds.py: how many birds are on the glass, and how many of
             // them against the sky.
@@ -794,7 +990,10 @@ impl Toy for Murmuration {
                     }
                 }
             }
-            println!("visible {:.2} {} {} near {:.2} big {}", self.t, n, sky, self.near, big);
+            println!(
+                "visible {:.2} {} {} near {:.2} big {}",
+                self.t, n, sky, self.near, big
+            );
             if std::env::var_os("MURMURATION_YOU").is_some() {
                 let b = &self.flock.birds[self.flock.you];
                 let rel = sub(b.pos, e.pos);
@@ -803,7 +1002,14 @@ impl Toy for Murmuration {
                 let (_, _, n15) = local(&self.flock, 15.0);
                 let c = self.flock.centre().0;
                 let to_c = sub(c, e.pos);
-                println!("round {} centre_dist {:.1} centre_in_view_z {:.1} cx {:.0} cy {:.0}", n15, length(sub(c, b.pos)), dot(to_c, e.fwd), dot(to_c, e.right) * e.focal / dot(to_c, e.fwd), dot(to_c, e.up) * e.focal / dot(to_c, e.fwd));
+                println!(
+                    "round {} centre_dist {:.1} centre_in_view_z {:.1} cx {:.0} cy {:.0}",
+                    n15,
+                    length(sub(c, b.pos)),
+                    dot(to_c, e.fwd),
+                    dot(to_c, e.right) * e.focal / dot(to_c, e.fwd),
+                    dot(to_c, e.up) * e.focal / dot(to_c, e.fwd)
+                );
             }
         }
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
@@ -814,11 +1020,15 @@ impl Toy for Murmuration {
                     view: &self.msaa,
                     resolve_target: Some(target),
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Discard },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Discard,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.sky_pipe);
             rp.set_bind_group(0, &self.sky_bind, &[]);
@@ -843,7 +1053,9 @@ impl Toy for Murmuration {
     }
 
     fn restore(&mut self, ctx: &mut Ctx, saved: &str) {
-        let Ok(v) = serde_json::from_str::<serde_json::Value>(saved) else { return };
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(saved) else {
+            return;
+        };
         let day = v["day"].as_f64();
         let fixed = v["fixed"].as_bool().unwrap_or(false);
         // A new day's dusk starts at its beginning; the same day's goes on from where it was.
@@ -878,7 +1090,14 @@ struct Wind {
 
 impl Wind {
     fn new(ears: Arc<Ears>) -> Wind {
-        Wind { ears, seed: 0x1234_5678, pink: [0.0; 3], bp: [[0.0; 2]; 3], lv: [0.0; 3], phase: 0.0 }
+        Wind {
+            ears,
+            seed: 0x1234_5678,
+            pink: [0.0; 3],
+            bp: [[0.0; 2]; 3],
+            lv: [0.0; 3],
+            phase: 0.0,
+        }
     }
     fn noise(&mut self) -> f32 {
         self.seed ^= self.seed << 13;
@@ -900,7 +1119,11 @@ fn svf(s: &mut [f32; 2], x: f32, f: f32, q: f32) -> f32 {
 
 impl Synth for Wind {
     fn render(&mut self, out: &mut [f32], channels: usize, rate: f64) {
-        let target = [get(&self.ears.murmur), get(&self.ears.rush), get(&self.ears.wings)];
+        let target = [
+            get(&self.ears.murmur),
+            get(&self.ears.rush),
+            get(&self.ears.wings),
+        ];
         let beat = get(&self.ears.rate).max(1.0);
         // Your bird's wingbeat, heard in step with the one seen.
         self.phase = get(&self.ears.phase) / std::f32::consts::TAU;

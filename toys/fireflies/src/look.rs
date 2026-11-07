@@ -59,7 +59,7 @@ impl Look {
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("field"),
                 bind_group_layouts: &[],
-                push_constant_ranges: &[],
+                immediate_size: 0,
             });
         let add = wgpu::BlendComponent {
             src_factor: wgpu::BlendFactor::One,
@@ -74,11 +74,11 @@ impl Look {
                 vertex: wgpu::VertexState {
                     module: &fshader,
                     entry_point: Some("vs_field"),
-                    buffers: &[wgpu::VertexBufferLayout {
+                    buffers: &[Some(wgpu::VertexBufferLayout {
                         array_stride: 12,
                         step_mode: wgpu::VertexStepMode::Instance,
                         attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32],
-                    }],
+                    })],
                     compilation_options: Default::default(),
                 },
                 primitive: wgpu::PrimitiveState {
@@ -100,7 +100,7 @@ impl Look {
                     })],
                     compilation_options: Default::default(),
                 }),
-                multiview: None,
+                multiview_mask: None,
                 cache: None,
             });
         let inst_cap = n * 2 + 16;
@@ -271,9 +271,19 @@ impl Look {
         u[5] = width as f32;
         for (k, r) in rings.iter().take(MAX_RINGS).enumerate() {
             let o = 8 + k * 8;
-            u[o..o + 8].copy_from_slice(&[r.at[0] as f32, r.at[1] as f32, r.at[2] as f32, r.t0 as f32, r.speed as f32, r.life as f32, 1.0, 0.0]);
+            u[o..o + 8].copy_from_slice(&[
+                r.at[0] as f32,
+                r.at[1] as f32,
+                r.at[2] as f32,
+                r.t0 as f32,
+                r.speed as f32,
+                r.life as f32,
+                1.0,
+                0.0,
+            ]);
         }
-        gpu.queue.write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&u));
+        gpu.queue
+            .write_buffer(&self.look_buf, 0, bytemuck::cast_slice(&u));
     }
 
     /// The flash field, then the night with it, into `target`.
@@ -294,6 +304,7 @@ impl Look {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.field_pipe);
             rp.set_vertex_buffer(0, self.inst.slice(..));
@@ -314,6 +325,7 @@ impl Look {
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.night_pipe);
             rp.set_bind_group(0, globe.view_bind(), &[]);

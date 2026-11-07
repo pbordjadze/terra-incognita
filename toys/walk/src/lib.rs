@@ -5,8 +5,8 @@
 //! land, not a picture of it. At dawn the real land comes up under the map. The one control is the
 //! stride: a touch sets how far each step may go (the ring round the walker reaches the finger).
 
-mod sound;
 pub mod land;
+mod sound;
 
 use land::{Land, Try, Walker, GW, K};
 use toy_kit::paint::Painter;
@@ -94,7 +94,11 @@ impl Ground {
         let dev = &ctx.gpu.device;
         let tex = dev.create_texture(&wgpu::TextureDescriptor {
             label: Some("walk prints"),
-            size: wgpu::Extent3d { width: GW as u32, height: gh as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: GW as u32,
+                height: gh as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -103,29 +107,81 @@ impl Ground {
             view_formats: &[],
         });
         let view = tex.create_view(&Default::default());
-        let sampler = dev.create_sampler(&wgpu::SamplerDescriptor { mag_filter: wgpu::FilterMode::Linear, min_filter: wgpu::FilterMode::Linear, ..Default::default() });
-        let buf = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("walk ground"), size: (16 * (3 + BUMPS)) as u64, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let sampler = dev.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+        let buf = dev.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("walk ground"),
+            size: (16 * (3 + BUMPS)) as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let bgl = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("walk ground"),
             entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         });
         let bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("walk ground"),
             layout: &bgl,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: buf.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&sampler) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
             ],
         });
-        let src = GROUND_WGSL.replace("BUMPS", &BUMPS.to_string()).replace("CONTOUR", &format!("{CONTOUR:.3}"));
+        let src = GROUND_WGSL
+            .replace("BUMPS", &BUMPS.to_string())
+            .replace("CONTOUR", &format!("{CONTOUR:.3}"));
         let shader = ctx.gpu.shader("walk ground", &src);
-        let pipe = ctx.gpu.fullscreen_pipeline("walk ground", &shader, &[&bgl], None);
-        Ground { pipe, bind, buf, tex, gh, half: vec![0; GW * gh] }
+        let pipe = ctx
+            .gpu
+            .fullscreen_pipeline("walk ground", &shader, &[&bgl], None);
+        Ground {
+            pipe,
+            bind,
+            buf,
+            tex,
+            gh,
+            half: vec![0; GW * gh],
+        }
     }
 }
 
@@ -155,7 +211,11 @@ impl Walk {
         let c = self.clock();
         let up = ((c - self.length) / RISE).clamp(0.0, 1.0);
         let up = up * up * (3.0 - 2.0 * up);
-        let light = if c < 2.0 && self.night > 1 { c / 2.0 } else { 1.0 - ((c - self.length - DAY) / DUSK).clamp(0.0, 1.0) };
+        let light = if c < 2.0 && self.night > 1 {
+            c / 2.0
+        } else {
+            1.0 - ((c - self.length - DAY) / DUSK).clamp(0.0, 1.0)
+        };
         (up, light)
     }
 
@@ -167,16 +227,20 @@ impl Walk {
     fn pt(&self, p: [f64; 2]) -> [f64; 2] {
         [p[0] * self.points[0], p[1] * self.points[0]]
     }
-    fn from_pt(&self, p: [f64; 2]) -> [f64; 2] {
+    fn unpt(&self, p: [f64; 2]) -> [f64; 2] {
         [p[0] / self.points[0], p[1] / self.points[0]]
     }
 
     fn reach_to(&mut self, p: [f64; 2]) {
-        let q = self.from_pt(p);
+        let q = self.unpt(p);
         let d = (q[0] - self.anchor[0]).hypot(q[1] - self.anchor[1]);
         self.walker.stride = d.max(MIN_STRIDE);
         if self.walking() {
-            self.length = self.length.max(NIGHT).max(self.clock() + AFTER).min(LONGEST);
+            self.length = self
+                .length
+                .max(NIGHT)
+                .max(self.clock() + AFTER)
+                .min(LONGEST);
         }
     }
 }
@@ -248,7 +312,8 @@ impl Toy for Walk {
         let mut steps: Vec<(f32, f32)> = Vec::new();
         if self.walking() {
             let want = if self.holding { 0.1 } else { 1.0 };
-            self.pace += (want - self.pace) * (1.0 - (-dt / if self.holding { 0.15 } else { 0.6 }).exp());
+            self.pace +=
+                (want - self.pace) * (1.0 - (-dt / if self.holding { 0.15 } else { 0.6 }).exp());
             self.acc += dt * PACE * self.pace;
             let n = self.acc.floor() as usize;
             self.acc -= n as f64;
@@ -282,7 +347,8 @@ impl Toy for Walk {
         }
         self.stride_seen += (self.walker.stride - self.stride_seen) * (1.0 - (-dt / 0.08).exp());
         let (dawn, light) = self.dawn();
-        self.sound.set(&steps, self.walker.stride as f32, dawn as f32, light as f32);
+        self.sound
+            .set(&steps, self.walker.stride as f32, dawn as f32, light as f32);
     }
 
     fn draw(&mut self, ctx: &mut Ctx, target: &wgpu::TextureView) {
@@ -295,33 +361,69 @@ impl Toy for Walk {
             *h = half(c);
         }
         gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.ground.tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.ground.tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
             bytemuck::cast_slice(&self.ground.half),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(GW as u32 * 2), rows_per_image: Some(self.ground.gh as u32) },
-            wgpu::Extent3d { width: GW as u32, height: self.ground.gh as u32, depth_or_array_layers: 1 },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(GW as u32 * 2),
+                rows_per_image: Some(self.ground.gh as u32),
+            },
+            wgpu::Extent3d {
+                width: GW as u32,
+                height: self.ground.gh as u32,
+                depth_or_array_layers: 1,
+            },
         );
         // the map's height is log(footprints / (count · cell area)) less the land's highest log-chance
         // (placed by the pile's own deepest point: the map knows nothing of the land)
         let deepest = self.walker.prints.iter().fold(1e-6f32, |a, &b| a.max(b));
         let off = (deepest as f64).ln();
         let mut u: Vec<f32> = vec![
-            size[0] as f32, size[1] as f32, self.t as f32, k as f32,
-            dawn as f32, light as f32, off as f32, K as f32,
-            self.land.top as f32, self.land.aspect as f32, self.land.bumps.len().min(BUMPS) as f32, self.ground.gh as f32,
+            size[0] as f32,
+            size[1] as f32,
+            self.t as f32,
+            k as f32,
+            dawn as f32,
+            light as f32,
+            off as f32,
+            K as f32,
+            self.land.top as f32,
+            self.land.aspect as f32,
+            self.land.bumps.len().min(BUMPS) as f32,
+            self.ground.gh as f32,
         ];
         for i in 0..BUMPS {
-            let b = self.land.bumps.get(i).copied().unwrap_or(land::Bump { c: [0.0, 0.0], sigma: 1.0, amp: 0.0 });
+            let b = self.land.bumps.get(i).copied().unwrap_or(land::Bump {
+                c: [0.0, 0.0],
+                sigma: 1.0,
+                amp: 0.0,
+            });
             u.extend_from_slice(&[b.c[0] as f32, b.c[1] as f32, b.sigma as f32, b.amp as f32]);
         }
-        gpu.queue.write_buffer(&self.ground.buf, 0, bytemuck::cast_slice(&u));
+        gpu.queue
+            .write_buffer(&self.ground.buf, 0, bytemuck::cast_slice(&u));
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("walk ground"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { view: target, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })],
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: target,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rp.set_pipeline(&self.ground.pipe);
             rp.set_bind_group(0, &self.ground.bind, &[]);
@@ -338,7 +440,10 @@ impl Toy for Walk {
             let to = px(g);
             let (dx, dy) = (to[0] - lamp[0], to[1] - lamp[1]);
             let d = dx.hypot(dy).max(1.0);
-            lamp = [lamp[0] + dx / d * 1.6 * pk * a, lamp[1] + dy / d * 1.6 * pk * a];
+            lamp = [
+                lamp[0] + dx / d * 1.6 * pk * a,
+                lamp[1] + dy / d * 1.6 * pk * a,
+            ];
         }
         let night = (1.0 - dawn) as f32 * light as f32;
         let lit = light as f32;
@@ -350,7 +455,12 @@ impl Toy for Walk {
                 // a try off the edge is shown at the edge, where it left the land
                 let e = 0.006;
                 let q = [p[0].clamp(e, 1.0 - e), p[1].clamp(e, self.land.aspect - e)];
-                self.painter.disc(px(q), 1.6 * pk, 1.0 * pk, [0.80, 0.86, 1.0, 0.6 * a * a * night]);
+                self.painter.disc(
+                    px(q),
+                    1.6 * pk,
+                    1.0 * pk,
+                    [0.80, 0.86, 1.0, 0.6 * a * a * night],
+                );
             }
         }
         // the latest footprints: warm while fresh, cooling into the map
@@ -360,34 +470,71 @@ impl Toy for Walk {
             let a = (1.0 - i as f32 / n.max(1) as f32).powf(0.0); // (kept even; the age fades them)
             let fade = (1.0 - age / 2.2).clamp(0.0, 1.0) as f32;
             let _ = a;
-            self.painter.disc(px(p), 1.1 * pk, 0.8 * pk, [1.0, 0.86, 0.62, 0.55 * fade * night + 0.25 * fade * (1.0 - night) * lit]);
+            self.painter.disc(
+                px(p),
+                1.1 * pk,
+                0.8 * pk,
+                [
+                    1.0,
+                    0.86,
+                    0.62,
+                    0.55 * fade * night + 0.25 * fade * (1.0 - night) * lit,
+                ],
+            );
         }
         // the stride: a ring round the walker that reaches as far as a step may go
         let r = (self.stride_seen * w * k) as f32;
         let since = self.clock();
-        let invite = if self.touched || !self.walking() || (self.night == 1 && since < 2.5) { 0.0 } else { 1.0 };
+        let invite = if self.touched || !self.walking() || (self.night == 1 && since < 2.5) {
+            0.0
+        } else {
+            1.0
+        };
         if invite > 0.0 {
             // every 3.2 s a faint ring swells from the stride's out toward a third of the screen and fades
             let ph = ((self.t - 2.5).max(0.0) % 3.2 / 2.2).min(1.0) as f32;
             let ease = 1.0 - (1.0 - ph) * (1.0 - ph);
             let grow = if self.still { 0.5 } else { ease };
             let rr = r + (0.30 * w * k) as f32 * grow;
-            let a = if self.still { 0.25 } else { 0.35 * (1.0 - ph) * (ph * 6.0).min(1.0) };
-            self.painter.glow_ring(lamp, rr, 0.8 * pk, 1.2 * pk, [1.0, 0.90, 0.70, a * lit]);
+            let a = if self.still {
+                0.25
+            } else {
+                0.35 * (1.0 - ph) * (ph * 6.0).min(1.0)
+            };
+            self.painter
+                .glow_ring(lamp, rr, 0.8 * pk, 1.2 * pk, [1.0, 0.90, 0.70, a * lit]);
         }
-        let ring_a = (0.28 + 0.30 * self.holding as i32 as f32 + 0.1 * invite) * lit * (1.0 - 0.6 * dawn as f32);
-        self.painter.glow_ring(lamp, r.max(2.5 * pk), 0.7 * pk, 0.9 * pk, [1.0, 0.90, 0.70, ring_a]);
+        let ring_a = (0.28 + 0.30 * self.holding as i32 as f32 + 0.1 * invite)
+            * lit
+            * (1.0 - 0.6 * dawn as f32);
+        self.painter.glow_ring(
+            lamp,
+            r.max(2.5 * pk),
+            0.7 * pk,
+            0.9 * pk,
+            [1.0, 0.90, 0.70, ring_a],
+        );
         // a stride longer than the land: its edges glow faintly, where the far tries end
-        let corner = [[0.0, 0.0], [1.0, 0.0], [0.0, self.land.aspect], [1.0, self.land.aspect]]
-            .iter()
-            .map(|c: &[f64; 2]| (c[0] - self.lamp[0]).hypot(c[1] - self.lamp[1]))
-            .fold(0.0, f64::max);
+        let corner = [
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [0.0, self.land.aspect],
+            [1.0, self.land.aspect],
+        ]
+        .iter()
+        .map(|c: &[f64; 2]| (c[0] - self.lamp[0]).hypot(c[1] - self.lamp[1]))
+        .fold(0.0, f64::max);
         let beyond = ((self.stride_seen - 0.5 * corner) / (0.5 * corner)).clamp(0.0, 1.0) as f32;
         if beyond > 0.0 {
             let (sw, sh) = (size[0] as f32, size[1] as f32);
             let e = 1.5 * pk;
             let c = [1.0, 0.88, 0.65, 0.22 * beyond * night];
-            for (a, b) in [([e, e], [sw - e, e]), ([sw - e, e], [sw - e, sh - e]), ([sw - e, sh - e], [e, sh - e]), ([e, sh - e], [e, e])] {
+            for (a, b) in [
+                ([e, e], [sw - e, e]),
+                ([sw - e, e], [sw - e, sh - e]),
+                ([sw - e, sh - e], [e, sh - e]),
+                ([e, sh - e], [e, e]),
+            ] {
                 self.painter.glow(a, b, 0.6 * pk, 10.0 * pk, c);
             }
         }
@@ -402,14 +549,45 @@ impl Toy for Walk {
         }
         let stay = if all > 0.0 { stays / all } else { 0.0 };
         if stay > 0.3 {
-            let beat = if self.still { 0.5 } else { (self.t * 9.0).sin().abs() as f32 };
-            self.painter.glow_ring(lamp, (5.5 + 1.5 * beat) * pk, 0.8 * pk, 1.0 * pk, [1.0, 0.88, 0.65, 0.5 * (stay - 0.3) / 0.7 * night]);
+            let beat = if self.still {
+                0.5
+            } else {
+                (self.t * 9.0).sin().abs() as f32
+            };
+            self.painter.glow_ring(
+                lamp,
+                (5.5 + 1.5 * beat) * pk,
+                0.8 * pk,
+                1.0 * pk,
+                [1.0, 0.88, 0.65, 0.5 * (stay - 0.3) / 0.7 * night],
+            );
         }
         // the lantern
-        let sway = if self.still { 0.0 } else { (self.t * 7.3).sin() as f32 * 0.06 };
-        self.painter.glow(lamp, lamp, 2.0 * pk, 24.0 * pk, [1.0, 0.78, 0.45, (0.22 + sway * 0.3) * night + 0.05 * lit]);
-        self.painter.glow(lamp, lamp, 1.5 * pk, 6.0 * pk, [1.0, 0.85, 0.6, 0.6 * night + 0.25 * lit]);
-        self.painter.disc(lamp, 2.4 * pk, 0.8 * pk, [1.0, 0.94, 0.80, (0.95 * night + 0.6 * (1.0 - night)) * lit]);
+        let sway = if self.still {
+            0.0
+        } else {
+            (self.t * 7.3).sin() as f32 * 0.06
+        };
+        self.painter.glow(
+            lamp,
+            lamp,
+            2.0 * pk,
+            24.0 * pk,
+            [1.0, 0.78, 0.45, (0.22 + sway * 0.3) * night + 0.05 * lit],
+        );
+        self.painter.glow(
+            lamp,
+            lamp,
+            1.5 * pk,
+            6.0 * pk,
+            [1.0, 0.85, 0.6, 0.6 * night + 0.25 * lit],
+        );
+        self.painter.disc(
+            lamp,
+            2.4 * pk,
+            0.8 * pk,
+            [1.0, 0.94, 0.80, (0.95 * night + 0.6 * (1.0 - night)) * lit],
+        );
         self.painter.render(gpu, &mut enc, target, size, None);
         gpu.queue.submit([enc.finish()]);
     }
@@ -438,7 +616,12 @@ impl Toy for Walk {
     fn anchors(&self) -> Vec<(String, [f64; 2])> {
         let w = self.points[0];
         let lamp = self.pt(self.lamp);
-        let clampi = |p: [f64; 2]| [p[0].clamp(8.0, self.points[0] - 8.0), p[1].clamp(8.0, self.points[1] - 8.0)];
+        let clampi = |p: [f64; 2]| {
+            [
+                p[0].clamp(8.0, self.points[0] - 8.0),
+                p[1].clamp(8.0, self.points[1] - 8.0),
+            ]
+        };
         let centre = [self.points[0] * 0.5, self.points[1] * 0.5];
         // toward the screen's middle, a third of the width away: a stride that finds the other hills
         let (dx, dy) = (centre[0] - lamp[0], centre[1] - lamp[1]);
@@ -446,11 +629,26 @@ impl Toy for Walk {
         let good = clampi([lamp[0] + dx / d * 0.3 * w, lamp[1] + dy / d * 0.3 * w]);
         let near = clampi([lamp[0] + 0.012 * w, lamp[1]]);
         // the screen's corner farthest from the walker: a stride longer than the land
-        let far = [[8.0, 8.0], [self.points[0] - 8.0, 8.0], [8.0, self.points[1] - 8.0], [self.points[0] - 8.0, self.points[1] - 8.0]]
-            .into_iter()
-            .max_by(|a, b| (a[0] - lamp[0]).hypot(a[1] - lamp[1]).total_cmp(&(b[0] - lamp[0]).hypot(b[1] - lamp[1])))
-            .unwrap();
-        let mut a = vec![("walker".to_string(), lamp), ("near".into(), near), ("good".into(), good), ("far".into(), far), ("centre".into(), centre)];
+        let far = [
+            [8.0, 8.0],
+            [self.points[0] - 8.0, 8.0],
+            [8.0, self.points[1] - 8.0],
+            [self.points[0] - 8.0, self.points[1] - 8.0],
+        ]
+        .into_iter()
+        .max_by(|a, b| {
+            (a[0] - lamp[0])
+                .hypot(a[1] - lamp[1])
+                .total_cmp(&(b[0] - lamp[0]).hypot(b[1] - lamp[1]))
+        })
+        .unwrap();
+        let mut a = vec![
+            ("walker".to_string(), lamp),
+            ("near".into(), near),
+            ("good".into(), good),
+            ("far".into(), far),
+            ("centre".into(), centre),
+        ];
         for (i, &h) in self.land.hills.iter().enumerate() {
             a.push((format!("hill{i}"), self.pt(h)));
         }
@@ -467,7 +665,10 @@ impl Toy for Walk {
         let (ux, uy) = (dx / d, dy / d);
         let from = [lamp[0] + ux * (r + 10.0), lamp[1] + uy * (r + 10.0)];
         let to = [lamp[0] + ux * 0.28 * w, lamp[1] + uy * 0.28 * w];
-        Some(toy_kit::info::Demo::new("Touch near the walker for short steps, farther away for long ones.", vec![toy_kit::info::Stroke::drag(0.5, 1.8, from, to)]))
+        Some(toy_kit::info::Demo::new(
+            "Touch near the walker for short steps, farther away for long ones.",
+            vec![toy_kit::info::Stroke::drag(0.5, 1.8, from, to)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {

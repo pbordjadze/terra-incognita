@@ -38,10 +38,25 @@ pub fn body(f: &crate::walk::Form) -> [f64; 8] {
 
 impl Instance {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(c: [f32; 2], r: f32, alpha: f32, form: &crate::walk::Form, clock: f32, touch: f32, look: [f32; 2]) -> Instance {
+    pub fn new(
+        c: [f32; 2],
+        r: f32,
+        alpha: f32,
+        form: &crate::walk::Form,
+        clock: f32,
+        touch: f32,
+        look: [f32; 2],
+    ) -> Instance {
         let b = body(form);
         let f = |i: usize| b[i] as f32;
-        Instance { c, r, alpha, f0: [f(0), f(1), f(2), f(3)], f1: [f(4), f(5), f(6), f(7)], life: [clock, touch, look[0], look[1]] }
+        Instance {
+            c,
+            r,
+            alpha,
+            f0: [f(0), f(1), f(2), f(3)],
+            f1: [f(4), f(5), f(6), f(7)],
+            life: [clock, touch, look[0], look[1]],
+        }
     }
 }
 
@@ -169,18 +184,38 @@ impl Creatures {
     pub fn new(gpu: &Gpu) -> Creatures {
         let dev = &gpu.device;
         let shader = gpu.shader("taste creature", WGSL);
-        let uniform = dev.create_buffer(&wgpu::BufferDescriptor { label: Some("creature u"), size: 16, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let uniform = dev.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("creature u"),
+            size: 16,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let bgl = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("creature"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
                 count: None,
             }],
         });
-        let bind = dev.create_bind_group(&wgpu::BindGroupDescriptor { label: Some("creature"), layout: &bgl, entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() }] });
-        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("creature"), bind_group_layouts: &[&bgl], push_constant_ranges: &[] });
+        let bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("creature"),
+            layout: &bgl,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform.as_entire_binding(),
+            }],
+        });
+        let layout = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("creature"),
+            bind_group_layouts: &[Some(&bgl)],
+            immediate_size: 0,
+        });
         let attrs = wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x4, 4 => Float32x4];
         let pipeline = dev.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("creature"),
@@ -188,7 +223,11 @@ impl Creatures {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[wgpu::VertexBufferLayout { array_stride: std::mem::size_of::<Instance>() as u64, step_mode: wgpu::VertexStepMode::Instance, attributes: &attrs }],
+                buffers: &[Some(wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Instance>() as u64,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &attrs,
+                })],
                 compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
@@ -197,29 +236,70 @@ impl Creatures {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(Gpu::over()),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
                 compilation_options: Default::default(),
             }),
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
-        Creatures { pipeline, bind, uniform, list: Vec::new() }
+        Creatures {
+            pipeline,
+            bind,
+            uniform,
+            list: Vec::new(),
+        }
     }
 
     /// Draws (and forgets) the creatures listed, in order (the last on top).
-    pub fn render(&mut self, gpu: &Gpu, enc: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, size: [u32; 2], time: f32, still: bool) {
+    pub fn render(
+        &mut self,
+        gpu: &Gpu,
+        enc: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        size: [u32; 2],
+        time: f32,
+        still: bool,
+    ) {
         if self.list.is_empty() {
             return;
         }
-        gpu.queue.write_buffer(&self.uniform, 0, bytemuck::cast_slice(&[size[0] as f32, size[1] as f32, time, if still { 1.0 } else { 0.0 }]));
-        let buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("creatures"), contents: bytemuck::cast_slice(&self.list), usage: wgpu::BufferUsages::VERTEX });
+        gpu.queue.write_buffer(
+            &self.uniform,
+            0,
+            bytemuck::cast_slice(&[
+                size[0] as f32,
+                size[1] as f32,
+                time,
+                if still { 1.0 } else { 0.0 },
+            ]),
+        );
+        let buf = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("creatures"),
+                contents: bytemuck::cast_slice(&self.list),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
         {
             let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("creatures"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { view, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store } })],
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind, &[]);

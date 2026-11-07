@@ -48,7 +48,10 @@ pub struct Seeds {
 impl Seeds {
     pub fn new(gpu: &Gpu, view: &wgpu::BindGroupLayout) -> Self {
         let module = gpu.shader("seeds", &marks_wgsl(include_str!("seeds.wgsl")));
-        Self { pipeline: mark_pipeline(gpu, "seeds", &module, LAYOUT, view, None), instances: Instances::new(gpu, "seeds", 16) }
+        Self {
+            pipeline: mark_pipeline(gpu, "seeds", &module, LAYOUT, view, None),
+            instances: Instances::new(gpu, "seeds", 16),
+        }
     }
 
     pub fn prepare(&mut self, gpu: &Gpu, seeds: &[SeedInstance]) {
@@ -93,8 +96,16 @@ pub fn spline_head(p: [LonLat; 4], fr: f64) -> LonLat {
     let t2 = t1 + knot(p1, p2);
     let t3 = t2 + knot(p2, p3);
     let lerp = |a: [f64; 3], b: [f64; 3], ta: f64, tb: f64, t: f64| {
-        let w = if (tb - ta).abs() < 1e-15 { 0.0 } else { (t - ta) / (tb - ta) };
-        [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w, a[2] + (b[2] - a[2]) * w]
+        let w = if (tb - ta).abs() < 1e-15 {
+            0.0
+        } else {
+            (t - ta) / (tb - ta)
+        };
+        [
+            a[0] + (b[0] - a[0]) * w,
+            a[1] + (b[1] - a[1]) * w,
+            a[2] + (b[2] - a[2]) * w,
+        ]
     };
     let t = t1 + (t2 - t1) * fr.clamp(0.0, 1.0);
     let a1 = lerp(p0, p1, 0.0, t1, t);
@@ -113,13 +124,33 @@ mod tests {
 
     #[test]
     fn spline_head_passes_through_the_steps() {
-        let p = [LonLat { lon: -80.0, lat: 38.0 }, LonLat { lon: -79.0, lat: 38.5 }, LonLat { lon: -77.5, lat: 38.2 }, LonLat { lon: -76.0, lat: 39.0 }];
+        let p = [
+            LonLat {
+                lon: -80.0,
+                lat: 38.0,
+            },
+            LonLat {
+                lon: -79.0,
+                lat: 38.5,
+            },
+            LonLat {
+                lon: -77.5,
+                lat: 38.2,
+            },
+            LonLat {
+                lon: -76.0,
+                lat: 39.0,
+            },
+        ];
         for (fr, want) in [(0.0, p[1]), (1.0, p[2])] {
             let h = spline_head(p, fr);
             assert!(h.distance_m(want) < 1.0, "{fr}: {h:?}");
         }
         // between, near the chord and not past either end
         let m = spline_head(p, 0.5);
-        assert!(m.distance_m(p[1]) < p[1].distance_m(p[2]) && m.distance_m(p[2]) < p[1].distance_m(p[2]));
+        assert!(
+            m.distance_m(p[1]) < p[1].distance_m(p[2])
+                && m.distance_m(p[2]) < p[1].distance_m(p[2])
+        );
     }
 }

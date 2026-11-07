@@ -19,6 +19,7 @@ import base64
 import json
 import os
 import sys
+from pathlib import Path
 
 # What the host serves as itself (by extension). Anything else is wrapped.
 SERVED = {'.html', '.js', '.mjs', '.css', '.json', '.wasm', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
@@ -47,7 +48,7 @@ def main():
         sys.exit(f'{web} has no index.html')
     adir = os.path.join(web, assets)
     index_path = os.path.join(adir, 'index.json')
-    index = json.load(open(index_path)) if os.path.isfile(index_path) else {}
+    index = json.loads(Path(index_path).read_text()) if os.path.isfile(index_path) else {}
 
     # wrap what the host won't serve
     wrapped = 0

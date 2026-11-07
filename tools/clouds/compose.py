@@ -9,13 +9,15 @@ layers them (GlobeView: the Metal globe, then a prototype's overlay, then the la
 look.cjs and film.cjs run these (they draw the overlay in Chromium between them). The globe is the
 Wikipedia style, or the ground with CLOUDS_GROUND=<month 1-12> (where the globe's preview has it).
 """
-import json, os, sys
+import json
+import os
+import sys
 from pathlib import Path
-import numpy as np
+
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'globe'))
-import preview  # noqa: E402
+import preview
 
 
 def camera(w, h, lon, lat, zoom):
