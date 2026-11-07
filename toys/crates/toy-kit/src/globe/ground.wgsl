@@ -53,8 +53,19 @@ const N_AIR = vec3f(196.0, 120.0, 72.0) / 255.0;      // the wide glow over a li
     let gr = uv_grad(G.uv);
     let g = textureSampleGrad(geoTex, linearS, G.uv, gr.dx, gr.dy);
     let t = textureSampleGrad(terrainTex, linearS, G.uv, gr.dx, gr.dy);
-    let fine = (g.r * 255.0 - 128.0) / 8.0;
+    var fine = (g.r * 255.0 - 128.0) / 8.0;
     let coarse = (g.g * 255.0 - 128.0) * 2.0;
+    // magnified past its own raster (a texel over ~6 pixels, close in: row 258), the coast's field shows
+    // the steps of the grid it was measured on: read as the mean of four taps half a texel apart, with a
+    // gentle wobble of a few texels (drawn), it reads as a shore rather than a staircase; from afar
+    // nothing changes
+    let gdims = vec2f(textureDimensions(geoTex));
+    let glod = log2(max(max(length(gr.dx * gdims), length(gr.dy * gdims)), 1e-5));
+    let wob = smoothstep(-1.6, -3.0, glod);
+    let o = vec2f(0.6) / gdims;
+    let f4 = (textureSampleLevel(geoTex, linearS, G.uv + vec2f(o.x, o.y), 0.0).r + textureSampleLevel(geoTex, linearS, G.uv + vec2f(-o.x, o.y), 0.0).r
+            + textureSampleLevel(geoTex, linearS, G.uv + vec2f(o.x, -o.y), 0.0).r + textureSampleLevel(geoTex, linearS, G.uv + vec2f(-o.x, -o.y), 0.0).r) * 0.25;
+    fine = mix(fine, (f4 * 255.0 - 128.0) / 8.0 + 0.45 * (vnoise3(G.g * 700.0) - 0.5), wob);
     let d = select(fine, coarse, abs(coarse) > 14.0);
     let hill = (t.r * 255.0 - 128.0) / 127.0;
     let height = t.g * 255.0 - 128.0;

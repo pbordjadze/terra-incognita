@@ -237,6 +237,40 @@ pub trait Toy: 'static {
     fn title(&self) -> Option<String> {
         None
     }
+    /// A toy whose picture is the ground seen from straight above, at a true scale, says where it lies
+    /// ([`Above`]), so a globe holding it (Terra) can come down onto it under the fingers and hand over
+    /// exactly: the last frame of the Earth and the toy's first are the same place at the same scale
+    /// (painting-company row 258). None (the default): not a view from above.
+    fn seen_from_above(&self, _ctx: &Ctx) -> Option<Above> {
+        None
+    }
+}
+
+/// Where a toy seen from straight above lies on the Earth (`Toy::seen_from_above`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Above {
+    /// The place at the middle of the toy's screen (longitude, latitude, degrees).
+    pub centre: [f64; 2],
+    /// Metres of ground a point of the screen covers.
+    pub metres_per_point: f64,
+    /// How the toy's picture is turned: its up is this many degrees east of north.
+    pub turn: f64,
+    /// The picture of the ground the toy lies on, if it has one, for the globe to lay at its place as the
+    /// camera comes down (`Globe::set_sheet`).
+    pub sheet: Option<Sheet>,
+}
+
+/// A picture of the ground laid on the globe at its true place and turn (`globe::sheet`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Sheet {
+    /// The image, by its name in the toy's data (a square picture, north-up before `turn`).
+    pub image: String,
+    /// Its middle (longitude, latitude, degrees), metres a side, and turn (its up, degrees east of north).
+    pub centre: [f64; 2],
+    pub side_m: f64,
+    pub turn: f64,
+    /// The colour as the toy shows it: `(c - lift[0]) * lift[1]`, then saturation by `lift[2]` (1 none).
+    pub lift: [f32; 3],
 }
 
 /// A decoded sound file (`Toy::opened`): its name (the file's, without its extension), its sample rate

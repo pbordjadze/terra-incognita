@@ -1,0 +1,211 @@
+{
+ "_": "Into Murmuration by the fingers alone (painting-company row 258): over Ham Wall, pinch after pinch anchored on the place; England, the Somerset Levels' own satellite ground darkening into the dusk, their fields; at the scale of the fields the light opens into a window onto the starlings themselves, growing with the zoom; let go, and the descent carries on into the toy. Inside, two fingers pinch it back into its light and the Earth rises over the same place.",
+ "restore": "{\"camera\":{\"lon\":-2.787,\"lat\":51.153,\"zoom\":1.4,\"roll\":0.0}}",
+ "seconds": 30,
+ "fps": 20,
+ "events": [
+  {
+   "t": 0.3,
+   "pinch": [
+    {
+     "lonlat": [
+      -19.232754729333283,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      13.658754729333285,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 1.9,
+   "pinch": [
+    {
+     "lonlat": [
+      -9.639397803888869,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      4.06539780388887,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 3.5,
+   "pinch": [
+    {
+     "lonlat": [
+      -5.642165751620362,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      0.06816575162036198,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 5.1,
+   "pinch": [
+    {
+     "lonlat": [
+      -3.9766523965084843,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      -1.5973476034915157,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 6.7,
+   "pinch": [
+    {
+     "lonlat": [
+      -3.282688498545202,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      -2.291311501454798,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 8.3,
+   "pinch": [
+    {
+     "lonlat": [
+      -2.993536874393834,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      -2.580463125606166,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 9.9,
+   "pinch": [
+    {
+     "lonlat": [
+      -2.8730570309974306,
+      51.153
+     ]
+    },
+    {
+     "lonlat": [
+      -2.7009429690025692,
+      51.153
+     ]
+    }
+   ],
+   "to": 2.4,
+   "for": 1.1
+  },
+  {
+   "t": 22.0,
+   "pinch": [
+    [
+     110,
+     426
+    ],
+    [
+     283,
+     426
+    ]
+   ],
+   "to": 0.3,
+   "for": 1.2
+  }
+ ],
+ "shots": [
+  {
+   "t": 0.2,
+   "name": "p00"
+  },
+  {
+   "t": 1.8,
+   "name": "p01"
+  },
+  {
+   "t": 3.4000000000000004,
+   "name": "p02"
+  },
+  {
+   "t": 5.000000000000001,
+   "name": "p03"
+  },
+  {
+   "t": 6.6000000000000005,
+   "name": "p04"
+  },
+  {
+   "t": 8.2,
+   "name": "p05"
+  },
+  {
+   "t": 9.8,
+   "name": "p06"
+  },
+  {
+   "t": 11.4,
+   "name": "p07"
+  },
+  {
+   "t": 17.0,
+   "name": "inside"
+  },
+  {
+   "t": 22.9,
+   "name": "squeezed"
+  },
+  {
+   "t": 24.5,
+   "name": "rising"
+  },
+  {
+   "t": 29.5,
+   "name": "back"
+  }
+ ],
+ "film": {
+  "from": 0,
+  "to": 30,
+  "every": 0.1
+ }
+}
