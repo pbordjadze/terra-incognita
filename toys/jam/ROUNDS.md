@@ -21,3 +21,9 @@ Salt Flat's six (row 244) in the history of this file before row 255.
   the next half by what they see and half by what they remember (12 s), so the town settles within
   about 40 s of a cut (a test holds it); the long roads pulled back on screen; tapping a car (its way)
   dropped for the road's tap.
+- R3 (Nov 7, 00:55; R2 critic "no", weakest (more): closing the bridge didn't feel like relief: the cars
+  stranded by the cut stayed red in one bunched queue, read as a new jam): a car's light is now how long
+  its whole way takes right now (the roads it came by, the one it's on and the quickest way on, at their
+  speeds now), not what it has suffered, so the town cools within about 15 s of the cut (the test holds
+  it); the invitation shows from the first frame; a pinned road lights every road it could join; the long
+  roads wholly on the iPhone's screen.

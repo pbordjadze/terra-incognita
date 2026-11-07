@@ -168,14 +168,14 @@ impl Jam {
             run += 0.5;
             if run > BEFORE - 30.0 {
                 for i in 0..town.cars.len() {
-                    sum += town.eta(i);
+                    sum += town.way(i);
                     n += 1;
                 }
             }
         }
         self.usual = if n > 0 { sum / n as f64 } else { 25.0 };
         for i in 0..town.cars.len() {
-            town.cars[i].late = town.eta(i) / self.usual;
+            town.cars[i].late = town.way(i) / self.usual;
         }
         self.town = town;
         self.edits.clear();
@@ -338,9 +338,9 @@ impl Toy for Jam {
         self.town.step(dt);
         self.town.tidy();
         // each car's light eases toward how long its trip will take
-        let ease = 1.0 - (-dt * 1.2).exp();
+        let ease = 1.0 - (-dt * 2.0).exp();
         for i in 0..self.town.cars.len() {
-            let want = self.town.eta(i) / self.usual;
+            let want = self.town.way(i) / self.usual;
             let c = &mut self.town.cars[i];
             c.late += (want - c.late) * ease;
         }
@@ -666,7 +666,7 @@ impl Toy for Jam {
             &[
                 "Every driver takes the way that looks quickest right now. No one plans for anyone else.",
                 "A road slows as it fills. The narrow streets fill fast; the long roads round never do.",
-                "A car glows white when its trip is quick and red when it runs long. Shake for the old roads.",
+                "Each car glows with how long its way takes right now: white when quick, red when slow. Shake for the old roads.",
             ],
             "Real: the rules, and that a new road can slow everyone (Braess, 1968). Made up: the town and its cars.",
         ))

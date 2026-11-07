@@ -41,7 +41,7 @@ impl Kind {
         match self {
             Kind::Entry | Kind::Exit => 16.0,
             Kind::Street => 2.0,
-            Kind::Long => 28.0,
+            Kind::Long => 25.0,
             Kind::Built => 4.0,
         }
     }
@@ -50,7 +50,7 @@ impl Kind {
         match self {
             Kind::Entry | Kind::Exit => 220.0,
             Kind::Street => 200.0,
-            Kind::Long => 28.0,
+            Kind::Long => 25.0,
             Kind::Built => 220.0,
         }
     }
@@ -143,6 +143,8 @@ pub struct Car {
     pub waiting: bool,
     /// How long its trip will take, as it looks now, against the town's usual (eased; set by the toy).
     pub late: f64,
+    /// The links it has driven, from the way in.
+    pub past: Vec<usize>,
 }
 
 pub struct Town {
@@ -201,7 +203,7 @@ pub fn first_roads() -> (Vec<[f64; 2]>, Vec<Road>) {
     // the long way round: out past the edge of the screen and back
     let long = |p: [f64; 2], q: [f64; 2], side: f64| -> Vec<[f64; 2]> {
         let dy = (q[1] - p[1]).signum();
-        bezier(p, [side * 250.0, p[1] + 40.0 * dy], [side * 250.0, q[1] - 10.0 * dy], q, 60)
+        bezier(p, [side * 228.0, p[1] + 40.0 * dy], [side * 228.0, q[1] - 10.0 * dy], q, 60)
     };
     let roads = vec![
         Road::new(0, 1, vec![o, s0], Kind::Entry),
@@ -457,6 +459,7 @@ impl Town {
                         Some(next) if self.room(next, &q) => {
                             let c = &mut self.cars[i];
                             c.s = (c.s - len).min(gap * 0.5);
+                            c.past.push(c.link);
                             c.link = next;
                             c.waiting = false;
                             q[link].remove(0);
@@ -487,7 +490,7 @@ impl Town {
             let first = self.choose(None, self.from, 0).filter(|&l| self.room(l, &q));
             if let Some(l) = first {
                 let seed = hash((self.t * 1000.0) as u32 ^ self.rng);
-                self.cars.push(Car { link: l, s: 0.0, v: self.roads[l / 2].kind.vf() * 0.7, born: self.t, seed, waiting: false, late: 1.0 });
+                self.cars.push(Car { link: l, s: 0.0, v: self.roads[l / 2].kind.vf() * 0.7, born: self.t, seed, waiting: false, late: 1.0, past: Vec::new() });
             }
             if self.next_car < self.t - 1.0 {
                 self.next_car = self.t;
@@ -503,6 +506,16 @@ impl Town {
         let rest = (r.len - c.s).max(0.0) / self.speed.get(c.link).copied().unwrap_or(1.0).max(1.0);
         let on = self.ahead.get(self.ends(c.link).1).copied().unwrap_or(0.0);
         (self.t - c.born) + rest + if on.is_finite() { on } else { 60.0 }
+    }
+
+    /// How long car `i`'s way takes now, end to end: the roads it came by and the one it is on at the
+    /// speeds their crowds give them now, and the quickest way on. Not what it has suffered, but how
+    /// good its way is at this moment: what a driver setting out now on the same way would expect.
+    pub fn way(&self, i: usize) -> f64 {
+        let c = &self.cars[i];
+        let behind: f64 = c.past.iter().map(|&l| self.cost(l)).sum();
+        let on = self.ahead.get(self.ends(c.link).1).copied().unwrap_or(0.0);
+        behind + self.cost(c.link) + if on.is_finite() { on } else { 60.0 }
     }
 
     /// The mean trip of those finished in the last `secs` seconds.
@@ -699,13 +712,13 @@ mod tests {
 mod settle {
     use super::*;
 
-    /// After the bridge is closed the town settles back: the drivers' expected trips come back to
-    /// within a tenth of the old ones within 40 s and stay there.
+    /// After the bridge is closed the town settles back: how long the cars' ways take comes back to
+    /// within a tenth of the old within 16 s and stays there.
     #[test]
     fn the_town_settles_after_a_cut() {
         let mut t = Town::new(0x5107_c0de);
         t.step(70.0);
-        let eta = |t: &Town| (0..t.cars.len()).map(|i| t.eta(i)).sum::<f64>() / t.cars.len().max(1) as f64;
+        let eta = |t: &Town| (0..t.cars.len()).map(|i| t.way(i)).sum::<f64>() / t.cars.len().max(1) as f64;
         let base = eta(&t);
         let (a, b) = (t.nodes[2], t.nodes[3]);
         t.build(a, b, 10.0);
@@ -717,7 +730,7 @@ mod settle {
             t.step(2.0);
             let e = eta(&t) / base;
             line += &format!("{e:.2} ");
-            if i >= 20 {
+            if i >= 8 {
                 worst = worst.max((e - 1.0).abs());
             }
         }
