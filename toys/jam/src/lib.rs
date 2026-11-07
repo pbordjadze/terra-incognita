@@ -203,6 +203,11 @@ impl Jam {
         (self.town.nodes[2], self.town.nodes[3])
     }
 
+    /// Whether the invitation shows: the town as it was, nothing pinned, no finger down.
+    fn inviting(&self) -> bool {
+        self.edits.is_empty() && self.pin.is_none()
+    }
+
     /// The newest open road the reader drew, if any.
     fn bridge(&self) -> Option<usize> {
         self.town.roads.iter().enumerate().rev().find(|(_, r)| r.kind == Kind::Built && r.open && r.alive).map(|(i, _)| i)
@@ -286,8 +291,25 @@ impl Toy for Jam {
                 let moved = dist(f.down, q);
                 let (a, b) = (self.to_town(f.down), self.to_town(q));
                 if moved < 12.0 {
-                    // a tap: a closed road opens; a road pins a start, and a second road builds to it;
-                    // the water ripples
+                    // a tap: while the invitation shows, a touch on it (a shore's ring, the dotted road,
+                    // the water) builds the road it shows; a closed road opens; a road pins a start, and
+                    // a second road builds to it; the water ripples
+                    let (sa, sb) = self.shores();
+                    let wet = (a[0] / LAKE[0]).hypot(a[1] / LAKE[1]) < 1.0;
+                    let near_invite = seg_dist(a, sa, sb) < 34.0 / self.layout().s.min(1.0);
+                    if self.inviting() && (wet || near_invite) {
+                        let edit = Edit::Build(sa, sb);
+                        if self.apply(&edit) {
+                            self.edits.push(edit);
+                            self.sound.thump();
+                            ctx.haptic();
+                        }
+                        if wet {
+                            self.splash = (q, self.t);
+                        }
+                        self.rings.push((q, self.t));
+                        return;
+                    }
                     let edit = Edit::Open(a);
                     if self.apply(&edit) {
                         self.edits.push(edit);
@@ -763,6 +785,14 @@ impl Toy for Jam {
 
 
 /// A car's place on its lane (drive on the right), and the way it faces.
+/// How far `p` is from the segment `a`-`b`.
+fn seg_dist(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {
+    let d = [b[0] - a[0], b[1] - a[1]];
+    let l2 = (d[0] * d[0] + d[1] * d[1]).max(1e-9);
+    let f = (((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / l2).clamp(0.0, 1.0);
+    dist(p, [a[0] + d[0] * f, a[1] + d[1] * f])
+}
+
 fn lane_place(town: &Town, c: &town::Car) -> ([f64; 2], [f64; 2]) {
     let (p, d) = town.place(c);
     let r = &town.roads[c.link / 2];
@@ -820,8 +850,8 @@ fn windows(town: &Town) -> Vec<([f64; 2], f32, f64)> {
     out
 }
 
-/// The town at night from above: dark fields and woods, the lake at the middle, the town's light at the
-/// top in the colour its arrivals bring and the evening's at the bottom. `p0.xy` the centre (px),
+/// The town at night from above: dark fields and woods, the lake at the middle, the town's warm light at
+/// the top and the evening's at the bottom (steady: only the cars and the reader's roads change colour). `p0.xy` the centre (px),
 /// `p0.zw` the lake's radii (town points), `p1.xyz` the arrivals' colour; `u.scale` pixels a town point.
 const GROUND_WGSL: &str = r#"
 fn fbm(p: vec2<f32>) -> f32 {
@@ -844,7 +874,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   let water = 1.0 - smoothstep(-0.5 - pxm, 0.5 + pxm, shore);
   let ripple = 0.5 + 0.5 * sin(m.y * 0.55 + 0.6 * sin(m.x * 0.21 + u.time * 0.4) + u.time * 0.7);
   var lake = vec3<f32>(0.020, 0.040, 0.075) * (0.85 + 0.3 * (1.0 - e));
-  lake = lake + u.p1.xyz * 0.035 * ripple * smoothstep(0.2, 1.0, e);
+  lake = lake + vec3<f32>(1.0, 0.9, 0.75) * 0.03 * ripple * smoothstep(0.2, 1.0, e);
   // a tap on the water: rings going out from it (u.center the tap in px, p1.w the seconds since)
   let since = u.p1.w;
   if (since < 3.0) {
@@ -858,7 +888,7 @@ fn backdrop(px: vec2<f32>, world: vec2<f32>) -> vec4<f32> {
   col = col + vec3<f32>(0.05, 0.07, 0.07) * (1.0 - smoothstep(0.0, 2.5, abs(shore))) * 0.6;
   // the town's light at the top, in the arrivals' colour; the evening's at the bottom
   let top = exp(-max(m.y + 400.0, 0.0) / 200.0) * exp(-pow(m.x / 220.0, 2.0));
-  col = col + u.p1.xyz * 0.16 * top;
+  col = col + vec3<f32>(1.0, 0.86, 0.62) * 0.12 * top;
   let bottom = exp(-max(420.0 - m.y, 0.0) / 160.0) * exp(-pow(m.x / 200.0, 2.0));
   col = col + vec3<f32>(0.55, 0.65, 0.85) * 0.07 * bottom;
   // the dark coming in at the edges

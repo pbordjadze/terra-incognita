@@ -32,3 +32,8 @@ Salt Flat's six (row 244) in the history of this file before row 255.
   the light of the cars on it, white while it helps and red once the crowd it brought slows every way, so
   the bridge reddens first and the town after it; a new road meets every road it crosses at a junction;
   the "?" card hangs from the top, its lines shorter; the info mark's ghost gives back a road it closes.
+- R5 (Nov 7, 01:40; R4 critic "no", weakest (polish): building wasn't the first natural touch: the
+  tester tapped the invitation's ring and the water and never built; then: the whole sky warmed with the
+  cars ("me, or night falling?"), the marks read as dead): while the invitation shows, any touch on it
+  (a shore's ring, the dotted road, the water, a drag along it) builds the road it shows; the sky and the
+  lake keep one warm light, so only the cars and the reader's roads change colour.
