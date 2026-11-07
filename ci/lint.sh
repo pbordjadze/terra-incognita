@@ -3,7 +3,7 @@
 # a rule is plainly wrong for this code, in the tool's own config file with the reason):
 #   rustfmt and clippy (-D warnings)  the toys' and Adrift's workspaces (rust-toolchain.toml)
 #   ruff                              the Python tools and checks (ruff.toml)
-#   shellcheck                        every shell script
+#   ShellCheck                        every shell script
 #   actionlint                        the workflows (.github/actionlint.yaml), with shellcheck on their scripts
 #   SwiftLint                         the Swift (.swiftlint.yml), when `swiftlint` is on PATH
 # ci/qa/ and qa-explore.yml are generated from painting-company's shared copy and linted there.
@@ -15,7 +15,7 @@
 # tools/requirements.txt (python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt), SwiftLint
 # by SWIFTLINT in ci.yml's lint job.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 only="${1:-all}"
 failed=()
 run() { local name="$1"; shift; echo "== $name"; "$@" || failed+=("$name"); }

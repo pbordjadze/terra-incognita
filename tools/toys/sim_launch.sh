@@ -71,7 +71,8 @@ export SIMCTL_CHILD_RUST_BACKTRACE=1
 # iOS text a Linux shot lacks; a toy without origins keeps showing its rules)
 export SIMCTL_CHILD_TOY_OPEN=rules,origins SIMCTL_CHILD_TOY_OPEN_AFTER=30 SIMCTL_CHILD_TOY_OPEN_EVERY=30
 xcrun simctl io "$UDID" screenshot /dev/null > /dev/null 2>&1 || true     # (the warm-up)
-# shellcheck disable=SC2010 # ls -t lists the crash reports newest first; their names are the system's own
+# (ls -t lists the crash reports newest first; their names are the system's own)
+# shellcheck disable=SC2010
 reports() { ls -t ~/Library/Logs/DiagnosticReports 2> /dev/null | grep "$EXEC" || true; }
 before="$(reports | wc -l | tr -d ' ')"
 xcrun simctl launch --terminate-running-process --stdout="$OUT/stdout.txt" --stderr="$OUT/stderr.txt" "$UDID" "$BUNDLE"
