@@ -1,0 +1,1 @@
+Merge lint-reasons: every silenced lint says why beside it, held by ci/silenced.py in the lint job; the stray `--help` file at the root goes (painting-company row 252)
