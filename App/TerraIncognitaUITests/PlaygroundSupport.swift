@@ -9,7 +9,9 @@ extension XCTestCase {
     @MainActor func openWorkbench(in app: XCUIApplication) {
         let button = app.buttons["workbenchButton"].firstMatch
         XCTAssertTrue(button.waitForExistence(timeout: 45), "The globe must offer its workbench")
-        XCTAssertTrue(button.isHittable)
+        // (under iOS 27 the button exists a moment before it can be touched, while it comes in)
+        let touchable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: button)
+        XCTAssertEqual(XCTWaiter().wait(for: [touchable], timeout: 10), .completed, "The workbench button can be touched")
         button.tap()
         XCTAssertTrue(app.buttons["workbenchClose"].firstMatch.waitForExistence(timeout: 10),
                       "The workbench must open, and can always be left without choosing")
