@@ -326,9 +326,20 @@ impl Swarm {
     /// firefly it reaches, out to `reach_km`, flashes as it arrives, so even a touch on the dark sea
     /// is answered by the nearest coast a beat later. When nothing is within reach, the ring carries
     /// on to the nearest dozen. Returns how many answered and when the last of them will (seconds).
-    pub fn touch(&mut self, at: [f64; 3], r_km: f64, reach_km: f64, speed_kms: f64) -> (usize, f64) {
+    pub fn touch(
+        &mut self,
+        at: [f64; 3],
+        r_km: f64,
+        reach_km: f64,
+        speed_kms: f64,
+    ) -> (usize, f64) {
         let t = self.t;
-        let mut all: Vec<(f64, usize)> = self.flies.iter().enumerate().map(|(i, f)| (km(at, f.xyz), i)).collect();
+        let mut all: Vec<(f64, usize)> = self
+            .flies
+            .iter()
+            .enumerate()
+            .map(|(i, f)| (km(at, f.xyz), i))
+            .collect();
         all.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         let mut last: f64 = 0.0;
         let mut n = 0;
@@ -342,7 +353,12 @@ impl Swarm {
                 }
             } else if d <= reach_km || k < 12 {
                 let delay = d / speed_kms;
-                self.pulses.push(Pulse { at: t + delay, to: i as u32, ver: None, force: true });
+                self.pulses.push(Pulse {
+                    at: t + delay,
+                    to: i as u32,
+                    ver: None,
+                    force: true,
+                });
                 last = last.max(delay);
             } else {
                 break;
@@ -412,9 +428,15 @@ mod tests {
         // 20 degrees west of the line's start, over open water: nothing within reach
         let (n, last) = s.touch(xyz(-20.0, 40.0), 50.0, 300.0, 2000.0);
         assert_eq!(n, 10);
-        assert!(last > 0.8 && last < 1.2, "the ring reaches them in {last:.2} s");
+        assert!(
+            last > 0.8 && last < 1.2,
+            "the ring reaches them in {last:.2} s"
+        );
         s.step(1.3);
-        assert!(s.flies.iter().all(|f| f.flashed > 0.5), "every one flashed as the ring arrived");
+        assert!(
+            s.flies.iter().all(|f| f.flashed > 0.5),
+            "every one flashed as the ring arrived"
+        );
     }
 
     #[test]

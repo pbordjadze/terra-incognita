@@ -22,15 +22,20 @@ pub fn wgsl(own: &str) -> String {
 
 /// The view's bind group layout (group 0 of every pass): one uniform buffer, `ViewUniform`.
 pub fn view_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
-    gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("view"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-            count: None,
-        }],
-    })
+    gpu.device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("view"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        })
 }
 
 /// The ground, its textures, the camera and the hand that turns it.
@@ -55,7 +60,14 @@ pub struct Globe {
 
 impl Globe {
     /// The globe over the month `month` (0 = January).
-    pub fn new(gpu: &Gpu, assets: &dyn Assets, width: u32, height: u32, ppp: f64, month: u32) -> anyhow::Result<Globe> {
+    pub fn new(
+        gpu: &Gpu,
+        assets: &dyn Assets,
+        width: u32,
+        height: u32,
+        ppp: f64,
+        month: u32,
+    ) -> anyhow::Result<Globe> {
         crate::step("the globe's textures");
         let textures = Textures::load(gpu, assets, month)?;
         crate::step("the globe's ground pass");
@@ -70,7 +82,10 @@ impl Globe {
         let view_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("view"),
             layout: &view_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: view_buf.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: view_buf.as_entire_binding(),
+            }],
         });
         let day = month as f64 * 30.44 + 15.0;
         Ok(Globe {
@@ -80,7 +95,11 @@ impl Globe {
             view_buf,
             view_bind,
             camera: Camera::new(-30.0, 25.0, 1.0),
-            clock: Clock { day, running: false, rate: 0.0 },
+            clock: Clock {
+                day,
+                running: false,
+                rate: 0.0,
+            },
             night: 0.0,
             seconds: 0.0,
             hand: Hand::default(),
@@ -184,12 +203,19 @@ impl Globe {
 
     /// The camera now, upright, is where Home goes (call it once the opening view is set).
     pub fn set_home(&mut self) {
-        self.hand.home = Some(Camera { roll: 0.0, ..self.camera });
+        self.hand.home = Some(Camera {
+            roll: 0.0,
+            ..self.camera
+        });
     }
 
     /// Writes the view uniform (call once a frame before drawing anything that reads it).
     pub fn upload(&self, gpu: &Gpu) {
-        gpu.queue.write_buffer(&self.view_buf, 0, bytemuck::bytes_of(&self.view().uniform()));
+        gpu.queue.write_buffer(
+            &self.view_buf,
+            0,
+            bytemuck::bytes_of(&self.view().uniform()),
+        );
     }
 
     /// The ground, filling the target (it clears nothing: it draws every pixel).
@@ -239,13 +265,31 @@ pub struct Hand {
 enum HandState {
     Idle,
     /// A finger down, not yet past the slop.
-    Down { id: u64, x0: f64, y0: f64 },
+    Down {
+        id: u64,
+        x0: f64,
+        y0: f64,
+    },
     /// One finger dragging: `grab` the place it took (None off the disc).
-    Orbit { id: u64, x: f64, y: f64, grab: Option<LonLat> },
+    Orbit {
+        id: u64,
+        x: f64,
+        y: f64,
+        grab: Option<LonLat>,
+    },
     /// Two fingers: the zoom when they began, and the pinch's scale since.
-    Pinch { a: u64, b: u64, zoom0: f64, scale: f64 },
+    Pinch {
+        a: u64,
+        b: u64,
+        zoom0: f64,
+        scale: f64,
+    },
     /// Three fingers: waiting for a swipe up (Home).
-    Three { x0: f64, y0: f64, done: bool },
+    Three {
+        x0: f64,
+        y0: f64,
+        done: bool,
+    },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -305,7 +349,10 @@ impl Hand {
     /// Whether the camera is moving of the hand's own accord (a fling, Home's flight), or a finger
     /// is down: a toy's own camera (an autopilot, an idle turn) waits while it is.
     pub fn busy(&self) -> bool {
-        !self.fingers.is_empty() || self.flight.is_some() || self.home_asked || self.spin.0.abs() + self.spin.1.abs() > FLING_REST
+        !self.fingers.is_empty()
+            || self.flight.is_some()
+            || self.home_asked
+            || self.spin.0.abs() + self.spin.1.abs() > FLING_REST
     }
 
     /// Asks for Home (flown on the next frame).
@@ -324,17 +371,34 @@ impl Hand {
                 self.fingers.insert(e.id, [e.x, e.y]);
                 let n = self.fingers.len();
                 self.state = match (self.state, n) {
-                    (_, 1) => HandState::Down { id: e.id, x0: e.x, y0: e.y },
-                    (HandState::Down { id, .. } | HandState::Orbit { id, .. }, 2) => HandState::Pinch { a: id, b: e.id, zoom0: cam.zoom, scale: 1.0 },
+                    (_, 1) => HandState::Down {
+                        id: e.id,
+                        x0: e.x,
+                        y0: e.y,
+                    },
+                    (HandState::Down { id, .. } | HandState::Orbit { id, .. }, 2) => {
+                        HandState::Pinch {
+                            a: id,
+                            b: e.id,
+                            zoom0: cam.zoom,
+                            scale: 1.0,
+                        }
+                    }
                     (HandState::Pinch { .. }, 3) => {
                         let (x0, y0) = self.mean();
-                        HandState::Three { x0, y0, done: false }
+                        HandState::Three {
+                            x0,
+                            y0,
+                            done: false,
+                        }
                     }
                     (s, _) => s,
                 };
             }
             Phase::Move => {
-                let Some(prev) = self.fingers.get(&e.id).copied() else { return cam };
+                let Some(prev) = self.fingers.get(&e.id).copied() else {
+                    return cam;
+                };
                 self.fingers.insert(e.id, [e.x, e.y]);
                 match self.state {
                     HandState::Down { id, x0, y0 } if id == e.id => {
@@ -343,22 +407,45 @@ impl Hand {
                             cam = drag(cam, &disc, grab, e.x, e.y, e.x - x0, e.y - y0);
                             self.samples.clear();
                             self.sample(&e);
-                            self.state = HandState::Orbit { id, x: e.x, y: e.y, grab };
+                            self.state = HandState::Orbit {
+                                id,
+                                x: e.x,
+                                y: e.y,
+                                grab,
+                            };
                         }
                     }
                     HandState::Orbit { id, x, y, grab } if id == e.id => {
                         cam = drag(cam, &disc, grab, e.x, e.y, e.x - x, e.y - y);
                         self.sample(&e);
-                        self.state = HandState::Orbit { id, x: e.x, y: e.y, grab };
+                        self.state = HandState::Orbit {
+                            id,
+                            x: e.x,
+                            y: e.y,
+                            grab,
+                        };
                     }
                     HandState::Pinch { a, b, zoom0, scale } if e.id == a || e.id == b => {
-                        let Some(&other) = self.fingers.get(&if e.id == a { b } else { a }) else { return cam };
+                        let Some(&other) = self.fingers.get(&if e.id == a { b } else { a }) else {
+                            return cam;
+                        };
                         let d0 = (prev[0] - other[0]).hypot(prev[1] - other[1]).max(1.0);
                         let d1 = (e.x - other[0]).hypot(e.y - other[1]).max(1.0);
                         let (ax, ay) = ((prev[0] + other[0]) / 2.0, (prev[1] + other[1]) / 2.0);
                         let (bx, by) = ((e.x + other[0]) / 2.0, (e.y + other[1]) / 2.0);
                         let grab = disc.unproject(&cam, ax, ay);
-                        let (c, grown) = pinch(cam, &disc, grab, ax, ay, bx, by, d1 / d0, self.min_zoom, self.max_zoom);
+                        let (c, grown) = pinch(
+                            cam,
+                            &disc,
+                            grab,
+                            ax,
+                            ay,
+                            bx,
+                            by,
+                            d1 / d0,
+                            self.min_zoom,
+                            self.max_zoom,
+                        );
                         cam = c;
                         // and turned about each other: the orb rolls with them, about their midpoint
                         let a0 = (prev[1] - other[1]).atan2(prev[0] - other[0]);
@@ -372,9 +459,18 @@ impl Hand {
                         if turn.abs() > 1e-9 {
                             cam = twist(cam, &grown, bx, by, turn);
                         }
-                        self.state = HandState::Pinch { a, b, zoom0, scale: scale * d1 / d0 };
+                        self.state = HandState::Pinch {
+                            a,
+                            b,
+                            zoom0,
+                            scale: scale * d1 / d0,
+                        };
                     }
-                    HandState::Three { x0, y0, done: false } => {
+                    HandState::Three {
+                        x0,
+                        y0,
+                        done: false,
+                    } => {
                         let (_, my) = self.mean();
                         let (mx, _) = self.mean();
                         let (dx, dy) = (mx - x0, my - y0);
@@ -408,12 +504,19 @@ impl Hand {
                             let rest = if e.id == a { b } else { a };
                             self.samples.clear();
                             self.state = match self.fingers.get(&rest) {
-                                Some(&f) => HandState::Orbit { id: rest, x: f[0], y: f[1], grab: disc.unproject(&cam, f[0], f[1]) },
+                                Some(&f) => HandState::Orbit {
+                                    id: rest,
+                                    x: f[0],
+                                    y: f[1],
+                                    grab: disc.unproject(&cam, f[0], f[1]),
+                                },
                                 None => HandState::Idle,
                             };
                         }
                     }
-                    HandState::Three { .. } if self.fingers.is_empty() => self.state = HandState::Idle,
+                    HandState::Three { .. } if self.fingers.is_empty() => {
+                        self.state = HandState::Idle
+                    }
                     _ => {}
                 }
                 if self.fingers.is_empty() && !matches!(self.state, HandState::Idle) {
@@ -426,7 +529,10 @@ impl Hand {
 
     fn mean(&self) -> (f64, f64) {
         let n = self.fingers.len().max(1) as f64;
-        (self.fingers.values().map(|p| p[0]).sum::<f64>() / n, self.fingers.values().map(|p| p[1]).sum::<f64>() / n)
+        (
+            self.fingers.values().map(|p| p[0]).sum::<f64>() / n,
+            self.fingers.values().map(|p| p[1]).sum::<f64>() / n,
+        )
     }
 
     fn sample(&mut self, e: &PointerEvent) {
@@ -438,7 +544,11 @@ impl Hand {
 
     /// The fling's velocity, points a second, from the drag's last samples (Adrift's `velocity`).
     fn velocity(&self, now: f64) -> (f64, f64) {
-        let recent: Vec<_> = self.samples.iter().filter(|s| now - s.0 <= FLING_WINDOW).collect();
+        let recent: Vec<_> = self
+            .samples
+            .iter()
+            .filter(|s| now - s.0 <= FLING_WINDOW)
+            .collect();
         let (first, last) = if recent.len() >= 2 {
             (*recent[0], *recent[recent.len() - 1])
         } else {
@@ -461,12 +571,24 @@ impl Hand {
         self.now += dt;
         let mut cam = cam;
         if std::mem::take(&mut self.home_asked) {
-            let to = self.home.map(|h| Camera { roll: 0.0, ..h }).unwrap_or(Camera { roll: 0.0, zoom: self.rest_zoom, ..Camera::new(cam.lon, cam.lat, self.rest_zoom) });
+            let to = self
+                .home
+                .map(|h| Camera { roll: 0.0, ..h })
+                .unwrap_or(Camera {
+                    roll: 0.0,
+                    zoom: self.rest_zoom,
+                    ..Camera::new(cam.lon, cam.lat, self.rest_zoom)
+                });
             self.spin = (0.0, 0.0);
             if self.reduce_motion {
                 return to;
             }
-            self.flight = Some(Flight { from: cam, to, start: self.now, duration: FLIGHT_S });
+            self.flight = Some(Flight {
+                from: cam,
+                to,
+                start: self.now,
+                duration: FLIGHT_S,
+            });
         }
         if let Some(fl) = self.flight {
             let u = ((self.now - fl.start) / fl.duration).clamp(0.0, 1.0);
@@ -478,7 +600,13 @@ impl Hand {
                 self.flight = None;
                 return Camera { zoom, ..fl.to };
             }
-            return Camera::from_rotation(quat_mat(slerp(mat_quat(fl.from.rotation()), mat_quat(fl.to.rotation()))(e)), zoom);
+            return Camera::from_rotation(
+                quat_mat(slerp(
+                    mat_quat(fl.from.rotation()),
+                    mat_quat(fl.to.rotation()),
+                )(e)),
+                zoom,
+            );
         }
         if !self.fingers.is_empty() {
             return cam;
@@ -511,7 +639,11 @@ fn dot(a: [f64; 3], b: [f64; 3]) -> f64 {
     a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
-    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
 }
 
 /// Terra's ease: cubic in, cubic out.
@@ -536,8 +668,18 @@ fn turn(cam: Camera, disc: &Disc, dx: f64, dy: f64) -> Camera {
 /// A drag: `grab`, the place the finger took, exactly under the finger at (x, y), by the one rotation
 /// carrying its view direction to the finger's; off the disc, or the place gone round the back, the
 /// finger's own move turns the globe by `turn`.
-fn drag(cam: Camera, disc: &Disc, grab: Option<LonLat>, x: f64, y: f64, dx: f64, dy: f64) -> Camera {
-    let Some(grab) = grab else { return turn(cam, disc, dx, dy) };
+fn drag(
+    cam: Camera,
+    disc: &Disc,
+    grab: Option<LonLat>,
+    x: f64,
+    y: f64,
+    dx: f64,
+    dy: f64,
+) -> Camera {
+    let Some(grab) = grab else {
+        return turn(cam, disc, dx, dy);
+    };
     let vx = (x - disc.cx) / disc.r;
     let vy = (disc.cy - y) / disc.r;
     let r2 = vx * vx + vy * vy;
@@ -556,11 +698,25 @@ fn drag(cam: Camera, disc: &Disc, grab: Option<LonLat>, x: f64, y: f64, dx: f64,
 /// Two fingers: zoom by `factor`, and the place under (ax, ay) moved to (bx, by). Returns the camera
 /// and the disc as it is drawn now (grown with the zoom).
 #[allow(clippy::too_many_arguments)]
-fn pinch(cam: Camera, disc: &Disc, grab: Option<LonLat>, ax: f64, ay: f64, bx: f64, by: f64, factor: f64, min: f64, max: f64) -> (Camera, Disc) {
+fn pinch(
+    cam: Camera,
+    disc: &Disc,
+    grab: Option<LonLat>,
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+    factor: f64,
+    min: f64,
+    max: f64,
+) -> (Camera, Disc) {
     let mut cam = cam;
     let z0 = cam.zoom;
     cam.zoom = (z0 * factor).clamp(min, max);
-    let grown = Disc { r: disc.r * cam.zoom / z0, ..*disc };
+    let grown = Disc {
+        r: disc.r * cam.zoom / z0,
+        ..*disc
+    };
     (drag(cam, &grown, grab, bx, by, bx - ax, by - ay), grown)
 }
 
@@ -573,7 +729,11 @@ fn twist(cam: Camera, disc: &Disc, x: f64, y: f64, angle: f64) -> Camera {
     let vx = (x - disc.cx) / disc.r;
     let vy = (disc.cy - y) / disc.r;
     let r2 = vx * vx + vy * vy;
-    let axis = if r2 < 1.0 { [vx, vy, (1.0 - r2).sqrt()] } else { [0.0, 0.0, 1.0] };
+    let axis = if r2 < 1.0 {
+        [vx, vy, (1.0 - r2).sqrt()]
+    } else {
+        [0.0, 0.0, 1.0]
+    };
     // view z toward the reader: a positive turn about it is counterclockwise on the screen
     cam.turned(axis, -angle)
 }
@@ -584,16 +744,36 @@ fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
     let tr = m(0, 0) + m(1, 1) + m(2, 2);
     let q = if tr > 0.0 {
         let s = (tr + 1.0).sqrt() * 2.0;
-        [0.25 * s, (m(2, 1) - m(1, 2)) / s, (m(0, 2) - m(2, 0)) / s, (m(1, 0) - m(0, 1)) / s]
+        [
+            0.25 * s,
+            (m(2, 1) - m(1, 2)) / s,
+            (m(0, 2) - m(2, 0)) / s,
+            (m(1, 0) - m(0, 1)) / s,
+        ]
     } else if m(0, 0) > m(1, 1) && m(0, 0) > m(2, 2) {
         let s = (1.0 + m(0, 0) - m(1, 1) - m(2, 2)).sqrt() * 2.0;
-        [(m(2, 1) - m(1, 2)) / s, 0.25 * s, (m(0, 1) + m(1, 0)) / s, (m(0, 2) + m(2, 0)) / s]
+        [
+            (m(2, 1) - m(1, 2)) / s,
+            0.25 * s,
+            (m(0, 1) + m(1, 0)) / s,
+            (m(0, 2) + m(2, 0)) / s,
+        ]
     } else if m(1, 1) > m(2, 2) {
         let s = (1.0 + m(1, 1) - m(0, 0) - m(2, 2)).sqrt() * 2.0;
-        [(m(0, 2) - m(2, 0)) / s, (m(0, 1) + m(1, 0)) / s, 0.25 * s, (m(1, 2) + m(2, 1)) / s]
+        [
+            (m(0, 2) - m(2, 0)) / s,
+            (m(0, 1) + m(1, 0)) / s,
+            0.25 * s,
+            (m(1, 2) + m(2, 1)) / s,
+        ]
     } else {
         let s = (1.0 + m(2, 2) - m(0, 0) - m(1, 1)).sqrt() * 2.0;
-        [(m(1, 0) - m(0, 1)) / s, (m(0, 2) + m(2, 0)) / s, (m(1, 2) + m(2, 1)) / s, 0.25 * s]
+        [
+            (m(1, 0) - m(0, 1)) / s,
+            (m(0, 2) + m(2, 0)) / s,
+            (m(1, 2) + m(2, 1)) / s,
+            0.25 * s,
+        ]
     };
     let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
     [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
@@ -603,11 +783,27 @@ fn mat_quat(c: [[f64; 3]; 3]) -> [f64; 4] {
 fn quat_mat(q: [f64; 4]) -> [[f64; 3]; 3] {
     let [w, x, y, z] = q;
     let r = [
-        [1.0 - 2.0 * (y * y + z * z), 2.0 * (x * y - w * z), 2.0 * (x * z + w * y)],
-        [2.0 * (x * y + w * z), 1.0 - 2.0 * (x * x + z * z), 2.0 * (y * z - w * x)],
-        [2.0 * (x * z - w * y), 2.0 * (y * z + w * x), 1.0 - 2.0 * (x * x + y * y)],
+        [
+            1.0 - 2.0 * (y * y + z * z),
+            2.0 * (x * y - w * z),
+            2.0 * (x * z + w * y),
+        ],
+        [
+            2.0 * (x * y + w * z),
+            1.0 - 2.0 * (x * x + z * z),
+            2.0 * (y * z - w * x),
+        ],
+        [
+            2.0 * (x * z - w * y),
+            2.0 * (y * z + w * x),
+            1.0 - 2.0 * (x * x + y * y),
+        ],
     ];
-    [[r[0][0], r[1][0], r[2][0]], [r[0][1], r[1][1], r[2][1]], [r[0][2], r[1][2], r[2][2]]]
+    [
+        [r[0][0], r[1][0], r[2][0]],
+        [r[0][1], r[1][1], r[2][1]],
+        [r[0][2], r[1][2], r[2][2]],
+    ]
 }
 
 /// The shortest turn from `a` to `b`, a share `t` of the way.
@@ -625,7 +821,12 @@ fn slerp(a: [f64; 4], b: [f64; 4]) -> impl Fn(f64) -> [f64; 4] {
             let th = d.clamp(-1.0, 1.0).acos();
             (((1.0 - t) * th).sin() / th.sin(), (t * th).sin() / th.sin())
         };
-        let q = [wa * a[0] + wb * b[0], wa * a[1] + wb * b[1], wa * a[2] + wb * b[2], wa * a[3] + wb * b[3]];
+        let q = [
+            wa * a[0] + wb * b[0],
+            wa * a[1] + wb * b[1],
+            wa * a[2] + wb * b[2],
+            wa * a[3] + wb * b[3],
+        ];
         let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
         [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
     }
@@ -637,20 +838,47 @@ mod tests {
 
     #[test]
     fn a_drag_keeps_the_place_under_the_finger() {
-        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let disc = Disc {
+            cx: 200.0,
+            cy: 400.0,
+            r: 180.0,
+        };
         let mut hand = Hand::default();
         let mut cam = Camera::new(10.0, 20.0, 1.0);
         let (x0, y0) = (230.0, 380.0);
         let under = disc.unproject(&cam, x0, y0).unwrap();
-        cam = hand.pointer(cam, disc, PointerEvent { id: 1, phase: Phase::Down, x: x0, y: y0, t: 0.0 });
+        cam = hand.pointer(
+            cam,
+            disc,
+            PointerEvent {
+                id: 1,
+                phase: Phase::Down,
+                x: x0,
+                y: y0,
+                t: 0.0,
+            },
+        );
         let (mut x, mut y) = (x0, y0);
         for i in 1..=20 {
             x += 1.5;
             y += 1.0;
-            cam = hand.pointer(cam, disc, PointerEvent { id: 1, phase: Phase::Move, x, y, t: i as f64 / 60.0 });
+            cam = hand.pointer(
+                cam,
+                disc,
+                PointerEvent {
+                    id: 1,
+                    phase: Phase::Move,
+                    x,
+                    y,
+                    t: i as f64 / 60.0,
+                },
+            );
         }
         let ([px, py], _) = disc.project(&cam, under);
-        assert!((px - x).abs() < 1.5 && (py - y).abs() < 1.5, "the place is at {px},{py}, the finger at {x},{y}");
+        assert!(
+            (px - x).abs() < 1.5 && (py - y).abs() < 1.5,
+            "the place is at {px},{py}, the finger at {x},{y}"
+        );
     }
 
     fn ev(id: u64, phase: Phase, x: f64, y: f64, t: f64) -> PointerEvent {
@@ -659,7 +887,11 @@ mod tests {
 
     #[test]
     fn a_drag_carries_the_orb_over_the_pole_and_home_lands_upright() {
-        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let disc = Disc {
+            cx: 200.0,
+            cy: 400.0,
+            r: 180.0,
+        };
         let mut hand = Hand::default();
         let mut cam = Camera::new(10.0, 60.0, 1.0);
         hand.home = Some(Camera::new(-30.0, 25.0, 1.0));
@@ -673,7 +905,10 @@ mod tests {
             north = north.max(cam.lat);
         }
         let ([px, py], _) = disc.project(&cam, grab);
-        assert!((px - x).abs() < 1e-6 && (py - y).abs() < 1e-6, "{px},{py} vs {x},{y}");
+        assert!(
+            (px - x).abs() < 1e-6 && (py - y).abs() < 1e-6,
+            "{px},{py} vs {x},{y}"
+        );
         assert!(north > 89.0 && cam.roll.abs() > 90.0, "{north} {cam:?}");
         cam = hand.pointer(cam, disc, ev(1, Phase::Up, x, y, 1.5));
         // three fingers swiped up: Home, the short way, upright
@@ -694,7 +929,11 @@ mod tests {
 
     #[test]
     fn a_twist_rolls_the_orb_and_a_pinch_holds_what_the_fingers_hold() {
-        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let disc = Disc {
+            cx: 200.0,
+            cy: 400.0,
+            r: 180.0,
+        };
         let mut hand = Hand::default();
         let mut cam = Camera::new(-30.0, 25.0, 1.0);
         let (mx, my) = (230.0, 380.0);
@@ -707,8 +946,16 @@ mod tests {
         for i in 1..=30 {
             let a = q * i as f64 / 30.0;
             let (c, s) = (a.cos() * 60.0, a.sin() * 60.0);
-            cam = hand.pointer(cam, disc, ev(1, Phase::Move, mx - c, my - s, i as f64 / 60.0));
-            cam = hand.pointer(cam, disc, ev(2, Phase::Move, mx + c, my + s, i as f64 / 60.0));
+            cam = hand.pointer(
+                cam,
+                disc,
+                ev(1, Phase::Move, mx - c, my - s, i as f64 / 60.0),
+            );
+            cam = hand.pointer(
+                cam,
+                disc,
+                ev(2, Phase::Move, mx + c, my + s, i as f64 / 60.0),
+            );
         }
         let ([px, py], _) = disc.project(&cam, mid);
         assert!((px - mx).abs() < 1.0 && (py - my).abs() < 1.0, "{px},{py}");
@@ -721,17 +968,42 @@ mod tests {
             let d = 60.0 + 3.0 * i as f64;
             let t = 0.5 + i as f64 / 60.0;
             // (the globe hands the hand the disc as drawn now, grown with the zoom)
-            cam = hand.pointer(cam, Disc { r: disc.r * cam.zoom, ..disc }, ev(1, Phase::Move, mx, my - d, t));
-            cam = hand.pointer(cam, Disc { r: disc.r * cam.zoom, ..disc }, ev(2, Phase::Move, mx, my + d, t));
+            cam = hand.pointer(
+                cam,
+                Disc {
+                    r: disc.r * cam.zoom,
+                    ..disc
+                },
+                ev(1, Phase::Move, mx, my - d, t),
+            );
+            cam = hand.pointer(
+                cam,
+                Disc {
+                    r: disc.r * cam.zoom,
+                    ..disc
+                },
+                ev(2, Phase::Move, mx, my + d, t),
+            );
         }
-        let grown = Disc { r: disc.r * cam.zoom, ..disc };
+        let grown = Disc {
+            r: disc.r * cam.zoom,
+            ..disc
+        };
         let ([px, py], _) = grown.project(&cam, mid);
-        assert!(cam.zoom > z0 * 1.9 && (px - mx).abs() < 1.0 && (py - my).abs() < 1.0, "{} {px},{py}", cam.zoom);
+        assert!(
+            cam.zoom > z0 * 1.9 && (px - mx).abs() < 1.0 && (py - my).abs() < 1.0,
+            "{} {px},{py}",
+            cam.zoom
+        );
     }
 
     #[test]
     fn a_fling_glides_on_and_a_tap_never_turns_it() {
-        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let disc = Disc {
+            cx: 200.0,
+            cy: 400.0,
+            r: 180.0,
+        };
         let mut hand = Hand::default();
         let cam0 = Camera::new(0.0, 0.0, 1.0);
         let mut cam = hand.pointer(cam0, disc, ev(1, Phase::Down, 200.0, 400.0, 0.0));
@@ -739,7 +1011,17 @@ mod tests {
         cam = hand.pointer(cam, disc, ev(1, Phase::Up, 203.0, 400.0, 0.1));
         assert_eq!(cam, cam0, "a tap within the slop turns nothing");
         for i in 1..=10 {
-            cam = hand.pointer(cam, disc, ev(2, if i == 1 { Phase::Down } else { Phase::Move }, 100.0 + 12.0 * i as f64, 400.0, 1.0 + i as f64 / 60.0));
+            cam = hand.pointer(
+                cam,
+                disc,
+                ev(
+                    2,
+                    if i == 1 { Phase::Down } else { Phase::Move },
+                    100.0 + 12.0 * i as f64,
+                    400.0,
+                    1.0 + i as f64 / 60.0,
+                ),
+            );
         }
         cam = hand.pointer(cam, disc, ev(2, Phase::Up, 220.0, 400.0, 1.0 + 10.5 / 60.0));
         let lon = cam.lon;
@@ -752,7 +1034,11 @@ mod tests {
 
     #[test]
     fn a_pinch_out_springs_back() {
-        let disc = Disc { cx: 200.0, cy: 400.0, r: 180.0 };
+        let disc = Disc {
+            cx: 200.0,
+            cy: 400.0,
+            r: 180.0,
+        };
         let mut hand = Hand::default();
         let mut cam = Camera::new(0.0, 0.0, 0.6);
         for _ in 0..120 {

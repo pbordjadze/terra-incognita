@@ -47,30 +47,86 @@ impl Backdrop {
     pub fn new(gpu: &Gpu, label: &str, body: &str) -> Backdrop {
         let src = format!("{body}\n{PRELUDE}");
         let shader = gpu.shader(label, &src);
-        let uniform = gpu.device.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size: 80, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-        let bgl = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let uniform = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
-            entries: &[wgpu::BindGroupLayoutEntry {
+            size: 80,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let bgl = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some(label),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+        let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(label),
+            layout: &bgl,
+            entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None,
+                resource: uniform.as_entire_binding(),
             }],
         });
-        let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor { label: Some(label), layout: &bgl, entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() }] });
         let pipeline = gpu.fullscreen_pipeline(label, &shader, &[&bgl], None);
-        Backdrop { pipeline, bind, uniform }
+        Backdrop {
+            pipeline,
+            bind,
+            uniform,
+        }
     }
 
-    pub fn render(&self, gpu: &Gpu, enc: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, size: [u32; 2], p: &BackdropParams) {
+    pub fn render(
+        &self,
+        gpu: &Gpu,
+        enc: &mut wgpu::CommandEncoder,
+        view: &wgpu::TextureView,
+        size: [u32; 2],
+        p: &BackdropParams,
+    ) {
         let data: [f32; 20] = [
-            size[0] as f32, size[1] as f32, p.time, p.scale, p.center[0], p.center[1], 0.0, 0.0,
-            p.p[0], p.p[1], p.p[2], p.p[3], p.p[4], p.p[5], p.p[6], p.p[7], 0.0, 0.0, 0.0, 0.0,
+            size[0] as f32,
+            size[1] as f32,
+            p.time,
+            p.scale,
+            p.center[0],
+            p.center[1],
+            0.0,
+            0.0,
+            p.p[0],
+            p.p[1],
+            p.p[2],
+            p.p[3],
+            p.p[4],
+            p.p[5],
+            p.p[6],
+            p.p[7],
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ];
-        gpu.queue.write_buffer(&self.uniform, 0, bytemuck::cast_slice(&data));
+        gpu.queue
+            .write_buffer(&self.uniform, 0, bytemuck::cast_slice(&data));
         let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("backdrop"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment { view, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })],
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                depth_slice: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,

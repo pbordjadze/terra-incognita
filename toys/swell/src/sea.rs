@@ -48,7 +48,8 @@ fn shapiro(f: &mut [f32], wet: &[bool], tmp: &mut Vec<f32>) {
             let at = |d: i64| row + (i as i64 + d).rem_euclid(W as i64) as usize;
             let (a, b, d, e) = (at(-2), at(-1), at(1), at(2));
             if wet[a] && wet[b] && wet[d] && wet[e] {
-                f[k] = tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
+                f[k] =
+                    tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
             }
         }
     }
@@ -62,7 +63,8 @@ fn shapiro(f: &mut [f32], wet: &[bool], tmp: &mut Vec<f32>) {
             }
             let (a, b, d, e) = (k - 2 * W, k - W, k + W, k + 2 * W);
             if wet[a] && wet[b] && wet[d] && wet[e] {
-                f[k] = tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
+                f[k] =
+                    tmp[k] - (tmp[a] - 4.0 * tmp[b] + 6.0 * tmp[k] - 4.0 * tmp[d] + tmp[e]) / 16.0;
             }
         }
     }
@@ -135,7 +137,9 @@ impl Sea {
                 if !wet[k] {
                     continue;
                 }
-                let near_land = [(i + W - 1) % W + j * W, (i + 1) % W + j * W, k - W, k + W].iter().any(|&q| !wet[q]);
+                let near_land = [(i + W - 1) % W + j * W, (i + 1) % W + j * W, k - W, k + W]
+                    .iter()
+                    .any(|&q| !wet[q]);
                 if near_land {
                     coast.push(k as u32);
                 }
@@ -143,12 +147,27 @@ impl Sea {
                 damp[k] = if near_land { 0.008 } else { 0.0004 };
             }
         }
-        Sea { depth: h.iter().map(|&d| d as f32).collect(), eta: vec![0.0; n], prev: vec![0.0; n], ke, kn, inv_cos, damp, wet, coast, steps: 0, scratch: Vec::with_capacity(n) }
+        Sea {
+            depth: h.iter().map(|&d| d as f32).collect(),
+            eta: vec![0.0; n],
+            prev: vec![0.0; n],
+            ke,
+            kn,
+            inv_cos,
+            damp,
+            wet,
+            coast,
+            steps: 0,
+            scratch: Vec::with_capacity(n),
+        }
     }
 
     /// One step of `STEP` seconds of sea, its rows in bands across the cores.
     pub fn step(&mut self) {
-        let bands = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1).clamp(1, 4);
+        let bands = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1)
+            .clamp(1, 4);
         let rows = (H + bands - 1) / bands;
         let mut prev = std::mem::take(&mut self.prev);
         let (eta, ke, kn, ic, damp) = (&self.eta, &self.ke, &self.kn, &self.inv_cos, &self.damp);
@@ -173,12 +192,17 @@ impl Sea {
                             }
                             let e = row + (i + 1) % W;
                             let c = eta[k];
-                            let lap = kee * (eta[e] - c) - kw * (c - eta[w]) + icj * (knn * (eta[k - W] - c) - ks * (c - eta[k + W]));
+                            let lap = kee * (eta[e] - c) - kw * (c - eta[w])
+                                + icj * (knn * (eta[k - W] - c) - ks * (c - eta[k + W]));
                             out[i] = c + (1.0 - damp[k]) * (c - out[i]) + lap;
                         }
                     }
                 };
-                if b + 1 == bands { work() } else { s.spawn(work); }
+                if b + 1 == bands {
+                    work()
+                } else {
+                    s.spawn(work);
+                }
             }
         });
         self.prev = std::mem::replace(&mut self.eta, prev);
@@ -253,7 +277,9 @@ mod tests {
         // six hours on, the front has crossed ~4000 km: the sea near Midway (177 W, 28 N) has moved
         let j = ((90.0 - 28.0) / 0.5) as usize;
         let i = ((-177.0 + 180.0) / 0.5) as usize;
-        let moved = (j - 6..j + 6).flat_map(|jj| (i - 6..i + 6).map(move |ii| (jj, ii))).any(|(jj, ii)| sea.eta[jj * W + ii].abs() > 1e-3);
+        let moved = (j - 6..j + 6)
+            .flat_map(|jj| (i - 6..i + 6).map(move |ii| (jj, ii)))
+            .any(|(jj, ii)| sea.eta[jj * W + ii].abs() > 1e-3);
         assert!(moved);
     }
 }

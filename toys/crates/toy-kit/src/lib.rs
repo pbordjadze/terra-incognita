@@ -46,7 +46,10 @@ static LOG: OnceLock<std::path::PathBuf> = OnceLock::new();
 pub fn set_log(path: std::path::PathBuf) {
     if LOG.set(path).is_ok() {
         std::panic::set_hook(Box::new(|info| {
-            let at = info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+            let at = info
+                .location()
+                .map(|l| format!("{}:{}", l.file(), l.line()))
+                .unwrap_or_default();
             let msg = info
                 .payload()
                 .downcast_ref::<&str>()
@@ -63,8 +66,15 @@ pub fn log(line: &str) {
     eprintln!("toy: {line}");
     if let Some(p) = LOG.get() {
         use std::io::Write;
-        let t = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
+        let t = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(p)
+        {
             let _ = writeln!(f, "{t} {line}");
         }
     }
@@ -77,7 +87,10 @@ pub fn log(line: &str) {
 /// `KIT_STEPS=1`.
 pub fn step(what: &str) {
     #[cfg(target_os = "ios")]
-    log(&format!("launch: {what}; {} MB available", shell::available_mb()));
+    log(&format!(
+        "launch: {what}; {} MB available",
+        shell::available_mb()
+    ));
     #[cfg(not(target_os = "ios"))]
     if std::env::var("KIT_STEPS").is_ok_and(|v| v == "1") {
         eprintln!("toy: launch: {what}");
@@ -102,7 +115,16 @@ pub struct Ctx {
 
 impl Ctx {
     pub fn new(gpu: Gpu, assets: Box<dyn Assets>, width: u32, height: u32, ppp: f64) -> Ctx {
-        Ctx { gpu, assets, width, height, ppp, night: false, reduce_motion: false, haptic: false }
+        Ctx {
+            gpu,
+            assets,
+            width,
+            height,
+            ppp,
+            night: false,
+            reduce_motion: false,
+            haptic: false,
+        }
     }
 
     /// Asks the shell for one light haptic tap this frame.
@@ -230,7 +252,11 @@ impl AudioFile {
     /// A WAV file (PCM 8, 16, 24 or 32 bit, or 32-bit float; any channels, the first two kept).
     pub fn wav(path: &std::path::Path) -> anyhow::Result<AudioFile> {
         let b = std::fs::read(path)?;
-        anyhow::ensure!(b.len() > 12 && &b[0..4] == b"RIFF" && &b[8..12] == b"WAVE", "{}: not a WAV file", path.display());
+        anyhow::ensure!(
+            b.len() > 12 && &b[0..4] == b"RIFF" && &b[8..12] == b"WAVE",
+            "{}: not a WAV file",
+            path.display()
+        );
         let (mut fmt, mut data) = (None, None);
         let mut i = 12;
         while i + 8 <= b.len() {
@@ -243,13 +269,20 @@ impl AudioFile {
             }
             i += 8 + n + (n & 1);
         }
-        let (f, d) = (fmt.ok_or_else(|| anyhow::anyhow!("no fmt chunk"))?, data.ok_or_else(|| anyhow::anyhow!("no data chunk"))?);
+        let (f, d) = (
+            fmt.ok_or_else(|| anyhow::anyhow!("no fmt chunk"))?,
+            data.ok_or_else(|| anyhow::anyhow!("no data chunk"))?,
+        );
         anyhow::ensure!(f.len() >= 16, "short fmt chunk");
         let tag = u16::from_le_bytes([f[0], f[1]]);
         let ch = u16::from_le_bytes([f[2], f[3]]).max(1) as usize;
         let rate = u32::from_le_bytes(f[4..8].try_into().unwrap()) as f64;
         let bits = u16::from_le_bytes([f[14], f[15]]) as usize;
-        let tag = if tag == 0xFFFE && f.len() >= 26 { u16::from_le_bytes([f[24], f[25]]) } else { tag };
+        let tag = if tag == 0xFFFE && f.len() >= 26 {
+            u16::from_le_bytes([f[24], f[25]])
+        } else {
+            tag
+        };
         let w = bits / 8;
         anyhow::ensure!(w > 0, "zero-width samples");
         let sample = |s: &[u8]| -> f32 {
@@ -267,10 +300,22 @@ impl AudioFile {
         for k in 0..frames {
             let at = k * w * ch;
             left.push(sample(&d[at..at + w]));
-            right.push(if ch > 1 { sample(&d[at + w..at + 2 * w]) } else { sample(&d[at..at + w]) });
+            right.push(if ch > 1 {
+                sample(&d[at + w..at + 2 * w])
+            } else {
+                sample(&d[at..at + w])
+            });
         }
-        let name = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-        Ok(AudioFile { name, rate, left, right })
+        let name = path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        Ok(AudioFile {
+            name,
+            rate,
+            left,
+            right,
+        })
     }
 }
 
@@ -301,8 +346,21 @@ impl<T: Toy> Host<T> {
         step("the toy starting");
         let mut toy = T::new(&mut ctx)?;
         let synth = toy.synth().map(|s| Arc::new(Mutex::new(s)));
-        let marks = info::Marks { demo: toy.demo(&ctx).is_some(), rules: toy.rules().is_some(), origins: toy.origins().is_some() };
-        Ok(Host { ctx, toy, synth, last_t: None, info: Default::default(), marks, buttons: Default::default(), title: Default::default() })
+        let marks = info::Marks {
+            demo: toy.demo(&ctx).is_some(),
+            rules: toy.rules().is_some(),
+            origins: toy.origins().is_some(),
+        };
+        Ok(Host {
+            ctx,
+            toy,
+            synth,
+            last_t: None,
+            info: Default::default(),
+            marks,
+            buttons: Default::default(),
+            title: Default::default(),
+        })
     }
 
     pub fn resize(&mut self, width: u32, height: u32, ppp: f64) {
@@ -318,7 +376,10 @@ impl<T: Toy> Host<T> {
         // without buttons keeps the rule that a closing tap is nobody's.
         if e.phase == Phase::Down && self.info.is_open() {
             let pts = self.toy.buttons(&self.ctx);
-            if pts.iter().any(|(_, p)| (e.x - p[0]).hypot(e.y - p[1]) <= info::Info::REACH) {
+            if pts
+                .iter()
+                .any(|(_, p)| (e.x - p[0]).hypot(e.y - p[1]) <= info::Info::REACH)
+            {
                 self.info.close();
                 self.toy.pointer(&mut self.ctx, e);
                 return;
@@ -336,13 +397,19 @@ impl<T: Toy> Host<T> {
     /// Shows where the rules came from (a tap on the origins mark, or VoiceOver's activation of it),
     /// or, if that shows, hides it.
     pub fn open_origins(&mut self) {
-        let r = if self.info.origins().is_some() { None } else { self.toy.origins() };
+        let r = if self.info.origins().is_some() {
+            None
+        } else {
+            self.toy.origins()
+        };
         self.info.show_origins(r);
     }
 
     /// The origins mark's place in points, if the toy has one.
     pub fn origins_spot(&self) -> Option<[f64; 2]> {
-        self.marks.origins.then(|| info::Info::origins_spot(self.ctx.points()))
+        self.marks
+            .origins
+            .then(|| info::Info::origins_spot(self.ctx.points()))
     }
 
     /// Whether the shell hangs the card from the top (`Toy::card_at_top`).
@@ -353,13 +420,19 @@ impl<T: Toy> Host<T> {
     /// Shows the rules (a tap on the rules mark, or VoiceOver's activation of it), or, if they show,
     /// hides them.
     pub fn open_rules(&mut self) {
-        let r = if self.info.rules().is_some() { None } else { self.toy.rules() };
+        let r = if self.info.rules().is_some() {
+            None
+        } else {
+            self.toy.rules()
+        };
         self.info.show_rules(r);
     }
 
     /// The rules mark's place in points, if the toy has one.
     pub fn rules_spot(&self) -> Option<[f64; 2]> {
-        self.marks.rules.then(|| info::Info::rules_spot(self.ctx.points()))
+        self.marks
+            .rules
+            .then(|| info::Info::rules_spot(self.ctx.points()))
     }
 
     /// Opens the info mark's demo (a tap on the mark, or VoiceOver's activation of it).
@@ -380,7 +453,14 @@ impl<T: Toy> Host<T> {
             .toy
             .buttons(&self.ctx)
             .into_iter()
-            .map(|(label, p)| format!("{}\t{:.1}\t{:.1}\n", label.replace(['\t', '\n', '\0'], " "), p[0], p[1]))
+            .map(|(label, p)| {
+                format!(
+                    "{}\t{:.1}\t{:.1}\n",
+                    label.replace(['\t', '\n', '\0'], " "),
+                    p[0],
+                    p[1]
+                )
+            })
             .collect();
         self.buttons = std::ffi::CString::new(text).unwrap_or_default();
         &self.buttons
@@ -441,7 +521,14 @@ impl<T: Toy> Host<T> {
 
     pub fn draw(&mut self, target: &wgpu::TextureView) {
         self.toy.draw(&mut self.ctx, target);
-        self.info.draw(&self.ctx.gpu, target, [self.ctx.width, self.ctx.height], self.ctx.ppp, self.marks, self.ctx.reduce_motion);
+        self.info.draw(
+            &self.ctx.gpu,
+            target,
+            [self.ctx.width, self.ctx.height],
+            self.ctx.ppp,
+            self.marks,
+            self.ctx.reduce_motion,
+        );
     }
 
     /// Forgets the clock (after the app was away: the next frame's dt is 0, not the time away).

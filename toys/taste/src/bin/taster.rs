@@ -20,10 +20,26 @@ struct Taste {
 }
 
 const TASTES: &[Taste] = &[
-    Taste { name: "warm-spiky", fav: &[(0, 0.04), (1, 0.85)], width: 0.2 },
-    Taste { name: "blue-jelly", fav: &[(0, 0.58), (3, 0.9), (1, 0.15)], width: 0.22 },
-    Taste { name: "many-matte", fav: &[(2, 0.9), (3, 0.1)], width: 0.2 },
-    Taste { name: "green-calm", fav: &[(0, 0.33), (2, 0.1)], width: 0.2 },
+    Taste {
+        name: "warm-spiky",
+        fav: &[(0, 0.04), (1, 0.85)],
+        width: 0.2,
+    },
+    Taste {
+        name: "blue-jelly",
+        fav: &[(0, 0.58), (3, 0.9), (1, 0.15)],
+        width: 0.22,
+    },
+    Taste {
+        name: "many-matte",
+        fav: &[(2, 0.9), (3, 0.1)],
+        width: 0.2,
+    },
+    Taste {
+        name: "green-calm",
+        fav: &[(0, 0.33), (2, 0.1)],
+        width: 0.2,
+    },
 ];
 
 fn closeness(t: &Taste, f: &Form) -> f64 {
@@ -42,7 +58,14 @@ pub const START: Form = taste::START;
 
 /// Plays a reader of taste `t` (who touches only when `touch`; the closeness is to `t` either way) for `seconds` at `fps`; returns per-frame
 /// (holding, closeness of the creature's kept form) and the walker.
-fn play(t: Option<&Taste>, touch: bool, rests: bool, seed: u64, seconds: f64, fps: f64) -> (Vec<bool>, Vec<f64>, Walker) {
+fn play(
+    t: Option<&Taste>,
+    touch: bool,
+    rests: bool,
+    seed: u64,
+    seconds: f64,
+    fps: f64,
+) -> (Vec<bool>, Vec<f64>, Walker) {
     let mut w = Walker::new(seed, START);
     let dt = 1.0 / fps;
     let frames = (seconds * fps).ceil() as usize;
@@ -61,7 +84,10 @@ fn play(t: Option<&Taste>, touch: bool, rests: bool, seed: u64, seconds: f64, fp
         if seen.len() > lag {
             seen.pop_front();
         }
-        let leaving = std::env::var("TASTER_LEAVE").ok().and_then(|v| v.parse::<f64>().ok()).is_some_and(|l| time >= l);
+        let leaving = std::env::var("TASTER_LEAVE")
+            .ok()
+            .and_then(|v| v.parse::<f64>().ok())
+            .is_some_and(|l| time >= l);
         if leaving && holding {
             holding = false;
             free_since = time - dt;
@@ -89,8 +115,14 @@ fn play(t: Option<&Taste>, touch: bool, rests: bool, seed: u64, seconds: f64, fp
         // the frame: the check dispatches events at t, then steps by dt (dt is 0 on the first frame)
         // (as the host does: this frame's time less the last's, not a constant 1/fps, so the walk's
         // phases end on the same frames)
-        let step = if f == 0 { 0.0 } else { (f as f64 / fps - (f - 1) as f64 / fps).clamp(0.0, 0.1) };
-        let engaged = holding || time - free_since < taste::walk::ENGAGED || (free_since == f64::NEG_INFINITY && touch);
+        let step = if f == 0 {
+            0.0
+        } else {
+            (f as f64 / fps - (f - 1) as f64 / fps).clamp(0.0, 0.1)
+        };
+        let engaged = holding
+            || time - free_since < taste::walk::ENGAGED
+            || (free_since == f64::NEG_INFINITY && touch);
         w.step(step, if holding { step } else { 0.0 }, engaged);
     }
     (holds, near, w)
@@ -107,8 +139,22 @@ fn main() {
                 let mut rows = Vec::new();
                 let mut score = 0.0;
                 for seed in 1..=6u64 {
-                    let (_, near, w) = play(Some(t), true, rests, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
-                    let (_, near0, _) = play(Some(t), false, false, taste::SEED ^ (seed * 0x9e37_79b9), 240.0, fps);
+                    let (_, near, w) = play(
+                        Some(t),
+                        true,
+                        rests,
+                        taste::SEED ^ (seed * 0x9e37_79b9),
+                        240.0,
+                        fps,
+                    );
+                    let (_, near0, _) = play(
+                        Some(t),
+                        false,
+                        false,
+                        taste::SEED ^ (seed * 0x9e37_79b9),
+                        240.0,
+                        fps,
+                    );
                     // the share of each minute the kept form is close to the taste (> 0.5)
                     let share = |v: &[f64], a: f64, b: f64| {
                         let s = &v[(a * fps) as usize..(b * fps) as usize];
@@ -144,16 +190,29 @@ fn main() {
                 match (h, start) {
                     (true, None) => start = Some(time),
                     (false, Some(s)) => {
-                        events.push(format!("    {{ \"t\": {:.5}, \"hold\": \"creature\", \"for\": {:.5} }}", s - 0.001, time - s));
+                        events.push(format!(
+                            "    {{ \"t\": {:.5}, \"hold\": \"creature\", \"for\": {:.5} }}",
+                            s - 0.001,
+                            time - s
+                        ));
                         start = None;
                     }
                     _ => {}
                 }
             }
             if let Some(s) = start {
-                events.push(format!("    {{ \"t\": {:.5}, \"hold\": \"creature\", \"for\": {:.5} }}", s - 0.001, seconds - s + 0.5));
+                events.push(format!(
+                    "    {{ \"t\": {:.5}, \"hold\": \"creature\", \"for\": {:.5} }}",
+                    s - 0.001,
+                    seconds - s + 0.5
+                ));
             }
-            eprintln!("{} holds; kept form near the taste at the end: {:.2}; steps {}", events.len(), near.last().unwrap(), w.steps);
+            eprintln!(
+                "{} holds; kept form near the taste at the end: {:.2}; steps {}",
+                events.len(),
+                near.last().unwrap(),
+                w.steps
+            );
             let _ = D;
             println!("{}", events.join(",\n"));
         }

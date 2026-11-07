@@ -242,7 +242,11 @@ fn storage(binding: u32, read_only: bool, vis: wgpu::ShaderStages) -> wgpu::Bind
     wgpu::BindGroupLayoutEntry {
         binding,
         visibility: vis,
-        ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only }, has_dynamic_offset: false, min_binding_size: None },
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
         count: None,
     }
 }
@@ -250,7 +254,11 @@ fn uniform(binding: u32, vis: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry 
     wgpu::BindGroupLayoutEntry {
         binding,
         visibility: vis,
-        ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
         count: None,
     }
 }
@@ -304,7 +312,13 @@ impl Frost {
     /// It rings as it starts: `chime` loud (0: silent), `lift` steps above its height's note.
     fn start(&mut self, at: [f64; 2], after: f64, chime: f32, lift: i32) {
         if self.on_glass(at) {
-            self.pending.push(Pending { at, after, chime, lift, step: None });
+            self.pending.push(Pending {
+                at,
+                after,
+                chime,
+                lift,
+                step: None,
+            });
         }
     }
 
@@ -318,7 +332,12 @@ impl Frost {
     /// the angle as frost.wgsl's melt_radius has it, and a point deeper inside another part of the
     /// stroke is not on its edge.
     fn edge_point(&mut self, path: &[[f64; 3]], inset: f64) -> Option<([f64; 2], usize)> {
-        let wob = |a: f64, r: f64| r * (1.0 + 0.16 * (3.0 * a + 1.7).sin() + 0.10 * (5.0 * a + 3.4).sin() + 0.07 * (8.0 * a + 5.27).sin());
+        let wob = |a: f64, r: f64| {
+            r * (1.0
+                + 0.16 * (3.0 * a + 1.7).sin()
+                + 0.10 * (5.0 * a + 3.4).sin()
+                + 0.07 * (8.0 * a + 5.27).sin())
+        };
         for _ in 0..10 {
             let k = ((self.rand() * path.len() as f64) as usize).min(path.len() - 1);
             let a = self.rand() * std::f64::consts::TAU - std::f64::consts::PI;
@@ -328,7 +347,12 @@ impl Frost {
                 continue;
             }
             let p = [c[0] + d * a.cos(), c[1] + d * a.sin()];
-            let deepest = path.iter().map(|q| wob((p[1] - q[1]).atan2(p[0] - q[0]), q[2]) - (p[0] - q[0]).hypot(p[1] - q[1])).fold(f64::MIN, f64::max);
+            let deepest = path
+                .iter()
+                .map(|q| {
+                    wob((p[1] - q[1]).atan2(p[0] - q[0]), q[2]) - (p[0] - q[0]).hypot(p[1] - q[1])
+                })
+                .fold(f64::MIN, f64::max);
             if deepest <= inset + 1.5 {
                 return Some((p, k));
             }
@@ -339,8 +363,17 @@ impl Frost {
     /// Lifted from ice: seeds along the melt's very edge, a beat later and one after another, each at
     /// its own angle; they creep in from the rim a fringe deep, and the middle stays clear.
     fn regrow(&mut self, f: &Finger, t: f64) {
-        let path: Vec<[f64; 3]> = f.path.iter().zip(&f.radii).map(|(p, r)| [p[0], p[1], *r]).collect();
-        let len: f64 = f.path.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).sum();
+        let path: Vec<[f64; 3]> = f
+            .path
+            .iter()
+            .zip(&f.radii)
+            .map(|(p, r)| [p[0], p[1], *r])
+            .collect();
+        let len: f64 = f
+            .path
+            .windows(2)
+            .map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1]))
+            .sum();
         let n = ((len + f.radius * 4.0) / 16.0).clamp(6.0, 18.0) as usize;
         let mut seeds = Vec::new();
         for _ in 0..n * 2 {
@@ -383,13 +416,23 @@ impl Frost {
             let after = t + beat + gap * i as f64;
             if j < m && i * m >= j * n {
                 let fade = 1.0 - 0.45 * j as f32 / m as f32;
-                self.pending.push(Pending { at: *p, after, chime: 0.11 * fade, lift: 5, step: Some(phrase[j] + 5) });
+                self.pending.push(Pending {
+                    at: *p,
+                    after,
+                    chime: 0.11 * fade,
+                    lift: 5,
+                    step: Some(phrase[j] + 5),
+                });
                 j += 1;
             } else {
                 self.start(*p, after, 0.0, 0);
             }
         }
-        self.marks.push(Mark { path, radius: f.radius, born: t });
+        self.marks.push(Mark {
+            path,
+            radius: f.radius,
+            born: t,
+        });
         if self.marks.len() > 40 {
             self.marks.remove(0);
         }
@@ -397,8 +440,11 @@ impl Frost {
 
     /// A healing hole: a seed just inside where its frost may reach by now, so the edge follows.
     fn renew(&mut self, t: f64) {
-        self.marks.retain(|m| FRINGE + RELAX_PER_S * (t - m.born) < m.radius * 1.2);
-        let old: Vec<usize> = (0..self.marks.len()).filter(|&i| t - self.marks[i].born > RENEW_AFTER_S).collect();
+        self.marks
+            .retain(|m| FRINGE + RELAX_PER_S * (t - m.born) < m.radius * 1.2);
+        let old: Vec<usize> = (0..self.marks.len())
+            .filter(|&i| t - self.marks[i].born > RENEW_AFTER_S)
+            .collect();
         if old.is_empty() {
             return;
         }
@@ -419,7 +465,12 @@ impl Frost {
         // (the help marks' corner stays clear: frost.wgsl's on_glass)
         let tx = ((p[0] - (w - 70.0)) / 44.0).clamp(0.0, 1.0);
         let corner = (p[0] - (w - 70.0 + 44.0 * tx)).hypot(p[1] - (h - 34.0)) <= 32.0;
-        p[0] >= f && p[1] >= f && p[0] < w - f && p[1] < h - f && (p[1] - h * BAR_AT).abs() > 0.5 * f && !corner
+        p[0] >= f
+            && p[1] >= f
+            && p[0] < w - f
+            && p[1] < h - f
+            && (p[1] - h * BAR_AT).abs() > 0.5 * f
+            && !corner
     }
 
     /// A seed where the glass meets the frame (or the crossbar), low more often than high.
@@ -441,7 +492,10 @@ impl Frost {
                 [f + u * (w - 2.0 * f), f]
             } else {
                 // a side, lower a little more often
-                [if u < 0.5 { f } else { w - f }, f + (1.0 - 0.6 * v * v) * (h - 2.0 * f)]
+                [
+                    if u < 0.5 { f } else { w - f },
+                    f + (1.0 - 0.6 * v * v) * (h - 2.0 * f),
+                ]
             };
             if self.on_glass(p) {
                 break p;
@@ -449,7 +503,13 @@ impl Frost {
         };
         let now = self.time;
         // (the frost coming in from the frame chimes softly, low)
-        self.pending.push(Pending { at, after: now, chime: 0.05, lift: 0, step: None });
+        self.pending.push(Pending {
+            at,
+            after: now,
+            chime: 0.05,
+            lift: 0,
+            step: None,
+        });
     }
 
     fn live(&self) -> usize {
@@ -474,16 +534,57 @@ impl Toy for Frost {
         toy_kit::step("frost: buffers");
         let st = wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST;
         let grid_bytes = SLOTS as u64 * (N * N) as u64 * 4;
-        let grids = [0, 1].map(|i| gpu.buffer(&wgpu::BufferDescriptor { label: Some(if i == 0 { "frost grid a" } else { "frost grid b" }), size: grid_bytes, usage: st, mapped_at_creation: false }));
+        let grids = [0, 1].map(|i| {
+            gpu.buffer(&wgpu::BufferDescriptor {
+                label: Some(if i == 0 {
+                    "frost grid a"
+                } else {
+                    "frost grid b"
+                }),
+                size: grid_bytes,
+                usage: st,
+                mapped_at_creation: false,
+            })
+        });
         let mask_len = (mask_side * mask_side) as usize;
-        let mask = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("frost mask"), contents: &vec![0xffu8; mask_len * 4], usage: st | wgpu::BufferUsages::COPY_SRC });
+        let mask = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("frost mask"),
+            contents: &vec![0xffu8; mask_len * 4],
+            usage: st | wgpu::BufferUsages::COPY_SRC,
+        });
         toy_kit::budget::count(mask_len as u64 * 4);
-        let field = gpu.buffer(&wgpu::BufferDescriptor { label: Some("frost field"), size: (field_side * field_side) as u64 * 4, usage: st, mapped_at_creation: false });
-        let glaze = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("frost glaze"), contents: &vec![0u8; mask_len * 4], usage: st });
+        let field = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("frost field"),
+            size: (field_side * field_side) as u64 * 4,
+            usage: st,
+            mapped_at_creation: false,
+        });
+        let glaze = dev.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("frost glaze"),
+            contents: &vec![0u8; mask_len * 4],
+            usage: st,
+        });
         toy_kit::budget::count(mask_len as u64 * 4);
-        let stats = gpu.buffer(&wgpu::BufferDescriptor { label: Some("frost stats"), size: SLOTS as u64 * 16 + 16, usage: st | wgpu::BufferUsages::COPY_SRC, mapped_at_creation: false });
-        let readback = gpu.buffer(&wgpu::BufferDescriptor { label: Some("frost readback"), size: SLOTS as u64 * 16 + 16, usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-        let ub = |label, size: usize| dev.create_buffer(&wgpu::BufferDescriptor { label: Some(label), size: size as u64, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let stats = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("frost stats"),
+            size: SLOTS as u64 * 16 + 16,
+            usage: st | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+        let readback = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("frost readback"),
+            size: SLOTS as u64 * 16 + 16,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let ub = |label, size: usize| {
+            dev.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size: size as u64,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
+        };
         let globals = ub("frost globals", std::mem::size_of::<Globals>());
         let op = ub("frost op", std::mem::size_of::<Op>());
         let look = ub("frost look", std::mem::size_of::<Look>());
@@ -492,26 +593,63 @@ impl Toy for Frost {
         let cs = wgpu::ShaderStages::COMPUTE;
         let layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("frost sim"),
-            entries: &[uniform(0, cs), storage(1, true, cs), storage(2, false, cs), storage(3, false, cs), storage(4, false, cs), storage(5, false, cs), uniform(6, cs), storage(7, false, cs)],
+            entries: &[
+                uniform(0, cs),
+                storage(1, true, cs),
+                storage(2, false, cs),
+                storage(3, false, cs),
+                storage(4, false, cs),
+                storage(5, false, cs),
+                uniform(6, cs),
+                storage(7, false, cs),
+            ],
         });
         let binds = [0usize, 1].map(|p| {
             dev.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("frost sim"),
                 layout: &layout,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: globals.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 1, resource: grids[p].as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 2, resource: grids[1 - p].as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 3, resource: mask.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 4, resource: stats.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 5, resource: field.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 6, resource: op.as_entire_binding() },
-                    wgpu::BindGroupEntry { binding: 7, resource: glaze.as_entire_binding() },
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: globals.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: grids[p].as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: grids[1 - p].as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: mask.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: stats.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 5,
+                        resource: field.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 6,
+                        resource: op.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: glaze.as_entire_binding(),
+                    },
                 ],
             })
         });
         let shader = gpu.shader("frost sim", include_str!("frost.wgsl"));
-        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("frost sim"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
+        let pl = dev.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("frost sim"),
+            bind_group_layouts: &[Some(&layout)],
+            immediate_size: 0,
+        });
         let compute = |entry: &str| {
             dev.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some(entry),
@@ -522,16 +660,35 @@ impl Toy for Frost {
                 cache: None,
             })
         };
-        let (grow, claim, seed, melt_cells, melt_pane, paint) = (compute("grow"), compute("claim"), compute("seed"), compute("melt_cells"), compute("melt_pane"), compute("paint"));
+        let (grow, claim, seed, melt_cells, melt_pane, paint) = (
+            compute("grow"),
+            compute("claim"),
+            compute("seed"),
+            compute("melt_cells"),
+            compute("melt_pane"),
+            compute("paint"),
+        );
         let (probe, clear, relax) = (compute("probe"), compute("clear"), compute("relax"));
 
         toy_kit::step("frost: the window's pipeline");
         let fs = wgpu::ShaderStages::FRAGMENT;
-        let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("frost draw"), entries: &[uniform(0, fs), storage(1, true, fs)] });
+        let draw_layout = dev.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("frost draw"),
+            entries: &[uniform(0, fs), storage(1, true, fs)],
+        });
         let draw_bind = dev.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("frost draw"),
             layout: &draw_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: look.as_entire_binding() }, wgpu::BindGroupEntry { binding: 1, resource: field.as_entire_binding() }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: look.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: field.as_entire_binding(),
+                },
+            ],
         });
         let draw_shader = gpu.shader("frost pane", include_str!("pane.wgsl"));
         let draw = gpu.fullscreen_pipeline("frost pane", &draw_shader, &[&draw_layout], None);
@@ -662,7 +819,10 @@ impl Toy for Frost {
         let mut sweep_r = None;
         if let Some((t0, c)) = self.sweep {
             let r = (t - t0) * SWEEP_SPEED;
-            let far = [0.0, self.pane[0]].iter().flat_map(|&x| [0.0, self.pane[1]].map(|y| (x - c[0]).hypot(y - c[1]))).fold(0.0, f64::max);
+            let far = [0.0, self.pane[0]]
+                .iter()
+                .flat_map(|&x| [0.0, self.pane[1]].map(|y| (x - c[0]).hypot(y - c[1])))
+                .fold(0.0, f64::max);
             sweep_r = Some((c, r));
             if r > far + 70.0 {
                 self.sweep = None;
@@ -676,12 +836,22 @@ impl Toy for Frost {
         if self.crept == 0 && since > 0.6 {
             self.crept = 1;
             self.next_creep = t + CREEP_S;
-            self.pending.push(Pending { at: [FRAME + 1.5, self.pane[1] - FRAME - 1.5], after: t, chime: 0.05, lift: 0, step: None });
+            self.pending.push(Pending {
+                at: [FRAME + 1.5, self.pane[1] - FRAME - 1.5],
+                after: t,
+                chime: 0.05,
+                lift: 0,
+                step: None,
+            });
         } else if self.crept > 0 && self.crept < CREEP_MAX && t > self.next_creep {
             self.crept += 1;
             let r = self.rand();
             // quick at first (the glass takes about twenty seconds to frost over), then now and then
-            let pace = if self.crept < 26 { CREEP_S } else { CREEP_S * 6.0 };
+            let pace = if self.crept < 26 {
+                CREEP_S
+            } else {
+                CREEP_S * 6.0
+            };
             self.next_creep = t + pace * (0.6 + 0.8 * r);
             self.creep();
         }
@@ -750,20 +920,48 @@ impl Toy for Frost {
                 } else {
                     // (round the height's note, now one, now another of its neighbours)
                     let r = self.rand();
-                    let st = sound::step_at(p.at[1] / self.pane[1].max(1.0)) + p.lift + if r < 0.3 { 1 } else if r < 0.5 { 2 } else { 0 };
+                    let st = sound::step_at(p.at[1] / self.pane[1].max(1.0))
+                        + p.lift
+                        + if r < 0.3 {
+                            1
+                        } else if r < 0.5 {
+                            2
+                        } else {
+                            0
+                        };
                     sound::note(st)
                 };
                 // (a little louder, a little brighter or not, so no two pings are the same)
                 let k = 0.75 + 0.5 * self.rand() as f32;
-                self.crackle.play(sound::Note::Ping { f, pan, amp: p.chime * k });
+                self.crackle.play(sound::Note::Ping {
+                    f,
+                    pan,
+                    amp: p.chime * k,
+                });
                 if std::env::var("FROST_LOG").is_ok() {
                     eprintln!("t {t:.2} ping {f:.0} amp {:.3} at {:?}", p.chime * k, p.at);
                 }
             }
             // a free grid, or the one whose tips have stalled longest (it stops where it is)
-            let k = (0..SLOTS).find(|&k| !self.slots[k].live).unwrap_or_else(|| (0..SLOTS).min_by(|&a, &b| self.slots[a].advanced.total_cmp(&self.slots[b].advanced)).unwrap());
+            let k = (0..SLOTS)
+                .find(|&k| !self.slots[k].live)
+                .unwrap_or_else(|| {
+                    (0..SLOTS)
+                        .min_by(|&a, &b| self.slots[a].advanced.total_cmp(&self.slots[b].advanced))
+                        .unwrap()
+                });
             let angle = self.rand() * std::f64::consts::FRAC_PI_3;
-            self.slots[k] = Slot { id: self.next_id, center: p.at, angle, live: true, born: t, grew: t, frozen: 0, reach: 0, advanced: t };
+            self.slots[k] = Slot {
+                id: self.next_id,
+                center: p.at,
+                angle,
+                live: true,
+                born: t,
+                grew: t,
+                frozen: 0,
+                reach: 0,
+                advanced: t,
+            };
             self.next_id += 1;
             op.kind |= OP_SEED;
             op.slot = k as u32;
@@ -771,10 +969,15 @@ impl Toy for Frost {
         let op = if op.kind != 0 { Some(op) } else { None };
         let mut g = self.globals();
         g.relax = (RELAX_PER_S * dt) as f32;
-        gpu.queue.write_buffer(&self.globals, 0, bytemuck::bytes_of(&g));
-        gpu.queue.write_buffer(&self.stats, (PROBE_AT * 4) as u64, &[0u8; 16]);
+        gpu.queue
+            .write_buffer(&self.globals, 0, bytemuck::bytes_of(&g));
+        gpu.queue
+            .write_buffer(&self.stats, (PROBE_AT * 4) as u64, &[0u8; 16]);
         let wg = N.div_ceil(8);
-        let (fw, fh) = ((self.pane[0] * FS as f64).ceil() as u32, (self.pane[1] * FS as f64).ceil() as u32);
+        let (fw, fh) = (
+            (self.pane[0] * FS as f64).ceil() as u32,
+            (self.pane[1] * FS as f64).ceil() as u32,
+        );
         {
             let mut cp = enc.begin_compute_pass(&Default::default());
             cp.set_bind_group(0, &self.binds[0], &[]);
@@ -803,7 +1006,11 @@ impl Toy for Frost {
             let span = |a: f32, b: f32| (((a - b).abs() + reach) * FS).ceil() as u32;
             if o.kind & OP_MELT != 0 {
                 cp.set_pipeline(&self.melt_pane);
-                cp.dispatch_workgroups(span(o.at[0], o.to[0]).div_ceil(8), span(o.at[1], o.to[1]).div_ceil(8), 1);
+                cp.dispatch_workgroups(
+                    span(o.at[0], o.to[0]).div_ceil(8),
+                    span(o.at[1], o.to[1]).div_ceil(8),
+                    1,
+                );
             }
             if o.kind & OP_CLEAR != 0 {
                 cp.set_pipeline(&self.clear);
@@ -811,7 +1018,11 @@ impl Toy for Frost {
             }
         }
         // the automaton, at its own pace (slower under Reduce Motion)
-        let rate = if self.reduce_motion { STEPS_PER_S * 0.4 } else { STEPS_PER_S };
+        let rate = if self.reduce_motion {
+            STEPS_PER_S * 0.4
+        } else {
+            STEPS_PER_S
+        };
         self.owed = (self.owed + dt * rate).min(40.0);
         let n = self.owed.floor() as u32;
         self.owed -= n as f64;
@@ -837,7 +1048,8 @@ impl Toy for Frost {
         let slice = self.readback.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
         let _ = gpu.device.poll(wgpu::PollType::wait_indefinitely());
-        let counts: Vec<u32> = bytemuck::cast_slice(&slice.get_mapped_range().expect("mapped")).to_vec();
+        let counts: Vec<u32> =
+            bytemuck::cast_slice(&slice.get_mapped_range().expect("mapped")).to_vec();
         self.readback.unmap();
         let mut strike = None;
         let mut touch = (0.0, 0.0, 0.0, 0.0, 0.0);
@@ -860,7 +1072,11 @@ impl Toy for Frost {
                 f.speed += (v - f.speed) * (1.0 - (-dt / 0.08).exp());
                 let rest = ((t - f.rest_since) / MELT_S).clamp(0.0, 1.0);
                 let moving = (f.speed / 260.0).min(1.0);
-                let widening = if rest < 1.0 && f.radius < MELT_MAX { f.ice * 0.5 } else { 0.0 };
+                let widening = if rest < 1.0 && f.radius < MELT_MAX {
+                    f.ice * 0.5
+                } else {
+                    0.0
+                };
                 let sizzle = (ice * (0.35 + 0.65 * moving)).max(widening);
                 let snaps = ice * f.speed * 0.12;
                 let step = sound::step_at(f.at[1] / ph.max(1.0));
@@ -878,27 +1094,44 @@ impl Toy for Frost {
                         self.drips += 1;
                         let r = (self.drips as f64 * 0.618).fract();
                         self.next_drip = t + 0.5 + 0.3 * r;
-                        self.drip = Some((step + DRIP[k], (f.at[0] / pw.max(1.0) * 2.0 - 1.0) * 0.7));
+                        self.drip =
+                            Some((step + DRIP[k], (f.at[0] / pw.max(1.0) * 2.0 - 1.0) * 0.7));
                     }
                 } else {
                     self.drips = 0;
                 }
                 let pan = (f.at[0] / pw.max(1.0) * 2.0 - 1.0) * 0.7;
-                touch = (sizzle as f32, snaps as f32, sound::note(step), sing as f32, pan as f32);
+                touch = (
+                    sizzle as f32,
+                    snaps as f32,
+                    sound::note(step),
+                    sing as f32,
+                    pan as f32,
+                );
             }
             f.last = f.at;
         }
         if let Some((st, pan)) = self.drip.take() {
-            self.crackle.play(sound::Note::Ping { f: sound::note(st), pan: pan as f32, amp: 0.05 });
+            self.crackle.play(sound::Note::Ping {
+                f: sound::note(st),
+                pan: pan as f32,
+                amp: 0.05,
+            });
         }
         if let Some((at, ice)) = strike {
             // the glass struck: bare glass rings, frost damps it
             let (f, pan) = self.voice_at(at, 0);
             // (ferns leave gaps: a probe 0.45 iced is a frosted pane)
             let damp = (ice / 0.45).clamp(0.0, 1.0);
-            self.crackle.play(sound::Note::Strike { f, pan, amp: 0.22, damp: (damp * damp * (3.0 - 2.0 * damp)) as f32 });
+            self.crackle.play(sound::Note::Strike {
+                f,
+                pan,
+                amp: 0.22,
+                damp: (damp * damp * (3.0 - 2.0 * damp)) as f32,
+            });
         }
-        self.crackle.touch(touch.0, touch.1, touch.2, touch.3, touch.4);
+        self.crackle
+            .touch(touch.0, touch.1, touch.2, touch.3, touch.4);
         let mut frozen_now = 0.0;
         let mut pan_w = 0.0;
         for k in 0..SLOTS {
@@ -919,7 +1152,10 @@ impl Toy for Frost {
                 s.advanced = t;
             }
             // done: its tips blocked all round (by other ice or the frame) for a while, or old
-            if (t - s.advanced > QUIET_S && t - s.born > 1.0) || t - s.born > MAX_AGE_S || s.reach as i64 >= (N / 2) as i64 - 6 {
+            if (t - s.advanced > QUIET_S && t - s.born > 1.0)
+                || t - s.born > MAX_AGE_S
+                || s.reach as i64 >= (N / 2) as i64 - 6
+            {
                 s.live = false;
             }
         }
@@ -931,7 +1167,11 @@ impl Toy for Frost {
         // slow spread a scatter)
         let per_s = if dt > 0.0 { frozen_now / dt } else { 0.0 };
         let clicks = (per_s.sqrt() * 0.7).min(60.0);
-        let pan = if frozen_now > 0.0 { pan_w / frozen_now } else { 0.0 };
+        let pan = if frozen_now > 0.0 {
+            pan_w / frozen_now
+        } else {
+            0.0
+        };
         self.crackle.set(clicks as f32, pan as f32);
         // and in the hand: a light tick for every so much new ice, never faster than 14 a second
         self.crack += frozen_now;
@@ -956,7 +1196,9 @@ impl Toy for Frost {
             frame: FRAME as f32,
             bar: (self.pane[1] * BAR_AT) as f32,
         };
-        ctx.gpu.queue.write_buffer(&self.look, 0, bytemuck::bytes_of(&look));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.look, 0, bytemuck::bytes_of(&look));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -965,7 +1207,10 @@ impl Toy for Frost {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -993,7 +1238,15 @@ impl Toy for Frost {
 
     fn demo(&self, _ctx: &Ctx) -> Option<info::Demo> {
         let at = [self.pane[0] * 0.55, self.pane[1] * 0.45];
-        Some(info::Demo::new("Frost on a window at −50 °C. Your finger is warm.", vec![info::Stroke::drag(0.4, 1.4, at, [at[0] - 90.0, at[1] + 140.0])]))
+        Some(info::Demo::new(
+            "Frost on a window at −50 °C. Your finger is warm.",
+            vec![info::Stroke::drag(
+                0.4,
+                1.4,
+                at,
+                [at[0] - 90.0, at[1] + 140.0],
+            )],
+        ))
     }
 
     fn rules(&self) -> Option<info::Rules> {

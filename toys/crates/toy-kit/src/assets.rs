@@ -21,7 +21,9 @@ pub struct MemoryAssets(pub HashMap<String, Vec<u8>>);
 
 impl Assets for MemoryAssets {
     fn read(&self, name: &str) -> anyhow::Result<Vec<u8>> {
-        self.0.get(name).cloned().ok_or_else(|| anyhow::anyhow!("no asset {name}"))
+        self.0
+            .get(name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("no asset {name}"))
     }
 }
-

@@ -21,7 +21,10 @@ pub struct MemoryAssets(pub HashMap<String, Vec<u8>>);
 
 impl Assets for MemoryAssets {
     fn read(&self, name: &str) -> anyhow::Result<Vec<u8>> {
-        self.0.get(name).cloned().ok_or_else(|| anyhow::anyhow!("no asset {name}"))
+        self.0
+            .get(name)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("no asset {name}"))
     }
 }
 
@@ -33,10 +36,30 @@ pub const FILES: &[&str] = &[
     "floor.png",
     "currents.png",
     "stream.png",
-    "ice-01.png", "ice-02.png", "ice-03.png", "ice-04.png", "ice-05.png", "ice-06.png",
-    "ice-07.png", "ice-08.png", "ice-09.png", "ice-10.png", "ice-11.png", "ice-12.png",
-    "land-01.jpg", "land-02.jpg", "land-03.jpg", "land-04.jpg", "land-05.jpg", "land-06.jpg",
-    "land-07.jpg", "land-08.jpg", "land-09.jpg", "land-10.jpg", "land-11.jpg", "land-12.jpg",
+    "ice-01.png",
+    "ice-02.png",
+    "ice-03.png",
+    "ice-04.png",
+    "ice-05.png",
+    "ice-06.png",
+    "ice-07.png",
+    "ice-08.png",
+    "ice-09.png",
+    "ice-10.png",
+    "ice-11.png",
+    "ice-12.png",
+    "land-01.jpg",
+    "land-02.jpg",
+    "land-03.jpg",
+    "land-04.jpg",
+    "land-05.jpg",
+    "land-06.jpg",
+    "land-07.jpg",
+    "land-08.jpg",
+    "land-09.jpg",
+    "land-10.jpg",
+    "land-11.jpg",
+    "land-12.jpg",
     // the Earth's lights by night (gpu/textures.rs reads it for the look's night)
     "night.jpg",
     // Adrift's own sheets (Truth; adrift/SOURCES.md): the wind, the eddy wander and its time

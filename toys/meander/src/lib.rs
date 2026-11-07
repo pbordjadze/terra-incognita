@@ -14,7 +14,10 @@ pub fn opening_course(seed: u64) -> Vec<[f64; 2]> {
     (0..=110)
         .map(|i| {
             let y = 11000.0 - i as f64 * 200.0;
-            let x = 1100.0 + 700.0 * (y / 1500.0 + ph[0]).sin() + 300.0 * (y / 700.0 + ph[1]).sin() + 200.0 * (y / 3700.0 + ph[2]).sin();
+            let x = 1100.0
+                + 700.0 * (y / 1500.0 + ph[0]).sin()
+                + 300.0 * (y / 700.0 + ph[1]).sin()
+                + 200.0 * (y / 3700.0 + ph[2]).sin();
             [x, y]
         })
         .collect()
@@ -29,7 +32,15 @@ pub fn seed_wobble(course: &[[f64; 2]], seed: u64) -> Vec<[f64; 2]> {
     }
     let mut s = seed | 1;
     // irregular, not a sine: six waves of random length (1.6-5 km) and strength
-    let waves: Vec<(f64, f64, f64)> = (0..6).map(|_| (1600.0 + 3400.0 * rand(&mut s), 110.0 + 120.0 * rand(&mut s), rand(&mut s) * 6.283)).collect();
+    let waves: Vec<(f64, f64, f64)> = (0..6)
+        .map(|_| {
+            (
+                1600.0 + 3400.0 * rand(&mut s),
+                110.0 + 120.0 * rand(&mut s),
+                rand(&mut s) * 6.283,
+            )
+        })
+        .collect();
     let mut out = Vec::with_capacity(p.len());
     let mut along = 0.0;
     for i in 0..p.len() {
@@ -40,7 +51,10 @@ pub fn seed_wobble(course: &[[f64; 2]], seed: u64) -> Vec<[f64; 2]> {
         let b = p[(i + 1).min(p.len() - 1)];
         let l = dist(a, b).max(1e-6);
         let nrm = [-(b[1] - a[1]) / l, (b[0] - a[0]) / l];
-        let off: f64 = waves.iter().map(|&(wl, amp, ph)| amp * (along / wl * 6.283 + ph).sin()).sum();
+        let off: f64 = waves
+            .iter()
+            .map(|&(wl, amp, ph)| amp * (along / wl * 6.283 + ph).sin())
+            .sum();
         out.push([p[i][0] + nrm[0] * off, p[i][1] + nrm[1] * off]);
     }
     out
@@ -58,7 +72,12 @@ pub fn extend(course: &[[f64; 2]], bounds: [f64; 4]) -> Vec<[f64; 2]> {
         [(to[0] - from[0]) / l, (to[1] - from[1]) / l]
     };
     let k = (p.len() - 1).min(8);
-    let outside = |q: [f64; 2]| q[0] < bounds[0] - 2500.0 || q[0] > bounds[2] + 2500.0 || q[1] < bounds[1] - 2500.0 || q[1] > bounds[3] + 2500.0;
+    let outside = |q: [f64; 2]| {
+        q[0] < bounds[0] - 2500.0
+            || q[0] > bounds[2] + 2500.0
+            || q[1] < bounds[1] - 2500.0
+            || q[1] > bounds[3] + 2500.0
+    };
     let mut head = Vec::new();
     let d0 = dir(p[k], p[0]);
     let mut q = p[0];

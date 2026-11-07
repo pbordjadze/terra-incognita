@@ -11,8 +11,8 @@ pub mod profile;
 pub mod sea;
 pub mod seeds;
 pub mod silver;
-pub mod veil;
 pub mod sprites;
+pub mod veil;
 pub mod wake;
 pub mod words;
 
@@ -43,42 +43,72 @@ pub use sprites::{Instance, SpritePass};
 
 /// The view's bind group layout (group 0 of every pass): one uniform buffer, `ViewUniform`.
 pub fn view_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
-    gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("view"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-            count: None,
-        }],
-    })
+    gpu.device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("view"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        })
 }
 
 /// A mark's pipeline: instanced quads of six vertices (`vs`, `fs`), one instance layout, the
 /// view's group 0 and the pass's own group 1 if it has one, premultiplied over the sea.
-pub fn mark_pipeline(gpu: &Gpu, name: &str, module: &wgpu::ShaderModule, instance: wgpu::VertexBufferLayout,
-                     view: &wgpu::BindGroupLayout, own: Option<&wgpu::BindGroupLayout>) -> wgpu::RenderPipeline {
+pub fn mark_pipeline(
+    gpu: &Gpu,
+    name: &str,
+    module: &wgpu::ShaderModule,
+    instance: wgpu::VertexBufferLayout,
+    view: &wgpu::BindGroupLayout,
+    own: Option<&wgpu::BindGroupLayout>,
+) -> wgpu::RenderPipeline {
     let mut layouts = vec![Some(view)];
     if let Some(o) = own {
         layouts.push(Some(o));
     }
-    let layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some(name), bind_group_layouts: &layouts, immediate_size: 0 });
-    gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some(name),
-        layout: Some(&layout),
-        vertex: wgpu::VertexState { module, entry_point: Some("vs"), buffers: &[Some(instance)], compilation_options: Default::default() },
-        fragment: Some(wgpu::FragmentState {
-            module,
-            entry_point: Some("fs"),
-            compilation_options: Default::default(),
-            targets: &[Some(wgpu::ColorTargetState { format: gpu.format, blend: Some(Gpu::over()), write_mask: wgpu::ColorWrites::ALL })],
-        }),
-        primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, ..Default::default() },
-        depth_stencil: None,
-        multisample: Default::default(),
-        multiview_mask: None,
-        cache: None,
-    })
+    let layout = gpu
+        .device
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some(name),
+            bind_group_layouts: &layouts,
+            immediate_size: 0,
+        });
+    gpu.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(name),
+            layout: Some(&layout),
+            vertex: wgpu::VertexState {
+                module,
+                entry_point: Some("vs"),
+                buffers: &[Some(instance)],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module,
+                entry_point: Some("fs"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: gpu.format,
+                    blend: Some(Gpu::over()),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: Default::default(),
+            multiview_mask: None,
+            cache: None,
+        })
 }
 
 /// An instance buffer that grows as it must and is written each frame.
@@ -93,7 +123,13 @@ pub struct Instances<T: Pod> {
 impl<T: Pod> Instances<T> {
     pub fn new(gpu: &Gpu, name: &'static str, capacity: usize) -> Self {
         let capacity = capacity.max(16);
-        Self { buffer: Self::make(gpu, name, capacity), capacity, count: 0, name, _t: Default::default() }
+        Self {
+            buffer: Self::make(gpu, name, capacity),
+            capacity,
+            count: 0,
+            name,
+            _t: Default::default(),
+        }
     }
 
     fn make(gpu: &Gpu, name: &str, capacity: usize) -> wgpu::Buffer {
@@ -111,7 +147,8 @@ impl<T: Pod> Instances<T> {
             self.buffer = Self::make(gpu, self.name, self.capacity);
         }
         if !items.is_empty() {
-            gpu.queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(items));
+            gpu.queue
+                .write_buffer(&self.buffer, 0, bytemuck::cast_slice(items));
         }
         self.count = items.len() as u32;
     }
@@ -131,15 +168,21 @@ pub struct Uniform<T: Pod> {
 
 impl<T: Pod> Uniform<T> {
     pub fn new(gpu: &Gpu, name: &str) -> Self {
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some(name),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None,
-            }],
-        });
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some(name),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(name),
             size: std::mem::size_of::<T>() as u64,
@@ -149,13 +192,22 @@ impl<T: Pod> Uniform<T> {
         let group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some(name),
             layout: &layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: buffer.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
         });
-        Self { layout, buffer, group, _t: Default::default() }
+        Self {
+            layout,
+            buffer,
+            group,
+            _t: Default::default(),
+        }
     }
 
     pub fn write(&self, gpu: &Gpu, value: &T) {
-        gpu.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(value));
+        gpu.queue
+            .write_buffer(&self.buffer, 0, bytemuck::bytes_of(value));
     }
 }
 
@@ -339,14 +391,14 @@ pub struct LookCue {
 
 pub fn lamp_hue(id: u32) -> [f32; 3] {
     const HUES: [[f32; 3]; 8] = [
-        [0.957, 0.647, 0.165],   // amber
-        [0.345, 0.722, 0.910],   // sky
-        [0.910, 0.435, 0.627],   // rose
-        [0.310, 0.816, 0.659],   // mint
-        [0.941, 0.439, 0.353],   // coral
-        [0.706, 0.549, 0.941],   // lilac
-        [0.722, 0.839, 0.290],   // lime
-        [0.949, 0.812, 0.227],   // gold
+        [0.957, 0.647, 0.165], // amber
+        [0.345, 0.722, 0.910], // sky
+        [0.910, 0.435, 0.627], // rose
+        [0.310, 0.816, 0.659], // mint
+        [0.941, 0.439, 0.353], // coral
+        [0.706, 0.549, 0.941], // lilac
+        [0.722, 0.839, 0.290], // lime
+        [0.949, 0.812, 0.227], // gold
     ];
     HUES[((id.max(1) - 1) % 8) as usize]
 }
@@ -354,7 +406,10 @@ pub fn lamp_hue(id: u32) -> [f32; 3] {
 /// A lamp not chosen while another is (as itself or as its cloud), live (R21): it steps back, so the
 /// chosen read at a glance; a finger's hold or a press brings it forward.
 fn step_back(state: &LookState, f: &LookFloat) -> bool {
-    !state.exporting && !(f.followed || f.shown || f.held || f.chosen) && state.floats.iter().any(|g| g.followed || g.shown) && state.panel_press.map_or(true, |p| p.0 != f.id)
+    !state.exporting
+        && !(f.followed || f.shown || f.held || f.chosen)
+        && state.floats.iter().any(|g| g.followed || g.shown)
+        && state.panel_press.map_or(true, |p| p.0 != f.id)
 }
 
 fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
@@ -363,7 +418,11 @@ fn smooth01(e0: f32, e1: f32, x: f32) -> f32 {
 }
 
 fn slerpish(a: [f32; 3], b: [f32; 3], t: f32) -> [f32; 3] {
-    let v = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    let v = [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t,
+    ];
     let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-9);
     [v[0] / l, v[1] / l, v[2] / l]
 }
@@ -376,22 +435,62 @@ const CUE_GLIDE: (f32, f32) = (0.1, 0.75);
 
 /// Where a conducted lamp is drawn: gliding from its old place to its new.
 fn glide(c: &LookCue) -> [f32; 3] {
-    slerpish(unit(c.from), unit(c.at), smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age))
+    slerpish(
+        unit(c.from),
+        unit(c.at),
+        smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age),
+    )
 }
 
 /// A thin ring on the globe round `at`, `radius` points across the screen (at the globe's scale).
-fn ring_on_globe(out: &mut Vec<wake::StrokeInstance>, at: LonLat, radius: f32, disc: [f32; 3], w: f32, a: f32, hue: [f32; 3], night: bool) {
+fn ring_on_globe(
+    out: &mut Vec<wake::StrokeInstance>,
+    at: LonLat,
+    radius: f32,
+    disc: [f32; 3],
+    w: f32,
+    a: f32,
+    hue: [f32; 3],
+    night: bool,
+) {
     let ang = radius / disc[2].max(1.0);
     let c = unit(at);
-    let up = if c[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
-    let e1 = { let v = [up[1] * c[2] - up[2] * c[1], up[2] * c[0] - up[0] * c[2], up[0] * c[1] - up[1] * c[0]]; let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt(); [v[0] / l, v[1] / l, v[2] / l] };
-    let e2 = [c[1] * e1[2] - c[2] * e1[1], c[2] * e1[0] - c[0] * e1[2], c[0] * e1[1] - c[1] * e1[0]];
+    let up = if c[1].abs() > 0.9 {
+        [1.0, 0.0, 0.0]
+    } else {
+        [0.0, 1.0, 0.0]
+    };
+    let e1 = {
+        let v = [
+            up[1] * c[2] - up[2] * c[1],
+            up[2] * c[0] - up[0] * c[2],
+            up[0] * c[1] - up[1] * c[0],
+        ];
+        let l = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+        [v[0] / l, v[1] / l, v[2] / l]
+    };
+    let e2 = [
+        c[1] * e1[2] - c[2] * e1[1],
+        c[2] * e1[0] - c[0] * e1[2],
+        c[0] * e1[1] - c[1] * e1[0],
+    ];
     let (ca, sa) = (ang.cos(), ang.sin());
-    let ring: Vec<wake::Pt> = (0..48).map(|j| {
-        let th = j as f32 / 48.0 * std::f32::consts::TAU;
-        let (x, y) = (th.cos() * sa, th.sin() * sa);
-        wake::Pt { p: [c[0] * ca + e1[0] * x + e2[0] * y, c[1] * ca + e1[1] * x + e2[1] * y, c[2] * ca + e1[2] * x + e2[2] * y], w, a, hollow: 0.0 }
-    }).collect();
+    let ring: Vec<wake::Pt> = (0..48)
+        .map(|j| {
+            let th = j as f32 / 48.0 * std::f32::consts::TAU;
+            let (x, y) = (th.cos() * sa, th.sin() * sa);
+            wake::Pt {
+                p: [
+                    c[0] * ca + e1[0] * x + e2[0] * y,
+                    c[1] * ca + e1[1] * x + e2[1] * y,
+                    c[2] * ca + e1[2] * x + e2[2] * y,
+                ],
+                w,
+                a,
+                hollow: 0.0,
+            }
+        })
+        .collect();
     wake::line(out, &ring, hue, false, night, true);
 }
 
@@ -408,10 +507,25 @@ fn fan(c: &LookCue, n: usize) -> Vec<[f32; 3]> {
         return Vec::new();
     }
     let at = unit(c.at);
-    let pool: Vec<usize> = c.near.iter().filter(|&&k| k != c.chosen && k >= 1 && (k as usize) <= c.worlds.len()).map(|&k| k as usize - 1).collect();
+    let pool: Vec<usize> = c
+        .near
+        .iter()
+        .filter(|&&k| k != c.chosen && k >= 1 && (k as usize) <= c.worlds.len())
+        .map(|&k| k as usize - 1)
+        .collect();
     // a tangent frame at the chosen place
-    let up = if at[1].abs() > 0.9 { [1.0, 0.0, 0.0] } else { [0.0, 1.0, 0.0] };
-    let cross = |a: [f32; 3], b: [f32; 3]| [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    let up = if at[1].abs() > 0.9 {
+        [1.0, 0.0, 0.0]
+    } else {
+        [0.0, 1.0, 0.0]
+    };
+    let cross = |a: [f32; 3], b: [f32; 3]| {
+        [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0],
+        ]
+    };
     let dot = |a: [f32; 3], b: [f32; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
     let e1 = cross(up, at);
     let e2 = cross(at, e1);
@@ -453,14 +567,33 @@ fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32
         let gone = (1.0 - fold).powf(0.7);
         for p in fan(c, 7) {
             let end = slerpish(p, at, fold);
-            let pts: Vec<wake::Pt> = (0..=12).map(|j| {
-                let t = j as f32 / 12.0;
-                wake::Pt { p: slerpish(from, end, t), w: (0.8 + 0.9 * t) * heavy, a: 0.5 * flash * gone * (0.25 + 0.75 * t), hollow: 0.0 }
-            }).collect();
+            let pts: Vec<wake::Pt> = (0..=12)
+                .map(|j| {
+                    let t = j as f32 / 12.0;
+                    wake::Pt {
+                        p: slerpish(from, end, t),
+                        w: (0.8 + 0.9 * t) * heavy,
+                        a: 0.5 * flash * gone * (0.25 + 0.75 * t),
+                        hollow: 0.0,
+                    }
+                })
+                .collect();
             if straight {
                 wake::line(out, &pts, hue, false, night, false);
             }
-            wake::line(out, &[wake::Pt { p: end, w: 4.0 * heavy, a: 0.55 * flash * gone, hollow: 0.0 }], hue, false, night, false);
+            wake::line(
+                out,
+                &[wake::Pt {
+                    p: end,
+                    w: 4.0 * heavy,
+                    a: 0.55 * flash * gone,
+                    hollow: 0.0,
+                }],
+                hue,
+                false,
+                night,
+                false,
+            );
         }
     }
     // the chosen: the lamp's own stroke from where it was to where it glides, bright, then fading into
@@ -468,10 +601,17 @@ fn cue(out: &mut Vec<wake::StrokeInstance>, c: &LookCue, night: bool, heavy: f32
     let g = smooth01(CUE_GLIDE.0, CUE_GLIDE.1, c.age);
     let stroke_a = 0.95 * (1.0 - smooth01(0.8, 1.4, c.age));
     if straight && g > 0.0 && stroke_a > 0.0 {
-        let pts: Vec<wake::Pt> = (0..=16).map(|j| {
-            let t = g * j as f32 / 16.0;
-            wake::Pt { p: slerpish(from, at, t), w: (1.4 + 1.8 * (j as f32 / 16.0)) * heavy, a: stroke_a * (0.4 + 0.6 * j as f32 / 16.0), hollow: 0.0 }
-        }).collect();
+        let pts: Vec<wake::Pt> = (0..=16)
+            .map(|j| {
+                let t = g * j as f32 / 16.0;
+                wake::Pt {
+                    p: slerpish(from, at, t),
+                    w: (1.4 + 1.8 * (j as f32 / 16.0)) * heavy,
+                    a: stroke_a * (0.4 + 0.6 * j as f32 / 16.0),
+                    hollow: 0.0,
+                }
+            })
+            .collect();
         wake::line(out, &pts, hue, false, night, false);
     }
 }
@@ -527,7 +667,15 @@ impl Look {
 
     /// Writes this frame's instances. `width`, `height` in points, `reading` the reading scale,
     /// `disc` the globe's centre and radius in points (where the words sit).
-    pub fn prepare(&mut self, gpu: &Gpu, state: &LookState, width: f32, height: f32, reading: f32, disc: [f32; 3]) {
+    pub fn prepare(
+        &mut self,
+        gpu: &Gpu,
+        state: &LookState,
+        width: f32,
+        height: f32,
+        reading: f32,
+        disc: [f32; 3],
+    ) {
         let n = state.night;
         // in a clip the lines carry it (R12): heavier and fuller than live, so the stochastic line
         // wins over the map
@@ -536,12 +684,30 @@ impl Look {
         let mut air = Vec::new();
         for f in state.floats.iter().filter(|f| f.medium == Medium::Wind) {
             // a seed's whole flight (R21), light; once down its line goes quiet but stays its journey
-            let quiet = if f.down.down() { 1.0 - 0.5 * smooth01(0.0, seeds::SETTLE_DAYS + seeds::FADE_DAYS, f.down_days) } else { 1.0 };
-            let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            let quiet = if f.down.down() {
+                1.0 - 0.5 * smooth01(0.0, seeds::SETTLE_DAYS + seeds::FADE_DAYS, f.down_days)
+            } else {
+                1.0
+            };
+            let fade = state
+                .cues
+                .iter()
+                .filter(|c| c.id == f.id)
+                .map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age))
+                .fold(1.0, f32::min);
             // (R22: the line ends at the seed's own place, as a lamp's does: while it is conducted its
             // path is already the new one, and a head at the cue's glide drew a straight spoke from the
             // new path's end back to it; the line comes in with the cue's fade instead)
-            wake::air_line(&mut air, &f.wake, f.at, n, lamp_hue(f.id), quiet * fade, heavy, 1.0 / disc[2].max(1.0));
+            wake::air_line(
+                &mut air,
+                &f.wake,
+                f.at,
+                n,
+                lamp_hue(f.id),
+                quiet * fade,
+                heavy,
+                1.0 / disc[2].max(1.0),
+            );
         }
         self.air.prepare(gpu, &air);
         for f in state.floats.iter().filter(|f| f.medium == Medium::Sea) {
@@ -550,7 +716,11 @@ impl Look {
                 continue;
             }
             // (a lamp chosen as itself draws its whole kept journey, R8; the others their last days)
-            let start = if f.followed { 0 } else { f.wake.len().saturating_sub(WAKE_DAYS * STEPS_A_DAY) };
+            let start = if f.followed {
+                0
+            } else {
+                f.wake.len().saturating_sub(WAKE_DAYS * STEPS_A_DAY)
+            };
             let mut path = f.wake[start..].to_vec();
             if !state.truth_marks {
                 for b in &mut path {
@@ -558,9 +728,24 @@ impl Look {
                 }
             }
             // (a lamp just conducted, R11: its rewritten line comes in as the worlds fold into it)
-            let fade = state.cues.iter().filter(|c| c.id == f.id).map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age)).fold(1.0, f32::min);
+            let fade = state
+                .cues
+                .iter()
+                .filter(|c| c.id == f.id)
+                .map(|c| 0.35 + 0.65 * smooth01(0.3, 0.9, c.age))
+                .fold(1.0, f32::min);
             let fade = fade * if step_back(state, f) { 0.45 } else { 1.0 };
-            wake::wake(&mut lines, &path, f.at, n, lamp_hue(f.id), f.followed, fade, heavy, 1.0 / disc[2].max(1.0));
+            wake::wake(
+                &mut lines,
+                &path,
+                f.at,
+                n,
+                lamp_hue(f.id),
+                f.followed,
+                fade,
+                heavy,
+                1.0 / disc[2].max(1.0),
+            );
         }
         // the fermata (R12): while a resting finger holds the date as the hand conducts, every lamp
         // holds its breath, a thin ring of its hue drawn in close and swelling slowly, so the hold is
@@ -568,18 +753,42 @@ impl Look {
         if state.fermata {
             let breath = 0.5 + 0.5 * (state.seconds * 1.6).sin();
             for f in state.floats.iter().filter(|f| !f.shown) {
-                ring_on_globe(&mut lines, f.at, (10.0 + 3.0 * breath) * reading * heavy.sqrt(), disc, 1.4 * heavy.sqrt(), 0.45 + 0.25 * breath, lamp_hue(f.id), n);
+                ring_on_globe(
+                    &mut lines,
+                    f.at,
+                    (10.0 + 3.0 * breath) * reading * heavy.sqrt(),
+                    disc,
+                    1.4 * heavy.sqrt(),
+                    0.45 + 0.25 * breath,
+                    lamp_hue(f.id),
+                    n,
+                );
             }
         }
         // (a lamp kept for good is a gold bead at its shoulder, R21, drawn with the glass: floats.wgsl)
         for c in &state.cues {
-            let wind = state.floats.iter().any(|f| f.id == c.id && f.medium == Medium::Wind);
+            let wind = state
+                .floats
+                .iter()
+                .any(|f| f.id == c.id && f.medium == Medium::Wind);
             cue(&mut lines, c, n, heavy, !wind);
         }
         self.wake.prepare(gpu, &lines);
         // every cloud out blooms from its lamp in its own hue (R6: several at once); the veil and the
         // silver are the front one's (its place and hue kept while it folds)
-        let draws: Vec<maybes::CloudDraw> = state.clouds.iter().map(|c| maybes::CloudDraw { base: c.base, count: c.count, origin: unit(c.at), hue: lamp_hue(c.id), bloom: c.bloom, front: c.front, wind: c.wind }).collect();
+        let draws: Vec<maybes::CloudDraw> = state
+            .clouds
+            .iter()
+            .map(|c| maybes::CloudDraw {
+                base: c.base,
+                count: c.count,
+                origin: unit(c.at),
+                hue: lamp_hue(c.id),
+                bloom: c.bloom,
+                front: c.front,
+                wind: c.wind,
+            })
+            .collect();
         self.maybes.prepare(gpu, &draws, n);
         if let Some(f) = state.floats.iter().find(|f| f.held || f.chosen) {
             self.bloom_from = unit(f.at);
@@ -593,23 +802,58 @@ impl Look {
         // in a clip (R10) what marks a finger is out of its last frame: the held ring and a lamp's
         // brightening (what the reader just did) settle through the last beat, eased, so the clip
         // ends on the lamps alone; a finger resting on the sea (the press ring) is never in a clip
-        let settle = if state.exporting { let e = state.ending.clamp(0.0, 1.0); 1.0 - e * e * (3.0 - 2.0 * e) } else { 1.0 };
+        let settle = if state.exporting {
+            let e = state.ending.clamp(0.0, 1.0);
+            1.0 - e * e * (3.0 - 2.0 * e)
+        } else {
+            1.0
+        };
         // the clip's first beat (R15): the lamps' glow breathes in and out once through the still
         // opening, so the first second already moves
-        let breathe_in = if state.exporting && state.opening < 1.0 { (state.opening.clamp(0.0, 1.0) * std::f32::consts::PI).sin() } else { 0.0 };
+        let breathe_in = if state.exporting && state.opening < 1.0 {
+            (state.opening.clamp(0.0, 1.0) * std::f32::consts::PI).sin()
+        } else {
+            0.0
+        };
         // a finger resting on a lamp's panel mark (R10): the lamp answers on the globe, lit and ringed
         // as the rest thickens, so the mark is found on the sea
-        let pressed = |id: u32| if state.exporting { 0.0 } else { state.panel_press.filter(|p| p.0 == id).map_or(0.0, |p| 0.35 + 0.65 * p.1.clamp(0.0, 1.0)) };
+        let pressed = |id: u32| {
+            if state.exporting {
+                0.0
+            } else {
+                state
+                    .panel_press
+                    .filter(|p| p.0 == id)
+                    .map_or(0.0, |p| 0.35 + 0.65 * p.1.clamp(0.0, 1.0))
+            }
+        };
         let mut sd: Vec<seeds::SeedInstance> = state
             .floats
             .iter()
             .filter(|f| f.medium == Medium::Wind)
             .map(|f| {
-                let lift = if f.down.down() || f.down_days < 0.0 { 1.0 - smooth01(-0.2, seeds::SETTLE_DAYS, f.down_days) } else { 1.0 };
-                let after = if f.down.down() { ((f.down_days - seeds::SETTLE_DAYS) / seeds::FADE_DAYS).clamp(0.0, 1.0) } else { 0.0 };
-                let down = match f.down { Held::Landed => 1.0, Held::Ditched => 2.0, _ => 0.0 };
+                let lift = if f.down.down() || f.down_days < 0.0 {
+                    1.0 - smooth01(-0.2, seeds::SETTLE_DAYS, f.down_days)
+                } else {
+                    1.0
+                };
+                let after = if f.down.down() {
+                    ((f.down_days - seeds::SETTLE_DAYS) / seeds::FADE_DAYS).clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
+                let down = match f.down {
+                    Held::Landed => 1.0,
+                    Held::Ditched => 2.0,
+                    _ => 0.0,
+                };
                 seeds::SeedInstance {
-                    g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)),
+                    g: state
+                        .cues
+                        .iter()
+                        .rev()
+                        .find(|c| c.id == f.id)
+                        .map_or(unit(f.at), |c| glide(c)),
                     beat: 1.0,
                     hue: lamp_hue(f.id),
                     night: n as u8 as f32,
@@ -617,8 +861,11 @@ impl Look {
                     down,
                     after,
                     spin: (f.id as f32 * 2.39996).rem_euclid(std::f32::consts::TAU),
-                    lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in),
-                    held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)),
+                    lit: (settle
+                        * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)))
+                    .max(breathe_in),
+                    held: settle
+                        * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)),
                     head: state.exporting as u8 as f32,
                     _pad: 0.0,
                 }
@@ -628,14 +875,74 @@ impl Look {
             .floats
             .iter()
             .filter(|f| f.medium == Medium::Sea)
-            .map(|f| floats::FloatInstance { g: state.cues.iter().rev().find(|c| c.id == f.id).map_or(unit(f.at), |c| glide(c)), beat: 1.0, lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id))).max(breathe_in), held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)), night: n as u8 as f32, measured: if state.truth_marks { f.measured } else { 1.0 }, hue: lamp_hue(f.id), speck: state.clouds.iter().find(|c| c.id == f.id).map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)), head: state.exporting as u8 as f32, mode: if state.exporting { 0.0 } else if f.followed { 1.0 } else if f.shown { 2.0 } else { 0.0 }, quiet: (step_back(state, f)) as u8 as f32, kept: (f.kept && !state.exporting) as u8 as f32, id: f.id as f32 })
+            .map(|f| floats::FloatInstance {
+                g: state
+                    .cues
+                    .iter()
+                    .rev()
+                    .find(|c| c.id == f.id)
+                    .map_or(unit(f.at), |c| glide(c)),
+                beat: 1.0,
+                lit: (settle * if f.followed { f.lit.max(0.85) } else { f.lit }.max(pressed(f.id)))
+                    .max(breathe_in),
+                held: settle * ((f.held || f.chosen || f.followed) as u8 as f32).max(pressed(f.id)),
+                night: n as u8 as f32,
+                measured: if state.truth_marks { f.measured } else { 1.0 },
+                hue: lamp_hue(f.id),
+                speck: state
+                    .clouds
+                    .iter()
+                    .find(|c| c.id == f.id)
+                    .map_or(0.0, |c| c.bloom.clamp(0.0, 1.0)),
+                head: state.exporting as u8 as f32,
+                mode: if state.exporting {
+                    0.0
+                } else if f.followed {
+                    1.0
+                } else if f.shown {
+                    2.0
+                } else {
+                    0.0
+                },
+                quiet: (step_back(state, f)) as u8 as f32,
+                kept: (f.kept && !state.exporting) as u8 as f32,
+                id: f.id as f32,
+            })
             .collect();
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && state.wind) {
-            sd.push(seeds::SeedInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), hue: lamp_hue(state.floats.len() as u32 + 1), night: n as u8 as f32, lift: 1.0, down: 0.0, after: 0.0, spin: ((state.floats.len() as u32 + 1) as f32 * 2.39996).rem_euclid(std::f32::consts::TAU), lit: 0.0, held: 0.0, head: 0.0, _pad: 0.0 });
+            sd.push(seeds::SeedInstance {
+                g: unit(at),
+                beat: beat.clamp(0.0, 0.999),
+                hue: lamp_hue(state.floats.len() as u32 + 1),
+                night: n as u8 as f32,
+                lift: 1.0,
+                down: 0.0,
+                after: 0.0,
+                spin: ((state.floats.len() as u32 + 1) as f32 * 2.39996)
+                    .rem_euclid(std::f32::consts::TAU),
+                lit: 0.0,
+                held: 0.0,
+                head: 0.0,
+                _pad: 0.0,
+            });
         }
         self.seeds.prepare(gpu, &sd);
         if let Some((at, beat)) = state.resting.filter(|_| !state.exporting && !state.wind) {
-            fl.push(floats::FloatInstance { g: unit(at), beat: beat.clamp(0.0, 0.999), lit: 0.0, held: 0.0, night: n as u8 as f32, measured: 1.0, hue: lamp_hue(state.floats.len() as u32 + 1), speck: 0.0, head: 0.0, mode: 0.0, quiet: 0.0, kept: 0.0, id: (state.floats.len() as u32 + 1) as f32 });
+            fl.push(floats::FloatInstance {
+                g: unit(at),
+                beat: beat.clamp(0.0, 0.999),
+                lit: 0.0,
+                held: 0.0,
+                night: n as u8 as f32,
+                measured: 1.0,
+                hue: lamp_hue(state.floats.len() as u32 + 1),
+                speck: 0.0,
+                head: 0.0,
+                mode: 0.0,
+                quiet: 0.0,
+                kept: 0.0,
+                id: (state.floats.len() as u32 + 1) as f32,
+            });
         }
         self.floats.prepare(gpu, &fl);
         // the drifter's label, at its point nearest the held float, rising with the silver
@@ -643,16 +950,50 @@ impl Look {
         // (the label from zoom 1.5: at the whole Earth it would be a banner across an ocean; shown or not,
         // never half)
         let zoom = disc[2] / ((width.min(height) / 2.0 - 14.0).max(40.0));
-        if state.truth_marks && state.rise > 0.0 && !state.drifter.is_empty() && !state.drifter_label.is_empty() && zoom >= 1.5 {
+        if state.truth_marks
+            && state.rise > 0.0
+            && !state.drifter.is_empty()
+            && !state.drifter_label.is_empty()
+            && zoom >= 1.5
+        {
             // (the point nearest the held float; kept while the silver sinks after the float is let go)
             if let Some(i) = state.drifter_nearest {
                 self.nearest = i;
             } else if let Some(at) = state.floats.iter().find(|f| f.held).map(|f| f.at) {
-                self.nearest = (0..state.drifter.len()).min_by(|&a, &b| state.drifter[a].distance_m(at).partial_cmp(&state.drifter[b].distance_m(at)).unwrap()).unwrap_or(0);
+                self.nearest = (0..state.drifter.len())
+                    .min_by(|&a, &b| {
+                        state.drifter[a]
+                            .distance_m(at)
+                            .partial_cmp(&state.drifter[b].distance_m(at))
+                            .unwrap()
+                    })
+                    .unwrap_or(0);
             }
             let at = unit(state.drifter[self.nearest.min(state.drifter.len() - 1)]);
-            let (ink, halo) = if n { ([0.863, 0.890, 0.918, state.rise], [0.063, 0.094, 0.157, 0.92 * state.rise]) } else { ([0.243, 0.298, 0.353, state.rise], [0.761, 0.894, 0.957, 0.92 * state.rise]) };
-            labels = self.words.face.label(&words::Line { text: &state.drifter_label, style: words::Style::Italic, size: 10.0 * reading, ink, tracking: 0.0 }, at, 12.0 * reading, -8.0 * reading, halo);
+            let (ink, halo) = if n {
+                (
+                    [0.863, 0.890, 0.918, state.rise],
+                    [0.063, 0.094, 0.157, 0.92 * state.rise],
+                )
+            } else {
+                (
+                    [0.243, 0.298, 0.353, state.rise],
+                    [0.761, 0.894, 0.957, 0.92 * state.rise],
+                )
+            };
+            labels = self.words.face.label(
+                &words::Line {
+                    text: &state.drifter_label,
+                    style: words::Style::Italic,
+                    size: 10.0 * reading,
+                    ink,
+                    tracking: 0.0,
+                },
+                at,
+                12.0 * reading,
+                -8.0 * reading,
+                halo,
+            );
         }
         // an exported frame (R9) is the sea and its lamps: no panel, no date band, no credits page, no
         // record control; the date alone as a quiet caption. The live screen keeps its chrome, the
@@ -661,25 +1002,73 @@ impl Look {
         if state.exporting {
             let clip = state.clip.unwrap_or([0.0, 0.0, width, height]);
             self.strokes.prepare(gpu, &strokes);
-            self.words.prepare_caption(gpu, &state.date, clip, reading, disc, n, state.ending, state.opening, &labels);
+            self.words.prepare_caption(
+                gpu,
+                &state.date,
+                clip,
+                reading,
+                disc,
+                n,
+                state.ending,
+                state.opening,
+                &labels,
+            );
             return;
         }
-        labels.extend(self.words.record_control(state.recording, state.seconds, width, reading, n, state.song, &mut strokes));
+        labels.extend(self.words.record_control(
+            state.recording,
+            state.seconds,
+            width,
+            reading,
+            n,
+            state.song,
+            &mut strokes,
+        ));
         // the panel of every lamp out there (R6; R10 a row of marks, each its lamp's journey in its hue)
-        let rows: Vec<words::PanelRow> = state.floats.iter().map(|f| words::PanelRow { id: f.id, origin: f.origin, put_day: f.put_day, shown: f.shown, followed: f.followed, front: f.chosen && (f.shown || f.followed), journey: &f.wake, at: f.at, pressed: pressed(f.id), kept: f.kept }).collect();
+        let rows: Vec<words::PanelRow> = state
+            .floats
+            .iter()
+            .map(|f| words::PanelRow {
+                id: f.id,
+                origin: f.origin,
+                put_day: f.put_day,
+                shown: f.shown,
+                followed: f.followed,
+                front: f.chosen && (f.shown || f.followed),
+                journey: &f.wake,
+                at: f.at,
+                pressed: pressed(f.id),
+                kept: f.kept,
+            })
+            .collect();
         // (while a take is made the marks step aside: the take is the globe alone, R12)
         let quiet_take = state.recording.is_some() || state.conducting;
-        self.words.panel(if quiet_take { &[] } else { &rows }, reading, n, &mut strokes);
+        self.words.panel(
+            if quiet_take { &[] } else { &rows },
+            reading,
+            n,
+            &mut strokes,
+        );
         // (R22) the marks' own ground while they are up, so the row never lies on the land as more lamps
-        let up = !quiet_take && rows.iter().any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
+        let up = !quiet_take
+            && rows
+                .iter()
+                .any(|r| r.front || r.shown || r.followed || r.pressed > 0.0);
         let cells = &self.words.panel_bounds;
         if up && !cells.is_empty() {
             let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
             for (_, c) in cells {
-                x0 = x0.min(c[0]); y0 = y0.min(c[1]); x1 = x1.max(c[0] + c[2]); y1 = y1.max(c[1] + c[3]);
+                x0 = x0.min(c[0]);
+                y0 = y0.min(c[1]);
+                x1 = x1.max(c[0] + c[2]);
+                y1 = y1.max(c[1] + c[3]);
             }
             let pad = 2.0 * reading;
-            self.veil.panel(gpu, [x0 - pad, y0 - pad, x1 - x0 + 2.0 * pad, y1 - y0 + 2.0 * pad], 1.0);
+            self.veil.panel(
+                gpu,
+                [x0 - pad, y0 - pad, x1 - x0 + 2.0 * pad, y1 - y0 + 2.0 * pad],
+                1.0,
+            );
         } else {
             self.veil.panel(gpu, [0.0; 4], 0.0);
         }
@@ -691,13 +1080,39 @@ impl Look {
                 continue;
             }
             let ease = 1.0 - (1.0 - t).powi(3);
-            ring_on_globe(&mut strokes, at, (9.0 + 34.0 * ease) * reading, disc, 2.2 - 1.2 * t, 0.85 * (1.0 - t).powf(1.5), lamp_hue(id), n);
+            ring_on_globe(
+                &mut strokes,
+                at,
+                (9.0 + 34.0 * ease) * reading,
+                disc,
+                2.2 - 1.2 * t,
+                0.85 * (1.0 - t).powf(1.5),
+                lamp_hue(id),
+                n,
+            );
         }
         self.strokes.prepare(gpu, &strokes);
         if state.credits_open {
-            labels.extend(self.words.credits_page(&state.credits_full, width, height, reading, n));
+            labels.extend(
+                self.words
+                    .credits_page(&state.credits_full, width, height, reading, n),
+            );
         }
-        self.words.prepare_foot(gpu, &state.date, &state.note, width, height, reading, disc, n, state.date_running, state.year_day, state.date_press, state.seconds, &labels);
+        self.words.prepare_foot(
+            gpu,
+            &state.date,
+            &state.note,
+            width,
+            height,
+            reading,
+            disc,
+            n,
+            state.date_running,
+            state.year_day,
+            state.date_press,
+            state.seconds,
+            &labels,
+        );
     }
 
     /// Draws the marks over the sea; `maybes` is the held float's buffer (`gpu::Maybes`).
@@ -731,18 +1146,46 @@ impl Look {
     }
 
     /// (R24, `ADRIFT_PROFILE=1`) The same draws as [`Look::draw`], each in its own timed pass.
-    pub fn draw_profiled(&self, gpu: &Gpu, target: &wgpu::TextureView, view_bind: &wgpu::BindGroup, maybes: &crate::sea::Maybes) {
-        crate::timed!(gpu, "wakes", target, None, |rp| { self.wake.draw(rp, view_bind); self.air.draw(rp, view_bind) });
-        crate::timed!(gpu, "maybes", target, None, |rp| self.maybes.draw(rp, view_bind, maybes));
-        crate::timed!(gpu, "silver", target, None, |rp| self.silver.draw(rp, view_bind));
-        crate::timed!(gpu, "floats", target, None, |rp| self.floats.draw(rp, view_bind));
-        crate::timed!(gpu, "seeds", target, None, |rp| self.seeds.draw(rp, view_bind));
-        crate::timed!(gpu, "veil", target, None, |rp| self.veil.draw(rp, view_bind));
-        crate::timed!(gpu, "strokes", target, None, |rp| self.strokes.draw(rp, view_bind));
-        crate::timed!(gpu, "words", target, None, |rp| self.words.draw(rp, view_bind));
+    pub fn draw_profiled(
+        &self,
+        gpu: &Gpu,
+        target: &wgpu::TextureView,
+        view_bind: &wgpu::BindGroup,
+        maybes: &crate::sea::Maybes,
+    ) {
+        crate::timed!(gpu, "wakes", target, None, |rp| {
+            self.wake.draw(rp, view_bind);
+            self.air.draw(rp, view_bind)
+        });
+        crate::timed!(gpu, "maybes", target, None, |rp| self
+            .maybes
+            .draw(rp, view_bind, maybes));
+        crate::timed!(gpu, "silver", target, None, |rp| self
+            .silver
+            .draw(rp, view_bind));
+        crate::timed!(gpu, "floats", target, None, |rp| self
+            .floats
+            .draw(rp, view_bind));
+        crate::timed!(gpu, "seeds", target, None, |rp| self
+            .seeds
+            .draw(rp, view_bind));
+        crate::timed!(gpu, "veil", target, None, |rp| self
+            .veil
+            .draw(rp, view_bind));
+        crate::timed!(gpu, "strokes", target, None, |rp| self
+            .strokes
+            .draw(rp, view_bind));
+        crate::timed!(gpu, "words", target, None, |rp| self
+            .words
+            .draw(rp, view_bind));
     }
 
-    pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup, maybes: &'a crate::sea::Maybes) {
+    pub fn draw<'a>(
+        &'a self,
+        rp: &mut wgpu::RenderPass<'a>,
+        view_bind: &'a wgpu::BindGroup,
+        maybes: &'a crate::sea::Maybes,
+    ) {
         self.wake.draw(rp, view_bind);
         self.air.draw(rp, view_bind);
         self.maybes.draw(rp, view_bind, maybes);

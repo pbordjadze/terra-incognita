@@ -66,7 +66,10 @@ pub struct Throats {
 
 impl Throats {
     fn world(&self, p: [f64; 2]) -> [f64; 2] {
-        [self.center[0] + (p[0] - self.size_pt[0] * 0.5) / self.pt, self.center[1] + (p[1] - self.size_pt[1] * 0.5) / self.pt]
+        [
+            self.center[0] + (p[0] - self.size_pt[0] * 0.5) / self.pt,
+            self.center[1] + (p[1] - self.size_pt[1] * 0.5) / self.pt,
+        ]
     }
 
     fn pour_along(&mut self, ctx: &mut Ctx, a: [f64; 2], b: [f64; 2], k: u8) {
@@ -75,12 +78,22 @@ impl Throats {
         let d = ((wb[0] - wa[0]).powi(2) + (wb[1] - wa[1]).powi(2)).sqrt();
         let r = (POUR_PT / self.pt).max(1.5);
         let n = ((d / (r * 0.5)).ceil() as usize).max(1);
-        let dir = if d > 1e-6 { [((wb[0] - wa[0]) / d) as f32, ((wb[1] - wa[1]) / d) as f32] } else { [0.0, 0.0] };
+        let dir = if d > 1e-6 {
+            [((wb[0] - wa[0]) / d) as f32, ((wb[1] - wa[1]) / d) as f32]
+        } else {
+            [0.0, 0.0]
+        };
         let mut laid = 0;
         for s in 1..=n {
             let f = s as f64 / n as f64;
             let p = [wa[0] + (wb[0] - wa[0]) * f, wa[1] + (wb[1] - wa[1]) * f];
-            laid += self.hill.pour(p[0].rem_euclid(W as f64) as f32, p[1].rem_euclid(H as f64) as f32, r as f32, k, dir);
+            laid += self.hill.pour(
+                p[0].rem_euclid(W as f64) as f32,
+                p[1].rem_euclid(H as f64) as f32,
+                r as f32,
+                k,
+                dir,
+            );
         }
         if laid > 0 && self.t - self.last_haptic > 0.09 {
             self.last_haptic = self.t;
@@ -98,7 +111,8 @@ impl Throats {
                 let mut bare = 0;
                 for y in (cy - vh / 2..cy + vh / 2).step_by(3) {
                     for x in (cx - vw / 2..cx + vw / 2).step_by(3) {
-                        let i = y.rem_euclid(H as i32) as usize * W + x.rem_euclid(W as i32) as usize;
+                        let i =
+                            y.rem_euclid(H as i32) as usize * W + x.rem_euclid(W as i32) as usize;
                         bare += (hill.kind[i] == sim::BOULDER) as usize;
                     }
                 }
@@ -122,7 +136,11 @@ impl Toy for Throats {
         let gpu = &ctx.gpu;
         let tex = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("rocks"),
-            size: wgpu::Extent3d { width: W as u32, height: H as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: W as u32,
+                height: H as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -130,19 +148,62 @@ impl Toy for Throats {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        let ubuf = gpu.buffer(&wgpu::BufferDescriptor { label: Some("hill-u"), size: std::mem::size_of::<U>() as u64, usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
-        let bgl = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("hill"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: false }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
-                wgpu::BindGroupLayoutEntry { binding: 3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
-            ],
+        let ubuf = gpu.buffer(&wgpu::BufferDescriptor {
+            label: Some("hill-u"),
+            size: std::mem::size_of::<U>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
+        let bgl = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("hill"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
         let relief = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("relief"),
-            size: wgpu::Extent3d { width: W as u32, height: H as u32, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: W as u32,
+                height: H as u32,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -151,10 +212,23 @@ impl Toy for Throats {
             view_formats: &[],
         });
         gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &relief, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo {
+                texture: &relief,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
             bytemuck::cast_slice(&hill.relief()),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(W as u32 * 4), rows_per_image: Some(H as u32) },
-            wgpu::Extent3d { width: W as u32, height: H as u32, depth_or_array_layers: 1 },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(W as u32 * 4),
+                rows_per_image: Some(H as u32),
+            },
+            wgpu::Extent3d {
+                width: W as u32,
+                height: H as u32,
+                depth_or_array_layers: 1,
+            },
         );
         let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("relief"),
@@ -169,9 +243,23 @@ impl Toy for Throats {
         let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("hill"),
             layout: &bgl,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: ubuf.as_entire_binding() }, wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&relief_view) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&sampler) },
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: ubuf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&relief_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
             ],
         });
         let shader = gpu.shader("hill", include_str!("hill.wgsl"));
@@ -217,7 +305,9 @@ impl Toy for Throats {
                     self.stroke = None;
                     let (a, b) = (self.fingers[0].at, self.fingers[1].at);
                     let mid = [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5];
-                    let d = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2)).sqrt().max(1.0);
+                    let d = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2))
+                        .sqrt()
+                        .max(1.0);
                     self.pinch = Some((self.world(mid), d, mid, self.pt));
                 }
             }
@@ -231,10 +321,15 @@ impl Toy for Throats {
                 } else if let (Some((anchor, d0, _, pt0)), 2) = (self.pinch, self.fingers.len()) {
                     let (a, b) = (self.fingers[0].at, self.fingers[1].at);
                     let mid = [(a[0] + b[0]) * 0.5, (a[1] + b[1]) * 0.5];
-                    let d = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2)).sqrt().max(1.0);
+                    let d = ((a[0] - b[0]).powi(2) + (a[1] - b[1]).powi(2))
+                        .sqrt()
+                        .max(1.0);
                     self.pt = self.clamp_pt(pt0 * d / d0);
                     // the world point that was under the fingers' middle stays under it
-                    self.center = [anchor[0] - (mid[0] - self.size_pt[0] * 0.5) / self.pt, anchor[1] - (mid[1] - self.size_pt[1] * 0.5) / self.pt];
+                    self.center = [
+                        anchor[0] - (mid[0] - self.size_pt[0] * 0.5) / self.pt,
+                        anchor[1] - (mid[1] - self.size_pt[1] * 0.5) / self.pt,
+                    ];
                 }
             }
             _ => {
@@ -263,15 +358,37 @@ impl Toy for Throats {
         let h = &self.hill;
         for i in 0..W * H {
             let f = h.from[i];
-            let fi = ((f[0].round() as i32).clamp(-4, 4) + 4) + 9 * ((f[1].round() as i32).clamp(-4, 4) + 4);
-            self.texels[i] = [(h.shown[i] as u32 + 4 * h.was[i] as u32 + 16 * h.look[i] as u32 + 1024 * h.ground[i] as u32) as f32, h.heading[i], h.since[i], fi as f32];
+            let fi = ((f[0].round() as i32).clamp(-4, 4) + 4)
+                + 9 * ((f[1].round() as i32).clamp(-4, 4) + 4);
+            self.texels[i] = [
+                (h.shown[i] as u32
+                    + 4 * h.was[i] as u32
+                    + 16 * h.look[i] as u32
+                    + 1024 * h.ground[i] as u32) as f32,
+                h.heading[i],
+                h.since[i],
+                fi as f32,
+            ];
         }
         let gpu = &ctx.gpu;
         gpu.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &self.tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
             bytemuck::cast_slice(&self.texels),
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(W as u32 * 16), rows_per_image: Some(H as u32) },
-            wgpu::Extent3d { width: W as u32, height: H as u32, depth_or_array_layers: 1 },
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(W as u32 * 16),
+                rows_per_image: Some(H as u32),
+            },
+            wgpu::Extent3d {
+                width: W as u32,
+                height: H as u32,
+                depth_or_array_layers: 1,
+            },
         );
         let ppp = ctx.ppp as f32;
         let u = U {
@@ -284,12 +401,21 @@ impl Toy for Throats {
             grid: [W as f32, H as f32],
             _p: [0.0; 2],
         };
-        gpu.queue.write_buffer(&self.ubuf, 0, bytemuck::bytes_of(&u));
+        gpu.queue
+            .write_buffer(&self.ubuf, 0, bytemuck::bytes_of(&u));
         let mut enc = gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("throats"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment { view: target, resolve_target: None, depth_slice: None, ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })],
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: target,
+                    resolve_target: None,
+                    depth_slice: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
@@ -306,7 +432,12 @@ impl Toy for Throats {
         let s = self.size_pt;
         Some(info::Demo::new(
             "Lizards on a California hillside. Draw to pour in a colour.",
-            vec![info::Stroke::drag(0.4, 1.4, [s[0] * 0.3, s[1] * 0.4], [s[0] * 0.7, s[1] * 0.55])],
+            vec![info::Stroke::drag(
+                0.4,
+                1.4,
+                [s[0] * 0.3, s[1] * 0.4],
+                [s[0] * 0.7, s[1] * 0.55],
+            )],
         ))
     }
 

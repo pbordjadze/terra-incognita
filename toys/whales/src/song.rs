@@ -17,10 +17,11 @@ pub struct Song {
 }
 
 const STEPS: [i32; 89] = [
-    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130, 143,
-    157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449, 494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552,
-    1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493, 10442, 11487,
-    12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
+    7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66,
+    73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408, 449,
+    494, 544, 598, 658, 724, 796, 876, 963, 1060, 1166, 1282, 1411, 1552, 1707, 1878, 2066, 2272,
+    2499, 2749, 3024, 3327, 3660, 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493,
+    10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
 ];
 const INDEX: [i32; 16] = [-1, -1, -1, -1, 2, 4, 6, 8, -1, -1, -1, -1, 2, 4, 6, 8];
 
@@ -34,7 +35,14 @@ impl Song {
         let env_rate = f32::from_le_bytes([b[20], b[21], b[22], b[23]]) as f64;
         let mut at = 24;
         anyhow::ensure!(b.len() >= at + frames * 2, "short envelope");
-        let env = (0..frames).map(|i| [b[at + 2 * i] as f32 / 255.0, b[at + 2 * i + 1] as f32 / 255.0]).collect();
+        let env = (0..frames)
+            .map(|i| {
+                [
+                    b[at + 2 * i] as f32 / 255.0,
+                    b[at + 2 * i + 1] as f32 / 255.0,
+                ]
+            })
+            .collect();
         at += frames * 2;
         let mut pcm = Vec::with_capacity(n + 1024);
         while at + 516 <= b.len() && pcm.len() < n {
@@ -63,7 +71,12 @@ impl Song {
         }
         pcm.truncate(n);
         anyhow::ensure!(pcm.len() == n, "short song");
-        Ok(Song { rate, pcm, env, env_rate })
+        Ok(Song {
+            rate,
+            pcm,
+            env,
+            env_rate,
+        })
     }
 
     pub fn seconds(&self) -> f64 {
@@ -168,7 +181,22 @@ impl Choir {
                 })
                 .collect::<Vec<f32>>()
         });
-        Choir { songs, mix, pos, g: [0.0; 2], p: [0.0; 2], past, head: 0, delay: [0.0; 2], dip: [1.0; 2], lp: [0.0; 2], corner: [20_000.0; 2], written: n - 1, moved: 0, jumping: [false; 2] }
+        Choir {
+            songs,
+            mix,
+            pos,
+            g: [0.0; 2],
+            p: [0.0; 2],
+            past,
+            head: 0,
+            delay: [0.0; 2],
+            dip: [1.0; 2],
+            lp: [0.0; 2],
+            corner: [20_000.0; 2],
+            written: n - 1,
+            moved: 0,
+            jumping: [false; 2],
+        }
     }
 }
 
@@ -240,7 +268,11 @@ impl Synth for Choir {
             // a soft ceiling above a knee, so two loud whales together never clip (and one is untouched)
             let soft = |x: f32| {
                 let a = x.abs();
-                if a < 0.6 { x } else { x.signum() * (0.6 + 0.35 * ((a - 0.6) / 0.35).tanh()) }
+                if a < 0.6 {
+                    x
+                } else {
+                    x.signum() * (0.6 + 0.35 * ((a - 0.6) / 0.35).tanh())
+                }
             };
             let (l, r) = (soft(l), soft(r));
             if channels == 1 {

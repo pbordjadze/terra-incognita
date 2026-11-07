@@ -39,7 +39,12 @@ pub fn step_at(height: f64) -> i32 {
 #[derive(Clone, Copy, Debug)]
 pub enum Note {
     /// The glass struck: frequency, pan (-1..1), loudness, and how much frost damps it (0..1).
-    Strike { f: f32, pan: f32, amp: f32, damp: f32 },
+    Strike {
+        f: f32,
+        pan: f32,
+        amp: f32,
+        damp: f32,
+    },
     /// A crystal starting: a small high ping.
     Ping { f: f32, pan: f32, amp: f32 },
     /// The stove's warmth sweeping the glass.
@@ -119,7 +124,15 @@ struct Glass {
 
 impl Glass {
     /// `partials`: (ratio, loudness, decay seconds); `beat`: the first mode's twin, a little detuned.
-    fn new(f: f32, amp: f32, pan: f32, partials: &[(f32, f32, f32)], beat: f32, rate: f32, tick: f32) -> Glass {
+    fn new(
+        f: f32,
+        amp: f32,
+        pan: f32,
+        partials: &[(f32, f32, f32)],
+        beat: f32,
+        rate: f32,
+        tick: f32,
+    ) -> Glass {
         let mut modes = Vec::new();
         let mut add = |hz: f32, a: f32, decay: f32| {
             if hz < rate * 0.45 && a > 0.0 {
@@ -136,7 +149,16 @@ impl Glass {
                 add(f * k, a, d);
             }
         }
-        Glass { modes, t: 0.0, attack: 0.002, pan, tick: tick * amp, tick_len: 0.004, gain: 1.0, duck_to: 1.0 }
+        Glass {
+            modes,
+            t: 0.0,
+            attack: 0.002,
+            pan,
+            tick: tick * amp,
+            tick_len: 0.004,
+            gain: 1.0,
+            duck_to: 1.0,
+        }
     }
     fn sample(&mut self, dt: f32, noise: f32) -> f32 {
         let mut s = 0.0;
@@ -148,7 +170,11 @@ impl Glass {
             s += m[1];
         }
         let ramp = (self.t / self.attack).min(1.0);
-        let tick = if self.t < self.tick_len * 6.0 { noise * self.tick * (-self.t / self.tick_len).exp() } else { 0.0 };
+        let tick = if self.t < self.tick_len * 6.0 {
+            noise * self.tick * (-self.t / self.tick_len).exp()
+        } else {
+            0.0
+        };
         self.t += dt;
         self.gain += (self.duck_to - self.gain) * (dt / 0.03).min(1.0);
         (s * ramp * ramp * (3.0 - 2.0 * ramp) + tick * ramp) * self.gain
@@ -158,7 +184,11 @@ impl Glass {
         self.duck_to *= k;
     }
     fn done(&self) -> bool {
-        self.t > 0.05 && self.modes.iter().all(|m| (m[0].abs() + m[1].abs()) * self.gain < 2e-5)
+        self.t > 0.05
+            && self
+                .modes
+                .iter()
+                .all(|m| (m[0].abs() + m[1].abs()) * self.gain < 2e-5)
     }
 }
 
@@ -243,15 +273,30 @@ impl CrackleSynth {
                 }
                 // a pane: its fundamental and its inharmonic upper modes, the frost taking the ring
                 let k = 1.0 - 0.85 * damp;
-                let partials = [(1.0, 1.0, 0.6 * k), (2.01, 0.42, 0.34 * k * k), (2.93, 0.2, 0.2 * k * k), (4.16, 0.12 * k, 0.1 * k), (5.43, 0.06 * k, 0.06 * k)];
-                self.glass.push(Glass::new(f, amp, pan, &partials, 0.9, rate, 0.6 + 1.6 * damp));
+                let partials = [
+                    (1.0, 1.0, 0.6 * k),
+                    (2.01, 0.42, 0.34 * k * k),
+                    (2.93, 0.2, 0.2 * k * k),
+                    (4.16, 0.12 * k, 0.1 * k),
+                    (5.43, 0.06 * k, 0.06 * k),
+                ];
+                self.glass.push(Glass::new(
+                    f,
+                    amp,
+                    pan,
+                    &partials,
+                    0.9,
+                    rate,
+                    0.6 + 1.6 * damp,
+                ));
             }
             Note::Ping { f, pan, amp } => {
                 for g in &mut self.glass {
                     g.duck(0.8);
                 }
                 let partials = [(1.0, 1.0, 0.32), (2.0, 0.22, 0.12), (4.0, 0.06, 0.05)];
-                self.glass.push(Glass::new(f, amp, pan, &partials, 1.7, rate, 0.25));
+                self.glass
+                    .push(Glass::new(f, amp, pan, &partials, 1.7, rate, 0.25));
             }
             Note::Rush => {
                 self.rush = 0.0;
@@ -263,7 +308,14 @@ impl CrackleSynth {
                     let step = 15 - i as i32 - if self.rand() < 0.3 { 1 } else { 0 };
                     let pan = -0.6 + 1.2 * i as f32 / 13.0;
                     let amp = 0.10 * (1.0 - 0.5 * i as f32 / 13.0);
-                    self.cascade.push((at, Note::Ping { f: note(step), pan, amp }));
+                    self.cascade.push((
+                        at,
+                        Note::Ping {
+                            f: note(step),
+                            pan,
+                            amp,
+                        },
+                    ));
                 }
             }
         }
@@ -306,14 +358,28 @@ impl Synth for CrackleSynth {
                 let len = 0.0015 + 0.004 * self.rand();
                 let pan = (self.pan + (self.rand() - 0.5) * 0.9).clamp(-1.0, 1.0);
                 let f = 2600.0 + 5200.0 * self.rand();
-                self.clicks.push(Click { t: 0.0, len, amp, pan, f, ph: 0.0 });
+                self.clicks.push(Click {
+                    t: 0.0,
+                    len,
+                    amp,
+                    pan,
+                    f,
+                    ph: 0.0,
+                });
             }
             // a snap where the finger breaks through ice: lower, drier, sharper than the crackle
             if self.rand() < self.snaps * dt && self.clicks.len() < 48 {
                 let a = self.rand();
                 let pan = (self.touch_pan + (self.rand() - 0.5) * 0.3).clamp(-1.0, 1.0);
                 let f = 1100.0 + 1800.0 * self.rand();
-                self.clicks.push(Click { t: 0.0, len: 0.0025 + 0.003 * a, amp: 0.07 + 0.08 * a, pan, f, ph: 0.0 });
+                self.clicks.push(Click {
+                    t: 0.0,
+                    len: 0.0025 + 0.003 * a,
+                    amp: 0.07 + 0.08 * a,
+                    pan,
+                    f,
+                    ph: 0.0,
+                });
             }
             let (mut l, mut rr) = (0.0f32, 0.0f32);
             let mut i = 0;
@@ -324,7 +390,10 @@ impl Synth for CrackleSynth {
                 let rise = (c.t / 0.00025).min(1.0);
                 let env = (-c.t / c.len).exp() * rise;
                 c.ph = (c.ph + c.f * dt).fract();
-                let ring = (c.ph * std::f32::consts::TAU).sin() * (-c.t / (c.len * 3.0)).exp() * 0.5 * rise;
+                let ring = (c.ph * std::f32::consts::TAU).sin()
+                    * (-c.t / (c.len * 3.0)).exp()
+                    * 0.5
+                    * rise;
                 let (a, b) = place((n * env + ring) * c.amp, c.pan);
                 l += a;
                 rr += b;
@@ -350,8 +419,12 @@ impl Synth for CrackleSynth {
 
             // the melt: noise, band-passed high, in small wet bubbles
             // (rising in 25 ms, dying away over a quarter second: the water stops, not a cut)
-        let k = if self.want_sizzle > self.sizzle { 0.0008 } else { 0.0001 };
-        self.sizzle += (self.want_sizzle - self.sizzle) * k;
+            let k = if self.want_sizzle > self.sizzle {
+                0.0008
+            } else {
+                0.0001
+            };
+            self.sizzle += (self.want_sizzle - self.sizzle) * k;
             if self.sizzle > 1e-4 {
                 if self.rand() < 90.0 * dt {
                     self.bubble = self.bubble.max(0.4 + 0.6 * self.rand());
@@ -369,8 +442,12 @@ impl Synth for CrackleSynth {
             }
             // the wet glass singing under the moving finger (a glass harp's tone, gliding to its note)
             // (rising in 50 ms, let go over half a second: the glass stops singing, not a switch)
-        let k = if self.want_sing > self.sing { 0.0004 } else { 0.00004 };
-        self.sing += (self.want_sing - self.sing) * k;
+            let k = if self.want_sing > self.sing {
+                0.0004
+            } else {
+                0.00004
+            };
+            self.sing += (self.want_sing - self.sing) * k;
             if self.want_sing_f > 0.0 {
                 if self.sing_f == 0.0 {
                     self.sing_f = self.want_sing_f;
@@ -380,7 +457,8 @@ impl Synth for CrackleSynth {
             if self.sing > 1e-4 {
                 self.sing_ph = (self.sing_ph + self.sing_f * dt).fract();
                 let p = self.sing_ph * std::f32::consts::TAU;
-                let s = (p.sin() + 0.18 * (2.0 * p).sin() + 0.05 * (3.0 * p).sin()) * self.sing * 0.06;
+                let s =
+                    (p.sin() + 0.18 * (2.0 * p).sin() + 0.05 * (3.0 * p).sin()) * self.sing * 0.06;
                 let (a, b) = place(s, self.touch_pan);
                 ol += a;
                 or += b;
@@ -427,7 +505,13 @@ impl Synth for CrackleSynth {
                 }
             }
             // a soft limit (never a hard clip)
-            let soft = |x: f32| if x.abs() < 0.6 { x } else { x.signum() * (0.6 + 0.4 * ((x.abs() - 0.6) / 0.4).tanh()) };
+            let soft = |x: f32| {
+                if x.abs() < 0.6 {
+                    x
+                } else {
+                    x.signum() * (0.6 + 0.4 * ((x.abs() - 0.6) / 0.4).tanh())
+                }
+            };
             frame[0] = soft(ol);
             if channels > 1 {
                 frame[1] = soft(or);
@@ -473,16 +557,27 @@ mod tests {
 
     #[test]
     fn a_strike_rings_at_the_height_s_note_without_a_click() {
-        for (h, want) in [(0.95, note(step_at(0.95))), (0.5, note(step_at(0.5))), (0.05, note(step_at(0.05)))] {
+        for (h, want) in [
+            (0.95, note(step_at(0.95))),
+            (0.5, note(step_at(0.5))),
+            (0.05, note(step_at(0.05))),
+        ] {
             let c = Crackle::default();
             let mut s = c.synth();
-            c.play(Note::Strike { f: want, pan: 0.0, amp: 0.25, damp: 0.0 });
+            c.play(Note::Strike {
+                f: want,
+                pan: 0.0,
+                amp: 0.25,
+                damp: 0.0,
+            });
             let x = render(&c, &mut s, 1.0);
             let got = peak_hz(&x[2400..2400 + 9600], want * 0.8, want * 1.2);
             // the onset rises, not steps: the level in its first 0.1 ms against its loudest 1 ms
             let lvl = |a: usize, b: usize| x[a..b].iter().fold(0.0f32, |m, v| m.max(v.abs()));
             let first = lvl(0, 5);
-            let loud = (0..20).map(|k| lvl(k * 48, k * 48 + 48)).fold(0.0f32, f32::max);
+            let loud = (0..20)
+                .map(|k| lvl(k * 48, k * 48 + 48))
+                .fold(0.0f32, f32::max);
             let peak = x.iter().fold(0.0f32, |m, v| m.max(v.abs()));
             println!("measured: strike at height {h}: wants {want:.1} Hz, rings at {got:.1} Hz; its first 0.1 ms at {:.0}% of its loudest; peak {peak:.2}", 100.0 * first / loud);
             assert!(first < loud * 0.1);
@@ -496,20 +591,32 @@ mod tests {
         let ring = |damp: f32| {
             let c = Crackle::default();
             let mut s = c.synth();
-            c.play(Note::Strike { f: note(5), pan: 0.0, amp: 0.25, damp });
+            c.play(Note::Strike {
+                f: note(5),
+                pan: 0.0,
+                amp: 0.25,
+                damp,
+            });
             let x = render(&c, &mut s, 1.2);
             let tail = &x[(0.4 * R) as usize..(0.5 * R) as usize];
             (tail.iter().map(|v| v * v).sum::<f32>() / tail.len() as f32).sqrt()
         };
         let (bare, frost) = (ring(0.0), ring(1.0));
-        println!("measured: strike's ring 0.4 s on: bare glass {:.1} dBFS, under thick frost {:.1} dBFS", 20.0 * bare.log10(), 20.0 * frost.log10());
+        println!(
+            "measured: strike's ring 0.4 s on: bare glass {:.1} dBFS, under thick frost {:.1} dBFS",
+            20.0 * bare.log10(),
+            20.0 * frost.log10()
+        );
         assert!(bare > frost * 6.0);
     }
 
     #[test]
     fn the_scale_is_pentatonic_and_rises_up_the_pane() {
         let notes: Vec<f32> = (0..=10).map(note).collect();
-        println!("measured: the scale, foot to top: {:?}", notes.iter().map(|f| format!("{f:.0}")).collect::<Vec<_>>());
+        println!(
+            "measured: the scale, foot to top: {:?}",
+            notes.iter().map(|f| format!("{f:.0}")).collect::<Vec<_>>()
+        );
         assert!(step_at(0.0) > step_at(1.0));
         assert!((note(5) / note(0) - 2.0).abs() < 1e-3);
     }
@@ -520,12 +627,21 @@ mod tests {
         let mut s = c.synth();
         // a hard stroke and its answer: a strike, the finger's sizzle and song at their loudest, then
         // eighteen pings 0.08 s apart over it, and a shake
-        c.play(Note::Strike { f: note(3), pan: 0.0, amp: 0.22, damp: 0.0 });
+        c.play(Note::Strike {
+            f: note(3),
+            pan: 0.0,
+            amp: 0.22,
+            damp: 0.0,
+        });
         c.play(Note::Rush);
         c.touch(1.0, 60.0, note(4), 1.0, 0.0);
         let mut x = render(&c, &mut s, 0.6);
         for k in 0..18 {
-            c.play(Note::Ping { f: note(5 + k % 7), pan: 0.0, amp: 0.14 });
+            c.play(Note::Ping {
+                f: note(5 + k % 7),
+                pan: 0.0,
+                amp: 0.14,
+            });
             x.extend(render(&c, &mut s, 0.08));
         }
         x.extend(render(&c, &mut s, 1.0));

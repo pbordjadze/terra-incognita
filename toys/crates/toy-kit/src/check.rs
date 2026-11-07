@@ -150,7 +150,17 @@ impl Places {
         fn two(p: &Option<[Place; 2]>, i: usize) -> Option<&Place> {
             p.as_ref().map(|p| &p[i])
         }
-        [self.tap.as_ref(), self.hold.as_ref(), two(&self.drag, 0), two(&self.drag, 1), two(&self.pinch, 0), two(&self.pinch, 1), self.down.as_ref(), self.mv.as_ref(), self.up.as_ref()]
+        [
+            self.tap.as_ref(),
+            self.hold.as_ref(),
+            two(&self.drag, 0),
+            two(&self.drag, 1),
+            two(&self.pinch, 0),
+            two(&self.pinch, 1),
+            self.down.as_ref(),
+            self.mv.as_ref(),
+            self.up.as_ref(),
+        ]
     }
 }
 
@@ -200,7 +210,15 @@ impl From<RawEvent> for Event {
             shake: r.shake,
             open: r.open,
             inert: r.inert,
-            places: Places { tap: r.tap, hold: r.hold, drag: r.drag, pinch: r.pinch, down: r.down, mv: r.mv, up: r.up },
+            places: Places {
+                tap: r.tap,
+                hold: r.hold,
+                drag: r.drag,
+                pinch: r.pinch,
+                down: r.down,
+                mv: r.mv,
+                up: r.up,
+            },
         }
     }
 }
@@ -251,8 +269,14 @@ pub fn draw_fingers(px: &mut [u8], w: u32, h: u32, ppp: f64, at: &[[f64; 2]]) {
     let lw = 2.5 * ppp;
     for p in at {
         let (cx, cy) = (p[0] * ppp, p[1] * ppp);
-        let (x0, x1) = (((cx - r - lw).floor().max(0.0)) as u32, ((cx + r + lw).ceil().min(w as f64 - 1.0)) as u32);
-        let (y0, y1) = (((cy - r - lw).floor().max(0.0)) as u32, ((cy + r + lw).ceil().min(h as f64 - 1.0)) as u32);
+        let (x0, x1) = (
+            ((cx - r - lw).floor().max(0.0)) as u32,
+            ((cx + r + lw).ceil().min(w as f64 - 1.0)) as u32,
+        );
+        let (y0, y1) = (
+            ((cy - r - lw).floor().max(0.0)) as u32,
+            ((cy + r + lw).ceil().min(h as f64 - 1.0)) as u32,
+        );
         for y in y0..=y1 {
             for x in x0..=x1 {
                 let d = ((x as f64 + 0.5 - cx).powi(2) + (y as f64 + 0.5 - cy).powi(2)).sqrt();
@@ -277,7 +301,18 @@ pub fn draw_fingers(px: &mut [u8], w: u32, h: u32, ppp: f64, at: &[[f64; 2]]) {
 pub fn pointers(events: &[Event]) -> Vec<(f64, Option<PointerEvent>)> {
     let mut out: Vec<(f64, Option<PointerEvent>)> = Vec::new();
     let mut next_id = 1000u64;
-    let pe = |id, phase, p: [f64; 2], t| (t, Some(PointerEvent { id, phase, x: p[0], y: p[1], t }));
+    let pe = |id, phase, p: [f64; 2], t| {
+        (
+            t,
+            Some(PointerEvent {
+                id,
+                phase,
+                x: p[0],
+                y: p[1],
+                t,
+            }),
+        )
+    };
     for e in events {
         let t = e.t;
         if let Some(p) = e.tap {
@@ -297,7 +332,12 @@ pub fn pointers(events: &[Event]) -> Vec<(f64, Option<PointerEvent>)> {
             out.push(pe(next_id, Phase::Down, a, t));
             for i in 1..=n {
                 let k = i as f64 / n as f64;
-                out.push(pe(next_id, Phase::Move, [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k], t + d * k));
+                out.push(pe(
+                    next_id,
+                    Phase::Move,
+                    [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k],
+                    t + d * k,
+                ));
             }
             out.push(pe(next_id, Phase::Up, b, t + d + 0.001));
         }
@@ -378,7 +418,11 @@ impl Pos {
 
 #[derive(Clone, Copy, Debug)]
 enum What {
-    Pointer { id: u64, phase: Phase, pos: Pos },
+    Pointer {
+        id: u64,
+        phase: Phase,
+        pos: Pos,
+    },
     Shake,
     /// The event's `open`: a sound file handed to the toy as if the reader chose it.
     Open,
@@ -399,7 +443,13 @@ fn schedule(events: &[Event]) -> Vec<Item> {
     for (ev, e) in events.iter().enumerate() {
         let s = e.places.slots();
         let t = e.t;
-        let mut ptr = |t: f64, id: u64, phase: Phase, pos: Pos| out.push(Item { t, ev, what: What::Pointer { id, phase, pos } });
+        let mut ptr = |t: f64, id: u64, phase: Phase, pos: Pos| {
+            out.push(Item {
+                t,
+                ev,
+                what: What::Pointer { id, phase, pos },
+            })
+        };
         if s[TAP].is_some() {
             next_id += 1;
             ptr(t, next_id, Phase::Down, Pos::Slot(TAP));
@@ -408,7 +458,12 @@ fn schedule(events: &[Event]) -> Vec<Item> {
         if s[HOLD].is_some() {
             next_id += 1;
             ptr(t, next_id, Phase::Down, Pos::Slot(HOLD));
-            ptr(t + e.dur.unwrap_or(1.0), next_id, Phase::Up, Pos::Slot(HOLD));
+            ptr(
+                t + e.dur.unwrap_or(1.0),
+                next_id,
+                Phase::Up,
+                Pos::Slot(HOLD),
+            );
         }
         if s[DRAG].is_some() {
             next_id += 1;
@@ -417,7 +472,12 @@ fn schedule(events: &[Event]) -> Vec<Item> {
             ptr(t, next_id, Phase::Down, Pos::Slot(DRAG));
             for i in 1..=n {
                 let k = i as f64 / n as f64;
-                ptr(t + d * k, next_id, Phase::Move, Pos::Lerp(DRAG, DRAG + 1, k));
+                ptr(
+                    t + d * k,
+                    next_id,
+                    Phase::Move,
+                    Pos::Lerp(DRAG, DRAG + 1, k),
+                );
             }
             ptr(t + d + 0.001, next_id, Phase::Up, Pos::Slot(DRAG + 1));
         }
@@ -449,10 +509,18 @@ fn schedule(events: &[Event]) -> Vec<Item> {
             ptr(t, id, Phase::Up, Pos::Slot(UP));
         }
         if e.shake {
-            out.push(Item { t, ev, what: What::Shake });
+            out.push(Item {
+                t,
+                ev,
+                what: What::Shake,
+            });
         }
         if e.open.is_some() {
-            out.push(Item { t, ev, what: What::Open });
+            out.push(Item {
+                t,
+                ev,
+                what: What::Open,
+            });
         }
     }
     out.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
@@ -461,7 +529,11 @@ fn schedule(events: &[Event]) -> Vec<Item> {
 
 /// A place as a point now: a point is itself, a name is looked up in the toy's `anchors`, a
 /// longitude and latitude go through the toy's `project`.
-pub fn resolve(place: &Place, anchors: impl FnOnce() -> Vec<(String, [f64; 2])>, project: impl FnOnce([f64; 2]) -> Option<[f64; 2]>) -> anyhow::Result<[f64; 2]> {
+pub fn resolve(
+    place: &Place,
+    anchors: impl FnOnce() -> Vec<(String, [f64; 2])>,
+    project: impl FnOnce([f64; 2]) -> Option<[f64; 2]>,
+) -> anyhow::Result<[f64; 2]> {
     match place {
         Place::At(p) => Ok(*p),
         Place::Named(n) => {
@@ -480,13 +552,21 @@ pub fn resolve(place: &Place, anchors: impl FnOnce() -> Vec<(String, [f64; 2])>,
 
 /// A headless GPU (Vulkan on Linux, Metal on a Mac).
 pub fn gpu() -> anyhow::Result<Gpu> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::VULKAN | wgpu::Backends::METAL,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    });
     block_on(Gpu::new(&instance, None))
 }
 
 /// The same device again (a run of its own, the GPU shared).
 fn share(g: &Gpu) -> Gpu {
-    Gpu { device: g.device.clone(), queue: g.queue.clone(), format: g.format, adapter_info: g.adapter_info.clone() }
+    Gpu {
+        device: g.device.clone(),
+        queue: g.queue.clone(),
+        format: g.format,
+        adapter_info: g.adapter_info.clone(),
+    }
 }
 
 /// The toy's data directory: `TOY_ASSETS`, or `toys/build/<toy>/assets` (tools/toys/assets.py).
@@ -494,7 +574,10 @@ pub fn assets_dir(toy: &str) -> PathBuf {
     if let Ok(d) = std::env::var("TOY_ASSETS") {
         return d.into();
     }
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../build").join(toy).join("assets")
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../build")
+        .join(toy)
+        .join("assets")
 }
 
 pub fn write_png(path: &Path, w: u32, h: u32, rgba: &[u8]) -> anyhow::Result<()> {
@@ -530,12 +613,25 @@ pub fn write_wav(path: &Path, samples: &[f32], channels: u16, rate: u32) -> anyh
 /// The loudness of interleaved stereo at 48 kHz: integrated LUFS (ITU-R BS.1770-4: K-weighted,
 /// 400 ms blocks, gated at -70 LUFS and 10 LU below), RMS and peak in dBFS. Silence is -inf.
 pub fn loudness(samples: &[f32], rate: f64) -> (f64, f64, f64) {
-    let db = |x: f64| if x > 0.0 { 20.0 * x.log10() } else { f64::NEG_INFINITY };
+    let db = |x: f64| {
+        if x > 0.0 {
+            20.0 * x.log10()
+        } else {
+            f64::NEG_INFINITY
+        }
+    };
     let frames = samples.len() / 2;
     let peak = samples.iter().fold(0.0f32, |m, s| m.max(s.abs())) as f64;
-    let rms = if frames > 0 { (samples.iter().map(|s| (*s as f64).powi(2)).sum::<f64>() / samples.len() as f64).sqrt() } else { 0.0 };
+    let rms = if frames > 0 {
+        (samples.iter().map(|s| (*s as f64).powi(2)).sum::<f64>() / samples.len() as f64).sqrt()
+    } else {
+        0.0
+    };
     // the K-weighting's two biquads (BS.1770's coefficients at 48 kHz)
-    let (b1, a1) = ([1.53512485958697, -2.69169618940638, 1.19839281085285], [-1.69065929318241, 0.73248077421585]);
+    let (b1, a1) = (
+        [1.53512485958697, -2.69169618940638, 1.19839281085285],
+        [-1.69065929318241, 0.73248077421585],
+    );
     let (b2, a2) = ([1.0, -2.0, 1.0], [-1.99004745483398, 0.99007225036621]);
     let mut sq = vec![0.0f64; frames];
     for ch in 0..2 {
@@ -566,7 +662,11 @@ pub fn loudness(samples: &[f32], rate: f64) -> (f64, f64, f64) {
     } else {
         let rel = lufs(mean(&abs)) - 10.0;
         let gated: Vec<f64> = abs.iter().copied().filter(|z| lufs(*z) > rel).collect();
-        if gated.is_empty() { f64::NEG_INFINITY } else { lufs(mean(&gated)) }
+        if gated.is_empty() {
+            f64::NEG_INFINITY
+        } else {
+            lufs(mean(&gated))
+        }
     };
     (integrated, db(rms), db(peak))
 }
@@ -614,7 +714,13 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Options {
-        Options { size: None, ppp: None, tap_check: std::env::var("KIT_TAP_CHECK").is_ok_and(|v| v == "1"), strict_taps: std::env::var("KIT_STRICT_TAPS").is_ok_and(|v| v == "1"), stretch: false }
+        Options {
+            size: None,
+            ppp: None,
+            tap_check: std::env::var("KIT_TAP_CHECK").is_ok_and(|v| v == "1"),
+            strict_taps: std::env::var("KIT_STRICT_TAPS").is_ok_and(|v| v == "1"),
+            stretch: false,
+        }
     }
 }
 
@@ -635,7 +741,15 @@ struct Run<T: Toy> {
 }
 
 impl<T: Toy> Run<T> {
-    fn new(gpu: Gpu, name: &str, plan: &Plan, w: u32, h: u32, ppp: f64, items: Vec<Item>) -> anyhow::Result<Run<T>> {
+    fn new(
+        gpu: Gpu,
+        name: &str,
+        plan: &Plan,
+        w: u32,
+        h: u32,
+        ppp: f64,
+        items: Vec<Item>,
+    ) -> anyhow::Result<Run<T>> {
         let mut ctx = Ctx::new(gpu, Box::new(DirAssets(assets_dir(name))), w, h, ppp);
         ctx.night = plan.night;
         ctx.reduce_motion = plan.reduce_motion;
@@ -644,7 +758,12 @@ impl<T: Toy> Run<T> {
         if let Some(s) = &plan.restore {
             host.toy.restore(&mut host.ctx, s);
         }
-        Ok(Run { host, items, next: 0, resolved: vec![None; plan.events.len()] })
+        Ok(Run {
+            host,
+            items,
+            next: 0,
+            resolved: vec![None; plan.events.len()],
+        })
     }
 
     /// Hands the toy everything due by `t` (places resolved when their event first acts).
@@ -657,19 +776,33 @@ impl<T: Toy> Run<T> {
                         let mut p = [[0.0; 2]; 9];
                         for (s, place) in events[it.ev].places.slots().iter().enumerate() {
                             if let Some(place) = place {
-                                p[s] = resolve(place, || self.host.anchors(), |ll| self.host.toy.project(ll))
-                                    .map_err(|e| anyhow::anyhow!("event at t={}: {e}", events[it.ev].t))?;
+                                p[s] = resolve(
+                                    place,
+                                    || self.host.anchors(),
+                                    |ll| self.host.toy.project(ll),
+                                )
+                                .map_err(|e| {
+                                    anyhow::anyhow!("event at t={}: {e}", events[it.ev].t)
+                                })?;
                             }
                         }
                         self.resolved[it.ev] = Some(p);
                     }
                     let [x, y] = pos.at(self.resolved[it.ev].as_ref().unwrap());
-                    self.host.pointer(PointerEvent { id, phase, x, y, t: it.t });
+                    self.host.pointer(PointerEvent {
+                        id,
+                        phase,
+                        x,
+                        y,
+                        t: it.t,
+                    });
                 }
                 What::Shake => self.host.toy.shaken(&mut self.host.ctx),
                 What::Open => {
                     let path = events[it.ev].open.as_deref().unwrap_or_default();
-                    let f = crate::AudioFile::wav(Path::new(path)).map_err(|e| anyhow::anyhow!("event at t={}: open {path}: {e}", events[it.ev].t))?;
+                    let f = crate::AudioFile::wav(Path::new(path)).map_err(|e| {
+                        anyhow::anyhow!("event at t={}: open {path}: {e}", events[it.ev].t)
+                    })?;
                     self.host.opened(f);
                 }
             }
@@ -693,12 +826,23 @@ fn small(rgba: &[u8], w: u32, h: u32) -> Vec<u8> {
             s[3] += 1;
         }
     }
-    sum.iter().flat_map(|s| [(s[0] / s[3]) as u8, (s[1] / s[3]) as u8, (s[2] / s[3]) as u8]).collect()
+    sum.iter()
+        .flat_map(|s| {
+            [
+                (s[0] / s[3]) as u8,
+                (s[1] / s[3]) as u8,
+                (s[2] / s[3]) as u8,
+            ]
+        })
+        .collect()
 }
 
 /// Which 4×4 blocks differ by 2 levels or more in a channel.
 fn changed(a: &[u8], b: &[u8]) -> Vec<bool> {
-    a.chunks_exact(3).zip(b.chunks_exact(3)).map(|(p, q)| p.iter().zip(q.iter()).any(|(x, y)| x.abs_diff(*y) >= 2)).collect()
+    a.chunks_exact(3)
+        .zip(b.chunks_exact(3))
+        .map(|(p, q)| p.iter().zip(q.iter()).any(|(x, y)| x.abs_diff(*y) >= 2))
+        .collect()
 }
 
 /// How near the finger a touch is judged on a toy that isn't deterministic, in points.
@@ -772,19 +916,41 @@ fn touches(events: &[Event], fps: f64, last_frame: usize) -> Vec<Touch> {
         }
         frames.push(frame(end + 0.4));
         frames.dedup();
-        out.push(Touch { ev: i, kind, omit, frames });
+        out.push(Touch {
+            ev: i,
+            kind,
+            omit,
+            frames,
+        });
     }
     out
 }
 
 /// Plays `plan` with toy `T` into `out`.
-pub fn play<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>, ppp: Option<f64>) -> anyhow::Result<()> {
-    let opts = Options { size, ppp, ..Options::default() };
+pub fn play<T: Toy>(
+    name: &str,
+    plan: &Plan,
+    out: &Path,
+    size: Option<[u32; 2]>,
+    ppp: Option<f64>,
+) -> anyhow::Result<()> {
+    let opts = Options {
+        size,
+        ppp,
+        ..Options::default()
+    };
     play_with::<T>(&gpu()?, name, plan, out, &opts, &mut std::io::stdout()).map(|_| ())
 }
 
 /// Plays `plan` with toy `T` on `gpu` into `out`, its lines to `log`.
-pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &Options, log: &mut dyn Write) -> anyhow::Result<Report> {
+pub fn play_with<T: Toy>(
+    gpu: &Gpu,
+    name: &str,
+    plan: &Plan,
+    out: &Path,
+    opts: &Options,
+    log: &mut dyn Write,
+) -> anyhow::Result<Report> {
     std::fs::create_dir_all(out)?;
     let [w, h] = opts.size.or(plan.size).unwrap_or([1179, 2556]);
     let ppp = opts.ppp.or(plan.ppp).unwrap_or(3.0);
@@ -802,10 +968,21 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
     shots.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     let last_shot = shots.last().map(|s| s.0).unwrap_or(0.0);
     let film_end = plan.film.as_ref().map(|f| f.to).unwrap_or(0.0);
-    let seconds = plan.seconds.unwrap_or(last_shot.max(film_end)).max(last_shot).max(film_end);
+    let seconds = plan
+        .seconds
+        .unwrap_or(last_shot.max(film_end))
+        .max(last_shot)
+        .max(film_end);
     let frames = (seconds * fps).ceil() as usize;
-    let checks = if opts.tap_check || opts.strict_taps || plan.strict_taps { touches(&plan.events, fps, frames) } else { Vec::new() };
-    let mut seen: BTreeMap<usize, Vec<u8>> = checks.iter().flat_map(|c| c.frames.iter().map(|f| (*f, Vec::new()))).collect();
+    let checks = if opts.tap_check || opts.strict_taps || plan.strict_taps {
+        touches(&plan.events, fps, frames)
+    } else {
+        Vec::new()
+    };
+    let mut seen: BTreeMap<usize, Vec<u8>> = checks
+        .iter()
+        .flat_map(|c| c.frames.iter().map(|f| (*f, Vec::new())))
+        .collect();
     let mut si = 0;
     let mut film_next = plan.film.as_ref().map(|f| f.from);
     let mut film_i = 0;
@@ -846,18 +1023,34 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 let p = out.join(format!("{}.png", shots[si].1));
                 write_png(&p, w, h, &px)?;
                 if opts.stretch {
-                    write_png(&out.join(format!("{}.stretch.png", shots[si].1)), w, h, &stretch(&px))?;
+                    write_png(
+                        &out.join(format!("{}.stretch.png", shots[si].1)),
+                        w,
+                        h,
+                        &stretch(&px),
+                    )?;
                 }
-                writeln!(log, "shot {:>7.2}s {} (update {cost:.2} ms)", t, p.display())?;
+                writeln!(
+                    log,
+                    "shot {:>7.2}s {} (update {cost:.2} ms)",
+                    t,
+                    p.display()
+                )?;
                 // the shell's text showing then (the info line, the rules), which the shell sets in
                 // the system's text and this frame lacks: tools/kit/shell_text.py draws it on the shot
                 let title = host.toy.title();
-                let (line, rules, origins) = (host.info.line(), host.info.rules(), host.info.origins());
+                let (line, rules, origins) =
+                    (host.info.line(), host.info.rules(), host.info.origins());
                 if line.is_some() || rules.is_some() || origins.is_some() || title.is_some() {
-                    let s = |c: Option<&std::ffi::CStr>| serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()));
+                    let s = |c: Option<&std::ffi::CStr>| {
+                        serde_json::Value::from(c.map(|c| c.to_string_lossy().into_owned()))
+                    };
                     let j = serde_json::json!({ "size": [w, h], "ppp": ppp, "line": s(line), "rules": s(rules),
                         "origins": s(origins), "top": host.card_at_top(), "title": title });
-                    std::fs::write(out.join(format!("{}.shell.json", shots[si].1)), j.to_string())?;
+                    std::fs::write(
+                        out.join(format!("{}.shell.json", shots[si].1)),
+                        j.to_string(),
+                    )?;
                 }
                 si += 1;
             }
@@ -866,9 +1059,19 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                 if film.fingers {
                     let mut px = px.clone();
                     draw_fingers(&mut px, w, h, ppp, &fingers_at(&finger_track, t));
-                    write_png(&out.join("film").join(format!("{film_i:04}.png")), w, h, &px)?;
+                    write_png(
+                        &out.join("film").join(format!("{film_i:04}.png")),
+                        w,
+                        h,
+                        &px,
+                    )?;
                 } else {
-                    write_png(&out.join("film").join(format!("{film_i:04}.png")), w, h, &px)?;
+                    write_png(
+                        &out.join("film").join(format!("{film_i:04}.png")),
+                        w,
+                        h,
+                        &px,
+                    )?;
                 }
                 film_i += 1;
                 let every = plan.film.as_ref().unwrap().every;
@@ -880,14 +1083,31 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
         let p = out.join("audio.wav");
         write_wav(&p, &sound, 2, rate as u32)?;
         let peak = sound.iter().fold(0.0f32, |m, s| m.max(s.abs()));
-        writeln!(log, "audio {} ({:.1} s, peak {peak:.2})", p.display(), sound.len() as f64 / 2.0 / rate)?;
+        writeln!(
+            log,
+            "audio {} ({:.1} s, peak {peak:.2})",
+            p.display(),
+            sound.len() as f64 / 2.0 / rate
+        )?;
         let (lufs, rms, peak) = loudness(&sound, rate);
-        writeln!(log, "loudness {lufs:.1} LUFS integrated, RMS {rms:.1} dBFS, peak {peak:.1} dBFS")?;
+        writeln!(
+            log,
+            "loudness {lufs:.1} LUFS integrated, RMS {rms:.1} dBFS, peak {peak:.1} dBFS"
+        )?;
     }
     if film_i > 0 {
-        writeln!(log, "film {} frames in {}", film_i, out.join("film").display())?;
+        writeln!(
+            log,
+            "film {} frames in {}",
+            film_i,
+            out.join("film").display()
+        )?;
     }
-    writeln!(log, "worst frame {:.2} ms at {:.2}s (CPU: the fingers' events and the update)", worst.0, worst.1)?;
+    writeln!(
+        log,
+        "worst frame {:.2} ms at {:.2}s (CPU: the fingers' events and the update)",
+        worst.0, worst.1
+    )?;
     let resolved = std::mem::take(&mut run.resolved);
     drop(run);
     let mut report = Report::default();
@@ -896,39 +1116,47 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
         let (sw, sh) = (w.div_ceil(4) as usize, h.div_ceil(4) as usize);
         // a shadow run without the events `omit`: at each frame of `upto`, which 4×4 blocks differ
         // from the real run
-        let shadow = |omit: &[usize], upto: &[usize]| -> anyhow::Result<BTreeMap<usize, Vec<bool>>> {
-            let items = schedule(&plan.events).into_iter().filter(|i| !omit.contains(&i.ev)).collect();
-            let mut run = Run::<T>::new(share(gpu), name, plan, w, h, ppp, items)?;
-            let last = *upto.iter().max().unwrap();
-            let mut out = BTreeMap::new();
-            let mut heard = 0usize;
-            for f in 0..=last {
-                let t = f as f64 / fps;
-                run.dispatch(&plan.events, t)?;
-                run.host.update(t);
-                let _ = run.host.take_haptic();
-                // the sound is pulled as the real run pulled it (a synth may share state with the toy)
-                if plan.audio {
-                    let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(heard);
-                    let mut buf = vec![0.0f32; n * 2];
-                    Host::<T>::audio(run.host.synth.as_ref(), &mut buf, 2, rate);
-                    heard += n;
+        let shadow =
+            |omit: &[usize], upto: &[usize]| -> anyhow::Result<BTreeMap<usize, Vec<bool>>> {
+                let items = schedule(&plan.events)
+                    .into_iter()
+                    .filter(|i| !omit.contains(&i.ev))
+                    .collect();
+                let mut run = Run::<T>::new(share(gpu), name, plan, w, h, ppp, items)?;
+                let last = *upto.iter().max().unwrap();
+                let mut out = BTreeMap::new();
+                let mut heard = 0usize;
+                for f in 0..=last {
+                    let t = f as f64 / fps;
+                    run.dispatch(&plan.events, t)?;
+                    run.host.update(t);
+                    let _ = run.host.take_haptic();
+                    // the sound is pulled as the real run pulled it (a synth may share state with the toy)
+                    if plan.audio {
+                        let n = (((t + 1.0 / fps) * rate) as usize).saturating_sub(heard);
+                        let mut buf = vec![0.0f32; n * 2];
+                        Host::<T>::audio(run.host.synth.as_ref(), &mut buf, 2, rate);
+                        heard += n;
+                    }
+                    if upto.contains(&f) {
+                        run.host.draw(&shadow_target.view);
+                        let px = small(&shadow_target.read(&run.host.ctx.gpu), w, h);
+                        out.insert(f, changed(&px, &seen[&f]));
+                    }
                 }
-                if upto.contains(&f) {
-                    run.host.draw(&shadow_target.view);
-                    let px = small(&shadow_target.read(&run.host.ctx.gpu), w, h);
-                    out.insert(f, changed(&px, &seen[&f]));
-                }
-            }
-            Ok(out)
-        };
+                Ok(out)
+            };
         // the control: a shadow with nothing left out. A deterministic toy matches it exactly; one
         // that isn't (GPU atomics racing, say) is judged near the finger, against its own noise.
         let all: Vec<usize> = seen.keys().copied().collect();
         let control = shadow(&[], &all)?;
         let noisy = control.values().any(|m| m.iter().any(|c| *c));
         if noisy {
-            let most = control.values().map(|m| m.iter().filter(|c| **c).count()).max().unwrap_or(0);
+            let most = control
+                .values()
+                .map(|m| m.iter().filter(|c| **c).count())
+                .max()
+                .unwrap_or(0);
             writeln!(log, "touch check: the toy isn't deterministic (a run with every touch differs from itself in {most} of {} blocks); touches judged within {REACH} points of the finger, against that noise", sw * sh)?;
         }
         let strict = opts.strict_taps || plan.strict_taps;
@@ -948,8 +1176,12 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                         }
                     }
                 }
-                let lo = pts.iter().fold([f64::MAX; 2], |m, p| [m[0].min(p[0]), m[1].min(p[1])]);
-                let hi = pts.iter().fold([f64::MIN; 2], |m, p| [m[0].max(p[0]), m[1].max(p[1])]);
+                let lo = pts
+                    .iter()
+                    .fold([f64::MAX; 2], |m, p| [m[0].min(p[0]), m[1].min(p[1])]);
+                let hi = pts
+                    .iter()
+                    .fold([f64::MIN; 2], |m, p| [m[0].max(p[0]), m[1].max(p[1])]);
                 let b = |v: f64| (v * ppp / 4.0).floor().max(0.0) as usize;
                 if !pts.is_empty() {
                     for y in b(lo[1] - REACH)..=b(hi[1] + REACH).min(sh - 1) {
@@ -961,14 +1193,36 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
             }
             let count = |m: &Vec<bool>| m.iter().zip(&near).filter(|(c, n)| **c && **n).count();
             let d = diff.values().map(count).max().unwrap_or(0);
-            let noise = c.frames.iter().map(|f| count(&control[f])).max().unwrap_or(0);
+            let noise = c
+                .frames
+                .iter()
+                .map(|f| count(&control[f]))
+                .max()
+                .unwrap_or(0);
             report.touches += 1;
-            let at = c.frames.iter().map(|f| format!("{:.2}", *f as f64 / fps)).collect::<Vec<_>>().join(", ");
-            let nothing = d < MIN_CHANGED || (noise > 0 && (d as f64) < 1.5 * noise as f64 + MIN_CHANGED as f64);
+            let at = c
+                .frames
+                .iter()
+                .map(|f| format!("{:.2}", *f as f64 / fps))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let nothing = d < MIN_CHANGED
+                || (noise > 0 && (d as f64) < 1.5 * noise as f64 + MIN_CHANGED as f64);
             if nothing {
-                let against = if noise > 0 { format!(", against its noise of {noise}") } else { String::new() };
-                let verb = if noise > 0 { "may have done nothing" } else { "did nothing" };
-                let line = format!("{} at t={:.2} {verb} ({d} blocks of 4x4 px changed at {at} s{against})", c.kind, e.t);
+                let against = if noise > 0 {
+                    format!(", against its noise of {noise}")
+                } else {
+                    String::new()
+                };
+                let verb = if noise > 0 {
+                    "may have done nothing"
+                } else {
+                    "did nothing"
+                };
+                let line = format!(
+                    "{} at t={:.2} {verb} ({d} blocks of 4x4 px changed at {at} s{against})",
+                    c.kind, e.t
+                );
                 report.did_nothing.push((e.t, c.kind.to_string()));
                 if strict {
                     writeln!(log, "EXPECT FAILED: {line}")?;
@@ -976,12 +1230,25 @@ pub fn play_with<T: Toy>(gpu: &Gpu, name: &str, plan: &Plan, out: &Path, opts: &
                     writeln!(log, "WARN: {line}")?;
                 }
             } else if std::env::var("KIT_TAP_VERBOSE").is_ok_and(|v| v == "1") {
-                writeln!(log, "touch: {} at t={:.2} changed {d} blocks (noise {noise})", c.kind, e.t)?;
+                writeln!(
+                    log,
+                    "touch: {} at t={:.2} changed {d} blocks (noise {noise})",
+                    c.kind, e.t
+                )?;
             }
         }
-        writeln!(log, "touches: {} checked, {} did nothing", report.touches, report.did_nothing.len())?;
+        writeln!(
+            log,
+            "touches: {} checked, {} did nothing",
+            report.touches,
+            report.did_nothing.len()
+        )?;
         if strict && !report.did_nothing.is_empty() {
-            anyhow::bail!("EXPECT FAILED: {} of {} touches did nothing", report.did_nothing.len(), report.touches);
+            anyhow::bail!(
+                "EXPECT FAILED: {} of {} touches did nothing",
+                report.did_nothing.len(),
+                report.touches
+            );
         }
     }
     Ok(report)
@@ -993,7 +1260,10 @@ fn plans_in(args: &[&String]) -> anyhow::Result<Vec<PathBuf>> {
     for a in args {
         let p = Path::new(a.as_str());
         if p.is_dir() {
-            let mut v: Vec<PathBuf> = std::fs::read_dir(p)?.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.extension().is_some_and(|x| x == "json")).collect();
+            let mut v: Vec<PathBuf> = std::fs::read_dir(p)?
+                .filter_map(|e| e.ok().map(|e| e.path()))
+                .filter(|p| p.extension().is_some_and(|x| x == "json"))
+                .collect();
             v.sort();
             out.extend(v);
         } else {
@@ -1010,14 +1280,23 @@ fn read_plan(p: &Path) -> anyhow::Result<Plan> {
 
 /// Plays many plans in one process: the GPU made once, the plans on `jobs` threads. Says whether
 /// every plan passed.
-pub fn play_all<T: Toy>(name: &str, plans: &[PathBuf], out: &Path, jobs: usize, opts: &Options) -> anyhow::Result<bool> {
+pub fn play_all<T: Toy>(
+    name: &str,
+    plans: &[PathBuf],
+    out: &Path,
+    jobs: usize,
+    opts: &Options,
+) -> anyhow::Result<bool> {
     std::fs::create_dir_all(out)?;
     let gpu = gpu()?;
     let next = std::sync::atomic::AtomicUsize::new(0);
     let failed = std::sync::atomic::AtomicUsize::new(0);
     let mut names: Vec<String> = Vec::new();
     for p in plans {
-        let stem = p.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+        let stem = p
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_default();
         let mut n = stem.clone();
         let mut k = 2;
         while names.contains(&n) {
@@ -1037,7 +1316,8 @@ pub fn play_all<T: Toy>(name: &str, plans: &[PathBuf], out: &Path, jobs: usize, 
                 let t0 = std::time::Instant::now();
                 let dir = out.join(&names[i]);
                 let mut log: Vec<u8> = Vec::new();
-                let r = read_plan(&plans[i]).and_then(|plan| play_with::<T>(&gpu, name, &plan, &dir, opts, &mut log));
+                let r = read_plan(&plans[i])
+                    .and_then(|plan| play_with::<T>(&gpu, name, &plan, &dir, opts, &mut log));
                 if let Err(e) = &r {
                     let _ = writeln!(log, "check: {e:#}");
                 }
@@ -1045,7 +1325,15 @@ pub fn play_all<T: Toy>(name: &str, plans: &[PathBuf], out: &Path, jobs: usize, 
                 let secs = t0.elapsed().as_secs_f64();
                 match r {
                     Ok(rep) => {
-                        let touches = if rep.touches > 0 { format!("; {} touches, {} did nothing", rep.touches, rep.did_nothing.len()) } else { String::new() };
+                        let touches = if rep.touches > 0 {
+                            format!(
+                                "; {} touches, {} did nothing",
+                                rep.touches,
+                                rep.did_nothing.len()
+                            )
+                        } else {
+                            String::new()
+                        };
                         println!("ok   {} ({secs:.1} s{touches})", plans[i].display());
                     }
                     Err(e) => {
@@ -1057,7 +1345,13 @@ pub fn play_all<T: Toy>(name: &str, plans: &[PathBuf], out: &Path, jobs: usize, 
         }
     });
     let failed = failed.into_inner();
-    println!("{} plans, {} failed, in {:.1} s ({} threads)", plans.len(), failed, start.elapsed().as_secs_f64(), jobs);
+    println!(
+        "{} plans, {} failed, in {:.1} s ({} threads)",
+        plans.len(),
+        failed,
+        start.elapsed().as_secs_f64(),
+        jobs
+    );
     Ok(failed == 0)
 }
 
@@ -1072,7 +1366,13 @@ fn clip_sh() -> Option<PathBuf> {
 
 /// Renders `plan` as a clip: every frame at 30 fps, 1080×1920 unless `size` says, with its sound,
 /// encoded by tools/kit/clip.sh into `out` (an MP4).
-pub fn clip<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>, ppp: Option<f64>) -> anyhow::Result<()> {
+pub fn clip<T: Toy>(
+    name: &str,
+    plan: &Plan,
+    out: &Path,
+    size: Option<[u32; 2]>,
+    ppp: Option<f64>,
+) -> anyhow::Result<()> {
     let [w, h] = size.unwrap_or([1080, 1920]);
     // the plan's points keep their width
     let plan_w = match plan.size {
@@ -1087,9 +1387,20 @@ pub fn clip<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>,
     let gpu = gpu()?;
     let target = Offscreen::new(&gpu, w, h);
     let mut run = Run::<T>::new(share(&gpu), name, plan, w, h, ppp, schedule(&plan.events))?;
-    let last_shot = plan.shots.iter().map(|s| match s { Shot::At(t) => *t, Shot::Named { t, .. } => *t }).fold(0.0, f64::max);
+    let last_shot = plan
+        .shots
+        .iter()
+        .map(|s| match s {
+            Shot::At(t) => *t,
+            Shot::Named { t, .. } => *t,
+        })
+        .fold(0.0, f64::max);
     let film_end = plan.film.as_ref().map(|f| f.to).unwrap_or(0.0);
-    let seconds = plan.seconds.unwrap_or(last_shot.max(film_end)).max(last_shot).max(film_end);
+    let seconds = plan
+        .seconds
+        .unwrap_or(last_shot.max(film_end))
+        .max(last_shot)
+        .max(film_end);
     let frames = (seconds * fps).round() as usize;
     let rate = 48_000.0;
     let mut sound: Vec<f32> = Vec::new();
@@ -1105,10 +1416,18 @@ pub fn clip<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>,
         sound.extend_from_slice(&buf);
         run.host.draw(&target.view);
         let px = target.read(&run.host.ctx.gpu);
-        let img = image::RgbaImage::from_raw(w, h, px).ok_or_else(|| anyhow::anyhow!("frame size"))?;
+        let img =
+            image::RgbaImage::from_raw(w, h, px).ok_or_else(|| anyhow::anyhow!("frame size"))?;
         // fast compression: the frames are only on their way to the encoder
-        let file = std::io::BufWriter::new(std::fs::File::create(frames_dir.join(format!("{f:05}.png")))?);
-        image::codecs::png::PngEncoder::new_with_quality(file, image::codecs::png::CompressionType::Fast, image::codecs::png::FilterType::Sub).write_image(&img, w, h, image::ExtendedColorType::Rgba8)?;
+        let file = std::io::BufWriter::new(std::fs::File::create(
+            frames_dir.join(format!("{f:05}.png")),
+        )?);
+        image::codecs::png::PngEncoder::new_with_quality(
+            file,
+            image::codecs::png::CompressionType::Fast,
+            image::codecs::png::FilterType::Sub,
+        )
+        .write_image(&img, w, h, image::ExtendedColorType::Rgba8)?;
         if f % 30 == 0 {
             eprint!("\rclip {:.0}/{seconds:.0} s", t);
         }
@@ -1117,11 +1436,29 @@ pub fn clip<T: Toy>(name: &str, plan: &Plan, out: &Path, size: Option<[u32; 2]>,
     write_wav(&frames_dir.join("audio.wav"), &sound, 2, rate as u32)?;
     let (lufs, rms, peak) = loudness(&sound, rate);
     println!("loudness {lufs:.1} LUFS integrated, RMS {rms:.1} dBFS, peak {peak:.1} dBFS");
-    let sh = clip_sh().ok_or_else(|| anyhow::anyhow!("no clip.sh (set KIT_CLIP_SH); the frames and sound are in {}", frames_dir.display()))?;
-    let st = std::process::Command::new("bash").arg(&sh).arg(&frames_dir).arg(out).arg(format!("{fps}")).status()?;
-    anyhow::ensure!(st.success(), "{} failed; the frames and sound are in {}", sh.display(), frames_dir.display());
+    let sh = clip_sh().ok_or_else(|| {
+        anyhow::anyhow!(
+            "no clip.sh (set KIT_CLIP_SH); the frames and sound are in {}",
+            frames_dir.display()
+        )
+    })?;
+    let st = std::process::Command::new("bash")
+        .arg(&sh)
+        .arg(&frames_dir)
+        .arg(out)
+        .arg(format!("{fps}"))
+        .status()?;
+    anyhow::ensure!(
+        st.success(),
+        "{} failed; the frames and sound are in {}",
+        sh.display(),
+        frames_dir.display()
+    );
     std::fs::remove_dir_all(&frames_dir)?;
-    println!("clip {} ({w}x{h}, {frames} frames at {fps} fps, {ppp:.3} px a point)", out.display());
+    println!(
+        "clip {} ({w}x{h}, {frames} frames at {fps} fps, {ppp:.3} px a point)",
+        out.display()
+    );
     Ok(())
 }
 
@@ -1134,16 +1471,32 @@ pub fn main<T: Toy>(name: &str) {
 /// The same, with the arguments given (without the program's name): a binary that checks several
 /// toys picks one first and passes the rest on. (From busquets' copy of the kit.)
 pub fn main_with<T: Toy>(name: &str, given: &[String]) {
-    let args: Vec<String> = std::iter::once(String::new()).chain(given.iter().cloned()).collect();
-    let flag = |k: &str| args.iter().position(|a| a == k).and_then(|i| args.get(i + 1)).cloned();
+    let args: Vec<String> = std::iter::once(String::new())
+        .chain(given.iter().cloned())
+        .collect();
+    let flag = |k: &str| {
+        args.iter()
+            .position(|a| a == k)
+            .and_then(|i| args.get(i + 1))
+            .cloned()
+    };
     let has = |k: &str| args.iter().any(|a| a == k);
     let size = flag("--size").and_then(|s| {
         let (a, b) = s.split_once('x')?;
         Some([a.parse().ok()?, b.parse().ok()?])
     });
     let ppp = flag("--ppp").and_then(|s| s.parse().ok());
-    let jobs = flag("-j").and_then(|s| s.parse().ok()).unwrap_or_else(|| std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1));
-    let switches = ["--stretch", "--strict-taps", "--tap-check", "--no-tap-check"];
+    let jobs = flag("-j").and_then(|s| s.parse().ok()).unwrap_or_else(|| {
+        std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(1)
+    });
+    let switches = [
+        "--stretch",
+        "--strict-taps",
+        "--tap-check",
+        "--no-tap-check",
+    ];
     let pos: Vec<&String> = {
         let mut v = Vec::new();
         let mut skip = false;
@@ -1163,23 +1516,42 @@ pub fn main_with<T: Toy>(name: &str, given: &[String]) {
         }
         v
     };
-    let mut opts = Options { size, ppp, ..Options::default() };
+    let mut opts = Options {
+        size,
+        ppp,
+        ..Options::default()
+    };
     opts.stretch = has("--stretch");
     opts.strict_taps |= has("--strict-taps");
     opts.tap_check = (opts.tap_check || has("--tap-check")) && !has("--no-tap-check");
     let usage = "usage: check play <plan.json> <out-dir> [--size WxH] [--ppp n] [--stretch] [--tap-check] [--strict-taps] [--no-tap-check]\n       check play-all <plans-dir or plan.json>... <out-dir> [-j N] [same flags]\n       check clip <plan.json> <out.mp4> [--size WxH] [--ppp n]";
     let r = match pos.as_slice() {
-        [cmd, plan, out] if cmd.as_str() == "play" => read_plan(Path::new(plan.as_str())).and_then(|p| {
-            gpu().and_then(|g| play_with::<T>(&g, name, &p, Path::new(out.as_str()), &opts, &mut std::io::stdout())).map(|_| ())
-        }),
-        [cmd, rest @ .., out] if cmd.as_str() == "play-all" && !rest.is_empty() => plans_in(rest).and_then(|plans| {
-            if play_all::<T>(name, &plans, Path::new(out.as_str()), jobs, &opts)? {
-                Ok(())
-            } else {
-                Err(anyhow::anyhow!("some plans failed"))
-            }
-        }),
-        [cmd, plan, out] if cmd.as_str() == "clip" => read_plan(Path::new(plan.as_str())).and_then(|p| clip::<T>(name, &p, Path::new(out.as_str()), size, ppp)),
+        [cmd, plan, out] if cmd.as_str() == "play" => {
+            read_plan(Path::new(plan.as_str())).and_then(|p| {
+                gpu()
+                    .and_then(|g| {
+                        play_with::<T>(
+                            &g,
+                            name,
+                            &p,
+                            Path::new(out.as_str()),
+                            &opts,
+                            &mut std::io::stdout(),
+                        )
+                    })
+                    .map(|_| ())
+            })
+        }
+        [cmd, rest @ .., out] if cmd.as_str() == "play-all" && !rest.is_empty() => plans_in(rest)
+            .and_then(|plans| {
+                if play_all::<T>(name, &plans, Path::new(out.as_str()), jobs, &opts)? {
+                    Ok(())
+                } else {
+                    Err(anyhow::anyhow!("some plans failed"))
+                }
+            }),
+        [cmd, plan, out] if cmd.as_str() == "clip" => read_plan(Path::new(plan.as_str()))
+            .and_then(|p| clip::<T>(name, &p, Path::new(out.as_str()), size, ppp)),
         _ => Err(anyhow::anyhow!("{usage}")),
     };
     if let Err(e) = r {
@@ -1224,7 +1596,16 @@ mod tests {
             match (o.1, n.what) {
                 (Some(pe), What::Pointer { id, phase, pos }) => {
                     let [x, y] = pos.at(&resolved[n.ev]);
-                    assert_eq!((pe.id, pe.phase, pe.x.to_bits(), pe.y.to_bits(), pe.t.to_bits()), (id, phase, x.to_bits(), y.to_bits(), n.t.to_bits()));
+                    assert_eq!(
+                        (
+                            pe.id,
+                            pe.phase,
+                            pe.x.to_bits(),
+                            pe.y.to_bits(),
+                            pe.t.to_bits()
+                        ),
+                        (id, phase, x.to_bits(), y.to_bits(), n.t.to_bits())
+                    );
                 }
                 (None, What::Shake) => {}
                 _ => panic!("different kinds"),
@@ -1234,14 +1615,22 @@ mod tests {
 
     #[test]
     fn places_by_name_and_lonlat() {
-        let p = plan(r#"{"events": [{"t": 1, "tap": "whale"}, {"t": 2, "drag": [[1, 2], {"lonlat": [10, 20]}]}, {"t": 3, "hold": "nowhere", "inert": true}]}"#);
+        let p = plan(
+            r#"{"events": [{"t": 1, "tap": "whale"}, {"t": 2, "drag": [[1, 2], {"lonlat": [10, 20]}]}, {"t": 3, "hold": "nowhere", "inert": true}]}"#,
+        );
         let anchors = || vec![("whale".to_string(), [50.0, 60.0])];
         let e = &p.events;
         assert_eq!(e[0].tap, None);
-        assert_eq!(resolve(e[0].places.tap.as_ref().unwrap(), anchors, |_| None).unwrap(), [50.0, 60.0]);
+        assert_eq!(
+            resolve(e[0].places.tap.as_ref().unwrap(), anchors, |_| None).unwrap(),
+            [50.0, 60.0]
+        );
         let d = e[1].places.drag.as_ref().unwrap();
         assert_eq!(resolve(&d[0], anchors, |_| None).unwrap(), [1.0, 2.0]);
-        assert_eq!(resolve(&d[1], anchors, |ll| Some([ll[0] * 2.0, ll[1]])).unwrap(), [20.0, 20.0]);
+        assert_eq!(
+            resolve(&d[1], anchors, |ll| Some([ll[0] * 2.0, ll[1]])).unwrap(),
+            [20.0, 20.0]
+        );
         assert!(resolve(&d[1], anchors, |_| None).is_err());
         assert!(resolve(e[2].places.hold.as_ref().unwrap(), anchors, |_| None).is_err());
         assert!(e[2].inert);
@@ -1249,8 +1638,10 @@ mod tests {
 
     #[test]
     fn touches_and_their_moments() {
-        let p = plan(r#"{"events": [{"t": 1, "tap": [1, 1]}, {"t": 2, "hold": [1, 1], "for": 1.5}, {"t": 4, "tap": [1, 1], "inert": true},
-            {"t": 5, "down": [1, 1], "id": 3}, {"t": 5.5, "move": [2, 1], "id": 3}, {"t": 6, "up": [2, 1], "id": 3}, {"t": 7, "shake": true}]}"#);
+        let p = plan(
+            r#"{"events": [{"t": 1, "tap": [1, 1]}, {"t": 2, "hold": [1, 1], "for": 1.5}, {"t": 4, "tap": [1, 1], "inert": true},
+            {"t": 5, "down": [1, 1], "id": 3}, {"t": 5.5, "move": [2, 1], "id": 3}, {"t": 6, "up": [2, 1], "id": 3}, {"t": 7, "shake": true}]}"#,
+        );
         let t = touches(&p.events, 30.0, 300);
         let kinds: Vec<&str> = t.iter().map(|t| t.kind).collect();
         assert_eq!(kinds, ["tap", "hold", "down"]);
@@ -1263,10 +1654,12 @@ mod tests {
     #[test]
     fn loudness_of_a_tone() {
         // a full-scale 1 kHz sine is -3.0 LUFS in one channel (BS.1770's reference), 0 in both
-        let s: Vec<f32> = (0..48_000 * 3).flat_map(|i| {
-            let v = (i as f64 * 1000.0 * std::f64::consts::TAU / 48_000.0).sin() as f32;
-            [v, v]
-        }).collect();
+        let s: Vec<f32> = (0..48_000 * 3)
+            .flat_map(|i| {
+                let v = (i as f64 * 1000.0 * std::f64::consts::TAU / 48_000.0).sin() as f32;
+                [v, v]
+            })
+            .collect();
         let (lufs, rms, peak) = loudness(&s, 48_000.0);
         assert!(lufs.abs() < 0.2, "lufs {lufs}");
         assert!((rms + 3.01).abs() < 0.05, "rms {rms}");

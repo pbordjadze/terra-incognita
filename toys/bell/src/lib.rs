@@ -62,7 +62,11 @@ pub struct Bell {
 fn canvas(ctx: &Ctx) -> (wgpu::Texture, wgpu::TextureView) {
     let tex = ctx.gpu.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("bell canvas"),
-        size: wgpu::Extent3d { width: ctx.width.max(1), height: ctx.height.max(1), depth_or_array_layers: 1 },
+        size: wgpu::Extent3d {
+            width: ctx.width.max(1),
+            height: ctx.height.max(1),
+            depth_or_array_layers: 1,
+        },
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
@@ -79,16 +83,33 @@ impl Bell {
         self.bind = Self::make_bind(ctx, &self.layout, &self.canvas.1, &self.sampler, &self.buf);
     }
 
-    fn make_bind(ctx: &Ctx, layout: &wgpu::BindGroupLayout, view: &wgpu::TextureView, s: &wgpu::Sampler, buf: &wgpu::Buffer) -> wgpu::BindGroup {
-        ctx.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("bell"),
-            layout,
-            entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(s) },
-                wgpu::BindGroupEntry { binding: 2, resource: buf.as_entire_binding() },
-            ],
-        })
+    fn make_bind(
+        ctx: &Ctx,
+        layout: &wgpu::BindGroupLayout,
+        view: &wgpu::TextureView,
+        s: &wgpu::Sampler,
+        buf: &wgpu::Buffer,
+    ) -> wgpu::BindGroup {
+        ctx.gpu
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("bell"),
+                layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(s),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: buf.as_entire_binding(),
+                    },
+                ],
+            })
     }
 
     fn strike(&mut self, ctx: &mut Ctx, at: LonLat, strength: f64) {
@@ -97,7 +118,11 @@ impl Bell {
             // the oldest gives way (as the ear lets its quietest go)
             self.strikes.remove(0);
         }
-        self.strikes.push(Strike { at: p, t0: self.t, strength });
+        self.strikes.push(Strike {
+            at: p,
+            t0: self.t,
+            strength,
+        });
         if let Ok(mut ear) = self.ear.lock() {
             ear.new.push((p, strength));
         }
@@ -113,39 +138,57 @@ impl Bell {
 
 impl Toy for Bell {
     fn new(ctx: &mut Ctx) -> anyhow::Result<Self> {
-        let mut globe = Globe::new(&ctx.gpu, ctx.assets.as_ref(), ctx.width, ctx.height, ctx.ppp, 10)?;
+        let mut globe = Globe::new(
+            &ctx.gpu,
+            ctx.assets.as_ref(),
+            ctx.width,
+            ctx.height,
+            ctx.ppp,
+            10,
+        )?;
         globe.camera = Camera::new(-62.0, -18.0, 1.0);
         globe.hand.max_zoom = 6.0;
         globe.set_home();
-        let layout = ctx.gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("bell"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let layout = ctx
+            .gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("bell"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                    count: None,
-                },
-            ],
-        });
-        let shader = ctx.gpu.shader("bell", &toy_kit::globe::wgsl(include_str!("bell.wgsl")));
-        let pipe = ctx.gpu.fullscreen_pipeline("bell", &shader, &[&globe.view_layout, &layout], None);
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+        let shader = ctx
+            .gpu
+            .shader("bell", &toy_kit::globe::wgsl(include_str!("bell.wgsl")));
+        let pipe =
+            ctx.gpu
+                .fullscreen_pipeline("bell", &shader, &[&globe.view_layout, &layout], None);
         let sampler = ctx.gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
@@ -230,7 +273,9 @@ impl Toy for Bell {
             self.strike(ctx, LonLat::new(lon, lat), if first { 0.85 } else { 0.6 });
             self.next_idle = t + 11.0 + 3.0 * ((self.idle_k as f64 * 2.39).sin() + 1.0);
         }
-        let longest = (0..MODES.len()).map(|i| modes::heard(i).1).fold(0.0, f64::max);
+        let longest = (0..MODES.len())
+            .map(|i| modes::heard(i).1)
+            .fold(0.0, f64::max);
         self.strikes.retain(|s| t - s.t0 < longest * 6.0);
         if let Ok(mut ear) = self.ear.try_lock() {
             ear.listener = self.listener();
@@ -241,7 +286,12 @@ impl Toy for Bell {
         self.globe.upload(&ctx.gpu);
         let mut u = [[0f32; 4]; 49];
         let n = self.strikes.len().min(MAX);
-        u[0] = [n as f32, 0.055, if self.soft { 0.0 } else { 1.0 }, if self.soft { 16.0 } else { 34.0 }];
+        u[0] = [
+            n as f32,
+            0.055,
+            if self.soft { 0.0 } else { 1.0 },
+            if self.soft { 16.0 } else { 34.0 },
+        ];
         for (k, s) in self.strikes.iter().take(MAX).enumerate() {
             let age = (self.t - s.t0).max(0.0);
             let base = 1 + 6 * k;
@@ -251,13 +301,24 @@ impl Toy for Bell {
             for (i, &(l, _, _)) in MODES.iter().enumerate() {
                 let (f, tau) = modes::heard(i);
                 let fv = f / modes::SLOW;
-                let boost = match l { 0 => 2.0, 2 => 1.8, 3 => 1.4, _ => 1.0 };
-                let c = boost * modes::weight(i) * s.strength * (-age / tau).exp() * (2.0 * std::f64::consts::PI * fv * age).cos();
+                let boost = match l {
+                    0 => 2.0,
+                    2 => 1.8,
+                    3 => 1.4,
+                    _ => 1.0,
+                };
+                let c = boost
+                    * modes::weight(i)
+                    * s.strength
+                    * (-age / tau).exp()
+                    * (2.0 * std::f64::consts::PI * fv * age).cos();
                 let l = l as usize;
                 u[base + 2 + l / 4][l % 4] = c as f32;
             }
         }
-        ctx.gpu.queue.write_buffer(&self.buf, 0, bytemuck::cast_slice(&u));
+        ctx.gpu
+            .queue
+            .write_buffer(&self.buf, 0, bytemuck::cast_slice(&u));
         let mut enc = ctx.gpu.device.create_command_encoder(&Default::default());
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -266,7 +327,10 @@ impl Toy for Bell {
                     view: &self.canvas.1,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -282,7 +346,10 @@ impl Toy for Bell {
                     view: target,
                     resolve_target: None,
                     depth_slice: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -304,7 +371,10 @@ impl Toy for Bell {
     fn demo(&self, _ctx: &Ctx) -> Option<toy_kit::info::Demo> {
         // a strike in the globe's middle: the Earth rings
         let at = self.globe.spot_for(&[]);
-        Some(toy_kit::info::Demo::new("Strike the Earth and hear it ring.", vec![toy_kit::info::Stroke::tap(0.5, at)]))
+        Some(toy_kit::info::Demo::new(
+            "Strike the Earth and hear it ring.",
+            vec![toy_kit::info::Stroke::tap(0.5, at)],
+        ))
     }
 
     fn rules(&self) -> Option<toy_kit::info::Rules> {
@@ -323,7 +393,10 @@ impl Toy for Bell {
     }
 
     fn save(&self) -> Option<String> {
-        serde_json::to_string(&Saved { camera: self.globe.camera }).ok()
+        serde_json::to_string(&Saved {
+            camera: self.globe.camera,
+        })
+        .ok()
     }
 
     fn restore(&mut self, _ctx: &mut Ctx, saved: &str) {

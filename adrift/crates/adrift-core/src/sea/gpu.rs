@@ -99,27 +99,52 @@ pub(crate) fn keep_from(gpu: &Gpu, paths: &wgpu::Buffer, base: u32, count: u32) 
     let mut enc = gpu.device.create_command_encoder(&Default::default());
     enc.copy_buffer_to_buffer(paths, from, &buffer, 0, size);
     gpu.queue.submit([enc.finish()]);
-    Keep { buffer, count, base }
+    Keep {
+        buffer,
+        count,
+        base,
+    }
 }
 
 /// A checkpoint's paths copied back into `paths` where they were kept from.
 pub(crate) fn restore_into(gpu: &Gpu, paths: &wgpu::Buffer, keep: &Keep) {
     let size = keep.count as u64 * std::mem::size_of::<GpuPath>() as u64;
     let mut enc = gpu.device.create_command_encoder(&Default::default());
-    enc.copy_buffer_to_buffer(&keep.buffer, 0, paths, keep.base as u64 * std::mem::size_of::<GpuPath>() as u64, size);
+    enc.copy_buffer_to_buffer(
+        &keep.buffer,
+        0,
+        paths,
+        keep.base as u64 * std::mem::size_of::<GpuPath>() as u64,
+        size,
+    );
     gpu.queue.submit([enc.finish()]);
 }
 
 /// Reads `count` paths of `paths` from `base` back through `readback` (waits for the GPU).
-pub(crate) fn read_from(gpu: &Gpu, paths: &wgpu::Buffer, readback: &wgpu::Buffer, base: u32, count: u32) -> Vec<GpuPath> {
+pub(crate) fn read_from(
+    gpu: &Gpu,
+    paths: &wgpu::Buffer,
+    readback: &wgpu::Buffer,
+    base: u32,
+    count: u32,
+) -> Vec<GpuPath> {
     let size = count as u64 * std::mem::size_of::<GpuPath>() as u64;
     let mut enc = gpu.device.create_command_encoder(&Default::default());
-    enc.copy_buffer_to_buffer(paths, base as u64 * std::mem::size_of::<GpuPath>() as u64, readback, 0, size);
+    enc.copy_buffer_to_buffer(
+        paths,
+        base as u64 * std::mem::size_of::<GpuPath>() as u64,
+        readback,
+        0,
+        size,
+    );
     gpu.queue.submit([enc.finish()]);
     let slice = readback.slice(..size);
     slice.map_async(wgpu::MapMode::Read, |_| {});
-    gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
-    let out = bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range().expect("mapped")).to_vec();
+    gpu.device
+        .poll(wgpu::PollType::wait_indefinitely())
+        .expect("poll");
+    let out =
+        bytemuck::cast_slice::<u8, GpuPath>(&slice.get_mapped_range().expect("mapped")).to_vec();
     readback.unmap();
     out
 }
@@ -147,39 +172,64 @@ pub struct Maybes {
 impl Maybes {
     /// Room for `capacity` paths. The sheets the look already holds are shared; wind, eddy and
     /// eddy time are read from the assets here.
-    pub fn new(gpu: &Gpu, assets: &dyn Assets, textures: &Textures, capacity: u32) -> anyhow::Result<Maybes> {
+    pub fn new(
+        gpu: &Gpu,
+        assets: &dyn Assets,
+        textures: &Textures,
+        capacity: u32,
+    ) -> anyhow::Result<Maybes> {
         let wind = Texture::flat(gpu, "wind", &decode(&assets.read("wind.png")?, 4)?);
         let eddy = Texture::flat(gpu, "eddy", &decode(&assets.read("eddy.png")?, 4)?);
-        let eddy_time = Texture::flat(gpu, "eddy-time", &decode(&assets.read("eddy-time.png")?, 4)?);
+        let eddy_time = Texture::flat(
+            gpu,
+            "eddy-time",
+            &decode(&assets.read("eddy-time.png")?, 4)?,
+        );
         let tex = |binding, dim| wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::COMPUTE,
-            ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: dim, multisampled: false },
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: dim,
+                multisampled: false,
+            },
             count: None,
         };
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("maybes"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: true, min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<Params>() as u64) },
-                    count: None,
-                },
-                tex(1, wgpu::TextureViewDimension::D2),
-                tex(2, wgpu::TextureViewDimension::D2),
-                tex(3, wgpu::TextureViewDimension::D2),
-                tex(4, wgpu::TextureViewDimension::D2Array),
-                tex(5, wgpu::TextureViewDimension::D2),
-                wgpu::BindGroupLayoutEntry {
-                    binding: 6,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset: false, min_binding_size: None },
-                    count: None,
-                },
-                tex(7, wgpu::TextureViewDimension::D2),
-            ],
-        });
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("maybes"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: true,
+                            min_binding_size: wgpu::BufferSize::new(
+                                std::mem::size_of::<Params>() as u64
+                            ),
+                        },
+                        count: None,
+                    },
+                    tex(1, wgpu::TextureViewDimension::D2),
+                    tex(2, wgpu::TextureViewDimension::D2),
+                    tex(3, wgpu::TextureViewDimension::D2),
+                    tex(4, wgpu::TextureViewDimension::D2Array),
+                    tex(5, wgpu::TextureViewDimension::D2),
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 6,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    tex(7, wgpu::TextureViewDimension::D2),
+                ],
+            });
         let params = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("maybes params"),
             size: SLOT * MAX_STEPS as u64,
@@ -190,7 +240,10 @@ impl Maybes {
         let paths = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("maybes paths"),
             size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
         let readback = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -205,35 +258,82 @@ impl Maybes {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer: &params, offset: 0, size: wgpu::BufferSize::new(std::mem::size_of::<Params>() as u64) }),
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: &params,
+                        offset: 0,
+                        size: wgpu::BufferSize::new(std::mem::size_of::<Params>() as u64),
+                    }),
                 },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&textures.currents.view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&wind.view) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&eddy.view) },
-                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&textures.ice.view) },
-                wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(&textures.geo.view) },
-                wgpu::BindGroupEntry { binding: 6, resource: paths.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::TextureView(&eddy_time.view) },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&textures.currents.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&wind.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&eddy.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&textures.ice.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::TextureView(&textures.geo.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: paths.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: wgpu::BindingResource::TextureView(&eddy_time.view),
+                },
             ],
         });
         let shader = gpu.shader("rules", RULES_WGSL);
-        let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("maybes"),
-            bind_group_layouts: &[Some(&layout)],
-            immediate_size: 0,
-        });
+        let pipeline_layout = gpu
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("maybes"),
+                bind_group_layouts: &[Some(&layout)],
+                immediate_size: 0,
+            });
         let make = |entry: &str| {
-            gpu.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: Some(entry),
-                layout: Some(&pipeline_layout),
-                module: &shader,
-                entry_point: Some(entry),
-                compilation_options: Default::default(),
-                cache: None,
-            })
+            gpu.device
+                .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some(entry),
+                    layout: Some(&pipeline_layout),
+                    module: &shader,
+                    entry_point: Some(entry),
+                    compilation_options: Default::default(),
+                    cache: None,
+                })
         };
-        let air = super::wind::AirMaybes::sharing(gpu, assets, textures, &wind.view, paths.clone(), capacity)?;
-        Ok(Maybes { walk: make("maybes"), flight: make("maybes_flight"), bind, params, paths, readback, capacity, air, _wind: wind, _eddy: eddy, _eddy_time: eddy_time })
+        let air = super::wind::AirMaybes::sharing(
+            gpu,
+            assets,
+            textures,
+            &wind.view,
+            paths.clone(),
+            capacity,
+        )?;
+        Ok(Maybes {
+            walk: make("maybes"),
+            flight: make("maybes_flight"),
+            bind,
+            params,
+            paths,
+            readback,
+            capacity,
+            air,
+            _wind: wind,
+            _eddy: eddy,
+            _eddy_time: eddy_time,
+        })
     }
 
     /// Writes the paths to step (at most `capacity`).
@@ -244,7 +344,11 @@ impl Maybes {
     /// Writes a cloud's paths from `base` (R6).
     pub fn seed_at(&self, gpu: &Gpu, base: u32, paths: &[GpuPath]) {
         assert!(base + paths.len() as u32 <= self.capacity);
-        gpu.queue.write_buffer(&self.paths, base as u64 * std::mem::size_of::<GpuPath>() as u64, bytemuck::cast_slice(paths));
+        gpu.queue.write_buffer(
+            &self.paths,
+            base as u64 * std::mem::size_of::<GpuPath>() as u64,
+            bytemuck::cast_slice(paths),
+        );
     }
 
     /// One step of every path (k = its index + 1), with memory (`flight`) or without.
@@ -256,18 +360,29 @@ impl Maybes {
     /// that must catch a cloud up by many steps costs one command buffer, not one a step. The
     /// result is the same as the steps one by one.
     pub fn step_many(&self, gpu: &Gpu, steps: &[Params], flight: bool) {
-        assert!(steps.len() as u32 <= MAX_STEPS, "at most {MAX_STEPS} steps a call");
+        assert!(
+            steps.len() as u32 <= MAX_STEPS,
+            "at most {MAX_STEPS} steps a call"
+        );
         if steps.is_empty() {
             return;
         }
         let mut bytes = vec![0u8; SLOT as usize * steps.len()];
         for (i, p) in steps.iter().enumerate() {
-            bytes[i * SLOT as usize..i * SLOT as usize + std::mem::size_of::<Params>()].copy_from_slice(bytemuck::bytes_of(p));
+            bytes[i * SLOT as usize..i * SLOT as usize + std::mem::size_of::<Params>()]
+                .copy_from_slice(bytemuck::bytes_of(p));
         }
         gpu.queue.write_buffer(&self.params, 0, &bytes);
-        let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("maybes") });
+        let mut enc = gpu
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("maybes"),
+            });
         {
-            let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("maybes"), timestamp_writes: None });
+            let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("maybes"),
+                timestamp_writes: None,
+            });
             pass.set_pipeline(if flight { &self.flight } else { &self.walk });
             for (i, p) in steps.iter().enumerate() {
                 pass.set_bind_group(0, &self.bind, &[(i as u64 * SLOT) as u32]);

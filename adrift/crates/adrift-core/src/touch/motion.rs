@@ -92,7 +92,11 @@ pub fn scrub_step(gap: f64, dt: f64, behind: f64) -> f64 {
     // of it lands in a frame or two instead of creeping), never faster than the limit
     let speed = (gap.abs() / SCRUB_TAU).max(SCRUB_FLOOR);
     let step = (speed * dt).min(limit).min(gap.abs()) * gap.signum();
-    if (gap - step).abs() <= SCRUB_THERE { gap } else { step }
+    if (gap - step).abs() <= SCRUB_THERE {
+        gap
+    } else {
+        step
+    }
 }
 
 /// Scrubbing: a year across the screen's width, never less than a day a point.
@@ -197,7 +201,11 @@ pub fn fling_glide(dt: f64) -> f64 {
 /// Wraps a longitude into (-180, 180].
 pub fn wrap_lon(lon: f64) -> f64 {
     let l = (lon + 540.0).rem_euclid(360.0) - 180.0;
-    if l <= -180.0 { l + 360.0 } else { l }
+    if l <= -180.0 {
+        l + 360.0
+    } else {
+        l
+    }
 }
 
 /// The shortest signed way from one longitude to another.

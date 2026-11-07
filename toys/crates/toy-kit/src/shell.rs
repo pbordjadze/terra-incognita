@@ -33,14 +33,33 @@ pub struct Shell<T: Toy> {
 impl<T: Toy> Shell<T> {
     /// # Safety
     /// `layer` is a live CAMetalLayer.
-    pub unsafe fn new(layer: *mut std::ffi::c_void, width: u32, height: u32, scale: f64, assets: &str) -> Option<Shell<T>> {
+    pub unsafe fn new(
+        layer: *mut std::ffi::c_void,
+        width: u32,
+        height: u32,
+        scale: f64,
+        assets: &str,
+    ) -> Option<Shell<T>> {
         // the launch's memory in the log: if the system kills the toy for memory while it starts, the
         // second line is missing and the first says how much there was (tools/kit/launch_check.py's
         // budget is checked against these)
-        crate::log(&format!("launch: {} MB available to the app", available_mb()));
-        crate::log(&format!("launch: {} {}x{} px at {scale}x", env!("CARGO_PKG_VERSION"), width, height));
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::METAL, ..wgpu::InstanceDescriptor::new_without_display_handle() });
-        let surface = match instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer)) {
+        crate::log(&format!(
+            "launch: {} MB available to the app",
+            available_mb()
+        ));
+        crate::log(&format!(
+            "launch: {} {}x{} px at {scale}x",
+            env!("CARGO_PKG_VERSION"),
+            width,
+            height
+        ));
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::METAL,
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
+        });
+        let surface = match instance
+            .create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CoreAnimationLayer(layer))
+        {
             Ok(s) => s,
             Err(e) => {
                 crate::log(&format!("no surface: {e}"));
@@ -67,11 +86,32 @@ impl<T: Toy> Shell<T> {
         };
         surface.configure(&gpu.device, &config);
         crate::step("the device and the surface");
-        let ctx = Ctx::new(gpu, Box::new(DirAssets(assets.into())), width.max(1), height.max(1), scale);
+        let ctx = Ctx::new(
+            gpu,
+            Box::new(DirAssets(assets.into())),
+            width.max(1),
+            height.max(1),
+            scale,
+        );
         match Host::<T>::new(ctx) {
             Ok(host) => {
-                crate::log(&format!("launch: the toy started, {} MB still available ({} MB made through the kit)", available_mb(), crate::budget::kit_bytes() >> 20));
-                Some(Shell { _instance: instance, surface, config, host, store: None, stats_at: 0.0, frames: 0, cost: 0.0, drawn: 0, started: None })
+                crate::log(&format!(
+                    "launch: the toy started, {} MB still available ({} MB made through the kit)",
+                    available_mb(),
+                    crate::budget::kit_bytes() >> 20
+                ));
+                Some(Shell {
+                    _instance: instance,
+                    surface,
+                    config,
+                    host,
+                    store: None,
+                    stats_at: 0.0,
+                    frames: 0,
+                    cost: 0.0,
+                    drawn: 0,
+                    started: None,
+                })
             }
             Err(e) => {
                 crate::log(&format!("the toy did not start: {e:#}"));
@@ -83,7 +123,8 @@ impl<T: Toy> Shell<T> {
     pub fn resize(&mut self, width: u32, height: u32, scale: f64) {
         self.config.width = width.max(1);
         self.config.height = height.max(1);
-        self.surface.configure(&self.host.ctx.gpu.device, &self.config);
+        self.surface
+            .configure(&self.host.ctx.gpu.device, &self.config);
         self.host.resize(width, height, scale);
     }
 
@@ -91,9 +132,11 @@ impl<T: Toy> Shell<T> {
         let start = std::time::Instant::now();
         self.host.update(t);
         let frame = match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(f) | wgpu::CurrentSurfaceTexture::Suboptimal(f) => f,
+            wgpu::CurrentSurfaceTexture::Success(f)
+            | wgpu::CurrentSurfaceTexture::Suboptimal(f) => f,
             wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
-                self.surface.configure(&self.host.ctx.gpu.device, &self.config);
+                self.surface
+                    .configure(&self.host.ctx.gpu.device, &self.config);
                 return;
             }
             other => {
@@ -116,7 +159,11 @@ impl<T: Toy> Shell<T> {
         // the frame's CPU cost every five seconds, in the device's log
         if t - self.stats_at >= 5.0 {
             if self.frames > 0 {
-                eprintln!("toy: {} frames, {:.2} ms a frame on the CPU", self.frames, self.cost * 1000.0 / self.frames as f64);
+                eprintln!(
+                    "toy: {} frames, {:.2} ms a frame on the CPU",
+                    self.frames,
+                    self.cost * 1000.0 / self.frames as f64
+                );
             }
             (self.stats_at, self.frames, self.cost) = (t, 0, 0.0);
         }

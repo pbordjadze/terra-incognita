@@ -22,7 +22,10 @@ pub struct Gpu {
 
 impl Gpu {
     /// A device for a surface (or none: offscreen). Prefers the platform's own backend.
-    pub async fn new(instance: &wgpu::Instance, surface: Option<&wgpu::Surface<'_>>) -> anyhow::Result<Gpu> {
+    pub async fn new(
+        instance: &wgpu::Instance,
+        surface: Option<&wgpu::Surface<'_>>,
+    ) -> anyhow::Result<Gpu> {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -48,10 +51,19 @@ impl Gpu {
             let phone = crate::budget::iphone_limits();
             let l = request(&phone);
             let mut over = Vec::new();
-            l.check_limits_with_fail_fn(&phone, false, |name, want, have| over.push(format!("{name} {want} > {have}")));
-            anyhow::ensure!(over.is_empty(), "an iPhone would refuse the device: {}", over.join(", "));
+            l.check_limits_with_fail_fn(&phone, false, |name, want, have| {
+                over.push(format!("{name} {want} > {have}"))
+            });
+            anyhow::ensure!(
+                over.is_empty(),
+                "an iPhone would refuse the device: {}",
+                over.join(", ")
+            );
             let lacking = required_features - crate::budget::iphone_features();
-            anyhow::ensure!(lacking.is_empty(), "an iPhone lacks the features {lacking:?}");
+            anyhow::ensure!(
+                lacking.is_empty(),
+                "an iPhone lacks the features {lacking:?}"
+            );
             log::info!("the iPhone's limits (KIT_IPHONE_LIMITS)");
             l
         } else {
@@ -80,13 +92,19 @@ impl Gpu {
                 l.max_storage_buffer_binding_size >> 20,
                 l.max_texture_dimension_2d
             ));
-            device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| crate::log(&format!("gpu: {e}"))));
-            device.set_device_lost_callback(|reason, msg| crate::log(&format!("gpu: the device was lost ({reason:?}): {msg}")));
+            device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| {
+                crate::log(&format!("gpu: {e}"))
+            }));
+            device.set_device_lost_callback(|reason, msg| {
+                crate::log(&format!("gpu: the device was lost ({reason:?}): {msg}"))
+            });
         } else {
             // the headless check: an error the device would only log is fatal here, so the check fails
             device.on_uncaptured_error(std::sync::Arc::new(|e: wgpu::Error| {
                 crate::log(&format!("gpu: {e}"));
-                panic!("a GPU validation error (logged, not fatal, on the device; fatal in the check)")
+                panic!(
+                    "a GPU validation error (logged, not fatal, on the device; fatal in the check)"
+                )
             }));
         }
         let device = Arc::new(device);
@@ -97,12 +115,22 @@ impl Gpu {
                 caps.formats
                     .iter()
                     .copied()
-                    .find(|f| matches!(f, wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Rgba8Unorm))
+                    .find(|f| {
+                        matches!(
+                            f,
+                            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Rgba8Unorm
+                        )
+                    })
                     .unwrap_or(caps.formats[0])
             }
             None => wgpu::TextureFormat::Rgba8Unorm,
         };
-        Ok(Gpu { device, queue: Arc::new(queue), format, adapter_info })
+        Ok(Gpu {
+            device,
+            queue: Arc::new(queue),
+            format,
+            adapter_info,
+        })
     }
 
     /// A texture, its bytes counted toward the toy's budget (`budget`).
@@ -122,13 +150,20 @@ impl Gpu {
         // to translate to Metal (MSL) as the iPhone does
         if let Ok(dir) = std::env::var("TOY_DUMP_SHADERS") {
             let _ = std::fs::create_dir_all(&dir);
-            let name: String = label.chars().map(|c| if c.is_ascii_alphanumeric() { c } else { '-' }).collect();
-            let _ = std::fs::write(std::path::Path::new(&dir).join(format!("{name}.wgsl")), wgsl);
+            let name: String = label
+                .chars()
+                .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+                .collect();
+            let _ = std::fs::write(
+                std::path::Path::new(&dir).join(format!("{name}.wgsl")),
+                wgsl,
+            );
         }
-        self.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some(label),
-            source: wgpu::ShaderSource::Wgsl(wgsl.into()),
-        })
+        self.device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some(label),
+                source: wgpu::ShaderSource::Wgsl(wgsl.into()),
+            })
     }
 
     /// The usual blend: the pass's colour over what is there (premultiplied).
@@ -156,37 +191,41 @@ impl Gpu {
         layouts: &[&wgpu::BindGroupLayout],
         blend: Option<wgpu::BlendState>,
     ) -> wgpu::RenderPipeline {
-        let layouts: Vec<Option<&wgpu::BindGroupLayout>> = layouts.iter().copied().map(Some).collect();
-        let layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some(label),
-            bind_group_layouts: &layouts,
-            immediate_size: 0,
-        });
-        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(label),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState {
-                module: shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: Default::default(),
-            },
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            fragment: Some(wgpu::FragmentState {
-                module: shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: self.format,
-                    blend,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            multiview_mask: None,
-            cache: None,
-        })
+        let layouts: Vec<Option<&wgpu::BindGroupLayout>> =
+            layouts.iter().copied().map(Some).collect();
+        let layout = self
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some(label),
+                bind_group_layouts: &layouts,
+                immediate_size: 0,
+            });
+        self.device
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some(label),
+                layout: Some(&layout),
+                vertex: wgpu::VertexState {
+                    module: shader,
+                    entry_point: Some("vs_main"),
+                    buffers: &[],
+                    compilation_options: Default::default(),
+                },
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                fragment: Some(wgpu::FragmentState {
+                    module: shader,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: self.format,
+                        blend,
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: Default::default(),
+                }),
+                multiview_mask: None,
+                cache: None,
+            })
     }
 }
 
@@ -202,7 +241,11 @@ impl Offscreen {
     pub fn new(gpu: &Gpu, width: u32, height: u32) -> Offscreen {
         let texture = gpu.texture(&wgpu::TextureDescriptor {
             label: Some("offscreen"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -211,7 +254,12 @@ impl Offscreen {
             view_formats: &[],
         });
         let view = texture.create_view(&Default::default());
-        Offscreen { texture, view, width, height }
+        Offscreen {
+            texture,
+            view,
+            width,
+            height,
+        }
     }
 
     /// The pixels, RGBA8, rows top down.
@@ -234,14 +282,24 @@ impl Offscreen {
             },
             wgpu::TexelCopyBufferInfo {
                 buffer: &buf,
-                layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(bpr), rows_per_image: None },
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(bpr),
+                    rows_per_image: None,
+                },
             },
-            wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
         );
         gpu.queue.submit([enc.finish()]);
         let slice = buf.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
-        gpu.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        gpu.device
+            .poll(wgpu::PollType::wait_indefinitely())
+            .expect("poll");
         let data = slice.get_mapped_range().expect("mapped");
         let mut out = Vec::with_capacity((self.width * self.height * 4) as usize);
         for y in 0..self.height {

@@ -13,7 +13,9 @@ fn now(perf: &web_sys::Performance) -> f64 {
 }
 
 async fn fetch(window: &web_sys::Window, url: &str) -> Result<Vec<u8>, JsValue> {
-    let resp: web_sys::Response = wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(url)).await?.dyn_into()?;
+    let resp: web_sys::Response = wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(url))
+        .await?
+        .dyn_into()?;
     if !resp.ok() {
         return Err(JsValue::from_str(&format!("{url}: {}", resp.status())));
     }
@@ -33,9 +35,13 @@ pub async fn start() -> Result<(), JsValue> {
     let window = web_sys::window().unwrap();
     let document = window.document().unwrap();
     let perf = window.performance().unwrap();
-    let canvas: web_sys::HtmlCanvasElement = document.get_element_by_id("adrift").unwrap().dyn_into()?;
+    let canvas: web_sys::HtmlCanvasElement =
+        document.get_element_by_id("adrift").unwrap().dyn_into()?;
     if js_sys::Reflect::get(&window.navigator(), &"gpu".into())?.is_undefined() {
-        status(&document, "This browser has no WebGPU. Safari 26, Chrome or Edge can open Adrift.");
+        status(
+            &document,
+            "This browser has no WebGPU. Safari 26, Chrome or Edge can open Adrift.",
+        );
         return Ok(());
     }
     let dpr = window.device_pixel_ratio();
@@ -53,12 +59,19 @@ pub async fn start() -> Result<(), JsValue> {
     };
     let mut files = HashMap::new();
     for name in adrift_core::assets::FILES {
-        let path = index.get(*name).cloned().unwrap_or_else(|| format!("assets/{name}"));
+        let path = index
+            .get(*name)
+            .cloned()
+            .unwrap_or_else(|| format!("assets/{name}"));
         let bytes = fetch(&window, &path).await?;
         // a binary sheet a host could only serve as JSON: {"base64": "..."}
         let bytes = if path.ends_with(".json") && !name.ends_with(".json") {
-            let v: serde_json::Value = serde_json::from_slice(&bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
-            let b64 = v.get("base64").and_then(|b| b.as_str()).ok_or_else(|| JsValue::from_str("no base64"))?;
+            let v: serde_json::Value =
+                serde_json::from_slice(&bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            let b64 = v
+                .get("base64")
+                .and_then(|b| b.as_str())
+                .ok_or_else(|| JsValue::from_str("no base64"))?;
             let bin = window.atob(b64)?;
             bin.chars().map(|c| c as u8).collect()
         } else {
@@ -67,9 +80,16 @@ pub async fn start() -> Result<(), JsValue> {
         files.insert(name.to_string(), bytes);
     }
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { backends: wgpu::Backends::BROWSER_WEBGPU, ..wgpu::InstanceDescriptor::new_without_display_handle() });
-    let surface = instance.create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone())).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let gpu = Gpu::new(&instance, Some(&surface)).await.map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::BROWSER_WEBGPU,
+        ..wgpu::InstanceDescriptor::new_without_display_handle()
+    });
+    let surface = instance
+        .create_surface(wgpu::SurfaceTarget::Canvas(canvas.clone()))
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let gpu = Gpu::new(&instance, Some(&surface))
+        .await
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: gpu.format,
@@ -82,7 +102,8 @@ pub async fn start() -> Result<(), JsValue> {
         view_formats: vec![],
     };
     surface.configure(&gpu.device, &config);
-    let app = App::new(gpu, Box::new(MemoryAssets(files)), w, h, dpr).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let app = App::new(gpu, Box::new(MemoryAssets(files)), w, h, dpr)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     status(&document, "");
     let mut app = app;
     if let Ok(Some(store)) = window.local_storage() {
@@ -91,8 +112,14 @@ pub async fn start() -> Result<(), JsValue> {
         }
     }
     // `?wind` opens with the wind's preset (R21): a put lifts a seed, anywhere, land too
-    if window.location().search().map_or(false, |q| q.contains("wind")) {
-        app.command(adrift_core::Intent::Medium { medium: adrift_core::Medium::Wind });
+    if window
+        .location()
+        .search()
+        .map_or(false, |q| q.contains("wind"))
+    {
+        app.command(adrift_core::Intent::Medium {
+            medium: adrift_core::Medium::Wind,
+        });
     }
     if let Ok(Some(mq)) = window.match_media("(prefers-color-scheme: dark)") {
         app.night = mq.matches();
@@ -107,25 +134,43 @@ pub async fn start() -> Result<(), JsValue> {
                 let _ = store.set_item("adrift", &a.borrow().snapshot());
             }
         });
-        document.add_event_listener_with_callback("visibilitychange", keep.as_ref().unchecked_ref())?;
+        document
+            .add_event_listener_with_callback("visibilitychange", keep.as_ref().unchecked_ref())?;
         window.add_event_listener_with_callback("pagehide", keep.as_ref().unchecked_ref())?;
         keep.forget();
     }
 
     // pointer events (points: CSS pixels)
     {
-        let make = |phase: Phase, app: Rc<RefCell<App>>, perf: web_sys::Performance, canvas: web_sys::HtmlCanvasElement| {
+        let make = |phase: Phase,
+                    app: Rc<RefCell<App>>,
+                    perf: web_sys::Performance,
+                    canvas: web_sys::HtmlCanvasElement| {
             Closure::<dyn FnMut(web_sys::PointerEvent)>::new(move |e: web_sys::PointerEvent| {
                 let r = canvas.get_bounding_client_rect();
-                let (x, y) = (e.client_x() as f64 - r.left(), e.client_y() as f64 - r.top());
+                let (x, y) = (
+                    e.client_x() as f64 - r.left(),
+                    e.client_y() as f64 - r.top(),
+                );
                 if phase == Phase::Down {
                     let _ = canvas.set_pointer_capture(e.pointer_id());
                 }
                 e.prevent_default();
-                app.borrow_mut().pointer(PointerEvent { id: e.pointer_id() as u64, phase, x, y, t: now(&perf) });
+                app.borrow_mut().pointer(PointerEvent {
+                    id: e.pointer_id() as u64,
+                    phase,
+                    x,
+                    y,
+                    t: now(&perf),
+                });
             })
         };
-        for (name, phase) in [("pointerdown", Phase::Down), ("pointermove", Phase::Move), ("pointerup", Phase::Up), ("pointercancel", Phase::Cancel)] {
+        for (name, phase) in [
+            ("pointerdown", Phase::Down),
+            ("pointermove", Phase::Move),
+            ("pointerup", Phase::Up),
+            ("pointercancel", Phase::Cancel),
+        ] {
             let c = make(phase, app.clone(), perf.clone(), canvas.clone());
             canvas.add_event_listener_with_callback(name, c.as_ref().unchecked_ref())?;
             c.forget();
@@ -134,37 +179,51 @@ pub async fn start() -> Result<(), JsValue> {
         // ⌘Z / ⇧⌘Z (Ctrl elsewhere) and ⌘Y undo and redo (touch/VOCABULARY.md › What the shells owe)
         let a = app.clone();
         let c2 = canvas.clone();
-        let wheel = Closure::<dyn FnMut(web_sys::WheelEvent)>::new(move |e: web_sys::WheelEvent| {
-            e.prevent_default();
-            let r = c2.get_bounding_client_rect();
-            let factor = if e.ctrl_key() { (-e.delta_y() / 100.0).exp() } else { (-e.delta_y() / 400.0).exp() };
-            a.borrow_mut().wheel(e.client_x() as f64 - r.left(), e.client_y() as f64 - r.top(), factor);
-        });
+        let wheel =
+            Closure::<dyn FnMut(web_sys::WheelEvent)>::new(move |e: web_sys::WheelEvent| {
+                e.prevent_default();
+                let r = c2.get_bounding_client_rect();
+                let factor = if e.ctrl_key() {
+                    (-e.delta_y() / 100.0).exp()
+                } else {
+                    (-e.delta_y() / 400.0).exp()
+                };
+                a.borrow_mut().wheel(
+                    e.client_x() as f64 - r.left(),
+                    e.client_y() as f64 - r.top(),
+                    factor,
+                );
+            });
         canvas.add_event_listener_with_callback("wheel", wheel.as_ref().unchecked_ref())?;
         wheel.forget();
         let a = app.clone();
-        let key = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            let k = e.key().to_lowercase();
-            // without a modifier: h or 0 flies home, Backspace or Delete clears the sea (undoable)
-            if !(e.meta_key() || e.ctrl_key() || e.alt_key()) {
-                match k.as_str() {
-                    "h" | "0" => a.borrow_mut().key(adrift_core::touch::Key::Home),
-                    "backspace" | "delete" => {
-                        e.prevent_default();
-                        a.borrow_mut().key(adrift_core::touch::Key::ClearAll);
+        let key =
+            Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
+                let k = e.key().to_lowercase();
+                // without a modifier: h or 0 flies home, Backspace or Delete clears the sea (undoable)
+                if !(e.meta_key() || e.ctrl_key() || e.alt_key()) {
+                    match k.as_str() {
+                        "h" | "0" => a.borrow_mut().key(adrift_core::touch::Key::Home),
+                        "backspace" | "delete" => {
+                            e.prevent_default();
+                            a.borrow_mut().key(adrift_core::touch::Key::ClearAll);
+                        }
+                        _ => {}
                     }
-                    _ => {}
+                    return;
                 }
-                return;
-            }
-            if k == "z" {
-                e.prevent_default();
-                a.borrow_mut().key(if e.shift_key() { adrift_core::touch::Key::Redo } else { adrift_core::touch::Key::Undo });
-            } else if k == "y" {
-                e.prevent_default();
-                a.borrow_mut().key(adrift_core::touch::Key::Redo);
-            }
-        });
+                if k == "z" {
+                    e.prevent_default();
+                    a.borrow_mut().key(if e.shift_key() {
+                        adrift_core::touch::Key::Redo
+                    } else {
+                        adrift_core::touch::Key::Undo
+                    });
+                } else if k == "y" {
+                    e.prevent_default();
+                    a.borrow_mut().key(adrift_core::touch::Key::Redo);
+                }
+            });
         window.add_event_listener_with_callback("keydown", key.as_ref().unchecked_ref())?;
         key.forget();
     }
@@ -182,7 +241,10 @@ pub async fn start() -> Result<(), JsValue> {
     *g.borrow_mut() = Some(Closure::new(move || {
         let dpr = window2.device_pixel_ratio();
         let r = canvas2.get_bounding_client_rect();
-        let (w, h) = (((r.width() * dpr) as u32).max(1), ((r.height() * dpr) as u32).max(1));
+        let (w, h) = (
+            ((r.width() * dpr) as u32).max(1),
+            ((r.height() * dpr) as u32).max(1),
+        );
         if w != config.width || h != config.height {
             canvas2.set_width(w);
             canvas2.set_height(h);
@@ -191,7 +253,9 @@ pub async fn start() -> Result<(), JsValue> {
             surface.configure(&gpu_device, &config);
             app2.borrow_mut().resize(w, h, dpr);
         }
-        if let wgpu::CurrentSurfaceTexture::Success(frame) | wgpu::CurrentSurfaceTexture::Suboptimal(frame) = surface.get_current_texture() {
+        if let wgpu::CurrentSurfaceTexture::Success(frame)
+        | wgpu::CurrentSurfaceTexture::Suboptimal(frame) = surface.get_current_texture()
+        {
             let view = frame.texture.create_view(&Default::default());
             let t = now(&perf2);
             app2.borrow_mut().frame(&view, t);
@@ -202,7 +266,9 @@ pub async fn start() -> Result<(), JsValue> {
                 web_sys::console::log_1(&app2.borrow_mut().stats().into());
             }
         }
-        window2.request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref()).unwrap();
+        window2
+            .request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref())
+            .unwrap();
     }));
     window.request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref())?;
     Ok(())

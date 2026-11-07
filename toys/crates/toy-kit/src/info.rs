@@ -32,13 +32,25 @@ pub struct Stroke {
 
 impl Stroke {
     pub fn tap(start: f64, at: [f64; 2]) -> Stroke {
-        Stroke { start, seconds: 0.12, path: vec![at] }
+        Stroke {
+            start,
+            seconds: 0.12,
+            path: vec![at],
+        }
     }
     pub fn drag(start: f64, seconds: f64, from: [f64; 2], to: [f64; 2]) -> Stroke {
-        Stroke { start, seconds, path: vec![from, to] }
+        Stroke {
+            start,
+            seconds,
+            path: vec![from, to],
+        }
     }
     pub fn hold(start: f64, seconds: f64, at: [f64; 2]) -> Stroke {
-        Stroke { start, seconds, path: vec![at] }
+        Stroke {
+            start,
+            seconds,
+            path: vec![at],
+        }
     }
     /// Where the finger is a share `u` (0..1) of the way.
     pub fn at(&self, u: f64) -> [f64; 2] {
@@ -70,23 +82,50 @@ pub struct Demo {
 
 impl Demo {
     pub fn new(line: &str, strokes: Vec<Stroke>) -> Demo {
-        Demo { line: line.into(), strokes }
+        Demo {
+            line: line.into(),
+            strokes,
+        }
     }
     /// Two fingers about `c`, `r` points apart each side, turned by `turn` radians (clockwise on the
     /// screen) and spread by `spread` (2: twice as far apart), over `seconds` from `start`.
-    pub fn two_fingers(start: f64, seconds: f64, c: [f64; 2], r: f64, turn: f64, spread: f64) -> Vec<Stroke> {
+    pub fn two_fingers(
+        start: f64,
+        seconds: f64,
+        c: [f64; 2],
+        r: f64,
+        turn: f64,
+        spread: f64,
+    ) -> Vec<Stroke> {
         let path = |sign: f64| {
             (0..=12)
                 .map(|i| {
                     let u = i as f64 / 12.0;
-                    let a = std::f64::consts::PI + turn * u + if sign > 0.0 { 0.0 } else { std::f64::consts::PI };
+                    let a = std::f64::consts::PI
+                        + turn * u
+                        + if sign > 0.0 {
+                            0.0
+                        } else {
+                            std::f64::consts::PI
+                        };
                     let d = r * (1.0 + (spread - 1.0) * u);
                     [c[0] + a.cos() * d, c[1] + a.sin() * d]
                 })
                 .collect()
         };
         // (each finger's path already eased by its points; the stroke eases it again only lightly)
-        vec![Stroke { start, seconds, path: path(1.0) }, Stroke { start, seconds, path: path(-1.0) }]
+        vec![
+            Stroke {
+                start,
+                seconds,
+                path: path(1.0),
+            },
+            Stroke {
+                start,
+                seconds,
+                path: path(-1.0),
+            },
+        ]
     }
     fn end(&self) -> f64 {
         self.strokes.iter().map(Stroke::end).fold(0.0, f64::max)
@@ -103,7 +142,10 @@ pub struct Rules {
 
 impl Rules {
     pub fn new(lines: &[&str], note: &str) -> Rules {
-        Rules { lines: lines.iter().map(|l| l.to_string()).collect(), note: note.into() }
+        Rules {
+            lines: lines.iter().map(|l| l.to_string()).collect(),
+            note: note.into(),
+        }
     }
     /// As the shell takes it: the lines, one a line, then a blank line and the note.
     pub fn text(&self) -> String {
@@ -275,7 +317,8 @@ impl Info {
     }
 
     pub fn open(&mut self, demo: Demo, now: f64) {
-        self.line = (!demo.line.is_empty()).then(|| std::ffi::CString::new(demo.line.replace('\0', "")).unwrap_or_default());
+        self.line = (!demo.line.is_empty())
+            .then(|| std::ffi::CString::new(demo.line.replace('\0', "")).unwrap_or_default());
         self.open = Some((demo, now));
         self.ghosts.clear();
         self.played.clear();
@@ -287,7 +330,9 @@ impl Info {
         self.now = now;
         let mut out = Vec::new();
         let close = std::mem::take(&mut self.close_pending);
-        let Some((demo, at)) = &self.open else { return out };
+        let Some((demo, at)) = &self.open else {
+            return out;
+        };
         let el = now - at;
         if !reduce_motion {
             for (i, s) in demo.strokes.iter().enumerate() {
@@ -295,20 +340,48 @@ impl Info {
                 let down = self.ghosts.contains(&i);
                 if !down && !close && el >= s.start && !self.played.contains(&i) {
                     let p = s.at(0.0);
-                    out.push(PointerEvent { id, phase: Phase::Down, x: p[0], y: p[1], t: now });
+                    out.push(PointerEvent {
+                        id,
+                        phase: Phase::Down,
+                        x: p[0],
+                        y: p[1],
+                        t: now,
+                    });
                     self.ghosts.push(i);
                     self.played.push(i);
                 } else if down {
-                    let u = if s.seconds > 0.0 { (el - s.start) / s.seconds } else { 1.0 };
+                    let u = if s.seconds > 0.0 {
+                        (el - s.start) / s.seconds
+                    } else {
+                        1.0
+                    };
                     let p = s.at(u);
                     if close {
-                        out.push(PointerEvent { id, phase: Phase::Cancel, x: p[0], y: p[1], t: now });
+                        out.push(PointerEvent {
+                            id,
+                            phase: Phase::Cancel,
+                            x: p[0],
+                            y: p[1],
+                            t: now,
+                        });
                         self.ghosts.retain(|&g| g != i);
                     } else if u >= 1.0 {
-                        out.push(PointerEvent { id, phase: Phase::Up, x: p[0], y: p[1], t: now });
+                        out.push(PointerEvent {
+                            id,
+                            phase: Phase::Up,
+                            x: p[0],
+                            y: p[1],
+                            t: now,
+                        });
                         self.ghosts.retain(|&g| g != i);
                     } else {
-                        out.push(PointerEvent { id, phase: Phase::Move, x: p[0], y: p[1], t: now });
+                        out.push(PointerEvent {
+                            id,
+                            phase: Phase::Move,
+                            x: p[0],
+                            y: p[1],
+                            t: now,
+                        });
                     }
                 }
             }
@@ -322,7 +395,15 @@ impl Info {
     }
 
     /// Draws the marks, and the ghost while the demo plays, over the toy's frame.
-    pub fn draw(&mut self, gpu: &Gpu, target: &wgpu::TextureView, size: [u32; 2], ppp: f64, m: Marks, reduce_motion: bool) {
+    pub fn draw(
+        &mut self,
+        gpu: &Gpu,
+        target: &wgpu::TextureView,
+        size: [u32; 2],
+        ppp: f64,
+        m: Marks,
+        reduce_motion: bool,
+    ) {
         if !m.demo && !m.rules && !m.origins {
             return;
         }
@@ -340,7 +421,13 @@ impl Info {
             let lit = if self.open.is_some() { 0.85 } else { 0.5 };
             ground(painter, c, lit);
             painter.disc([c[0], c[1] - 3.1 * k], 0.95 * k, 0.7, [1.0, 1.0, 1.0, lit]);
-            painter.line([c[0], c[1] - 0.6 * k], [c[0], c[1] + 3.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            painter.line(
+                [c[0], c[1] - 0.6 * k],
+                [c[0], c[1] + 3.4 * k],
+                0.62 * k,
+                0.7,
+                [1.0, 1.0, 1.0, lit],
+            );
         }
         if m.rules {
             let s = Self::rules_spot(points);
@@ -359,7 +446,13 @@ impl Info {
                 painter.line(w[0], w[1], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
             }
             let end = arc[arc.len() - 1];
-            painter.line(end, [c[0], c[1] + 1.4 * k], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+            painter.line(
+                end,
+                [c[0], c[1] + 1.4 * k],
+                0.62 * k,
+                0.7,
+                [1.0, 1.0, 1.0, lit],
+            );
             painter.disc([c[0], c[1] + 3.6 * k], 0.85 * k, 0.7, [1.0, 1.0, 1.0, lit]);
         }
         if m.origins {
@@ -371,7 +464,13 @@ impl Info {
             for i in 0..6 {
                 let a = std::f32::consts::PI * (0.5 + i as f32 / 3.0);
                 let (dx, dy) = (a.cos() * k, a.sin() * k);
-                painter.line([c[0] + dx * 0.9, c[1] - dy * 0.9], [c[0] + dx * 3.5, c[1] - dy * 3.5], 0.62 * k, 0.7, [1.0, 1.0, 1.0, lit]);
+                painter.line(
+                    [c[0] + dx * 0.9, c[1] - dy * 0.9],
+                    [c[0] + dx * 3.5, c[1] - dy * 3.5],
+                    0.62 * k,
+                    0.7,
+                    [1.0, 1.0, 1.0, lit],
+                );
             }
         }
         if let Some((demo, at)) = &self.open {
@@ -381,15 +480,27 @@ impl Info {
                 let (u, a) = if reduce_motion {
                     (0.0, 1.0)
                 } else {
-                    let a = ((el - s.start + 0.25) / 0.25).clamp(0.0, 1.0) * (1.0 - ((el - s.end()) / 0.35).clamp(0.0, 1.0));
-                    (if s.seconds > 0.0 { (el - s.start) / s.seconds } else { 1.0 }, a as f32)
+                    let a = ((el - s.start + 0.25) / 0.25).clamp(0.0, 1.0)
+                        * (1.0 - ((el - s.end()) / 0.35).clamp(0.0, 1.0));
+                    (
+                        if s.seconds > 0.0 {
+                            (el - s.start) / s.seconds
+                        } else {
+                            1.0
+                        },
+                        a as f32,
+                    )
                 };
                 if a <= 0.0 {
                     continue;
                 }
                 let p = s.at(u);
                 let p = [p[0] as f32 * k, p[1] as f32 * k];
-                let pressed = if !reduce_motion && el >= s.start && el <= s.end() { 1.0 } else { 0.6 };
+                let pressed = if !reduce_motion && el >= s.start && el <= s.end() {
+                    1.0
+                } else {
+                    0.6
+                };
                 painter.disc(p, 19.0 * k, 5.0 * k, [1.0, 1.0, 1.0, 0.16 * a * pressed]);
                 painter.ring(p, 19.0 * k, 1.4 * k, 1.0, [1.0, 1.0, 1.0, 0.55 * a]);
                 // (a dark edge outside it, so it reads on paper as on night)
@@ -407,32 +518,75 @@ mod tests {
     use super::*;
 
     fn tap(info: &mut Info, id: u64, at: [f64; 2], demo: bool, rules: bool) -> Route {
-        tap3(info, id, at, Marks { demo, rules, origins: false })
+        tap3(
+            info,
+            id,
+            at,
+            Marks {
+                demo,
+                rules,
+                origins: false,
+            },
+        )
     }
     fn tap3(info: &mut Info, id: u64, at: [f64; 2], m: Marks) -> Route {
         let pts = [390.0, 844.0];
-        let down = PointerEvent { id, phase: Phase::Down, x: at[0], y: at[1], t: 0.0 };
+        let down = PointerEvent {
+            id,
+            phase: Phase::Down,
+            x: at[0],
+            y: at[1],
+            t: 0.0,
+        };
         let r = info.route(&down, pts, m);
         if !matches!(r, Route::Taken) {
             return r;
         }
-        info.route(&PointerEvent { phase: Phase::Up, ..down }, pts, m)
+        info.route(
+            &PointerEvent {
+                phase: Phase::Up,
+                ..down
+            },
+            pts,
+            m,
+        )
     }
 
     #[test]
     fn the_origins_mark_opens_and_takes_the_rules_place() {
         let pts = [390.0, 844.0];
-        let all = Marks { demo: true, rules: true, origins: true };
+        let all = Marks {
+            demo: true,
+            rules: true,
+            origins: true,
+        };
         let mut info = Info::default();
-        assert!(matches!(tap3(&mut info, 1, Info::origins_spot(pts), all), Route::Origins));
+        assert!(matches!(
+            tap3(&mut info, 1, Info::origins_spot(pts), all),
+            Route::Origins
+        ));
         // without it its place is the toy's
-        assert!(matches!(tap3(&mut info, 2, Info::origins_spot(pts), Marks { origins: false, ..all }), Route::Toy));
+        assert!(matches!(
+            tap3(
+                &mut info,
+                2,
+                Info::origins_spot(pts),
+                Marks {
+                    origins: false,
+                    ..all
+                }
+            ),
+            Route::Toy
+        ));
         info.show_rules(Some(Rules::new(&["a"], "")));
         assert_eq!(info.rules().unwrap().to_str().unwrap(), "a");
         info.show_origins(Some(Rules::new(&["b"], "c")));
         assert!(info.rules().is_none());
         assert_eq!(info.origins().unwrap().to_str().unwrap(), "b\n\nc");
-        assert!(matches!(tap3(&mut info, 3, [100.0, 100.0], all), Route::Taken));
+        assert!(matches!(
+            tap3(&mut info, 3, [100.0, 100.0], all),
+            Route::Taken
+        ));
         assert!(info.origins().is_none() && !info.is_open());
     }
 
@@ -440,15 +594,27 @@ mod tests {
     fn the_rules_mark_opens_and_any_tap_closes() {
         let pts = [390.0, 844.0];
         let mut info = Info::default();
-        assert!(matches!(tap(&mut info, 1, Info::rules_spot(pts), true, true), Route::Rules));
-        assert!(matches!(tap(&mut info, 2, Info::spot(pts), true, true), Route::Open));
+        assert!(matches!(
+            tap(&mut info, 1, Info::rules_spot(pts), true, true),
+            Route::Rules
+        ));
+        assert!(matches!(
+            tap(&mut info, 2, Info::spot(pts), true, true),
+            Route::Open
+        ));
         // without a rules mark its place is the toy's
-        assert!(matches!(tap(&mut info, 3, Info::rules_spot(pts), true, false), Route::Toy));
+        assert!(matches!(
+            tap(&mut info, 3, Info::rules_spot(pts), true, false),
+            Route::Toy
+        ));
         info.show_rules(Some(Rules::new(&["a", "b"], "c")));
         assert_eq!(info.rules().unwrap().to_str().unwrap(), "a\nb\n\nc");
         assert!(info.is_open());
         // a tap anywhere closes them and is not the toy's
-        assert!(matches!(tap(&mut info, 4, [100.0, 100.0], true, true), Route::Taken));
+        assert!(matches!(
+            tap(&mut info, 4, [100.0, 100.0], true, true),
+            Route::Taken
+        ));
         assert!(info.rules().is_none() && !info.is_open());
     }
 }

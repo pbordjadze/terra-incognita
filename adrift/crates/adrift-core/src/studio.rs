@@ -60,7 +60,14 @@ pub struct Framing {
 
 impl Default for Framing {
     fn default() -> Framing {
-        Framing { hold_in: 0.8, hold_out: 1.5, follow: 0.3, open: 0.1, settle: 0.3, braid: false }
+        Framing {
+            hold_in: 0.8,
+            hold_out: 1.5,
+            follow: 0.3,
+            open: 0.1,
+            settle: 0.3,
+            braid: false,
+        }
     }
 }
 
@@ -145,12 +152,47 @@ pub struct ClipCamera {
 
 impl ClipCamera {
     pub fn new(start: Camera) -> ClipCamera {
-        ClipCamera { cam: start, w: [0.0; 3], vz: 0.0, seen: None, take_w: [0.0; 3], take_vz: 0.0, zoom0: start.zoom, last_target: None, target_w: [0.0; 3], target_vz: 0.0, lead_scale: 1.0, t: 0.0, fc: None, fw: [0.0; 3], fzv: 0.0, end_from: None, open_zoom: None, establish: None, lim_vz: 0.0, lim_w: [0.0; 3], last_c: None, cv: [0.0; 3], last_want: None, want_rate: 0.0, lamp_prev: Vec::new(), lamp_v: Vec::new() }
+        ClipCamera {
+            cam: start,
+            w: [0.0; 3],
+            vz: 0.0,
+            seen: None,
+            take_w: [0.0; 3],
+            take_vz: 0.0,
+            zoom0: start.zoom,
+            last_target: None,
+            target_w: [0.0; 3],
+            target_vz: 0.0,
+            lead_scale: 1.0,
+            t: 0.0,
+            fc: None,
+            fw: [0.0; 3],
+            fzv: 0.0,
+            end_from: None,
+            open_zoom: None,
+            establish: None,
+            lim_vz: 0.0,
+            lim_w: [0.0; 3],
+            last_c: None,
+            cv: [0.0; 3],
+            last_want: None,
+            want_rate: 0.0,
+            lamp_prev: Vec::new(),
+            lamp_v: Vec::new(),
+        }
     }
 
     /// One frame of the clip, `dt` seconds after the last: `take` is the replay's camera at this
     /// frame, `part` and `through` where the frame falls (`Take::clip_at`). Returns the camera to draw.
-    pub fn step(&mut self, take: Camera, part: ClipPart, through: f64, dt: f64, f: &Framing, lamps: &Lean) -> Camera {
+    pub fn step(
+        &mut self,
+        take: Camera,
+        part: ClipPart,
+        through: f64,
+        dt: f64,
+        f: &Framing,
+        lamps: &Lean,
+    ) -> Camera {
         let t = self.t;
         self.t += dt;
         if let Some(cam) = self.framed(take, part, through, t, dt, f, lamps) {
@@ -162,7 +204,10 @@ impl ClipCamera {
             ClipPart::Before => {
                 // the opening: the take's first framing, from a touch wider, eased in (still at both ends)
                 let e = crate::touch::motion::ease_in_out(through);
-                self.cam = Camera { zoom: take.zoom * (-f.open * (1.0 - e)).exp(), ..take };
+                self.cam = Camera {
+                    zoom: take.zoom * (-f.open * (1.0 - e)).exp(),
+                    ..take
+                };
                 self.w = [0.0; 3];
                 self.vz = 0.0;
                 self.seen = Some(take);
@@ -187,10 +232,21 @@ impl ClipCamera {
                 let end = self.seen.unwrap_or(take);
                 let u = through * f.hold_out;
                 self.lead_scale = (1.0 - u / 0.3).max(0.0);
-                let carry = if f.settle > 0.0 { f.settle * (1.0 - (-u / f.settle).exp()) } else { 0.0 };
-                let turn = [self.take_w[0] * carry, self.take_w[1] * carry, self.take_w[2] * carry];
+                let carry = if f.settle > 0.0 {
+                    f.settle * (1.0 - (-u / f.settle).exp())
+                } else {
+                    0.0
+                };
+                let turn = [
+                    self.take_w[0] * carry,
+                    self.take_w[1] * carry,
+                    self.take_w[2] * carry,
+                ];
                 let q = qmul(rot_exp(turn), cam_quat(end));
-                let target = Camera::from_rotation(crate::touch::camera::quat_mat(q), end.zoom * (self.take_vz * carry).exp());
+                let target = Camera::from_rotation(
+                    crate::touch::camera::quat_mat(q),
+                    end.zoom * (self.take_vz * carry).exp(),
+                );
                 self.spring(target, dt, f)
             }
         }
@@ -204,7 +260,16 @@ impl ClipCamera {
     /// wider and eases in over `OPEN_SECS` of the clip; the end beat pulls out to the take's whole
     /// lines. The result lifted (`lifted`) so the lower third stays clear.
     #[allow(clippy::too_many_arguments)]
-    fn framed(&mut self, take: Camera, part: ClipPart, through: f64, t: f64, dt: f64, f: &Framing, l: &Lean) -> Option<Camera> {
+    fn framed(
+        &mut self,
+        take: Camera,
+        part: ClipPart,
+        through: f64,
+        t: f64,
+        dt: f64,
+        f: &Framing,
+        l: &Lean,
+    ) -> Option<Camera> {
         // (R22) a journey frames the pair and its last few days of line, as close as the coast in view
         // allows (`journey_lean`), coming in as they close and pulling out as they part; the braid's
         // whole shape is the end beat's
@@ -228,10 +293,20 @@ impl ClipCamera {
             // against the pair's mean motion: their parting and closing (their run together is the
             // pan's own lead)
             let n = self.lamp_v.len().max(1) as f64;
-            let m = self.lamp_v.iter().fold([0.0; 3], |a, v| [a[0] + v[0] / n, a[1] + v[1] / n, a[2] + v[2] / n]);
+            let m = self.lamp_v.iter().fold([0.0; 3], |a, v| {
+                [a[0] + v[0] / n, a[1] + v[1] / n, a[2] + v[2] / n]
+            });
             for (p, v) in now.iter().zip(&self.lamp_v) {
-                let d = [(v[0] - m[0]) * LAMP_LEAD, (v[1] - m[1]) * LAMP_LEAD, (v[2] - m[2]) * LAMP_LEAD];
-                jl.trail.push(crate::model::LonLat::from_xyz([p[0] + d[0], p[1] + d[1], p[2] + d[2]]));
+                let d = [
+                    (v[0] - m[0]) * LAMP_LEAD,
+                    (v[1] - m[1]) * LAMP_LEAD,
+                    (v[2] - m[2]) * LAMP_LEAD,
+                ];
+                jl.trail.push(crate::model::LonLat::from_xyz([
+                    p[0] + d[0],
+                    p[1] + d[1],
+                    p[2] + d[2],
+                ]));
             }
             self.lamp_prev = now;
             &jl
@@ -241,13 +316,30 @@ impl ClipCamera {
         let (c, z) = frame(l)?;
         // (R17) centred on the pair itself (its bounding circle's centre), the lines held by the hold
         // box from there rather than pulling the pair to the frame's edge
-        let c = if l.focus.is_none() { lamps_centre(&l.lamps).unwrap_or(c) } else { c };
+        let c = if l.focus.is_none() {
+            lamps_centre(&l.lamps).unwrap_or(c)
+        } else {
+            c
+        };
         // (R22) the pair's centre's own turn (as the camera's quaternions turn, so it composes with them),
         // smoothed over `PAIR_SMOOTH`
         if journey {
-            let qc = cam_quat(Camera { lon: c.lon, lat: c.lat, zoom: 1.0, roll: take.roll });
+            let qc = cam_quat(Camera {
+                lon: c.lon,
+                lat: c.lat,
+                zoom: 1.0,
+                roll: take.roll,
+            });
             if let Some(p) = self.last_c.filter(|_| dt > 0.0) {
-                let r = rot_log(qmul(qc, qconj(cam_quat(Camera { lon: p.lon, lat: p.lat, zoom: 1.0, roll: take.roll }))));
+                let r = rot_log(qmul(
+                    qc,
+                    qconj(cam_quat(Camera {
+                        lon: p.lon,
+                        lat: p.lat,
+                        zoom: 1.0,
+                        roll: take.roll,
+                    })),
+                ));
                 let k = 1.0 - (-dt / PAIR_SMOOTH).exp();
                 for i in 0..3 {
                     self.cv[i] += (r[i] / dt - self.cv[i]) * k;
@@ -261,23 +353,45 @@ impl ClipCamera {
         let z = match l.land_km.filter(|_| !journey) {
             Some(d) => {
                 let see = COAST_SEEN * l.half / (l.r1 * (d / 6371.0).sin().max(1e-6));
-                if see < z { z.min(see.max(z / COAST_PULL)) } else { z }
+                if see < z {
+                    z.min(see.max(z / COAST_PULL))
+                } else {
+                    z
+                }
             }
             None => z,
         };
         let (c, z) = match part {
             ClipPart::After => {
                 let from = *self.end_from.get_or_insert((c, z));
-                let whole = Lean { trail: l.trail.iter().copied().chain(l.whole.iter().map(|w| w.1)).collect(), focus: None, whole: Vec::new(), ..l.clone() };
+                let whole = Lean {
+                    trail: l
+                        .trail
+                        .iter()
+                        .copied()
+                        .chain(l.whole.iter().map(|w| w.1))
+                        .collect(),
+                    focus: None,
+                    whole: Vec::new(),
+                    ..l.clone()
+                };
                 let (cw, zw) = frame(&whole).unwrap_or((c, z));
                 // never closer than where it was: the end opens out to the shape, it does not dive in
                 let zw = zw.min(from.1);
                 // (R19) the pull-out takes the first `END_PULL` seconds of the end beat; the rest holds
                 // still on the shape, so it reads as an ending
-                let e = crate::touch::motion::ease_in_out((through * f.hold_out / END_PULL).min(1.0));
+                let e =
+                    crate::touch::motion::ease_in_out((through * f.hold_out / END_PULL).min(1.0));
                 let (a, b) = (from.0.to_xyz(), cw.to_xyz());
-                let v = [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e, a[2] + (b[2] - a[2]) * e];
-                (crate::model::LonLat::from_xyz(v), (from.1.ln() + (zw.ln() - from.1.ln()) * e).exp())
+                let v = [
+                    a[0] + (b[0] - a[0]) * e,
+                    a[1] + (b[1] - a[1]) * e,
+                    a[2] + (b[2] - a[2]) * e,
+                ];
+                (
+                    crate::model::LonLat::from_xyz(v),
+                    (from.1.ln() + (zw.ln() - from.1.ln()) * e).exp(),
+                )
             }
             _ => {
                 self.end_from = None;
@@ -297,13 +411,24 @@ impl ClipCamera {
             }
             _ => 0.0,
         };
-        let braid = if wb > 0.0 { self.open_zoom.map(|open| braid_lean(l, open / BRAID_WIDER)) } else { None };
+        let braid = if wb > 0.0 {
+            self.open_zoom.map(|open| braid_lean(l, open / BRAID_WIDER))
+        } else {
+            None
+        };
         let (c, z) = match &braid {
             Some(lb) => {
                 let (cb, zb) = frame(lb).unwrap_or((c, z));
                 let (a, b) = (c.to_xyz(), cb.to_xyz());
-                let v = [a[0] + (b[0] - a[0]) * wb, a[1] + (b[1] - a[1]) * wb, a[2] + (b[2] - a[2]) * wb];
-                (crate::model::LonLat::from_xyz(v), (z.ln() + (zb.ln() - z.ln()) * wb).exp())
+                let v = [
+                    a[0] + (b[0] - a[0]) * wb,
+                    a[1] + (b[1] - a[1]) * wb,
+                    a[2] + (b[2] - a[2]) * wb,
+                ];
+                (
+                    crate::model::LonLat::from_xyz(v),
+                    (z.ln() + (zb.ln() - z.ln()) * wb).exp(),
+                )
             }
             None => (c, z),
         };
@@ -334,7 +459,12 @@ impl ClipCamera {
             (wide, crate::touch::motion::ease_in_out(t / OPEN_SECS))
         };
         let opening = f.braid && t < OPEN_SECS;
-        let target = Camera { lon: c.lon, lat: c.lat, zoom: (wide.ln() + (z.ln() - wide.ln()) * e).exp(), roll: take.roll };
+        let target = Camera {
+            lon: c.lon,
+            lat: c.lat,
+            zoom: (wide.ln() + (z.ln() - wide.ln()) * e).exp(),
+            roll: take.roll,
+        };
         let fc = match self.fc {
             Some(fc) if part != ClipPart::Before => fc,
             _ => {
@@ -349,8 +479,22 @@ impl ClipCamera {
         // the centre, slowly; (R22) in a journey aimed ahead of the pair by the lag the spring leaves
         // at its speed (2τ·v), so a pair running at a close zoom stays where the frame put it
         let tau = PAN_HALF / HALF_TO_TAU;
-        let qt = cam_quat(Camera { zoom: 1.0, ..target });
-        let qt = if journey { qmul(rot_exp([self.cv[0] * 2.0 * tau, self.cv[1] * 2.0 * tau, self.cv[2] * 2.0 * tau]), qt) } else { qt };
+        let qt = cam_quat(Camera {
+            zoom: 1.0,
+            ..target
+        });
+        let qt = if journey {
+            qmul(
+                rot_exp([
+                    self.cv[0] * 2.0 * tau,
+                    self.cv[1] * 2.0 * tau,
+                    self.cv[2] * 2.0 * tau,
+                ]),
+                qt,
+            )
+        } else {
+            qt
+        };
         let x = rot_log(qmul(cam_quat(Camera { zoom: 1.0, ..fc }), qconj(qt)));
         let mut nx = [0.0; 3];
         for i in 0..3 {
@@ -358,16 +502,31 @@ impl ClipCamera {
             nx[i] = a;
             self.fw[i] = v;
         }
-        let moved = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), fc.zoom);
+        let moved = Camera::from_rotation(
+            crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)),
+            fc.zoom,
+        );
         // the zoom: the frame's, but no deeper than holds them all from where the centre now is
         let hold = match &braid {
             // the braid's points held as the frame eases over to them, so the zoom opens with the ease
-            Some(lb) => (hold_zoom(moved, l).ln() * (1.0 - wb) + hold_zoom(moved, lb).ln() * wb).exp(),
+            Some(lb) => {
+                (hold_zoom(moved, l).ln() * (1.0 - wb) + hold_zoom(moved, lb).ln() * wb).exp()
+            }
             None => hold_zoom(moved, l),
         };
         // (R22) and from where the camera is: in a journey the limited pan may trail the spring's aim
         // behind a pair that runs at a close zoom, so the box is held from both
-        let hold = if journey { hold.min(hold_zoom(Camera { zoom: fc.zoom, ..fc }, l)) } else { hold };
+        let hold = if journey {
+            hold.min(hold_zoom(
+                Camera {
+                    zoom: fc.zoom,
+                    ..fc
+                },
+                l,
+            ))
+        } else {
+            hold
+        };
         let want = target.zoom.min(hold);
         // (R17-R21 a journey's zoom eased outward only; R22: it comes back in as the pair closes, and
         // pulls out ahead of a pair that parts by how fast its frame has been widening, `ZOOM_LEAD`
@@ -383,14 +542,30 @@ impl ClipCamera {
             1.0
         };
         let (want, hold) = (want * lead, hold * lead);
-        let half = if want < moved.zoom { ZOOM_OUT_HALF } else if journey { JOURNEY_IN_HALF } else { ZOOM_IN_HALF };
-        let (lz, vz) = crate::touch::motion::spring(moved.zoom.ln(), self.fzv, want.ln(), half / HALF_TO_TAU, dt);
+        let half = if want < moved.zoom {
+            ZOOM_OUT_HALF
+        } else if journey {
+            JOURNEY_IN_HALF
+        } else {
+            ZOOM_IN_HALF
+        };
+        let (lz, vz) = crate::touch::motion::spring(
+            moved.zoom.ln(),
+            self.fzv,
+            want.ln(),
+            half / HALF_TO_TAU,
+            dt,
+        );
         self.fzv = vz;
         // a lamp never leaves: past the hold by more than a little, the zoom is held there
         let zoom = lz.exp().min(hold * 1.12);
         // (R18) the opening's ease is the zoom itself (a spring after it would still be coming in when
         // the outward-only rule began, and stop short); after it, outward only
-        let zoom = if opening { target.zoom.min(hold * 1.12) } else { zoom };
+        let zoom = if opening {
+            target.zoom.min(hold * 1.12)
+        } else {
+            zoom
+        };
         let base = if journey { self.cv } else { [0.0; 3] };
         let fc = self.limit_moving(Some(fc), Camera { zoom, ..moved }, dt, l, base);
         self.fc = Some(fc);
@@ -409,31 +584,69 @@ impl ClipCamera {
     /// its change are limited relative to the pair's own motion, so at a close zoom the camera keeps up
     /// with a pair that runs (the ground slides as fast as the pair goes) while anything else it does is
     /// as eased as ever. `base` is itself smoothed (`PAIR_SMOOTH`), so the camera never jerks with it.
-    fn limit_moving(&mut self, prev: Option<Camera>, next: Camera, dt: f64, l: &Lean, base: [f64; 3]) -> Camera {
+    fn limit_moving(
+        &mut self,
+        prev: Option<Camera>,
+        next: Camera,
+        dt: f64,
+        l: &Lean,
+        base: [f64; 3],
+    ) -> Camera {
         let Some(prev) = prev else { return next };
         if dt <= 0.0 {
             return prev;
         }
         let ease = |err: f64, v: f64, rate: f64, accel: f64| {
-            let want = err.signum() * (err.abs() / dt).min((2.0 * accel * err.abs()).sqrt()).min(rate);
+            let want = err.signum()
+                * (err.abs() / dt)
+                    .min((2.0 * accel * err.abs()).sqrt())
+                    .min(rate);
             v + (want - v).clamp(-accel * dt, accel * dt)
         };
         // the zoom, in its log
-        self.lim_vz = ease((next.zoom / prev.zoom).ln(), self.lim_vz, ZOOM_RATE, ZOOM_ACCEL);
+        self.lim_vz = ease(
+            (next.zoom / prev.zoom).ln(),
+            self.lim_vz,
+            ZOOM_RATE,
+            ZOOM_ACCEL,
+        );
         let zoom = prev.zoom * (self.lim_vz * dt).exp();
         // the turn, as a vector (world frame), its limits in screen points at this zoom
         let scale = l.r1.max(1.0) * zoom;
-        let (qa, qb) = (cam_quat(Camera { zoom: 1.0, ..prev }), cam_quat(Camera { zoom: 1.0, ..next }));
+        let (qa, qb) = (
+            cam_quat(Camera { zoom: 1.0, ..prev }),
+            cam_quat(Camera { zoom: 1.0, ..next }),
+        );
         // what is left to turn once the frame's own turn over this step is taken out
         let qa_moved = qmul(rot_exp([base[0] * dt, base[1] * dt, base[2] * dt]), qa);
         let r = rot_log(qmul(qb, qconj(qa_moved)));
         let ang = (r[0] * r[0] + r[1] * r[1] + r[2] * r[2]).sqrt();
         let (rate, accel) = (PAN_RATE / scale, PAN_ACCEL / scale);
-        let speed = if ang > 1e-12 { (ang / dt).min((2.0 * accel * ang).sqrt()).min(rate) } else { 0.0 };
-        let want = if ang > 1e-12 { [r[0] / ang * speed + base[0], r[1] / ang * speed + base[1], r[2] / ang * speed + base[2]] } else { base };
-        let dv = [want[0] - self.lim_w[0], want[1] - self.lim_w[1], want[2] - self.lim_w[2]];
+        let speed = if ang > 1e-12 {
+            (ang / dt).min((2.0 * accel * ang).sqrt()).min(rate)
+        } else {
+            0.0
+        };
+        let want = if ang > 1e-12 {
+            [
+                r[0] / ang * speed + base[0],
+                r[1] / ang * speed + base[1],
+                r[2] / ang * speed + base[2],
+            ]
+        } else {
+            base
+        };
+        let dv = [
+            want[0] - self.lim_w[0],
+            want[1] - self.lim_w[1],
+            want[2] - self.lim_w[2],
+        ];
         let dvn = (dv[0] * dv[0] + dv[1] * dv[1] + dv[2] * dv[2]).sqrt();
-        let k = if dvn > accel * dt { accel * dt / dvn } else { 1.0 };
+        let k = if dvn > accel * dt {
+            accel * dt / dvn
+        } else {
+            1.0
+        };
         for i in 0..3 {
             self.lim_w[i] += dv[i] * k;
         }
@@ -462,8 +675,18 @@ impl ClipCamera {
         }
         self.last_target = Some(target);
         let lead = 2.0 * tau * self.lead_scale;
-        let qt = qmul(rot_exp([self.target_w[0] * lead, self.target_w[1] * lead, self.target_w[2] * lead]), qt);
-        let target = Camera { zoom: target.zoom * (self.target_vz * lead * ZOOM_SLOWER).exp(), ..target };
+        let qt = qmul(
+            rot_exp([
+                self.target_w[0] * lead,
+                self.target_w[1] * lead,
+                self.target_w[2] * lead,
+            ]),
+            qt,
+        );
+        let target = Camera {
+            zoom: target.zoom * (self.target_vz * lead * ZOOM_SLOWER).exp(),
+            ..target
+        };
         // where the camera lies from the target, as a turn (world frame): cam = exp(x) · target
         let x = rot_log(qmul(cam_quat(self.cam), qconj(qt)));
         let mut nx = [0.0; 3];
@@ -474,9 +697,18 @@ impl ClipCamera {
         }
         // (R14) the zoom breathes on a spring twice as slow: as a pair nears or parts the frame closes
         // and opens calmly, whatever the journey's pace
-        let (lz, vz) = crate::touch::motion::spring(self.cam.zoom.ln(), self.vz, target.zoom.ln(), tau * ZOOM_SLOWER, dt);
+        let (lz, vz) = crate::touch::motion::spring(
+            self.cam.zoom.ln(),
+            self.vz,
+            target.zoom.ln(),
+            tau * ZOOM_SLOWER,
+            dt,
+        );
         self.vz = vz;
-        self.cam = Camera::from_rotation(crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)), lz.exp());
+        self.cam = Camera::from_rotation(
+            crate::touch::camera::quat_mat(qmul(rot_exp(nx), qt)),
+            lz.exp(),
+        );
         self.cam
     }
 }
@@ -529,12 +761,20 @@ impl Lean {
     /// The deepest the frame may come: `FRAME_ZOOM_MAX`, or (R22) a journey's cap where that is
     /// deeper (`journey_lean`).
     pub fn deepest(&self) -> f64 {
-        if self.journey { JOURNEY_ZOOM_MAX } else { FRAME_ZOOM_MAX }
+        if self.journey {
+            JOURNEY_ZOOM_MAX
+        } else {
+            FRAME_ZOOM_MAX
+        }
     }
 
     /// The medium's scale (1 for the sea, when unset).
     pub fn scale(&self) -> f64 {
-        if self.scale > 0.0 { self.scale } else { 1.0 }
+        if self.scale > 0.0 {
+            self.scale
+        } else {
+            1.0
+        }
     }
 }
 
@@ -639,9 +879,26 @@ pub const PAIR_SMOOTH: f64 = 0.5;
 /// (R22) What a journey frames: the pair and its last `JOURNEY_TRAIL_DAYS` of line (from `whole`), its
 /// cap the coast's only while the coast is in view (`journey_cap`).
 pub fn journey_lean(l: &Lean) -> Lean {
-    let last = l.whole.iter().map(|w| w.0).fold(f64::NEG_INFINITY, f64::max);
-    let trail = if last.is_finite() { l.whole.iter().filter(|w| w.0 >= last - JOURNEY_TRAIL_DAYS).map(|w| w.1).collect() } else { l.trail.clone() };
-    let mut j = Lean { trail, focus: None, journey: true, ..l.clone() };
+    let last = l
+        .whole
+        .iter()
+        .map(|w| w.0)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let trail = if last.is_finite() {
+        l.whole
+            .iter()
+            .filter(|w| w.0 >= last - JOURNEY_TRAIL_DAYS)
+            .map(|w| w.1)
+            .collect()
+    } else {
+        l.trail.clone()
+    };
+    let mut j = Lean {
+        trail,
+        focus: None,
+        journey: true,
+        ..l.clone()
+    };
     j.zoom_cap = JOURNEY_ZOOM_MAX;
     if let Some(d) = l.land_km {
         // the frame as close as it would come with no coast near, and the zoom at which the coast
@@ -693,7 +950,11 @@ const EARTH_KM: f64 = 6371.0;
 /// and their lines (Bădoiu–Clarkson, on the sphere), the zoom at which that circle and its margin fill
 /// `FRAME_FILL` of the width. None without lamps.
 pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
-    let cap = if l.zoom_cap > 0.0 { l.zoom_cap.min(l.deepest()) } else { l.deepest() };
+    let cap = if l.zoom_cap > 0.0 {
+        l.zoom_cap.min(l.deepest())
+    } else {
+        l.deepest()
+    };
     let all = frame_of(&l.lamps, &l.trail, l.r1, l.half, cap, l.scale(), l.journey)?;
     match &l.focus {
         Some((lamps, trail, w)) if *w > 0.0 => {
@@ -705,7 +966,11 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
                 let zoom = (all.1.ln() + (one.1.ln() - all.1.ln()) * w).exp();
                 let wc = w.max(1.0 - all.1 / zoom);
                 let (a, b) = (all.0.to_xyz(), one.0.to_xyz());
-                let v = [a[0] + (b[0] - a[0]) * wc, a[1] + (b[1] - a[1]) * wc, a[2] + (b[2] - a[2]) * wc];
+                let v = [
+                    a[0] + (b[0] - a[0]) * wc,
+                    a[1] + (b[1] - a[1]) * wc,
+                    a[2] + (b[2] - a[2]) * wc,
+                ];
                 (crate::model::LonLat::from_xyz(v), zoom)
             };
             // never so far in that another lamp leaves the frame (the lean is as much as keeps them all)
@@ -713,7 +978,8 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
                 let cam = Camera::new(c.lon, c.lat, z);
                 l.lamps.iter().all(|p| {
                     let v = cam.view(p.to_xyz());
-                    v[2] > 0.0 && (v[0] * v[0] + v[1] * v[1]).sqrt() * l.r1 * z <= FOCUS_HOLD * l.half
+                    v[2] > 0.0
+                        && (v[0] * v[0] + v[1] * v[1]).sqrt() * l.r1 * z <= FOCUS_HOLD * l.half
                 })
             };
             if holds(at(*w)) {
@@ -722,7 +988,11 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
             let (mut lo, mut hi) = (0.0, *w);
             for _ in 0..14 {
                 let mid = (lo + hi) / 2.0;
-                if holds(at(mid)) { lo = mid } else { hi = mid }
+                if holds(at(mid)) {
+                    lo = mid
+                } else {
+                    hi = mid
+                }
             }
             Some(at(lo))
         }
@@ -731,7 +1001,15 @@ pub fn frame(l: &Lean) -> Option<(crate::model::LonLat, f64)> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: f64, half: f64, cap: f64, scale: f64, journey: bool) -> Option<(crate::model::LonLat, f64)> {
+fn frame_of(
+    lamps: &[crate::model::LonLat],
+    trail: &[crate::model::LonLat],
+    r1: f64,
+    half: f64,
+    cap: f64,
+    scale: f64,
+    journey: bool,
+) -> Option<(crate::model::LonLat, f64)> {
     if lamps.is_empty() || r1 <= 0.0 || half <= 0.0 {
         return None;
     }
@@ -743,21 +1021,45 @@ fn frame_of(lamps: &[crate::model::LonLat], trail: &[crate::model::LonLat], r1: 
         let m = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
         [v[0] / m, v[1] / m, v[2] / m]
     };
-    let mut c = norm(pts.iter().fold([0.0; 3], |a, p| [a[0] + p[0], a[1] + p[1], a[2] + p[2]]));
+    let mut c = norm(
+        pts.iter()
+            .fold([0.0; 3], |a, p| [a[0] + p[0], a[1] + p[1], a[2] + p[2]]),
+    );
     for i in 1..=40 {
-        let far = *pts.iter().min_by(|a, b| dot(**a, c).total_cmp(&dot(**b, c))).unwrap();
+        let far = *pts
+            .iter()
+            .min_by(|a, b| dot(**a, c).total_cmp(&dot(**b, c)))
+            .unwrap();
         let k = 1.0 / (i as f64 + 1.0);
-        c = norm([c[0] + (far[0] - c[0]) * k, c[1] + (far[1] - c[1]) * k, c[2] + (far[2] - c[2]) * k]);
+        c = norm([
+            c[0] + (far[0] - c[0]) * k,
+            c[1] + (far[1] - c[1]) * k,
+            c[2] + (far[2] - c[2]) * k,
+        ]);
     }
     let spread = pts.iter().map(|p| dot(*p, c).acos()).fold(0.0, f64::max);
     // (R21) at the medium's scale: a seed's least span and margin are the wind's
     // (R22) a journey's pair may come closer (`JOURNEY_PAIR_MIN_KM`, carried as a cap above
     // `FRAME_ZOOM_MAX`)
-    let (pair_min, margin, fill) = if journey { (JOURNEY_PAIR_MIN_KM, JOURNEY_MARGIN_KM, JOURNEY_FILL) } else { (FRAME_PAIR_MIN_KM, FRAME_MARGIN_KM, FRAME_FILL) };
-    let least = scale * if lamps.len() > 1 { pair_min } else { FRAME_SPAN_MIN_KM };
-    let half_span = (spread + scale * margin / EARTH_KM).max(least / EARTH_KM).min(std::f64::consts::FRAC_PI_2);
+    let (pair_min, margin, fill) = if journey {
+        (JOURNEY_PAIR_MIN_KM, JOURNEY_MARGIN_KM, JOURNEY_FILL)
+    } else {
+        (FRAME_PAIR_MIN_KM, FRAME_MARGIN_KM, FRAME_FILL)
+    };
+    let least = scale
+        * if lamps.len() > 1 {
+            pair_min
+        } else {
+            FRAME_SPAN_MIN_KM
+        };
+    let half_span = (spread + scale * margin / EARTH_KM)
+        .max(least / EARTH_KM)
+        .min(std::f64::consts::FRAC_PI_2);
     let zoom = (fill * half / (r1 * half_span.sin())).max(crate::touch::motion::ZOOM_MIN);
-    Some((crate::model::LonLat::from_xyz(c), zoom.min(cap.max(crate::touch::motion::ZOOM_MIN))))
+    Some((
+        crate::model::LonLat::from_xyz(c),
+        zoom.min(cap.max(crate::touch::motion::ZOOM_MIN)),
+    ))
 }
 
 /// The clip's camera: the lamps framed (`frame`), the take's own pinch kept by half against its first
@@ -769,7 +1071,15 @@ pub fn lean(take: Camera, l: &Lean, zoom0: f64) -> Camera {
         Some((c, z)) => {
             let pinch = (take.zoom / zoom0.max(1e-6)).powf(FRAME_PINCH);
             let zoom = (z * pinch).clamp(crate::touch::motion::ZOOM_MIN, FRAME_ZOOM_MAX);
-            lifted(Camera { lon: c.lon, lat: c.lat, zoom, roll: take.roll }, l)
+            lifted(
+                Camera {
+                    lon: c.lon,
+                    lat: c.lat,
+                    zoom,
+                    roll: take.roll,
+                },
+                l,
+            )
         }
     }
 }
@@ -818,9 +1128,23 @@ pub const BRAID_WIDER: f64 = 2.0;
 /// The lamps with their whole lines since the clip began, or, if all of them would frame wider than
 /// `floor` (the opening's zoom), their most recent part that frames no wider (R16).
 pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
-    let with = |from: f64| Lean { trail: l.trail.iter().copied().chain(l.whole.iter().filter(|w| w.0 >= from).map(|w| w.1)).collect(), focus: None, whole: Vec::new(), ..l.clone() };
+    let with = |from: f64| Lean {
+        trail: l
+            .trail
+            .iter()
+            .copied()
+            .chain(l.whole.iter().filter(|w| w.0 >= from).map(|w| w.1))
+            .collect(),
+        focus: None,
+        whole: Vec::new(),
+        ..l.clone()
+    };
     let first = l.whole.iter().map(|w| w.0).fold(f64::INFINITY, f64::min);
-    let last = l.whole.iter().map(|w| w.0).fold(f64::NEG_INFINITY, f64::max);
+    let last = l
+        .whole
+        .iter()
+        .map(|w| w.0)
+        .fold(f64::NEG_INFINITY, f64::max);
     if !first.is_finite() {
         return l.clone();
     }
@@ -832,7 +1156,11 @@ pub fn braid_lean(l: &Lean, floor: f64) -> Lean {
     let (mut lo, mut hi) = (first, last);
     for _ in 0..12 {
         let mid = (lo + hi) / 2.0;
-        if fits(mid) { hi = mid } else { lo = mid }
+        if fits(mid) {
+            hi = mid
+        } else {
+            lo = mid
+        }
     }
     with(hi)
 }
@@ -893,7 +1221,11 @@ fn qconj(q: [f64; 4]) -> [f64; 4] {
 
 /// A unit quaternion as its rotation vector (axis × angle, the short way).
 fn rot_log(q: [f64; 4]) -> [f64; 3] {
-    let q = if q[0] < 0.0 { [-q[0], -q[1], -q[2], -q[3]] } else { q };
+    let q = if q[0] < 0.0 {
+        [-q[0], -q[1], -q[2], -q[3]]
+    } else {
+        q
+    };
     let s = (q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
     if s < 1e-12 {
         return [2.0 * q[1], 2.0 * q[2], 2.0 * q[3]];
@@ -960,7 +1292,11 @@ pub enum TakeEvent {
 impl TakeEvent {
     pub fn t(&self) -> f64 {
         match self {
-            TakeEvent::Frame { t } | TakeEvent::Wheel { t, .. } | TakeEvent::Key { t, .. } | TakeEvent::Shake { t } | TakeEvent::Intent { t, .. } => *t,
+            TakeEvent::Frame { t }
+            | TakeEvent::Wheel { t, .. }
+            | TakeEvent::Key { t, .. }
+            | TakeEvent::Shake { t }
+            | TakeEvent::Intent { t, .. } => *t,
             TakeEvent::Pointer(p) => p.t,
         }
     }
@@ -1025,7 +1361,10 @@ impl Take {
         if (self.speed - 1.0).abs() > 1e-9 {
             return None;
         }
-        Some((self.framing.hold_in, self.clip_seconds() - self.framing.hold_in))
+        Some((
+            self.framing.hold_in,
+            self.clip_seconds() - self.framing.hold_in,
+        ))
     }
 
     pub fn clip_seconds(&self) -> f64 {
@@ -1041,13 +1380,33 @@ impl Take {
         let f = self.framing;
         let during = (b - a) / self.speed.max(0.05);
         if tau < f.hold_in {
-            (self.t0 + a, ClipPart::Before, if f.hold_in > 0.0 { tau / f.hold_in } else { 1.0 })
+            (
+                self.t0 + a,
+                ClipPart::Before,
+                if f.hold_in > 0.0 {
+                    tau / f.hold_in
+                } else {
+                    1.0
+                },
+            )
         } else if tau < f.hold_in + during {
             let u = tau - f.hold_in;
-            (self.t0 + a + u * self.speed, ClipPart::During, if during > 0.0 { u / during } else { 1.0 })
+            (
+                self.t0 + a + u * self.speed,
+                ClipPart::During,
+                if during > 0.0 { u / during } else { 1.0 },
+            )
         } else {
             let u = tau - f.hold_in - during;
-            (self.t0 + b, ClipPart::After, if f.hold_out > 0.0 { (u / f.hold_out).min(1.0) } else { 1.0 })
+            (
+                self.t0 + b,
+                ClipPart::After,
+                if f.hold_out > 0.0 {
+                    (u / f.hold_out).min(1.0)
+                } else {
+                    1.0
+                },
+            )
         }
     }
 }
@@ -1098,15 +1457,49 @@ mod tests {
         let b = Camera::new(-170.0, 20.0, 4.0);
         let one = follow(a, b, 0.1, 0.12);
         let two = follow(follow(a, b, 0.05, 0.12), b, 0.05, 0.12);
-        assert!((one.lon - two.lon).abs() < 1e-9 && (one.lat - two.lat).abs() < 1e-9 && (one.zoom - two.zoom).abs() < 1e-9);
+        assert!(
+            (one.lon - two.lon).abs() < 1e-9
+                && (one.lat - two.lat).abs() < 1e-9
+                && (one.zoom - two.zoom).abs() < 1e-9
+        );
         // the short way round the date line
         assert!(one.lon > 170.0 || one.lon < -170.0);
     }
 
     #[test]
     fn clip_parts() {
-        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: Camera::new(0.0, 0.0, 1.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false, medium: Default::default() };
-        let take = Take { start, events: vec![], t0: 10.0, t1: 14.0, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 0.5, framing: Framing::default(), song: None };
+        let start = TakeStart {
+            floats: vec![],
+            next_id: 1,
+            clock: Clock {
+                day: 0.0,
+                running: true,
+                rate: 1.0,
+            },
+            camera: Camera::new(0.0, 0.0, 1.0),
+            chosen: vec![],
+            followed: vec![],
+            riding: None,
+            seconds: 0.0,
+            night: false,
+            reduce_motion: false,
+            credits_open: false,
+            medium: Default::default(),
+        };
+        let take = Take {
+            start,
+            events: vec![],
+            t0: 10.0,
+            t1: 14.0,
+            width: 100,
+            height: 100,
+            ppp: 1.0,
+            trim: None,
+            end: None,
+            speed: 0.5,
+            framing: Framing::default(),
+            song: None,
+        };
         let f = take.framing;
         assert!((take.clip_seconds() - (f.hold_in + 8.0 + f.hold_out)).abs() < 1e-9);
         assert_eq!(take.clip_at(0.2).1, ClipPart::Before);
@@ -1121,22 +1514,72 @@ mod tests {
     /// A take camera's path: still, then a pinch in sparse steps (20 events a second, the zoom jumping
     /// at each), then a fling turning east at 40° a second until the take ends mid-fling.
     fn take_cam(t: f64) -> Camera {
-        let zoom = if t < 0.5 { 1.2 } else if t < 1.0 { 1.2 * (1.0 + ((t - 0.5) * 20.0).floor() / 10.0) } else { 2.4 };
-        let lon = if t < 1.0 { -40.0 } else { -40.0 + 40.0 * (t - 1.0) };
+        let zoom = if t < 0.5 {
+            1.2
+        } else if t < 1.0 {
+            1.2 * (1.0 + ((t - 0.5) * 20.0).floor() / 10.0)
+        } else {
+            2.4
+        };
+        let lon = if t < 1.0 {
+            -40.0
+        } else {
+            -40.0 + 40.0 * (t - 1.0)
+        };
         Camera::new(lon, 20.0, zoom)
     }
 
     /// The clip's camera through a whole clip at `fps`: (clip seconds, camera) a frame.
     fn run_clip(fps: f64) -> Vec<(f64, Camera)> {
-        let start = TakeStart { floats: vec![], next_id: 1, clock: Clock { day: 0.0, running: true, rate: 1.0 }, camera: take_cam(0.0), chosen: vec![], followed: vec![], riding: None, seconds: 0.0, night: false, reduce_motion: false, credits_open: false, medium: Default::default() };
-        let take = Take { start, events: vec![], t0: 0.0, t1: 1.6, width: 100, height: 100, ppp: 1.0, trim: None, end: None, speed: 1.0, framing: Framing::default(), song: None };
+        let start = TakeStart {
+            floats: vec![],
+            next_id: 1,
+            clock: Clock {
+                day: 0.0,
+                running: true,
+                rate: 1.0,
+            },
+            camera: take_cam(0.0),
+            chosen: vec![],
+            followed: vec![],
+            riding: None,
+            seconds: 0.0,
+            night: false,
+            reduce_motion: false,
+            credits_open: false,
+            medium: Default::default(),
+        };
+        let take = Take {
+            start,
+            events: vec![],
+            t0: 0.0,
+            t1: 1.6,
+            width: 100,
+            height: 100,
+            ppp: 1.0,
+            trim: None,
+            end: None,
+            speed: 1.0,
+            framing: Framing::default(),
+            song: None,
+        };
         let mut cc = ClipCamera::new(take.start.camera);
         let n = (take.clip_seconds() * fps).ceil() as usize;
         (0..n)
             .map(|i| {
                 let tau = i as f64 / fps;
                 let (t, part, through) = take.clip_at(tau);
-                (tau, cc.step(take_cam(t), part, through, 1.0 / fps, &take.framing, &Lean::default()))
+                (
+                    tau,
+                    cc.step(
+                        take_cam(t),
+                        part,
+                        through,
+                        1.0 / fps,
+                        &take.framing,
+                        &Lean::default(),
+                    ),
+                )
             })
             .collect()
     }
@@ -1146,7 +1589,11 @@ mod tests {
         let f = Framing::default();
         let c = run_clip(60.0);
         // the opening: a touch wider at the first frame, the take's own framing by the beat's end
-        assert!((c[0].1.zoom - 1.2 * (-f.open).exp()).abs() < 1e-9, "{:?}", c[0].1);
+        assert!(
+            (c[0].1.zoom - 1.2 * (-f.open).exp()).abs() < 1e-9,
+            "{:?}",
+            c[0].1
+        );
         let at = |s: f64| c.iter().find(|(t, _)| *t >= s - 1e-9).unwrap().1;
         assert!((at(f.hold_in).zoom - 1.2).abs() < 1e-3);
         // the pinch's steps come out smooth: the zoom's rate never changes by more than a little a frame
@@ -1157,7 +1604,10 @@ mod tests {
             worst = worst.max((r1 - r0).abs());
         }
         // (the take's own zoom jumps by ln 1.1 ≈ 0.095 at a step; the clip's rate changes by a sliver)
-        assert!(worst < 0.004, "the zoom's rate jumped by {worst} in a frame");
+        assert!(
+            worst < 0.004,
+            "the zoom's rate jumped by {worst} in a frame"
+        );
         // the fling at the take's end is carried on and dies away: still moving east just after,
         // and at rest by the clip's last frame
         let lon = |i: usize| c[i].1.lon;
@@ -1166,7 +1616,11 @@ mod tests {
         assert!(lon(after + 6) - lon(after) > 0.5, "the drift stopped dead");
         let last = (lon(n - 1) - lon(n - 2)) * 60.0;
         assert!(last.abs() < 1.5, "still turning {last}°/s at the end");
-        assert!(lon(n - 1) > take_cam(1.6).lon + 5.0, "the drift carried {}°", lon(n - 1) - take_cam(1.6).lon);
+        assert!(
+            lon(n - 1) > take_cam(1.6).lon + 5.0,
+            "the drift carried {}°",
+            lon(n - 1) - take_cam(1.6).lon
+        );
     }
 
     #[test]
@@ -1174,8 +1628,15 @@ mod tests {
         let a = run_clip(60.0);
         let b = run_clip(20.0);
         for (tau, cam) in &b {
-            let other = a.iter().min_by(|x, y| (x.0 - tau).abs().partial_cmp(&(y.0 - tau).abs()).unwrap()).unwrap().1;
-            assert!((cam.lon - other.lon).abs() < 1.0 && (cam.zoom.ln() - other.zoom.ln()).abs() < 0.03, "at {tau}: {cam:?} vs {other:?}");
+            let other = a
+                .iter()
+                .min_by(|x, y| (x.0 - tau).abs().partial_cmp(&(y.0 - tau).abs()).unwrap())
+                .unwrap()
+                .1;
+            assert!(
+                (cam.lon - other.lon).abs() < 1.0 && (cam.zoom.ln() - other.zoom.ln()).abs() < 0.03,
+                "at {tau}: {cam:?} vs {other:?}"
+            );
         }
     }
 
@@ -1187,11 +1648,30 @@ mod tests {
         let f = Framing::default();
         for i in 0..120 {
             let lat = 80.0 + i as f64 * 0.2;
-            let target = if lat <= 90.0 { Camera::new(0.0, lat, 2.0) } else { Camera { lon: 180.0, lat: 180.0 - lat, zoom: 2.0, roll: 180.0 } };
-            let cam = cc.step(target, ClipPart::During, 0.0, 1.0 / 60.0, &f, &Lean::default());
+            let target = if lat <= 90.0 {
+                Camera::new(0.0, lat, 2.0)
+            } else {
+                Camera {
+                    lon: 180.0,
+                    lat: 180.0 - lat,
+                    zoom: 2.0,
+                    roll: 180.0,
+                }
+            };
+            let cam = cc.step(
+                target,
+                ClipPart::During,
+                0.0,
+                1.0 / 60.0,
+                &f,
+                &Lean::default(),
+            );
             let d = LonLat::new(cam.lon, cam.lat).to_xyz();
             let e = LonLat::new(last.lon, last.lat).to_xyz();
-            let step = (d[0] * e[0] + d[1] * e[1] + d[2] * e[2]).clamp(-1.0, 1.0).acos().to_degrees();
+            let step = (d[0] * e[0] + d[1] * e[1] + d[2] * e[2])
+                .clamp(-1.0, 1.0)
+                .acos()
+                .to_degrees();
             assert!(step < 1.0, "jumped {step}° at {cam:?}");
             last = cam;
         }
@@ -1200,17 +1680,36 @@ mod tests {
     /// (R21) Seeds are framed at the wind's scale; lamps exactly as before (scale unset and 1 alike).
     #[test]
     fn seeds_are_framed_at_the_winds_scale_and_lamps_as_ever() {
-        let lean = |lamps: Vec<LonLat>, scale: f64| Lean { lamps, trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale, journey: false };
+        let lean = |lamps: Vec<LonLat>, scale: f64| Lean {
+            lamps,
+            trail: vec![],
+            r1: 166.0,
+            half: 180.0,
+            focus: None,
+            whole: vec![],
+            zoom_cap: 0.0,
+            land_km: None,
+            land_far_km: None,
+            scale,
+            journey: false,
+        };
         let pair = vec![LonLat::new(-20.0, 45.0), LonLat::new(-19.5, 45.0)];
         let lone = vec![LonLat::new(-20.0, 45.0)];
         for p in [&pair, &lone] {
-            assert_eq!(frame(&lean(p.clone(), 0.0)), frame(&lean(p.clone(), 1.0)), "a lamp's frame is the same, the scale unset or 1");
+            assert_eq!(
+                frame(&lean(p.clone(), 0.0)),
+                frame(&lean(p.clone(), 1.0)),
+                "a lamp's frame is the same, the scale unset or 1"
+            );
         }
         // a seed pair 40 km apart: its least span is the wind's (300 km), so the frame is ~5x wider
         let (_, zl) = frame(&lean(pair.clone(), 1.0)).unwrap();
         let (_, zs) = frame(&lean(pair.clone(), WIND_SCALE)).unwrap();
         let half_km = |z: f64| 180.0 * EARTH_KM / (166.0 * z);
-        assert!(zs < zl && half_km(zs) > 0.9 * WIND_SCALE * FRAME_PAIR_MIN_KM / FRAME_FILL, "lamps zoom {zl:.1}, seeds {zs:.1}");
+        assert!(
+            zs < zl && half_km(zs) > 0.9 * WIND_SCALE * FRAME_PAIR_MIN_KM / FRAME_FILL,
+            "lamps zoom {zl:.1}, seeds {zs:.1}"
+        );
         // two seeds 1500 km apart fill the frame as two lamps 1500 km apart do: their own span wins (the
         // margin, 50 km for a seed against 10, is all that differs)
         let far = vec![LonLat::new(-30.0, 45.0), LonLat::new(-11.0, 45.0)];
@@ -1223,56 +1722,146 @@ mod tests {
     fn the_frame_fills_six_tenths_with_the_lamps_and_shows_a_lone_lamps_tens_of_km() {
         let km_pt = |zoom: f64| 166.0 * zoom / EARTH_KM;
         // a lone lamp, a short line: close enough that 40 km is plainly visible (≥ 30 points)
-        let lone = Lean { lamps: vec![LonLat::new(-72.0, 35.0)], trail: vec![LonLat::new(-72.2, 35.05)], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
+        let lone = Lean {
+            lamps: vec![LonLat::new(-72.0, 35.0)],
+            trail: vec![LonLat::new(-72.2, 35.05)],
+            r1: 166.0,
+            half: 180.0,
+            focus: None,
+            whole: vec![],
+            zoom_cap: 0.0,
+            land_km: None,
+            land_far_km: None,
+            scale: 0.0,
+            journey: false,
+        };
         let (c, z) = frame(&lone).unwrap();
-        assert!(40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2, "{c:?} {z}");
+        assert!(
+            40.0 * km_pt(z) >= 30.0 && (c.lon + 72.1).abs() < 0.2,
+            "{c:?} {z}"
+        );
         // two lamps a thousand km apart: their span (with the margin) fills 60% of the width
-        let two = Lean { lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
+        let two = Lean {
+            lamps: vec![LonLat::new(-72.0, 35.0), LonLat::new(-61.0, 37.0)],
+            trail: vec![],
+            r1: 166.0,
+            half: 180.0,
+            focus: None,
+            whole: vec![],
+            zoom_cap: 0.0,
+            land_km: None,
+            land_far_km: None,
+            scale: 0.0,
+            journey: false,
+        };
         let (c, z) = frame(&two).unwrap();
         let cam = Camera::new(c.lon, c.lat, z);
-        let reach = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z }).fold(0.0, f64::max);
-        assert!(reach > 0.45 * 180.0 && reach < 0.6 * 180.0, "the furthest lamp {reach} pt from the centre");
+        let reach = two
+            .lamps
+            .iter()
+            .map(|p| {
+                let v = cam.view(p.to_xyz());
+                (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * z
+            })
+            .fold(0.0, f64::max);
+        assert!(
+            reach > 0.45 * 180.0 && reach < 0.6 * 180.0,
+            "the furthest lamp {reach} pt from the centre"
+        );
         // continuous: the line growing a little moves the frame a little
         let mut more = lone.clone();
         more.trail.push(LonLat::new(-72.25, 35.06));
         let (c2, z2) = frame(&more).unwrap();
         let (c1, z1) = frame(&lone).unwrap();
-        assert!((c2.lon - c1.lon).abs() < 0.05 && (z2 / z1 - 1.0).abs() < 0.1, "{c1:?} {z1} → {c2:?} {z2}");
+        assert!(
+            (c2.lon - c1.lon).abs() < 0.05 && (z2 / z1 - 1.0).abs() < 0.1,
+            "{c1:?} {z1} → {c2:?} {z2}"
+        );
         // the clip frames the lamps whatever the take's zoom; no lamps, the take's camera
         let a = lean(Camera::new(-50.0, 30.0, 2.0), &two, 1.0);
         assert!((a.zoom / z - 1.0).abs() < 1e-6, "{a:?}");
-        assert_eq!(lean(Camera::new(-100.0, 10.0, 1.3), &Lean::default(), 1.3), Camera::new(-100.0, 10.0, 1.3));
+        assert_eq!(
+            lean(Camera::new(-100.0, 10.0, 1.3), &Lean::default(), 1.3),
+            Camera::new(-100.0, 10.0, 1.3)
+        );
         // a lamp cued alone: the frame leans in on it, then eases back to both; never a jump
         assert_eq!(focus_weight(-0.1), 0.0);
         let mut last = frame(&two).unwrap();
         for i in 0..=100 {
             let age = i as f64 * 0.05;
-            let f = Lean { focus: Some((vec![LonLat::new(-72.0, 35.0)], vec![], focus_weight(age))), ..two.clone() };
+            let f = Lean {
+                focus: Some((vec![LonLat::new(-72.0, 35.0)], vec![], focus_weight(age))),
+                ..two.clone()
+            };
             let now = frame(&f).unwrap();
-            assert!((now.1 / last.1).ln().abs() < 0.15 && (now.0.lon - last.0.lon).abs() < 0.8, "at {age}: {last:?} → {now:?}");
+            assert!(
+                (now.1 / last.1).ln().abs() < 0.15 && (now.0.lon - last.0.lon).abs() < 0.8,
+                "at {age}: {last:?} → {now:?}"
+            );
             let cam = Camera::new(now.0.lon, now.0.lat, now.1);
             let v = cam.view(LonLat::new(-72.0, 35.0).to_xyz());
-            assert!((v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * now.1 <= 0.62 * 180.0, "the cued lamp out of frame at {age}");
+            assert!(
+                (v[0] * v[0] + v[1] * v[1]).sqrt() * 166.0 * now.1 <= 0.62 * 180.0,
+                "the cued lamp out of frame at {age}"
+            );
             let o = cam.view(LonLat::new(-61.0, 37.0).to_xyz());
-            assert!((o[0] * o[0] + o[1] * o[1]).sqrt() * 166.0 * now.1 <= 0.91 * 180.0, "the other lamp out of frame at {age}");
+            assert!(
+                (o[0] * o[0] + o[1] * o[1]).sqrt() * 166.0 * now.1 <= 0.91 * 180.0,
+                "the other lamp out of frame at {age}"
+            );
             if (age - 1.0).abs() < 1e-9 {
-                assert!(now.1 > 1.1 * z && (now.0.lon + 72.0).abs() < 6.0, "not in on the lamp: {now:?}");
+                assert!(
+                    now.1 > 1.1 * z && (now.0.lon + 72.0).abs() < 6.0,
+                    "not in on the lamp: {now:?}"
+                );
             }
             last = now;
         }
-        assert!((last.1 / z - 1.0).abs() < 1e-6, "not back out to both: {last:?}");
+        assert!(
+            (last.1 / z - 1.0).abs() < 1e-6,
+            "not back out to both: {last:?}"
+        );
     }
 
     #[test]
     fn the_clip_puts_the_lamps_centre_a_little_above_the_middle_and_fills_six_tenths() {
-        let two = Lean { lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: vec![], zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
+        let two = Lean {
+            lamps: vec![LonLat::new(-70.0, 35.0), LonLat::new(-66.0, 36.0)],
+            trail: vec![],
+            r1: 166.0,
+            half: 180.0,
+            focus: None,
+            whole: vec![],
+            zoom_cap: 0.0,
+            land_km: None,
+            land_far_km: None,
+            scale: 0.0,
+            journey: false,
+        };
         for roll in [0.0, 40.0] {
-            let cam = lean(Camera { roll, ..Camera::new(-50.0, 20.0, 1.0) }, &two, 1.0);
+            let cam = lean(
+                Camera {
+                    roll,
+                    ..Camera::new(-50.0, 20.0, 1.0)
+                },
+                &two,
+                1.0,
+            );
             let r = 166.0 * cam.zoom;
-            let pts: Vec<(f64, f64)> = two.lamps.iter().map(|p| { let v = cam.view(p.to_xyz()); (180.0 + r * v[0], 320.0 - r * v[1]) }).collect();
+            let pts: Vec<(f64, f64)> = two
+                .lamps
+                .iter()
+                .map(|p| {
+                    let v = cam.view(p.to_xyz());
+                    (180.0 + r * v[0], 320.0 - r * v[1])
+                })
+                .collect();
             let (mx, my) = ((pts[0].0 + pts[1].0) / 2.0, (pts[0].1 + pts[1].1) / 2.0);
             let span = ((pts[0].0 - pts[1].0).powi(2) + (pts[0].1 - pts[1].1).powi(2)).sqrt();
-            assert!((my - (320.0 - FRAME_LIFT * 640.0)).abs() < 3.0, "roll {roll}: centre at y {my}");
+            assert!(
+                (my - (320.0 - FRAME_LIFT * 640.0)).abs() < 3.0,
+                "roll {roll}: centre at y {my}"
+            );
             if roll == 0.0 {
                 assert!((mx - 180.0).abs() < 3.0, "centre at x {mx}");
             }
@@ -1284,19 +1873,50 @@ mod tests {
     #[test]
     fn the_braid_is_held_whole_when_it_fits_and_its_recent_part_when_not() {
         // two lamps near (153, -29), their lines since day 0 running 1° a day south-west, 20 days
-        let whole: Vec<(f64, LonLat)> = (0..=20).flat_map(|d| {
-            let d = d as f64;
-            [(d, LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1)), (d, LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1))]
-        }).collect();
-        let l = Lean { lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole, zoom_cap: 0.0, land_km: None, land_far_km: None, scale: 0.0, journey: false };
+        let whole: Vec<(f64, LonLat)> = (0..=20)
+            .flat_map(|d| {
+                let d = d as f64;
+                [
+                    (
+                        d,
+                        LonLat::new(153.0 + (20.0 - d) * 0.1, -29.0 + (20.0 - d) * 0.1),
+                    ),
+                    (
+                        d,
+                        LonLat::new(153.2 + (20.0 - d) * 0.1, -29.1 + (20.0 - d) * 0.1),
+                    ),
+                ]
+            })
+            .collect();
+        let l = Lean {
+            lamps: vec![LonLat::new(153.0, -29.0), LonLat::new(153.2, -29.1)],
+            trail: vec![],
+            r1: 166.0,
+            half: 180.0,
+            focus: None,
+            whole,
+            zoom_cap: 0.0,
+            land_km: None,
+            land_far_km: None,
+            scale: 0.0,
+            journey: false,
+        };
         // a wide floor: all of it
         let all = braid_lean(&l, 2.0);
         assert_eq!(all.trail.len(), 42);
         // a close floor: only the recent part, framed no wider than the floor
         let floor = (frame(&all).unwrap().1 * 1.5).min(FRAME_ZOOM_MAX * 0.8);
         let part = braid_lean(&l, floor);
-        assert!(part.trail.len() < 42 && part.trail.len() >= 2, "{}", part.trail.len());
-        assert!(frame(&part).unwrap().1 >= floor * 0.99, "{:?}", frame(&part));
+        assert!(
+            part.trail.len() < 42 && part.trail.len() >= 2,
+            "{}",
+            part.trail.len()
+        );
+        assert!(
+            frame(&part).unwrap().1 >= floor * 0.99,
+            "{:?}",
+            frame(&part)
+        );
     }
 
     #[test]
@@ -1304,7 +1924,11 @@ mod tests {
         // a pair whose framing jumps: a coast comes into reach mid-way (the cap and the pull change at
         // once), the lamps jump a degree (a cue), and the opening hands over to the follow
         let mut cc = ClipCamera::new(Camera::new(150.0, -30.0, 1.0));
-        let f = Framing { braid: true, hold_out: JOURNEY_HOLD_OUT, ..Framing::default() };
+        let f = Framing {
+            braid: true,
+            hold_out: JOURNEY_HOLD_OUT,
+            ..Framing::default()
+        };
         let mut last: Option<Camera> = None;
         let mut last_dz: Option<f64> = None;
         let fps = 30.0;
@@ -1312,7 +1936,10 @@ mod tests {
             let t = i as f64 / fps;
             let jump = if i > 150 { 1.0 } else { 0.0 };
             let l = Lean {
-                lamps: vec![LonLat::new(156.7 + jump, -29.0), LonLat::new(157.1 + jump, -29.0)],
+                lamps: vec![
+                    LonLat::new(156.7 + jump, -29.0),
+                    LonLat::new(157.1 + jump, -29.0),
+                ],
                 trail: vec![LonLat::new(156.5, -28.9)],
                 r1: 166.0,
                 half: 180.0,
@@ -1324,15 +1951,39 @@ mod tests {
                 scale: 0.0,
                 journey: false,
             };
-            let part = if t < f.hold_in { ClipPart::Before } else if i < 270 { ClipPart::During } else { ClipPart::After };
-            let through = if part == ClipPart::After { (i - 270) as f64 / 30.0 / f.hold_out } else { (t / 9.0).min(1.0) };
-            let cam = cc.step(Camera::new(150.0, -30.0, 1.0), part, through, 1.0 / fps, &f, &l);
+            let part = if t < f.hold_in {
+                ClipPart::Before
+            } else if i < 270 {
+                ClipPart::During
+            } else {
+                ClipPart::After
+            };
+            let through = if part == ClipPart::After {
+                (i - 270) as f64 / 30.0 / f.hold_out
+            } else {
+                (t / 9.0).min(1.0)
+            };
+            let cam = cc.step(
+                Camera::new(150.0, -30.0, 1.0),
+                part,
+                through,
+                1.0 / fps,
+                &f,
+                &l,
+            );
             if let Some(p) = last {
                 let dz = (cam.zoom / p.zoom).ln();
-                assert!(dz.abs() <= ZOOM_RATE / fps + 1e-6, "frame {i}: the zoom stepped {:.1}%", dz.abs() * 100.0);
+                assert!(
+                    dz.abs() <= ZOOM_RATE / fps + 1e-6,
+                    "frame {i}: the zoom stepped {:.1}%",
+                    dz.abs() * 100.0
+                );
                 if let Some(pd) = last_dz {
                     let ddz: f64 = dz - pd;
-                    assert!(ddz.abs() <= ZOOM_ACCEL / (fps * fps) + 1e-6, "frame {i}: the zoom's rate changed by {ddz}");
+                    assert!(
+                        ddz.abs() <= ZOOM_ACCEL / (fps * fps) + 1e-6,
+                        "frame {i}: the zoom's rate changed by {ddz}"
+                    );
                 }
                 last_dz = Some(dz);
             }
@@ -1346,12 +1997,19 @@ mod tests {
         // to ~25 km apart: the journey's camera keeps both in frame and comes back in (R17-R21's only
         // pulled out), the pair a fair share of the width at the end
         let mut cc = ClipCamera::new(Camera::new(150.0, -40.0, 1.0));
-        let f = Framing { braid: true, hold_out: JOURNEY_HOLD_OUT, ..Framing::default() };
+        let f = Framing {
+            braid: true,
+            hold_out: JOURNEY_HOLD_OUT,
+            ..Framing::default()
+        };
         let fps = 60.0;
         let at = |t: f64| {
             let c = 150.0 + 0.4 * t;
             let gap = 2.0 - 1.7 * (t / 16.0).min(1.0);
-            (LonLat::new(c - gap / 2.0, -40.0), LonLat::new(c + gap / 2.0, -40.0))
+            (
+                LonLat::new(c - gap / 2.0, -40.0),
+                LonLat::new(c + gap / 2.0, -40.0),
+            )
         };
         let mut whole = Vec::new();
         let (mut mid, mut last) = (0.0, Camera::new(150.0, -40.0, 1.0));
@@ -1360,14 +2018,44 @@ mod tests {
             let (a, b) = at(t);
             whole.push((2.0 * t, a));
             whole.push((2.0 * t, b));
-            let l = Lean { lamps: vec![a, b], trail: vec![], r1: 166.0, half: 180.0, focus: None, whole: whole.clone(), zoom_cap: FRAME_ZOOM_OPEN_SEA, land_km: None, land_far_km: None, scale: 0.0, journey: false };
-            let part = if t < f.hold_in { ClipPart::Before } else { ClipPart::During };
-            let cam = cc.step(Camera::new(150.0, -40.0, 1.0), part, (t / 30.0).min(1.0), 1.0 / fps, &f, &l);
+            let l = Lean {
+                lamps: vec![a, b],
+                trail: vec![],
+                r1: 166.0,
+                half: 180.0,
+                focus: None,
+                whole: whole.clone(),
+                zoom_cap: FRAME_ZOOM_OPEN_SEA,
+                land_km: None,
+                land_far_km: None,
+                scale: 0.0,
+                journey: false,
+            };
+            let part = if t < f.hold_in {
+                ClipPart::Before
+            } else {
+                ClipPart::During
+            };
+            let cam = cc.step(
+                Camera::new(150.0, -40.0, 1.0),
+                part,
+                (t / 30.0).min(1.0),
+                1.0 / fps,
+                &f,
+                &l,
+            );
             if t > OPEN_SECS {
                 for p in [a, b] {
                     let v = cam.view(p.to_xyz());
-                    let (x, y) = (180.0 + 166.0 * cam.zoom * v[0], 320.0 - 166.0 * cam.zoom * v[1]);
-                    assert!(v[2] > 0.0 && (0.0..=360.0).contains(&x) && (0.0..=640.0).contains(&y), "{t:.2} s: a lamp at {x:.0},{y:.0} (zoom {:.1})", cam.zoom);
+                    let (x, y) = (
+                        180.0 + 166.0 * cam.zoom * v[0],
+                        320.0 - 166.0 * cam.zoom * v[1],
+                    );
+                    assert!(
+                        v[2] > 0.0 && (0.0..=360.0).contains(&x) && (0.0..=640.0).contains(&y),
+                        "{t:.2} s: a lamp at {x:.0},{y:.0} (zoom {:.1})",
+                        cam.zoom
+                    );
                 }
             }
             if (t - 6.0).abs() < 0.5 / fps {
@@ -1378,8 +2066,16 @@ mod tests {
         let (a, b) = at(20.0);
         let (va, vb) = (last.view(a.to_xyz()), last.view(b.to_xyz()));
         let span = 166.0 * last.zoom * (va[0] - vb[0]).abs() / 360.0;
-        assert!(last.zoom > 2.0 * mid, "the zoom came in from {mid:.1} only to {:.1}", last.zoom);
+        assert!(
+            last.zoom > 2.0 * mid,
+            "the zoom came in from {mid:.1} only to {:.1}",
+            last.zoom
+        );
         // 25 km apart is about 30% of the width at `JOURNEY_ZOOM_MAX`, which the zoom is still easing into
-        assert!(span >= 0.2, "the pair spans {:.0}% of the width at the end", span * 100.0);
+        assert!(
+            span >= 0.2,
+            "the pair spans {:.0}% of the width at the end",
+            span * 100.0
+        );
     }
 }

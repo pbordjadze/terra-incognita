@@ -37,10 +37,18 @@ pub fn beat(l: &[f32], r: &[f32], rate: f64) -> (f64, f64) {
         .iter()
         .map(|m| best.1 * m)
         .filter(|p| *p >= lag(200.0) * 0.98 && *p <= lag(50.0) * 1.02)
-        .max_by(|a, b| prior(60.0 * fr / a).partial_cmp(&prior(60.0 * fr / b)).unwrap())
+        .max_by(|a, b| {
+            prior(60.0 * fr / a)
+                .partial_cmp(&prior(60.0 * fr / b))
+                .unwrap()
+        })
         .unwrap_or(best.1);
     if std::env::var("SCREW_TEMPO").is_ok() {
-        eprintln!("the folds' period: {:.1} BPM; the beat: {:.1} BPM", 60.0 * fr / best.1, 60.0 * fr / p0);
+        eprintln!(
+            "the folds' period: {:.1} BPM; the beat: {:.1} BPM",
+            60.0 * fr / best.1,
+            60.0 * fr / p0
+        );
     }
     // refined: fold the onsets on periods near it and keep the sharpest fold
     let mut top = (f64::MIN, p0, 0.0);
@@ -147,7 +155,8 @@ mod tests {
             let ph = t - b as f64 * beat;
             if b % 2 == 0 {
                 let f = 50.0 + 90.0 * (-ph * 30.0).exp();
-                *s += (0.8 * (-ph * 9.0).exp() * (2.0 * std::f64::consts::PI * f * ph).sin()) as f32;
+                *s +=
+                    (0.8 * (-ph * 9.0).exp() * (2.0 * std::f64::consts::PI * f * ph).sin()) as f32;
             } else {
                 *s += (0.4 * (-ph * 18.0).exp()) as f32 * noise();
             }
@@ -163,9 +172,17 @@ mod tests {
             let x = groove(bpm, 40.0, off);
             let (b, first) = beat(&x, &x, 44_100.0);
             let want = if bpm > 110.0 { 120.0 / bpm } else { 60.0 / bpm };
-            assert!((b / want - 1.0).abs() < 0.002, "{bpm} BPM: a beat of {b:.4} s, want {want:.4}");
-            let off_by = ((first - off).rem_euclid(60.0 / bpm) + 0.5 * 60.0 / bpm).rem_euclid(60.0 / bpm) - 0.5 * 60.0 / bpm;
-            assert!(off_by.abs() < 0.015 || bpm > 110.0, "{bpm} BPM: the first beat at {first:.3}, want {off}");
+            assert!(
+                (b / want - 1.0).abs() < 0.002,
+                "{bpm} BPM: a beat of {b:.4} s, want {want:.4}"
+            );
+            let off_by = ((first - off).rem_euclid(60.0 / bpm) + 0.5 * 60.0 / bpm)
+                .rem_euclid(60.0 / bpm)
+                - 0.5 * 60.0 / bpm;
+            assert!(
+                off_by.abs() < 0.015 || bpm > 110.0,
+                "{bpm} BPM: the first beat at {first:.3}, want {off}"
+            );
         }
     }
 }

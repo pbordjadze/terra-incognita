@@ -35,7 +35,10 @@ impl LonLat {
         if lon >= 180.0 {
             lon -= 360.0;
         }
-        Self { lon, lat: self.lat.clamp(-90.0, 90.0) }
+        Self {
+            lon,
+            lat: self.lat.clamp(-90.0, 90.0),
+        }
     }
 
     /// Great-circle distance, in metres (the Earth taken as a sphere of 6 371 km).
@@ -143,7 +146,15 @@ pub struct Leg {
 impl Leg {
     /// A leg put fresh: the real world, its own eddy, the current law, on the sea.
     pub const fn new(at: LonLat, day: f64, seed: u64) -> Leg {
-        Leg { at, day, seed, world: 0, eddy: None, law: crate::sea::rules::LAW, medium: Medium::Sea }
+        Leg {
+            at,
+            day,
+            seed,
+            world: 0,
+            eddy: None,
+            law: crate::sea::rules::LAW,
+            medium: Medium::Sea,
+        }
     }
 
     /// The same, under `law` (a leg that continues another's).
@@ -210,7 +221,12 @@ impl Float {
     pub fn legs(&self) -> Vec<Leg> {
         if self.legs.is_empty() {
             // a kept state from before legs (and before laws): the first law
-            vec![Leg::new(self.wake.first().map_or(self.at, |b| b.at), self.put_day, self.seed).under(0)]
+            vec![Leg::new(
+                self.wake.first().map_or(self.at, |b| b.at),
+                self.put_day,
+                self.seed,
+            )
+            .under(0)]
         } else {
             self.legs.clone()
         }
@@ -280,7 +296,12 @@ pub struct Camera {
 
 impl Camera {
     pub const fn new(lon: f64, lat: f64, zoom: f64) -> Camera {
-        Camera { lon, lat, zoom, roll: 0.0 }
+        Camera {
+            lon,
+            lat,
+            zoom,
+            roll: 0.0,
+        }
     }
 
     /// World from view: Ry(lon) · Rx(-lat) · Rz(roll), as columns `[c0, c1, c2]` (Terra's
@@ -296,8 +317,16 @@ impl Camera {
         }
         let (sr, cr) = self.roll.to_radians().sin_cos();
         [
-            [cr * c0[0] + sr * c1[0], cr * c0[1] + sr * c1[1], cr * c0[2] + sr * c1[2]],
-            [-sr * c0[0] + cr * c1[0], -sr * c0[1] + cr * c1[1], -sr * c0[2] + cr * c1[2]],
+            [
+                cr * c0[0] + sr * c1[0],
+                cr * c0[1] + sr * c1[1],
+                cr * c0[2] + sr * c1[2],
+            ],
+            [
+                -sr * c0[0] + cr * c1[0],
+                -sr * c0[1] + cr * c1[1],
+                -sr * c0[2] + cr * c1[2],
+            ],
             c2,
         ]
     }
@@ -308,11 +337,26 @@ impl Camera {
     pub fn from_rotation(m: [[f64; 3]; 3], zoom: f64) -> Camera {
         let c = m[2];
         let lat = c[1].clamp(-1.0, 1.0).asin().to_degrees();
-        let lon = if c[0].abs() < 1e-12 && c[2].abs() < 1e-12 { 0.0 } else { c[0].atan2(c[2]).to_degrees() };
-        let base = Camera { lon, lat, zoom, roll: 0.0 }.rotation();
+        let lon = if c[0].abs() < 1e-12 && c[2].abs() < 1e-12 {
+            0.0
+        } else {
+            c[0].atan2(c[2]).to_degrees()
+        };
+        let base = Camera {
+            lon,
+            lat,
+            zoom,
+            roll: 0.0,
+        }
+        .rotation();
         let dot = |a: [f64; 3], b: [f64; 3]| a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
         let roll = dot(m[0], base[1]).atan2(dot(m[0], base[0])).to_degrees();
-        Camera { lon, lat, zoom, roll }
+        Camera {
+            lon,
+            lat,
+            zoom,
+            roll,
+        }
     }
 
     /// The globe turned on the screen by `angle` radians about `axis`, a direction in view space
@@ -490,7 +534,10 @@ pub enum Intent {
     Menu,
     /// A conductor's cue while a take is recorded (R11): the lamp `float` (None: every lamp out)
     /// takes the world that did what the gesture did.
-    Conduct { float: Option<u32>, gesture: ConductGesture },
+    Conduct {
+        float: Option<u32>,
+        gesture: ConductGesture,
+    },
     /// The newest take's clip plays at this speed (R10: 0.5 is slow motion, the clip twice the take's
     /// length; clamped to 0.25..2). The take itself is unchanged.
     TakeSpeed { speed: f64 },
@@ -507,13 +554,27 @@ mod camera_tests {
     use super::*;
 
     fn close(a: [[f64; 3]; 3], b: [[f64; 3]; 3]) -> bool {
-        a.iter().flatten().zip(b.iter().flatten()).all(|(x, y)| (x - y).abs() < 1e-9)
+        a.iter()
+            .flatten()
+            .zip(b.iter().flatten())
+            .all(|(x, y)| (x - y).abs() < 1e-9)
     }
 
     #[test]
     fn a_rotation_reads_back_as_its_camera() {
-        for &(lon, lat, roll) in &[(-30.0, 25.0, 0.0), (120.0, -60.0, 33.0), (10.0, 89.9, -150.0), (0.0, 90.0, 0.0), (45.0, -90.0, 70.0)] {
-            let c = Camera { lon, lat, zoom: 2.0, roll };
+        for &(lon, lat, roll) in &[
+            (-30.0, 25.0, 0.0),
+            (120.0, -60.0, 33.0),
+            (10.0, 89.9, -150.0),
+            (0.0, 90.0, 0.0),
+            (45.0, -90.0, 70.0),
+        ] {
+            let c = Camera {
+                lon,
+                lat,
+                zoom: 2.0,
+                roll,
+            };
             let back = Camera::from_rotation(c.rotation(), 2.0);
             assert!(close(c.rotation(), back.rotation()), "{c:?} -> {back:?}");
         }
@@ -533,7 +594,10 @@ mod camera_tests {
             assert!((arc - step).abs() < 1e-6, "{arc} at {c:?}");
             last = now;
         }
-        assert!((c.lat - 60.0).abs() < 1e-6 && (c.lon - 150.0).abs() < 1e-6, "{c:?}");
+        assert!(
+            (c.lat - 60.0).abs() < 1e-6 && (c.lon - 150.0).abs() < 1e-6,
+            "{c:?}"
+        );
         // the place under the screen's top moved by the same turn: what was 10° above the centre
         let v = c.view(LonLat::new(150.0, 70.0).to_xyz());
         assert!(v[2] > 0.0, "the far side came into view: {v:?}");

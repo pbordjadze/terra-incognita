@@ -26,7 +26,12 @@ impl Sheet {
     /// Decoded with four channels (grey and RGB widened), or one when `grey`.
     pub fn load(assets: &dyn Assets, name: &str, grey: bool) -> anyhow::Result<Sheet> {
         let p = decode(&assets.read(name)?, if grey { 1 } else { 4 })?;
-        Ok(Sheet { width: p.width as usize, height: p.height as usize, channels: p.channels as usize, bytes: p.data.into() })
+        Ok(Sheet {
+            width: p.width as usize,
+            height: p.height as usize,
+            channels: p.channels as usize,
+            bytes: p.data.into(),
+        })
     }
 
     #[inline]
@@ -45,7 +50,11 @@ pub struct Tiled {
 }
 
 impl Tiled {
-    pub fn new(sheet: Sheet, cells: (usize, usize), tiles: (usize, usize)) -> anyhow::Result<Tiled> {
+    pub fn new(
+        sheet: Sheet,
+        cells: (usize, usize),
+        tiles: (usize, usize),
+    ) -> anyhow::Result<Tiled> {
         anyhow::ensure!(
             sheet.width == (cells.0 + 2) * tiles.0 && sheet.height == (cells.1 + 2) * tiles.1,
             "a sheet of {} x {} is not {} tiles of {} cells",
@@ -54,7 +63,11 @@ impl Tiled {
             tiles.0 * tiles.1,
             cells.0
         );
-        Ok(Tiled { sheet, cells, tiles })
+        Ok(Tiled {
+            sheet,
+            cells,
+            tiles,
+        })
     }
 
     /// Every channel of month `m` at (lon, lat), bilinear, as raw byte values 0..255 (unused
@@ -129,7 +142,11 @@ impl Currents {
     pub const VMAX: f32 = 2.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<Currents> {
-        Ok(Currents(Tiled::new(Sheet::load(assets, "currents.png", false)?, (720, 360), (4, 3))?))
+        Ok(Currents(Tiled::new(
+            Sheet::load(assets, "currents.png", false)?,
+            (720, 360),
+            (4, 3),
+        )?))
     }
 
     #[inline]
@@ -158,7 +175,11 @@ impl Wind {
     pub const WMAX: f32 = 16.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<Wind> {
-        Ok(Wind(Tiled::new(Sheet::load(assets, "wind.png", false)?, (360, 180), (4, 3))?))
+        Ok(Wind(Tiled::new(
+            Sheet::load(assets, "wind.png", false)?,
+            (360, 180),
+            (4, 3),
+        )?))
     }
 
     /// (u east, v north) in m/s at the day's mix of months.
@@ -167,7 +188,10 @@ impl Wind {
         let pa = self.0.sample_all(a, lon, lat);
         let pb = self.0.sample_all(b, lon, lat);
         let mix = |c: usize| pa[c] * (1.0 - t) + pb[c] * t;
-        ((mix(0) - 128.0) / 127.0 * Self::WMAX, (mix(1) - 128.0) / 127.0 * Self::WMAX)
+        (
+            (mix(0) - 128.0) / 127.0 * Self::WMAX,
+            (mix(1) - 128.0) / 127.0 * Self::WMAX,
+        )
     }
 }
 
@@ -179,7 +203,11 @@ impl Eddy {
     pub const KMAX: f32 = 40000.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<Eddy> {
-        Ok(Eddy(Tiled::new(Sheet::load(assets, "eddy.png", false)?, (720, 360), (1, 1))?))
+        Ok(Eddy(Tiled::new(
+            Sheet::load(assets, "eddy.png", false)?,
+            (720, 360),
+            (1, 1),
+        )?))
     }
 
     /// (K zonal, K meridional) in m^2/s and how measured 0..1.
@@ -200,7 +228,11 @@ impl EddyTime {
     pub const TMAX: f32 = 10.0;
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<EddyTime> {
-        Ok(EddyTime(Tiled::new(Sheet::load(assets, "eddy-time.png", false)?, (360, 180), (1, 1))?))
+        Ok(EddyTime(Tiled::new(
+            Sheet::load(assets, "eddy-time.png", false)?,
+            (360, 180),
+            (1, 1),
+        )?))
     }
 
     /// (T zonal, T meridional) in days.
@@ -218,7 +250,12 @@ impl Ice {
         let mut months = Vec::with_capacity(12);
         for m in 1..=12 {
             let s = Sheet::load(assets, &format!("ice-{m:02}.png"), true)?;
-            anyhow::ensure!(s.width == 1440 && s.height == 720, "ice-{m:02}.png is {} x {}", s.width, s.height);
+            anyhow::ensure!(
+                s.width == 1440 && s.height == 720,
+                "ice-{m:02}.png is {} x {}",
+                s.width,
+                s.height
+            );
             months.push(s);
         }
         Ok(Ice(months))
@@ -267,7 +304,12 @@ impl Coast {
 
     pub fn load(assets: &dyn Assets) -> anyhow::Result<Coast> {
         let s = Sheet::load(assets, "geo.png", false)?;
-        anyhow::ensure!(s.width == 4096 && s.height == 2048, "geo.png is {} x {}", s.width, s.height);
+        anyhow::ensure!(
+            s.width == 4096 && s.height == 2048,
+            "geo.png is {} x {}",
+            s.width,
+            s.height
+        );
         Ok(Coast(s))
     }
 

@@ -36,54 +36,123 @@ pub struct SeaPass {
 
 impl SeaPass {
     pub fn new(gpu: &Gpu, view_layout: &wgpu::BindGroupLayout, tx: &Textures) -> SeaPass {
-        let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("sea textures"),
-            entries: &[tex2d_entry(0), tex2d_entry(1), tex2d_entry(2), tex_array_entry(3), tex3d(4), sampler(5), sampler(6), sampler(7)],
-        });
-        let ulayout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("sea uniforms"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None,
-            }],
-        });
+        let layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("sea textures"),
+                entries: &[
+                    tex2d_entry(0),
+                    tex2d_entry(1),
+                    tex2d_entry(2),
+                    tex_array_entry(3),
+                    tex3d(4),
+                    sampler(5),
+                    sampler(6),
+                    sampler(7),
+                ],
+            });
+        let ulayout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("sea uniforms"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
         let paired = pair_months(gpu, &tx.stream);
         let shader = gpu.shader("sea", &super::wgsl(include_str!("sea.wgsl")));
-        let glow_layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("sea glow"), entries: &[tex2d_entry(0)] });
-        let pipeline = gpu.fullscreen_pipeline("sea", &shader, &[view_layout, &layout, &ulayout, &glow_layout], Some(Gpu::over()));
-        let glow_pipeline = {
-            let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("sea glow"), bind_group_layouts: &[Some(view_layout), Some(&layout)], immediate_size: 0 });
-            gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let glow_layout = gpu
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("sea glow"),
-                layout: Some(&pl),
-                vertex: wgpu::VertexState { module: &shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: Some("fs_glow"),
-                    targets: &[Some(wgpu::ColorTargetState { format: GLOW_FORMAT, blend: None, write_mask: wgpu::ColorWrites::ALL })],
-                    compilation_options: Default::default(),
-                }),
-                multiview_mask: None,
-                cache: None,
-            })
+                entries: &[tex2d_entry(0)],
+            });
+        let pipeline = gpu.fullscreen_pipeline(
+            "sea",
+            &shader,
+            &[view_layout, &layout, &ulayout, &glow_layout],
+            Some(Gpu::over()),
+        );
+        let glow_pipeline = {
+            let pl = gpu
+                .device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("sea glow"),
+                    bind_group_layouts: &[Some(view_layout), Some(&layout)],
+                    immediate_size: 0,
+                });
+            gpu.device
+                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some("sea glow"),
+                    layout: Some(&pl),
+                    vertex: wgpu::VertexState {
+                        module: &shader,
+                        entry_point: Some("vs_main"),
+                        buffers: &[],
+                        compilation_options: Default::default(),
+                    },
+                    primitive: wgpu::PrimitiveState::default(),
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState::default(),
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: Some("fs_glow"),
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: GLOW_FORMAT,
+                            blend: None,
+                            write_mask: wgpu::ColorWrites::ALL,
+                        })],
+                        compilation_options: Default::default(),
+                    }),
+                    multiview_mask: None,
+                    cache: None,
+                })
         };
         let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("sea textures"),
             layout: &layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&tx.currents.view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&paired.create_view(&Default::default())) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&tx.geo.view) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&tx.ice.view) },
-                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&tx.noise.view) },
-                wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::Sampler(&tx.linear_clamp) },
-                wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x) },
-                wgpu::BindGroupEntry { binding: 7, resource: wgpu::BindingResource::Sampler(&tx.linear_repeat) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&tx.currents.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(
+                        &paired.create_view(&Default::default()),
+                    ),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&tx.geo.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&tx.ice.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&tx.noise.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Sampler(&tx.linear_clamp),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: wgpu::BindingResource::Sampler(&tx.linear_wrap_x),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: wgpu::BindingResource::Sampler(&tx.linear_repeat),
+                },
             ],
         });
         let uniforms = gpu.device.create_buffer(&wgpu::BufferDescriptor {
@@ -95,42 +164,72 @@ impl SeaPass {
         let uniform_bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("sea uniforms"),
             layout: &ulayout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniforms.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniforms.as_entire_binding(),
+            }],
         });
-        SeaPass { _paired: paired, pipeline, bind, glow_pipeline, glow_layout, glow: None, uniforms, uniform_bind }
+        SeaPass {
+            _paired: paired,
+            pipeline,
+            bind,
+            glow_pipeline,
+            glow_layout,
+            glow: None,
+            uniforms,
+            uniform_bind,
+        }
     }
 
     /// The newest four touches.
     pub fn prepare(&self, gpu: &Gpu, ripples: &[Ripple]) {
-        let mut u = SeaUniforms { ripple: [[0.0; 4]; 8] };
+        let mut u = SeaUniforms {
+            ripple: [[0.0; 4]; 8],
+        };
         for (i, r) in ripples.iter().rev().take(4).enumerate() {
             let w = r.at.to_xyz();
             u.ripple[2 * i] = [w[0] as f32, w[1] as f32, w[2] as f32, r.when as f32];
             u.ripple[2 * i + 1] = [r.strength, 0.0, 0.0, 0.0];
         }
-        gpu.queue.write_buffer(&self.uniforms, 0, bytemuck::bytes_of(&u));
+        gpu.queue
+            .write_buffer(&self.uniforms, 0, bytemuck::bytes_of(&u));
     }
 
     /// (R24) The light along the streamlines for a stage `width` x `height`, at half its resolution,
     /// into the sea's own texture: encoded before the stage's pass (whose `draw` reads it).
-    pub fn glow_pass(&mut self, gpu: &Gpu, enc: &mut wgpu::CommandEncoder, view_bind: &wgpu::BindGroup, width: u32, height: u32) {
+    pub fn glow_pass(
+        &mut self,
+        gpu: &Gpu,
+        enc: &mut wgpu::CommandEncoder,
+        view_bind: &wgpu::BindGroup,
+        width: u32,
+        height: u32,
+    ) {
         let (w, h) = (width.div_ceil(2).max(1), height.div_ceil(2).max(1));
         if self.glow.as_ref().map_or(true, |g| (g.0, g.1) != (w, h)) {
             let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("sea glow"),
-                size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+                size: wgpu::Extent3d {
+                    width: w,
+                    height: h,
+                    depth_or_array_layers: 1,
+                },
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: GLOW_FORMAT,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING
+                    | wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             });
             let view = texture.create_view(&Default::default());
             let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("sea glow"),
                 layout: &self.glow_layout,
-                entries: &[wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) }],
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&view),
+                }],
             });
             self.glow = Some((w, h, view, bind));
         }
@@ -140,7 +239,10 @@ impl SeaPass {
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &glow.2,
                 resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    store: wgpu::StoreOp::Store,
+                },
                 depth_slice: None,
             })],
             depth_stencil_attachment: None,
@@ -157,7 +259,15 @@ impl SeaPass {
     /// Draws the sea; `glow_pass` for this stage first.
     pub fn draw<'a>(&'a self, rp: &mut wgpu::RenderPass<'a>, view_bind: &'a wgpu::BindGroup) {
         rp.set_pipeline(&self.pipeline);
-        rp.set_bind_group(3, &self.glow.as_ref().expect("the sea's glow_pass before its draw").3, &[]);
+        rp.set_bind_group(
+            3,
+            &self
+                .glow
+                .as_ref()
+                .expect("the sea's glow_pass before its draw")
+                .3,
+            &[],
+        );
         rp.set_bind_group(0, view_bind, &[]);
         rp.set_bind_group(1, &self.bind, &[]);
         rp.set_bind_group(2, &self.uniform_bind, &[]);
@@ -173,7 +283,11 @@ fn pair_months(gpu: &Gpu, stream: &crate::gpu::Texture) -> wgpu::Texture {
     let format = wgpu::TextureFormat::Rgba8Unorm;
     let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("stream, paired months"),
-        size: wgpu::Extent3d { width: stream.width, height: stream.height, depth_or_array_layers: 1 },
+        size: wgpu::Extent3d {
+            width: stream.width,
+            height: stream.height,
+            depth_or_array_layers: 1,
+        },
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
@@ -198,38 +312,70 @@ fn pair_months(gpu: &Gpu, stream: &crate::gpu::Texture) -> wgpu::Texture {
 }
 "#,
     );
-    let layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor { label: Some("stream pairing"), entries: &[tex2d_entry(0)] });
-    let pl = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("stream pairing"), bind_group_layouts: &[Some(&layout)], immediate_size: 0 });
-    let pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("stream pairing"),
-        layout: Some(&pl),
-        vertex: wgpu::VertexState { module: &shader, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
-        primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: Some("fs_main"),
-            targets: &[Some(wgpu::ColorTargetState { format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
-            compilation_options: Default::default(),
-        }),
-        multiview_mask: None,
-        cache: None,
-    });
+    let layout = gpu
+        .device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("stream pairing"),
+            entries: &[tex2d_entry(0)],
+        });
+    let pl = gpu
+        .device
+        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("stream pairing"),
+            bind_group_layouts: &[Some(&layout)],
+            immediate_size: 0,
+        });
+    let pipeline = gpu
+        .device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("stream pairing"),
+            layout: Some(&pl),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            multiview_mask: None,
+            cache: None,
+        });
     let bind = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("stream pairing"),
         layout: &layout,
-        entries: &[wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&stream.view) }],
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(&stream.view),
+        }],
     });
     let view = texture.create_view(&Default::default());
-    let mut enc = gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("stream pairing") });
+    let mut enc = gpu
+        .device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("stream pairing"),
+        });
     {
         let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("stream pairing"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
                 resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    store: wgpu::StoreOp::Store,
+                },
                 depth_slice: None,
             })],
             depth_stencil_attachment: None,
